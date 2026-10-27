@@ -1,4 +1,4 @@
-//! The Playstyle screen's activity: daily swipes and searches, swipe
+//! The Activity screen's data: daily swipes and searches, swipe
 //! outcomes, keep rate by card role and hard passes, read from the usage
 //! tables the app's flushes fill. Also the summary route's first spelling,
 //! served beside the new one until the client floor passes it.
@@ -10,7 +10,7 @@ mod common;
 use axum::http::StatusCode;
 use common::{TestApp, card, seed_cards};
 use uuid::Uuid;
-use zwipe_core::http::paths::{LEGACY_PLAY_STYLE_ROUTE, PLAYSTYLE_ACTIVITY_ROUTE, PLAYSTYLE_ROUTE};
+use zwipe_core::http::paths::{ACTIVITY_ROUTE, LEGACY_PLAY_STYLE_ROUTE, PLAYSTYLE_ROUTE};
 
 /// Writes one day of usage `days_ago` UTC days back.
 async fn seed_day(pool: &sqlx::PgPool, user: Uuid, days_ago: i32, right: i32, searches: i32) {
@@ -53,7 +53,7 @@ async fn seed_signal(
 #[sqlx::test]
 async fn activity_needs_a_session(pool: sqlx::PgPool) {
     let app = TestApp::new(pool);
-    let (status, _) = app.get(PLAYSTYLE_ACTIVITY_ROUTE, None).await;
+    let (status, _) = app.get(ACTIVITY_ROUTE, None).await;
     assert_eq!(status, StatusCode::UNAUTHORIZED);
 }
 
@@ -76,7 +76,7 @@ async fn a_new_account_has_no_activity(pool: sqlx::PgPool) {
     let (token, uid) = app.register("quiet").await;
     app.verify_email(&uid).await;
 
-    let (status, body) = app.get(PLAYSTYLE_ACTIVITY_ROUTE, Some(&token)).await;
+    let (status, body) = app.get(ACTIVITY_ROUTE, Some(&token)).await;
     assert_eq!(status, StatusCode::OK, "{body}");
     assert_eq!(body["days"].as_array().unwrap().len(), 0, "{body}");
     assert_eq!(body["outcomes"]["added"], 0, "{body}");
@@ -123,7 +123,7 @@ async fn activity_reads_the_year_the_outcomes_the_roles_and_the_passes(pool: sql
     seed_signal(&pool, user, b, ids[3], (0, 2, 0)).await;
     seed_signal(&pool, user, a, ids[4], (0, 1, 0)).await;
 
-    let (status, body) = app.get(PLAYSTYLE_ACTIVITY_ROUTE, Some(&token)).await;
+    let (status, body) = app.get(ACTIVITY_ROUTE, Some(&token)).await;
     assert_eq!(status, StatusCode::OK, "{body}");
 
     let days = body["days"].as_array().unwrap();
@@ -219,7 +219,7 @@ async fn hard_passes_weigh_skips_against_other_players(pool: sqlx::PgPool) {
     seed_pooled(&pool, mine, kept_id, (0, 2)).await;
     seed_pooled(&pool, theirs, kept_id, (40, 10)).await;
 
-    let (status, body) = app.get(PLAYSTYLE_ACTIVITY_ROUTE, Some(&token)).await;
+    let (status, body) = app.get(ACTIVITY_ROUTE, Some(&token)).await;
     assert_eq!(status, StatusCode::OK, "{body}");
     let names: Vec<&str> = body["passes"]
         .as_array()
@@ -274,7 +274,7 @@ async fn tag_rates_count_each_card_once_and_carry_everyone_elses(pool: sqlx::PgP
     .await
     .unwrap();
 
-    let (status, body) = app.get(PLAYSTYLE_ACTIVITY_ROUTE, Some(&token)).await;
+    let (status, body) = app.get(ACTIVITY_ROUTE, Some(&token)).await;
     assert_eq!(status, StatusCode::OK, "{body}");
     let tags = body["tags"].as_array().unwrap();
     assert_eq!(

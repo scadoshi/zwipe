@@ -38,9 +38,9 @@ pub const UPCOMING: &[Release] = &[Release {
     version: "1.16.0",
     date: None,
     entries: &[
-        "Playstyle's Activity section maps your swipes and searches over the last year",
-        "Playstyle shows what your swipes came to and your rates by card role and oracle tag",
-        "Playstyle lists your hard passes, the cards you skip and never keep",
+        "An Activity screen, opened from Home's counters, maps your swipes and searches over the last year",
+        "Activity shows what your swipes came to and your rates by card role and oracle tag",
+        "Activity lists your hard passes, the cards you skip and never keep",
         "Home's Playstyle button sits at the end of the color map's key",
         "Featured flavor's Image and Buy are buttons beside its card name and price",
         "Home's counts switch between all users and just you",

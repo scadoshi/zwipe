@@ -8,6 +8,7 @@ use uuid::Uuid;
 use crate::inbound::components::auth::auth_gate::AuthGate;
 use crate::inbound::components::navigation::back_handler::BackHandlerLayout;
 use crate::inbound::screens::account::Account;
+use crate::inbound::screens::activity::Activity;
 use crate::inbound::screens::auth::forgot_password::ForgotPassword;
 use crate::inbound::screens::auth::login::Login;
 use crate::inbound::screens::auth::register::Register;
@@ -69,6 +70,11 @@ pub enum Router {
     /// Release history: shared changelog, reached from Account.
     #[route("/changelog")]
     Changelog {},
+
+    /// Activity: how the user picks, from their swipes, reached from the
+    /// Home counters.
+    #[route("/activity")]
+    Activity {},
 
     /// List all user's decks with name, format, and card count.
     #[route("/deck")]

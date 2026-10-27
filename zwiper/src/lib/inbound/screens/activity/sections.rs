@@ -1,8 +1,8 @@
-//! The Playstyle screen's activity: a heatmap of the user's swipes and
-//! searches over the last year, what their swipes came to, their rates per
-//! card role and oracle tag, and the cards they keep passing on. The first three are
-//! sections in the profile's accordion; the hard passes are a card group
-//! under Staples in its grammar.
+//! The Activity screen's parts: a heatmap of the user's swipes and searches
+//! over the last year, what their swipes came to, their rates per card role
+//! and oracle tag, and the cards they keep passing on. The first three are
+//! sections in one accordion; the hard passes are a card group in Staples'
+//! grammar.
 
 use std::cmp::Reverse;
 use std::collections::HashMap;
@@ -22,12 +22,12 @@ use zwipe_core::http::contracts::suggestions::{
     HttpTagRates,
 };
 
-use super::collapsible_section::CollapsibleSection;
 use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::info_button::InfoButton;
 use crate::inbound::screens::deck::card::components::card_row::{
     CardRow, OtagDescribe, OtagExamplesOpen,
 };
+use crate::inbound::screens::deck::components::collapsible_section::CollapsibleSection;
 
 /// The accordion title of the heatmap section.
 pub(crate) const ACTIVITY_TITLE: &str = "Activity";
@@ -443,7 +443,7 @@ fn ActivityHeatmap(through: NaiveDate, days: Vec<HttpActivityDay>) -> Element {
     }
 }
 
-/// The activity's three sections in the profile's accordion: Activity, the
+/// The screen's three sections in one accordion: Activity, the
 /// year's heatmap with its totals under it; Swipes, what the user's swipes
 /// came to as columns; Rates, a chip row picking Added, Skipped, Maybeboard
 /// or Removed over two charts of that share, Card roles with role chips

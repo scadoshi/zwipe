@@ -51,6 +51,10 @@ pub const HINT_COMMANDER_MAYBEBOARD: &str = "commander_maybeboard";
 /// Swipe, top 10). The key keeps its suggested commanders name.
 pub const HINT_SUGGESTED_COMMANDERS: &str = "suggested_commanders";
 
+/// Explainer for the Activity screen (the heatmap, swipes, rates and hard
+/// passes).
+pub const HINT_ACTIVITY: &str = "activity";
+
 /// Maximum length of a hint key.
 pub const HINT_KEY_MAX_LEN: usize = 64;
 
@@ -111,6 +115,7 @@ mod tests {
     #[test]
     fn accepts_known_hint_keys() {
         for key in [
+            HINT_ACTIVITY,
             HINT_FIRST_LOGIN,
             HINT_ADD_DECK_CARDS,
             HINT_SWIPE_SELECT,

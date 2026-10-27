@@ -594,6 +594,7 @@ pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
                         )
                         .route("/hint", patch(mark_hint_shown))
                         .route("/metrics", get(get_my_metrics))
+                        .route("/activity", get(get_activity))
                         .route(
                             "/commander-maybeboard",
                             get(get_commander_maybeboard).delete(clear_commander_maybeboard),
@@ -657,7 +658,6 @@ pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
                         // The first spelling, for apps before 1.16.0, until
                         // the client floor passes them.
                         .route("/play-style", get(get_play_style_summary))
-                        .route("/playstyle/activity", get(get_activity))
                         .route(
                             "/{deck_id}/import/archidekt",
                             post(import_archidekt_deck).layer(

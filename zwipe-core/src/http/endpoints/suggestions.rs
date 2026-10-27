@@ -10,8 +10,8 @@ use crate::http::contracts::suggestions::{
 };
 use crate::http::endpoint::{Endpoint, Method};
 use crate::http::paths::{
-    COMMANDER_DISMISSALS_ROUTE, COMMANDER_SUGGESTIONS_ROUTE, PLAYSTYLE_ACTIVITY_ROUTE,
-    PLAYSTYLE_ROUTE, undismiss_commander_route,
+    ACTIVITY_ROUTE, COMMANDER_DISMISSALS_ROUTE, COMMANDER_SUGGESTIONS_ROUTE, PLAYSTYLE_ROUTE,
+    undismiss_commander_route,
 };
 
 /// The user's deck count and color map, for Home's play
@@ -26,15 +26,15 @@ impl Endpoint for GetPlayStyleSummary {
     }
 }
 
-/// The user's swiping, searching, keep rate by role and hard passes, for the
-/// Playstyle screen's Activity sections.
+/// The user's swiping, searching, rates by role and tag, and hard passes,
+/// for the Activity screen.
 pub struct GetActivity;
 impl Endpoint for GetActivity {
     const METHOD: Method = Method::Get;
     type Request = ();
     type Response = HttpActivity;
     fn path(&self) -> Cow<'static, str> {
-        Cow::Borrowed(PLAYSTYLE_ACTIVITY_ROUTE)
+        Cow::Borrowed(ACTIVITY_ROUTE)
     }
 }
 
@@ -107,7 +107,7 @@ mod tests {
     }
 
     #[test]
-    fn activity_reads_under_the_playstyle_route() {
-        assert_eq!(GetActivity.path(), "/api/deck/playstyle/activity");
+    fn activity_reads_under_the_user_route() {
+        assert_eq!(GetActivity.path(), "/api/user/activity");
     }
 }

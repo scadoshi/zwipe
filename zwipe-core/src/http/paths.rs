@@ -38,6 +38,9 @@ pub const DELETE_USER_ROUTE: &str = "/api/user/delete-user";
 pub const PREFERENCES_ROUTE: &str = "/api/user/preferences";
 pub const MARK_HINT_SHOWN_ROUTE: &str = "/api/user/hint";
 pub const GET_MY_METRICS_ROUTE: &str = "/api/user/metrics";
+/// The user's swiping and searching over the last year, and what they add,
+/// skip, save and remove.
+pub const ACTIVITY_ROUTE: &str = "/api/user/activity";
 
 /// Base for the commander maybeboard; the per-card routes hang off it.
 pub const COMMANDER_MAYBEBOARD_ROUTE: &str = "/api/user/commander-maybeboard";
@@ -77,9 +80,6 @@ pub const PLAYSTYLE_ROUTE: &str = "/api/deck/playstyle";
 /// floor reaches 1.16.0, the first app on the new path. See
 /// `context/plans/playstyle_route_rename.md`.
 pub const LEGACY_PLAY_STYLE_ROUTE: &str = "/api/deck/play-style";
-/// The user's swiping and searching over the last year, and what they keep
-/// and pass on.
-pub const PLAYSTYLE_ACTIVITY_ROUTE: &str = "/api/deck/playstyle/activity";
 
 // == suggested commanders ==
 
@@ -239,8 +239,8 @@ pub const FIXED_ROUTES: &[(Method, &str, bool)] = &[
     (Method::Patch, MARK_HINT_SHOWN_ROUTE, true),
     (Method::Get, MIN_CLIENT_VERSION_ROUTE, false),
     (Method::Get, PLAYSTYLE_ROUTE, true),
+    (Method::Get, ACTIVITY_ROUTE, true),
     (Method::Get, LEGACY_PLAY_STYLE_ROUTE, true),
-    (Method::Get, PLAYSTYLE_ACTIVITY_ROUTE, true),
     (Method::Get, PREFERENCES_ROUTE, true),
     (Method::Patch, PREFERENCES_ROUTE, true),
     (Method::Get, PUBLIC_METRICS_ROUTE, false),

@@ -276,7 +276,7 @@ pub async fn get_play_style_summary(
         .map(|summary| (StatusCode::OK, Json(summary.into())))
 }
 
-/// Returns the authenticated user's activity for the Playstyle screen.
+/// Returns the authenticated user's activity for the Activity screen.
 pub async fn get_activity(
     user: AuthenticatedUser,
     State(state): State<AppState>,

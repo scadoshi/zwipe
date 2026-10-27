@@ -1,4 +1,4 @@
-//! Fetch the activity behind the Playstyle screen's Activity sections.
+//! Fetch the data behind the Activity screen.
 
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::http::contracts::suggestions::HttpActivity;

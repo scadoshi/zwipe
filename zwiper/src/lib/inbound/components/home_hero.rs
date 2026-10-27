@@ -14,6 +14,7 @@ use zwipe_core::http::contracts::metrics::{HttpLifetimeCounters, HttpPublicMetri
 
 use crate::inbound::components::auth::authed::use_authed;
 use crate::inbound::components::telemetry::vocabulary::Screen;
+use crate::inbound::router::Router;
 use crate::outbound::count_scope_store::CountScope;
 use crate::outbound::counts_store::PersistCounts;
 
@@ -188,8 +189,8 @@ pub fn HomeHero() -> Element {
     }
 }
 
-/// Home's hero: [`HomeHero`] with its "all users" tag as a button after the
-/// "live" tag that
+/// Home's hero: [`HomeHero`] with an Activity button opening the Activity
+/// screen, and its "all users" tag as a button after the "live" tag that
 /// switches the figures to the user's own counts ("just me") and back. The
 /// choice is saved, so Home opens on the last one. Every switch rolls the
 /// figures to the other counts, rolling on while the user's are fetched the
@@ -198,6 +199,7 @@ pub fn HomeHero() -> Element {
 #[component]
 pub fn HomeHeroScoped() -> Element {
     let mut scope: Signal<CountScope> = use_context();
+    let navigator = use_navigator();
     let (public, public_live) = use_public_counts();
     let mine = use_my_counts(scope);
     let (figures, live) = match scope() {
@@ -224,6 +226,13 @@ pub fn HomeHeroScoped() -> Element {
                     for label in [label] {
                         span { key: "{label}", class: "hero-scope-label", "{label}" }
                     }
+                }
+                button {
+                    class: "card-action-btn",
+                    onclick: move |_| {
+                        navigator.push(Router::Activity {});
+                    },
+                    "Activity"
                 }
             },
         }

@@ -1711,10 +1711,14 @@ button {
     margin-top: 0;
 }
 
-/* Home's scope button takes the row's height, level with the live tag, and
-   one width for both labels so a switch does not shift the row. */
-.home-hero .stats-source > .hero-scope {
+/* Home's buttons take the row's height, level with the live tag, and the
+   scope button keeps one width for both labels so a switch does not shift
+   the row. */
+.home-hero .stats-source > .card-action-btn {
     align-self: stretch;
+}
+
+.home-hero .stats-source > .hero-scope {
     min-width: 5.5rem;
 }
 
@@ -3876,6 +3880,13 @@ button {
 
 .activity-rate-chips {
     padding: 0 0.75rem;
+}
+
+/* The heatmap's ghost while the Activity screen loads, the grid's height. */
+.activity-heat-ghost {
+    height: 7rem;
+    margin: 0.5rem 0.75rem 0;
+    border-radius: 0.4rem;
 }
 
 /* The year's totals under the grid. */

@@ -1,4 +1,4 @@
-//! The Playstyle screen's activity: daily swipes and searches, what the
+//! The Activity screen's data: daily swipes and searches, what the
 //! swipes came to, the keep rate per card role and the cards passed on most.
 
 use chrono::NaiveDate;
@@ -118,7 +118,7 @@ pub struct HardPass {
     pub commanders: u32,
 }
 
-/// The Playstyle screen's activity.
+/// The Activity screen's data.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Activity {
     /// The database's UTC date, the last day of the heatmap.

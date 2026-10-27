@@ -4,6 +4,8 @@
 
 /// Account screen and its sheets (username, email, password, delete).
 pub mod account;
+/// How the user picks: the heatmap, swipe outcomes, rates and hard passes.
+pub mod activity;
 /// Authentication screens (login, register).
 pub mod auth;
 /// Release history screen (shared changelog).

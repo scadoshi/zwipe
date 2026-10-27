@@ -23,4 +23,4 @@ pub mod suggested_commanders;
 pub mod view;
 
 /// Extracted components for deck screens.
-mod components;
+pub(crate) mod components;

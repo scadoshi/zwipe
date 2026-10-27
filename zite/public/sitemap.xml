@@ -96,6 +96,11 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://zwipe.net/guides/activity</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://zwipe.net/guides/budgeting</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>

@@ -39,6 +39,7 @@ pub mod screen {
     pub const PROFILE_CHANGE_USERNAME: &str = "profile_change_username";
     pub const PROFILE_PREFERENCES: &str = "profile_preferences";
     pub const SUGGESTED_COMMANDERS: &str = "suggested_commanders";
+    pub const ACTIVITY: &str = "activity";
 }
 
 /// Typed screen identity for the authed facade: the same closed vocabulary as
@@ -67,6 +68,8 @@ pub enum Screen {
     Profile(ProfileScreen),
     /// The Playstyle screen, logged under its suggested commanders key.
     SuggestedCommanders,
+    /// The Activity screen.
+    Activity,
 }
 
 /// `screens/auth/` members.
@@ -140,6 +143,7 @@ impl Screen {
             Self::Profile(ProfileScreen::ChangeUsername) => screen::PROFILE_CHANGE_USERNAME,
             Self::Profile(ProfileScreen::Preferences) => screen::PROFILE_PREFERENCES,
             Self::SuggestedCommanders => screen::SUGGESTED_COMMANDERS,
+            Self::Activity => screen::ACTIVITY,
         }
     }
 }
@@ -176,6 +180,7 @@ mod tests {
             Screen::Profile(ProfileScreen::ChangeUsername),
             Screen::Profile(ProfileScreen::Preferences),
             Screen::SuggestedCommanders,
+            Screen::Activity,
         ];
         let mut mapped: Vec<&str> = variants.iter().map(|v| v.as_str()).collect();
         mapped.sort_unstable();
@@ -203,6 +208,7 @@ mod tests {
             screen::PROFILE_CHANGE_USERNAME,
             screen::PROFILE_PREFERENCES,
             screen::SUGGESTED_COMMANDERS,
+            screen::ACTIVITY,
         ];
         constants.sort_unstable();
         assert_eq!(mapped, constants);
