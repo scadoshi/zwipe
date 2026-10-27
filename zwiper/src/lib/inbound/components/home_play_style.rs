@@ -142,9 +142,9 @@ pub(crate) fn ColorMapSkeleton() -> Element {
     }
 }
 
-/// The panel's title bar: Color map centered, its "?" at the left end and
-/// Playstyle as a chip at the right end, the way the deck view's Budget
-/// header carries its currency chips.
+/// The panel's title bar: Color map centered, Playstyle as a chip at the
+/// left end and its "?" at the right end, where the app's other headers keep
+/// theirs.
 #[component]
 fn PanelHeader(onclick: EventHandler<MouseEvent>) -> Element {
     rsx! {

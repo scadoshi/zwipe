@@ -84,8 +84,15 @@ pub const SWEEP_RINGS: u32 = 7;
 /// The wait between one ring's sweep and the next, in milliseconds. With
 /// orangui's 0.4s `heat-sweep`, the last ring lands about 700ms after mount.
 pub const SWEEP_STEP_MS: u32 = 50;
-/// The ghost blob's reach from its middle, in grid steps.
-pub const GHOST_REACH: i32 = 3;
+/// The counts a [`ColorMapGhost`] grows from: about 40 tiles, enough to
+/// branch like a real map while staying a small cluster.
+const GHOST_COUNTS: ColorMapCounts = ColorMapCounts {
+    cards: [8, 6, 6, 5, 5],
+    colorless: 0,
+};
+/// The seed a [`ColorMapGhost`] grows from, so every skeleton has the same
+/// shape.
+const GHOST_SEED: u64 = 0x5eed_c0de;
 /// The full shade, a color's own mana fill.
 pub const FULL_SHADE: u8 = 4;
 /// Each shade's share of the mana fill over the panel, faintest first, the
@@ -741,69 +748,43 @@ pub fn ColorMap(counts: ColorMapCounts, seed: u64) -> Element {
     }
 }
 
-/// The cells of a [`ColorMapGhost`], each with its ring, in row order: every
-/// cell within [`GHOST_REACH`] steps of the middle along the grid, a round
-/// blob of 25. The ring is the cell's band of straight-line distance from the
-/// middle over the farthest cell's, in [`SWEEP_RINGS`] bands like a map's.
+/// The map a [`ColorMapGhost`] draws: `GHOST_COUNTS` grown from
+/// `GHOST_SEED`, so it branches out to jagged tips like a real map.
 #[must_use]
-pub fn ghost_cells() -> Vec<((i32, i32), u32)> {
-    let reach = f64::from(GHOST_REACH);
-    (-GHOST_REACH..=GHOST_REACH)
-        .flat_map(|y| (-GHOST_REACH..=GHOST_REACH).map(move |x| (x, y)))
-        .filter(|&(x, y)| x.abs() + y.abs() <= GHOST_REACH)
-        .map(|cell| {
-            let spot = (f64::from(cell.0), f64::from(cell.1));
-            (cell, band(distance(spot, (0.0, 0.0)) / reach, SWEEP_RINGS))
-        })
-        .collect()
+pub fn ghost_model() -> ColorMapModel {
+    ColorMapModel::new(&GHOST_COUNTS, GHOST_SEED)
 }
 
-/// A ghost tile's twinkle pace and offset as inline custom properties,
-/// spread over 0.9 to 1.6s and 0 to 1.2s by the cell's position so
-/// neighbors drift apart without randomness.
-fn twinkle(x: i32, y: i32) -> String {
-    let spot = x
-        .wrapping_mul(7)
-        .wrapping_add(y.wrapping_mul(13))
-        .rem_euclid(8);
-    let pace = 900 + spot * 100;
-    let offset = x
-        .wrapping_mul(5)
-        .wrapping_sub(y.wrapping_mul(3))
-        .rem_euclid(7)
-        * 170;
-    format!("--twinkle-ms:{pace}ms;--twinkle-delay:{offset}ms;")
-}
-
-/// A [`ColorMap`]'s viewport while its counts load: a small blob of ghost
-/// tiles at the map's pitch, in the middle of a box as tall as a map of
-/// about 2,200 colored cards, so the swap to the real map stays in place.
-/// The tiles flower out ring by ring from the middle and fold back in on a
-/// loop until the data lands, dimmer toward the edge, each one twinkling at
-/// its own pace.
+/// A [`ColorMap`]'s viewport while its counts load: a small map of ghost
+/// tiles (`ghost_model`) at the map's pitch, in the middle of a box as tall
+/// as a map of about 2,200 colored cards, so the swap to the real map stays
+/// in place. The tiles grow out ring by ring to the map's jagged tips and
+/// fold back in, tips first, on a loop until the data lands, dimmer toward
+/// the edge.
 /// The look is the app's `.color-map-ghost*` skeleton rules; it carries no
 /// key, which the caller ghosts as chips.
 #[component]
 pub fn ColorMapGhost() -> Element {
-    let cells = ghost_cells();
-    let side = 2 * GHOST_REACH + 1;
-    let length = f64::from(side) * PITCH_PX;
+    let model = ghost_model();
+    let (width, height) = (
+        f64::from(model.columns) * PITCH_PX,
+        f64::from(model.rows) * PITCH_PX,
+    );
     let (inset, size, corner) = (GAP_SHARE / 2.0, 1.0 - GAP_SHARE, CORNER_SHARE);
     rsx! {
         div { class: "color-map-viewport color-map-ghost",
             svg {
                 class: "color-map-svg",
-                view_box: "0 0 {side} {side}",
-                width: "{length}",
-                height: "{length}",
+                view_box: "0 0 {model.columns} {model.rows}",
+                width: "{width}",
+                height: "{height}",
                 "aria-hidden": "true",
-                for ((x, y), ring) in cells {
+                for tile in model.tiles {
                     rect {
-                        key: "{x},{y}",
-                        class: "color-map-ghost-tile color-map-ghost-ring-{ring}",
-                        style: "{twinkle(x, y)}",
-                        x: "{f64::from(x + GHOST_REACH) + inset:.2}",
-                        y: "{f64::from(y + GHOST_REACH) + inset:.2}",
+                        key: "{tile.column},{tile.row}",
+                        class: "color-map-ghost-tile color-map-ghost-ring-{tile.ring}",
+                        x: "{f64::from(tile.column) + inset:.2}",
+                        y: "{f64::from(tile.row) + inset:.2}",
                         width: "{size:.2}",
                         height: "{size:.2}",
                         rx: "{corner:.2}",
@@ -1130,27 +1111,23 @@ mod tests {
     }
 
     #[test]
-    fn the_ghost_is_a_round_blob_that_sweeps_out() {
-        let cells = ghost_cells();
-        assert_eq!(cells.len(), 25);
-        assert_eq!(cells, ghost_cells(), "the same cells every time");
-        let middle = cells.iter().find(|(cell, _)| *cell == (0, 0)).unwrap();
-        assert_eq!(middle.1, 0, "the middle sweeps first");
-        assert_eq!(
-            cells.iter().map(|&(_, ring)| ring).max(),
-            Some(SWEEP_RINGS - 1),
-            "the tips sweep last"
+    fn the_ghost_grows_like_a_small_map() {
+        let ghost = ghost_model();
+        assert_eq!(ghost, ghost_model(), "the same shape every time");
+        assert!(
+            (30..=50).contains(&ghost.tiles.len()),
+            "{} tiles",
+            ghost.tiles.len()
         );
-        for &((x, y), _) in &cells {
-            assert!(
-                cells.iter().any(|&(c, _)| c == (-x, -y)),
-                "symmetric at {x},{y}"
-            );
-            assert!(
-                cells.iter().any(|&(c, _)| c == (y, x)),
-                "symmetric at {x},{y}"
-            );
-        }
+        assert!(
+            ghost.tiles.iter().map(|tile| tile.ring).min() <= Some(1),
+            "grows from near the middle"
+        );
+        assert_eq!(
+            ghost.tiles.iter().map(|tile| tile.ring).max(),
+            Some(SWEEP_RINGS - 1),
+            "tips on the last ring"
+        );
     }
 
     #[test]

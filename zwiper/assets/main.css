@@ -2477,34 +2477,21 @@ button {
     justify-content: center;
 }
 
-/* Ghost tiles in the skeleton fill. The blob flowers out from the middle
-   ring by ring and folds back in, outer rings first, on a 2.6s loop until
-   the data lands; each ring peaks dimmer than the one inside it, so the
-   blob fades as it spreads. A twinkle runs on fill-opacity at each tile's
-   own pace, set inline, so it never fights the bloom. */
+/* Ghost tiles in the skeleton fill. The small map grows out from the
+   middle ring by ring to its tips and folds back in, tips first, on a 2.6s
+   loop until the data lands; each ring peaks dimmer than the one inside it,
+   so the map fades as it spreads. */
 .color-map-ghost-tile {
     fill: var(--border-muted);
     transform-box: fill-box;
     transform-origin: center;
     opacity: 0;
-    animation-duration: 2.6s, var(--twinkle-ms, 1300ms);
-    animation-delay: 0ms, var(--twinkle-delay, 0ms);
+    animation-duration: 2.6s;
     animation-timing-function: ease-in-out;
     animation-iteration-count: infinite;
 }
 
-@keyframes color-map-ghost-twinkle {
-    0%,
-    100% {
-        fill-opacity: 1;
-    }
-    50% {
-        fill-opacity: 0.35;
-    }
-}
-
 @keyframes color-map-ghost-bloom-0 {
-    0%,
     0%,
     94%,
     100% {
@@ -2519,7 +2506,7 @@ button {
 }
 
 .color-map-ghost-ring-0 {
-    animation-name: color-map-ghost-bloom-0, color-map-ghost-twinkle;
+    animation-name: color-map-ghost-bloom-0;
 }
 
 @keyframes color-map-ghost-bloom-1 {
@@ -2538,7 +2525,7 @@ button {
 }
 
 .color-map-ghost-ring-1 {
-    animation-name: color-map-ghost-bloom-1, color-map-ghost-twinkle;
+    animation-name: color-map-ghost-bloom-1;
 }
 
 @keyframes color-map-ghost-bloom-2 {
@@ -2557,7 +2544,7 @@ button {
 }
 
 .color-map-ghost-ring-2 {
-    animation-name: color-map-ghost-bloom-2, color-map-ghost-twinkle;
+    animation-name: color-map-ghost-bloom-2;
 }
 
 @keyframes color-map-ghost-bloom-3 {
@@ -2576,7 +2563,7 @@ button {
 }
 
 .color-map-ghost-ring-3 {
-    animation-name: color-map-ghost-bloom-3, color-map-ghost-twinkle;
+    animation-name: color-map-ghost-bloom-3;
 }
 
 @keyframes color-map-ghost-bloom-4 {
@@ -2595,7 +2582,7 @@ button {
 }
 
 .color-map-ghost-ring-4 {
-    animation-name: color-map-ghost-bloom-4, color-map-ghost-twinkle;
+    animation-name: color-map-ghost-bloom-4;
 }
 
 @keyframes color-map-ghost-bloom-5 {
@@ -2614,7 +2601,7 @@ button {
 }
 
 .color-map-ghost-ring-5 {
-    animation-name: color-map-ghost-bloom-5, color-map-ghost-twinkle;
+    animation-name: color-map-ghost-bloom-5;
 }
 
 @keyframes color-map-ghost-bloom-6 {
@@ -2633,7 +2620,7 @@ button {
 }
 
 .color-map-ghost-ring-6 {
-    animation-name: color-map-ghost-bloom-6, color-map-ghost-twinkle;
+    animation-name: color-map-ghost-bloom-6;
 }
 
 /* Reduced motion shows the ghost tiles still. */
@@ -2645,7 +2632,7 @@ button {
 }
 
 /* Home's Color map title bar: the title centered, the Playstyle chip pinned to
-   the right end. */
+   the left end. */
 .home-panel-header {
     position: relative;
     justify-content: center;
@@ -2653,16 +2640,16 @@ button {
 
 .home-panel-open {
     position: absolute;
-    right: 0.75rem;
+    left: 0.75rem;
     top: 50%;
     transform: translateY(-50%);
 }
 
-/* The "?" at the left end, mirroring the Playstyle chip, out of the flow so
+/* The "?" at the right end, mirroring the Playstyle chip, out of the flow so
    the header keeps its height. */
 .home-panel-hint {
     position: absolute;
-    left: 0.75rem;
+    right: 0.75rem;
     top: 50%;
     transform: translateY(-50%);
     display: flex;
