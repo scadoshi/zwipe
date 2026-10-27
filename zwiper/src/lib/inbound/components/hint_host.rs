@@ -140,7 +140,7 @@ impl HintTopic {
             Self::Activity => "Activity",
             Self::RoleRates => "Card roles",
             Self::TagRates => "Oracle tags",
-            Self::HardPasses => "Hard passes",
+            Self::HardPasses => "Most skipped",
         }
     }
 
@@ -295,12 +295,12 @@ impl HintTopic {
                 HintBullets {
                     HintBullet { "Your swipes and searches each day over the last year, a darker square for a busier day" }
                     HintBullet { "A lit square is one of your biggest days. Tap a square to see its counts" }
-                    HintBullet { HintKey { "Swipes" } " is what the cards dealt to your decks came to: " HintKey { "Added" } " and " HintKey { "Maybeboard" } " you kept, " HintKey { "Skipped" } " you passed on, and " HintKey { "Removed" } " you later took out" }
+                    HintBullet { "The columns under it are what the cards dealt to your decks came to: " HintKey { "Added" } " and " HintKey { "Maybeboard" } " you kept, " HintKey { "Skipped" } " you passed on, and " HintKey { "Removed" } " you later took out" }
                 }
             },
             Self::RoleRates => rsx! {
                 HintBullets {
-                    HintBullet { "Your rate for each card role. Pick a " HintKey { "Rate" } ": " HintKey { "Added" } ", " HintKey { "Skipped" } " and " HintKey { "Maybeboard" } " are shares of the cards dealt to you, and " HintKey { "Removed" } " is the share of added cards you later took out" }
+                    HintBullet { "Your rate for each card role. Pick one under " HintKey { "Show" } ": " HintKey { "Added" } ", " HintKey { "Skipped" } " and " HintKey { "Maybeboard" } " are shares of the cards dealt to you, and " HintKey { "Removed" } " is the share of added cards you later took out" }
                     HintBullet { "Tap a role to see the tags you swiped under it" }
                     HintBullet { "From your decks with a commander, for roles dealt at least 10 times" }
                 }

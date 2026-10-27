@@ -46,22 +46,37 @@ fn has_anything(activity: &HttpActivity) -> bool {
 
 /// The screen while its first fetch is out, in the deck view's skeleton
 /// grammar: the Activity section open on a blank body the heatmap's height,
-/// which the grid then sweeps into, then Card roles and Oracle tags collapsed
-/// to their headers.
+/// which the grid then sweeps into, Card roles and Oracle tags collapsed to
+/// their headers, then the Most skipped group as Playstyle's list ghosts it,
+/// its header a bar and its rows a thumb and a bar.
 #[component]
 fn ActivitySkeleton() -> Element {
     rsx! {
-        div { class: "skeleton-stats",
-            div { class: "skeleton-info-list",
-                div { class: "skeleton-card-header card-group-header-with-hint",
-                    div { class: "skeleton-bar skeleton-section-label" }
+        div { style: "width:100%;display:flex;flex-direction:column;gap:var(--panel-gap);",
+            div { class: "skeleton-stats",
+                div { class: "skeleton-info-list",
+                    div { class: "skeleton-card-header card-group-header-with-hint",
+                        div { class: "skeleton-bar skeleton-section-label" }
+                        div { class: "skeleton-bar skeleton-chip skeleton-info-button" }
+                    }
+                    div { class: "activity-heat-blank" }
+                }
+                for i in 0..2 {
+                    div { key: "{i}", class: "skeleton-chart-box",
+                        div { class: "skeleton-bar skeleton-section-label" }
+                    }
+                }
+            }
+            div { class: "maybeboard-list card-group row-enter",
+                div { class: "card-group-header card-group-header-with-hint",
+                    div { class: "skeleton-bar skeleton-card-bar-header-wide" }
                     div { class: "skeleton-bar skeleton-chip skeleton-info-button" }
                 }
-                div { class: "activity-heat-blank" }
-            }
-            for i in 0..2 {
-                div { key: "{i}", class: "skeleton-chart-box",
-                    div { class: "skeleton-bar skeleton-section-label" }
+                for i in 0..6 {
+                    div { key: "{i}", class: "skeleton-card-row",
+                        div { class: "skeleton-bar skeleton-card-thumb" }
+                        div { class: "skeleton-bar skeleton-card-bar-row" }
+                    }
                 }
             }
         }
@@ -138,7 +153,7 @@ pub fn Activity() -> Element {
                 HintBullets {
                     HintBullet { HintKey { "Activity" } " maps your swipes and searches over the last year, and what the cards dealt to your decks came to" }
                     HintBullet { HintKey { "Card roles" } " and " HintKey { "Oracle tags" } " show how often you add, skip, save or remove each one" }
-                    HintBullet { HintKey { "Hard passes" } " lists cards you skip that other players usually keep" }
+                    HintBullet { HintKey { "Most skipped" } " lists cards you skip that other players usually keep" }
                 }
                 HintLine { "Each section's ? explains it" }
             }

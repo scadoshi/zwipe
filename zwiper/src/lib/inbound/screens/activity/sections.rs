@@ -36,7 +36,7 @@ const ROLES_TITLE: &str = "Card roles";
 /// The accordion title of the tag rates section.
 const TAGS_TITLE: &str = "Oracle tags";
 /// The hard passes group's header.
-const PASSES_TITLE: &str = "Hard passes";
+const PASSES_TITLE: &str = "Most skipped";
 
 /// Room on the left of the grid for the weekday labels.
 const LEFT: f64 = 24.0;
@@ -162,19 +162,13 @@ fn counted(n: u32, one: &str, many: &str) -> String {
     format!("{} {noun}", with_separators(u64::from(n)))
 }
 
-/// What a tapped day's chip says.
-fn day_text(cell: &DayCell) -> String {
-    let date = cell.date.format("%b %-d");
-    match (cell.swipes, cell.searches) {
-        (0, 0) => format!("Nothing on {date}"),
-        (swipes, 0) => format!("{} on {date}", counted(swipes, "swipe", "swipes")),
-        (0, searches) => format!("{} on {date}", counted(searches, "search", "searches")),
-        (swipes, searches) => format!(
-            "{} and {} on {date}",
-            counted(swipes, "swipe", "swipes"),
-            counted(searches, "search", "searches")
-        ),
-    }
+/// A tapped day's tags: its swipes, its searches and its date.
+fn day_tags(cell: &DayCell) -> [String; 3] {
+    [
+        counted(cell.swipes, "swipe", "swipes"),
+        counted(cell.searches, "search", "searches"),
+        cell.date.format("%b %-d").to_string(),
+    ]
 }
 
 /// The line under the heatmap: the year's swipes and searches.
@@ -368,16 +362,17 @@ fn tag_rate_bars(kind: RateKind, tags: &[HttpTagRates]) -> Vec<Bar> {
 /// The year as a heatmap: weekday labels down the left, month labels over
 /// the top, a cell per day shaded by its swipes and searches in orangui's
 /// [`HeatGrid`]. Wider than a phone, it scrolls sideways and opens on the
-/// latest week. Under it, the year's totals, or a tapped day's counts as a
-/// tag in their place until the same day is tapped again; under the grid
-/// rather than over it, the tag is never cut off by the scroll.
+/// latest week. Under it, the year's totals, or a tapped day's swipes,
+/// searches and date as tags in their place until the same day is tapped
+/// again; under the grid rather than over it, they are never cut off by the
+/// scroll.
 #[component]
 fn ActivityHeatmap(through: NaiveDate, days: Vec<HttpActivityDay>) -> Element {
     let mut picked: Signal<Option<usize>> = use_signal(|| None);
     let layout = heat_layout(through, &days);
     let width = LEFT + heat_span(layout.columns);
     let height = TOP + heat_span(HEAT_ROWS);
-    let texts: Vec<String> = layout.cells.iter().map(day_text).collect();
+    let tags: Vec<[String; 3]> = layout.cells.iter().map(day_tags).collect();
     let grid: Vec<HeatCell> = layout
         .cells
         .iter()
@@ -396,7 +391,7 @@ fn ActivityHeatmap(through: NaiveDate, days: Vec<HttpActivityDay>) -> Element {
             picked.set(Some(hit.index));
         }
     };
-    let day = picked().and_then(|i| texts.get(i).cloned());
+    let day = picked().and_then(|i| tags.get(i).cloned());
     rsx! {
         div {
             class: "chart-scroll scroll-fade-x activity-scroll",
@@ -441,8 +436,12 @@ fn ActivityHeatmap(through: NaiveDate, days: Vec<HttpActivityDay>) -> Element {
             }
         }
         div { class: "activity-total",
-            if let Some(text) = day {
-                span { class: "tag activity-day-tag", "{text}" }
+            if let Some(day) = day {
+                div { class: "activity-day-tags",
+                    for tag in day {
+                        span { class: "tag", "{tag}" }
+                    }
+                }
             } else {
                 "{year_line(&days)}"
             }
@@ -530,7 +529,7 @@ pub(crate) fn ActivitySections(
                 }
                 if has_outcomes(&outcomes) {
                     div { class: "activity-outcomes",
-                        BarChart { label: "Swipes", bars: outcome_bars(&outcomes) }
+                        BarChart { bars: outcome_bars(&outcomes) }
                     }
                 }
             }
@@ -597,14 +596,14 @@ pub(crate) fn ActivitySections(
     }
 }
 
-/// The Rate chip row over the role and tag charts: Added, Skipped,
+/// The Show chip row over the role and tag charts: Added, Skipped,
 /// Maybeboard or Removed, one always picked. Both sections render it over
 /// the same signal, so a pick in either switches both.
 #[component]
 fn RateChips(mut kind: Signal<RateKind>) -> Element {
     rsx! {
         div { class: "chip-row activity-rate-chips",
-            span { class: "stat-chip stat-chip-p1 chip-row-label", "Rate" }
+            span { class: "stat-chip stat-chip-p1 chip-row-label", "Show" }
             for choice in RateKind::ALL {
                 Chip {
                     key: "{choice.label()}",
@@ -766,7 +765,7 @@ mod tests {
     }
 
     #[test]
-    fn a_day_says_what_happened_on_it() {
+    fn a_day_reads_as_its_swipes_searches_and_date() {
         let on = date(2026, 10, 3);
         let cell = |swipes, searches| DayCell {
             column: 0,
@@ -777,12 +776,10 @@ mod tests {
             swipes,
             searches,
         };
-        assert_eq!(day_text(&cell(0, 0)), "Nothing on Oct 3");
-        assert_eq!(day_text(&cell(1, 0)), "1 swipe on Oct 3");
-        assert_eq!(day_text(&cell(0, 2)), "2 searches on Oct 3");
+        assert_eq!(day_tags(&cell(0, 0)), ["0 swipes", "0 searches", "Oct 3"]);
         assert_eq!(
-            day_text(&cell(1200, 1)),
-            "1,200 swipes and 1 search on Oct 3"
+            day_tags(&cell(1200, 1)),
+            ["1,200 swipes", "1 search", "Oct 3"]
         );
     }
 
