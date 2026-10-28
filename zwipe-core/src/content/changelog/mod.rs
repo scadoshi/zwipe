@@ -44,6 +44,8 @@ pub const UPCOMING: &[Release] = &[Release {
         "Home's Playstyle button sits at the end of the color map's key",
         "Featured flavor's Image and Buy are buttons beside its card name and price",
         "Home's counts switch between everybody and only you",
+        "Chart titles are chips centered over their charts, with their ? beside them",
+        "Playstyle with no decks shows Home's line, Build a deck to see your playstyle",
     ],
 }];
 
