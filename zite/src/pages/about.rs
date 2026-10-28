@@ -263,10 +263,9 @@ pub fn About() -> Element {
 
                     Panel { title: "How AI is used",
                         p { class: "card-summary",
-                            "Agents write most of the code, more than I can read. The checks it has to pass decide what ships."
+                            "I design Zwipe's structure, and agents write the code inside it. There's more of it than I could review line by line, so strict checks decide what ships, the same way every time."
                         }
                         ul { class: "card-bullets",
-                            li { "I design the structure and the rules each part follows" }
                             li { "Nothing deploys unless over a thousand tests and strict lints pass" }
                             li { "Queries, types and dependencies are checked before anything runs" }
                             li { "I pick the parts worth learning and go deep on those by hand" }
