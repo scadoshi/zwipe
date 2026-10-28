@@ -286,11 +286,6 @@ impl RateKind {
 /// overall rate. The server's hard passes weigh the same way.
 const TAG_BASELINE_WEIGHT: f64 = 10.0;
 
-/// The lift a tag needs to be shown: the user's count times the log of how
-/// much their rate exceeds other players'. A tag others pass on as often
-/// takes many more cards to get there.
-const TAG_MIN_SCORE: f64 = 1.0;
-
 /// Rows on the Oracle tags chart.
 const TAG_ROWS: usize = 10;
 
@@ -351,17 +346,17 @@ fn lift_score(kind: RateKind, tag: &HttpTagRates, baseline: f64) -> Option<f64> 
 }
 
 /// The [`TAG_ROWS`] tags whose share stands out most from other players',
-/// each at [`TAG_MIN_SCORE`] or more, most first, labeled by slug, the bar
-/// and count the user's own share as a percent.
+/// any tag the user's share beats theirs on, labeled by slug, the bar and
+/// count the user's own share as a percent. Drawn highest share first, as the Card
+/// roles chart is, with ties in order of how much they stand out.
 fn tag_rate_bars(kind: RateKind, tags: &[HttpTagRates]) -> Vec<Bar> {
     let base = baseline(kind, tags);
     let mut scored: Vec<(&HttpTagRates, f64)> = tags
         .iter()
         .filter_map(|t| lift_score(kind, t, base).map(|score| (t, score)))
-        .filter(|(_, score)| *score >= TAG_MIN_SCORE)
         .collect();
     scored.sort_by(|a, b| b.1.total_cmp(&a.1).then_with(|| a.0.tag.cmp(&b.0.tag)));
-    scored
+    let mut bars: Vec<Bar> = scored
         .into_iter()
         .take(TAG_ROWS)
         .filter_map(|(tag, _)| {
@@ -374,7 +369,9 @@ fn tag_rate_bars(kind: RateKind, tags: &[HttpTagRates]) -> Vec<Bar> {
                 revealable: true,
             })
         })
-        .collect()
+        .collect();
+    bars.sort_by_key(|bar| Reverse(bar.pct));
+    bars
 }
 
 /// The year as a heatmap: weekday labels down the left, month labels over
@@ -904,7 +901,7 @@ mod tests {
     }
 
     #[test]
-    fn a_tag_everyone_passes_on_needs_far_more_skips_than_one_others_keep() {
+    fn a_tag_others_keep_ranks_above_one_everyone_passes_on() {
         let common = tag(
             "generic",
             "ramp",
@@ -921,9 +918,55 @@ mod tests {
         let keys: Vec<String> = bars.into_iter().map(|b| b.key).collect();
         assert_eq!(
             keys,
-            ["mana-rock"],
-            "skipping what everyone skips is no news"
+            ["mana-rock", "generic"],
+            "skipping what everyone skips is less news, so it ranks lower"
         );
+    }
+
+    #[test]
+    fn a_tag_the_user_passes_on_less_than_others_is_left_out() {
+        let kept = tag("kept", "ramp", outcomes(8, 2, 0, 0), outcomes(10, 90, 0, 0));
+        assert!(tag_rate_bars(RateKind::Skipped, &[kept]).is_empty());
+    }
+
+    #[test]
+    fn the_tag_chart_draws_its_rows_highest_share_first() {
+        // "steady" stands out most on its many skips but at a lower share,
+        // so it is picked first and drawn second.
+        let steady = tag(
+            "steady",
+            "ramp",
+            outcomes(40, 60, 0, 0),
+            outcomes(90, 10, 0, 0),
+        );
+        let sharp = tag(
+            "sharp",
+            "ramp",
+            outcomes(1, 9, 0, 0),
+            outcomes(90, 10, 0, 0),
+        );
+        let bars = tag_rate_bars(RateKind::Skipped, &[steady, sharp]);
+        let rows: Vec<(String, u32)> = bars.into_iter().map(|b| (b.key, b.pct)).collect();
+        assert_eq!(
+            rows,
+            [("sharp".to_string(), 90), ("steady".to_string(), 60)]
+        );
+    }
+
+    #[test]
+    fn a_single_maybeboard_over_other_players_rate_still_shows() {
+        let tags: Vec<HttpTagRates> = (0..3)
+            .map(|i| {
+                tag(
+                    &format!("t{i}"),
+                    "ramp",
+                    // 1 in 20 against others' 3 in 100: a lift of about 0.5.
+                    outcomes(0, 19, 1, 0),
+                    outcomes(60, 37, 3, 0),
+                )
+            })
+            .collect();
+        assert_eq!(tag_rate_bars(RateKind::Maybed, &tags).len(), 3);
     }
 
     #[test]
