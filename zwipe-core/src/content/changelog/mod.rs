@@ -40,6 +40,7 @@ pub const UPCOMING: &[Release] = &[Release {
     entries: &[
         "Activity's Oracle tags chart lists its tags highest share first",
         "Activity's Oracle tags chart shows up to ten tags where your rate beats other players'",
+        "Activity's counts roll until the rest of the screen loads, then land with it",
     ],
 }];
 
