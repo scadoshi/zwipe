@@ -45,8 +45,8 @@ fn has_anything(activity: &HttpActivity) -> bool {
 }
 
 /// The screen while its first fetch is out, in the deck view's skeleton
-/// grammar: the Activity section open on a blank body the heatmap's height,
-/// which the grid then sweeps into, Card roles and Oracle tags collapsed to
+/// grammar: the Activity section open on a blank body its loaded height, the
+/// grid, its tags and Totals, which the grid then sweeps into, Card roles and Oracle tags collapsed to
 /// their headers, then the Most skipped group as Playstyle's list ghosts it,
 /// its header a bar and its rows a thumb and a bar.
 #[component]
@@ -72,7 +72,7 @@ fn ActivitySkeleton() -> Element {
                     div { class: "skeleton-bar skeleton-card-bar-header-wide" }
                     div { class: "skeleton-bar skeleton-chip skeleton-info-button" }
                 }
-                for i in 0..6 {
+                for i in 0..10 {
                     div { key: "{i}", class: "skeleton-card-row",
                         div { class: "skeleton-bar skeleton-card-thumb" }
                         div { class: "skeleton-bar skeleton-card-bar-row" }

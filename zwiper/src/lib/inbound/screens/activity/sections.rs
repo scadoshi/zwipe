@@ -549,6 +549,9 @@ pub(crate) fn ActivitySections(
                     }
                 }
                 if has_outcomes(&outcomes) {
+                    if has_days {
+                        hr { class: "card-row-rule card-row-rule-muted activity-rule" }
+                    }
                     div { class: "activity-outcomes",
                         BarChart { label: "Totals", bars: outcome_bars(&outcomes) }
                     }

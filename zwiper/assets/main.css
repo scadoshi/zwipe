@@ -3890,15 +3890,21 @@ button {
     padding: 0 0.75rem;
 }
 
-/* The heatmap's place while the Activity screen loads: blank at the grid's
-   height, so the sweep is the only entrance and the swap does not jump. */
+/* The Activity section's body while the screen loads: blank at its loaded
+   height (the grid, its tags and Totals), so the sweep is the only entrance
+   and the list under it starts where it will stay. */
 .activity-heat-blank {
-    height: 7rem;
+    height: 22rem;
 }
 
-/* The swipe columns under the year's totals, a panel gap below them. */
+/* The full-bleed rule between the heatmap's tags and Totals. */
+.activity-rule {
+    margin-top: 0.75rem;
+}
+
+/* The Totals columns under that rule. */
 .activity-outcomes {
-    margin-top: 1rem;
+    margin-top: 0.75rem;
 }
 
 /* A section's one-line note, such as a rate with nothing to show. */
