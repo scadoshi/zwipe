@@ -34,20 +34,21 @@ pub struct Release {
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[Release {
-    version: "1.16.1",
-    date: None,
-    entries: &[
-        "The color map's key sits under a rule, the way a panel's buttons do",
-        "Featured flavor's card name, price and buttons sit under a rule",
-        "Activity shows its tags and Totals as ghosts while it loads, keeping the grid's space empty",
-        "Activity opens with your own counts: decks created, searches run and cards swiped",
-        "Settings names the theme's mode Dark or Light, capitalized",
-    ],
-}];
+pub const UPCOMING: &[Release] = &[];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
+    Release {
+        version: "1.16.1",
+        date: NaiveDate::from_ymd_opt(2026, 10, 28),
+        entries: &[
+            "The color map's key sits under a rule, the way a panel's buttons do",
+            "Featured flavor's card name, price and buttons sit under a rule",
+            "Activity shows its tags and Totals as ghosts while it loads, keeping the grid's space empty",
+            "Activity opens with your own counts: decks created, searches run and cards swiped",
+            "Settings names the theme's mode Dark or Light, capitalized",
+        ],
+    },
     Release {
         version: "1.16.0",
         date: NaiveDate::from_ymd_opt(2026, 10, 27),
