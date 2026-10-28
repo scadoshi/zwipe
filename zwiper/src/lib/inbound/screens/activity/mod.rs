@@ -193,8 +193,9 @@ pub fn Activity() -> Element {
                     class: "flex-col",
                     style: "max-width: 40rem; width: 100%; padding: 0 1rem; gap: var(--panel-gap);",
                     // The user's lifetime counters head the screen in every
-                    // state; they load on their own.
-                    MyCountsPanel {}
+                    // state, rolling until the activity lands (or fails) so
+                    // they resolve with the rest of the screen.
+                    MyCountsPanel { ready: !is_loading() }
                     if is_loading() {
                         ActivitySkeleton {}
                     } else if load_failed() {

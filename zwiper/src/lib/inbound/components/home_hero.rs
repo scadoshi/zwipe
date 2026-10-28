@@ -246,17 +246,20 @@ pub fn HomeHeroScoped() -> Element {
 /// The Activity screen's header: the user's own counters in Home's strip,
 /// without the mark, tagged "Live" once they come from this launch and
 /// "Only me". Shares Home's cached copy, so coming from Home's "Only me"
-/// shows them at once.
+/// has them at once. The figures keep rolling until `ready`, which the
+/// screen sets when the rest of it lands, so the counts resolve together
+/// with it; they are fetched meanwhile all the same.
 #[component]
-pub fn MyCountsPanel() -> Element {
+pub fn MyCountsPanel(ready: bool) -> Element {
     let scope = use_signal(|| CountScope::JustMe);
     let mine = use_my_counts(scope, Screen::Activity);
-    let live = mine.is_some();
+    let shown = mine.as_ref().filter(|_| ready);
+    let live = shown.is_some();
     rsx! {
         div { class: "home-hero activity-counts",
             Panel {
                 StatsStrip {
-                    figures: my_figures(mine.as_ref()),
+                    figures: my_figures(shown),
                     compact: true,
                     source: rsx! {
                         if live {
