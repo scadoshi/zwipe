@@ -7,11 +7,11 @@
 use std::cmp::Reverse;
 use std::collections::HashMap;
 
-use chrono::{Datelike, Duration, NaiveDate};
+use chrono::{Datelike, Duration, NaiveDate, Utc};
 use components::{
-    Bar, BarChart, BarOrientation, ChartTip, Chip, HEAT_CELL, HEAT_ROWS, HeatCell, HeatGrid,
-    HeatHit, HeatReadout, LabelCase, OtagDef, RoleTags, heat_span, peak_indices, use_heat_pick,
-    with_separators,
+    Bar, BarChart, BarOrientation, ChartTip, Chip, HEAT_CELL, HEAT_ROWS, HEAT_STEP, HeatCell,
+    HeatGrid, HeatHit, HeatReadout, LabelCase, OtagDef, RoleTags, heat_span, peak_indices,
+    use_heat_pick, with_separators,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -39,10 +39,21 @@ const TAGS_TITLE: &str = "Oracle tags";
 /// The hard passes group's header.
 const PASSES_TITLE: &str = "Most skipped";
 
-/// Room on the left of the grid for the weekday labels.
-const LEFT: f64 = 24.0;
-/// Room above the grid for the month labels.
-const TOP: f64 = 14.0;
+/// Columns of tiles left of the grid, room for the weekday labels.
+const FIELD_LEFT_COLUMNS: usize = 2;
+/// Rows of tiles in the field: one over the grid for the month labels, the
+/// seven weekdays, and one under it.
+const FIELD_ROWS: usize = HEAT_ROWS + 2;
+/// Room on the left of the grid for the weekday labels, whole tiles so the
+/// days land on the field's tiles.
+const LEFT: f64 = 2.0 * HEAT_STEP;
+/// Room above the grid for the month labels, one tile.
+const TOP: f64 = HEAT_STEP;
+/// How far a weekday label sits in from the field's left edge.
+const LABEL_INSET: f64 = 4.0;
+/// The backdrop's tile shades, as in orangui's `grid-cells.js`. The
+/// stylesheet holds the alphas; this is how many there are.
+const TILE_SHADES: usize = 5;
 /// A month label needs this many columns before the next one.
 const LABEL_SPAN: usize = 3;
 /// A day at or past this many times the median busy day is a peak, at most
@@ -154,6 +165,81 @@ fn heat_layout(through: NaiveDate, days: &[HttpActivityDay]) -> HeatLayout {
         cells,
         months,
         columns,
+    }
+}
+
+/// The field's width and height in SVG units for a year `columns` weeks
+/// wide: the label room, the grid, and a column of tiles past its right edge
+/// and a row under it.
+fn field_size(columns: usize) -> (f64, f64) {
+    (
+        LEFT + heat_span(columns.saturating_add(1)),
+        TOP + heat_span(HEAT_ROWS.saturating_add(1)),
+    )
+}
+
+/// A tile's shade, 0 to 4, picked by a hash of its place, so the field is
+/// the same on every load and the skeleton's tiles are the loaded ones.
+fn tile_shade(column: usize, row: usize) -> usize {
+    let mut h = column.wrapping_mul(2_654_435_761) ^ row.wrapping_mul(2_246_822_519);
+    h ^= h >> 13;
+    h = h.wrapping_mul(1_540_483_477);
+    h ^= h >> 15;
+    h % TILE_SHADES
+}
+
+/// The field's tiles, `across` columns of [`FIELD_ROWS`], each in one of
+/// the backdrop's shades. They hold still; the days sweep in over them.
+#[component]
+fn HeatTiles(across: usize) -> Element {
+    rsx! {
+        for column in 0..across {
+            for row in 0..FIELD_ROWS {
+                rect {
+                    key: "t{column}-{row}",
+                    class: "heat-tile heat-tile-{tile_shade(column, row)}",
+                    x: "{heat_span(column)}",
+                    y: "{heat_span(row)}",
+                    width: "{HEAT_CELL}",
+                    height: "{HEAT_CELL}",
+                    rx: "2",
+                }
+            }
+        }
+    }
+}
+
+/// How many tile columns a year `columns` weeks wide needs.
+fn tiles_across(columns: usize) -> usize {
+    FIELD_LEFT_COLUMNS.saturating_add(columns).saturating_add(1)
+}
+
+/// The heatmap's field with no days on it, for the screen's skeleton: the
+/// same tiles, still, scrolled to the latest week, so the loaded grid's
+/// colors land on what is already there.
+#[component]
+pub(crate) fn HeatFieldGhost() -> Element {
+    let columns = heat_layout(Utc::now().date_naive(), &[]).columns;
+    let (width, height) = field_size(columns);
+    rsx! {
+        div { class: "activity-field",
+            div {
+                class: "chart-scroll scroll-fade-x activity-scroll",
+                onmounted: move |event| async move {
+                    let _ = event.data().scroll(
+                        dioxus::html::geometry::PixelsVector2D::new(width, 0.0),
+                        ScrollBehavior::Instant,
+                    ).await;
+                },
+                svg {
+                    class: "heat-grid activity-field-grid",
+                    style: "width:{width}px;",
+                    view_box: "0 0 {width} {height}",
+                    "aria-hidden": "true",
+                    HeatTiles { across: tiles_across(columns) }
+                }
+            }
+        }
     }
 }
 
@@ -377,20 +463,21 @@ fn tag_rate_bars(kind: RateKind, tags: &[HttpTagRates]) -> Vec<Bar> {
         .collect()
 }
 
-/// The year as a heatmap: weekday labels down the left, month labels over
-/// the top, a cell per day shaded by its swipes and searches in orangui's
-/// [`HeatGrid`]. Wider than a phone, it scrolls sideways and opens on the
-/// latest week. Under it, orangui's [`HeatReadout`]: the year's swipes,
-/// searches and span as tags, which a tapped day's take over for a few
-/// seconds on a touch or narrow screen. A hover device with room names the
-/// day under the pointer in a floating chip instead.
+/// The year as a heatmap on a field of the backdrop's tiles, edge to edge
+/// in its section: weekday labels down the left, month labels over the
+/// top, a day on each tile of the grid shaded by its swipes and searches in
+/// orangui's [`HeatGrid`]. Wider than a phone, it scrolls sideways and opens
+/// on the latest week. Under a rule, orangui's [`HeatReadout`] like an
+/// action bar: the year's swipes, searches and span as tags, which a tapped
+/// day's take over for a few seconds on a touch or narrow screen. A hover
+/// device with room names the day under the pointer in a floating chip
+/// instead.
 #[component]
 fn ActivityHeatmap(through: NaiveDate, days: Vec<HttpActivityDay>) -> Element {
     let pick = use_heat_pick();
     let mut hover: Signal<Option<(String, f64, f64)>> = use_signal(|| None);
     let layout = heat_layout(through, &days);
-    let width = LEFT + heat_span(layout.columns);
-    let height = TOP + heat_span(HEAT_ROWS);
+    let (width, height) = field_size(layout.columns);
     let tags: Vec<[String; 3]> = layout.cells.iter().map(day_tags).collect();
     let grid: Vec<HeatCell> = layout
         .cells
@@ -417,56 +504,62 @@ fn ActivityHeatmap(through: NaiveDate, days: Vec<HttpActivityDay>) -> Element {
         }
     };
     rsx! {
-        div {
-            class: "chart-scroll scroll-fade-x activity-scroll",
-            onmounted: move |event| async move {
-                let _ = event.data().scroll(
-                    dioxus::html::geometry::PixelsVector2D::new(width, 0.0),
-                    ScrollBehavior::Instant,
-                ).await;
-            },
-            div {
-                class: "activity-plot",
-                style: "width:{width}px;",
-                onmouseleave: move |_| hover.set(None),
-                svg {
-                    class: "heat-grid",
-                    style: "width:{width}px;",
-                    view_box: "0 0 {width} {height}",
-                    role: "img",
-                    "aria-label": "{year_line(&days)}",
-                    for (column, name) in layout.months.iter() {
-                        text {
-                            key: "m{column}",
-                            class: "heat-label",
-                            x: "{LEFT + heat_span(*column)}",
-                            y: "{TOP - 4.0}",
-                            "{name}"
+        div { class: "activity-heat",
+            div { class: "activity-field",
+                div {
+                    class: "chart-scroll scroll-fade-x activity-scroll",
+                    onmounted: move |event| async move {
+                        let _ = event.data().scroll(
+                            dioxus::html::geometry::PixelsVector2D::new(width, 0.0),
+                            ScrollBehavior::Instant,
+                        ).await;
+                    },
+                    div {
+                        class: "activity-plot",
+                        style: "width:{width}px;",
+                        onmouseleave: move |_| hover.set(None),
+                        svg {
+                            class: "heat-grid activity-field-grid",
+                            style: "width:{width}px;",
+                            view_box: "0 0 {width} {height}",
+                            role: "img",
+                            "aria-label": "{year_line(&days)}",
+                            HeatTiles { across: tiles_across(layout.columns) }
+                            for (column, name) in layout.months.iter() {
+                                text {
+                                    key: "m{column}",
+                                    class: "heat-label",
+                                    x: "{LEFT + heat_span(*column)}",
+                                    y: "{TOP - 4.0}",
+                                    "{name}"
+                                }
+                            }
+                            for (row, name) in [(1usize, "Mon"), (3, "Wed"), (5, "Fri")] {
+                                text {
+                                    key: "d{row}",
+                                    class: "heat-label",
+                                    x: "{LABEL_INSET}",
+                                    y: "{TOP + heat_span(row) + HEAT_CELL - 2.0}",
+                                    "{name}"
+                                }
+                            }
+                            HeatGrid {
+                                cells: grid,
+                                left: LEFT,
+                                top: TOP,
+                                on_enter,
+                                on_tap,
+                            }
+                        }
+                        if let Some((text, left, top)) = hover() {
+                            ChartTip { text, left, top, class: "tag heat-float" }
                         }
                     }
-                    for (row, name) in [(1usize, "Mon"), (3, "Wed"), (5, "Fri")] {
-                        text {
-                            key: "d{row}",
-                            class: "heat-label",
-                            x: "0",
-                            y: "{TOP + heat_span(row) + HEAT_CELL - 2.0}",
-                            "{name}"
-                        }
-                    }
-                    HeatGrid {
-                        cells: grid,
-                        left: LEFT,
-                        top: TOP,
-                        on_enter,
-                        on_tap,
-                    }
-                }
-                if let Some((text, left, top)) = hover() {
-                    ChartTip { text, left, top, class: "tag heat-float" }
                 }
             }
+            hr { class: "card-row-rule card-row-rule-muted activity-heat-rule" }
+            HeatReadout { rest: year_tags(&days).to_vec(), pick }
         }
-        HeatReadout { rest: year_tags(&days).to_vec(), pick }
     }
 }
 
@@ -779,6 +872,28 @@ mod tests {
             .map(|c| c.date)
             .collect();
         assert_eq!(peaks, [through]);
+    }
+
+    #[test]
+    fn days_land_on_whole_tiles_in_every_shade() {
+        assert!((LEFT / HEAT_STEP - 2.0).abs() < f64::EPSILON);
+        assert!((TOP / HEAT_STEP - 1.0).abs() < f64::EPSILON);
+        let layout = heat_layout(date(2026, 10, 27), &[]);
+        let (width, height) = field_size(layout.columns);
+        let across = tiles_across(layout.columns);
+        assert!((heat_span(across) - width).abs() < f64::EPSILON);
+        assert!((heat_span(FIELD_ROWS) - height).abs() < f64::EPSILON);
+        let mut seen = [false; TILE_SHADES];
+        for column in 0..across {
+            for row in 0..FIELD_ROWS {
+                let shade = tile_shade(column, row);
+                assert_eq!(shade, tile_shade(column, row));
+                if let Some(slot) = seen.get_mut(shade) {
+                    *slot = true;
+                }
+            }
+        }
+        assert!(seen.iter().all(|&s| s), "{seen:?}");
     }
 
     #[test]

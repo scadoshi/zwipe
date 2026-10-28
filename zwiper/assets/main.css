@@ -3862,10 +3862,25 @@ button {
   Playstyle activity heatmap
 =========================== */
 
-/* The year scrolls sideways inside its section, faded at an edge with more
+/* The heatmap's field: the backdrop's sink and tiles, edge to edge between
+   the section's header rule and the rule over its tags, like a panel's body
+   between its header and action bar. The section's rule sits 0.6rem up, so
+   the field pulls up to meet it. The sink is on this box rather than the
+   scroller, so the scroller's edge fade thins the tiles, not the field. */
+.activity-heat {
+    display: flex;
+    flex-direction: column;
+    margin-top: -0.6rem;
+}
+
+.activity-field {
+    background-color: var(--bg-sink);
+}
+
+/* The year scrolls sideways inside the field, faded at an edge with more
    past it, and opens on the latest week. */
 .activity-scroll {
-    padding: 0.25rem 0.75rem 0;
+    display: block;
 }
 
 /* The grid at its own size, so a cell keeps its pitch on any phone, and the
@@ -3874,9 +3889,51 @@ button {
     position: relative;
 }
 
-.activity-plot .heat-grid {
+.activity-field-grid {
     height: auto;
     max-width: none;
+}
+
+/* The backdrop's tiles at the grid's pitch, in its five shades of the text
+   color (orangui's grid-cells.js). They hold still under the days. */
+.heat-tile {
+    fill: var(--text-primary);
+}
+
+.heat-tile-0 {
+    fill-opacity: 0.015;
+}
+
+.heat-tile-1 {
+    fill-opacity: 0.03;
+}
+
+.heat-tile-2 {
+    fill-opacity: 0.05;
+}
+
+.heat-tile-3 {
+    fill-opacity: 0.075;
+}
+
+.heat-tile-4 {
+    fill-opacity: 0.1;
+}
+
+/* An empty day is its tile; only a day with activity draws over it. */
+.activity-field .heat-0 {
+    fill: transparent;
+}
+
+/* The rule under the field and the tags under it, padded like a section's
+   action bar. */
+.activity-heat-rule {
+    margin: 0;
+}
+
+.activity-heat .heat-readout {
+    margin-top: 0;
+    padding: 0.75rem 0.75rem 0;
 }
 
 /* The Rates section: its chip row inset like the charts under it. */
@@ -3890,16 +3947,33 @@ button {
     padding: 0 0.75rem;
 }
 
-/* The Activity section's body while the screen loads: blank at its loaded
-   height (the grid, its tags and Totals), so the sweep is the only entrance
-   and the list under it starts where it will stay. */
-.activity-heat-blank {
-    height: 22rem;
+/* The Activity section's skeleton under its field: the tags as still
+   ghosts under a rule, then a blank its loaded height where Totals goes,
+   behind a rule of its own. Nothing pulses, so the colors arriving are the
+   only entrance. */
+.activity-ghost-tags {
+    display: flex;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.75rem;
+    border-top: 1px solid var(--border-secondary);
+}
+
+.activity-ghost-tag {
+    width: 5.5rem;
+    height: 1.45rem;
+    border-radius: 0.6rem;
+    animation: none;
+}
+
+.activity-totals-blank {
+    height: 11rem;
+    border-top: 1px solid var(--border-secondary);
 }
 
 /* The full-bleed rule between the heatmap's tags and Totals. */
 .activity-rule {
-    margin-top: 0.75rem;
+    margin-top: 0;
 }
 
 /* The Totals columns under that rule. */
