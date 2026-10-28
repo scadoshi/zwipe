@@ -21,6 +21,7 @@ use self::sections::{ACTIVITY_TITLE, ActivitySections, HardPassesPanel, HeatGhos
 use crate::inbound::components::auth::authed::use_authed;
 use crate::inbound::components::catalog_cache::CatalogCache;
 use crate::inbound::components::hint_dialog::use_one_time_hint;
+use crate::inbound::components::home_hero::MyCountsPanel;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{Screen, screen};
 use crate::inbound::screens::deck::card::components::card_row::{
@@ -46,7 +47,7 @@ fn has_anything(activity: &HttpActivity) -> bool {
 
 /// The screen while its first fetch is out, in the deck view's skeleton
 /// grammar: the Activity section open on its loaded shape, the year's grid
-/// as empty squares ([`HeatGhost`]), its three tags, a rule, then Totals as
+/// as empty space at its height ([`HeatGhost`]), its three tags, a rule, then Totals as
 /// its title as a plain ghost chip over four bars and their labels; Card
 /// roles and Oracle tags collapsed to their headers; then the Most skipped
 /// group as Playstyle's list ghosts it, its header a bar and its rows a
@@ -190,7 +191,10 @@ pub fn Activity() -> Element {
                 // so an unbounded column would grow to content width.
                 div {
                     class: "flex-col",
-                    style: "max-width: 40rem; width: 100%; padding: 0 1rem;",
+                    style: "max-width: 40rem; width: 100%; padding: 0 1rem; gap: var(--panel-gap);",
+                    // The user's lifetime counters head the screen in every
+                    // state; they load on their own.
+                    MyCountsPanel {}
                     if is_loading() {
                         ActivitySkeleton {}
                     } else if load_failed() {

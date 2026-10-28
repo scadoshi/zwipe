@@ -1,6 +1,7 @@
 //! The mark in a panel with the three counters, on home and the auth
-//! screens. The auth screens show everyone's counts; home's scope button
-//! switches between everyone's and the user's own.
+//! screens, and the user's own counters heading the Activity screen. The
+//! auth screens show everyone's counts; home's scope button switches between
+//! everyone's and the user's own.
 
 use std::time::{Duration, Instant};
 
@@ -96,10 +97,10 @@ fn use_public_counts() -> (Option<HttpPublicMetrics>, bool) {
 /// The signed-in user's counters from the cache above the router, fetched
 /// while `scope` is [`CountScope::JustMe`] and the copy is missing, another
 /// user's or older than `COUNTS_FRESH`. A failed fetch is only logged.
-fn use_my_counts(scope: Signal<CountScope>) -> Option<HttpLifetimeCounters> {
+fn use_my_counts(scope: Signal<CountScope>, screen: Screen) -> Option<HttpLifetimeCounters> {
     let session: Signal<Option<Session>> = use_context();
     let mut cache: Signal<Option<CachedMyCounts>> = use_context();
-    let authed = use_authed(Screen::Home);
+    let authed = use_authed(screen);
     let user_id = session.peek().as_ref().map(|s| s.user.id);
     use_effect(move || {
         if scope() != CountScope::JustMe {
@@ -201,7 +202,7 @@ pub fn HomeHeroScoped() -> Element {
     let mut scope: Signal<CountScope> = use_context();
     let navigator = use_navigator();
     let (public, public_live) = use_public_counts();
-    let mine = use_my_counts(scope);
+    let mine = use_my_counts(scope, Screen::Home);
     let (figures, live) = match scope() {
         CountScope::AllUsers => (public_figures(public.as_ref()), public_live),
         CountScope::JustMe => (my_figures(mine.as_ref()), mine.is_some()),
@@ -238,6 +239,33 @@ pub fn HomeHeroScoped() -> Element {
                     "Activity"
                 }
             },
+        }
+    }
+}
+
+/// The Activity screen's header: the user's own counters in Home's strip,
+/// without the mark, tagged "Live" once they come from this launch and
+/// "Only me". Shares Home's cached copy, so coming from Home's "Only me"
+/// shows them at once.
+#[component]
+pub fn MyCountsPanel() -> Element {
+    let scope = use_signal(|| CountScope::JustMe);
+    let mine = use_my_counts(scope, Screen::Activity);
+    let live = mine.is_some();
+    rsx! {
+        div { class: "home-hero activity-counts",
+            Panel {
+                StatsStrip {
+                    figures: my_figures(mine.as_ref()),
+                    compact: true,
+                    source: rsx! {
+                        if live {
+                            span { class: "stat-chip", "Live" }
+                        }
+                        span { class: "stat-chip", "{CountScope::JustMe.label()}" }
+                    },
+                }
+            }
         }
     }
 }
