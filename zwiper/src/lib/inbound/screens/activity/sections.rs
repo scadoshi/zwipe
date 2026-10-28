@@ -197,7 +197,7 @@ fn HeatTiles(across: usize) -> Element {
             for row in 0..FIELD_ROWS {
                 rect {
                     key: "t{column}-{row}",
-                    class: "heat-tile heat-tile-{tile_shade(column, row)}",
+                    class: "field-tile field-tile-{tile_shade(column, row)}",
                     x: "{heat_span(column)}",
                     y: "{heat_span(row)}",
                     width: "{HEAT_CELL}",

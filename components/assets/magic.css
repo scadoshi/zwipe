@@ -1170,26 +1170,31 @@ i.ms.ms-cost.ms-gp {
 
 /* The tiles and pips read `--mana-white` through `--mana-green`, so the map
    follows the pip style like every other pip. */
-/* No side padding, so the map runs to the panel's edges; the key below
-   carries its own. */
+/* No padding, so the field runs to the panel's edges and up to its header
+   rule; the key below carries its own. */
 .color-map {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.25rem 0 0.5rem;
+}
+
+/* The field: the backdrop's sink under the map's tiles, edge to edge. The
+   sink is on this box rather than the scrollers, so their edge fades thin
+   the tiles, not the field. */
+.color-map-field {
+    align-self: stretch;
+    background-color: var(--bg-sink);
 }
 
 /* Tiles keep their size, so a map larger than the box scrolls inside it:
    up and down here, across in .color-map-across inside, each box with
    orangui's edge fade for its axis. 14rem holds a map of about 2,200
-   colored cards. The scroll stays in the box instead of carrying on to the
-   page. */
+   colored cards, and a smaller one sits in the middle of the field. The
+   scroll stays in the box instead of carrying on to the page. */
 .color-map-viewport {
     display: flex;
     flex-direction: column;
-    align-self: stretch;
-    max-height: 14rem;
+    height: 14rem;
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -1198,10 +1203,11 @@ i.ms.ms-cost.ms-gp {
 }
 
 /* A flex child with auto margins centers when it fits and starts at the
-   edge when it does not, so every part stays reachable. */
+   edge when it does not, so every part stays reachable. It fills the
+   viewport's height, so the field does too. */
 .color-map-across {
     display: flex;
-    flex: none;
+    flex: 1 0 auto;
     width: 100%;
     overflow-x: auto;
     overflow-y: hidden;
@@ -1210,10 +1216,39 @@ i.ms.ms-cost.ms-gp {
     scrollbar-width: none;
 }
 
+/* The field reaches past the SVG's box; the scrollers clip it. */
 .color-map-svg {
     display: block;
     flex: none;
     margin: auto;
+    overflow: visible;
+}
+
+/* The backdrop's tiles in its five shades of the text color (orangui's
+   grid-cells.js), for a field under a chart's own tiles: the color map's
+   and the Activity heatmap's. They hold still. */
+.field-tile {
+    fill: var(--text-primary);
+}
+
+.field-tile-0 {
+    fill-opacity: 0.015;
+}
+
+.field-tile-1 {
+    fill-opacity: 0.03;
+}
+
+.field-tile-2 {
+    fill-opacity: 0.05;
+}
+
+.field-tile-3 {
+    fill-opacity: 0.075;
+}
+
+.field-tile-4 {
+    fill-opacity: 0.1;
 }
 
 /* Tiles sweep in on orangui's `heat-sweep`, a ring at a time from the middle
@@ -1237,9 +1272,12 @@ i.ms.ms-cost.ms-gp {
     }
 }
 
+/* Under a rule, padded like a panel's action bar. */
 .color-map-key {
     display: flex;
-    padding: 0 0.75rem;
+    align-self: stretch;
+    padding: 0.75rem 0.75rem 0;
+    border-top: 1px solid var(--border-secondary);
     flex-wrap: wrap;
     justify-content: center;
     gap: 0.4rem;

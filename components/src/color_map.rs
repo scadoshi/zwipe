@@ -85,15 +85,20 @@ pub const SWEEP_RINGS: u32 = 7;
 /// The wait between one ring's sweep and the next, in milliseconds. With
 /// orangui's 0.4s `heat-sweep`, the last ring lands about 700ms after mount.
 pub const SWEEP_STEP_MS: u32 = 50;
-/// The counts a [`ColorMapGhost`] grows from: about 40 tiles, enough to
-/// branch like a real map while staying a small cluster.
-const GHOST_COUNTS: ColorMapCounts = ColorMapCounts {
-    cards: [8, 6, 6, 5, 5],
-    colorless: 0,
-};
-/// The seed a [`ColorMapGhost`] grows from, so every skeleton has the same
-/// shape.
-const GHOST_SEED: u64 = 0x5eed_c0de;
+/// The field's pattern, in tiles: one block of seeded shades repeated under
+/// the map. Odd sides, so the repeat is hard to spot.
+const FIELD_PATTERN: (i32, i32) = (17, 13);
+/// The backdrop's tile shades, as in orangui's `grid-cells.js`. `magic.css`
+/// holds the alphas; this is how many there are.
+const FIELD_SHADES: u64 = 5;
+/// How far the field reaches past the map on each side, in tiles: past the
+/// edges of the widest box the map sits in.
+const FIELD_REACH: i32 = 40;
+/// Salts the field's shades apart from the map's own hashes ("field").
+const FIELD_SALT: u64 = 0x0066_6965_6c64;
+/// The pattern's id. Every field draws the same pattern, so a duplicate id
+/// on a page resolves to the same tiles.
+const FIELD_ID: &str = "color-map-field";
 /// The full shade, a color's own mana fill.
 pub const FULL_SHADE: u8 = 4;
 /// Each shade's share of the mana fill over the panel, faintest first, the
@@ -645,6 +650,60 @@ pub fn mana_var(color: Color) -> &'static str {
     }
 }
 
+/// `n` rounded up to even, so a box's middle falls on a tile edge and every
+/// field's tiles line up with every other's, the ghost's included.
+fn even(n: i32) -> i32 {
+    n.saturating_add(n.rem_euclid(2))
+}
+
+/// A field tile's shade, 0 to 4, by a hash of its place in the pattern.
+fn field_shade(column: i32, row: i32) -> u64 {
+    hash(0, FIELD_SALT, (column, row)) % FIELD_SHADES
+}
+
+/// The field under a map `columns` by `rows` tiles (both even): the
+/// backdrop's shaded tiles at the map's pitch, one pattern anchored at the
+/// middle, so the field holds still wherever the map's middle sits and the
+/// map's tiles land on its tiles. It reaches [`FIELD_REACH`] tiles past the
+/// map; the SVG lets it show and the viewport clips it.
+#[component]
+fn MapField(columns: i32, rows: i32) -> Element {
+    let (inset, size, corner) = (GAP_SHARE / 2.0, 1.0 - GAP_SHARE, CORNER_SHARE);
+    let (across, down) = FIELD_PATTERN;
+    rsx! {
+        defs {
+            pattern {
+                id: FIELD_ID,
+                x: "{columns / 2}",
+                y: "{rows / 2}",
+                width: "{across}",
+                height: "{down}",
+                "patternUnits": "userSpaceOnUse",
+                for row in 0..down {
+                    for column in 0..across {
+                        rect {
+                            key: "{column},{row}",
+                            class: "field-tile field-tile-{field_shade(column, row)}",
+                            x: "{f64::from(column) + inset:.2}",
+                            y: "{f64::from(row) + inset:.2}",
+                            width: "{size:.2}",
+                            height: "{size:.2}",
+                            rx: "{corner:.2}",
+                        }
+                    }
+                }
+            }
+        }
+        rect {
+            x: "{-FIELD_REACH}",
+            y: "{-FIELD_REACH}",
+            width: "{columns.saturating_add(2 * FIELD_REACH)}",
+            height: "{rows.saturating_add(2 * FIELD_REACH)}",
+            fill: "url(#{FIELD_ID})",
+        }
+    }
+}
+
 /// Scrolls `viewport` so the middle of what it holds sits in its middle.
 async fn center(viewport: std::rc::Rc<MountedData>) {
     let (Ok(content), Ok(frame)) = (
@@ -674,14 +733,16 @@ async fn center(viewport: std::rc::Rc<MountedData>) {
 /// opens, and every color fades from full at the map's
 /// middle toward the panel at its edges. The key's pips stay at full color.
 ///
-/// Tiles keep [`PITCH_PX`] at any size. The map runs the full width of its
-/// container and up to 14rem tall, centered when it fits and otherwise
-/// scrolling, opened on the map's middle. It scrolls in two nested boxes,
-/// up and down in orangui's `scroll-fade-y` and across in its
-/// `scroll-fade-x`, so an edge with more map past it fades out. Under it, a
-/// key of six chips gives every color's pip and card count, zero included, then the colorless
-/// cards, which the map leaves out. A host's `key_action` sits at the key's
-/// end, wrapping with its chips.
+/// Tiles keep [`PITCH_PX`] at any size. The map sits on a field of the
+/// backdrop's shaded tiles ([`MapField`]) that runs the full width of its
+/// container and 14rem tall, the map's tiles landing on the field's. The
+/// map is centered when it fits and otherwise scrolls, opened on its middle,
+/// in two nested boxes, up and down in orangui's `scroll-fade-y` and across
+/// in its `scroll-fade-x`, so an edge with more map past it fades out. Under
+/// a rule, like a panel's action bar, a key of six chips gives every color's
+/// pip and card count, zero included, then the colorless cards, which the
+/// map leaves out. A host's `key_action` sits at the key's end, wrapping
+/// with its chips.
 #[component]
 pub fn ColorMap(
     counts: ColorMapCounts,
@@ -691,9 +752,10 @@ pub fn ColorMap(
     key_action: Option<Element>,
 ) -> Element {
     let model = ColorMapModel::new(&counts, seed);
-    let width = f64::from(model.columns) * PITCH_PX;
-    let height = f64::from(model.rows) * PITCH_PX;
-    let view_box = format!("0 0 {} {}", model.columns, model.rows);
+    let (columns, rows) = (even(model.columns), even(model.rows));
+    let width = f64::from(columns) * PITCH_PX;
+    let height = f64::from(rows) * PITCH_PX;
+    let view_box = format!("0 0 {columns} {rows}");
     let (inset, size, corner) = (GAP_SHARE / 2.0, 1.0 - GAP_SHARE, CORNER_SHARE);
     let key = Color::all().into_iter().zip(counts.cards);
     let colorless = counts.colorless;
@@ -702,6 +764,7 @@ pub fn ColorMap(
     rsx! {
         div { class: "color-map",
             if !model.tiles.is_empty() {
+                div { class: "color-map-field",
                 div {
                     class: "color-map-viewport scroll-fade-y",
                     role: "img",
@@ -720,6 +783,7 @@ pub fn ColorMap(
                             width: "{width}",
                             height: "{height}",
                             "aria-hidden": "true",
+                            MapField { columns, rows }
                             for tile in model.tiles.iter() {
                                 rect {
                                     key: "{tile.cell.0},{tile.cell.1}",
@@ -734,6 +798,7 @@ pub fn ColorMap(
                             }
                         }
                     }
+                }
                 }
             }
             div { class: "color-map-key",
@@ -755,46 +820,22 @@ pub fn ColorMap(
     }
 }
 
-/// The map a [`ColorMapGhost`] draws: `GHOST_COUNTS` grown from
-/// `GHOST_SEED`, so it branches out to jagged tips like a real map.
-#[must_use]
-pub fn ghost_model() -> ColorMapModel {
-    ColorMapModel::new(&GHOST_COUNTS, GHOST_SEED)
-}
-
-/// A [`ColorMap`]'s viewport while its counts load: a small map of ghost
-/// tiles (`ghost_model`) at the map's pitch, in the middle of a box as tall
-/// as a map of about 2,200 colored cards, so the swap to the real map stays
-/// in place. The tiles grow out ring by ring to the map's jagged tips and
-/// fold back in, tips first, on a loop until the data lands, dimmer toward
-/// the edge.
-/// The look is the app's `.color-map-ghost*` skeleton rules; it carries no
-/// key, which the caller ghosts as chips.
+/// A [`ColorMap`]'s field while its counts load: the same box and tiles,
+/// still and empty, so the map's colors sweep in over a field already in
+/// place. It carries no key, which the caller ghosts as chips.
 #[component]
 pub fn ColorMapGhost() -> Element {
-    let model = ghost_model();
-    let (width, height) = (
-        f64::from(model.columns) * PITCH_PX,
-        f64::from(model.rows) * PITCH_PX,
-    );
-    let (inset, size, corner) = (GAP_SHARE / 2.0, 1.0 - GAP_SHARE, CORNER_SHARE);
     rsx! {
-        div { class: "color-map-viewport color-map-ghost",
-            svg {
-                class: "color-map-svg",
-                view_box: "0 0 {model.columns} {model.rows}",
-                width: "{width}",
-                height: "{height}",
-                "aria-hidden": "true",
-                for tile in model.tiles {
-                    rect {
-                        key: "{tile.column},{tile.row}",
-                        class: "color-map-ghost-tile color-map-ghost-ring-{tile.ring}",
-                        x: "{f64::from(tile.column) + inset:.2}",
-                        y: "{f64::from(tile.row) + inset:.2}",
-                        width: "{size:.2}",
-                        height: "{size:.2}",
-                        rx: "{corner:.2}",
+        div { class: "color-map-field",
+            div { class: "color-map-viewport",
+                div { class: "color-map-across",
+                    svg {
+                        class: "color-map-svg",
+                        view_box: "0 0 2 2",
+                        width: "{2.0 * PITCH_PX}",
+                        height: "{2.0 * PITCH_PX}",
+                        "aria-hidden": "true",
+                        MapField { columns: 2, rows: 2 }
                     }
                 }
             }
@@ -1118,23 +1159,20 @@ mod tests {
     }
 
     #[test]
-    fn the_ghost_grows_like_a_small_map() {
-        let ghost = ghost_model();
-        assert_eq!(ghost, ghost_model(), "the same shape every time");
-        assert!(
-            (30..=50).contains(&ghost.tiles.len()),
-            "{} tiles",
-            ghost.tiles.len()
-        );
-        assert!(
-            ghost.tiles.iter().map(|tile| tile.ring).min() <= Some(1),
-            "grows from near the middle"
-        );
-        assert_eq!(
-            ghost.tiles.iter().map(|tile| tile.ring).max(),
-            Some(SWEEP_RINGS - 1),
-            "tips on the last ring"
-        );
+    fn the_field_lines_up_in_every_shade() {
+        assert_eq!((even(0), even(1), even(6), even(7)), (0, 2, 6, 8));
+        let (across, down) = FIELD_PATTERN;
+        let mut seen = [false; 5];
+        for row in 0..down {
+            for column in 0..across {
+                let shade = field_shade(column, row);
+                assert_eq!(shade, field_shade(column, row));
+                if let Some(slot) = usize::try_from(shade).ok().and_then(|i| seen.get_mut(i)) {
+                    *slot = true;
+                }
+            }
+        }
+        assert!(seen.iter().all(|&s| s), "{seen:?}");
     }
 
     #[test]
