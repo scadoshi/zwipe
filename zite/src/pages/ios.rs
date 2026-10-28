@@ -38,7 +38,7 @@ pub fn Ios() -> Element {
                         a {
                             href: "{APP_STORE_URL}",
                             class: "store-btn",
-                            "open Zwipe on the App Store ↗"
+                            "open Zwipe on the App Store" span { class: "ext", "\u{2197}" }
                         }
                     }
                 }

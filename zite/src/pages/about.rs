@@ -38,8 +38,8 @@ pub fn About() -> Element {
                     title: "Zwipe",
                     title_h1: true,
                     actions: rsx! {
-                        a { class: "panel-action", href: "https://github.com/scadoshi/zwipe", "Source ↗" }
-                        a { class: "panel-action", href: "https://scottyfermo.com", "Built by Scotty ↗" }
+                        a { class: "panel-action", href: "https://github.com/scadoshi/zwipe", "Source" span { class: "ext", "\u{2197}" } }
+                        a { class: "panel-action", href: "https://scottyfermo.com", "Built by Scotty" span { class: "ext", "\u{2197}" } }
                     },
                     p {
                         "Zwipe is built and maintained by Scotty Fermo, a Commander player who
@@ -263,12 +263,13 @@ pub fn About() -> Element {
 
                     Panel { title: "How AI is used",
                         p { class: "card-summary",
-                            "I learn the approach before a model writes any code."
+                            "Agents write most of the code, more than I can read. The checks it has to pass decide what ships."
                         }
                         ul { class: "card-bullets",
-                            li { "It starts with research: teaching myself, cross-referencing with a model, learning the approaches before picking one" }
-                            li { "Security checked at every stop, implementations validated against other models, everything tested" }
-                            li { "Only once I could build it myself does the model write it, and I read every line" }
+                            li { "I design the structure and the rules each part follows" }
+                            li { "Nothing deploys unless over a thousand tests and strict lints pass" }
+                            li { "Queries, types and dependencies are checked before anything runs" }
+                            li { "I pick the parts worth learning and go deep on those by hand" }
                             li { "All of it is open source. Read it; criticism is welcome" }
                         }
                     }

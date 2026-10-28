@@ -38,7 +38,7 @@ pub fn Android() -> Element {
                         a {
                             href: "{PLAY_STORE_URL}",
                             class: "store-btn",
-                            "get Zwipe on Google Play ↗"
+                            "get Zwipe on Google Play" span { class: "ext", "\u{2197}" }
                         }
                     }
                 }
