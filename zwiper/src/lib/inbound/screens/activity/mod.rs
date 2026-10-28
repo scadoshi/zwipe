@@ -17,7 +17,7 @@ use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::user::models::hints::HINT_ACTIVITY;
 use zwipe_core::http::contracts::suggestions::HttpActivity;
 
-use self::sections::{ACTIVITY_TITLE, ActivitySections, HardPassesPanel, HeatFieldGhost};
+use self::sections::{ACTIVITY_TITLE, ActivitySections, HardPassesPanel};
 use crate::inbound::components::auth::authed::use_authed;
 use crate::inbound::components::catalog_cache::CatalogCache;
 use crate::inbound::components::hint_dialog::use_one_time_hint;
@@ -45,11 +45,10 @@ fn has_anything(activity: &HttpActivity) -> bool {
 }
 
 /// The screen while its first fetch is out, in the deck view's skeleton
-/// grammar: the Activity section open on the heatmap's field, empty and
-/// still, its tags as ghosts under a rule and a blank where Totals goes, so
-/// the loaded days land on the same tiles; Card roles and Oracle tags
-/// collapsed to their headers; then the Most skipped group as Playstyle's
-/// list ghosts it, its header a bar and its rows a thumb and a bar.
+/// grammar: the Activity section open on a blank body its loaded height, the
+/// grid, its tags and Totals, which the grid then sweeps into, Card roles and Oracle tags collapsed to
+/// their headers, then the Most skipped group as Playstyle's list ghosts it,
+/// its header a bar and its rows a thumb and a bar.
 #[component]
 fn ActivitySkeleton() -> Element {
     rsx! {
@@ -60,13 +59,7 @@ fn ActivitySkeleton() -> Element {
                         div { class: "skeleton-bar skeleton-section-label" }
                         div { class: "skeleton-bar skeleton-chip skeleton-info-button" }
                     }
-                    HeatFieldGhost {}
-                    div { class: "activity-ghost-tags",
-                        for i in 0..3 {
-                            div { key: "{i}", class: "skeleton-bar activity-ghost-tag" }
-                        }
-                    }
-                    div { class: "activity-totals-blank" }
+                    div { class: "activity-heat-blank" }
                 }
                 for i in 0..2 {
                     div { key: "{i}", class: "skeleton-chart-box",

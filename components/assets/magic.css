@@ -1224,9 +1224,8 @@ i.ms.ms-cost.ms-gp {
     overflow: visible;
 }
 
-/* The backdrop's tiles in its five shades of the text color (orangui's
-   grid-cells.js), for a field under a chart's own tiles: the color map's
-   and the Activity heatmap's. They hold still. */
+/* The color map's field: the backdrop's tiles in its five shades of the
+   text color (orangui's grid-cells.js). They hold still. */
 .field-tile {
     fill: var(--text-primary);
 }

@@ -38,7 +38,7 @@ pub const UPCOMING: &[Release] = &[Release {
     version: "1.16.1",
     date: None,
     entries: &[
-        "Activity's heatmap sits on the backdrop's tiles, and its days fill in with color over them",
+        "The color map sits on a field of the backdrop's tiles, and its colors fill in over them, with its key under a rule",
     ],
 }];
 
