@@ -1178,10 +1178,12 @@ i.ms.ms-cost.ms-gp {
     align-items: center;
 }
 
-/* The field: the map's box, edge to edge between the header rule and the
-   key's rule. */
+/* The field: the map's box between the header rule and the key's rule,
+   inset from the panel's edges by the key's own side padding, so the empty
+   squares stop short of the panel's border. */
 .color-map-field {
     align-self: stretch;
+    padding: 0.75rem;
 }
 
 /* Tiles keep their size, so a map larger than the box scrolls inside it:
