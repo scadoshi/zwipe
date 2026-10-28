@@ -6,11 +6,12 @@
      Referenced by every page via zite's PageMeta as {WEB_BASE}/assets/og-default.png.
      zite's home hero as a card: the sites' backdrop of shaded 28px squares on a
      darkened --bg-sink (drawn by the script in the body), and on it one panel holding the Zwipe wordmark beside the three
-     public counters, a rule, the tagline with the rating, the chips and the
+     public counters, a rule, the tagline, the chips with the rating last, and the
      domain. Tokens are copied from orangui/assets/themes.css
      .theme-gruvbox-dark, and the colors play the roles zite gives them: the
-     counters and stars in palette-5, the tagline's link in palette-1, a bright
-     gruvbox color per chip (Free yellow, No ads red, iOS blue, Android green)
+     counters in palette-5, the tagline's link in palette-1, a bright
+     gruvbox color per chip (Free yellow, No ads red, iOS blue, Android green,
+     the rating orange)
      and the domain in palette-6 aqua. The counters are a snapshot of the
      live numbers at render time; refresh them when regenerating. The
      block-glyph wordmark needs the app's self-hosted JetBrains Mono (the CDN
@@ -49,6 +50,7 @@
   --green: #b8bb26;
   --blue: #83a598;
   --yellow: #fabd2f;
+  --orange: #fe8019;
   --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
   --grid-line: rgba(235, 219, 162, 0.04);
@@ -150,8 +152,7 @@ body {
 }
 .link { color: var(--palette-1); font-weight: 700; }
 .hl { color: var(--text-primary); font-weight: 700; }
-.stars { color: var(--palette-5); font-weight: 700; letter-spacing: 3px; }
-.score { color: var(--text-primary); font-weight: 700; }
+.stars { letter-spacing: 3px; margin-right: 10px; }
 
 /* A bright gruvbox color per chip; the --c each sets is its text, tint and border. */
 .tags {
@@ -173,6 +174,7 @@ body {
 .tag-red { --c: var(--red); }
 .tag-blue { --c: var(--blue); }
 .tag-green { --c: var(--green); }
+.tag-orange { --c: var(--orange); }
 
 .site {
   margin-top: 24px;
@@ -223,22 +225,21 @@ body {
                                   ▎▎▉▉
                                    ▎▎▉▉</pre>
       <div class="stats">
-        <div class="stat"><span class="stat-num">2,195</span><span class="stat-label">Decks created</span></div>
-        <div class="stat"><span class="stat-num">31,162</span><span class="stat-label">Searches run</span></div>
-        <div class="stat"><span class="stat-num">260,241</span><span class="stat-label">Cards swiped</span></div>
+        <div class="stat"><span class="stat-num">2,196</span><span class="stat-label">Decks created</span></div>
+        <div class="stat"><span class="stat-num">31,175</span><span class="stat-label">Searches run</span></div>
+        <div class="stat"><span class="stat-num">260,291</span><span class="stat-label">Cards swiped</span></div>
       </div>
     </div>
     <hr class="rule" />
     <div class="tagline">
       <span>The <span class="link">Magic: The Gathering</span> deck builder built for <span class="hl">mobile</span></span>
-      <span class="stars">★★★★★</span>
-      <span class="score">4.8</span>
     </div>
     <div class="tags">
       <span class="tag tag-yellow">Free</span>
       <span class="tag tag-red">No ads</span>
       <span class="tag tag-blue">iOS</span>
       <span class="tag tag-green">Android</span>
+      <span class="tag tag-orange"><span class="stars">★★★★★</span>4.8</span>
     </div>
     <div class="site">zwipe.net</div>
   </div>
