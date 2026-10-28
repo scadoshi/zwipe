@@ -2663,16 +2663,17 @@ button {
 }
 
 /* Card name and price tags, then the Image and Buy buttons, centered on
-   their own lines below the quote. Wraps the rest to a new line before the
-   name is forced to wrap internally. */
+   their own lines below the quote, under a full-bleed rule like a panel's
+   action bar. Wraps the rest to a new line before the name is forced to
+   wrap internally. */
 .flavor-buy-row {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
     align-items: center;
     gap: 0.4rem;
-    margin-top: calc(0.8rem + 2px);
-    padding: 0 1rem;
+    padding: 0.75rem 1rem 0;
+    border-top: 1px solid var(--border-secondary);
 }
 
 /* The card's name and USD price as tags, under the quote. */
