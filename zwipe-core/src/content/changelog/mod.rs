@@ -37,7 +37,11 @@ pub struct Release {
 pub const UPCOMING: &[Release] = &[Release {
     version: "1.16.1",
     date: None,
-    entries: &["The color map's key sits under a rule, the way a panel's buttons do"],
+    entries: &[
+        "The color map's key sits under a rule, the way a panel's buttons do",
+        "Featured flavor's card name, price and buttons sit under a rule",
+        "Activity shows its grid, tags and Totals as ghosts while it loads",
+    ],
 }];
 
 /// Shipped releases, newest first.
