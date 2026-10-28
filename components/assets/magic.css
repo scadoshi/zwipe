@@ -1256,3 +1256,14 @@ i.ms.ms-cost.ms-gp {
 .color-map-key > .card-action-btn {
     align-self: stretch;
 }
+
+/* A chart's title: a chip in the theme's muted tone, its "?" beside it at
+   the button's own margin. */
+.chart-label {
+    display: inline-flex;
+    align-items: center;
+}
+
+.chart-label-chip {
+    --tone: var(--text-muted);
+}

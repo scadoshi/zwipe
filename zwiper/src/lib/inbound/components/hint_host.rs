@@ -295,7 +295,7 @@ impl HintTopic {
                 HintBullets {
                     HintBullet { "Your swipes and searches each day over the last year, a darker square for a busier day" }
                     HintBullet { "A lit square is one of your biggest days. Tap a square to see its counts" }
-                    HintBullet { "The columns under it are what the cards dealt to your decks came to: " HintKey { "Added" } " and " HintKey { "Maybeboard" } " you kept, " HintKey { "Skipped" } " you passed on, and " HintKey { "Removed" } " you later took out" }
+                    HintBullet { HintKey { "Totals" } " is what the cards dealt to your decks came to: " HintKey { "Added" } " and " HintKey { "Maybeboard" } " you kept, " HintKey { "Skipped" } " you passed on, and " HintKey { "Removed" } " you later took out" }
                 }
             },
             Self::RoleRates => rsx! {

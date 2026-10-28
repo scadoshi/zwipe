@@ -550,7 +550,7 @@ pub(crate) fn ActivitySections(
                 }
                 if has_outcomes(&outcomes) {
                     div { class: "activity-outcomes",
-                        BarChart { bars: outcome_bars(&outcomes) }
+                        BarChart { label: "Totals", bars: outcome_bars(&outcomes) }
                     }
                 }
             }

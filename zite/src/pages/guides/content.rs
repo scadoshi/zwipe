@@ -701,7 +701,7 @@ pub static GUIDES: &[Guide] = &[
             ),
             Block::H2("What's on it"),
             Block::Bullets(&[
-                "Activity is a heatmap of the last year, a square per day, darker the more you swiped and searched. Your biggest days are lit. Tap a square for its counts. Under it, columns show what the cards dealt to your decks came to: added, skipped, saved to a maybeboard, or added and later removed.",
+                "Activity is a heatmap of the last year, a square per day, darker the more you swiped and searched. Your biggest days are lit. Tap a square for its counts. Under it, Totals shows what the cards dealt to your decks came to: added, skipped, saved to a maybeboard, or added and later removed.",
                 "Card roles and Oracle tags share a Show chip row: Added, Skipped and Maybeboard are shares of the cards dealt to you, and Removed is the share of cards you added and later took out. Pick one in either section and both follow.",
                 "Card roles shows your rate for each role. Tap one to see the tags you swiped under it.",
                 "Oracle tags lists the tags where your rate stands out most from other players', so a tag everyone passes on only shows up after a lot of skips. Tap a tag to see what it means.",

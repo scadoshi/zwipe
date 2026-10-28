@@ -15,16 +15,18 @@ use zwipe_core::domain::deck::draw_odds::p_at_least_one;
 
 use crate::role_tags::RoleTags;
 
-/// Sentence-case accent sub-heading shown above each flattened chart block.
+/// A chart's title, a sentence-case chip in the theme's muted tone over each
+/// flattened chart block.
 ///
-/// `hint` is whatever the host wants right of the text, in practice the app's
-/// "?" button. It is an `Element` rather than a topic because the hint system
-/// lives in the app and this crate is shared with the site, which has none.
+/// `hint` is whatever the host wants right of the chip, in practice the app's
+/// "?" button, beside the chip rather than inside it. It is an `Element`
+/// rather than a topic because the hint system lives in the app and this
+/// crate is shared with the site, which has none.
 #[component]
 pub fn ChartLabel(text: &'static str, hint: Option<Element>) -> Element {
     rsx! {
-        span { style: "display:inline-flex;align-items:center;font-size:0.75rem;font-weight:600;color:var(--accent-tertiary);",
-            "{text}"
+        span { class: "chart-label",
+            span { class: "stat-chip chart-label-chip", "{text}" }
             if let Some(h) = hint { {h} }
         }
     }
@@ -510,8 +512,8 @@ pub fn DrawOdds(
                     onclick: move |_| { let t = turn(); if t > 0 { turn.set(t - 1); } },
                     "-"
                 }
-                span { style: "display:inline-flex;align-items:center;font-size:0.75rem;font-weight:600;color:var(--accent-tertiary);",
-                    "{heading}"
+                span { class: "chart-label",
+                    span { class: "stat-chip chart-label-chip", "{heading}" }
                     if let Some(h) = hint { {h} }
                 }
                 button {
