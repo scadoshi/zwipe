@@ -127,9 +127,9 @@ pub fn HomePlayStyle() -> Element {
     }
 }
 
-/// A [`ColorMap`] while its counts load: a [`ColorMapGhost`], the map's
-/// field still and empty in the map's own box, then under its rule a still
-/// bare chip for each of the key's five colors and a wider one for
+/// A [`ColorMap`] while its counts load: a [`ColorMapGhost`] of skeleton
+/// tiles sweeping out from the middle in the map's own box, then under its
+/// rule a bare chip for each of the key's five colors and a wider one for
 /// colorless, and with `key_action` one more for the button at the key's
 /// end.
 #[component]

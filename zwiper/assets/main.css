@@ -2506,22 +2506,172 @@ button {
     margin-bottom: auto;
 }
 
-/* A color map's key while it loads: still ghost chips under the field's
-   still tiles, so the map's colors arriving are the only entrance. */
-.color-map-key > .skeleton-bar {
-    animation: none;
+/* A color map while it loads: a blob of ghost tiles in the middle of a box
+   as tall as the map's own at its 14rem cap, which a map of about 2,200
+   colored cards reaches, so the swap to the real tiles stays in place. */
+.color-map-ghost {
+    height: 14rem;
+    justify-content: center;
+}
+
+/* Ghost tiles in the skeleton fill. The small map grows out from the
+   middle ring by ring to its tips and folds back in, tips first, on a 2.6s
+   loop until the data lands; each ring peaks dimmer than the one inside it,
+   so the map fades as it spreads. */
+.color-map-ghost-tile {
+    fill: var(--border-muted);
+    transform-box: fill-box;
+    transform-origin: center;
+    opacity: 0;
+    animation-duration: 2.6s;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+}
+
+@keyframes color-map-ghost-bloom-0 {
+    0%,
+    94%,
+    100% {
+        opacity: 0;
+        transform: scale(0.5);
+    }
+    8%,
+    86% {
+        opacity: 1.0;
+        transform: none;
+    }
+}
+
+.color-map-ghost-ring-0 {
+    animation-name: color-map-ghost-bloom-0;
+}
+
+@keyframes color-map-ghost-bloom-1 {
+    0%,
+    6%,
+    88%,
+    100% {
+        opacity: 0;
+        transform: scale(0.5);
+    }
+    14%,
+    80% {
+        opacity: 0.9;
+        transform: none;
+    }
+}
+
+.color-map-ghost-ring-1 {
+    animation-name: color-map-ghost-bloom-1;
+}
+
+@keyframes color-map-ghost-bloom-2 {
+    0%,
+    12%,
+    82%,
+    100% {
+        opacity: 0;
+        transform: scale(0.5);
+    }
+    20%,
+    74% {
+        opacity: 0.8;
+        transform: none;
+    }
+}
+
+.color-map-ghost-ring-2 {
+    animation-name: color-map-ghost-bloom-2;
+}
+
+@keyframes color-map-ghost-bloom-3 {
+    0%,
+    18%,
+    76%,
+    100% {
+        opacity: 0;
+        transform: scale(0.5);
+    }
+    26%,
+    68% {
+        opacity: 0.7;
+        transform: none;
+    }
+}
+
+.color-map-ghost-ring-3 {
+    animation-name: color-map-ghost-bloom-3;
+}
+
+@keyframes color-map-ghost-bloom-4 {
+    0%,
+    24%,
+    70%,
+    100% {
+        opacity: 0;
+        transform: scale(0.5);
+    }
+    32%,
+    62% {
+        opacity: 0.6;
+        transform: none;
+    }
+}
+
+.color-map-ghost-ring-4 {
+    animation-name: color-map-ghost-bloom-4;
+}
+
+@keyframes color-map-ghost-bloom-5 {
+    0%,
+    30%,
+    64%,
+    100% {
+        opacity: 0;
+        transform: scale(0.5);
+    }
+    38%,
+    56% {
+        opacity: 0.5;
+        transform: none;
+    }
+}
+
+.color-map-ghost-ring-5 {
+    animation-name: color-map-ghost-bloom-5;
+}
+
+@keyframes color-map-ghost-bloom-6 {
+    0%,
+    36%,
+    58%,
+    100% {
+        opacity: 0;
+        transform: scale(0.5);
+    }
+    44%,
+    50% {
+        opacity: 0.4;
+        transform: none;
+    }
+}
+
+.color-map-ghost-ring-6 {
+    animation-name: color-map-ghost-bloom-6;
+}
+
+/* Reduced motion shows the ghost tiles still. */
+@media (prefers-reduced-motion: reduce) {
+    .color-map-ghost-tile {
+        animation: none;
+        opacity: 1;
+    }
 }
 
 /* The Playstyle skeleton's box has no padding of its own, so its key keeps
    the loaded section's room under the chips. */
 .skeleton-info-list .color-map-key {
     padding-bottom: 0.75rem;
-}
-
-/* The Playstyle section's rule sits 0.6rem over its body; the map's field
-   pulls up to meet it, as it meets Home's header rule. */
-.collapsible-inner .color-map {
-    margin-top: -0.6rem;
 }
 
 /* Home's Color map title bar: the title centered, the Playstyle chip pinned to

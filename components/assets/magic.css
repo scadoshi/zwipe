@@ -1170,38 +1170,26 @@ i.ms.ms-cost.ms-gp {
 
 /* The tiles and pips read `--mana-white` through `--mana-green`, so the map
    follows the pip style like every other pip. */
-/* No padding, so the field runs to the panel's edges and up to its header
-   rule; the key below carries its own. */
+/* No side padding, so the map runs to the panel's edges; the key below
+   carries its own. */
 .color-map {
     display: flex;
     flex-direction: column;
     align-items: center;
-}
-
-/* The field: the map's box between the header rule and the key's rule,
-   inset from the panel's edges by the key's own side padding, so the empty
-   squares stop short of the panel's border. */
-.color-map-field {
-    align-self: stretch;
-    padding: 0.75rem;
+    gap: 0.5rem;
+    padding: 0.25rem 0 0.5rem;
 }
 
 /* Tiles keep their size, so a map larger than the box scrolls inside it:
    up and down here, across in .color-map-across inside, each box with
-   orangui's edge fade for its axis. 18 tiles hold a map of about 2,000
-   colored cards, and a smaller one sits in the middle of the field. The
-   scroll stays in the box instead of carrying on to the page. */
+   orangui's edge fade for its axis. 14rem holds a map of about 2,200
+   colored cards. The scroll stays in the box instead of carrying on to the
+   page. */
 .color-map-viewport {
     display: flex;
     flex-direction: column;
-    /* Whole tiles only: 18 tall, and as many pairs across as fit. The map's
-       sides are even, so centered in an even box its tiles, and the field's,
-       meet the box's edges whole. A browser without round() keeps the full
-       width. */
-    width: 100%;
-    width: round(down, 100%, 24px);
-    height: 216px;
-    margin: 0 auto;
+    align-self: stretch;
+    max-height: 14rem;
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -1210,11 +1198,10 @@ i.ms.ms-cost.ms-gp {
 }
 
 /* A flex child with auto margins centers when it fits and starts at the
-   edge when it does not, so every part stays reachable. It fills the
-   viewport's height, so the field does too. */
+   edge when it does not, so every part stays reachable. */
 .color-map-across {
     display: flex;
-    flex: 1 0 auto;
+    flex: none;
     width: 100%;
     overflow-x: auto;
     overflow-y: hidden;
@@ -1223,18 +1210,10 @@ i.ms.ms-cost.ms-gp {
     scrollbar-width: none;
 }
 
-/* The field reaches past the SVG's box; the scrollers clip it. */
 .color-map-svg {
     display: block;
     flex: none;
     margin: auto;
-    overflow: visible;
-}
-
-/* The field's empty squares, in the heat grid's tone for a day with
-   nothing (orangui's .heat-cell). */
-.field-tile {
-    fill: var(--border-secondary);
 }
 
 /* Tiles sweep in on orangui's `heat-sweep`, a ring at a time from the middle
@@ -1258,10 +1237,11 @@ i.ms.ms-cost.ms-gp {
     }
 }
 
-/* Under a rule, padded like a panel's action bar. */
+/* Under a full-bleed rule, padded like a panel's action bar. */
 .color-map-key {
     display: flex;
     align-self: stretch;
+    margin-top: 0.25rem;
     padding: 0.75rem 0.75rem 0;
     border-top: 1px solid var(--border-secondary);
     flex-wrap: wrap;
