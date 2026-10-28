@@ -49,7 +49,7 @@ pub fn StatsStrip() -> Element {
     // the as-of chip changing its words in place.
     let label = match (live.is_some(), as_of) {
         (true, _) => Some("Live".to_string()),
-        (false, Some(day)) => Some(format!("As of {day}")),
+        (false, Some(day)) => Some(format!("as of {day}")),
         (false, None) => None,
     };
 
