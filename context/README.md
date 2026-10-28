@@ -23,7 +23,7 @@ The running log, newest first. Update this when something ships; [`progress/todo
 
 ## 2026-10-28: 1.16.1 submitted
 
-1.16.1 is cut and submitted to both stores, iOS build 110 and Android vc72, both built on scotland-halo. Notes are at [`operations/store-submissions/1.16.1/whats_new.md`](operations/store-submissions/1.16.1/whats_new.md). It brings the user's own counts at the top of Activity, an empty heatmap space in place of the ghost grid while Activity loads, Featured flavor's name, price and buttons and the color map's key under a rule, and Settings naming the theme's mode Dark or Light. The changelog dates 1.16.1 to 2026-10-28; move it if it goes live on another day.
+1.16.1 is cut and submitted to both stores, iOS build 110 and Android vc72, both built on scotland-halo. Notes are at [`operations/store-submissions/1.16.1/whats_new.md`](operations/store-submissions/1.16.1/whats_new.md). It brings the user's own counts at the top of Activity, an empty heatmap space in place of the ghost grid while Activity loads, Featured flavor's name, price and buttons and the color map's key under a rule, and Settings naming the theme's mode Dark or Light. iOS went live on the App Store the same day, matching the changelog's 2026-10-28.
 
 ## 2026-10-27: 1.16.0 cut and built
 
