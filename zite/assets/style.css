@@ -250,15 +250,8 @@ a {
     width: 100%;
     max-width: 74rem;
     margin: 0 auto;
-    padding: 0 1.5rem 5rem;
-}
-
-.page.guide-page {
-    padding-bottom: 1rem;
-}
-
-.guide-page + .site-footer {
-    margin-top: 0;
+    /* The same 1rem off the footer as the nav's margin leaves at the top. */
+    padding: 0 1.5rem 1rem;
 }
 
 /* ==================
@@ -834,9 +827,10 @@ code {
 
 /* ── Featured flavor ──────────────────────────────────────────────────────
    The hour's shared flavor pick, same card the app home shows, flipping at
-   the top of every UTC hour. A Panel tucked under the demo gallery; tap the
-   card-name tag to open the full-art overlay (shared .sd-image-overlay*
-   styles). */
+   the top of every UTC hour. A Panel tucked under the demo gallery: the quote
+   in the body, then the card's name and price tags with Image and retailer
+   buttons centered in the action row, as on the app home. Image opens the full-art
+   overlay (shared .sd-image-overlay* styles). */
 .ff-quote {
     font-style: italic;
     color: var(--text-primary);
@@ -844,41 +838,37 @@ code {
     text-align: center;
 }
 
-.ff-name-row {
-    display: flex;
+.featured-flavor .panel-actions {
     justify-content: center;
-    margin-top: 0.8rem;
+    align-items: center;
+    gap: 0.5rem;
 }
 
-/* Card-name tag, matching the app home's .flavor-name pill. */
-.ff-name {
-    display: inline-block;
+/* Name and price tags, matching the app home's .flavor-name and
+   .flavor-price. */
+.ff-name,
+.ff-price {
+    display: inline-flex;
+    align-items: center;
     max-width: 100%;
     padding: 0.28rem 0.8rem;
     font-size: 0.8rem;
     line-height: 1.3;
     text-align: center;
-    color: var(--palette-3);
-    background-color: color-mix(in srgb, var(--palette-3) 12%, transparent);
-    border: 1px solid color-mix(in srgb, var(--palette-3) 35%, transparent);
     border-radius: 0.6rem;
 }
 
-.ff-name-link {
-    cursor: pointer;
-    transition: all 0.2s ease;
+.ff-name {
+    color: var(--palette-1);
+    background-color: color-mix(in srgb, var(--palette-1) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--palette-1) 35%, transparent);
 }
 
-/* Hover-capable pointers only, so touch devices never keep a stuck grown
-   state. Same slight scale-up as the share screen's keyword chips. */
-@media (hover: hover) {
-    .ff-name-link:hover {
-        transform: scale(1.06);
-    }
-}
-
-.ff-name-link:active {
-    transform: scale(0.97);
+.ff-price {
+    color: var(--color-money);
+    background-color: color-mix(in srgb, var(--color-money) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-money) 35%, transparent);
+    font-variant-numeric: tabular-nums;
 }
 
 /* ==================
@@ -892,6 +882,13 @@ code {
 /* (.about-headline and its h1/contents rules lived here. The about hero is a
    real Panel now: the title comes from panel-title, the profile links ride the
    panel's action row, and the tag row sits in the body.) */
+
+/* A chip riding after a panel title (the privacy policy's Last updated)
+   sits a gap off the title text, as the portfolio's title tags do. */
+.panel-title > .stat-chip {
+    margin-left: 0.6rem;
+    vertical-align: middle;
+}
 
 /* Panelled page header (title + tagline in a floating bubble), shared by the
    changelog and guides index. */
@@ -1440,7 +1437,7 @@ code {
  ==================== */
 
 .site-footer {
-    margin-top: 3.75rem;
+    margin-top: 0;
 }
 
 /* Visually hidden but exposed to assistive tech and crawlers. Used for the
@@ -1482,7 +1479,8 @@ code {
     margin-top: 0.75rem;
 }
 
-/* Home hero spec labels (Free / No ads / iOS / Android). Renamed from `.chip`
+/* Home hero spec labels (Free / No ads); the store links beside them are
+   panel-action buttons. Renamed from `.chip`
    so the interactive `.chip` in the shared components.css doesn't collide. */
 .hero-chip {
     padding: 0.2rem 0.6rem;
@@ -1500,32 +1498,6 @@ code {
         transparent
     );
     border-color: color-mix(in srgb, var(--palette-5) 40%, transparent);
-}
-
-.chip-plat {
-    color: var(--text-muted);
-    background-color: color-mix(in srgb, var(--text-muted) 12%, transparent);
-    border-color: color-mix(in srgb, var(--text-muted) 30%, transparent);
-    text-decoration: none;
-    transition: all 0.2s ease;
-}
-
-.chip-plat:hover {
-    color: var(--text-primary);
-    border-color: var(--text-muted);
-}
-
-/* The store links grow slightly on hover, as the rating tag does. */
-@media (hover: hover) {
-    .chip-plat:hover {
-        transform: scale(1.06);
-    }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .chip-plat:hover {
-        transform: none;
-    }
 }
 
 /* ==================
