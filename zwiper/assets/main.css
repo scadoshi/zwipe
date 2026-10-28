@@ -2512,6 +2512,12 @@ button {
     animation: none;
 }
 
+/* The Playstyle skeleton's box has no padding of its own, so its key keeps
+   the loaded section's room under the chips. */
+.skeleton-info-list .color-map-key {
+    padding-bottom: 0.75rem;
+}
+
 /* The Playstyle section's rule sits 0.6rem over its body; the map's field
    pulls up to meet it, as it meets Home's header rule. */
 .collapsible-inner .color-map {
@@ -3739,11 +3745,72 @@ button {
     padding: 0 0.75rem;
 }
 
-/* The Activity section's body while the screen loads: blank at its loaded
-   height (the grid, its tags and Totals), so the sweep is the only entrance
-   and the list under it starts where it will stay. */
-.activity-heat-blank {
-    height: 22rem;
+/* The Activity section's body while the screen loads, in its loaded
+   shape: the section's padding and gap around the empty grid, its tags, the
+   rule and Totals, so the loaded section lands where the ghost stood. */
+.activity-ghost-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 0.6rem 0 0.75rem;
+}
+
+/* The grid's days as empty squares, in the heat grid's tone for a day with
+   nothing. They hold still; the loaded days sweep in over them. */
+.activity-ghost-cell {
+    fill: var(--border-secondary);
+}
+
+/* A tag's size, so the row sits where the loaded tags do. */
+.activity-ghost-tag {
+    width: 6.5rem;
+    height: 1.75rem;
+}
+
+/* Totals as BarChart lays it out: the title, 6rem of columns, the labels. */
+.activity-ghost-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 0 0.75rem;
+}
+
+/* The title chip, ghosted in its accent. */
+.activity-ghost-title {
+    align-self: center;
+    width: 4.5rem;
+    height: 1.45rem;
+    border-color: var(--accent-tertiary);
+}
+
+.activity-ghost-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.25rem;
+    height: 6rem;
+}
+
+.activity-ghost-column {
+    flex: 1;
+    height: 100%;
+    display: flex;
+    align-items: flex-end;
+}
+
+.activity-ghost-bar {
+    width: 100%;
+    border-radius: 0.15rem 0.15rem 0 0;
+}
+
+.activity-ghost-labels {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.activity-ghost-label {
+    flex: 1;
+    height: 0.65rem;
+    margin: 0 0.75rem;
 }
 
 /* The full-bleed rule between the heatmap's tags and Totals. */

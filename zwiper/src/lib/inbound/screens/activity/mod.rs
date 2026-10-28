@@ -17,7 +17,7 @@ use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::user::models::hints::HINT_ACTIVITY;
 use zwipe_core::http::contracts::suggestions::HttpActivity;
 
-use self::sections::{ACTIVITY_TITLE, ActivitySections, HardPassesPanel};
+use self::sections::{ACTIVITY_TITLE, ActivitySections, HardPassesPanel, HeatGhost};
 use crate::inbound::components::auth::authed::use_authed;
 use crate::inbound::components::catalog_cache::CatalogCache;
 use crate::inbound::components::hint_dialog::use_one_time_hint;
@@ -45,10 +45,12 @@ fn has_anything(activity: &HttpActivity) -> bool {
 }
 
 /// The screen while its first fetch is out, in the deck view's skeleton
-/// grammar: the Activity section open on a blank body its loaded height, the
-/// grid, its tags and Totals, which the grid then sweeps into, Card roles and Oracle tags collapsed to
-/// their headers, then the Most skipped group as Playstyle's list ghosts it,
-/// its header a bar and its rows a thumb and a bar.
+/// grammar: the Activity section open on its loaded shape, the year's grid
+/// as empty squares ([`HeatGhost`]), its three tags, a rule, then Totals as
+/// its title chip ghosted in its tone over four bars and their labels; Card
+/// roles and Oracle tags collapsed to their headers; then the Most skipped
+/// group as Playstyle's list ghosts it, its header a bar and its rows a
+/// thumb and a bar.
 #[component]
 fn ActivitySkeleton() -> Element {
     rsx! {
@@ -59,7 +61,32 @@ fn ActivitySkeleton() -> Element {
                         div { class: "skeleton-bar skeleton-section-label" }
                         div { class: "skeleton-bar skeleton-chip skeleton-info-button" }
                     }
-                    div { class: "activity-heat-blank" }
+                    div { class: "activity-ghost-body",
+                        HeatGhost {}
+                        div { class: "heat-readout",
+                            div { class: "heat-readout-row",
+                                for i in 0..3 {
+                                    div { key: "{i}", class: "skeleton-bar skeleton-chip activity-ghost-tag" }
+                                }
+                            }
+                        }
+                        hr { class: "card-row-rule card-row-rule-muted activity-rule" }
+                        div { class: "activity-outcomes activity-ghost-chart",
+                            div { class: "skeleton-bar skeleton-chip activity-ghost-title" }
+                            div { class: "activity-ghost-bars",
+                                for (i, pct) in [70, 100, 20, 35].into_iter().enumerate() {
+                                    div { key: "{i}", class: "activity-ghost-column",
+                                        div { class: "skeleton-bar activity-ghost-bar", style: "height:{pct}%;" }
+                                    }
+                                }
+                            }
+                            div { class: "activity-ghost-labels",
+                                for i in 0..4 {
+                                    div { key: "{i}", class: "skeleton-bar activity-ghost-label" }
+                                }
+                            }
+                        }
+                    }
                 }
                 for i in 0..2 {
                     div { key: "{i}", class: "skeleton-chart-box",
