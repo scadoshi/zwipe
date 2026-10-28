@@ -10,7 +10,7 @@ use std::collections::HashMap;
 use chrono::{Datelike, Duration, NaiveDate};
 use components::{
     Bar, BarChart, BarOrientation, ChartTip, Chip, HEAT_CELL, HEAT_ROWS, HeatCell, HeatGrid,
-    HeatHit, HeatReadout, OtagDef, RoleTags, heat_span, peak_indices, use_heat_pick,
+    HeatHit, HeatReadout, LabelCase, OtagDef, RoleTags, heat_span, peak_indices, use_heat_pick,
     with_separators,
 };
 use dioxus::prelude::*;
@@ -603,6 +603,8 @@ pub(crate) fn ActivitySections(
                                 BarChart {
                                     bars: tag_bars.clone(),
                                     orientation: BarOrientation::Horizontal,
+                                    // Tag slugs read as written, as they do everywhere else.
+                                    label_case: LabelCase::AsIs,
                                     on_bar: toggle_tag,
                                     selected: selected_tag(),
                                     reveal: tag_reveal,
