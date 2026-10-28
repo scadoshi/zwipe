@@ -1705,7 +1705,6 @@ button {
 /* The source chips sit one column gap under the strip, nothing more. */
 .home-hero .stats-source {
     display: flex;
-    flex-wrap: wrap;
     justify-content: center;
     gap: 0.4rem;
     margin-top: 0;
@@ -3960,14 +3959,14 @@ button {
 }
 
 .activity-ghost-tag {
-    width: 5.5rem;
-    height: 1.45rem;
+    width: 6.5rem;
+    height: 1.75rem;
     border-radius: 0.6rem;
     animation: none;
 }
 
 .activity-totals-blank {
-    height: 11rem;
+    height: 11.875rem;
     border-top: 1px solid var(--border-secondary);
 }
 
