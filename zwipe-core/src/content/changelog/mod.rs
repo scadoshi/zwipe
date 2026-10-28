@@ -34,7 +34,14 @@ pub struct Release {
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[];
+pub const UPCOMING: &[Release] = &[Release {
+    version: "1.16.2",
+    date: None,
+    entries: &[
+        "Activity's Oracle tags chart lists its tags highest share first",
+        "Activity's Oracle tags chart shows up to ten tags where your rate beats other players'",
+    ],
+}];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
