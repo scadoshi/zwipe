@@ -21,6 +21,10 @@ Plus [`CLAUDE.md`](CLAUDE.md), the authoritative rules for AI assistants.
 
 The running log, newest first. Update this when something ships; [`progress/todo.md`](progress/todo.md) holds what is still open.
 
+## 2026-10-28: 1.16.1 cut and built
+
+1.16.1 is cut with 1.16.0 submitted. iOS build 110 is open in Transporter and Android vc72 is signed and verified at `zwipe-1.16.1.aab`, both built on scotland-halo. Notes are at [`operations/store-submissions/1.16.1/whats_new.md`](operations/store-submissions/1.16.1/whats_new.md). It brings the user's own counts at the top of Activity, an empty heatmap space in place of the ghost grid while Activity loads, Featured flavor's name, price and buttons and the color map's key under a rule, and Settings naming the theme's mode Dark or Light. The changelog dates 1.16.1 to 2026-10-28; move it if it goes live on another day.
+
 ## 2026-10-27: 1.16.0 cut and built
 
 1.16.0 is cut, the same day 1.15.0 went live. iOS build 109 is uploaded through Transporter and Android vc71 is signed and verified at `zwipe-1.16.0.aab`, both built on scotland-halo. Notes are at [`operations/store-submissions/1.16.0/whats_new.md`](operations/store-submissions/1.16.0/whats_new.md). It brings Activity, a screen opened from Home's counters that maps the user's swipes and searches over the last year, with what their swipes came to, rates by card role and oracle tag, and their most skipped cards. Home's counts switch between everybody and only you, Featured flavor's Image and Buy are buttons, and chart titles are chips centered over their charts. The changelog dates 1.16.0 to 2026-10-27; move it if it goes live on another day.
