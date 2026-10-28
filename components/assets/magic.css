@@ -1257,11 +1257,13 @@ i.ms.ms-cost.ms-gp {
     align-self: stretch;
 }
 
-/* A chart's title: a chip in the theme's muted tone, its "?" beside it at
-   the button's own margin. */
+/* A chart's title: a chip in the theme's muted tone, centered over its
+   chart with its "?" beside it at the button's own margin. */
 .chart-label {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
+    align-self: center;
 }
 
 .chart-label-chip {

@@ -15,8 +15,8 @@ use zwipe_core::domain::deck::draw_odds::p_at_least_one;
 
 use crate::role_tags::RoleTags;
 
-/// A chart's title, a sentence-case chip in the theme's muted tone over each
-/// flattened chart block.
+/// A chart's title, a sentence-case chip in the theme's muted tone centered
+/// over each flattened chart block.
 ///
 /// `hint` is whatever the host wants right of the chip, in practice the app's
 /// "?" button, beside the chip rather than inside it. It is an `Element`
