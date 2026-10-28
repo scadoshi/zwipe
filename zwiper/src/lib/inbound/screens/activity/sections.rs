@@ -7,7 +7,7 @@
 use std::cmp::Reverse;
 use std::collections::HashMap;
 
-use chrono::{Datelike, Duration, NaiveDate, Utc};
+use chrono::{Datelike, Duration, NaiveDate};
 use components::{
     Bar, BarChart, BarOrientation, ChartTip, Chip, HEAT_CELL, HEAT_ROWS, HeatCell, HeatGrid,
     HeatHit, HeatReadout, LabelCase, OtagDef, RoleTags, heat_span, peak_indices, use_heat_pick,
@@ -470,43 +470,15 @@ fn ActivityHeatmap(through: NaiveDate, days: Vec<HttpActivityDay>) -> Element {
     }
 }
 
-/// The heatmap while the screen loads: the year's grid on today's columns,
-/// every day an empty square at the loaded grid's place and size, still,
-/// scrolled to the latest week, so the colors sweep in over it. No labels,
-/// which the loaded grid brings.
+/// The heatmap while the screen loads: empty space at the loaded grid's
+/// height, so nothing under it moves when the grid lands. No squares and no
+/// labels, which the loaded grid brings.
 #[component]
 pub(crate) fn HeatGhost() -> Element {
-    let layout = heat_layout(Utc::now().date_naive(), &[]);
-    let width = LEFT + heat_span(layout.columns);
     let height = TOP + heat_span(HEAT_ROWS);
     rsx! {
-        div {
-            class: "chart-scroll scroll-fade-x activity-scroll",
-            onmounted: move |event| async move {
-                let _ = event.data().scroll(
-                    dioxus::html::geometry::PixelsVector2D::new(width, 0.0),
-                    ScrollBehavior::Instant,
-                ).await;
-            },
-            div { class: "activity-plot", style: "width:{width}px;",
-                svg {
-                    class: "heat-grid",
-                    style: "width:{width}px;",
-                    view_box: "0 0 {width} {height}",
-                    "aria-hidden": "true",
-                    for cell in layout.cells.iter() {
-                        rect {
-                            key: "{cell.date}",
-                            class: "activity-ghost-cell",
-                            x: "{LEFT + heat_span(cell.column)}",
-                            y: "{TOP + heat_span(cell.row)}",
-                            width: "{HEAT_CELL}",
-                            height: "{HEAT_CELL}",
-                            rx: "2",
-                        }
-                    }
-                }
-            }
+        div { class: "chart-scroll activity-scroll",
+            div { class: "activity-plot", style: "height:{height}px;" }
         }
     }
 }
