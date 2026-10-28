@@ -40,7 +40,8 @@ pub const UPCOMING: &[Release] = &[Release {
     entries: &[
         "The color map's key sits under a rule, the way a panel's buttons do",
         "Featured flavor's card name, price and buttons sit under a rule",
-        "Activity shows its grid, tags and Totals as ghosts while it loads",
+        "Activity shows its tags and Totals as ghosts while it loads, keeping the grid's space empty",
+        "Activity opens with your own counts: decks created, searches run and cards swiped",
         "Settings names the theme's mode Dark or Light, capitalized",
     ],
 }];
