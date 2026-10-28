@@ -713,8 +713,9 @@ async fn center(viewport: std::rc::Rc<MountedData>) {
 /// middle toward the panel at its edges. The key's pips stay at full color.
 ///
 /// Tiles keep [`PITCH_PX`] at any size. The map sits on a field of empty
-/// squares ([`MapField`]), 14rem tall and inset from its container's
-/// edges, the map's tiles landing on the field's. The
+/// squares ([`MapField`]), 18 tiles tall and a whole even number of tiles
+/// across, inset from its container's edges, so only whole tiles show and
+/// the map's land on the field's. The
 /// map is centered when it fits and otherwise scrolls, opened on its middle,
 /// in two nested boxes, up and down in orangui's `scroll-fade-y` and across
 /// in its `scroll-fade-x`, so an edge with more map past it fades out. Under

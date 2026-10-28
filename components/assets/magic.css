@@ -1188,13 +1188,20 @@ i.ms.ms-cost.ms-gp {
 
 /* Tiles keep their size, so a map larger than the box scrolls inside it:
    up and down here, across in .color-map-across inside, each box with
-   orangui's edge fade for its axis. 14rem holds a map of about 2,200
+   orangui's edge fade for its axis. 18 tiles hold a map of about 2,000
    colored cards, and a smaller one sits in the middle of the field. The
    scroll stays in the box instead of carrying on to the page. */
 .color-map-viewport {
     display: flex;
     flex-direction: column;
-    height: 14rem;
+    /* Whole tiles only: 18 tall, and as many pairs across as fit. The map's
+       sides are even, so centered in an even box its tiles, and the field's,
+       meet the box's edges whole. A browser without round() keeps the full
+       width. */
+    width: 100%;
+    width: round(down, 100%, 24px);
+    height: 216px;
+    margin: 0 auto;
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
