@@ -1257,7 +1257,7 @@ i.ms.ms-cost.ms-gp {
     align-self: stretch;
 }
 
-/* A chart's title: a chip in the theme's muted tone, centered over its
+/* A chart's title: a chip in the theme's heading accent, centered over its
    chart with its "?" beside it at the button's own margin. */
 .chart-label {
     display: inline-flex;
@@ -1267,5 +1267,5 @@ i.ms.ms-cost.ms-gp {
 }
 
 .chart-label-chip {
-    --tone: var(--text-muted);
+    --tone: var(--accent-tertiary);
 }
