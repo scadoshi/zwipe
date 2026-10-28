@@ -47,7 +47,7 @@ fn has_anything(activity: &HttpActivity) -> bool {
 /// The screen while its first fetch is out, in the deck view's skeleton
 /// grammar: the Activity section open on its loaded shape, the year's grid
 /// as empty squares ([`HeatGhost`]), its three tags, a rule, then Totals as
-/// its title chip ghosted in its tone over four bars and their labels; Card
+/// its title as a plain ghost chip over four bars and their labels; Card
 /// roles and Oracle tags collapsed to their headers; then the Most skipped
 /// group as Playstyle's list ghosts it, its header a bar and its rows a
 /// thumb and a bar.

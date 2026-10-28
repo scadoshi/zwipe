@@ -3776,12 +3776,11 @@ button {
     padding: 0 0.75rem;
 }
 
-/* The title chip, ghosted in its accent. */
+/* The title chip, a plain ghost chip like the tags'. */
 .activity-ghost-title {
     align-self: center;
     width: 4.5rem;
     height: 1.45rem;
-    border-color: var(--accent-tertiary);
 }
 
 .activity-ghost-bars {
