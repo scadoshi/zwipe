@@ -23,8 +23,8 @@ pub fn PipToggle(style: Signal<PipStyle>) -> Element {
             span { class: "mode-label",
                 i { class: "ms ms-r ms-cost", "aria-hidden": "true" }
                 match current {
-                    PipStyle::Theme => "theme",
-                    PipStyle::Natural => "natural",
+                    PipStyle::Theme => "Theme",
+                    PipStyle::Natural => "Natural",
                 }
             }
         }

@@ -41,6 +41,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "The color map's key sits under a rule, the way a panel's buttons do",
         "Featured flavor's card name, price and buttons sit under a rule",
         "Activity shows its grid, tags and Totals as ghosts while it loads",
+        "Settings names the theme's mode Dark or Light, capitalized",
     ],
 }];
 
