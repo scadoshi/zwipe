@@ -21,6 +21,10 @@ Plus [`CLAUDE.md`](CLAUDE.md), the authoritative rules for AI assistants.
 
 The running log, newest first. Update this when something ships; [`progress/todo.md`](progress/todo.md) holds what is still open.
 
+## 2026-10-28: 1.16.2 cut and built
+
+1.16.2 is cut the day 1.16.1 went live on the App Store. iOS build 111 is in Transporter and Android vc73 is signed and verified at `zwipe-1.16.2.aab`, both built on scotland-halo. Notes are at [`operations/store-submissions/1.16.2/whats_new.md`](operations/store-submissions/1.16.2/whats_new.md). It brings Activity's Oracle tags chart in order from the highest share, with up to ten tags where your rate beats other players', and Activity's counts landing with the rest of the screen. The changelog dates 1.16.2 to 2026-10-28; move it if it goes live on another day.
+
 ## 2026-10-28: 1.16.1 submitted
 
 1.16.1 is cut and submitted to both stores, iOS build 110 and Android vc72, both built on scotland-halo. Notes are at [`operations/store-submissions/1.16.1/whats_new.md`](operations/store-submissions/1.16.1/whats_new.md). It brings the user's own counts at the top of Activity, an empty heatmap space in place of the ghost grid while Activity loads, Featured flavor's name, price and buttons and the color map's key under a rule, and Settings naming the theme's mode Dark or Light. iOS went live on the App Store the same day, matching the changelog's 2026-10-28.

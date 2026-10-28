@@ -34,18 +34,19 @@ pub struct Release {
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[Release {
-    version: "1.16.2",
-    date: None,
-    entries: &[
-        "Activity's Oracle tags chart lists its tags highest share first",
-        "Activity's Oracle tags chart shows up to ten tags where your rate beats other players'",
-        "Activity's counts roll until the rest of the screen loads, then land with it",
-    ],
-}];
+pub const UPCOMING: &[Release] = &[];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
+    Release {
+        version: "1.16.2",
+        date: NaiveDate::from_ymd_opt(2026, 10, 28),
+        entries: &[
+            "Activity's Oracle tags chart lists its tags highest share first",
+            "Activity's Oracle tags chart shows up to ten tags where your rate beats other players'",
+            "Activity's counts roll until the rest of the screen loads, then land with it",
+        ],
+    },
     Release {
         version: "1.16.1",
         date: NaiveDate::from_ymd_opt(2026, 10, 28),
