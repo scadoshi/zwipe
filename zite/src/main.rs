@@ -259,6 +259,8 @@ fn App() -> Element {
 pub fn Nav() -> Element {
     let (theme, shown) = use_theme_wipe(use_context::<Signal<ThemeConfig>>(), "body");
     let pip_style = use_context::<Signal<PipStyle>>();
+    // The pip style only shows on a shared deck, the one page that draws pips.
+    let on_shared_deck = matches!(use_route::<Route>(), Route::SharedDeck { .. });
     let mut open = use_signal(|| false);
     let mut replay = use_context::<Replay>().0;
     let mut hovering = use_signal(|| false);
@@ -289,12 +291,12 @@ pub fn Nav() -> Element {
                 a {
                     class: "nav-cta",
                     href: "https://apps.apple.com/us/app/zwipe-tcg/id6761341603",
-                    "App Store ↗"
+                    "App Store" span { class: "ext", "\u{2197}" }
                 }
                 a {
                     class: "nav-cta",
                     href: "https://play.google.com/store/apps/details?id=com.scadoshi.zwipe",
-                    "Play Store ↗"
+                    "Play Store" span { class: "ext", "\u{2197}" }
                 }
             },
             links: rsx! {
@@ -318,7 +320,7 @@ pub fn Nav() -> Element {
                         class: "nav-cta",
                         href: "https://apps.apple.com/us/app/zwipe-tcg/id6761341603",
                         onclick: move |_| open.set(false),
-                        "App Store ↗"
+                        "App Store" span { class: "ext", "\u{2197}" }
                     }
                 }
                 li { class: "nav-cta-item",
@@ -326,14 +328,16 @@ pub fn Nav() -> Element {
                         class: "nav-cta",
                         href: "https://play.google.com/store/apps/details?id=com.scadoshi.zwipe",
                         onclick: move |_| open.set(false),
-                        "Play Store ↗"
+                        "Play Store" span { class: "ext", "\u{2197}" }
                     }
                 }
             },
             trailing: rsx! {
                 div { class: "theme-controls",
                     ThemePicker { theme, shown }
-                    components::PipToggle { style: pip_style }
+                    if on_shared_deck {
+                        components::PipToggle { style: pip_style }
+                    }
                 }
             },
         }
