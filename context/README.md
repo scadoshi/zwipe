@@ -21,6 +21,10 @@ Plus [`CLAUDE.md`](CLAUDE.md), the authoritative rules for AI assistants.
 
 The running log, newest first. Update this when something ships; [`progress/todo.md`](progress/todo.md) holds what is still open.
 
+## 2026-10-27: 1.16.0 cut and built
+
+1.16.0 is cut, the same day 1.15.0 went live. iOS build 109 is uploaded through Transporter and Android vc71 is signed and verified at `zwipe-1.16.0.aab`, both built on scotland-halo. Notes are at [`operations/store-submissions/1.16.0/whats_new.md`](operations/store-submissions/1.16.0/whats_new.md). It brings Activity, a screen opened from Home's counters that maps the user's swipes and searches over the last year, with what their swipes came to, rates by card role and oracle tag, and their most skipped cards. Home's counts switch between everybody and only you, Featured flavor's Image and Buy are buttons, and chart titles are chips centered over their charts. The changelog dates 1.16.0 to 2026-10-27; move it if it goes live on another day.
+
 ## 2026-10-27: 1.15.0 released
 
 1.15.0 went to review on both stores, iOS build 108 and Android vc70, and was approved and live on both the same day, with notes at [`operations/store-submissions/1.15.0/whats_new.md`](operations/store-submissions/1.15.0/whats_new.md). It brings Playstyle: a screen with the user's color map, card roles, staples and suggested commanders, and the color map on Home. Skipped and removed cards return to the swipe pile after a week and a month, card details open in a bottom sheet, Profile splits into Account and Config, and mana symbols follow the theme.
