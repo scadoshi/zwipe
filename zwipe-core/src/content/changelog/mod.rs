@@ -34,23 +34,24 @@ pub struct Release {
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[Release {
-    version: "1.16.0",
-    date: None,
-    entries: &[
-        "An Activity screen, opened from Home's counters, maps your swipes and searches over the last year",
-        "Activity shows what your swipes came to and your rates by card role and oracle tag",
-        "Activity lists your most skipped cards, the ones you skip and never keep",
-        "Home's Playstyle button sits at the end of the color map's key",
-        "Featured flavor's Image and Buy are buttons beside its card name and price",
-        "Home's counts switch between everybody and only you",
-        "Chart titles are chips centered over their charts, with their ? beside them",
-        "Playstyle with no decks shows Home's line, Build a deck to see your playstyle",
-    ],
-}];
+pub const UPCOMING: &[Release] = &[];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
+    Release {
+        version: "1.16.0",
+        date: NaiveDate::from_ymd_opt(2026, 10, 27),
+        entries: &[
+            "An Activity screen, opened from Home's counters, maps your swipes and searches over the last year",
+            "Activity shows what your swipes came to and your rates by card role and oracle tag",
+            "Activity lists your most skipped cards, the ones you skip and never keep",
+            "Home's Playstyle button sits at the end of the color map's key",
+            "Featured flavor's Image and Buy are buttons beside its card name and price",
+            "Home's counts switch between everybody and only you",
+            "Chart titles are chips centered over their charts, with their ? beside them",
+            "Playstyle with no decks shows Home's line, Build a deck to see your playstyle",
+        ],
+    },
     Release {
         version: "1.15.0",
         date: NaiveDate::from_ymd_opt(2026, 10, 27),
