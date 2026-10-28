@@ -7,17 +7,20 @@
 //! builds additionally fall back to a frozen real response (below) so the
 //! element always renders under `dx serve` with no backend.
 //!
-//! Tapping the card-name tag requests the full-art overlay via the `overlay`
-//! signal; the HOME PAGE renders the overlay itself at its top level, outside
-//! the `content-enter` content tree, mirroring the shared-deck page. Keeping
-//! the overlay nested here was the trapped-in-the-page-column bug: an
-//! animated ancestor's transform makes it the containing block for
-//! `position: fixed`.
+//! The card's name and price sit as tags in the panel's action row, beside
+//! Image, TCGplayer and Card Kingdom buttons. Image requests the full-art
+//! overlay via the `overlay` signal; the HOME PAGE renders the overlay itself
+//! at its top level, outside the `content-enter` content tree, mirroring the
+//! shared-deck page. Keeping the overlay nested here was the
+//! trapped-in-the-page-column bug: an animated ancestor's transform makes it
+//! the containing block for `position: fixed`.
 
 use components::Panel;
 use dioxus::prelude::*;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
+use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
+use zwipe_core::domain::deck::deck_metrics::card_price;
 
 use crate::components::sleep_ms;
 
@@ -52,6 +55,37 @@ pub fn dismiss_flavor_overlay(
     });
 }
 
+/// URL-encodes a card's front face name for a retailer link, as zwiper's
+/// `buy_links` does.
+fn encode_name(name: &str) -> String {
+    name.split(" // ")
+        .next()
+        .unwrap_or(name)
+        .replace(' ', "+")
+        .replace(',', "%2C")
+        .replace('\'', "%27")
+}
+
+/// The card's TCGplayer product page when its id is known, else a one-copy
+/// mass entry by name.
+fn tcgplayer_url(name: &str, tcgplayer_id: Option<i32>) -> String {
+    match tcgplayer_id {
+        Some(id) => format!("https://www.tcgplayer.com/product/{id}"),
+        None => format!(
+            "https://www.tcgplayer.com/massentry?c=1+{}",
+            encode_name(name)
+        ),
+    }
+}
+
+/// A one-copy Card Kingdom builder link.
+fn cardkingdom_url(name: &str) -> String {
+    format!(
+        "https://www.cardkingdom.com/builder?c=1+{}",
+        encode_name(name)
+    )
+}
+
 #[component]
 pub fn FeaturedFlavor(overlay: Signal<Option<ScryfallData>>) -> Element {
     let fetched: Resource<Option<Card>> =
@@ -68,25 +102,50 @@ pub fn FeaturedFlavor(overlay: Signal<Option<ScryfallData>>) -> Element {
     let Some(flavor_text) = card.scryfall_data.flavor_text.clone() else {
         return rsx! {};
     };
-    let name = card.scryfall_data.name.clone();
     let sd = card.scryfall_data;
+    let name = sd.name.clone();
     let has_image = sd.primary_image_url(ImageSize::Normal).is_some();
+    let usd_price =
+        card_price(&sd, PriceCurrency::Usd).map(|p| PriceCurrency::Usd.format_amount(p));
+    let tcgplayer = tcgplayer_url(&name, sd.tcgplayer_id);
+    let cardkingdom = cardkingdom_url(&name);
 
     rsx! {
         section { class: "featured-flavor",
-            Panel { title: "Featured flavor",
-                div { class: "ff-quote", "{flavor_text}" }
-                div { class: "ff-name-row",
-                    span {
-                        class: if has_image { "ff-name ff-name-link" } else { "ff-name" },
-                        onclick: move |_| {
-                            if has_image {
-                                overlay.set(Some(sd.clone()));
-                            }
-                        },
-                        "{name}"
+            Panel {
+                title: "Featured flavor",
+                actions: rsx! {
+                    span { class: "ff-name", "{name}" }
+                    if let Some(price) = usd_price.as_ref() {
+                        span { class: "ff-price", "{price}" }
                     }
-                }
+                    if has_image {
+                        button {
+                            class: "panel-action",
+                            onclick: move |_| overlay.set(Some(sd.clone())),
+                            "Image"
+                        }
+                    }
+                    if usd_price.is_some() {
+                        a {
+                            class: "panel-action",
+                            href: "{tcgplayer}",
+                            target: "_blank",
+                            rel: "noopener",
+                            "TCGplayer"
+                            span { class: "ext", "\u{2197}" }
+                        }
+                        a {
+                            class: "panel-action",
+                            href: "{cardkingdom}",
+                            target: "_blank",
+                            rel: "noopener",
+                            "Card Kingdom"
+                            span { class: "ext", "\u{2197}" }
+                        }
+                    }
+                },
+                div { class: "ff-quote", "{flavor_text}" }
             }
         }
     }
