@@ -1178,12 +1178,10 @@ i.ms.ms-cost.ms-gp {
     align-items: center;
 }
 
-/* The field: the backdrop's sink under the map's tiles, edge to edge. The
-   sink is on this box rather than the scrollers, so their edge fades thin
-   the tiles, not the field. */
+/* The field: the map's box, edge to edge between the header rule and the
+   key's rule. */
 .color-map-field {
     align-self: stretch;
-    background-color: var(--bg-sink);
 }
 
 /* Tiles keep their size, so a map larger than the box scrolls inside it:
@@ -1224,30 +1222,10 @@ i.ms.ms-cost.ms-gp {
     overflow: visible;
 }
 
-/* The color map's field: the backdrop's tiles in its five shades of the
-   text color (orangui's grid-cells.js). They hold still. */
+/* The field's empty squares, in the heat grid's tone for a day with
+   nothing (orangui's .heat-cell). */
 .field-tile {
-    fill: var(--text-primary);
-}
-
-.field-tile-0 {
-    fill-opacity: 0.015;
-}
-
-.field-tile-1 {
-    fill-opacity: 0.03;
-}
-
-.field-tile-2 {
-    fill-opacity: 0.05;
-}
-
-.field-tile-3 {
-    fill-opacity: 0.075;
-}
-
-.field-tile-4 {
-    fill-opacity: 0.1;
+    fill: var(--border-secondary);
 }
 
 /* Tiles sweep in on orangui's `heat-sweep`, a ring at a time from the middle

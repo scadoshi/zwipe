@@ -37,9 +37,7 @@ pub struct Release {
 pub const UPCOMING: &[Release] = &[Release {
     version: "1.16.1",
     date: None,
-    entries: &[
-        "The color map sits on a field of the backdrop's tiles, and its colors fill in over them, with its key under a rule",
-    ],
+    entries: &["The color map fills in over a grid of empty squares, with its key under a rule"],
 }];
 
 /// Shipped releases, newest first.

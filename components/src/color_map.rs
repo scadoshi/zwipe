@@ -85,17 +85,9 @@ pub const SWEEP_RINGS: u32 = 7;
 /// The wait between one ring's sweep and the next, in milliseconds. With
 /// orangui's 0.4s `heat-sweep`, the last ring lands about 700ms after mount.
 pub const SWEEP_STEP_MS: u32 = 50;
-/// The field's pattern, in tiles: one block of seeded shades repeated under
-/// the map. Odd sides, so the repeat is hard to spot.
-const FIELD_PATTERN: (i32, i32) = (17, 13);
-/// The backdrop's tile shades, as in orangui's `grid-cells.js`. `magic.css`
-/// holds the alphas; this is how many there are.
-const FIELD_SHADES: u64 = 5;
 /// How far the field reaches past the map on each side, in tiles: past the
 /// edges of the widest box the map sits in.
 const FIELD_REACH: i32 = 40;
-/// Salts the field's shades apart from the map's own hashes ("field").
-const FIELD_SALT: u64 = 0x0066_6965_6c64;
 /// The pattern's id. Every field draws the same pattern, so a duplicate id
 /// on a page resolves to the same tiles.
 const FIELD_ID: &str = "color-map-field";
@@ -656,41 +648,28 @@ fn even(n: i32) -> i32 {
     n.saturating_add(n.rem_euclid(2))
 }
 
-/// A field tile's shade, 0 to 4, by a hash of its place in the pattern.
-fn field_shade(column: i32, row: i32) -> u64 {
-    hash(0, FIELD_SALT, (column, row)) % FIELD_SHADES
-}
-
-/// The field under a map `columns` by `rows` tiles (both even): the
-/// backdrop's shaded tiles at the map's pitch, one pattern anchored at the
-/// middle, so the field holds still wherever the map's middle sits and the
-/// map's tiles land on its tiles. It reaches [`FIELD_REACH`] tiles past the
-/// map; the SVG lets it show and the viewport clips it.
+/// The field under a map `columns` by `rows` tiles (both even): an empty
+/// square on every cell at the map's pitch, in the heatmap's tone for a day
+/// with nothing, so the map's tiles land on squares already there. One
+/// pattern tile repeated; it reaches [`FIELD_REACH`] tiles past the map,
+/// which the SVG lets show and the viewport clips.
 #[component]
 fn MapField(columns: i32, rows: i32) -> Element {
     let (inset, size, corner) = (GAP_SHARE / 2.0, 1.0 - GAP_SHARE, CORNER_SHARE);
-    let (across, down) = FIELD_PATTERN;
     rsx! {
         defs {
             pattern {
                 id: FIELD_ID,
-                x: "{columns / 2}",
-                y: "{rows / 2}",
-                width: "{across}",
-                height: "{down}",
+                width: "1",
+                height: "1",
                 "patternUnits": "userSpaceOnUse",
-                for row in 0..down {
-                    for column in 0..across {
-                        rect {
-                            key: "{column},{row}",
-                            class: "field-tile field-tile-{field_shade(column, row)}",
-                            x: "{f64::from(column) + inset:.2}",
-                            y: "{f64::from(row) + inset:.2}",
-                            width: "{size:.2}",
-                            height: "{size:.2}",
-                            rx: "{corner:.2}",
-                        }
-                    }
+                rect {
+                    class: "field-tile",
+                    x: "{inset:.2}",
+                    y: "{inset:.2}",
+                    width: "{size:.2}",
+                    height: "{size:.2}",
+                    rx: "{corner:.2}",
                 }
             }
         }
@@ -733,8 +712,8 @@ async fn center(viewport: std::rc::Rc<MountedData>) {
 /// opens, and every color fades from full at the map's
 /// middle toward the panel at its edges. The key's pips stay at full color.
 ///
-/// Tiles keep [`PITCH_PX`] at any size. The map sits on a field of the
-/// backdrop's shaded tiles ([`MapField`]) that runs the full width of its
+/// Tiles keep [`PITCH_PX`] at any size. The map sits on a field of empty
+/// squares ([`MapField`]) that runs the full width of its
 /// container and 14rem tall, the map's tiles landing on the field's. The
 /// map is centered when it fits and otherwise scrolls, opened on its middle,
 /// in two nested boxes, up and down in orangui's `scroll-fade-y` and across
@@ -1159,20 +1138,8 @@ mod tests {
     }
 
     #[test]
-    fn the_field_lines_up_in_every_shade() {
+    fn sides_round_up_to_even() {
         assert_eq!((even(0), even(1), even(6), even(7)), (0, 2, 6, 8));
-        let (across, down) = FIELD_PATTERN;
-        let mut seen = [false; 5];
-        for row in 0..down {
-            for column in 0..across {
-                let shade = field_shade(column, row);
-                assert_eq!(shade, field_shade(column, row));
-                if let Some(slot) = usize::try_from(shade).ok().and_then(|i| seen.get_mut(i)) {
-                    *slot = true;
-                }
-            }
-        }
-        assert!(seen.iter().all(|&s| s), "{seen:?}");
     }
 
     #[test]
