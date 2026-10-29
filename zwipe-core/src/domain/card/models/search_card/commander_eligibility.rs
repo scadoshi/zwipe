@@ -158,14 +158,14 @@ pub fn are_valid_partners(card_a: &Card, card_b: &Card) -> bool {
     let kind_b = partner_kind(card_b);
 
     match (kind_a, kind_b) {
-        (Some(PartnerKind::Generic), Some(PartnerKind::Generic)) => true,
+        (Some(PartnerKind::Generic), Some(PartnerKind::Generic))
+        | (Some(PartnerKind::FriendsForever), Some(PartnerKind::FriendsForever)) => true,
         (Some(PartnerKind::Named(name)), _) => {
             card_b.scryfall_data.name.eq_ignore_ascii_case(&name)
         }
         (_, Some(PartnerKind::Named(name))) => {
             card_a.scryfall_data.name.eq_ignore_ascii_case(&name)
         }
-        (Some(PartnerKind::FriendsForever), Some(PartnerKind::FriendsForever)) => true,
         (Some(PartnerKind::DoctorsCompanion), _) => card_b
             .scryfall_data
             .type_line
