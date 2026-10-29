@@ -170,7 +170,6 @@ pub fn search_oracle_tags(tags: &[OracleTag], query: &str) -> Vec<OracleTag> {
 }
 
 #[cfg(test)]
-#[allow(clippy::indexing_slicing, clippy::unwrap_used)]
 mod tests {
     use super::*;
 

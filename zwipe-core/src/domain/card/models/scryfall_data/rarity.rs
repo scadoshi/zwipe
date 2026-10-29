@@ -10,7 +10,7 @@ pub struct InvalidRarity;
 ///
 /// Variants are declared in tier order so the derived `Ord` produces
 /// `Common < Uncommon < Rare < Mythic < Bonus < Special`; do not reorder.
-#[allow(missing_docs)]
+#[expect(missing_docs, reason = "the variants are the rarity names")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Rarity {
     Common,

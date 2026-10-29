@@ -447,7 +447,6 @@ where
 
 #[cfg(test)]
 mod tests {
-    #![allow(clippy::expect_used)]
     use crate::test_utils::make_card;
 
     /// Reversible cards (Secret Lair double-sided printings) arrive from

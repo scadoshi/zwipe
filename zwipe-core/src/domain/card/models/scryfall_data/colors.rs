@@ -7,7 +7,7 @@ use thiserror::Error;
 pub struct InvalidColor;
 
 /// Magic: The Gathering's five colors.
-#[allow(missing_docs)]
+#[expect(missing_docs, reason = "the variants are the color names")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Color {
     White,

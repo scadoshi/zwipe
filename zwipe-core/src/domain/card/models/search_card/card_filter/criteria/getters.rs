@@ -5,7 +5,10 @@ use crate::domain::card::search_card::card_filter::price_currency::PriceCurrency
 use crate::domain::card::search_card::card_type::CardType;
 use crate::domain::deck::Format;
 
-#[allow(missing_docs)]
+#[expect(
+    missing_docs,
+    reason = "each getter returns the criteria field of the same name"
+)]
 impl CardCriteria {
     // text
     pub fn name_contains(&self) -> Option<&str> {

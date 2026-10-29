@@ -126,7 +126,6 @@ pub fn sort_deck_entries(
     });
 }
 #[cfg(test)]
-#[allow(clippy::indexing_slicing)]
 mod tests {
     use chrono::NaiveDate;
     use uuid::Uuid;

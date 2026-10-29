@@ -278,7 +278,6 @@ fn classify_cmc(card: &Card) -> usize {
 }
 
 #[cfg(test)]
-#[allow(clippy::indexing_slicing)]
 mod tests {
     use chrono::NaiveDate;
     use uuid::Uuid;

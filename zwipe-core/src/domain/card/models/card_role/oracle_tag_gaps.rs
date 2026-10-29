@@ -75,8 +75,11 @@ pub fn classify_oracle_tag_gaps(card: &Card) -> Vec<CardRole> {
     cats
 }
 
-// Compiled regex patterns (lazy-initialized). Compile-time-known valid patterns.
-#[allow(clippy::expect_used)]
+// Compiled regex patterns (lazy-initialized).
+#[expect(
+    clippy::expect_used,
+    reason = "literal patterns; the unit tests exercise every one"
+)]
 mod patterns {
     use super::*;
 
