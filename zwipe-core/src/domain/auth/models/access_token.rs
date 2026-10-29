@@ -277,7 +277,9 @@ mod tests {
     fn token_expiring_in(seconds: i64) -> AccessToken {
         AccessToken {
             value: Jwt::from_str("header.payload.signature").unwrap(),
-            expires_at: Utc::now() + Duration::seconds(seconds),
+            expires_at: Utc::now()
+                .checked_add_signed(Duration::seconds(seconds))
+                .unwrap(),
         }
     }
 
