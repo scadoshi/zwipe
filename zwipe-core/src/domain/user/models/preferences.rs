@@ -506,7 +506,7 @@ mod tests {
         let prefs: UserPreferences =
             serde_json::from_str(r#"{"theme":"gruvbox","dark_mode":true}"#).unwrap();
         assert!(!prefs.exclude_universes_beyond);
-        assert!(prefs.universes_beyond_exceptions.is_empty());
+        assert_eq!(prefs.universes_beyond_exceptions, Vec::<String>::new());
         assert_eq!(prefs.pip_style, PipStyle::Theme);
     }
 

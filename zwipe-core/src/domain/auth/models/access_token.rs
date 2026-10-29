@@ -210,8 +210,8 @@ mod tests {
             user_id,
             username,
             email,
-            exp: 1234567890,
-            iat: 1234567890,
+            exp: 1_234_567_890,
+            iat: 1_234_567_890,
         };
 
         let serialized = serde_json::to_string(&claims).unwrap();
@@ -230,22 +230,22 @@ mod tests {
             user_id: id1,
             username: username.clone(),
             email: email.clone(),
-            exp: 1234567890,
-            iat: 1234567890,
+            exp: 1_234_567_890,
+            iat: 1_234_567_890,
         };
         let claims2 = UserClaims {
             user_id: id1,
             username: username.clone(),
             email: email.clone(),
-            exp: 1234567890,
-            iat: 1234567890,
+            exp: 1_234_567_890,
+            iat: 1_234_567_890,
         };
         let claims3 = UserClaims {
             user_id: id2,
             username,
             email,
-            exp: 1234567890,
-            iat: 1234567890,
+            exp: 1_234_567_890,
+            iat: 1_234_567_890,
         };
 
         assert_eq!(claims1, claims2);

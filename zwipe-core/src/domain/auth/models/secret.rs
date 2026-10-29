@@ -100,6 +100,10 @@ mod tests {
         struct New {
             password: Secret,
         }
+        #[derive(Deserialize)]
+        struct Incoming {
+            password: Secret,
+        }
 
         let old = serde_json::to_string(&Old {
             password: "hunter2".to_string(),
@@ -111,10 +115,6 @@ mod tests {
         .unwrap();
         assert_eq!(old, new);
 
-        #[derive(Deserialize)]
-        struct Incoming {
-            password: Secret,
-        }
         let from_shipped_client = r#"{"password":"hunter2"}"#;
         let parsed: Incoming = serde_json::from_str(from_shipped_client).unwrap();
         assert_eq!(parsed.password.read(), "hunter2");
