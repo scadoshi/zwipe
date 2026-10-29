@@ -266,7 +266,7 @@ mod tests {
         }
     }
 
-    // ── keywords_contains_any ────────────────────────────────────────────────
+    // == keywords_contains_any ==
 
     #[test]
     fn test_keywords_contains_any_matches_when_one_keyword_present() {
@@ -326,7 +326,7 @@ mod tests {
         assert_eq!(result.len(), 1);
     }
 
-    // ── keywords_contains_all ────────────────────────────────────────────────
+    // == keywords_contains_all ==
 
     #[test]
     fn test_keywords_contains_all_matches_when_all_keywords_present() {
@@ -383,7 +383,7 @@ mod tests {
         assert_eq!(result.len(), 1);
     }
 
-    // ── produced_mana_contains_any ──────────────────────────────────────────
+    // == produced_mana_contains_any ==
 
     #[test]
     fn test_produced_mana_contains_any_matches_when_one_color_present() {
@@ -449,7 +449,7 @@ mod tests {
         assert_eq!(result.len(), 1);
     }
 
-    // ── produced_mana_contains_all ──────────────────────────────────────────
+    // == produced_mana_contains_all ==
 
     #[test]
     fn test_produced_mana_contains_all_matches_when_all_colors_present() {
@@ -506,7 +506,7 @@ mod tests {
         assert_eq!(result.len(), 1);
     }
 
-    // ── text ──────────────────────────────────────────────────────────────────
+    // == text ==
 
     #[test]
     fn test_name_contains_case_insensitive() {
@@ -750,7 +750,7 @@ mod tests {
         assert_eq!(result[0].scryfall_data.name, "Shivan Dragon");
     }
 
-    // ── mana ──────────────────────────────────────────────────────────────────
+    // == mana ==
 
     #[test]
     fn test_cmc_equals() {
@@ -781,7 +781,7 @@ mod tests {
         assert_eq!(result.len(), 2);
     }
 
-    // ── color identity ─────────────────────────────────────────────────────────
+    // == color identity ==
 
     #[test]
     fn test_color_identity_equals_exact() {
@@ -812,7 +812,7 @@ mod tests {
         assert_eq!(result[0].scryfall_data.name, "Bolt");
     }
 
-    // ── combat ────────────────────────────────────────────────────────────────
+    // == combat ==
 
     #[test]
     fn test_power_equals() {
@@ -855,7 +855,7 @@ mod tests {
         assert_eq!(result[0].scryfall_data.name, "B");
     }
 
-    // ── flags ─────────────────────────────────────────────────────────────────
+    // == flags ==
 
     #[test]
     fn test_is_playable_filters_token_layout() {
@@ -875,7 +875,7 @@ mod tests {
         assert_eq!(result[0].scryfall_data.name, "Forest");
     }
 
-    // ── metadata ──────────────────────────────────────────────────────────────
+    // == metadata ==
 
     #[test]
     fn test_rarity_equals_any_single() {
@@ -921,7 +921,7 @@ mod tests {
         assert_eq!(result[0].scryfall_data.name, "MH2 Card");
     }
 
-    // ── sort ──────────────────────────────────────────────────────────────────
+    // == sort ==
 
     #[test]
     fn test_sorted_by_name_ascending() {

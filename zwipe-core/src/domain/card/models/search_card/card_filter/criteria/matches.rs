@@ -45,7 +45,7 @@ impl CardCriteria {
         let sd = &card.scryfall_data;
         let cp = &card.card_profile;
 
-        // ── text ──────────────────────────────────────────────────────
+        // == text ==
         if let Some(q) = self.name_contains()
             && !strip_punctuation(&sd.name)
                 .to_lowercase()
@@ -121,7 +121,7 @@ impl CardCriteria {
             }
         }
 
-        // ── keywords ──────────────────────────────────────────────────
+        // == keywords ==
         if let Some(values) = self.keywords_contains_any() {
             let matches = match &sd.keywords {
                 Some(kw) => values
@@ -158,7 +158,7 @@ impl CardCriteria {
             }
         }
 
-        // ── card roles ──────────────────────────────────────────────
+        // == card roles ==
         if let Some(values) = self.card_roles_contains_any() {
             let matches = card
                 .card_profile
@@ -193,7 +193,7 @@ impl CardCriteria {
             }
         }
 
-        // ── oracle tags ─────────────────────────────────────────────
+        // == oracle tags ==
         if let Some(values) = self.oracle_tags_contains_any() {
             let matches = card
                 .card_profile
@@ -228,7 +228,7 @@ impl CardCriteria {
             }
         }
 
-        // ── produced mana ────────────────────────────────────────────
+        // == produced mana ==
         if let Some(values) = self.produced_mana_contains_any() {
             let matches = match &sd.produced_mana {
                 Some(pm) => values
@@ -296,7 +296,7 @@ impl CardCriteria {
             }
         }
 
-        // ── types ─────────────────────────────────────────────────────
+        // == types ==
         if let Some(q) = self.type_line_contains() {
             match &sd.type_line {
                 Some(tl)
@@ -398,7 +398,7 @@ impl CardCriteria {
             }
         }
 
-        // ── legality (any-of-formats) ────────────────────────────────
+        // == legality (any-of-formats) ==
         if let Some(formats) = self.legalities_contains_any() {
             let is_legal_in_any = formats.iter().any(|format_key| {
                 Format::try_from(format_key.as_str())
@@ -411,14 +411,14 @@ impl CardCriteria {
             }
         }
 
-        // ── commander eligibility ────────────────────────────────────
+        // == commander eligibility ==
         if let Some(format) = self.is_commander_in_format()
             && !is_valid_commander(card, format)
         {
             return false;
         }
 
-        // ── mana ──────────────────────────────────────────────────────
+        // == mana ==
         if let Some(val) = self.cmc_equals()
             && sd.cmc != Some(val)
         {
@@ -434,7 +434,7 @@ impl CardCriteria {
             }
         }
 
-        // ── price ─────────────────────────────────────────────────────
+        // == price ==
         if self.price_min().is_some() || self.price_max().is_some() {
             let price = match self.price_currency().unwrap_or_default() {
                 PriceCurrency::Usd => sd.prices.usd.as_deref(),
@@ -471,7 +471,7 @@ impl CardCriteria {
             return false;
         }
 
-        // ── combat ────────────────────────────────────────────────────
+        // == combat ==
         if let Some(val) = self.power_equals() {
             let parsed = sd.power.as_deref().and_then(|p| p.parse::<i32>().ok());
             if parsed != Some(val) {
@@ -504,7 +504,7 @@ impl CardCriteria {
             }
         }
 
-        // ── metadata ──────────────────────────────────────────────────
+        // == metadata ==
         if let Some(rarities) = self.rarity_equals_any()
             && !rarities.contains(&sd.rarity)
         {
@@ -556,7 +556,7 @@ impl CardCriteria {
             return false;
         }
 
-        // ── flags ─────────────────────────────────────────────────────
+        // == flags ==
 
         if let Some(val) = self.is_token()
             && cp.is_token != val

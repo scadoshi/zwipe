@@ -417,7 +417,7 @@ mod tests {
         }
     }
 
-    // ── GroupByOption::CardType ────────────────────────────────────────────────
+    // == GroupByOption::CardType ==
 
     #[test]
     fn test_group_by_type_creature() {
@@ -474,7 +474,7 @@ mod tests {
         assert!(result.iter().all(|g| g.label != "Creatures"));
     }
 
-    // ── GroupByOption::Cmc ─────────────────────────────────────────────────────
+    // == GroupByOption::Cmc ==
 
     #[test]
     fn test_group_by_cmc_zero() {
@@ -515,7 +515,7 @@ mod tests {
         assert_eq!(result[0].label, "6+");
     }
 
-    // ── GroupByOption::Color ───────────────────────────────────────────────────
+    // == GroupByOption::Color ==
 
     #[test]
     fn test_group_by_color_mono_white() {

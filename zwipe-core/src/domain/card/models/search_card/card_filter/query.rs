@@ -167,7 +167,7 @@ mod tests {
     use super::*;
     use crate::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 
-    // ── the Option A wire gate ────────────────────────────────────────────
+    // == the Option A wire gate ==
     // The split must not change the POST-body JSON. These tests pin the wire
     // to the pre-split `CardFilter` shape in both directions.
 
@@ -272,7 +272,7 @@ mod tests {
         }
     }
 
-    // ── every body shape the server can receive ──────────────────────────
+    // == every body shape the server can receive ==
 
     #[test]
     fn direction_only_reads_as_direction() {
