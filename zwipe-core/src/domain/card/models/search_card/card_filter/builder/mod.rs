@@ -269,7 +269,7 @@ impl Default for CardQueryBuilder {
             oracle_tags_contains_any: None,
             oracle_tags_contains_all: None,
             oracle_tags_excludes: None,
-            limit: 25,
+            limit: Limit::DEFAULT,
             offset: 0,
             sort: None,
             direction: SortDirection::Ascending,

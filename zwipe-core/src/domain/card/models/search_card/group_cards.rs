@@ -243,6 +243,12 @@ fn classify(card: &Card, option: GroupByOption) -> usize {
     }
 }
 
+/// Bucket index of "Other" in the card type labels, after the seven checked types.
+const OTHER_CARD_TYPE: usize = 7;
+
+/// Bucket index of "6+", the last mana value label.
+const CMC_SIX_PLUS: usize = 6;
+
 /// Card type classification; first match wins.
 ///
 /// Priority: Land → Creature → Planeswalker → Artifact → Enchantment →
@@ -260,20 +266,20 @@ fn classify_card_type(card: &Card) -> usize {
 
     let type_line = match &card.scryfall_data.type_line {
         Some(tl) => tl.as_str(),
-        None => return 7, // "other"
+        None => return OTHER_CARD_TYPE,
     };
 
     CHECKS
         .iter()
         .position(|keyword| type_line.contains(keyword))
-        .unwrap_or(7) // "other"
+        .unwrap_or(OTHER_CARD_TYPE)
 }
 
 /// CMC classification: floor to integer, cap at 6.
 fn classify_cmc(card: &Card) -> usize {
     let cmc = card.scryfall_data.cmc.unwrap_or(0.0);
     let floored = cmc.floor() as usize;
-    floored.min(6) // indices 0–5 for "0"–"5", index 6 for "6+"
+    floored.min(CMC_SIX_PLUS)
 }
 
 #[cfg(test)]

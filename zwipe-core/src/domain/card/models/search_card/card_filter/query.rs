@@ -29,6 +29,9 @@ impl Limit {
     /// The hard cap on a single search page.
     pub const MAX: u32 = 250;
 
+    /// The page size when a query names none.
+    pub const DEFAULT: u32 = 25;
+
     /// Creates a limit, clamping `value` to [`Limit::MAX`].
     pub fn new(value: u32) -> Self {
         Self(value.min(Self::MAX))
@@ -41,9 +44,9 @@ impl Limit {
 }
 
 impl Default for Limit {
-    /// The pre-split default page size (25).
+    /// A page of [`Limit::DEFAULT`] cards.
     fn default() -> Self {
-        Self(25)
+        Self(Self::DEFAULT)
     }
 }
 
