@@ -92,6 +92,7 @@ impl User {
     /// ```rust,ignore
     /// let user = User::new(id, username, email);
     /// ```
+    #[must_use]
     pub fn new(id: Uuid, username: Username, email: Email) -> Self {
         Self {
             id,
@@ -105,6 +106,7 @@ impl User {
     }
 
     /// Whether a one-time UI hint has already been shown to this user.
+    #[must_use]
     pub fn has_seen_hint(&self, key: &str) -> bool {
         self.hints_shown.get(key).copied().unwrap_or(false)
     }

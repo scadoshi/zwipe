@@ -41,6 +41,7 @@ impl Secret {
     ///
     /// The only way past the redacted formatters. Use it for verification and
     /// hashing, never for logging or an API response.
+    #[must_use]
     pub fn read(&self) -> &str {
         &self.0
     }

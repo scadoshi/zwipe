@@ -35,6 +35,7 @@ pub struct Session {
 
 impl Session {
     /// Checks if the refresh token has expired.
+    #[must_use]
     pub fn is_expired(&self) -> bool {
         self.refresh_token.expires_at < Utc::now()
     }

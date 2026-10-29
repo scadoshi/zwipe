@@ -78,6 +78,7 @@ impl std::fmt::Debug for RefreshToken {
 
 impl RefreshToken {
     /// Generates a new cryptographically-secure refresh token.
+    #[must_use]
     pub fn generate() -> Self {
         let mut bytes = [0u8; TOKEN_BYTES];
         rand::rng().fill_bytes(&mut bytes);

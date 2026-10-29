@@ -114,6 +114,7 @@ pub const MAX_REPEATS: u8 = 3;
 /// The policy as lines a client can show before the user types, one per rule
 /// [`validate`] checks, in the order it checks them. Built from the same
 /// constants, so the list cannot drift from what is enforced.
+#[must_use]
 pub fn requirements() -> Vec<String> {
     vec![
         format!("{MIN_LENGTH} to {MAX_LENGTH} characters"),

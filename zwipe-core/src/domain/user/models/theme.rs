@@ -20,6 +20,7 @@ pub struct ThemeConfig {
 
 impl ThemeConfig {
     /// Returns the CSS class to apply to the screen root: `theme-{name}-{dark|light}`.
+    #[must_use]
     pub fn css_class(&self) -> String {
         let mode = if self.is_dark { "dark" } else { "light" };
         format!("theme-{}-{}", self.name, mode)
