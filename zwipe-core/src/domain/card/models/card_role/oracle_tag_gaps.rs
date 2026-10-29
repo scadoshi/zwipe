@@ -84,19 +84,19 @@ mod patterns {
     use super::{LazyLock, Regex};
 
     /// Parenthesized reminder text, stripped before classification.
-    pub static REMINDER: LazyLock<Regex> =
+    pub(crate) static REMINDER: LazyLock<Regex> =
         LazyLock::new(|| Regex::new(r"\([^)]*\)").expect("valid regex"));
-    pub static PUMP: LazyLock<Regex> = LazyLock::new(|| {
+    pub(crate) static PUMP: LazyLock<Regex> = LazyLock::new(|| {
         Regex::new(r"(target|equipped|enchanted) creature.{0,15}gets? \+\d+/\+\d+")
             .expect("valid regex")
     });
-    pub static STAX_CANT: LazyLock<Regex> =
+    pub(crate) static STAX_CANT: LazyLock<Regex> =
         LazyLock::new(|| Regex::new(r"(opponents?|players?) can'?t").expect("valid regex"));
-    pub static STAX_EACH: LazyLock<Regex> = LazyLock::new(|| {
+    pub(crate) static STAX_EACH: LazyLock<Regex> = LazyLock::new(|| {
         Regex::new(r"(each|all) (player|opponent).{0,30}(sacrifice|discard|lose|pay)")
             .expect("valid regex")
     });
-    pub static GRAVEYARD_HATE: LazyLock<Regex> = LazyLock::new(|| {
+    pub(crate) static GRAVEYARD_HATE: LazyLock<Regex> = LazyLock::new(|| {
         Regex::new(r"exile.{0,30}(graveyard|all cards from)").expect("valid regex")
     });
 }
