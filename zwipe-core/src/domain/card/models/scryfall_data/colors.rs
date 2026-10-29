@@ -157,6 +157,10 @@ impl TryFrom<String> for Color {
 
 impl Colors {
     /// Parses a `Vec<String>` of short color codes into `Colors`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`InvalidColor`] for the first name that is not a color code.
     pub fn from_short_names(names: Vec<String>) -> Result<Self, InvalidColor> {
         names
             .into_iter()
