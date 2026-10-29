@@ -912,12 +912,12 @@ mod tests {
     fn test_set_equals_any() {
         let mut m21_card = make_card("M21 Card");
         m21_card.scryfall_data.set_name = "m21".to_string();
-        let mut mh2_card = make_card("MH2 Card");
-        mh2_card.scryfall_data.set_name = "mh2".to_string();
+        let mut horizons_card = make_card("MH2 Card");
+        horizons_card.scryfall_data.set_name = "mh2".to_string();
         let filter = CardQueryBuilder::with_set_contains(["mh2"])
             .build_criteria()
             .unwrap();
-        let result = Cards::from(vec![m21_card, mh2_card]).matching(&filter);
+        let result = Cards::from(vec![m21_card, horizons_card]).matching(&filter);
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].scryfall_data.name, "MH2 Card");
     }
