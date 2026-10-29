@@ -97,7 +97,7 @@ pub struct TooFewUniqueChars(u8);
 /// Required symbols for password policy.
 ///
 /// At least one of these characters must be present in every password.
-pub const SYMBOLS: &str = r#"~!@#$%^&*()_+=[]{}\/?|:;<>,."#;
+pub const SYMBOLS: &str = r"~!@#$%^&*()_+=[]{}\/?|:;<>,.";
 
 /// Fewest characters a password may have.
 pub const MIN_LENGTH: usize = 8;
