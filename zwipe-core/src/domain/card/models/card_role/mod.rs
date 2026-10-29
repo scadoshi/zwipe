@@ -227,17 +227,16 @@ impl CardRole {
 /// shows a readable label without a client release, while known roles keep their
 /// curated labels (e.g. `counters` → "+1/+1 Counters").
 pub fn role_label(slug: &str) -> String {
-    CardRole::try_from(slug)
-        .map(|r| r.display_name().to_string())
-        .unwrap_or_else(|_| prettify_role_slug(slug))
+    CardRole::try_from(slug).map_or_else(
+        |_| prettify_role_slug(slug),
+        |r| r.display_name().to_string(),
+    )
 }
 
 /// The chart label for a role slug: [`CardRole::to_short_name`] for a known
 /// role, the slug itself otherwise, so a role reads the same in every chart.
 pub fn role_short_label(slug: &str) -> String {
-    CardRole::try_from(slug)
-        .map(|r| r.to_short_name().to_string())
-        .unwrap_or_else(|_| slug.to_string())
+    CardRole::try_from(slug).map_or_else(|_| slug.to_string(), |r| r.to_short_name().to_string())
 }
 
 /// Title-cases a `snake_case`/`kebab-case` slug (`future_role` → "Future Role").

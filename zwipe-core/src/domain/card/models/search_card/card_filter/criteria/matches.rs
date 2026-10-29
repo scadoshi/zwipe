@@ -286,11 +286,7 @@ impl CardCriteria {
         }
 
         if let Some(want_flavor) = self.has_flavor_text() {
-            let has = sd
-                .flavor_text
-                .as_ref()
-                .map(|t| !t.is_empty())
-                .unwrap_or(false);
+            let has = sd.flavor_text.as_ref().is_some_and(|t| !t.is_empty());
             if has != want_flavor {
                 return false;
             }
