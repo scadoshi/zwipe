@@ -248,11 +248,6 @@ fn classify(card: &Card, option: GroupByOption) -> usize {
 /// Priority: Land → Creature → Planeswalker → Artifact → Enchantment →
 /// Instant → Sorcery → Other.
 fn classify_card_type(card: &Card) -> usize {
-    let type_line = match &card.scryfall_data.type_line {
-        Some(tl) => tl.as_str(),
-        None => return 7, // "other"
-    };
-
     const CHECKS: &[&str] = &[
         "Land",
         "Creature",
@@ -262,6 +257,11 @@ fn classify_card_type(card: &Card) -> usize {
         "Instant",
         "Sorcery",
     ];
+
+    let type_line = match &card.scryfall_data.type_line {
+        Some(tl) => tl.as_str(),
+        None => return 7, // "other"
+    };
 
     CHECKS
         .iter()
