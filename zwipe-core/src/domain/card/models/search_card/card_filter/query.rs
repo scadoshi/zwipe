@@ -136,6 +136,7 @@ impl CardQuery {
 
     /// The same query starting at `offset`. Any offset is valid, so this
     /// needs no trip back through the builder.
+    #[must_use]
     pub fn with_offset(mut self, offset: u32) -> Self {
         self.offset = offset;
         self

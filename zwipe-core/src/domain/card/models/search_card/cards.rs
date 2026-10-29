@@ -61,6 +61,7 @@ impl IntoIterator for Cards {
 
 impl Cards {
     /// Keeps only the cards matching `criteria`.
+    #[must_use]
     pub fn matching(self, criteria: &CardCriteria) -> Cards {
         Cards(
             self.0
@@ -73,6 +74,7 @@ impl Cards {
     /// Returns the cards ordered by `sort`. `None` is a no-op (pass a
     /// [`CardSortKey`] directly or a builder's `sort()`); `Random` shuffles and
     /// ignores `direction`.
+    #[must_use]
     pub fn sorted(
         mut self,
         sort: impl Into<Option<CardSortKey>>,
