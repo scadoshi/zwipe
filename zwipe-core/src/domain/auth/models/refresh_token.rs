@@ -112,6 +112,13 @@ impl Sha256Hash for String {
 /// token before looking it up in the database.
 pub struct UnvalidatedRefreshToken(String);
 
+/// Redacted: the string is the client's live refresh token.
+impl std::fmt::Debug for UnvalidatedRefreshToken {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("UnvalidatedRefreshToken(REDACTED)")
+    }
+}
+
 impl std::ops::Deref for UnvalidatedRefreshToken {
     type Target = str;
     fn deref(&self) -> &Self::Target {
@@ -227,6 +234,14 @@ mod tests {
             result,
             Err(InvalidRefreshToken::InvalidCharacters)
         ));
+    }
+
+    #[test]
+    fn test_unvalidated_refresh_token_debug_is_redacted() {
+        let token_str = "a".repeat(64);
+        let token = UnvalidatedRefreshToken::from_str(&token_str).unwrap();
+        let debug = format!("{token:?}");
+        assert!(!debug.contains(&token_str), "Debug leaked: {debug}");
     }
 
     #[test]
