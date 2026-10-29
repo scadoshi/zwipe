@@ -27,13 +27,19 @@ pub const REFRESH_TOKEN_LIFESPAN: Duration = Duration::days(14);
 /// that started it (30 days). After that the user signs in again.
 pub const REFRESH_ABSOLUTE_LIFESPAN: Duration = Duration::days(30);
 
+/// Random bytes in a refresh token.
+const TOKEN_BYTES: usize = 32;
+
+/// Length of a refresh token's hex encoding: two characters per byte.
+const TOKEN_HEX_LEN: usize = 64;
+
 // == error ==
 
 /// Errors that can occur while validating a refresh token string.
 #[derive(Debug, Error)]
 pub enum InvalidRefreshToken {
     /// Token string is not exactly 64 characters (32 bytes hex-encoded).
-    #[error("must be 64 characters")]
+    #[error("must be {TOKEN_HEX_LEN} characters")]
     Length,
     /// Token contains non-hexadecimal characters.
     #[error("must contain only hexadecimal characters")]
@@ -73,7 +79,7 @@ impl std::fmt::Debug for RefreshToken {
 impl RefreshToken {
     /// Generates a new cryptographically-secure refresh token.
     pub fn generate() -> Self {
-        let mut bytes = [0u8; 32];
+        let mut bytes = [0u8; TOKEN_BYTES];
         rand::rng().fill_bytes(&mut bytes);
         let value = hex::encode(bytes);
         let expires_at = Utc::now() + REFRESH_TOKEN_LIFESPAN;
@@ -131,7 +137,7 @@ impl FromStr for UnvalidatedRefreshToken {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let s = s.trim();
-        if s.len() != 64 {
+        if s.len() != TOKEN_HEX_LEN {
             return Err(InvalidRefreshToken::Length);
         }
         if !s.chars().all(|c| c.is_ascii_hexdigit()) {
