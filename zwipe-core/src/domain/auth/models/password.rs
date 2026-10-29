@@ -184,7 +184,8 @@ pub fn validate(password: &str) -> Result<(), InvalidPassword> {
         }
         if let Some(last_char) = last_char_opt {
             if ch == last_char {
-                repeat_count += 1;
+                // Tops out at MAX_REPEATS + 1: the check below returns there.
+                repeat_count = repeat_count.saturating_add(1);
                 if repeat_count > MAX_REPEATS {
                     return Err(TooManyRepeats(MAX_REPEATS).into());
                 }
