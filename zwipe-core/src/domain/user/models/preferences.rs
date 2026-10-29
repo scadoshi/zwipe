@@ -217,7 +217,15 @@ pub struct UpdatePreferences {
 }
 
 impl UpdatePreferences {
-    /// Validates and constructs the request.
+    /// Validates and constructs the request. A slug in [`RENAMED_THEMES`]
+    /// becomes the theme it maps to.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`InvalidUpdatePreferences::InvalidTheme`] when `theme` is not
+    /// in [`ALLOWED_THEMES`], and
+    /// [`InvalidUpdatePreferences::InvalidFranchise`] when an exception slug
+    /// names no known Universes Beyond franchise.
     pub fn new(
         user_id: Uuid,
         theme: Option<&str>,

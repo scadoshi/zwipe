@@ -1,3 +1,5 @@
+//! User entity and its value objects.
+
 pub mod email;
 pub mod hints;
 pub mod preferences;

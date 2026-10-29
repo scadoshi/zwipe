@@ -136,7 +136,7 @@ pub struct AccessToken {
 }
 
 impl AccessToken {
-    /// Checks if the access token has expired (current time >= expires_at).
+    /// Checks if the access token has expired (`expires_at` is before now).
     pub fn is_expired(&self) -> bool {
         self.expires_at < Utc::now()
     }

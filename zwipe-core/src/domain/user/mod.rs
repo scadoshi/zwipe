@@ -1,6 +1,6 @@
-/// User entity and its value objects.
+//! Accounts, emails, usernames and preferences.
+
 pub mod models;
-/// Validated inputs for user operations.
 pub mod requests;
 
 pub use models::*;

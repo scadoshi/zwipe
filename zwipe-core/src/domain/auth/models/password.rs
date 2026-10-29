@@ -134,6 +134,11 @@ pub fn requirements() -> Vec<String> {
 /// Returns `Ok(())` if all requirements are met, or an `Err(InvalidPassword)`
 /// indicating the first requirement that failed.
 ///
+/// # Errors
+///
+/// Returns the [`InvalidPassword`] variant for the first rule `password`
+/// breaks, checked in the order [`requirements`] lists them.
+///
 /// # Example
 ///
 /// ```
