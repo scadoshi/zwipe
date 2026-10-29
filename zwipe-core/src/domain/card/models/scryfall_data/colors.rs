@@ -126,10 +126,7 @@ impl<'de> Deserialize<'de> for Color {
             "b" => Ok(Self::Black),
             "r" => Ok(Self::Red),
             "g" => Ok(Self::Green),
-            _ => Err(serde::de::Error::custom(format!(
-                "{} is an invalid color",
-                s
-            ))),
+            _ => Err(serde::de::Error::custom(format!("{s} is an invalid color"))),
         }
     }
 }

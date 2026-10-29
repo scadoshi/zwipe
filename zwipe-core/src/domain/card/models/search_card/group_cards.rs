@@ -79,12 +79,7 @@ impl CardGroup {
         }
         self.pips
             .as_ref()
-            .map(|pips| {
-                pips.iter()
-                    .map(Color::to_short_name)
-                    .collect::<Vec<_>>()
-                    .join("")
-            })
+            .map(|pips| pips.iter().map(Color::to_short_name).collect::<String>())
             .unwrap_or_default()
     }
 }
