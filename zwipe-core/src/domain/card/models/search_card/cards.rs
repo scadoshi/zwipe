@@ -127,6 +127,8 @@ pub fn sort_deck_entries(
 }
 #[cfg(test)]
 mod tests {
+    use std::collections::BTreeMap;
+
     use chrono::NaiveDate;
     use uuid::Uuid;
 
@@ -149,7 +151,7 @@ mod tests {
                 is_token: false,
                 card_roles: vec![],
                 oracle_tags: vec![],
-                oracle_tags_by_role: Default::default(),
+                oracle_tags_by_role: BTreeMap::default(),
                 other_oracle_tags: vec![],
                 created_at: NaiveDate::from_ymd_opt(2021, 1, 1)
                     .unwrap()
