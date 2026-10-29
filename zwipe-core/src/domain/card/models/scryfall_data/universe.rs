@@ -41,7 +41,7 @@ pub struct UbFranchise {
     /// Display name for the exceptions checkboxes.
     pub name: &'static str,
     /// Every set in the franchise as (set code, set name), satellites
-    /// included. Codes drive the oou_sets overlay and pick predicates; names
+    /// included. Codes drive the `oou_sets` overlay and pick predicates; names
     /// match `latest_cards.printing_set_names`.
     pub sets: &'static [(&'static str, &'static str)],
 }
@@ -196,10 +196,10 @@ pub const FRANCHISES: &[UbFranchise] = &[
 
 /// Exception-only entries: mixed sets whose UB cards are caught by the
 /// per-card triangle stamp, never by set code. These codes MUST stay out of
-/// `all_set_codes` (and so out of oou_sets and the OOU test), or every
+/// `all_set_codes` (and so out of `oou_sets` and the OOU test), or every
 /// in-universe printing in the set would be misclassified. They exist so the
 /// exceptions whitelist can rescue a mixed set's UB cards wholesale: the
-/// crossover Secret Lairs (SpongeBob, PlayStation, Furby, and every future
+/// crossover Secret Lairs (`SpongeBob`, `PlayStation`, Furby, and every future
 /// drop) become one selection instead of a hand-maintained franchise each.
 /// Rescue-only semantics make this safe: the exception term only ever brings
 /// back cards the exclusion hid, so the set's in-universe cards are untouched.
@@ -215,7 +215,7 @@ pub const MIXED_SET_FRANCHISES: &[UbFranchise] = &[UbFranchise {
     ],
 }];
 
-/// Every wholly-UB set code across all franchises (the oou_sets overlay and
+/// Every wholly-UB set code across all franchises (the `oou_sets` overlay and
 /// SQL pick predicates). Deliberately excludes [`MIXED_SET_FRANCHISES`].
 pub fn all_set_codes() -> impl Iterator<Item = &'static str> {
     FRANCHISES

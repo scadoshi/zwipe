@@ -119,7 +119,7 @@ pub enum PartnerKind {
     Generic,
     /// "Partner with \[Name\]": compatible only with the named card.
     Named(String),
-    /// "Friends forever": compatible with any other FriendsForever card.
+    /// "Friends forever": compatible with any other `FriendsForever` card.
     FriendsForever,
     /// "Doctor's companion": compatible with Time Lord Doctor cards.
     DoctorsCompanion,
@@ -385,7 +385,7 @@ mod tests {
     // are often legal commanders, so the layout alone cannot separate them.
 
     /// Builds a meld card. `role` is this card's own entry in `all_parts`:
-    /// "meld_result" for the melded permanent, "meld_part" for a component.
+    /// `"meld_result"` for the melded permanent, `"meld_part"` for a component.
     fn make_meld(name: &str, type_line: &str, role: &str) -> Card {
         let mut card = make_card(name);
         card.scryfall_data.type_line = Some(type_line.to_string());

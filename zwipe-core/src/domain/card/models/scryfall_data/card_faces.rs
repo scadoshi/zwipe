@@ -43,7 +43,7 @@ pub struct CardFace {
     pub mana_cost: String,
     /// Name of this card face.
     pub name: String,
-    /// Scryfall object type. Always "card_face".
+    /// Scryfall object type. Always `"card_face"`.
     pub object: String,
     /// Oracle ID shared across all printings. `None` for tokens.
     pub oracle_id: Option<Uuid>,

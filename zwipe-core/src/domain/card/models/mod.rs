@@ -22,8 +22,8 @@ use serde::{Deserialize, Serialize};
 /// Complete MTG card data combining internal metadata and Scryfall card information.
 ///
 /// Aggregates:
-/// - **card_profile**: Internal card metadata (sync timestamps, database ID)
-/// - **scryfall_data**: Complete Scryfall card object (~100 fields)
+/// - **`card_profile`**: Internal card metadata (sync timestamps, database ID)
+/// - **`scryfall_data`**: Complete Scryfall card object (~100 fields)
 #[derive(Debug, Clone, Serialize, PartialEq, Deserialize)]
 pub struct Card {
     /// Internal card metadata and sync information.

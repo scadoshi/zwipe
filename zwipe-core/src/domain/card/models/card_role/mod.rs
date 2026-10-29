@@ -174,7 +174,7 @@ impl CardRole {
     }
 }
 
-/// Display as snake_case (matches serde serialization).
+/// Display as `snake_case` (matches serde serialization).
 impl fmt::Display for CardRole {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let s = serde_json::to_string(self).unwrap_or_default();
@@ -202,7 +202,7 @@ impl TryFrom<&str> for CardRole {
 /// a compiled enum; see `context/plans/server_driven_catalogs.md` (Part B).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CardRoleView {
-    /// snake_case slug (matches the served role values, e.g. `graveyard_hate`).
+    /// `snake_case` slug (matches the served role values, e.g. `graveyard_hate`).
     pub slug: String,
     /// Human-readable label (e.g. `Graveyard Hate`).
     pub display_name: String,

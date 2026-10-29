@@ -59,10 +59,10 @@ pub struct ScryfallData {
     /// This card's multiverse IDs on Gatherer, if any, as an array of integers.
     pub multiverse_ids: Option<Vec<i32>>,
 
-    /// This card's ID on TCGplayer's API, also known as the productId.
+    /// This card's ID on `TCGplayer`'s API, also known as the productId.
     pub tcgplayer_id: Option<i32>,
 
-    /// This card's ID on TCGplayer's API, for its etched version if separate.
+    /// This card's ID on `TCGplayer`'s API, for its etched version if separate.
     pub tcgplayer_etched_id: Option<i32>,
 
     /// This card's ID on Cardmarket's API, also known as the idProduct.
@@ -71,7 +71,7 @@ pub struct ScryfallData {
     /// A content type for this object, always "card".
     pub object: String,
 
-    /// A code for this card's layout. Common values: "normal", "split", "transform", "modal_dfc", "meld", "leveler", "adventure".
+    /// A code for this card's layout. Common values: `"normal"`, `"split"`, `"transform"`, `"modal_dfc"`, `"meld"`, `"leveler"`, `"adventure"`.
     pub layout: String,
 
     /// A unique ID for this card's oracle identity consistent across reprints.
@@ -169,7 +169,7 @@ pub struct ScryfallData {
     /// The IDs of the artists that illustrated this card.
     pub artist_ids: Option<Vec<Uuid>>,
 
-    /// The lit Unfinity attractions lights on this card, if any (e.g., ["1", "3", "6"]).
+    /// The lit Unfinity attractions lights on this card, if any (e.g., `["1", "3", "6"]`).
     #[serde(default, deserialize_with = "deserialize_int_or_string_array")]
     pub attraction_lights: Option<Vec<String>>,
 
@@ -433,7 +433,7 @@ impl ScryfallData {
 
 /// for deserializing `INT[]`, `TEXT[]` or `VARCHAR[]` into `Vec<String>`
 ///
-/// used on a single field in ScryfallData
+/// used on a single field in `ScryfallData`
 fn deserialize_int_or_string_array<'de, D>(deserializer: D) -> Result<Option<Vec<String>>, D::Error>
 where
     D: serde::Deserializer<'de>,
