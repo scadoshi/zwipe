@@ -155,23 +155,22 @@ fn group_by_color(cards: Vec<Card>) -> Vec<CardGroup> {
     let mut groups: Vec<CardGroup> = Vec::new();
     for card in cards {
         let pips = identity_pips(&card);
-        match groups
+        if let Some(group) = groups
             .iter_mut()
             .find(|g| g.pips.as_deref() == Some(pips.as_slice()))
         {
-            Some(group) => group.cards.push(card),
-            None => {
-                let label = if pips.is_empty() {
-                    "Colorless".to_string()
-                } else {
-                    String::new()
-                };
-                groups.push(CardGroup {
-                    label,
-                    pips: Some(pips),
-                    cards: vec![card],
-                });
-            }
+            group.cards.push(card);
+        } else {
+            let label = if pips.is_empty() {
+                "Colorless".to_string()
+            } else {
+                String::new()
+            };
+            groups.push(CardGroup {
+                label,
+                pips: Some(pips),
+                cards: vec![card],
+            });
         }
     }
     // Fewest colors first, each in WUBRG order, colorless last, the same
