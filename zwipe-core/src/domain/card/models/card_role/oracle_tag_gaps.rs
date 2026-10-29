@@ -81,7 +81,7 @@ pub fn classify_oracle_tag_gaps(card: &Card) -> Vec<CardRole> {
     reason = "literal patterns; the unit tests exercise every one"
 )]
 mod patterns {
-    use super::*;
+    use super::{LazyLock, Regex};
 
     /// Parenthesized reminder text, stripped before classification.
     pub static REMINDER: LazyLock<Regex> =
