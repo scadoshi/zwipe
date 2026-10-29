@@ -261,14 +261,17 @@ mod tests {
     #[test]
     fn search_blank_query_returns_nothing() {
         let tags = vec![tag("ramp", "Ramp", None)];
-        assert!(search_oracle_tags(&tags, "").is_empty());
-        assert!(search_oracle_tags(&tags, "   ").is_empty());
+        assert_eq!(search_oracle_tags(&tags, ""), Vec::<OracleTag>::new());
+        assert_eq!(search_oracle_tags(&tags, "   "), Vec::<OracleTag>::new());
     }
 
     #[test]
     fn search_skips_nonmatches() {
         let tags = vec![tag("ramp", "Ramp", Some("Accelerates your mana."))];
-        assert!(search_oracle_tags(&tags, "graveyard").is_empty());
+        assert_eq!(
+            search_oracle_tags(&tags, "graveyard"),
+            Vec::<OracleTag>::new()
+        );
     }
 
     #[test]

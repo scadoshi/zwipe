@@ -161,7 +161,10 @@ mod tests {
 
     #[test]
     fn no_false_positive_on_vanilla() {
-        assert!(classify_oracle_tag_gaps(&card_with("Flying")).is_empty());
+        assert_eq!(
+            classify_oracle_tag_gaps(&card_with("Flying")),
+            Vec::<CardRole>::new()
+        );
     }
 
     #[test]

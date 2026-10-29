@@ -337,6 +337,6 @@ mod tests {
     fn exception_set_names_expands_known_slugs_and_ignores_unknown() {
         let names = exception_set_names(&["doctor-who".to_string(), "not-a-franchise".to_string()]);
         assert_eq!(names, vec!["Doctor Who", "Doctor Who Tokens"]);
-        assert!(exception_set_names(&[]).is_empty());
+        assert_eq!(exception_set_names(&[]), Vec::<String>::new());
     }
 }
