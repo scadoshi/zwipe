@@ -70,7 +70,6 @@ impl Display for Secret {
 
 #[cfg(test)]
 mod tests {
-    #![allow(clippy::unwrap_used)]
     use super::*;
 
     /// Catches a re-derived `Debug` or `Display`, either of which prints the
