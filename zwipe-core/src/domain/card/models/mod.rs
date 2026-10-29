@@ -1,6 +1,6 @@
 //! Card domain types shared between frontend and backend.
 
-/// User-specific card metadata (favorites, notes; future expansion).
+/// Per-card metadata the app computes: token flag, roles, oracle tags, timestamps.
 pub mod card_profile;
 /// Mechanical category classification (ramp, draw, removal, etc.).
 pub mod card_role;

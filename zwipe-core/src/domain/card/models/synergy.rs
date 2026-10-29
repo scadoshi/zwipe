@@ -5,14 +5,14 @@
 //! crate both sides already depend on, so there is exactly ONE definition of
 //! the shape. That matters because the reader is tolerant by design: if writer
 //! and reader each kept their own copy, renaming a field on the writing side
-//! would parse cleanly over here and simply yield nothing — no error, no log,
+//! would parse cleanly over here and simply yield nothing: no error, no log,
 //! the synergy feature quietly off. Sharing the type turns that class of
 //! mistake into a build failure.
 //!
 //! Tolerance is still required and deliberate: the table holds payloads
 //! written by *older* worker versions, so every field but `name` has a
 //! default. Shape drift must degrade to "no signal", never to a failed search.
-//! Defaults affect deserialization only — the writer always fills them in.
+//! Defaults affect deserialization only; the writer always fills them in.
 
 use std::collections::HashMap;
 
@@ -62,7 +62,7 @@ pub struct SynergyCard {
 
 impl SynergyPayload {
     /// Total cards across all lists. Used by the worker for logging and as a
-    /// sanity check — a payload that parses but holds zero cards means the
+    /// sanity check: a payload that parses but holds zero cards means the
     /// upstream shape moved, and is treated as a fetch failure rather than
     /// cached over good data.
     pub fn card_count(&self) -> usize {
@@ -94,7 +94,7 @@ mod tests {
     /// Sharing this type stops writer and reader from disagreeing, but it does
     /// NOT make a rename safe: `commander_synergy` already holds rows
     /// serialized with these key names. Rename a field and both crates still
-    /// compile — every stored payload just stops deserializing into anything,
+    /// compile, and every stored payload just stops deserializing into anything,
     /// silently, because the fields below default to empty.
     ///
     /// So these key names are a data contract with the table, not only with

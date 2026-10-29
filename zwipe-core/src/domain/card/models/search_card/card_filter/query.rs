@@ -289,7 +289,7 @@ mod tests {
 
     #[test]
     fn a_stray_ascending_bool_is_ignored() {
-        // A body from before the bool was dropped still parses; only
+        // A body carrying an `ascending` bool still parses; only
         // `direction` decides.
         let query: CardQuery = serde_json::from_str(
             r#"{"name_contains":"bolt","ascending":false,"direction":"ascending"}"#,

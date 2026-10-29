@@ -457,8 +457,7 @@ mod tests {
     //
     // Scryfall stores both faces in one type line, so a card whose BACK face is
     // a legendary creature reads as eligible unless only the front is tested.
-    // These are real cards; the local pool holds 29 that the Commander arm
-    // accepted before the split.
+    // These are real cards; the local pool holds 29 of this shape.
 
     /// Builds a double-faced card with no top-level P/T, the way Scryfall
     /// stores one (per-face values live in `card_faces`).
@@ -507,8 +506,7 @@ mod tests {
 
     #[test]
     fn legendary_creature_on_both_faces_stays_a_commander() {
-        // Must not regress: eligible because the FRONT face qualifies, and the
-        // whole point of the split is that this still passes.
+        // Eligible because the FRONT face qualifies.
         let card = make_dfc(
             "Avatar Aang // Aang, Master of Elements",
             "Legendary Creature \u{2014} Avatar // Legendary Creature \u{2014} Avatar",
@@ -721,8 +719,8 @@ mod tests {
     #[test]
     fn adventure_creature_is_not_a_signature_spell() {
         // The Oathbreaker FAQ rejects these by name: the card is a creature
-        // card, the Adventure half only becomes a spell on the stack. 169
-        // Adventure cards were passing.
+        // card, the Adventure half only becomes a spell on the stack. The
+        // pool holds 169 Adventure cards.
         let mut card = make_card("Beluna Grandsquall // Seek Thrills");
         card.scryfall_data.type_line = Some(
             "Legendary Creature \u{2014} Giant Noble // Instant \u{2014} Adventure".to_string(),
@@ -734,7 +732,7 @@ mod tests {
     #[test]
     fn prepare_creature_is_not_a_signature_spell() {
         // Same shape as Adventure, different keyword: a creature card whose
-        // back half is a sorcery. 70 of these were passing.
+        // back half is a sorcery. The pool holds 70 of these.
         let mut card = make_card("Adventurous Eater // Have a Bite");
         card.scryfall_data.type_line =
             Some("Creature \u{2014} Human Warlock // Sorcery".to_string());
