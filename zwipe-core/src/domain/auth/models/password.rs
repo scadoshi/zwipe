@@ -154,19 +154,19 @@ pub fn validate(password: &str) -> Result<(), InvalidPassword> {
     if password.len() > MAX_LENGTH {
         return Err(InvalidPassword::TooLong);
     }
-    if !password.chars().any(|x| x.is_uppercase()) {
+    if !password.chars().any(char::is_uppercase) {
         return Err(InvalidPassword::MissingUpperCase);
     }
-    if !password.chars().any(|x| x.is_lowercase()) {
+    if !password.chars().any(char::is_lowercase) {
         return Err(InvalidPassword::MissingLowerCase);
     }
-    if !password.chars().any(|x| x.is_numeric()) {
+    if !password.chars().any(char::is_numeric) {
         return Err(InvalidPassword::MissingNumber);
     }
     if !password.chars().any(|x| SYMBOLS.contains(x)) {
         return Err(InvalidPassword::MissingSymbol(SYMBOLS.to_string()));
     }
-    if password.chars().any(|x| x.is_whitespace()) {
+    if password.chars().any(char::is_whitespace) {
         return Err(InvalidPassword::ContainsWhitespace);
     }
 

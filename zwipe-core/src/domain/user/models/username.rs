@@ -122,7 +122,7 @@ impl Username {
             return Err(InvalidUsername::BadWord);
         }
 
-        if trimmed.chars().any(|c| c.is_whitespace()) {
+        if trimmed.chars().any(char::is_whitespace) {
             return Err(InvalidUsername::Whitespace);
         }
 

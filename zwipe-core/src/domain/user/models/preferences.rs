@@ -254,7 +254,7 @@ impl UpdatePreferences {
         }
         Ok(Self {
             user_id,
-            theme: theme.map(|t| t.to_string()),
+            theme: theme.map(ToString::to_string),
             dark_mode,
             exclude_universes_beyond,
             universes_beyond_exceptions,
