@@ -53,7 +53,7 @@ impl CardQueryBuilder {
     {
         let v: Vec<String> = oracle_text_contains_any
             .into_iter()
-            .map(|s| s.into())
+            .map(Into::into)
             .collect();
         self.oracle_text_contains_any = if v.is_empty() { None } else { Some(v) };
         self
@@ -73,7 +73,7 @@ impl CardQueryBuilder {
     {
         let v: Vec<String> = oracle_text_contains_all
             .into_iter()
-            .map(|s| s.into())
+            .map(Into::into)
             .collect();
         self.oracle_text_contains_all = if v.is_empty() { None } else { Some(v) };
         self
@@ -95,7 +95,7 @@ impl CardQueryBuilder {
     {
         let v: Vec<String> = keywords_contains_any
             .into_iter()
-            .map(|s| s.into())
+            .map(Into::into)
             .filter(|s| !s.is_empty())
             .collect();
         self.keywords_contains_any = if v.is_empty() { None } else { Some(v) };
@@ -116,7 +116,7 @@ impl CardQueryBuilder {
     {
         let v: Vec<String> = keywords_contains_all
             .into_iter()
-            .map(|s| s.into())
+            .map(Into::into)
             .filter(|s| !s.is_empty())
             .collect();
         self.keywords_contains_all = if v.is_empty() { None } else { Some(v) };
@@ -177,10 +177,7 @@ impl CardQueryBuilder {
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        let v: Vec<String> = type_line_contains_any
-            .into_iter()
-            .map(|s| s.into())
-            .collect();
+        let v: Vec<String> = type_line_contains_any.into_iter().map(Into::into).collect();
         self.type_line_contains_any = if v.is_empty() { None } else { Some(v) };
         self
     }
@@ -213,10 +210,7 @@ impl CardQueryBuilder {
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        let v: Vec<String> = type_line_contains_all
-            .into_iter()
-            .map(|s| s.into())
-            .collect();
+        let v: Vec<String> = type_line_contains_all.into_iter().map(Into::into).collect();
         self.type_line_contains_all = if v.is_empty() { None } else { Some(v) };
         self
     }
@@ -252,7 +246,7 @@ impl CardQueryBuilder {
     ) -> &mut Self {
         let s: Vec<String> = set_equals_any
             .into_iter()
-            .map(|x| x.into())
+            .map(Into::into)
             .filter(|s| !s.is_empty())
             .collect();
         self.set_equals_any = if s.is_empty() { None } else { Some(s) };
@@ -272,7 +266,7 @@ impl CardQueryBuilder {
     ) -> &mut Self {
         let s: Vec<String> = artist_equals_any
             .into_iter()
-            .map(|x| x.into())
+            .map(Into::into)
             .filter(|s| !s.is_empty())
             .collect();
         self.artist_equals_any = if s.is_empty() { None } else { Some(s) };
@@ -653,7 +647,7 @@ impl CardQueryBuilder {
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        let v: Vec<String> = categories.into_iter().map(|s| s.into()).collect();
+        let v: Vec<String> = categories.into_iter().map(Into::into).collect();
         self.card_roles_contains_any = if v.is_empty() { None } else { Some(v) };
         self
     }
@@ -670,7 +664,7 @@ impl CardQueryBuilder {
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        let v: Vec<String> = categories.into_iter().map(|s| s.into()).collect();
+        let v: Vec<String> = categories.into_iter().map(Into::into).collect();
         self.card_roles_contains_all = if v.is_empty() { None } else { Some(v) };
         self
     }
@@ -687,7 +681,7 @@ impl CardQueryBuilder {
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        let v: Vec<String> = tags.into_iter().map(|s| s.into()).collect();
+        let v: Vec<String> = tags.into_iter().map(Into::into).collect();
         self.oracle_tags_contains_any = if v.is_empty() { None } else { Some(v) };
         self
     }
@@ -704,7 +698,7 @@ impl CardQueryBuilder {
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        let v: Vec<String> = tags.into_iter().map(|s| s.into()).collect();
+        let v: Vec<String> = tags.into_iter().map(Into::into).collect();
         self.oracle_tags_contains_all = if v.is_empty() { None } else { Some(v) };
         self
     }
@@ -824,7 +818,7 @@ impl CardQueryBuilder {
     {
         let v: Vec<String> = oracle_text_excludes_any
             .into_iter()
-            .map(|s| s.into())
+            .map(Into::into)
             .collect();
         self.oracle_text_excludes_any = if v.is_empty() { None } else { Some(v) };
         self
@@ -895,10 +889,7 @@ impl CardQueryBuilder {
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        let v: Vec<String> = type_line_excludes_any
-            .into_iter()
-            .map(|s| s.into())
-            .collect();
+        let v: Vec<String> = type_line_excludes_any.into_iter().map(Into::into).collect();
         self.type_line_excludes_any = if v.is_empty() { None } else { Some(v) };
         self
     }

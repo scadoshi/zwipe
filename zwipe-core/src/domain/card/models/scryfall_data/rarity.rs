@@ -119,12 +119,12 @@ impl std::ops::Deref for Rarities {
 impl Rarities {
     /// Converts all rarities to short codes (e.g., `["C", "M", "R"]`).
     pub fn to_short_names(&self) -> Vec<String> {
-        self.0.iter().map(|c| c.to_short_name()).collect()
+        self.0.iter().map(Rarity::to_short_name).collect()
     }
 
     /// Converts all rarities to long names (e.g., `["Common", "Mythic", "Rare"]`).
     pub fn to_long_names(&self) -> Vec<String> {
-        self.0.iter().map(|c| c.to_long_name()).collect()
+        self.0.iter().map(Rarity::to_long_name).collect()
     }
 }
 

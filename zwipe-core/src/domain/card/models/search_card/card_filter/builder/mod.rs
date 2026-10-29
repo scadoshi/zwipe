@@ -366,7 +366,7 @@ impl CardQueryBuilder {
     {
         let v: Vec<String> = oracle_text_contains_any
             .into_iter()
-            .map(|s| s.into())
+            .map(Into::into)
             .collect();
         CardQueryBuilder {
             oracle_text_contains_any: if v.is_empty() { None } else { Some(v) },
@@ -382,7 +382,7 @@ impl CardQueryBuilder {
     {
         let v: Vec<String> = oracle_text_contains_all
             .into_iter()
-            .map(|s| s.into())
+            .map(Into::into)
             .collect();
         CardQueryBuilder {
             oracle_text_contains_all: if v.is_empty() { None } else { Some(v) },
@@ -476,10 +476,7 @@ impl CardQueryBuilder {
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        let v: Vec<String> = type_line_contains_any
-            .into_iter()
-            .map(|s| s.into())
-            .collect();
+        let v: Vec<String> = type_line_contains_any.into_iter().map(Into::into).collect();
         CardQueryBuilder {
             type_line_contains_any: if v.is_empty() { None } else { Some(v) },
             ..CardQueryBuilder::default()
@@ -527,7 +524,7 @@ impl CardQueryBuilder {
         set_equals_any: impl IntoIterator<Item = impl Into<String>>,
     ) -> CardQueryBuilder {
         CardQueryBuilder {
-            set_equals_any: Some(set_equals_any.into_iter().map(|x| x.into()).collect()),
+            set_equals_any: Some(set_equals_any.into_iter().map(Into::into).collect()),
             ..CardQueryBuilder::default()
         }
     }

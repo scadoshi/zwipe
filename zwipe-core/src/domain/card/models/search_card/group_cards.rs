@@ -81,7 +81,7 @@ impl CardGroup {
             .as_ref()
             .map(|pips| {
                 pips.iter()
-                    .map(|c| c.to_short_name())
+                    .map(Color::to_short_name)
                     .collect::<Vec<_>>()
                     .join("")
             })

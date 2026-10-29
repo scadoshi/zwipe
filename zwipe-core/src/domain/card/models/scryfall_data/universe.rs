@@ -255,7 +255,7 @@ impl UbFranchise {
 /// Every franchise the exceptions picker offers, as wire views, sorted by
 /// display name so the server decides the order once.
 pub fn selectable_franchise_views() -> Vec<UbFranchiseView> {
-    let mut views: Vec<UbFranchiseView> = selectable_franchises().map(|f| f.view()).collect();
+    let mut views: Vec<UbFranchiseView> = selectable_franchises().map(UbFranchise::view).collect();
     views.sort_by(|a, b| a.name.cmp(&b.name));
     views
 }
