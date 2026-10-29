@@ -21,9 +21,13 @@ Plus [`CLAUDE.md`](CLAUDE.md), the authoritative rules for AI assistants.
 
 The running log, newest first. Update this when something ships; [`progress/todo.md`](progress/todo.md) holds what is still open.
 
+## 2026-10-29: 1.16.2 released
+
+1.16.2 is live on the App Store (build 111) and Google Play (vc73), a day after it was submitted. The changelog dates it 2026-10-29, which is what zite shows.
+
 ## 2026-10-28: 1.16.2 submitted
 
-1.16.2 is cut and submitted to both stores the day 1.16.1 went live on the App Store, iOS build 111 and Android vc73, both built on scotland-halo. vc73 replaced 1.16.1's vc72 in Play review, so Android goes from 1.16.0 straight to 1.16.2. Notes are at [`operations/store-submissions/1.16.2/whats_new.md`](operations/store-submissions/1.16.2/whats_new.md). It brings Activity's Oracle tags chart in order from the highest share, with up to ten tags where your rate beats other players', and Activity's counts landing with the rest of the screen. The changelog dates 1.16.2 to 2026-10-28; move it if it goes live on another day.
+1.16.2 is cut and submitted to both stores the day 1.16.1 went live on the App Store, iOS build 111 and Android vc73, both built on scotland-halo. vc73 replaced 1.16.1's vc72 in Play review, so Android goes from 1.16.0 straight to 1.16.2. Notes are at [`operations/store-submissions/1.16.2/whats_new.md`](operations/store-submissions/1.16.2/whats_new.md). It brings Activity's Oracle tags chart in order from the highest share, with up to ten tags where your rate beats other players', and Activity's counts landing with the rest of the screen.
 
 ## 2026-10-28: 1.16.1 submitted
 

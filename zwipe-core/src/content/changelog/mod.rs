@@ -40,7 +40,7 @@ pub const UPCOMING: &[Release] = &[];
 pub const RELEASES: &[Release] = &[
     Release {
         version: "1.16.2",
-        date: NaiveDate::from_ymd_opt(2026, 10, 28),
+        date: NaiveDate::from_ymd_opt(2026, 10, 29),
         entries: &[
             "Activity's Oracle tags chart lists its tags highest share first",
             "Activity's Oracle tags chart shows up to ten tags where your rate beats other players'",
