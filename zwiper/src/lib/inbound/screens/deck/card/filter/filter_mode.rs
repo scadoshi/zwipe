@@ -11,6 +11,7 @@ pub enum FilterMode {
 
 impl FilterMode {
     /// Toggles between Exact and Range modes.
+    #[must_use]
     pub fn toggle(self) -> Self {
         match self {
             Self::Exact => Self::Range,

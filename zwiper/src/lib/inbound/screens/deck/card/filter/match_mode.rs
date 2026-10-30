@@ -11,6 +11,7 @@ pub enum MatchMode {
 
 impl MatchMode {
     /// Toggles between Any and All modes.
+    #[must_use]
     pub fn toggle(self) -> Self {
         match self {
             Self::Any => Self::All,
