@@ -21,27 +21,35 @@ fn ln_factorial(n: u32) -> f64 {
 /// Natural log of the binomial coefficient `C(n, k)`. Returns
 /// [`f64::NEG_INFINITY`] (i.e. `C = 0`) when `k > n`.
 fn ln_choose(n: u32, k: u32) -> f64 {
-    if k > n {
+    let Some(rest) = n.checked_sub(k) else {
         return f64::NEG_INFINITY;
-    }
-    ln_factorial(n) - ln_factorial(k) - ln_factorial(n - k)
+    };
+    ln_factorial(n) - ln_factorial(k) - ln_factorial(rest)
 }
 
 /// `P(exactly k of the category)` when drawing `draws` cards from a `deck_size`
 /// deck containing `successes` of the category. Returns `0.0` for an impossible
 /// `k` (more than exist, or too many to leave room for the rest of the hand).
-/// `draws` is capped at `deck_size`; you can't draw more cards than the deck holds.
+/// `draws` and `successes` are both capped at `deck_size`: you can't draw more
+/// cards than the deck holds, and a category can't hold more cards than the deck.
 pub fn p_exactly(deck_size: u32, successes: u32, draws: u32, k: u32) -> f64 {
-    // Cap first: you can't draw more than the deck holds. A 0-card draw (empty
-    // deck, or draws == 0) yields exactly 0 successes with certainty; the
-    // general computation below produces that (C(·,0) = 1); no special-case.
+    // Cap first. A 0-card draw (empty deck, or draws == 0) yields exactly 0
+    // successes with certainty; the general computation below produces that
+    // (C(·,0) = 1); no special-case.
     let draws = draws.min(deck_size);
+    let successes = successes.min(deck_size);
+    // `draws - k` is `None` when k > draws, an impossible k.
+    let (Some(others), Some(other_draws)) =
+        (deck_size.checked_sub(successes), draws.checked_sub(k))
+    else {
+        return 0.0;
+    };
     // k of the successes, and (draws - k) of the non-successes, must both fit.
-    if k > successes || k > draws || draws - k > deck_size - successes {
+    if k > successes || other_draws > others {
         return 0.0;
     }
-    let ln_p = ln_choose(successes, k) + ln_choose(deck_size - successes, draws - k)
-        - ln_choose(deck_size, draws);
+    let ln_p =
+        ln_choose(successes, k) + ln_choose(others, other_draws) - ln_choose(deck_size, draws);
     ln_p.exp().clamp(0.0, 1.0)
 }
 
@@ -119,5 +127,58 @@ mod tests {
         assert_eq!(p_exactly(0, 0, 7, 1), 0.0); // no success to draw
         // Drawing nothing yields exactly zero successes with certainty.
         assert!((p_exactly(0, 0, 7, 0) - 1.0).abs() < EPS);
+    }
+
+    #[test]
+    fn valid_inputs_keep_their_exact_values() {
+        let cases = [
+            (
+                (99, 37, 7, 1),
+                0.966_964_794_119_874_8,
+                0.152_787_827_195_582_6,
+            ),
+            (
+                (60, 24, 7, 1),
+                0.978_385_472_740_881_5,
+                0.121_041_352_651_063_15,
+            ),
+            (
+                (60, 24, 10, 2),
+                0.966_660_149_919_705_6,
+                0.110_776_066_879_950_52,
+            ),
+            (
+                (40, 17, 9, 3),
+                0.844_594_594_594_594_5,
+                0.251_039_501_039_502_46,
+            ),
+            (
+                (100, 10, 7, 1),
+                0.533_259_585_682_814_5,
+                0.388_950_345_264_343_24,
+            ),
+            ((5, 2, 10, 1), 1.0, 0.0),
+        ];
+        for ((n, s, d, k), at_least, exactly) in cases {
+            assert_eq!(
+                p_at_least(n, s, d, k),
+                at_least,
+                "p_at_least({n}, {s}, {d}, {k})"
+            );
+            assert_eq!(
+                p_exactly(n, s, d, k),
+                exactly,
+                "p_exactly({n}, {s}, {d}, {k})"
+            );
+        }
+    }
+
+    #[test]
+    fn more_successes_than_cards_is_a_full_deck_of_them() {
+        assert_eq!(p_at_least_one(60, 70, 7), 1.0);
+        assert_eq!(p_at_least_one(5, 9, 10), 1.0);
+        assert_eq!(p_exactly(60, 70, 7, 7), 1.0);
+        assert_eq!(p_exactly(60, 70, 7, 3), 0.0);
+        assert_eq!(p_at_least_one(0, 3, 7), 0.0); // an empty deck still draws nothing
     }
 }
