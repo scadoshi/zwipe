@@ -298,6 +298,10 @@ mod tests {
     use crate::domain::card::scryfall_data::prices::Prices;
     use crate::domain::card::scryfall_data::rarity::Rarity;
 
+    #[expect(
+        clippy::too_many_lines,
+        reason = "a fixture that fills every Scryfall field"
+    )]
     fn make_card(name: &str) -> Card {
         Card {
             card_profile: CardProfile {

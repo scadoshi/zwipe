@@ -41,6 +41,10 @@ impl CardCriteria {
     /// `is_signature_spell` are **not** evaluated here (matching the old
     /// in-memory filter); they are command-zone pool constraints only the
     /// server-side search applies.
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one short check per criterion, in field order"
+    )]
     pub fn matches(&self, card: &Card) -> bool {
         let sd = &card.scryfall_data;
         let cp = &card.card_profile;

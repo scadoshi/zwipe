@@ -18,6 +18,7 @@
 /// `Protection`). Land-type walks (`Islandwalk`, …) and type cycling
 /// (`Landcycling`, …) share one generic reminder each. Unrecognized keywords
 /// fall back to a generic note rather than returning nothing.
+#[expect(clippy::too_many_lines, reason = "a lookup table, one arm per keyword")]
 pub fn keyword_reminder(name: &str) -> &'static str {
     let key = name.trim().to_ascii_lowercase();
 

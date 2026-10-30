@@ -146,6 +146,10 @@ mod tests {
     use crate::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
     use crate::domain::card::search_card::card_filter::sort_direction::SortDirection;
 
+    #[expect(
+        clippy::too_many_lines,
+        reason = "a fixture that fills every Scryfall field"
+    )]
     fn make_card(name: &str) -> Card {
         Card {
             card_profile: CardProfile {

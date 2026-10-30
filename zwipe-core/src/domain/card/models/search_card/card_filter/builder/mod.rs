@@ -739,6 +739,10 @@ impl CardQueryBuilder {
     /// # Errors
     ///
     /// Same as [`build`](Self::build).
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one check or cleanup per criteria field, in field order"
+    )]
     pub fn build_criteria(&self) -> Result<CardCriteria, InvalidCardCriteria> {
         // Reject only the true firehose: no criteria, no sort, synergy off. An
         // explicit sort or synergy mode is intent enough to serve all cards
