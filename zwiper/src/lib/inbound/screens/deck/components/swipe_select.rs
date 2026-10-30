@@ -544,7 +544,7 @@ pub(crate) fn SwipeSelect(
     } else {
         (Vec::new(), None, false)
     };
-    let noun = mode().as_ref().map(SwipeMode::noun).unwrap_or("card");
+    let noun = mode().as_ref().map_or("card", SwipeMode::noun);
     let suggested = mode() == Some(SwipeMode::Suggested);
     // Up-swipe = "maybe this commander" (per-user save), so it's only live in
     // the modes whose pool is commanders. Background/signature-spell picks

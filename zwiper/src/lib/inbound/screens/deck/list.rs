@@ -222,8 +222,7 @@ fn group_decks(profiles: &[DeckProfile], by: DeckGroupBy) -> Vec<DeckGroup> {
                 let header = profile
                     .format
                     .as_ref()
-                    .map(|f| f.display_name().to_string())
-                    .unwrap_or_else(|| "No format".to_string());
+                    .map_or_else(|| "No format".to_string(), |f| f.display_name().to_string());
                 match groups.iter_mut().find(|g| g.header == header) {
                     Some(group) => group.decks.push(profile.clone()),
                     None => groups.push(DeckGroup {

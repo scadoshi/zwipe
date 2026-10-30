@@ -112,7 +112,7 @@ pub(crate) fn OracleTagSelect(
     };
 
     let cell_read = cell.read();
-    let tags: &[OracleTag] = cell_read.loaded().map(Vec::as_slice).unwrap_or(&[]);
+    let tags: &[OracleTag] = cell_read.loaded().map_or(&[], Vec::as_slice);
     let sel = selected();
 
     // Empty search → the server-marked curated grid plus any selected slug

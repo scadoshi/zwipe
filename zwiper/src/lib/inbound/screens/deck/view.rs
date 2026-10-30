@@ -274,7 +274,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                 DeckProfileSection {
                                     deck_profile: deck_profile.clone(),
                                     commander: commander(),
-                                    card_count: metrics.as_ref().map(|m| m.total_cards).unwrap_or_else(|| deck_profile.card_count.max(0) as usize),
+                                    card_count: metrics.as_ref().map_or_else(|| deck_profile.card_count.max(0) as usize, |m| m.total_cards),
                                 }
 
                                 if has_budget(&deck_profile, metrics.is_some()) {
@@ -320,7 +320,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                     // section: a curve (mainboard cards) OR just a land
                                     // target set, so the Lands goal-vs-actual stays
                                     // visible even on an otherwise-empty deck.
-                                    let land_count = metrics.as_ref().map(|m| m.land_count).unwrap_or(0);
+                                    let land_count = metrics.as_ref().map_or(0, |m| m.land_count);
                                     rsx! {
                                         if mana_curve_bars.is_some() || land_target.is_some() {
                                           // Nested column: keep its gap equal to the outer
@@ -469,7 +469,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                                     .await
                                                     .is_some()
                                                 {
-                                                        let label = if deck_profile_resource().is_some_and(|r| r.as_ref().ok().is_some_and(|p| p.format.as_ref().is_some_and(Format::has_signature_spell))) {
+                                                        let label = if deck_profile_resource().is_some_and(|r| r.as_ref().is_ok_and(|p| p.format.as_ref().is_some_and(Format::has_signature_spell))) {
                                                             "Oathbreaker"
                                                         } else {
                                                             "Commander"
