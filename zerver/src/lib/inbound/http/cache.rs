@@ -1,6 +1,6 @@
 //! Serving-layer caches.
 //!
-//! [`TtlSlot`](crate::inbound::http::cache::TtlSlot) is a cached *variable*, not a cache store: one global value
+//! [`TtlSlot`] is a cached *variable*, not a cache store: one global value
 //! that knows how to refresh itself. There are no keys and no lookups; the
 //! slot holds THE current value (the featured flavor card, a metrics blob)
 //! plus the deadline after which it must be rebuilt. Overwrite-on-expiry is
