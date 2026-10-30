@@ -10,7 +10,9 @@
 //!
 //! User-facing copy lives here too ([`ClientError::to_user_message`]), the
 //! client owns the client-to-user translation. Server-authored 4xx messages
-//! pass through verbatim: by contract they are user-safe copy.
+//! pass through verbatim: by contract they are user-safe copy. A 400 or 413
+//! comes from the framework rather than the server's `ApiError`, so its body
+//! is replaced with copy of the client's own.
 
 use reqwest::StatusCode;
 use thiserror::Error;
@@ -18,6 +20,9 @@ use thiserror::Error;
 /// Errors surfaced by API client calls.
 #[derive(Debug, Error, Clone)]
 pub enum ClientError {
+    /// 400: the server could not read the request at all.
+    #[error("{0}")]
+    BadRequest(String),
     /// 401: no valid session.
     #[error("{0}")]
     Unauthorized(String),
@@ -33,6 +38,9 @@ pub enum ClientError {
     /// 409: the request clashes with the current state.
     #[error("{0}")]
     Conflict(String),
+    /// 413: the request body is over the server's size limit.
+    #[error("{0}")]
+    PayloadTooLarge(String),
     /// 429: rate limited.
     #[error("{0}")]
     TooManyRequests(String),
@@ -54,8 +62,13 @@ impl ClientError {
             ClientError::Network(_) => {
                 "connection error, check your network and try again".to_string()
             }
-            ClientError::Decode(_) | ClientError::InternalServerError(_) => {
+            ClientError::BadRequest(_)
+            | ClientError::Decode(_)
+            | ClientError::InternalServerError(_) => {
                 "something went wrong, please try again".to_string()
+            }
+            ClientError::PayloadTooLarge(_) => {
+                "request too large, try importing fewer cards".to_string()
             }
             other => other.to_string(),
         }
@@ -83,12 +96,14 @@ impl From<(StatusCode, String)> for ClientError {
         let (status, message) = value;
         let message = message.to_lowercase();
         match status {
+            StatusCode::BAD_REQUEST => Self::BadRequest(message),
             StatusCode::UNAUTHORIZED => Self::Unauthorized(message),
             StatusCode::FORBIDDEN => Self::Forbidden(message),
             StatusCode::NOT_FOUND => Self::NotFound(message),
             StatusCode::UNPROCESSABLE_ENTITY => Self::UnprocessableEntity(message),
             StatusCode::TOO_MANY_REQUESTS => Self::TooManyRequests(message),
             StatusCode::CONFLICT => Self::Conflict(message),
+            StatusCode::PAYLOAD_TOO_LARGE => Self::PayloadTooLarge(message),
             _ => Self::InternalServerError(message),
         }
     }
@@ -107,6 +122,8 @@ mod tests {
             (StatusCode::UNPROCESSABLE_ENTITY, "unprocessable"),
             (StatusCode::TOO_MANY_REQUESTS, "too_many"),
             (StatusCode::CONFLICT, "conflict"),
+            (StatusCode::BAD_REQUEST, "bad_request"),
+            (StatusCode::PAYLOAD_TOO_LARGE, "payload_too_large"),
             (StatusCode::INTERNAL_SERVER_ERROR, "internal"),
             (StatusCode::BAD_GATEWAY, "internal"), // unknown statuses fold to 500
         ];
@@ -119,11 +136,25 @@ mod tests {
                 ClientError::UnprocessableEntity(_) => "unprocessable",
                 ClientError::TooManyRequests(_) => "too_many",
                 ClientError::Conflict(_) => "conflict",
+                ClientError::BadRequest(_) => "bad_request",
+                ClientError::PayloadTooLarge(_) => "payload_too_large",
                 ClientError::InternalServerError(_) => "internal",
                 other => panic!("expected a status variant for {status}, got {other:?}"),
             };
             assert_eq!(actual, expected, "wrong variant for {status}");
         }
+    }
+
+    #[test]
+    fn oversized_requests_say_so() {
+        let error = ClientError::from((
+            StatusCode::PAYLOAD_TOO_LARGE,
+            "length limit exceeded".to_string(),
+        ));
+        assert_eq!(
+            error.to_user_message(),
+            "request too large, try importing fewer cards"
+        );
     }
 
     #[test]
@@ -151,6 +182,14 @@ mod tests {
         let decode = ClientError::Decode("missing field `id` at line 1".into());
         assert_eq!(
             decode.to_user_message(),
+            "something went wrong, please try again"
+        );
+
+        let bad_request = ClientError::BadRequest(
+            "failed to parse the request body as json: expected value at line 1".into(),
+        );
+        assert_eq!(
+            bad_request.to_user_message(),
             "something went wrong, please try again"
         );
 
