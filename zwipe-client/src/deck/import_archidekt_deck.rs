@@ -33,7 +33,7 @@ impl ZwipeClient {
                 deck_id,
                 HttpImportArchidektDeck {
                     url: url.to_string(),
-                    board: board.map(|b| b.to_string()),
+                    board: board.map(ToString::to_string),
                     mode,
                 },
             ),

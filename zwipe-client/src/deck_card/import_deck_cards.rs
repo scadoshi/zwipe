@@ -29,7 +29,7 @@ impl ZwipeClient {
                 deck_id,
                 HttpImportDeckCards {
                     text: text.to_string(),
-                    board: board.map(|b| b.to_string()),
+                    board: board.map(ToString::to_string),
                     mode,
                 },
             ),
