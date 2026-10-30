@@ -277,7 +277,7 @@ async fn cold_start_is_empty_with_zero_decks(pool: sqlx::PgPool) {
     build_deck(&app, &token, "Headless", "standard", &[]).await;
     let body = suggestions(&app, &token, 10).await;
     assert_eq!(body["deck_count"], 0);
-    assert!(names(&body).is_empty());
+    assert_eq!(names(&body), Vec::<String>::new());
     assert_eq!(body["profile"], Value::Null);
 }
 
@@ -471,7 +471,10 @@ async fn dismissals_hide_undo_clear_and_expire(pool: sqlx::PgPool) {
             .await;
         assert_eq!(status, StatusCode::NO_CONTENT);
     }
-    assert!(names(&suggestions(&app, &token, 10).await).is_empty());
+    assert_eq!(
+        names(&suggestions(&app, &token, 10).await),
+        Vec::<String>::new()
+    );
     let (status, body) = app.delete(COMMANDER_DISMISSALS_ROUTE, Some(&token)).await;
     assert_eq!(status, StatusCode::OK, "clear: {body}");
     assert_eq!(body, json!({ "cleared": 2 }));

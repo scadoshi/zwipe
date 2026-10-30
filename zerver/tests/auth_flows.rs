@@ -16,7 +16,7 @@ async fn register_authed_login_refresh(pool: sqlx::PgPool) {
 
     // 1. Register, then log in: the helper does both.
     let (token, user_id) = app.register("alice").await;
-    assert!(!token.is_empty());
+    assert_ne!(token, "");
 
     // 2. Authed request with the access token.
     let (status, me) = app.get(GET_USER_ROUTE, Some(&token)).await;

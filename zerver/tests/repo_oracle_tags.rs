@@ -373,7 +373,7 @@ async fn get_oracle_tags_returns_catalog_with_parent_slugs(pool: sqlx::PgPool) {
     assert_eq!(tags[0].slug, "removal");
     assert_eq!(tags[0].label, "Removal");
     assert_eq!(tags[0].description.as_deref(), Some("Removes stuff"));
-    assert!(tags[0].parent_slugs.is_empty());
+    assert_eq!(tags[0].parent_slugs, Vec::<String>::new());
 
     assert_eq!(tags[1].slug, "spot-removal");
     assert_eq!(tags[1].description, None);
