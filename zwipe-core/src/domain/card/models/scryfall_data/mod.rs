@@ -37,6 +37,10 @@ use uuid::Uuid;
 /// - **Gameplay fields**: Rules-relevant properties (CMC, colors, oracle text)
 /// - **Print fields**: Printing-specific properties (artist, set, rarity)
 ///
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "mirrors the boolean fields of Scryfall's card object"
+)]
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct ScryfallData {
     // == Core Card Fields ==
