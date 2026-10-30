@@ -20,6 +20,36 @@ enum ResetState {
     Error(String),
 }
 
+/// What a submit does.
+#[derive(Debug, PartialEq)]
+enum SubmitCheck {
+    /// A reset is already out: ignore the submit, the token is single use.
+    Ignore,
+    /// Show this error instead of sending.
+    Reject(String),
+    /// Send the reset.
+    Send,
+}
+
+/// Decides a submit from the page state, the two fields and the link's token.
+fn check_submit(state: &ResetState, pw: &str, cf: &str, token: &str) -> SubmitCheck {
+    if *state == ResetState::Loading {
+        return SubmitCheck::Ignore;
+    }
+    if let Some(err) = validate_password(pw) {
+        return SubmitCheck::Reject(err);
+    }
+    if pw != cf {
+        return SubmitCheck::Reject("Passwords do not match".to_string());
+    }
+    if token.is_empty() {
+        return SubmitCheck::Reject(
+            "This link is missing its code. Open it from the email again.".to_string(),
+        );
+    }
+    SubmitCheck::Send
+}
+
 #[component]
 pub fn Reset(token: String) -> Element {
     let password = use_signal(String::new);
@@ -32,22 +62,16 @@ pub fn Reset(token: String) -> Element {
 
         let pw = password.read().clone();
         let cf = confirm.read().clone();
-
-        if let Some(err) = validate_password(&pw) {
-            state.set(ResetState::Error(err));
-            return;
-        }
-        if pw != cf {
-            state.set(ResetState::Error("Passwords do not match".to_string()));
-            return;
-        }
-
         let token = token.clone();
-        if token.is_empty() {
-            state.set(ResetState::Error(
-                "This link is missing its code. Open it from the email again.".to_string(),
-            ));
-            return;
+
+        let check = check_submit(&state.peek(), &pw, &cf, &token);
+        match check {
+            SubmitCheck::Ignore => return,
+            SubmitCheck::Reject(err) => {
+                state.set(ResetState::Error(err));
+                return;
+            }
+            SubmitCheck::Send => {}
         }
 
         state.set(ResetState::Loading);
@@ -170,5 +194,37 @@ pub fn Reset(token: String) -> Element {
                 },
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const GOOD: &str = "Correct!Horse!Battery9";
+
+    #[test]
+    fn a_submit_while_loading_is_ignored() {
+        assert_eq!(
+            check_submit(&ResetState::Loading, GOOD, GOOD, "token"),
+            SubmitCheck::Ignore,
+            "a second send would burn the single-use token"
+        );
+    }
+
+    #[test]
+    fn an_idle_submit_checks_the_form() {
+        assert_eq!(
+            check_submit(&ResetState::Form, GOOD, GOOD, "token"),
+            SubmitCheck::Send
+        );
+        assert_eq!(
+            check_submit(&ResetState::Form, GOOD, "other", "token"),
+            SubmitCheck::Reject("Passwords do not match".to_string())
+        );
+        assert!(matches!(
+            check_submit(&ResetState::Form, GOOD, GOOD, ""),
+            SubmitCheck::Reject(_)
+        ));
     }
 }
