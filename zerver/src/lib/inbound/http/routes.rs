@@ -182,10 +182,8 @@ fn hourly_public_cache(response: &Response<Body>) -> Option<HeaderValue> {
 type CacheHeaderFn = fn(&Response<Body>) -> Option<HeaderValue>;
 
 fn hourly_cache_layer() -> SetResponseHeaderLayer<CacheHeaderFn> {
-    SetResponseHeaderLayer::if_not_present(
-        header::CACHE_CONTROL,
-        hourly_public_cache as CacheHeaderFn,
-    )
+    let make_header: CacheHeaderFn = hourly_public_cache;
+    SetResponseHeaderLayer::if_not_present(header::CACHE_CONTROL, make_header)
 }
 
 /// `Cache-Control: private, no-store` on every authenticated response, so no
