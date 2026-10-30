@@ -12,9 +12,13 @@ pub trait ScreenOffsetMethods {
     fn right() -> Self;
     fn up() -> Self;
     fn down() -> Self;
+    #[must_use]
     fn and_left(&self) -> Self;
+    #[must_use]
     fn and_right(&self) -> Self;
+    #[must_use]
     fn and_up(&self) -> Self;
+    #[must_use]
     fn and_down(&self) -> Self;
 }
 
