@@ -316,7 +316,7 @@ impl HttpUpdateDeckProfileBuilder {
     /// cannot express "clear" because a name is non-clearable.
     #[must_use]
     pub fn name(mut self, name: Option<&str>) -> Self {
-        self.name = name.map(|s| s.to_string());
+        self.name = name.map(ToString::to_string);
         self
     }
 
