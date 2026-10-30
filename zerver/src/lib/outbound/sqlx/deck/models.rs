@@ -198,6 +198,6 @@ mod tests {
             ..base_profile()
         };
         let profile = DeckProfile::try_from(db).unwrap();
-        assert!(profile.color_identity.is_empty());
+        assert_eq!(profile.color_identity, Vec::<String>::new());
     }
 }

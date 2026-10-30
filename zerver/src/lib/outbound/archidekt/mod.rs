@@ -305,7 +305,7 @@ mod tests {
         let cards = raw.into_cards();
         let custom = cards.first().expect("first card present");
         assert_eq!(custom.scryfall_id, Uuid::nil());
-        assert!(custom.name.is_empty());
+        assert_eq!(custom.name, "");
         let names: Vec<&str> = cards.iter().map(|c| c.name.as_str()).collect();
         assert_eq!(names, vec!["", "Mystic Remora"]);
     }

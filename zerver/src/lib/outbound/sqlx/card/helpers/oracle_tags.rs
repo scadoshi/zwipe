@@ -181,7 +181,10 @@ mod tests {
 
     #[test]
     fn flatten_empty_is_empty() {
-        assert!(flatten_correlations(&[]).is_empty());
-        assert!(flatten_correlations(&[tag("x", &[])]).is_empty());
+        assert_eq!(flatten_correlations(&[]), Vec::<(uuid::Uuid, &str)>::new());
+        assert_eq!(
+            flatten_correlations(&[tag("x", &[])]),
+            Vec::<(uuid::Uuid, &str)>::new()
+        );
     }
 }
