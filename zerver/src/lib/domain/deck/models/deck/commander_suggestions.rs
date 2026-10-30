@@ -638,7 +638,10 @@ mod tests {
 
     #[test]
     fn empty_stays_empty() {
-        assert!(cap_color_identities(vec![], 4).is_empty());
+        assert_eq!(
+            cap_color_identities(vec![], 4),
+            Vec::<ScoredCommander>::new()
+        );
     }
 
     #[test]
@@ -1166,7 +1169,7 @@ mod tests {
 
     #[test]
     fn no_rows_is_no_staples() {
-        assert!(rank_staples(&[]).is_empty());
+        assert_eq!(rank_staples(&[]), Vec::<StapleCount>::new());
     }
 
     #[test]

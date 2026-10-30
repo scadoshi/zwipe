@@ -338,7 +338,7 @@ mod tests {
         assert!(result.is_ok());
 
         let hash = result.unwrap();
-        assert!(!hash.0.is_empty());
+        assert_ne!(hash.0, "");
 
         // Argon2 hashes should start with $argon2 and have multiple $ delimited sections
         assert!(hash.0.starts_with("$argon2"));
@@ -354,7 +354,7 @@ mod tests {
         assert!(result.is_ok());
 
         let hash = result.unwrap();
-        assert!(!hash.to_string().is_empty());
+        assert_ne!(hash.to_string(), "");
         assert!(hash.to_string().starts_with("$argon2"));
     }
 
@@ -470,7 +470,7 @@ mod tests {
         assert_eq!(long_password.len(), 128);
         let password = Password::new(&long_password).unwrap();
         let hash = HashedPassword::generate(password).unwrap();
-        assert!(!hash.0.is_empty());
+        assert_ne!(hash.0, "");
     }
 
     #[test]
@@ -493,7 +493,7 @@ mod tests {
         assert!(result.is_ok());
 
         let hash = result.unwrap();
-        assert!(!hash.0.is_empty());
+        assert_ne!(hash.0, "");
     }
 
     #[test]
@@ -504,7 +504,7 @@ mod tests {
         assert!(result.is_ok());
 
         let hash = result.unwrap();
-        assert!(!hash.0.is_empty());
+        assert_ne!(hash.0, "");
     }
 
     // == password verification ==
