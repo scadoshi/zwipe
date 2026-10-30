@@ -17,6 +17,10 @@ use zwipe_core::domain::card::scryfall_data::rarity::Rarity;
 /// primitives or `Json<T>` wrappers that `SQLx` handles natively.
 #[derive(Debug, FromRow)]
 #[expect(missing_docs, reason = "each field mirrors the column it is read from")]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "each bool mirrors a scryfall_data column"
+)]
 pub struct DatabaseScryfallData {
     // Core Card Fields
     pub arena_id: Option<i32>,
