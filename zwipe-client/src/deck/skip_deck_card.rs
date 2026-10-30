@@ -9,6 +9,11 @@ use crate::{ClientError, ZwipeClient};
 
 impl ZwipeClient {
     /// Posts a single deck-card skip.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`ClientError`] when the request fails to complete, the server answers with an
+    /// error status, or the reply doesn't decode.
     pub async fn skip_deck_card(
         &self,
         deck_id: Uuid,
@@ -23,6 +28,11 @@ impl ZwipeClient {
     }
 
     /// Undoes a single deck-card skip.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`ClientError`] when the request fails to complete, the server answers with an
+    /// error status, or the reply doesn't decode.
     pub async fn unskip_deck_card(
         &self,
         deck_id: Uuid,

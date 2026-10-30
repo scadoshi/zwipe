@@ -9,6 +9,11 @@ use crate::{ClientError, ZwipeClient};
 
 impl ZwipeClient {
     /// Marks a one-time UI hint as shown for the authenticated user.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`ClientError`] when the request fails to complete, the server answers with an
+    /// error status, or the reply doesn't decode.
     pub async fn mark_hint_shown(
         &self,
         hint: &str,

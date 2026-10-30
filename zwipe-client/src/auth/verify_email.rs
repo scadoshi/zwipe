@@ -10,6 +10,11 @@ impl ZwipeClient {
     ///
     /// Unauthenticated: the link opens in a browser with no session. A token
     /// that is unknown, spent or expired answers 4xx.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`ClientError`] when the request fails to complete, the server answers with an
+    /// error status, or the reply doesn't decode.
     pub async fn verify_email(&self, token: String) -> Result<(), ClientError> {
         self.call(VerifyEmail(HttpVerifyEmail { token }), None)
             .await

@@ -11,6 +11,11 @@ use crate::{ClientError, ZwipeClient};
 
 impl ZwipeClient {
     /// Fetches the hour's featured flavor card.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`ClientError`] when the request fails to complete, the server answers with an
+    /// error status, or the reply doesn't decode.
     pub async fn featured_flavor(&self) -> Result<Card, ClientError> {
         self.call(FeaturedFlavor, None).await
     }

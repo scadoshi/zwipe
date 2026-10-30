@@ -8,6 +8,11 @@ use crate::{ClientError, ZwipeClient};
 
 impl ZwipeClient {
     /// Reads the user's deck count and color map.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`ClientError`] when the request fails to complete, the server answers with an
+    /// error status, or the reply doesn't decode.
     pub async fn play_style_summary(
         &self,
         session: &Session,

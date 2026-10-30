@@ -8,6 +8,11 @@ use crate::{ClientError, ZwipeClient};
 
 impl ZwipeClient {
     /// Reads the user's commander suggestions, at most `limit` of them.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`ClientError`] when the request fails to complete, the server answers with an
+    /// error status, or the reply doesn't decode.
     pub async fn commander_suggestions(
         &self,
         limit: u32,

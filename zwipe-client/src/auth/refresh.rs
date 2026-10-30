@@ -8,6 +8,11 @@ use crate::{ClientError, ZwipeClient};
 
 impl ZwipeClient {
     /// Refreshes access tokens using a refresh token.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`ClientError`] when the request fails to complete, the server answers with an
+    /// error status, or the reply doesn't decode.
     pub async fn refresh(&self, request: &HttpRefreshSession) -> Result<Session, ClientError> {
         self.call(Refresh(request.clone()), None).await
     }

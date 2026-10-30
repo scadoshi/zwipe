@@ -17,6 +17,11 @@ impl ZwipeClient {
     /// (false while the commander's cache is still warming, so the server
     /// served the full pool), and where related cards begin when the synergy
     /// pool ran out.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`ClientError`] when the request fails to complete, the server answers with an
+    /// error status, or the reply doesn't decode.
     pub async fn search_deck_cards(
         &self,
         deck_id: Uuid,

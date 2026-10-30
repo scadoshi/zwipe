@@ -9,6 +9,11 @@ use crate::{ClientError, ZwipeClient};
 
 impl ZwipeClient {
     /// Searches cards with filter criteria.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`ClientError`] when the request fails to complete, the server answers with an
+    /// error status, or the reply doesn't decode.
     pub async fn search_cards(
         &self,
         card_filter: &CardQuery,

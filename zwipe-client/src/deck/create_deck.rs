@@ -9,6 +9,11 @@ use crate::{ClientError, ZwipeClient};
 
 impl ZwipeClient {
     /// Creates new deck profiles.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`ClientError`] when the request fails to complete, the server answers with an
+    /// error status, or the reply doesn't decode.
     pub async fn create_deck_profile(
         &self,
         request: &HttpCreateDeckProfile,

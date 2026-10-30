@@ -10,6 +10,11 @@ use crate::{ClientError, ZwipeClient};
 
 impl ZwipeClient {
     /// Adds cards to a deck.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`ClientError`] when the request fails to complete, the server answers with an
+    /// error status, or the reply doesn't decode.
     pub async fn create_deck_card(
         &self,
         deck_id: Uuid,

@@ -13,6 +13,11 @@ impl ZwipeClient {
     /// The password is validated server-side; callers should run
     /// `zwipe_core`'s password validation first so the user sees the rule
     /// they broke without a round trip.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`ClientError`] when the request fails to complete, the server answers with an
+    /// error status, or the reply doesn't decode.
     pub async fn reset_password(
         &self,
         token: String,

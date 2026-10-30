@@ -7,6 +7,11 @@ use crate::{ClientError, ZwipeClient};
 
 impl ZwipeClient {
     /// Posts a crash report from the previous run.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`ClientError`] when the request fails to complete, the server answers with an
+    /// error status, or the reply doesn't decode.
     pub async fn record_crash(&self, report: &HttpCrashReport) -> Result<(), ClientError> {
         self.call(RecordCrash(report.clone()), None).await
     }

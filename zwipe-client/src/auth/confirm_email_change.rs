@@ -12,6 +12,11 @@ impl ZwipeClient {
     /// Unauthenticated, for the same reason as [`ZwipeClient::verify_email`].
     /// A token that is unknown, spent or expired answers 422; an address
     /// another account took in the meantime answers 409.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`ClientError`] when the request fails to complete, the server answers with an
+    /// error status, or the reply doesn't decode.
     pub async fn confirm_email_change(&self, token: String) -> Result<(), ClientError> {
         self.call(ConfirmEmailChange(HttpConfirmEmailChange { token }), None)
             .await

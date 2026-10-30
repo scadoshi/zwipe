@@ -12,6 +12,11 @@ impl ZwipeClient {
     /// selectable on a deploy instead of a store train. There is no offline
     /// fallback: the picker writes a preference, which needs the server
     /// anyway.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`ClientError`] when the request fails to complete, the server answers with an
+    /// error status, or the reply doesn't decode.
     pub async fn get_ub_franchises(&self) -> Result<Vec<UbFranchiseView>, ClientError> {
         self.call(GetUbFranchises, None).await
     }
