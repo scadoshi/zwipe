@@ -97,7 +97,7 @@ fn build_rules(card: &Card) -> Option<Vec<FaceRules>> {
 /// (e.g. an eyeball sheet putting it in a footer bar) use this to decide whether
 /// to render it.
 pub fn card_face_count(card: &Card) -> usize {
-    build_rules(card).map(|f| f.len()).unwrap_or(0)
+    build_rules(card).map_or(0, |f| f.len())
 }
 
 /// The shared card-detail body + action bar.
@@ -182,7 +182,7 @@ pub fn CardDetails(
     let faces = build_rules(&card);
     // Multi-faced cards (DFCs) show one face at a time with a Flip control, so a
     // long two-face card can't overflow a non-scrolling host.
-    let face_count = faces.as_ref().map(|f| f.len()).unwrap_or(0);
+    let face_count = faces.as_ref().map_or(0, Vec::len);
     // Host-controlled face state when `face` is passed, else an internal signal
     // (the hook always runs so the call order stays stable across renders).
     let internal_face = use_signal(|| 0usize);
