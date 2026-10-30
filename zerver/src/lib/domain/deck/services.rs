@@ -15,8 +15,7 @@ use zwipe_core::domain::deck::requests::delete_deck_card::DeleteDeckCard;
 use zwipe_core::domain::deck::requests::get_deck_profile::GetDeckProfile;
 use zwipe_core::domain::deck::requests::get_deck_profiles::GetDeckProfiles;
 use zwipe_core::domain::deck::requests::import_deck_cards::{
-    ImportDeckCards, ImportDeckCardsResult, ImportedCard, UnresolvedCard, dfc_front_face,
-    entry_front_face,
+    self, ImportDeckCards, ImportDeckCardsResult, ImportedCard, UnresolvedCard,
 };
 use zwipe_core::domain::deck::requests::skip_deck_card::SkipDeckCard;
 use zwipe_core::domain::deck::requests::update_deck_card::UpdateDeckCard;
@@ -833,7 +832,7 @@ where
         let mut card_map: HashMap<String, Card> = HashMap::new();
         for card in cards {
             let full = card.scryfall_data.name.to_lowercase();
-            if let Some(front) = dfc_front_face(&full) {
+            if let Some(front) = import_deck_cards::dfc_front_face(&full) {
                 card_map
                     .entry(front.to_string())
                     .or_insert_with(|| card.clone());
@@ -875,7 +874,7 @@ where
             // Try the entry as written, then its front face (before a slash), so
             // "A // B", "A / B", and "A" all resolve to the same card.
             let matched = card_map.get(&key).or_else(|| {
-                let front = entry_front_face(&key);
+                let front = import_deck_cards::entry_front_face(&key);
                 if front.is_empty() || front == key {
                     None
                 } else {

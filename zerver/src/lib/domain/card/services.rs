@@ -1,7 +1,7 @@
 use chrono::{DateTime, Utc};
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::card_profile::CardProfile;
-use zwipe_core::domain::card::card_role::{CardRole, classify_oracle_tag_gaps};
+use zwipe_core::domain::card::card_role::{self, CardRole};
 use zwipe_core::domain::card::oracle_tag::OracleTag;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::card::search_card::card_filter::CardQuery;
@@ -23,7 +23,7 @@ use crate::domain::card::requests::get_oracle_words::GetOracleWordsError;
 use crate::domain::card::requests::get_scryfall_data::{GetScryfallData, ScryfallDataIds};
 use crate::domain::card::requests::get_sets::GetSetsError;
 use crate::inbound::external::scryfall::bulk::BulkEndpoint;
-use crate::outbound::sqlx::card::helpers::scryfall_data_fields::scryfall_data_field_count;
+use crate::outbound::sqlx::card::helpers::scryfall_data_fields;
 
 /// PostgreSQL parameter limit per query (~65k parameters).
 ///
@@ -40,7 +40,7 @@ const POSTGRESQL_PARAMETER_HARD_LIMIT: usize = 65_535;
 ///
 /// With 87 fields per card and the 65,535 param limit, this yields 376 cards per batch.
 fn batch_size() -> usize {
-    POSTGRESQL_PARAMETER_HARD_LIMIT / 2 / scryfall_data_field_count()
+    POSTGRESQL_PARAMETER_HARD_LIMIT / 2 / scryfall_data_fields::scryfall_data_field_count()
 }
 
 /// Card service implementation handling MTG card operations and Scryfall synchronization.
@@ -105,7 +105,7 @@ impl<R: CardRepository> CardService for Service<R> {
             let updates: Vec<_> = cards
                 .iter()
                 .filter_map(|card| {
-                    let gaps = classify_oracle_tag_gaps(card);
+                    let gaps = card_role::classify_oracle_tag_gaps(card);
                     if gaps.is_empty() {
                         return None;
                     }

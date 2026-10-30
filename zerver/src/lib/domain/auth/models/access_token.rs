@@ -8,7 +8,7 @@
 use std::str::FromStr;
 
 use chrono::{Duration, Utc};
-use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
+use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use zwipe_core::domain::auth::models::access_token::{
@@ -118,7 +118,7 @@ pub trait JwtValidate {
 
 impl JwtValidate for Jwt {
     fn validate(&self, secret: &JwtSecret) -> Result<UserClaims, jsonwebtoken::errors::Error> {
-        let token_data = decode::<UserClaims>(
+        let token_data = jsonwebtoken::decode::<UserClaims>(
             &self.to_string(),
             &DecodingKey::from_secret(secret.as_ref()),
             &Validation::default(),
@@ -160,7 +160,7 @@ impl AccessTokenExt for AccessToken {
         };
 
         let value = Jwt::from_str(
-            &encode(
+            &jsonwebtoken::encode(
                 &Header::default(),
                 &user_claims,
                 &EncodingKey::from_secret(secret.as_ref()),
@@ -368,7 +368,7 @@ mod tests {
     fn test_encode_reproduces_token_minted_by_jsonwebtoken_10() {
         let secret = JwtSecret::new(COMPAT_SECRET).unwrap();
 
-        let token = encode(
+        let token = jsonwebtoken::encode(
             &Header::default(),
             &compat_claims(),
             &EncodingKey::from_secret(secret.as_ref()),
