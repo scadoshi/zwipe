@@ -123,7 +123,8 @@ fn minor_of(version: &str) -> &str {
     version
         .match_indices('.')
         .nth(1)
-        .map_or(version, |(dot, _)| &version[..dot])
+        .and_then(|(dot, _)| version.get(..dot))
+        .unwrap_or(version)
 }
 
 /// One chip: its label, whether it lights up, and what clicking it selects.
