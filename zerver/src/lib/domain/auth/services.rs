@@ -45,7 +45,10 @@ use crate::domain::user::ports::UserRepository;
 /// never matches any input; its only job is to burn equivalent CPU so a
 /// missing account isn't measurably faster to reject than a real one with a
 /// wrong password (which would leak whether the account exists: enumeration).
-#[allow(clippy::expect_used)]
+#[expect(
+    clippy::expect_used,
+    reason = "a fixed literal that meets the password policy; a unit test forces it"
+)]
 static TIMING_EQUALIZER_HASH: LazyLock<HashedPassword> = LazyLock::new(|| {
     Password::new("Zw1pe!Dummy#Hash7")
         .expect("timing-equalizer dummy password must satisfy the password policy")

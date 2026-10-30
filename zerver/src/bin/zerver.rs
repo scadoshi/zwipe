@@ -12,7 +12,10 @@ use zwipe::outbound::sqlx::postgres::Postgres;
 use zwipe_core::domain::logo;
 
 #[tokio::main]
-#[allow(clippy::print_stderr)]
+#[expect(
+    clippy::print_stderr,
+    reason = "the error goes to stderr before exit, when tracing may not be set up"
+)]
 async fn main() {
     logo::Zerver::print();
     match run().await {

@@ -1,3 +1,5 @@
+//! Deck card operations: server-side error types only.
+
 /// Add card to deck operation.
 pub mod create_deck_card;
 /// Remove card from deck operation.
