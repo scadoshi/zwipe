@@ -1,9 +1,7 @@
 //! Update deck card operation (idempotent PATCH semantics).
 //!
 //! One constructor, one wire shape: [`UpdateDeckCard::patch`] with quantity
-//! as an **absolute** value to set, so replaying a request is harmless. The
-//! legacy delta (PUT) form was removed at the end of the migration in
-//! `context/plans/patch_idempotent_updates.md`.
+//! as an **absolute** value to set, so replaying a request is harmless.
 
 use thiserror::Error;
 use uuid::Uuid;

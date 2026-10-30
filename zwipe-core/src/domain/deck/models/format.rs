@@ -185,7 +185,7 @@ impl Format {
     pub fn max_cards(&self) -> Option<u32> {
         match self {
             // Exactly-100 commander singleton formats. `Brawl` is Arena's
-            // 100-card Brawl (formerly Historic Brawl, renamed Dec 2023).
+            // 100-card Brawl.
             Self::Commander
             | Self::PauperCommander
             | Self::Duel

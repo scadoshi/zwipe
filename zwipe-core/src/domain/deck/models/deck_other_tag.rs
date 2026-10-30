@@ -6,8 +6,8 @@
 //! aren't about the game plan (Budget, Jank, Meme, Precon, …) and is meant to
 //! grow freely over time.
 //!
-//! Variants are only ever added, never removed or renamed, so previously-stored
-//! values keep parsing.
+//! Variants are only ever added, never removed or renamed, so stored values
+//! keep parsing.
 
 use std::fmt;
 

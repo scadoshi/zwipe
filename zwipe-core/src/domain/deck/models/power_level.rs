@@ -7,7 +7,7 @@
 //!
 //! Brackets are Commander-coined but players apply them loosely to any deck, so
 //! this isn't gated by format. Variants are only ever added, never removed or
-//! renamed, so previously-stored values keep parsing.
+//! renamed, so stored values keep parsing.
 
 use std::fmt;
 

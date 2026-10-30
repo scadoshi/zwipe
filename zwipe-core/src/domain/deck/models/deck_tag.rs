@@ -8,7 +8,7 @@
 //!
 //! The list is large on purpose; the picker is a searchable typeahead, so more
 //! options cost nothing on screen. Variants are only ever added, never removed
-//! or renamed, so previously-stored tags keep parsing.
+//! or renamed, so stored tags keep parsing.
 
 use std::fmt;
 
