@@ -30,7 +30,7 @@ use uuid::Uuid;
 use zwipe::domain::card::ports::CardRepository;
 use zwipe::outbound::sqlx::postgres::Postgres;
 use zwipe_core::domain::card::Card;
-use zwipe_core::domain::card::search_card::card_filter::CardQuery;
+use zwipe_core::domain::card::search_card::card_filter::{CardQuery, strip_punctuation};
 
 /// Build a `CardQuery` from a flat criteria object, forcing a high limit so the
 /// SQL side never truncates below the predicate side.
@@ -437,4 +437,104 @@ async fn sql_and_predicate_agree_on_every_criterion(pool: sqlx::PgPool) {
         "SQL/predicate parity mismatches:\n{}",
         mismatches.join("\n")
     );
+}
+
+/// Card search folds accents on both sides: the typed query and the stored
+/// text. "Jotun" and "Jötun" both find Jötun Grunt, and the in-memory matcher
+/// keeps the same cards the SQL returns.
+#[sqlx::test]
+async fn accented_text_matches_with_or_without_accents(pool: sqlx::PgPool) {
+    let universe = vec![
+        card("Lim-Dûl the Necromancer")
+            .mono("B")
+            .type_line("Legendary Creature — Human Wizard"),
+        card("Jötun Grunt")
+            .mono("W")
+            .type_line("Creature — Giant Soldier")
+            .oracle_text("Cumulative upkeep—Put two cards from a single graveyard on the bottom of their owner's library."),
+        card("Dandân")
+            .mono("U")
+            .type_line("Creature — Fish")
+            .oracle_text("Dandân can't attack unless defending player controls an Island. Séance-proof."),
+        card("Lightning Bolt")
+            .mono("R")
+            .type_line("Instant")
+            .oracle_text("Lightning Bolt deals 3 damage to any target."),
+    ];
+    seed_cards(&pool, &universe).await;
+    let repo = Postgres { pool: pool.clone() };
+    let all: Vec<Card> = repo.search_cards(&query(json!({}))).await.unwrap();
+
+    // The app's CardQueryBuilder folds and strips the typed value before it
+    // goes on the wire, so the cases do the same with `strip_punctuation`.
+    let cases = [
+        ("name_contains", "Lim-Dul", "Lim-Dûl the Necromancer"),
+        ("name_contains", "Lim-Dûl", "Lim-Dûl the Necromancer"),
+        ("name_contains", "Jotun", "Jötun Grunt"),
+        ("name_contains", "Jötun", "Jötun Grunt"),
+        ("name_contains", "dandan", "Dandân"),
+        ("oracle_text_contains", "seance", "Dandân"),
+        ("oracle_text_contains", "Séance", "Dandân"),
+    ];
+    let mut failures: Vec<String> = Vec::new();
+    for (field, typed, expected) in cases {
+        let criteria = json!({ field: strip_punctuation(typed) });
+        let q = query(criteria.clone());
+        let sql: Vec<String> = repo
+            .search_cards(&q)
+            .await
+            .unwrap()
+            .into_iter()
+            .map(|c| c.scryfall_data.name)
+            .collect();
+        let predicate: Vec<String> = all
+            .iter()
+            .filter(|c| q.criteria().matches(c))
+            .map(|c| c.scryfall_data.name.clone())
+            .collect();
+        if sql != [expected] || predicate != [expected] {
+            failures.push(format!(
+                "{field} {typed:?}: SQL={sql:?} predicate={predicate:?}, want [{expected:?}]"
+            ));
+        }
+    }
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+}
+
+/// The SQL fold and zwipe-core's `strip_punctuation` produce the same text, so
+/// a card the server returns is one the in-memory matcher keeps.
+#[sqlx::test]
+async fn sql_fold_and_core_strip_agree(pool: sqlx::PgPool) {
+    let samples = [
+        "Lim-Dûl the Necromancer",
+        "Lim-Du\u{302}l, decomposed",
+        "Jötun Grunt",
+        "Æther Vial",
+        "Ætherize",
+        "Dandân",
+        "Séance",
+        "Ifh-Bíff Efreet",
+        "Márton Stromgald",
+        "Œuvre",
+        "Straße",
+        "Øl Ðrake Þorn Łukasz",
+        "Ĳssel ﬁre",
+        "Akroma's Will",
+        "Satya, Aetherflux Genius",
+        "Lightning Bolt",
+    ];
+    let mut mismatches: Vec<String> = Vec::new();
+    for sample in samples {
+        let sql: String =
+            sqlx::query_scalar("SELECT regexp_replace(f_unaccent($1), '[^a-zA-Z0-9 ]', '', 'g')")
+                .bind(sample)
+                .fetch_one(&pool)
+                .await
+                .unwrap();
+        let core = strip_punctuation(sample);
+        if sql != core {
+            mismatches.push(format!("{sample:?}: SQL={sql:?} core={core:?}"));
+        }
+    }
+    assert!(mismatches.is_empty(), "{}", mismatches.join("\n"));
 }
