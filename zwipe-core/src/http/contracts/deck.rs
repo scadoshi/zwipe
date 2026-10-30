@@ -7,7 +7,7 @@ use crate::domain::card::Card;
 use crate::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use crate::domain::deck::format::Format;
 use crate::domain::deck::{DeckEntry, DeckOtherTag, ImportMode, PowerLevel};
-use crate::http::helpers::Opdate;
+use crate::http::helpers::Patch;
 
 /// Request to import an Archidekt deck's cards into an existing deck.
 ///
@@ -216,60 +216,60 @@ impl HttpCreateDeckProfileBuilder {
 
 /// Deck metadata update request body with partial update semantics.
 ///
-/// Uses [`Opdate`] for nullable fields: absent means unchanged, `null`
-/// means clear, a bare value means set (the Opdate custom serde impls make
+/// Uses [`Patch`] for nullable fields: absent means unchanged, `null`
+/// means clear, a bare value means set (the Patch custom serde impls make
 /// this real; every field carries `default` + `skip_serializing_if` per the
-/// Opdate contract). `name` is the one non-clearable field: a deck always
+/// Patch contract). `name` is the one non-clearable field: a deck always
 /// has a name, so explicit `null` there is a 422 (RFC 7396 resolution),
 /// enforced by the handler.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HttpUpdateDeckProfile {
     /// New deck name; absent = leave unchanged. Non-clearable: `null` is
     /// rejected by the handler rather than ignored.
-    #[serde(default, skip_serializing_if = "Opdate::is_unchanged")]
-    pub name: Opdate<String>,
+    #[serde(default, skip_serializing_if = "Patch::is_unchanged")]
+    pub name: Patch<String>,
     /// Commander card ID with partial update semantics.
-    #[serde(default, skip_serializing_if = "Opdate::is_unchanged")]
-    pub commander_id: Opdate<Uuid>,
+    #[serde(default, skip_serializing_if = "Patch::is_unchanged")]
+    pub commander_id: Patch<Uuid>,
     /// Partner commander card ID with partial update semantics.
-    #[serde(default, skip_serializing_if = "Opdate::is_unchanged")]
-    pub partner_commander_id: Opdate<Uuid>,
+    #[serde(default, skip_serializing_if = "Patch::is_unchanged")]
+    pub partner_commander_id: Patch<Uuid>,
     /// Background enchantment card ID with partial update semantics.
-    #[serde(default, skip_serializing_if = "Opdate::is_unchanged")]
-    pub background_id: Opdate<Uuid>,
+    #[serde(default, skip_serializing_if = "Patch::is_unchanged")]
+    pub background_id: Patch<Uuid>,
     /// Signature spell card ID with partial update semantics.
-    #[serde(default, skip_serializing_if = "Opdate::is_unchanged")]
-    pub signature_spell_id: Opdate<Uuid>,
+    #[serde(default, skip_serializing_if = "Patch::is_unchanged")]
+    pub signature_spell_id: Patch<Uuid>,
     /// Format with partial update semantics.
-    #[serde(default, skip_serializing_if = "Opdate::is_unchanged")]
-    pub format: Opdate<String>,
+    #[serde(default, skip_serializing_if = "Patch::is_unchanged")]
+    pub format: Patch<String>,
     /// Tags with partial update semantics. `Set` replaces the full tag set
     /// (empty/`null` clears all tags); absent leaves them unchanged.
-    #[serde(default, skip_serializing_if = "Opdate::is_unchanged")]
-    pub tags: Opdate<Vec<String>>,
+    #[serde(default, skip_serializing_if = "Patch::is_unchanged")]
+    pub tags: Patch<Vec<String>>,
     /// Power level with partial update semantics. `Set(None)` clears it;
     /// absent leaves it unchanged.
-    #[serde(default, skip_serializing_if = "Opdate::is_unchanged")]
-    pub power_level: Opdate<String>,
+    #[serde(default, skip_serializing_if = "Patch::is_unchanged")]
+    pub power_level: Patch<String>,
     /// Other-tags with partial update semantics. `Set` replaces the full set
     /// (empty/`null` clears all); absent leaves them unchanged.
-    #[serde(default, skip_serializing_if = "Opdate::is_unchanged")]
-    pub other_tags: Opdate<Vec<String>>,
+    #[serde(default, skip_serializing_if = "Patch::is_unchanged")]
+    pub other_tags: Patch<Vec<String>>,
     /// Oracle-tags with partial update semantics. `Set` replaces the full set
     /// (empty/`null` clears all); absent leaves them unchanged.
-    #[serde(default, skip_serializing_if = "Opdate::is_unchanged")]
-    pub oracle_tags: Opdate<Vec<String>>,
+    #[serde(default, skip_serializing_if = "Patch::is_unchanged")]
+    pub oracle_tags: Patch<Vec<String>>,
     /// Land target with partial update semantics. `Set(None)` clears the
     /// override (back to the format heuristic); absent leaves it unchanged.
-    #[serde(default, skip_serializing_if = "Opdate::is_unchanged")]
-    pub land_target: Opdate<i32>,
+    #[serde(default, skip_serializing_if = "Patch::is_unchanged")]
+    pub land_target: Patch<i32>,
     /// Price target with partial update semantics. `Set(None)` clears the
     /// budget; absent leaves it unchanged.
-    #[serde(default, skip_serializing_if = "Opdate::is_unchanged")]
-    pub price_target: Opdate<f64>,
+    #[serde(default, skip_serializing_if = "Patch::is_unchanged")]
+    pub price_target: Patch<f64>,
     /// Price target currency with partial update semantics.
-    #[serde(default, skip_serializing_if = "Opdate::is_unchanged")]
-    pub price_target_currency: Opdate<PriceCurrency>,
+    #[serde(default, skip_serializing_if = "Patch::is_unchanged")]
+    pub price_target_currency: Patch<PriceCurrency>,
 }
 
 impl HttpUpdateDeckProfile {
@@ -277,18 +277,18 @@ impl HttpUpdateDeckProfile {
     pub fn builder() -> HttpUpdateDeckProfileBuilder {
         HttpUpdateDeckProfileBuilder {
             name: None,
-            commander_id: Opdate::Unchanged,
-            partner_commander_id: Opdate::Unchanged,
-            background_id: Opdate::Unchanged,
-            signature_spell_id: Opdate::Unchanged,
-            format: Opdate::Unchanged,
-            tags: Opdate::Unchanged,
-            power_level: Opdate::Unchanged,
-            other_tags: Opdate::Unchanged,
-            oracle_tags: Opdate::Unchanged,
-            land_target: Opdate::Unchanged,
-            price_target: Opdate::Unchanged,
-            price_target_currency: Opdate::Unchanged,
+            commander_id: Patch::Unchanged,
+            partner_commander_id: Patch::Unchanged,
+            background_id: Patch::Unchanged,
+            signature_spell_id: Patch::Unchanged,
+            format: Patch::Unchanged,
+            tags: Patch::Unchanged,
+            power_level: Patch::Unchanged,
+            other_tags: Patch::Unchanged,
+            oracle_tags: Patch::Unchanged,
+            land_target: Patch::Unchanged,
+            price_target: Patch::Unchanged,
+            price_target_currency: Patch::Unchanged,
         }
     }
 }
@@ -297,18 +297,18 @@ impl HttpUpdateDeckProfile {
 #[derive(Debug)]
 pub struct HttpUpdateDeckProfileBuilder {
     name: Option<String>,
-    commander_id: Opdate<Uuid>,
-    partner_commander_id: Opdate<Uuid>,
-    background_id: Opdate<Uuid>,
-    signature_spell_id: Opdate<Uuid>,
-    format: Opdate<String>,
-    tags: Opdate<Vec<String>>,
-    power_level: Opdate<String>,
-    other_tags: Opdate<Vec<String>>,
-    oracle_tags: Opdate<Vec<String>>,
-    land_target: Opdate<i32>,
-    price_target: Opdate<f64>,
-    price_target_currency: Opdate<PriceCurrency>,
+    commander_id: Patch<Uuid>,
+    partner_commander_id: Patch<Uuid>,
+    background_id: Patch<Uuid>,
+    signature_spell_id: Patch<Uuid>,
+    format: Patch<String>,
+    tags: Patch<Vec<String>>,
+    power_level: Patch<String>,
+    other_tags: Patch<Vec<String>>,
+    oracle_tags: Patch<Vec<String>>,
+    land_target: Patch<i32>,
+    price_target: Patch<f64>,
+    price_target_currency: Patch<PriceCurrency>,
 }
 
 impl HttpUpdateDeckProfileBuilder {
@@ -322,84 +322,84 @@ impl HttpUpdateDeckProfileBuilder {
 
     /// Sets the commander update.
     #[must_use]
-    pub fn commander_id(mut self, id: Opdate<Uuid>) -> Self {
+    pub fn commander_id(mut self, id: Patch<Uuid>) -> Self {
         self.commander_id = id;
         self
     }
 
     /// Sets the partner commander update.
     #[must_use]
-    pub fn partner_commander_id(mut self, id: Opdate<Uuid>) -> Self {
+    pub fn partner_commander_id(mut self, id: Patch<Uuid>) -> Self {
         self.partner_commander_id = id;
         self
     }
 
     /// Sets the background enchantment update.
     #[must_use]
-    pub fn background_id(mut self, id: Opdate<Uuid>) -> Self {
+    pub fn background_id(mut self, id: Patch<Uuid>) -> Self {
         self.background_id = id;
         self
     }
 
     /// Sets the signature spell update.
     #[must_use]
-    pub fn signature_spell_id(mut self, id: Opdate<Uuid>) -> Self {
+    pub fn signature_spell_id(mut self, id: Patch<Uuid>) -> Self {
         self.signature_spell_id = id;
         self
     }
 
     /// Sets the format update.
     #[must_use]
-    pub fn format(mut self, format: Opdate<String>) -> Self {
+    pub fn format(mut self, format: Patch<String>) -> Self {
         self.format = format;
         self
     }
 
     /// Sets the tags update.
     #[must_use]
-    pub fn tags(mut self, tags: Opdate<Vec<String>>) -> Self {
+    pub fn tags(mut self, tags: Patch<Vec<String>>) -> Self {
         self.tags = tags;
         self
     }
 
     /// Sets the power level update.
     #[must_use]
-    pub fn power_level(mut self, power_level: Opdate<String>) -> Self {
+    pub fn power_level(mut self, power_level: Patch<String>) -> Self {
         self.power_level = power_level;
         self
     }
 
     /// Sets the other-tags update.
     #[must_use]
-    pub fn other_tags(mut self, other_tags: Opdate<Vec<String>>) -> Self {
+    pub fn other_tags(mut self, other_tags: Patch<Vec<String>>) -> Self {
         self.other_tags = other_tags;
         self
     }
 
     /// Sets the oracle-tags update.
     #[must_use]
-    pub fn oracle_tags(mut self, oracle_tags: Opdate<Vec<String>>) -> Self {
+    pub fn oracle_tags(mut self, oracle_tags: Patch<Vec<String>>) -> Self {
         self.oracle_tags = oracle_tags;
         self
     }
 
     /// Sets the land target update.
     #[must_use]
-    pub fn land_target(mut self, land_target: Opdate<i32>) -> Self {
+    pub fn land_target(mut self, land_target: Patch<i32>) -> Self {
         self.land_target = land_target;
         self
     }
 
     /// Sets the price target update.
     #[must_use]
-    pub fn price_target(mut self, price_target: Opdate<f64>) -> Self {
+    pub fn price_target(mut self, price_target: Patch<f64>) -> Self {
         self.price_target = price_target;
         self
     }
 
     /// Sets the price target currency update.
     #[must_use]
-    pub fn price_target_currency(mut self, price_target_currency: Opdate<PriceCurrency>) -> Self {
+    pub fn price_target_currency(mut self, price_target_currency: Patch<PriceCurrency>) -> Self {
         self.price_target_currency = price_target_currency;
         self
     }
@@ -407,9 +407,7 @@ impl HttpUpdateDeckProfileBuilder {
     /// Builds the request.
     pub fn build(self) -> HttpUpdateDeckProfile {
         HttpUpdateDeckProfile {
-            name: self
-                .name
-                .map_or(Opdate::Unchanged, |n| Opdate::Set(Some(n))),
+            name: self.name.map_or(Patch::Unchanged, |n| Patch::Set(Some(n))),
             commander_id: self.commander_id,
             partner_commander_id: self.partner_commander_id,
             background_id: self.background_id,
@@ -588,13 +586,13 @@ mod tests {
         // Inbound: null = clear, bare value = set, absent = unchanged.
         let json = r#"{"commander_id":null,"land_target":33}"#;
         let req: HttpUpdateDeckProfile = serde_json::from_str(json).unwrap();
-        assert_eq!(req.commander_id, Opdate::Set(None));
-        assert_eq!(req.land_target, Opdate::Set(Some(33)));
+        assert_eq!(req.commander_id, Patch::Set(None));
+        assert_eq!(req.land_target, Patch::Set(Some(33)));
         assert!(req.format.is_unchanged());
         assert!(req.name.is_unchanged());
 
         // A null name decodes as Set(None), the handler's 422 signal.
         let req: HttpUpdateDeckProfile = serde_json::from_str(r#"{"name":null}"#).unwrap();
-        assert_eq!(req.name, Opdate::Set(None));
+        assert_eq!(req.name, Patch::Set(None));
     }
 }

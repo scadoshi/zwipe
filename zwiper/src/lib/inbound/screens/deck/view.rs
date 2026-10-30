@@ -17,7 +17,7 @@ use zwipe_core::domain::deck::format::Format;
 use zwipe_core::domain::user::models::hints::HINT_FIRST_DECK;
 use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
 use zwipe_core::http::contracts::deck_card::HttpPatchDeckCard;
-use zwipe_core::http::helpers::Opdate;
+use zwipe_core::http::helpers::Patch;
 
 use super::components::clone_deck_dialog::CloneDeckDialog;
 use super::components::collapsible_section::CollapsibleSection;
@@ -459,7 +459,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                         },
                                         on_clear_commander: move |()| {
                                             let request = HttpUpdateDeckProfile::builder()
-                                                .commander_id(Opdate::Set(None))
+                                                .commander_id(Patch::Set(None))
                                                 .build();
 
                                             spawn(async move {

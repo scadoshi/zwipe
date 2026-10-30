@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::domain::card::scryfall_data::ScryfallData;
 use crate::domain::deck::ImportMode;
-use crate::http::helpers::Opdate;
+use crate::http::helpers::Patch;
 
 /// Add card to deck request body.
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -45,27 +45,27 @@ impl HttpCreateDeckCard {
 ///
 /// Every field here is non-clearable (a deck card always has all four), so
 /// per the RFC 7396 resolution an explicit `null` is a 422, enforced by the
-/// handler; absent means untouched. [`Opdate`] fields keep null and absent
+/// handler; absent means untouched. [`Patch`] fields keep null and absent
 /// distinguishable on decode. The constructors never emit null.
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct HttpPatchDeckCard {
     /// Absolute quantity to set (≥ 1). Absent = untouched.
-    #[serde(default, skip_serializing_if = "Opdate::is_unchanged")]
-    pub quantity: Opdate<i32>,
+    #[serde(default, skip_serializing_if = "Patch::is_unchanged")]
+    pub quantity: Patch<i32>,
     /// Move card to this board ("deck", "maybeboard", "sideboard").
-    #[serde(default, skip_serializing_if = "Opdate::is_unchanged")]
-    pub board: Opdate<String>,
+    #[serde(default, skip_serializing_if = "Patch::is_unchanged")]
+    pub board: Patch<String>,
     /// Change the selected printing (new Scryfall data ID).
-    #[serde(default, skip_serializing_if = "Opdate::is_unchanged")]
-    pub scryfall_data_id: Opdate<String>,
+    #[serde(default, skip_serializing_if = "Patch::is_unchanged")]
+    pub scryfall_data_id: Patch<String>,
     /// Star (true) or unstar (false) this card as a deck MVP. Absent = untouched.
-    #[serde(default, skip_serializing_if = "Opdate::is_unchanged")]
-    pub mvp: Opdate<bool>,
+    #[serde(default, skip_serializing_if = "Patch::is_unchanged")]
+    pub mvp: Patch<bool>,
 }
 
 /// Absent-or-set: the constructor inputs can't express null by design.
-fn set_or_absent<T>(value: Option<T>) -> Opdate<T> {
-    value.map_or(Opdate::Unchanged, |v| Opdate::Set(Some(v)))
+fn set_or_absent<T>(value: Option<T>) -> Patch<T> {
+    value.map_or(Patch::Unchanged, |v| Patch::Set(Some(v)))
 }
 
 impl HttpPatchDeckCard {
@@ -74,18 +74,18 @@ impl HttpPatchDeckCard {
         Self {
             quantity: set_or_absent(quantity),
             board: set_or_absent(board),
-            scryfall_data_id: Opdate::Unchanged,
-            mvp: Opdate::Unchanged,
+            scryfall_data_id: Patch::Unchanged,
+            mvp: Patch::Unchanged,
         }
     }
 
     /// Creates a patch request that changes the selected printing.
     pub fn with_printing(scryfall_data_id: &str) -> Self {
         Self {
-            quantity: Opdate::Unchanged,
-            board: Opdate::Unchanged,
-            scryfall_data_id: Opdate::Set(Some(scryfall_data_id.to_string())),
-            mvp: Opdate::Unchanged,
+            quantity: Patch::Unchanged,
+            board: Patch::Unchanged,
+            scryfall_data_id: Patch::Set(Some(scryfall_data_id.to_string())),
+            mvp: Patch::Unchanged,
         }
     }
 
@@ -93,10 +93,10 @@ impl HttpPatchDeckCard {
     /// as a deck MVP.
     pub fn with_mvp(mvp: bool) -> Self {
         Self {
-            quantity: Opdate::Unchanged,
-            board: Opdate::Unchanged,
-            scryfall_data_id: Opdate::Unchanged,
-            mvp: Opdate::Set(Some(mvp)),
+            quantity: Patch::Unchanged,
+            board: Patch::Unchanged,
+            scryfall_data_id: Patch::Unchanged,
+            mvp: Patch::Set(Some(mvp)),
         }
     }
 }
@@ -125,7 +125,7 @@ mod tests {
     #[test]
     fn patch_body_round_trips_absolute_quantity() {
         let body: HttpPatchDeckCard = serde_json::from_str(r#"{"quantity":3}"#).unwrap();
-        assert_eq!(body.quantity, Opdate::Set(Some(3)));
+        assert_eq!(body.quantity, Patch::Set(Some(3)));
         assert!(body.board.is_unchanged());
         assert!(body.scryfall_data_id.is_unchanged());
         assert!(body.mvp.is_unchanged());
@@ -138,9 +138,9 @@ mod tests {
     fn patch_body_distinguishes_null_from_absent() {
         // Explicit null decodes as Set(None), the handler's 422 signal,
         // while an absent field stays Unchanged. Plain Option couldn't tell
-        // these apart, which is why the fields are Opdate.
+        // these apart, which is why the fields are Patch.
         let body: HttpPatchDeckCard = serde_json::from_str(r#"{"quantity":null}"#).unwrap();
-        assert_eq!(body.quantity, Opdate::Set(None));
+        assert_eq!(body.quantity, Patch::Set(None));
         assert!(body.board.is_unchanged());
     }
 
@@ -149,7 +149,7 @@ mod tests {
         let printing = HttpPatchDeckCard::with_printing("abc");
         assert_eq!(
             printing.scryfall_data_id,
-            Opdate::Set(Some("abc".to_string()))
+            Patch::Set(Some("abc".to_string()))
         );
         assert!(
             printing.quantity.is_unchanged()
@@ -158,7 +158,7 @@ mod tests {
         );
 
         let mvp = HttpPatchDeckCard::with_mvp(true);
-        assert_eq!(mvp.mvp, Opdate::Set(Some(true)));
+        assert_eq!(mvp.mvp, Patch::Set(Some(true)));
         assert!(
             mvp.quantity.is_unchanged()
                 && mvp.board.is_unchanged()
