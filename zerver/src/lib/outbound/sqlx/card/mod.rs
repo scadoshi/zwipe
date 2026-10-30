@@ -299,7 +299,10 @@ impl CardRepository for MyPostgres {
             .context("failed to commit oou_sets overlay")?;
         tracing::info!("oou sets overlay: {} wholly-UB set codes", codes.len());
 
-        sqlx::query("REFRESH MATERIALIZED VIEW latest_cards")
+        // CONCURRENTLY keeps card reads flowing during the nightly rebuild; it
+        // needs the unique index idx_latest_cards_id, which every migration
+        // that recreates the view also recreates.
+        sqlx::query("REFRESH MATERIALIZED VIEW CONCURRENTLY latest_cards")
             .execute(&self.pool)
             .await
             .context("failed to refresh latest_cards materialized view")?;
