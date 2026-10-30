@@ -135,7 +135,7 @@ async fn static_routes() -> ServerFnResult<Vec<String>> {
 /// Whether this load's splash is still to come or playing. The home page
 /// draws it; it goes false once the splash has faded, or at once on a load
 /// that skips it, so coming back to the home page never plays it again.
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct SiteSplash(pub Signal<bool>);
 
 #[component]
