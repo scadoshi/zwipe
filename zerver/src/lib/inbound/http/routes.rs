@@ -92,7 +92,7 @@ use crate::inbound::http::middleware::{CfConnectingIpKeyExtractor, UserIdKeyExtr
 /// On those routes the governor layer runs *before* the `AuthenticatedUser`
 /// extractor, and it calls the key extractor to bucket the request. When the
 /// request has no valid Bearer token the extractor returns
-/// `GovernorError::UnableToExtractKey`, and tower_governor's default maps that
+/// `GovernorError::UnableToExtractKey`, and `tower_governor`'s default maps that
 /// to a **500**, so an unauthenticated call to a private route answered 500
 /// instead of 401, polluting error logs and misleading health probes.
 ///
@@ -131,7 +131,7 @@ fn stable_rate_limit(error: GovernorError) -> Response<Body> {
 
 /// 429 with a STABLE body and the exact wait in the `Retry-After` header.
 ///
-/// tower_governor's default body interpolates the live countdown ("Too Many
+/// `tower_governor`'s default body interpolates the live countdown ("Too Many
 /// Requests! Wait for 1784s"); the client shows that text in a toast AND uses
 /// it in the error-report dedupe key, so every second of a lockout minted a
 /// fresh `client_errors` row (field-confirmed 2026-08-05). Bucketed copy keeps

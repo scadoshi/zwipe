@@ -50,7 +50,7 @@ impl BulkEndpoint {
         }
     }
 
-    /// Returns the snake_case name for file naming.
+    /// Returns the `snake_case` name for file naming.
     pub fn to_snake_case(&self) -> String {
         match self {
             Self::OracleCards => "oracle_cards".to_string(),

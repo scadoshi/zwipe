@@ -2,7 +2,7 @@
 //!
 //! The file is a JSON array of tag objects; each carries its metadata plus the
 //! list of cards (`taggings`) that hold it. We invert this at ingest into a
-//! normalized `card_otags` (oracle_id -> otag) correlation. See
+//! normalized `card_otags` (`oracle_id` -> otag) correlation. See
 //! `context/plans/otags/` for the wider design.
 
 use serde::Deserialize;

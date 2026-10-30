@@ -79,7 +79,7 @@ pub struct Config {
     /// Secret key for signing and verifying JWT tokens.
     pub jwt_secret: JwtSecret,
 
-    /// PostgreSQL connection URL (e.g., "postgres://user:pass@host/db").
+    /// PostgreSQL connection URL (e.g., `"postgres://user:pass@host/db"`).
     pub database_url: String,
 
     /// Address to bind the HTTP server to (e.g., "0.0.0.0:8080").
@@ -215,7 +215,7 @@ impl Config {
 /// even be offered) JWT/Resend/email secrets. Keep this to exactly what the
 /// sync pipeline needs; the systemd unit feeds it `/etc/zwipe/zervice.env`.
 pub struct ZerviceConfig {
-    /// PostgreSQL connection URL (e.g., "postgres://user:pass@host/db").
+    /// PostgreSQL connection URL (e.g., `"postgres://user:pass@host/db"`).
     pub database_url: String,
 
     /// Tracing filter directive(s), fed to `tracing_subscriber::EnvFilter`.

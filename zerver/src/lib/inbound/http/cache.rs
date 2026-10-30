@@ -8,7 +8,7 @@
 //!
 //! Deadlines are pinned instants, not durations, so each use case aligns
 //! expiry to whatever boundary it wants (top of the UTC hour, +5 minutes,
-//! next sync). AppState carries one typed slot per use case; the "registry"
+//! next sync). `AppState` carries one typed slot per use case; the "registry"
 //! is the struct itself, so every cached type is known at compile time and
 //! there are no string keys to collide.
 

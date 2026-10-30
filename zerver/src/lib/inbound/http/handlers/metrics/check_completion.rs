@@ -1,6 +1,6 @@
 //! Post-mutation deck-completion check.
 //!
-//! Called by deck and deck_card handlers after any mutation succeeds. Loads
+//! Called by deck and `deck_card` handlers after any mutation succeeds. Loads
 //! the full deck, runs validation, and if the deck has just reached a valid
 //! state for the first time, stamps `first_completed_at`, emits a
 //! `DeckCompleted` event, and increments the lifetime completed counter.
