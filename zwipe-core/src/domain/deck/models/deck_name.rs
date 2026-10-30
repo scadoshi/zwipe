@@ -24,14 +24,15 @@ pub enum InvalidDeckname {
     BadWord,
 }
 
-/// Longest name [`DeckName::new`] accepts, measured with `str::len`.
+/// Longest name [`DeckName::new`] accepts, counted in characters after trimming.
 const MAX_LENGTH: usize = 64;
 
 /// Validated deck name (1-64 characters, no profanity).
 ///
 /// # Validation Rules
 ///
-/// - **Length**: 1-64 characters (inclusive)
+/// - **Length**: 1-64 characters (inclusive), counted after trimming
+/// - **Trimmed**: Leading/trailing whitespace removed
 /// - **Content**: No profanity (uses two-tier filtering)
 ///
 /// # Example
@@ -49,21 +50,22 @@ impl DeckName {
     /// # Errors
     ///
     /// Returns [`InvalidDeckname`] if:
-    /// - Name is empty
+    /// - Name is empty or only whitespace
     /// - Name exceeds 64 characters
     /// - Name contains profanity
     pub fn new(name: impl Into<String>) -> Result<Self, InvalidDeckname> {
         let name = name.into();
+        let name = name.trim();
         if name.is_empty() {
             return Err(InvalidDeckname::TooShort);
         }
-        if name.len() > MAX_LENGTH {
+        if name.chars().count() > MAX_LENGTH {
             return Err(InvalidDeckname::TooLong);
         }
         if name.contains_bad_word() {
             return Err(InvalidDeckname::BadWord);
         }
-        Ok(Self(name))
+        Ok(Self(name.to_string()))
     }
 }
 
@@ -117,6 +119,37 @@ mod tests {
     fn test_deck_name_new_rejects_65_chars() {
         assert!(matches!(
             DeckName::new("a".repeat(65)),
+            Err(InvalidDeckname::TooLong)
+        ));
+    }
+
+    #[test]
+    fn test_deck_name_new_rejects_whitespace_only() {
+        assert!(matches!(
+            DeckName::new("   "),
+            Err(InvalidDeckname::TooShort)
+        ));
+    }
+
+    #[test]
+    fn test_deck_name_new_stores_trimmed_value() {
+        assert_eq!(&*DeckName::new("  My Deck  ").unwrap(), "My Deck");
+    }
+
+    #[test]
+    fn test_deck_name_new_accepts_max_chars_of_two_byte_chars() {
+        assert!(DeckName::new("é".repeat(MAX_LENGTH)).is_ok());
+    }
+
+    #[test]
+    fn test_deck_name_new_accepts_max_chars_of_four_byte_chars() {
+        assert!(DeckName::new("🐉".repeat(MAX_LENGTH)).is_ok());
+    }
+
+    #[test]
+    fn test_deck_name_new_rejects_one_char_over_max_of_multibyte_chars() {
+        assert!(matches!(
+            DeckName::new("é".repeat(MAX_LENGTH + 1)),
             Err(InvalidDeckname::TooLong)
         ));
     }
