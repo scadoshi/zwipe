@@ -92,23 +92,29 @@ fn assert_guide_slugs_match() {
 }
 
 fn generate_sitemap() {
+    use std::fmt::Write as _;
+
     let mut xml = String::from(
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
          <urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n",
     );
     for (path, changefreq, priority) in ROUTES {
-        xml.push_str(&format!(
+        write!(
+            xml,
             "  <url>\n    <loc>{WEB_BASE}{path}</loc>\n    \
              <changefreq>{changefreq}</changefreq>\n    \
              <priority>{priority}</priority>\n  </url>\n",
-        ));
+        )
+        .expect("writing to a String cannot fail");
     }
     for slug in GUIDE_SLUGS {
-        xml.push_str(&format!(
+        write!(
+            xml,
             "  <url>\n    <loc>{WEB_BASE}/guides/{slug}</loc>\n    \
              <changefreq>monthly</changefreq>\n    \
              <priority>0.6</priority>\n  </url>\n",
-        ));
+        )
+        .expect("writing to a String cannot fail");
     }
     xml.push_str("</urlset>\n");
 
