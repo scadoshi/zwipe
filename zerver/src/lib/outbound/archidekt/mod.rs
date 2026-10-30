@@ -226,7 +226,7 @@ mod tests {
     fn extract_id_from_full_url() {
         assert_eq!(
             ArchidektClient::extract_deck_id("https://archidekt.com/decks/13769484/shorikai"),
-            Some(13769484)
+            Some(13_769_484)
         );
     }
 
@@ -234,13 +234,16 @@ mod tests {
     fn extract_id_from_url_without_slug() {
         assert_eq!(
             ArchidektClient::extract_deck_id("archidekt.com/decks/11493358"),
-            Some(11493358)
+            Some(11_493_358)
         );
     }
 
     #[test]
     fn extract_id_from_bare_id() {
-        assert_eq!(ArchidektClient::extract_deck_id("11493358"), Some(11493358));
+        assert_eq!(
+            ArchidektClient::extract_deck_id("11493358"),
+            Some(11_493_358)
+        );
     }
 
     #[test]
