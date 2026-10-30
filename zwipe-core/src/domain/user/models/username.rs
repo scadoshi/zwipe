@@ -11,11 +11,15 @@ use thiserror::Error;
 
 use crate::domain::moderation::ContainsBadWord;
 
-/// Fewest bytes a trimmed username may have.
+/// Fewest characters a trimmed username may have.
 const MIN_LENGTH: usize = 3;
 
-/// Most bytes a trimmed username may have.
+/// Most characters a trimmed username may have.
 const MAX_LENGTH: usize = 20;
+
+/// Zero-width characters that `char::is_whitespace` misses but that render as
+/// nothing, so a username containing one would look like another user's.
+const ZERO_WIDTH: [char; 5] = ['\u{200B}', '\u{200C}', '\u{200D}', '\u{2060}', '\u{FEFF}'];
 
 /// Validation errors when creating a username.
 ///
@@ -40,7 +44,8 @@ pub enum InvalidUsername {
     #[error("must not exceed {MAX_LENGTH} characters")]
     TooLong,
 
-    /// Username contains whitespace (spaces, tabs, newlines).
+    /// Username contains whitespace (spaces, tabs, newlines) or a zero-width
+    /// character.
     ///
     /// Whitespace is disallowed to prevent:
     /// - Confusion with display formatting
@@ -65,7 +70,7 @@ pub enum InvalidUsername {
 /// # Validation Rules
 ///
 /// - **Length**: 3-20 characters
-/// - **No Whitespace**: No spaces, tabs, or newlines
+/// - **No Whitespace**: No spaces, tabs, newlines, or zero-width characters
 /// - **No Profanity**: Checked against bad word dictionary
 /// - **Trimmed**: Leading/trailing whitespace removed
 ///
@@ -128,15 +133,20 @@ impl Username {
             return Err(InvalidUsername::BadWord);
         }
 
-        if trimmed.chars().any(char::is_whitespace) {
+        if trimmed
+            .chars()
+            .any(|c| c.is_whitespace() || ZERO_WIDTH.contains(&c))
+        {
             return Err(InvalidUsername::Whitespace);
         }
 
-        if trimmed.len() < MIN_LENGTH {
+        let length = trimmed.chars().count();
+
+        if length < MIN_LENGTH {
             return Err(InvalidUsername::TooShort);
         }
 
-        if trimmed.len() > MAX_LENGTH {
+        if length > MAX_LENGTH {
             return Err(InvalidUsername::TooLong);
         }
 
@@ -204,6 +214,40 @@ mod tests {
             Username::new("abcdefghijklmnopqrst"),
             Ok(Username(_))
         ));
+    }
+
+    #[test]
+    fn test_username_new_rejects_two_multibyte_chars_as_too_short() {
+        assert!(matches!(
+            Username::new("éé"),
+            Err(InvalidUsername::TooShort)
+        ));
+    }
+
+    #[test]
+    fn test_username_new_accepts_max_chars_of_two_byte_chars() {
+        assert!(Username::new("é".repeat(MAX_LENGTH)).is_ok());
+    }
+
+    #[test]
+    fn test_username_new_rejects_one_char_over_max_of_multibyte_chars() {
+        assert!(matches!(
+            Username::new("é".repeat(MAX_LENGTH + 1)),
+            Err(InvalidUsername::TooLong)
+        ));
+    }
+
+    #[test]
+    fn test_username_new_rejects_zero_width_chars() {
+        for zw in ['\u{200B}', '\u{200C}', '\u{200D}', '\u{2060}', '\u{FEFF}'] {
+            assert!(
+                matches!(
+                    Username::new(format!("scadoshi{zw}")),
+                    Err(InvalidUsername::Whitespace)
+                ),
+                "{zw:?} should be rejected"
+            );
+        }
     }
 
     #[test]
