@@ -1,10 +1,15 @@
-# Clippy configuration - thresholds and behavior settings only
-# Lint levels (warn/deny/allow) go in Cargo.toml [workspace.lints.clippy]
+# Thresholds and behavior only. Lint levels live in Cargo.toml [lints.clippy].
 
-# Threshold settings
 too-many-arguments-threshold = 7
 type-complexity-threshold = 250
 cognitive-complexity-threshold = 25
 
-# Allow unwrap/expect in test code - panics are the correct failure mode for tests
+# Google's bool rule: flag functions with several bools, not every bool.
+# Single bool setters stay; an unclear lone bool gets a call-site comment.
+max-fn-params-bools = 2
+
+# Panicking is the right failure mode in a test.
 allow-unwrap-in-tests = true
+allow-expect-in-tests = true
+allow-panic-in-tests = true
+allow-indexing-slicing-in-tests = true
