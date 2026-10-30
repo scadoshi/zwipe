@@ -53,6 +53,15 @@ enum AddSource {
     Maybeboard,
 }
 
+/// Pixels a swipe travels to commit.
+const SWIPE_DISTANCE_PX: f64 = 90.0;
+/// Pixels per millisecond a flick needs to commit.
+const SWIPE_SPEED_PX_PER_MS: f64 = 2.5;
+/// Pixels a downward pull on the end card travels to undo the last swipe.
+const BACK_PULL_PX: f64 = 60.0;
+/// The stack-limit warning repeats every this many cards.
+const STACK_WARNING_EVERY: usize = 100;
+
 /// Applies the "lands already at target" state to the search filter: adds
 /// `CardType::Land` to the excludes and drops it from either include list, so we
 /// never end up with an include+exclude clash on Land (which serves zero cards).
@@ -345,8 +354,8 @@ pub fn Add(deck_id: Uuid) -> Element {
     };
 
     // Swipe config: the stack owns its own SwipeState internally.
-    // Thresholds tuned for responsive rapid swiping: a short drag (60px) OR
-    // a quick flick (1.5 px/ms over the 10px minimum) commits.
+    // Thresholds tuned for responsive rapid swiping: a drag past 90px OR a
+    // flick faster than 2.5 px/ms (after the 32px minimum) commits.
     let swipe_config = SwipeConfig::new(
         vec![
             Direction::Left,
@@ -354,8 +363,8 @@ pub fn Add(deck_id: Uuid) -> Element {
             Direction::Up,
             Direction::Down,
         ],
-        90.0, // distance threshold in px
-        2.5,  // speed threshold in px/ms
+        SWIPE_DISTANCE_PX,
+        SWIPE_SPEED_PX_PER_MS,
     );
 
     // Advance past the just-committed card. The stack fires its on_swipe_*
@@ -368,7 +377,7 @@ pub fn Add(deck_id: Uuid) -> Element {
             return;
         }
         if (CARDS_WARNING_THRESHOLD..MAX_CARDS_IN_STACK).contains(&total)
-            && total.is_multiple_of(100)
+            && total.is_multiple_of(STACK_WARNING_EVERY)
         {
             toast.info(
                 "Approaching the card stack limit, refresh your search to continue".to_string(),
@@ -1356,7 +1365,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                         end_swipe_start.set(None);
                                         if let Some(t) = e.touches_changed().into_iter().next() {
                                             let p = t.client_coordinates();
-                                            if p.y - sy >= 60.0 && (p.y - sy).abs() > (p.x - sx).abs() {
+                                            if p.y - sy >= BACK_PULL_PX && (p.y - sy).abs() > (p.x - sx).abs() {
                                                 undo_last_action();
                                             }
                                         }
@@ -1371,7 +1380,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                         };
                                         end_swipe_start.set(None);
                                         let p = e.client_coordinates();
-                                        if p.y - sy >= 60.0 && (p.y - sy).abs() > (p.x - sx).abs() {
+                                        if p.y - sy >= BACK_PULL_PX && (p.y - sy).abs() > (p.x - sx).abs() {
                                             undo_last_action();
                                         }
                                     },

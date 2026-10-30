@@ -6,6 +6,9 @@ use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
 
 use super::flippable_card_image::FlippableCardImage;
 
+/// Milliseconds the dismiss animation plays before the preview clears.
+const DISMISS_MS: u64 = 200;
+
 /// Fullscreen image preview overlay with dismiss animation. The payload carries
 /// the face to open on (0 = front) so it lands on whichever side the caller was
 /// showing; the shared flip control still cycles from there.
@@ -26,7 +29,7 @@ pub(crate) fn ImagePreview(
                 onclick: move |_| {
                     dismissing.set(true);
                     spawn(async move {
-                        time::sleep(Duration::from_millis(200)).await;
+                        time::sleep(Duration::from_millis(DISMISS_MS)).await;
                         card.set(None);
                         dismissing.set(false);
                     });

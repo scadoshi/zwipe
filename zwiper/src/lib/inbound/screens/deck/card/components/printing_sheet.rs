@@ -18,6 +18,9 @@ use crate::inbound::components::interactions::carousel::state::CarouselState;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::component;
 
+/// Page width in pixels when the viewport can't be measured.
+const FALLBACK_PAGE_WIDTH_PX: f64 = 375.0;
+
 /// Bottom sheet for browsing all printings of a card and selecting one.
 #[component]
 pub(crate) fn PrintingSheet(
@@ -93,7 +96,8 @@ pub(crate) fn PrintingSheet(
 
                     // Measure viewport width (sheet-content uses no-pad-x so carousel is full-width)
                     let mut eval = document::eval("dioxus.send(window.innerWidth)");
-                    let page_width: f64 = eval.recv::<f64>().await.unwrap_or(375.0);
+                    let page_width: f64 =
+                        eval.recv::<f64>().await.unwrap_or(FALLBACK_PAGE_WIDTH_PX);
                     carousel_state.set(CarouselState::new(count, idx, page_width));
                 }
                 Err(e) => {

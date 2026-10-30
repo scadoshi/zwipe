@@ -34,6 +34,11 @@ use crate::inbound::screens::deck::card::components::undo_log::{UndoAction, Undo
 use crate::inbound::screens::deck::card::filter::card_filter_sheet::CardFilterSheet;
 use crate::inbound::screens::deck::card::filter::deck_cards::DeckCards;
 
+/// Pixels a swipe travels to commit.
+const SWIPE_DISTANCE_PX: f64 = 90.0;
+/// Pixels per millisecond a flick needs to commit.
+const SWIPE_SPEED_PX_PER_MS: f64 = 2.5;
+
 /// Board filter for the remove screen.
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 enum BoardFilter {
@@ -116,8 +121,8 @@ pub fn Remove(deck_id: Uuid) -> Element {
     let mut price_budget_currency: Signal<PriceCurrency> = use_signal(|| PriceCurrency::Usd);
 
     // Swipe config: the stack owns its own SwipeState internally.
-    // Thresholds tuned for responsive rapid swiping: a short drag (60px) OR
-    // a quick flick (1.5 px/ms over the 10px minimum) commits.
+    // Thresholds tuned for responsive rapid swiping: a drag past 90px OR a
+    // flick faster than 2.5 px/ms (after the 32px minimum) commits.
     let swipe_config = SwipeConfig::new(
         vec![
             Direction::Left,
@@ -125,8 +130,8 @@ pub fn Remove(deck_id: Uuid) -> Element {
             Direction::Up,
             Direction::Down,
         ],
-        90.0,
-        2.5,
+        SWIPE_DISTANCE_PX,
+        SWIPE_SPEED_PX_PER_MS,
     );
 
     let current_card = move || stack.current_wrapping();
