@@ -47,7 +47,7 @@ pub fn Register() -> Element {
         if let Err(e) = Username::new(username()) {
             username_error.set(Some(e.to_string()));
         } else {
-            username_error.set(None)
+            username_error.set(None);
         }
     };
 
@@ -61,7 +61,7 @@ pub fn Register() -> Element {
 
     let mut validate_password = move || {
         if let Err(e) = validate(&password()) {
-            password_error.set(Some(e.to_string()))
+            password_error.set(Some(e.to_string()));
         } else if password().as_str() != confirm_password().as_str()
             // Mid-typing the confirmation can't match yet; judge it once it
             // is as long as the password, or on submit.

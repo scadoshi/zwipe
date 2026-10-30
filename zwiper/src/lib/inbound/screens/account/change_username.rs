@@ -23,7 +23,7 @@ pub fn ChangeUsernameSheet(mut open: Signal<bool>) -> Element {
         if let Err(e) = Username::new(new_username()) {
             username_error.set(Some(e.to_string()));
         } else {
-            username_error.set(None)
+            username_error.set(None);
         }
     };
 

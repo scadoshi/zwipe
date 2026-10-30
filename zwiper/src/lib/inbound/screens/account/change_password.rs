@@ -42,7 +42,7 @@ pub fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
                 "New password must be different from your current password".to_string(),
             ));
         } else {
-            password_error.set(None)
+            password_error.set(None);
         }
     };
 

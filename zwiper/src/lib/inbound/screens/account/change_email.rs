@@ -24,7 +24,7 @@ pub fn ChangeEmailSheet(mut open: Signal<bool>) -> Element {
         if let Err(e) = Email::new(new_email()) {
             email_error.set(Some(e.to_user_facing_string()));
         } else {
-            email_error.set(None)
+            email_error.set(None);
         }
     };
 
