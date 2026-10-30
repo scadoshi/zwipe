@@ -68,6 +68,14 @@ use crate::outbound::sqlx::postgres::Postgres as MyPostgres;
 /// filtering with much larger limits, but that path never reaches this query.
 const MAX_SEARCH_LIMIT: u32 = 250;
 
+/// A request offset as the `INTEGER` Postgres binds, capped at `i32::MAX`.
+///
+/// A plain cast would wrap a larger value negative, and Postgres rejects a
+/// negative OFFSET; capped, it only pages past the end.
+fn clamped_offset(offset: u32) -> i32 {
+    i32::try_from(offset).unwrap_or(i32::MAX)
+}
+
 // Default-synergy-ordering dials (context/plans/suggestion_signal.md).
 // `W_SIGNAL = 0.0` and `BAND_SIZE = 1` together give plain score ordering.
 
@@ -328,7 +336,7 @@ impl CardRepository for MyPostgres {
     async fn sync_oracle_tags(
         &self,
         tags: &[crate::inbound::external::scryfall::oracle_tag::OracleTag],
-    ) -> anyhow::Result<(u32, u32)> {
+    ) -> anyhow::Result<(usize, usize)> {
         crate::outbound::sqlx::card::helpers::oracle_tags::sync_oracle_tags(&self.pool, tags).await
     }
 
@@ -1318,7 +1326,7 @@ impl CardRepository for MyPostgres {
             // the Rust splice below lifts them to WILDCARD_POSITION.
             let limit = i64::from(request.limit().min(MAX_SEARCH_LIMIT));
             let band_limit = (limit - WILDCARD_SLOTS).max(1);
-            let page_index = i64::from(request.offset().min(i32::MAX as u32)) / limit.max(1);
+            let page_index = i64::from(clamped_offset(request.offset())) / limit.max(1);
             qb.push(format!(
                 ") SELECT * FROM ((SELECT *, 0 AS slice FROM pool \
                  ORDER BY pool_returned, (rn - 1) / {BAND_SIZE}, shuffle, name ASC LIMIT "
@@ -1391,12 +1399,9 @@ impl CardRepository for MyPostgres {
         // The wildcard CTE carries per-slice LIMIT/OFFSET above.
         if !wildcard_serving {
             qb.push(" LIMIT ");
-            qb.push_bind(request.limit().min(MAX_SEARCH_LIMIT) as i32);
-
-            // Guard the u32->i32 cast: a value above i32::MAX wraps negative, and
-            // Postgres rejects a negative OFFSET (errors the whole query).
+            qb.push_bind(i64::from(request.limit().min(MAX_SEARCH_LIMIT)));
             qb.push(" OFFSET ");
-            qb.push_bind(request.offset().min(i32::MAX as u32) as i32);
+            qb.push_bind(clamped_offset(request.offset()));
         }
 
         let db_rows: Vec<DatabaseScryfallData> = qb.build_query_as().fetch_all(&self.pool).await?;
@@ -1412,10 +1417,12 @@ impl CardRepository for MyPostgres {
         // hide a probe inside the band width; it then simply serves at the
         // tail, which is fine.
         if wildcard_serving {
-            let band_limit = (request.limit().min(MAX_SEARCH_LIMIT) as usize)
-                .saturating_sub(WILDCARD_SLOTS as usize)
+            let band_limit = i64::from(request.limit().min(MAX_SEARCH_LIMIT))
+                .saturating_sub(WILDCARD_SLOTS)
                 .max(1);
-            if scryfall_data.len() > band_limit {
+            if let Ok(band_limit) = usize::try_from(band_limit)
+                && scryfall_data.len() > band_limit
+            {
                 let wildcards = scryfall_data.split_off(band_limit);
                 for wildcard in wildcards {
                     let position = WILDCARD_POSITION.min(scryfall_data.len());

@@ -125,6 +125,11 @@ impl DeckRepository for Postgres {
         let tags_json = deck_tags_to_json(&request.tags);
         let other_tags_json = deck_other_tags_to_json(&request.other_tags);
         let oracle_tags_json = deck_oracle_tags_to_json(&request.oracle_tags);
+        let format: Option<String> = request.format.map(|f| f.to_legality_key().to_string());
+        let power_level: Option<String> = request.power_level.map(|p| p.to_string());
+        let price_target_currency: Option<String> = request
+            .price_target_currency
+            .map(|c| c.json_key().to_string());
         let database_deck_profile = query_as!(
             DatabaseDeckProfile,
             r#"INSERT INTO decks (name, commander_id, partner_commander_id, background_id, signature_spell_id, format, tags, power_level, other_tags, oracle_tags, land_target, price_target, price_target_currency, user_id)
@@ -148,14 +153,14 @@ impl DeckRepository for Postgres {
             request.partner_commander_id,
             request.background_id,
             request.signature_spell_id,
-            request.format.map(|f| f.to_legality_key().to_string()) as Option<String>,
+            format,
             tags_json,
-            request.power_level.map(|p| p.to_string()) as Option<String>,
+            power_level,
             other_tags_json,
             oracle_tags_json,
             request.land_target,
             request.price_target,
-            request.price_target_currency.map(|c| c.json_key().to_string()) as Option<String>,
+            price_target_currency,
             request.user_id
         )
         .fetch_one(&mut *tx)

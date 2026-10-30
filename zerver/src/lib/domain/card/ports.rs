@@ -135,7 +135,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     fn sync_oracle_tags(
         &self,
         tags: &[ScryfallOracleTag],
-    ) -> impl Future<Output = anyhow::Result<(u32, u32)>> + Send;
+    ) -> impl Future<Output = anyhow::Result<(usize, usize)>> + Send;
 
     /// Rebuilds the `card_profiles.oracle_tags` JSONB projection from
     /// `card_oracle_tags` (aggregated per `oracle_id`, fanned to every printing).
@@ -457,7 +457,7 @@ pub trait CardService: Clone + Send + Sync + 'static {
     fn derive_card_categories(
         &self,
         batch_size: usize,
-    ) -> impl Future<Output = anyhow::Result<(u32, u32)>> + Send;
+    ) -> impl Future<Output = anyhow::Result<(u64, usize)>> + Send;
 
     /// Refreshes the `latest_cards` materialized view after data changes.
     fn refresh_latest_cards(&self) -> impl Future<Output = anyhow::Result<()>> + Send;
@@ -471,7 +471,7 @@ pub trait CardService: Clone + Send + Sync + 'static {
 
     /// Syncs the `oracle_tag` catalog + card correlation from Scryfall's Oracle
     /// Tags bulk file (nightly, zervice). Returns `(catalog_rows, correlation_rows)`.
-    fn sync_oracle_tags(&self) -> impl Future<Output = anyhow::Result<(u32, u32)>> + Send;
+    fn sync_oracle_tags(&self) -> impl Future<Output = anyhow::Result<(usize, usize)>> + Send;
 
     /// Rebuilds the `card_profiles.oracle_tags` projection (nightly, zervice).
     fn refresh_card_oracle_tags(&self) -> impl Future<Output = anyhow::Result<()>> + Send;
