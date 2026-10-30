@@ -1587,7 +1587,7 @@ mod tests {
     #[test]
     fn identity_of_runs_wubrg_once_each() {
         assert_eq!(identity_of(&[Red, White, Red]), vec![White, Red]);
-        assert!(identity_of(&[]).is_empty());
+        assert_eq!(identity_of(&[]), Vec::<Color>::new());
     }
 
     #[test]
@@ -1613,7 +1613,10 @@ mod tests {
                 vec![],
             ]
         );
-        assert!(identities_present(std::iter::empty()).is_empty());
+        assert_eq!(
+            identities_present(std::iter::empty()),
+            Vec::<Vec<Color>>::new()
+        );
         let chosen: &[Color] = &[Green];
         assert_eq!(
             identities_present(held.iter().map(colors_of).chain([chosen])),
@@ -1714,7 +1717,7 @@ mod tests {
 
     #[test]
     fn color_lines_skip_unknown_codes() {
-        assert!(color_lines(&[color("C", 2)], 2).is_empty());
+        assert_eq!(color_lines(&[color("C", 2)], 2), Vec::<String>::new());
     }
 
     fn tag(slug: &str, role: Option<&str>) -> HttpSharedTag {
@@ -1930,7 +1933,10 @@ mod tests {
             vec![StapleColor::Of(Green)],
             "no colorless chip without a colorless staple"
         );
-        assert!(staple_types_present::<Staple>(&[], type_line_of).is_empty());
+        assert_eq!(
+            staple_types_present::<Staple>(&[], type_line_of),
+            Vec::<CardType>::new()
+        );
     }
 
     fn value(pips: &[Color], count: &str) -> SummaryValue {
@@ -2111,7 +2117,7 @@ mod tests {
             ],
             "the order sent, impact rounded against the top score"
         );
-        assert!(tag_rows(&[]).is_empty());
+        assert_eq!(tag_rows(&[]), Vec::<TagRow>::new());
     }
 
     #[test]
@@ -2152,7 +2158,7 @@ mod tests {
             role_tags(&tags, "sacrifice"),
             vec!["sacrifice-outlet", "aristocrats"]
         );
-        assert!(role_tags(&tags, "draw").is_empty());
+        assert_eq!(role_tags(&tags, "draw"), Vec::<String>::new());
     }
 
     #[test]
