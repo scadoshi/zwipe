@@ -225,6 +225,11 @@ impl UsageBuffer {
         }
     }
 
+    /// Drops everything buffered without sending it.
+    pub fn clear(&self) {
+        drop(self.snapshot_and_zero());
+    }
+
     /// Snapshots all counters into a batch and resets them to zero.
     ///
     /// Returns `None` when every counter is zero and no signals are buffered.

@@ -2,7 +2,7 @@
 
 use std::time::Duration;
 
-use dioxus::prelude::{ReadableExt, Signal, document, spawn};
+use dioxus::prelude::{ReadableExt, Signal, document, spawn, use_effect};
 use tokio::time;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
@@ -55,6 +55,16 @@ pub fn spawn_visibility_flusher(
     });
 }
 
+/// Empties the buffer whenever the session ends, so one account's counts
+/// never flush under the next account's session.
+pub fn use_clear_on_logout(buffer: Signal<UsageBuffer>, session: Signal<Option<Session>>) {
+    use_effect(move || {
+        if session.read().is_none() {
+            buffer.peek().clear();
+        }
+    });
+}
+
 /// One-shot flush: useful on screen exit / route changes.
 pub async fn flush_once(
     buffer: &UsageBuffer,
@@ -72,5 +82,62 @@ pub async fn flush_once(
     let client = client.peek().clone();
     if let Err(e) = client.record_usage(&batch, &current_session).await {
         tracing::debug!(error = ?e, "usage flush failed; dropping batch");
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::cell::RefCell;
+
+    use dioxus::prelude::*;
+
+    use super::*;
+    use crate::inbound::components::interactions::swipe::direction::Direction;
+    use crate::test_fixtures;
+
+    /// The root's buffer and session, handed out to the test body.
+    type RootSignals = (Signal<UsageBuffer>, Signal<Option<Session>>);
+
+    thread_local! {
+        static SIGNALS: RefCell<Option<RootSignals>> = const { RefCell::new(None) };
+    }
+
+    #[component]
+    fn Root() -> Element {
+        let buffer = use_signal(UsageBuffer::new);
+        let session = use_signal(|| Some(test_fixtures::session()));
+        use_clear_on_logout(buffer, session);
+        SIGNALS.with(|s| *s.borrow_mut() = Some((buffer, session)));
+        rsx! {}
+    }
+
+    #[test]
+    fn logging_out_drops_the_buffered_counts() {
+        let mut dom = VirtualDom::new(Root);
+        dom.rebuild_in_place();
+        let (buffer, mut session) = SIGNALS.with(|s| s.borrow().expect("the root rendered"));
+
+        dom.in_runtime(|| buffer.peek().record_swipe(Direction::Right));
+        dom.in_runtime(|| session.set(None));
+        dom.render_immediate_to_vec();
+
+        let left = dom.in_runtime(|| buffer.peek().snapshot_and_zero());
+        assert!(
+            left.is_none(),
+            "the logged-out account's counts are still buffered: {left:?}"
+        );
+    }
+
+    #[test]
+    fn a_live_session_keeps_its_counts() {
+        let mut dom = VirtualDom::new(Root);
+        dom.rebuild_in_place();
+        let (buffer, _) = SIGNALS.with(|s| s.borrow().expect("the root rendered"));
+
+        dom.in_runtime(|| buffer.peek().record_swipe(Direction::Right));
+        dom.render_immediate_to_vec();
+
+        let kept = dom.in_runtime(|| buffer.peek().snapshot_and_zero());
+        assert!(kept.is_some());
     }
 }
