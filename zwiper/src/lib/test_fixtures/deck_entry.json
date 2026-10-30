@@ -1,0 +1,62 @@
+{
+  "card": {
+    "card_profile": {
+      "scryfall_data_id": "0e71851e-c504-453c-b5e9-b96400e75e03",
+      "is_token": false,
+      "card_roles": [],
+      "oracle_tags": [],
+      "oracle_tags_by_role": {},
+      "other_oracle_tags": [],
+      "created_at": "2021-01-01T00:00:00Z",
+      "updated_at": "2021-01-01T00:00:00Z"
+    },
+    "scryfall_data": {
+      "id": "0e71851e-c504-453c-b5e9-b96400e75e03",
+      "lang": "en",
+      "object": "card",
+      "layout": "normal",
+      "oracle_id": "718450c6-3cc2-4dec-a930-991cdf4db2ff",
+      "prints_search_uri": "",
+      "rulings_uri": "",
+      "scryfall_uri": "",
+      "uri": "",
+      "color_identity": [],
+      "legalities": {},
+      "name": "Lightning Bolt",
+      "reserved": false,
+      "booster": false,
+      "border_color": "",
+      "collector_number": "",
+      "digital": false,
+      "finishes": [],
+      "frame": "",
+      "full_art": false,
+      "highres_image": false,
+      "image_status": "",
+      "oversized": false,
+      "prices": {},
+      "promo": false,
+      "rarity": "common",
+      "released_at": "2021-01-01",
+      "reprint": false,
+      "scryfall_set_uri": "",
+      "set_name": "",
+      "set_search_uri": "",
+      "set_type": "",
+      "set_uri": "",
+      "set": "m21",
+      "set_id": "b5412aed-be90-4fe8-8e05-4f845b686d6a",
+      "story_spotlight": false,
+      "textless": false,
+      "variation": false,
+      "related_uris": null
+    }
+  },
+  "deck_card": {
+    "deck_id": "13616b12-204d-4103-8272-3305537ced94",
+    "scryfall_data_id": "0e71851e-c504-453c-b5e9-b96400e75e03",
+    "oracle_id": "718450c6-3cc2-4dec-a930-991cdf4db2ff",
+    "quantity": 3,
+    "board": "deck"
+  }
+}

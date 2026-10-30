@@ -34,7 +34,7 @@ use super::components::image_preview::ImagePreview;
 use super::components::printing_sheet::PrintingSheet;
 use super::components::quick_add::QuickAdd;
 use super::components::undo_log::{
-    CommandZoneSlot, UndoAction, UndoLog, UndoStore, create_board_field,
+    CommandZoneSlot, UndoAction, UndoLog, UndoStore, create_board_field, take_newest_in,
 };
 use crate::inbound::components::auth::authed::use_authed;
 use crate::inbound::components::catalog_cache::CatalogCache;
@@ -81,6 +81,30 @@ struct PendingQty {
 
 /// Quiet period after the last quantity tap before the net delta posts.
 const QTY_FLUSH_MS: u64 = 300;
+
+/// Reverses a burst's optimistic delete after the server refused it: the row
+/// comes back at its pre-burst quantity, and the burst's `Removed` undo entry
+/// goes, since undoing it would re-create a row the server still holds.
+fn roll_back_failed_delete(
+    entries: &mut Vec<DeckEntry>,
+    log: &mut Vec<UndoAction>,
+    removed: DeckEntry,
+    baseline: i32,
+) {
+    let card_id = removed.card.scryfall_data.id;
+    take_newest_in(
+        log,
+        |a| matches!(a, UndoAction::Removed { entry, .. } if entry.card.scryfall_data.id == card_id),
+    );
+    if entries.iter().any(|e| e.card.scryfall_data.id == card_id) {
+        return;
+    }
+    let mut restored = removed;
+    if let Ok(quantity) = Quantity::new(baseline) {
+        restored.deck_card.quantity = quantity;
+    }
+    entries.push(restored);
+}
 
 /// Collapsible card group: a header with the card-row disclosure arrow
 /// (points down while expanded, spins sideways when collapsed: the same
@@ -191,6 +215,9 @@ pub fn View(deck_id: Uuid) -> Element {
 
     // Per-card pending quantity bursts (see PendingQty).
     let pending_qty: Signal<HashMap<Uuid, PendingQty>> = use_signal(HashMap::new);
+    // Rows a burst deleted optimistically, kept until the delete answers so a
+    // refusal can put them back.
+    let removed_rows: Signal<HashMap<Uuid, DeckEntry>> = use_signal(HashMap::new);
     // A tap inside the debounce window must still reach the server when the
     // user leaves the screen: post every mapped burst on unmount. Detached
     // tasks (the screen's scope is going away), so failures only report and
@@ -644,12 +671,16 @@ pub fn View(deck_id: Uuid) -> Element {
 
                 // Undoable: re-creating wants the old board + the quantity from
                 // before this whole burst, not the 1 it died at.
-                if record && let Some(entry) = removed_entry {
-                    let baseline = pending_qty
-                        .peek()
-                        .get(&card_id)
-                        .map_or(current_qty, |p| p.baseline);
-                    undo_log.push(UndoAction::Removed { entry, baseline });
+                if let Some(entry) = removed_entry {
+                    let mut removed_rows = removed_rows;
+                    removed_rows.write().insert(card_id, entry.clone());
+                    if record {
+                        let baseline = pending_qty
+                            .peek()
+                            .get(&card_id)
+                            .map_or(current_qty, |p| p.baseline);
+                        undo_log.push(UndoAction::Removed { entry, baseline });
+                    }
                 }
 
                 // Optimistic: remove from entries
@@ -716,17 +747,36 @@ pub fn View(deck_id: Uuid) -> Element {
                 let Some(pending) = flushed else {
                     return;
                 };
+                let removed = {
+                    let mut removed_rows = removed_rows;
+                    removed_rows.write().remove(&card_id)
+                };
                 if pending.delta == 0 {
                     // A burst that nets out (+1 then -1) needs no server call.
                     return;
                 }
 
                 if pending.baseline + pending.delta < 1 {
-                    let _ = authed
-                        .run("change_quantity", |c, s| async move {
+                    let deleted = authed
+                        .try_run("change_quantity", |c, s| async move {
                             c.delete_deck_card(deck_id, card_id, &s).await
                         })
                         .await;
+                    // The failure already toasted; put the row back so the
+                    // screen and the undo log match the server again.
+                    if deleted.is_err()
+                        && let Some(removed) = removed
+                    {
+                        let mut log = undo_log.0;
+                        roll_back_failed_delete(
+                            &mut deck_entries.write(),
+                            &mut log.write(),
+                            removed,
+                            pending.baseline,
+                        );
+                        let current = *filter_reset_counter.peek();
+                        filter_reset_counter.set(current + 1);
+                    }
                 } else {
                     // PATCH: the burst's absolute target (baseline + net), so
                     // a retried or replayed request lands on the same value.
@@ -1761,5 +1811,54 @@ pub fn View(deck_id: Uuid) -> Element {
                 OracleTagExamples { open: otag_examples_open, slug: otag_examples_slug() }
             }
             }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_fixtures;
+
+    #[test]
+    fn failed_delete_restores_the_row_and_drops_its_undo_entry() {
+        let removed = test_fixtures::deck_entry("Sol Ring", 1);
+        let card_id = removed.card.scryfall_data.id;
+        let other = test_fixtures::deck_entry("Arcane Signet", 1);
+        let mut entries = vec![other.clone()];
+        let mut log = vec![
+            UndoAction::Removed {
+                entry: other,
+                baseline: 1,
+            },
+            UndoAction::Removed {
+                entry: removed.clone(),
+                baseline: 3,
+            },
+        ];
+
+        roll_back_failed_delete(&mut entries, &mut log, removed, 3);
+
+        let restored = entries
+            .iter()
+            .find(|e| e.card.scryfall_data.id == card_id)
+            .expect("the row is back");
+        assert_eq!(
+            *restored.deck_card.quantity, 3,
+            "back at its pre-burst quantity"
+        );
+        assert_eq!(log.len(), 1, "only the other card's entry is left");
+        assert!(
+            !matches!(&log[0], UndoAction::Removed { entry, .. } if entry.card.scryfall_data.id == card_id),
+            "undo must not re-create a row the server kept"
+        );
+    }
+
+    #[test]
+    fn failed_delete_never_duplicates_a_row_already_back() {
+        let removed = test_fixtures::deck_entry("Sol Ring", 1);
+        let mut entries = vec![removed.clone()];
+        let mut log = Vec::new();
+        roll_back_failed_delete(&mut entries, &mut log, removed, 2);
+        assert_eq!(entries.len(), 1);
     }
 }
