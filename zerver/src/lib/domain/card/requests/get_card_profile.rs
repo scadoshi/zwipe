@@ -76,6 +76,6 @@ impl std::ops::Deref for CardProfileIds {
 
 impl From<&[ScryfallData]> for CardProfileIds {
     fn from(value: &[ScryfallData]) -> Self {
-        Self(value.iter().map(|sfd| sfd.id.to_owned()).collect())
+        Self(value.iter().map(|sfd| sfd.id).collect())
     }
 }
