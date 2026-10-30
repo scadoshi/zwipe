@@ -61,6 +61,9 @@ impl From<InvalidCreateDeckProfile> for ApiError {
             InvalidCreateDeckProfile::TooManyOracleTags => {
                 Self::UnprocessableEntity("a deck may have at most 30 oracle tags".to_string())
             }
+            e @ (InvalidCreateDeckProfile::LandTarget | InvalidCreateDeckProfile::PriceTarget) => {
+                Self::UnprocessableEntity(e.to_string())
+            }
         }
     }
 }

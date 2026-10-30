@@ -4,6 +4,7 @@ use thiserror::Error;
 use uuid::Uuid;
 
 use crate::domain::card::search_card::card_filter::price_currency::PriceCurrency;
+use crate::domain::deck::deck_profile::{self, MAX_LAND_TARGET};
 use crate::domain::deck::format::{Format, InvalidFormat};
 use crate::domain::deck::{
     DeckName, DeckOtherTag, DeckTag, InvalidDeckOtherTag, InvalidDeckTag, InvalidDeckname,
@@ -38,6 +39,12 @@ pub enum InvalidUpdateDeckProfile {
     /// More than [`MAX_DECK_ORACLE_TAGS`] oracle tags were supplied.
     #[error("a deck may have at most {MAX_DECK_ORACLE_TAGS} oracle tags")]
     TooManyOracleTags,
+    /// The land target is outside 0 through [`MAX_LAND_TARGET`].
+    #[error("land target must be between 0 and {MAX_LAND_TARGET}")]
+    LandTarget,
+    /// The price target is negative.
+    #[error("price target can't be negative")]
+    PriceTarget,
     /// No fields specified for update.
     #[error("must update at least one field")]
     NoUpdates,
@@ -268,8 +275,9 @@ impl UpdateDeckProfileBuilder {
     /// # Errors
     ///
     /// Returns [`InvalidUpdateDeckProfile`] when nothing is set, when the name, format, a tag, the
-    /// power level or an other-tag is invalid, or when the tags, other-tags or oracle tags exceed
-    /// their caps.
+    /// power level or an other-tag is invalid, when the tags, other-tags or oracle tags exceed
+    /// their caps, or when the land target is outside 0 through [`MAX_LAND_TARGET`] or the price
+    /// target is negative.
     pub fn build(self) -> Result<UpdateDeckProfile, InvalidUpdateDeckProfile> {
         if self.name.is_none()
             && self.commander_id.is_none()
@@ -326,6 +334,20 @@ impl UpdateDeckProfileBuilder {
                 Some(deduped)
             }
         };
+        if self
+            .land_target
+            .flatten()
+            .is_some_and(|target| !deck_profile::is_valid_land_target(target))
+        {
+            return Err(InvalidUpdateDeckProfile::LandTarget);
+        }
+        if self
+            .price_target
+            .flatten()
+            .is_some_and(|target| !deck_profile::is_valid_price_target(target))
+        {
+            return Err(InvalidUpdateDeckProfile::PriceTarget);
+        }
 
         Ok(UpdateDeckProfile {
             deck_id: self.deck_id,
@@ -344,5 +366,54 @@ impl UpdateDeckProfileBuilder {
             price_target_currency: self.price_target_currency,
             user_id: self.user_id,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn builder() -> UpdateDeckProfileBuilder {
+        UpdateDeckProfile::builder(Uuid::nil(), Uuid::nil())
+    }
+
+    #[test]
+    fn land_target_must_be_between_0_and_100() {
+        for ok in [0, 37, 100] {
+            assert!(
+                builder().land_target(Some(Some(ok))).build().is_ok(),
+                "{ok}"
+            );
+        }
+        assert!(builder().land_target(Some(None)).build().is_ok());
+        for bad in [-1, 101, i32::MAX] {
+            assert!(
+                matches!(
+                    builder().land_target(Some(Some(bad))).build(),
+                    Err(InvalidUpdateDeckProfile::LandTarget)
+                ),
+                "{bad}"
+            );
+        }
+    }
+
+    #[test]
+    fn price_target_must_not_be_negative() {
+        for ok in [0.0, 12.5] {
+            assert!(
+                builder().price_target(Some(Some(ok))).build().is_ok(),
+                "{ok}"
+            );
+        }
+        assert!(builder().price_target(Some(None)).build().is_ok());
+        for bad in [-0.01, f64::NAN, f64::INFINITY] {
+            assert!(
+                matches!(
+                    builder().price_target(Some(Some(bad))).build(),
+                    Err(InvalidUpdateDeckProfile::PriceTarget)
+                ),
+                "{bad}"
+            );
+        }
     }
 }
