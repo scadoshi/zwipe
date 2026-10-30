@@ -30,7 +30,9 @@ use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen, component, screen};
 use crate::inbound::screens::deck::card::components::action_history::{RemoveAction, StackAction};
 use crate::inbound::screens::deck::card::components::card_stack::use_card_stack;
-use crate::inbound::screens::deck::card::components::undo_log::{UndoAction, UndoStore};
+use crate::inbound::screens::deck::card::components::undo_log::{
+    UndoAction, UndoStore, create_board_field,
+};
 use crate::inbound::screens::deck::card::filter::card_filter_sheet::CardFilterSheet;
 use crate::inbound::screens::deck::card::filter::deck_cards::DeckCards;
 
@@ -51,6 +53,17 @@ enum BoardFilter {
     Sideboard,
     /// Show all cards regardless of board.
     All,
+}
+
+/// The create request a swipe-remove undo sends.
+fn undo_remove_request(card: &Card, board: Board, quantity: i32) -> HttpCreateDeckCard {
+    let (quantity, board) = undo_remove_fields(board, quantity);
+    HttpCreateDeckCard::new(&card.scryfall_data, quantity, board)
+}
+
+/// The quantity and board fields of [`undo_remove_request`].
+fn undo_remove_fields(board: Board, quantity: i32) -> (i32, Option<String>) {
+    (quantity, create_board_field(board))
 }
 
 #[component]
@@ -380,7 +393,11 @@ pub fn Remove(deck_id: Uuid) -> Element {
                     ToastOptions::default().duration(TOAST_QUICK),
                 );
             }
-            RemoveAction::Remove { card } => {
+            RemoveAction::Remove {
+                card,
+                board,
+                quantity,
+            } => {
                 let card = *card;
                 let card_id = card.scryfall_data.id;
 
@@ -412,7 +429,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                 stack.insert_current(card.clone());
 
                 // Restore on the backend
-                let request = HttpCreateDeckCard::new(&card.scryfall_data, 1, None);
+                let request = undo_remove_request(&card, board, quantity);
                 // Facade holdout: staged compensation (refresh failure cancels
                 // the primed entry; a failed call leaves the action standing).
                 spawn(async move {
@@ -582,7 +599,13 @@ pub fn Remove(deck_id: Uuid) -> Element {
                                 usage_buffer().record_swipe(Direction::Right);
                                 // Removal signal (delayed negative) keyed by commander + card.
                                 usage_buffer().record_removal(deck_id, card.scryfall_data.oracle_id);
-                                stack.record(RemoveAction::Remove { card: Box::new(card) });
+                                // Snapshot board and copies before the optimistic drop: undo restores both.
+                                let (board, quantity) = deck_entries
+                                    .peek()
+                                    .iter()
+                                    .find(|e| e.card.scryfall_data.id == card.scryfall_data.id)
+                                    .map_or((Board::Deck, 1), |e| (e.deck_card.board, *e.deck_card.quantity));
+                                stack.record(RemoveAction::Remove { card: Box::new(card), board, quantity });
                                 delete_card_from_deck();
                                 toast.success(
                                     "Removed from deck".to_string(),
@@ -702,5 +725,24 @@ pub fn Remove(deck_id: Uuid) -> Element {
                 show_active_indicators: true,
             }
             }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn undo_remove_restores_the_board_and_quantity() {
+        assert_eq!(
+            undo_remove_fields(Board::Sideboard, 3),
+            (3, Some("sideboard".to_string())),
+            "all removed copies come back on their old board"
+        );
+        assert_eq!(
+            undo_remove_fields(Board::Deck, 2),
+            (2, None),
+            "the main deck is the server default"
+        );
     }
 }

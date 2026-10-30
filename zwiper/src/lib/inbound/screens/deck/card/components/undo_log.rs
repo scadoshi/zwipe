@@ -67,6 +67,15 @@ pub(crate) enum UndoAction {
     },
 }
 
+/// The `board` field of a create request that puts a card back on `board`:
+/// `None` for the main deck, the server's default.
+pub(crate) fn create_board_field(board: Board) -> Option<String> {
+    match board {
+        Board::Deck => None,
+        other => Some(other.display_name().to_string()),
+    }
+}
+
 /// Append with the cap enforced: shared by the live log and the parked
 /// stacks so both drop oldest identically.
 ///
