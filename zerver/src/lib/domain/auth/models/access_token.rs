@@ -105,6 +105,11 @@ impl JwtSecret {
 /// Extension trait for validating JWT signatures on the server.
 pub trait JwtValidate {
     /// Validates the JWT signature and extracts user claims.
+    ///
+    /// # Errors
+    ///
+    /// Returns the `jsonwebtoken` error when the token doesn't decode, its
+    /// signature doesn't match `secret`, or it has expired.
     fn validate(&self, secret: &JwtSecret) -> Result<UserClaims, jsonwebtoken::errors::Error>;
 }
 
@@ -122,6 +127,11 @@ impl JwtValidate for Jwt {
 /// Extension trait for server-side access token operations.
 pub trait AccessTokenExt {
     /// Generates a new access token for a user that expires `lifetime` from now.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`InvalidJwt`] when the claims fail to encode or the encoded
+    /// token doesn't parse back as a JWT.
     fn generate(
         user: &User,
         secret: &JwtSecret,

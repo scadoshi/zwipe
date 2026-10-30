@@ -285,6 +285,11 @@ impl HashedPassword {
     ///     false => println!("Invalid password"),
     /// }
     /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns the `password_hash` error when the stored hash doesn't parse or
+    /// verification fails for any reason other than a wrong password.
     pub fn verify(&self, password: &str) -> Result<bool, password_hash::Error> {
         let parsed_hash = argon2::PasswordHash::new(&self.0)?;
 

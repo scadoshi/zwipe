@@ -63,6 +63,11 @@ impl CommanderDismissal {
     }
 
     /// Creates a dismissal request parsing the oracle id from a path segment.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`InvalidCommanderDismissal::OracleId`] when the trimmed segment
+    /// isn't a UUID.
     pub fn from_path(user_id: Uuid, oracle_id: &str) -> Result<Self, InvalidCommanderDismissal> {
         let oracle_id =
             Uuid::try_parse(oracle_id.trim()).map_err(InvalidCommanderDismissal::OracleId)?;
