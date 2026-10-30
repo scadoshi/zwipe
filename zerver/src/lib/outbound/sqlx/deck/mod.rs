@@ -463,6 +463,27 @@ impl DeckRepository for Postgres {
             return Err(UpdateDeckCardError::Forbidden);
         }
         let mut tx = self.pool.begin().await?;
+        if let Some(new_id) = request.new_scryfall_data_id {
+            // A printing swap stays within the card: the row keeps its
+            // oracle_id, so a printing of another card would break the
+            // singleton and commander checks keyed on it.
+            let current = query_scalar!(
+                "SELECT oracle_id FROM deck_cards WHERE deck_id = $1 AND scryfall_data_id = $2",
+                request.deck_id,
+                request.scryfall_data_id
+            )
+            .fetch_optional(&mut *tx)
+            .await?
+            .ok_or(UpdateDeckCardError::NotFound)?;
+            let swapped =
+                query_scalar!("SELECT oracle_id FROM scryfall_data WHERE id = $1", new_id)
+                    .fetch_optional(&mut *tx)
+                    .await?
+                    .flatten();
+            if swapped != Some(current) {
+                return Err(UpdateDeckCardError::PrintingMismatch);
+            }
+        }
         if request.mvp == Some(true) {
             // Board rule: the star lands on the mainboard; either the board
             // this request sets, or the row's current board when untouched.

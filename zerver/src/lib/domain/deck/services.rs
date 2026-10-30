@@ -159,29 +159,45 @@ where
     ) -> Result<DeckCard, CreateDeckCardError> {
         let deck_profile = self.get_deck_profile(&request.into()).await?;
 
-        // Resolve command zone scryfall_data_ids to oracle_ids for comparison
-        let cz_ids: ScryfallDataIds = [
+        // One batch fetch resolves the card's own oracle_id and the command
+        // zone's. The client's oracle_id is ignored: trusting it would let a
+        // forged one slip the commander or a second singleton past the checks.
+        let command_zone = [
             deck_profile.commander_id,
             deck_profile.partner_commander_id,
             deck_profile.background_id,
             deck_profile.signature_spell_id,
-        ]
-        .into_iter()
-        .flatten()
-        .collect();
-        if !cz_ids.is_empty() {
-            let cz_oracle_ids: std::collections::HashSet<Uuid> = self
-                .card_repo
-                .get_multiple_scryfall_data(&cz_ids)
-                .await
-                .map_err(|e| CreateDeckCardError::Database(e.into()))?
-                .into_iter()
-                .filter_map(|sd| sd.oracle_id)
-                .collect();
-            if cz_oracle_ids.contains(&request.oracle_id) {
-                return Err(CreateDeckCardError::IsCommander);
-            }
+        ];
+        let ids: ScryfallDataIds = command_zone
+            .into_iter()
+            .flatten()
+            .chain([request.scryfall_data_id])
+            .collect();
+        let printings = self
+            .card_repo
+            .get_multiple_scryfall_data(&ids)
+            .await
+            .map_err(|e| CreateDeckCardError::Database(e.into()))?;
+        let oracle_of = |id: Uuid| {
+            printings
+                .iter()
+                .find(|sd| sd.id == id)
+                .and_then(|sd| sd.oracle_id)
+        };
+        let oracle_id =
+            oracle_of(request.scryfall_data_id).ok_or(CreateDeckCardError::UnknownCard)?;
+        if command_zone
+            .into_iter()
+            .flatten()
+            .filter_map(oracle_of)
+            .any(|cz| cz == oracle_id)
+        {
+            return Err(CreateDeckCardError::IsCommander);
         }
+        let request = CreateDeckCard {
+            oracle_id,
+            ..request.clone()
+        };
         // The limit VALUE is policy and stays here; the count + check runs
         // inside the repo's transaction (under the deck row lock) so two
         // concurrent adds can't both pass the check.
@@ -190,7 +206,7 @@ where
         } else {
             UNVERIFIED_MAX_CARDS_PER_DECK
         };
-        self.deck_repo.create_deck_card(request, card_limit).await
+        self.deck_repo.create_deck_card(&request, card_limit).await
     }
 
     // == get ==

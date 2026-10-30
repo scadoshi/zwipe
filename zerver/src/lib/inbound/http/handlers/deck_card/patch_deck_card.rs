@@ -37,6 +37,9 @@ impl From<UpdateDeckCardError> for ApiError {
             UpdateDeckCardError::MvpNotMainboard => {
                 Self::UnprocessableEntity("Only cards in the deck can be MVPs".to_string())
             }
+            UpdateDeckCardError::PrintingMismatch => {
+                Self::UnprocessableEntity(UpdateDeckCardError::PrintingMismatch.to_string())
+            }
             UpdateDeckCardError::Database(e) | UpdateDeckCardError::DeckCardFromDb(e) => e.to_500(),
             UpdateDeckCardError::GetDeckProfileError(e) => ApiError::from(e),
             UpdateDeckCardError::Forbidden => Self::NotFound("deck not found".to_string()),
@@ -88,7 +91,7 @@ pub fn reject_null<T>(field: Opdate<T>, name: &str) -> Result<Option<T>, ApiErro
 /// # Errors
 ///
 /// Returns 422 for a `null` field, an invalid id, quantity or board, a card not
-/// in the deck, or a broken MVP rule, 404 when the deck isn't the caller's, and
+/// in the deck, a printing of another card, or a broken MVP rule, 404 when the deck isn't the caller's, and
 /// 500 on a database failure.
 pub async fn patch_deck_card(
     user: AuthenticatedUser,
