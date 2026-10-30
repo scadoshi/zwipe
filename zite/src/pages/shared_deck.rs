@@ -159,7 +159,7 @@ fn CommandZoneCard(
                         class: "sd-cz-image".to_string(),
                         draggable: false,
                         on_face_change: move |face: usize| current_face.set(face),
-                        on_load: move |_| on_load.call(()),
+                        on_load: move |()| on_load.call(()),
                     }
                 }
             }
@@ -533,7 +533,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
     } else {
         "sd-featured"
     };
-    let on_featured_load = move |_| featured_loaded += 1;
+    let on_featured_load = move |()| featured_loaded += 1;
     // A format with a signature spell is Oathbreaker: the "commander" is the
     // oathbreaker planeswalker.
     let is_oathbreaker = deck
