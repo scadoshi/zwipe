@@ -69,13 +69,9 @@ impl FlavorCard {
     /// Wrap a freshly fetched card, expiring at the top of the next UTC hour
     /// (the server's rotation boundary).
     pub fn new(card: Card) -> Self {
-        use chrono::Timelike;
-        let now = Utc::now();
-        let secs_into_hour = i64::from(now.minute()) * SECS_PER_MINUTE + i64::from(now.second());
         Self {
             card,
-            expires_at: now
-                + chrono::Duration::seconds(SECS_PER_HOUR - secs_into_hour.min(SECS_PER_HOUR - 1)),
+            expires_at: next_hour(Utc::now()),
         }
     }
 
@@ -83,6 +79,13 @@ impl FlavorCard {
     pub fn is_expired(&self) -> bool {
         Utc::now() >= self.expires_at
     }
+}
+
+/// The top of the UTC hour after `now`, keeping `now`'s fraction of a second.
+fn next_hour(now: DateTime<Utc>) -> DateTime<Utc> {
+    use chrono::Timelike;
+    let secs_into_hour = i64::from(now.minute()) * SECS_PER_MINUTE + i64::from(now.second());
+    now + chrono::Duration::seconds(SECS_PER_HOUR - secs_into_hour.min(SECS_PER_HOUR - 1))
 }
 
 /// App-wide changelog cache, populated by a background fetch at startup.
@@ -367,4 +370,32 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
     });
 
     UpgradeRequired(upgrade_required)
+}
+
+#[cfg(test)]
+mod tests {
+    use chrono::{TimeZone, Timelike};
+
+    use super::*;
+
+    #[test]
+    fn a_flavor_card_expires_at_the_top_of_the_next_hour() {
+        let at = |h, m, s| {
+            Utc.with_ymd_and_hms(2026, 10, 30, h, m, s)
+                .unwrap()
+                .with_nanosecond(789_000_000)
+                .unwrap()
+        };
+        assert_eq!(next_hour(at(12, 34, 56)), at(13, 0, 0));
+        assert_eq!(next_hour(at(12, 0, 0)), at(13, 0, 0));
+        assert_eq!(next_hour(at(12, 59, 59)), at(13, 0, 0));
+    }
+
+    #[test]
+    fn a_flavor_card_fetched_at_the_end_of_time_never_expires() {
+        assert_eq!(
+            next_hour(DateTime::<Utc>::MAX_UTC),
+            DateTime::<Utc>::MAX_UTC
+        );
+    }
 }

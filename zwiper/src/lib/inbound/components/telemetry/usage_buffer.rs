@@ -387,7 +387,7 @@ mod tests {
     use zwipe_client::ClientError;
     use zwipe_core::http::contracts::metrics::{HttpUsageBatch, PileEndKind, PileEndReport};
 
-    use super::UsageBuffer;
+    use super::{CardTally, SelectTally, UsageBuffer};
     use crate::inbound::components::interactions::swipe::direction::Direction;
 
     #[test]
@@ -407,6 +407,61 @@ mod tests {
         assert!(batch.deck_skips.is_empty());
 
         assert!(buffer.snapshot_and_zero().is_none());
+    }
+
+    #[test]
+    fn a_full_tally_stays_full() {
+        let buffer = UsageBuffer::new();
+        let (deck, card) = (Uuid::new_v4(), Uuid::new_v4());
+        let full = CardTally {
+            added: u32::MAX,
+            ..CardTally::default()
+        };
+        buffer
+            .inner
+            .signals
+            .lock()
+            .unwrap()
+            .insert((card, deck), full);
+        buffer.record_signal(deck, Some(card), Direction::Right);
+        let tally = buffer.inner.signals.lock().unwrap()[&(card, deck)];
+        assert_eq!(tally.added, u32::MAX);
+    }
+
+    #[test]
+    fn a_shown_count_past_u32_drops_its_delta() {
+        let buffer = UsageBuffer::new();
+        let (deck, card) = (Uuid::new_v4(), Uuid::new_v4());
+        let tally = CardTally {
+            added: u32::MAX,
+            skipped: 1,
+            ..CardTally::default()
+        };
+        buffer
+            .inner
+            .signals
+            .lock()
+            .unwrap()
+            .insert((card, deck), tally);
+        let select = SelectTally {
+            selected: u32::MAX,
+            skipped: 1,
+        };
+        buffer
+            .inner
+            .select_signals
+            .lock()
+            .unwrap()
+            .insert(card, select);
+        buffer.record_search();
+        let batch = buffer.snapshot_and_zero().unwrap();
+        assert!(batch.signals.is_empty(), "{:?}", batch.signals);
+        assert!(
+            batch.select_signals.is_empty(),
+            "{:?}",
+            batch.select_signals
+        );
+        assert_eq!(batch.searches, 1);
     }
 
     #[test]

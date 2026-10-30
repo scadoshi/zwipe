@@ -9,6 +9,8 @@ use zwipe_core::domain::auth::models::access_token::{AccessToken, Jwt};
 use zwipe_core::domain::auth::models::refresh_token::RefreshToken;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::deck::DeckEntry;
+use zwipe_core::domain::deck::deck_name::DeckName;
+use zwipe_core::domain::deck::deck_profile::DeckProfile;
 use zwipe_core::domain::deck::quantity::Quantity;
 use zwipe_core::domain::user::models::User;
 use zwipe_core::domain::user::models::email::Email;
@@ -27,6 +29,38 @@ pub(crate) fn deck_entry(name: &str, quantity: i32) -> DeckEntry {
     name.clone_into(&mut entry.card.scryfall_data.name);
     entry.deck_card.quantity = Quantity::new(quantity).expect("a valid test quantity");
     entry
+}
+
+/// An empty, formatless deck profile with no command zone and no cards.
+pub(crate) fn deck_profile() -> DeckProfile {
+    DeckProfile {
+        id: Uuid::new_v4(),
+        name: DeckName::new("Test deck").expect("a valid deck name"),
+        commander_id: None,
+        partner_commander_id: None,
+        background_id: None,
+        signature_spell_id: None,
+        format: None,
+        tags: Vec::new(),
+        power_level: None,
+        other_tags: Vec::new(),
+        oracle_tags: Vec::new(),
+        land_target: None,
+        price_target: None,
+        price_target_currency: None,
+        share_token: None,
+        user_id: Uuid::new_v4(),
+        card_count: 0,
+        commander_name: None,
+        partner_commander_name: None,
+        background_name: None,
+        signature_spell_name: None,
+        color_identity: Vec::new(),
+        commander_art_url: None,
+        partner_commander_art_url: None,
+        background_art_url: None,
+        signature_spell_art_url: None,
+    }
 }
 
 /// A live session for a made-up user; the tokens are well formed but sign

@@ -389,6 +389,15 @@ mod tests {
         dom.render_immediate_to_vec();
     }
 
+    #[test]
+    fn a_fetch_at_the_end_of_time_is_never_stale() {
+        let cell: CatalogCell<Vec<String>> = CatalogCell::Loaded {
+            data: Vec::new(),
+            fetched_at: DateTime::<Utc>::MAX_UTC,
+        };
+        assert!(!cell.is_stale());
+    }
+
     #[tokio::test]
     async fn leaving_the_screen_mid_fetch_does_not_wedge_the_slot() {
         let mut dom = VirtualDom::new(Root);

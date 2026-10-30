@@ -333,6 +333,29 @@ mod tests {
     }
 
     #[test]
+    fn my_cards_swiped_past_i64_waits_instead_of_overflowing() {
+        let mine = HttpLifetimeCounters {
+            user_id: Uuid::nil(),
+            swipes_right: i64::MAX,
+            swipes_left: 1,
+            swipes_up: 0,
+            swipes_down: 0,
+            searches: 5,
+            decks_created: 6,
+            decks_completed: 0,
+            updated_at: Utc::now(),
+        };
+        assert_eq!(
+            my_figures(Some(&mine)),
+            vec![
+                (Some(6), "Decks created"),
+                (Some(5), "Searches run"),
+                (None, "Cards swiped"),
+            ]
+        );
+    }
+
+    #[test]
     fn figures_wait_while_counts_load() {
         assert!(my_figures(None).iter().all(|(n, _)| n.is_none()));
         assert!(public_figures(None).iter().all(|(n, _)| n.is_none()));

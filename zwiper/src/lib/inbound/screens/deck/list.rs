@@ -296,10 +296,8 @@ fn group_decks(profiles: &[DeckProfile], by: DeckGroupBy) -> Vec<DeckGroup> {
     }
 }
 
-/// One tappable deck row: name, identity pips, and the stat chips.
-#[component]
-fn DeckRow(profile: DeckProfile) -> Element {
-    let navigator = use_navigator();
+/// The row's card count: the deck's cards plus its command zone.
+fn row_card_count(profile: &DeckProfile) -> i64 {
     let mut count = profile.card_count;
     if profile.format.as_ref().is_some_and(Format::has_commander) && profile.commander_id.is_some()
     {
@@ -314,6 +312,14 @@ fn DeckRow(profile: DeckProfile) -> Element {
     if profile.signature_spell_id.is_some() {
         count += 1;
     }
+    count
+}
+
+/// One tappable deck row: name, identity pips, and the stat chips.
+#[component]
+fn DeckRow(profile: DeckProfile) -> Element {
+    let navigator = use_navigator();
+    let count = row_card_count(&profile);
     // Out of bounds only when the format defines a size rule the count breaks.
     let count_bad = profile.format.as_ref().is_some_and(|f| {
         f.min_cards().is_some_and(|m| count < i64::from(m))
@@ -724,5 +730,31 @@ pub fn DeckList() -> Element {
                 }
             }
             }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use uuid::Uuid;
+
+    use super::*;
+    use crate::test_fixtures;
+
+    #[test]
+    fn the_row_counts_the_command_zone() {
+        let mut profile = test_fixtures::deck_profile();
+        profile.card_count = 98;
+        profile.format = Some(Format::Commander);
+        profile.commander_id = Some(Uuid::new_v4());
+        profile.partner_commander_id = Some(Uuid::new_v4());
+        assert_eq!(row_card_count(&profile), 100);
+    }
+
+    #[test]
+    fn a_server_count_at_the_cap_stays_there() {
+        let mut profile = test_fixtures::deck_profile();
+        profile.card_count = i64::MAX;
+        profile.signature_spell_id = Some(Uuid::new_v4());
+        assert_eq!(row_card_count(&profile), i64::MAX);
     }
 }

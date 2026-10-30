@@ -743,6 +743,19 @@ mod tests {
     }
 
     #[test]
+    fn a_year_ending_on_the_last_date_stops_there() {
+        let layout = heat_layout(NaiveDate::MAX, &[]);
+        assert_eq!(layout.cells.last().map(|c| c.date), Some(NaiveDate::MAX));
+    }
+
+    #[test]
+    fn a_year_reaching_before_the_first_date_is_empty() {
+        let layout = heat_layout(NaiveDate::MIN, &[]);
+        assert!(layout.cells.is_empty());
+        assert_eq!(layout.columns, 0);
+    }
+
+    #[test]
     fn the_year_is_every_day_in_week_columns_ending_on_through() {
         let through = date(2026, 10, 27);
         let layout = heat_layout(through, &[]);
