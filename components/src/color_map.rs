@@ -324,16 +324,16 @@ fn grow(seed: u64, quotas: [u32; 5]) -> Vec<((i32, i32), usize)> {
         let Some(left) = room.get_mut(color) else {
             continue;
         };
-        let Some(seen) = index(cell)
+        let Some(was_visited) = index(cell)
             .and_then(|i| visited.get_mut(i))
             .and_then(|row| row.get_mut(color))
         else {
             continue;
         };
-        if *left == 0 || *seen {
+        if *left == 0 || *was_visited {
             continue;
         }
-        *seen = true;
+        *was_visited = true;
         // Another color's cell is crossed, not taken, at a steep price, so a
         // color walled in breaks out nearby instead of stopping.
         let toll = if free(&owner, cell) {
