@@ -236,6 +236,19 @@ mod tests {
     }
 
     #[test]
+    fn test_user_claims_deserialize_stored_email_that_fails_todays_rules() {
+        let json = serde_json::json!({
+            "user_id": uuid::Uuid::nil(),
+            "username": "tester",
+            "email": "test@localhost",
+            "exp": 1_234_567_890,
+            "iat": 1_234_567_890,
+        });
+        let claims: UserClaims = serde_json::from_value(json).unwrap();
+        assert_eq!(&*claims.email, "test@localhost");
+    }
+
+    #[test]
     fn test_user_claims_partial_eq_works() {
         let id1 = uuid::Uuid::new_v4();
         let id2 = uuid::Uuid::new_v4();

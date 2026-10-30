@@ -41,8 +41,17 @@ pub type InvalidEmail = email_address::Error;
 ///
 /// # Immutability
 ///
-/// `Email` has no public fields and no setters. Once constructed, it is
-/// guaranteed valid. To change it, parse a new one.
+/// `Email` has no public fields and no setters. To change it, parse a new one.
+///
+/// # Stored addresses
+///
+/// [`Email::new`] applies the rules to new input. Addresses that already
+/// passed once come back through [`Email::from_stored`] or serde without a
+/// second check, so an address accepted under older rules still loads.
+/// Deserializing trusts the value because serde only ever sees addresses the
+/// server already accepted: JWT claims, API responses and the app's saved
+/// session. Request bodies carry a plain `String` that goes through
+/// [`Email::new`].
 ///
 /// # Why a newtype, not a helper function
 ///
@@ -69,6 +78,17 @@ impl Email {
                 .without_display_text(),
         )?;
         Ok(Self(parsed))
+    }
+
+    /// Wraps an address that already passed [`Email::new`] once, such as one
+    /// read from the database, a JWT or a server response.
+    ///
+    /// Nothing is checked. The rules can tighten after an address was
+    /// accepted, and an existing account must keep loading when they do. New
+    /// input from a user goes through [`Email::new`].
+    #[must_use]
+    pub fn from_stored(stored: String) -> Self {
+        Self(EmailAddress::new_unchecked(stored))
     }
 }
 
@@ -116,8 +136,7 @@ impl<'de> Deserialize<'de> for Email {
     where
         D: serde::Deserializer<'de>,
     {
-        let raw = String::deserialize(deserializer)?;
-        Email::new(raw).map_err(serde::de::Error::custom)
+        String::deserialize(deserializer).map(Email::from_stored)
     }
 }
 
@@ -177,8 +196,13 @@ mod tests {
     }
 
     #[test]
-    fn deserialize_rejects_invalid_address() {
-        let result: Result<Email, _> = serde_json::from_str("\"user@apple\"");
-        assert!(result.is_err());
+    fn from_stored_keeps_value_as_is() {
+        assert_eq!(&*Email::from_stored("user@apple".to_string()), "user@apple");
+    }
+
+    #[test]
+    fn deserialize_keeps_stored_address_that_fails_todays_rules() {
+        let email: Email = serde_json::from_str("\"user@apple\"").unwrap();
+        assert_eq!(&*email, "user@apple");
     }
 }

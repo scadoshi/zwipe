@@ -29,7 +29,7 @@ impl TryFrom<DatabaseUserWithPasswordHash> for UserWithPasswordHash {
 
     fn try_from(value: DatabaseUserWithPasswordHash) -> Result<Self, Self::Error> {
         let username = Username::from_stored(value.username);
-        let email = zwipe_core::domain::Email::new(&value.email)?;
+        let email = zwipe_core::domain::Email::from_stored(value.email);
         let password_hash = HashedPassword::new(&value.password_hash)?;
         Ok(Self {
             id: value.id,
@@ -80,5 +80,20 @@ mod tests {
         };
         let user = UserWithPasswordHash::try_from(db).unwrap();
         assert_eq!(&*user.username, "fuck");
+    }
+
+    #[test]
+    fn stored_email_that_fails_todays_rules_still_loads() {
+        let hash = HashedPassword::generate(Password::new("SecurePass123!").unwrap()).unwrap();
+        let db = DatabaseUserWithPasswordHash {
+            id: Uuid::nil(),
+            username: "tester".to_string(),
+            email: "tester@localhost".to_string(),
+            password_hash: hash.to_string(),
+            email_verified_at: None,
+            hints_shown: serde_json::json!({}),
+        };
+        let user = UserWithPasswordHash::try_from(db).unwrap();
+        assert_eq!(&*user.email, "tester@localhost");
     }
 }

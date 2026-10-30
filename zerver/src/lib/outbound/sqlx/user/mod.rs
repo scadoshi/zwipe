@@ -60,19 +60,16 @@ impl UserRepository for Postgres {
         .fetch_one(&self.pool)
         .await?;
 
-        let mut user: User = database_user.try_into()?;
+        let mut user = User::from(database_user);
 
-        // Lenient like `hints_shown`: an address that no longer validates
-        // reads as no pending change.
         if let Some(row) = query!(
             "SELECT new_email, expires_at FROM email_change_requests WHERE user_id = $1 AND expires_at > NOW()",
             user_id
         )
         .fetch_optional(&self.pool)
         .await?
-            && let Ok(email) = Email::new(&row.new_email)
         {
-            user.pending_email = Some(email);
+            user.pending_email = Some(Email::from_stored(row.new_email));
             user.pending_email_expires_at = Some(row.expires_at);
         }
 
@@ -98,13 +95,7 @@ impl UserRepository for Postgres {
             other => MarkHintShownError::Database(other.into()),
         })?;
 
-        let user: User = database_user.try_into().map_err(
-            |e: crate::outbound::sqlx::user::error::IntoUserError| {
-                MarkHintShownError::UserFromDb(anyhow::anyhow!(e))
-            },
-        )?;
-
-        Ok(user)
+        Ok(User::from(database_user))
     }
 
     // == preferences ==
