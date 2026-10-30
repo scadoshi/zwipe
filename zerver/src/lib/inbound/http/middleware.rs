@@ -141,10 +141,15 @@ pub struct ClientIp(pub IpAddr);
 
 impl<S: Send + Sync> FromRequestParts<S> for ClientIp {
     type Rejection = StatusCode;
-    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
-        client_ip(&parts.headers, &parts.extensions)
-            .map(Self)
-            .ok_or(StatusCode::BAD_REQUEST)
+    fn from_request_parts(
+        parts: &mut Parts,
+        _state: &S,
+    ) -> impl Future<Output = Result<Self, Self::Rejection>> + Send {
+        std::future::ready(
+            client_ip(&parts.headers, &parts.extensions)
+                .map(Self)
+                .ok_or(StatusCode::BAD_REQUEST),
+        )
     }
 }
 
