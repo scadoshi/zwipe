@@ -99,7 +99,7 @@ pub(crate) fn apply_action(
 
 /// Shared bottom-sheet filter accordion used by add, view, and remove card screens.
 ///
-/// Reads `Signal<CardQueryBuilder>` and `Signal<u32>` (filter_reset_counter) from context.
+/// Reads `Signal<CardQueryBuilder>` and `Signal<u32>` (`filter_reset_counter`) from context.
 #[component]
 pub(crate) fn CardFilterSheet(
     mut open: Signal<bool>,

@@ -34,7 +34,7 @@ pub(crate) fn PrintingSheet(
     #[props(default)]
     read_only: bool,
     /// Confirmation shown after Save. Host-specific because only some hosts
-    /// persist: the deck view PATCHes the deck card, while the add screen just
+    /// persist: the deck view sends a `PATCH` for the deck card, while the add screen just
     /// re-skins the card still sitting in the swipe stack, where "saved" would
     /// claim a deck change that never happened.
     #[props(default = "Printing saved")]

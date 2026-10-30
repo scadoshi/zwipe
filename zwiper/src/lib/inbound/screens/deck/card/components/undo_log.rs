@@ -58,7 +58,7 @@ pub(crate) enum UndoAction {
     /// A regular deck card changed printing; undo restores the old printing.
     PrintingChanged { old_card: Card, new_id: Uuid },
     /// A command-zone card changed printing: a deck-profile slot update,
-    /// not a deck_card row; undo rebuilds the profile request with the old
+    /// not a `deck_card` row; undo rebuilds the profile request with the old
     /// printing id and restores the slot's pinned card signal.
     CommandZonePrintingChanged {
         slot: CommandZoneSlot,
@@ -127,7 +127,7 @@ pub(crate) fn use_undo_store() -> UndoStore {
 impl UndoStore {
     /// The stack last parked for this deck (empty if none). Clones rather
     /// than takes: restore runs inside the screen's mount initializer, and
-    /// writing the store mid-render is the bug FilterStore's clone-on-restore
+    /// writing the store mid-render is the bug `FilterStore`'s clone-on-restore
     /// shape avoids; the leftover copy is simply overwritten on next park.
     pub fn restore(&self, deck_id: Uuid) -> Vec<UndoAction> {
         self.entries
