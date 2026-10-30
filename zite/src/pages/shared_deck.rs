@@ -22,11 +22,23 @@ use zwipe_core::domain::deck::deck_metrics::{DeckMetrics, mainboard_total_price}
 use zwipe_core::domain::deck::{Board, DeckEntry, Format, deck_tag_label};
 use zwipe_core::http::contracts::deck::HttpSharedDeck;
 
-use crate::components::{PageMeta, sleep_ms};
+use crate::components::{OVERLAY_EXIT_MS, PageMeta, sleep_ms};
 use crate::{Footer, Nav, api};
 
 /// Desktop columns the deck sections split into, in order.
 const SECTION_COLUMNS: usize = 3;
+
+/// How long a hover preview stays up once the cursor leaves its row or the row flips.
+const PREVIEW_LIFE_MS: u32 = 2000;
+
+/// A hover preview's fade out, `sd-preview-out` in `assets/style.css`.
+const PREVIEW_FADE_MS: u32 = 400;
+
+/// Shortest the retry spinner shows, so an instant failure still reads as a click.
+const RETRY_SPINNER_MIN_MS: u32 = 500;
+
+/// Longest the featured row waits for its images before it opens anyway.
+const FEATURED_WAIT_MS: u32 = 4000;
 
 /// How a shared-deck fetch can fail, from the reader's point of view.
 #[derive(Clone, PartialEq)]
@@ -238,13 +250,13 @@ fn CardRow(
                     s.truncate(5);
                 });
                 spawn(async move {
-                    sleep_ms(2000).await;
+                    sleep_ms(PREVIEW_LIFE_MS).await;
                     preview_stack.with_mut(|s| {
                         if let Some(c) = s.iter_mut().find(|c| c.id == id) {
                             c.leaving = true;
                         }
                     });
-                    sleep_ms(400).await;
+                    sleep_ms(PREVIEW_FADE_MS).await;
                     preview_stack.with_mut(|s| s.retain(|c| c.id != id));
                 });
             },
@@ -274,13 +286,13 @@ fn CardRow(
                 my_preview_id.set(None);
                 // Now the card's 2s life runs; then a short fade-out, then drop.
                 spawn(async move {
-                    sleep_ms(2000).await;
+                    sleep_ms(PREVIEW_LIFE_MS).await;
                     preview_stack.with_mut(|s| {
                         if let Some(c) = s.iter_mut().find(|c| c.id == id) {
                             c.leaving = true;
                         }
                     });
-                    sleep_ms(400).await;
+                    sleep_ms(PREVIEW_FADE_MS).await;
                     preview_stack.with_mut(|s| s.retain(|c| c.id != id));
                 });
             },
@@ -395,9 +407,7 @@ pub fn SharedDeck(token: String) -> Element {
                                     retrying.set(true);
                                     result.restart();
                                     spawn(async move {
-                                        // Minimum visible spinner so an instant
-                                        // failure still reads as a click.
-                                        sleep_ms(500).await;
+                                        sleep_ms(RETRY_SPINNER_MIN_MS).await;
                                         retrying.set(false);
                                     });
                                 },
@@ -443,7 +453,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
     let mut featured_loaded = use_signal(|| 0usize);
     let mut featured_timed_out = use_signal(|| false);
     use_future(move || async move {
-        sleep_ms(4000).await;
+        sleep_ms(FEATURED_WAIT_MS).await;
         featured_timed_out.set(true);
     });
     // Budget panel currency, mirroring the app's Budget section chips.
@@ -939,7 +949,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
                 onclick: move |_| {
                     overlay_dismissing.set(true);
                     spawn(async move {
-                        sleep_ms(200).await;
+                        sleep_ms(OVERLAY_EXIT_MS).await;
                         overlay_card.set(None);
                         overlay_dismissing.set(false);
                     });

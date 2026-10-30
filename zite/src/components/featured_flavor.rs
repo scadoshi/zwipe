@@ -22,7 +22,7 @@ use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::deck_metrics::card_price;
 
-use crate::components::sleep_ms;
+use crate::components::{OVERLAY_EXIT_MS, sleep_ms};
 
 /// A real card response (Research Assistant, M15) frozen 2026-08-07, decoded as
 /// the DEBUG-ONLY fallback while the live fetch is pending or failing, so
@@ -49,7 +49,7 @@ pub(crate) fn dismiss_flavor_overlay(
 ) {
     dismissing.set(true);
     spawn(async move {
-        sleep_ms(200).await;
+        sleep_ms(OVERLAY_EXIT_MS).await;
         overlay.set(None);
         dismissing.set(false);
     });

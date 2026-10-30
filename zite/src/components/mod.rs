@@ -7,6 +7,9 @@ pub(crate) use page_meta::PageMeta;
 pub(crate) use pip_toggle::PipToggle;
 pub(crate) use stats_strip::StatsStrip;
 
+/// The full-art overlay's exit animation, `sd-image-out` in `assets/style.css`.
+pub(crate) const OVERLAY_EXIT_MS: u32 = 200;
+
 /// Browser `setTimeout` as a future. No-op off wasm (the server render never
 /// runs the dismiss timers).
 pub(crate) async fn sleep_ms(ms: u32) {

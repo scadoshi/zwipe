@@ -5,6 +5,9 @@ use dioxus::prelude::*;
 use crate::components::{PageMeta, sleep_ms};
 use crate::{Footer, Nav};
 
+/// One frame for the selected month's cards to mount before the scroll.
+const MOUNT_WAIT_MS: u32 = 50;
+
 /// Reads the URL fragment on the client, as text without its `#`.
 const READ_HASH_JS: &str = "dioxus.send(decodeURIComponent(window.location.hash.slice(1)))";
 
@@ -24,8 +27,7 @@ pub fn Changelog() -> Element {
                 return;
             }
             anchor.set(Some(fragment.clone()));
-            // One frame for the selected month's cards to mount.
-            sleep_ms(50).await;
+            sleep_ms(MOUNT_WAIT_MS).await;
             let _ = eval(&format!(
                 "document.getElementById({fragment:?})?.scrollIntoView({{ block: 'start' }});"
             ))
