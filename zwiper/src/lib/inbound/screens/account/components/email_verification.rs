@@ -177,7 +177,7 @@ pub(crate) fn VerificationActions() -> Element {
                 spawn(async move {
                     if let Some(fresh_user) = authed
                         .run_at(component::EMAIL_VERIFICATION, "check_verified", |c, s| async move {
-                            c.get_user(&s).await
+                            c.fetch_user(&s).await
                         })
                         .await
                     {

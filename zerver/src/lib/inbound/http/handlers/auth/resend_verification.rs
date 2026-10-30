@@ -21,7 +21,7 @@ pub async fn resend_verification(
 ) -> Result<StatusCode, ApiError> {
     let profile = state
         .user_service
-        .get_user(&GetUser::from(user.id))
+        .fetch_user(&GetUser::from(user.id))
         .await
         .map_err(ApiError::from)?;
 

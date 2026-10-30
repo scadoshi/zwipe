@@ -15,7 +15,10 @@ impl ZwipeClient {
     ///
     /// Returns a [`ClientError`] when the request fails to complete, the server answers with an
     /// error status, or the reply doesn't decode.
-    pub async fn get_deck_tags(&self, session: &Session) -> Result<Vec<DeckTagView>, ClientError> {
+    pub async fn fetch_deck_tags(
+        &self,
+        session: &Session,
+    ) -> Result<Vec<DeckTagView>, ClientError> {
         self.call(GetDeckTags, Some(session)).await
     }
 }

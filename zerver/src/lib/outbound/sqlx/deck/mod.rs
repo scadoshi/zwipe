@@ -238,7 +238,7 @@ impl DeckRepository for Postgres {
     }
 
     // == get ==
-    async fn get_deck_profile(
+    async fn fetch_deck_profile(
         &self,
         request: &GetDeckProfile,
     ) -> Result<DeckProfile, GetDeckProfileError> {
@@ -279,7 +279,7 @@ impl DeckRepository for Postgres {
         Ok(deck_profile)
     }
 
-    async fn get_deck_profiles(
+    async fn fetch_deck_profiles(
         &self,
         request: &GetDeckProfiles,
     ) -> Result<Vec<DeckProfile>, GetDeckProfileError> {
@@ -320,7 +320,7 @@ impl DeckRepository for Postgres {
         Ok(deck_profiles)
     }
 
-    async fn get_deck_cards(
+    async fn fetch_deck_cards(
         &self,
         request: &GetDeckProfile,
     ) -> Result<Vec<DeckCard>, GetDeckCardError> {
@@ -348,7 +348,7 @@ impl DeckRepository for Postgres {
     /// Distinct `card_roles` across the deck's mainboard MVPs. Unnests each
     /// MVP's roles array and dedupes, so three MVPs sharing a role contribute
     /// it once: the serve term is a flat lift, not a tally.
-    async fn get_mvp_card_roles(
+    async fn fetch_mvp_card_roles(
         &self,
         request: &GetDeckProfile,
     ) -> Result<Vec<String>, GetDeckCardError> {
@@ -698,7 +698,7 @@ impl DeckRepository for Postgres {
         Ok(())
     }
 
-    async fn get_commander_maybeboard_oracle_ids(
+    async fn fetch_commander_maybeboard_oracle_ids(
         &self,
         user_id: uuid::Uuid,
     ) -> Result<Vec<uuid::Uuid>, CommanderMaybeboardError> {
@@ -1456,7 +1456,7 @@ impl DeckRepository for Postgres {
         Ok(())
     }
 
-    async fn get_deck_id_by_share_token(
+    async fn fetch_deck_id_by_share_token(
         &self,
         token: uuid::Uuid,
     ) -> Result<Option<(uuid::Uuid, uuid::Uuid)>, anyhow::Error> {

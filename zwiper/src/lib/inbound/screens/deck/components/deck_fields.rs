@@ -19,6 +19,7 @@ use zwipe_core::domain::deck::{
     self, DeckName, DeckOtherTag, MAX_DECK_ORACLE_TAGS, MAX_DECK_TAGS, PowerLevel,
 };
 
+use crate::inbound::components::generation::use_generation;
 use crate::inbound::components::hint_dialog::HintColored;
 use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::info_button::{self, InfoButton};
@@ -183,12 +184,17 @@ pub(crate) fn DeckFields(
         }
     });
 
+    // Command-zone search state. Each field's searches take tickets from its
+    // own generation, so a reply for an older query never lands over a newer
+    // one.
+
     // Commander search state
     let mut cmd_search_query = use_signal(String::new);
     let mut cmd_search_results = use_signal(Vec::<Card>::new);
     let mut cmd_is_searching = use_signal(|| false);
     let mut cmd_show_dropdown = use_signal(|| false);
     let mut cmd_filter_on = use_signal(|| true);
+    let mut cmd_searches = use_generation();
 
     // Partner search state
     let mut partner_search_query = use_signal(String::new);
@@ -196,6 +202,7 @@ pub(crate) fn DeckFields(
     let mut partner_is_searching = use_signal(|| false);
     let mut partner_show_dropdown = use_signal(|| false);
     let mut partner_filter_on = use_signal(|| true);
+    let mut partner_searches = use_generation();
 
     // Background search state
     let mut bg_search_query = use_signal(String::new);
@@ -203,6 +210,7 @@ pub(crate) fn DeckFields(
     let mut bg_is_searching = use_signal(|| false);
     let mut bg_show_dropdown = use_signal(|| false);
     let mut bg_filter_on = use_signal(|| true);
+    let mut bg_searches = use_generation();
 
     // Signature spell search state
     let mut spell_search_query = use_signal(String::new);
@@ -210,6 +218,7 @@ pub(crate) fn DeckFields(
     let mut spell_is_searching = use_signal(|| false);
     let mut spell_show_dropdown = use_signal(|| false);
     let mut spell_filter_on = use_signal(|| true);
+    let mut spell_searches = use_generation();
 
     // Visibility memos
     let show_commander = use_memo(move || selected_format().is_some_and(|f| f.has_commander()));
@@ -282,6 +291,7 @@ pub(crate) fn DeckFields(
     // Commander debounced search
     use_effect(move || {
         let query = cmd_search_query();
+        let ticket = cmd_searches.next_ticket();
 
         if query.len() < MIN_NAME_QUERY_LEN {
             cmd_show_dropdown.set(false);
@@ -298,7 +308,7 @@ pub(crate) fn DeckFields(
         spawn(async move {
             time::sleep(Duration::from_millis(SEARCH_DEBOUNCE_MS)).await;
 
-            if cmd_search_query() != query {
+            if !cmd_searches.is_current(ticket) {
                 return;
             }
 
@@ -315,7 +325,11 @@ pub(crate) fn DeckFields(
                     return;
                 };
                 usage_buffer().record_search();
-                match client().search_cards(&card_filter, &session).await {
+                let reply = client().search_cards(&card_filter, &session).await;
+                if !cmd_searches.is_current(ticket) {
+                    return;
+                }
+                match reply {
                     Ok(cards) => {
                         cmd_search_results.set(cards);
                         cmd_is_searching.set(false);
@@ -334,6 +348,7 @@ pub(crate) fn DeckFields(
     // Partner debounced search (1 char minimum: small card pool)
     use_effect(move || {
         let query = partner_search_query();
+        let ticket = partner_searches.next_ticket();
 
         if query.is_empty() {
             partner_show_dropdown.set(false);
@@ -347,7 +362,7 @@ pub(crate) fn DeckFields(
         spawn(async move {
             time::sleep(Duration::from_millis(SEARCH_DEBOUNCE_MS)).await;
 
-            if partner_search_query() != query {
+            if !partner_searches.is_current(ticket) {
                 return;
             }
 
@@ -364,7 +379,11 @@ pub(crate) fn DeckFields(
                     return;
                 };
                 usage_buffer().record_search();
-                match client().search_cards(&card_filter, &session).await {
+                let reply = client().search_cards(&card_filter, &session).await;
+                if !partner_searches.is_current(ticket) {
+                    return;
+                }
+                match reply {
                     Ok(cards) => {
                         partner_search_results.set(cards);
                         partner_is_searching.set(false);
@@ -383,6 +402,7 @@ pub(crate) fn DeckFields(
     // Background debounced search (1 char minimum, small card pool)
     use_effect(move || {
         let query = bg_search_query();
+        let ticket = bg_searches.next_ticket();
 
         if query.is_empty() {
             bg_show_dropdown.set(false);
@@ -396,7 +416,7 @@ pub(crate) fn DeckFields(
         spawn(async move {
             time::sleep(Duration::from_millis(SEARCH_DEBOUNCE_MS)).await;
 
-            if bg_search_query() != query {
+            if !bg_searches.is_current(ticket) {
                 return;
             }
 
@@ -413,7 +433,11 @@ pub(crate) fn DeckFields(
                     return;
                 };
                 usage_buffer().record_search();
-                match client().search_cards(&card_filter, &session).await {
+                let reply = client().search_cards(&card_filter, &session).await;
+                if !bg_searches.is_current(ticket) {
+                    return;
+                }
+                match reply {
                     Ok(cards) => {
                         bg_search_results.set(cards);
                         bg_is_searching.set(false);
@@ -432,6 +456,7 @@ pub(crate) fn DeckFields(
     // Signature spell debounced search
     use_effect(move || {
         let query = spell_search_query();
+        let ticket = spell_searches.next_ticket();
 
         if query.len() < MIN_NAME_QUERY_LEN {
             spell_show_dropdown.set(false);
@@ -445,7 +470,7 @@ pub(crate) fn DeckFields(
         spawn(async move {
             time::sleep(Duration::from_millis(SEARCH_DEBOUNCE_MS)).await;
 
-            if spell_search_query() != query {
+            if !spell_searches.is_current(ticket) {
                 return;
             }
 
@@ -463,7 +488,11 @@ pub(crate) fn DeckFields(
                     return;
                 };
                 usage_buffer().record_search();
-                match client().search_cards(&card_filter, &session).await {
+                let reply = client().search_cards(&card_filter, &session).await;
+                if !spell_searches.is_current(ticket) {
+                    return;
+                }
+                match reply {
                     Ok(cards) => {
                         spell_search_results.set(cards);
                         spell_is_searching.set(false);

@@ -143,6 +143,12 @@ mod tests {
     }
 
     #[test]
+    fn test_change_username_new_rejects_banned_word() {
+        let result = ChangeUsername::new(Uuid::new_v4(), "fuck", "SecurePass123!");
+        assert!(matches!(result, Err(InvalidChangeUsername::Username(_))));
+    }
+
+    #[test]
     fn test_change_username_new_accepts_legacy_weak_password() {
         // The current password is verified at the service layer, not policy-gated here,
         // so a legacy password that predates the current policy must not be rejected.

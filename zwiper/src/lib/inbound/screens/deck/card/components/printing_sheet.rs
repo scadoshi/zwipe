@@ -83,7 +83,7 @@ pub(crate) fn PrintingSheet(
         is_loading.set(true);
 
         spawn(async move {
-            match client().get_printings(oid).await {
+            match client().fetch_printings(oid).await {
                 Ok(cards) => {
                     let idx = cards
                         .iter()

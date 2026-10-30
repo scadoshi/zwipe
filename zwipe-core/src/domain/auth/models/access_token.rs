@@ -225,6 +225,19 @@ mod tests {
     }
 
     #[test]
+    fn test_user_claims_deserialize_stored_username_containing_a_banned_word() {
+        let json = serde_json::json!({
+            "user_id": uuid::Uuid::nil(),
+            "username": "fuck",
+            "email": "test@example.com",
+            "exp": 1_234_567_890,
+            "iat": 1_234_567_890,
+        });
+        let claims: UserClaims = serde_json::from_value(json).unwrap();
+        assert_eq!(&*claims.username, "fuck");
+    }
+
+    #[test]
     fn test_user_claims_partial_eq_works() {
         let id1 = uuid::Uuid::new_v4();
         let id2 = uuid::Uuid::new_v4();

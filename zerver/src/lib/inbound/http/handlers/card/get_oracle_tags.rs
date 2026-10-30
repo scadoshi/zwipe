@@ -26,7 +26,7 @@ pub async fn get_oracle_tags(
 ) -> Result<(StatusCode, Json<Vec<OracleTag>>), ApiError> {
     state
         .card_service
-        .get_oracle_tags()
+        .fetch_oracle_tags()
         .await
         .map_err(ApiError::from)
         .map(|all_oracle_tags| (StatusCode::OK, Json(all_oracle_tags)))
