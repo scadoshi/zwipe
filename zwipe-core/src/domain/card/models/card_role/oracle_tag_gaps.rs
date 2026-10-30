@@ -1,9 +1,9 @@
 //! Heuristic classification for the handful of `CardRole` variants that
 //! Oracle Tags cannot cleanly express: `Pump`, `Stax`, `Protection`, `GraveyardHate`.
 //!
-//! As of 2026-07-11 the other ~18 categories are derived from Oracle-tag subtrees
-//! (the community gold standard) and `Tokens` from `all_parts`; see
-//! `context/plans/otags/` (Phase 2). Those concepts map cleanly to otags. These four
+//! The other ~18 categories are derived from Oracle-tag subtrees (the
+//! community gold standard) and `Tokens` from `all_parts`; see
+//! `context/plans/archive/otags/`. Those concepts map cleanly to otags. These four
 //! do NOT: the otag taxonomy carves the space differently (no single "single-target
 //! pump" or "tax/denial" concept, and `hate-graveyard` under-covers graveyard hate).
 //! So we keep a small, stable regex heuristic *only* for them.
@@ -24,12 +24,10 @@ use crate::domain::card::Card;
 pub fn classify_oracle_tag_gaps(card: &Card) -> Vec<CardRole> {
     let sd = &card.scryfall_data;
     // Reminder text (parenthesized) smuggles pattern matches: split second's
-    // "(...players can't cast spells...)" made every split second card Stax,
-    // and delve/embalm/escape reminders ("exile ... from your graveyard")
-    // tagged own-graveyard costs as GraveyardHate: 187 misroled cards across
-    // the four rules when audited 2026-08-06. Rules text a card actually
-    // carries always exists outside the parens, so classification reads the
-    // stripped text only.
+    // "(...players can't cast spells...)" reads as Stax, and
+    // delve/embalm/escape reminders ("exile ... from your graveyard") read as
+    // GraveyardHate. Rules text a card actually carries always exists outside
+    // the parens, so classification reads the stripped text only.
     let oracle = REMINDER
         .replace_all(&sd.oracle_text.as_deref().unwrap_or("").to_lowercase(), "")
         .into_owned();

@@ -37,9 +37,8 @@ impl CardCriteria {
     ///
     /// Unset criteria (`None`) never exclude a card, so an empty criteria set
     /// matches everything. Parity note: `is_partner` / `is_background` /
-    /// `is_signature_spell` are **not** evaluated here (matching the old
-    /// in-memory filter); they are command-zone pool constraints only the
-    /// server-side search applies.
+    /// `is_signature_spell` are **not** evaluated here; they are command-zone
+    /// pool constraints only the server-side search applies.
     #[expect(
         clippy::too_many_lines,
         reason = "one short check per criterion, in field order"
@@ -516,7 +515,7 @@ impl CardCriteria {
             return false;
         }
 
-        // Known divergence from the server (2026-09-01): zerver matches set
+        // Known divergence from the server: zerver matches set
         // filters against printing_set_names, the card's full printing
         // history; here only the wire card's own printing is visible, so the
         // check stays pick-based. Acceptable for the small in-memory

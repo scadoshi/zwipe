@@ -2,8 +2,8 @@
 //!
 //! [`CardQuery`] is what zwiper POSTs to `/api/card/search` and the deck-aware
 //! search. Its [`CardCriteria`] is `#[serde(flatten)]`ed, so the wire JSON is
-//! identical to the pre-split `CardFilter` (criteria fields at the top level
-//! alongside `limit` / `offset` / `order_by` / `direction` / `synergy`).
+//! flat: criteria fields at the top level alongside `limit` / `offset` /
+//! `order_by` / `direction` / `synergy`.
 //!
 //! `limit` is untrusted pagination input, so it is a clamping [`Limit`]; the
 //! in-memory path ([`Cards`](crate::domain::card::search_card::cards::Cards))
@@ -66,11 +66,11 @@ impl<'de> Deserialize<'de> for Limit {
 ///
 /// Built via [`CardQueryBuilder`](crate::domain::card::models::search_card::card_filter::builder::CardQueryBuilder). The
 /// in-memory filter path uses bare [`CardCriteria`] instead and cannot carry
-/// pagination; that split is the point.
+/// pagination.
 #[skip_serializing_none]
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct CardQuery {
-    /// The predicate fields, flattened so the wire stays the pre-split shape.
+    /// The predicate fields, flattened to the top level of the wire JSON.
     #[serde(flatten)]
     criteria: CardCriteria,
     #[serde(default)]
@@ -81,7 +81,7 @@ pub struct CardQuery {
     #[serde(rename = "order_by")]
     sort: Option<CardSortKey>,
     /// Sort direction by name (`"ascending"` / `"descending"`); absent means
-    /// ascending. A stray `ascending` bool from an old body is ignored.
+    /// ascending. A stray `ascending` bool is ignored.
     #[serde(default)]
     direction: SortDirection,
     /// Deck-aware search only: when true, constrain results to the commander's
@@ -171,12 +171,12 @@ mod tests {
     use super::*;
     use crate::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 
-    // == the Option A wire gate ==
-    // The split must not change the POST-body JSON. These tests pin the wire
-    // to the pre-split `CardFilter` shape in both directions.
+    // == the wire shape ==
+    // These tests pin the POST-body JSON in both directions: criteria fields at
+    // the top level alongside the config fields.
 
-    /// A pre-split `CardFilter` JSON body, as an already-shipped client sends
-    /// it: criteria fields at the top level alongside the config fields.
+    /// A JSON body as a shipped client sends it: criteria fields at the top
+    /// level alongside the config fields.
     const OLD_CLIENT_JSON: &str = r#"{
         "name_contains": "bolt",
         "cmc_range": [1.0, 3.0],
@@ -219,7 +219,7 @@ mod tests {
         let expected = serde_json::json!({
             "name_contains": "bolt",
             "cmc_range": [1.0, 3.0],
-            // builder defaults, present pre-split too
+            // builder defaults
             "is_playable": true,
             "digital": false,
             "oversized": false,
