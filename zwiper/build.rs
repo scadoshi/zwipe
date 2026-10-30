@@ -21,8 +21,8 @@ fn main() {
         .unwrap_or_else(|_| panic!("{RUST_BACKTRACE_KEY} must be set in .env file"));
 
     // Fail the build, not the first launch. `Config::from_env` parses this with
-    // `Url::from_str` and unwraps; the value is baked in, so a malformed one
-    // panics on startup for every install of that build. Cheap scheme+host check
+    // `Url::from_str`; the value is baked in, so a malformed one stops every
+    // install of that build at startup. Cheap scheme+host check
     // here catches the realistic mistakes (empty, typo'd, missing scheme).
     let rest = backend_url
         .strip_prefix("https://")

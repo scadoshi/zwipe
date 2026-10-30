@@ -72,7 +72,7 @@ enum Route {
     NotFound { segments: Vec<String> },
 }
 
-fn main() {
+fn main() -> std::io::Result<()> {
     // Native only: under `dx serve` this is the server binary and the logo
     // lands in the terminal, like zwiper's does. The wasm client's stdout
     // goes nowhere, so it does not carry the art.
@@ -92,19 +92,29 @@ fn main() {
                 #[cfg(not(debug_assertions))]
                 let config = config.incremental(
                     dioxus::server::IncrementalRendererConfig::new()
-                        .static_dir(
-                            std::env::current_exe()
-                                .unwrap()
-                                .parent()
-                                .unwrap()
-                                .join("public")
-                        )
+                        .static_dir(prerender_dir()?)
                         .clear_cache(false)
                 );
                 config.enable_out_of_order_streaming()
             }
         })
         .launch(App);
+    Ok(())
+}
+
+/// Where `dx build --ssg` writes the prerendered pages: `public/` beside the
+/// server binary.
+///
+/// # Errors
+///
+/// Fails when the binary's own path can't be read or has no parent directory.
+#[cfg(all(feature = "server", not(debug_assertions)))]
+fn prerender_dir() -> std::io::Result<std::path::PathBuf> {
+    let exe = std::env::current_exe()?;
+    let dir = exe
+        .parent()
+        .ok_or_else(|| std::io::Error::other("the server binary's path has no parent directory"))?;
+    Ok(dir.join("public"))
 }
 
 /// Endpoint hit by `dx build --ssg` to enumerate routes to prerender.

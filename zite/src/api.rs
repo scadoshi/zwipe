@@ -23,3 +23,16 @@ pub(crate) fn client() -> ZwipeClient {
         .get_or_init(|| ZwipeClient::new(Url::parse(API_BASE).unwrap()))
         .clone()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_api_base_parses_as_a_url() {
+        assert!(
+            Url::parse(API_BASE).is_ok(),
+            "API_BASE is not a url: {API_BASE}"
+        );
+    }
+}
