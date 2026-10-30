@@ -123,6 +123,9 @@ impl UpgradeRequired {
 /// cards. Returns the [`UpgradeRequired`] gate, true when this build is
 /// below the server minimum; the root component swaps the router for a
 /// blocking update screen.
+///
+/// The API client's base URL comes from the [`Config`] that `main` launches
+/// with as root context.
 pub fn spawn_upkeeper() -> UpgradeRequired {
     tracing::debug!("upkeeper spawned");
     // Owned by the root scope rather than this component's: token refresh
@@ -133,13 +136,11 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
 
     // The client crate reads no environment: zwiper supplies the base URL from
     // its build-time config, which is what lets a debug build point at prod.
+    // `main` loads that config and launches with it as root context.
     // Root-owned for the same reason as the session.
-    let client = use_hook(|| {
-        Signal::new_in_scope(
-            ZwipeClient::new(Config::from_env().backend_url),
-            ScopeId::ROOT,
-        )
-    });
+    let config: Config = use_context();
+    let client =
+        use_hook(|| Signal::new_in_scope(ZwipeClient::new(config.backend_url), ScopeId::ROOT));
     use_context_provider(|| client);
 
     // Registration hands its email to the login form through this.
