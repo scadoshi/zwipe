@@ -59,9 +59,9 @@ static TIMING_EQUALIZER_HASH: LazyLock<HashedPassword> = LazyLock::new(|| {
 /// Authentication service implementation handling user registration, login, and session management.
 ///
 /// This service orchestrates authentication operations by coordinating between:
-/// - **AuthRepository**: Password hashing, refresh token rotation, credential updates
-/// - **UserRepository**: User data retrieval
-/// - **EmailSender**: Transactional email delivery (verification, password reset)
+/// - **[`AuthRepository`]**: Password hashing, refresh token rotation, credential updates
+/// - **[`UserRepository`]**: User data retrieval
+/// - **[`EmailSender`]**: Transactional email delivery (verification, password reset)
 /// - **JWT Secret**: Access token generation
 ///
 /// # Authorization Pattern

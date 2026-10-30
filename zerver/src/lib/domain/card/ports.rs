@@ -67,7 +67,7 @@ pub struct DeckServeContext<'a> {
     /// term. Empty (the default) leaves ordering byte-identical.
     pub mvp_card_roles: &'a [String],
     /// User preference: hide cards with no in-universe printing. The pick
-    /// preference in latest_cards makes the picked printing's stamp/set a
+    /// preference in `latest_cards` makes the picked printing's stamp/set a
     /// card-level truth, so the predicate reads the row directly.
     pub exclude_universes_beyond: bool,
     /// Set NAMES whose printings are served despite the exclusion (the
@@ -161,7 +161,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         request: &CardQuery,
     ) -> impl Future<Output = Result<Vec<ScryfallData>, SearchScryfallDataError>> + Send;
 
-    /// `search_scryfall_data` plus deck-aware extras: oracle_id exclusion,
+    /// `search_scryfall_data` plus deck-aware extras: `oracle_id` exclusion,
     /// suppression filtering (skipped/removed cards for `deck_id`),
     /// synergy-score default ordering, and (when `synergy_only`) constraining
     /// results to the commander's synergy pool. With `synergy_only` set and a
@@ -197,7 +197,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         request: &ScryfallDataIds,
     ) -> impl Future<Output = Result<Vec<Card>, GetCardError>> + Send;
 
-    /// Returns all printings of a card by oracle_id, ordered by release date.
+    /// Returns all printings of a card by `oracle_id`, ordered by release date.
     fn get_printings(
         &self,
         oracle_id: uuid::Uuid,
@@ -301,7 +301,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         names: &[String],
     ) -> impl Future<Output = Result<Vec<Card>, SearchCardsError>> + Send;
 
-    /// `search_cards` with deck awareness: rows whose oracle_id is in
+    /// `search_cards` with deck awareness: rows whose `oracle_id` is in
     /// `exclude_oracle_ids` are omitted, the deck's suppression set (skipped
     /// / removed cards) is filtered out when `deck_id` is given, and when
     /// `synergy_scores` is given (lowercased card name → score) results are
@@ -315,7 +315,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         context: DeckServeContext<'_>,
     ) -> impl Future<Output = Result<Vec<Card>, SearchCardsError>> + Send;
 
-    /// First-class commander search (context/archive/commander_select_ordering.md):
+    /// First-class commander search (`context/archive/commander_select_ordering.md`):
     /// results ordered by decks-helmed popularity, banded + wildcarded per user
     /// per day (deck-independent), with token/emblem printings excluded so a
     /// same-named token is never offered as a commander. An explicit sort in
@@ -390,7 +390,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         ids: &[uuid::Uuid],
     ) -> impl Future<Output = Result<Vec<Card>, anyhow::Error>> + Send;
 
-    /// Updates card_roles for a batch of cards.
+    /// Updates `card_roles` for a batch of cards.
     fn update_card_roles(
         &self,
         updates: &[(
@@ -408,7 +408,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     /// server-grouped card display). Returns rows affected.
     fn refresh_oracle_tag_groups(&self) -> impl Future<Output = anyhow::Result<u64>> + Send;
 
-    /// IDs of every card with oracle text (candidates for the oracle_tag_gaps merge).
+    /// IDs of every card with oracle text (candidates for the `oracle_tag_gaps` merge).
     fn get_card_ids_with_oracle_text(
         &self,
     ) -> impl Future<Output = Result<Vec<uuid::Uuid>, anyhow::Error>> + Send;
@@ -426,7 +426,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
 ///
 /// `scryfall_sync()` is the primary sync operation:
 /// 1. Download bulk JSON from Scryfall (~150MB)
-/// 2. Parse JSON into ScryfallData structs
+/// 2. Parse JSON into `ScryfallData` structs
 /// 3. Batch delta upsert (only update changed cards)
 /// 4. Record metrics (duration, cards processed)
 ///
@@ -450,23 +450,23 @@ pub trait CardService: Clone + Send + Sync + 'static {
 
     /// Derives `card_roles` from Oracle Tags (18 subtrees + Tokens via
     /// `all_parts`), then merges the 4 heuristic stragglers (Pump/Stax/Protection/
-    /// GraveyardHate) via `oracle_tag_gaps`. Returns `(otag_rows_written, gap_merges)`.
+    /// `GraveyardHate`) via `oracle_tag_gaps`. Returns `(otag_rows_written, gap_merges)`.
     fn derive_card_categories(
         &self,
         batch_size: usize,
     ) -> impl Future<Output = anyhow::Result<(u32, u32)>> + Send;
 
-    /// Refreshes the latest_cards materialized view after data changes.
+    /// Refreshes the `latest_cards` materialized view after data changes.
     fn refresh_latest_cards(&self) -> impl Future<Output = anyhow::Result<()>> + Send;
 
-    /// Refreshes the card_signal_rollup materialized view (nightly, zervice).
+    /// Refreshes the `card_signal_rollup` materialized view (nightly, zervice).
     fn refresh_card_signal_rollup(&self) -> impl Future<Output = anyhow::Result<()>> + Send;
 
-    /// Refreshes the otag_context_signal_rollup materialized view (nightly, zervice).
+    /// Refreshes the `otag_context_signal_rollup` materialized view (nightly, zervice).
     fn refresh_otag_context_signal_rollup(&self)
     -> impl Future<Output = anyhow::Result<()>> + Send;
 
-    /// Syncs the oracle_tag catalog + card correlation from Scryfall's Oracle
+    /// Syncs the `oracle_tag` catalog + card correlation from Scryfall's Oracle
     /// Tags bulk file (nightly, zervice). Returns `(catalog_rows, correlation_rows)`.
     fn sync_oracle_tags(&self) -> impl Future<Output = anyhow::Result<(u32, u32)>> + Send;
 
@@ -498,7 +498,7 @@ pub trait CardService: Clone + Send + Sync + 'static {
         request: &ScryfallDataIds,
     ) -> impl Future<Output = Result<Vec<Card>, GetCardError>> + Send;
 
-    /// Returns all printings of a card by oracle_id, ordered by release date.
+    /// Returns all printings of a card by `oracle_id`, ordered by release date.
     fn get_printings(
         &self,
         oracle_id: uuid::Uuid,
@@ -514,7 +514,7 @@ pub trait CardService: Clone + Send + Sync + 'static {
         user_id: uuid::Uuid,
     ) -> impl Future<Output = Result<Vec<Card>, SearchCardsError>> + Send;
 
-    /// Searches for commanders (context/archive/commander_select_ordering.md):
+    /// Searches for commanders (`context/archive/commander_select_ordering.md`):
     /// popularity-ordered, banded + wildcarded per user per day, token-free.
     fn search_commanders(
         &self,

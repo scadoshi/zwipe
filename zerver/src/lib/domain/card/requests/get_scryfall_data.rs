@@ -31,7 +31,7 @@ pub enum SearchScryfallDataError {
 pub struct GetScryfallData(Uuid);
 
 impl GetScryfallData {
-    /// Creates a new GetScryfallData request by parsing a UUID string.
+    /// Creates a new `GetScryfallData` request by parsing a UUID string.
     ///
     /// # Errors
     /// Returns `uuid::Error` if the string is not a valid UUID.

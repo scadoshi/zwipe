@@ -7,7 +7,7 @@
 //!
 //! All card data comes from the [Scryfall API](https://scryfall.com/docs/api).
 
-/// Card models and value objects (ScryfallData, CardProfile, Card, filters).
+/// Card models and value objects (`ScryfallData`, `CardProfile`, `Card`, filters).
 pub mod models;
 pub use models::{helpers, search_card, synergy, zervice_metrics};
 

@@ -23,7 +23,7 @@ pub const UNVERIFIED_MAX_CARDS_PER_DECK: i64 = 100;
 /// rejected (422), not evicted: every entry is a deliberate save.
 pub const MAX_COMMANDER_MAYBEBOARD: i64 = 50;
 
-/// Deck models and value objects (DeckProfile, Deck, DeckCard, operations).
+/// Deck models and value objects (`DeckProfile`, `Deck`, `DeckCard`, operations).
 pub mod models;
 
 /// Port traits (interfaces) for deck operations.

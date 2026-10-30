@@ -31,7 +31,7 @@ use crate::domain::user::models::preferences::{GetPreferencesError, UpdatePrefer
 pub trait UserRepository: Clone + Send + Sync + 'static {
     /// Retrieves a user profile by ID.
     ///
-    /// Returns user data without password hash (use AuthRepository for that).
+    /// Returns user data without password hash (use `AuthRepository` for that).
     fn get_user(&self, user_id: Uuid) -> impl Future<Output = Result<User, GetUserError>> + Send;
 
     /// Fetches display preferences for a user. Returns defaults if no row exists.

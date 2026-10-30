@@ -44,7 +44,7 @@ impl From<uuid::Error> for InvalidCardProfileIds {
 pub struct GetCardProfile(Uuid);
 
 impl GetCardProfile {
-    /// Creates a new GetCardProfile request by parsing a UUID string.
+    /// Creates a new `GetCardProfile` request by parsing a UUID string.
     ///
     /// # Errors
     /// Returns `uuid::Error` if the string is not a valid UUID.

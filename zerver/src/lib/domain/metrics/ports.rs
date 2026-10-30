@@ -148,13 +148,13 @@ pub trait MetricsService: Clone + Send + Sync + 'static {
         user_id: Uuid,
     ) -> impl Future<Output = Result<(), MetricsError>> + Send;
 
-    /// Increments the lifetime decks_created counter.
+    /// Increments the lifetime `decks_created` counter.
     fn increment_decks_created(
         &self,
         user_id: Uuid,
     ) -> impl Future<Output = Result<(), MetricsError>> + Send;
 
-    /// Increments the lifetime decks_completed counter.
+    /// Increments the lifetime `decks_completed` counter.
     fn increment_decks_completed(
         &self,
         user_id: Uuid,

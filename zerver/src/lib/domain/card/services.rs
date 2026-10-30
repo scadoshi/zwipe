@@ -53,7 +53,7 @@ fn batch_size() -> usize {
 ///
 /// # Performance
 /// Bulk operations use batch processing to avoid PostgreSQL parameter limits.
-/// Batch size is auto-calculated based on ScryfallData field count (376 cards/batch).
+/// Batch size is auto-calculated based on `ScryfallData` field count (376 cards/batch).
 #[derive(Debug, Clone)]
 pub struct Service<R> {
     repo: R,
