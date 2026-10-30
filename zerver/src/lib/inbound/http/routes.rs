@@ -197,6 +197,11 @@ fn private_no_store_layer() -> SetResponseHeaderLayer<HeaderValue> {
 }
 
 /// Routes that don't require authentication.
+///
+/// # Panics
+///
+/// Never in practice: a governor config only fails to build on a zero period
+/// or burst, and every one here is a non-zero constant.
 #[expect(
     clippy::expect_used,
     reason = "every governor config has a non-zero period and burst, so finish never returns None"
@@ -484,6 +489,11 @@ pub fn public_routes() -> Router<AppState> {
 }
 
 /// Routes that require `AuthenticatedUser` (JWT Bearer token).
+///
+/// # Panics
+///
+/// Never in practice: a governor config only fails to build on a zero period
+/// or burst, and every one here is a non-zero constant.
 #[expect(
     clippy::expect_used,
     reason = "every governor config has a non-zero period and burst, so finish never returns None"
