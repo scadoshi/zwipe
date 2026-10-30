@@ -186,7 +186,15 @@ mod tests {
     use super::*;
 
     fn parse_lines(text: &str) -> Vec<ImportLine> {
-        ImportDeckCards::parse(Uuid::nil(), Uuid::nil(), text, false, None, ImportMode::Add).lines
+        ImportDeckCards::parse(
+            Uuid::nil(),
+            Uuid::nil(),
+            text,
+            /* email_verified */ false,
+            None,
+            ImportMode::Add,
+        )
+        .lines
     }
 
     /// Does an entry (as the user typed it) resolve to a card stored under
@@ -371,7 +379,7 @@ mod tests {
             Uuid::nil(),
             Uuid::nil(),
             text,
-            false,
+            /* email_verified */ false,
             Some(Board::Maybeboard),
             ImportMode::Add,
         )

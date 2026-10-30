@@ -258,7 +258,7 @@ mod tests {
     use super::*;
 
     fn builder(tags: Vec<&str>) -> CreateDeckProfileBuilder {
-        CreateDeckProfile::builder("My Deck", Uuid::new_v4(), true)
+        CreateDeckProfile::builder("My Deck", Uuid::new_v4(), /* email_verified */ true)
             .tags(tags.into_iter().map(str::to_string).collect())
     }
 
