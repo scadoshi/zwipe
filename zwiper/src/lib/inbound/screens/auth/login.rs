@@ -18,7 +18,7 @@ use crate::outbound::session::Persist;
 
 /// An identifier for the login form to fill in once, set by a screen that
 /// sends the user here (registration). Provided at the root.
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct LoginPrefill(pub Signal<Option<String>>);
 
 /// Login form screen for user authentication.
