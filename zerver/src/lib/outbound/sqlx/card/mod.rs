@@ -76,13 +76,12 @@ use crate::outbound::sqlx::postgres::Postgres as MyPostgres;
 /// filtering with much larger limits, but that path never reaches this query.
 const MAX_SEARCH_LIMIT: u32 = 250;
 
-// Default-synergy-ordering dials (context/plans/suggestion_signal.md,
-// Phase 3a+3b band revision). `W_SIGNAL = 0.0` and `BAND_SIZE = 1` together
-// reproduce the pre-signal score ordering exactly; that's the revert lever.
+// Default-synergy-ordering dials (context/plans/suggestion_signal.md).
+// `W_SIGNAL = 0.0` and `BAND_SIZE = 1` together give plain score ordering.
 
 /// Weight of the pooled add-rate term (centered on the global rate, so a
 /// card with no data contributes exactly zero). Units are synergy-score
-/// points (scores span roughly -0.6..1.0, measured 2026-07-06); enough to
+/// points (scores span roughly -0.6..1.0); enough to
 /// migrate a proven card across a band boundary over time.
 const W_SIGNAL: f64 = 0.15;
 
@@ -98,7 +97,7 @@ const BAND_SIZE: i64 = 25;
 /// outweighs the global prior.
 const SHRINK_K: f64 = 10.0;
 
-/// Weight of the oracle-tag correlation term (Phase 4): a fixed lift for cards
+/// Weight of the oracle-tag correlation term: a fixed lift for cards
 /// whose `card_profiles.oracle_tags` overlap the deck's selected otags. Units
 /// are synergy-score points (scores span roughly -0.6..1.0), sized to float a
 /// strategy-relevant card up a band or so without swamping commander synergy.
@@ -501,7 +500,7 @@ impl CardRepository for MyPostgres {
                 " + {W_SIGNAL} * ((COALESCE(sig.net, 0) + {SHRINK_K} * g.rate) \
                    / (COALESCE(sig.shown, 0) + {SHRINK_K}) - g.rate)"
             ));
-            // Oracle-tag term (Phase 4): a flat lift for cards whose otags overlap
+            // Oracle-tag term: a flat lift for cards whose otags overlap
             // the deck's selected otags. Dormant when the deck selected none, so
             // decks without otags keep byte-identical ordering. Mirrors the
             // filter's `?|` jsonb-array overlap probe.
@@ -1062,8 +1061,8 @@ impl CardRepository for MyPostgres {
             // That conjunct is logically redundant, since the front face is a
             // substring of the whole line, but `type_line ILIKE` can use the
             // trigram index while `split_part(type_line, ...)` cannot. Keeping
-            // both lets the index narrow first: measured at 12ms against 21ms
-            // for the old filter and 57ms with the raw test dropped.
+            // both lets the index narrow first: measured at 12ms, against 57ms
+            // with the raw test dropped.
             match format {
                 // Legendary creature, legendary vehicle with P/T, or "can be your commander"
                 Format::Commander | Format::Duel | Format::Predh => {
@@ -1338,7 +1337,7 @@ impl CardRepository for MyPostgres {
             ));
         } else if let Some(scores) = synergy_scores {
             // Default synergy ordering: band shuffle over (base + signal)
-            // (context/plans/suggestion_signal.md, Phase 3a+3b band revision).
+            // (context/plans/suggestion_signal.md).
             //   score: the commander's synergy score (unscored cards anchor
             //          below the scored floor, see UNSCORED_ANCHOR) + the
             //          pooled net-rate, shrunk toward and centered on the
@@ -1347,10 +1346,7 @@ impl CardRepository for MyPostgres {
             //          Bands stay in strict order; position *within* a band
             //          is purely the (card, deck, day) hash; a different
             //          opening hand per deck per day, while a band-2 card
-            //          can never lead band 1. Score-jitter was tried first
-            //          and replaced: it permutes positions but never rotates
-            //          the visible cast, which reads as "same order"
-            //          (2026-07-06 live Krenko tests at 0.01/0.04/0.08).
+            //          can never lead band 1.
             qb.push(" ORDER BY ");
             if let Some(d) = returned_deck {
                 push_returned(&mut qb, d);
@@ -1364,8 +1360,7 @@ impl CardRepository for MyPostgres {
                     " DESC, name ASC, latest_cards.id) - 1) / {BAND_SIZE}, "
                 ));
                 // COALESCE the oracle_id: it is nullable, and NULL || seed
-                // would NULL the shuffle key (caught by the dev harness,
-                // 2026-07-06).
+                // would NULL the shuffle key.
                 qb.push("hashtext(COALESCE(latest_cards.oracle_id::text, '') || ");
                 qb.push_bind(seed);
                 qb.push("), name ASC");

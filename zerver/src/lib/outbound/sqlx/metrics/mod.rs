@@ -127,7 +127,7 @@ impl MetricsRepository for Postgres {
         let s32 = batch.searches as i32;
 
         // Resolve every deck's context from `deck_id`: the client sends only the
-        // deck now, the backend derives the rest. Ownership-scoped (`user_id`), so a
+        // deck, the backend derives the rest. Ownership-scoped (`user_id`), so a
         // client can only attribute signal to decks it owns. Per owned deck we resolve
         // its commander's oracle id (EDH) and its `format_ci` key (non-EDH), used by
         // the three signal sinks below.
@@ -238,8 +238,7 @@ impl MetricsRepository for Postgres {
         }
 
         // First-party suggestion signal: aggregate per-(commander, card) tallies,
-        // commander resolved from the deck (clients at or above the 1.7.0
-        // `MIN_CLIENT_VERSION` floor never send one). Pure aggregate, no user_id. A deck
+        // commander resolved from the deck. Pure aggregate, no user_id. A deck
         // with no commander (a non-Commander deck) is skipped here: it has no lead
         // key for this table and feeds the otag-context signal below via (format, CI).
         for sig in &signals {
@@ -310,11 +309,11 @@ impl MetricsRepository for Postgres {
             .map_err(db)?;
         }
 
-        // Generalized-context per-otag signal (Phase 5, the cross-format moat
-        // dataset, context/plans/otags/moat.md; shipped dark). For every add-stack
+        // Generalized-context per-otag signal (the cross-format dataset,
+        // context/plans/otags/moat.md). For every add-stack
         // signal we credit each OTAG OF THE SWIPED CARD (card_profiles.oracle_tags),
         // keyed by the deck's generalized context:
-        //   * commander present → 'commander:<oracle_id>' (every existing client),
+        //   * commander present → 'commander:<oracle_id>',
         //   * else deck_id present → 'format_ci:<format>:<CI>' from the deck row
         //     (non-Commander decks; ownership-scoped). Nothing otag/format/CI is on
         //     the wire; it is all derived here. Pure aggregate, no user_id.

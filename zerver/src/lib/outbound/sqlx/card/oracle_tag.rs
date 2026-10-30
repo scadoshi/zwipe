@@ -18,8 +18,7 @@ impl From<DatabaseOracleTag> for OracleTag {
     fn from(value: DatabaseOracleTag) -> Self {
         // Curation is a server decision, stamped here from the compiled
         // list, so a retune ships on a deploy. A slug that is no longer
-        // served cannot be marked curated, which is what the client used to
-        // filter for by hand.
+        // served cannot be marked curated.
         let curated = CURATED_ORACLE_TAGS.contains(&value.slug.as_str());
         Self {
             slug: value.slug,
