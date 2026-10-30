@@ -493,7 +493,7 @@ mod tests {
         assert_eq!(repeated.count, 3);
         assert_eq!(repeated.kind, "api_unprocessable");
         assert_eq!(repeated.message, "deck limit reached");
-        assert!(!repeated.client_version.is_empty());
+        assert_ne!(repeated.client_version, "");
 
         // Drained: a second snapshot has nothing.
         assert!(buffer.snapshot_and_zero().is_none());
