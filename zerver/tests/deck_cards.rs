@@ -524,3 +524,45 @@ async fn concurrent_stars_stop_at_the_mvp_cap(pool: sqlx::PgPool) {
     .unwrap();
     assert_eq!(starred, 3, "statuses {first} and {second}");
 }
+
+/// The import result lists its cards by name, whatever order the text gave.
+#[sqlx::test]
+async fn import_result_is_sorted_by_name(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, did) = deck_for(&app, "sorter").await;
+
+    let names = [
+        "Wrath of God",
+        "Brainstorm",
+        "Ponder",
+        "Counterspell",
+        "Swords to Plowshares",
+        "Arcane Signet",
+        "Lightning Bolt",
+        "Duress",
+    ];
+    let cards: Vec<_> = names
+        .iter()
+        .map(|name| card(name).type_line("Instant"))
+        .collect();
+    seed_cards(&pool, &cards).await;
+
+    let text = names.map(|name| format!("1 {name}")).join("\n");
+    let (status, result) = app
+        .post(
+            &import_deck_cards_route(did.parse().unwrap()),
+            json!({ "text": text }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "import: {result}");
+    let imported: Vec<&str> = result["imported"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|c| c["name"].as_str().unwrap())
+        .collect();
+    let mut sorted = names.to_vec();
+    sorted.sort_unstable();
+    assert_eq!(imported, sorted);
+}

@@ -949,14 +949,16 @@ where
             )
             .await?;
 
-        // Build imported list from insert_map
-        let imported: Vec<ImportedCard> = insert_map
+        // Build imported list from insert_map, sorted by name so the result
+        // doesn't follow HashMap order.
+        let mut imported: Vec<ImportedCard> = insert_map
             .into_values()
             .map(|(_, _, qty, name, _, _)| ImportedCard {
                 name,
                 quantity: qty,
             })
             .collect();
+        imported.sort_by(|a, b| a.name.cmp(&b.name));
 
         Ok(ImportDeckCardsResult {
             imported,
@@ -1103,13 +1105,14 @@ where
             .apply_import_batch(user_id, deck_id, mode, &batch, card_limit, email_verified)
             .await?;
 
-        let imported: Vec<ImportedCard> = insert_map
+        let mut imported: Vec<ImportedCard> = insert_map
             .into_values()
             .map(|(_, qty, name)| ImportedCard {
                 name,
                 quantity: qty,
             })
             .collect();
+        imported.sort_by(|a, b| a.name.cmp(&b.name));
 
         Ok(ImportDeckCardsResult {
             imported,
