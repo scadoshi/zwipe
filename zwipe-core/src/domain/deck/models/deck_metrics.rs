@@ -515,7 +515,6 @@ fn numeric_stat(top: Option<&str>, front_face: Option<&str>) -> Option<f64> {
     top.or(front_face).and_then(|v| v.parse::<f64>().ok())
 }
 
-/// Card type classification; first match wins (matches `group_cards.rs` logic).
 #[cfg(test)]
 mod budget_tests {
     use super::budget_tier;
@@ -579,6 +578,7 @@ const COLOR_LABELS: [&str; 7] = [
     "colorless",
 ];
 
+/// Card type classification; first match wins (matches `group_cards.rs` logic).
 fn classify_type(card: &Card) -> usize {
     const CHECKS: &[&str] = &[
         "Land",
