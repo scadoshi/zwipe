@@ -627,7 +627,7 @@ mod tests {
     fn scored(n: u128, identity: &[&str]) -> ScoredCommander {
         ScoredCommander {
             oracle_id: Uuid::from_u128(n),
-            color_identity: identity.iter().map(|c| c.to_string()).collect(),
+            color_identity: identity.iter().map(ToString::to_string).collect(),
             tag_slugs: vec![],
         }
     }
@@ -700,14 +700,14 @@ mod tests {
     fn deck(n: u128, colors: &[&str]) -> ProfiledDeck {
         ProfiledDeck {
             commander_oracle_id: Some(Uuid::from_u128(n)),
-            colors: colors.iter().map(|c| c.to_string()).collect(),
+            colors: colors.iter().map(ToString::to_string).collect(),
             mainboard_oracle_ids: vec![],
             card_colors: CardColorCounts::default(),
         }
     }
 
     fn strings(colors: &[&str]) -> Vec<String> {
-        colors.iter().map(|c| c.to_string()).collect()
+        colors.iter().map(ToString::to_string).collect()
     }
 
     #[test]
