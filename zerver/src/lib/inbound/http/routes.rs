@@ -113,7 +113,7 @@ fn unauthorized_on_missing_key(error: GovernorError) -> Response<Body> {
         GovernorError::TooManyRequests { wait_time, headers } => {
             too_many_requests_response(wait_time, headers)
         }
-        other => other.into_response().map(Body::from),
+        other @ GovernorError::Other { .. } => other.into_response().map(Body::from),
     }
 }
 
