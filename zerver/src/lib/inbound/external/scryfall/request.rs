@@ -27,7 +27,7 @@ pub(super) struct ScryfallRequest(RequestBuilder);
 
 impl ScryfallRequest {
     /// Builds a GET request carrying the Scryfall headers.
-    pub(super) fn get(client: Client, full_url: &str) -> Self {
+    pub(super) fn get(client: &Client, full_url: &str) -> Self {
         Self(
             client
                 .get(full_url)
@@ -51,7 +51,7 @@ impl ScryfallRequest {
         reason = "a by-name search kept beside the bulk fetches, with no caller yet"
     )]
     pub(super) async fn search_cards(
-        client: Client,
+        client: &Client,
         search_str: &str,
     ) -> anyhow::Result<Vec<ScryfallData>> {
         let url = SCRYFALL_API_BASE.to_string() + CARDS_SEARCH_ENDPOINT;
@@ -85,6 +85,6 @@ pub(super) trait IntoScryfallRequest {
 
 impl IntoScryfallRequest for Client {
     fn into_scryfall_request(self, endpoint: &str) -> ScryfallRequest {
-        ScryfallRequest::get(self, endpoint)
+        ScryfallRequest::get(&self, endpoint)
     }
 }

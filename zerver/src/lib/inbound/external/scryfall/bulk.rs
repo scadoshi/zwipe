@@ -68,7 +68,7 @@ impl BulkEndpoint {
     /// partial data).
     async fn fetch_jsonl_gz<T: DeserializeOwned>(&self, what: &str) -> anyhow::Result<Vec<T>> {
         let url = format!("{}{}", SCRYFALL_API_BASE, self.resolve());
-        let request = ScryfallRequest::get(Client::new(), &url);
+        let request = ScryfallRequest::get(&Client::new(), &url);
 
         let bulk_data_object: BulkDataObject = request
             .send()
@@ -78,7 +78,7 @@ impl BulkEndpoint {
             .await
             .with_context(|| format!("failed to parse BulkDataObject for {what}"))?;
 
-        let request = ScryfallRequest::get(Client::new(), &bulk_data_object.jsonl_download_uri);
+        let request = ScryfallRequest::get(&Client::new(), &bulk_data_object.jsonl_download_uri);
         let bytes = request
             .send()
             .await
