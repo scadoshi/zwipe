@@ -195,9 +195,11 @@ where
         &self,
         request: &AuthenticateUser,
     ) -> Result<User, AuthenticateUserError> {
-        let user_with_password_hash = self.auth_repo.get_user_with_password_hash(request).await?;
-        let password_hash = user_with_password_hash.password_hash.clone();
-        let user: User = user_with_password_hash.into();
+        let (user, password_hash) = self
+            .auth_repo
+            .get_user_with_password_hash(request)
+            .await?
+            .into_parts();
 
         let verified = password_hash
             .verify(request.password.read())
@@ -323,9 +325,7 @@ where
             return Err(AuthenticateUserError::AccountLocked);
         }
 
-        let password_hash = user_with_password_hash.password_hash.clone();
-
-        let user: User = user_with_password_hash.into();
+        let (user, password_hash) = user_with_password_hash.into_parts();
 
         let verified = password_hash
             .verify(request.password.read())

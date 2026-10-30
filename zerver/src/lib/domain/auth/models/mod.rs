@@ -46,17 +46,33 @@ pub struct UserWithPasswordHash {
     pub hints_shown: std::collections::HashMap<String, bool>,
 }
 
-impl From<UserWithPasswordHash> for User {
-    fn from(value: UserWithPasswordHash) -> Self {
-        Self {
-            id: value.id,
-            username: value.username,
-            email: value.email,
-            email_verified_at: value.email_verified_at,
-            hints_shown: value.hints_shown,
+impl UserWithPasswordHash {
+    /// Splits the password hash off, leaving the public [`User`].
+    pub(crate) fn into_parts(self) -> (User, HashedPassword) {
+        let Self {
+            id,
+            username,
+            email,
+            password_hash,
+            email_verified_at,
+            hints_shown,
+        } = self;
+        let user = User {
+            id,
+            username,
+            email,
+            email_verified_at,
+            hints_shown,
             pending_email: None,
             pending_email_expires_at: None,
-        }
+        };
+        (user, password_hash)
+    }
+}
+
+impl From<UserWithPasswordHash> for User {
+    fn from(value: UserWithPasswordHash) -> Self {
+        value.into_parts().0
     }
 }
 
