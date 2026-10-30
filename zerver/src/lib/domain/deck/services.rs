@@ -104,7 +104,7 @@ where
         let ids: ScryfallDataIds = counts.iter().map(|c| c.scryfall_data_id).collect();
         let mut cards: HashMap<Uuid, Card> = self
             .card_repo
-            .get_cards(&ids)
+            .fetch_cards(&ids)
             .await
             .map_err(|e| CommanderSuggestionsError::Database(e.into()))?
             .into_iter()
@@ -165,7 +165,7 @@ where
             .collect();
         let printings = self
             .card_repo
-            .get_multiple_scryfall_data(&ids)
+            .fetch_multiple_scryfall_data(&ids)
             .await
             .map_err(|e| CreateDeckCardError::Database(e.into()))?;
         let oracle_of = |id: Uuid| {
@@ -222,7 +222,7 @@ where
         let deck_profile = self.deck_repo.fetch_deck_profile(request).await?;
         let deck_cards = self.deck_repo.fetch_deck_cards(request).await?;
         let scryfall_data_ids = ScryfallDataIds::from(deck_cards.as_slice());
-        let cards = self.card_repo.get_cards(&scryfall_data_ids).await?;
+        let cards = self.card_repo.fetch_cards(&scryfall_data_ids).await?;
 
         let mut deck_card_map: HashMap<Uuid, DeckCard> = deck_cards
             .into_iter()
@@ -254,7 +254,7 @@ where
             HashMap::new()
         } else {
             self.card_repo
-                .get_cards(&cz_ids)
+                .fetch_cards(&cz_ids)
                 .await
                 .unwrap_or_default()
                 .into_iter()
@@ -338,7 +338,7 @@ where
         if !slot_scryfall_ids.is_empty() {
             exclude_oracle_ids.extend(
                 self.card_repo
-                    .get_multiple_scryfall_data(&slot_scryfall_ids)
+                    .fetch_multiple_scryfall_data(&slot_scryfall_ids)
                     .await
                     .map_err(|e| SearchDeckCardsError::Database(e.into()))?
                     .into_iter()
@@ -420,7 +420,7 @@ where
         // degrades to serving everything rather than failing the search.
         let (exclude_universes_beyond, universes_beyond_exception_set_names) = self
             .card_repo
-            .get_universes_beyond_preferences(request.user_id)
+            .fetch_universes_beyond_preferences(request.user_id)
             .await
             .unwrap_or_default();
 
@@ -505,7 +505,7 @@ where
             return Ok(Vec::new());
         }
 
-        let tokens = self.card_repo.get_cards(&token_ids).await?;
+        let tokens = self.card_repo.fetch_cards(&token_ids).await?;
         Ok(tokens)
     }
 
@@ -562,7 +562,7 @@ where
             .await?;
         let cards = self
             .card_repo
-            .get_latest_cards_by_oracle_ids(&oracle_ids)
+            .fetch_latest_cards_by_oracle_ids(&oracle_ids)
             .await
             .map_err(|e| CommanderMaybeboardError::Database(e.into()))?;
         // Re-impose save order (newest first): ANY($1) hydration is
@@ -701,7 +701,7 @@ where
         let scored_oracle_ids: Vec<Uuid> = scored.iter().map(|s| s.oracle_id).collect();
         let mut cards_by_oracle: HashMap<Uuid, Card> = self
             .card_repo
-            .get_latest_cards_by_oracle_ids(&scored_oracle_ids)
+            .fetch_latest_cards_by_oracle_ids(&scored_oracle_ids)
             .await
             .map_err(|e| CommanderSuggestionsError::Database(e.into()))?
             .into_iter()
@@ -754,7 +754,7 @@ where
             HashMap::new()
         } else {
             self.card_repo
-                .get_latest_cards_by_oracle_ids(&oracle_ids)
+                .fetch_latest_cards_by_oracle_ids(&oracle_ids)
                 .await
                 .map_err(|e| CommanderSuggestionsError::Database(e.into()))?
                 .into_iter()
@@ -862,7 +862,7 @@ where
                 std::collections::HashSet::new()
             } else {
                 self.card_repo
-                    .get_multiple_scryfall_data(&additional_scryfall_ids)
+                    .fetch_multiple_scryfall_data(&additional_scryfall_ids)
                     .await
                     .map_err(|e| ImportDeckCardsError::Database(e.into()))?
                     .into_iter()
@@ -1001,7 +1001,7 @@ where
             HashSet::new()
         } else {
             self.card_repo
-                .get_multiple_scryfall_data(&additional_scryfall_ids)
+                .fetch_multiple_scryfall_data(&additional_scryfall_ids)
                 .await
                 .map_err(|e| ImportDeckCardsError::Database(e.into()))?
                 .into_iter()
@@ -1016,7 +1016,7 @@ where
         let all_ids: ScryfallDataIds = cards.iter().map(|c| c.scryfall_id).collect();
         let resolved = self
             .card_repo
-            .get_multiple_scryfall_data(&all_ids)
+            .fetch_multiple_scryfall_data(&all_ids)
             .await
             .map_err(|e| ImportDeckCardsError::Database(e.into()))?;
         let oracle_by_id: HashMap<Uuid, Uuid> = resolved
@@ -1193,7 +1193,7 @@ where
             HashMap::new()
         } else {
             self.card_repo
-                .get_cards(&cz_ids)
+                .fetch_cards(&cz_ids)
                 .await
                 .map_err(|e| GetSharedDeckError::Database(e.into()))?
                 .into_iter()
@@ -1234,7 +1234,7 @@ where
             Vec::new()
         } else {
             self.card_repo
-                .get_cards(&token_ids)
+                .fetch_cards(&token_ids)
                 .await
                 .map_err(|e| GetSharedDeckError::Database(e.into()))?
         };

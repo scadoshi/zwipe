@@ -25,7 +25,7 @@ pub async fn get_card_types(
 ) -> Result<(StatusCode, Json<Vec<String>>), ApiError> {
     state
         .card_service
-        .get_card_types()
+        .fetch_card_types()
         .await
         .map_err(ApiError::from)
         .map(|all_types| (StatusCode::OK, Json(all_types)))
