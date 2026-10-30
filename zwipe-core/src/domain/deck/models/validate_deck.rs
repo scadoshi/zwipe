@@ -66,7 +66,7 @@ pub fn validate_deck(
     // Budget warning is format-independent; a price target applies to any deck.
     check_price_target(deck_profile, &active_entries, command_zone, &mut warnings);
 
-    let Some(format) = &deck_profile.format else {
+    let Some(format) = deck_profile.format else {
         return warnings;
     };
 
@@ -89,7 +89,7 @@ fn plural(n: u32) -> &'static str {
     if n == 1 { "card" } else { "cards" }
 }
 
-fn check_card_count(format: &Format, profile: &DeckProfile, warnings: &mut Vec<DeckWarning>) {
+fn check_card_count(format: Format, profile: &DeckProfile, warnings: &mut Vec<DeckWarning>) {
     let mut count = profile.card_count as u32;
 
     // The commander is stored separately from deck entries, so include it in the total.
@@ -135,7 +135,7 @@ fn check_card_count(format: &Format, profile: &DeckProfile, warnings: &mut Vec<D
 /// user's explicit override if set, otherwise the format heuristic. Mirrors the
 /// other format-derived checks, which warn off the format's rules regardless.
 fn check_land_target(
-    format: &Format,
+    format: Format,
     profile: &DeckProfile,
     active_entries: &[DeckEntry],
     warnings: &mut Vec<DeckWarning>,
@@ -180,7 +180,7 @@ fn check_price_target(
 }
 
 fn check_commander_required(
-    format: &Format,
+    format: Format,
     profile: &DeckProfile,
     warnings: &mut Vec<DeckWarning>,
 ) {
@@ -192,9 +192,9 @@ fn check_commander_required(
     }
 }
 
-fn check_legality(format: &Format, entries: &[DeckEntry], warnings: &mut Vec<DeckWarning>) {
+fn check_legality(format: Format, entries: &[DeckEntry], warnings: &mut Vec<DeckWarning>) {
     for entry in entries {
-        let legality = entry.card.scryfall_data.legalities.get(format);
+        let legality = entry.card.scryfall_data.legalities.get(&format);
 
         match legality {
             Some(LegalityKind::NotLegal) => {
@@ -222,7 +222,7 @@ fn check_legality(format: &Format, entries: &[DeckEntry], warnings: &mut Vec<Dec
     }
 }
 
-fn check_copy_limits(format: &Format, entries: &[DeckEntry], warnings: &mut Vec<DeckWarning>) {
+fn check_copy_limits(format: Format, entries: &[DeckEntry], warnings: &mut Vec<DeckWarning>) {
     let base_max = format.copy_max();
 
     for entry in entries {
@@ -233,8 +233,8 @@ fn check_copy_limits(format: &Format, entries: &[DeckEntry], warnings: &mut Vec<
         let qty = *entry.deck_card.quantity as u32;
 
         // Vintage restricted cards are limited to 1 copy
-        let max = if *format == Format::Vintage {
-            match entry.card.scryfall_data.legalities.get(format) {
+        let max = if format == Format::Vintage {
+            match entry.card.scryfall_data.legalities.get(&format) {
                 Some(LegalityKind::Restricted) => 1,
                 _ => base_max,
             }
@@ -258,7 +258,7 @@ fn check_copy_limits(format: &Format, entries: &[DeckEntry], warnings: &mut Vec<
 }
 
 fn check_color_identity(
-    format: &Format,
+    format: Format,
     entries: &[DeckEntry],
     command_zone: &DeckCommandZone,
     warnings: &mut Vec<DeckWarning>,
@@ -344,7 +344,7 @@ fn check_color_identity(
 }
 
 fn check_commander_eligibility(
-    format: &Format,
+    format: Format,
     profile: &DeckProfile,
     command_zone: &DeckCommandZone,
     warnings: &mut Vec<DeckWarning>,
@@ -362,7 +362,7 @@ fn check_commander_eligibility(
         return; // Can't validate without the card data
     };
 
-    if !is_valid_commander(card, format) {
+    if !is_valid_commander(card, &format) {
         warnings.push(DeckWarning::with_action(
             format!(
                 "{} is not a valid commander for {}",
@@ -376,7 +376,7 @@ fn check_commander_eligibility(
 }
 
 fn check_partner_validity(
-    format: &Format,
+    format: Format,
     profile: &DeckProfile,
     command_zone: &DeckCommandZone,
     warnings: &mut Vec<DeckWarning>,
@@ -422,7 +422,7 @@ fn check_partner_validity(
 }
 
 fn check_background_validity(
-    format: &Format,
+    format: Format,
     profile: &DeckProfile,
     command_zone: &DeckCommandZone,
     warnings: &mut Vec<DeckWarning>,
@@ -473,7 +473,7 @@ fn check_background_validity(
     }
 }
 
-fn check_sideboard_limits(format: &Format, entries: &[DeckEntry], warnings: &mut Vec<DeckWarning>) {
+fn check_sideboard_limits(format: Format, entries: &[DeckEntry], warnings: &mut Vec<DeckWarning>) {
     let sideboard_count: u32 = entries
         .iter()
         .filter(|e| e.deck_card.board.is_sideboard())
@@ -505,7 +505,7 @@ fn check_sideboard_limits(format: &Format, entries: &[DeckEntry], warnings: &mut
 }
 
 fn check_signature_spell_validity(
-    format: &Format,
+    format: Format,
     profile: &DeckProfile,
     command_zone: &DeckCommandZone,
     warnings: &mut Vec<DeckWarning>,
