@@ -39,7 +39,7 @@ fn swipe_app(card: zwipe_core::domain::card::Card) -> App {
     let mut view = SwipeView::opening(deck_profile("Simic Ramp"));
     view.stack = Some(stack);
     view.query = None::<CardQuery>;
-    let mut app = App::new();
+    let mut app = App::new(Palette::terminal());
     app.palette = Palette::for_account("gruvbox", true);
     app.screen = Screen::Swipe(Box::new(view));
     app
@@ -47,7 +47,7 @@ fn swipe_app(card: zwipe_core::domain::card::Card) -> App {
 
 #[test]
 fn the_login_screen_masks_the_password() {
-    let mut app = App::new();
+    let mut app = App::new(Palette::terminal());
     app.screen = Screen::Login(LoginForm {
         identifier: "scotty".to_owned(),
         password: "hunter2".to_owned(),
@@ -68,7 +68,7 @@ fn the_deck_list_shows_names_counts_and_the_selection() {
     let mut first = deck_profile("Simic Ramp");
     first.card_count = 42;
     first.commander_name = Some("Tatyova".to_owned());
-    let mut app = App::new();
+    let mut app = App::new(Palette::terminal());
     app.screen = Screen::Decks(DeckList {
         decks: vec![first, deck_profile("Mono Red")],
         ..DeckList::default()
@@ -151,7 +151,7 @@ fn an_exhausted_deck_says_so() {
 
 #[test]
 fn the_update_notice_gives_the_install_command() {
-    let mut app = App::new();
+    let mut app = App::new(Palette::terminal());
     app.screen = Screen::UpdateRequired;
     let screen = text(&app);
     assert!(screen.contains("Update required"));

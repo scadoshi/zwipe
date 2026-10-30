@@ -1,4 +1,8 @@
-//! The network and the disk: the signed-in account and its saved session.
+//! The network and the disk: the signed-in account, its saved session, and the remembered theme.
 
 /// The API client, the session, and the session file.
 pub(crate) mod account;
+/// The app's config folder and owner-only writes to it.
+pub(crate) mod files;
+/// The last account's theme, for drawing before sign-in.
+pub(crate) mod theme_file;

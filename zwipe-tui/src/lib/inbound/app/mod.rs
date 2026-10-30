@@ -10,7 +10,7 @@ use crate::domain::theme::Palette;
 #[derive(Debug)]
 pub(crate) struct App {
     pub(crate) screen: Screen,
-    /// The account's ZWIPE theme once signed in, the terminal's colors before.
+    /// The account's ZWIPE theme, or before sign-in the last account's, or gruvbox dark.
     pub(crate) palette: Palette,
     pub(crate) username: Option<String>,
     /// A one-line message under the deck list and the swipe screen.
@@ -18,10 +18,10 @@ pub(crate) struct App {
 }
 
 impl App {
-    pub(crate) fn new() -> Self {
+    pub(crate) fn new(palette: Palette) -> Self {
         Self {
             screen: Screen::Login(LoginForm::default()),
-            palette: Palette::terminal(),
+            palette,
             username: None,
             status: String::new(),
         }

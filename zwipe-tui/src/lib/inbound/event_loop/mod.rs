@@ -24,6 +24,7 @@ use super::ui;
 use crate::domain::swipe::{self, Effect, Stack, Swipe};
 use crate::domain::theme::Palette;
 use crate::outbound::account::Account;
+use crate::outbound::theme_file::{RememberedTheme, ThemeFile};
 
 /// This build's version, which the server's minimum client version is checked against.
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -62,6 +63,8 @@ enum Request {
         effect: Effect,
     },
     SignOut,
+    /// Saves the account's theme for drawing before the next sign-in.
+    RememberTheme(RememberedTheme),
 }
 
 /// A result from a background request.
@@ -99,16 +102,18 @@ pub(crate) struct EventLoop {
     rx: UnboundedReceiver<Update>,
     pending: Vec<Request>,
     account: Arc<Account>,
+    theme_file: Arc<ThemeFile>,
 }
 
 impl EventLoop {
-    pub(crate) fn new(account: Arc<Account>) -> Self {
+    pub(crate) fn new(account: Arc<Account>, theme_file: Arc<ThemeFile>) -> Self {
         let (tx, rx) = mpsc::unbounded_channel();
         Self {
             tx,
             rx,
             pending: Vec::new(),
             account,
+            theme_file,
         }
     }
 
@@ -150,10 +155,14 @@ impl EventLoop {
         }
     }
 
-    /// Applies the account's theme and opens the deck list.
+    /// Applies the account's theme, remembers it for the next launch, and opens the deck list.
     fn signed_in(&mut self, app: &mut App, session: &Session) {
         let preferences = &session.preferences;
         app.palette = Palette::for_account(&preferences.theme, preferences.dark_mode);
+        self.pending.push(Request::RememberTheme(RememberedTheme {
+            theme: preferences.theme.clone(),
+            dark_mode: preferences.dark_mode,
+        }));
         app.username = Some(session.user.username.to_string());
         self.open_decks(app);
     }
@@ -163,9 +172,8 @@ impl EventLoop {
         self.pending.push(Request::LoadDecks);
     }
 
-    /// Back to sign-in in the terminal's colors, with `error` on the form.
+    /// Back to sign-in, still in the account's theme, with `error` on the form.
     fn signed_out(app: &mut App, error: Option<String>) {
-        app.palette = Palette::terminal();
         app.username = None;
         app.status.clear();
         app.screen = Screen::Login(LoginForm {
@@ -401,8 +409,9 @@ impl EventLoop {
         for request in mem::take(&mut self.pending) {
             let tx = self.tx.clone();
             let account = Arc::clone(&self.account);
+            let theme_file = Arc::clone(&self.theme_file);
             tokio::spawn(async move {
-                if let Some(update) = perform(&account, request).await {
+                if let Some(update) = perform(&account, &theme_file, request).await {
                     tx.send(update).ok();
                 }
             });
@@ -411,7 +420,7 @@ impl EventLoop {
 }
 
 /// Runs one request.
-async fn perform(account: &Account, request: Request) -> Option<Update> {
+async fn perform(account: &Account, theme_file: &ThemeFile, request: Request) -> Option<Update> {
     let client = &account.client;
     match request {
         Request::CheckVersion => {
@@ -428,6 +437,11 @@ async fn perform(account: &Account, request: Request) -> Option<Update> {
         Request::SignOut => {
             account.sign_out().await;
             Some(Update::SignedOut)
+        }
+        Request::RememberTheme(theme) => {
+            // Only the next launch's first screen depends on it, so a failed write is not worth a message.
+            theme_file.save(&theme).ok();
+            None
         }
         Request::LoadDecks => Some(
             match async { client.fetch_deck_profiles(&account.fresh().await?).await }.await {

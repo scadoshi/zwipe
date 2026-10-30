@@ -6,12 +6,14 @@ use zwipe_core::domain::card::Card;
 
 use super::*;
 use crate::outbound::account::SessionFile;
+use crate::outbound::theme_file::ThemeFile;
 use crate::test_support::{card, deck, deck_profile};
 
 fn event_loop() -> EventLoop {
     let client = ZwipeClient::new(Url::parse("http://127.0.0.1:9").unwrap());
     let file = SessionFile::at(std::env::temp_dir().join("zwipe-tui-tests-no-session.json"));
-    EventLoop::new(Arc::new(Account::new(client, file)))
+    let theme_file = ThemeFile::at(std::env::temp_dir().join("zwipe-tui-tests-theme.json"));
+    EventLoop::new(Arc::new(Account::new(client, file)), Arc::new(theme_file))
 }
 
 fn key(code: KeyCode) -> KeyEvent {
@@ -34,7 +36,7 @@ fn swipe_view(app: &App) -> &SwipeView {
 /// A loop on the swipe screen for a fresh deck, with `cards` served as the first page.
 fn swiping(cards: Vec<Card>) -> (EventLoop, App, Uuid) {
     let mut event_loop = event_loop();
-    let mut app = App::new();
+    let mut app = App::new(Palette::terminal());
     let profile = deck_profile("Pile");
     let deck_id = profile.id;
     app.screen = Screen::Decks(DeckList::default());
@@ -62,7 +64,7 @@ fn swiping(cards: Vec<Card>) -> (EventLoop, App, Uuid) {
 #[test]
 fn without_a_session_it_asks_to_sign_in_and_checks_the_version() {
     let mut event_loop = event_loop();
-    let mut app = App::new();
+    let mut app = App::new(Palette::terminal());
     event_loop.start(&mut app, None);
     assert!(matches!(app.screen, Screen::Login(_)));
     assert_eq!(event_loop.pending, [Request::CheckVersion]);
@@ -71,7 +73,7 @@ fn without_a_session_it_asks_to_sign_in_and_checks_the_version() {
 #[test]
 fn the_form_moves_to_the_password_then_signs_in() {
     let mut event_loop = event_loop();
-    let mut app = App::new();
+    let mut app = App::new(Palette::terminal());
     type_text(&mut event_loop, &mut app, " scotty ");
     event_loop.handle_key(&mut app, key(KeyCode::Enter));
     type_text(&mut event_loop, &mut app, "hunter2");
@@ -93,7 +95,7 @@ fn the_form_moves_to_the_password_then_signs_in() {
 #[test]
 fn an_empty_form_is_refused_without_a_request() {
     let mut event_loop = event_loop();
-    let mut app = App::new();
+    let mut app = App::new(Palette::terminal());
     event_loop.handle_key(&mut app, key(KeyCode::Tab));
     event_loop.handle_key(&mut app, key(KeyCode::Enter));
     let Screen::Login(form) = &app.screen else {
@@ -106,7 +108,7 @@ fn an_empty_form_is_refused_without_a_request() {
 #[test]
 fn a_failed_sign_in_shows_why_and_allows_another_try() {
     let mut event_loop = event_loop();
-    let mut app = App::new();
+    let mut app = App::new(Palette::terminal());
     if let Screen::Login(form) = &mut app.screen {
         form.busy = true;
     }
@@ -133,7 +135,7 @@ fn the_password_never_shows_in_debug_output() {
 #[test]
 fn q_types_on_the_login_screen_and_ctrl_c_quits() {
     let mut event_loop = event_loop();
-    let mut app = App::new();
+    let mut app = App::new(Palette::terminal());
     assert_eq!(
         event_loop.handle_key(&mut app, key(KeyCode::Char('q'))),
         Flow::Continue
@@ -145,7 +147,7 @@ fn q_types_on_the_login_screen_and_ctrl_c_quits() {
 #[test]
 fn enter_on_a_deck_opens_it_for_swiping() {
     let mut event_loop = event_loop();
-    let mut app = App::new();
+    let mut app = App::new(Palette::terminal());
     let (first, second) = (deck_profile("First"), deck_profile("Second"));
     app.screen = Screen::Decks(DeckList::loading());
     event_loop.apply(&mut app, Update::Decks(vec![first, second.clone()]));
@@ -158,7 +160,7 @@ fn enter_on_a_deck_opens_it_for_swiping() {
 #[test]
 fn an_opened_deck_fetches_its_first_page() {
     let mut event_loop = event_loop();
-    let mut app = App::new();
+    let mut app = App::new(Palette::terminal());
     let profile = deck_profile("Pile");
     app.screen = Screen::Swipe(Box::new(SwipeView::opening(profile.clone())));
     event_loop.apply(
@@ -224,7 +226,7 @@ fn swipes_send_their_effects_and_undo_reverses_the_count() {
 #[test]
 fn a_short_page_asks_for_the_next_one_once() {
     let mut event_loop = event_loop();
-    let mut app = App::new();
+    let mut app = App::new(Palette::terminal());
     let profile = deck_profile("Pile");
     let deck_id = profile.id;
     app.screen = Screen::Swipe(Box::new(SwipeView::opening(profile.clone())));
@@ -292,7 +294,11 @@ fn an_ended_session_returns_to_sign_in_and_clears_the_saved_one() {
     app.username = Some("scotty".to_owned());
     event_loop.apply(&mut app, Update::SessionEnded);
     assert!(matches!(&app.screen, Screen::Login(form) if form.error.is_some()));
-    assert_eq!(app.palette, Palette::terminal());
+    assert_eq!(
+        app.palette,
+        Palette::for_account("gruvbox", true),
+        "the theme stays"
+    );
     assert!(app.username.is_none());
     assert_eq!(event_loop.pending, [Request::SignOut]);
 }
@@ -300,7 +306,7 @@ fn an_ended_session_returns_to_sign_in_and_clears_the_saved_one() {
 #[test]
 fn an_old_build_is_stopped_until_it_updates() {
     let mut event_loop = event_loop();
-    let mut app = App::new();
+    let mut app = App::new(Palette::terminal());
     event_loop.apply(&mut app, Update::TooOld);
     assert!(matches!(app.screen, Screen::UpdateRequired));
     assert_eq!(

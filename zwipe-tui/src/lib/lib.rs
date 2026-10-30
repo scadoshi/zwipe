@@ -10,9 +10,11 @@ use std::sync::Arc;
 use anyhow::Result;
 use zwipe_client::ZwipeClient;
 
+use crate::domain::theme::Palette;
 use crate::inbound::app::App;
 use crate::inbound::event_loop::EventLoop;
 use crate::outbound::account::{Account, SessionFile};
+use crate::outbound::theme_file::ThemeFile;
 
 /// Where the API is.
 pub(crate) mod config;
@@ -34,10 +36,17 @@ mod test_support;
 pub async fn run() -> Result<()> {
     let client = ZwipeClient::new(config::backend_url()?);
     let account = Arc::new(Account::new(client, SessionFile::in_config_dir()?));
-    let mut app = App::new();
+    let theme_file = ThemeFile::in_config_dir()?;
+    let remembered = theme_file.load();
+    let mut app = App::new(Palette::for_account(
+        &remembered.theme,
+        remembered.dark_mode,
+    ));
 
     let mut terminal = ratatui::try_init()?;
-    let result = EventLoop::new(account).run(&mut terminal, &mut app).await;
+    let result = EventLoop::new(account, Arc::new(theme_file))
+        .run(&mut terminal, &mut app)
+        .await;
     ratatui::try_restore()?;
     result
 }
