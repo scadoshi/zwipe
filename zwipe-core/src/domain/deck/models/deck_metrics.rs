@@ -721,8 +721,8 @@ mod tests {
         assert_eq!(metrics.land_count, 0);
         assert_eq!(metrics.nonland_count, 0);
         assert_eq!(metrics.cmc_histogram, [0; 7]);
-        assert!(metrics.type_counts.is_empty());
-        assert!(metrics.color_counts.is_empty());
+        assert_eq!(metrics.type_counts, Vec::<(&str, usize)>::new());
+        assert_eq!(metrics.color_counts, Vec::<(&str, usize)>::new());
         assert_eq!(metrics.total_price_usd, None);
         assert_eq!(metrics.avg_price_usd, None);
         assert_eq!(metrics.total_price_eur, None);

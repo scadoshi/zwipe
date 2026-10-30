@@ -1067,14 +1067,14 @@ mod tests {
     #[test]
     fn display_name_non_empty() {
         for tag in DeckTag::all() {
-            assert!(!tag.display_name().is_empty());
+            assert_ne!(tag.display_name(), "");
         }
     }
 
     #[test]
     fn description_non_empty() {
         for tag in DeckTag::all() {
-            assert!(!tag.description().is_empty());
+            assert_ne!(tag.description(), "");
         }
     }
 

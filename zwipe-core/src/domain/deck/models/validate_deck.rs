@@ -572,7 +572,7 @@ mod tests {
     fn no_warnings_without_format() {
         let profile = test_profile(None);
         let warnings = validate_deck(&profile, &[], &empty_command_zone());
-        assert!(warnings.is_empty());
+        assert_eq!(warnings, Vec::<DeckWarning>::new());
     }
 
     fn test_profile(format: Option<Format>) -> DeckProfile {
