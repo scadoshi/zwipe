@@ -62,7 +62,14 @@ mod tests {
         let now = Instant::now();
         assert!(cooldown.try_send_at("a@b.co", now));
         assert!(!cooldown.try_send_at("a@b.co", now + Duration::from_secs(1)));
-        assert!(!cooldown.try_send_at("a@b.co", now + NOTICE_COOLDOWN - Duration::from_secs(1)));
+        assert!(
+            !cooldown.try_send_at(
+                "a@b.co",
+                now + NOTICE_COOLDOWN
+                    .checked_sub(Duration::from_secs(1))
+                    .expect("the cooldown is longer than a second")
+            )
+        );
     }
 
     #[test]
