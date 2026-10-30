@@ -58,7 +58,7 @@ pub fn Reset(token: String) -> Element {
                 Ok(()) => state.set(ResetState::Success),
                 // A request that never landed is not a bad token; say so.
                 Err(e @ (ClientError::Network(_) | ClientError::Decode(_))) => {
-                    state.set(ResetState::Error(e.to_user_message()))
+                    state.set(ResetState::Error(e.to_user_message()));
                 }
                 Err(_) => state.set(ResetState::Error(
                     "This link is invalid or has expired. Request a new one from the app."
