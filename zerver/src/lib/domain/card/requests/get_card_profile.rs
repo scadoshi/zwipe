@@ -40,6 +40,7 @@ impl From<uuid::Error> for InvalidCardProfileIds {
 /// Request to get a single card profile by Scryfall ID.
 ///
 /// Wraps a UUID parsed from a string ID.
+#[derive(Debug)]
 pub struct GetCardProfile(Uuid);
 
 impl GetCardProfile {

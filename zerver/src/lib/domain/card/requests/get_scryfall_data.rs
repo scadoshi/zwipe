@@ -67,6 +67,7 @@ impl From<&CardProfile> for GetScryfallData {
 ///
 /// Used for bulk fetching Scryfall data by IDs.
 /// Derefs to `&[Uuid]` for direct slice operations.
+#[derive(Debug)]
 pub struct ScryfallDataIds(Vec<Uuid>);
 
 impl std::ops::Deref for ScryfallDataIds {

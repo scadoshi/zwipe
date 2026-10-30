@@ -1,6 +1,7 @@
 //! Password reset request operation.
 
 /// Request to initiate a password reset for the given email address.
+#[derive(Debug)]
 pub struct RequestPasswordReset {
     /// Email address to send the reset link to.
     pub email: String,

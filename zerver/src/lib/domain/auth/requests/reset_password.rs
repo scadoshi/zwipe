@@ -22,6 +22,16 @@ pub struct ResetPassword {
     pub new_password_hash: crate::domain::auth::models::password::HashedPassword,
 }
 
+/// Redacted: `token` is a credential and `new_password_hash` is the stored secret.
+impl std::fmt::Debug for ResetPassword {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ResetPassword")
+            .field("token", &"REDACTED")
+            .field("new_password_hash", &"REDACTED")
+            .finish()
+    }
+}
+
 impl ResetPassword {
     /// Validates the new password and hashes it.
     ///
