@@ -5,6 +5,7 @@
 
 use std::cmp::Reverse;
 use std::collections::{HashMap, HashSet};
+use std::hash::BuildHasher;
 
 use thiserror::Error;
 use uuid::Uuid;
@@ -183,7 +184,10 @@ pub struct ScoredCommander {
 /// Pairs each shared tag slug with the card role `tag_roles` maps it to, in
 /// order. A slug missing from the map falls under no role.
 #[must_use]
-pub fn shared_tags(slugs: Vec<String>, tag_roles: &HashMap<String, String>) -> Vec<SharedTag> {
+pub fn shared_tags<S: BuildHasher>(
+    slugs: Vec<String>,
+    tag_roles: &HashMap<String, String, S>,
+) -> Vec<SharedTag> {
     slugs
         .into_iter()
         .map(|slug| SharedTag {
@@ -532,10 +536,10 @@ pub struct PlayStyleSummary {
 /// The top identity breaks ties by more colors, then WUBRG order; it is
 /// `None` when more than one deck exists and no identity repeats.
 #[must_use]
-pub fn summarize_profile(
+pub fn summarize_profile<S: BuildHasher>(
     decks: &[ProfiledDeck],
     profiles: &[Option<DeckTagProfile>],
-    tag_roles: &HashMap<String, String>,
+    tag_roles: &HashMap<String, String, S>,
 ) -> Option<BuilderProfile> {
     if decks.is_empty() {
         return None;
