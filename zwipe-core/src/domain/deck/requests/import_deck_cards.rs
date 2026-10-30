@@ -2,7 +2,8 @@
 //!
 //! Parses plain-text decklists (`[qty] [card name]` per line),
 //! resolves card names against the database, and bulk-inserts matched cards.
-//! Supports `// Sideboard` and `// Maybeboard` section headers.
+//! Supports `// Sideboard` and `// Maybeboard` section headers, and MTGA's bare
+//! `Sideboard` line.
 
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -59,6 +60,14 @@ impl ImportDeckCards {
         for line in text.lines() {
             let trimmed = line.trim();
             if trimmed.is_empty() {
+                continue;
+            }
+
+            // MTGA marks its sideboard with a bare "Sideboard" line.
+            if trimmed.eq_ignore_ascii_case("sideboard") {
+                if board_override.is_none() {
+                    current_board = Board::Sideboard;
+                }
                 continue;
             }
 
@@ -418,5 +427,29 @@ mod tests {
         assert_eq!(lines.len(), 1);
         assert_eq!(lines[0].quantity, 1);
         assert_eq!(lines[0].card_name, "+2 Mace");
+    }
+
+    #[test]
+    fn mtga_sideboard_header_without_slashes() {
+        let lines = parse_lines("4 Lightning Bolt\n\n  sideboard \n2 Rest in Peace");
+        assert_eq!(lines.len(), 2);
+        assert_eq!(lines[0].board, Board::Deck);
+        assert_eq!(lines[1].board, Board::Sideboard);
+        assert_eq!(lines[1].card_name, "Rest in Peace");
+    }
+
+    #[test]
+    fn mtga_sideboard_header_skipped_under_board_override() {
+        let lines = ImportDeckCards::parse(
+            Uuid::nil(),
+            Uuid::nil(),
+            "1 Sol Ring\nSideboard\n1 Rest in Peace",
+            /* email_verified */ false,
+            Some(Board::Maybeboard),
+            ImportMode::Add,
+        )
+        .lines;
+        assert_eq!(lines.len(), 2);
+        assert!(lines.iter().all(|l| l.board == Board::Maybeboard));
     }
 }
