@@ -145,9 +145,14 @@ impl AccessToken {
     }
 
     /// Checks if the access token expires within `window` of now, or already has.
+    /// A window reaching past the calendar's end covers every expiry, and one
+    /// reaching before its start covers none.
     #[must_use]
     pub fn expires_within(&self, window: Duration) -> bool {
-        self.expires_at < Utc::now() + window
+        match Utc::now().checked_add_signed(window) {
+            Some(limit) => self.expires_at < limit,
+            None => window > Duration::zero(),
+        }
     }
 }
 
@@ -326,6 +331,12 @@ mod tests {
     #[test]
     fn test_access_token_expires_within_window_when_already_expired() {
         assert!(token_expiring_in(-1).expires_within(Duration::minutes(2)));
+    }
+
+    #[test]
+    fn test_access_token_expires_within_a_window_past_the_calendar() {
+        assert!(token_expiring_in(60).expires_within(Duration::MAX));
+        assert!(!token_expiring_in(60).expires_within(Duration::MIN));
     }
 
     #[test]

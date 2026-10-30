@@ -31,6 +31,9 @@ pub struct ManaBalanceRow {
 }
 
 /// Aggregate statistics for a collection of cards.
+///
+/// The counts are display tallies, so they saturate at `usize::MAX` rather
+/// than overflow; only a corrupt quantity gets near it.
 #[derive(Debug, Clone, PartialEq)]
 pub struct DeckMetrics {
     /// Total unique card count.
@@ -110,10 +113,16 @@ impl DeckMetrics {
     /// 100, any nonzero count reads at least 4 (a visible sliver), zero is 0.
     pub fn bar_pct(count: usize, max: usize) -> u32 {
         if max > 0 && count > 0 {
-            let pct = ((count * 100) / max).max(BAR_SLIVER_PCT);
-            // At most 100 while count <= max, as every chart passes it; a
-            // count past max is outside the contract and saturates.
-            u32::try_from(pct).unwrap_or(u32::MAX)
+            // Widened to u128 so `count * 100` can't overflow. At most 100
+            // while count <= max, as every chart passes it; a count past max
+            // is outside the contract and saturates.
+            let pct = u128::try_from(count)
+                .ok()
+                .and_then(|count| count.checked_mul(100))
+                .zip(u128::try_from(max).ok())
+                .and_then(|(scaled, max)| scaled.checked_div(max))
+                .map_or(u32::MAX, |pct| u32::try_from(pct).unwrap_or(u32::MAX));
+            pct.max(BAR_SLIVER_PCT)
         } else {
             0
         }
@@ -205,7 +214,7 @@ impl DeckMetrics {
     /// plus each card role. Library size is the mainboard (the commander sits
     /// in the command zone, not the library).
     pub fn draw_odds_buckets(&self) -> (u32, Vec<(&'static str, u32)>) {
-        let deck_size = display_count(self.land_count + self.nonland_count);
+        let deck_size = display_count(self.land_count.saturating_add(self.nonland_count));
         let mut buckets: Vec<(&'static str, u32)> = vec![("Land", display_count(self.land_count))];
         buckets.extend(
             self.card_role_counts
@@ -271,21 +280,21 @@ impl DeckMetrics {
             let qty = usize::try_from(copies).unwrap_or(1);
             let qty_f = f64::from(copies);
             let card = &entry.card;
-            total_cards += qty;
+            total_cards = total_cards.saturating_add(qty);
 
             let type_idx = classify_type(card);
             if let Some(slot) = type_buckets.get_mut(type_idx) {
-                *slot += qty;
+                *slot = slot.saturating_add(qty);
             }
             let is_land = type_idx == 0;
             if is_land {
-                land_count += qty;
+                land_count = land_count.saturating_add(qty);
             }
 
             if !is_land {
                 let cmc_idx = classify_cmc(card);
                 if let Some(slot) = cmc_histogram.get_mut(cmc_idx) {
-                    *slot += qty;
+                    *slot = slot.saturating_add(qty);
                 }
                 cmc_sum += card.scryfall_data.cmc.unwrap_or(0.0) * qty_f;
                 nonland_copies += qty_f;
@@ -293,7 +302,7 @@ impl DeckMetrics {
 
             let color_idx = classify_color(card);
             if let Some(slot) = color_buckets.get_mut(color_idx) {
-                *slot += qty;
+                *slot = slot.saturating_add(qty);
             }
 
             // Card roles. `card_roles` are server slugs; this compact chart keys off
@@ -305,7 +314,7 @@ impl DeckMetrics {
                     .position(|c| c.to_string().as_str() == slug.as_str())
                     && let Some(slot) = cat_buckets.get_mut(idx)
                 {
-                    *slot += qty;
+                    *slot = slot.saturating_add(qty);
                 }
             }
             for (slug, tags) in &card.card_profile.oracle_tags_by_role {
@@ -315,7 +324,8 @@ impl DeckMetrics {
                     && let Some(counts) = cat_tag_counts.get_mut(idx)
                 {
                     for tag in tags {
-                        *counts.entry(tag.clone()).or_insert(0) += qty;
+                        let count = counts.entry(tag.clone()).or_insert(0);
+                        *count = count.saturating_add(qty);
                     }
                 }
             }
@@ -324,7 +334,7 @@ impl DeckMetrics {
             if let Some(mc) = &card.scryfall_data.mana_cost {
                 let pips = count_color_pips(mc);
                 for (slot, &pip) in pip_consumed.iter_mut().zip(pips.iter()) {
-                    *slot += pip * qty;
+                    *slot = slot.saturating_add(pip.saturating_mul(qty));
                 }
             }
 
@@ -334,7 +344,7 @@ impl DeckMetrics {
                     if let Some(idx) = produced_color_index(s)
                         && let Some(slot) = pip_produced.get_mut(idx)
                     {
-                        *slot += qty;
+                        *slot = slot.saturating_add(qty);
                     }
                 }
             }
@@ -390,7 +400,8 @@ impl DeckMetrics {
                 pip_produced.get(i).copied().unwrap_or(0),
             )
         });
-        let nonland_count = total_cards - land_count;
+        // Every land's copies also went into total_cards, so this never saturates.
+        let nonland_count = total_cards.saturating_sub(land_count);
         let avg_cmc = if nonland_count > 0 {
             cmc_sum / nonland_copies
         } else {
@@ -409,7 +420,7 @@ impl DeckMetrics {
             if already_active {
                 continue;
             }
-            total_cards += 1;
+            total_cards = total_cards.saturating_add(1);
             if let Some(p) = card_price(&card.scryfall_data, PriceCurrency::Usd) {
                 usd_sum += p;
                 usd_copies += 1.0;
@@ -533,7 +544,16 @@ fn numeric_stat(top: Option<&str>, front_face: Option<&str>) -> Option<f64> {
 
 #[cfg(test)]
 mod budget_tests {
-    use super::budget_tier;
+    use super::{DeckMetrics, budget_tier};
+
+    #[test]
+    fn bar_pct_holds_at_the_usize_limit() {
+        assert_eq!(DeckMetrics::bar_pct(usize::MAX, usize::MAX), 100);
+        assert_eq!(DeckMetrics::bar_pct(usize::MAX / 2, usize::MAX), 49);
+        assert_eq!(DeckMetrics::bar_pct(1, usize::MAX), 4);
+        assert_eq!(DeckMetrics::bar_pct(3, 4), 75);
+        assert_eq!(DeckMetrics::bar_pct(0, 4), 0);
+    }
 
     #[test]
     fn tiers_track_total_against_budget() {
@@ -569,7 +589,7 @@ fn display_count(count: usize) -> u32 {
 }
 
 /// Smallest bar height, in percent, for a nonzero count, so it shows as a sliver.
-const BAR_SLIVER_PCT: usize = 4;
+const BAR_SLIVER_PCT: u32 = 4;
 
 /// Bucket index of "other" in [`TYPE_LABELS`], after the seven checked types.
 const OTHER_CARD_TYPE: usize = 7;
@@ -621,19 +641,14 @@ fn classify_type(card: &Card) -> usize {
 /// Count colored pip symbols in a Scryfall `mana_cost` string (e.g. "{2}{R}{R}").
 /// Only counts pure single-color symbols; skips hybrid ({W/U}), phyrexian ({W/P}), etc.
 fn count_color_pips(mana_cost: &str) -> [usize; 5] {
-    let mut counts = [0usize; 5];
-    for token in mana_cost.split('{').skip(1) {
-        let sym = token.trim_end_matches('}');
-        match sym {
-            "W" => counts[0] += 1,
-            "U" => counts[1] += 1,
-            "B" => counts[2] += 1,
-            "R" => counts[3] += 1,
-            "G" => counts[4] += 1,
-            _ => {} // {2}, {X}, {C}, {W/U}, {W/P} are ignored
-        }
-    }
-    counts
+    // {2}, {X}, {C}, {W/U}, {W/P} match no color and are ignored.
+    ["W", "U", "B", "R", "G"].map(|color| {
+        mana_cost
+            .split('{')
+            .skip(1)
+            .filter(|token| token.trim_end_matches('}') == color)
+            .count()
+    })
 }
 
 /// Map a `produced_mana` string ("W","U","B","R","G") to WUBRG index.

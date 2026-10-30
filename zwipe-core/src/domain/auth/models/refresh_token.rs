@@ -79,6 +79,10 @@ impl std::fmt::Debug for RefreshToken {
 impl RefreshToken {
     /// Generates a new cryptographically-secure refresh token.
     #[must_use]
+    #[expect(
+        clippy::arithmetic_side_effects,
+        reason = "now plus a 14-day const lifespan; chrono's limit is the year 262143"
+    )]
     pub fn generate() -> Self {
         let mut bytes = [0u8; TOKEN_BYTES];
         rand::rng().fill_bytes(&mut bytes);

@@ -85,21 +85,20 @@ fn plural(n: i64) -> &'static str {
 }
 
 fn check_card_count(format: Format, profile: &DeckProfile, warnings: &mut Vec<DeckWarning>) {
-    let mut count = profile.card_count;
-
     // The commander is stored separately from deck entries, so include it in the total.
-    if format.has_commander() && profile.commander_id.is_some() {
-        count += 1;
-    }
-    if profile.partner_commander_id.is_some() {
-        count += 1;
-    }
-    if profile.background_id.is_some() {
-        count += 1;
-    }
-    if profile.signature_spell_id.is_some() {
-        count += 1;
-    }
+    let zone_slots = [
+        format.has_commander() && profile.commander_id.is_some(),
+        profile.partner_commander_id.is_some(),
+        profile.background_id.is_some(),
+        profile.signature_spell_id.is_some(),
+    ]
+    .into_iter()
+    .filter(|present| *present)
+    .count();
+    // A count for a warning message: it saturates rather than overflows.
+    let count = i64::try_from(zone_slots).map_or(profile.card_count, |slots| {
+        profile.card_count.saturating_add(slots)
+    });
 
     if let Some(min) = format.min_cards()
         && count < i64::from(min)
@@ -570,6 +569,20 @@ mod tests {
         let profile = test_profile(None);
         let warnings = validate_deck(&profile, &[], &empty_command_zone());
         assert_eq!(warnings, Vec::<DeckWarning>::new());
+    }
+
+    #[test]
+    fn card_count_at_the_i64_limit_still_warns() {
+        let mut profile = test_profile(Some(Format::Commander));
+        profile.card_count = i64::MAX;
+        profile.commander_id = Some(uuid::Uuid::new_v4());
+        profile.partner_commander_id = Some(uuid::Uuid::new_v4());
+        let warnings = validate_deck(&profile, &[], &empty_command_zone());
+        let want = format!("deck has {} cards, commander allows at most 100", i64::MAX);
+        assert!(
+            warnings.iter().any(|w| w.contains(&want)),
+            "warnings {warnings:?}"
+        );
     }
 
     fn test_profile(format: Option<Format>) -> DeckProfile {
