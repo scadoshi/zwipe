@@ -15,7 +15,7 @@ impl ZwipeClient {
     ///
     /// Returns a [`ClientError`] when the request fails to complete, the server answers with an
     /// error status, or the reply doesn't decode.
-    pub async fn get_keyword_reminders(&self) -> Result<HashMap<String, String>, ClientError> {
+    pub async fn fetch_keyword_reminders(&self) -> Result<HashMap<String, String>, ClientError> {
         self.call(GetKeywordReminders, None).await
     }
 }

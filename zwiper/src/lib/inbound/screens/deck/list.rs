@@ -423,7 +423,7 @@ pub fn DeckList() -> Element {
             return;
         };
         spawn(async move {
-            match auth_client().get_user(&s).await {
+            match auth_client().fetch_user(&s).await {
                 Ok(fresh_user) => {
                     let current = session.peek().clone();
                     if let Some(mut current) = current {
@@ -443,10 +443,9 @@ pub fn DeckList() -> Element {
             // try_run keeps the Result the errored/loading branches match on;
             // reporting and the error toast live in the facade.
             authed
-                .try_run(
-                    "load_decks",
-                    |c, s| async move { c.get_deck_profiles(&s).await },
-                )
+                .try_run("load_decks", |c, s| async move {
+                    c.fetch_deck_profiles(&s).await
+                })
                 .await
         });
 

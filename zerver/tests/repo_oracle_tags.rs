@@ -341,7 +341,7 @@ async fn derive_card_categories_combines_otags_and_gaps(pool: sqlx::PgPool) {
     assert!(cats.contains(&"protection".to_string()));
 }
 
-/// `get_oracle_tags` returns the catalog ordered by slug, with `parent_ids`
+/// `fetch_oracle_tags` returns the catalog ordered by slug, with `parent_ids`
 /// resolved to parent slugs and null descriptions preserved.
 #[sqlx::test]
 async fn get_oracle_tags_returns_catalog_with_parent_slugs(pool: sqlx::PgPool) {
@@ -366,7 +366,7 @@ async fn get_oracle_tags_returns_catalog_with_parent_slugs(pool: sqlx::PgPool) {
     .unwrap();
 
     let repo = Postgres { pool: pool.clone() };
-    let tags = repo.get_oracle_tags().await.unwrap();
+    let tags = repo.fetch_oracle_tags().await.unwrap();
 
     // ordered by slug: removal, then spot-removal
     assert_eq!(tags.len(), 2);
@@ -456,7 +456,7 @@ async fn projection_untagged_card_is_empty(pool: sqlx::PgPool) {
 /// The sync-time overlay writes our authored `ORACLE_TAG_DESCRIPTIONS` over
 /// whatever Scryfall shipped: an authored slug is served with OUR text, and a
 /// slug we don't author keeps Scryfall's. Exercises overlay (in `sync_oracle_tags`)
-/// + serve (in `get_oracle_tags`) end to end, the pipeline the dictionary reads.
+/// + serve (in `fetch_oracle_tags`) end to end, the pipeline the dictionary reads.
 #[sqlx::test]
 async fn sync_overlays_authored_descriptions(pool: sqlx::PgPool) {
     let repo = Postgres { pool: pool.clone() };
@@ -478,7 +478,7 @@ async fn sync_overlays_authored_descriptions(pool: sqlx::PgPool) {
     .await
     .unwrap();
 
-    let served = repo.get_oracle_tags().await.unwrap();
+    let served = repo.fetch_oracle_tags().await.unwrap();
     let desc_of = |slug: &str| {
         served
             .iter()

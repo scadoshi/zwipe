@@ -14,7 +14,10 @@ impl ZwipeClient {
     ///
     /// Returns a [`ClientError`] when the request fails to complete, the server answers with an
     /// error status, or the reply doesn't decode.
-    pub async fn get_preferences(&self, session: &Session) -> Result<UserPreferences, ClientError> {
+    pub async fn fetch_preferences(
+        &self,
+        session: &Session,
+    ) -> Result<UserPreferences, ClientError> {
         self.call(GetPreferences, Some(session)).await
     }
 

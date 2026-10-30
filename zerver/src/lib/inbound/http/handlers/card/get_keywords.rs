@@ -25,7 +25,7 @@ pub async fn get_keywords(
 ) -> Result<(StatusCode, Json<Vec<String>>), ApiError> {
     state
         .card_service
-        .get_keywords()
+        .fetch_keywords()
         .await
         .map_err(ApiError::from)
         .map(|all_keywords| (StatusCode::OK, Json(all_keywords)))

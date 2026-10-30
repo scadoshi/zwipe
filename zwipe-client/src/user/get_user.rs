@@ -13,7 +13,7 @@ impl ZwipeClient {
     ///
     /// Returns a [`ClientError`] when the request fails to complete, the server answers with an
     /// error status, or the reply doesn't decode.
-    pub async fn get_user(&self, session: &Session) -> Result<User, ClientError> {
+    pub async fn fetch_user(&self, session: &Session) -> Result<User, ClientError> {
         self.call(GetUser, Some(session)).await
     }
 }

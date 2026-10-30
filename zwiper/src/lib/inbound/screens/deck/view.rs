@@ -65,7 +65,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
             // reporting and the error toast live in the facade.
             authed
                 .try_run("load_deck", |c, s| async move {
-                    c.get_deck_profile(deck_id, &s).await
+                    c.fetch_deck_profile(deck_id, &s).await
                 })
                 .await
         }));
@@ -78,13 +78,13 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
             else {
                 return Ok(None);
             };
-            client().get_card(original_commander_id).await.map(Some)
+            client().fetch_card(original_commander_id).await.map(Some)
         });
     let mut deck_resource: Resource<DeckResult> =
         use_resource(use_reactive!(|deck_id| async move {
             authed
                 .try_run("load_deck", |c, s| async move {
-                    c.get_deck(deck_id, &s)
+                    c.fetch_deck(deck_id, &s)
                         .await
                         .map(|d| (d.entries, d.warnings, d.command_zone_cards))
                 })
