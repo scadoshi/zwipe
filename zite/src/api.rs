@@ -17,7 +17,7 @@ use zwipe_client::ZwipeClient;
 use crate::API_BASE;
 
 /// The process-wide client. Cheap to clone; reqwest pools connections.
-pub fn client() -> ZwipeClient {
+pub(crate) fn client() -> ZwipeClient {
     static CLIENT: OnceLock<ZwipeClient> = OnceLock::new();
     CLIENT
         .get_or_init(|| ZwipeClient::new(Url::parse(API_BASE).unwrap()))

@@ -6,7 +6,7 @@
 use dioxus::prelude::*;
 
 /// A block of article content. Rendered in order by `super::render_block`.
-pub enum Block {
+pub(crate) enum Block {
     /// Emphasized intro paragraph.
     Lead(&'static str),
     /// Section heading.
@@ -37,7 +37,7 @@ pub enum Block {
 /// literal path, so each shipped image gets one arm here, added when the file
 /// lands (see `context/plans/guide_images.md`). `None` renders nothing, so an
 /// [`Block::Image`] without its registry arm is a wiring bug caught by eye.
-pub fn guide_image(file: &str) -> Option<Asset> {
+pub(crate) fn guide_image(file: &str) -> Option<Asset> {
     match file {
         "getting-started/01-create-deck.webp" => {
             Some(asset!("/assets/guides/getting-started/01-create-deck.webp"))
@@ -149,7 +149,7 @@ pub fn guide_image(file: &str) -> Option<Asset> {
     }
 }
 
-pub struct Guide {
+pub(crate) struct Guide {
     pub slug: &'static str,
     pub title: &'static str,
     pub summary: &'static str,
@@ -161,7 +161,7 @@ pub struct Guide {
     pub blocks: &'static [Block],
 }
 
-pub static GUIDES: &[Guide] = &[
+pub(crate) static GUIDES: &[Guide] = &[
     Guide {
         slug: "getting-started",
         title: "Getting started with Zwipe",

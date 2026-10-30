@@ -43,7 +43,7 @@ fn spoof_card() -> Option<Card> {
 /// Dismisses the flavor overlay with the shared 200ms exit animation.
 /// Split out so the home page's backdrop click handler and any future
 /// dismiss affordance run the identical sequence.
-pub fn dismiss_flavor_overlay(
+pub(crate) fn dismiss_flavor_overlay(
     mut overlay: Signal<Option<ScryfallData>>,
     mut dismissing: Signal<bool>,
 ) {
