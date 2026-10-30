@@ -15,6 +15,10 @@ use crate::domain::deck::quantity::Quantity;
 use crate::domain::deck::{Board, DeckCard};
 
 /// Creates a minimal test `DeckEntry` with the given card name and quantity.
+///
+/// # Panics
+///
+/// Panics if `qty` is not a valid [`Quantity`].
 pub fn make_entry(name: &str, qty: i32) -> DeckEntry {
     let deck_id = Uuid::new_v4();
     let card = make_card(name);
@@ -37,6 +41,10 @@ pub fn make_entry(name: &str, qty: i32) -> DeckEntry {
 ///
 /// Most optional fields are `None`. Mutate the returned card to set
 /// specific fields needed for your test.
+///
+/// # Panics
+///
+/// Never: the fixed timestamps are valid dates and times.
 pub fn make_card(name: &str) -> Card {
     Card {
         card_profile: CardProfile {

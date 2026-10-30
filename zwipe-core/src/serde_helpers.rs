@@ -17,6 +17,10 @@ use serde::{Deserialize, Deserializer};
 /// Apply with `#[serde(default, deserialize_with = "crate::serde_helpers::lossy_vec")]`.
 /// Deserialize-only: serialization is unchanged, so the wire is identical and
 /// existing clients are unaffected.
+///
+/// # Errors
+///
+/// Returns the deserializer's error when the value is not an array.
 pub fn lossy_vec<'de, D, T>(deserializer: D) -> Result<Vec<T>, D::Error>
 where
     D: Deserializer<'de>,
