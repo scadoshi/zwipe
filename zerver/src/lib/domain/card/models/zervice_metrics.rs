@@ -7,6 +7,9 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+/// Share of the intended cards a sync must upsert to count as a partial success.
+const PARTIAL_SUCCESS_SHARE: f32 = 0.7;
+
 // == parts ==
 
 /// Scryfall sync operation status.
@@ -331,7 +334,7 @@ impl ZerviceMetrics {
     fn evaluate_status(&mut self) -> &mut Self {
         self.status = SyncStatus::Failure;
         let intended_to_import = self.received_count - self.skipped_count;
-        if self.upserted_count as f32 >= intended_to_import as f32 * 0.7 {
+        if self.upserted_count as f32 >= intended_to_import as f32 * PARTIAL_SUCCESS_SHARE {
             self.status = SyncStatus::PartialSuccess;
         }
         if self.upserted_count == intended_to_import && self.error_count == 0 {

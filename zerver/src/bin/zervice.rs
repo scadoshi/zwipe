@@ -12,6 +12,15 @@ use zwipe::inbound::external::scryfall::bulk::BulkEndpoint;
 use zwipe::outbound::sqlx::postgres::Postgres;
 use zwipe_core::domain::logo;
 
+/// Daily log files kept; the appender deletes older ones.
+const MAX_LOG_FILES: usize = 30;
+
+/// Cards per batch when deriving card roles.
+const DERIVE_CATEGORIES_BATCH_SIZE: usize = 1000;
+
+/// How long the healthcheck ping waits for an answer.
+const HEALTHCHECK_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(10);
+
 #[tokio::main]
 #[expect(
     clippy::too_many_lines,
@@ -33,12 +42,11 @@ async fn main() -> anyhow::Result<()> {
         .map_err(|e| anyhow::anyhow!("failed to create log directory: {e}"))?;
 
     // Rolling daily log file: $LOG_DIR/zervice.YYYY-MM-DD.log (default: /var/log/zwipe)
-    // max_log_files(30) automatically deletes files older than 30 days
     let file_appender = RollingFileAppender::builder()
         .rotation(Rotation::DAILY)
         .filename_prefix("zervice")
         .filename_suffix("log")
-        .max_log_files(30)
+        .max_log_files(MAX_LOG_FILES)
         .build(&config.log_dir)
         .map_err(|e| anyhow::anyhow!("failed to build log file appender: {e}"))?;
 
@@ -101,7 +109,10 @@ async fn main() -> anyhow::Result<()> {
     }
 
     tracing::info!("step 3/5 derive categories (otags + gaps): starting");
-    match card_service.derive_card_categories(1000).await {
+    match card_service
+        .derive_card_categories(DERIVE_CATEGORIES_BATCH_SIZE)
+        .await
+    {
         Ok((otag_rows, merges)) => {
             tracing::info!(
                 "step 3/5 derive categories: {otag_rows} rows from otags, {merges} straggler merges"
@@ -186,7 +197,7 @@ async fn ping_healthcheck(url: Option<&str>) {
     };
     let result = reqwest::Client::new()
         .get(url)
-        .timeout(std::time::Duration::from_secs(10))
+        .timeout(HEALTHCHECK_TIMEOUT)
         .send()
         .await;
     match result {

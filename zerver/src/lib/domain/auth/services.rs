@@ -39,6 +39,18 @@ use crate::domain::email::models::SendEmail;
 use crate::domain::email::ports::EmailSender;
 use crate::domain::user::ports::UserRepository;
 
+/// Random bytes in a verify, reset or email change token, before hex encoding.
+const TOKEN_BYTES: usize = 32;
+
+/// How long an email verification link stays valid.
+const VERIFY_EMAIL_LINK_LIFETIME: Duration = Duration::hours(24);
+
+/// How long an email change confirmation link stays valid.
+const EMAIL_CHANGE_LINK_LIFETIME: Duration = Duration::hours(24);
+
+/// How long a password reset link stays valid.
+const PASSWORD_RESET_LINK_LIFETIME: Duration = Duration::minutes(15);
+
 /// A throwaway Argon2 hash used to equalize login timing for non-existent
 /// accounts. Generated lazily with the same default Argon2 params as real
 /// hashes, so verifying against it costs the same as verifying a real one. It
@@ -230,7 +242,7 @@ fn escape_html(value: &str) -> String {
 /// 32 random bytes → hex-encode → raw token sent to client.
 /// SHA-256 hash of raw → stored in database.
 fn generate_hex_token() -> (String, String) {
-    let mut bytes = [0u8; 32];
+    let mut bytes = [0u8; TOKEN_BYTES];
     rand::rng().fill_bytes(&mut bytes);
     let raw = hex::encode(bytes);
     let hash = hex::encode(sha2::Sha256::digest(raw.as_bytes()));
@@ -473,7 +485,7 @@ where
         let mut user = self.verify_password(&request.into()).await?;
 
         let (raw, hash) = generate_hex_token();
-        let expires_at = Utc::now() + Duration::hours(24);
+        let expires_at = Utc::now() + EMAIL_CHANGE_LINK_LIFETIME;
         self.auth_repo
             .store_email_change_request(user.id, &request.email, hash, expires_at)
             .await?;
@@ -541,7 +553,7 @@ where
             .await?;
 
         let (raw, hash) = generate_hex_token();
-        let expires_at = Utc::now() + Duration::hours(24);
+        let expires_at = Utc::now() + VERIFY_EMAIL_LINK_LIFETIME;
 
         self.auth_repo
             .store_email_verification_token(user_id, hash, expires_at)
@@ -606,7 +618,7 @@ where
         self.auth_repo.delete_password_reset_tokens(user_id).await?;
 
         let (raw, hash) = generate_hex_token();
-        let expires_at = Utc::now() + Duration::minutes(15);
+        let expires_at = Utc::now() + PASSWORD_RESET_LINK_LIFETIME;
 
         self.auth_repo
             .store_password_reset_token(user_id, hash, expires_at)

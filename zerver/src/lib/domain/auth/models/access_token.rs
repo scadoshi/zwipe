@@ -16,6 +16,9 @@ use zwipe_core::domain::auth::models::access_token::{
 };
 use zwipe_core::domain::user::User;
 
+/// Shortest JWT secret accepted, in bytes.
+const MIN_JWT_SECRET_LEN: usize = 32;
+
 // == errors ==
 
 /// Errors when constructing a JWT secret.
@@ -93,7 +96,7 @@ impl JwtSecret {
         if raw.is_empty() {
             return Err(JwtSecretError::MissingSecret);
         }
-        if raw.len() < 32 {
+        if raw.len() < MIN_JWT_SECRET_LEN {
             return Err(JwtSecretError::TooShort);
         }
         Ok(Self(raw.to_string()))

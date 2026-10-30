@@ -13,6 +13,9 @@ use zwipe::outbound::resend::Resend;
 use zwipe::outbound::sqlx::postgres::Postgres;
 use zwipe_core::domain::logo;
 
+/// Daily log files kept; the appender deletes older ones.
+const MAX_LOG_FILES: usize = 30;
+
 #[tokio::main]
 #[expect(
     clippy::print_stderr,
@@ -46,12 +49,11 @@ async fn run() -> anyhow::Result<()> {
         .map_err(|e| anyhow::anyhow!("failed to create log directory: {e}"))?;
 
     // Rolling daily log file: $LOG_DIR/zerver.YYYY-MM-DD.log (default: /var/log/zwipe)
-    // max_log_files(30) automatically deletes files older than 30 days
     let file_appender = RollingFileAppender::builder()
         .rotation(Rotation::DAILY)
         .filename_prefix("zerver")
         .filename_suffix("log")
-        .max_log_files(30)
+        .max_log_files(MAX_LOG_FILES)
         .build(&config.log_dir)
         .map_err(|e| anyhow::anyhow!("failed to build log file appender: {e}"))?;
 
