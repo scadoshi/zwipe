@@ -247,7 +247,6 @@ impl SwipeState {
 }
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used)]
 mod tests {
     use chrono::NaiveDate;
     use dioxus::html::geometry::euclid::Point2D;

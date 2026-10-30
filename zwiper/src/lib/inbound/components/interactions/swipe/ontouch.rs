@@ -7,7 +7,10 @@ use crate::inbound::components::interactions::swipe::onswipe::OnSwipe;
 use crate::inbound::components::interactions::swipe::state::SwipeState;
 
 /// Trait for handling touch events as swipe gestures (mobile devices).
-#[allow(missing_docs)]
+#[expect(
+    missing_docs,
+    reason = "each method handles the touch event it is named after"
+)]
 pub trait OnTouch {
     fn ontouchstart(&mut self, e: Event<TouchData>);
     fn ontouchmove(&mut self, e: Event<TouchData>);

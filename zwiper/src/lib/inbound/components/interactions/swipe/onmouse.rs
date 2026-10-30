@@ -8,7 +8,10 @@ use crate::inbound::components::interactions::swipe::onswipe::OnSwipe;
 use crate::inbound::components::interactions::swipe::state::SwipeState;
 
 /// Trait for handling mouse events as swipe gestures (desktop development).
-#[allow(missing_docs)]
+#[expect(
+    missing_docs,
+    reason = "each method handles the mouse event it is named after"
+)]
 pub trait OnMouse {
     fn onmousedown(&mut self, e: Event<MouseData>);
     fn onmousemove(&mut self, e: Event<MouseData>);

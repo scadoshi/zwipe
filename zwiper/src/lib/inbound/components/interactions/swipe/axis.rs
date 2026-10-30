@@ -2,7 +2,7 @@
 
 /// The axis along which a swipe gesture is traveling.
 #[derive(Debug, Clone, PartialEq)]
-#[allow(missing_docs)]
+#[expect(missing_docs, reason = "the variants are the axis names")]
 pub enum Axis {
     X,
     Y,

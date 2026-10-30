@@ -11,7 +11,10 @@ use crate::inbound::components::interactions::swipe::state::SwipeState;
 use crate::inbound::components::interactions::swipe::time_point::TimePoint;
 
 /// Core swipe event handlers shared by touch and mouse implementations.
-#[allow(missing_docs)]
+#[expect(
+    missing_docs,
+    reason = "each method handles the swipe phase it is named after"
+)]
 pub trait OnSwipe {
     fn onswipestart(&mut self, start_point: ClientPoint);
     fn onswipemove(&mut self, current_point: ClientPoint);

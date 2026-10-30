@@ -1,4 +1,7 @@
-#![allow(clippy::expect_used, clippy::panic)]
+#![expect(
+    clippy::panic,
+    reason = "a build script fails the build by panicking on a missing variable"
+)]
 
 const BACKEND_URL_KEY: &str = "BACKEND_URL";
 const RUST_LOG_KEY: &str = "RUST_LOG";

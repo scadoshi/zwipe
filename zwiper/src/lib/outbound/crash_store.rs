@@ -80,7 +80,6 @@ pub fn clear() {
 
 #[cfg(all(test, not(target_arch = "wasm32")))]
 mod tests {
-    #![allow(clippy::expect_used, clippy::unwrap_used)]
     use uuid::Uuid;
     use zwipe_core::domain::auth::models::platform::ClientPlatform;
 

@@ -203,7 +203,10 @@ mod platform {
         FOLLOWS.load(Ordering::Relaxed)
     }
 
-    #[allow(clippy::unnecessary_wraps)]
+    #[expect(
+        clippy::unnecessary_wraps,
+        reason = "signature is shared with the ios variant, which can fail"
+    )]
     pub fn set_follows_theme(on: bool) -> anyhow::Result<()> {
         FOLLOWS.store(on, Ordering::Relaxed);
         Ok(())
@@ -213,7 +216,10 @@ mod platform {
         PICKED.lock().ok()?.clone()
     }
 
-    #[allow(clippy::unnecessary_wraps)]
+    #[expect(
+        clippy::unnecessary_wraps,
+        reason = "signature is shared with the ios variant, which can fail"
+    )]
     pub fn set(name: Option<&str>) -> anyhow::Result<()> {
         if let Ok(mut picked) = PICKED.lock() {
             *picked = name.map(str::to_string);

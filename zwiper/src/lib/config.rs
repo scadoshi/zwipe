@@ -3,8 +3,6 @@
 //! Loads compile-time environment variables baked in by `build.rs`. Values are
 //! fixed per build, so every device running a given binary sees the same ones.
 
-#![allow(clippy::unwrap_used)]
-
 use std::str::FromStr;
 
 use anyhow::Context;
@@ -52,6 +50,10 @@ impl Config {
     /// rather than anything a user can trigger: the value is identical in every
     /// copy of a given binary, so a bad one fails on the first launch of any
     /// build rather than for some users and not others.
+    #[expect(
+        clippy::unwrap_used,
+        reason = "build.rs checks BACKEND_URL, so a parse failure is a build bug"
+    )]
     pub fn from_env() -> Self {
         let backend_url = Url::from_str(BACKEND_URL)
             .context(format!("invalid url in BACKEND_URL: {}", BACKEND_URL))

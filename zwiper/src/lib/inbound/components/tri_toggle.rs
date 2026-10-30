@@ -7,7 +7,6 @@ use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilde
 /// - `Some(true)` → true_label (default: "true")
 /// - `Some(false)` → false_label (default: "false")
 /// - `None` → none_label (default: "none")
-#[allow(unpredictable_function_pointer_comparisons)]
 #[component]
 pub fn TriToggle(
     label: &'static str,
