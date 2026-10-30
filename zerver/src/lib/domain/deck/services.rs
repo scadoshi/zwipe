@@ -75,11 +75,7 @@ const PROFILE_SYNERGY_CARDS: usize = 15;
 /// allowing modifications. `GetDeckProfileError::Forbidden` is returned if
 /// the user ID doesn't match the deck's owner.
 #[derive(Debug, Clone)]
-pub struct Service<DR, CR>
-where
-    DR: DeckRepository,
-    CR: CardRepository,
-{
+pub struct Service<DR, CR> {
     deck_repo: DR,
     card_repo: CR,
 }

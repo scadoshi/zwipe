@@ -11,10 +11,7 @@ use crate::domain::metrics::ports::{MetricsRepository, MetricsService};
 
 /// Default metrics service.
 #[derive(Debug, Clone)]
-pub struct Service<R>
-where
-    R: MetricsRepository,
-{
+pub struct Service<R> {
     repo: R,
 }
 

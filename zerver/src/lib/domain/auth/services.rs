@@ -68,12 +68,7 @@ static TIMING_EQUALIZER_HASH: LazyLock<HashedPassword> = LazyLock::new(|| {
 /// Operations that modify user data (change username/email/password, delete user)
 /// require password re-authentication for security, even with a valid session.
 #[derive(Debug, Clone)]
-pub struct Service<AR, UR, ES>
-where
-    AR: AuthRepository,
-    UR: UserRepository,
-    ES: EmailSender,
-{
+pub struct Service<AR, UR, ES> {
     auth_repo: AR,
     user_repo: UR,
     email_sender: ES,

@@ -12,7 +12,7 @@ pub const REPLACED_TOKEN_RETENTION_DAYS: i32 = 7;
 
 /// Canonical [`UpkeepService`] implementation.
 #[derive(Debug, Clone)]
-pub struct Service<R: UpkeepRepository> {
+pub struct Service<R> {
     repo: R,
 }
 

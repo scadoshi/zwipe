@@ -17,10 +17,7 @@ use crate::domain::user::ports::{UserRepository, UserService};
 /// (username, email, password changes) are handled by the auth service for
 /// security reasons (require password re-authentication).
 #[derive(Debug, Clone)]
-pub struct Service<R>
-where
-    R: UserRepository,
-{
+pub struct Service<R> {
     repo: R,
 }
 
