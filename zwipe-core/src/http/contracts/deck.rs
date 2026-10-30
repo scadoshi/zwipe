@@ -111,72 +111,84 @@ pub struct HttpCreateDeckProfileBuilder {
 
 impl HttpCreateDeckProfileBuilder {
     /// Sets the commander card ID.
+    #[must_use]
     pub fn commander_id(mut self, id: Option<Uuid>) -> Self {
         self.commander_id = id;
         self
     }
 
     /// Sets the partner commander card ID.
+    #[must_use]
     pub fn partner_commander_id(mut self, id: Option<Uuid>) -> Self {
         self.partner_commander_id = id;
         self
     }
 
     /// Sets the background enchantment card ID.
+    #[must_use]
     pub fn background_id(mut self, id: Option<Uuid>) -> Self {
         self.background_id = id;
         self
     }
 
     /// Sets the signature spell card ID.
+    #[must_use]
     pub fn signature_spell_id(mut self, id: Option<Uuid>) -> Self {
         self.signature_spell_id = id;
         self
     }
 
     /// Sets the deck format.
+    #[must_use]
     pub fn format(mut self, format: Option<String>) -> Self {
         self.format = format;
         self
     }
 
     /// Sets the deck tags.
+    #[must_use]
     pub fn tags(mut self, tags: Option<Vec<String>>) -> Self {
         self.tags = tags;
         self
     }
 
     /// Sets the power level.
+    #[must_use]
     pub fn power_level(mut self, power_level: Option<String>) -> Self {
         self.power_level = power_level;
         self
     }
 
     /// Sets the other-tags.
+    #[must_use]
     pub fn other_tags(mut self, other_tags: Option<Vec<String>>) -> Self {
         self.other_tags = other_tags;
         self
     }
 
     /// Sets the oracle-tags.
+    #[must_use]
     pub fn oracle_tags(mut self, oracle_tags: Option<Vec<String>>) -> Self {
         self.oracle_tags = oracle_tags;
         self
     }
 
     /// Sets the land target.
+    #[must_use]
     pub fn land_target(mut self, land_target: Option<i32>) -> Self {
         self.land_target = land_target;
         self
     }
 
     /// Sets the price target (budget).
+    #[must_use]
     pub fn price_target(mut self, price_target: Option<f64>) -> Self {
         self.price_target = price_target;
         self
     }
 
     /// Sets the price target currency.
+    #[must_use]
     pub fn price_target_currency(mut self, price_target_currency: Option<PriceCurrency>) -> Self {
         self.price_target_currency = price_target_currency;
         self
@@ -302,78 +314,91 @@ pub struct HttpUpdateDeckProfileBuilder {
 impl HttpUpdateDeckProfileBuilder {
     /// Sets the new deck name. `None` leaves the name unchanged; the builder
     /// cannot express "clear" because a name is non-clearable.
+    #[must_use]
     pub fn name(mut self, name: Option<&str>) -> Self {
         self.name = name.map(|s| s.to_string());
         self
     }
 
     /// Sets the commander update.
+    #[must_use]
     pub fn commander_id(mut self, id: Opdate<Uuid>) -> Self {
         self.commander_id = id;
         self
     }
 
     /// Sets the partner commander update.
+    #[must_use]
     pub fn partner_commander_id(mut self, id: Opdate<Uuid>) -> Self {
         self.partner_commander_id = id;
         self
     }
 
     /// Sets the background enchantment update.
+    #[must_use]
     pub fn background_id(mut self, id: Opdate<Uuid>) -> Self {
         self.background_id = id;
         self
     }
 
     /// Sets the signature spell update.
+    #[must_use]
     pub fn signature_spell_id(mut self, id: Opdate<Uuid>) -> Self {
         self.signature_spell_id = id;
         self
     }
 
     /// Sets the format update.
+    #[must_use]
     pub fn format(mut self, format: Opdate<String>) -> Self {
         self.format = format;
         self
     }
 
     /// Sets the tags update.
+    #[must_use]
     pub fn tags(mut self, tags: Opdate<Vec<String>>) -> Self {
         self.tags = tags;
         self
     }
 
     /// Sets the power level update.
+    #[must_use]
     pub fn power_level(mut self, power_level: Opdate<String>) -> Self {
         self.power_level = power_level;
         self
     }
 
     /// Sets the other-tags update.
+    #[must_use]
     pub fn other_tags(mut self, other_tags: Opdate<Vec<String>>) -> Self {
         self.other_tags = other_tags;
         self
     }
 
     /// Sets the oracle-tags update.
+    #[must_use]
     pub fn oracle_tags(mut self, oracle_tags: Opdate<Vec<String>>) -> Self {
         self.oracle_tags = oracle_tags;
         self
     }
 
     /// Sets the land target update.
+    #[must_use]
     pub fn land_target(mut self, land_target: Opdate<i32>) -> Self {
         self.land_target = land_target;
         self
     }
 
     /// Sets the price target update.
+    #[must_use]
     pub fn price_target(mut self, price_target: Opdate<f64>) -> Self {
         self.price_target = price_target;
         self
     }
 
     /// Sets the price target currency update.
+    #[must_use]
     pub fn price_target_currency(mut self, price_target_currency: Opdate<PriceCurrency>) -> Self {
         self.price_target_currency = price_target_currency;
         self
