@@ -92,13 +92,13 @@ mod platform {
         keyring_entry::entry(SERVICE, USERNAME)
     }
 
-    pub fn save(session: &Session) -> anyhow::Result<()> {
+    pub(crate) fn save(session: &Session) -> anyhow::Result<()> {
         let bytes = serde_json::to_vec(session)?;
         entry()?.set_secret(&bytes)?;
         Ok(())
     }
 
-    pub fn load() -> anyhow::Result<Option<Session>> {
+    pub(crate) fn load() -> anyhow::Result<Option<Session>> {
         let entry = entry()?;
         match entry.get_secret() {
             Err(keyring::Error::NoEntry) => Ok(None),
@@ -114,7 +114,7 @@ mod platform {
         }
     }
 
-    pub fn delete() -> anyhow::Result<()> {
+    pub(crate) fn delete() -> anyhow::Result<()> {
         entry()?.delete_credential()?;
         Ok(())
     }
@@ -134,7 +134,7 @@ mod platform {
         Ok(files_dir()?.join("session.json"))
     }
 
-    pub fn save(session: &Session) -> anyhow::Result<()> {
+    pub(crate) fn save(session: &Session) -> anyhow::Result<()> {
         let bytes = serde_json::to_vec(session)?;
         let blob = android_keystore::seal(&bytes)?;
         std::fs::write(session_path()?, blob)?;
@@ -145,7 +145,7 @@ mod platform {
     /// Keystore; it is read as is and rewritten sealed. A sealed file that does
     /// not open (the key is gone after a reinstall, or the file is corrupt)
     /// counts as logged out and is removed.
-    pub fn load() -> anyhow::Result<Option<Session>> {
+    pub(crate) fn load() -> anyhow::Result<Option<Session>> {
         let path = session_path()?;
         let bytes = match std::fs::read(&path) {
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(None),
@@ -186,7 +186,7 @@ mod platform {
         Ok(Some(session))
     }
 
-    pub fn delete() -> anyhow::Result<()> {
+    pub(crate) fn delete() -> anyhow::Result<()> {
         match std::fs::remove_file(session_path()?) {
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(()),
             other => Ok(other?),

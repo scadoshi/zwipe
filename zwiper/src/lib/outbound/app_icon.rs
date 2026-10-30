@@ -146,14 +146,14 @@ mod platform {
         app.ok_or_else(|| anyhow::anyhow!("UIApplication is NULL"))
     }
 
-    pub fn current() -> Option<String> {
+    pub(crate) fn current() -> Option<String> {
         let app = app().ok()?;
         // SAFETY: `alternateIconName` is a nullable NSString getter.
         let name: Option<Retained<NSString>> = unsafe { msg_send![&*app, alternateIconName] };
         name.map(|n| n.to_string())
     }
 
-    pub fn set(name: Option<&str>) -> anyhow::Result<()> {
+    pub(crate) fn set(name: Option<&str>) -> anyhow::Result<()> {
         let app = app()?;
         // False only when Info.plist lists no alternates, which is a build
         // that skipped zcripts/ios/icons.sh.
@@ -180,11 +180,11 @@ mod platform {
         )
     }
 
-    pub fn follows_theme() -> bool {
+    pub(crate) fn follows_theme() -> bool {
         follows_entry().is_ok_and(|entry| entry.get_secret().is_ok())
     }
 
-    pub fn set_follows_theme(on: bool) -> anyhow::Result<()> {
+    pub(crate) fn set_follows_theme(on: bool) -> anyhow::Result<()> {
         let entry = follows_entry()?;
         if on {
             entry.set_secret(b"1")?;
@@ -207,7 +207,7 @@ mod platform {
     static PICKED: Mutex<Option<String>> = Mutex::new(None);
     static FOLLOWS: AtomicBool = AtomicBool::new(false);
 
-    pub fn follows_theme() -> bool {
+    pub(crate) fn follows_theme() -> bool {
         FOLLOWS.load(Ordering::Relaxed)
     }
 
@@ -215,12 +215,12 @@ mod platform {
         clippy::unnecessary_wraps,
         reason = "signature is shared with the ios variant, which can fail"
     )]
-    pub fn set_follows_theme(on: bool) -> anyhow::Result<()> {
+    pub(crate) fn set_follows_theme(on: bool) -> anyhow::Result<()> {
         FOLLOWS.store(on, Ordering::Relaxed);
         Ok(())
     }
 
-    pub fn current() -> Option<String> {
+    pub(crate) fn current() -> Option<String> {
         PICKED.lock().ok()?.clone()
     }
 
@@ -228,7 +228,7 @@ mod platform {
         clippy::unnecessary_wraps,
         reason = "signature is shared with the ios variant, which can fail"
     )]
-    pub fn set(name: Option<&str>) -> anyhow::Result<()> {
+    pub(crate) fn set(name: Option<&str>) -> anyhow::Result<()> {
         if let Ok(mut picked) = PICKED.lock() {
             *picked = name.map(str::to_string);
         }

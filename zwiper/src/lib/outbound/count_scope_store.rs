@@ -85,12 +85,12 @@ mod platform {
         keyring_entry::entry(SERVICE, USERNAME)
     }
 
-    pub fn save(bytes: &[u8]) -> anyhow::Result<()> {
+    pub(crate) fn save(bytes: &[u8]) -> anyhow::Result<()> {
         entry()?.set_secret(bytes)?;
         Ok(())
     }
 
-    pub fn load() -> anyhow::Result<Option<Vec<u8>>> {
+    pub(crate) fn load() -> anyhow::Result<Option<Vec<u8>>> {
         match entry()?.get_secret() {
             Err(keyring::Error::NoEntry) => Ok(None),
             Err(e) => Err(e.into()),
@@ -110,12 +110,12 @@ mod platform {
         Ok(files_dir()?.join("count_scope"))
     }
 
-    pub fn save(bytes: &[u8]) -> anyhow::Result<()> {
+    pub(crate) fn save(bytes: &[u8]) -> anyhow::Result<()> {
         std::fs::write(scope_path()?, bytes)?;
         Ok(())
     }
 
-    pub fn load() -> anyhow::Result<Option<Vec<u8>>> {
+    pub(crate) fn load() -> anyhow::Result<Option<Vec<u8>>> {
         match std::fs::read(scope_path()?) {
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
             Err(e) => Err(e.into()),

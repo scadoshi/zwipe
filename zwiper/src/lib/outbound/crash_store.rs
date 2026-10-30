@@ -142,7 +142,7 @@ mod platform {
 
     /// Android: the app's private files dir (same home as session/theme).
     #[cfg(target_os = "android")]
-    pub fn crash_file() -> Option<PathBuf> {
+    pub(crate) fn crash_file() -> Option<PathBuf> {
         Some(
             crate::outbound::android_fs::files_dir()
                 .ok()?
@@ -152,7 +152,7 @@ mod platform {
 
     /// iOS: the sandbox's Documents dir, always writable, survives restarts.
     #[cfg(target_os = "ios")]
-    pub fn crash_file() -> Option<PathBuf> {
+    pub(crate) fn crash_file() -> Option<PathBuf> {
         Some(
             PathBuf::from(std::env::var_os("HOME")?)
                 .join("Documents")
@@ -167,7 +167,7 @@ mod platform {
         clippy::unnecessary_wraps,
         reason = "signature is shared with the android and ios variants, which can fail"
     )]
-    pub fn crash_file() -> Option<PathBuf> {
+    pub(crate) fn crash_file() -> Option<PathBuf> {
         Some(std::env::temp_dir().join(CRASH_FILE))
     }
 }

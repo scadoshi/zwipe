@@ -59,12 +59,12 @@ mod platform {
         keyring_entry::entry(SERVICE, USERNAME)
     }
 
-    pub fn save(counts: &HttpPublicMetrics) -> anyhow::Result<()> {
+    pub(crate) fn save(counts: &HttpPublicMetrics) -> anyhow::Result<()> {
         entry()?.set_secret(&serde_json::to_vec(counts)?)?;
         Ok(())
     }
 
-    pub fn load() -> anyhow::Result<Option<HttpPublicMetrics>> {
+    pub(crate) fn load() -> anyhow::Result<Option<HttpPublicMetrics>> {
         match entry()?.get_secret() {
             Err(keyring::Error::NoEntry) => Ok(None),
             Err(e) => Err(e.into()),
@@ -85,12 +85,12 @@ mod platform {
         Ok(files_dir()?.join("counts.json"))
     }
 
-    pub fn save(counts: &HttpPublicMetrics) -> anyhow::Result<()> {
+    pub(crate) fn save(counts: &HttpPublicMetrics) -> anyhow::Result<()> {
         std::fs::write(counts_path()?, serde_json::to_vec(counts)?)?;
         Ok(())
     }
 
-    pub fn load() -> anyhow::Result<Option<HttpPublicMetrics>> {
+    pub(crate) fn load() -> anyhow::Result<Option<HttpPublicMetrics>> {
         match std::fs::read(counts_path()?) {
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
             Err(e) => Err(e.into()),
