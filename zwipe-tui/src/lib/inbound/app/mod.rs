@@ -274,6 +274,14 @@ impl DeckList {
         }
     }
 
+    /// Takes the decks, sorted by name ignoring case as in the app, keeping the selection in range.
+    pub(crate) fn set_decks(&mut self, mut decks: Vec<DeckProfile>) {
+        decks.sort_by_cached_key(|d| d.name.to_lowercase());
+        self.decks = decks;
+        self.loading = false;
+        self.selected = self.selected.min(self.decks.len().saturating_sub(1));
+    }
+
     pub(crate) fn selected_deck(&self) -> Option<&DeckProfile> {
         self.decks.get(self.selected)
     }
@@ -325,6 +333,19 @@ mod tests {
     fn login_focus_toggles_between_the_two_fields() {
         assert_eq!(LoginField::Identifier.other(), LoginField::Password);
         assert_eq!(LoginField::Password.other(), LoginField::Identifier);
+    }
+
+    #[test]
+    fn decks_sort_by_name_ignoring_case() {
+        let mut list = DeckList::loading();
+        list.set_decks(vec![
+            crate::test_support::deck_profile("satya"),
+            crate::test_support::deck_profile("Big fat chud"),
+            crate::test_support::deck_profile("isshin"),
+        ]);
+        let names: Vec<String> = list.decks.iter().map(|d| d.name.to_string()).collect();
+        assert_eq!(names, ["Big fat chud", "isshin", "satya"]);
+        assert!(!list.loading);
     }
 
     #[test]

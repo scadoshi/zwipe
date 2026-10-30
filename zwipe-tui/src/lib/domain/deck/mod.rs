@@ -20,6 +20,15 @@ pub(crate) fn card_count(profile: &DeckProfile) -> i64 {
         .saturating_add(i64::try_from(command_zone).unwrap_or_default())
 }
 
+/// `1 card`, `2 cards`.
+pub(crate) fn cards_label(count: i64) -> String {
+    if count == 1 {
+        "1 card".to_owned()
+    } else {
+        format!("{count} cards")
+    }
+}
+
 /// Whether `count` fits the format's minimum and maximum deck size. A deck with no format, or a format with no limit, always fits.
 pub(crate) fn count_fits(profile: &DeckProfile, count: i64) -> bool {
     let Some(format) = profile.format else {
@@ -69,6 +78,13 @@ mod tests {
         profile.commander_id = Some(Uuid::new_v4());
         assert_eq!(card_count(&profile), 60);
         assert!(count_fits(&profile, 3), "no format, no limits");
+    }
+
+    #[test]
+    fn one_card_is_singular() {
+        assert_eq!(cards_label(1), "1 card");
+        assert_eq!(cards_label(0), "0 cards");
+        assert_eq!(cards_label(100), "100 cards");
     }
 
     #[test]

@@ -256,9 +256,7 @@ impl EventLoop {
             }
             Update::Decks(decks) => {
                 if let Screen::Decks(list) = &mut app.screen {
-                    list.decks = decks;
-                    list.loading = false;
-                    list.selected = list.selected.min(list.decks.len().saturating_sub(1));
+                    list.set_decks(decks);
                 }
             }
             Update::DecksFailed(error) => {

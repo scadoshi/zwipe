@@ -18,6 +18,9 @@ use crate::inbound::app::{App, DeckView, Section};
 /// A vertical chart is at most this tall, frame included, so a small deck's bars stay short.
 const CHART_HEIGHT: u16 = 14;
 
+/// The profile's labels take this many cells before their values.
+const LABEL_WIDTH: usize = 16;
+
 /// The profile column is this wide, in cells.
 const PROFILE_WIDTH: u16 = 38;
 
@@ -63,25 +66,30 @@ pub(super) fn draw(f: &mut Frame<'_>, palette: &Palette, app: &App, view: &DeckV
 
 fn draw_profile(f: &mut Frame<'_>, palette: &Palette, view: &DeckView, area: Rect) {
     let profile = &view.profile;
-    let field = |label: &str, value: String| {
-        Line::from(vec![
-            Span::styled(format!("{label:<16}"), palette.muted),
-            Span::raw(value),
-        ])
+    let value_width = usize::from(area.width.saturating_sub(2)).saturating_sub(LABEL_WIDTH);
+    let mut lines = Vec::new();
+    let mut field = |label: &str, value: String| {
+        if value.chars().count() <= value_width {
+            lines.push(Line::from(vec![
+                Span::styled(format!("{label:<LABEL_WIDTH$}"), palette.muted),
+                Span::raw(value),
+            ]));
+        } else {
+            lines.push(Line::from(Span::styled(label.to_owned(), palette.muted)));
+            lines.push(Line::from(format!("  {value}")));
+        }
     };
     let cards = view.metrics.as_ref().map_or(profile.card_count, |m| {
         i64::try_from(m.total_cards).unwrap_or(i64::MAX)
     });
-    let mut lines = vec![
-        field("Name", profile.name.to_string()),
-        field("Cards", cards.to_string()),
-        field(
-            "Format",
-            profile
-                .format
-                .map_or_else(|| "None".to_owned(), |f| f.display_name().to_owned()),
-        ),
-    ];
+    field("Name", profile.name.to_string());
+    field("Cards", cards.to_string());
+    field(
+        "Format",
+        profile
+            .format
+            .map_or_else(|| "None".to_owned(), |f| f.display_name().to_owned()),
+    );
     if let Some(format) = profile
         .format
         .filter(zwipe_core::domain::deck::Format::has_commander)
@@ -91,13 +99,13 @@ fn draw_profile(f: &mut Frame<'_>, palette: &Palette, view: &DeckView, area: Rec
         } else {
             "Commander"
         };
-        lines.push(field(
+        field(
             label,
             profile
                 .commander_name
                 .clone()
                 .unwrap_or_else(|| "None".to_owned()),
-        ));
+        );
     }
     for (label, name) in [
         ("Partner", &profile.partner_commander_name),
@@ -105,11 +113,11 @@ fn draw_profile(f: &mut Frame<'_>, palette: &Palette, view: &DeckView, area: Rec
         ("Signature spell", &profile.signature_spell_name),
     ] {
         if let Some(name) = name {
-            lines.push(field(label, name.clone()));
+            field(label, name.clone());
         }
     }
     if let Some(power) = profile.power_level {
-        lines.push(field("Power level", power.display_name().to_owned()));
+        field("Power level", power.display_name().to_owned());
     }
     f.render_widget(
         Paragraph::new(lines).wrap(Wrap { trim: true }).block(

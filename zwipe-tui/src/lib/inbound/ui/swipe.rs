@@ -8,13 +8,16 @@ use ratatui::widgets::{Block, Padding, Paragraph, Wrap};
 use zwipe_core::domain::card::Card;
 
 use super::hints;
+use crate::domain;
 use crate::domain::card::{self, Face};
 use crate::domain::theme::Palette;
 use crate::inbound::app::{App, SwipeView};
 
-/// The card is at most this wide and this tall, in cells, so it reads like a card on a wide terminal.
+/// The card is at most this wide, in cells, so it reads like a card on a wide terminal.
 const CARD_WIDTH: u16 = 64;
-const CARD_HEIGHT: u16 = 24;
+
+/// The card's border and padding, across both sides.
+const CARD_FRAME: u16 = 4;
 
 pub(super) fn draw(f: &mut Frame<'_>, palette: &Palette, app: &App, view: &SwipeView) {
     let [header, body, footer, status, keys] = Layout::vertical([
@@ -27,7 +30,7 @@ pub(super) fn draw(f: &mut Frame<'_>, palette: &Palette, app: &App, view: &Swipe
     .margin(1)
     .areas(f.area());
 
-    let count = view.deck.card_count.saturating_add(view.added);
+    let count = domain::deck::card_count(&view.deck).saturating_add(view.added);
     let commander = view
         .deck
         .commander_name
@@ -37,15 +40,17 @@ pub(super) fn draw(f: &mut Frame<'_>, palette: &Palette, app: &App, view: &Swipe
         Line::from(vec![
             Span::styled(view.deck.name.to_string(), palette.accent).bold(),
             Span::styled(commander, palette.muted),
-            Span::styled(format!("  {count} cards"), palette.muted),
+            Span::styled(
+                format!("  {}", domain::deck::cards_label(count)),
+                palette.muted,
+            ),
         ]),
         header,
     );
 
-    let card_area = body.centered(Constraint::Max(CARD_WIDTH), Constraint::Max(CARD_HEIGHT));
     let current = view.stack.as_ref().and_then(|s| s.current());
     match (current, placeholder(view)) {
-        (Some(card), _) => draw_card(f, palette, card, card_area),
+        (Some(card), _) => draw_card(f, palette, card, body),
         (None, Some(message)) => {
             f.render_widget(
                 Paragraph::new(message.style(palette.muted))
@@ -108,6 +113,7 @@ fn placeholder(view: &SwipeView) -> Option<Line<'static>> {
     Some(Line::from(message))
 }
 
+/// Draws the card centered in `area`, as tall as its text.
 fn draw_card(f: &mut Frame<'_>, palette: &Palette, card: &Card, area: Rect) {
     let data = &card.scryfall_data;
     let mut lines = Vec::new();
@@ -127,7 +133,16 @@ fn draw_card(f: &mut Frame<'_>, palette: &Palette, card: &Card, area: Rect) {
             .border_style(palette.accent)
             .padding(Padding::horizontal(1)),
     );
-    f.render_widget(card, area);
+    let width = area.width.min(CARD_WIDTH);
+    let height =
+        u16::try_from(card.line_count(width.saturating_sub(CARD_FRAME))).unwrap_or(u16::MAX);
+    f.render_widget(
+        card,
+        area.centered(
+            Constraint::Length(width),
+            Constraint::Length(height.min(area.height)),
+        ),
+    );
 }
 
 fn face_lines(palette: &Palette, face: &Face) -> Vec<Line<'static>> {

@@ -99,7 +99,10 @@ fn deck_row(palette: &Palette, deck: &DeckProfile) -> Line<'static> {
     } else {
         palette.warning
     };
-    spans.extend([gap(), Span::styled(format!("{count} cards"), count_style)]);
+    spans.extend([
+        gap(),
+        Span::styled(domain::deck::cards_label(count), count_style),
+    ]);
     if let Some(format) = deck.format {
         spans.extend([
             gap(),
