@@ -8,6 +8,7 @@ use crate::http::endpoint::{Endpoint, Method};
 use crate::http::paths::{CHANGELOG_ROUTE, MIN_CLIENT_VERSION_ROUTE};
 
 /// The release history the app and site both render.
+#[derive(Debug)]
 pub struct GetChangelog;
 impl Endpoint for GetChangelog {
     const METHOD: Method = Method::Get;
@@ -20,6 +21,7 @@ impl Endpoint for GetChangelog {
 }
 
 /// The force-update gate's minimum client version.
+#[derive(Debug)]
 pub struct GetMinClientVersion;
 impl Endpoint for GetMinClientVersion {
     const METHOD: Method = Method::Get;

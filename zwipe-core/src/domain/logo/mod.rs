@@ -41,6 +41,7 @@ pub const ZWIPE: &str = include_str!("zwipe.txt");
 /// ```rust,ignore
 /// Zwipe::print(); // Prints logo to stdout
 /// ```
+#[derive(Debug)]
 pub struct Zwipe;
 
 impl Zwipe {
@@ -60,6 +61,7 @@ pub const ZERVER: &str = include_str!("zerver.txt");
 /// ```rust,ignore
 /// Zerver::print(); // Prints logo to stdout
 /// ```
+#[derive(Debug)]
 pub struct Zerver;
 
 impl Zerver {
@@ -79,6 +81,7 @@ pub const ZERVICE: &str = include_str!("zervice.txt");
 /// ```rust,ignore
 /// Zervice::print(); // Prints logo to stdout
 /// ```
+#[derive(Debug)]
 pub struct Zervice;
 
 impl Zervice {
@@ -98,6 +101,7 @@ pub const ZWIPER: &str = include_str!("zwiper.txt");
 /// ```rust,ignore
 /// Zwiper::print(); // Prints logo to stdout
 /// ```
+#[derive(Debug)]
 pub struct Zwiper;
 
 impl Zwiper {
@@ -117,6 +121,7 @@ pub const ZYNERGY: &str = include_str!("zynergy.txt");
 /// ```rust,ignore
 /// Zynergy::print(); // Prints logo to stdout
 /// ```
+#[derive(Debug)]
 pub struct Zynergy;
 
 impl Zynergy {
@@ -136,6 +141,7 @@ pub const ZITE: &str = include_str!("zite.txt");
 /// ```rust,ignore
 /// Zite::print(); // Prints logo to stdout
 /// ```
+#[derive(Debug)]
 pub struct Zite;
 
 impl Zite {

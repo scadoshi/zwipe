@@ -21,6 +21,7 @@ use crate::http::paths::{
 macro_rules! public_get {
     ($(#[$doc:meta])* $name:ident => $path:expr, $resp:ty) => {
         $(#[$doc])*
+        #[derive(Debug)]
         pub struct $name;
         impl Endpoint for $name {
             const METHOD: Method = Method::Get;
@@ -76,6 +77,7 @@ public_get!(
 );
 
 /// One card by its Scryfall printing id.
+#[derive(Debug)]
 pub struct GetCard(pub Uuid);
 impl Endpoint for GetCard {
     const METHOD: Method = Method::Get;
@@ -88,6 +90,7 @@ impl Endpoint for GetCard {
 }
 
 /// Every printing of one oracle id.
+#[derive(Debug)]
 pub struct GetPrintings(pub Uuid);
 impl Endpoint for GetPrintings {
     const METHOD: Method = Method::Get;
@@ -101,6 +104,7 @@ impl Endpoint for GetPrintings {
 
 /// Filtered card search. The filter is pre-serialized so this type stays free
 /// of the query builder's generics.
+#[derive(Debug)]
 pub struct SearchCards(pub CardQuery);
 impl Endpoint for SearchCards {
     const METHOD: Method = Method::Post;
@@ -115,6 +119,7 @@ impl Endpoint for SearchCards {
 }
 
 /// Filtered search restricted to commander-eligible cards.
+#[derive(Debug)]
 pub struct SearchCommanders(pub CardQuery);
 impl Endpoint for SearchCommanders {
     const METHOD: Method = Method::Post;

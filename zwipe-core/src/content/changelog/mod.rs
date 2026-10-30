@@ -21,6 +21,7 @@ pub const DISPLAY_DATE_FORMAT: &str = "%b %-d, %Y";
 /// follow `context/development/changelog_guidelines.md`: a phrase saying what
 /// changed, no period, no examples. The tests below hold the parts of that a
 /// machine can check.
+#[derive(Debug)]
 pub struct Release {
     /// Semantic version string, e.g. `"1.6.0"`.
     pub version: &'static str,

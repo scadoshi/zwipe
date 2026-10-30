@@ -92,6 +92,7 @@ impl HttpCreateDeckProfile {
 }
 
 /// Builder for [`HttpCreateDeckProfile`].
+#[derive(Debug)]
 pub struct HttpCreateDeckProfileBuilder {
     name: String,
     commander_id: Option<Uuid>,
@@ -281,6 +282,7 @@ impl HttpUpdateDeckProfile {
 }
 
 /// Builder for [`HttpUpdateDeckProfile`].
+#[derive(Debug)]
 pub struct HttpUpdateDeckProfileBuilder {
     name: Option<String>,
     commander_id: Opdate<Uuid>,

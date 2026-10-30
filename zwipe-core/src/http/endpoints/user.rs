@@ -20,6 +20,7 @@ use crate::http::paths::{
 };
 
 /// The signed-in user's profile.
+#[derive(Debug)]
 pub struct GetUser;
 impl Endpoint for GetUser {
     const METHOD: Method = Method::Get;
@@ -31,6 +32,7 @@ impl Endpoint for GetUser {
 }
 
 /// Change the account email; answers the updated user.
+#[derive(Debug)]
 pub struct ChangeEmail(pub HttpChangeEmail);
 impl Endpoint for ChangeEmail {
     const METHOD: Method = Method::Patch;
@@ -45,6 +47,7 @@ impl Endpoint for ChangeEmail {
 }
 
 /// Change the username; answers the updated user.
+#[derive(Debug)]
 pub struct ChangeUsername(pub HttpChangeUsername);
 impl Endpoint for ChangeUsername {
     const METHOD: Method = Method::Patch;
@@ -59,6 +62,7 @@ impl Endpoint for ChangeUsername {
 }
 
 /// Change the password. Answers no content beyond 200.
+#[derive(Debug)]
 pub struct ChangePassword(pub HttpChangePassword);
 impl Endpoint for ChangePassword {
     const METHOD: Method = Method::Patch;
@@ -73,6 +77,7 @@ impl Endpoint for ChangePassword {
 }
 
 /// Delete the account. Answers 204.
+#[derive(Debug)]
 pub struct DeleteUser(pub HttpDeleteUser);
 impl Endpoint for DeleteUser {
     const METHOD: Method = Method::Delete;
@@ -87,6 +92,7 @@ impl Endpoint for DeleteUser {
 }
 
 /// Mark a one-time UI hint as seen; answers the updated user.
+#[derive(Debug)]
 pub struct MarkHintShown(pub HttpMarkHintShown);
 impl Endpoint for MarkHintShown {
     const METHOD: Method = Method::Patch;
@@ -101,6 +107,7 @@ impl Endpoint for MarkHintShown {
 }
 
 /// Read display preferences.
+#[derive(Debug)]
 pub struct GetPreferences;
 impl Endpoint for GetPreferences {
     const METHOD: Method = Method::Get;
@@ -112,6 +119,7 @@ impl Endpoint for GetPreferences {
 }
 
 /// Update display preferences; answers the stored result.
+#[derive(Debug)]
 pub struct UpdatePreferences(pub HttpUpdatePreferences);
 impl Endpoint for UpdatePreferences {
     const METHOD: Method = Method::Patch;
@@ -126,6 +134,7 @@ impl Endpoint for UpdatePreferences {
 }
 
 /// The saved commander candidates.
+#[derive(Debug)]
 pub struct GetCommanderMaybeboard;
 impl Endpoint for GetCommanderMaybeboard {
     const METHOD: Method = Method::Get;
@@ -137,6 +146,7 @@ impl Endpoint for GetCommanderMaybeboard {
 }
 
 /// Save one commander candidate. Answers 204.
+#[derive(Debug)]
 pub struct AddCommanderMaybeboardCard(pub Uuid);
 impl Endpoint for AddCommanderMaybeboardCard {
     const METHOD: Method = Method::Post;
@@ -148,6 +158,7 @@ impl Endpoint for AddCommanderMaybeboardCard {
 }
 
 /// Drop one commander candidate. Answers 204.
+#[derive(Debug)]
 pub struct RemoveCommanderMaybeboardCard(pub Uuid);
 impl Endpoint for RemoveCommanderMaybeboardCard {
     const METHOD: Method = Method::Delete;
@@ -159,6 +170,7 @@ impl Endpoint for RemoveCommanderMaybeboardCard {
 }
 
 /// Empty the commander maybeboard. Answers 204.
+#[derive(Debug)]
 pub struct ClearCommanderMaybeboard;
 impl Endpoint for ClearCommanderMaybeboard {
     const METHOD: Method = Method::Delete;

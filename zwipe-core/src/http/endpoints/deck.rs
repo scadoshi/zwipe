@@ -30,6 +30,7 @@ use crate::http::paths::{
 };
 
 /// Every deck profile the user owns.
+#[derive(Debug)]
 pub struct GetDeckProfiles;
 impl Endpoint for GetDeckProfiles {
     const METHOD: Method = Method::Get;
@@ -41,6 +42,7 @@ impl Endpoint for GetDeckProfiles {
 }
 
 /// Create a deck. Answers 201.
+#[derive(Debug)]
 pub struct CreateDeck(pub HttpCreateDeckProfile);
 impl Endpoint for CreateDeck {
     const METHOD: Method = Method::Post;
@@ -55,6 +57,7 @@ impl Endpoint for CreateDeck {
 }
 
 /// One deck with its entries and warnings.
+#[derive(Debug)]
 pub struct GetDeck(pub Uuid);
 impl Endpoint for GetDeck {
     const METHOD: Method = Method::Get;
@@ -66,6 +69,7 @@ impl Endpoint for GetDeck {
 }
 
 /// One deck's profile only.
+#[derive(Debug)]
 pub struct GetDeckProfile(pub Uuid);
 impl Endpoint for GetDeckProfile {
     const METHOD: Method = Method::Get;
@@ -77,6 +81,7 @@ impl Endpoint for GetDeckProfile {
 }
 
 /// Edit a deck's profile.
+#[derive(Debug)]
 pub struct UpdateDeckProfile(pub Uuid, pub HttpUpdateDeckProfile);
 impl Endpoint for UpdateDeckProfile {
     const METHOD: Method = Method::Patch;
@@ -91,6 +96,7 @@ impl Endpoint for UpdateDeckProfile {
 }
 
 /// Delete a deck. Answers 204.
+#[derive(Debug)]
 pub struct DeleteDeck(pub Uuid);
 impl Endpoint for DeleteDeck {
     const METHOD: Method = Method::Delete;
@@ -102,6 +108,7 @@ impl Endpoint for DeleteDeck {
 }
 
 /// Copy a deck into a new one. Answers 201.
+#[derive(Debug)]
 pub struct CloneDeck(pub Uuid, pub HttpCloneDeck);
 impl Endpoint for CloneDeck {
     const METHOD: Method = Method::Post;
@@ -117,6 +124,7 @@ impl Endpoint for CloneDeck {
 
 /// Deck-aware card search. Scoped to a deck, so cards already in it are
 /// excluded and results default to synergy ordering.
+#[derive(Debug)]
 pub struct SearchDeckCards(pub Uuid, pub CardQuery);
 impl Endpoint for SearchDeckCards {
     const METHOD: Method = Method::Post;
@@ -131,6 +139,7 @@ impl Endpoint for SearchDeckCards {
 }
 
 /// Token-producing tokens the deck's cards create.
+#[derive(Debug)]
 pub struct GetDeckTokens(pub Uuid);
 impl Endpoint for GetDeckTokens {
     const METHOD: Method = Method::Get;
@@ -142,6 +151,7 @@ impl Endpoint for GetDeckTokens {
 }
 
 /// The user's deck tag vocabulary.
+#[derive(Debug)]
 pub struct GetDeckTags;
 impl Endpoint for GetDeckTags {
     const METHOD: Method = Method::Get;
@@ -153,6 +163,7 @@ impl Endpoint for GetDeckTags {
 }
 
 /// Start sharing a deck publicly.
+#[derive(Debug)]
 pub struct ShareDeck(pub Uuid);
 impl Endpoint for ShareDeck {
     const METHOD: Method = Method::Post;
@@ -164,6 +175,7 @@ impl Endpoint for ShareDeck {
 }
 
 /// Stop sharing a deck. Answers 204.
+#[derive(Debug)]
 pub struct UnshareDeck(pub Uuid);
 impl Endpoint for UnshareDeck {
     const METHOD: Method = Method::Delete;
@@ -175,6 +187,7 @@ impl Endpoint for UnshareDeck {
 }
 
 /// Suppress one card from a deck's suggestions. Answers 204.
+#[derive(Debug)]
 pub struct SkipDeckCard(pub Uuid, pub HttpSkipDeckCard);
 impl Endpoint for SkipDeckCard {
     const METHOD: Method = Method::Post;
@@ -189,6 +202,7 @@ impl Endpoint for SkipDeckCard {
 }
 
 /// Lift one suppression. Answers 204.
+#[derive(Debug)]
 pub struct UnskipDeckCard(pub Uuid, pub Uuid);
 impl Endpoint for UnskipDeckCard {
     const METHOD: Method = Method::Delete;
@@ -200,6 +214,7 @@ impl Endpoint for UnskipDeckCard {
 }
 
 /// Lift every suppression on a deck.
+#[derive(Debug)]
 pub struct ClearDeckSuppressions(pub Uuid);
 impl Endpoint for ClearDeckSuppressions {
     const METHOD: Method = Method::Delete;
@@ -211,6 +226,7 @@ impl Endpoint for ClearDeckSuppressions {
 }
 
 /// Add a card to a deck. Answers 201.
+#[derive(Debug)]
 pub struct CreateDeckCard(pub Uuid, pub HttpCreateDeckCard);
 impl Endpoint for CreateDeckCard {
     const METHOD: Method = Method::Post;
@@ -225,6 +241,7 @@ impl Endpoint for CreateDeckCard {
 }
 
 /// Edit one deck card.
+#[derive(Debug)]
 pub struct UpdateDeckCard(pub Uuid, pub Uuid, pub HttpPatchDeckCard);
 impl Endpoint for UpdateDeckCard {
     const METHOD: Method = Method::Patch;
@@ -239,6 +256,7 @@ impl Endpoint for UpdateDeckCard {
 }
 
 /// Remove one deck card.
+#[derive(Debug)]
 pub struct DeleteDeckCard(pub Uuid, pub Uuid);
 impl Endpoint for DeleteDeckCard {
     const METHOD: Method = Method::Delete;
@@ -250,6 +268,7 @@ impl Endpoint for DeleteDeckCard {
 }
 
 /// Import a decklist from pasted text.
+#[derive(Debug)]
 pub struct ImportDeckCards(pub Uuid, pub HttpImportDeckCards);
 impl Endpoint for ImportDeckCards {
     const METHOD: Method = Method::Post;
@@ -264,6 +283,7 @@ impl Endpoint for ImportDeckCards {
 }
 
 /// Import a public Archidekt deck by URL.
+#[derive(Debug)]
 pub struct ImportArchidektDeck(pub Uuid, pub HttpImportArchidektDeck);
 impl Endpoint for ImportArchidektDeck {
     const METHOD: Method = Method::Post;
@@ -281,6 +301,7 @@ impl Endpoint for ImportArchidektDeck {
 ///
 /// Unauthenticated: the share link is meant to open for anyone, including
 /// people with no account. A revoked or unknown token answers 404.
+#[derive(Debug)]
 pub struct GetSharedDeck(pub Uuid);
 impl Endpoint for GetSharedDeck {
     const METHOD: Method = Method::Get;

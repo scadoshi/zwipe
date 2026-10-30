@@ -12,6 +12,7 @@ use crate::http::paths::{
 };
 
 /// Flush a batch of buffered usage counters.
+#[derive(Debug)]
 pub struct RecordUsage(pub HttpUsageBatch);
 impl Endpoint for RecordUsage {
     const METHOD: Method = Method::Post;
@@ -26,6 +27,7 @@ impl Endpoint for RecordUsage {
 }
 
 /// Record one pre-account funnel event.
+#[derive(Debug)]
 pub struct RecordAnonymousEvent(pub HttpAnonymousEvent);
 impl Endpoint for RecordAnonymousEvent {
     const METHOD: Method = Method::Post;
@@ -41,6 +43,7 @@ impl Endpoint for RecordAnonymousEvent {
 }
 
 /// Report the crash left on disk by the previous launch.
+#[derive(Debug)]
 pub struct RecordCrash(pub HttpCrashReport);
 impl Endpoint for RecordCrash {
     const METHOD: Method = Method::Post;
@@ -58,6 +61,7 @@ impl Endpoint for RecordCrash {
 /// Install and deck counts for the site's stats strip.
 ///
 /// Unauthenticated: it renders on a public marketing page.
+#[derive(Debug)]
 pub struct PublicMetrics;
 impl Endpoint for PublicMetrics {
     const METHOD: Method = Method::Get;
@@ -71,6 +75,7 @@ impl Endpoint for PublicMetrics {
 
 /// The caller's own lifetime counters, the per-user rows the public counts
 /// sum.
+#[derive(Debug)]
 pub struct GetMyMetrics;
 impl Endpoint for GetMyMetrics {
     const METHOD: Method = Method::Get;

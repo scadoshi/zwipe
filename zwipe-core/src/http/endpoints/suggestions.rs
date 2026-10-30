@@ -16,6 +16,7 @@ use crate::http::paths::{
 
 /// The user's deck count and color map, for Home's play
 /// style panel.
+#[derive(Debug)]
 pub struct GetPlayStyleSummary;
 impl Endpoint for GetPlayStyleSummary {
     const METHOD: Method = Method::Get;
@@ -28,6 +29,7 @@ impl Endpoint for GetPlayStyleSummary {
 
 /// The user's swiping, searching, rates by role and tag, and hard passes,
 /// for the Activity screen.
+#[derive(Debug)]
 pub struct GetActivity;
 impl Endpoint for GetActivity {
     const METHOD: Method = Method::Get;
@@ -40,6 +42,7 @@ impl Endpoint for GetActivity {
 
 /// The user's ranked commander suggestions, at most this many. The server
 /// clamps the limit to `MAX_SUGGESTION_LIMIT`.
+#[derive(Debug)]
 pub struct GetCommanderSuggestions(pub u32);
 impl Endpoint for GetCommanderSuggestions {
     const METHOD: Method = Method::Get;
@@ -54,6 +57,7 @@ impl Endpoint for GetCommanderSuggestions {
 }
 
 /// Hide one commander from the suggestions for a week. Answers 204.
+#[derive(Debug)]
 pub struct DismissCommander(pub HttpDismissCommander);
 impl Endpoint for DismissCommander {
     const METHOD: Method = Method::Post;
@@ -68,6 +72,7 @@ impl Endpoint for DismissCommander {
 }
 
 /// Undo one dismissal. Answers 204.
+#[derive(Debug)]
 pub struct UndismissCommander(pub Uuid);
 impl Endpoint for UndismissCommander {
     const METHOD: Method = Method::Delete;
@@ -79,6 +84,7 @@ impl Endpoint for UndismissCommander {
 }
 
 /// Lift every dismissal; answers how many were lifted.
+#[derive(Debug)]
 pub struct ClearCommanderDismissals;
 impl Endpoint for ClearCommanderDismissals {
     const METHOD: Method = Method::Delete;
