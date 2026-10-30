@@ -8,7 +8,7 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::stop_words::{ORACLE_STOP_WORDS, TYPE_STOP_WORDS};
 
 /// Newtype so `try_use_context` doesn't collide with other `Signal<Vec<Card>>` contexts.
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct DeckCards(pub Signal<Vec<Card>>);
 
 /// Extracts distinct type words from deck cards' `type_line` fields.
