@@ -12,7 +12,7 @@
 
 use zwipe_core::http::paths::{
     GET_ARTISTS_ROUTE, GET_CARD_TYPES_ROUTE, GET_KEYWORDS_ROUTE, GET_LANGUAGES_ROUTE,
-    GET_SETS_ROUTE, get_printings_route,
+    GET_SETS_ROUTE, printings_route,
 };
 mod common;
 
@@ -109,7 +109,7 @@ async fn printings_returns_all_printings_of_an_oracle(pool: sqlx::PgPool) {
     )
     .await;
 
-    let (status, body) = app.get(&get_printings_route(shared), None).await;
+    let (status, body) = app.get(&printings_route(shared), None).await;
     assert_eq!(status, StatusCode::OK, "printings: {body}");
     let printings = body.as_array().unwrap();
     assert_eq!(printings.len(), 2, "both printings of the shared oracle");
