@@ -1150,9 +1150,11 @@ pub fn Add(deck_id: Uuid) -> Element {
             "That's every synergy pick. Showing cards like your deck".to_string(),
             ToastOptions::default().duration(TOAST_NORMAL),
         );
-        usage_buffer
-            .peek()
-            .record_pile_end(deck_id, PileEndKind::SynergyExhausted, true);
+        usage_buffer.peek().record_pile_end(
+            deck_id,
+            PileEndKind::SynergyExhausted,
+            /* synergy */ true,
+        );
     });
 
     rsx! {

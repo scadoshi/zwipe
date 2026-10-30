@@ -989,7 +989,9 @@ pub fn View(deck_id: Uuid) -> Element {
                     stale();
                     return;
                 }
-                change_quantity(card_id, -net, false, false);
+                change_quantity(
+                    card_id, -net, /* is_basic_land */ false, /* record */ false,
+                );
                 toast.info(format!("{card_name} back to \u{00d7}{baseline}"), short);
             }
             UndoAction::MovedBoard {
@@ -1001,7 +1003,7 @@ pub fn View(deck_id: Uuid) -> Element {
                     stale();
                     return;
                 }
-                move_to_board(card_id, from, false);
+                move_to_board(card_id, from, /* record */ false);
                 toast.info(
                     format!("{card_name} back to {}", from.display_name()),
                     short,
@@ -1346,8 +1348,8 @@ pub fn View(deck_id: Uuid) -> Element {
                                                     expanded_card,
                                                     preview_card,
                                                     preview_dismissing,
-                                                    on_qty_change: move |delta: i32| change_quantity(card_id, delta, is_basic_land, true),
-                                                    on_move_to: move |target: Board| move_to_board(card_id, target, true),
+                                                    on_qty_change: move |delta: i32| change_quantity(card_id, delta, is_basic_land, /* record */ true),
+                                                    on_move_to: move |target: Board| move_to_board(card_id, target, /* record */ true),
                                                     current_board: Some(Board::Maybeboard),
                                                     on_printing: move |card: Card| {
                                                         command_zone_slot.set(None);
@@ -1399,8 +1401,8 @@ pub fn View(deck_id: Uuid) -> Element {
                                                     expanded_card,
                                                     preview_card,
                                                     preview_dismissing,
-                                                    on_qty_change: move |delta: i32| change_quantity(card_id, delta, is_basic_land, true),
-                                                    on_move_to: move |target: Board| move_to_board(card_id, target, true),
+                                                    on_qty_change: move |delta: i32| change_quantity(card_id, delta, is_basic_land, /* record */ true),
+                                                    on_move_to: move |target: Board| move_to_board(card_id, target, /* record */ true),
                                                     current_board: Some(Board::Sideboard),
                                                     on_printing: move |card: Card| {
                                                         command_zone_slot.set(None);
@@ -1532,8 +1534,8 @@ pub fn View(deck_id: Uuid) -> Element {
                                             expanded_card,
                                             preview_card,
                                             preview_dismissing,
-                                            on_qty_change: move |delta: i32| change_quantity(card_id, delta, is_basic_land, true),
-                                            on_move_to: move |target: Board| move_to_board(card_id, target, true),
+                                            on_qty_change: move |delta: i32| change_quantity(card_id, delta, is_basic_land, /* record */ true),
+                                            on_move_to: move |target: Board| move_to_board(card_id, target, /* record */ true),
                                             current_board: card_board,
                                             on_printing: move |card: Card| {
                                                 command_zone_slot.set(None);
@@ -1581,8 +1583,8 @@ pub fn View(deck_id: Uuid) -> Element {
                                                     expanded_card,
                                                     preview_card,
                                                     preview_dismissing,
-                                                    on_qty_change: move |delta: i32| change_quantity(card_id, delta, is_basic_land, true),
-                                                    on_move_to: move |target: Board| move_to_board(card_id, target, true),
+                                                    on_qty_change: move |delta: i32| change_quantity(card_id, delta, is_basic_land, /* record */ true),
+                                                    on_move_to: move |target: Board| move_to_board(card_id, target, /* record */ true),
                                                     current_board: card_board,
                                                     on_printing: move |card: Card| {
                                                         command_zone_slot.set(None);
