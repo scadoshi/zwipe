@@ -58,7 +58,7 @@ impl Endpoint for GetDeck {
     type Request = ();
     type Response = Deck;
     fn path(&self) -> Cow<'static, str> {
-        Cow::Owned(paths::get_deck_route(self.0))
+        Cow::Owned(paths::deck_route(self.0))
     }
 }
 
@@ -70,7 +70,7 @@ impl Endpoint for GetDeckProfile {
     type Request = ();
     type Response = DeckProfile;
     fn path(&self) -> Cow<'static, str> {
-        Cow::Owned(paths::get_deck_profile_route(self.0))
+        Cow::Owned(paths::deck_profile_route(self.0))
     }
 }
 
@@ -140,7 +140,7 @@ impl Endpoint for GetDeckTokens {
     type Request = ();
     type Response = Vec<Card>;
     fn path(&self) -> Cow<'static, str> {
-        Cow::Owned(paths::get_deck_tokens_route(self.0))
+        Cow::Owned(paths::deck_tokens_route(self.0))
     }
 }
 
@@ -303,6 +303,6 @@ impl Endpoint for GetSharedDeck {
     type Request = ();
     type Response = HttpSharedDeck;
     fn path(&self) -> Cow<'static, str> {
-        Cow::Owned(paths::get_shared_deck_route(self.0))
+        Cow::Owned(paths::shared_deck_route(self.0))
     }
 }

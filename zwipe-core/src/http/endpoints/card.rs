@@ -86,7 +86,7 @@ impl Endpoint for GetCard {
     type Request = ();
     type Response = Card;
     fn path(&self) -> Cow<'static, str> {
-        Cow::Owned(paths::get_card_route(self.0))
+        Cow::Owned(paths::card_route(self.0))
     }
 }
 
@@ -99,7 +99,7 @@ impl Endpoint for GetPrintings {
     type Request = ();
     type Response = Vec<Card>;
     fn path(&self) -> Cow<'static, str> {
-        Cow::Owned(paths::get_printings_route(self.0))
+        Cow::Owned(paths::printings_route(self.0))
     }
 }
 
