@@ -366,7 +366,7 @@ The typed client for the backend, depending on zwipe-core and reqwest and nothin
 
 ```rust
 /// Fetches a complete deck with all cards.
-pub async fn get_deck(&self, deck_id: Uuid, session: &Session) -> Result<Deck, ClientError> {
+pub async fn fetch_deck(&self, deck_id: Uuid, session: &Session) -> Result<Deck, ClientError> {
     self.call(GetDeck(deck_id), Some(session)).await
 }
 ```

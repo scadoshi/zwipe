@@ -17,7 +17,7 @@ impl ZwipeClient {
     ///
     /// Returns a [`ClientError`] when the request fails to complete, the server answers with an
     /// error status, or the reply doesn't decode.
-    pub async fn get_commander_maybeboard(
+    pub async fn fetch_commander_maybeboard(
         &self,
         session: &Session,
     ) -> Result<Vec<Card>, ClientError> {

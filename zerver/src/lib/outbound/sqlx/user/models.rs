@@ -26,7 +26,7 @@ impl TryFrom<DatabaseUser> for User {
     type Error = IntoUserError;
 
     fn try_from(value: DatabaseUser) -> Result<Self, Self::Error> {
-        let username = Username::new(value.username)?;
+        let username = Username::from_stored(value.username);
         let email = Email::new(&value.email)?;
         Ok(Self {
             id: value.id,
@@ -38,5 +38,23 @@ impl TryFrom<DatabaseUser> for User {
             pending_email: None,
             pending_email_expires_at: None,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn stored_username_with_a_banned_word_still_loads() {
+        let db = DatabaseUser {
+            id: Uuid::nil(),
+            username: "fuck".to_string(),
+            email: "tester@test.local".to_string(),
+            email_verified_at: None,
+            hints_shown: serde_json::json!({}),
+        };
+        let user = User::try_from(db).unwrap();
+        assert_eq!(&*user.username, "fuck");
     }
 }

@@ -65,7 +65,7 @@ pub fn Home() -> Element {
             return;
         };
         spawn(async move {
-            match client().get_user(&s).await {
+            match client().fetch_user(&s).await {
                 Ok(fresh_user) => {
                     let needs_verification = fresh_user.email_verified_at.is_none();
                     let username = fresh_user.username.clone();
@@ -110,7 +110,7 @@ pub fn Home() -> Element {
             return;
         };
         spawn(async move {
-            match client().get_preferences(&s).await {
+            match client().fetch_preferences(&s).await {
                 Ok(prefs) => {
                     let theme = components::theme_from_preferences(&prefs);
                     app_icon::follow(&theme);

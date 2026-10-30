@@ -127,6 +127,17 @@ mod tests {
     }
 
     #[test]
+    fn deserializes_stored_username_containing_a_banned_word() {
+        let json = serde_json::json!({
+            "id": Uuid::nil(),
+            "username": "fuck",
+            "email": "tester@test.local",
+        });
+        let user: User = serde_json::from_value(json).unwrap();
+        assert_eq!(&*user.username, "fuck");
+    }
+
+    #[test]
     fn pending_expiry_round_trips_when_present() {
         let mut u = user();
         u.pending_email = Some(Email::new("new@test.local").unwrap());

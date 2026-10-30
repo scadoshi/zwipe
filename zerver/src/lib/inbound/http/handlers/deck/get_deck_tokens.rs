@@ -36,7 +36,7 @@ pub async fn get_deck_tokens(
 
     state
         .deck_service
-        .get_deck_tokens(&request)
+        .fetch_deck_tokens(&request)
         .await
         .map_err(ApiError::from)
         .map(|tokens| (StatusCode::OK, Json(tokens)))
