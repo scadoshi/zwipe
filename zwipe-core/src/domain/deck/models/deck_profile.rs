@@ -7,6 +7,23 @@ use crate::domain::card::search_card::card_filter::price_currency::PriceCurrency
 use crate::domain::deck::format::Format;
 use crate::domain::deck::{DeckName, DeckOtherTag, PowerLevel};
 
+/// Highest land target a deck may set. No format plays more than 100 cards.
+pub const MAX_LAND_TARGET: i32 = 100;
+
+/// Whether `target` is a land count a deck may set: 0 through
+/// [`MAX_LAND_TARGET`].
+#[must_use]
+pub fn is_valid_land_target(target: i32) -> bool {
+    (0..=MAX_LAND_TARGET).contains(&target)
+}
+
+/// Whether `target` is a budget a deck may set: a finite amount of zero or
+/// more.
+#[must_use]
+pub fn is_valid_price_target(target: f64) -> bool {
+    target.is_finite() && target >= 0.0
+}
+
 /// Deck metadata without card list.
 #[derive(Debug, Clone, Serialize, PartialEq, Deserialize)]
 pub struct DeckProfile {
@@ -42,11 +59,11 @@ pub struct DeckProfile {
     /// enum. `#[serde(default)]` so older payloads without the field parse empty.
     #[serde(default)]
     pub oracle_tags: Vec<String>,
-    /// User-set land target. `None` falls back to the format-derived heuristic
-    /// ([`Format::default_land_target`]).
+    /// User-set land target, 0 through [`MAX_LAND_TARGET`] on new input. `None`
+    /// falls back to the format-derived heuristic ([`Format::default_land_target`]).
     pub land_target: Option<i32>,
-    /// User-set deck price target (budget), in `price_target_currency`. `None`
-    /// means no budget is set (no price alerts).
+    /// User-set deck price target (budget), in `price_target_currency`, never
+    /// negative on new input. `None` means no budget is set (no price alerts).
     pub price_target: Option<f64>,
     /// Currency for `price_target`. `None` falls back to USD.
     pub price_target_currency: Option<PriceCurrency>,

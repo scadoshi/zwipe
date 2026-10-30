@@ -14,7 +14,7 @@ use axum::http::StatusCode;
 use zwipe_core::domain::deck::DeckCard;
 use zwipe_core::domain::deck::requests::update_deck_card::{InvalidUpdateDeckCard, UpdateDeckCard};
 use zwipe_core::http::contracts::deck_card::HttpPatchDeckCard;
-use zwipe_core::http::helpers::Opdate;
+use zwipe_core::http::helpers::Patch;
 
 use crate::domain::deck::models::deck_card::update_deck_card::UpdateDeckCardError;
 use crate::inbound::http::handlers::metrics::check_completion;
@@ -36,6 +36,9 @@ impl From<UpdateDeckCardError> for ApiError {
             }
             UpdateDeckCardError::MvpNotMainboard => {
                 Self::UnprocessableEntity("Only cards in the deck can be MVPs".to_string())
+            }
+            UpdateDeckCardError::PrintingMismatch => {
+                Self::UnprocessableEntity(UpdateDeckCardError::PrintingMismatch.to_string())
             }
             UpdateDeckCardError::Database(e) | UpdateDeckCardError::DeckCardFromDb(e) => e.to_500(),
             UpdateDeckCardError::GetDeckProfileError(e) => ApiError::from(e),
@@ -73,11 +76,11 @@ impl From<InvalidUpdateDeckCard> for ApiError {
 /// # Errors
 ///
 /// Returns 422 naming `name` when the field is an explicit `null`.
-pub fn reject_null<T>(field: Opdate<T>, name: &str) -> Result<Option<T>, ApiError> {
+pub fn reject_null<T>(field: Patch<T>, name: &str) -> Result<Option<T>, ApiError> {
     match field {
-        Opdate::Unchanged => Ok(None),
-        Opdate::Set(Some(value)) => Ok(Some(value)),
-        Opdate::Set(None) => Err(ApiError::UnprocessableEntity(format!(
+        Patch::Unchanged => Ok(None),
+        Patch::Set(Some(value)) => Ok(Some(value)),
+        Patch::Set(None) => Err(ApiError::UnprocessableEntity(format!(
             "{name} cannot be null"
         ))),
     }
@@ -88,7 +91,7 @@ pub fn reject_null<T>(field: Opdate<T>, name: &str) -> Result<Option<T>, ApiErro
 /// # Errors
 ///
 /// Returns 422 for a `null` field, an invalid id, quantity or board, a card not
-/// in the deck, or a broken MVP rule, 404 when the deck isn't the caller's, and
+/// in the deck, a printing of another card, or a broken MVP rule, 404 when the deck isn't the caller's, and
 /// 500 on a database failure.
 pub async fn patch_deck_card(
     user: AuthenticatedUser,

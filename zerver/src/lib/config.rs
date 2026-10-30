@@ -16,7 +16,7 @@ const JWT_SECRET_KEY: &str = "JWT_SECRET";
 /// Environment variable key for the PostgreSQL connection URL.
 const DATABASE_URL_KEY: &str = "DATABASE_URL";
 
-/// Environment variable key for the server bind address (e.g., "0.0.0.0:8080").
+/// Environment variable key for the server bind address (e.g., "127.0.0.1:3000").
 const BIND_ADDRESS_KEY: &str = "BIND_ADDRESS";
 
 /// Environment variable key for the log level (e.g., "debug", "info", "warn").
@@ -82,7 +82,10 @@ pub struct Config {
     /// PostgreSQL connection URL (e.g., `"postgres://user:pass@host/db"`).
     pub database_url: String,
 
-    /// Address to bind the HTTP server to (e.g., "0.0.0.0:8080").
+    /// Address to bind the HTTP server to (e.g., "127.0.0.1:3000"). Keep it on
+    /// loopback in production: the rate limiter trusts `CF-Connecting-IP` only
+    /// because `cloudflared` is the one thing that can connect (see
+    /// [`CfConnectingIpKeyExtractor`](crate::inbound::http::middleware::CfConnectingIpKeyExtractor)).
     pub bind_address: String,
 
     /// Tracing filter directive(s). Accepts a bare level (`"info"`) or

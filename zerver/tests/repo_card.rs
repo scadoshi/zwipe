@@ -398,7 +398,7 @@ async fn mvp_card_roles_are_mainboard_stars_deduped(pool: sqlx::PgPool) {
 
     let repo = Postgres { pool: pool.clone() };
     let request = GetDeckProfile { user_id, deck_id };
-    let mut roles = repo.get_mvp_card_roles(&request).await.unwrap();
+    let mut roles = repo.fetch_mvp_card_roles(&request).await.unwrap();
     roles.sort();
 
     // "ramp" is on both mainboard MVPs but must appear once; "wipe" sits on an
@@ -492,6 +492,34 @@ async fn oou_sets_overlay_syncs_table_to_const(pool: sqlx::PgPool) {
     let mut expected: Vec<String> = universe::all_set_codes().map(str::to_string).collect();
     expected.sort();
     assert_eq!(in_db, expected, "oou_sets must mirror the const exactly");
+}
+
+/// The nightly refresh must not wait on readers. A plain `REFRESH MATERIALIZED
+/// VIEW` needs an ACCESS EXCLUSIVE lock, so it queues behind any open read of
+/// `latest_cards` and every later read queues behind it. The concurrent refresh
+/// only conflicts with writers.
+#[sqlx::test]
+async fn refresh_latest_cards_runs_while_a_reader_holds_the_view(pool: sqlx::PgPool) {
+    let repo = Postgres { pool: pool.clone() };
+    seed_cards(&pool, &[card("Lightning Bolt")]).await;
+
+    let mut reader = pool.begin().await.unwrap();
+    let _: i64 = sqlx::query_scalar("SELECT count(*) FROM latest_cards")
+        .fetch_one(&mut *reader)
+        .await
+        .unwrap();
+
+    let refreshed = tokio::time::timeout(
+        std::time::Duration::from_secs(5),
+        repo.refresh_latest_cards(),
+    )
+    .await;
+    reader.rollback().await.unwrap();
+    assert!(
+        refreshed.is_ok(),
+        "refresh blocked behind an open read of latest_cards"
+    );
+    refreshed.unwrap().unwrap();
 }
 
 /// The in-universe ORDER BY tiebreaker: with two same-day printings of one

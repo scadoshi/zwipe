@@ -209,13 +209,14 @@ where
     ) -> Result<User, AuthenticateUserError> {
         let (user, password_hash) = self
             .auth_repo
-            .get_user_with_password_hash(request)
+            .fetch_user_with_password_hash(request)
             .await?
             .into_parts();
 
         let verified = password_hash
-            .verify(request.password.read())
-            .map_err(|e| AuthenticateUserError::FailedToVerify(e.into()))?;
+            .verify_blocking(&request.password)
+            .await
+            .map_err(AuthenticateUserError::FailedToVerify)?;
 
         if !verified {
             return Err(AuthenticateUserError::InvalidPassword);
@@ -305,7 +306,7 @@ where
     ) -> Result<Session, AuthenticateUserError> {
         let user_with_password_hash: UserWithPasswordHash = match self
             .auth_repo
-            .get_user_with_password_hash(request)
+            .fetch_user_with_password_hash(request)
             .await
         {
             Ok(user) => user,
@@ -315,7 +316,9 @@ where
                 // measurably faster to reject (prevents username/email
                 // enumeration via response timing). Result is discarded; it
                 // never matches.
-                let _ = TIMING_EQUALIZER_HASH.verify(request.password.read());
+                let _ = TIMING_EQUALIZER_HASH
+                    .verify_blocking(&request.password)
+                    .await;
                 tracing::warn!(event = "login_failure", reason = "user_not_found", identifier = %request.identifier);
                 return Err(AuthenticateUserError::UserNotFound);
             }
@@ -340,8 +343,9 @@ where
         let (user, password_hash) = user_with_password_hash.into_parts();
 
         let verified = password_hash
-            .verify(request.password.read())
-            .map_err(|e| AuthenticateUserError::FailedToVerify(e.into()))?;
+            .verify_blocking(&request.password)
+            .await
+            .map_err(AuthenticateUserError::FailedToVerify)?;
 
         if !verified {
             if self.lockout.record_failure(user.id, client_ip) {
@@ -356,7 +360,7 @@ where
 
         let preferences = self
             .user_repo
-            .get_preferences(user.id)
+            .fetch_preferences(user.id)
             .await
             .unwrap_or_default();
 
@@ -378,10 +382,10 @@ where
     }
 
     async fn create_session(&self, request: &CreateSession) -> Result<Session, CreateSessionError> {
-        let user = self.user_repo.get_user(request.user_id).await?;
+        let user = self.user_repo.fetch_user(request.user_id).await?;
         let preferences = self
             .user_repo
-            .get_preferences(request.user_id)
+            .fetch_preferences(request.user_id)
             .await
             .unwrap_or_default();
 
@@ -411,10 +415,10 @@ where
         &self,
         request: &RefreshSession,
     ) -> Result<Session, RefreshSessionError> {
-        let user = self.user_repo.get_user(request.user_id).await?;
+        let user = self.user_repo.fetch_user(request.user_id).await?;
         let preferences = self
             .user_repo
-            .get_preferences(request.user_id)
+            .fetch_preferences(request.user_id)
             .await
             .unwrap_or_default();
 
@@ -494,7 +498,7 @@ where
         // mails, and it mails off the request path.
         let taken = self
             .auth_repo
-            .get_user_id_by_email(request.email.as_ref())
+            .fetch_user_id_by_email(request.email.as_ref())
             .await
             .map_err(ChangeEmailError::Database)?
             .is_some();
@@ -601,7 +605,11 @@ where
         request: &RequestPasswordReset,
     ) -> Result<(), RequestPasswordResetError> {
         // Silently return Ok; never reveal whether an email is registered
-        let Some(user_id) = self.auth_repo.get_user_id_by_email(&request.email).await? else {
+        let Some(user_id) = self
+            .auth_repo
+            .fetch_user_id_by_email(&request.email)
+            .await?
+        else {
             tracing::debug!(event = "password_reset_unknown_email");
             return Ok(());
         };

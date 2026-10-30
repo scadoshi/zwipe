@@ -51,7 +51,7 @@ impl TryFrom<DatabaseUserPreferences> for UserPreferences {
 impl UserRepository for Postgres {
     // == get ==
 
-    async fn get_user(&self, user_id: Uuid) -> Result<User, GetUserError> {
+    async fn fetch_user(&self, user_id: Uuid) -> Result<User, GetUserError> {
         let database_user = query_as!(
             DatabaseUser,
             "SELECT id, username, email, email_verified_at, hints_shown FROM users WHERE id = $1",
@@ -60,19 +60,16 @@ impl UserRepository for Postgres {
         .fetch_one(&self.pool)
         .await?;
 
-        let mut user: User = database_user.try_into()?;
+        let mut user = User::from(database_user);
 
-        // Lenient like `hints_shown`: an address that no longer validates
-        // reads as no pending change.
         if let Some(row) = query!(
             "SELECT new_email, expires_at FROM email_change_requests WHERE user_id = $1 AND expires_at > NOW()",
             user_id
         )
         .fetch_optional(&self.pool)
         .await?
-            && let Ok(email) = Email::new(&row.new_email)
         {
-            user.pending_email = Some(email);
+            user.pending_email = Some(Email::from_stored(row.new_email));
             user.pending_email_expires_at = Some(row.expires_at);
         }
 
@@ -98,18 +95,15 @@ impl UserRepository for Postgres {
             other => MarkHintShownError::Database(other.into()),
         })?;
 
-        let user: User = database_user.try_into().map_err(
-            |e: crate::outbound::sqlx::user::error::IntoUserError| {
-                MarkHintShownError::UserFromDb(anyhow::anyhow!(e))
-            },
-        )?;
-
-        Ok(user)
+        Ok(User::from(database_user))
     }
 
     // == preferences ==
 
-    async fn get_preferences(&self, user_id: Uuid) -> Result<UserPreferences, GetPreferencesError> {
+    async fn fetch_preferences(
+        &self,
+        user_id: Uuid,
+    ) -> Result<UserPreferences, GetPreferencesError> {
         let result = query_as!(
             DatabaseUserPreferences,
             "SELECT user_id, theme, dark_mode, exclude_universes_beyond, universes_beyond_exceptions, \

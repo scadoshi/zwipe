@@ -12,7 +12,7 @@ impl ZwipeClient {
     ///
     /// Returns a [`ClientError`] when the request fails to complete, the server answers with an
     /// error status, or the reply doesn't decode.
-    pub async fn get_card_roles(&self) -> Result<Vec<CardRoleView>, ClientError> {
+    pub async fn fetch_card_roles(&self) -> Result<Vec<CardRoleView>, ClientError> {
         self.call(GetCardRoles, None).await
     }
 }

@@ -28,7 +28,7 @@ pub async fn get_preferences(
 ) -> Result<(StatusCode, Json<UserPreferences>), ApiError> {
     state
         .user_service
-        .get_preferences(user.id)
+        .fetch_preferences(user.id)
         .await
         .map(|prefs| (StatusCode::OK, Json(prefs)))
         .map_err(ApiError::from)

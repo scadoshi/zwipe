@@ -61,6 +61,9 @@ impl From<InvalidCreateDeckProfile> for ApiError {
             InvalidCreateDeckProfile::TooManyOracleTags => {
                 Self::UnprocessableEntity("a deck may have at most 30 oracle tags".to_string())
             }
+            e @ (InvalidCreateDeckProfile::LandTarget | InvalidCreateDeckProfile::PriceTarget) => {
+                Self::UnprocessableEntity(e.to_string())
+            }
         }
     }
 }
@@ -76,7 +79,10 @@ pub async fn create_deck_profile(
     State(state): State<AppState>,
     Json(body): Json<HttpCreateDeckProfile>,
 ) -> Result<(StatusCode, Json<DeckProfile>), ApiError> {
-    let db_user = state.user_service.get_user(&GetUser::from(user.id)).await?;
+    let db_user = state
+        .user_service
+        .fetch_user(&GetUser::from(user.id))
+        .await?;
     let email_verified = db_user.email_verified_at.is_some();
     let request = CreateDeckProfile::builder(body.name, user.id, email_verified)
         .commander_id(body.commander_id)

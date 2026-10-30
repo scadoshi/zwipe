@@ -37,7 +37,7 @@
 //!
 //! // Later: verify during authentication
 //! let provided = Password::new(user_input)?;
-//! let stored_hash = user_repo.get_password_hash(&user_id).await?;
+//! let stored_hash = user_repo.fetch_password_hash(&user_id).await?;
 //! stored_hash.verify(&provided)?; // Returns Ok(()) if matches
 //! ```
 
@@ -46,6 +46,7 @@ use std::fmt::Display;
 use argon2::password_hash::rand_core::OsRng;
 use argon2::password_hash::{self, SaltString};
 use argon2::{Argon2, PasswordHasher, PasswordVerifier};
+use zwipe_core::domain::auth::models::secret::Secret;
 use zwipe_core::domain::auth::password::InvalidPassword;
 
 /// A validated password that meets all security policy requirements.
@@ -199,7 +200,7 @@ impl Display for Password {
 /// user_repo.create_user(username, email, hashed).await?;
 ///
 /// // During authentication
-/// let stored_hash: HashedPassword = user_repo.get_password_hash(&user_id).await?;
+/// let stored_hash: HashedPassword = user_repo.fetch_password_hash(&user_id).await?;
 /// let provided = Password::new(user_input)?;
 ///
 /// if stored_hash.verify(provided.read())? {
@@ -281,7 +282,7 @@ impl HashedPassword {
     /// # Example
     ///
     /// ```rust,ignore
-    /// let stored_hash: HashedPassword = user_repo.get_password_hash(&user_id).await?;
+    /// let stored_hash: HashedPassword = user_repo.fetch_password_hash(&user_id).await?;
     /// let user_input = "SecurePass123!";
     ///
     /// match stored_hash.verify(user_input)? {
@@ -302,6 +303,23 @@ impl HashedPassword {
             Err(password_hash::Error::Password) => Ok(false),
             Err(e) => Err(e),
         }
+    }
+}
+
+impl HashedPassword {
+    /// [`verify`](Self::verify) on tokio's blocking pool. Argon2 holds a core
+    /// for tens of milliseconds, which on an async worker stalls every task
+    /// queued behind it.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when [`verify`](Self::verify) does, or when the
+    /// blocking task panics or is cancelled.
+    pub async fn verify_blocking(&self, password: &Secret) -> anyhow::Result<bool> {
+        let hash = self.clone();
+        let password = password.clone();
+        let verified = tokio::task::spawn_blocking(move || hash.verify(password.read())).await??;
+        Ok(verified)
     }
 }
 

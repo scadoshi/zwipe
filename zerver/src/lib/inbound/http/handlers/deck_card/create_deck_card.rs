@@ -19,6 +19,9 @@ impl From<CreateDeckCardError> for ApiError {
             CreateDeckCardError::Duplicate => {
                 Self::Conflict("card and deck combination already exist".to_string())
             }
+            CreateDeckCardError::UnknownCard => {
+                Self::UnprocessableEntity(CreateDeckCardError::UnknownCard.to_string())
+            }
             CreateDeckCardError::IsCommander => {
                 Self::UnprocessableEntity(CreateDeckCardError::IsCommander.to_string())
             }
@@ -62,7 +65,7 @@ impl From<InvalidCreateDeckCard> for ApiError {
 ///
 /// # Errors
 ///
-/// Returns 422 for an invalid id, quantity or board, a commander, or a full
+/// Returns 422 for an invalid id, quantity or board, an unknown card, a commander, or a full
 /// deck, 409 when the card is already in it, 404 when the deck isn't the
 /// caller's, and 500 on a database failure.
 pub async fn create_deck_card(
@@ -71,7 +74,10 @@ pub async fn create_deck_card(
     Path(deck_id): Path<String>,
     Json(body): Json<HttpCreateDeckCard>,
 ) -> Result<(StatusCode, Json<DeckCard>), ApiError> {
-    let db_user = state.user_service.get_user(&GetUser::from(user.id)).await?;
+    let db_user = state
+        .user_service
+        .fetch_user(&GetUser::from(user.id))
+        .await?;
     let email_verified = db_user.email_verified_at.is_some();
     let board = body
         .board

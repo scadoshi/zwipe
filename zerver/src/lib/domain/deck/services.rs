@@ -104,7 +104,7 @@ where
         let ids: ScryfallDataIds = counts.iter().map(|c| c.scryfall_data_id).collect();
         let mut cards: HashMap<Uuid, Card> = self
             .card_repo
-            .get_cards(&ids)
+            .fetch_cards(&ids)
             .await
             .map_err(|e| CommanderSuggestionsError::Database(e.into()))?
             .into_iter()
@@ -133,55 +133,61 @@ where
         &self,
         request: &CreateDeckProfile,
     ) -> Result<DeckProfile, CreateDeckProfileError> {
-        let deck_count = self
-            .deck_repo
-            .count_decks_by_user(request.user_id)
-            .await
-            .map_err(CreateDeckProfileError::Database)?;
         let deck_limit = if request.email_verified {
             MAX_DECKS_PER_USER
         } else {
             UNVERIFIED_MAX_DECKS_PER_USER
         };
-        if deck_count >= deck_limit {
-            return Err(if request.email_verified {
-                CreateDeckProfileError::LimitReached
-            } else {
-                CreateDeckProfileError::UnverifiedLimitReached
-            });
-        }
-        self.deck_repo.create_deck_profile(request).await
+        self.deck_repo
+            .create_deck_profile(request, deck_limit)
+            .await
     }
 
     async fn create_deck_card(
         &self,
         request: &CreateDeckCard,
     ) -> Result<DeckCard, CreateDeckCardError> {
-        let deck_profile = self.get_deck_profile(&request.into()).await?;
+        let deck_profile = self.fetch_deck_profile(&request.into()).await?;
 
-        // Resolve command zone scryfall_data_ids to oracle_ids for comparison
-        let cz_ids: ScryfallDataIds = [
+        // One batch fetch resolves the card's own oracle_id and the command
+        // zone's. The client's oracle_id is ignored: trusting it would let a
+        // forged one slip the commander or a second singleton past the checks.
+        let command_zone = [
             deck_profile.commander_id,
             deck_profile.partner_commander_id,
             deck_profile.background_id,
             deck_profile.signature_spell_id,
-        ]
-        .into_iter()
-        .flatten()
-        .collect();
-        if !cz_ids.is_empty() {
-            let cz_oracle_ids: std::collections::HashSet<Uuid> = self
-                .card_repo
-                .get_multiple_scryfall_data(&cz_ids)
-                .await
-                .map_err(|e| CreateDeckCardError::Database(e.into()))?
-                .into_iter()
-                .filter_map(|sd| sd.oracle_id)
-                .collect();
-            if cz_oracle_ids.contains(&request.oracle_id) {
-                return Err(CreateDeckCardError::IsCommander);
-            }
+        ];
+        let ids: ScryfallDataIds = command_zone
+            .into_iter()
+            .flatten()
+            .chain([request.scryfall_data_id])
+            .collect();
+        let printings = self
+            .card_repo
+            .fetch_multiple_scryfall_data(&ids)
+            .await
+            .map_err(|e| CreateDeckCardError::Database(e.into()))?;
+        let oracle_of = |id: Uuid| {
+            printings
+                .iter()
+                .find(|sd| sd.id == id)
+                .and_then(|sd| sd.oracle_id)
+        };
+        let oracle_id =
+            oracle_of(request.scryfall_data_id).ok_or(CreateDeckCardError::UnknownCard)?;
+        if command_zone
+            .into_iter()
+            .flatten()
+            .filter_map(oracle_of)
+            .any(|cz| cz == oracle_id)
+        {
+            return Err(CreateDeckCardError::IsCommander);
         }
+        let request = CreateDeckCard {
+            oracle_id,
+            ..request.clone()
+        };
         // The limit VALUE is policy and stays here; the count + check runs
         // inside the repo's transaction (under the deck row lock) so two
         // concurrent adds can't both pass the check.
@@ -190,33 +196,33 @@ where
         } else {
             UNVERIFIED_MAX_CARDS_PER_DECK
         };
-        self.deck_repo.create_deck_card(request, card_limit).await
+        self.deck_repo.create_deck_card(&request, card_limit).await
     }
 
     // == get ==
-    async fn get_deck_profile(
+    async fn fetch_deck_profile(
         &self,
         request: &GetDeckProfile,
     ) -> Result<DeckProfile, GetDeckProfileError> {
-        let deck_profile = self.deck_repo.get_deck_profile(request).await?;
+        let deck_profile = self.deck_repo.fetch_deck_profile(request).await?;
         if request.user_id != deck_profile.user_id {
             return Err(GetDeckProfileError::Forbidden);
         }
         Ok(deck_profile)
     }
 
-    async fn get_deck_profiles(
+    async fn fetch_deck_profiles(
         &self,
         request: &GetDeckProfiles,
     ) -> Result<Vec<DeckProfile>, GetDeckProfileError> {
-        self.deck_repo.get_deck_profiles(request).await
+        self.deck_repo.fetch_deck_profiles(request).await
     }
 
-    async fn get_deck(&self, request: &GetDeckProfile) -> Result<Deck, GetDeckError> {
-        let deck_profile = self.deck_repo.get_deck_profile(request).await?;
-        let deck_cards = self.deck_repo.get_deck_cards(request).await?;
+    async fn fetch_deck(&self, request: &GetDeckProfile) -> Result<Deck, GetDeckError> {
+        let deck_profile = self.deck_repo.fetch_deck_profile(request).await?;
+        let deck_cards = self.deck_repo.fetch_deck_cards(request).await?;
         let scryfall_data_ids = ScryfallDataIds::from(deck_cards.as_slice());
-        let cards = self.card_repo.get_cards(&scryfall_data_ids).await?;
+        let cards = self.card_repo.fetch_cards(&scryfall_data_ids).await?;
 
         let mut deck_card_map: HashMap<Uuid, DeckCard> = deck_cards
             .into_iter()
@@ -248,7 +254,7 @@ where
             HashMap::new()
         } else {
             self.card_repo
-                .get_cards(&cz_ids)
+                .fetch_cards(&cz_ids)
                 .await
                 .unwrap_or_default()
                 .into_iter()
@@ -297,7 +303,7 @@ where
         request: &GetDeckProfile,
         filter: &CardQuery,
     ) -> Result<DeckCardServe, SearchDeckCardsError> {
-        let deck_profile = self.deck_repo.get_deck_profile(request).await?;
+        let deck_profile = self.deck_repo.fetch_deck_profile(request).await?;
         if request.user_id != deck_profile.user_id {
             return Err(GetDeckProfileError::Forbidden.into());
         }
@@ -314,7 +320,7 @@ where
         // importers' slot exclusion).
         let deck_cards = self
             .deck_repo
-            .get_deck_cards(request)
+            .fetch_deck_cards(request)
             .await
             .map_err(|e| SearchDeckCardsError::Database(e.into()))?;
         let mut exclude_oracle_ids: std::collections::HashSet<Uuid> =
@@ -332,7 +338,7 @@ where
         if !slot_scryfall_ids.is_empty() {
             exclude_oracle_ids.extend(
                 self.card_repo
-                    .get_multiple_scryfall_data(&slot_scryfall_ids)
+                    .fetch_multiple_scryfall_data(&slot_scryfall_ids)
                     .await
                     .map_err(|e| SearchDeckCardsError::Database(e.into()))?
                     .into_iter()
@@ -405,7 +411,7 @@ where
         // steering rather than an error response.
         let mvp_card_roles = self
             .deck_repo
-            .get_mvp_card_roles(request)
+            .fetch_mvp_card_roles(request)
             .await
             .unwrap_or_default();
 
@@ -414,7 +420,7 @@ where
         // degrades to serving everything rather than failing the search.
         let (exclude_universes_beyond, universes_beyond_exception_set_names) = self
             .card_repo
-            .get_universes_beyond_preferences(request.user_id)
+            .fetch_universes_beyond_preferences(request.user_id)
             .await
             .unwrap_or_default();
 
@@ -478,11 +484,11 @@ where
         })
     }
 
-    async fn get_deck_tokens(
+    async fn fetch_deck_tokens(
         &self,
         request: &GetDeckProfile,
     ) -> Result<Vec<Card>, GetDeckTokensError> {
-        let deck = self.get_deck(request).await?;
+        let deck = self.fetch_deck(request).await?;
 
         let token_ids: ScryfallDataIds = deck
             .entries
@@ -499,7 +505,7 @@ where
             return Ok(Vec::new());
         }
 
-        let tokens = self.card_repo.get_cards(&token_ids).await?;
+        let tokens = self.card_repo.fetch_cards(&token_ids).await?;
         Ok(tokens)
     }
 
@@ -509,7 +515,7 @@ where
         request: &UpdateDeckProfile,
     ) -> Result<DeckProfile, UpdateDeckProfileError> {
         let get_deck = GetDeckProfile::from(request);
-        let _deck_profile = self.get_deck_profile(&get_deck).await?;
+        let _deck_profile = self.fetch_deck_profile(&get_deck).await?;
         self.deck_repo.update_deck_profile(request).await
     }
 
@@ -517,7 +523,7 @@ where
         &self,
         request: &UpdateDeckCard,
     ) -> Result<DeckCard, UpdateDeckCardError> {
-        let _deck_profile = self.get_deck_profile(&request.into()).await?;
+        let _deck_profile = self.fetch_deck_profile(&request.into()).await?;
         self.deck_repo.update_deck_card(request).await
     }
 
@@ -527,7 +533,7 @@ where
     }
 
     async fn delete_deck_card(&self, request: &DeleteDeckCard) -> Result<(), DeleteDeckCardError> {
-        let _deck_profile = self.get_deck_profile(&request.into()).await?;
+        let _deck_profile = self.fetch_deck_profile(&request.into()).await?;
         self.deck_repo.delete_deck_card(request).await
     }
 
@@ -546,17 +552,17 @@ where
         self.deck_repo.unskip_deck_card(request).await
     }
 
-    async fn get_commander_maybeboard(
+    async fn fetch_commander_maybeboard(
         &self,
         user_id: Uuid,
     ) -> Result<Vec<Card>, CommanderMaybeboardError> {
         let oracle_ids = self
             .deck_repo
-            .get_commander_maybeboard_oracle_ids(user_id)
+            .fetch_commander_maybeboard_oracle_ids(user_id)
             .await?;
         let cards = self
             .card_repo
-            .get_latest_cards_by_oracle_ids(&oracle_ids)
+            .fetch_latest_cards_by_oracle_ids(&oracle_ids)
             .await
             .map_err(|e| CommanderMaybeboardError::Database(e.into()))?;
         // Re-impose save order (newest first): ANY($1) hydration is
@@ -678,7 +684,7 @@ where
             .collect();
         exclude_oracle_ids.extend(
             self.deck_repo
-                .get_commander_maybeboard_oracle_ids(user_id)
+                .fetch_commander_maybeboard_oracle_ids(user_id)
                 .await
                 .map_err(|e| CommanderSuggestionsError::Database(e.into()))?,
         );
@@ -695,7 +701,7 @@ where
         let scored_oracle_ids: Vec<Uuid> = scored.iter().map(|s| s.oracle_id).collect();
         let mut cards_by_oracle: HashMap<Uuid, Card> = self
             .card_repo
-            .get_latest_cards_by_oracle_ids(&scored_oracle_ids)
+            .fetch_latest_cards_by_oracle_ids(&scored_oracle_ids)
             .await
             .map_err(|e| CommanderSuggestionsError::Database(e.into()))?
             .into_iter()
@@ -748,7 +754,7 @@ where
             HashMap::new()
         } else {
             self.card_repo
-                .get_latest_cards_by_oracle_ids(&oracle_ids)
+                .fetch_latest_cards_by_oracle_ids(&oracle_ids)
                 .await
                 .map_err(|e| CommanderSuggestionsError::Database(e.into()))?
                 .into_iter()
@@ -808,7 +814,7 @@ where
     ) -> Result<ImportDeckCardsResult, ImportDeckCardsError> {
         // Auth check
         let get_deck = GetDeckProfile::new(request.user_id, request.deck_id);
-        let deck_profile = self.get_deck_profile(&get_deck).await?;
+        let deck_profile = self.fetch_deck_profile(&get_deck).await?;
         // Collect unique lowercased card names
         let names: Vec<String> = request
             .lines
@@ -856,7 +862,7 @@ where
                 std::collections::HashSet::new()
             } else {
                 self.card_repo
-                    .get_multiple_scryfall_data(&additional_scryfall_ids)
+                    .fetch_multiple_scryfall_data(&additional_scryfall_ids)
                     .await
                     .map_err(|e| ImportDeckCardsError::Database(e.into()))?
                     .into_iter()
@@ -866,7 +872,7 @@ where
 
         // Classify lines, deduplicating by oracle_id (summing quantities).
         // Tuple: (scryfall_id, oracle_id, quantity, name, is_basic_land, board)
-        let mut unresolved: Vec<UnresolvedCard> = Vec::new();
+        let mut unresolved: Vec<UnresolvedCard> = request.rejected.clone();
         let mut insert_map: HashMap<Uuid, (Uuid, Uuid, i32, String, bool, String)> = HashMap::new();
 
         for line in &request.lines {
@@ -896,19 +902,23 @@ where
                 }
                 let is_basic_land = card.scryfall_data.is_basic_land();
                 let board = line.board.display_name().to_string();
-                insert_map
-                    .entry(oracle_id)
-                    .and_modify(|(_, _, qty, _, _, _)| *qty += line.quantity)
-                    .or_insert_with(|| {
-                        (
-                            scryfall_id,
-                            oracle_id,
-                            line.quantity,
-                            card.scryfall_data.name.clone(),
-                            is_basic_land,
-                            board,
-                        )
-                    });
+                let (_, _, qty, _, _, _) = insert_map.entry(oracle_id).or_insert_with(|| {
+                    (
+                        scryfall_id,
+                        oracle_id,
+                        0,
+                        card.scryfall_data.name.clone(),
+                        is_basic_land,
+                        board,
+                    )
+                });
+                match qty.checked_add(line.quantity) {
+                    Some(sum) => *qty = sum,
+                    None => unresolved.push(UnresolvedCard {
+                        name: line.card_name.clone(),
+                        reason: "quantity too large".to_string(),
+                    }),
+                }
             } else {
                 unresolved.push(UnresolvedCard {
                     name: line.card_name.clone(),
@@ -943,14 +953,16 @@ where
             )
             .await?;
 
-        // Build imported list from insert_map
-        let imported: Vec<ImportedCard> = insert_map
+        // Build imported list from insert_map, sorted by name so the result
+        // doesn't follow HashMap order.
+        let mut imported: Vec<ImportedCard> = insert_map
             .into_values()
             .map(|(_, _, qty, name, _, _)| ImportedCard {
                 name,
                 quantity: qty,
             })
             .collect();
+        imported.sort_by(|a, b| a.name.cmp(&b.name));
 
         Ok(ImportDeckCardsResult {
             imported,
@@ -975,7 +987,7 @@ where
 
         // Auth check
         let get_deck = GetDeckProfile::new(user_id, deck_id);
-        let deck_profile = self.get_deck_profile(&get_deck).await?;
+        let deck_profile = self.fetch_deck_profile(&get_deck).await?;
 
         // Resolve oracle_ids for additional cards (commander, partner,
         // background, signature spell) so imported copies of them are skipped,
@@ -993,7 +1005,7 @@ where
             HashSet::new()
         } else {
             self.card_repo
-                .get_multiple_scryfall_data(&additional_scryfall_ids)
+                .fetch_multiple_scryfall_data(&additional_scryfall_ids)
                 .await
                 .map_err(|e| ImportDeckCardsError::Database(e.into()))?
                 .into_iter()
@@ -1008,7 +1020,7 @@ where
         let all_ids: ScryfallDataIds = cards.iter().map(|c| c.scryfall_id).collect();
         let resolved = self
             .card_repo
-            .get_multiple_scryfall_data(&all_ids)
+            .fetch_multiple_scryfall_data(&all_ids)
             .await
             .map_err(|e| ImportDeckCardsError::Database(e.into()))?;
         let oracle_by_id: HashMap<Uuid, Uuid> = resolved
@@ -1074,7 +1086,13 @@ where
             let entry = insert_map
                 .entry(oracle_id)
                 .or_insert_with(|| (scryfall_id, 0, card.name.clone()));
-            entry.1 += card.quantity;
+            match entry.1.checked_add(card.quantity) {
+                Some(sum) => entry.1 = sum,
+                None => unresolved.push(UnresolvedCard {
+                    name: card.name.clone(),
+                    reason: "quantity too large".to_string(),
+                }),
+            }
         }
 
         let board_name = board.display_name().to_string();
@@ -1097,13 +1115,14 @@ where
             .apply_import_batch(user_id, deck_id, mode, &batch, card_limit, email_verified)
             .await?;
 
-        let imported: Vec<ImportedCard> = insert_map
+        let mut imported: Vec<ImportedCard> = insert_map
             .into_values()
             .map(|(_, qty, name)| ImportedCard {
                 name,
                 quantity: qty,
             })
             .collect();
+        imported.sort_by(|a, b| a.name.cmp(&b.name));
 
         Ok(ImportDeckCardsResult {
             imported,
@@ -1113,11 +1132,11 @@ where
 
     // == clone ==
     async fn clone_deck(&self, request: &CloneDeck) -> Result<Uuid, CloneDeckError> {
-        // 1. Verify the source exists and is owned by the caller. get_deck_profile
+        // 1. Verify the source exists and is owned by the caller. fetch_deck_profile
         //    on the repo already enforces ownership (returns Forbidden on mismatch)
         //    and existence (returns NotFound).
         let get_req = GetDeckProfile::new(request.user_id, request.source_deck_id);
-        if let Err(e) = self.deck_repo.get_deck_profile(&get_req).await {
+        if let Err(e) = self.deck_repo.fetch_deck_profile(&get_req).await {
             return Err(match e {
                 GetDeckProfileError::NotFound => CloneDeckError::SourceNotFound,
                 GetDeckProfileError::Forbidden => CloneDeckError::Forbidden,
@@ -1125,62 +1144,51 @@ where
             });
         }
 
-        // 2. Enforce the same deck-count limit as create_deck_profile.
-        let deck_count = self
-            .deck_repo
-            .count_decks_by_user(request.user_id)
-            .await
-            .map_err(CloneDeckError::Database)?;
+        // 2. The repo copies in one transaction and enforces the deck-count
+        //    limit there, under the user's row lock.
         let deck_limit = if request.email_verified {
             MAX_DECKS_PER_USER
         } else {
             UNVERIFIED_MAX_DECKS_PER_USER
         };
-        if deck_count >= deck_limit {
-            return Err(if request.email_verified {
-                CloneDeckError::LimitReached
-            } else {
-                CloneDeckError::UnverifiedLimitReached
-            });
-        }
-
-        // 3. Delegate to the repo for the transactional copy.
-        self.deck_repo
-            .clone_deck(request.source_deck_id, &request.new_name, request.user_id)
-            .await
+        self.deck_repo.clone_deck(request, deck_limit).await
     }
 
     // == share ==
     async fn share_deck(&self, request: &GetDeckProfile) -> Result<Uuid, ShareDeckError> {
-        self.get_deck_profile(request).await.map_err(|e| match e {
-            GetDeckProfileError::Forbidden => ShareDeckError::Forbidden,
-            GetDeckProfileError::NotFound => ShareDeckError::NotFound,
-            other => ShareDeckError::Database(other.into()),
-        })?;
+        self.fetch_deck_profile(request)
+            .await
+            .map_err(|e| match e {
+                GetDeckProfileError::Forbidden => ShareDeckError::Forbidden,
+                GetDeckProfileError::NotFound => ShareDeckError::NotFound,
+                other => ShareDeckError::Database(other.into()),
+            })?;
         self.deck_repo.set_share_token(request.deck_id).await
     }
 
     async fn unshare_deck(&self, request: &GetDeckProfile) -> Result<(), ShareDeckError> {
-        self.get_deck_profile(request).await.map_err(|e| match e {
-            GetDeckProfileError::Forbidden => ShareDeckError::Forbidden,
-            GetDeckProfileError::NotFound => ShareDeckError::NotFound,
-            other => ShareDeckError::Database(other.into()),
-        })?;
+        self.fetch_deck_profile(request)
+            .await
+            .map_err(|e| match e {
+                GetDeckProfileError::Forbidden => ShareDeckError::Forbidden,
+                GetDeckProfileError::NotFound => ShareDeckError::NotFound,
+                other => ShareDeckError::Database(other.into()),
+            })?;
         self.deck_repo.clear_share_token(request.deck_id).await
     }
 
-    async fn get_shared_deck(&self, token: Uuid) -> Result<SharedDeck, GetSharedDeckError> {
+    async fn fetch_shared_deck(&self, token: Uuid) -> Result<SharedDeck, GetSharedDeckError> {
         // The token is the capability: resolving it yields the owner's id,
-        // which satisfies the ownership checks along the normal get_deck path.
+        // which satisfies the ownership checks along the normal fetch_deck path.
         let (deck_id, owner_id) = self
             .deck_repo
-            .get_deck_id_by_share_token(token)
+            .fetch_deck_id_by_share_token(token)
             .await
             .map_err(GetSharedDeckError::Database)?
             .ok_or(GetSharedDeckError::NotFound)?;
 
         let request = GetDeckProfile::new(owner_id, deck_id);
-        let deck = self.get_deck(&request).await?;
+        let deck = self.fetch_deck(&request).await?;
 
         let cz_ids: ScryfallDataIds = [
             deck.deck_profile.commander_id,
@@ -1195,7 +1203,7 @@ where
             HashMap::new()
         } else {
             self.card_repo
-                .get_cards(&cz_ids)
+                .fetch_cards(&cz_ids)
                 .await
                 .map_err(|e| GetSharedDeckError::Database(e.into()))?
                 .into_iter()
@@ -1220,7 +1228,7 @@ where
             .signature_spell_id
             .and_then(|id| cz_cards.get(&id).cloned());
 
-        // Tokens the deck's cards produce, same derivation as `get_deck_tokens`,
+        // Tokens the deck's cards produce, same derivation as `fetch_deck_tokens`,
         // so the public shared page matches the app without an authed call.
         let token_ids: ScryfallDataIds = deck
             .entries
@@ -1236,7 +1244,7 @@ where
             Vec::new()
         } else {
             self.card_repo
-                .get_cards(&token_ids)
+                .fetch_cards(&token_ids)
                 .await
                 .map_err(|e| GetSharedDeckError::Database(e.into()))?
         };

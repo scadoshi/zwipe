@@ -15,75 +15,9 @@ use tower_http::set_header::SetResponseHeaderLayer;
 
 use crate::domain::auth::models::access_token::JwtSecret;
 use crate::inbound::http::AppState;
-use crate::inbound::http::handlers::auth::authenticate_user::authenticate_user;
-use crate::inbound::http::handlers::auth::change_email::change_email;
-use crate::inbound::http::handlers::auth::change_password::change_password;
-use crate::inbound::http::handlers::auth::change_username::change_username;
-use crate::inbound::http::handlers::auth::confirm_email_change::confirm_email_change;
-use crate::inbound::http::handlers::auth::delete_user::delete_user;
-use crate::inbound::http::handlers::auth::refresh_session::refresh_session;
-use crate::inbound::http::handlers::auth::register_user::register_user;
-use crate::inbound::http::handlers::auth::request_password_reset::request_password_reset;
-use crate::inbound::http::handlers::auth::resend_verification::resend_verification;
-use crate::inbound::http::handlers::auth::reset_password::reset_password;
-use crate::inbound::http::handlers::auth::revoke_sessions::revoke_sessions;
-use crate::inbound::http::handlers::auth::verify_email::verify_email;
-use crate::inbound::http::handlers::card::featured_flavor::get_featured_flavor;
-use crate::inbound::http::handlers::card::get_artists::get_artists;
-use crate::inbound::http::handlers::card::get_card::get_card;
-use crate::inbound::http::handlers::card::get_card_roles::get_card_roles;
-use crate::inbound::http::handlers::card::get_card_types::get_card_types;
-use crate::inbound::http::handlers::card::get_keyword_reminders::get_keyword_reminders;
-use crate::inbound::http::handlers::card::get_keywords::get_keywords;
-use crate::inbound::http::handlers::card::get_languages::get_languages;
-use crate::inbound::http::handlers::card::get_oracle_tags::get_oracle_tags;
-use crate::inbound::http::handlers::card::get_oracle_words::get_oracle_words;
-use crate::inbound::http::handlers::card::get_printings::get_printings;
-use crate::inbound::http::handlers::card::get_sets::get_sets;
-use crate::inbound::http::handlers::card::get_ub_franchises::get_ub_franchises;
-use crate::inbound::http::handlers::card::search_card::search_cards;
-use crate::inbound::http::handlers::card::search_commanders::search_commanders;
-use crate::inbound::http::handlers::changelog::get_changelog;
-use crate::inbound::http::handlers::client::get_min_client_version;
-use crate::inbound::http::handlers::deck::clear_deck_suppressions::clear_deck_suppressions;
-use crate::inbound::http::handlers::deck::clone_deck::clone_deck;
-use crate::inbound::http::handlers::deck::commander_suggestions::{
-    clear_commander_dismissals, dismiss_commander, get_activity, get_commander_suggestions,
-    get_play_style_summary, undismiss_commander,
+use crate::inbound::http::handlers::{
+    auth, card, changelog, client, deck, deck_card, health, metrics, user,
 };
-use crate::inbound::http::handlers::deck::create_deck_profile::create_deck_profile;
-use crate::inbound::http::handlers::deck::delete_deck::delete_deck;
-use crate::inbound::http::handlers::deck::get_deck::get_deck;
-use crate::inbound::http::handlers::deck::get_deck_profile::get_deck_profile;
-use crate::inbound::http::handlers::deck::get_deck_profiles::get_deck_profiles;
-use crate::inbound::http::handlers::deck::get_deck_tags::get_deck_tags;
-use crate::inbound::http::handlers::deck::get_deck_tokens::get_deck_tokens;
-use crate::inbound::http::handlers::deck::get_shared_deck::get_shared_deck;
-use crate::inbound::http::handlers::deck::import_archidekt::import_archidekt_deck;
-use crate::inbound::http::handlers::deck::search_deck_cards::search_deck_cards;
-use crate::inbound::http::handlers::deck::share_deck::{share_deck, unshare_deck};
-use crate::inbound::http::handlers::deck::skip_deck_card::{skip_deck_card, unskip_deck_card};
-use crate::inbound::http::handlers::deck::update_deck_profile::update_deck_profile;
-use crate::inbound::http::handlers::deck_card::create_deck_card::create_deck_card;
-use crate::inbound::http::handlers::deck_card::delete_deck_card::delete_deck_card;
-use crate::inbound::http::handlers::deck_card::import_deck_cards::import_deck_cards;
-use crate::inbound::http::handlers::deck_card::patch_deck_card::patch_deck_card;
-use crate::inbound::http::handlers::health::{
-    are_server_and_database_running, is_server_running, root,
-};
-use crate::inbound::http::handlers::metrics::get_my_metrics::get_my_metrics;
-use crate::inbound::http::handlers::metrics::get_public_metrics::get_public_metrics;
-use crate::inbound::http::handlers::metrics::record_anonymous_event::record_anonymous_event;
-use crate::inbound::http::handlers::metrics::record_crash::record_crash;
-use crate::inbound::http::handlers::metrics::record_usage::record_usage;
-use crate::inbound::http::handlers::user::commander_maybeboard::{
-    add_commander_maybeboard_card, clear_commander_maybeboard, get_commander_maybeboard,
-    remove_commander_maybeboard_card,
-};
-use crate::inbound::http::handlers::user::get_preferences::get_preferences;
-use crate::inbound::http::handlers::user::get_user::get_user;
-use crate::inbound::http::handlers::user::mark_hint_shown::mark_hint_shown;
-use crate::inbound::http::handlers::user::update_preferences::update_preferences;
 use crate::inbound::http::middleware::{CfConnectingIpKeyExtractor, UserIdKeyExtractor};
 
 /// Largest crash report body accepted, in bytes. A report is about 2 KB of
@@ -345,13 +279,13 @@ pub fn public_routes() -> Router<AppState> {
     );
 
     Router::new()
-        .route("/", get(root))
+        .route("/", get(health::root))
         .nest(
             "/health",
             Router::new()
-                .route("/", get(are_server_and_database_running))
-                .route("/server", get(is_server_running))
-                .route("/database", get(are_server_and_database_running))
+                .route("/", get(health::are_server_and_database_running))
+                .route("/server", get(health::is_server_running))
+                .route("/database", get(health::are_server_and_database_running))
                 .layer(GovernorLayer::new(health_config).error_handler(stable_rate_limit)),
         )
         .nest(
@@ -362,47 +296,47 @@ pub fn public_routes() -> Router<AppState> {
                     Router::new()
                         .route(
                             "/register",
-                            post(register_user).layer(
+                            post(auth::register_user).layer(
                                 GovernorLayer::new(register_config)
                                     .error_handler(stable_rate_limit),
                             ),
                         )
                         .route(
                             "/login",
-                            post(authenticate_user).layer(
+                            post(auth::authenticate_user).layer(
                                 GovernorLayer::new(login_config).error_handler(stable_rate_limit),
                             ),
                         )
                         .route(
                             "/refresh",
-                            post(refresh_session).layer(
+                            post(auth::refresh_session).layer(
                                 GovernorLayer::new(refresh_config).error_handler(stable_rate_limit),
                             ),
                         )
                         .route(
                             "/verify-email",
-                            post(verify_email).layer(
+                            post(auth::verify_email).layer(
                                 GovernorLayer::new(Arc::clone(&verify_reset_config))
                                     .error_handler(stable_rate_limit),
                             ),
                         )
                         .route(
                             "/confirm-email-change",
-                            post(confirm_email_change).layer(
+                            post(auth::confirm_email_change).layer(
                                 GovernorLayer::new(Arc::clone(&verify_reset_config))
                                     .error_handler(stable_rate_limit),
                             ),
                         )
                         .route(
                             "/forgot-password",
-                            post(request_password_reset).layer(
+                            post(auth::request_password_reset).layer(
                                 GovernorLayer::new(forgot_password_config)
                                     .error_handler(stable_rate_limit),
                             ),
                         )
                         .route(
                             "/reset-password",
-                            post(reset_password).layer(
+                            post(auth::reset_password).layer(
                                 GovernorLayer::new(verify_reset_config)
                                     .error_handler(stable_rate_limit),
                             ),
@@ -411,19 +345,19 @@ pub fn public_routes() -> Router<AppState> {
                 .nest(
                     "/card",
                     Router::new()
-                        .route("/{scryfall_data_id}", get(get_card))
-                        .route("/featured-flavor", get(get_featured_flavor))
-                        .route("/{oracle_id}/printings", get(get_printings))
-                        .route("/artists", get(get_artists))
-                        .route("/types", get(get_card_types))
-                        .route("/keywords", get(get_keywords))
-                        .route("/keyword-reminders", get(get_keyword_reminders))
-                        .route("/roles", get(get_card_roles))
-                        .route("/ub-franchises", get(get_ub_franchises))
-                        .route("/oracle-tags", get(get_oracle_tags))
-                        .route("/oracle-words", get(get_oracle_words))
-                        .route("/languages", get(get_languages))
-                        .route("/sets", get(get_sets))
+                        .route("/{scryfall_data_id}", get(card::get_card))
+                        .route("/featured-flavor", get(card::get_featured_flavor))
+                        .route("/{oracle_id}/printings", get(card::get_printings))
+                        .route("/artists", get(card::get_artists))
+                        .route("/types", get(card::get_card_types))
+                        .route("/keywords", get(card::get_keywords))
+                        .route("/keyword-reminders", get(card::get_keyword_reminders))
+                        .route("/roles", get(card::get_card_roles))
+                        .route("/ub-franchises", get(card::get_ub_franchises))
+                        .route("/oracle-tags", get(card::get_oracle_tags))
+                        .route("/oracle-words", get(card::get_oracle_words))
+                        .route("/languages", get(card::get_languages))
+                        .route("/sets", get(card::get_sets))
                         .layer(
                             GovernorLayer::new(public_card_config).error_handler(stable_rate_limit),
                         )
@@ -432,7 +366,7 @@ pub fn public_routes() -> Router<AppState> {
                 .nest(
                     "/marketing",
                     Router::new()
-                        .route("/stats", get(get_public_metrics))
+                        .route("/stats", get(metrics::get_public_metrics))
                         .layer(
                             GovernorLayer::new(public_marketing_config)
                                 .error_handler(stable_rate_limit),
@@ -442,7 +376,7 @@ pub fn public_routes() -> Router<AppState> {
                 .nest(
                     "/client",
                     Router::new()
-                        .route("/min-version", get(get_min_client_version))
+                        .route("/min-version", get(client::get_min_client_version))
                         .layer(
                             GovernorLayer::new(public_client_config)
                                 .error_handler(stable_rate_limit),
@@ -455,7 +389,7 @@ pub fn public_routes() -> Router<AppState> {
                     Router::new()
                         .route(
                             "/changelog",
-                            get(get_changelog).layer(
+                            get(changelog::get_changelog).layer(
                                 GovernorLayer::new(public_changelog_config)
                                     .error_handler(stable_rate_limit),
                             ),
@@ -465,14 +399,14 @@ pub fn public_routes() -> Router<AppState> {
                 .nest(
                     "/metrics",
                     Router::new()
-                        .route("/anonymous", post(record_anonymous_event))
+                        .route("/anonymous", post(metrics::record_anonymous_event))
                         .layer(
                             GovernorLayer::new(anonymous_event_config)
                                 .error_handler(stable_rate_limit),
                         )
                         .merge(
                             Router::new()
-                                .route("/crash", post(record_crash))
+                                .route("/crash", post(metrics::record_crash))
                                 .layer(
                                     GovernorLayer::new(crash_report_config)
                                         .error_handler(stable_rate_limit),
@@ -483,7 +417,7 @@ pub fn public_routes() -> Router<AppState> {
                 .nest(
                     "/share",
                     Router::new()
-                        .route("/deck/{token}", get(get_shared_deck))
+                        .route("/deck/{token}", get(deck::get_shared_deck))
                         .layer(
                             GovernorLayer::new(public_share_config)
                                 .error_handler(stable_rate_limit),
@@ -570,74 +504,77 @@ pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
             Router::new()
                 .nest(
                     "/auth",
-                    Router::new().route("/logout", post(revoke_sessions)).route(
-                        "/resend-verification",
-                        post(resend_verification).layer(
-                            GovernorLayer::new(resend_verification_config)
-                                .error_handler(unauthorized_on_missing_key),
+                    Router::new()
+                        .route("/logout", post(auth::revoke_sessions))
+                        .route(
+                            "/resend-verification",
+                            post(auth::resend_verification).layer(
+                                GovernorLayer::new(resend_verification_config)
+                                    .error_handler(unauthorized_on_missing_key),
+                            ),
                         ),
-                    ),
                 )
                 .nest(
                     "/user",
                     Router::new()
-                        .route("/", get(get_user))
+                        .route("/", get(user::get_user))
                         .route(
                             "/change-password",
-                            patch(change_password).layer(
+                            patch(auth::change_password).layer(
                                 GovernorLayer::new(Arc::clone(&sensitive_config))
                                     .error_handler(unauthorized_on_missing_key),
                             ),
                         )
                         .route(
                             "/change-username",
-                            patch(change_username).layer(
+                            patch(auth::change_username).layer(
                                 GovernorLayer::new(Arc::clone(&sensitive_config))
                                     .error_handler(unauthorized_on_missing_key),
                             ),
                         )
                         .route(
                             "/change-email",
-                            patch(change_email).layer(
+                            patch(auth::change_email).layer(
                                 GovernorLayer::new(Arc::clone(&sensitive_config))
                                     .error_handler(unauthorized_on_missing_key),
                             ),
                         )
                         .route(
                             "/delete-user",
-                            delete(delete_user).layer(
+                            delete(auth::delete_user).layer(
                                 GovernorLayer::new(sensitive_config)
                                     .error_handler(unauthorized_on_missing_key),
                             ),
                         )
                         .route(
                             "/preferences",
-                            get(get_preferences).patch(update_preferences),
+                            get(user::get_preferences).patch(user::update_preferences),
                         )
-                        .route("/hint", patch(mark_hint_shown))
-                        .route("/metrics", get(get_my_metrics))
-                        .route("/activity", get(get_activity))
+                        .route("/hint", patch(user::mark_hint_shown))
+                        .route("/metrics", get(metrics::get_my_metrics))
+                        .route("/activity", get(deck::get_activity))
                         .route(
                             "/commander-maybeboard",
-                            get(get_commander_maybeboard).delete(clear_commander_maybeboard),
+                            get(user::get_commander_maybeboard)
+                                .delete(user::clear_commander_maybeboard),
                         )
                         .route(
                             "/commander-maybeboard/{oracle_id}",
-                            post(add_commander_maybeboard_card)
-                                .delete(remove_commander_maybeboard_card),
+                            post(user::add_commander_maybeboard_card)
+                                .delete(user::remove_commander_maybeboard_card),
                         ),
                 )
                 .nest(
                     "/commander",
                     Router::new()
-                        .route("/suggestions", get(get_commander_suggestions))
+                        .route("/suggestions", get(deck::get_commander_suggestions))
                         .route(
                             "/suggestions/dismissals",
-                            post(dismiss_commander).delete(clear_commander_dismissals),
+                            post(deck::dismiss_commander).delete(deck::clear_commander_dismissals),
                         )
                         .route(
                             "/suggestions/dismissals/{oracle_id}",
-                            delete(undismiss_commander),
+                            delete(deck::undismiss_commander),
                         ),
                 )
                 .nest(
@@ -645,7 +582,7 @@ pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
                     Router::new()
                         .route(
                             "/search",
-                            post(search_cards).layer(
+                            post(card::search_cards).layer(
                                 GovernorLayer::new(Arc::clone(&card_search_config))
                                     .error_handler(unauthorized_on_missing_key),
                             ),
@@ -655,7 +592,7 @@ pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
                         // dedicated serving path.
                         .route(
                             "/search/commanders",
-                            post(search_commanders).layer(
+                            post(card::search_commanders).layer(
                                 GovernorLayer::new(card_search_config)
                                     .error_handler(unauthorized_on_missing_key),
                             ),
@@ -665,7 +602,7 @@ pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
                     "/metrics",
                     Router::new().route(
                         "/usage",
-                        post(record_usage).layer(
+                        post(metrics::record_usage).layer(
                             GovernorLayer::new(metrics_usage_config)
                                 .error_handler(unauthorized_on_missing_key),
                         ),
@@ -674,44 +611,53 @@ pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
                 .nest(
                     "/deck",
                     Router::new()
-                        .route("/", get(get_deck_profiles).post(create_deck_profile))
-                        .route("/tags", get(get_deck_tags))
-                        .route("/playstyle", get(get_play_style_summary))
+                        .route(
+                            "/",
+                            get(deck::get_deck_profiles).post(deck::create_deck_profile),
+                        )
+                        .route("/tags", get(deck::get_deck_tags))
+                        .route("/playstyle", get(deck::get_play_style_summary))
                         // The first spelling, for apps before 1.16.0, until
                         // the client floor passes them.
-                        .route("/play-style", get(get_play_style_summary))
+                        .route("/play-style", get(deck::get_play_style_summary))
                         .route(
                             "/{deck_id}/import/archidekt",
-                            post(import_archidekt_deck).layer(
+                            post(deck::import_archidekt_deck).layer(
                                 GovernorLayer::new(archidekt_import_config)
                                     .error_handler(unauthorized_on_missing_key),
                             ),
                         )
-                        .route("/profile/{deck_id}", get(get_deck_profile))
+                        .route("/profile/{deck_id}", get(deck::get_deck_profile))
                         .route(
                             "/{deck_id}",
-                            get(get_deck).patch(update_deck_profile).delete(delete_deck),
+                            get(deck::get_deck)
+                                .patch(deck::update_deck_profile)
+                                .delete(deck::delete_deck),
                         )
-                        .route("/{deck_id}/clone", post(clone_deck))
-                        .route("/{deck_id}/share", post(share_deck).delete(unshare_deck))
+                        .route("/{deck_id}/clone", post(deck::clone_deck))
+                        .route(
+                            "/{deck_id}/share",
+                            post(deck::share_deck).delete(deck::unshare_deck),
+                        )
                         .route(
                             "/{deck_id}/suppressions",
-                            delete(clear_deck_suppressions).post(skip_deck_card),
+                            delete(deck::clear_deck_suppressions).post(deck::skip_deck_card),
                         )
                         .route(
                             "/{deck_id}/suppressions/{oracle_id}",
-                            delete(unskip_deck_card),
+                            delete(deck::unskip_deck_card),
                         )
-                        .route("/{deck_id}/tokens", get(get_deck_tokens))
+                        .route("/{deck_id}/tokens", get(deck::get_deck_tokens))
                         .nest(
                             "/{deck_id}/card",
                             Router::new()
-                                .route("/", post(create_deck_card))
-                                .route("/import", post(import_deck_cards))
-                                .route("/search", post(search_deck_cards))
+                                .route("/", post(deck_card::create_deck_card))
+                                .route("/import", post(deck_card::import_deck_cards))
+                                .route("/search", post(deck::search_deck_cards))
                                 .route(
                                     "/{scryfall_data_id}",
-                                    patch(patch_deck_card).delete(delete_deck_card),
+                                    patch(deck_card::patch_deck_card)
+                                        .delete(deck_card::delete_deck_card),
                                 ),
                         ),
                 ),

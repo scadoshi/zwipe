@@ -16,6 +16,7 @@
 //! `include_skipped`. `direction` is `"ascending"` or `"descending"` and
 //! defaults to ascending when absent.
 
+pub mod accent_fold;
 pub mod builder;
 pub mod card_sort_key;
 pub mod criteria;
@@ -29,10 +30,15 @@ pub use criteria::CardCriteria;
 pub use query::{CardQuery, Limit};
 pub use sort_direction::SortDirection;
 
-/// Strips punctuation from a string, keeping only alphanumeric characters and whitespace.
-/// Used for punctuation-insensitive text search (e.g., "akromas will" matches "Akroma's Will").
+/// Folds accents (see [`accent_fold::fold_accents`]), then strips punctuation,
+/// keeping only alphanumeric characters and whitespace. Used for accent- and
+/// punctuation-insensitive text search: "akromas will" matches "Akroma's
+/// Will" and "jotun" matches "Jötun Grunt". The server folds the stored text
+/// the same way in SQL.
+#[must_use]
 pub fn strip_punctuation(s: &str) -> String {
-    s.chars()
+    accent_fold::fold_accents(s)
+        .chars()
         .filter(|c| c.is_alphanumeric() || c.is_whitespace())
         .collect()
 }
@@ -58,13 +64,19 @@ mod tests {
     fn strips_multiple_punctuation() {
         assert_eq!(
             strip_punctuation("Ætherize — the card!"),
-            "Ætherize  the card"
+            "AEtherize  the card"
         );
     }
 
     #[test]
     fn preserves_alphanumeric_and_spaces() {
         assert_eq!(strip_punctuation("Lightning Bolt"), "Lightning Bolt");
+    }
+
+    #[test]
+    fn folds_accents_before_stripping() {
+        assert_eq!(strip_punctuation("Lim-Dûl"), "LimDul");
+        assert_eq!(strip_punctuation("Jötun"), "Jotun");
     }
 
     #[test]

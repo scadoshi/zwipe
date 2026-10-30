@@ -26,6 +26,7 @@ use super::components::card_info::{CardDetailsSheet, CardInfoDisplay, CardSkelet
 use super::components::printing_sheet::PrintingSheet;
 use crate::inbound::components::auth::authed::use_authed;
 use crate::inbound::components::auth::ensure_session::EnsureFresh;
+use crate::inbound::components::generation::use_generation;
 use crate::inbound::components::hint_dialog::{HintColored, use_one_time_hint};
 use crate::inbound::components::interactions::swipe::SwipeStack;
 use crate::inbound::components::interactions::swipe::config::SwipeConfig;
@@ -43,6 +44,7 @@ use crate::inbound::screens::deck::card::components::add_stack_cache::{
 use crate::inbound::screens::deck::card::components::card_stack::{CardStack, use_card_stack};
 use crate::inbound::screens::deck::card::components::filter_store::{FilterScope, FilterStore};
 use crate::inbound::screens::deck::card::components::flippable_card_image;
+use crate::inbound::screens::deck::card::components::in_flight_adds::{AddOutcome, InFlightAdds};
 use crate::inbound::screens::deck::card::components::undo_log::{UndoAction, UndoStore};
 use crate::inbound::screens::deck::card::filter::card_filter_sheet::CardFilterSheet;
 
@@ -237,6 +239,10 @@ pub fn Add(deck_id: Uuid) -> Element {
     let mut pagination_exhausted = use_signal(|| false);
 
     let mut is_loading_cards = use_signal(|| false);
+    // A fresh search (the filter effect, Refresh) starts a generation and a
+    // load-more joins the current one, so neither an older search nor a page
+    // of the stack it replaced lands on the new stack.
+    let mut stack_loads = use_generation();
 
     // Park this deck's stack on leave so returning resumes mid-stack. Only a
     // served stack parks, an empty one, or one with no recorded filter,
@@ -300,17 +306,23 @@ pub fn Add(deck_id: Uuid) -> Element {
             return;
         };
         let synergy = builder.synergy();
+        let ticket = stack_loads.current();
 
         usage_buffer().record_search();
         spawn(async move {
             // A failed load-more toasts, so the pile never stops growing
             // without a word.
-            match authed
+            let reply = authed
                 .try_run("load_more", |c, s| async move {
                     c.search_deck_cards(deck_id, &filter, &s).await
                 })
-                .await
-            {
+                .await;
+            if !stack_loads.is_current(ticket) {
+                // A fresh search replaced the stack this page was for.
+                is_loading_more.set(false);
+                return;
+            }
+            match reply {
                 Ok(page) => {
                     synergy_warming.set(!page.synergy_applied);
                     related_ids.write().extend(related_ids_of(&page));
@@ -393,21 +405,40 @@ pub fn Add(deck_id: Uuid) -> Element {
         }
     };
 
-    let add_card_to_deck = move |card: Card| {
+    // Adds still waiting on their POST: an undo in that window is parked here
+    // and the add's task deletes the card once the POST lands.
+    let mut in_flight_adds = use_signal(InFlightAdds::default);
+
+    // The delete for an add the user undid while its POST was in flight.
+    let delete_undone_add = move |card_id: Uuid| {
+        spawn(async move {
+            let _ = authed
+                .run("undo_add", |c, s| async move {
+                    c.delete_deck_card(deck_id, card_id, &s).await
+                })
+                .await;
+        });
+    };
+
+    let mut add_card_to_deck = move |card: Card| {
         // A swipe adds one copy.
         let request = HttpCreateDeckCard::new(&card.scryfall_data, 1, None);
         let oracle_id = card.scryfall_data.oracle_id;
         let card_id = card.scryfall_data.id;
         let card_name = card.scryfall_data.name;
 
+        in_flight_adds.write().begin(card_id);
         spawn(async move {
-            if authed
+            let added = authed
                 .run("add_card", |c, s| async move {
                     c.create_deck_card(deck_id, &request, &s).await
                 })
                 .await
-                .is_some()
-            {
+                .is_some();
+            let outcome = in_flight_adds.write().finish(card_id);
+            if added && outcome == AddOutcome::Undo {
+                delete_undone_add(card_id);
+            } else if added {
                 if let Some(oid) = oracle_id {
                     deck_cards_ids.write().insert(oid);
                 }
@@ -416,20 +447,24 @@ pub fn Add(deck_id: Uuid) -> Element {
         });
     };
 
-    let add_card_to_maybeboard = move |card: Card| {
+    let mut add_card_to_maybeboard = move |card: Card| {
         let request =
             HttpCreateDeckCard::new(&card.scryfall_data, 1, Some("maybeboard".to_string()));
         let oracle_id = card.scryfall_data.oracle_id;
         let card_id = card.scryfall_data.id;
         let card_name = card.scryfall_data.name.clone();
 
+        in_flight_adds.write().begin(card_id);
         spawn(async move {
-            if let Some(deck_card) = authed
+            let added = authed
                 .run("add_maybeboard", |c, s| async move {
                     c.create_deck_card(deck_id, &request, &s).await
                 })
-                .await
-            {
+                .await;
+            let outcome = in_flight_adds.write().finish(card_id);
+            if added.is_some() && outcome == AddOutcome::Undo {
+                delete_undone_add(card_id);
+            } else if let Some(deck_card) = added {
                 if let Some(oid) = oracle_id {
                     deck_cards_ids.write().insert(oid);
                 }
@@ -489,6 +524,20 @@ pub fn Add(deck_id: Uuid) -> Element {
                 let was_price =
                     deck_metrics::card_price(&card.scryfall_data, price_budget_currency())
                         .unwrap_or(0.0);
+
+                // The add's POST hasn't answered: its task deletes the card
+                // when it does. The counts rewind now, like a finished undo.
+                if in_flight_adds.write().undo(card_id) {
+                    if was_land {
+                        mainboard_land_count.set((mainboard_land_count() - 1).max(0));
+                    }
+                    deck_total_price.set((deck_total_price() - was_price).max(0.0));
+                    toast.success(
+                        "Undid add".to_string(),
+                        ToastOptions::default().duration(TOAST_QUICK),
+                    );
+                    return;
+                }
 
                 // Reconcile with the global stack: take this add's entry
                 // back. Entry gone AND card gone from the deck means the
@@ -562,6 +611,15 @@ pub fn Add(deck_id: Uuid) -> Element {
             AddAction::Maybe => {
                 let card_id = card.scryfall_data.id;
                 let oracle_id = card.scryfall_data.oracle_id;
+
+                // Same in-flight parking as Add.
+                if in_flight_adds.write().undo(card_id) {
+                    toast.success(
+                        "Undid maybeboard".to_string(),
+                        ToastOptions::default().duration(TOAST_QUICK),
+                    );
+                    return;
+                }
 
                 // Same reconciliation as Add: entry gone + card gone means
                 // the button already reversed this; skip the server delete.
@@ -685,7 +743,7 @@ pub fn Add(deck_id: Uuid) -> Element {
             // records the failure.
             let fetched = authed
                 .run_quiet("load_deck_context", |c, s| async move {
-                    c.get_deck(deck_id, &s).await
+                    c.fetch_deck(deck_id, &s).await
                 })
                 .await;
             if let Some(deck) = fetched {
@@ -705,7 +763,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                 .into_iter()
                 .flatten()
                 {
-                    if let Ok(card) = client().get_card(cz_id).await
+                    if let Ok(card) = client().fetch_card(cz_id).await
                         && let Some(oid) = card.scryfall_data.oracle_id
                     {
                         ids.insert(oid);
@@ -714,7 +772,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                 }
                 // Signature spell: oracle_id exclusion only (doesn't contribute to color identity)
                 if let Some(spell_id) = deck.deck_profile.signature_spell_id
-                    && let Ok(card) = client().get_card(spell_id).await
+                    && let Ok(card) = client().fetch_card(spell_id).await
                     && let Some(oid) = card.scryfall_data.oracle_id
                 {
                     ids.insert(oid);
@@ -849,6 +907,11 @@ pub fn Add(deck_id: Uuid) -> Element {
         //   - explicit user action (refresh / apply filter), OR
         //   - initial mount with a different/new filter, OR
         //   - initial mount with no existing cards
+        let ticket = stack_loads.next_ticket();
+        // A search still out no longer lands, so it can't end the skeleton.
+        if *is_loading_cards.peek() {
+            is_loading_cards.set(false);
+        }
         stack.reset();
         // Fresh results ease in again, even previously seen images.
         flippable_card_image::reset_image_ease();
@@ -898,12 +961,15 @@ pub fn Add(deck_id: Uuid) -> Element {
             // Flush buffered usage (signals feed synergy ordering) before the
             // refetch. Skips post directly at swipe time.
             flush_loop::flush_once(&usage_buffer(), &client, &session).await;
-            match authed
+            let reply = authed
                 .try_run("search_cards", |c, s| async move {
                     c.search_deck_cards(deck_id, &filter, &s).await
                 })
-                .await
-            {
+                .await;
+            if !stack_loads.is_current(ticket) {
+                return;
+            }
+            match reply {
                 Ok(page) => {
                     let warming = !page.synergy_applied;
                     synergy_warming.set(warming);
@@ -1456,7 +1522,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                             spawn(async move {
                                 if let Some(deck) = authed
                                     .run("search_cards", |c, s| async move {
-                                        c.get_deck(deck_id, &s).await
+                                        c.fetch_deck(deck_id, &s).await
                                     })
                                     .await
                                 {
@@ -1490,6 +1556,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 return;
                             };
 
+                            let ticket = stack_loads.next_ticket();
                             stack.reset();
                             flippable_card_image::reset_image_ease();
                             last_search_filter.set(None);
@@ -1504,12 +1571,15 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 // ordering) before the refetch. Skips post
                                 // directly at swipe time.
                                 flush_loop::flush_once(&usage_buffer(), &client, &session).await;
-                                match authed
+                                let reply = authed
                                     .try_run("search_cards", |c, s| async move {
                                         c.search_deck_cards(deck_id, &filter, &s).await
                                     })
-                                    .await
-                                {
+                                    .await;
+                                if !stack_loads.is_current(ticket) {
+                                    return;
+                                }
+                                match reply {
                                     Ok(page) => {
                                         synergy_warming.set(!page.synergy_applied);
                                         related_ids.set(related_ids_of(&page));

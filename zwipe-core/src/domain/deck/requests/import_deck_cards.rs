@@ -10,6 +10,10 @@ use uuid::Uuid;
 
 use crate::domain::deck::{Board, ImportMode};
 
+/// Most copies one import line may ask for. Far above any real deck, low
+/// enough that summing every line of a request-sized body stays inside `i32`.
+pub const MAX_IMPORT_LINE_QUANTITY: i32 = 9_999;
+
 /// A parsed line from import text.
 #[derive(Debug, Clone)]
 pub struct ImportLine {
@@ -30,6 +34,9 @@ pub struct ImportDeckCards {
     pub deck_id: Uuid,
     /// Parsed import lines.
     pub lines: Vec<ImportLine>,
+    /// Lines refused at parse time (a quantity over
+    /// [`MAX_IMPORT_LINE_QUANTITY`]), each with its line number in the reason.
+    pub rejected: Vec<UnresolvedCard>,
     /// Whether the requesting user's email is verified.
     pub email_verified: bool,
     /// Add on top of each board, or replace each board present in the import.
@@ -41,7 +48,9 @@ impl ImportDeckCards {
     ///
     /// Format: `[qty] [card name]` per line.
     /// Quantity defaults to 1 if the first word is not a number.
-    /// Empty and whitespace-only lines are skipped.
+    /// Empty and whitespace-only lines are skipped. A line asking for more than
+    /// [`MAX_IMPORT_LINE_QUANTITY`] copies lands in `rejected` with its line
+    /// number instead of `lines`.
     /// When `board_override` is `Some`, every imported line is placed on that
     /// board and section headers in the text are ignored.
     /// With [`ImportMode::Replace`], each board present in the import is
@@ -56,8 +65,9 @@ impl ImportDeckCards {
     ) -> Self {
         let mut current_board = board_override.unwrap_or(Board::Deck);
         let mut lines = Vec::new();
+        let mut rejected = Vec::new();
 
-        for line in text.lines() {
+        for (index, line) in text.lines().enumerate() {
             let trimmed = line.trim();
             if trimmed.is_empty() {
                 continue;
@@ -115,6 +125,16 @@ impl ImportDeckCards {
             if card_name.is_empty() || quantity < 1 {
                 continue;
             }
+            if quantity > MAX_IMPORT_LINE_QUANTITY {
+                let line_number = index.saturating_add(1);
+                rejected.push(UnresolvedCard {
+                    name: card_name,
+                    reason: format!(
+                        "line {line_number}: quantity is over the {MAX_IMPORT_LINE_QUANTITY} limit"
+                    ),
+                });
+                continue;
+            }
             lines.push(ImportLine {
                 quantity,
                 card_name,
@@ -125,6 +145,7 @@ impl ImportDeckCards {
             user_id,
             deck_id,
             lines,
+            rejected,
             email_verified,
             mode,
         }
@@ -185,7 +206,7 @@ pub struct UnresolvedCard {
 /// Import operation result.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ImportDeckCardsResult {
-    /// Cards that were successfully imported.
+    /// Cards that were successfully imported, sorted by name.
     pub imported: Vec<ImportedCard>,
     /// Card names that couldn't be resolved.
     pub unresolved: Vec<UnresolvedCard>,
@@ -307,6 +328,32 @@ mod tests {
         let lines = parse_lines("\n  \n4 Lightning Bolt\n\n");
         assert_eq!(lines.len(), 1);
         assert_eq!(lines[0].card_name, "Lightning Bolt");
+    }
+
+    #[test]
+    fn quantity_over_the_cap_is_rejected_with_its_line_number() {
+        let lines = parse_lines("10000 Island\n9999 Island\n4 Lightning Bolt");
+        let kept: Vec<(i32, &str)> = lines
+            .iter()
+            .map(|l| (l.quantity, l.card_name.as_str()))
+            .collect();
+        assert_eq!(kept, vec![(9999, "Island"), (4, "Lightning Bolt")]);
+
+        let rejected = ImportDeckCards::parse(
+            Uuid::nil(),
+            Uuid::nil(),
+            "4 Lightning Bolt\n10000 Island",
+            /* email_verified */ false,
+            None,
+            ImportMode::Add,
+        )
+        .rejected;
+        assert_eq!(rejected.len(), 1);
+        assert_eq!(rejected[0].name, "Island");
+        assert_eq!(
+            rejected[0].reason,
+            "line 2: quantity is over the 9999 limit"
+        );
     }
 
     #[test]

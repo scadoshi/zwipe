@@ -292,7 +292,7 @@ async fn get_deck_carries_command_zone_cards(pool: sqlx::PgPool) {
     let bolt_oid = bolt.oracle_id().unwrap();
     seed_cards(&pool, &[commander, bolt]).await;
 
-    // Set the commander on the deck (clean Opdate wire: bare value = set,
+    // Set the commander on the deck (clean Patch wire: bare value = set,
     // absent = unchanged; the tagged dialect is not decoded).
     let (status, updated) = app
         .patch(
@@ -335,4 +335,262 @@ async fn get_deck_carries_command_zone_cards(pool: sqlx::PgPool) {
         entries[0]["card"]["scryfall_data"]["name"],
         "Lightning Bolt"
     );
+}
+
+/// The server takes a card's `oracle_id` from its own `scryfall_data` row and
+/// ignores the client's, so a forged one can't slip the commander or a second
+/// copy of a singleton past the checks, and a printing swap can't change the
+/// card.
+#[sqlx::test]
+async fn oracle_id_comes_from_the_printing_not_the_client(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, did) = deck_for(&app, "forger").await;
+    let deck_id = did.parse().unwrap();
+
+    let commander = card("Atraxa, Praetors' Voice")
+        .colors("WUBG")
+        .type_line("Legendary Creature — Phyrexian Angel Horror")
+        .commander_legal();
+    let cmd_sid = commander.id();
+    let sol = card("Sol Ring").color_identity("").type_line("Artifact");
+    let (sol_sid, sol_oid) = (sol.id(), sol.oracle_id().unwrap());
+    let sol_reprint = card("Sol Ring")
+        .color_identity("")
+        .type_line("Artifact")
+        .oracle(Some(sol_oid));
+    let reprint_sid = sol_reprint.id();
+    let bolt = card("Lightning Bolt").mono("R").type_line("Instant");
+    let bolt_sid = bolt.id();
+    let forged_oid = uuid::Uuid::new_v4();
+    seed_cards(&pool, &[commander, sol, sol_reprint, bolt]).await;
+
+    let (status, body) = app
+        .patch(
+            &deck_route(deck_id),
+            json!({ "commander_id": cmd_sid.to_string() }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "set commander: {body}");
+
+    // The commander's own printing with someone else's oracle id.
+    let (status, body) = app
+        .post(
+            &create_deck_card_route(deck_id),
+            json!({ "scryfall_data_id": cmd_sid.to_string(), "oracle_id": forged_oid.to_string(), "quantity": 1 }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "commander under a forged oracle id: {body}"
+    );
+
+    // A second Sol Ring printing under a forged oracle id.
+    let (status, body) = app
+        .post(
+            &create_deck_card_route(deck_id),
+            json!({ "scryfall_data_id": sol_sid.to_string(), "oracle_id": sol_oid.to_string(), "quantity": 1 }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::CREATED, "add sol ring: {body}");
+    let (status, body) = app
+        .post(
+            &create_deck_card_route(deck_id),
+            json!({ "scryfall_data_id": reprint_sid.to_string(), "oracle_id": forged_oid.to_string(), "quantity": 1 }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::CONFLICT,
+        "second sol ring under a forged oracle id: {body}"
+    );
+
+    // A wrong oracle id on an honest printing is ignored, not stored.
+    let (status, body) = app
+        .post(
+            &create_deck_card_route(deck_id),
+            json!({ "scryfall_data_id": bolt_sid.to_string(), "oracle_id": forged_oid.to_string(), "quantity": 1 }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::CREATED, "add bolt: {body}");
+    let stored: uuid::Uuid = sqlx::query_scalar(
+        "SELECT oracle_id FROM deck_cards WHERE deck_id = $1 AND scryfall_data_id = $2",
+    )
+    .bind(deck_id)
+    .bind(bolt_sid)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_ne!(stored, forged_oid, "the forged oracle id was stored");
+
+    // Swapping Sol Ring's printing to a different card is refused.
+    let (status, body) = app
+        .patch(
+            &update_deck_card_route(deck_id, sol_sid),
+            json!({ "scryfall_data_id": cmd_sid.to_string() }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "printing swap to another card: {body}"
+    );
+
+    // Swapping to another printing of the same card still works.
+    let (status, body) = app
+        .patch(
+            &update_deck_card_route(deck_id, sol_sid),
+            json!({ "scryfall_data_id": reprint_sid.to_string() }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "printing swap to a reprint: {body}");
+}
+
+/// Two stars racing onto a deck with two MVPs end at the cap of three: the
+/// star count runs under the deck row lock.
+#[sqlx::test]
+async fn concurrent_stars_stop_at_the_mvp_cap(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, did) = deck_for(&app, "starrer").await;
+    let deck_id = did.parse().unwrap();
+
+    let cards = [
+        card("Sol Ring").type_line("Artifact"),
+        card("Arcane Signet").type_line("Artifact"),
+        card("Mind Stone").type_line("Artifact"),
+        card("Fellwar Stone").type_line("Artifact"),
+    ];
+    let ids: Vec<(uuid::Uuid, uuid::Uuid)> = cards
+        .iter()
+        .map(|c| (c.id(), c.oracle_id().unwrap()))
+        .collect();
+    seed_cards(&pool, &cards).await;
+    for (sid, oid) in &ids {
+        let (status, body) = app
+            .post(
+                &create_deck_card_route(deck_id),
+                json!({ "scryfall_data_id": sid.to_string(), "oracle_id": oid.to_string(), "quantity": 1 }),
+                Some(&token),
+            )
+            .await;
+        assert_eq!(status, StatusCode::CREATED, "add card: {body}");
+    }
+    for (sid, _) in &ids[..2] {
+        let (status, body) = app
+            .patch(
+                &update_deck_card_route(deck_id, *sid),
+                json!({ "mvp": true }),
+                Some(&token),
+            )
+            .await;
+        assert_eq!(status, StatusCode::OK, "star: {body}");
+    }
+
+    // Hold the deck card rows so both requests count the stars before
+    // either writes.
+    let hold = async {
+        let mut tx = pool.begin().await.unwrap();
+        sqlx::query("SELECT 1 FROM deck_cards WHERE deck_id = $1 FOR UPDATE")
+            .bind(deck_id)
+            .execute(&mut *tx)
+            .await
+            .unwrap();
+        tokio::time::sleep(std::time::Duration::from_millis(300)).await;
+        tx.commit().await.unwrap();
+    };
+    let star = json!({ "mvp": true });
+    let (third, fourth) = (
+        update_deck_card_route(deck_id, ids[2].0),
+        update_deck_card_route(deck_id, ids[3].0),
+    );
+    let ((first, _), (second, _), ()) = tokio::join!(
+        app.patch(&third, star.clone(), Some(&token)),
+        app.patch(&fourth, star.clone(), Some(&token)),
+        hold,
+    );
+    let starred: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM deck_cards WHERE deck_id = $1 AND mvp_at IS NOT NULL",
+    )
+    .bind(deck_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(starred, 3, "statuses {first} and {second}");
+}
+
+/// A line over the per-line quantity cap is reported with its line number,
+/// and a huge quantity can't overflow the sum for a card listed twice.
+#[sqlx::test]
+async fn import_rejects_a_quantity_over_the_cap(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, did) = deck_for(&app, "bigqty").await;
+    seed_cards(&pool, &[card("Island").type_line("Basic Land — Island")]).await;
+
+    let (status, result) = app
+        .post(
+            &import_deck_cards_route(did.parse().unwrap()),
+            json!({ "text": "2147483647 Island\n1 Island" }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "import: {result}");
+    let imported = result["imported"].as_array().unwrap();
+    assert_eq!(imported.len(), 1, "the in-range line imports: {result}");
+    assert_eq!(imported[0]["quantity"], 1, "{result}");
+    let unresolved = result["unresolved"].as_array().unwrap();
+    assert_eq!(unresolved.len(), 1, "the capped line is reported: {result}");
+    assert_eq!(unresolved[0]["name"], "Island", "{result}");
+    assert!(
+        unresolved[0]["reason"].as_str().unwrap().contains("line 1"),
+        "the reason names the line: {result}"
+    );
+}
+
+/// The import result lists its cards by name, whatever order the text gave.
+#[sqlx::test]
+async fn import_result_is_sorted_by_name(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, did) = deck_for(&app, "sorter").await;
+
+    let names = [
+        "Wrath of God",
+        "Brainstorm",
+        "Ponder",
+        "Counterspell",
+        "Swords to Plowshares",
+        "Arcane Signet",
+        "Lightning Bolt",
+        "Duress",
+    ];
+    let cards: Vec<_> = names
+        .iter()
+        .map(|name| card(name).type_line("Instant"))
+        .collect();
+    seed_cards(&pool, &cards).await;
+
+    let text = names.map(|name| format!("1 {name}")).join("\n");
+    let (status, result) = app
+        .post(
+            &import_deck_cards_route(did.parse().unwrap()),
+            json!({ "text": text }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "import: {result}");
+    let imported: Vec<&str> = result["imported"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|c| c["name"].as_str().unwrap())
+        .collect();
+    let mut sorted = names.to_vec();
+    sorted.sort_unstable();
+    assert_eq!(imported, sorted);
 }

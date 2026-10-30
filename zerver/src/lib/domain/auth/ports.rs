@@ -88,7 +88,7 @@ pub trait AuthRepository: Clone + Send + Sync + 'static {
     ///
     /// Looks up user by email, username, or ID and returns full user data
     /// including the Argon2id password hash for verification.
-    fn get_user_with_password_hash(
+    fn fetch_user_with_password_hash(
         &self,
         request: &AuthenticateUser,
     ) -> impl Future<Output = Result<UserWithPasswordHash, AuthenticateUserError>> + Send;
@@ -183,7 +183,7 @@ pub trait AuthRepository: Clone + Send + Sync + 'static {
     /// Looks up a user ID by email. Returns `None` if the email is not registered.
     ///
     /// Never exposes `UserNotFound` in error; only DB failures are returned.
-    fn get_user_id_by_email(
+    fn fetch_user_id_by_email(
         &self,
         email: &str,
     ) -> impl Future<Output = Result<Option<Uuid>, anyhow::Error>> + Send;

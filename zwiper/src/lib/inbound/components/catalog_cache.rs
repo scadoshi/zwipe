@@ -20,6 +20,7 @@
 //! to them. Deck tags are the one authed catalog; they warm once a session exists.
 
 use chrono::{DateTime, Utc};
+use dioxus::core::spawn_forever;
 use dioxus::prelude::*;
 use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_core::domain::auth::models::session::Session;
@@ -135,7 +136,10 @@ impl<T: Clone + PartialEq + 'static> CatalogSlot<T> {
         }
 
         fetching.set(true);
-        spawn(async move {
+        // Forever, not the caller's scope: a screen that unmounts mid-fetch
+        // would cancel the task with `fetching` still set, and no later read
+        // would ever fetch again.
+        spawn_forever(async move {
             match fetch().await {
                 Ok(data) => cell.set(CatalogCell::Loaded {
                     data,
@@ -255,7 +259,7 @@ impl CatalogCache {
     pub fn ensure_artists(self, client: Signal<ZwipeClient>) {
         self.artists.refresh(move || async move {
             let http = client.peek().clone();
-            http.get_artists().await
+            http.fetch_artists().await
         });
     }
 
@@ -263,7 +267,7 @@ impl CatalogCache {
     pub fn ensure_sets(self, client: Signal<ZwipeClient>) {
         self.sets.refresh(move || async move {
             let http = client.peek().clone();
-            http.get_sets().await
+            http.fetch_sets().await
         });
     }
 
@@ -271,7 +275,7 @@ impl CatalogCache {
     pub fn ensure_keywords(self, client: Signal<ZwipeClient>) {
         self.keywords.refresh(move || async move {
             let http = client.peek().clone();
-            http.get_keywords().await
+            http.fetch_keywords().await
         });
     }
 
@@ -279,7 +283,7 @@ impl CatalogCache {
     pub fn ensure_keyword_reminders(self, client: Signal<ZwipeClient>) {
         self.keyword_reminders.refresh(move || async move {
             let http = client.peek().clone();
-            http.get_keyword_reminders().await
+            http.fetch_keyword_reminders().await
         });
     }
 
@@ -287,7 +291,7 @@ impl CatalogCache {
     pub fn ensure_oracle_words(self, client: Signal<ZwipeClient>) {
         self.oracle_words.refresh(move || async move {
             let http = client.peek().clone();
-            http.get_oracle_words().await
+            http.fetch_oracle_words().await
         });
     }
 
@@ -295,7 +299,7 @@ impl CatalogCache {
     pub fn ensure_card_types(self, client: Signal<ZwipeClient>) {
         self.card_types.refresh(move || async move {
             let http = client.peek().clone();
-            http.get_card_types().await
+            http.fetch_card_types().await
         });
     }
 
@@ -303,7 +307,7 @@ impl CatalogCache {
     pub fn ensure_card_roles(self, client: Signal<ZwipeClient>) {
         self.card_roles.refresh(move || async move {
             let http = client.peek().clone();
-            http.get_card_roles().await
+            http.fetch_card_roles().await
         });
     }
 
@@ -311,7 +315,7 @@ impl CatalogCache {
     pub fn ensure_ub_franchises(self, client: Signal<ZwipeClient>) {
         self.ub_franchises.refresh(move || async move {
             let http = client.peek().clone();
-            http.get_ub_franchises().await
+            http.fetch_ub_franchises().await
         });
     }
 
@@ -320,7 +324,7 @@ impl CatalogCache {
     pub fn ensure_oracle_tags(self, client: Signal<ZwipeClient>) {
         self.oracle_tags.refresh(move || async move {
             let http = client.peek().clone();
-            http.get_oracle_tags().await
+            http.fetch_oracle_tags().await
         });
     }
 
@@ -328,7 +332,79 @@ impl CatalogCache {
     pub fn ensure_deck_tags(self, client: Signal<ZwipeClient>, session: Session) {
         self.deck_tags.refresh(move || async move {
             let http = client.peek().clone();
-            http.get_deck_tags(&session).await
+            http.fetch_deck_tags(&session).await
         });
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::cell::RefCell;
+    use std::time::Duration;
+
+    use super::*;
+
+    const FETCH_TIME: Duration = Duration::from_millis(30);
+
+    thread_local! {
+        static SLOT: RefCell<Option<CatalogSlot<Vec<String>>>> = const { RefCell::new(None) };
+        static SHOW_SCREEN: RefCell<Option<Signal<bool>>> = const { RefCell::new(None) };
+    }
+
+    /// Stands in for `spawn_upkeeper`: owns the slot above the screens.
+    #[component]
+    fn Root() -> Element {
+        let slot: CatalogSlot<Vec<String>> = use_catalog_slot();
+        let show_screen = use_signal(|| true);
+        SLOT.with(|s| *s.borrow_mut() = Some(slot));
+        SHOW_SCREEN.with(|s| *s.borrow_mut() = Some(show_screen));
+        rsx! {
+            if show_screen() {
+                Screen {}
+            }
+        }
+    }
+
+    /// A screen that asks for the catalog on mount.
+    #[component]
+    fn Screen() -> Element {
+        use_hook(|| {
+            let slot = SLOT.with(|s| s.borrow().expect("the root rendered"));
+            slot.refresh(|| async {
+                tokio::time::sleep(FETCH_TIME).await;
+                Ok(vec!["Rebecca Guay".to_string()])
+            });
+        });
+        rsx! {}
+    }
+
+    async fn run_for(dom: &mut VirtualDom, span: Duration) {
+        let deadline = tokio::time::Instant::now() + span;
+        while tokio::time::timeout_at(deadline, dom.wait_for_work())
+            .await
+            .is_ok()
+        {
+            dom.render_immediate_to_vec();
+        }
+        dom.render_immediate_to_vec();
+    }
+
+    #[tokio::test]
+    async fn leaving_the_screen_mid_fetch_does_not_wedge_the_slot() {
+        let mut dom = VirtualDom::new(Root);
+        dom.rebuild_in_place();
+
+        let mut show_screen = SHOW_SCREEN.with(|s| s.borrow().expect("the root rendered"));
+        dom.in_runtime(|| show_screen.set(false));
+        run_for(&mut dom, FETCH_TIME * 4).await;
+
+        let slot = SLOT.with(|s| s.borrow().expect("the root rendered"));
+        let (fetching, loaded) =
+            dom.in_runtime(|| (*slot.fetching.peek(), slot.cell.peek().loaded().cloned()));
+        assert!(
+            !fetching,
+            "the slot stays stuck in flight and never fetches again"
+        );
+        assert_eq!(loaded, Some(vec!["Rebecca Guay".to_string()]));
     }
 }

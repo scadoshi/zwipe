@@ -61,6 +61,9 @@ impl From<InvalidUpdateDeckProfile> for ApiError {
             InvalidUpdateDeckProfile::TooManyOracleTags => {
                 Self::UnprocessableEntity("a deck may have at most 30 oracle tags".to_string())
             }
+            e @ (InvalidUpdateDeckProfile::LandTarget | InvalidUpdateDeckProfile::PriceTarget) => {
+                Self::UnprocessableEntity(e.to_string())
+            }
             InvalidUpdateDeckProfile::NoUpdates => {
                 Self::UnprocessableEntity("must update at least one field".to_string())
             }

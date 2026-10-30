@@ -174,7 +174,9 @@ impl UsageBuffer {
                 );
                 return;
             }
-            ClientError::Decode(detail) => ("decode", sanitized_decode_message(detail)),
+            ClientError::Decode(detail) => {
+                ("decode", sanitized_decode_message(&detail.to_string()))
+            }
             api => (api_error_kind(api), api.to_string()),
         };
         let message: String = message
@@ -223,6 +225,11 @@ impl UsageBuffer {
                 synergy,
             });
         }
+    }
+
+    /// Drops everything buffered without sending it.
+    pub fn clear(&self) {
+        drop(self.snapshot_and_zero());
     }
 
     /// Snapshots all counters into a batch and resets them to zero.
@@ -339,6 +346,8 @@ fn api_error_kind(api: &ClientError) -> &'static str {
         ClientError::UnprocessableEntity(_) => "api_unprocessable",
         ClientError::TooManyRequests(_) => "api_too_many_requests",
         ClientError::Conflict(_) => "api_conflict",
+        ClientError::BadRequest(_) => "api_bad_request",
+        ClientError::PayloadTooLarge(_) => "api_payload_too_large",
         // Network and Decode are handled before this is reached.
         ClientError::InternalServerError(_) | ClientError::Network(_) | ClientError::Decode(_) => {
             "api_internal"
@@ -506,7 +515,12 @@ mod tests {
             "deck_edit",
             "",
             "save_profile",
-            &ClientError::Network("dns error: no such host".to_string()),
+            &ClientError::from(
+                reqwest::Client::new()
+                    .get("not a url")
+                    .build()
+                    .expect_err("a relative url fails to build"),
+            ),
         );
         assert!(buffer.snapshot_and_zero().is_none());
     }
@@ -518,9 +532,9 @@ mod tests {
             "deck_view",
             "",
             "load_deck",
-            &ClientError::Decode(
-                "invalid type: string \"secret payload contents\", expected u32 at line 1 column 9"
-                    .to_string(),
+            &ClientError::from(
+                serde_json::from_str::<u32>("\"secret payload contents\"")
+                    .expect_err("a string is not a u32"),
             ),
         );
         let batch = buffer.snapshot_and_zero().expect("decode error buffered");
@@ -531,7 +545,7 @@ mod tests {
             report.message
         );
         assert!(
-            report.message.contains("expected u32 at line 1 column 9"),
+            report.message.contains("expected u32 at line 1 column 25"),
             "error shape survives: {}",
             report.message
         );

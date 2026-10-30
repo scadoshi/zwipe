@@ -9,7 +9,6 @@
 //! Server-only operations (signing, verification) are provided by zerver
 //! via extension traits.
 
-use std::fmt::Display;
 use std::str::FromStr;
 
 use chrono::{DateTime, Duration, Utc};
@@ -71,8 +70,8 @@ pub struct UserClaims {
 pub struct Jwt(String);
 
 /// Redacted: the token is a bearer credential, and a derived `Debug` would
-/// print it through every struct that holds one. `Display` is the way out,
-/// for the `Authorization` header.
+/// print it through every struct that holds one. [`Jwt::as_str`] is the way
+/// out, for the `Authorization` header.
 impl std::fmt::Debug for Jwt {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str("Jwt(REDACTED)")
@@ -92,16 +91,19 @@ impl FromStr for Jwt {
     }
 }
 
-impl std::ops::Deref for Jwt {
-    type Target = str;
-    fn deref(&self) -> &Self::Target {
+impl Jwt {
+    /// The raw token, for the `Authorization` header. There is no `Display`,
+    /// so the token never lands in a log line or message by accident.
+    #[must_use]
+    pub fn as_str(&self) -> &str {
         &self.0
     }
 }
 
-impl Display for Jwt {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0)
+impl std::ops::Deref for Jwt {
+    type Target = str;
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
@@ -220,6 +222,32 @@ mod tests {
         let deserialized: UserClaims = serde_json::from_str(&serialized).unwrap();
 
         assert_eq!(claims, deserialized);
+    }
+
+    #[test]
+    fn test_user_claims_deserialize_stored_username_containing_a_banned_word() {
+        let json = serde_json::json!({
+            "user_id": uuid::Uuid::nil(),
+            "username": "fuck",
+            "email": "test@example.com",
+            "exp": 1_234_567_890,
+            "iat": 1_234_567_890,
+        });
+        let claims: UserClaims = serde_json::from_value(json).unwrap();
+        assert_eq!(&*claims.username, "fuck");
+    }
+
+    #[test]
+    fn test_user_claims_deserialize_stored_email_that_fails_todays_rules() {
+        let json = serde_json::json!({
+            "user_id": uuid::Uuid::nil(),
+            "username": "tester",
+            "email": "test@localhost",
+            "exp": 1_234_567_890,
+            "iat": 1_234_567_890,
+        });
+        let claims: UserClaims = serde_json::from_value(json).unwrap();
+        assert_eq!(&*claims.email, "test@localhost");
     }
 
     #[test]

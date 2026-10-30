@@ -23,7 +23,7 @@ use zwipe_core::domain::deck::requests::import_deck_cards::{
 use zwipe_core::domain::deck::requests::skip_deck_card::SkipDeckCard;
 use zwipe_core::domain::deck::requests::update_deck_card::UpdateDeckCard;
 use zwipe_core::domain::deck::requests::update_deck_profile::UpdateDeckProfile;
-use zwipe_core::domain::deck::{Deck, DeckCard, DeckName};
+use zwipe_core::domain::deck::{Deck, DeckCard};
 
 use crate::domain::BoxFuture;
 use crate::domain::deck::models::deck::activity::{Activity, ActivityCounts};
@@ -56,10 +56,14 @@ use crate::domain::deck::models::deck_card::update_deck_card::UpdateDeckCardErro
 pub trait DeckRepository: Clone + Send + Sync + 'static {
     // == create ==
 
-    /// Creates a new deck profile.
+    /// Creates a new deck profile. The user's row lock, the deck-count check
+    /// and the insert run in one transaction, so concurrent creates can't
+    /// pass `deck_limit` together. `deck_limit` is resolved by the domain; the
+    /// request's `email_verified` picks the error variant.
     fn create_deck_profile(
         &self,
         request: &CreateDeckProfile,
+        deck_limit: i64,
     ) -> impl Future<Output = Result<DeckProfile, CreateDeckProfileError>> + Send;
 
     /// Adds a card to a deck. Ownership + row lock, the card-limit check, and
@@ -74,12 +78,6 @@ pub trait DeckRepository: Clone + Send + Sync + 'static {
 
     // == count ==
 
-    /// Returns the number of decks owned by a user.
-    fn count_decks_by_user(
-        &self,
-        user_id: uuid::Uuid,
-    ) -> impl Future<Output = Result<i64, anyhow::Error>> + Send;
-
     /// Returns the total card quantity (sum of all copies) in a deck.
     fn count_cards_in_deck(
         &self,
@@ -89,19 +87,19 @@ pub trait DeckRepository: Clone + Send + Sync + 'static {
     // == get ==
 
     /// Retrieves a single deck profile by ID.
-    fn get_deck_profile(
+    fn fetch_deck_profile(
         &self,
         request: &GetDeckProfile,
     ) -> impl Future<Output = Result<DeckProfile, GetDeckProfileError>> + Send;
 
     /// Retrieves all deck profiles for a user.
-    fn get_deck_profiles(
+    fn fetch_deck_profiles(
         &self,
         request: &GetDeckProfiles,
     ) -> impl Future<Output = Result<Vec<DeckProfile>, GetDeckProfileError>> + Send;
 
     /// Retrieves all cards in a deck.
-    fn get_deck_cards(
+    fn fetch_deck_cards(
         &self,
         request: &GetDeckProfile,
     ) -> impl Future<Output = Result<Vec<DeckCard>, GetDeckCardError>> + Send;
@@ -111,7 +109,7 @@ pub trait DeckRepository: Clone + Send + Sync + 'static {
     /// roles), which leaves serve ordering untouched. Unvested MVPs count:
     /// vesting guards the *global* signal, while steering your own deck is
     /// immediate by design.
-    fn get_mvp_card_roles(
+    fn fetch_mvp_card_roles(
         &self,
         request: &GetDeckProfile,
     ) -> impl Future<Output = Result<Vec<String>, GetDeckCardError>> + Send;
@@ -183,7 +181,7 @@ pub trait DeckRepository: Clone + Send + Sync + 'static {
     ) -> impl Future<Output = Result<(), SkipDeckCardError>> + Send;
 
     /// Lists a user's commander maybeboard oracle ids, newest save first.
-    fn get_commander_maybeboard_oracle_ids(
+    fn fetch_commander_maybeboard_oracle_ids(
         &self,
         user_id: uuid::Uuid,
     ) -> impl Future<Output = Result<Vec<uuid::Uuid>, CommanderMaybeboardError>> + Send;
@@ -261,15 +259,16 @@ pub trait DeckRepository: Clone + Send + Sync + 'static {
     // == clone ==
 
     /// Transactionally copies a source deck's profile and all entries into a
-    /// new deck owned by `owner_id` with the given `new_name`. Returns the
-    /// new deck's id. The caller must have already verified `owner_id` owns
-    /// `source_deck_id`: this method performs no authorization check.
+    /// new deck owned by the requesting user with the given `new_name`.
+    /// Returns the new deck's id. The deck-count check against `deck_limit`
+    /// runs in the same transaction under the user's row lock, as in
+    /// `create_deck_profile`. The caller must have already verified the user
+    /// owns `source_deck_id`: this method performs no authorization check.
     /// `share_token` is deliberately not copied: clones start private.
     fn clone_deck(
         &self,
-        source_deck_id: uuid::Uuid,
-        new_name: &DeckName,
-        owner_id: uuid::Uuid,
+        request: &CloneDeck,
+        deck_limit: i64,
     ) -> impl Future<Output = Result<uuid::Uuid, CloneDeckError>> + Send;
 
     // == share ==
@@ -290,7 +289,7 @@ pub trait DeckRepository: Clone + Send + Sync + 'static {
 
     /// Resolves a share token to `(deck_id, owner_user_id)`, or `None` when
     /// no deck carries this token (never shared, or sharing was stopped).
-    fn get_deck_id_by_share_token(
+    fn fetch_deck_id_by_share_token(
         &self,
         token: uuid::Uuid,
     ) -> impl Future<Output = Result<Option<(uuid::Uuid, uuid::Uuid)>, anyhow::Error>> + Send;
@@ -315,19 +314,19 @@ pub trait DeckService: Clone + Send + Sync + 'static {
     // == get ==
 
     /// Retrieves a deck profile with authorization check.
-    fn get_deck_profile(
+    fn fetch_deck_profile(
         &self,
         request: &GetDeckProfile,
     ) -> impl Future<Output = Result<DeckProfile, GetDeckProfileError>> + Send;
 
     /// Retrieves all decks for the requesting user.
-    fn get_deck_profiles(
+    fn fetch_deck_profiles(
         &self,
         request: &GetDeckProfiles,
     ) -> impl Future<Output = Result<Vec<DeckProfile>, GetDeckProfileError>> + Send;
 
     /// Retrieves complete deck with authorization check.
-    fn get_deck(
+    fn fetch_deck(
         &self,
         request: &GetDeckProfile,
     ) -> impl Future<Output = Result<Deck, GetDeckError>> + Send;
@@ -349,7 +348,7 @@ pub trait DeckService: Clone + Send + Sync + 'static {
     ) -> impl Future<Output = Result<DeckCardServe, SearchDeckCardsError>> + Send;
 
     /// Retrieves all token cards produced by the cards in a deck.
-    fn get_deck_tokens(
+    fn fetch_deck_tokens(
         &self,
         request: &GetDeckProfile,
     ) -> impl Future<Output = Result<Vec<Card>, GetDeckTokensError>> + Send;
@@ -404,7 +403,7 @@ pub trait DeckService: Clone + Send + Sync + 'static {
 
     /// Returns the user's commander maybeboard hydrated to full cards
     /// (preferred printing via `latest_cards`), newest save first.
-    fn get_commander_maybeboard(
+    fn fetch_commander_maybeboard(
         &self,
         user_id: uuid::Uuid,
     ) -> impl Future<Output = Result<Vec<Card>, CommanderMaybeboardError>> + Send;
@@ -523,7 +522,7 @@ pub trait DeckService: Clone + Send + Sync + 'static {
 
     /// Resolves a share token to the full deck aggregate plus command zone
     /// cards. **Unauthenticated**: possession of the token is the authority.
-    fn get_shared_deck(
+    fn fetch_shared_deck(
         &self,
         token: uuid::Uuid,
     ) -> impl Future<Output = Result<SharedDeck, GetSharedDeckError>> + Send;
@@ -544,20 +543,20 @@ pub trait ErasedDeckService: Send + Sync + 'static {
         request: &'a CreateDeckCard,
     ) -> BoxFuture<'a, Result<DeckCard, CreateDeckCardError>>;
 
-    /// See [`DeckService::get_deck_profile`].
-    fn get_deck_profile<'a>(
+    /// See [`DeckService::fetch_deck_profile`].
+    fn fetch_deck_profile<'a>(
         &'a self,
         request: &'a GetDeckProfile,
     ) -> BoxFuture<'a, Result<DeckProfile, GetDeckProfileError>>;
 
-    /// See [`DeckService::get_deck_profiles`].
-    fn get_deck_profiles<'a>(
+    /// See [`DeckService::fetch_deck_profiles`].
+    fn fetch_deck_profiles<'a>(
         &'a self,
         request: &'a GetDeckProfiles,
     ) -> BoxFuture<'a, Result<Vec<DeckProfile>, GetDeckProfileError>>;
 
-    /// See [`DeckService::get_deck`].
-    fn get_deck<'a>(
+    /// See [`DeckService::fetch_deck`].
+    fn fetch_deck<'a>(
         &'a self,
         request: &'a GetDeckProfile,
     ) -> BoxFuture<'a, Result<Deck, GetDeckError>>;
@@ -569,8 +568,8 @@ pub trait ErasedDeckService: Send + Sync + 'static {
         filter: &'a CardQuery,
     ) -> BoxFuture<'a, Result<DeckCardServe, SearchDeckCardsError>>;
 
-    /// See [`DeckService::get_deck_tokens`].
-    fn get_deck_tokens<'a>(
+    /// See [`DeckService::fetch_deck_tokens`].
+    fn fetch_deck_tokens<'a>(
         &'a self,
         request: &'a GetDeckProfile,
     ) -> BoxFuture<'a, Result<Vec<Card>, GetDeckTokensError>>;
@@ -617,8 +616,8 @@ pub trait ErasedDeckService: Send + Sync + 'static {
         request: &'a SkipDeckCard,
     ) -> BoxFuture<'a, Result<(), SkipDeckCardError>>;
 
-    /// See [`DeckService::get_commander_maybeboard`].
-    fn get_commander_maybeboard(
+    /// See [`DeckService::fetch_commander_maybeboard`].
+    fn fetch_commander_maybeboard(
         &self,
         user_id: uuid::Uuid,
     ) -> BoxFuture<'_, Result<Vec<Card>, CommanderMaybeboardError>>;
@@ -713,8 +712,8 @@ pub trait ErasedDeckService: Send + Sync + 'static {
         request: &'a GetDeckProfile,
     ) -> BoxFuture<'a, Result<(), ShareDeckError>>;
 
-    /// See [`DeckService::get_shared_deck`].
-    fn get_shared_deck(
+    /// See [`DeckService::fetch_shared_deck`].
+    fn fetch_shared_deck(
         &self,
         token: uuid::Uuid,
     ) -> BoxFuture<'_, Result<SharedDeck, GetSharedDeckError>>;
@@ -738,25 +737,25 @@ where
         Box::pin(DeckService::create_deck_card(self, request))
     }
 
-    fn get_deck_profile<'a>(
+    fn fetch_deck_profile<'a>(
         &'a self,
         request: &'a GetDeckProfile,
     ) -> BoxFuture<'a, Result<DeckProfile, GetDeckProfileError>> {
-        Box::pin(DeckService::get_deck_profile(self, request))
+        Box::pin(DeckService::fetch_deck_profile(self, request))
     }
 
-    fn get_deck_profiles<'a>(
+    fn fetch_deck_profiles<'a>(
         &'a self,
         request: &'a GetDeckProfiles,
     ) -> BoxFuture<'a, Result<Vec<DeckProfile>, GetDeckProfileError>> {
-        Box::pin(DeckService::get_deck_profiles(self, request))
+        Box::pin(DeckService::fetch_deck_profiles(self, request))
     }
 
-    fn get_deck<'a>(
+    fn fetch_deck<'a>(
         &'a self,
         request: &'a GetDeckProfile,
     ) -> BoxFuture<'a, Result<Deck, GetDeckError>> {
-        Box::pin(DeckService::get_deck(self, request))
+        Box::pin(DeckService::fetch_deck(self, request))
     }
 
     fn search_deck_cards<'a>(
@@ -767,11 +766,11 @@ where
         Box::pin(DeckService::search_deck_cards(self, request, filter))
     }
 
-    fn get_deck_tokens<'a>(
+    fn fetch_deck_tokens<'a>(
         &'a self,
         request: &'a GetDeckProfile,
     ) -> BoxFuture<'a, Result<Vec<Card>, GetDeckTokensError>> {
-        Box::pin(DeckService::get_deck_tokens(self, request))
+        Box::pin(DeckService::fetch_deck_tokens(self, request))
     }
 
     fn update_deck_profile<'a>(
@@ -823,11 +822,11 @@ where
         Box::pin(DeckService::unskip_deck_card(self, request))
     }
 
-    fn get_commander_maybeboard(
+    fn fetch_commander_maybeboard(
         &self,
         user_id: uuid::Uuid,
     ) -> BoxFuture<'_, Result<Vec<Card>, CommanderMaybeboardError>> {
-        Box::pin(DeckService::get_commander_maybeboard(self, user_id))
+        Box::pin(DeckService::fetch_commander_maybeboard(self, user_id))
     }
 
     fn add_commander_maybeboard_card<'a>(
@@ -942,10 +941,10 @@ where
         Box::pin(DeckService::unshare_deck(self, request))
     }
 
-    fn get_shared_deck(
+    fn fetch_shared_deck(
         &self,
         token: uuid::Uuid,
     ) -> BoxFuture<'_, Result<SharedDeck, GetSharedDeckError>> {
-        Box::pin(DeckService::get_shared_deck(self, token))
+        Box::pin(DeckService::fetch_shared_deck(self, token))
     }
 }

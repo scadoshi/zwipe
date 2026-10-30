@@ -28,8 +28,8 @@ impl TryFrom<DatabaseUserWithPasswordHash> for UserWithPasswordHash {
     type Error = IntoUserWithPasswordHashError;
 
     fn try_from(value: DatabaseUserWithPasswordHash) -> Result<Self, Self::Error> {
-        let username = Username::new(value.username)?;
-        let email = zwipe_core::domain::Email::new(&value.email)?;
+        let username = Username::from_stored(value.username);
+        let email = zwipe_core::domain::Email::from_stored(value.email);
         let password_hash = HashedPassword::new(&value.password_hash)?;
         Ok(Self {
             id: value.id,
@@ -60,4 +60,40 @@ pub struct DatabaseRefreshToken {
     pub platform: Option<String>,
     /// Client app version string (e.g. `"1.6.1"`), NULL if unknown.
     pub client_version: Option<String>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::domain::auth::models::password::Password;
+
+    #[test]
+    fn stored_username_with_a_banned_word_still_loads() {
+        let hash = HashedPassword::generate(Password::new("SecurePass123!").unwrap()).unwrap();
+        let db = DatabaseUserWithPasswordHash {
+            id: Uuid::nil(),
+            username: "fuck".to_string(),
+            email: "tester@test.local".to_string(),
+            password_hash: hash.to_string(),
+            email_verified_at: None,
+            hints_shown: serde_json::json!({}),
+        };
+        let user = UserWithPasswordHash::try_from(db).unwrap();
+        assert_eq!(&*user.username, "fuck");
+    }
+
+    #[test]
+    fn stored_email_that_fails_todays_rules_still_loads() {
+        let hash = HashedPassword::generate(Password::new("SecurePass123!").unwrap()).unwrap();
+        let db = DatabaseUserWithPasswordHash {
+            id: Uuid::nil(),
+            username: "tester".to_string(),
+            email: "tester@localhost".to_string(),
+            password_hash: hash.to_string(),
+            email_verified_at: None,
+            hints_shown: serde_json::json!({}),
+        };
+        let user = UserWithPasswordHash::try_from(db).unwrap();
+        assert_eq!(&*user.email, "tester@localhost");
+    }
 }

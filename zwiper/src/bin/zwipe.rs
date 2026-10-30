@@ -24,9 +24,9 @@ const FONT_JBM_400: Asset = asset!("/assets/fonts/jetbrains-mono-400.woff2");
 const FONT_JBM_500: Asset = asset!("/assets/fonts/jetbrains-mono-500.woff2");
 const FONT_JBM_700: Asset = asset!("/assets/fonts/jetbrains-mono-700.woff2");
 
-fn main() {
+fn main() -> anyhow::Result<()> {
     logo::Zwiper::print();
-    let config = Config::from_env();
+    let config = Config::from_env()?;
     tracing_subscriber::fmt()
         .with_env_filter(EnvFilter::new(&config.rust_log))
         .init();
@@ -35,7 +35,8 @@ fn main() {
     // it (session_upkeep) and clears the file on a 2xx. Native-only.
     #[cfg(not(target_arch = "wasm32"))]
     zwiper::outbound::crash_store::install_panic_hook();
-    launch_app();
+    launch_app(config);
+    Ok(())
 }
 
 // Native shells (iOS/Android/desktop) render into a WebView that paints dark
@@ -43,14 +44,16 @@ fn main() {
 // among its head elements); web has no such config, so it falls back to the
 // plain launch. dioxus::mobile and dioxus::desktop are both re-exports of the same
 // dioxus-desktop crate, feature-gated by which platform this build targets.
+// Either way the config rides in as root context for `spawn_upkeeper`.
 #[cfg(any(feature = "desktop", feature = "mobile"))]
-fn launch_app() {
+fn launch_app(config: Config) {
     #[cfg(feature = "desktop")]
     use dioxus::desktop::Config as WebviewConfig;
     #[cfg(all(feature = "mobile", not(feature = "desktop")))]
     use dioxus::mobile::Config as WebviewConfig;
 
     dioxus::LaunchBuilder::new()
+        .with_context(config)
         .with_cfg(
             WebviewConfig::new()
                 .with_background_color(components::BOOT_BG)
@@ -60,8 +63,10 @@ fn launch_app() {
 }
 
 #[cfg(not(any(feature = "desktop", feature = "mobile")))]
-fn launch_app() {
-    dioxus::launch(App);
+fn launch_app(config: Config) {
+    dioxus::LaunchBuilder::new()
+        .with_context(config)
+        .launch(App);
 }
 
 #[component]

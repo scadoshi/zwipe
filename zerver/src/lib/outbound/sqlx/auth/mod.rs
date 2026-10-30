@@ -48,7 +48,7 @@ impl AuthRepository for Postgres {
             request.password_hash.to_string()
         ).fetch_one(&self.pool).await?;
 
-        Ok(database_user.try_into()?)
+        Ok(User::from(database_user))
     }
 
     async fn username_exists(&self, username: &Username) -> Result<bool, RegisterUserError> {
@@ -77,7 +77,7 @@ impl AuthRepository for Postgres {
     }
     // == get ==
     /// Looks up a user by ID, username, **or** email using a single `OR` query.
-    async fn get_user_with_password_hash(
+    async fn fetch_user_with_password_hash(
         &self,
         request: &AuthenticateUser,
     ) -> Result<UserWithPasswordHash, AuthenticateUserError> {
@@ -138,7 +138,7 @@ impl AuthRepository for Postgres {
             request.user_id
         ).fetch_one(&mut *tx).await?;
 
-        let user: User = database_user.try_into()?;
+        let user = User::from(database_user);
 
         tx.commit().await?;
 
@@ -220,9 +220,8 @@ impl AuthRepository for Postgres {
 
         tx.commit().await?;
 
-        let user: User = database_user.try_into()?;
-        let old_email =
-            Email::new(&old_email).map_err(|e| ConfirmEmailChangeError::UserFromDb(e.into()))?;
+        let user = User::from(database_user);
+        let old_email = Email::from_stored(old_email);
         Ok(ConfirmedEmailChange { user, old_email })
     }
 
@@ -413,7 +412,7 @@ impl AuthRepository for Postgres {
 
     // == password reset ==
 
-    async fn get_user_id_by_email(&self, email: &str) -> Result<Option<Uuid>, anyhow::Error> {
+    async fn fetch_user_id_by_email(&self, email: &str) -> Result<Option<Uuid>, anyhow::Error> {
         let user_id: Option<Uuid> = query_scalar!("SELECT id FROM users WHERE email = $1", email)
             .fetch_optional(&self.pool)
             .await

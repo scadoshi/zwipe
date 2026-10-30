@@ -121,7 +121,12 @@ impl EnsureFresh for Signal<Option<Session>> {
             let _ = tx.send(result);
         });
 
-        rx.await
-            .unwrap_or_else(|_| Err(ClientError::Network("refresh task dropped".to_string())))
+        // A dropped sender means the refresh task died without answering:
+        // a client-side fault, not a transport one, so it carries no source.
+        rx.await.unwrap_or_else(|_| {
+            Err(ClientError::InternalServerError(
+                "refresh task dropped".to_string(),
+            ))
+        })
     }
 }

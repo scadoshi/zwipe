@@ -26,7 +26,7 @@ use zwipe_core::domain::deck::{
 use zwipe_core::domain::user::models::hints::HINT_DECK_CARDS;
 use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
 use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpPatchDeckCard};
-use zwipe_core::http::helpers::Opdate;
+use zwipe_core::http::helpers::Patch;
 
 use super::components::card_row::{CardRow, OtagDescribe, OtagExamplesOpen, ShowRowArt};
 use super::components::filter_store::{FilterScope, FilterStore};
@@ -34,7 +34,7 @@ use super::components::image_preview::ImagePreview;
 use super::components::printing_sheet::PrintingSheet;
 use super::components::quick_add::QuickAdd;
 use super::components::undo_log::{
-    CommandZoneSlot, UndoAction, UndoLog, UndoStore, create_board_field,
+    CommandZoneSlot, UndoAction, UndoLog, UndoStore, create_board_field, take_newest_in,
 };
 use crate::inbound::components::auth::authed::use_authed;
 use crate::inbound::components::catalog_cache::CatalogCache;
@@ -81,6 +81,30 @@ struct PendingQty {
 
 /// Quiet period after the last quantity tap before the net delta posts.
 const QTY_FLUSH_MS: u64 = 300;
+
+/// Reverses a burst's optimistic delete after the server refused it: the row
+/// comes back at its pre-burst quantity, and the burst's `Removed` undo entry
+/// goes, since undoing it would re-create a row the server still holds.
+fn roll_back_failed_delete(
+    entries: &mut Vec<DeckEntry>,
+    log: &mut Vec<UndoAction>,
+    removed: DeckEntry,
+    baseline: i32,
+) {
+    let card_id = removed.card.scryfall_data.id;
+    take_newest_in(
+        log,
+        |a| matches!(a, UndoAction::Removed { entry, .. } if entry.card.scryfall_data.id == card_id),
+    );
+    if entries.iter().any(|e| e.card.scryfall_data.id == card_id) {
+        return;
+    }
+    let mut restored = removed;
+    if let Ok(quantity) = Quantity::new(baseline) {
+        restored.deck_card.quantity = quantity;
+    }
+    entries.push(restored);
+}
 
 /// Collapsible card group: a header with the card-row disclosure arrow
 /// (points down while expanded, spins sideways when collapsed: the same
@@ -191,6 +215,9 @@ pub fn View(deck_id: Uuid) -> Element {
 
     // Per-card pending quantity bursts (see PendingQty).
     let pending_qty: Signal<HashMap<Uuid, PendingQty>> = use_signal(HashMap::new);
+    // Rows a burst deleted optimistically, kept until the delete answers so a
+    // refusal can put them back.
+    let removed_rows: Signal<HashMap<Uuid, DeckEntry>> = use_signal(HashMap::new);
     // A tap inside the debounce window must still reach the server when the
     // user leaves the screen: post every mapped burst on unmount. Detached
     // tasks (the screen's scope is going away), so failures only report and
@@ -373,18 +400,18 @@ pub fn View(deck_id: Uuid) -> Element {
     // Fetches deck entries, separates the commander into its own pinned slot.
     use_effect(move || {
         spawn(async move {
-            // The whole load rides one facade call: only get_deck's failure
+            // The whole load rides one facade call: only fetch_deck's failure
             // aborts (reported and toasted); the profile and command-zone fetches keep their
             // tolerant .ok() handling inside.
             let _ = authed
                 .run("load_deck", |c, s| async move {
-                    let deck = c.get_deck(deck_id, &s).await?;
+                    let deck = c.fetch_deck(deck_id, &s).await?;
                     command_zone_cards.set(deck.command_zone_cards);
                     let mut entries = deck.entries;
 
                     // Resolve commander and signature spell from profile.
                     // Pull from entries if present, otherwise fetch separately.
-                    if let Ok(profile) = c.get_deck_profile(deck_id, &s).await {
+                    if let Ok(profile) = c.fetch_deck_profile(deck_id, &s).await {
                         deck_name.set(profile.name.to_string());
                         deck_format.set(profile.format);
                         deck_power.set(profile.power_level);
@@ -405,7 +432,7 @@ pub fn View(deck_id: Uuid) -> Element {
                         // Resolve command zone cards by oracle_id (not printing-specific scryfall_data_id).
                         // Fetch the card first to get its oracle_id, then remove from entries by oracle_id.
                         if let Some(commander_id) = profile.commander_id {
-                            let fetched = c.get_card(commander_id).await.ok();
+                            let fetched = c.fetch_card(commander_id).await.ok();
                             if let Some(ref card) = fetched
                                 && let Some(oid) = card.scryfall_data.oracle_id
                             {
@@ -415,7 +442,7 @@ pub fn View(deck_id: Uuid) -> Element {
                         }
 
                         if let Some(spell_id) = profile.signature_spell_id {
-                            let fetched = c.get_card(spell_id).await.ok();
+                            let fetched = c.fetch_card(spell_id).await.ok();
                             if let Some(ref card) = fetched
                                 && let Some(oid) = card.scryfall_data.oracle_id
                             {
@@ -425,7 +452,7 @@ pub fn View(deck_id: Uuid) -> Element {
                         }
 
                         if let Some(partner_id) = profile.partner_commander_id {
-                            let fetched = c.get_card(partner_id).await.ok();
+                            let fetched = c.fetch_card(partner_id).await.ok();
                             if let Some(ref card) = fetched
                                 && let Some(oid) = card.scryfall_data.oracle_id
                             {
@@ -435,7 +462,7 @@ pub fn View(deck_id: Uuid) -> Element {
                         }
 
                         if let Some(bg_id) = profile.background_id {
-                            let fetched = c.get_card(bg_id).await.ok();
+                            let fetched = c.fetch_card(bg_id).await.ok();
                             if let Some(ref card) = fetched
                                 && let Some(oid) = card.scryfall_data.oracle_id
                             {
@@ -472,7 +499,7 @@ pub fn View(deck_id: Uuid) -> Element {
     let tokens_resource: Resource<Vec<Card>> = use_resource(move || async move {
         authed
             .run_quiet("load_tokens", |c, s| async move {
-                c.get_deck_tokens(deck_id, &s).await
+                c.fetch_deck_tokens(deck_id, &s).await
             })
             .await
             .unwrap_or_default()
@@ -644,12 +671,16 @@ pub fn View(deck_id: Uuid) -> Element {
 
                 // Undoable: re-creating wants the old board + the quantity from
                 // before this whole burst, not the 1 it died at.
-                if record && let Some(entry) = removed_entry {
-                    let baseline = pending_qty
-                        .peek()
-                        .get(&card_id)
-                        .map_or(current_qty, |p| p.baseline);
-                    undo_log.push(UndoAction::Removed { entry, baseline });
+                if let Some(entry) = removed_entry {
+                    let mut removed_rows = removed_rows;
+                    removed_rows.write().insert(card_id, entry.clone());
+                    if record {
+                        let baseline = pending_qty
+                            .peek()
+                            .get(&card_id)
+                            .map_or(current_qty, |p| p.baseline);
+                        undo_log.push(UndoAction::Removed { entry, baseline });
+                    }
                 }
 
                 // Optimistic: remove from entries
@@ -716,17 +747,36 @@ pub fn View(deck_id: Uuid) -> Element {
                 let Some(pending) = flushed else {
                     return;
                 };
+                let removed = {
+                    let mut removed_rows = removed_rows;
+                    removed_rows.write().remove(&card_id)
+                };
                 if pending.delta == 0 {
                     // A burst that nets out (+1 then -1) needs no server call.
                     return;
                 }
 
                 if pending.baseline + pending.delta < 1 {
-                    let _ = authed
-                        .run("change_quantity", |c, s| async move {
+                    let deleted = authed
+                        .try_run("change_quantity", |c, s| async move {
                             c.delete_deck_card(deck_id, card_id, &s).await
                         })
                         .await;
+                    // The failure already toasted; put the row back so the
+                    // screen and the undo log match the server again.
+                    if deleted.is_err()
+                        && let Some(removed) = removed
+                    {
+                        let mut log = undo_log.0;
+                        roll_back_failed_delete(
+                            &mut deck_entries.write(),
+                            &mut log.write(),
+                            removed,
+                            pending.baseline,
+                        );
+                        let current = *filter_reset_counter.peek();
+                        filter_reset_counter.set(current + 1);
+                    }
                 } else {
                     // PATCH: the burst's absolute target (baseline + net), so
                     // a retried or replayed request lands on the same value.
@@ -1060,7 +1110,7 @@ pub fn View(deck_id: Uuid) -> Element {
                 }
                 let card_name = old_card.scryfall_data.name.clone();
                 let old_id = old_card.scryfall_data.id;
-                let id = Opdate::Set(Some(old_id));
+                let id = Patch::Set(Some(old_id));
                 let request = match slot {
                     CommandZoneSlot::Commander => {
                         HttpUpdateDeckProfile::builder().commander_id(id).build()
@@ -1696,7 +1746,7 @@ pub fn View(deck_id: Uuid) -> Element {
 
                         if let Some(slot) = command_zone_slot() {
                             // Command zone card: update deck profile
-                            let id = Opdate::Set(Some(new_id));
+                            let id = Patch::Set(Some(new_id));
                             let request = match slot {
                                 CommandZoneSlot::Commander => HttpUpdateDeckProfile::builder().commander_id(id).build(),
                                 CommandZoneSlot::Partner => HttpUpdateDeckProfile::builder().partner_commander_id(id).build(),
@@ -1761,5 +1811,54 @@ pub fn View(deck_id: Uuid) -> Element {
                 OracleTagExamples { open: otag_examples_open, slug: otag_examples_slug() }
             }
             }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_fixtures;
+
+    #[test]
+    fn failed_delete_restores_the_row_and_drops_its_undo_entry() {
+        let removed = test_fixtures::deck_entry("Sol Ring", 1);
+        let card_id = removed.card.scryfall_data.id;
+        let other = test_fixtures::deck_entry("Arcane Signet", 1);
+        let mut entries = vec![other.clone()];
+        let mut log = vec![
+            UndoAction::Removed {
+                entry: other,
+                baseline: 1,
+            },
+            UndoAction::Removed {
+                entry: removed.clone(),
+                baseline: 3,
+            },
+        ];
+
+        roll_back_failed_delete(&mut entries, &mut log, removed, 3);
+
+        let restored = entries
+            .iter()
+            .find(|e| e.card.scryfall_data.id == card_id)
+            .expect("the row is back");
+        assert_eq!(
+            *restored.deck_card.quantity, 3,
+            "back at its pre-burst quantity"
+        );
+        assert_eq!(log.len(), 1, "only the other card's entry is left");
+        assert!(
+            !matches!(&log[0], UndoAction::Removed { entry, .. } if entry.card.scryfall_data.id == card_id),
+            "undo must not re-create a row the server kept"
+        );
+    }
+
+    #[test]
+    fn failed_delete_never_duplicates_a_row_already_back() {
+        let removed = test_fixtures::deck_entry("Sol Ring", 1);
+        let mut entries = vec![removed.clone()];
+        let mut log = Vec::new();
+        roll_back_failed_delete(&mut entries, &mut log, removed, 2);
+        assert_eq!(entries.len(), 1);
     }
 }

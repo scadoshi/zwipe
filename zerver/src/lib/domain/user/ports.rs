@@ -32,10 +32,10 @@ pub trait UserRepository: Clone + Send + Sync + 'static {
     /// Retrieves a user profile by ID.
     ///
     /// Returns user data without password hash (use `AuthRepository` for that).
-    fn get_user(&self, user_id: Uuid) -> impl Future<Output = Result<User, GetUserError>> + Send;
+    fn fetch_user(&self, user_id: Uuid) -> impl Future<Output = Result<User, GetUserError>> + Send;
 
     /// Fetches display preferences for a user. Returns defaults if no row exists.
-    fn get_preferences(
+    fn fetch_preferences(
         &self,
         user_id: Uuid,
     ) -> impl Future<Output = Result<UserPreferences, GetPreferencesError>> + Send;
@@ -60,7 +60,7 @@ pub trait UserService: Clone + Send + Sync + 'static {
     /// Retrieves a user profile by ID.
     ///
     /// Returns public user data (username, email, ID).
-    fn get_user(
+    fn fetch_user(
         &self,
         request: &GetUser,
     ) -> impl Future<Output = Result<User, GetUserError>> + Send;
@@ -68,7 +68,7 @@ pub trait UserService: Clone + Send + Sync + 'static {
     // == preferences ==
 
     /// Fetches display preferences for a user.
-    fn get_preferences(
+    fn fetch_preferences(
         &self,
         user_id: Uuid,
     ) -> impl Future<Output = Result<UserPreferences, GetPreferencesError>> + Send;
@@ -91,11 +91,11 @@ pub trait UserService: Clone + Send + Sync + 'static {
 /// Object-safe wrapper used by `AppState` so the concrete service type stays
 /// out of the generic parameter list. Auto-implemented for any `UserService`.
 pub trait ErasedUserService: Send + Sync + 'static {
-    /// See [`UserService::get_user`].
-    fn get_user<'a>(&'a self, request: &'a GetUser) -> BoxFuture<'a, Result<User, GetUserError>>;
+    /// See [`UserService::fetch_user`].
+    fn fetch_user<'a>(&'a self, request: &'a GetUser) -> BoxFuture<'a, Result<User, GetUserError>>;
 
-    /// See [`UserService::get_preferences`].
-    fn get_preferences(
+    /// See [`UserService::fetch_preferences`].
+    fn fetch_preferences(
         &self,
         user_id: Uuid,
     ) -> BoxFuture<'_, Result<UserPreferences, GetPreferencesError>>;
@@ -117,15 +117,15 @@ impl<T> ErasedUserService for T
 where
     T: UserService,
 {
-    fn get_user<'a>(&'a self, request: &'a GetUser) -> BoxFuture<'a, Result<User, GetUserError>> {
-        Box::pin(UserService::get_user(self, request))
+    fn fetch_user<'a>(&'a self, request: &'a GetUser) -> BoxFuture<'a, Result<User, GetUserError>> {
+        Box::pin(UserService::fetch_user(self, request))
     }
 
-    fn get_preferences(
+    fn fetch_preferences(
         &self,
         user_id: Uuid,
     ) -> BoxFuture<'_, Result<UserPreferences, GetPreferencesError>> {
-        Box::pin(UserService::get_preferences(self, user_id))
+        Box::pin(UserService::fetch_preferences(self, user_id))
     }
 
     fn update_preferences<'a>(

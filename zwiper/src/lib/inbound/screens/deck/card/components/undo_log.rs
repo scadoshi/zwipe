@@ -95,7 +95,7 @@ fn push_capped(log: &mut Vec<UndoAction>, action: UndoAction) {
 /// Newest-first predicate removal: the reconciliation primitive behind
 /// `UndoStore::take_newest`, split out so the selection logic is testable
 /// without a signal runtime.
-fn take_newest_in(
+pub(crate) fn take_newest_in(
     log: &mut Vec<UndoAction>,
     matches: impl Fn(&UndoAction) -> bool,
 ) -> Option<UndoAction> {
