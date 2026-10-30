@@ -4,6 +4,8 @@
 pub(crate) mod card;
 /// A deck's row in the deck list.
 pub(crate) mod deck;
+/// The logo entrance, ported from orangui.
+pub(crate) mod decode;
 /// The home screen's counters and color map.
 pub(crate) mod home;
 /// The swipe stack and the query that fills it.

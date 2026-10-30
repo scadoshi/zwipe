@@ -12,6 +12,7 @@ use zwipe_core::domain::logo;
 
 use super::charts::row;
 use super::{height_of, hints, width_of};
+use crate::domain::decode;
 use crate::domain::home::{self, Figures};
 use crate::domain::theme::Palette;
 use crate::inbound::app::{App, HomeView};
@@ -55,8 +56,14 @@ pub(super) fn draw(f: &mut Frame<'_>, palette: &Palette, app: &App, view: &HomeV
     );
     if let Some(text) = logo_text {
         let width = text.lines().map(width_of).max().unwrap_or(0);
-        let art =
-            Text::from(text.lines().map(Line::from).collect::<Vec<_>>()).style(palette.accent);
+        let frame = decode::at(text, view.logo_elapsed());
+        let art = Text::from(
+            frame
+                .lines()
+                .map(|l| Line::from(l.to_owned()))
+                .collect::<Vec<_>>(),
+        )
+        .style(palette.accent);
         f.render_widget(
             Paragraph::new(art),
             logo_area.centered_horizontally(Constraint::Length(width)),

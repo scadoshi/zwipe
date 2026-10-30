@@ -1,5 +1,7 @@
 //! What the screens draw from: which screen is up and its state.
 
+use std::time::{Duration, Instant};
+
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::CardQuery;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
@@ -7,6 +9,7 @@ use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
 use zwipe_core::domain::deck::{Deck, DeckProfile};
 use zwipe_core::http::contracts::suggestions::HttpPlayStyleSummary;
 
+use crate::domain::decode;
 use crate::domain::home::{Figures, Scope};
 use crate::domain::swipe::Stack;
 use crate::domain::theme::Palette;
@@ -23,6 +26,11 @@ pub(crate) struct App {
 }
 
 impl App {
+    /// Whether something on screen is moving, so the loop should redraw on a timer.
+    pub(crate) fn animating(&self) -> bool {
+        matches!(&self.screen, Screen::Home(home) if home.logo_elapsed() < decode::DURATION)
+    }
+
     pub(crate) fn new(palette: Palette) -> Self {
         Self {
             screen: Screen::Login(LoginForm::default()),
@@ -93,9 +101,24 @@ pub(crate) struct HomeView {
     pub(crate) play_style_failed: bool,
     /// The card the server features this hour. Shown only when it has flavor text.
     pub(crate) flavor: Option<Card>,
+    /// When the logo started decoding in. `None` draws it settled.
+    pub(crate) logo_started: Option<Instant>,
 }
 
 impl HomeView {
+    /// A home screen whose logo starts decoding in now.
+    pub(crate) fn opening() -> Self {
+        Self {
+            logo_started: Some(Instant::now()),
+            ..Self::default()
+        }
+    }
+
+    /// How far the logo's entrance has run; settled when it never started.
+    pub(crate) fn logo_elapsed(&self) -> Duration {
+        self.logo_started.map_or(decode::DURATION, |t| t.elapsed())
+    }
+
     /// The counters for the scope on screen, `None` until they arrive.
     pub(crate) fn figures(&self) -> Option<Figures> {
         match self.scope {

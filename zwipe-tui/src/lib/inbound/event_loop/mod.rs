@@ -21,8 +21,11 @@ use zwipe_core::http::contracts::deck_card::HttpCreateDeckCard;
 use zwipe_core::http::contracts::suggestions::HttpPlayStyleSummary;
 use zwipe_core::version::version_at_least;
 
-use super::app::{App, DeckList, DeckView, LoginField, LoginForm, Screen, Step, SwipeView};
+use super::app::{
+    App, DeckList, DeckView, HomeView, LoginField, LoginForm, Screen, Step, SwipeView,
+};
 use super::ui;
+use crate::domain::decode;
 use crate::domain::home::{Figures, Scope};
 use crate::domain::swipe::{self, Effect, Stack, Swipe};
 use crate::domain::theme::Palette;
@@ -147,8 +150,10 @@ impl EventLoop {
             self.dispatch();
             terminal.draw(|f| ui::draw(f, app))?;
 
+            let animating = app.animating();
             tokio::select! {
                 Some(update) = self.rx.recv() => self.apply(app, update),
+                () = tokio::time::sleep(decode::TICK), if animating => {}
                 event = events.next() => match event {
                     Some(Ok(Event::Key(key))) if key.kind == KeyEventKind::Press => {
                         if self.handle_key(app, key) == Flow::Quit {
@@ -187,7 +192,7 @@ impl EventLoop {
 
     /// Opens home and fetches its counters, color map and featured card.
     fn open_home(&mut self, app: &mut App) {
-        app.screen = Screen::Home(Box::default());
+        app.screen = Screen::Home(Box::new(HomeView::opening()));
         self.pending
             .extend([Request::PublicMetrics, Request::PlayStyle, Request::Flavor]);
     }

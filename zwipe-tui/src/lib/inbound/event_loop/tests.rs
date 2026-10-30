@@ -461,3 +461,14 @@ fn a_failed_request_ends_the_session_only_on_unauthorized() {
         Update::Status(m) if m == "gone"
     ));
 }
+
+#[test]
+fn home_animates_only_while_the_logo_decodes() {
+    let mut event_loop = event_loop();
+    let mut app = App::new(Palette::terminal());
+    assert!(!app.animating(), "the login screen is still");
+    event_loop.open_home(&mut app);
+    assert!(app.animating(), "a fresh home decodes its logo");
+    app.screen = Screen::Home(Box::default());
+    assert!(!app.animating(), "a home that never started is settled");
+}
