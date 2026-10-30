@@ -92,11 +92,12 @@ impl ImportDeckCards {
 
             let (quantity, rest) = match trimmed.split_once(char::is_whitespace) {
                 Some((first, rest)) => {
-                    // Handle "4" or "4x" quantity prefix
+                    // Handle "4" or "4x" quantity prefix. A leading `+` is part
+                    // of the name ("+2 Mace"), though `i32` parsing accepts it.
                     let stripped = first.strip_suffix('x').unwrap_or(first);
                     match stripped.parse::<i32>() {
-                        Ok(qty) => (qty, rest.trim()),
-                        Err(_) => (1, trimmed),
+                        Ok(qty) if !stripped.starts_with('+') => (qty, rest.trim()),
+                        _ => (1, trimmed),
                     }
                 }
                 None => (1, trimmed),
@@ -386,5 +387,36 @@ mod tests {
         .lines;
         assert_eq!(lines.len(), 3);
         assert!(lines.iter().all(|l| l.board == Board::Maybeboard));
+    }
+
+    #[test]
+    fn quantity_prefixes() {
+        let quantities_and_names = |text: &str| -> Vec<(i32, String)> {
+            parse_lines(text)
+                .into_iter()
+                .map(|l| (l.quantity, l.card_name))
+                .collect()
+        };
+        assert_eq!(
+            quantities_and_names("2 Sol Ring"),
+            [(2, "Sol Ring".to_string())]
+        );
+        assert_eq!(
+            quantities_and_names("2x Sol Ring"),
+            [(2, "Sol Ring".to_string())]
+        );
+        assert_eq!(
+            quantities_and_names("Sol Ring"),
+            [(1, "Sol Ring".to_string())]
+        );
+        assert_eq!(quantities_and_names("-1 Sol Ring"), Vec::new());
+    }
+
+    #[test]
+    fn card_name_starting_with_a_plus_sign() {
+        let lines = parse_lines("+2 Mace");
+        assert_eq!(lines.len(), 1);
+        assert_eq!(lines[0].quantity, 1);
+        assert_eq!(lines[0].card_name, "+2 Mace");
     }
 }
