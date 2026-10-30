@@ -2,7 +2,6 @@
 
 use thiserror::Error;
 use zwipe_core::domain::deck::board::InvalidBoard;
-use zwipe_core::domain::deck::deck_name::InvalidDeckname;
 use zwipe_core::domain::deck::format::InvalidFormat;
 use zwipe_core::domain::deck::quantity::InvalidQuantity;
 
@@ -20,8 +19,6 @@ use crate::outbound::sqlx::postgres::IsConstraintViolation;
 #[derive(Debug, Error)]
 #[expect(missing_docs, reason = "each variant's message names the failure")]
 pub enum IntoDeckProfileError {
-    #[error(transparent)]
-    DeckName(#[from] InvalidDeckname),
     #[error(transparent)]
     Format(#[from] InvalidFormat),
 }

@@ -277,6 +277,13 @@ mod tests {
     }
 
     #[test]
+    fn rejects_whitespace_only_name() {
+        let res =
+            CreateDeckProfile::builder("   ", Uuid::new_v4(), /* email_verified */ true).build();
+        assert!(matches!(res, Err(InvalidCreateDeckProfile::DeckName(_))));
+    }
+
+    #[test]
     fn rejects_too_many_tags() {
         let res = builder(vec!["aggro", "control", "tokens", "burn", "mill", "stax"]).build();
         assert!(matches!(res, Err(InvalidCreateDeckProfile::TooManyTags)));
