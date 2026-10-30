@@ -6,7 +6,7 @@ use zwipe_core::domain::deck::{Board, Deck, DeckCard, DeckEntry, DeckProfile, Qu
 
 const CARD_JSON: &str = include_str!("card.json");
 
-/// A real card renamed to `name`, with fresh printing and oracle IDs, no faces, and no cost, rules or stats.
+/// A real card renamed to `name`, with fresh printing and oracle IDs, no faces, and no cost, rules, stats or flavor text.
 pub(crate) fn card(name: &str) -> Card {
     let mut card: Card = serde_json::from_str(CARD_JSON).unwrap();
     let id = Uuid::new_v4();
@@ -23,6 +23,7 @@ pub(crate) fn card(name: &str) -> Card {
     data.toughness = None;
     data.loyalty = None;
     data.defense = None;
+    data.flavor_text = None;
     card
 }
 

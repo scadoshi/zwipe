@@ -3,8 +3,10 @@
 use reqwest::Url;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 
 use super::*;
+use crate::inbound::app::Section;
 use crate::outbound::account::SessionFile;
 use crate::outbound::theme_file::ThemeFile;
 use crate::test_support::{card, deck, deck_profile};
@@ -44,8 +46,9 @@ fn swiping(cards: Vec<Card>) -> (EventLoop, App, Uuid) {
     event_loop.handle_key(&mut app, key(KeyCode::Enter));
     event_loop.apply(
         &mut app,
-        Update::DeckOpened(Box::new(deck(profile, Vec::new()))),
+        Update::DeckLoaded(Box::new(deck(profile, Vec::new()))),
     );
+    event_loop.handle_key(&mut app, key(KeyCode::Char('s')));
     event_loop.apply(
         &mut app,
         Update::Cards {
@@ -145,7 +148,7 @@ fn q_types_on_the_login_screen_and_ctrl_c_quits() {
 }
 
 #[test]
-fn enter_on_a_deck_opens_it_for_swiping() {
+fn enter_on_a_deck_opens_its_screen() {
     let mut event_loop = event_loop();
     let mut app = App::new(Palette::terminal());
     let (first, second) = (deck_profile("First"), deck_profile("Second"));
@@ -153,20 +156,27 @@ fn enter_on_a_deck_opens_it_for_swiping() {
     event_loop.apply(&mut app, Update::Decks(vec![first, second.clone()]));
     event_loop.handle_key(&mut app, key(KeyCode::Char('j')));
     event_loop.handle_key(&mut app, key(KeyCode::Enter));
-    assert_eq!(swipe_view(&app).deck.id, second.id);
-    assert_eq!(event_loop.pending, [Request::OpenDeck(second.id)]);
+    assert!(matches!(&app.screen, Screen::Deck(view) if view.profile.id == second.id));
+    assert_eq!(event_loop.pending, [Request::LoadDeck(second.id)]);
 }
 
 #[test]
-fn an_opened_deck_fetches_its_first_page() {
+fn s_on_a_loaded_deck_starts_swiping_and_fetches_the_first_page() {
     let mut event_loop = event_loop();
     let mut app = App::new(Palette::terminal());
     let profile = deck_profile("Pile");
-    app.screen = Screen::Swipe(Box::new(SwipeView::opening(profile.clone())));
+    app.screen = Screen::Deck(Box::new(DeckView::opening(profile.clone())));
+    event_loop.handle_key(&mut app, key(KeyCode::Char('s')));
+    assert!(
+        matches!(app.screen, Screen::Deck(_)),
+        "nothing to swipe before the deck loads"
+    );
+
     event_loop.apply(
         &mut app,
-        Update::DeckOpened(Box::new(deck(profile.clone(), Vec::new()))),
+        Update::DeckLoaded(Box::new(deck(profile.clone(), Vec::new()))),
     );
+    event_loop.handle_key(&mut app, key(KeyCode::Char('s')));
     let view = swipe_view(&app);
     assert!(view.stack.is_some() && view.fetching);
     assert!(matches!(
@@ -225,33 +235,32 @@ fn swipes_send_their_effects_and_undo_reverses_the_count() {
 
 #[test]
 fn a_short_page_asks_for_the_next_one_once() {
-    let mut event_loop = event_loop();
-    let mut app = App::new(Palette::terminal());
-    let profile = deck_profile("Pile");
-    let deck_id = profile.id;
-    app.screen = Screen::Swipe(Box::new(SwipeView::opening(profile.clone())));
-    event_loop.apply(
-        &mut app,
-        Update::DeckOpened(Box::new(deck(profile, Vec::new()))),
+    let (mut event_loop, mut app, deck_id) = swiping(vec![card("A")]);
+    assert_eq!(
+        event_loop.pending,
+        [],
+        "the helper clears the follow-up fetch"
     );
-    event_loop.pending.clear();
 
     let page = |cards| HttpDeckCardSearch {
         cards,
         synergy_applied: false,
         related_from: None,
     };
+    if let Screen::Swipe(view) = &mut app.screen {
+        view.fetching = false;
+    }
     event_loop.apply(
         &mut app,
         Update::Cards {
             deck_id,
-            page: page(vec![card("A")]),
+            page: page(vec![card("B")]),
         },
     );
     assert_eq!(
         event_loop.pending.len(),
         1,
-        "a page of one leaves the stack low"
+        "two cards still leave the stack low"
     );
 
     event_loop.pending.clear();
@@ -280,11 +289,133 @@ fn swiping_with_no_card_does_nothing() {
 }
 
 #[test]
-fn esc_goes_back_to_a_fresh_deck_list() {
-    let (mut event_loop, mut app, _) = swiping(vec![card("A")]);
+fn esc_steps_back_from_swipe_to_deck_to_decks_to_home() {
+    let (mut event_loop, mut app, deck_id) = swiping(vec![card("A")]);
+    event_loop.handle_key(&mut app, key(KeyCode::Esc));
+    assert!(
+        matches!(&app.screen, Screen::Deck(view) if view.profile.id == deck_id && view.deck.is_none())
+    );
+    assert_eq!(
+        event_loop.pending,
+        [Request::LoadDeck(deck_id)],
+        "the deck reloads with the new cards"
+    );
+
+    event_loop.pending.clear();
     event_loop.handle_key(&mut app, key(KeyCode::Esc));
     assert!(matches!(&app.screen, Screen::Decks(list) if list.loading));
     assert_eq!(event_loop.pending, [Request::LoadDecks]);
+
+    event_loop.pending.clear();
+    event_loop.handle_key(&mut app, key(KeyCode::Esc));
+    assert!(matches!(app.screen, Screen::Home(_)));
+    assert_eq!(
+        event_loop.handle_key(&mut app, key(KeyCode::Esc)),
+        Flow::Quit
+    );
+}
+
+#[test]
+fn home_fetches_its_panels_and_fills_them_as_they_arrive() {
+    let mut event_loop = event_loop();
+    let mut app = App::new(Palette::terminal());
+    event_loop.open_home(&mut app);
+    assert_eq!(
+        event_loop.pending,
+        [Request::PublicMetrics, Request::PlayStyle, Request::Flavor]
+    );
+    let figures = Figures {
+        decks_created: 1,
+        searches: 2,
+        cards_swiped: 3,
+    };
+    event_loop.apply(&mut app, Update::PublicMetrics(figures));
+    event_loop.apply(&mut app, Update::PlayStyleFailed);
+    event_loop.apply(&mut app, Update::Flavor(Box::new(card("Flavor"))));
+    let Screen::Home(home) = &app.screen else {
+        panic!("left home");
+    };
+    assert_eq!(home.figures(), Some(figures));
+    assert!(home.play_style_failed);
+    assert!(home.flavor.is_some());
+}
+
+#[test]
+fn s_on_home_switches_to_my_counters_and_fetches_them() {
+    let mut event_loop = event_loop();
+    let mut app = App::new(Palette::terminal());
+    event_loop.open_home(&mut app);
+    event_loop.pending.clear();
+    event_loop.handle_key(&mut app, key(KeyCode::Char('s')));
+    assert!(
+        matches!(&app.screen, Screen::Home(home) if home.scope == Scope::OnlyMe && home.figures().is_none())
+    );
+    assert_eq!(event_loop.pending, [Request::MyMetrics]);
+
+    event_loop.pending.clear();
+    event_loop.handle_key(&mut app, key(KeyCode::Char('s')));
+    assert!(matches!(&app.screen, Screen::Home(home) if home.scope == Scope::Everybody));
+    assert_eq!(event_loop.pending, []);
+}
+
+#[test]
+fn d_on_home_opens_the_decks() {
+    let mut event_loop = event_loop();
+    let mut app = App::new(Palette::terminal());
+    event_loop.open_home(&mut app);
+    event_loop.pending.clear();
+    event_loop.handle_key(&mut app, key(KeyCode::Char('d')));
+    assert!(matches!(app.screen, Screen::Decks(_)));
+    assert_eq!(event_loop.pending, [Request::LoadDecks]);
+}
+
+#[test]
+fn the_deck_screen_steps_tabs_currency_and_turn() {
+    let mut event_loop = event_loop();
+    let mut app = App::new(Palette::terminal());
+    let profile = deck_profile("Pile");
+    app.screen = Screen::Deck(Box::new(DeckView::opening(profile.clone())));
+    event_loop.apply(
+        &mut app,
+        Update::DeckLoaded(Box::new(deck(profile, vec![card("A")]))),
+    );
+
+    let deck_view = |app: &App| match &app.screen {
+        Screen::Deck(view) => (view.section, view.currency, view.turn, view.sections()),
+        other => panic!("left the deck screen: {other:?}"),
+    };
+    let (section, _, _, sections) = deck_view(&app);
+    assert_eq!(section, Section::Budget);
+    assert!(sections.contains(&Section::Budget));
+
+    event_loop.handle_key(&mut app, key(KeyCode::Char('c')));
+    event_loop.handle_key(&mut app, key(KeyCode::Char('-')));
+    for _ in 0..25 {
+        event_loop.handle_key(&mut app, key(KeyCode::Char('+')));
+    }
+    let (_, currency, turn, _) = deck_view(&app);
+    assert_eq!(currency, PriceCurrency::Eur);
+    assert_eq!(turn, crate::inbound::app::MAX_TURN);
+
+    let count = sections.len();
+    for _ in 0..count {
+        event_loop.handle_key(&mut app, key(KeyCode::Tab));
+    }
+    assert_eq!(deck_view(&app).0, Section::Budget, "Tab wraps back around");
+    event_loop.handle_key(&mut app, key(KeyCode::BackTab));
+    assert_eq!(Some(&deck_view(&app).0), sections.last());
+}
+
+#[test]
+fn a_deck_result_for_another_deck_is_ignored() {
+    let mut event_loop = event_loop();
+    let mut app = App::new(Palette::terminal());
+    app.screen = Screen::Deck(Box::new(DeckView::opening(deck_profile("Open"))));
+    event_loop.apply(
+        &mut app,
+        Update::DeckLoaded(Box::new(deck(deck_profile("Other"), Vec::new()))),
+    );
+    assert!(matches!(&app.screen, Screen::Deck(view) if view.deck.is_none()));
 }
 
 #[test]

@@ -1,6 +1,9 @@
 //! Draws whichever screen is up, in the account's theme.
 
+mod charts;
+mod deck;
 mod decks;
+mod home;
 mod login;
 mod swipe;
 mod update;
@@ -22,7 +25,9 @@ pub(crate) fn draw(f: &mut Frame<'_>, app: &App) {
     f.render_widget(Block::new().style(palette.base), f.area());
     match &app.screen {
         Screen::Login(form) => login::draw(f, palette, form),
+        Screen::Home(view) => home::draw(f, palette, app, view),
         Screen::Decks(list) => decks::draw(f, palette, app, list),
+        Screen::Deck(view) => deck::draw(f, palette, app, view),
         Screen::Swipe(view) => swipe::draw(f, palette, app, view),
         Screen::UpdateRequired => update::draw(f, palette),
     }

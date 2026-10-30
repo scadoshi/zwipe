@@ -5,8 +5,11 @@ use ratatui::layout::{Constraint, Layout};
 use ratatui::style::Stylize;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, HighlightSpacing, List, ListItem, ListState, Paragraph};
+use zwipe_core::domain::deck::DeckProfile;
+use zwipe_core::domain::deck::deck_tag::deck_tag_label;
 
 use super::hints;
+use crate::domain;
 use crate::domain::theme::Palette;
 use crate::inbound::app::{App, DeckList};
 
@@ -48,17 +51,7 @@ pub(super) fn draw(f: &mut Frame<'_>, palette: &Palette, app: &App, list: &DeckL
         let items: Vec<ListItem<'_>> = list
             .decks
             .iter()
-            .map(|deck| {
-                let commander = deck
-                    .commander_name
-                    .as_deref()
-                    .map_or_else(String::new, |c| format!("  {c}"));
-                ListItem::new(Line::from(vec![
-                    Span::raw(deck.name.to_string()),
-                    Span::styled(commander, palette.muted),
-                    Span::styled(format!("  {} cards", deck.card_count), palette.muted),
-                ]))
-            })
+            .map(|deck| ListItem::new(deck_row(palette, deck)))
             .collect();
         let deck_list = List::new(items)
             .block(block)
@@ -78,12 +71,63 @@ pub(super) fn draw(f: &mut Frame<'_>, palette: &Palette, app: &App, list: &DeckL
             palette,
             &[
                 ("j/k", "move"),
-                ("Enter", "swipe"),
+                ("Enter", "open"),
                 ("r", "reload"),
+                ("Esc", "home"),
                 ("O", "sign out"),
                 ("q", "quit"),
             ],
         ),
         keys,
     );
+}
+
+/// A deck's row, as the app lays it out: name, color pips, card count, format, power level, the command zone, then tags.
+fn deck_row(palette: &Palette, deck: &DeckProfile) -> Line<'static> {
+    let gap = || Span::raw("  ");
+    let mut spans = vec![Span::raw(deck.name.to_string()).bold(), gap()];
+    for pip in domain::deck::pips(deck) {
+        let style = palette.mana.get(pip).copied().unwrap_or(palette.muted);
+        spans.push(Span::styled(
+            ["W", "U", "B", "R", "G"].get(pip).copied().unwrap_or("?"),
+            style.bold(),
+        ));
+    }
+    let count = domain::deck::card_count(deck);
+    let count_style = if domain::deck::count_fits(deck, count) {
+        palette.muted
+    } else {
+        palette.warning
+    };
+    spans.extend([gap(), Span::styled(format!("{count} cards"), count_style)]);
+    if let Some(format) = deck.format {
+        spans.extend([
+            gap(),
+            Span::styled(format.display_name().to_owned(), palette.muted),
+        ]);
+    }
+    if let Some(power) = deck.power_level {
+        spans.extend([gap(), Span::styled(power.display_name(), palette.muted)]);
+    }
+    for name in [
+        &deck.commander_name,
+        &deck.partner_commander_name,
+        &deck.background_name,
+        &deck.signature_spell_name,
+    ]
+    .into_iter()
+    .flatten()
+    {
+        spans.extend([gap(), Span::styled(name.clone(), palette.accent)]);
+    }
+    let tags: Vec<String> = deck
+        .tags
+        .iter()
+        .map(|t| deck_tag_label(t))
+        .chain(deck.other_tags.iter().map(|t| t.display_name().to_owned()))
+        .collect();
+    if !tags.is_empty() {
+        spans.extend([gap(), Span::styled(tags.join(", "), palette.muted)]);
+    }
+    Line::from(spans)
 }

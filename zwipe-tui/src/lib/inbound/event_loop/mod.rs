@@ -13,14 +13,17 @@ use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 use uuid::Uuid;
 use zwipe_client::ClientError;
 use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::CardQuery;
 use zwipe_core::domain::deck::{Deck, DeckProfile};
 use zwipe_core::http::contracts::deck::HttpDeckCardSearch;
 use zwipe_core::http::contracts::deck_card::HttpCreateDeckCard;
+use zwipe_core::http::contracts::suggestions::HttpPlayStyleSummary;
 use zwipe_core::version::version_at_least;
 
-use super::app::{App, DeckList, LoginField, LoginForm, Screen, SwipeView};
+use super::app::{App, DeckList, DeckView, LoginField, LoginForm, Screen, Step, SwipeView};
 use super::ui;
+use crate::domain::home::{Figures, Scope};
 use crate::domain::swipe::{self, Effect, Stack, Swipe};
 use crate::domain::theme::Palette;
 use crate::outbound::account::Account;
@@ -51,8 +54,16 @@ enum Request {
         identifier: String,
         password: Password,
     },
+    /// Everybody's counters.
+    PublicMetrics,
+    /// The user's own counters.
+    MyMetrics,
+    /// The color map.
+    PlayStyle,
+    /// This hour's featured flavor card.
+    Flavor,
     LoadDecks,
-    OpenDeck(Uuid),
+    LoadDeck(Uuid),
     FetchCards {
         deck_id: Uuid,
         query: Box<CardQuery>,
@@ -74,9 +85,14 @@ enum Update {
     TooOld,
     SignedIn(Box<Session>),
     SignInFailed(String),
+    PublicMetrics(Figures),
+    MyMetrics(Figures),
+    PlayStyle(Box<HttpPlayStyleSummary>),
+    PlayStyleFailed,
+    Flavor(Box<Card>),
     Decks(Vec<DeckProfile>),
     DecksFailed(String),
-    DeckOpened(Box<Deck>),
+    DeckLoaded(Box<Deck>),
     DeckFailed(String),
     Cards {
         deck_id: Uuid,
@@ -117,7 +133,7 @@ impl EventLoop {
         }
     }
 
-    /// Runs until the user quits: straight to the decks with a saved session, else to sign-in.
+    /// Runs until the user quits: straight home with a saved session, else to sign-in.
     ///
     /// # Errors
     ///
@@ -155,7 +171,7 @@ impl EventLoop {
         }
     }
 
-    /// Applies the account's theme, remembers it for the next launch, and opens the deck list.
+    /// Applies the account's theme, remembers it for the next launch, and goes home.
     fn signed_in(&mut self, app: &mut App, session: &Session) {
         let preferences = &session.preferences;
         app.palette = Palette::for_account(&preferences.theme, preferences.dark_mode);
@@ -163,13 +179,29 @@ impl EventLoop {
             theme: preferences.theme.clone(),
             dark_mode: preferences.dark_mode,
         }));
-        app.username = Some(session.user.username.to_string());
-        self.open_decks(app);
+        let username = session.user.username.to_string();
+        app.status = format!("Hello, {username}!");
+        app.username = Some(username);
+        self.open_home(app);
+    }
+
+    /// Opens home and fetches its counters, color map and featured card.
+    fn open_home(&mut self, app: &mut App) {
+        app.screen = Screen::Home(Box::default());
+        self.pending
+            .extend([Request::PublicMetrics, Request::PlayStyle, Request::Flavor]);
     }
 
     fn open_decks(&mut self, app: &mut App) {
+        app.status.clear();
         app.screen = Screen::Decks(DeckList::loading());
         self.pending.push(Request::LoadDecks);
+    }
+
+    fn open_deck(&mut self, app: &mut App, profile: DeckProfile) {
+        app.status.clear();
+        self.pending.push(Request::LoadDeck(profile.id));
+        app.screen = Screen::Deck(Box::new(DeckView::opening(profile)));
     }
 
     /// Back to sign-in, still in the account's theme, with `error` on the form.
@@ -196,6 +228,32 @@ impl EventLoop {
                     form.error = Some(error);
                 }
             }
+            Update::PublicMetrics(figures) => {
+                if let Screen::Home(home) = &mut app.screen {
+                    home.everybody = Some(figures);
+                }
+            }
+            Update::MyMetrics(figures) => {
+                if let Screen::Home(home) = &mut app.screen {
+                    home.mine = Some(figures);
+                }
+            }
+            Update::PlayStyle(summary) => {
+                if let Screen::Home(home) = &mut app.screen {
+                    home.play_style = Some(*summary);
+                    home.play_style_failed = false;
+                }
+            }
+            Update::PlayStyleFailed => {
+                if let Screen::Home(home) = &mut app.screen {
+                    home.play_style_failed = true;
+                }
+            }
+            Update::Flavor(card) => {
+                if let Screen::Home(home) = &mut app.screen {
+                    home.flavor = Some(*card);
+                }
+            }
             Update::Decks(decks) => {
                 if let Screen::Decks(list) = &mut app.screen {
                     list.decks = decks;
@@ -209,8 +267,19 @@ impl EventLoop {
                     list.error = Some(error);
                 }
             }
-            Update::DeckOpened(deck) => self.on_deck_opened(app, &deck),
-            Update::DeckFailed(error) | Update::CardsFailed(error) => {
+            Update::DeckLoaded(deck) => {
+                if let Screen::Deck(view) = &mut app.screen
+                    && view.profile.id == deck.deck_profile.id
+                {
+                    view.load(*deck);
+                }
+            }
+            Update::DeckFailed(error) => {
+                if let Screen::Deck(view) = &mut app.screen {
+                    view.error = Some(error);
+                }
+            }
+            Update::CardsFailed(error) => {
                 if let Screen::Swipe(view) = &mut app.screen {
                     view.fetching = false;
                     view.error = Some(error);
@@ -235,23 +304,19 @@ impl EventLoop {
         }
     }
 
-    /// Builds the deck's card query and fetches the first page.
-    fn on_deck_opened(&mut self, app: &mut App, deck: &Deck) {
-        let Screen::Swipe(view) = &mut app.screen else {
-            return;
-        };
-        if view.deck.id != deck.deck_profile.id || view.stack.is_some() {
-            return;
-        }
-        view.deck = deck.deck_profile.clone();
+    /// Starts swiping into the loaded deck: builds its card query and fetches the first page.
+    fn start_swipe(&mut self, app: &mut App, deck: &Deck) {
+        let mut view = SwipeView::opening(deck.deck_profile.clone());
         match swipe::query_for(deck) {
             Ok(query) => {
                 view.stack = Some(Stack::new(swipe::cards_in(deck)));
                 view.query = Some(query);
-                self.refill(view);
+                self.refill(&mut view);
             }
             Err(e) => view.error = Some(format!("Could not build the card search: {e}")),
         }
+        app.status.clear();
+        app.screen = Screen::Swipe(Box::new(view));
     }
 
     /// Fetches the next page when the stack is running low and no fetch is out.
@@ -274,7 +339,9 @@ impl EventLoop {
         }
         match &mut app.screen {
             Screen::Login(form) => return self.handle_login_key(form, key.code),
+            Screen::Home(_) => return self.handle_home_key(app, key.code),
             Screen::Decks(_) => return self.handle_decks_key(app, key.code),
+            Screen::Deck(_) => return self.handle_deck_key(app, key.code),
             Screen::Swipe(_) => self.handle_swipe_key(app, key.code),
             Screen::UpdateRequired => {
                 if matches!(key.code, KeyCode::Esc | KeyCode::Char('q')) {
@@ -321,24 +388,49 @@ impl EventLoop {
         });
     }
 
+    fn handle_home_key(&mut self, app: &mut App, code: KeyCode) -> Flow {
+        let Screen::Home(home) = &mut app.screen else {
+            return Flow::Continue;
+        };
+        match code {
+            KeyCode::Esc | KeyCode::Char('q') => return Flow::Quit,
+            KeyCode::Char('d') | KeyCode::Enter => self.open_decks(app),
+            KeyCode::Char('s') => {
+                home.scope = home.scope.toggled();
+                if home.scope == Scope::OnlyMe {
+                    self.pending.push(Request::MyMetrics);
+                }
+            }
+            KeyCode::Char('r') => {
+                let scope = home.scope;
+                self.open_home(app);
+                if let Screen::Home(home) = &mut app.screen {
+                    home.scope = scope;
+                }
+                if scope == Scope::OnlyMe {
+                    self.pending.push(Request::MyMetrics);
+                }
+            }
+            KeyCode::Char('O') => self.sign_out(app),
+            _ => {}
+        }
+        Flow::Continue
+    }
+
     fn handle_decks_key(&mut self, app: &mut App, code: KeyCode) -> Flow {
         let Screen::Decks(list) = &mut app.screen else {
             return Flow::Continue;
         };
         match code {
-            KeyCode::Esc | KeyCode::Char('q') => return Flow::Quit,
+            KeyCode::Char('q') => return Flow::Quit,
+            KeyCode::Esc => self.open_home(app),
             KeyCode::Down | KeyCode::Char('j') => list.next(),
             KeyCode::Up | KeyCode::Char('k') => list.previous(),
             KeyCode::Char('r') => self.open_decks(app),
-            KeyCode::Char('O') => {
-                "Signing out...".clone_into(&mut app.status);
-                self.pending.push(Request::SignOut);
-            }
+            KeyCode::Char('O') => self.sign_out(app),
             KeyCode::Enter => {
-                if let Some(deck) = list.selected_deck().cloned() {
-                    self.pending.push(Request::OpenDeck(deck.id));
-                    app.status.clear();
-                    app.screen = Screen::Swipe(Box::new(SwipeView::opening(deck)));
+                if let Some(profile) = list.selected_deck().cloned() {
+                    self.open_deck(app, profile);
                 }
             }
             _ => {}
@@ -346,13 +438,46 @@ impl EventLoop {
         Flow::Continue
     }
 
+    fn handle_deck_key(&mut self, app: &mut App, code: KeyCode) -> Flow {
+        let Screen::Deck(view) = &mut app.screen else {
+            return Flow::Continue;
+        };
+        match code {
+            KeyCode::Char('q') => return Flow::Quit,
+            KeyCode::Esc => self.open_decks(app),
+            KeyCode::Tab | KeyCode::Right | KeyCode::Char('l') => view.step_section(Step::Next),
+            KeyCode::BackTab | KeyCode::Left | KeyCode::Char('h') => {
+                view.step_section(Step::Previous);
+            }
+            KeyCode::Char('c') => view.next_currency(),
+            KeyCode::Char('+' | '=') => view.later_turn(),
+            KeyCode::Char('-') => view.earlier_turn(),
+            KeyCode::Char('r') => {
+                let profile = view.profile.clone();
+                self.open_deck(app, profile);
+            }
+            KeyCode::Char('s') => {
+                if let Some(deck) = view.deck.take() {
+                    self.start_swipe(app, &deck);
+                }
+            }
+            _ => {}
+        }
+        Flow::Continue
+    }
+
+    fn sign_out(&mut self, app: &mut App) {
+        "Signing out...".clone_into(&mut app.status);
+        self.pending.push(Request::SignOut);
+    }
+
     fn handle_swipe_key(&mut self, app: &mut App, code: KeyCode) {
         let Screen::Swipe(view) = &mut app.screen else {
             return;
         };
         if matches!(code, KeyCode::Esc | KeyCode::Char('q')) {
-            app.status.clear();
-            self.open_decks(app);
+            let profile = view.deck.clone();
+            self.open_deck(app, profile);
             return;
         }
         let Some(stack) = &mut view.stack else {
@@ -443,15 +568,35 @@ async fn perform(account: &Account, theme_file: &ThemeFile, request: Request) ->
             theme_file.save(&theme).ok();
             None
         }
+        Request::PublicMetrics => client
+            .public_metrics()
+            .await
+            .ok()
+            .map(|metrics| Update::PublicMetrics(Figures::from(&metrics))),
+        Request::MyMetrics => async { client.my_metrics(&account.fresh().await?).await }
+            .await
+            .ok()
+            .map(|counters| Update::MyMetrics(Figures::from(&counters))),
+        Request::PlayStyle => Some(
+            match async { client.play_style_summary(&account.fresh().await?).await }.await {
+                Ok(summary) => Update::PlayStyle(Box::new(summary)),
+                Err(e) => failure(&e, |_| Update::PlayStyleFailed),
+            },
+        ),
+        Request::Flavor => client
+            .featured_flavor()
+            .await
+            .ok()
+            .map(|card| Update::Flavor(Box::new(card))),
         Request::LoadDecks => Some(
             match async { client.fetch_deck_profiles(&account.fresh().await?).await }.await {
                 Ok(decks) => Update::Decks(decks),
                 Err(e) => failure(&e, Update::DecksFailed),
             },
         ),
-        Request::OpenDeck(deck_id) => Some(
+        Request::LoadDeck(deck_id) => Some(
             match async { client.fetch_deck(deck_id, &account.fresh().await?).await }.await {
-                Ok(deck) => Update::DeckOpened(Box::new(deck)),
+                Ok(deck) => Update::DeckLoaded(Box::new(deck)),
                 Err(e) => failure(&e, Update::DeckFailed),
             },
         ),

@@ -86,7 +86,7 @@ pub(super) fn draw(f: &mut Frame<'_>, palette: &Palette, app: &App, view: &Swipe
                 ("l", "add"),
                 ("m", "maybe"),
                 ("u", "undo"),
-                ("Esc", "decks"),
+                ("Esc", "deck"),
             ],
         )
         .centered(),
