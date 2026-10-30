@@ -15,6 +15,8 @@ const ALIAS: &str = "zwipe-session";
 const IV_LEN: usize = 12;
 /// GCM tag length in bits.
 const TAG_BITS: i32 = 128;
+/// AES key size in bits.
+const KEY_BITS: i32 = 256;
 /// `KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT`.
 const PURPOSES: i32 = 1 | 2;
 /// `Cipher.ENCRYPT_MODE` and `Cipher.DECRYPT_MODE`.
@@ -203,7 +205,7 @@ fn generate_key<'a>(env: &mut jni::JNIEnv<'a>, alias: &JString<'_>) -> anyhow::R
         &builder,
         "setKeySize",
         format!("(I){BUILDER_SIG}"),
-        &[JValue::Int(256)],
+        &[JValue::Int(KEY_BITS)],
     )?;
     // KeyGenParameterSpec spec = builder.build();
     let spec = env
