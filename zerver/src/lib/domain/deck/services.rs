@@ -872,15 +872,12 @@ where
             });
             if let Some(card) = matched {
                 let scryfall_id = card.scryfall_data.id;
-                let oracle_id = match card.scryfall_data.oracle_id {
-                    Some(id) => id,
-                    None => {
-                        unresolved.push(UnresolvedCard {
-                            name: line.card_name.clone(),
-                            reason: "missing oracle id".to_string(),
-                        });
-                        continue;
-                    }
+                let Some(oracle_id) = card.scryfall_data.oracle_id else {
+                    unresolved.push(UnresolvedCard {
+                        name: line.card_name.clone(),
+                        reason: "missing oracle id".to_string(),
+                    });
+                    continue;
                 };
                 // Skip additional cards (commander, partner, background, signature spell)
                 if additional_oracle_ids.contains(&oracle_id) {

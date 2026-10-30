@@ -588,13 +588,10 @@ where
         &self,
         request: &RequestPasswordReset,
     ) -> Result<(), RequestPasswordResetError> {
-        let user_id = match self.auth_repo.get_user_id_by_email(&request.email).await? {
-            Some(id) => id,
-            // Silently return Ok; never reveal whether an email is registered
-            None => {
-                tracing::debug!(event = "password_reset_unknown_email");
-                return Ok(());
-            }
+        // Silently return Ok; never reveal whether an email is registered
+        let Some(user_id) = self.auth_repo.get_user_id_by_email(&request.email).await? else {
+            tracing::debug!(event = "password_reset_unknown_email");
+            return Ok(());
         };
 
         if self
