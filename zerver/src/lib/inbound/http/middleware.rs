@@ -99,6 +99,11 @@ const CF_CONNECTING_IP: &str = "cf-connecting-ip";
 /// (ufw default-deny inbound; only loopback and `tailscale0` are allowed), so
 /// the header is trustworthy here.
 ///
+/// That trust rests on zerver binding `127.0.0.1` (`BIND_ADDRESS`), so the only
+/// thing that can reach it is `cloudflared` on the same box. Bind it to a
+/// public interface and any client can send its own `CF-Connecting-IP`, which
+/// lets it pick its rate-limit bucket and login lockout key.
+///
 /// Falls back to the socket peer IP when the header is absent, i.e. for
 /// non-Cloudflare paths (localhost health checks, Tailscale admin access),
 /// which are trusted. Real internet traffic always carries the header.
