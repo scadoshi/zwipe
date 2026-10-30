@@ -21,7 +21,7 @@ use crate::domain::card::requests::create_card::CreateCardError;
 use crate::domain::card::requests::get_scryfall_data::ScryfallDataIds;
 use crate::outbound::sqlx::card::card_profile::DatabaseCardProfile;
 use crate::outbound::sqlx::card::helpers::scryfall_data_fields::{
-    BindCards, BindScryfallDataFields, bulk_upsert_conflict_fields, scryfall_data_fields,
+    self, BindCards, BindScryfallDataFields,
 };
 use crate::outbound::sqlx::card::models::DatabaseScryfallData;
 
@@ -69,9 +69,11 @@ impl SingleUpsertWithTx for ScryfallData {
     ) -> Result<Card, CreateCardError> {
         let scryfall_data_id = self.id;
         let mut sfd_qb = QueryBuilder::new("INSERT INTO scryfall_data (");
-        sfd_qb.push(scryfall_data_fields()).push(") VALUES ");
+        sfd_qb
+            .push(scryfall_data_fields::scryfall_data_fields())
+            .push(") VALUES ");
         sfd_qb.bind_scryfall_fields(self);
-        sfd_qb.push(bulk_upsert_conflict_fields());
+        sfd_qb.push(scryfall_data_fields::bulk_upsert_conflict_fields());
         sfd_qb.push(" RETURNING *");
         let db: DatabaseScryfallData = sfd_qb
             .build_query_as::<DatabaseScryfallData>()
@@ -126,10 +128,10 @@ impl BulkUpsertWithTx for &[ScryfallData] {
         scryfall_data.dedup_by_key(|scryfall| scryfall.id);
         let mut scryfall_data_query_builder = QueryBuilder::new("INSERT INTO scryfall_data (");
         scryfall_data_query_builder
-            .push(scryfall_data_fields())
+            .push(scryfall_data_fields::scryfall_data_fields())
             .push(") VALUES ")
             .bind_cards(scryfall_data.as_slice())
-            .push(bulk_upsert_conflict_fields())
+            .push(scryfall_data_fields::bulk_upsert_conflict_fields())
             .push(" RETURNING *;");
         let db_rows: Vec<DatabaseScryfallData> = scryfall_data_query_builder
             .build_query_as::<DatabaseScryfallData>()

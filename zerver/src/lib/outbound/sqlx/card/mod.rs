@@ -29,7 +29,7 @@ use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortK
 use zwipe_core::domain::card::search_card::card_filter::criteria::PLAYABLE_LAYOUTS;
 use zwipe_core::domain::card::search_card::card_filter::sort_direction::SortDirection;
 use zwipe_core::domain::deck::Format;
-use zwipe_core::domain::deck::requests::import_deck_cards::entry_front_face;
+use zwipe_core::domain::deck::requests::import_deck_cards;
 use zwipe_core::domain::deck::tag_profile::{PROFILE_EXCLUDED_TAG_PREFIX, PROFILE_TAG_LIMIT};
 
 use crate::domain::card::models::helpers::SleeveCardProfile;
@@ -56,9 +56,7 @@ use crate::domain::deck::models::deck::commander_suggestions::{
 };
 use crate::outbound::sqlx::card::card_profile::DatabaseCardProfile;
 use crate::outbound::sqlx::card::helpers::commander_scoring::SCORE_COMMANDER_SUGGESTIONS_SQL;
-use crate::outbound::sqlx::card::helpers::oracle_tag_groups::{
-    RoleMembershipBinds, role_membership_ctes,
-};
+use crate::outbound::sqlx::card::helpers::oracle_tag_groups::{self, RoleMembershipBinds};
 use crate::outbound::sqlx::card::helpers::upsert_card::{
     BatchDeltaUpsertWithTx, BatchUpsertWithTx, BulkUpsertWithTx, SingleUpsertWithTx,
 };
@@ -1788,7 +1786,7 @@ impl CardRepository for MyPostgres {
         let mut lowered: std::collections::HashSet<String> = std::collections::HashSet::new();
         for name in names {
             let lower = name.to_lowercase();
-            let front = entry_front_face(&lower);
+            let front = import_deck_cards::entry_front_face(&lower);
             if !front.is_empty() {
                 lowered.insert(front.to_string());
             }
@@ -2026,7 +2024,7 @@ impl CardRepository for MyPostgres {
              SELECT deck, jsonb_object_agg(oracle_tag, w),
                     jsonb_object_agg(oracle_tag, cards::int4)
              FROM normalized GROUP BY deck",
-            role_membership_ctes(1)
+            oracle_tag_groups::role_membership_ctes(1)
         );
         let rows: Vec<ProfileRow> = binds
             .bind(sqlx::query(sqlx::AssertSqlSafe(sql)))
@@ -2099,7 +2097,7 @@ impl CardRepository for MyPostgres {
              SELECT slug, min(role) FROM membership
              WHERE slug = ANY($7::text[])
              GROUP BY slug",
-            role_membership_ctes(1)
+            oracle_tag_groups::role_membership_ctes(1)
         );
         let rows: Vec<(String, String)> = binds
             .bind(sqlx::query(sqlx::AssertSqlSafe(sql)))
@@ -2157,10 +2155,7 @@ impl CardRepository for MyPostgres {
     }
 
     async fn refresh_oracle_tag_groups(&self) -> anyhow::Result<u64> {
-        crate::outbound::sqlx::card::helpers::oracle_tag_groups::refresh_oracle_tag_groups(
-            &self.pool,
-        )
-        .await
+        oracle_tag_groups::refresh_oracle_tag_groups(&self.pool).await
     }
 
     async fn get_card_ids_with_oracle_text(&self) -> Result<Vec<uuid::Uuid>, anyhow::Error> {

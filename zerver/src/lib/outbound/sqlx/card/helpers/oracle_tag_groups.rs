@@ -17,7 +17,7 @@
 
 use anyhow::Context;
 use sqlx::PgPool;
-use zwipe_core::domain::card::card_role::role_tags::{exclusion_pairs, override_pairs, root_pairs};
+use zwipe_core::domain::card::card_role::role_tags;
 use zwipe_core::domain::card::oracle_tag::NOISE_ORACLE_TAG_SLUGS;
 
 /// The six parallel arrays [`role_membership_ctes`] reads, in bind order, built
@@ -42,9 +42,9 @@ pub struct RoleMembershipBinds {
 impl RoleMembershipBinds {
     /// Flattens the role tables for `unnest`.
     pub fn new() -> Self {
-        let (roles, root_slugs) = root_pairs();
-        let (override_roles, override_slugs) = override_pairs();
-        let (exclusion_roles, exclusion_slugs) = exclusion_pairs();
+        let (roles, root_slugs) = role_tags::root_pairs();
+        let (override_roles, override_slugs) = role_tags::override_pairs();
+        let (exclusion_roles, exclusion_slugs) = role_tags::exclusion_pairs();
         Self {
             roles,
             root_slugs,
