@@ -71,7 +71,7 @@ pub async fn import_archidekt_deck(
     // never spends a fetch against Archidekt from this origin.
     state
         .deck_service
-        .get_deck_profile(&GetDeckProfile::new(user.id, deck_id))
+        .fetch_deck_profile(&GetDeckProfile::new(user.id, deck_id))
         .await?;
 
     let db_user = state
