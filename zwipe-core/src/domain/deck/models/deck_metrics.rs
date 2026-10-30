@@ -228,6 +228,10 @@ impl DeckMetrics {
     /// *not* mixed into the type/color/mana/category distributions (those reflect
     /// the mainboard). Cards already present as active entries are skipped so a
     /// commander that also sits in the deck list is not double-counted.
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one pass over the entries that fills every metric at once"
+    )]
     pub fn from_entries_and_command_zone(entries: &[DeckEntry], command_zone: &[Card]) -> Self {
         let active_entries: Vec<DeckEntry> = entries
             .iter()

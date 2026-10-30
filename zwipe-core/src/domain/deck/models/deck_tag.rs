@@ -259,6 +259,7 @@ pub enum DeckTag {
 
 impl DeckTag {
     /// All deck tag variants, alphabetical.
+    #[expect(clippy::too_many_lines, reason = "a list of every variant")]
     pub fn all() -> &'static [DeckTag] {
         &[
             Self::Adventures,
@@ -382,6 +383,7 @@ impl DeckTag {
     }
 
     /// Human-readable display name.
+    #[expect(clippy::too_many_lines, reason = "a lookup table, one arm per tag")]
     pub fn display_name(&self) -> &'static str {
         match self {
             Self::Adventures => "Adventures",
@@ -506,6 +508,7 @@ impl DeckTag {
 
     /// One-line, plain-language definition of the strategy, for the tag picker's
     /// hint dialog.
+    #[expect(clippy::too_many_lines, reason = "a lookup table, one arm per tag")]
     pub fn description(&self) -> &'static str {
         match self {
             Self::Adventures => {
@@ -657,6 +660,7 @@ impl DeckTag {
     /// pre-selects these on the deck; the user then adds/removes/searches. Curated
     /// to be tuned over time as usage data and player feedback arrive. Archetypes
     /// too vague or niche to seed usefully return `&[]` (the user picks manually).
+    #[expect(clippy::too_many_lines, reason = "a lookup table, one arm per tag")]
     pub fn oracle_tag_slugs(&self) -> &'static [&'static str] {
         match self {
             Self::Aggro => &[
