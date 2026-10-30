@@ -138,10 +138,9 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             // try_run keeps the Result the watcher matches on; reporting and
             // the error toast live in the facade.
             authed
-                .try_run(
-                    "load_deck",
-                    |c, s| async move { c.get_deck(deck_id, &s).await },
-                )
+                .try_run("load_deck", |c, s| async move {
+                    c.fetch_deck(deck_id, &s).await
+                })
                 .await
         });
     use_effect(move || {
@@ -193,7 +192,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             else {
                 return Ok(None);
             };
-            client().get_card(original_commander_id).await.map(Some)
+            client().fetch_card(original_commander_id).await.map(Some)
         });
     use_effect(move || match original_commander_resource() {
         Some(Ok(Some(original))) => {
@@ -230,7 +229,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             else {
                 return Ok(None);
             };
-            client().get_card(id).await.map(Some)
+            client().fetch_card(id).await.map(Some)
         });
     use_effect(move || match original_partner_resource() {
         Some(Ok(Some(original))) => {
@@ -267,7 +266,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             else {
                 return Ok(None);
             };
-            client().get_card(id).await.map(Some)
+            client().fetch_card(id).await.map(Some)
         });
     use_effect(move || match original_background_resource() {
         Some(Ok(Some(original))) => {
@@ -304,7 +303,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             else {
                 return Ok(None);
             };
-            client().get_card(id).await.map(Some)
+            client().fetch_card(id).await.map(Some)
         });
     use_effect(move || match original_spell_resource() {
         Some(Ok(Some(original))) => {

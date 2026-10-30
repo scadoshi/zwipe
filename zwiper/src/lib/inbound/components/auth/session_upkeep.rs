@@ -221,7 +221,7 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
     use_future(move || async move {
         // Bind before awaiting so the peek guard is dropped, not held across it.
         let http = client.peek().clone();
-        match http.get_changelog().await {
+        match http.fetch_changelog().await {
             Ok(changelog) => changelog_cache.set(ChangelogCache::Loaded(changelog)),
             Err(error) => {
                 tracing::debug!(?error, "changelog fetch failed; using compiled-in copy");
@@ -350,7 +350,7 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
             // Min-version gate check. Fails open: only a successful response
             // can flip the gate; a network hiccup never locks anyone out.
             let http = client.peek().clone();
-            if let Ok(min) = http.get_min_client_version().await {
+            if let Ok(min) = http.fetch_min_client_version().await {
                 let required = !version::version_at_least(APP_VERSION, &min.min_version);
                 if required != *upgrade_required.peek() {
                     tracing::info!(

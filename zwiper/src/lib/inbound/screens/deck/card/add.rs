@@ -732,7 +732,7 @@ pub fn Add(deck_id: Uuid) -> Element {
             // records the failure.
             let fetched = authed
                 .run_quiet("load_deck_context", |c, s| async move {
-                    c.get_deck(deck_id, &s).await
+                    c.fetch_deck(deck_id, &s).await
                 })
                 .await;
             if let Some(deck) = fetched {
@@ -752,7 +752,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                 .into_iter()
                 .flatten()
                 {
-                    if let Ok(card) = client().get_card(cz_id).await
+                    if let Ok(card) = client().fetch_card(cz_id).await
                         && let Some(oid) = card.scryfall_data.oracle_id
                     {
                         ids.insert(oid);
@@ -761,7 +761,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                 }
                 // Signature spell: oracle_id exclusion only (doesn't contribute to color identity)
                 if let Some(spell_id) = deck.deck_profile.signature_spell_id
-                    && let Ok(card) = client().get_card(spell_id).await
+                    && let Ok(card) = client().fetch_card(spell_id).await
                     && let Some(oid) = card.scryfall_data.oracle_id
                 {
                     ids.insert(oid);
@@ -1503,7 +1503,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                             spawn(async move {
                                 if let Some(deck) = authed
                                     .run("search_cards", |c, s| async move {
-                                        c.get_deck(deck_id, &s).await
+                                        c.fetch_deck(deck_id, &s).await
                                     })
                                     .await
                                 {

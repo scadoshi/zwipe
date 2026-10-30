@@ -1241,7 +1241,7 @@ pub fn SuggestedCommanders() -> Element {
         use_resource(move || async move {
             authed
                 .run_quiet("load_deck_profiles", |c, s| async move {
-                    c.get_deck_profiles(&s).await
+                    c.fetch_deck_profiles(&s).await
                 })
                 .await
         });
