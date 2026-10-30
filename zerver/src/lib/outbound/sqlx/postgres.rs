@@ -57,6 +57,7 @@ impl IsConstraintViolation for sqlx::Error {
 /// - 10 maximum connections (prevents overloading the database)
 /// - 5 minute idle timeout (releases unused connections)
 /// - 5 second acquire timeout (fails fast on pool exhaustion)
+#[derive(Debug)]
 pub struct PostgresPoolOptions(sqlx::postgres::PgPoolOptions);
 
 impl Default for PostgresPoolOptions {
