@@ -46,7 +46,7 @@ pub struct DeckMetrics {
     pub type_counts: Vec<(&'static str, usize)>,
     /// Non-empty color counts in fixed order.
     pub color_counts: Vec<(&'static str, usize)>,
-    /// Per-color (WUBRG) mana balance: (consumed_pips, produced_pips).
+    /// Per-color (WUBRG) mana balance: `(consumed_pips, produced_pips)`.
     /// Index 0=White 1=Blue 2=Black 3=Red 4=Green.
     pub mana_balance: [(usize, usize); 5],
     /// Total deck price in USD (nonfoil preferred, foil/etched fallback). `None` if no cards priced.
@@ -527,7 +527,7 @@ fn numeric_stat(top: Option<&str>, front_face: Option<&str>) -> Option<f64> {
     top.or(front_face).and_then(|v| v.parse::<f64>().ok())
 }
 
-/// Card type classification; first match wins (matches group_cards.rs logic).
+/// Card type classification; first match wins (matches `group_cards.rs` logic).
 #[cfg(test)]
 mod budget_tests {
     use super::budget_tier;
@@ -585,7 +585,7 @@ fn classify_cmc(card: &Card) -> usize {
     (cmc.floor() as usize).min(6)
 }
 
-/// Count colored pip symbols in a Scryfall mana_cost string (e.g. "{2}{R}{R}").
+/// Count colored pip symbols in a Scryfall `mana_cost` string (e.g. "{2}{R}{R}").
 /// Only counts pure single-color symbols; skips hybrid ({W/U}), phyrexian ({W/P}), etc.
 fn count_color_pips(mana_cost: &str) -> [usize; 5] {
     let mut counts = [0usize; 5];
@@ -603,7 +603,7 @@ fn count_color_pips(mana_cost: &str) -> [usize; 5] {
     counts
 }
 
-/// Map a produced_mana string ("W","U","B","R","G") to WUBRG index.
+/// Map a `produced_mana` string ("W","U","B","R","G") to WUBRG index.
 /// Returns None for "C" (colorless), "S" (snow), or unknown values.
 fn produced_color_index(s: &str) -> Option<usize> {
     match s {

@@ -59,7 +59,7 @@ pub struct CreateDeckProfile {
     pub format: Option<Format>,
     /// Deck archetype/strategy tags (validated, deduped, at most [`MAX_DECK_TAGS`]).
     pub tags: Vec<DeckTag>,
-    /// Power level (WotC Commander Bracket). `None` = unset.
+    /// Power level (official Commander Bracket). `None` = unset.
     pub power_level: Option<PowerLevel>,
     /// Secondary, non-gameplay labels (validated, deduped, at most [`MAX_DECK_OTHER_TAGS`]).
     pub other_tags: Vec<DeckOtherTag>,

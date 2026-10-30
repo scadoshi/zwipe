@@ -14,7 +14,7 @@ use crate::domain::deck::deck::DeckEntry;
 use crate::domain::deck::deck_metrics::deck_price;
 use crate::domain::deck::{DeckProfile, DeckWarning, Format, WarningAction};
 
-/// Cards in the command zone (stored on the profile, not in deck_cards).
+/// Cards in the command zone (stored on the profile, not in `deck_cards`).
 pub struct DeckCommandZone<'a> {
     /// Primary commander (or oathbreaker planeswalker).
     pub commander: Option<&'a Card>,
@@ -793,9 +793,9 @@ mod tests {
             );
         }
 
-        /// Commander stored with printing A, command_zone has same card
-        /// with a different printing (different scryfall_data.id, same oracle_id).
-        /// Eligibility check should still find the commander via oracle_id.
+        /// Commander stored with printing A, `command_zone` has same card
+        /// with a different printing (different `scryfall_data.id`, same `oracle_id`).
+        /// Eligibility check should still find the commander via `oracle_id`.
         #[test]
         fn different_printing_still_validates_commander() {
             let mut card = make_card("Atraxa, Praetors' Voice");
@@ -880,7 +880,7 @@ mod tests {
         }
 
         /// Commander is in entries with a different printing than the profile stores.
-        /// Color identity check should still skip the commander entry (matched by oracle_id).
+        /// Color identity check should still skip the commander entry (matched by `oracle_id`).
         #[test]
         fn commander_in_entries_different_printing_not_warned() {
             let mut commander = make_card("Atraxa, Praetors' Voice");

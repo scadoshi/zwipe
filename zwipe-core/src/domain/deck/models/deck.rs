@@ -10,7 +10,7 @@ use crate::domain::deck::{DeckCard, DeckProfile, DeckWarning};
 pub struct DeckEntry {
     /// Full card data (Scryfall + profile).
     pub card: Card,
-    /// Deck-card join data (quantity, deck_id, scryfall_data_id).
+    /// Deck-card join data (quantity, `deck_id`, `scryfall_data_id`).
     pub deck_card: DeckCard,
 }
 
@@ -21,7 +21,7 @@ pub struct DeckEntry {
 ///
 /// # Structure
 ///
-/// - **DeckProfile**: Name, commander, owner ID
+/// - **`DeckProfile`**: Name, commander, owner ID
 /// - **Entries**: Each entry pairs a card with its deck membership data (quantity, etc.)
 ///
 /// # Use Cases

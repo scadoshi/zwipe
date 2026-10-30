@@ -29,7 +29,7 @@ pub struct DeckProfile {
     /// be selected + stored without a client release; labels via `deck_tag_label`.
     #[serde(default)]
     pub tags: Vec<String>,
-    /// Power level (WotC Commander Bracket). `None` = unset. `#[serde(default)]`
+    /// Power level (official Commander Bracket). `None` = unset. `#[serde(default)]`
     /// so an older client reading a payload without it parses to `None`.
     #[serde(default)]
     pub power_level: Option<PowerLevel>,

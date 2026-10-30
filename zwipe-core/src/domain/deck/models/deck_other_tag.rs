@@ -67,7 +67,7 @@ impl DeckOtherTag {
     }
 }
 
-/// Display as snake_case (matches serde serialization).
+/// Display as `snake_case` (matches serde serialization).
 impl fmt::Display for DeckOtherTag {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let s = serde_json::to_string(self).unwrap_or_default();

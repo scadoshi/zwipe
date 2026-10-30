@@ -933,7 +933,7 @@ impl DeckTag {
     }
 }
 
-/// Display as snake_case (matches serde serialization).
+/// Display as `snake_case` (matches serde serialization).
 impl fmt::Display for DeckTag {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let s = serde_json::to_string(self).unwrap_or_default();
@@ -961,7 +961,7 @@ impl TryFrom<&str> for DeckTag {
 /// reaches clients on deploy. See `context/plans/server_driven_catalogs.md` (Part C).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DeckTagView {
-    /// snake_case slug (matches the served tag values).
+    /// `snake_case` slug (matches the served tag values).
     pub slug: String,
     /// Human-readable label.
     pub display_name: String,
