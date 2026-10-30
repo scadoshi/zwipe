@@ -214,7 +214,7 @@ pub fn public_routes() -> Router<AppState> {
     // 5 req / 1hr: rarely needed legitimately
     let register_config = Arc::new(
         GovernorConfigBuilder::default()
-            .period(Duration::from_secs(720))
+            .period(Duration::from_mins(12))
             .burst_size(5)
             .key_extractor(CfConnectingIpKeyExtractor)
             .finish()
@@ -232,7 +232,7 @@ pub fn public_routes() -> Router<AppState> {
     // 5 req / 1hr per IP: password reset is rare
     let forgot_password_config = Arc::new(
         GovernorConfigBuilder::default()
-            .period(Duration::from_secs(720))
+            .period(Duration::from_mins(12))
             .burst_size(5)
             .key_extractor(CfConnectingIpKeyExtractor)
             .finish()
@@ -501,7 +501,7 @@ pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
     // burst 2, then 1 req/30min: account mutations are done once; 2 attempts covers typos
     let sensitive_config = Arc::new(
         GovernorConfigBuilder::default()
-            .period(Duration::from_secs(1800))
+            .period(Duration::from_mins(30))
             .burst_size(2)
             .key_extractor(UserIdKeyExtractor::new(jwt_secret.clone()))
             .finish()
