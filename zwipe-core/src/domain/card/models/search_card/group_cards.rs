@@ -17,9 +17,8 @@
 
 use std::collections::BTreeMap;
 
-use crate::domain::card::Card;
-use crate::domain::card::card_role::role_label;
 use crate::domain::card::scryfall_data::colors::Color;
+use crate::domain::card::{Card, card_role};
 
 /// Grouping strategies for partitioning cards.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -199,7 +198,7 @@ fn identity_pips(card: &Card) -> Vec<Color> {
 /// Groups cards by card role. Cards with multiple roles appear in each matching
 /// group (cloned); cards with no roles go into "uncategorized". Buckets are keyed
 /// by the card's role **slugs** (`card_profile.card_roles`), so a server-added
-/// role groups without a client release; labels come from [`role_label`].
+/// role groups without a client release; labels come from [`role_label`](card_role::role_label).
 fn group_by_card_role(cards: Vec<Card>) -> Vec<CardGroup> {
     // slug -> its cards, ordered by slug (BTreeMap) for a stable display order.
     let mut buckets: BTreeMap<String, Vec<Card>> = BTreeMap::new();
@@ -218,7 +217,7 @@ fn group_by_card_role(cards: Vec<Card>) -> Vec<CardGroup> {
     let mut groups: Vec<CardGroup> = buckets
         .into_iter()
         .map(|(slug, cards)| CardGroup {
-            label: role_label(&slug),
+            label: card_role::role_label(&slug),
             pips: None,
             cards,
         })

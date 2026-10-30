@@ -7,8 +7,7 @@ use crate::domain::card::Card;
 use crate::domain::card::scryfall_data::legalities::LegalityKind;
 use crate::domain::card::search_card::card_filter::criteria::CardCriteria;
 use crate::domain::card::search_card::card_filter::price_currency::PriceCurrency;
-use crate::domain::card::search_card::card_filter::strip_punctuation;
-use crate::domain::card::search_card::commander_eligibility::is_valid_commander;
+use crate::domain::card::search_card::{card_filter, commander_eligibility};
 use crate::domain::deck::Format;
 
 /// Layouts representing cards playable in Magic formats.
@@ -51,7 +50,7 @@ impl CardCriteria {
 
         // == text ==
         if let Some(q) = self.name_contains()
-            && !strip_punctuation(&sd.name)
+            && !card_filter::strip_punctuation(&sd.name)
                 .to_lowercase()
                 .contains(&q.to_lowercase())
         {
@@ -59,7 +58,7 @@ impl CardCriteria {
         }
 
         if let Some(q) = self.name_not_contains()
-            && strip_punctuation(&sd.name)
+            && card_filter::strip_punctuation(&sd.name)
                 .to_lowercase()
                 .contains(&q.to_lowercase())
         {
@@ -69,7 +68,7 @@ impl CardCriteria {
         if let Some(q) = self.oracle_text_contains() {
             match &sd.oracle_text {
                 Some(text)
-                    if strip_punctuation(text)
+                    if card_filter::strip_punctuation(text)
                         .to_lowercase()
                         .contains(&q.to_lowercase()) => {}
                 _ => return false,
@@ -78,7 +77,7 @@ impl CardCriteria {
 
         if let Some(q) = self.oracle_text_not_contains()
             && sd.oracle_text.as_ref().is_some_and(|text| {
-                strip_punctuation(text)
+                card_filter::strip_punctuation(text)
                     .to_lowercase()
                     .contains(&q.to_lowercase())
             })
@@ -89,7 +88,7 @@ impl CardCriteria {
         if let Some(values) = self.oracle_text_contains_any() {
             let matches = match &sd.oracle_text {
                 Some(text) => {
-                    let stripped = strip_punctuation(text).to_lowercase();
+                    let stripped = card_filter::strip_punctuation(text).to_lowercase();
                     values.iter().any(|v| stripped.contains(&v.to_lowercase()))
                 }
                 None => false,
@@ -102,7 +101,7 @@ impl CardCriteria {
         if let Some(values) = self.oracle_text_contains_all() {
             let matches = match &sd.oracle_text {
                 Some(text) => {
-                    let stripped = strip_punctuation(text).to_lowercase();
+                    let stripped = card_filter::strip_punctuation(text).to_lowercase();
                     values.iter().all(|v| stripped.contains(&v.to_lowercase()))
                 }
                 None => false,
@@ -115,7 +114,7 @@ impl CardCriteria {
         if let Some(values) = self.oracle_text_excludes_any() {
             let excluded = match &sd.oracle_text {
                 Some(text) => {
-                    let stripped = strip_punctuation(text).to_lowercase();
+                    let stripped = card_filter::strip_punctuation(text).to_lowercase();
                     values.iter().any(|v| stripped.contains(&v.to_lowercase()))
                 }
                 None => false,
@@ -272,7 +271,7 @@ impl CardCriteria {
         if let Some(q) = self.flavor_text_contains() {
             match &sd.flavor_text {
                 Some(text)
-                    if strip_punctuation(text)
+                    if card_filter::strip_punctuation(text)
                         .to_lowercase()
                         .contains(&q.to_lowercase()) => {}
                 _ => return false,
@@ -281,7 +280,7 @@ impl CardCriteria {
 
         if let Some(q) = self.flavor_text_not_contains()
             && sd.flavor_text.as_ref().is_some_and(|text| {
-                strip_punctuation(text)
+                card_filter::strip_punctuation(text)
                     .to_lowercase()
                     .contains(&q.to_lowercase())
             })
@@ -300,7 +299,7 @@ impl CardCriteria {
         if let Some(q) = self.type_line_contains() {
             match &sd.type_line {
                 Some(tl)
-                    if strip_punctuation(tl)
+                    if card_filter::strip_punctuation(tl)
                         .to_lowercase()
                         .contains(&q.to_lowercase()) => {}
                 _ => return false,
@@ -309,7 +308,7 @@ impl CardCriteria {
 
         if let Some(q) = self.type_line_not_contains()
             && sd.type_line.as_ref().is_some_and(|tl| {
-                strip_punctuation(tl)
+                card_filter::strip_punctuation(tl)
                     .to_lowercase()
                     .contains(&q.to_lowercase())
             })
@@ -320,7 +319,7 @@ impl CardCriteria {
         if let Some(values) = self.type_line_contains_any() {
             let matches = match &sd.type_line {
                 Some(tl) => {
-                    let stripped = strip_punctuation(tl).to_lowercase();
+                    let stripped = card_filter::strip_punctuation(tl).to_lowercase();
                     values.iter().any(|v| stripped.contains(&v.to_lowercase()))
                 }
                 None => false,
@@ -333,7 +332,7 @@ impl CardCriteria {
         if let Some(card_types) = self.card_type_contains_any() {
             let matches = match &sd.type_line {
                 Some(tl) => {
-                    let stripped = strip_punctuation(tl).to_lowercase();
+                    let stripped = card_filter::strip_punctuation(tl).to_lowercase();
                     card_types
                         .iter()
                         .any(|ct| stripped.contains(&ct.to_string().to_lowercase()))
@@ -348,7 +347,7 @@ impl CardCriteria {
         if let Some(values) = self.type_line_contains_all() {
             let matches = match &sd.type_line {
                 Some(tl) => {
-                    let stripped = strip_punctuation(tl).to_lowercase();
+                    let stripped = card_filter::strip_punctuation(tl).to_lowercase();
                     values.iter().all(|v| stripped.contains(&v.to_lowercase()))
                 }
                 None => false,
@@ -373,7 +372,7 @@ impl CardCriteria {
         if let Some(values) = self.type_line_excludes_any() {
             let excluded = match &sd.type_line {
                 Some(tl) => {
-                    let stripped = strip_punctuation(tl).to_lowercase();
+                    let stripped = card_filter::strip_punctuation(tl).to_lowercase();
                     values.iter().any(|v| stripped.contains(&v.to_lowercase()))
                 }
                 None => false,
@@ -386,7 +385,7 @@ impl CardCriteria {
         if let Some(card_types) = self.card_type_excludes_any() {
             let excluded = match &sd.type_line {
                 Some(tl) => {
-                    let stripped = strip_punctuation(tl).to_lowercase();
+                    let stripped = card_filter::strip_punctuation(tl).to_lowercase();
                     card_types
                         .iter()
                         .any(|ct| stripped.contains(&ct.to_string().to_lowercase()))
@@ -413,7 +412,7 @@ impl CardCriteria {
 
         // == commander eligibility ==
         if let Some(format) = self.is_commander_in_format()
-            && !is_valid_commander(card, format)
+            && !commander_eligibility::is_valid_commander(card, format)
         {
             return false;
         }
