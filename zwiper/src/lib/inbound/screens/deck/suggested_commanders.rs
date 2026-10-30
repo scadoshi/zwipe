@@ -627,13 +627,13 @@ pub(crate) enum StapleColor {
 impl StapleColor {
     /// Every chip in the row's order: WUBRG, then colorless.
     fn all() -> [Self; 6] {
-        let [w, u, b, r, g] = Color::all();
+        let [white, blue, black, red, green] = Color::all();
         [
-            Self::Of(w),
-            Self::Of(u),
-            Self::Of(b),
-            Self::Of(r),
-            Self::Of(g),
+            Self::Of(white),
+            Self::Of(blue),
+            Self::Of(black),
+            Self::Of(red),
+            Self::Of(green),
             Self::Colorless,
         ]
     }
