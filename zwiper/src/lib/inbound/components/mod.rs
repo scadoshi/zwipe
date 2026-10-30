@@ -1,6 +1,6 @@
 //! Reusable UI components.
 //!
-//! Provides Leptos components used throughout the application for consistent UX.
+//! Provides Dioxus components used throughout the application for consistent UX.
 
 /// Expandable accordion component.
 pub mod accordion;

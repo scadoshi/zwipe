@@ -88,6 +88,10 @@ impl Authed {
     /// Same reporting as [`Self::run`], but hands the `Err` back instead of
     /// swallowing it, for optimistic-update sites that must revert their
     /// state on failure.
+    ///
+    /// # Errors
+    ///
+    /// Returns the refresh's or the call's [`ClientError`].
     pub async fn try_run<T, Fut>(
         &self,
         op: &'static str,

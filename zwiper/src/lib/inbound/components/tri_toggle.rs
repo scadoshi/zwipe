@@ -1,12 +1,14 @@
+//! Three-chip selector for an `Option<bool>` filter field.
+
 use dioxus::prelude::*;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 
 /// A 3-state filter chip selector for `Option<bool>` values.
 ///
 /// Displays three mutually-exclusive chips with programmable labels:
-/// - `Some(true)` → true_label (default: "true")
-/// - `Some(false)` → false_label (default: "false")
-/// - `None` → none_label (default: "none")
+/// - `Some(true)` → `true_label` (default: "true")
+/// - `Some(false)` → `false_label` (default: "false")
+/// - `None` → `none_label` (default: "none")
 #[component]
 pub fn TriToggle(
     label: &'static str,

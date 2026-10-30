@@ -1,3 +1,5 @@
+//! The zwiper app: logging, crash capture, then the Dioxus launch.
+
 use components::{DialogHostView, ThemeConfig, ToastStack, use_dialog_host};
 use dioxus::prelude::*;
 use tracing_subscriber::EnvFilter;

@@ -1,3 +1,5 @@
+//! Bakes `BACKEND_URL`, `RUST_LOG` and `RUST_BACKTRACE` into the build, failing it on a bad backend URL.
+
 #![expect(
     clippy::panic,
     reason = "a build script fails the build by panicking on a missing variable"

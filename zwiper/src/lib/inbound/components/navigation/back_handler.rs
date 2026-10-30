@@ -49,7 +49,7 @@ fn webview() -> Option<NonNull<c_void>> {
     NonNull::new((&raw const *webview).cast_mut().cast())
 }
 
-/// No WKWebView off iOS.
+/// No `WKWebView` off iOS.
 #[cfg(not(all(target_os = "ios", feature = "mobile")))]
 fn webview() -> Option<NonNull<c_void>> {
     None

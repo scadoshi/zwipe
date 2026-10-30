@@ -59,6 +59,10 @@ pub fn replace_retired() {
 
 /// Switches the icon to `icon`'s colors. On iOS the OS shows its own alert
 /// saying the icon changed.
+///
+/// # Errors
+///
+/// Fails when the platform rejects the switch.
 pub fn set(icon: &ThemeConfig) -> anyhow::Result<()> {
     platform::set(alternate_name(icon).as_deref())
 }
@@ -69,6 +73,10 @@ pub fn follows_theme() -> bool {
 }
 
 /// Turns following the app's theme on or off for this device.
+///
+/// # Errors
+///
+/// Fails when the platform cannot store or clear the flag.
 pub fn set_follows_theme(on: bool) -> anyhow::Result<()> {
     platform::set_follows_theme(on)
 }

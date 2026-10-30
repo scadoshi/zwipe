@@ -13,7 +13,7 @@ pub struct TimePoint {
 }
 
 impl TimePoint {
-    /// Creates a new TimePoint with the given coordinates and timestamp.
+    /// Creates a new `TimePoint` with the given coordinates and timestamp.
     pub fn new(point: ClientPoint, time: NaiveDateTime) -> Self {
         Self { point, time }
     }

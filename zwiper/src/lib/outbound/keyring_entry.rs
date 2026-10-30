@@ -22,6 +22,10 @@ pub use keyring_core::Entry;
 
 /// Opens the entry for `(service, user)`, installing the iOS store first if
 /// this is the process's first use.
+///
+/// # Errors
+///
+/// Fails when the platform store cannot open the entry.
 pub fn entry(service: &str, user: &str) -> Result<Entry, keyring::Error> {
     #[cfg(target_os = "ios")]
     {

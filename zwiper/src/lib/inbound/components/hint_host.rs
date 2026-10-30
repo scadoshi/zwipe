@@ -34,7 +34,7 @@ pub enum HintTopic {
     Background,
     /// The oathbreaker signature spell field.
     SignatureSpell,
-    /// The WotC bracket the deck targets.
+    /// The Commander bracket the deck targets.
     PowerLevel,
     /// The deck's land count target.
     LandTarget,

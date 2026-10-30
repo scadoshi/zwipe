@@ -20,6 +20,10 @@ pub trait PersistTheme {
     fn infallible_save(&self);
     /// Loads the cached theme, returning `None` if not found or if it names no
     /// theme this build has. A retired theme loads as its replacement.
+    ///
+    /// # Errors
+    ///
+    /// Fails when the store cannot be read or the copy does not parse.
     fn load() -> anyhow::Result<Option<ThemeConfig>>;
     /// Loads the cached theme, logging errors and returning `None` on failure.
     fn infallible_load() -> Option<ThemeConfig>;

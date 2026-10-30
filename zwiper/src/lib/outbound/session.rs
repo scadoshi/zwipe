@@ -16,14 +16,26 @@ use zwipe_core::domain::auth::models::session::Session;
 /// Trait for persisting sessions across application restarts.
 pub trait Persist {
     /// Saves the session to persistent storage.
+    ///
+    /// # Errors
+    ///
+    /// Fails when the session cannot be serialized or written.
     fn save(&self) -> anyhow::Result<()>;
     /// Saves the session, logging errors instead of returning them.
     fn infallible_save(&self);
     /// Loads a session from storage, returning `None` if not found or expired.
+    ///
+    /// # Errors
+    ///
+    /// Fails when the store cannot be read or the session does not parse.
     fn load() -> anyhow::Result<Option<Session>>;
     /// Loads a session, logging errors and returning `None` on failure.
     fn infallible_load() -> Option<Session>;
     /// Deletes the session from storage.
+    ///
+    /// # Errors
+    ///
+    /// Fails when the store cannot remove the session.
     fn delete(&self) -> anyhow::Result<()>;
     /// Deletes the session, logging errors instead of returning them.
     fn infallible_delete(&self);

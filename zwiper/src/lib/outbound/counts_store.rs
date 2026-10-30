@@ -15,6 +15,10 @@ pub trait PersistCounts {
     /// Saves the counters, logging errors instead of returning them.
     fn infallible_save(&self);
     /// Loads the cached counters, returning `None` if not found.
+    ///
+    /// # Errors
+    ///
+    /// Fails when the store cannot be read or the copy does not parse.
     fn load() -> anyhow::Result<Option<HttpPublicMetrics>>;
     /// Loads the cached counters, logging errors and returning `None` on failure.
     fn infallible_load() -> Option<HttpPublicMetrics>;
