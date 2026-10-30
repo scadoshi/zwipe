@@ -11,6 +11,10 @@ use zwipe::outbound::sqlx::postgres::Postgres;
 use zwipe_core::domain::logo;
 
 #[tokio::main]
+#[expect(
+    clippy::too_many_lines,
+    reason = "the nightly steps in order, each logging and counting its own failure"
+)]
 async fn main() -> anyhow::Result<()> {
     logo::Zervice::print();
     let config = ZerviceConfig::from_env()?;

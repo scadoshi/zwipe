@@ -289,6 +289,10 @@ where
         Ok(deck)
     }
 
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one search's steps in order: exclusions, the synergy map, then the query"
+    )]
     async fn search_deck_cards(
         &self,
         request: &GetDeckProfile,
@@ -595,6 +599,10 @@ where
         self.deck_repo.clear_commander_maybeboard(user_id).await
     }
 
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one pipeline in order: profile, summarize, score, cap and hydrate"
+    )]
     async fn commander_suggestions(
         &self,
         user_id: Uuid,
@@ -791,6 +799,10 @@ where
         self.deck_repo.clear_commander_dismissals(user_id).await
     }
 
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one import in order: resolve names, classify lines, then write"
+    )]
     async fn import_deck_cards(
         &self,
         request: &ImportDeckCards,
@@ -947,6 +959,10 @@ where
         })
     }
 
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one import in order: resolve ids, fall back to names, classify, then write"
+    )]
     async fn import_archidekt_deck(
         &self,
         user_id: Uuid,
