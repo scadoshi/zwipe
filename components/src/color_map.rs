@@ -832,20 +832,20 @@ mod tests {
     /// Each color's largest 4-connected region, in tiles, in WUBRG order.
     fn largest_regions(model: &ColorMapModel) -> [usize; 5] {
         let cells = by_cell(model);
-        let mut seen: BTreeMap<(i32, i32), ()> = BTreeMap::new();
+        let mut seen: BTreeSet<(i32, i32)> = BTreeSet::new();
         let mut largest = [0_usize; 5];
         for (&start, &color) in &cells {
-            if seen.contains_key(&start) {
+            if seen.contains(&start) {
                 continue;
             }
             let mut stack = vec![start];
-            seen.insert(start, ());
+            seen.insert(start);
             let mut size = 0;
             while let Some(cell) = stack.pop() {
                 size += 1;
                 for next in neighbors(cell) {
-                    if cells.get(&next) == Some(&color) && !seen.contains_key(&next) {
-                        seen.insert(next, ());
+                    if cells.get(&next) == Some(&color) && !seen.contains(&next) {
+                        seen.insert(next);
                         stack.push(next);
                     }
                 }
