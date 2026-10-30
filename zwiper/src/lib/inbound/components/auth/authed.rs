@@ -30,6 +30,18 @@ pub struct Authed {
     screen: Screen,
 }
 
+// By hand: `Toasts` has no `Debug`.
+impl std::fmt::Debug for Authed {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Authed")
+            .field("session", &self.session)
+            .field("client", &self.client)
+            .field("usage_buffer", &self.usage_buffer)
+            .field("screen", &self.screen)
+            .finish_non_exhaustive()
+    }
+}
+
 /// Reads the app contexts once and pins the telemetry screen for every call
 /// made through the handle. One call per screen component, next to the other
 /// hooks.

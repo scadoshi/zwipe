@@ -53,7 +53,7 @@ const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 /// navigation: Home reads it and only refetches when empty or expired. The
 /// server serves ONE shared pick per UTC hour, so expiry pins to the top of
 /// the next hour: the app flips exactly when the server does.
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct FlavorCard {
     /// The card whose flavor text is shown.
     pub card: Card,
@@ -87,7 +87,7 @@ impl FlavorCard {
 /// reads this: `Loading` shows a skeleton, `Loaded` renders the fetched copy,
 /// and `Failed` says so. No compiled fallback: zwiper renders served data
 /// only (`context/plans/server-driven-catalogs-2/overview.md`).
-#[derive(Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum ChangelogCache {
     /// Startup fetch still in flight.
     Loading,
@@ -103,7 +103,7 @@ pub enum ChangelogCache {
 /// other `Signal<bool>` contexts: a bare `Signal<bool>` here was once grabbed
 /// by the filter sheet's collapse lookup, which flashed the blocking
 /// "Update required" screen every time Apply was hit on add/remove cards.
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct UpgradeRequired(Signal<bool>);
 
 impl UpgradeRequired {

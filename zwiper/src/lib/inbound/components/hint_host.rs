@@ -16,7 +16,7 @@ use crate::inbound::components::concept_explainers::{DeckTagsExplainer, OracleTa
 /// One per field or row rather than one per screen: a dialog that explains
 /// ten fields at once gets skipped, and the reader only wanted the one they
 /// tapped. Each body says only what looking at the control does not.
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum HintTopic {
     /// The archetype tags you pick on a deck.
     DeckTags,
