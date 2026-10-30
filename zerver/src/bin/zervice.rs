@@ -33,8 +33,7 @@ async fn main() -> anyhow::Result<()> {
     // See zerver.rs for the rationale: RUST_LOG from the process env wins; otherwise
     // we use the directive string from Config. ONE filter, attached globally: a
     // per-layer EnvFilter copy on each fmt layer silently DROPS events (incl. the
-    // step-result and error lines) once the directive set has per-target entries
-    // (found live 2026-07-30).
+    // step-result and error lines) once the directive set has per-target entries.
     let env_filter =
         EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(&config.rust_log));
 
@@ -186,8 +185,8 @@ async fn main() -> anyhow::Result<()> {
 
 /// Dead-man's-switch ping on an all-steps-ok run: the receiving side
 /// (healthchecks.io) alerts on SILENCE, covering "never ran at all"; the
-/// blind spot `OnFailure=` email can't see (masked timer, wedged box; the
-/// 2026-08-05 cron ghost was this class). Skipped when the URL is unset (dev
+/// blind spot `OnFailure=` email can't see (masked timer, wedged box).
+/// Skipped when the URL is unset (dev
 /// runs stay quiet), and a failed ping only warns: the sync itself succeeded,
 /// and a false "zervice is down" email from their side is the correct outcome
 /// if the ping can't get out.

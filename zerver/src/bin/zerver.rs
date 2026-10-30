@@ -37,11 +37,10 @@ async fn run() -> anyhow::Result<()> {
     let config: Config = Config::from_env()?;
 
     // EnvFilter::try_from_default_env() reads RUST_LOG directly from the process env;
-    // when unset/invalid we fall back to the directive string loaded via Config (which
-    // came from .env). ONE filter, attached globally to the registry; a per-layer
-    // EnvFilter copy on each fmt layer silently DROPS events (incl. errors) once the
-    // directive set has per-target entries (found live 2026-07-30; both sinks want
-    // identical filtering anyway).
+    // when unset/invalid we fall back to the directive string loaded via Config (read
+    // from .env). ONE filter, attached globally to the registry; a per-layer EnvFilter
+    // copy on each fmt layer silently DROPS events (incl. errors) once the directive
+    // set has per-target entries, and both sinks want identical filtering anyway.
     let env_filter =
         EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(&config.rust_log));
 
