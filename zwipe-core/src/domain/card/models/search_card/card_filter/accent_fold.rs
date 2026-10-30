@@ -10,8 +10,8 @@
 //! `zerver/tests/card_filter_parity.rs` folds the same samples both ways.
 
 /// Folds accented Latin letters to ASCII the way Postgres `unaccent` does:
-/// "Jötun" becomes "Jotun", "Æther" becomes "AEther", "Straße" becomes
-/// "Strasse". Combining marks are dropped, so decomposed input folds the same
+/// `Jötun` becomes `Jotun`, `Æther` becomes `AEther`, `Straße` becomes
+/// `Strasse`. Combining marks are dropped, so decomposed input folds the same
 /// as precomposed. Everything else passes through unchanged.
 #[must_use]
 pub fn fold_accents(text: &str) -> String {
