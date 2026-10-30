@@ -4,4 +4,4 @@
 //! collapsible/expandable content container for organizing information.
 
 mod component;
-pub use component::*;
+pub use component::{Accordion, AccordionContent, AccordionItem, AccordionTrigger};
