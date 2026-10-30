@@ -413,16 +413,6 @@ impl DeckMetrics {
             }
         }
 
-        const TYPE_LABELS: [&str; 8] = [
-            "lands",
-            "creatures",
-            "planeswalkers",
-            "artifacts",
-            "enchantments",
-            "instants",
-            "sorceries",
-            "other",
-        ];
         let type_counts: Vec<(&'static str, usize)> = TYPE_LABELS
             .iter()
             .zip(type_buckets.iter())
@@ -430,15 +420,6 @@ impl DeckMetrics {
             .map(|(&label, &count)| (label, count))
             .collect();
 
-        const COLOR_LABELS: [&str; 7] = [
-            "white",
-            "blue",
-            "black",
-            "red",
-            "green",
-            "multicolor",
-            "colorless",
-        ];
         let color_counts: Vec<(&'static str, usize)> = COLOR_LABELS
             .iter()
             .zip(color_buckets.iter())
@@ -559,11 +540,30 @@ mod budget_tests {
     }
 }
 
+/// Chart labels for the type buckets, in [`classify_type`] order.
+const TYPE_LABELS: [&str; 8] = [
+    "lands",
+    "creatures",
+    "planeswalkers",
+    "artifacts",
+    "enchantments",
+    "instants",
+    "sorceries",
+    "other",
+];
+
+/// Chart labels for the color buckets.
+const COLOR_LABELS: [&str; 7] = [
+    "white",
+    "blue",
+    "black",
+    "red",
+    "green",
+    "multicolor",
+    "colorless",
+];
+
 fn classify_type(card: &Card) -> usize {
-    let type_line = match &card.scryfall_data.type_line {
-        Some(tl) => tl.as_str(),
-        None => return 7, // "other"
-    };
     const CHECKS: &[&str] = &[
         "Land",
         "Creature",
@@ -573,6 +573,10 @@ fn classify_type(card: &Card) -> usize {
         "Instant",
         "Sorcery",
     ];
+    let type_line = match &card.scryfall_data.type_line {
+        Some(tl) => tl.as_str(),
+        None => return 7, // "other"
+    };
     CHECKS
         .iter()
         .position(|keyword| type_line.contains(keyword))
