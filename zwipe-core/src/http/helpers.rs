@@ -2,7 +2,6 @@
 //!
 //! Provides utilities for handling partial updates and JSON serialization edge cases.
 
-use serde::de::DeserializeOwned;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 /// Wrapper for optional field updates that preserves `None` vs "unchanged" semantics.
@@ -68,7 +67,7 @@ impl<T: Serialize> Serialize for Opdate<T> {
         match self {
             Opdate::Set(inner) => inner.serialize(serializer),
             Opdate::Unchanged => Err(serde::ser::Error::custom(
-                "Opdate::Unchanged must be skipped, not serialized — add \
+                "Opdate::Unchanged must be skipped, not serialized: add \
                  #[serde(default, skip_serializing_if = \"Opdate::is_unchanged\")] to the field",
             )),
         }
@@ -79,16 +78,9 @@ impl<T: Serialize> Serialize for Opdate<T> {
 /// absent → `Unchanged` via `#[serde(default)]`. The legacy externally-tagged
 /// dialect from pre-1.7.5 clients fails to decode (or, for `Opdate<String>`,
 /// reads as an ordinary value); those clients are behind the version gate.
-impl<'de, T: DeserializeOwned> Deserialize<'de> for Opdate<T> {
+impl<'de, T: Deserialize<'de>> Deserialize<'de> for Opdate<T> {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        use serde::de::Error as _;
-        let value = serde_json::Value::deserialize(deserializer)?;
-        match value {
-            serde_json::Value::Null => Ok(Opdate::Set(None)),
-            other => T::deserialize(other)
-                .map(|v| Opdate::Set(Some(v)))
-                .map_err(D::Error::custom),
-        }
+        Option::<T>::deserialize(deserializer).map(Opdate::Set)
     }
 }
 
@@ -115,10 +107,7 @@ impl<T> Opdate<T> {
     }
 }
 
-impl<T> Opdate<T>
-where
-    T: PartialEq,
-{
+impl<T> Opdate<T> {
     /// Converts to domain-layer `Option<Option<T>>` representation.
     ///
     /// - `Unchanged` → `None` (don't update)
@@ -128,33 +117,11 @@ where
     }
 }
 
-/// Iterator impl allows consuming `Opdate` in a for loop.
-///
-/// Yields the inner `Option<T>` once if `Set`, nothing if `Unchanged`.
-/// After iteration, the `Opdate` becomes `Unchanged`.
-impl<T> Iterator for Opdate<T> {
-    type Item = Option<T>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        match self {
-            Opdate::Set(value) => {
-                let result = Some(value.take());
-                *self = Opdate::Unchanged;
-                result
-            }
-            Opdate::Unchanged => None,
-        }
-    }
-}
-
 /// Converts `Opdate<T>` to domain-layer `Option<Option<T>>` representation.
 ///
 /// - `Unchanged` → `None` (don't update this field)
 /// - `Set(inner)` → `Some(inner)` (update field, possibly to None)
-impl<T> From<Opdate<T>> for Option<Option<T>>
-where
-    T: PartialEq,
-{
+impl<T> From<Opdate<T>> for Option<Option<T>> {
     fn from(value: Opdate<T>) -> Self {
         match value {
             Opdate::Set(inner) => Some(inner),
@@ -223,6 +190,39 @@ mod tests {
         // ...and an "Unchanged" string is just a string value.
         let p: StringProbe = serde_json::from_str(r#"{"field":"Unchanged"}"#).unwrap();
         assert_eq!(p.field, Opdate::Set(Some("Unchanged".to_string())));
+    }
+
+    #[test]
+    fn wrong_type_errors() {
+        assert!(serde_json::from_str::<Probe>(r#"{"field":"seven"}"#).is_err());
+        assert!(serde_json::from_str::<Probe>(r#"{"field":[7]}"#).is_err());
+        assert!(serde_json::from_str::<StringProbe>(r#"{"field":7}"#).is_err());
+    }
+
+    #[test]
+    fn decodes_nested_values() {
+        #[derive(Debug, Deserialize)]
+        struct ListProbe {
+            #[serde(default)]
+            field: Opdate<Vec<String>>,
+        }
+        let p: ListProbe = serde_json::from_str(r#"{"field":["a","b"]}"#).unwrap();
+        assert_eq!(
+            p.field,
+            Opdate::Set(Some(vec!["a".to_string(), "b".to_string()]))
+        );
+        let p: ListProbe = serde_json::from_str(r#"{"field":[]}"#).unwrap();
+        assert_eq!(p.field, Opdate::Set(Some(Vec::new())));
+    }
+
+    #[test]
+    fn wrong_type_error_message() {
+        let err = serde_json::from_str::<Probe>(r#"{"field":"seven"}"#).unwrap_err();
+        let message = err.to_string();
+        assert!(
+            message.starts_with(r#"invalid type: string "seven", expected i32 at line 1"#),
+            "message {message:?}"
+        );
     }
 
     #[test]
