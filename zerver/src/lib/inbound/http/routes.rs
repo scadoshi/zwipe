@@ -86,6 +86,10 @@ use crate::inbound::http::handlers::user::mark_hint_shown::mark_hint_shown;
 use crate::inbound::http::handlers::user::update_preferences::update_preferences;
 use crate::inbound::http::middleware::{CfConnectingIpKeyExtractor, UserIdKeyExtractor};
 
+/// Largest crash report body accepted, in bytes. A report is about 2 KB of
+/// truncated panic text, and the route takes it unauthenticated.
+const CRASH_REPORT_BODY_LIMIT: usize = 4096;
+
 /// Rate-limit error handler for the routes keyed by user id
 /// (`UserIdKeyExtractor`).
 ///
@@ -473,9 +477,7 @@ pub fn public_routes() -> Router<AppState> {
                                     GovernorLayer::new(crash_report_config)
                                         .error_handler(stable_rate_limit),
                                 )
-                                // A crash report is ~2KB of truncated panic
-                                // text; 4KB bounds this unauthed body hard.
-                                .layer(DefaultBodyLimit::max(4096)),
+                                .layer(DefaultBodyLimit::max(CRASH_REPORT_BODY_LIMIT)),
                         ),
                 )
                 .nest(

@@ -149,6 +149,12 @@ async fn security_headers(request: Request, next: Next) -> Response {
 
 // == server ==
 
+/// Largest request body accepted on any route, in bytes (2 MiB).
+const REQUEST_BODY_LIMIT: usize = 2 * 1024 * 1024;
+
+/// How long a request may run before it is answered with 408.
+const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
+
 /// Bind address and CORS origins for the HTTP server.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HttpServerConfig<'a> {
@@ -254,10 +260,10 @@ pub fn build_router(
             )),
         )
         .merge(routes::public_routes())
-        .layer(RequestBodyLimitLayer::new(2 * 1024 * 1024))
+        .layer(RequestBodyLimitLayer::new(REQUEST_BODY_LIMIT))
         .layer(TimeoutLayer::with_status_code(
             StatusCode::REQUEST_TIMEOUT,
-            Duration::from_secs(30),
+            REQUEST_TIMEOUT,
         ))
         .layer(axum::middleware::from_fn(security_headers))
         .layer(
