@@ -5,7 +5,7 @@ use axum::http::StatusCode;
 use zwipe_core::domain::deck::requests::delete_deck_card::{DeleteDeckCard, InvalidDeleteDeckCard};
 
 use crate::domain::deck::models::deck_card::delete_deck_card::DeleteDeckCardError;
-use crate::inbound::http::handlers::metrics::check_completion::check_deck_completion;
+use crate::inbound::http::handlers::metrics::check_completion;
 use crate::inbound::http::middleware::AuthenticatedUser;
 use crate::inbound::http::{ApiError, AppState, To500};
 
@@ -58,7 +58,12 @@ pub async fn delete_deck_card(
     let deck_service = std::sync::Arc::clone(&state.deck_service);
     let uid = user.id;
     let did = request.deck_id;
-    tokio::spawn(check_deck_completion(deck_service, metrics, uid, did));
+    tokio::spawn(check_completion::check_deck_completion(
+        deck_service,
+        metrics,
+        uid,
+        did,
+    ));
 
     Ok(StatusCode::NO_CONTENT)
 }

@@ -142,8 +142,6 @@ mod tests {
     use flate2::Compression;
     use flate2::write::GzEncoder;
 
-    use super::parse_jsonl_gz;
-
     fn gz(lines: &str) -> Vec<u8> {
         let mut enc = GzEncoder::new(Vec::new(), Compression::default());
         enc.write_all(lines.as_bytes()).unwrap();
@@ -158,7 +156,7 @@ mod tests {
     #[test]
     fn parses_one_object_per_line_skipping_blanks() {
         let bytes = gz("{\"name\":\"a\"}\n\n{\"name\":\"b\"}\n");
-        let rows: Vec<Row> = parse_jsonl_gz(&bytes).unwrap();
+        let rows: Vec<Row> = super::parse_jsonl_gz(&bytes).unwrap();
         assert_eq!(
             rows,
             vec![
@@ -175,7 +173,7 @@ mod tests {
     #[test]
     fn malformed_line_fails_loudly_with_line_number() {
         let bytes = gz("{\"name\":\"a\"}\nnot json\n");
-        let err = parse_jsonl_gz::<Row>(&bytes).unwrap_err();
+        let err = super::parse_jsonl_gz::<Row>(&bytes).unwrap_err();
         assert!(format!("{err:#}").contains("line 2"), "{err:#}");
     }
 }

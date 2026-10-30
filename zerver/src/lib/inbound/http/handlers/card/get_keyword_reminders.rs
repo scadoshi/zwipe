@@ -11,7 +11,7 @@ use std::collections::HashMap;
 use axum::Json;
 use axum::extract::State;
 use reqwest::StatusCode;
-use zwipe_core::domain::card::keyword::keyword_reminder;
+use zwipe_core::domain::card::keyword;
 
 use crate::inbound::http::{ApiError, AppState};
 
@@ -32,7 +32,7 @@ pub async fn get_keyword_reminders(
     let reminders: HashMap<String, String> = keywords
         .into_iter()
         .map(|name| {
-            let reminder = keyword_reminder(&name).to_string();
+            let reminder = keyword::keyword_reminder(&name).to_string();
             (name, reminder)
         })
         .collect();

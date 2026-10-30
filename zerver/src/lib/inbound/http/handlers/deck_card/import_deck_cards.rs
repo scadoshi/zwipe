@@ -10,7 +10,7 @@ use zwipe_core::domain::user::requests::get_user::GetUser;
 use zwipe_core::http::contracts::deck_card::HttpImportDeckCards;
 
 use crate::domain::deck::models::deck_card::import_deck_cards::ImportDeckCardsError;
-use crate::inbound::http::handlers::metrics::check_completion::check_deck_completion;
+use crate::inbound::http::handlers::metrics::check_completion;
 use crate::inbound::http::middleware::AuthenticatedUser;
 use crate::inbound::http::{ApiError, AppState, To500};
 
@@ -71,7 +71,12 @@ pub async fn import_deck_cards(
     let metrics = std::sync::Arc::clone(&state.metrics_service);
     let deck_service = std::sync::Arc::clone(&state.deck_service);
     let uid = user.id;
-    tokio::spawn(check_deck_completion(deck_service, metrics, uid, deck_id));
+    tokio::spawn(check_completion::check_deck_completion(
+        deck_service,
+        metrics,
+        uid,
+        deck_id,
+    ));
 
     Ok((StatusCode::OK, Json(result)))
 }

@@ -31,7 +31,6 @@ use crate::domain::deck::ports::{DeckService, ErasedDeckService};
 use crate::domain::health::ports::{ErasedHealthService, HealthService};
 use crate::domain::metrics::ports::ErasedMetricsService;
 use crate::domain::user::ports::{ErasedUserService, UserService};
-use crate::inbound::http::routes::{private_routes, public_routes};
 
 // == error ==
 
@@ -249,12 +248,12 @@ pub fn build_router(
         .merge(
             // last-active layer wraps private routes only: it peeks the Bearer
             // token, so it must sit where every request carries one
-            private_routes(jwt_secret).layer(axum::middleware::from_fn_with_state(
+            routes::private_routes(jwt_secret).layer(axum::middleware::from_fn_with_state(
                 state.clone(),
                 middleware::track_last_active,
             )),
         )
-        .merge(public_routes())
+        .merge(routes::public_routes())
         .layer(RequestBodyLimitLayer::new(2 * 1024 * 1024))
         .layer(TimeoutLayer::with_status_code(
             StatusCode::REQUEST_TIMEOUT,
@@ -349,8 +348,8 @@ async fn shutdown_signal() {
 
     #[cfg(unix)]
     let terminate = async {
-        use tokio::signal::unix::{SignalKind, signal};
-        if let Ok(mut stream) = signal(SignalKind::terminate()) {
+        use tokio::signal::unix::{self, SignalKind};
+        if let Ok(mut stream) = unix::signal(SignalKind::terminate()) {
             stream.recv().await;
         }
     };

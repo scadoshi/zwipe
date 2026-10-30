@@ -11,7 +11,7 @@ use zwipe_core::http::contracts::deck::{HttpCloneDeck, HttpClonedDeck};
 use crate::domain::deck::models::deck::clone_deck::CloneDeckError;
 use crate::domain::deck::models::deck::get_deck_profile::GetDeckProfileError;
 use crate::domain::metrics::models::kinds::EventKind;
-use crate::inbound::http::handlers::metrics::check_completion::check_deck_completion;
+use crate::inbound::http::handlers::metrics::check_completion;
 use crate::inbound::http::middleware::AuthenticatedUser;
 use crate::inbound::http::{ApiError, AppState, To500};
 
@@ -100,7 +100,7 @@ pub async fn clone_deck(
         }
         // A clone is a complete copy of an existing deck, so it may already be
         // valid, so run the completion check immediately.
-        check_deck_completion(deck_service, metrics, uid, new_deck_id).await;
+        check_completion::check_deck_completion(deck_service, metrics, uid, new_deck_id).await;
     });
 
     Ok((

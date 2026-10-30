@@ -17,7 +17,7 @@ use zwipe_core::http::contracts::deck_card::HttpPatchDeckCard;
 use zwipe_core::http::helpers::Opdate;
 
 use crate::domain::deck::models::deck_card::update_deck_card::UpdateDeckCardError;
-use crate::inbound::http::handlers::metrics::check_completion::check_deck_completion;
+use crate::inbound::http::handlers::metrics::check_completion;
 use crate::inbound::http::middleware::AuthenticatedUser;
 use crate::inbound::http::{ApiError, AppState, To500};
 
@@ -126,7 +126,12 @@ pub async fn patch_deck_card(
     let deck_service = std::sync::Arc::clone(&state.deck_service);
     let uid = user.id;
     let did = request.deck_id;
-    tokio::spawn(check_deck_completion(deck_service, metrics, uid, did));
+    tokio::spawn(check_completion::check_deck_completion(
+        deck_service,
+        metrics,
+        uid,
+        did,
+    ));
 
     Ok((StatusCode::OK, Json(deck_card)))
 }

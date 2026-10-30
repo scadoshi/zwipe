@@ -11,8 +11,8 @@ use zwipe_core::domain::deck::requests::update_deck_profile::{
 use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
 
 use crate::domain::deck::models::deck::update_deck_profile::UpdateDeckProfileError;
-use crate::inbound::http::handlers::deck_card::patch_deck_card::reject_null;
-use crate::inbound::http::handlers::metrics::check_completion::check_deck_completion;
+use crate::inbound::http::handlers::deck_card::patch_deck_card;
+use crate::inbound::http::handlers::metrics::check_completion;
 use crate::inbound::http::middleware::AuthenticatedUser;
 use crate::inbound::http::{ApiError, AppState, To500};
 
@@ -83,7 +83,7 @@ pub async fn update_deck_profile(
 ) -> Result<(StatusCode, Json<DeckProfile>), ApiError> {
     // A deck always has a name: explicit null is a 422 (RFC 7396 policy),
     // absent leaves it unchanged.
-    let name = reject_null(body.name, "name")?;
+    let name = patch_deck_card::reject_null(body.name, "name")?;
     let format_raw: Option<Option<String>> = body.format.into_option();
     let format_option: Option<Option<&str>> = format_raw.as_ref().map(|opt| opt.as_deref());
     let power_level_raw: Option<Option<String>> = body.power_level.into_option();
@@ -114,7 +114,12 @@ pub async fn update_deck_profile(
     let metrics = std::sync::Arc::clone(&state.metrics_service);
     let deck_service = std::sync::Arc::clone(&state.deck_service);
     let uid = user.id;
-    tokio::spawn(check_deck_completion(deck_service, metrics, uid, deck_id));
+    tokio::spawn(check_completion::check_deck_completion(
+        deck_service,
+        metrics,
+        uid,
+        deck_id,
+    ));
 
     Ok((StatusCode::OK, Json(deck_profile)))
 }

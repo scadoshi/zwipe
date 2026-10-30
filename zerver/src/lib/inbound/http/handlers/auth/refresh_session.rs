@@ -5,7 +5,7 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::http::contracts::auth::HttpRefreshSession;
-use zwipe_core::version::canonical_version;
+use zwipe_core::version;
 
 use crate::domain::auth::requests::refresh_session::{
     InvalidRefreshSession, RefreshSession, RefreshSessionError,
@@ -59,7 +59,10 @@ impl TryFrom<HttpRefreshSession> for RefreshSession {
     type Error = InvalidRefreshSession;
     fn try_from(value: HttpRefreshSession) -> Result<Self, Self::Error> {
         let mut request = Self::new(&value.user_id, &value.refresh_token)?;
-        request.client_version = value.client_version.as_deref().and_then(canonical_version);
+        request.client_version = value
+            .client_version
+            .as_deref()
+            .and_then(version::canonical_version);
         Ok(request)
     }
 }
