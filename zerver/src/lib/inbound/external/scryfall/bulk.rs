@@ -39,7 +39,7 @@ pub enum BulkEndpoint {
 }
 
 impl BulkEndpoint {
-    pub(super) fn resolve(&self) -> String {
+    pub(super) fn resolve(self) -> String {
         match self {
             Self::OracleCards => "/bulk-data/oracle-cards".to_string(),
             Self::UniqueArtwork => "/bulk-data/unique-artworks".to_string(),
