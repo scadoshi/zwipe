@@ -360,7 +360,7 @@ where
 
         let preferences = self
             .user_repo
-            .get_preferences(user.id)
+            .fetch_preferences(user.id)
             .await
             .unwrap_or_default();
 
@@ -382,10 +382,10 @@ where
     }
 
     async fn create_session(&self, request: &CreateSession) -> Result<Session, CreateSessionError> {
-        let user = self.user_repo.get_user(request.user_id).await?;
+        let user = self.user_repo.fetch_user(request.user_id).await?;
         let preferences = self
             .user_repo
-            .get_preferences(request.user_id)
+            .fetch_preferences(request.user_id)
             .await
             .unwrap_or_default();
 
@@ -415,10 +415,10 @@ where
         &self,
         request: &RefreshSession,
     ) -> Result<Session, RefreshSessionError> {
-        let user = self.user_repo.get_user(request.user_id).await?;
+        let user = self.user_repo.fetch_user(request.user_id).await?;
         let preferences = self
             .user_repo
-            .get_preferences(request.user_id)
+            .fetch_preferences(request.user_id)
             .await
             .unwrap_or_default();
 
