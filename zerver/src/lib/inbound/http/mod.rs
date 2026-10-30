@@ -193,7 +193,21 @@ pub struct AppState {
     pub web_base_url: Arc<str>,
 }
 
+/// The services are trait objects with no `Debug`, so only the plain fields
+/// print.
+impl std::fmt::Debug for AppState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("AppState")
+            .field("last_active_cache", &self.last_active_cache)
+            .field("featured_flavor", &self.featured_flavor)
+            .field("min_client_version", &self.min_client_version)
+            .field("web_base_url", &self.web_base_url)
+            .finish_non_exhaustive()
+    }
+}
+
 /// Axum HTTP server with pre-configured routes and middleware.
+#[derive(Debug)]
 pub struct HttpServer {
     router: axum::Router,
     listener: net::TcpListener,

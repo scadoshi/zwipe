@@ -32,6 +32,7 @@ use crate::inbound::http::AppState;
 ///
 /// Rejects with `400 Bad Request` if the header is missing or malformed,
 /// `401 Unauthorized` if the signature is invalid.
+#[derive(Debug)]
 pub struct AuthenticatedUser {
     /// User ID from JWT claims.
     pub id: Uuid,
@@ -135,6 +136,7 @@ impl KeyExtractor for CfConnectingIpKeyExtractor {
 ///
 /// Rejects with `400 Bad Request` only when neither the Cloudflare header nor
 /// a socket peer is present, which no served request can hit.
+#[derive(Debug)]
 pub struct ClientIp(pub IpAddr);
 
 impl<S: Send + Sync> FromRequestParts<S> for ClientIp {

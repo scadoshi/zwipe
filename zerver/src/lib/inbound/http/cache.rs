@@ -17,6 +17,7 @@ use std::time::Instant;
 use tokio::sync::RwLock;
 
 /// One-slot, deadline-based cache. See the module docs for the model.
+#[derive(Debug)]
 pub struct TtlSlot<V> {
     slot: RwLock<Option<(Instant, V)>>,
 }

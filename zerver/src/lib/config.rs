@@ -123,6 +123,28 @@ pub struct Config {
     pub support_email_address: String,
 }
 
+/// Redacted: the database URL carries its password, and the JWT secret and
+/// Resend key are secrets.
+impl std::fmt::Debug for Config {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Config")
+            .field("jwt_secret", &self.jwt_secret)
+            .field("database_url", &"REDACTED")
+            .field("bind_address", &self.bind_address)
+            .field("rust_log", &self.rust_log)
+            .field("rust_backtrace", &self.rust_backtrace)
+            .field("allowed_origins", &self.allowed_origins)
+            .field("resend_api_key", &"REDACTED")
+            .field("resend_from_email", &self.resend_from_email)
+            .field("log_dir", &self.log_dir)
+            .field("min_client_version", &self.min_client_version)
+            .field("access_token_lifetime", &self.access_token_lifetime)
+            .field("web_base_url", &self.web_base_url)
+            .field("support_email_address", &self.support_email_address)
+            .finish()
+    }
+}
+
 impl Config {
     /// Loads configuration from environment variables.
     ///
@@ -212,6 +234,22 @@ pub struct ZerviceConfig {
     /// silence-based on the receiving side; the `OnFailure=` email covers
     /// "ran and failed", this covers "never ran at all".
     pub healthcheck_ping_url: Option<String>,
+}
+
+/// Redacted: the database URL carries its password, and the ping URL's path
+/// is the check's only credential.
+impl std::fmt::Debug for ZerviceConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ZerviceConfig")
+            .field("database_url", &"REDACTED")
+            .field("rust_log", &self.rust_log)
+            .field("log_dir", &self.log_dir)
+            .field(
+                "healthcheck_ping_url",
+                &self.healthcheck_ping_url.as_ref().map(|_| "REDACTED"),
+            )
+            .finish()
+    }
 }
 
 impl ZerviceConfig {
