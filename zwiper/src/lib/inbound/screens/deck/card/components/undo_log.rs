@@ -101,7 +101,7 @@ pub(crate) struct UndoLog(pub Signal<Vec<UndoAction>>);
 
 impl UndoLog {
     /// Appends an action, dropping the oldest past the cap.
-    pub fn push(mut self, action: UndoAction) {
+    pub(crate) fn push(mut self, action: UndoAction) {
         push_capped(&mut self.0.write(), action);
     }
 }
@@ -129,7 +129,7 @@ impl UndoStore {
     /// than takes: restore runs inside the screen's mount initializer, and
     /// writing the store mid-render is the bug `FilterStore`'s clone-on-restore
     /// shape avoids; the leftover copy is simply overwritten on next park.
-    pub fn restore(&self, deck_id: Uuid) -> Vec<UndoAction> {
+    pub(crate) fn restore(&self, deck_id: Uuid) -> Vec<UndoAction> {
         self.entries
             .peek()
             .get(&deck_id)
@@ -138,14 +138,14 @@ impl UndoStore {
     }
 
     /// Remembers this deck's stack, replacing any prior one.
-    pub fn park(&mut self, deck_id: Uuid, log: Vec<UndoAction>) {
+    pub(crate) fn park(&mut self, deck_id: Uuid, log: Vec<UndoAction>) {
         self.entries.write().insert(deck_id, log);
     }
 
     /// Records a mutation made while the deck cards screen (and its live
     /// log) is unmounted: the add/remove screens' recording path. Writes
     /// straight into the parked stack; the next restore picks it up.
-    pub fn push(&mut self, deck_id: Uuid, action: UndoAction) {
+    pub(crate) fn push(&mut self, deck_id: Uuid, action: UndoAction) {
         push_capped(self.entries.write().entry(deck_id).or_default(), action);
     }
 
@@ -155,7 +155,7 @@ impl UndoStore {
     /// the button already consumed it (skip the server call, the world is
     /// already reversed). On a failed reversal, push the action back so the
     /// button's history stays truthful.
-    pub fn take_newest(
+    pub(crate) fn take_newest(
         &mut self,
         deck_id: Uuid,
         matches: impl Fn(&UndoAction) -> bool,
@@ -166,7 +166,7 @@ impl UndoStore {
     /// Drops the deck's whole stack: import overwrites the deck, so every
     /// entry recorded before it is semantically void (owner decision in the
     /// plan; the import screen's hint discloses it).
-    pub fn clear(&mut self, deck_id: Uuid) {
+    pub(crate) fn clear(&mut self, deck_id: Uuid) {
         self.entries.write().remove(&deck_id);
     }
 }

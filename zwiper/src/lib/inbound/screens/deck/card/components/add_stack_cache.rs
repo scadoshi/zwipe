@@ -22,7 +22,7 @@ const MAX_PARKED_DECKS: usize = 20;
 const PARKED_BEHIND_CARDS: usize = 50;
 
 /// A parked search stack for one deck.
-pub struct ParkedStack {
+pub(crate) struct ParkedStack {
     /// The card list (behind-cursor zone trimmed on park).
     pub cards: Vec<Card>,
     /// Cursor position within `cards`.
@@ -37,12 +37,12 @@ pub struct ParkedStack {
 
 /// App-scoped MRU cache of parked stacks, one per deck.
 #[derive(Clone, Copy)]
-pub struct AddStackCache {
+pub(crate) struct AddStackCache {
     entries: Signal<Vec<(Uuid, ParkedStack)>>,
 }
 
 /// Creates the cache (provided as context in `spawn_upkeeper`).
-pub fn use_add_stack_cache() -> AddStackCache {
+pub(crate) fn use_add_stack_cache() -> AddStackCache {
     AddStackCache {
         entries: use_signal(Vec::new),
     }
@@ -51,7 +51,7 @@ pub fn use_add_stack_cache() -> AddStackCache {
 impl AddStackCache {
     /// Parks a deck's stack: trims the swiped-past zone to the undo depth,
     /// fronts the deck in the MRU order, and evicts beyond the cap.
-    pub fn park(&mut self, deck_id: Uuid, mut parked: ParkedStack) {
+    pub(crate) fn park(&mut self, deck_id: Uuid, mut parked: ParkedStack) {
         let cut = parked.index.saturating_sub(PARKED_BEHIND_CARDS);
         if cut > 0 {
             parked.cards.drain(..cut);
@@ -68,7 +68,7 @@ impl AddStackCache {
     }
 
     /// Removes and returns a deck's parked stack, if any.
-    pub fn take(&mut self, deck_id: Uuid) -> Option<ParkedStack> {
+    pub(crate) fn take(&mut self, deck_id: Uuid) -> Option<ParkedStack> {
         let mut entries = self.entries.write();
         let pos = entries.iter().position(|(id, _)| *id == deck_id)?;
         Some(entries.remove(pos).1)

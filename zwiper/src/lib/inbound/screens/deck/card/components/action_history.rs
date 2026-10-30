@@ -13,7 +13,7 @@ use crate::inbound::components::interactions::swipe::direction::Direction;
 
 /// Behavior every stack action shares: which way the card exited, so undo
 /// can animate it re-entering from the same side.
-pub trait StackAction {
+pub(crate) trait StackAction {
     /// The direction the card exited when the action committed.
     fn exited(&self) -> Direction;
 }
@@ -21,7 +21,7 @@ pub trait StackAction {
 /// Add screen, search stack (linear). Field-less: the swiped card is still
 /// in the stack at the position undo rewinds to.
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub enum AddAction {
+pub(crate) enum AddAction {
     /// Left swipe: durable skip.
     Skip,
     /// Right swipe: added to the deck.
@@ -43,7 +43,7 @@ impl StackAction for AddAction {
 /// Add screen, maybeboard stack (cycling). Promote removes the card from the
 /// stack, so that variant carries it for undo's re-insert.
 #[derive(Clone, Debug, PartialEq)]
-pub enum MaybeboardAction {
+pub(crate) enum MaybeboardAction {
     /// Left swipe: cycle past without acting.
     Skip,
     /// Right swipe: promoted to the deck.
@@ -65,7 +65,7 @@ impl StackAction for MaybeboardAction {
 /// Remove screen (cycling). Remove and board moves drop the card from the
 /// displayed stack, so those variants carry it for undo's re-insert.
 #[derive(Clone, Debug, PartialEq)]
-pub enum RemoveAction {
+pub(crate) enum RemoveAction {
     /// Left swipe: keep the card, cycle past.
     Keep,
     /// Right swipe: removed from the deck.
@@ -100,7 +100,7 @@ impl StackAction for RemoveAction {
 /// only committing gesture is a left swipe (advance), so undo always re-enters
 /// from the left.
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub enum BrowseAction {
+pub(crate) enum BrowseAction {
     /// Left swipe: advanced to the next example card.
     Next,
 }
@@ -114,7 +114,7 @@ impl StackAction for BrowseAction {
 }
 
 /// Maximum cards to keep in memory before requiring refresh.
-pub const MAX_CARDS_IN_STACK: usize = 500;
+pub(crate) const MAX_CARDS_IN_STACK: usize = 500;
 
 /// Warning threshold: show a toast when approaching the limit.
-pub const CARDS_WARNING_THRESHOLD: usize = 400;
+pub(crate) const CARDS_WARNING_THRESHOLD: usize = 400;
