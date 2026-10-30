@@ -12,8 +12,7 @@ use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
-use zwipe_core::domain::deck::Board;
-use zwipe_core::domain::deck::deck_metrics::card_price;
+use zwipe_core::domain::deck::{Board, deck_metrics};
 
 use crate::CardDetails;
 
@@ -98,7 +97,8 @@ pub fn CardRow(
     };
     // Compact-row price in the deck's chosen currency (nonfoil→foil fallback);
     // `None` (no price in that currency) omits the tag entirely.
-    let price_display = card_price(sd, price_currency).map(|p| price_currency.format_amount(p));
+    let price_display =
+        deck_metrics::card_price(sd, price_currency).map(|p| price_currency.format_amount(p));
     let pt_display = match (&sd.power, &sd.toughness) {
         (Some(p), Some(t)) => format!("{p}/{t}"),
         _ => String::new(),

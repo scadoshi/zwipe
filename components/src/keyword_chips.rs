@@ -8,7 +8,7 @@
 use std::collections::HashMap;
 
 use dioxus::prelude::*;
-use zwipe_core::domain::card::keyword::keyword_reminder;
+use zwipe_core::domain::card::keyword;
 
 /// Context: the served keyword-reminder catalog (name → reminder).
 ///
@@ -47,7 +47,7 @@ pub fn KeywordChips(keywords: Vec<String>) -> Element {
                     .as_ref()
                     .and_then(|map| map.get(&k.trim().to_ascii_lowercase()).cloned())
                     .unwrap_or_default(),
-                None => keyword_reminder(k).to_string(),
+                None => keyword::keyword_reminder(k).to_string(),
             };
             (k.clone(), reminder)
         })

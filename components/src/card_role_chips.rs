@@ -17,7 +17,7 @@
 use std::collections::BTreeMap;
 
 use dioxus::prelude::*;
-use zwipe_core::domain::card::card_role::role_label;
+use zwipe_core::domain::card::card_role;
 
 /// Card roles as chips; expandable to their grouped oracle tags, plus an "Other
 /// tags" bucket. `tags_by_role` is keyed by role slug (`CardRole`'s
@@ -57,7 +57,7 @@ pub fn CardRoleChips(
         .iter()
         .map(|slug| {
             let tags = tags_by_role.get(slug).cloned().unwrap_or_default();
-            (role_label(slug), tags)
+            (card_role::role_label(slug), tags)
         })
         .collect();
     if !other_tags.is_empty() {
