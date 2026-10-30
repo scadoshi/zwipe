@@ -21,6 +21,9 @@ pub enum UpdateDeckCardError {
     /// Only mainboard cards can be MVPs.
     #[error("only mainboard cards can be MVPs")]
     MvpNotMainboard,
+    /// The new printing is missing or belongs to a different card.
+    #[error("printing belongs to a different card")]
+    PrintingMismatch,
     /// Database operation failed.
     #[error(transparent)]
     Database(anyhow::Error),

@@ -336,3 +336,119 @@ async fn get_deck_carries_command_zone_cards(pool: sqlx::PgPool) {
         "Lightning Bolt"
     );
 }
+
+/// The server takes a card's `oracle_id` from its own `scryfall_data` row and
+/// ignores the client's, so a forged one can't slip the commander or a second
+/// copy of a singleton past the checks, and a printing swap can't change the
+/// card.
+#[sqlx::test]
+async fn oracle_id_comes_from_the_printing_not_the_client(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, did) = deck_for(&app, "forger").await;
+    let deck_id = did.parse().unwrap();
+
+    let commander = card("Atraxa, Praetors' Voice")
+        .colors("WUBG")
+        .type_line("Legendary Creature — Phyrexian Angel Horror")
+        .commander_legal();
+    let cmd_sid = commander.id();
+    let sol = card("Sol Ring").color_identity("").type_line("Artifact");
+    let (sol_sid, sol_oid) = (sol.id(), sol.oracle_id().unwrap());
+    let sol_reprint = card("Sol Ring")
+        .color_identity("")
+        .type_line("Artifact")
+        .oracle(Some(sol_oid));
+    let reprint_sid = sol_reprint.id();
+    let bolt = card("Lightning Bolt").mono("R").type_line("Instant");
+    let bolt_sid = bolt.id();
+    let forged_oid = uuid::Uuid::new_v4();
+    seed_cards(&pool, &[commander, sol, sol_reprint, bolt]).await;
+
+    let (status, body) = app
+        .patch(
+            &deck_route(deck_id),
+            json!({ "commander_id": cmd_sid.to_string() }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "set commander: {body}");
+
+    // The commander's own printing with someone else's oracle id.
+    let (status, body) = app
+        .post(
+            &create_deck_card_route(deck_id),
+            json!({ "scryfall_data_id": cmd_sid.to_string(), "oracle_id": forged_oid.to_string(), "quantity": 1 }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "commander under a forged oracle id: {body}"
+    );
+
+    // A second Sol Ring printing under a forged oracle id.
+    let (status, body) = app
+        .post(
+            &create_deck_card_route(deck_id),
+            json!({ "scryfall_data_id": sol_sid.to_string(), "oracle_id": sol_oid.to_string(), "quantity": 1 }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::CREATED, "add sol ring: {body}");
+    let (status, body) = app
+        .post(
+            &create_deck_card_route(deck_id),
+            json!({ "scryfall_data_id": reprint_sid.to_string(), "oracle_id": forged_oid.to_string(), "quantity": 1 }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::CONFLICT,
+        "second sol ring under a forged oracle id: {body}"
+    );
+
+    // A wrong oracle id on an honest printing is ignored, not stored.
+    let (status, body) = app
+        .post(
+            &create_deck_card_route(deck_id),
+            json!({ "scryfall_data_id": bolt_sid.to_string(), "oracle_id": forged_oid.to_string(), "quantity": 1 }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::CREATED, "add bolt: {body}");
+    let stored: uuid::Uuid = sqlx::query_scalar(
+        "SELECT oracle_id FROM deck_cards WHERE deck_id = $1 AND scryfall_data_id = $2",
+    )
+    .bind(deck_id)
+    .bind(bolt_sid)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_ne!(stored, forged_oid, "the forged oracle id was stored");
+
+    // Swapping Sol Ring's printing to a different card is refused.
+    let (status, body) = app
+        .patch(
+            &update_deck_card_route(deck_id, sol_sid),
+            json!({ "scryfall_data_id": cmd_sid.to_string() }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "printing swap to another card: {body}"
+    );
+
+    // Swapping to another printing of the same card still works.
+    let (status, body) = app
+        .patch(
+            &update_deck_card_route(deck_id, sol_sid),
+            json!({ "scryfall_data_id": reprint_sid.to_string() }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "printing swap to a reprint: {body}");
+}

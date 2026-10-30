@@ -37,7 +37,8 @@ pub struct CreateDeckCard {
     pub deck_id: Uuid,
     /// Card to add (selected printing Scryfall data ID).
     pub scryfall_data_id: Uuid,
-    /// Logical card identity (shared across all printings).
+    /// Logical card identity (shared across all printings). The server
+    /// derives its own from `scryfall_data_id` and ignores this one.
     pub oracle_id: Uuid,
     /// How many copies.
     pub quantity: Quantity,
