@@ -1,3 +1,5 @@
+//! Deck entities and their value objects.
+
 // Value objects
 pub mod board;
 pub mod deck_name;
