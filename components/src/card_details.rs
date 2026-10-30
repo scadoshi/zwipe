@@ -29,17 +29,17 @@ struct FaceRules {
 /// Format the power/toughness, loyalty, or defense line for a face. Returns the
 /// first that applies; `None` if the face has none (e.g. an instant).
 fn stats_line(
-    power: &Option<String>,
-    toughness: &Option<String>,
-    loyalty: &Option<String>,
-    defense: &Option<String>,
+    power: Option<&str>,
+    toughness: Option<&str>,
+    loyalty: Option<&str>,
+    defense: Option<&str>,
 ) -> Option<String> {
     if let (Some(p), Some(t)) = (power, toughness) {
         Some(format!("{p}/{t}"))
     } else if let Some(l) = loyalty {
         Some(format!("Loyalty {l}"))
     } else {
-        defense.as_ref().map(|d| format!("Defense {d}"))
+        defense.map(|d| format!("Defense {d}"))
     }
 }
 
@@ -58,7 +58,12 @@ fn build_rules(card: &Card) -> Option<Vec<FaceRules>> {
             .map(|f| FaceRules {
                 type_line: f.type_line.clone().unwrap_or_default(),
                 mana_cost: f.mana_cost.clone(),
-                stats: stats_line(&f.power, &f.toughness, &f.loyalty, &None),
+                stats: stats_line(
+                    f.power.as_deref(),
+                    f.toughness.as_deref(),
+                    f.loyalty.as_deref(),
+                    None,
+                ),
                 oracle: f.oracle_text.clone().unwrap_or_default(),
             })
             .filter(|f| !f.oracle.is_empty() || !f.type_line.is_empty())
@@ -76,7 +81,12 @@ fn build_rules(card: &Card) -> Option<Vec<FaceRules>> {
     Some(vec![FaceRules {
         type_line,
         mana_cost: sd.mana_cost.clone().unwrap_or_default(),
-        stats: stats_line(&sd.power, &sd.toughness, &sd.loyalty, &sd.defense),
+        stats: stats_line(
+            sd.power.as_deref(),
+            sd.toughness.as_deref(),
+            sd.loyalty.as_deref(),
+            sd.defense.as_deref(),
+        ),
         oracle,
     }])
 }
