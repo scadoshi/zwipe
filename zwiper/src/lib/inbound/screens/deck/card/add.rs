@@ -700,7 +700,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                         && let Some(oid) = card.scryfall_data.oracle_id
                     {
                         ids.insert(oid);
-                        identity_colors.extend(card.scryfall_data.color_identity.iter().cloned());
+                        identity_colors.extend(card.scryfall_data.color_identity.iter().copied());
                     }
                 }
                 // Signature spell: oracle_id exclusion only (doesn't contribute to color identity)
