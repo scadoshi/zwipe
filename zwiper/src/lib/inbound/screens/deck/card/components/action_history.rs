@@ -72,6 +72,10 @@ pub(crate) enum RemoveAction {
     Remove {
         /// The removed card (dropped from stack and deck on commit).
         card: Box<Card>,
+        /// Board the card sat on, so undo puts it back there.
+        board: Board,
+        /// Copies the deck held, so undo restores all of them.
+        quantity: i32,
     },
     /// Up swipe: moved between boards. `from` lets undo restore the
     /// original board.
