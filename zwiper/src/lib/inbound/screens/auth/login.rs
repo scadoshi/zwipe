@@ -19,6 +19,28 @@ use crate::outbound::session::Persist;
 #[derive(Debug, Clone, Copy)]
 pub struct LoginPrefill(pub Signal<Option<String>>);
 
+/// What a tap on Log in does.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum SubmitGate {
+    /// A request is already out: ignore the tap.
+    Busy,
+    /// Nothing to send: tell the user.
+    MissingInputs,
+    /// Send the request.
+    Send,
+}
+
+/// Decides a Log in tap from the loading flag and the form.
+fn submit_gate(is_loading: bool, inputs_are_present: bool) -> SubmitGate {
+    if is_loading {
+        SubmitGate::Busy
+    } else if inputs_are_present {
+        SubmitGate::Send
+    } else {
+        SubmitGate::MissingInputs
+    }
+}
+
 /// Login form screen for user authentication.
 #[component]
 pub fn Login() -> Element {
@@ -27,6 +49,7 @@ pub fn Login() -> Element {
     let mut session: Signal<Option<Session>> = use_context();
     let auth_client: Signal<ZwipeClient> = use_context();
     let mut pip_style: Signal<PipStyle> = use_context();
+    let mut theme: Signal<ThemeConfig> = use_context();
 
     let mut username_or_email = use_signal(String::new);
     let mut password = use_signal(String::new);
@@ -55,12 +78,16 @@ pub fn Login() -> Element {
         move || !username_or_email().trim().is_empty() && !password().is_empty();
 
     let mut attempt_submit = move || {
-        if !inputs_are_present() {
-            toast.error(
-                "Enter your username or email and password".to_string(),
-                ToastOptions::default().duration(TOAST_NORMAL),
-            );
-            return;
+        match submit_gate(*is_loading.peek(), inputs_are_present()) {
+            SubmitGate::Busy => return,
+            SubmitGate::MissingInputs => {
+                toast.error(
+                    "Enter your username or email and password".to_string(),
+                    ToastOptions::default().duration(TOAST_NORMAL),
+                );
+                return;
+            }
+            SubmitGate::Send => {}
         }
         is_loading.set(true);
         let request = HttpAuthenticateUser::new(&username_or_email(), &password());
@@ -69,7 +96,6 @@ pub fn Login() -> Element {
                 Ok(new_session) => {
                     new_session.infallible_save();
                     // Apply theme from preferences
-                    let mut theme: Signal<ThemeConfig> = use_context();
                     let picked = components::theme_from_preferences(&new_session.preferences);
                     app_icon::follow(&picked);
                     theme.set(picked);
@@ -139,5 +165,22 @@ pub fn Login() -> Element {
             }
         }
     }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_tap_while_logging_in_sends_nothing() {
+        assert_eq!(submit_gate(true, true), SubmitGate::Busy);
+        assert_eq!(submit_gate(true, false), SubmitGate::Busy);
+    }
+
+    #[test]
+    fn an_idle_tap_checks_the_form() {
+        assert_eq!(submit_gate(false, true), SubmitGate::Send);
+        assert_eq!(submit_gate(false, false), SubmitGate::MissingInputs);
     }
 }
