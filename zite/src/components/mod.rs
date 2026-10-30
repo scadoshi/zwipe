@@ -8,8 +8,7 @@ pub(crate) use pip_toggle::PipToggle;
 pub(crate) use stats_strip::StatsStrip;
 
 /// Browser `setTimeout` as a future. No-op off wasm (the server render never
-/// runs the dismiss timers); the `.await` only exists on wasm, hence the allow.
-#[allow(clippy::unused_async)]
+/// runs the dismiss timers).
 pub(crate) async fn sleep_ms(ms: u32) {
     #[cfg(target_arch = "wasm32")]
     gloo_timers::future::TimeoutFuture::new(ms).await;

@@ -1,7 +1,10 @@
 //! Build script: checks `GUIDE_SLUGS` against the guides in `src/pages/guides/content.rs`
 //! and writes `public/sitemap.xml`.
 
-#![allow(clippy::expect_used)]
+#![expect(
+    clippy::expect_used,
+    reason = "a build script fails the build by panicking"
+)]
 
 /// Public base URL — must match the release `WEB_BASE` in zwipe-core's
 /// `domain::site` (build scripts can't import the lib, so this is the one

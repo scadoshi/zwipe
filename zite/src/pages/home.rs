@@ -201,7 +201,10 @@ pub fn Home() -> Element {
     ];
     let total = demos.len();
     let index = use_signal(|| 0usize);
-    #[allow(clippy::indexing_slicing)]
+    #[expect(
+        clippy::indexing_slicing,
+        reason = "orangui's GalleryFrame keeps index below total, the length of demos"
+    )]
     let (current_src, current_caption, current_label) = demos[index()];
 
     // Featured flavor's full-art overlay state. The overlay is rendered HERE,

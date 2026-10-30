@@ -4,11 +4,6 @@
 //! `zwipe-core`'s `Endpoint` impls and sent by `zwipe-client`. Nothing here
 //! builds a URL or a request by hand.
 
-// The base URL is a compile-time const from zwipe-core. A value that fails to
-// parse breaks the first page load of every build rather than for some
-// visitors and not others, so it is a build bug, not a runtime condition.
-#![allow(clippy::unwrap_used)]
-
 use std::sync::OnceLock;
 
 use reqwest::Url;
@@ -17,6 +12,11 @@ use zwipe_client::ZwipeClient;
 use crate::API_BASE;
 
 /// The process-wide client. Cheap to clone; reqwest pools connections.
+#[expect(
+    clippy::unwrap_used,
+    reason = "API_BASE is a compile-time const: a value that fails to parse breaks every \
+              build's first page load, a build bug rather than a runtime condition"
+)]
 pub(crate) fn client() -> ZwipeClient {
     static CLIENT: OnceLock<ZwipeClient> = OnceLock::new();
     CLIENT
