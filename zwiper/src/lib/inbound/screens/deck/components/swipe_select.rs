@@ -55,6 +55,12 @@ use crate::inbound::screens::deck::suggested_commanders::{self, SuggestionReason
 const PAGE: u32 = 25;
 /// Prefetch the next page when this many or fewer cards remain ahead of the top.
 const LOAD_MORE_AT: usize = 5;
+/// How long the maybeboard save toast stays up.
+const MAYBEBOARD_TOAST_MS: u64 = 1500;
+/// Pixels a drag travels to commit a swipe.
+const SWIPE_DISTANCE_PX: f64 = 90.0;
+/// Pixels per millisecond a flick needs to commit.
+const SWIPE_SPEED_PX_PER_MS: f64 = 2.5;
 
 /// The ranking a [`SwipeMode::Suggested`] overlay deals, held by its host.
 #[derive(Debug, Clone, PartialEq, Default)]
@@ -583,7 +589,7 @@ pub(crate) fn SwipeSelect(
     if maybe_enabled {
         directions.push(Direction::Up);
     }
-    let swipe_config = SwipeConfig::new(directions, 90.0, 2.5);
+    let swipe_config = SwipeConfig::new(directions, SWIPE_DISTANCE_PX, SWIPE_SPEED_PX_PER_MS);
 
     rsx! {
         div { class: "{screen_class}",
@@ -671,7 +677,7 @@ pub(crate) fn SwipeSelect(
                                             toast.success(
                                                 "Added to your commander maybeboard".to_string(),
                                                 ToastOptions::default()
-                                                    .duration(Duration::from_millis(1500)),
+                                                    .duration(Duration::from_millis(MAYBEBOARD_TOAST_MS)),
                                             );
                                         }
                                         Err(e) => {

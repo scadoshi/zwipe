@@ -25,6 +25,20 @@ use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 /// Upper bound for the land-target stepper: no deck runs more lands than this.
 const MAX_LAND_TARGET: i32 = 100;
 
+/// Pause after the last keystroke before a command-zone search fires.
+const SEARCH_DEBOUNCE_MS: u64 = 800;
+
+/// Characters the commander and signature spell searches wait for. Partner and
+/// background search from one character, their pools being small.
+const MIN_NAME_QUERY_LEN: usize = 3;
+
+/// Results fetched by a by-name lookup: the commander and signature spell
+/// searches and the named partner autofill.
+const NAME_RESULT_LIMIT: u32 = 5;
+
+/// Results fetched by the partner and background searches.
+const POOL_RESULT_LIMIT: u32 = 10;
+
 /// "Partner with [Name]" names exactly one legal partner, so a commander pick
 /// fills the partner slot automatically: fetch the named mate and set it, with
 /// a toast so the user knows something automatic happened. Generic Partner /
@@ -54,7 +68,7 @@ pub(crate) fn autofill_named_partner(
             return;
         };
         let mut builder = CardQueryBuilder::with_name_contains(&mate);
-        builder.set_limit(5);
+        builder.set_limit(NAME_RESULT_LIMIT);
         let Ok(filter) = builder.build() else {
             return;
         };
@@ -267,7 +281,7 @@ pub(crate) fn DeckFields(
     use_effect(move || {
         let query = cmd_search_query();
 
-        if query.len() < 3 {
+        if query.len() < MIN_NAME_QUERY_LEN {
             cmd_show_dropdown.set(false);
             cmd_is_searching.set(false);
             return;
@@ -280,7 +294,7 @@ pub(crate) fn DeckFields(
         cmd_show_dropdown.set(true);
 
         spawn(async move {
-            time::sleep(Duration::from_millis(800)).await;
+            time::sleep(Duration::from_millis(SEARCH_DEBOUNCE_MS)).await;
 
             if cmd_search_query() != query {
                 return;
@@ -293,7 +307,7 @@ pub(crate) fn DeckFields(
                 {
                     builder.set_is_commander_in_format(fmt);
                 }
-                builder.set_limit(5);
+                builder.set_limit(NAME_RESULT_LIMIT);
                 let Ok(card_filter) = builder.build() else {
                     tracing::error!("{}", InvalidCardCriteria::Empty.to_string());
                     return;
@@ -329,7 +343,7 @@ pub(crate) fn DeckFields(
         partner_show_dropdown.set(true);
 
         spawn(async move {
-            time::sleep(Duration::from_millis(800)).await;
+            time::sleep(Duration::from_millis(SEARCH_DEBOUNCE_MS)).await;
 
             if partner_search_query() != query {
                 return;
@@ -343,7 +357,7 @@ pub(crate) fn DeckFields(
                 if partner_filter_on() {
                     builder.set_is_partner(true);
                 }
-                builder.set_limit(10);
+                builder.set_limit(POOL_RESULT_LIMIT);
                 let Ok(card_filter) = builder.build() else {
                     return;
                 };
@@ -378,7 +392,7 @@ pub(crate) fn DeckFields(
         bg_show_dropdown.set(true);
 
         spawn(async move {
-            time::sleep(Duration::from_millis(800)).await;
+            time::sleep(Duration::from_millis(SEARCH_DEBOUNCE_MS)).await;
 
             if bg_search_query() != query {
                 return;
@@ -392,7 +406,7 @@ pub(crate) fn DeckFields(
                 if bg_filter_on() {
                     builder.set_is_background(true);
                 }
-                builder.set_limit(10);
+                builder.set_limit(POOL_RESULT_LIMIT);
                 let Ok(card_filter) = builder.build() else {
                     return;
                 };
@@ -417,7 +431,7 @@ pub(crate) fn DeckFields(
     use_effect(move || {
         let query = spell_search_query();
 
-        if query.len() < 3 {
+        if query.len() < MIN_NAME_QUERY_LEN {
             spell_show_dropdown.set(false);
             spell_is_searching.set(false);
             return;
@@ -427,7 +441,7 @@ pub(crate) fn DeckFields(
         spell_show_dropdown.set(true);
 
         spawn(async move {
-            time::sleep(Duration::from_millis(800)).await;
+            time::sleep(Duration::from_millis(SEARCH_DEBOUNCE_MS)).await;
 
             if spell_search_query() != query {
                 return;
@@ -442,7 +456,7 @@ pub(crate) fn DeckFields(
                         builder.set_color_identity_within(ob.scryfall_data.color_identity);
                     }
                 }
-                builder.set_limit(5);
+                builder.set_limit(NAME_RESULT_LIMIT);
                 let Ok(card_filter) = builder.build() else {
                     return;
                 };

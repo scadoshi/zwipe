@@ -22,6 +22,9 @@ use crate::inbound::components::concept_explainers::OracleTagsExplainer;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::screens::oracle_tag_dictionary::OracleTagDictionary;
 
+/// Ranked catalog matches a non-empty search shows.
+const SEARCH_RESULT_LIMIT: usize = 40;
+
 /// Whether two slug lists pick the same tags, ignoring tap order.
 fn same_set(a: &[String], b: &[String]) -> bool {
     let mut a: Vec<&str> = a.iter().map(String::as_str).collect();
@@ -133,7 +136,7 @@ pub(crate) fn OracleTagSelect(
         curated
     } else {
         let mut matches = oracle_tag::search_oracle_tags(tags, &q);
-        matches.truncate(40);
+        matches.truncate(SEARCH_RESULT_LIMIT);
         matches
     };
 
