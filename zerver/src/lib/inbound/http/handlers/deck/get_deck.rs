@@ -1,3 +1,5 @@
+//! Full deck with cards handler.
+
 use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;

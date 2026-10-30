@@ -1,3 +1,5 @@
+//! Error conversions for deck card lookups.
+
 use crate::domain::deck::models::deck_card::get_deck_card::GetDeckCardError;
 use crate::inbound::http::{ApiError, To500};
 

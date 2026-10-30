@@ -1,3 +1,5 @@
+//! Distinct card type names handler.
+
 use axum::Json;
 use axum::extract::State;
 use reqwest::StatusCode;

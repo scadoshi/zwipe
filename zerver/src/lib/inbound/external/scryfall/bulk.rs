@@ -1,3 +1,5 @@
+//! Bulk data download endpoints.
+
 use std::io::{BufRead, BufReader};
 
 use anyhow::Context;

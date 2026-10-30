@@ -1,3 +1,5 @@
+//! Universes Beyond franchise catalog handler.
+
 use axum::Json;
 use reqwest::StatusCode;
 use zwipe_core::domain::card::scryfall_data::universe::{

@@ -1,3 +1,5 @@
+//! Deck-tag catalog handler (`GET /api/deck/tags`).
+
 use axum::Json;
 use reqwest::StatusCode;
 use zwipe_core::domain::deck::{DeckTag, DeckTagView};

@@ -1,3 +1,5 @@
+//! Accepts a batched usage update from the client.
+
 use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;

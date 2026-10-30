@@ -1,3 +1,5 @@
+//! Distinct language names handler.
+
 use axum::Json;
 use axum::extract::State;
 use reqwest::StatusCode;

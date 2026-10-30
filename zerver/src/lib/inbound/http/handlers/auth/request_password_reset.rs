@@ -1,3 +1,5 @@
+//! Password reset initiation handler.
+
 use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;

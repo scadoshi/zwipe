@@ -1,3 +1,5 @@
+//! Commander search handler (popularity-ordered, banded, wildcarded).
+
 use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;

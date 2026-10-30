@@ -1,3 +1,5 @@
+//! Card-role catalog handler (`GET /api/card/roles`).
+
 use axum::Json;
 use reqwest::StatusCode;
 use zwipe_core::domain::card::card_role::{CardRole, CardRoleView};

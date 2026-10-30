@@ -1,3 +1,5 @@
+//! Single-card skip/unskip suppression handlers.
+
 use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;

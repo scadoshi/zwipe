@@ -1,3 +1,5 @@
+//! Accepts a pre-auth funnel event from an unauthenticated client (no auth).
+
 use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;

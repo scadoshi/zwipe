@@ -1,3 +1,5 @@
+//! Returns public app-wide aggregate metrics (no auth).
+
 use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;

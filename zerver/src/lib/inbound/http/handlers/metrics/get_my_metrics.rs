@@ -1,3 +1,5 @@
+//! Returns the caller's lifetime counters.
+
 use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;

@@ -1,12 +1,8 @@
 //! HTTP layer: Axum server, error mapping, middleware, and route definitions.
 
-/// Serving-layer caches (`TtlSlot`, one typed slot per cached value).
 pub mod cache;
-/// HTTP request handlers organized by domain.
 pub mod handlers;
-/// JWT authentication and last-active tracking middleware.
 pub mod middleware;
-/// Route definitions mapping paths to handlers.
 pub mod routes;
 
 use std::sync::Arc;

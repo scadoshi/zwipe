@@ -1,3 +1,5 @@
+//! Deck share/unshare handlers (owner-side token management).
+
 use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;

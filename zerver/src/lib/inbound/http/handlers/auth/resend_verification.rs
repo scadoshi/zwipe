@@ -1,3 +1,5 @@
+//! Re-send email verification handler (private).
+
 use axum::extract::State;
 use axum::http::StatusCode;
 use zwipe_core::domain::user::requests::get_user::GetUser;

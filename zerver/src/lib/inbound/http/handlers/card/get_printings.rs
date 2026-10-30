@@ -1,3 +1,5 @@
+//! All printings of a card by oracle ID.
+
 use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;

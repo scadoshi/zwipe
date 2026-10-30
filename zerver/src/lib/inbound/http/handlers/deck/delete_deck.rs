@@ -1,3 +1,5 @@
+//! Deck deletion handler.
+
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use zwipe_core::domain::deck::requests::delete_deck::{DeleteDeck, InvalidDeleteDeck};

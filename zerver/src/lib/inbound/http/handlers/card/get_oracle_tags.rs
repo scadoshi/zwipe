@@ -1,3 +1,5 @@
+//! Oracle tag catalog handler.
+
 use axum::Json;
 use axum::extract::State;
 use reqwest::StatusCode;

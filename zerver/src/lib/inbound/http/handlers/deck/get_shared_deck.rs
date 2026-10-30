@@ -1,3 +1,5 @@
+//! Public shared-deck read handler (token-addressed, no auth).
+
 use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;

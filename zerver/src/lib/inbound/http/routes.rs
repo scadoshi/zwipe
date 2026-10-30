@@ -1,4 +1,4 @@
-//! Route definitions and path constants shared between frontend and backend.
+//! Route definitions mapping paths to handlers.
 
 use std::sync::Arc;
 use std::time::Duration;

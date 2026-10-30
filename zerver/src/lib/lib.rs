@@ -14,23 +14,7 @@
 
 #![warn(missing_docs)]
 
-/// Application configuration from environment variables.
-///
-/// Provides [`Config`](config::Config) for loading and validating startup configuration.
 pub mod config;
-
-/// Core domain models and business logic.
-///
-/// Contains the heart of the application: cards, decks, users, and authentication.
-/// All validation and business rules are enforced at this layer.
 pub mod domain;
-
-/// HTTP API layer for external communication.
-///
-/// Axum-based handlers, routing, and request/response types.
 pub mod inbound;
-
-/// Database and external service integrations.
-///
-/// PostgreSQL repositories, Scryfall API client, and data mapping.
 pub mod outbound;

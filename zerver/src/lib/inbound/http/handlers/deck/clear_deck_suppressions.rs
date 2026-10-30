@@ -1,3 +1,5 @@
+//! Deck suppression-clear handler.
+
 use axum::Json;
 use axum::extract::{Path, State};
 use zwipe_core::domain::deck::requests::clear_deck_suppressions::{

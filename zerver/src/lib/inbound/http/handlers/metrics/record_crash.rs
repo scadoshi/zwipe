@@ -1,3 +1,5 @@
+//! Stores a crash report posted on the launch after a crash (no auth).
+
 use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;

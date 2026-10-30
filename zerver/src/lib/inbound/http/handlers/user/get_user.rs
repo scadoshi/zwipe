@@ -1,3 +1,5 @@
+//! Returns the authenticated user's profile.
+
 use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;

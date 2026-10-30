@@ -1,3 +1,5 @@
+//! Health check handlers.
+
 use axum::Json;
 use axum::extract::State;
 use chrono::Utc;
