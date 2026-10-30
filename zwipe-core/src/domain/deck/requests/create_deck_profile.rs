@@ -4,6 +4,7 @@ use thiserror::Error;
 use uuid::Uuid;
 
 use crate::domain::card::search_card::card_filter::price_currency::PriceCurrency;
+use crate::domain::deck::deck_profile::{self, MAX_LAND_TARGET};
 use crate::domain::deck::format::{Format, InvalidFormat};
 use crate::domain::deck::{
     DeckName, DeckOtherTag, DeckTag, InvalidDeckOtherTag, InvalidDeckTag, InvalidDeckname,
@@ -38,6 +39,12 @@ pub enum InvalidCreateDeckProfile {
     /// More than [`MAX_DECK_ORACLE_TAGS`] oracle tags were supplied.
     #[error("a deck may have at most {MAX_DECK_ORACLE_TAGS} oracle tags")]
     TooManyOracleTags,
+    /// The land target is outside 0 through [`MAX_LAND_TARGET`].
+    #[error("land target must be between 0 and {MAX_LAND_TARGET}")]
+    LandTarget,
+    /// The price target is negative.
+    #[error("price target can't be negative")]
+    PriceTarget,
 }
 
 /// Request to create a new deck profile.
@@ -212,7 +219,8 @@ impl CreateDeckProfileBuilder {
     /// # Errors
     ///
     /// Returns [`InvalidCreateDeckProfile`] when the name, format, a tag, the power level or an
-    /// other-tag is invalid, or when the tags, other-tags or oracle tags exceed their caps.
+    /// other-tag is invalid, when the tags, other-tags or oracle tags exceed their caps, or when
+    /// the land target is outside 0 through [`MAX_LAND_TARGET`] or the price target is negative.
     pub fn build(self) -> Result<CreateDeckProfile, InvalidCreateDeckProfile> {
         let name = DeckName::new(self.name)?;
         let format = self.format.as_deref().map(Format::try_from).transpose()?;
@@ -232,6 +240,18 @@ impl CreateDeckProfileBuilder {
         let oracle_tags = deck_oracle_tags::dedupe_oracle_tags(&self.oracle_tags);
         if oracle_tags.len() > MAX_DECK_ORACLE_TAGS {
             return Err(InvalidCreateDeckProfile::TooManyOracleTags);
+        }
+        if self
+            .land_target
+            .is_some_and(|target| !deck_profile::is_valid_land_target(target))
+        {
+            return Err(InvalidCreateDeckProfile::LandTarget);
+        }
+        if self
+            .price_target
+            .is_some_and(|target| !deck_profile::is_valid_price_target(target))
+        {
+            return Err(InvalidCreateDeckProfile::PriceTarget);
         }
         Ok(CreateDeckProfile {
             name,
@@ -287,5 +307,43 @@ mod tests {
     fn rejects_too_many_tags() {
         let res = builder(vec!["aggro", "control", "tokens", "burn", "mill", "stax"]).build();
         assert!(matches!(res, Err(InvalidCreateDeckProfile::TooManyTags)));
+    }
+
+    #[test]
+    fn land_target_must_be_between_0_and_100() {
+        for ok in [0, 37, 100] {
+            assert!(
+                builder(vec![]).land_target(Some(ok)).build().is_ok(),
+                "{ok}"
+            );
+        }
+        for bad in [-1, 101, i32::MAX] {
+            assert!(
+                matches!(
+                    builder(vec![]).land_target(Some(bad)).build(),
+                    Err(InvalidCreateDeckProfile::LandTarget)
+                ),
+                "{bad}"
+            );
+        }
+    }
+
+    #[test]
+    fn price_target_must_not_be_negative() {
+        for ok in [0.0, 12.5] {
+            assert!(
+                builder(vec![]).price_target(Some(ok)).build().is_ok(),
+                "{ok}"
+            );
+        }
+        for bad in [-0.01, f64::NAN, f64::INFINITY] {
+            assert!(
+                matches!(
+                    builder(vec![]).price_target(Some(bad)).build(),
+                    Err(InvalidCreateDeckProfile::PriceTarget)
+                ),
+                "{bad}"
+            );
+        }
     }
 }
