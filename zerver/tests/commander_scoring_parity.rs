@@ -14,7 +14,8 @@
 #![expect(
     clippy::unwrap_used,
     clippy::indexing_slicing,
-    reason = "a test: helpers outside #[test] fns unwrap and index, and a panic is the failure report"
+    clippy::arithmetic_side_effects,
+    reason = "a test: helpers outside #[test] fns unwrap and index, and the seeded generator does small modular math; a panic is the failure report"
 )]
 
 mod common;

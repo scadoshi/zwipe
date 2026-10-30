@@ -3,6 +3,11 @@
 //!
 //! Requires `DATABASE_URL` (dev's value works): `set -a; source zerver/.env`.
 
+#![expect(
+    clippy::arithmetic_side_effects,
+    reason = "a test: email and row counts add small numbers, and an overflow would only panic the test"
+)]
+
 use zwipe_core::http::paths::{LOGIN_ROUTE, REGISTER_ROUTE, VERIFY_EMAIL_ROUTE};
 mod common;
 

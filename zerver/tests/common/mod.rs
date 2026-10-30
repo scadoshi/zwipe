@@ -13,7 +13,11 @@
 #![expect(
     clippy::unwrap_used,
     clippy::indexing_slicing,
-    reason = "a test: helpers outside #[test] fns unwrap and index, and a panic is the failure report"
+    clippy::arithmetic_side_effects,
+    clippy::string_slice,
+    clippy::as_conversions,
+    clippy::cast_possible_truncation,
+    reason = "a test harness: helpers outside #[test] fns unwrap, index and slice the captured email body, and fold a counter into a fake port; a panic is the failure report"
 )]
 
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
@@ -49,6 +53,10 @@ pub(crate) struct FakeEmailSender {
 }
 
 impl EmailSender for FakeEmailSender {
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "the push stays inside the future so it runs when the service awaits it, as the real sender's send does"
+    )]
     async fn send_email(&self, email: SendEmail) -> Result<(), SendEmailError> {
         self.sent.lock().unwrap().push(email);
         Ok(())

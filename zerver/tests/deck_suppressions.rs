@@ -8,7 +8,8 @@
 #![expect(
     clippy::unwrap_used,
     clippy::indexing_slicing,
-    reason = "a test: helpers outside #[test] fns unwrap and index, and a panic is the failure report"
+    clippy::arithmetic_side_effects,
+    reason = "a test: helpers outside #[test] fns unwrap and index, and the paging math multiplies small numbers; a panic is the failure report"
 )]
 
 use zwipe_core::http::paths::{

@@ -5,6 +5,11 @@
 //!
 //! Requires `DATABASE_URL`: `set -a; source zerver/.env; set +a`.
 
+#![expect(
+    clippy::arithmetic_side_effects,
+    reason = "a test: email and row counts add small numbers, and an overflow would only panic the test"
+)]
+
 use zwipe_core::http::paths::{
     CHANGE_EMAIL_ROUTE, CHANGE_PASSWORD_ROUTE, CHANGE_USERNAME_ROUTE, CONFIRM_EMAIL_CHANGE_ROUTE,
     DECK_ROUTE, DELETE_USER_ROUTE, GET_USER_ROUTE, LOGIN_ROUTE, PREFERENCES_ROUTE,
