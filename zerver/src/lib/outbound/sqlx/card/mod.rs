@@ -678,14 +678,14 @@ impl CardRepository for MyPostgres {
         }
 
         if let Some(query_string_array) = &criteria.type_line_contains_all() {
-            for query_string in query_string_array.iter() {
+            for query_string in *query_string_array {
                 sep.push(STRIP_TYPE);
                 sep.push_bind_unseparated(format!("%{query_string}%"));
             }
         }
 
         if let Some(card_types) = &criteria.card_type_contains_all() {
-            for card_type in card_types.iter() {
+            for card_type in *card_types {
                 sep.push(STRIP_TYPE);
                 sep.push_bind_unseparated(format!("%{card_type}%"));
             }
@@ -854,7 +854,7 @@ impl CardRepository for MyPostgres {
         }
 
         if let Some(query_string_array) = &criteria.oracle_text_contains_all() {
-            for query_string in query_string_array.iter() {
+            for query_string in *query_string_array {
                 sep.push(STRIP_ORACLE);
                 sep.push_bind_unseparated(format!("%{query_string}%"));
             }
