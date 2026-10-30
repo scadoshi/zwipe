@@ -7,6 +7,8 @@
 
 use chrono::{NaiveDateTime, Utc};
 
+use crate::inbound::components::interactions::gesture_math;
+
 /// Tracks the state of a horizontal snap-to-page carousel.
 #[derive(Debug, Clone)]
 pub struct CarouselState {
@@ -83,7 +85,7 @@ impl CarouselState {
     /// harmless.
     pub fn translate_x_css(&self) -> String {
         let percent = if self.current_index > 0 {
-            -(self.current_index as f64) * 100.0
+            -gesture_math::layout_index(self.current_index) * 100.0
         } else {
             0.0
         };
@@ -125,7 +127,7 @@ impl CarouselState {
         // Update velocity tracking
         let now = Utc::now().naive_utc();
         if let (Some(px), Some(pt)) = (self.prev_x, self.prev_time) {
-            let dt_ms = (now - pt).num_milliseconds() as f64;
+            let dt_ms = gesture_math::gap_millis(now - pt);
             if dt_ms > 0.0 {
                 self.velocity_px_ms = (client_x - px) / dt_ms;
             }

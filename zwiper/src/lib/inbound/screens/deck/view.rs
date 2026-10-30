@@ -275,7 +275,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                 DeckProfileSection {
                                     deck_profile: deck_profile.clone(),
                                     commander: commander(),
-                                    card_count: metrics.as_ref().map_or_else(|| deck_profile.card_count.max(0) as usize, |m| m.total_cards),
+                                    card_count: metrics.as_ref().map_or_else(|| usize::try_from(deck_profile.card_count).unwrap_or(0), |m| m.total_cards),
                                 }
 
                                 if deck_budget_section::has_budget(&deck_profile, metrics.is_some()) {
