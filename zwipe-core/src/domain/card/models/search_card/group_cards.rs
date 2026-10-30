@@ -246,7 +246,7 @@ fn classify(card: &Card, option: GroupByOption) -> usize {
 const OTHER_CARD_TYPE: usize = 7;
 
 /// Bucket index of "6+", the last mana value label.
-const CMC_SIX_PLUS: usize = 6;
+const CMC_SIX_PLUS: u8 = 6;
 
 /// Card type classification; first match wins.
 ///
@@ -274,11 +274,14 @@ fn classify_card_type(card: &Card) -> usize {
         .unwrap_or(OTHER_CARD_TYPE)
 }
 
-/// CMC classification: floor to integer, cap at 6.
-fn classify_cmc(card: &Card) -> usize {
+/// CMC classification: floor to integer, cap at 6. A missing, negative or
+/// NaN mana value reads as 0. Deck metrics bucket the same way.
+pub(crate) fn classify_cmc(card: &Card) -> usize {
     let cmc = card.scryfall_data.cmc.unwrap_or(0.0);
-    let floored = cmc.floor() as usize;
-    floored.min(CMC_SIX_PLUS)
+    (1..=CMC_SIX_PLUS)
+        .rev()
+        .find(|&bucket| cmc >= f64::from(bucket))
+        .map_or(0, usize::from)
 }
 
 #[cfg(test)]
@@ -517,6 +520,25 @@ mod tests {
         card.scryfall_data.cmc = Some(6.0);
         let result = vec![card].group_by(GroupByOption::Cmc);
         assert_eq!(result[0].label, "6+");
+    }
+
+    #[test]
+    fn test_classify_cmc_floors_and_clamps_odd_values() {
+        let cases = [
+            (0.5, 0),
+            (2.5, 2),
+            (5.99, 5),
+            (-1.0, 0),
+            (f64::NAN, 0),
+            (f64::NEG_INFINITY, 0),
+            (f64::INFINITY, 6),
+            (1e300, 6),
+        ];
+        for (cmc, want) in cases {
+            let mut card = make_card("Odd Cost");
+            card.scryfall_data.cmc = Some(cmc);
+            assert_eq!(super::classify_cmc(&card), want, "cmc {cmc}");
+        }
     }
 
     // == GroupByOption::Color ==

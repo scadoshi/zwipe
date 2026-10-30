@@ -212,7 +212,7 @@ impl Format {
     }
 
     /// Maximum copies of a single non-basic-land card.
-    pub fn copy_max(&self) -> u32 {
+    pub fn copy_max(&self) -> u8 {
         match self {
             Self::Commander
             | Self::Brawl
