@@ -16,7 +16,7 @@ impl ZwipeClient {
     ///
     /// Returns a [`ClientError`] when the request fails to complete, the server answers with an
     /// error status, or the reply doesn't decode.
-    pub async fn get_min_client_version(&self) -> Result<HttpMinClientVersion, ClientError> {
+    pub async fn fetch_min_client_version(&self) -> Result<HttpMinClientVersion, ClientError> {
         self.call(GetMinClientVersion, None).await
     }
 }

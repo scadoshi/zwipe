@@ -42,7 +42,7 @@ pub async fn get_shared_deck(
 
     let shared = state
         .deck_service
-        .get_shared_deck(token)
+        .fetch_shared_deck(token)
         .await
         .map_err(ApiError::from)?;
 

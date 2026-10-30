@@ -341,7 +341,7 @@ pub fn SharedDeck(token: String) -> Element {
                 return Err(FetchError::NotShared);
             };
             api::client()
-                .get_shared_deck(token)
+                .fetch_shared_deck(token)
                 .await
                 .map_err(|e| match e {
                     // A revoked or unknown token is not an outage.
@@ -433,7 +433,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
     // empty and exposed tags read "No description yet". No examples browse on the
     // web, so tags reveal their definition only (no "Examples" button).
     let otags: Resource<Vec<OracleTag>> =
-        use_resource(|| async move { api::client().get_oracle_tags().await.unwrap_or_default() });
+        use_resource(|| async move { api::client().fetch_oracle_tags().await.unwrap_or_default() });
     let describe_tag = use_callback(move |slug: String| {
         otags.read().as_ref().and_then(|tags| {
             tags.iter()

@@ -23,6 +23,7 @@ use zwipe_core::http::contracts::deck_card::HttpCreateDeckCard;
 
 use super::undo_log::{UndoAction, UndoLog};
 use crate::inbound::components::auth::authed::use_authed;
+use crate::inbound::components::generation::{Generation, Ticket, use_generation};
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen, component};
 
@@ -77,12 +78,16 @@ pub fn QuickAdd(deck_id: Uuid, deck_entries: Signal<Vec<DeckEntry>>) -> Element 
     let mut results: Signal<Vec<Card>> = use_signal(Vec::new);
     let mut is_searching = use_signal(|| false);
     let mut show_dropdown = use_signal(|| false);
+    let mut searches = use_generation();
 
     // Debounced deck-aware search. Mirrors the commander picker in deck_fields:
     // reveal the dropdown at once (so "Searching..." shows during the wait),
-    // sleep, then bail if the query moved on before the timer elapsed.
+    // sleep, then bail if the query moved on before the timer elapsed. Every
+    // edit, the clear button's included, takes a ticket, so a reply for an
+    // older query never lands over a newer one.
     use_effect(move || {
         let q = query();
+        let ticket = searches.next_ticket();
 
         if q.trim().len() < MIN_QUERY_LEN {
             show_dropdown.set(false);
@@ -96,7 +101,7 @@ pub fn QuickAdd(deck_id: Uuid, deck_entries: Signal<Vec<DeckEntry>>) -> Element 
         spawn(async move {
             time::sleep(Duration::from_millis(DEBOUNCE_MS)).await;
 
-            if query() != q {
+            if !searches.is_current(ticket) {
                 return;
             }
 
@@ -119,21 +124,23 @@ pub fn QuickAdd(deck_id: Uuid, deck_entries: Signal<Vec<DeckEntry>>) -> Element 
 
             usage_buffer().record_search();
             // Quiet: fires per debounced keystroke; the dropdown just closes.
-            if let Some(page) = authed
+            let page = authed
                 .run_quiet_at(
                     component::QUICK_ADD,
                     "quick_add_search",
                     |c, s| async move { c.search_deck_cards(deck_id, &card_filter, &s).await },
                 )
-                .await
-            {
-                results.set(page.cards);
-                is_searching.set(false);
-                show_dropdown.set(true);
-            } else {
-                is_searching.set(false);
-                show_dropdown.set(false);
-            }
+                .await;
+            land_search(
+                searches,
+                ticket,
+                page.map(|page| page.cards),
+                SearchView {
+                    results,
+                    is_searching,
+                    show_dropdown,
+                },
+            );
         });
     });
 
@@ -248,5 +255,106 @@ pub fn QuickAdd(deck_id: Uuid, deck_entries: Signal<Vec<DeckEntry>>) -> Element 
                 }
             }
         }
+    }
+}
+
+/// The signals a quick-add search reply writes.
+#[derive(Clone, Copy)]
+struct SearchView {
+    results: Signal<Vec<Card>>,
+    is_searching: Signal<bool>,
+    show_dropdown: Signal<bool>,
+}
+
+/// Shows a search reply, or closes the dropdown on a failed search, unless a
+/// newer edit has taken a ticket since `ticket`; that edit's own search owns
+/// the dropdown then.
+fn land_search(searches: Generation, ticket: Ticket, cards: Option<Vec<Card>>, view: SearchView) {
+    if !searches.is_current(ticket) {
+        return;
+    }
+    let SearchView {
+        mut results,
+        mut is_searching,
+        mut show_dropdown,
+    } = view;
+    is_searching.set(false);
+    match cards {
+        Some(cards) => {
+            results.set(cards);
+            show_dropdown.set(true);
+        }
+        None => show_dropdown.set(false),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::cell::Cell;
+
+    use super::*;
+    use crate::test_fixtures;
+
+    thread_local! {
+        static STATE: Cell<Option<(Generation, SearchView)>> = const { Cell::new(None) };
+    }
+
+    #[component]
+    fn Root() -> Element {
+        let searches = use_generation();
+        let view = SearchView {
+            results: use_signal(Vec::new),
+            is_searching: use_signal(|| true),
+            show_dropdown: use_signal(|| true),
+        };
+        STATE.with(|s| s.set(Some((searches, view))));
+        rsx! {}
+    }
+
+    fn card(name: &str) -> Card {
+        test_fixtures::deck_entry(name, 1).card
+    }
+
+    fn names(cards: &[Card]) -> Vec<String> {
+        cards.iter().map(|c| c.scryfall_data.name.clone()).collect()
+    }
+
+    #[test]
+    fn an_older_reply_landing_after_a_newer_one_is_dropped() {
+        let mut dom = VirtualDom::new(Root);
+        dom.rebuild_in_place();
+        let (mut searches, view) = STATE.with(|s| s.get().expect("the root rendered"));
+
+        dom.in_runtime(|| {
+            let typed_so = searches.next_ticket();
+            let typed_sol = searches.next_ticket();
+            land_search(searches, typed_sol, Some(vec![card("Sol Ring")]), view);
+            land_search(searches, typed_so, Some(vec![card("Soldier")]), view);
+        });
+
+        let shown = dom.in_runtime(|| names(&view.results.peek()));
+        assert_eq!(
+            shown,
+            ["Sol Ring"],
+            "the older query's reply replaced the newer one"
+        );
+    }
+
+    #[test]
+    fn a_reply_still_out_when_the_bar_clears_keeps_the_dropdown_closed() {
+        let mut dom = VirtualDom::new(Root);
+        dom.rebuild_in_place();
+        let (mut searches, mut view) = STATE.with(|s| s.get().expect("the root rendered"));
+
+        dom.in_runtime(|| {
+            let typed = searches.next_ticket();
+            // The clear button empties the query, which takes a ticket of its own.
+            searches.next_ticket();
+            view.show_dropdown.set(false);
+            land_search(searches, typed, Some(vec![card("Sol Ring")]), view);
+        });
+
+        let open = dom.in_runtime(|| *view.show_dropdown.peek());
+        assert!(!open, "a reply for the cleared query reopened the dropdown");
     }
 }

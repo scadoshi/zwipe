@@ -60,7 +60,7 @@ pub fn Account() -> Element {
             return;
         };
         spawn(async move {
-            match client().get_user(&s).await {
+            match client().fetch_user(&s).await {
                 Ok(fresh_user) => {
                     let current = session.peek().clone();
                     if let Some(mut current) = current {

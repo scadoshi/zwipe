@@ -351,7 +351,7 @@ impl CardRepository for MyPostgres {
     }
 
     // == get ==
-    async fn get_scryfall_data(
+    async fn fetch_scryfall_data(
         &self,
         request: &GetScryfallData,
     ) -> Result<ScryfallData, GetScryfallDataError> {
@@ -364,7 +364,7 @@ impl CardRepository for MyPostgres {
         Ok(scryfall_data)
     }
 
-    async fn get_multiple_scryfall_data(
+    async fn fetch_multiple_scryfall_data(
         &self,
         request: &ScryfallDataIds,
     ) -> Result<Vec<ScryfallData>, GetScryfallDataError> {
@@ -1458,25 +1458,27 @@ impl CardRepository for MyPostgres {
         .await?)
     }
 
-    async fn get_card(&self, request: &GetScryfallData) -> Result<Card, GetCardError> {
-        let scryfall_data = self.get_scryfall_data(request).await?;
-        let card_profile = self.get_card_profile_with_scryfall_data_id(request).await?;
+    async fn fetch_card(&self, request: &GetScryfallData) -> Result<Card, GetCardError> {
+        let scryfall_data = self.fetch_scryfall_data(request).await?;
+        let card_profile = self
+            .fetch_card_profile_with_scryfall_data_id(request)
+            .await?;
         let card = Card::new(card_profile, scryfall_data);
         Ok(card)
     }
 
-    async fn get_cards(&self, request: &ScryfallDataIds) -> Result<Vec<Card>, GetCardError> {
-        let scryfall_data = self.get_multiple_scryfall_data(request).await?;
+    async fn fetch_cards(&self, request: &ScryfallDataIds) -> Result<Vec<Card>, GetCardError> {
+        let scryfall_data = self.fetch_multiple_scryfall_data(request).await?;
         let scryfall_data_ids: ScryfallDataIds = scryfall_data.as_slice().into();
         let card_profiles = self
-            .get_card_profiles_with_scryfall_data_ids(&scryfall_data_ids)
+            .fetch_card_profiles_with_scryfall_data_ids(&scryfall_data_ids)
             .await?;
         let cards = card_profiles.sleeve(scryfall_data);
         Ok(cards)
     }
 
     /// Returns all printings of a card by `oracle_id`, ordered by release date (newest first).
-    async fn get_printings(&self, oracle_id: uuid::Uuid) -> Result<Vec<Card>, GetCardError> {
+    async fn fetch_printings(&self, oracle_id: uuid::Uuid) -> Result<Vec<Card>, GetCardError> {
         let db_rows: Vec<DatabaseScryfallData> =
             query_as("SELECT sd.* FROM scryfall_data sd JOIN card_profiles cp ON sd.id = cp.scryfall_data_id WHERE sd.oracle_id = $1 ORDER BY sd.released_at ASC")
                 .bind(oracle_id)
@@ -1493,13 +1495,13 @@ impl CardRepository for MyPostgres {
         }
         let scryfall_data_ids: ScryfallDataIds = scryfall_data.as_slice().into();
         let card_profiles = self
-            .get_card_profiles_with_scryfall_data_ids(&scryfall_data_ids)
+            .fetch_card_profiles_with_scryfall_data_ids(&scryfall_data_ids)
             .await?;
         let cards = card_profiles.sleeve(scryfall_data);
         Ok(cards)
     }
 
-    async fn get_latest_cards_by_oracle_ids(
+    async fn fetch_latest_cards_by_oracle_ids(
         &self,
         oracle_ids: &[uuid::Uuid],
     ) -> Result<Vec<Card>, GetCardError> {
@@ -1524,7 +1526,7 @@ impl CardRepository for MyPostgres {
         }
         let scryfall_data_ids: ScryfallDataIds = scryfall_data.as_slice().into();
         let card_profiles = self
-            .get_card_profiles_with_scryfall_data_ids(&scryfall_data_ids)
+            .fetch_card_profiles_with_scryfall_data_ids(&scryfall_data_ids)
             .await?;
         let cards = card_profiles.sleeve(scryfall_data);
         Ok(cards)
@@ -1538,14 +1540,14 @@ impl CardRepository for MyPostgres {
         }
         let scryfall_data_ids: ScryfallDataIds = scryfall_data.as_slice().into();
         let card_profiles = self
-            .get_card_profiles_with_scryfall_data_ids(&scryfall_data_ids)
+            .fetch_card_profiles_with_scryfall_data_ids(&scryfall_data_ids)
             .await?;
         let cards = card_profiles.sleeve(scryfall_data);
         Ok(cards)
     }
 
     /// Extracts distinct card types by tokenizing `type_line` with `STRING_TO_ARRAY`.
-    async fn get_card_types(&self) -> Result<Vec<String>, GetCardTypesError> {
+    async fn fetch_card_types(&self) -> Result<Vec<String>, GetCardTypesError> {
         // Stop words: see domain::card::models::search_card::stop_words::TYPE_STOP_WORDS
         let card_types: Vec<String> = query_scalar!(
             "SELECT DISTINCT subtype FROM (
@@ -1564,7 +1566,7 @@ impl CardRepository for MyPostgres {
     }
 
     /// Returns distinct keyword abilities from the `keywords` array column.
-    async fn get_keywords(&self) -> Result<Vec<String>, GetKeywordsError> {
+    async fn fetch_keywords(&self) -> Result<Vec<String>, GetKeywordsError> {
         let keywords: Vec<String> = query_scalar!(
             "SELECT DISTINCT LOWER(TRIM(keyword)) AS keyword
              FROM latest_cards, UNNEST(keywords) AS keyword
@@ -1582,7 +1584,7 @@ impl CardRepository for MyPostgres {
 
     /// Returns the full oracle tag catalog: every row of `oracle_tags` with its
     /// `parent_ids` resolved to parent slugs, ordered by slug.
-    async fn get_oracle_tags(&self) -> Result<Vec<OracleTag>, GetOracleTagsError> {
+    async fn fetch_oracle_tags(&self) -> Result<Vec<OracleTag>, GetOracleTagsError> {
         let oracle_tags: Vec<OracleTag> = query_as!(
             DatabaseOracleTag,
             r#"SELECT
@@ -1610,7 +1612,7 @@ impl CardRepository for MyPostgres {
     }
 
     /// Returns distinct normalized words extracted from oracle text, noise-filtered.
-    async fn get_oracle_words(&self) -> Result<Vec<String>, GetOracleWordsError> {
+    async fn fetch_oracle_words(&self) -> Result<Vec<String>, GetOracleWordsError> {
         // Stop words: see domain::card::models::search_card::stop_words::ORACLE_STOP_WORDS
         let words: Vec<String> = query_scalar!(
             "SELECT DISTINCT LOWER(REGEXP_REPLACE(word, '[^a-zA-Z]', '', 'g')) AS word
@@ -1633,7 +1635,7 @@ impl CardRepository for MyPostgres {
         Ok(words)
     }
 
-    async fn get_artists(&self) -> Result<Vec<String>, GetArtistsError> {
+    async fn fetch_artists(&self) -> Result<Vec<String>, GetArtistsError> {
         let artists: Vec<String> = query_scalar!(
             "SELECT DISTINCT artist FROM latest_cards
              WHERE artist IS NOT NULL
@@ -1647,7 +1649,7 @@ impl CardRepository for MyPostgres {
         Ok(artists)
     }
 
-    async fn get_sets(&self) -> Result<Vec<String>, GetSetsError> {
+    async fn fetch_sets(&self) -> Result<Vec<String>, GetSetsError> {
         let sets: Vec<String> =
             query_scalar!("SELECT DISTINCT set_name FROM latest_cards ORDER BY set_name")
                 .fetch_all(&self.pool)
@@ -1658,7 +1660,7 @@ impl CardRepository for MyPostgres {
         Ok(sets)
     }
 
-    async fn get_universes_beyond_preferences(
+    async fn fetch_universes_beyond_preferences(
         &self,
         user_id: uuid::Uuid,
     ) -> anyhow::Result<(bool, Vec<String>)> {
@@ -1677,7 +1679,7 @@ impl CardRepository for MyPostgres {
         ))
     }
 
-    async fn get_languages(&self) -> Result<Vec<String>, GetLanguagesError> {
+    async fn fetch_languages(&self) -> Result<Vec<String>, GetLanguagesError> {
         let languages: Vec<String> = query_scalar!(
             "SELECT DISTINCT lang FROM latest_cards
              WHERE lang IS NOT NULL
@@ -1691,7 +1693,7 @@ impl CardRepository for MyPostgres {
         Ok(languages)
     }
 
-    async fn get_card_profile_with_id(
+    async fn fetch_card_profile_with_id(
         &self,
         request: &GetCardProfile,
     ) -> Result<CardProfile, GetCardProfileError> {
@@ -1706,7 +1708,7 @@ impl CardRepository for MyPostgres {
         Ok(card_profile)
     }
 
-    async fn get_card_profile_with_scryfall_data_id(
+    async fn fetch_card_profile_with_scryfall_data_id(
         &self,
         request: &GetScryfallData,
     ) -> Result<CardProfile, GetCardProfileError> {
@@ -1722,7 +1724,7 @@ impl CardRepository for MyPostgres {
         Ok(card_profile)
     }
 
-    async fn get_card_profiles_with_ids(
+    async fn fetch_card_profiles_with_ids(
         &self,
         request: &CardProfileIds,
     ) -> Result<Vec<CardProfile>, GetCardProfileError> {
@@ -1740,7 +1742,7 @@ impl CardRepository for MyPostgres {
         Ok(card_profiles)
     }
 
-    async fn get_card_profiles_with_scryfall_data_ids(
+    async fn fetch_card_profiles_with_scryfall_data_ids(
         &self,
         request: &ScryfallDataIds,
     ) -> Result<Vec<CardProfile>, GetCardProfileError> {
@@ -1758,7 +1760,7 @@ impl CardRepository for MyPostgres {
         Ok(card_profiles)
     }
 
-    async fn get_last_sync_date(&self) -> anyhow::Result<Option<DateTime<Utc>>> {
+    async fn fetch_last_sync_date(&self) -> anyhow::Result<Option<DateTime<Utc>>> {
         let last_sync_date: Option<DateTime<Utc>> = query_scalar(
             "SELECT started_at FROM zervice_metrics
             ORDER BY started_at DESC LIMIT 1",
@@ -1813,7 +1815,7 @@ impl CardRepository for MyPostgres {
         }
         let scryfall_data_ids: ScryfallDataIds = scryfall_data.as_slice().into();
         let card_profiles = self
-            .get_card_profiles_with_scryfall_data_ids(&scryfall_data_ids)
+            .fetch_card_profiles_with_scryfall_data_ids(&scryfall_data_ids)
             .await?;
         let cards = card_profiles.sleeve(scryfall_data);
         Ok(cards)
@@ -1834,7 +1836,7 @@ impl CardRepository for MyPostgres {
         }
         let scryfall_data_ids: ScryfallDataIds = scryfall_data.as_slice().into();
         let card_profiles = self
-            .get_card_profiles_with_scryfall_data_ids(&scryfall_data_ids)
+            .fetch_card_profiles_with_scryfall_data_ids(&scryfall_data_ids)
             .await?;
         let cards = card_profiles.sleeve(scryfall_data);
         Ok(cards)
@@ -1854,7 +1856,7 @@ impl CardRepository for MyPostgres {
         // Same degrade-to-everything read as the deck-aware serve: the UB
         // preference should never fail commander select.
         let (exclude_universes_beyond, universes_beyond_exception_set_names) = self
-            .get_universes_beyond_preferences(user_id)
+            .fetch_universes_beyond_preferences(user_id)
             .await
             .unwrap_or_default();
         let scryfall_data = self
@@ -1873,7 +1875,7 @@ impl CardRepository for MyPostgres {
         }
         let scryfall_data_ids: ScryfallDataIds = scryfall_data.as_slice().into();
         let card_profiles = self
-            .get_card_profiles_with_scryfall_data_ids(&scryfall_data_ids)
+            .fetch_card_profiles_with_scryfall_data_ids(&scryfall_data_ids)
             .await?;
         let cards = card_profiles.sleeve(scryfall_data);
         Ok(cards)
@@ -2109,12 +2111,12 @@ impl CardRepository for MyPostgres {
 
     // == category derivation ==
 
-    async fn get_cards_batch(&self, ids: &[uuid::Uuid]) -> Result<Vec<Card>, anyhow::Error> {
+    async fn fetch_cards_batch(&self, ids: &[uuid::Uuid]) -> Result<Vec<Card>, anyhow::Error> {
         if ids.is_empty() {
             return Ok(vec![]);
         }
         let scryfall_data_ids: ScryfallDataIds = ids.iter().copied().collect();
-        self.get_cards(&scryfall_data_ids)
+        self.fetch_cards(&scryfall_data_ids)
             .await
             .map_err(|e| anyhow::anyhow!("failed to fetch card batch: {e}"))
     }
@@ -2156,7 +2158,7 @@ impl CardRepository for MyPostgres {
         oracle_tag_groups::refresh_oracle_tag_groups(&self.pool).await
     }
 
-    async fn get_card_ids_with_oracle_text(&self) -> Result<Vec<uuid::Uuid>, anyhow::Error> {
+    async fn fetch_card_ids_with_oracle_text(&self) -> Result<Vec<uuid::Uuid>, anyhow::Error> {
         let ids: Vec<uuid::Uuid> = sqlx::query_scalar(
             "SELECT cp.scryfall_data_id FROM card_profiles cp \
              JOIN scryfall_data sd ON cp.scryfall_data_id = sd.id \

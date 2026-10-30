@@ -24,7 +24,7 @@
 //!
 //! // Fetch user profile
 //! let request = GetUser::from(user_id);
-//! let user = user_service.get_user(request).await?;
+//! let user = user_service.fetch_user(request).await?;
 //!
 //! println!("User: {} ({})", user.username, user.email);
 //! ```
