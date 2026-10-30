@@ -303,6 +303,7 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
     // loop every time the root component re-renders.
     let usage_buffer = use_signal(UsageBuffer::new);
     use_context_provider(|| usage_buffer);
+    flush_loop::use_clear_on_logout(usage_buffer, session);
     use_hook(|| {
         flush_loop::spawn_usage_flusher(usage_buffer.peek().clone(), client, session);
         flush_loop::spawn_visibility_flusher(usage_buffer.peek().clone(), client, session);
