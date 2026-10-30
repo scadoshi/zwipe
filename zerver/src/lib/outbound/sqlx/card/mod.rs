@@ -1740,7 +1740,7 @@ impl CardRepository for MyPostgres {
         .fetch_all(&self.pool)
         .await?
         .into_iter()
-        .map(|dcp| dcp.into())
+        .map(Into::into)
         .collect();
         Ok(card_profiles)
     }
@@ -1758,7 +1758,7 @@ impl CardRepository for MyPostgres {
         .fetch_all(&self.pool)
         .await?
         .into_iter()
-        .map(|dcp| dcp.into())
+        .map(Into::into)
         .collect();
         Ok(card_profiles)
     }
@@ -2138,7 +2138,7 @@ impl CardRepository for MyPostgres {
         let mut tx = self.pool.begin().await?;
 
         for (id, categories) in updates {
-            let cat_strings: Vec<String> = categories.iter().map(|c| c.to_string()).collect();
+            let cat_strings: Vec<String> = categories.iter().map(ToString::to_string).collect();
             let json = serde_json::to_value(&cat_strings)?;
             sqlx::query!(
                 "UPDATE card_profiles SET card_roles = $1, updated_at = NOW() WHERE scryfall_data_id = $2",

@@ -293,7 +293,7 @@ impl DeckRepository for Postgres {
         .await?;
         let deck_profiles: Vec<DeckProfile> = database_deck_profiles
             .into_iter()
-            .map(|x| x.try_into())
+            .map(TryInto::try_into)
             .collect::<Result<Vec<DeckProfile>, IntoDeckProfileError>>()?;
         Ok(deck_profiles)
     }
@@ -318,7 +318,7 @@ impl DeckRepository for Postgres {
         .await?;
         let deck_cards: Vec<DeckCard> = database_deck_cards
             .into_iter()
-            .map(|x| x.try_into())
+            .map(TryInto::try_into)
             .collect::<Result<Vec<DeckCard>, IntoDeckCardError>>()?;
         Ok(deck_cards)
     }

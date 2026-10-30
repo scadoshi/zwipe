@@ -164,7 +164,7 @@ impl BulkUpsertWithTx for &[ScryfallData] {
             .fetch_all(&mut **tx)
             .await?
             .into_iter()
-            .map(|database_card_profile| database_card_profile.into())
+            .map(Into::into)
             .collect();
         let cards: Vec<Card> = scryfall_data.sleeve(card_profiles);
         Ok(cards)
@@ -280,7 +280,7 @@ impl BulkDeltaUpsertWithTx for &[ScryfallData] {
         let delta: Vec<ScryfallData> = self
             .iter()
             .filter(|x| !existing.contains(x))
-            .map(|x| x.to_owned())
+            .map(ToOwned::to_owned)
             .collect();
         let skipped_count = self.len() - delta.len();
         if delta.is_empty() {

@@ -6,6 +6,7 @@
 use sqlx::types::Json;
 use sqlx::{Postgres, QueryBuilder};
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
+use zwipe_core::domain::card::scryfall_data::colors::Colors;
 
 /// Every [`ScryfallData`] field name, line-separated for SQL generation.
 ///
@@ -121,7 +122,7 @@ pub fn scryfall_data_field_count() -> usize {
     SCRYFALL_DATA_FIELDS
         .trim()
         .lines()
-        .map(|line| line.trim())
+        .map(str::trim)
         .filter(|line| !line.is_empty())
         .count()
 }
@@ -199,9 +200,9 @@ impl BindScryfallDataFields for QueryBuilder<Postgres> {
         self.push(", ");
         self.push_bind(card.color_identity.to_short_names());
         self.push(", ");
-        self.push_bind(card.color_indicator.as_ref().map(|c| c.to_short_names()));
+        self.push_bind(card.color_indicator.as_ref().map(Colors::to_short_names));
         self.push(", ");
-        self.push_bind(card.colors.as_ref().map(|c| c.to_short_names()));
+        self.push_bind(card.colors.as_ref().map(Colors::to_short_names));
         self.push(", ");
         self.push_bind(card.defense.clone());
         self.push(", ");

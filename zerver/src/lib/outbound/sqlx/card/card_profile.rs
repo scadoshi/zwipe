@@ -55,7 +55,7 @@ impl From<DatabaseCardProfile> for CardProfile {
             is_token: value.is_token,
             // The `card_profiles.card_roles` column holds role slugs;
             // serve them as `card_roles` (validated against the known role set).
-            card_roles: card_roles.iter().map(|r| r.to_string()).collect(),
+            card_roles: card_roles.iter().map(ToString::to_string).collect(),
             oracle_tags,
             oracle_tags_by_role,
             other_oracle_tags,
