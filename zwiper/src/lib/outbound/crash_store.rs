@@ -7,7 +7,7 @@
 //! accumulates. WITHIN a process the first panic wins: a panic that unwinds
 //! into a no-unwind frame (an FFI callback) raises a second panic before the
 //! abort, and letting it write would replace the real cause with "panic in a
-//! function that cannot unwind" (seen twice in the field on 1.9.3 iOS).
+//! function that cannot unwind".
 //! The `crash_id` is stamped at panic time, so however many launches retry
 //! the send, the server stores exactly one row per crash.
 

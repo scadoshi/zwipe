@@ -43,7 +43,7 @@ use crate::outbound::session::Persist;
 use crate::outbound::theme_store::PersistTheme;
 
 /// The running app version, baked in at compile time (matches
-/// CFBundleShortVersionString since 1.0.3).
+/// `CFBundleShortVersionString`).
 const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// The featured flavor card cached for the Home screen, with the time it
@@ -100,9 +100,7 @@ pub enum ChangelogCache {
 /// Min-version gate state: true when this build is below the server minimum.
 ///
 /// Newtype so `try_use_context` / `use_context` lookups can't collide with
-/// other `Signal<bool>` contexts: a bare `Signal<bool>` here was once grabbed
-/// by the filter sheet's collapse lookup, which flashed the blocking
-/// "Update required" screen every time Apply was hit on add/remove cards.
+/// other `Signal<bool>` contexts, such as the filter sheet's collapse lookup.
 #[derive(Debug, Clone, Copy)]
 pub struct UpgradeRequired(Signal<bool>);
 

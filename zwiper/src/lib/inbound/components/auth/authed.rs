@@ -57,9 +57,8 @@ pub fn use_authed(screen: Screen) -> Authed {
 
 impl Authed {
     /// The uniform path: refresh, run, and on any failure report + toast,
-    /// yielding `None`. `op` is the telemetry action name and MUST match the
-    /// string the call site used before conversion, so the server-side
-    /// `client_errors` dedupe keys stay continuous.
+    /// yielding `None`. `op` is the telemetry action name, part of the
+    /// server-side `client_errors` dedupe key, so it stays fixed per site.
     pub async fn run<T, Fut>(
         &self,
         op: &'static str,
@@ -106,7 +105,7 @@ impl Authed {
     /// Telemetry and log only, no toast: for work the user never initiated
     /// and never waits on (prefetch, fire-and-forget flushes). When in doubt
     /// use [`Self::run`] instead; a user who hits a dead end deserves a
-    /// warning (owner call, 2026-09-02).
+    /// warning.
     pub async fn run_quiet<T, Fut>(
         &self,
         op: &'static str,

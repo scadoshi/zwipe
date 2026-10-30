@@ -248,8 +248,8 @@ impl UsageBuffer {
                 // richer generalized-context per-otag signal, and (for
                 // non-Commander decks) is the sole context key.
                 deck_id: Some(deck_id),
-                // `shown` is derived from add-stack actions for now; a removal is
-                // not an impression, so it doesn't count toward `shown`.
+                // `shown` is derived from add-stack actions; a removal is not an
+                // impression, so it doesn't count toward `shown`.
                 shown: t.added + t.skipped + t.maybed,
                 added: t.added,
                 skipped: t.skipped,
@@ -319,7 +319,7 @@ impl UsageBuffer {
             swipes_down: down,
             searches,
             // Durable skips post directly per swipe (skip_deck_card); the
-            // batch field remains for wire compat with the server.
+            // batch field stays empty, kept for the wire format.
             deck_skips: Vec::new(),
             signals,
             select_signals,

@@ -41,7 +41,7 @@ pub fn current() -> ThemeConfig {
         .unwrap_or_else(primary)
 }
 
-/// Moves an icon this build no longer bundles (a retired theme's) onto the one
+/// Moves an icon this build does not bundle (a retired theme's) onto the one
 /// [`current`] reads it as. A no-op once they match; on iOS the OS shows its
 /// own alert when it switches.
 pub fn replace_retired() {

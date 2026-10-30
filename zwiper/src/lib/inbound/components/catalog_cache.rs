@@ -1,7 +1,7 @@
 //! App-wide catalog cache: slow-changing card/deck filter metadata, fetched
 //! once at startup and held above the router for the session.
 //!
-//! The filter subsections, pickers, and (soon) the oracle-tag dictionary all read
+//! The filter subsections, pickers, and the oracle-tag dictionary all read
 //! the same lists: artists, sets, keywords, oracle words, card types, card roles,
 //! oracle tags, and deck tags. Those lists only change when Scryfall / `zervice`
 //! refreshes (daily) or when we deploy catalog consts, not when a user opens a

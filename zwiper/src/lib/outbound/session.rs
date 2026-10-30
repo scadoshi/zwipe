@@ -86,8 +86,8 @@ mod platform {
     const SERVICE: &str = concat!(env!("CARGO_PKG_NAME"), "-service");
     const USERNAME: &str = concat!(env!("CARGO_PKG_NAME"), "-user");
 
-    /// (service, username) must keep mapping to the Keychain item the
-    /// keyring-3 backend wrote, or existing sessions drop on upgrade.
+    /// `SERVICE` and `USERNAME` name the Keychain item existing installs hold;
+    /// changing either logs every user out.
     fn entry() -> Result<Entry, keyring::Error> {
         keyring_entry::entry(SERVICE, USERNAME)
     }
@@ -141,8 +141,8 @@ mod platform {
         Ok(())
     }
 
-    /// A file that starts with `{` is plaintext JSON from a build before the
-    /// Keystore; it is read as is and rewritten sealed. A sealed file that does
+    /// A file that starts with `{` is plaintext JSON; it is read as is and
+    /// rewritten sealed. A sealed file that does
     /// not open (the key is gone after a reinstall, or the file is corrupt)
     /// counts as logged out and is removed.
     pub(crate) fn load() -> anyhow::Result<Option<Session>> {
