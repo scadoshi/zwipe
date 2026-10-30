@@ -91,6 +91,10 @@ impl PostgresPoolOptions {
     }
 
     /// Establishes a connection pool to the database at the given URL.
+    ///
+    /// # Errors
+    ///
+    /// Returns the [`sqlx::Error`] when the pool cannot connect.
     pub async fn connect(self, path: &str) -> Result<sqlx::postgres::PgPool, sqlx::Error> {
         self.0.connect(path).await
     }

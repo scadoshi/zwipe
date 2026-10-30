@@ -30,6 +30,10 @@ fn flatten_correlations(tags: &[OracleTag]) -> Vec<(uuid::Uuid, &str)> {
 
 /// Replaces the `oracle_tag` catalog and the scryfall-sourced card correlations
 /// from `tags`. Returns `(catalog_rows, correlation_rows)`.
+///
+/// # Errors
+///
+/// Returns an error if the transaction or any of its statements fails.
 pub async fn sync_oracle_tags(pool: &PgPool, tags: &[OracleTag]) -> anyhow::Result<(u32, u32)> {
     let correlations = flatten_correlations(tags);
 

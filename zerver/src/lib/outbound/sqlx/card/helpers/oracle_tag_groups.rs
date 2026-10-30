@@ -115,6 +115,10 @@ pub fn role_membership_ctes(first: usize) -> String {
 
 /// Rebuilds `card_profiles.oracle_tags_by_role` and `.other_oracle_tags` from the
 /// tag hierarchy + `CATEGORY_ROOTS`. Returns rows affected.
+///
+/// # Errors
+///
+/// Returns an error if the update statement fails.
 pub async fn refresh_oracle_tag_groups(pool: &PgPool) -> anyhow::Result<u64> {
     let binds = RoleMembershipBinds::new();
     let noise: Vec<String> = NOISE_ORACLE_TAG_SLUGS

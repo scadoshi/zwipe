@@ -78,6 +78,12 @@ impl ArchidektClient {
     }
 
     /// Fetches a public Archidekt deck and returns its card list.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ArchidektError::NotFound`] on a 404, `Upstream` on any other
+    /// failing status or a body that does not parse, `TooLarge` past
+    /// `MAX_RESPONSE_BYTES`, and `Network` when the request fails.
     pub async fn fetch_deck(&self, deck_id: i64) -> Result<Vec<ArchidektCard>, ArchidektError> {
         let url = format!("https://archidekt.com/api/decks/{deck_id}/");
         let response = self
