@@ -52,7 +52,7 @@ impl DeckCommandZone<'_> {
 pub fn validate_deck(
     deck_profile: &DeckProfile,
     entries: &[DeckEntry],
-    command_zone: &DeckCommandZone,
+    command_zone: &DeckCommandZone<'_>,
 ) -> Vec<DeckWarning> {
     // Only validate active deck cards, not maybeboard or sideboard
     let active_entries: Vec<DeckEntry> = entries
@@ -161,7 +161,7 @@ fn check_land_target(
 fn check_price_target(
     profile: &DeckProfile,
     active_entries: &[DeckEntry],
-    command_zone: &DeckCommandZone,
+    command_zone: &DeckCommandZone<'_>,
     warnings: &mut Vec<DeckWarning>,
 ) {
     let Some(target) = profile.price_target.filter(|t| *t > 0.0) else {
@@ -260,7 +260,7 @@ fn check_copy_limits(format: Format, entries: &[DeckEntry], warnings: &mut Vec<D
 fn check_color_identity(
     format: Format,
     entries: &[DeckEntry],
-    command_zone: &DeckCommandZone,
+    command_zone: &DeckCommandZone<'_>,
     warnings: &mut Vec<DeckWarning>,
 ) {
     if !format.checks_color_identity() {
@@ -346,7 +346,7 @@ fn check_color_identity(
 fn check_commander_eligibility(
     format: Format,
     profile: &DeckProfile,
-    command_zone: &DeckCommandZone,
+    command_zone: &DeckCommandZone<'_>,
     warnings: &mut Vec<DeckWarning>,
 ) {
     if !format.has_commander() {
@@ -355,7 +355,7 @@ fn check_commander_eligibility(
 
     if profile.commander_id.is_none() {
         return; // Already warned by check_commander_required
-    };
+    }
 
     // Use command zone directly (always populated by get_deck)
     let Some(card) = command_zone.commander else {
@@ -378,7 +378,7 @@ fn check_commander_eligibility(
 fn check_partner_validity(
     format: Format,
     profile: &DeckProfile,
-    command_zone: &DeckCommandZone,
+    command_zone: &DeckCommandZone<'_>,
     warnings: &mut Vec<DeckWarning>,
 ) {
     let Some(partner_id) = profile.partner_commander_id else {
@@ -424,7 +424,7 @@ fn check_partner_validity(
 fn check_background_validity(
     format: Format,
     profile: &DeckProfile,
-    command_zone: &DeckCommandZone,
+    command_zone: &DeckCommandZone<'_>,
     warnings: &mut Vec<DeckWarning>,
 ) {
     let Some(bg_id) = profile.background_id else {
@@ -507,7 +507,7 @@ fn check_sideboard_limits(format: Format, entries: &[DeckEntry], warnings: &mut 
 fn check_signature_spell_validity(
     format: Format,
     profile: &DeckProfile,
-    command_zone: &DeckCommandZone,
+    command_zone: &DeckCommandZone<'_>,
     warnings: &mut Vec<DeckWarning>,
 ) {
     if profile.signature_spell_id.is_none() {
