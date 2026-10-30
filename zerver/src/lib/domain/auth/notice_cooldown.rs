@@ -12,7 +12,7 @@ use dashmap::DashMap;
 use dashmap::mapref::entry::Entry;
 
 /// How long after one notice the next one to the same address is skipped.
-pub const NOTICE_COOLDOWN: Duration = Duration::from_secs(60 * 60);
+pub const NOTICE_COOLDOWN: Duration = Duration::from_hours(1);
 
 /// Entries are swept this often, counted in notices allowed.
 const SWEEP_EVERY: usize = 1024;
