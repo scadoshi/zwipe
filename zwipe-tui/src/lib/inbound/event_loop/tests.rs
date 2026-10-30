@@ -1,5 +1,7 @@
 //! Tests for the main loop: starting up, the back stack, and the app's own results, with no network.
 
+use std::time::Instant;
+
 use crossterm::event::KeyCode;
 
 use super::Flow;
@@ -8,7 +10,9 @@ use crate::domain::theme::Palette;
 use crate::inbound::screens::decks::DeckList;
 use crate::inbound::screens::login::LoginForm;
 use crate::inbound::screens::{Request, Screen, Update, deck, decks};
-use crate::test_support::{card, render, screen_text};
+use crate::inbound::widgets::hint;
+use crate::inbound::widgets::toast::{self, ToastKind};
+use crate::test_support::{card, render, screen_text, user};
 
 #[test]
 fn without_a_session_it_asks_to_sign_in_and_checks_the_version() {
@@ -71,6 +75,56 @@ fn an_ended_session_returns_to_sign_in_and_clears_the_saved_one() {
     );
     assert!(harness.app.shared.username.is_none());
     assert_eq!(harness.pending(), [Request::SignOut]);
+}
+
+#[test]
+fn a_toast_shows_over_the_screen_and_redraws_until_it_leaves() {
+    let mut harness = Harness::on(Screen::UpdateRequired);
+    assert!(!harness.app.animating());
+    harness.apply(Update::Toast(ToastKind::Success, "Saved".to_owned()));
+    assert!(
+        harness.app.animating(),
+        "the loop ticks while a toast is up"
+    );
+    assert!(screen_text(&harness.app).contains("Saved"));
+    harness.app.tick(Instant::now() + toast::LIFETIME);
+    assert!(!harness.app.animating());
+    assert!(!screen_text(&harness.app).contains("Saved"));
+}
+
+#[test]
+fn an_open_hint_takes_every_key_until_it_closes() {
+    let mut harness = Harness::on(Screen::UpdateRequired);
+    harness.app.shared.user = Some(user(true));
+    harness.open(|cx| {
+        hint::show(cx, "swipe", "Swiping", "Right adds the card.");
+    });
+    assert_eq!(
+        harness.pending(),
+        [Request::MarkHintShown("swipe".to_owned())]
+    );
+    assert_eq!(
+        harness.press(KeyCode::Char('q')),
+        Flow::Continue,
+        "q does not reach the screen"
+    );
+    assert!(harness.app.shared.hint.is_some());
+    harness.press(KeyCode::Enter);
+    assert!(harness.app.shared.hint.is_none());
+
+    let mut marked = user(true);
+    marked.hints_shown.insert("swipe".to_owned(), true);
+    harness.apply(Update::HintMarked(Box::new(marked)));
+    assert!(
+        harness
+            .app
+            .shared
+            .user
+            .as_ref()
+            .unwrap()
+            .has_seen_hint("swipe")
+    );
+    assert_eq!(harness.press(KeyCode::Char('q')), Flow::Quit);
 }
 
 #[test]

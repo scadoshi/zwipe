@@ -10,6 +10,7 @@ mod tests;
 use std::collections::VecDeque;
 use std::mem;
 use std::sync::Arc;
+use std::time::Instant;
 
 use anyhow::Result;
 use crossterm::event::{Event, EventStream, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
@@ -21,6 +22,7 @@ use zwipe_core::domain::auth::models::session::Session;
 use super::app::{App, Context, Effects, Navigation};
 use super::screens::login::{self, LoginForm};
 use super::screens::{self, Request, Screen, Update};
+use super::widgets::hint;
 use crate::domain::decode;
 use crate::outbound::account::Account;
 use crate::outbound::theme_file::ThemeFile;
@@ -66,6 +68,7 @@ impl EventLoop {
 
         loop {
             self.dispatch();
+            app.tick(Instant::now());
             terminal.draw(|f| app.draw(f))?;
 
             let animating = app.animating();
@@ -110,10 +113,16 @@ impl EventLoop {
         self.settle(app, effects)
     }
 
-    /// Hands a key to the screen on top. Ctrl+C quits from anywhere.
+    /// Hands a key to the open hint, else to the screen on top. Ctrl+C quits from anywhere.
     fn handle_key(&mut self, app: &mut App, key: KeyEvent) -> Flow {
         if key.code == KeyCode::Char('c') && key.modifiers.contains(KeyModifiers::CONTROL) {
             return Flow::Quit;
+        }
+        if app.shared.hint.is_some() {
+            if hint::dismisses(key.code) {
+                app.shared.hint = None;
+            }
+            return Flow::Continue;
         }
         let mut cx = Context::new(&mut app.shared);
         app.nav.top_mut().handle_key(key.code, &mut cx);

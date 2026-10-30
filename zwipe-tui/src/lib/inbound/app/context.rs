@@ -5,6 +5,7 @@ use zwipe_core::domain::user::preferences::UserPreferences;
 use super::Shared;
 use crate::domain::theme::Palette;
 use crate::inbound::screens::{Request, Screen};
+use crate::inbound::widgets::toast::ToastKind;
 use crate::outbound::theme_file::RememberedTheme;
 
 /// A change to the back stack, applied by the loop once the handler returns.
@@ -78,6 +79,11 @@ impl<'app> Context<'app> {
 
     pub(crate) fn quit(&mut self) {
         self.effects.quit = true;
+    }
+
+    /// Shows a toast that leaves on its own.
+    pub(crate) fn toast(&mut self, kind: ToastKind, message: String) {
+        self.shared.toasts.push(kind, message);
     }
 
     /// Draws in `preferences` from now on and remembers their theme for the next launch.

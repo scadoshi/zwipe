@@ -18,3 +18,19 @@ pub(crate) fn line(palette: &Palette, keys: &[(&str, &str)]) -> Line<'static> {
         .collect();
     Line::from(spans)
 }
+
+#[cfg(test)]
+mod tests {
+    use ratatui::style::Modifier;
+
+    use super::*;
+
+    #[test]
+    fn each_key_is_bold_and_its_action_muted() {
+        let palette = Palette::terminal();
+        let line = line(&palette, &[("Enter", "open"), ("q", "quit")]);
+        assert_eq!(line.to_string(), "Enter open  q quit  ");
+        assert!(line.spans[0].style.add_modifier.contains(Modifier::BOLD));
+        assert_eq!(line.spans[1].style, palette.muted);
+    }
+}

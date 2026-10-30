@@ -16,6 +16,7 @@ use std::fmt;
 use crossterm::event::KeyCode;
 use ratatui::Frame;
 use zwipe_client::ClientError;
+use zwipe_core::domain::user::User;
 use zwipe_core::version::version_at_least;
 
 use self::account::AccountView;
@@ -27,6 +28,7 @@ use self::login::LoginForm;
 use self::swipe::SwipeView;
 use super::app::{Context, Shared};
 use super::nav::Nav;
+use super::widgets::toast::ToastKind;
 use crate::outbound::account::Account;
 use crate::outbound::theme_file::{RememberedTheme, ThemeFile};
 
@@ -103,6 +105,15 @@ pub(crate) enum Request {
     SignOut,
     /// Saves the account's theme for drawing before the next sign-in.
     RememberTheme(RememberedTheme),
+    /// Tells the server a one-time hint has been shown, by its key.
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "sent by the hint widget, which no screen shows yet"
+        )
+    )]
+    MarkHintShown(String),
     Login(login::Request),
     Home(home::Request),
     Decks(decks::Request),
@@ -122,6 +133,17 @@ pub(crate) enum Update {
     SignedOut,
     /// A message for the status line.
     Status(String),
+    /// A toast for a result that has no screen to show it on.
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "for screens still to come; no request toasts its result yet"
+        )
+    )]
+    Toast(ToastKind, String),
+    /// The user as the server keeps it after marking a hint shown.
+    HintMarked(Box<User>),
     Login(login::Update),
     Home(home::Update),
     Decks(decks::Update),
@@ -151,6 +173,18 @@ pub(crate) async fn perform(
             theme_file.save(&theme).ok();
             None
         }
+        Request::MarkHintShown(hint) => {
+            // The hint is already marked on the local copy, so a failure only means it may show again next launch.
+            async {
+                account
+                    .client
+                    .mark_hint_shown(&hint, &account.fresh().await?)
+                    .await
+            }
+            .await
+            .ok()
+            .map(|user| Update::HintMarked(Box::new(user)))
+        }
         Request::Login(request) => login::perform(account, request).await,
         Request::Home(request) => home::perform(account, request).await,
         Request::Decks(request) => decks::perform(account, request).await,
@@ -171,6 +205,11 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
         }
         Update::SignedOut => login::signed_out(cx, None),
         Update::Status(status) => cx.shared.status = status,
+        Update::Toast(kind, message) => cx.toast(kind, message),
+        Update::HintMarked(user) => {
+            cx.shared.username = Some(user.username.to_string());
+            cx.shared.user = Some(*user);
+        }
         Update::Login(update) => login::apply(nav, update, cx),
         Update::Home(update) => home::apply(nav, update, cx),
         Update::Decks(update) => decks::apply(nav, update, cx),

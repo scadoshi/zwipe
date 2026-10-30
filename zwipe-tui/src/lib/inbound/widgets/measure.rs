@@ -26,3 +26,17 @@ pub(crate) fn cursor_after(text: &str, area: Rect) -> Position {
         y: area.y.saturating_add(1),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn widths_count_characters_and_the_cursor_stays_inside_the_box() {
+        assert_eq!(width_of("héllo"), 5);
+        assert_eq!(height_of(3), 3);
+        let area = Rect::new(2, 4, 10, 3);
+        assert_eq!(cursor_after("abc", area), Position { x: 6, y: 5 });
+        assert_eq!(cursor_after("far too long a value", area).x, 10);
+    }
+}

@@ -2,6 +2,8 @@
 
 mod context;
 
+use std::time::Instant;
+
 use ratatui::Frame;
 use ratatui::widgets::Block;
 use ratatui_image::picker::Picker;
@@ -11,6 +13,8 @@ pub(crate) use self::context::{Context, Effects, Navigation};
 use super::nav::Nav;
 use super::screens::Screen;
 use super::screens::login::LoginForm;
+use super::widgets::hint::HintDialog;
+use super::widgets::toast::Toasts;
 use crate::domain::theme::Palette;
 
 /// Everything the UI draws from.
@@ -33,6 +37,10 @@ pub(crate) struct Shared {
     pub(crate) status: String,
     /// How this terminal draws images, or `None` when card images are off.
     pub(crate) images: Option<Picker>,
+    /// Toasts up in the bottom-right corner.
+    pub(crate) toasts: Toasts,
+    /// A one-time hint over the screen, which takes every key until it closes.
+    pub(crate) hint: Option<HintDialog>,
 }
 
 impl App {
@@ -46,18 +54,30 @@ impl App {
                 user: None,
                 status: String::new(),
                 images: None,
+                toasts: Toasts::default(),
+                hint: None,
             },
         }
     }
 
-    /// Whether something on screen is moving, so the loop should redraw on a timer.
+    /// Whether something on screen is moving, so the loop should redraw on a timer: the screen on top, or a toast waiting to leave.
     pub(crate) fn animating(&self) -> bool {
-        self.nav.top().animating()
+        self.nav.top().animating() || !self.shared.toasts.is_empty()
     }
 
-    /// Draws the screen on top over the theme's background.
+    /// Drops what has timed out by `now`.
+    pub(crate) fn tick(&mut self, now: Instant) {
+        self.shared.toasts.prune(now);
+    }
+
+    /// Draws the screen on top over the theme's background, then the hint and the toasts over it.
     pub(crate) fn draw(&self, f: &mut Frame<'_>) {
-        f.render_widget(Block::new().style(self.shared.palette.base), f.area());
+        let palette = &self.shared.palette;
+        f.render_widget(Block::new().style(palette.base), f.area());
         self.nav.top().draw(f, &self.shared);
+        if let Some(hint) = &self.shared.hint {
+            hint.draw(f, palette);
+        }
+        self.shared.toasts.draw(f, palette, f.area());
     }
 }
