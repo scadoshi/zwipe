@@ -2,9 +2,7 @@
 //!
 //! Provides fluent API for building card filters with validation.
 
-/// Getter methods for accessing filter values.
 pub mod getters;
-/// Setter methods for modifying filter values.
 pub mod setters;
 
 use std::fmt::Debug;

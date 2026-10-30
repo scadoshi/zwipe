@@ -1,3 +1,5 @@
+//! Criteria validation errors.
+
 use thiserror::Error;
 
 /// Error returned when building invalid card criteria.

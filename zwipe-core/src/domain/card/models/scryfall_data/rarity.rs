@@ -1,3 +1,5 @@
+//! Rarity types (Common, Uncommon, Rare, Mythic).
+
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 

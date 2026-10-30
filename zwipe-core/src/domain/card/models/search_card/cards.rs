@@ -1,6 +1,6 @@
 //! The in-memory card collection.
 //!
-//! [`Cards`](crate::domain::card::models::search_card::cards::Cards) wraps a `Vec<Card>` already in hand (a loaded deck, a fetched
+//! [`Cards`] wraps a `Vec<Card>` already in hand (a loaded deck, a fetched
 //! stack) and exposes the two in-memory operations as explicit steps:
 //! [`matching`](crate::domain::card::models::search_card::cards::Cards::matching) (predicate, via
 //! [`CardCriteria::matches`](crate::domain::card::models::search_card::card_filter::criteria::CardCriteria::matches)) and [`sorted`](crate::domain::card::models::search_card::cards::Cards::sorted) (ordering, via

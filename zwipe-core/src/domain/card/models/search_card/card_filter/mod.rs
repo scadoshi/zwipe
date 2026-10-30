@@ -1,9 +1,9 @@
 //! Card search criteria and query construction.
 //!
-//! Two types share one predicate core, [`CardCriteria`](crate::domain::card::models::search_card::card_filter::criteria::CardCriteria):
+//! Two types share one predicate core, [`CardCriteria`]:
 //!
-//! - [`CardQuery`](crate::domain::card::models::search_card::card_filter::query::CardQuery): the **database query** POSTed to the server: criteria plus
-//!   bounded pagination ([`Limit`](crate::domain::card::models::search_card::card_filter::query::Limit)) and ordering.
+//! - [`CardQuery`]: the **database query** sent to the server in a POST: criteria plus
+//!   bounded pagination ([`Limit`]) and ordering.
 //! - [`Cards`](crate::domain::card::search_card::cards::Cards): the
 //!   **in-memory collection**, whose operations take bare criteria and cannot
 //!   express a limit.
@@ -11,24 +11,17 @@
 //! Both are built from one [`CardQueryBuilder`](crate::domain::card::models::search_card::card_filter::builder::CardQueryBuilder):
 //! `build()` for the server path, `build_criteria()` for the in-memory path.
 //!
-//! On the wire a [`CardQuery`](crate::domain::card::models::search_card::card_filter::query::CardQuery) is the criteria flattened to the top level
+//! On the wire a [`CardQuery`] is the criteria flattened to the top level
 //! beside `limit` / `offset` / `order_by` / `direction` / `synergy` /
 //! `include_skipped`. `direction` is `"ascending"` or `"descending"` and
 //! defaults to ascending when absent.
 
-/// Builder producing [`CardQuery`] / [`CardCriteria`] with validation.
 pub mod builder;
-/// Sort key options (name, CMC, rarity, etc.).
 pub mod card_sort_key;
-/// The shared predicate core (~50 criteria fields) and `matches()`.
 pub mod criteria;
-/// Criteria validation errors.
 pub mod error;
-/// Currency selector for the price-range filter.
 pub mod price_currency;
-/// The server search request: criteria + `Limit` + offset + sort.
 pub mod query;
-/// The direction a sort runs in.
 pub mod sort_direction;
 
 pub use card_sort_key::CardSortKey;

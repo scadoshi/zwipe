@@ -1,3 +1,5 @@
+//! Card face data for double-faced/transform/modal cards.
+
 use std::ops::Deref;
 
 use serde::{Deserialize, Serialize};

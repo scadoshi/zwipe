@@ -1,3 +1,5 @@
+//! Sort key options (name, CMC, rarity, etc.).
+
 use std::cmp::Ordering;
 
 use serde::{Deserialize, Serialize};

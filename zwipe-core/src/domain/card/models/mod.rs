@@ -1,18 +1,11 @@
 //! Card domain types shared between frontend and backend.
 
-/// Per-card metadata the app computes: token flag, roles, oracle tags, timestamps.
 pub mod card_profile;
-/// Mechanical category classification (ramp, draw, removal, etc.).
 pub mod card_role;
-/// Reminder text for keyword abilities (Flying, Trample, …).
 pub mod keyword;
-/// Oracle tag catalog entry (community-maintained functional tags).
 pub mod oracle_tag;
-/// Scryfall API data models.
 pub mod scryfall_data;
-/// Card search and filtering.
 pub mod search_card;
-/// Commander synergy cache payload, shared with the synergy worker.
 pub mod synergy;
 
 use card_profile::CardProfile;

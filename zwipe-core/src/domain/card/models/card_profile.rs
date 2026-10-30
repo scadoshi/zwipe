@@ -1,6 +1,6 @@
 //! User-specific card metadata and computed properties.
 //!
-//! CardProfile stores application-computed metadata for each card:
+//! `CardProfile` stores application-computed metadata for each card:
 //! - Token status (whether this is a token vs. real card)
 //! - Timestamps (when card was added/updated in database)
 

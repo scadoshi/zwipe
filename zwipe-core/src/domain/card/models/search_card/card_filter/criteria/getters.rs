@@ -1,3 +1,5 @@
+//! Getter methods for accessing criteria values.
+
 use crate::domain::card::scryfall_data::colors::Colors;
 use crate::domain::card::scryfall_data::rarity::Rarities;
 use crate::domain::card::search_card::card_filter::criteria::CardCriteria;

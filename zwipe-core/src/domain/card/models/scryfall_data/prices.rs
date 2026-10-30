@@ -1,3 +1,5 @@
+//! Card pricing data from various sources.
+
 use serde::{Deserialize, Serialize};
 
 /// Current market prices for a card in various currencies and finishes.

@@ -1,3 +1,5 @@
+//! Format legality status (Standard, Modern, Commander, etc.).
+
 use serde::{Deserialize, Serialize};
 
 use crate::domain::deck::Format;

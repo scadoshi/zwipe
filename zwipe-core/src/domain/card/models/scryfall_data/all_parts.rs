@@ -1,3 +1,5 @@
+//! Multi-part card relationships (split cards, double-faced cards, etc.).
+
 use std::ops::Deref;
 
 use serde::{Deserialize, Serialize};

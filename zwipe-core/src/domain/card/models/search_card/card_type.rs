@@ -1,3 +1,5 @@
+//! Card type enum (Creature, Instant, Sorcery, etc.).
+
 use std::fmt::Display;
 
 use serde::{Deserialize, Serialize};

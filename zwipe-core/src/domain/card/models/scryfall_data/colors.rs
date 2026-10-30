@@ -1,3 +1,5 @@
+//! Color and color identity types and conversions.
+
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 

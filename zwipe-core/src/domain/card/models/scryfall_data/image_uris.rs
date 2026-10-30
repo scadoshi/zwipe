@@ -1,3 +1,5 @@
+//! Card image URIs at various resolutions.
+
 use serde::{Deserialize, Serialize};
 
 /// Which Scryfall image size variant to read. Used by [`ImageUris::at_size`] and

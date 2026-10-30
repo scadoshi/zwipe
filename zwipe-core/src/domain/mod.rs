@@ -1,5 +1,4 @@
 pub mod auth;
-/// Cards, their Scryfall data and the search filter.
 pub mod card;
 /// Decks, their cards, tags and draw odds.
 pub mod deck;
