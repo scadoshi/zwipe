@@ -96,13 +96,13 @@ mod tests {
         assert_eq!(decoded, ());
     }
 
-    /// Typing the request changed how bodies are serialized: they used to go
-    /// through `serde_json::Value`, whose map is a `BTreeMap` here, so keys
-    /// went out alphabetically. A typed `.json()` emits declaration order.
+    /// A typed body serializes its keys in declaration order, while one sent
+    /// through `serde_json::Value`, whose map is a `BTreeMap` here, sorts them
+    /// alphabetically.
     ///
-    /// That is a byte-level change to every mutating request, so this pins
-    /// what actually matters: the two are the same document. JSON object
-    /// order carries no meaning and serde ignores it when decoding.
+    /// The bytes differ, so this pins what matters: the two are the same
+    /// document. JSON object order carries no meaning and serde ignores it
+    /// when decoding.
     #[test]
     fn typing_the_body_changes_key_order_but_not_the_document() {
         #[derive(serde::Serialize)]

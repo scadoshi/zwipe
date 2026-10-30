@@ -236,9 +236,9 @@ mod tests {
     // contract so a future `#[serde(default)]` removal can't slip through.
 
     /// Every password-bearing body a shipped client sends, pinned as literal
-    /// JSON. `Secret` is `#[serde(transparent)]`, so these read exactly as the
-    /// plain `String` fields they replaced; if that ever stops being true,
-    /// every installed app fails to authenticate.
+    /// JSON. `Secret` is `#[serde(transparent)]`, so these read exactly as
+    /// plain `String` fields would; if that ever stops being true, every
+    /// installed app fails to authenticate.
     #[test]
     fn shipped_client_payloads_still_deserialize() {
         let req: HttpChangePassword =
@@ -301,8 +301,8 @@ mod tests {
         assert!(!wire.contains("client_version"), "wire: {wire}");
     }
 
-    /// 1.12.x and 1.13.x bodies carry fields the server no longer reads.
-    /// None of the contracts deny unknown fields, so they still deserialize.
+    /// 1.12.x and 1.13.x bodies carry fields the server ignores. None of the
+    /// contracts deny unknown fields, so they deserialize.
     #[test]
     fn retired_flags_are_ignored() {
         let json = r#"{"username":"alice","email":"a@b.co","password":"pw","platform":"ios","client_version":"1.13.0","verify_first":true}"#;

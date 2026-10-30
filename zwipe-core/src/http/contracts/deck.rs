@@ -526,9 +526,9 @@ pub struct HttpSharedDeck {
 /// ordering was actually applied. A cold commander cache serves the full pool
 /// in default order instead, and the app says so.
 ///
-/// This replaced a bare `Vec<Card>` plus an `x-synergy-applied` header. A
-/// header cannot be read from a browser, and it kept this one endpoint out of
-/// the `Endpoint` trait because the response needed hand-written transport.
+/// The flag rides in the body rather than a header because a browser cannot
+/// read a custom header, and a body keeps this endpoint on the `Endpoint`
+/// trait with no hand-written transport.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct HttpDeckCardSearch {
     /// The cards, in serve order.
