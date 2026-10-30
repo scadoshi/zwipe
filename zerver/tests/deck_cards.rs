@@ -525,6 +525,34 @@ async fn concurrent_stars_stop_at_the_mvp_cap(pool: sqlx::PgPool) {
     assert_eq!(starred, 3, "statuses {first} and {second}");
 }
 
+/// A line over the per-line quantity cap is reported with its line number,
+/// and a huge quantity can't overflow the sum for a card listed twice.
+#[sqlx::test]
+async fn import_rejects_a_quantity_over_the_cap(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, did) = deck_for(&app, "bigqty").await;
+    seed_cards(&pool, &[card("Island").type_line("Basic Land — Island")]).await;
+
+    let (status, result) = app
+        .post(
+            &import_deck_cards_route(did.parse().unwrap()),
+            json!({ "text": "2147483647 Island\n1 Island" }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "import: {result}");
+    let imported = result["imported"].as_array().unwrap();
+    assert_eq!(imported.len(), 1, "the in-range line imports: {result}");
+    assert_eq!(imported[0]["quantity"], 1, "{result}");
+    let unresolved = result["unresolved"].as_array().unwrap();
+    assert_eq!(unresolved.len(), 1, "the capped line is reported: {result}");
+    assert_eq!(unresolved[0]["name"], "Island", "{result}");
+    assert!(
+        unresolved[0]["reason"].as_str().unwrap().contains("line 1"),
+        "the reason names the line: {result}"
+    );
+}
+
 /// The import result lists its cards by name, whatever order the text gave.
 #[sqlx::test]
 async fn import_result_is_sorted_by_name(pool: sqlx::PgPool) {

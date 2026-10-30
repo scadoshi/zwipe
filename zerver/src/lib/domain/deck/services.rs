@@ -872,7 +872,7 @@ where
 
         // Classify lines, deduplicating by oracle_id (summing quantities).
         // Tuple: (scryfall_id, oracle_id, quantity, name, is_basic_land, board)
-        let mut unresolved: Vec<UnresolvedCard> = Vec::new();
+        let mut unresolved: Vec<UnresolvedCard> = request.rejected.clone();
         let mut insert_map: HashMap<Uuid, (Uuid, Uuid, i32, String, bool, String)> = HashMap::new();
 
         for line in &request.lines {
@@ -902,19 +902,23 @@ where
                 }
                 let is_basic_land = card.scryfall_data.is_basic_land();
                 let board = line.board.display_name().to_string();
-                insert_map
-                    .entry(oracle_id)
-                    .and_modify(|(_, _, qty, _, _, _)| *qty += line.quantity)
-                    .or_insert_with(|| {
-                        (
-                            scryfall_id,
-                            oracle_id,
-                            line.quantity,
-                            card.scryfall_data.name.clone(),
-                            is_basic_land,
-                            board,
-                        )
-                    });
+                let (_, _, qty, _, _, _) = insert_map.entry(oracle_id).or_insert_with(|| {
+                    (
+                        scryfall_id,
+                        oracle_id,
+                        0,
+                        card.scryfall_data.name.clone(),
+                        is_basic_land,
+                        board,
+                    )
+                });
+                match qty.checked_add(line.quantity) {
+                    Some(sum) => *qty = sum,
+                    None => unresolved.push(UnresolvedCard {
+                        name: line.card_name.clone(),
+                        reason: "quantity too large".to_string(),
+                    }),
+                }
             } else {
                 unresolved.push(UnresolvedCard {
                     name: line.card_name.clone(),
@@ -1082,7 +1086,13 @@ where
             let entry = insert_map
                 .entry(oracle_id)
                 .or_insert_with(|| (scryfall_id, 0, card.name.clone()));
-            entry.1 += card.quantity;
+            match entry.1.checked_add(card.quantity) {
+                Some(sum) => entry.1 = sum,
+                None => unresolved.push(UnresolvedCard {
+                    name: card.name.clone(),
+                    reason: "quantity too large".to_string(),
+                }),
+            }
         }
 
         let board_name = board.display_name().to_string();
