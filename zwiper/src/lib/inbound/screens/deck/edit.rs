@@ -330,60 +330,60 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
 
     // Change tracking
     let deck_name_update = use_memo(move || {
-        if deck_name() != original_deck_name() {
-            Some(deck_name())
-        } else {
+        if deck_name() == original_deck_name() {
             None
+        } else {
+            Some(deck_name())
         }
     });
     let commander_id_update = use_memo(move || {
-        if commander() != original_commander() {
-            Opdate::Set(commander().map(|c| c.scryfall_data.id))
-        } else {
+        if commander() == original_commander() {
             Opdate::Unchanged
+        } else {
+            Opdate::Set(commander().map(|c| c.scryfall_data.id))
         }
     });
     let partner_id_update = use_memo(move || {
-        if partner_commander() != original_partner() {
-            Opdate::Set(partner_commander().map(|c| c.scryfall_data.id))
-        } else {
+        if partner_commander() == original_partner() {
             Opdate::Unchanged
+        } else {
+            Opdate::Set(partner_commander().map(|c| c.scryfall_data.id))
         }
     });
     let background_id_update = use_memo(move || {
-        if background() != original_background() {
-            Opdate::Set(background().map(|c| c.scryfall_data.id))
-        } else {
+        if background() == original_background() {
             Opdate::Unchanged
+        } else {
+            Opdate::Set(background().map(|c| c.scryfall_data.id))
         }
     });
     let signature_spell_id_update = use_memo(move || {
-        if signature_spell() != original_signature_spell() {
-            Opdate::Set(signature_spell().map(|c| c.scryfall_data.id))
-        } else {
+        if signature_spell() == original_signature_spell() {
             Opdate::Unchanged
+        } else {
+            Opdate::Set(signature_spell().map(|c| c.scryfall_data.id))
         }
     });
     let format_update = use_memo(move || {
-        if selected_format() != original_format() {
-            Opdate::Set(selected_format().map(|f| f.to_legality_key().to_string()))
-        } else {
+        if selected_format() == original_format() {
             Opdate::Unchanged
+        } else {
+            Opdate::Set(selected_format().map(|f| f.to_legality_key().to_string()))
         }
     });
     let tags_update = use_memo(move || {
-        if selected_tags() != original_tags() {
-            Opdate::Set(Some(selected_tags()))
-        } else {
+        if selected_tags() == original_tags() {
             Opdate::Unchanged
+        } else {
+            Opdate::Set(Some(selected_tags()))
         }
     });
     let land_target_update = use_memo(move || {
-        if land_target() != original_land_target() {
+        if land_target() == original_land_target() {
+            Opdate::Unchanged
+        } else {
             // `None` here clears the override back to the heuristic.
             Opdate::Set(land_target())
-        } else {
-            Opdate::Unchanged
         }
     });
     let price_target_update = use_memo(move || {
@@ -392,44 +392,44 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             .parse()
             .ok()
             .filter(|v: &f64| *v > 0.0);
-        if cur != orig {
+        if cur == orig {
+            Opdate::Unchanged
+        } else {
             // Empty/zero parses to `None` → clears the budget.
             Opdate::Set(cur)
-        } else {
-            Opdate::Unchanged
         }
     });
     let price_currency_update = use_memo(move || {
-        if price_target_currency() != original_price_target_currency() {
-            Opdate::Set(Some(price_target_currency()))
-        } else {
+        if price_target_currency() == original_price_target_currency() {
             Opdate::Unchanged
+        } else {
+            Opdate::Set(Some(price_target_currency()))
         }
     });
     let power_level_update = use_memo(move || {
-        if power_level() != original_power_level() {
-            Opdate::Set(power_level().map(|p| p.to_string()))
-        } else {
+        if power_level() == original_power_level() {
             Opdate::Unchanged
+        } else {
+            Opdate::Set(power_level().map(|p| p.to_string()))
         }
     });
     let other_tags_update = use_memo(move || {
-        if other_tags() != original_other_tags() {
+        if other_tags() == original_other_tags() {
+            Opdate::Unchanged
+        } else {
             Opdate::Set(Some(
                 other_tags()
                     .iter()
                     .map(ToString::to_string)
                     .collect::<Vec<_>>(),
             ))
-        } else {
-            Opdate::Unchanged
         }
     });
     let oracle_tags_update = use_memo(move || {
-        if oracle_tags() != original_oracle_tags() {
-            Opdate::Set(Some(oracle_tags()))
-        } else {
+        if oracle_tags() == original_oracle_tags() {
             Opdate::Unchanged
+        } else {
+            Opdate::Set(Some(oracle_tags()))
         }
     });
     let has_made_changes = use_memo(move || {
