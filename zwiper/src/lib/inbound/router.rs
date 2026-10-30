@@ -31,7 +31,7 @@ use crate::inbound::screens::legal::privacy_policy::PrivacyPolicy;
 /// Application routes mapping URLs to screen components.
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
-#[allow(missing_docs)]
+#[expect(missing_docs, reason = "each route field is the URL parameter its path names")]
 pub enum Router {
     // Wrap every route so the OS back-intent bridge (edge swipe / hardware
     // back) mounts once inside the router context and persists across routes.
