@@ -6,6 +6,7 @@ members = [
     "components",
     "zite",
     "zwipe-client",
+    "zwipe-tui",
 ]
 resolver = "2"
 
