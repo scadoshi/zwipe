@@ -208,7 +208,7 @@ pub fn View(deck_id: Uuid) -> Element {
                 let _ = authed
                     .run("flush_quantity", |c, s| async move {
                         if p.baseline + p.delta < 1 {
-                            c.delete_deck_card(deck_id, card_id, &s).await.map(|()| ())
+                            c.delete_deck_card(deck_id, card_id, &s).await
                         } else {
                             // PATCH: the burst's absolute target, replay-safe.
                             let request = HttpPatchDeckCard::new(Some(p.baseline + p.delta), None);
