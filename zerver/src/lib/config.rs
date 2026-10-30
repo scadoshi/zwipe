@@ -163,7 +163,7 @@ impl Config {
         let rust_backtrace = env_var_by_key(RUST_BACKTRACE_KEY)?;
         let allowed_origins: Vec<HeaderValue> = env_var_by_key(ALLOWED_ORIGINS_KEY)?
             .split(',')
-            .map(|x| x.parse())
+            .map(str::parse)
             .collect::<Result<Vec<HeaderValue>, _>>()?;
         let resend_api_key = env_var_by_key(RESEND_API_KEY_KEY)?;
         let resend_from_email = env_var_by_key(RESEND_EMAIL_FROM_KEY)?;
