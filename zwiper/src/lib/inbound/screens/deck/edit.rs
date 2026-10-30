@@ -373,12 +373,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     });
     let tags_update = use_memo(move || {
         if selected_tags() != original_tags() {
-            Opdate::Set(Some(
-                selected_tags()
-                    .iter()
-                    .map(|t| t.to_string())
-                    .collect::<Vec<_>>(),
-            ))
+            Opdate::Set(Some(selected_tags()))
         } else {
             Opdate::Unchanged
         }
@@ -423,7 +418,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             Opdate::Set(Some(
                 other_tags()
                     .iter()
-                    .map(|t| t.to_string())
+                    .map(ToString::to_string)
                     .collect::<Vec<_>>(),
             ))
         } else {

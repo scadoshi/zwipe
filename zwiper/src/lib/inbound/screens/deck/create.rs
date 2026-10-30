@@ -144,8 +144,8 @@ pub fn CreateDeck() -> Element {
         spawn(async move {
             let commander_id = commander().map(|c| c.scryfall_data.id);
             let format_str = selected_format().map(|f| f.to_legality_key().to_string());
-            let tags: Vec<String> = selected_tags().iter().map(|t| t.to_string()).collect();
-            let other: Vec<String> = other_tags().iter().map(|t| t.to_string()).collect();
+            let tags: Vec<String> = selected_tags();
+            let other: Vec<String> = other_tags().iter().map(ToString::to_string).collect();
             let price_target_val: Option<f64> =
                 price_target().parse().ok().filter(|v: &f64| *v > 0.0);
             let request = HttpCreateDeckProfile::builder(&deck_name())

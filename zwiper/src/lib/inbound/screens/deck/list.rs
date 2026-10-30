@@ -21,6 +21,7 @@ use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::deck::deck_profile::DeckProfile;
 use zwipe_core::domain::deck::deck_tag_label;
+use zwipe_core::domain::deck::format::Format;
 use zwipe_core::domain::user::models::hints::HINT_DECK_LIST;
 
 use crate::inbound::components::auth::authed::use_authed;
@@ -306,7 +307,7 @@ fn group_decks(profiles: &[DeckProfile], by: DeckGroupBy) -> Vec<DeckGroup> {
 fn DeckRow(profile: DeckProfile) -> Element {
     let navigator = use_navigator();
     let mut count = profile.card_count;
-    if profile.format.as_ref().is_some_and(|f| f.has_commander()) && profile.commander_id.is_some()
+    if profile.format.as_ref().is_some_and(Format::has_commander) && profile.commander_id.is_some()
     {
         count += 1;
     }
@@ -639,7 +640,7 @@ pub fn DeckList() -> Element {
                                 }
                             } else if loading {
                                 DeckListSkeleton {}
-                            } else if profiles.as_ref().is_some_and(|p| p.is_empty()) {
+                            } else if profiles.as_ref().is_some_and(Vec::is_empty) {
                                 div { class: "message-empty",
                                     span { class: "chip-note", "No decks" }
                                 }

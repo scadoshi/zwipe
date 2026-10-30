@@ -11,6 +11,7 @@ use zwipe_core::domain::deck::DeckEntry;
 use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
 use zwipe_core::domain::deck::deck_profile::DeckProfile;
 use zwipe_core::domain::deck::deck_warning::DeckWarning;
+use zwipe_core::domain::deck::format::Format;
 use zwipe_core::domain::user::models::hints::HINT_FIRST_DECK;
 use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
 use zwipe_core::http::contracts::deck_card::HttpPatchDeckCard;
@@ -185,7 +186,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
     // commander but no cards never produces metrics, and an absence-keyed
     // skeleton pulses forever on exactly that deck.
     let deck_loading = deck_resource().is_none();
-    let deck_data = deck_resource().and_then(|r| r.ok());
+    let deck_data = deck_resource().and_then(Result::ok);
     let warnings: Vec<DeckWarning> = deck_data
         .as_ref()
         .map(|(_, w, _)| w.clone())
@@ -206,7 +207,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
         .filter(|m| m.land_count + m.nonland_count > 0);
 
     let command_zone_names: Vec<String> = deck_profile_resource()
-        .and_then(|r| r.ok())
+        .and_then(Result::ok)
         .map(|p| {
             [
                 p.commander_name.as_deref(),
@@ -216,11 +217,11 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
             ]
             .into_iter()
             .flatten()
-            .map(|s| s.to_string())
+            .map(str::to_string)
             .collect()
         })
         .unwrap_or_default();
-    let cz_refs: Vec<&str> = command_zone_names.iter().map(|s| s.as_str()).collect();
+    let cz_refs: Vec<&str> = command_zone_names.iter().map(String::as_str).collect();
 
     let tcg_url = deck_data.as_ref().map(|(entries, _, _)| {
         let active: Vec<_> = entries
@@ -239,17 +240,18 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
         buy_links::cardkingdom_url(&active, &cz_refs)
     });
 
-    let mana_curve_bars: Option<[(usize, u32); 7]> = chart_metrics.map(|m| m.mana_curve_bars());
-    let type_bars: Option<Vec<(&str, usize, u32)>> = chart_metrics.map(|m| m.type_bars());
-    let color_bars: Option<Vec<(&str, usize, u32)>> = chart_metrics.map(|m| m.color_bars());
+    let mana_curve_bars: Option<[(usize, u32); 7]> =
+        chart_metrics.map(DeckMetrics::mana_curve_bars);
+    let type_bars: Option<Vec<(&str, usize, u32)>> = chart_metrics.map(DeckMetrics::type_bars);
+    let color_bars: Option<Vec<(&str, usize, u32)>> = chart_metrics.map(DeckMetrics::color_bars);
     let category_bars: Option<Vec<(&str, usize, u32)>> =
-        chart_metrics.and_then(|m| m.card_role_bars());
+        chart_metrics.and_then(DeckMetrics::card_role_bars);
     let role_tags = chart_metrics.map(|m| m.card_role_tags.clone());
 
     let draw_odds_data: Option<(u32, Vec<(&'static str, u32)>)> =
-        chart_metrics.map(|m| m.draw_odds_buckets());
+        chart_metrics.map(DeckMetrics::draw_odds_buckets);
     let mana_balance_rows: Option<Vec<ManaBalanceRow>> =
-        chart_metrics.map(|m| m.mana_balance_rows());
+        chart_metrics.map(DeckMetrics::mana_balance_rows);
 
     rsx! {
             div { class: "screen",
@@ -467,7 +469,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                                     .await
                                                     .is_some()
                                                 {
-                                                        let label = if deck_profile_resource().is_some_and(|r| r.as_ref().ok().is_some_and(|p| p.format.as_ref().is_some_and(|f| f.has_signature_spell()))) {
+                                                        let label = if deck_profile_resource().is_some_and(|r| r.as_ref().ok().is_some_and(|p| p.format.as_ref().is_some_and(Format::has_signature_spell))) {
                                                             "Oathbreaker"
                                                         } else {
                                                             "Commander"
@@ -558,7 +560,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
             CloneDeckDialog {
                 source_deck_id: deck_id,
                 default_name: deck_profile_resource()
-                    .and_then(|r| r.ok())
+                    .and_then(Result::ok)
                     .map(|p| format!("{} (clone)", p.name))
                     .unwrap_or_default(),
                 open: show_clone_dialog,

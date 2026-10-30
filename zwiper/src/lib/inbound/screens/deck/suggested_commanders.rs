@@ -1726,7 +1726,7 @@ mod tests {
 
     fn top(colors: &[&str], decks: u32) -> HttpColorIdentityCount {
         HttpColorIdentityCount {
-            colors: colors.iter().map(|c| c.to_string()).collect(),
+            colors: colors.iter().map(ToString::to_string).collect(),
             decks,
         }
     }
