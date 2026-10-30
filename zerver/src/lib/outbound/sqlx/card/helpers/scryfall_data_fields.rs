@@ -12,7 +12,7 @@ use zwipe_core::domain::card::scryfall_data::colors::Colors;
 ///
 /// This constant serves as the single source of truth for field ordering,
 /// ensuring consistency between INSERT column lists and VALUES bindings.
-const SCRYFALL_DATA_FIELDS: &str = r#"
+const SCRYFALL_DATA_FIELDS: &str = r"
     arena_id
     id
     lang
@@ -100,7 +100,7 @@ const SCRYFALL_DATA_FIELDS: &str = r#"
     preview_previewed_at
     preview_source_uri
     preview_source
-"#;
+";
 
 /// Returns a comma-separated list of all Scryfall data field names.
 ///
