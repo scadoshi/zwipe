@@ -9,7 +9,7 @@
 
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
-use zwipe_core::domain::card::oracle_tag::{OracleTag, search_oracle_tags};
+use zwipe_core::domain::card::oracle_tag::{self, OracleTag};
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 
 use super::match_mode::MatchMode;
@@ -160,7 +160,7 @@ pub(crate) fn OracleTags(mut dict_open: Signal<bool>, mut dict_exclude: Signal<b
             // search-to-add over the full catalog
             if !includes_search().is_empty() {
                 {
-                    let results: Vec<OracleTag> = search_oracle_tags(tags, &includes_search())
+                    let results: Vec<OracleTag> = oracle_tag::search_oracle_tags(tags, &includes_search())
                         .into_iter()
                         .filter(|t| !selected.contains(&t.slug))
                         .take(8)
@@ -260,7 +260,7 @@ pub(crate) fn OracleTags(mut dict_open: Signal<bool>, mut dict_exclude: Signal<b
 
             if !excludes_search().is_empty() {
                 {
-                    let results: Vec<OracleTag> = search_oracle_tags(tags, &excludes_search())
+                    let results: Vec<OracleTag> = oracle_tag::search_oracle_tags(tags, &excludes_search())
                         .into_iter()
                         .filter(|t| !selected.contains(&t.slug) && !excluded.contains(&t.slug))
                         .take(8)

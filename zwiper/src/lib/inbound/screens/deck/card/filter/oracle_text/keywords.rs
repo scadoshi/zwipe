@@ -4,7 +4,7 @@ use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 
-use super::super::deck_cards::{DeckCards, extract_keywords};
+use super::super::deck_cards::{self, DeckCards};
 use super::super::match_mode::MatchMode;
 use crate::inbound::components::catalog_cache::CatalogCache;
 
@@ -69,7 +69,7 @@ pub(crate) fn Keywords() -> Element {
     });
     let all_keywords = use_memo(move || -> Option<Vec<String>> {
         if let Some(dc) = deck_ctx {
-            Some(extract_keywords(&dc.0()))
+            Some(deck_cards::extract_keywords(&dc.0()))
         } else {
             cache.keywords.cell().read().loaded().cloned()
         }

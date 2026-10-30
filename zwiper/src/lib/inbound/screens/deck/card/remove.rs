@@ -12,8 +12,7 @@ use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilde
 use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::card::search_card::cards::Cards;
-use zwipe_core::domain::deck::deck_metrics::{budget_tier, deck_price};
-use zwipe_core::domain::deck::{Board, DeckEntry};
+use zwipe_core::domain::deck::{Board, DeckEntry, deck_metrics};
 use zwipe_core::domain::user::models::hints::HINT_REMOVE_DECK_CARDS;
 use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpPatchDeckCard};
 
@@ -158,7 +157,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
 
     // Mainboard total in the budget currency from the source of truth.
     let total_price = move || -> f64 {
-        deck_price(
+        deck_metrics::deck_price(
             &deck_entries.peek(),
             &command_zone_cards.peek(),
             price_budget_currency(),
@@ -175,7 +174,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
         if budget <= 0.0 {
             return;
         }
-        if budget_tier(budget, after) > budget_tier(budget, before) {
+        if deck_metrics::budget_tier(budget, after) > deck_metrics::budget_tier(budget, before) {
             let pct = after / budget * 100.0;
             let amount = price_budget_currency().format_amount(budget);
             let msg = format!("Deck at {pct:.2}% of your {amount} budget");

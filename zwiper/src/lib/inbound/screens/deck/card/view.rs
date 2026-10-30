@@ -8,7 +8,7 @@ use components::{
 use dioxus::core::spawn_forever;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use tokio::time::sleep;
+use tokio::time;
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
@@ -17,12 +17,11 @@ use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
-use zwipe_core::domain::card::search_card::cards::{Cards, sort_deck_entries};
+use zwipe_core::domain::card::search_card::cards::{self, Cards};
 use zwipe_core::domain::card::search_card::group_cards::{CardGroup, GroupByOption, GroupCards};
-use zwipe_core::domain::deck::deck_metrics::{budget_tier, deck_price};
 use zwipe_core::domain::deck::quantity::Quantity;
 use zwipe_core::domain::deck::{
-    Board, DeckEntry, DeckOtherTag, Format, PowerLevel, deck_tag_label,
+    self, Board, DeckEntry, DeckOtherTag, Format, PowerLevel, deck_metrics,
 };
 use zwipe_core::domain::user::models::hints::HINT_DECK_CARDS;
 use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
@@ -585,7 +584,7 @@ pub fn View(deck_id: Uuid) -> Element {
 
     // Mainboard total in the budget currency from the source of truth.
     let total_price = move || -> f64 {
-        deck_price(
+        deck_metrics::deck_price(
             &deck_entries.peek(),
             &command_zone_cards.peek(),
             price_budget_currency(),
@@ -601,7 +600,7 @@ pub fn View(deck_id: Uuid) -> Element {
         if budget <= 0.0 {
             return;
         }
-        if budget_tier(budget, after) > budget_tier(budget, before) {
+        if deck_metrics::budget_tier(budget, after) > deck_metrics::budget_tier(budget, before) {
             let pct = after / budget * 100.0;
             let amount = price_budget_currency().format_amount(budget);
             let msg = format!("Deck at {pct:.2}% of your {amount} budget");
@@ -699,7 +698,7 @@ pub fn View(deck_id: Uuid) -> Element {
             };
 
             spawn(async move {
-                sleep(Duration::from_millis(QTY_FLUSH_MS)).await;
+                time::sleep(Duration::from_millis(QTY_FLUSH_MS)).await;
 
                 // Only the burst's latest tap posts; earlier taps wake to a newer
                 // generation and stand down. Navigating away cancels these tasks
@@ -1150,7 +1149,7 @@ pub fn View(deck_id: Uuid) -> Element {
                                 span { class: "stat-chip stat-chip-p5", "{pl.display_name()}" }
                             }
                             for tag in deck_tags() {
-                                span { key: "{tag}", class: "stat-chip stat-chip-muted", "{deck_tag_label(&tag)}" }
+                                span { key: "{tag}", class: "stat-chip stat-chip-muted", "{deck::deck_tag_label(&tag)}" }
                             }
                             for tag in deck_other_tags() {
                                 span { key: "{tag}", class: "stat-chip stat-chip-p5", "{tag.display_name()}" }
@@ -1326,7 +1325,7 @@ pub fn View(deck_id: Uuid) -> Element {
                             {
                                 mb_entries.retain(|e| criteria.matches(&e.card));
                             }
-                            sort_deck_entries(&mut mb_entries, b.sort().unwrap_or(CardSortKey::Name), b.direction());
+                            cards::sort_deck_entries(&mut mb_entries, b.sort().unwrap_or(CardSortKey::Name), b.direction());
                         }
                         let mb_count = mb_entries.len();
                         rsx! {
@@ -1379,7 +1378,7 @@ pub fn View(deck_id: Uuid) -> Element {
                             {
                                 sb_entries.retain(|e| criteria.matches(&e.card));
                             }
-                            sort_deck_entries(&mut sb_entries, b.sort().unwrap_or(CardSortKey::Name), b.direction());
+                            cards::sort_deck_entries(&mut sb_entries, b.sort().unwrap_or(CardSortKey::Name), b.direction());
                         }
                         let sb_count = sb_entries.len();
                         rsx! {

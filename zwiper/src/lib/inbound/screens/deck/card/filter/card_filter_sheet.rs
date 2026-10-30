@@ -26,9 +26,7 @@ use crate::inbound::screens::deck::card::filter::format::FormatFilter;
 use crate::inbound::screens::deck::card::filter::mana::Mana;
 use crate::inbound::screens::deck::card::filter::match_mode::MatchMode;
 use crate::inbound::screens::deck::card::filter::name::Name;
-use crate::inbound::screens::deck::card::filter::oracle_tags::{
-    OracleTags, read_excluded, read_selected, write_excluded, write_selected,
-};
+use crate::inbound::screens::deck::card::filter::oracle_tags::{self, OracleTags};
 use crate::inbound::screens::deck::card::filter::oracle_text::OracleText;
 use crate::inbound::screens::deck::card::filter::price::PriceFilter;
 use crate::inbound::screens::deck::card::filter::rarity::Rarity;
@@ -195,9 +193,9 @@ pub(crate) fn CardFilterSheet(
             MatchMode::Any
         };
         let already = if otag_dict_exclude() {
-            read_excluded(&filter_builder()).contains(&slug)
+            oracle_tags::read_excluded(&filter_builder()).contains(&slug)
         } else {
-            read_selected(&filter_builder(), mode).contains(&slug)
+            oracle_tags::read_selected(&filter_builder(), mode).contains(&slug)
         };
         if already {
             toast.info(
@@ -207,13 +205,13 @@ pub(crate) fn CardFilterSheet(
             return;
         }
         if otag_dict_exclude() {
-            let mut current = read_excluded(&filter_builder());
+            let mut current = oracle_tags::read_excluded(&filter_builder());
             current.push(slug);
-            write_excluded(&mut filter_builder.write(), current);
+            oracle_tags::write_excluded(&mut filter_builder.write(), current);
         } else {
-            let mut current = read_selected(&filter_builder(), mode);
+            let mut current = oracle_tags::read_selected(&filter_builder(), mode);
             current.push(slug);
-            write_selected(&mut filter_builder.write(), mode, current);
+            oracle_tags::write_selected(&mut filter_builder.write(), mode, current);
         }
         toast.success(
             "Added to filter".to_string(),

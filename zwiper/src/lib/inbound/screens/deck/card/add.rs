@@ -15,9 +15,8 @@ use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilde
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::card::search_card::card_type::CardType;
 use zwipe_core::domain::card::search_card::cards::Cards;
-use zwipe_core::domain::deck::deck_metrics::{budget_tier, card_price, deck_price};
 use zwipe_core::domain::deck::format::Format;
-use zwipe_core::domain::deck::{Board, DeckEntry, Quantity};
+use zwipe_core::domain::deck::{Board, DeckEntry, Quantity, deck_metrics};
 use zwipe_core::domain::user::models::hints::HINT_ADD_DECK_CARDS;
 use zwipe_core::http::contracts::deck::HttpDeckCardSearch;
 use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpPatchDeckCard};
@@ -43,7 +42,7 @@ use crate::inbound::screens::deck::card::components::add_stack_cache::{
 };
 use crate::inbound::screens::deck::card::components::card_stack::{CardStack, use_card_stack};
 use crate::inbound::screens::deck::card::components::filter_store::{FilterScope, FilterStore};
-use crate::inbound::screens::deck::card::components::flippable_card_image::reset_image_ease;
+use crate::inbound::screens::deck::card::components::flippable_card_image;
 use crate::inbound::screens::deck::card::components::undo_log::{UndoAction, UndoStore};
 use crate::inbound::screens::deck::card::filter::card_filter_sheet::CardFilterSheet;
 
@@ -479,7 +478,8 @@ pub fn Add(deck_id: Uuid) -> Element {
                 let oracle_id = card.scryfall_data.oracle_id;
                 let was_land = card.scryfall_data.is_land();
                 let was_price =
-                    card_price(&card.scryfall_data, price_budget_currency()).unwrap_or(0.0);
+                    deck_metrics::card_price(&card.scryfall_data, price_budget_currency())
+                        .unwrap_or(0.0);
 
                 // Reconcile with the global stack: take this add's entry
                 // back. Entry gone AND card gone from the deck means the
@@ -765,7 +765,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                     .deck_profile
                     .price_target_currency
                     .unwrap_or(PriceCurrency::Usd);
-                deck_total_price.set(deck_price(
+                deck_total_price.set(deck_metrics::deck_price(
                     &deck.entries,
                     &deck.command_zone_cards,
                     currency,
@@ -842,7 +842,7 @@ pub fn Add(deck_id: Uuid) -> Element {
         //   - initial mount with no existing cards
         stack.reset();
         // Fresh results ease in again, even previously seen images.
-        reset_image_ease();
+        flippable_card_image::reset_image_ease();
         last_search_filter.set(None);
         pagination_exhausted.set(false);
 
@@ -1273,7 +1273,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                     usage_buffer().record_signal(deck_id, card.scryfall_data.oracle_id, Direction::Right);
                                     stack.record(AddAction::Add);
                                     let added_land = card.scryfall_data.is_land();
-                                    let added_price = card_price(&card.scryfall_data, price_budget_currency()).unwrap_or(0.0);
+                                    let added_price = deck_metrics::card_price(&card.scryfall_data, price_budget_currency()).unwrap_or(0.0);
                                     add_card_to_deck(card);
                                     toast.success("Added to deck".to_string(), ToastOptions::default().duration(TOAST_QUICK));
                                     if added_land {
@@ -1302,7 +1302,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                         let before = deck_total_price();
                                         let after = before + added_price;
                                         deck_total_price.set(after);
-                                        if budget_tier(budget, after) > budget_tier(budget, before) {
+                                        if deck_metrics::budget_tier(budget, after) > deck_metrics::budget_tier(budget, before) {
                                             let pct = after / budget * 100.0;
                                             let amount = price_budget_currency().format_amount(budget);
                                             let msg = format!("Deck at {pct:.2}% of your {amount} budget");
@@ -1480,7 +1480,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                             };
 
                             stack.reset();
-                            reset_image_ease();
+                            flippable_card_image::reset_image_ease();
                             last_search_filter.set(None);
                             pagination_exhausted.set(false);
                             is_loading_cards.set(true);

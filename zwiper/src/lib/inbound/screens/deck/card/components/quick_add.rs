@@ -13,7 +13,7 @@ use std::time::Duration;
 use components::TOAST_QUICK;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use tokio::time::sleep;
+use tokio::time;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
@@ -94,7 +94,7 @@ pub fn QuickAdd(deck_id: Uuid, deck_entries: Signal<Vec<DeckEntry>>) -> Element 
         show_dropdown.set(true);
 
         spawn(async move {
-            sleep(Duration::from_millis(DEBOUNCE_MS)).await;
+            time::sleep(Duration::from_millis(DEBOUNCE_MS)).await;
 
             if query() != q {
                 return;

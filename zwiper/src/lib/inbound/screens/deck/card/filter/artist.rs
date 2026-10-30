@@ -4,7 +4,7 @@ use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 
-use super::deck_cards::{DeckCards, extract_artists};
+use super::deck_cards::{self, DeckCards};
 use crate::inbound::components::catalog_cache::CatalogCache;
 
 /// Whether the artist filter is in include or exclude mode.
@@ -77,7 +77,7 @@ pub fn Artist() -> Element {
     });
     let all_artists = use_memo(move || -> Option<Vec<String>> {
         if let Some(dc) = deck_ctx {
-            Some(extract_artists(&dc.0()))
+            Some(deck_cards::extract_artists(&dc.0()))
         } else {
             cache.artists.cell().read().loaded().cloned()
         }

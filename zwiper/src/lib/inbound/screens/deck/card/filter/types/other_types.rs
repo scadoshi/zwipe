@@ -4,7 +4,7 @@ use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 
-use super::super::deck_cards::{DeckCards, extract_type_words};
+use super::super::deck_cards::{self, DeckCards};
 use super::super::match_mode::MatchMode;
 use crate::inbound::components::catalog_cache::CatalogCache;
 
@@ -67,7 +67,7 @@ pub(crate) fn OtherTypes() -> Element {
     });
     let all_card_types = use_memo(move || -> Option<Vec<String>> {
         if let Some(dc) = deck_ctx {
-            Some(extract_type_words(&dc.0()))
+            Some(deck_cards::extract_type_words(&dc.0()))
         } else {
             cache.card_types.cell().read().loaded().cloned()
         }

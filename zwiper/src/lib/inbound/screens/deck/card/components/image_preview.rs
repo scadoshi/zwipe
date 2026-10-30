@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use dioxus::prelude::*;
-use tokio::time::sleep;
+use tokio::time;
 use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
 
 use super::flippable_card_image::FlippableCardImage;
@@ -26,7 +26,7 @@ pub(crate) fn ImagePreview(
                 onclick: move |_| {
                     dismissing.set(true);
                     spawn(async move {
-                        sleep(Duration::from_millis(200)).await;
+                        time::sleep(Duration::from_millis(200)).await;
                         card.set(None);
                         dismissing.set(false);
                     });

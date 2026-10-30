@@ -4,7 +4,7 @@ use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 
-use super::deck_cards::{DeckCards, extract_sets};
+use super::deck_cards::{self, DeckCards};
 use crate::inbound::components::catalog_cache::CatalogCache;
 
 /// Whether the set filter is in include or exclude mode.
@@ -70,7 +70,7 @@ pub fn Set() -> Element {
     });
     let all_sets = use_memo(move || -> Option<Vec<String>> {
         if let Some(dc) = deck_ctx {
-            Some(extract_sets(&dc.0()))
+            Some(deck_cards::extract_sets(&dc.0()))
         } else {
             cache.sets.cell().read().loaded().cloned()
         }
