@@ -15,6 +15,8 @@ pub fn files_dir() -> anyhow::Result<PathBuf> {
     // running app.
     let vm = unsafe { jni::JavaVM::from_raw(ctx.vm().cast()) }?;
     let mut env = vm.attach_current_thread()?;
+    // SAFETY: the same ndk-context guarantee covers the Context jobject, which
+    // stays alive for the running app.
     let context = unsafe { JObject::from_raw(ctx.context().cast()) };
 
     // File dir = context.getFilesDir();

@@ -76,6 +76,8 @@ mod platform {
         // the running app.
         let vm = unsafe { jni::JavaVM::from_raw(ctx.vm().cast()) }?;
         let mut env = vm.attach_current_thread()?;
+        // SAFETY: the same ndk-context guarantee covers the Activity jobject,
+        // which stays alive for the running app.
         let context = unsafe { JObject::from_raw(ctx.context().cast()) };
 
         // Uri uri = Uri.parse(url);
