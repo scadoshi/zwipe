@@ -8,7 +8,7 @@
 //! Method: seed one diverse universe, fetch it back as `Vec<Card>`, then for
 //! each criterion assert `{cards SQL returns} == {cards matches() keeps}`.
 //!
-//! Excluded by design: `is_partner` / `is_background` / `is_signature_spell` —
+//! Excluded by design: `is_partner` / `is_background` / `is_signature_spell`.
 //! `matches` deliberately does not evaluate these (command-zone pool constraints
 //! the server applies only); see the doc comment on `CardCriteria::matches`.
 //!
@@ -216,7 +216,7 @@ async fn sql_and_predicate_agree_on_every_criterion(pool: sqlx::PgPool) {
         "universe should round-trip whole"
     );
 
-    // (label, criteria) — every branch of CardCriteria::matches except the three
+    // (label, criteria) for every branch of `CardCriteria::matches` except the three
     // documented server-only pool constraints.
     let battery: Vec<(&str, Value)> = vec![
         // text

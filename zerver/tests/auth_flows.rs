@@ -37,7 +37,7 @@ async fn register_authed_login_refresh(pool: sqlx::PgPool) {
         .unwrap()
         .to_string();
 
-    // 4. Refresh — old token rotates into a new session.
+    // 4. Refresh: the old token rotates into a new session.
     let (status, refreshed) = app
         .post(
             REFRESH_SESSION_ROUTE,

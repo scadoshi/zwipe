@@ -47,7 +47,7 @@ async fn sync_populates_catalog_and_correlations(pool: sqlx::PgPool) {
     let card_b = Uuid::from_u128(0xb);
     // NOTE: `test-null-desc` is a synthetic slug, not a real Scryfall tag. It must
     // stay absent from `ORACLE_TAG_DESCRIPTIONS` so the sync-time description overlay
-    // leaves it NULL — the point of the round-trip assertion below. (A real slug like
+    // leaves it NULL, which is the point of the round-trip assertion below. (A real slug like
     // `ramp` is now authored, so the overlay would fill it and break this.)
     let tags = vec![
         tag(0x1, "removal", Some("Removes stuff"), &[card_a, card_b]),
@@ -107,7 +107,7 @@ async fn re_sync_fully_replaces_scryfall_rows(pool: sqlx::PgPool) {
         2
     );
 
-    // Second sync drops 'ramp' and re-sends 'removal' — full replace, no dupes.
+    // Second sync drops 'ramp' and re-sends 'removal': a full replace, no dupes.
     let (catalog, correlations) = repo
         .sync_oracle_tags(&[tag(0x1, "removal", None, &[card])])
         .await
@@ -142,7 +142,7 @@ async fn re_sync_preserves_heuristic_rows(pool: sqlx::PgPool) {
     let repo = Postgres { pool: pool.clone() };
     let card = Uuid::from_u128(0xd);
 
-    // Seed a heuristic-sourced correlation (as a later phase would).
+    // Seed a heuristic-sourced correlation (as the heuristic writer would).
     sqlx::query(
         "INSERT INTO card_oracle_tags (oracle_id, oracle_tag, source) VALUES ($1, 'ramp', 'heuristic')",
     )
@@ -456,13 +456,13 @@ async fn projection_untagged_card_is_empty(pool: sqlx::PgPool) {
 /// The sync-time overlay writes our authored `ORACLE_TAG_DESCRIPTIONS` over
 /// whatever Scryfall shipped: an authored slug is served with OUR text, and a
 /// slug we don't author keeps Scryfall's. Exercises overlay (in `sync_oracle_tags`)
-/// + serve (in `get_oracle_tags`) end to end — the pipeline the dictionary reads.
+/// + serve (in `get_oracle_tags`) end to end, the pipeline the dictionary reads.
 #[sqlx::test]
 async fn sync_overlays_authored_descriptions(pool: sqlx::PgPool) {
     let repo = Postgres { pool: pool.clone() };
-    // A real authored entry — the overlay must REPLACE Scryfall's text with ours.
+    // A real authored entry: the overlay must REPLACE Scryfall's text with ours.
     let (authored_slug, our_desc) = ORACLE_TAG_DESCRIPTIONS[0];
-    // A slug absent from the const — Scryfall's text must pass through untouched.
+    // A slug absent from the const: Scryfall's text must pass through untouched.
     let passthrough_slug = "zzz-unauthored-test-tag";
     let passthrough_desc = "Scryfall's own words";
 

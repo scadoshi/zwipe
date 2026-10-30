@@ -2,7 +2,7 @@
 //! HTTP. Constructs `Postgres { pool }` and calls `CardRepository` methods
 //! directly (no router). Covers the default synergy ordering, the
 //! `card_signal_rollup` math, and the deck-aware serve's NULL-`oracle_id`
-//! handling (the 2026-07-06 regression: `NULL || seed` nulled the shuffle key).
+//! handling (`NULL || seed` must not null the shuffle key).
 //!
 //! Requires `DATABASE_URL`: `set -a; source zerver/.env; set +a`.
 
@@ -24,7 +24,7 @@ use zwipe_core::domain::card::search_card::card_filter::CardQuery;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::deck::requests::get_deck_profile::GetDeckProfile;
 
-/// A default `CardQuery` — no criteria, no explicit sort (so the synergy /
+/// A default `CardQuery`: no criteria, no explicit sort (so the synergy /
 /// popularity ordering is the one under test).
 fn default_query() -> CardQuery {
     serde_json::from_value(json!({})).unwrap()
@@ -92,7 +92,7 @@ async fn card_signal_rollup_math(pool: sqlx::PgPool) {
 
 /// With no deck seed, the deck-aware serve is pure score order: scored cards by
 /// synergy score descending, unscored cards anchored below the floor
-/// (`UNSCORED_ANCHOR`). No banding, no shuffle — deterministic.
+/// (`UNSCORED_ANCHOR`). No banding, no shuffle: deterministic.
 #[sqlx::test]
 async fn synergy_ordering_scored_before_unscored(pool: sqlx::PgPool) {
     seed_cards(
@@ -216,9 +216,9 @@ async fn null_oracle_card_survives_deck_aware_shuffle(pool: sqlx::PgPool) {
     assert_eq!(names, names2, "same deck seed must yield the same order");
 }
 
-/// Phase 4: a deck's selected oracle tags lift matching cards within the
+/// A deck's selected oracle tags lift matching cards within the
 /// synergy serve. Both cards are unscored (equal base), so the otag term is the
-/// only differentiator — and with no selected otags the term is dormant and the
+/// only differentiator, and with no selected otags the term is dormant and the
 /// name tiebreak wins (the zero-regression / revert guarantee).
 #[sqlx::test]
 async fn deck_oracle_tags_lift_matching_cards(pool: sqlx::PgPool) {
@@ -258,7 +258,7 @@ async fn deck_oracle_tags_lift_matching_cards(pool: sqlx::PgPool) {
     );
 
     // Zero-regression: no selected otags => the term is dormant and ordering
-    // falls back to the name tiebreak (byte-identical to pre-Phase-4).
+    // falls back to the name tiebreak (byte-identical to a serve without the term).
     let served = repo
         .search_scryfall_data_deck_aware(
             &default_query(),
@@ -277,7 +277,7 @@ async fn deck_oracle_tags_lift_matching_cards(pool: sqlx::PgPool) {
     );
 }
 
-/// Phase 4 (production path): the otag term must reorder within the *banded /
+/// Production path: the otag term must reorder within the *banded /
 /// wildcard* serve (`deck_id` present), not just the pure-score path. 30 unscored
 /// cards; four otag-matching cards are named to sort last, so absent otags they
 /// land in band 1 (off the 24-card first page). With the deck's selected otag
@@ -346,9 +346,9 @@ async fn deck_oracle_tags_lift_matching_cards_in_banded_serve(pool: sqlx::PgPool
     );
 }
 
-/// MVP steering (deck-MVPs phase 3) reads only the roles that should steer:
+/// MVP steering reads only the roles that should steer:
 /// mainboard stars, deduped, with unstarred cards ignored. The serve term is a
-/// flat overlap lift, so a role shared by two MVPs must appear once — a tally
+/// flat overlap lift, so a role shared by two MVPs must appear once; a tally
 /// here would silently double that role's weight. A non-mainboard star can't be
 /// constructed at all now (`deck_cards_mvp_mainboard_only`); the import path
 /// that used to strand one is covered in `import_atomicity.rs`.
@@ -546,7 +546,7 @@ async fn latest_cards_pick_prefers_in_universe_printing(pool: sqlx::PgPool) {
 
 /// Array-semantics set filters: include matches any printing's set (not just
 /// the pick), and exclude only hides a card when EVERY printing's set is
-/// excluded — the Sol Ring / Secret Lair Drop shadowing bug.
+/// excluded (the Sol Ring / Secret Lair Drop shadowing bug).
 #[sqlx::test]
 async fn set_filters_are_printing_aware(pool: sqlx::PgPool) {
     let oracle = Uuid::from_u128(0x0002);

@@ -1,9 +1,9 @@
 //! Integration-test harness.
 //!
 //! Each test gets a fresh, migrated, isolated database via `#[sqlx::test]`
-//! (requires `DATABASE_URL` in the env — `set -a; source zerver/.env`). We build
+//! (requires `DATABASE_URL` in the env: `set -a; source zerver/.env`). We build
 //! the real Axum router with [`build_router`] over that pool + a capturing fake
-//! email sender, and drive it in-process with `tower::ServiceExt::oneshot` — no
+//! email sender, and drive it in-process with `tower::ServiceExt::oneshot`: no
 //! socket, full middleware stack.
 
 #![allow(
@@ -100,7 +100,7 @@ impl FakeEmailSender {
     }
 
     /// Extracts the raw token from a `/{segment}/{token}` link in the most
-    /// recent email body — the verify/reset flows embed the raw token there
+    /// recent email body. The verify/reset flows embed the raw token there
     /// (`{web_base_url}/verify/{raw}`, `.../reset/{raw}`), exactly as a user
     /// would receive it. Returns `None` if no such link is present.
     pub(crate) fn last_token(&self, segment: &str) -> Option<String> {
@@ -327,13 +327,13 @@ impl TestApp {
 // its required `card_profiles` mate (the `latest_cards` view JOINs it) and
 // refreshes both materialized views the migrations create empty.
 //
-// The raw INSERT is an unchecked `sqlx` query on purpose — test-only columns
+// The raw INSERT is an unchecked `sqlx` query on purpose: test-only columns
 // stay out of the committed `.sqlx` offline data. The defaults are chosen so
 // every row round-trips back through `DatabaseScryfallData::try_from`: colors
 // are WUBRG short names, rarity is a valid variant, and the JSONB columns
 // deserialize into `Legalities` / `Prices` (both all-`Option`, so `{}` works).
 
-// Distinct, stable ids in allocation order — no `Uuid::new_v4()` (feature) and
+// Distinct, stable ids in allocation order, with no `Uuid::new_v4()` (feature) and
 // no `Math.random`-style nondeterminism, so ordering assertions are repeatable.
 static CARD_SEQ: AtomicU64 = AtomicU64::new(1);
 
@@ -444,7 +444,7 @@ impl CardFixture {
         &self.name
     }
 
-    /// Set both `id` and `oracle_id` — use when a test needs two printings of
+    /// Set both `id` and `oracle_id`; use it when a test needs two printings of
     /// the same card (same `oracle_id`, different `id`).
     pub(crate) fn with_ids(mut self, id: Uuid, oracle_id: Option<Uuid>) -> Self {
         self.id = id;
@@ -486,7 +486,7 @@ impl CardFixture {
         self
     }
     /// Color identity, compact form. Defaults to whatever `colors` was set to
-    /// is NOT assumed — set both explicitly when they differ.
+    /// is NOT assumed; set both explicitly when they differ.
     pub(crate) fn color_identity(mut self, ci: &str) -> Self {
         self.color_identity = colors_of(ci);
         self
@@ -590,13 +590,13 @@ impl CardFixture {
         self.layout = "token".to_string();
         self
     }
-    /// Mechanical categories (`snake_case`, e.g. `"ramp"`, `"graveyard_hate"`) —
+    /// Mechanical categories (`snake_case`, e.g. `"ramp"`, `"graveyard_hate"`),
     /// written to `card_profiles.card_roles`.
     pub(crate) fn categories(mut self, cats: &[&str]) -> Self {
         self.card_roles = cats.iter().map(ToString::to_string).collect();
         self
     }
-    /// Oracle tags (e.g. `"spot-removal"`) — written to `card_profiles.oracle_tags`.
+    /// Oracle tags (e.g. `"spot-removal"`), written to `card_profiles.oracle_tags`.
     pub(crate) fn oracle_tags(mut self, tags: &[&str]) -> Self {
         self.oracle_tags = tags.iter().map(ToString::to_string).collect();
         self
@@ -605,7 +605,7 @@ impl CardFixture {
 
 /// Seed `cards` with the given fixtures, write their `card_profiles` rows, and
 /// refresh the `latest_cards` / `card_signal_rollup` materialized views (both
-/// start empty — the views must be refreshed before any card query, even with
+/// start empty; the views must be refreshed before any card query, even with
 /// zero rows, or Postgres errors that they are unpopulated).
 pub(crate) async fn seed_cards(pool: &PgPool, cards: &[CardFixture]) {
     if !cards.is_empty() {
@@ -625,7 +625,7 @@ pub(crate) async fn seed_cards(pool: &PgPool, cards: &[CardFixture]) {
         );
         qb.push_values(cards.iter(), |mut b, c| {
             let prices = json!({ "usd": c.usd });
-            // Production stores rarity as the short code ("R"/"C"/…) — the SQL
+            // Production stores rarity as the short code ("R"/"C"/…); the SQL
             // rarity filters compare against `to_short_name()`. Storing the long
             // word here would read back fine (try_from accepts both) but silently
             // break those filters, so mirror the real write form.

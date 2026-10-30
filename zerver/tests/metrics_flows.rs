@@ -137,10 +137,10 @@ async fn usage_batch_signal_deltas_accumulate(pool: sqlx::PgPool) {
 
 #[sqlx::test]
 async fn legacy_commander_field_is_ignored(pool: sqlx::PgPool) {
-    // Phase 5S step 3: the legacy client-sent `commander_oracle_id` no longer
-    // exists on the wire type and the server fallback is gone. A straggler
-    // payload carrying it (and no deck_id) must be accepted — serde ignores
-    // unknown fields — but land no commander-keyed signal.
+    // The old client-sent `commander_oracle_id` is not on the wire type and the
+    // server has no fallback for it. A straggler payload carrying it (and no
+    // `deck_id`) must be accepted, since serde ignores unknown fields, but land
+    // no commander-keyed signal.
     let app = TestApp::new(pool.clone());
     let (token, _) = app.register("straggler").await;
 
@@ -224,7 +224,7 @@ async fn usage_batch_client_errors_land_clamped(pool: sqlx::PgPool) {
     let (token, _) = app.register("errorer").await;
 
     // 25 distinct reports (server truncates to 20); the first carries an
-    // oversized message and an absurd count — both must come back clamped.
+    // oversized message and an absurd count, and both must come back clamped.
     let mut reports: Vec<serde_json::Value> = (0..25)
         .map(|i| {
             json!({
@@ -308,8 +308,8 @@ async fn crash_report_stored_exactly_once_no_auth(pool: sqlx::PgPool) {
         "occurred_at": chrono::Utc::now().to_rfc3339(),
     });
 
-    // First post stores; the retry (client never saw the 2xx) is a no-op —
-    // both succeed from the client's point of view.
+    // First post stores; the retry (client never saw the 2xx) is a no-op,
+    // and both succeed from the client's point of view.
     for attempt in 1..=2 {
         let (status, body) = app.post(RECORD_CRASH_ROUTE, report.clone(), None).await;
         assert_eq!(

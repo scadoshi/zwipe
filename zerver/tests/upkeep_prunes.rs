@@ -1,5 +1,5 @@
-//! Upkeep (nightly maintenance) prune behavior against real rows — the local
-//! zervice runs only proved the grants on empty tables. Constructs
+//! Upkeep (nightly maintenance) prune behavior against real rows, which a
+//! zervice run on empty tables can't show. Constructs
 //! `Postgres { pool }` and calls `UpkeepRepository` methods directly.
 //!
 //! Requires `DATABASE_URL`: `set -a; source zerver/.env; set +a`.
@@ -76,7 +76,7 @@ async fn diagnostic_prunes_kill_old_and_spare_fresh(pool: sqlx::PgPool) {
 async fn session_prune_kills_expired_across_users(pool: sqlx::PgPool) {
     let repo = Postgres { pool: pool.clone() };
 
-    // Two dormant users, expired + live tokens each — the global sweep case
+    // Two dormant users, expired + live tokens each: the global sweep case
     // the insert-time drive-by never reaches.
     for who in ["ghost_one", "ghost_two"] {
         let user_id: uuid::Uuid = sqlx::query_scalar(

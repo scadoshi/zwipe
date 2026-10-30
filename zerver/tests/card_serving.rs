@@ -231,9 +231,9 @@ async fn search_requires_auth(pool: sqlx::PgPool) {
     assert_eq!(status, StatusCode::UNAUTHORIZED);
 }
 
-/// Phase 4 end-to-end: a deck's *persisted* selected oracle tags lift matching
+/// End to end: a deck's *persisted* selected oracle tags lift matching
 /// cards through the real serve endpoint (`POST /api/deck/{id}/card/search`).
-/// Proves the whole path — `search_deck_cards` loading `deck_profile.oracle_tags`
+/// Proves the whole path: `search_deck_cards` loading `deck_profile.oracle_tags`
 /// and threading them into the banded synergy serve. A spoofed commander synergy
 /// payload activates the signal-ordering path (its one scored entry is the
 /// commander itself, which the serve excludes, so every servable card is

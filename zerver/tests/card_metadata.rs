@@ -121,7 +121,7 @@ async fn printings_returns_all_printings_of_an_oracle(pool: sqlx::PgPool) {
     );
 }
 
-/// A fresh `TestApp` over a cloned pool — the metadata test issues several
+/// A fresh `TestApp` over a cloned pool. The metadata test issues several
 /// independent public GETs and each helper call wants an app to drive.
 fn app_of(pool: sqlx::PgPool) -> TestApp {
     TestApp::new(pool)

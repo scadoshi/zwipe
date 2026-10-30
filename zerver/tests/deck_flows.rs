@@ -161,7 +161,7 @@ async fn cannot_touch_another_users_deck(pool: sqlx::PgPool) {
         .await;
     let id = deck["id"].as_str().unwrap().to_string();
 
-    // 404 (not 403) — another user's deck must look nonexistent, no existence leak.
+    // 404 (not 403): another user's deck must look nonexistent, no existence leak.
     let (b_token, _) = app.register("erin").await;
     let (status, _) = app
         .get(&get_deck_route(id.parse().unwrap()), Some(&b_token))

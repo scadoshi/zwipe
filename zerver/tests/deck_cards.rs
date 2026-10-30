@@ -1,9 +1,9 @@
 //! Deck-card operations through the real router: add, quantity delta, board
-//! placement, remove, and text import (resolved + unresolved). These were
-//! deferred out of `deck_flows.rs` because they need real `cards` rows — the
-//! `card()` / `seed_cards()` fixture builder now supplies them.
+//! placement, remove, and text import (resolved + unresolved). They live apart from `deck_flows.rs` because they
+//! need real `cards` rows, which the `card()` / `seed_cards()` fixture builder
+//! supplies.
 //!
-//! Note the create route is `POST /api/deck/{id}/card` — no trailing slash
+//! Note the create route is `POST /api/deck/{id}/card`, with no trailing slash
 //! (the nested `/` leaf resolves without one, same as `/api/deck`).
 //!
 //! Requires `DATABASE_URL`: `set -a; source zerver/.env; set +a`.
@@ -293,7 +293,7 @@ async fn get_deck_carries_command_zone_cards(pool: sqlx::PgPool) {
     seed_cards(&pool, &[commander, bolt]).await;
 
     // Set the commander on the deck (clean Opdate wire: bare value = set,
-    // absent = unchanged; the legacy tagged dialect is no longer decoded).
+    // absent = unchanged; the tagged dialect is not decoded).
     let (status, updated) = app
         .patch(
             &get_deck_route(did.parse().unwrap()),
