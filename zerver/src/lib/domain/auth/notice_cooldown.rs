@@ -1,9 +1,9 @@
 //! One "you already have an account" email per address per hour.
 //!
-//! Registering with a taken email mails that address's owner. Without a cap,
-//! anyone could fill a stranger's inbox five emails an hour from every
-//! address they register from. Kept in memory like the login lockout: a
-//! restart forgets it, which costs the owner one extra email at most.
+//! Registering with a taken email mails that address's owner, so the cap
+//! keeps a stranger's inbox from filling. Kept in memory like the login
+//! lockout: a restart forgets it, which costs the owner one extra email at
+//! most.
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
