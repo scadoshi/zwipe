@@ -19,7 +19,7 @@ use zwipe_core::domain::logo;
 async fn main() {
     logo::Zerver::print();
     match run().await {
-        Ok(_) => (),
+        Ok(()) => (),
         Err(e) => {
             // Nonzero exit so systemd's Restart=on-failure fires.
             eprintln!("main failed: {e:?}");
