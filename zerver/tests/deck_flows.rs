@@ -6,8 +6,6 @@
 //!
 //! Requires `DATABASE_URL`: `set -a; source zerver/.env; set +a`.
 
-#![allow(clippy::unwrap_used, clippy::indexing_slicing)]
-
 use zwipe_core::http::paths::{
     DECK_ROUTE, clone_deck_route, get_deck_profile_route, get_deck_route,
 };

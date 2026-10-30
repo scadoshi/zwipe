@@ -7,8 +7,6 @@
 //!
 //! Requires `DATABASE_URL`: `set -a; source zerver/.env; set +a`.
 
-#![allow(clippy::unwrap_used, clippy::indexing_slicing)]
-
 use zwipe_core::http::paths::GET_ORACLE_TAGS_ROUTE;
 mod common;
 

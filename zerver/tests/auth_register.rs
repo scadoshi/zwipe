@@ -3,8 +3,6 @@
 //!
 //! Requires `DATABASE_URL` (dev's value works): `set -a; source zerver/.env`.
 
-#![allow(clippy::unwrap_used, clippy::indexing_slicing)]
-
 use zwipe_core::http::paths::{LOGIN_ROUTE, REGISTER_ROUTE, VERIFY_EMAIL_ROUTE};
 mod common;
 

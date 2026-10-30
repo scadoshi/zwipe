@@ -13,11 +13,9 @@
 //! `outbound::archidekt::tests`; this guards the one thing those can't: that the
 //! live API still returns the shape the parser expects.
 
-#![allow(
-    clippy::unwrap_used,
-    clippy::expect_used,
-    clippy::indexing_slicing,
-    clippy::print_stderr
+#![expect(
+    clippy::print_stderr,
+    reason = "a live smoke test: it prints what it fetched so a parser drift is easy to read"
 )]
 
 use zwipe::outbound::archidekt::ArchidektClient;

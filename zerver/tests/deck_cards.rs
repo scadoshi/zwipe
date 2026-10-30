@@ -8,7 +8,11 @@
 //!
 //! Requires `DATABASE_URL`: `set -a; source zerver/.env; set +a`.
 
-#![allow(clippy::unwrap_used, clippy::indexing_slicing)]
+#![expect(
+    clippy::unwrap_used,
+    clippy::indexing_slicing,
+    reason = "a test: helpers outside #[test] fns unwrap and index, and a panic is the failure report"
+)]
 
 use zwipe_core::http::paths::{
     DECK_ROUTE, clone_deck_route, create_deck_card_route, get_deck_route, import_deck_cards_route,

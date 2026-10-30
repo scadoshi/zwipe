@@ -6,7 +6,15 @@
 //! email sender, and drive it in-process with `tower::ServiceExt::oneshot` — no
 //! socket, full middleware stack.
 
-#![allow(clippy::unwrap_used, clippy::indexing_slicing, dead_code)]
+#![allow(
+    dead_code,
+    reason = "each test binary uses a different slice of the harness, so the unused set differs per binary"
+)]
+#![expect(
+    clippy::unwrap_used,
+    clippy::indexing_slicing,
+    reason = "a test: helpers outside #[test] fns unwrap and index, and a panic is the failure report"
+)]
 
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
@@ -211,7 +219,12 @@ impl TestApp {
         (status, value)
     }
 
-    pub(crate) async fn post(&self, path: &str, json: Value, token: Option<&str>) -> (StatusCode, Value) {
+    pub(crate) async fn post(
+        &self,
+        path: &str,
+        json: Value,
+        token: Option<&str>,
+    ) -> (StatusCode, Value) {
         self.send(Method::POST, path, Some(json), token).await
     }
 
@@ -219,11 +232,21 @@ impl TestApp {
         self.send(Method::GET, path, None, token).await
     }
 
-    pub(crate) async fn put(&self, path: &str, json: Value, token: Option<&str>) -> (StatusCode, Value) {
+    pub(crate) async fn put(
+        &self,
+        path: &str,
+        json: Value,
+        token: Option<&str>,
+    ) -> (StatusCode, Value) {
         self.send(Method::PUT, path, Some(json), token).await
     }
 
-    pub(crate) async fn patch(&self, path: &str, json: Value, token: Option<&str>) -> (StatusCode, Value) {
+    pub(crate) async fn patch(
+        &self,
+        path: &str,
+        json: Value,
+        token: Option<&str>,
+    ) -> (StatusCode, Value) {
         self.send(Method::PATCH, path, Some(json), token).await
     }
 

@@ -3,7 +3,10 @@
 //! tables the app's flushes fill. Also the summary route's first spelling,
 //! served beside the new one until the client floor passes it.
 
-#![allow(clippy::unwrap_used, clippy::indexing_slicing)]
+#![expect(
+    clippy::unwrap_used,
+    reason = "a test: helpers outside #[test] fns unwrap, and a panic is the failure report"
+)]
 
 mod common;
 

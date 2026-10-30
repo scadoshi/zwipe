@@ -5,7 +5,10 @@
 //!
 //! Requires `DATABASE_URL` (dev's value works): `set -a; source zerver/.env`.
 
-#![allow(clippy::unwrap_used, clippy::indexing_slicing)]
+#![expect(
+    clippy::unwrap_used,
+    reason = "a test: helpers outside #[test] fns unwrap, and a panic is the failure report"
+)]
 
 use zwipe_core::http::paths::{LOGIN_ROUTE, REFRESH_SESSION_ROUTE, REGISTER_ROUTE};
 mod common;

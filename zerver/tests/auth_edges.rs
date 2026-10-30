@@ -6,8 +6,6 @@
 //!
 //! Requires `DATABASE_URL`: `set -a; source zerver/.env; set +a`.
 
-#![allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
-
 use zwipe_core::http::paths::{
     FORGOT_PASSWORD_ROUTE, GET_USER_ROUTE, LOGIN_ROUTE, REFRESH_SESSION_ROUTE,
     RESET_PASSWORD_ROUTE, VERIFY_EMAIL_ROUTE,

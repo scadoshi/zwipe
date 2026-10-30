@@ -4,7 +4,10 @@
 //!
 //! Requires `DATABASE_URL`: `set -a; source zerver/.env; set +a`.
 
-#![allow(clippy::unwrap_used)]
+#![expect(
+    clippy::unwrap_used,
+    reason = "a test: helpers outside #[test] fns unwrap, and a panic is the failure report"
+)]
 
 use zwipe::domain::upkeep::ports::UpkeepRepository;
 use zwipe::domain::upkeep::services::{DIAGNOSTIC_RETENTION_DAYS, REPLACED_TOKEN_RETENTION_DAYS};

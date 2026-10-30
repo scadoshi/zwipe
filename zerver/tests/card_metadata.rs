@@ -5,7 +5,10 @@
 //!
 //! Requires `DATABASE_URL`: `set -a; source zerver/.env; set +a`.
 
-#![allow(clippy::unwrap_used, clippy::indexing_slicing)]
+#![expect(
+    clippy::unwrap_used,
+    reason = "a test: helpers outside #[test] fns unwrap, and a panic is the failure report"
+)]
 
 use zwipe_core::http::paths::{
     GET_ARTISTS_ROUTE, GET_CARD_TYPES_ROUTE, GET_KEYWORDS_ROUTE, GET_LANGUAGES_ROUTE,
