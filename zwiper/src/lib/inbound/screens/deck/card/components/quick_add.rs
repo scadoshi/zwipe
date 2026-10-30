@@ -42,7 +42,7 @@ const RESULT_LIMIT: u32 = 5;
 /// signed deficit to the anchor's current height, so it converges as results
 /// change. Runs on the next frame (post-layout) and once more after the
 /// focus smooth-scroll has settled.
-const QUICK_ADD_FIT_JS: &str = r#"
+const QUICK_ADD_FIT_JS: &str = r"
 const fit = () => {
     const anchor = document.getElementById('quick-add-anchor');
     const results = document.getElementById('quick-add-results');
@@ -58,7 +58,7 @@ const fit = () => {
 };
 requestAnimationFrame(fit);
 setTimeout(fit, 400);
-"#;
+";
 
 /// Live card-name search that adds the picked card straight to the mainboard.
 ///
