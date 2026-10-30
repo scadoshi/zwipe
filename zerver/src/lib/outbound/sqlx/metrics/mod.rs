@@ -803,7 +803,7 @@ impl MetricsRepository for Postgres {
         Ok(PublicMetrics {
             cards_swiped: row.cards_swiped,
             searches: row.searches,
-            decks_created: row.decks_created as i64,
+            decks_created: row.decks_created,
         })
     }
 
