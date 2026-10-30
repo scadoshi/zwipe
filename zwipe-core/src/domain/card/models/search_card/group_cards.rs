@@ -149,7 +149,7 @@ impl GroupCards for Vec<Card> {
 /// deck list groups decks by color.
 ///
 /// Colored groups carry [`CardGroup::pips`] and an empty label; the view
-/// renders pips where a color word used to be. Colorless keeps its word and
+/// renders pips in place of a color word. Colorless keeps its word and
 /// sorts last.
 fn group_by_color(cards: Vec<Card>) -> Vec<CardGroup> {
     let mut groups: Vec<CardGroup> = Vec::new();
