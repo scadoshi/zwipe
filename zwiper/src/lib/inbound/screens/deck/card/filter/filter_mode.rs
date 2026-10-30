@@ -2,7 +2,7 @@
 
 /// The mode for numeric filters (exact value or range).
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
-#[allow(missing_docs)]
+#[expect(missing_docs, reason = "the variants name the modes")]
 pub enum FilterMode {
     #[default]
     Exact,

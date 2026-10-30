@@ -2,7 +2,7 @@
 
 /// Whether a multi-select filter uses OR ("any") or AND ("all") matching.
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
-#[allow(missing_docs)]
+#[expect(missing_docs, reason = "the variants name the modes")]
 pub enum MatchMode {
     #[default]
     Any,

@@ -173,7 +173,6 @@ impl UndoStore {
 
 #[cfg(test)]
 mod tests {
-    #![allow(clippy::expect_used, clippy::panic, clippy::indexing_slicing)]
     use super::*;
 
     fn added(card_id: Uuid, name: &str) -> UndoAction {
