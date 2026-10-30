@@ -8,7 +8,7 @@
 //! deploy) and overlay it onto the catalog **inside the same sync transaction**,
 //! right after the reinsert. Ours always wins: it replaces Scryfall's description
 //! where we have one and fills the blanks where we don't. The end state is that
-//! every tag is described by us; grow [`ORACLE_TAG_DESCRIPTIONS`](crate::outbound::sqlx::card::helpers::oracle_tag_descriptions::ORACLE_TAG_DESCRIPTIONS) over time,
+//! every tag is described by us; grow [`ORACLE_TAG_DESCRIPTIONS`] over time,
 //! priority order = highest card population first.
 //!
 //! Because the column itself carries the merged text post-sync, every reader

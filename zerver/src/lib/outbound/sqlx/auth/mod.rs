@@ -1,10 +1,7 @@
 //! Authentication and account management repository implementation.
 
-/// SQLx error-to-domain error mappings and intermediate conversion errors.
 pub mod error;
-/// Transaction helpers for refresh token creation and session limits.
 pub mod helpers;
-/// Database-to-domain auth model conversions.
 pub mod models;
 
 use chrono::{DateTime, Utc};

@@ -1,3 +1,5 @@
+//! Database-to-domain deck model conversions.
+
 use sqlx_macros::FromRow;
 use uuid::Uuid;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;

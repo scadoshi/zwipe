@@ -1,4 +1,4 @@
-//! Error mappings between SQLx errors and user domain errors.
+//! Error mappings between `SQLx` errors and user domain errors.
 
 use thiserror::Error;
 use zwipe_core::domain::InvalidEmail;

@@ -1,16 +1,9 @@
 //! SQL generation helpers for card data operations.
 
-/// The commander suggestions scoring statement.
 pub mod commander_scoring;
-/// Derive `card_roles` from oracle-tag subtrees + `all_parts`.
 pub mod derive_categories;
-/// Our authored oracle-tag descriptions, overlaid onto the catalog each sync.
 pub mod oracle_tag_descriptions;
-/// Group each card's oracle tags under their role + an "other" bucket.
 pub mod oracle_tag_groups;
-/// Oracle Tags ingest: replace the oracle_tag catalog + card correlation.
 pub mod oracle_tags;
-/// Field listing and binding for the 94-column `scryfall_data` table.
 pub mod scryfall_data_fields;
-/// Upsert strategies: single, bulk, batch, and delta-aware.
 pub mod upsert_card;

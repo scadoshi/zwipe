@@ -1,10 +1,7 @@
 //! Deck management repository implementation.
 
-/// SQLx error-to-domain error mappings and intermediate conversion errors.
 pub mod error;
-/// Query-based deck ownership verification.
 pub mod helper;
-/// Database-to-domain deck model conversions.
 pub mod models;
 
 use sqlx::{QueryBuilder, query, query_as, query_scalar};

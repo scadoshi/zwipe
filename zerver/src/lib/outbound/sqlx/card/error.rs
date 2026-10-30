@@ -1,3 +1,5 @@
+//! `SQLx` error-to-domain error mappings.
+
 use crate::domain::card::requests::create_card::CreateCardError;
 use crate::domain::card::requests::get_artists::GetArtistsError;
 use crate::domain::card::requests::get_card_profile::GetCardProfileError;

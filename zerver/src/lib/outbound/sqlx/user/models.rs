@@ -1,3 +1,5 @@
+//! Database-to-domain user model conversions.
+
 use chrono::{DateTime, Utc};
 use sqlx_macros::FromRow;
 use uuid::Uuid;

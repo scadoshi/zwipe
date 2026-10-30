@@ -1,8 +1,6 @@
 //! User profile repository implementation.
 
-/// SQLx error-to-domain error mappings and intermediate conversion errors.
 pub mod error;
-/// Database-to-domain user model conversions.
 pub mod models;
 
 use sqlx::{query, query_as};

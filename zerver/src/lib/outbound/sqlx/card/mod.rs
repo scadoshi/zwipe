@@ -1,16 +1,10 @@
 //! Card data and Scryfall sync repository implementation.
 
-/// Database-to-domain card profile conversion.
 pub mod card_profile;
-/// `SQLx` error-to-domain error mappings.
 pub mod error;
-/// SQL generation helpers for bulk upserts and field binding.
 pub mod helpers;
-/// Database-to-domain Scryfall data conversion.
 pub mod models;
-/// Database-to-domain oracle tag catalog conversion.
 pub mod oracle_tag;
-/// Sync metrics JSONB codecs and database model.
 pub mod zervice_metrics;
 
 use std::collections::HashMap;
