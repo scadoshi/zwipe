@@ -1,3 +1,5 @@
+//! The Account email row: the address, its verification badge and the resend actions.
+
 use std::time::Duration;
 
 use chrono::{DateTime, Utc};

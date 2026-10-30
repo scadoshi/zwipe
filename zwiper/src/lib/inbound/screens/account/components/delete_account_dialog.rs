@@ -1,3 +1,5 @@
+//! The delete account dialog: a countdown, the password, then the delete.
+
 use std::time::Duration;
 
 use components::{ActionButton, AlertDialog, DialogAction, TextInput};
