@@ -69,7 +69,7 @@ pub trait TxHelper {
     ) -> impl Future<Output = Result<(), EnforceSessionMaximumError>> + Send;
 }
 
-impl<'a> TxHelper for PgTransaction<'a> {
+impl TxHelper for PgTransaction<'_> {
     async fn create_refresh_token(
         &mut self,
         user_id: Uuid,
