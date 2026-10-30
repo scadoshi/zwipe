@@ -78,7 +78,6 @@ impl HttpChangelog {
 }
 
 #[cfg(test)]
-#[allow(clippy::expect_used, clippy::indexing_slicing)]
 mod tests {
     use super::*;
 

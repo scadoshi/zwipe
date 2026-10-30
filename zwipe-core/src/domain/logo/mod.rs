@@ -26,8 +26,6 @@
 //! println!("{}", zwipe::domain::logo::ZERVER);
 //! ```
 
-#![allow(clippy::print_stdout)]
-
 /// ASCII art logo for Z (compact nav logo).
 pub const Z: &str = include_str!("z.txt");
 
@@ -46,6 +44,7 @@ pub struct Zwipe;
 
 impl Zwipe {
     /// Prints the ZWIPE ASCII art logo to stdout.
+    #[expect(clippy::print_stdout, reason = "prints the logo to a CLI's own output")]
     pub fn print() {
         println!("{ZWIPE}");
     }
@@ -66,6 +65,7 @@ pub struct Zerver;
 
 impl Zerver {
     /// Prints the ZERVER ASCII art logo to stdout.
+    #[expect(clippy::print_stdout, reason = "prints the logo to a CLI's own output")]
     pub fn print() {
         println!("{ZERVER}");
     }
@@ -86,6 +86,7 @@ pub struct Zervice;
 
 impl Zervice {
     /// Prints the ZERVICE ASCII art logo to stdout.
+    #[expect(clippy::print_stdout, reason = "prints the logo to a CLI's own output")]
     pub fn print() {
         println!("{ZERVICE}");
     }
@@ -106,6 +107,7 @@ pub struct Zwiper;
 
 impl Zwiper {
     /// Prints the ZWIPER ASCII art logo to stdout.
+    #[expect(clippy::print_stdout, reason = "prints the logo to a CLI's own output")]
     pub fn print() {
         println!("{ZWIPER}");
     }
@@ -126,6 +128,7 @@ pub struct Zynergy;
 
 impl Zynergy {
     /// Prints the ZYNERGY ASCII art logo to stdout.
+    #[expect(clippy::print_stdout, reason = "prints the logo to a CLI's own output")]
     pub fn print() {
         println!("{ZYNERGY}");
     }
@@ -146,6 +149,7 @@ pub struct Zite;
 
 impl Zite {
     /// Prints the ZITE ASCII art logo to stdout.
+    #[expect(clippy::print_stdout, reason = "prints the logo to a CLI's own output")]
     pub fn print() {
         println!("{ZITE}");
     }
