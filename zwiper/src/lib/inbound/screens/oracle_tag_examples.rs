@@ -280,7 +280,7 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
                 CardDetailsSheet {
                     open: show_details,
                     card: card.clone(),
-                    on_printings: move |_| printing_open.set(true),
+                    on_printings: move |()| printing_open.set(true),
                 }
                 PrintingSheet {
                     host_screen: screen::ORACLE_TAG_EXAMPLES,

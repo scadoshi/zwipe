@@ -117,7 +117,7 @@ pub fn UniversesBeyondExceptionsSheet(
             open,
             title: "Exceptions".to_string(),
             hint: hint_open,
-            on_dismiss: move |_| discard.call(()),
+            on_dismiss: move |()| discard.call(()),
             footer: rsx! {
                 Button {
                     variant: ButtonVariant::Action,
