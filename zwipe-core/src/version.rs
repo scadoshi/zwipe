@@ -5,12 +5,15 @@
 //! build metadata. Both sides use this: the client compares its own version
 //! against the server's minimum, and tests pin the semantics.
 
+/// Segments in an `x.y.z` version: major, minor and patch.
+const VERSION_SEGMENTS: usize = 3;
+
 /// Parses an `x.y.z` version string into a numeric tuple.
 ///
 /// Tolerates fewer than three segments (`"1.2"` → `(1, 2, 0)`). Returns
 /// `None` if any present segment isn't a non-negative integer.
 pub fn parse_version(version: &str) -> Option<(u64, u64, u64)> {
-    let mut segments = version.trim().splitn(3, '.');
+    let mut segments = version.trim().splitn(VERSION_SEGMENTS, '.');
     let mut next = |missing_ok: bool| -> Option<u64> {
         match segments.next() {
             Some(segment) => segment.trim().parse().ok(),
