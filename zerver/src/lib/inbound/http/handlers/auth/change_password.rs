@@ -50,11 +50,17 @@ pub async fn change_password(
     State(state): State<AppState>,
     Json(body): Json<HttpChangePassword>,
 ) -> Result<(StatusCode, Json<()>), ApiError> {
-    let request = ChangePassword::new(
-        user.id,
-        body.current_password.read(),
-        body.new_password.read(),
-    )?;
+    // ChangePassword::new hashes with Argon2, so it runs on the blocking pool.
+    let user_id = user.id;
+    let request = tokio::task::spawn_blocking(move || {
+        ChangePassword::new(
+            user_id,
+            body.current_password.read(),
+            body.new_password.read(),
+        )
+    })
+    .await
+    .map_err(To500::to_500)??;
 
     state
         .auth_service

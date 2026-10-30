@@ -105,8 +105,14 @@ pub async fn register_user(
     State(state): State<AppState>,
     Json(body): Json<HttpRegisterUser>,
 ) -> Result<Response, ApiError> {
-    let request = RegisterUser::new(&body.username, &body.email, body.password.read())?;
-    tracing::info!(event = "register", username = %body.username);
+    let username = body.username.clone();
+    // RegisterUser::new hashes with Argon2, so it runs on the blocking pool.
+    let request = tokio::task::spawn_blocking(move || {
+        RegisterUser::new(&body.username, &body.email, body.password.read())
+    })
+    .await
+    .map_err(To500::to_500)??;
+    tracing::info!(event = "register", username = %username);
 
     let outcome = state
         .auth_service
