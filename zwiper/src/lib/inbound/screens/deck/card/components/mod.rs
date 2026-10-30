@@ -16,6 +16,8 @@ pub(crate) mod filter_store;
 pub(crate) mod flippable_card_image;
 /// Fullscreen image preview overlay.
 pub(crate) mod image_preview;
+/// Swipe adds still waiting on the server, so an early undo isn't lost.
+pub(crate) mod in_flight_adds;
 /// Bottom sheet for selecting card printings.
 pub(crate) mod printing_sheet;
 /// Name-search bar that adds a card straight to the deck.

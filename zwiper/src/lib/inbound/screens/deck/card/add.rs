@@ -43,6 +43,7 @@ use crate::inbound::screens::deck::card::components::add_stack_cache::{
 use crate::inbound::screens::deck::card::components::card_stack::{CardStack, use_card_stack};
 use crate::inbound::screens::deck::card::components::filter_store::{FilterScope, FilterStore};
 use crate::inbound::screens::deck::card::components::flippable_card_image;
+use crate::inbound::screens::deck::card::components::in_flight_adds::{AddOutcome, InFlightAdds};
 use crate::inbound::screens::deck::card::components::undo_log::{UndoAction, UndoStore};
 use crate::inbound::screens::deck::card::filter::card_filter_sheet::CardFilterSheet;
 
@@ -393,21 +394,40 @@ pub fn Add(deck_id: Uuid) -> Element {
         }
     };
 
-    let add_card_to_deck = move |card: Card| {
+    // Adds still waiting on their POST: an undo in that window is parked here
+    // and the add's task deletes the card once the POST lands.
+    let mut in_flight_adds = use_signal(InFlightAdds::default);
+
+    // The delete for an add the user undid while its POST was in flight.
+    let delete_undone_add = move |card_id: Uuid| {
+        spawn(async move {
+            let _ = authed
+                .run("undo_add", |c, s| async move {
+                    c.delete_deck_card(deck_id, card_id, &s).await
+                })
+                .await;
+        });
+    };
+
+    let mut add_card_to_deck = move |card: Card| {
         // A swipe adds one copy.
         let request = HttpCreateDeckCard::new(&card.scryfall_data, 1, None);
         let oracle_id = card.scryfall_data.oracle_id;
         let card_id = card.scryfall_data.id;
         let card_name = card.scryfall_data.name;
 
+        in_flight_adds.write().begin(card_id);
         spawn(async move {
-            if authed
+            let added = authed
                 .run("add_card", |c, s| async move {
                     c.create_deck_card(deck_id, &request, &s).await
                 })
                 .await
-                .is_some()
-            {
+                .is_some();
+            let outcome = in_flight_adds.write().finish(card_id);
+            if added && outcome == AddOutcome::Undo {
+                delete_undone_add(card_id);
+            } else if added {
                 if let Some(oid) = oracle_id {
                     deck_cards_ids.write().insert(oid);
                 }
@@ -416,20 +436,24 @@ pub fn Add(deck_id: Uuid) -> Element {
         });
     };
 
-    let add_card_to_maybeboard = move |card: Card| {
+    let mut add_card_to_maybeboard = move |card: Card| {
         let request =
             HttpCreateDeckCard::new(&card.scryfall_data, 1, Some("maybeboard".to_string()));
         let oracle_id = card.scryfall_data.oracle_id;
         let card_id = card.scryfall_data.id;
         let card_name = card.scryfall_data.name.clone();
 
+        in_flight_adds.write().begin(card_id);
         spawn(async move {
-            if let Some(deck_card) = authed
+            let added = authed
                 .run("add_maybeboard", |c, s| async move {
                     c.create_deck_card(deck_id, &request, &s).await
                 })
-                .await
-            {
+                .await;
+            let outcome = in_flight_adds.write().finish(card_id);
+            if added.is_some() && outcome == AddOutcome::Undo {
+                delete_undone_add(card_id);
+            } else if let Some(deck_card) = added {
                 if let Some(oid) = oracle_id {
                     deck_cards_ids.write().insert(oid);
                 }
@@ -489,6 +513,20 @@ pub fn Add(deck_id: Uuid) -> Element {
                 let was_price =
                     deck_metrics::card_price(&card.scryfall_data, price_budget_currency())
                         .unwrap_or(0.0);
+
+                // The add's POST hasn't answered: its task deletes the card
+                // when it does. The counts rewind now, like a finished undo.
+                if in_flight_adds.write().undo(card_id) {
+                    if was_land {
+                        mainboard_land_count.set((mainboard_land_count() - 1).max(0));
+                    }
+                    deck_total_price.set((deck_total_price() - was_price).max(0.0));
+                    toast.success(
+                        "Undid add".to_string(),
+                        ToastOptions::default().duration(TOAST_QUICK),
+                    );
+                    return;
+                }
 
                 // Reconcile with the global stack: take this add's entry
                 // back. Entry gone AND card gone from the deck means the
@@ -562,6 +600,15 @@ pub fn Add(deck_id: Uuid) -> Element {
             AddAction::Maybe => {
                 let card_id = card.scryfall_data.id;
                 let oracle_id = card.scryfall_data.oracle_id;
+
+                // Same in-flight parking as Add.
+                if in_flight_adds.write().undo(card_id) {
+                    toast.success(
+                        "Undid maybeboard".to_string(),
+                        ToastOptions::default().duration(TOAST_QUICK),
+                    );
+                    return;
+                }
 
                 // Same reconciliation as Add: entry gone + card gone means
                 // the button already reversed this; skip the server delete.
