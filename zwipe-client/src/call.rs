@@ -67,6 +67,10 @@ async fn hold_for_skeleton_audit(method: Method) {
 }
 
 #[cfg(target_arch = "wasm32")]
+#[expect(
+    clippy::unused_async,
+    reason = "keeps the native version's async signature, which sleeps"
+)]
 async fn hold_for_skeleton_audit(_method: Method) {}
 
 /// Splits the response into success and failure, and turns a success body into
