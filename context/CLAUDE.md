@@ -113,10 +113,11 @@ The frontend's API client lives in the `zwipe-client` crate, which both clients 
 
 ## Linting
 
-22 Clippy warnings configured in workspace `Cargo.toml`. Thresholds in `clippy.toml`:
-- `too-many-arguments-threshold = 7` (refactor to builder pattern above this)
-- `type-complexity-threshold = 250`
-- `cognitive-complexity-threshold = 25`
+The workspace `Cargo.toml` carries the scadoshi-rust lint set (clippy `all` and `pedantic`, `missing_docs`, no `unwrap`/`expect`/`panic`/indexing outside tests). Every member opts in with `[lints] workspace = true`. Lints that still have findings sit in the phase 2 block at the bottom as `"allow"`, each with its remaining count; fix a lint's findings, then delete its line.
+
+Thresholds and test allowances live in `clippy.toml` (zwiper has its own copy). Above 7 arguments, refactor to a builder.
+
+A suppression is `#[expect(lint, reason = "...")]` on the narrowest item, never `#[allow]`, so a stale one fails the build. A public function that returns `Result` documents its failures under `# Errors`.
 
 ## Environment Files
 
