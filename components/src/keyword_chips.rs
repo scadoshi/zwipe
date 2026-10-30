@@ -19,7 +19,7 @@ use zwipe_core::domain::card::keyword::keyword_reminder;
 ///
 /// zite provides nothing and reads the compiled table, which is correct for
 /// a static page built from the same binary.
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct KeywordReminders(pub Signal<Option<HashMap<String, String>>>);
 
 /// Tappable keyword chips with a shared inline reminder area.
