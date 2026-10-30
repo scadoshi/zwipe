@@ -104,7 +104,7 @@ impl PostgresPoolOptions {
 /// at application startup and clone it for each request handler.
 #[derive(Debug, Clone)]
 pub struct Postgres {
-    /// The underlying SQLx connection pool.
+    /// The underlying `SQLx` connection pool.
     pub pool: sqlx::PgPool,
 }
 

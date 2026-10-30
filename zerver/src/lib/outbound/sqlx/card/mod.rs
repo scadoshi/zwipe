@@ -2,7 +2,7 @@
 
 /// Database-to-domain card profile conversion.
 pub mod card_profile;
-/// SQLx error-to-domain error mappings.
+/// `SQLx` error-to-domain error mappings.
 pub mod error;
 /// SQL generation helpers for bulk upserts and field binding.
 pub mod helpers;
@@ -128,12 +128,12 @@ const UNSCORED_ANCHOR: f64 = -10.5;
 // Wildcard slot dials (context/archive/wildcard_slot/).
 
 /// Wildcard slots per page: positions reserved for cards drawn from beyond
-/// the reachable horizon (rank > DEEP_POOL_FLOOR), least-shown first, so the
+/// the reachable horizon (rank > `DEEP_POOL_FLOOR`), least-shown first, so the
 /// deep pool accrues impressions at all. 0 reverts to pure band serving.
 const WILDCARD_SLOTS: i64 = 1;
 
 /// The reachable horizon: mirrors the client add-stack hard cap (zwiper
-/// `MAX_CARDS_IN_STACK`, action_history.rs, which zerver can't import). Cards
+/// `MAX_CARDS_IN_STACK`, `action_history.rs`, which zerver can't import). Cards
 /// ranked past this are structurally unreachable by band pagination within a
 /// session, so no signal can ever accrue for them without the wildcard probe.
 const DEEP_POOL_FLOOR: i64 = 500;
@@ -188,20 +188,20 @@ const DISMISSAL_TTL_DAYS: i32 = 7;
 /// name, then id for a stable tiebreak. Shared by the wildcard CTE's
 /// `row_number()` and the non-wildcard banded ORDER BY. Absent popularity rows
 /// sort last, so an empty table degrades to pure `edhrec_rank`; the revert
-/// lever. (context/archive/commander_select_ordering.md §2.)
+/// lever. (`context/archive/commander_select_ordering.md` §2.)
 const POPULARITY_RANK: &str = "pop.pop_decks DESC NULLS LAST, latest_cards.edhrec_rank ASC NULLS LAST, latest_cards.name ASC, latest_cards.id";
 
 /// The popularity join, aliased so it exposes only `pop_decks`, never a bare
 /// `name`/`oracle_id`/`decks`, which would collide with `latest_cards` and the
 /// shared WHERE filters (name search, exclude-oracle_ids) and make those
-/// columns ambiguous. Keyed on the real card's oracle_id.
+/// columns ambiguous. Keyed on the real card's `oracle_id`.
 const POPULARITY_JOIN: &str = "LEFT JOIN (SELECT oracle_id AS pop_oracle_id, decks AS pop_decks FROM commander_popularity) pop ON pop.pop_oracle_id = latest_cards.oracle_id";
 
 /// First-party select-signal join for the commander-select wildcard's
 /// least-shown deep slice, aliased for the same ambiguity reason as
 /// [`POPULARITY_JOIN`]. An absent row COALESCEs to 0 impressions, so an empty
 /// table leaves the deep slice on the daily shuffle alone; the dormant-until-
-/// data-accrues behavior (context/archive/commander_select_signal.md §3).
+/// data-accrues behavior (`context/archive/commander_select_signal.md` §3).
 const SELECT_SIGNAL_JOIN: &str = "LEFT JOIN (SELECT commander_oracle_id AS sel_oid, shown AS sel_shown FROM commander_select_signal) sel ON sel.sel_oid = latest_cards.oracle_id";
 
 impl CardRepository for MyPostgres {
@@ -392,7 +392,7 @@ impl CardRepository for MyPostgres {
     }
 
     /// Searches the `latest_cards` materialized view (pre-deduplicated to one row per
-    /// oracle_id). Joins `card_profiles` for is_token / card_roles filters.
+    /// `oracle_id`). Joins `card_profiles` for `is_token` / `card_roles` filters.
     /// Filter clauses are composed with `AND` via `QueryBuilder::separated`.
     async fn search_scryfall_data(
         &self,
@@ -402,13 +402,13 @@ impl CardRepository for MyPostgres {
             .await
     }
 
-    /// `search_scryfall_data` plus the deck-aware extras: oracle_id exclusion,
+    /// `search_scryfall_data` plus the deck-aware extras: `oracle_id` exclusion,
     /// suppression filtering for `deck_id` (skipped/removed cards), synergy-score
     /// default ordering, and (when `synergy_only`) a membership constraint to
     /// the commander's synergy pool. The plain search is this with no extras.
     ///
     /// `commander_seed` switches the engine into commander-select mode
-    /// (context/archive/commander_select_ordering.md): decks-helmed popularity
+    /// (`context/archive/commander_select_ordering.md`): decks-helmed popularity
     /// ordering, banded + wildcarded by that caller-supplied seed (typically
     /// `{user_id}:{date}`, no deck required), and token/emblem printings
     /// excluded from the candidate pool. Exposed as `search_commanders`; every
@@ -1480,7 +1480,7 @@ impl CardRepository for MyPostgres {
         Ok(cards)
     }
 
-    /// Returns all printings of a card by oracle_id, ordered by release date (newest first).
+    /// Returns all printings of a card by `oracle_id`, ordered by release date (newest first).
     async fn get_printings(&self, oracle_id: uuid::Uuid) -> Result<Vec<Card>, GetCardError> {
         let db_rows: Vec<DatabaseScryfallData> =
             query_as("SELECT sd.* FROM scryfall_data sd JOIN card_profiles cp ON sd.id = cp.scryfall_data_id WHERE sd.oracle_id = $1 ORDER BY sd.released_at ASC")
@@ -1845,7 +1845,7 @@ impl CardRepository for MyPostgres {
         Ok(cards)
     }
 
-    /// First-class commander search (context/archive/commander_select_ordering.md):
+    /// First-class commander search (`context/archive/commander_select_ordering.md`):
     /// decks-helmed popularity ordering, banded + wildcarded per user per day
     /// (no deck required), token/emblem printings excluded. An explicit sort in
     /// `request` still wins; the pool is always token-free. The shuffle seed is

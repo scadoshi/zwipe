@@ -58,7 +58,7 @@ use crate::outbound::sqlx::postgres::Postgres;
 /// oldest `suppressed_at` beyond it.
 pub(crate) const MAX_SUPPRESSIONS_PER_DECK: i64 = 5_000;
 
-/// Serializes deck tags to a JSONB array of snake_case strings for storage.
+/// Serializes deck tags to a JSONB array of `snake_case` strings for storage.
 fn deck_tags_to_json(tags: &[DeckTag]) -> serde_json::Value {
     serde_json::Value::Array(
         tags.iter()
@@ -67,7 +67,7 @@ fn deck_tags_to_json(tags: &[DeckTag]) -> serde_json::Value {
     )
 }
 
-/// Serializes deck other-tags to a JSONB array of snake_case strings for storage.
+/// Serializes deck other-tags to a JSONB array of `snake_case` strings for storage.
 fn deck_other_tags_to_json(tags: &[DeckOtherTag]) -> serde_json::Value {
     serde_json::Value::Array(
         tags.iter()
@@ -451,7 +451,7 @@ impl DeckRepository for Postgres {
     ///
     /// Supports setting quantity (absolute), board, printing, and/or
     /// MVP star. The database's check constraint on `quantity` stays as the
-    /// backstop, surfacing as `QuantityUnderflow` if it ever trips. MVP rules (context/plans/deck_mvps/): mainboard
+    /// backstop, surfacing as `QuantityUnderflow` if it ever trips. MVP rules (`context/plans/deck_mvps/`): mainboard
     /// only, at most 3 per deck (checked in the tx), and moving a card off
     /// the mainboard clears its star in the same UPDATE.
     async fn update_deck_card(

@@ -14,7 +14,7 @@ use zwipe_core::domain::card::scryfall_data::rarity::Rarity;
 /// Raw database Scryfall data record (unvalidated data from PostgreSQL).
 ///
 /// Fields that are domain newtypes in [`ScryfallData`] are stored here as
-/// primitives or `Json<T>` wrappers that SQLx handles natively.
+/// primitives or `Json<T>` wrappers that `SQLx` handles natively.
 #[derive(Debug, FromRow)]
 #[expect(missing_docs, reason = "each field mirrors the column it is read from")]
 pub struct DatabaseScryfallData {

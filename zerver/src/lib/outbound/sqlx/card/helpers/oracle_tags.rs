@@ -14,7 +14,7 @@ const CATALOG_BATCH: usize = 4_000;
 /// Correlation rows per INSERT batch (3 bind params/row).
 const CORRELATION_BATCH: usize = 20_000;
 
-/// Inverts tag -> `[card]` into flat card -> oracle_tag correlations, dropping any
+/// Inverts tag -> `[card]` into flat card -> `oracle_tag` correlations, dropping any
 /// tagging without an oracle id. Borrows each slug from `tags`.
 fn flatten_correlations(tags: &[OracleTag]) -> Vec<(uuid::Uuid, &str)> {
     let mut correlations = Vec::new();
@@ -28,7 +28,7 @@ fn flatten_correlations(tags: &[OracleTag]) -> Vec<(uuid::Uuid, &str)> {
     correlations
 }
 
-/// Replaces the oracle_tag catalog and the scryfall-sourced card correlations
+/// Replaces the `oracle_tag` catalog and the scryfall-sourced card correlations
 /// from `tags`. Returns `(catalog_rows, correlation_rows)`.
 pub async fn sync_oracle_tags(pool: &PgPool, tags: &[OracleTag]) -> anyhow::Result<(u32, u32)> {
     let correlations = flatten_correlations(tags);
