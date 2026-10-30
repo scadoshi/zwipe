@@ -527,7 +527,8 @@ fn label(counts: &ColorMapCounts) -> String {
         format!("Color map. {}", parts.join(", "))
     };
     if counts.colorless > 0 {
-        label.push_str(&format!(". Colorless {}", counted(counts.colorless)));
+        label.push_str(". Colorless ");
+        label.push_str(&counted(counts.colorless));
     }
     label
 }
