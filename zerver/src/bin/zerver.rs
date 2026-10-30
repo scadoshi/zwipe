@@ -1,3 +1,5 @@
+//! zerver: the Zwipe HTTP API, logging to stdout and a daily rolling file.
+
 use std::sync::Arc;
 
 use tracing_appender::rolling::{RollingFileAppender, Rotation};

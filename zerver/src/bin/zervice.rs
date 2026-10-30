@@ -1,3 +1,5 @@
+//! zervice: the nightly job that syncs Scryfall, refreshes the card views and prunes old rows.
+
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::layer::SubscriberExt;
