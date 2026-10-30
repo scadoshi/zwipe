@@ -83,8 +83,8 @@ mod tests {
             r#"{ "id": "00155182-3099-4742-be68-f8b4ea259d78", "slug": "ramp", "label": "Ramp" }"#;
         let tag: OracleTag = serde_json::from_str(json).unwrap();
         assert!(tag.description.is_none());
-        assert!(tag.parent_ids.is_empty());
-        assert!(tag.aliases.is_empty());
+        assert_eq!(tag.parent_ids, Vec::<Uuid>::new());
+        assert_eq!(tag.aliases, Vec::<String>::new());
         assert!(tag.taggings.is_empty());
     }
 }
