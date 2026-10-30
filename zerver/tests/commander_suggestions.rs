@@ -199,7 +199,7 @@ async fn goblin_user(app: &TestApp) -> (String, Uuid, Uuid) {
         .type_line("Legendary Creature — Goblin")
         .commander_legal();
 
-    let cmd_sid = commander.id();
+    let commander_id = commander.id();
     let cmd_oid = commander.oracle_id().unwrap();
     let a = (goblin_a.id(), goblin_a.oracle_id().unwrap());
     let b = (goblin_b.id(), goblin_b.oracle_id().unwrap());
@@ -243,7 +243,7 @@ async fn goblin_user(app: &TestApp) -> (String, Uuid, Uuid) {
     seed_profile(&app.pool, cmd_oid, json!({ "gives-haste": 1.0 })).await;
     seed_profile(&app.pool, maybe_oid, json!({ "gives-haste": 1.0 })).await;
 
-    build_commander_deck(app, &token, "Gobbos", cmd_sid, &[a, b]).await;
+    build_commander_deck(app, &token, "Gobbos", commander_id, &[a, b]).await;
     let (status, body) = app
         .post(
             &add_commander_maybeboard_card_route(maybe_oid),
