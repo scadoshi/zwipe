@@ -653,10 +653,8 @@ pub fn budget_tier(budget: f64, total: f64) -> u8 {
         3
     } else if total >= 0.75 * budget {
         2
-    } else if total >= 0.5 * budget {
-        1
     } else {
-        0
+        u8::from(total >= 0.5 * budget)
     }
 }
 
@@ -669,7 +667,7 @@ pub fn mainboard_total_price(entries: &[DeckEntry], currency: PriceCurrency) -> 
         .filter(|e| e.deck_card.board.is_active())
         .map(|e| {
             card_price(&e.card.scryfall_data, currency).unwrap_or(0.0)
-                * (*e.deck_card.quantity as f64)
+                * f64::from(*e.deck_card.quantity)
         })
         .sum()
 }
