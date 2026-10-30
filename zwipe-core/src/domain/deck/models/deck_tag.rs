@@ -1015,6 +1015,10 @@ fn prettify_deck_tag_slug(slug: &str) -> String {
 /// Parses raw tag strings into validated tags, dropping duplicates while
 /// preserving order. Returns an error on the first unrecognized string. Callers
 /// enforce [`MAX_DECK_TAGS`] separately so they can surface their own error.
+///
+/// # Errors
+///
+/// Returns [`InvalidDeckTag`] for the first string that is not a tag slug.
 pub fn parse_tags(raw: &[String]) -> Result<Vec<DeckTag>, InvalidDeckTag> {
     let mut out: Vec<DeckTag> = Vec::with_capacity(raw.len());
     for s in raw {

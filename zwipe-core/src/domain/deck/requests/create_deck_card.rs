@@ -49,6 +49,11 @@ pub struct CreateDeckCard {
 
 impl CreateDeckCard {
     /// Creates a new deck card addition request with validation.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`InvalidCreateDeckCard`] when an id is not a UUID or `quantity` is not a valid
+    /// [`Quantity`].
     pub fn new(
         user_id: Uuid,
         deck_id: &str,

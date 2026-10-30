@@ -25,6 +25,10 @@ pub struct DeleteDeck {
 
 impl DeleteDeck {
     /// Creates a new deck deletion request with validation.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`InvalidDeleteDeck::DeckId`] when `deck_id` is not a UUID.
     pub fn new(user_id: Uuid, deck_id: &str) -> Result<Self, InvalidDeleteDeck> {
         let deck_id = Uuid::try_parse(deck_id.trim()).map_err(InvalidDeleteDeck::DeckId)?;
         Ok(Self { user_id, deck_id })

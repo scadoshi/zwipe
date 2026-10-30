@@ -27,6 +27,10 @@ pub struct DeleteDeckCard {
 
 impl DeleteDeckCard {
     /// Creates a new deck card deletion request with validation.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`InvalidDeleteDeckCard`] when either id is not a UUID.
     pub fn new(
         user_id: Uuid,
         deck_id: &str,

@@ -197,6 +197,11 @@ impl CreateDeckProfileBuilder {
     }
 
     /// Validates and builds the request.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`InvalidCreateDeckProfile`] when the name, format, a tag, the power level or an
+    /// other-tag is invalid, or when the tags, other-tags or oracle tags exceed their caps.
     pub fn build(self) -> Result<CreateDeckProfile, InvalidCreateDeckProfile> {
         let name = DeckName::new(self.name)?;
         let format = self.format.as_deref().map(Format::try_from).transpose()?;

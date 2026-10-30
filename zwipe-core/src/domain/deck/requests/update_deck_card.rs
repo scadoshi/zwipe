@@ -65,6 +65,11 @@ impl UpdateDeckCard {
     ///
     /// At least one of `quantity`, `board`, `new_scryfall_data_id`, or `mvp`
     /// must be `Some`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`InvalidUpdateDeckCard`] when an id is not a UUID, `quantity` is not a valid
+    /// [`Quantity`], or nothing is set.
     pub fn patch(
         user_id: Uuid,
         deck_id: &str,

@@ -27,6 +27,10 @@ pub struct SkipDeckCard {
 
 impl SkipDeckCard {
     /// Creates a new skip request with validation.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`InvalidSkipDeckCard::DeckId`] when `deck_id` is not a UUID.
     pub fn new(user_id: Uuid, deck_id: &str, oracle_id: Uuid) -> Result<Self, InvalidSkipDeckCard> {
         let deck_id = Uuid::try_parse(deck_id.trim()).map_err(InvalidSkipDeckCard::DeckId)?;
         Ok(Self {
@@ -37,6 +41,10 @@ impl SkipDeckCard {
     }
 
     /// Creates a new skip request parsing both ids from path segments.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`InvalidSkipDeckCard`] when either id is not a UUID.
     pub fn from_path(
         user_id: Uuid,
         deck_id: &str,

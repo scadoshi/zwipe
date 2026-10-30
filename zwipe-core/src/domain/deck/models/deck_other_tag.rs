@@ -92,6 +92,10 @@ impl TryFrom<&str> for DeckOtherTag {
 /// Parses raw strings into validated other-tags, dropping duplicates while
 /// preserving order. Returns an error on the first unrecognized string. Callers
 /// enforce [`MAX_DECK_OTHER_TAGS`] separately so they can surface their own error.
+///
+/// # Errors
+///
+/// Returns [`InvalidDeckOtherTag`] for the first string that is not an other-tag slug.
 pub fn parse_other_tags(raw: &[String]) -> Result<Vec<DeckOtherTag>, InvalidDeckOtherTag> {
     let mut out: Vec<DeckOtherTag> = Vec::with_capacity(raw.len());
     for s in raw {

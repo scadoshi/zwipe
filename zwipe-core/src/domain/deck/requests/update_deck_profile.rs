@@ -248,6 +248,12 @@ impl UpdateDeckProfileBuilder {
     }
 
     /// Validates and builds the request.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`InvalidUpdateDeckProfile`] when nothing is set, when the name, format, a tag, the
+    /// power level or an other-tag is invalid, or when the tags, other-tags or oracle tags exceed
+    /// their caps.
     pub fn build(self) -> Result<UpdateDeckProfile, InvalidUpdateDeckProfile> {
         if self.name.is_none()
             && self.commander_id.is_none()
