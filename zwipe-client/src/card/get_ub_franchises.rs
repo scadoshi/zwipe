@@ -17,7 +17,7 @@ impl ZwipeClient {
     ///
     /// Returns a [`ClientError`] when the request fails to complete, the server answers with an
     /// error status, or the reply doesn't decode.
-    pub async fn get_ub_franchises(&self) -> Result<Vec<UbFranchiseView>, ClientError> {
+    pub async fn fetch_ub_franchises(&self) -> Result<Vec<UbFranchiseView>, ClientError> {
         self.call(GetUbFranchises, None).await
     }
 }

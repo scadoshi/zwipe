@@ -16,7 +16,7 @@ impl ZwipeClient {
     ///
     /// Returns a [`ClientError`] when the request fails to complete, the server answers with an
     /// error status, or the reply doesn't decode.
-    pub async fn get_changelog(&self) -> Result<HttpChangelog, ClientError> {
+    pub async fn fetch_changelog(&self) -> Result<HttpChangelog, ClientError> {
         self.call(GetChangelog, None).await
     }
 }

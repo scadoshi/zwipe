@@ -25,7 +25,7 @@ pub async fn get_keyword_reminders(
 ) -> Result<(StatusCode, Json<HashMap<String, String>>), ApiError> {
     let keywords = state
         .card_service
-        .get_keywords()
+        .fetch_keywords()
         .await
         .map_err(ApiError::from)?;
 

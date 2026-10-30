@@ -74,7 +74,10 @@ pub async fn create_deck_card(
     Path(deck_id): Path<String>,
     Json(body): Json<HttpCreateDeckCard>,
 ) -> Result<(StatusCode, Json<DeckCard>), ApiError> {
-    let db_user = state.user_service.get_user(&GetUser::from(user.id)).await?;
+    let db_user = state
+        .user_service
+        .fetch_user(&GetUser::from(user.id))
+        .await?;
     let email_verified = db_user.email_verified_at.is_some();
     let board = body
         .board

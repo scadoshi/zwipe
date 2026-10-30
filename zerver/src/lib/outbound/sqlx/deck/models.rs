@@ -48,7 +48,7 @@ pub struct DatabaseDeckProfile {
 impl TryFrom<DatabaseDeckProfile> for DeckProfile {
     type Error = IntoDeckProfileError;
     fn try_from(value: DatabaseDeckProfile) -> Result<Self, Self::Error> {
-        let name = DeckName::new(value.name)?;
+        let name = DeckName::from_stored(value.name);
         let format = value.format.map(Format::try_from).transpose()?;
         // Unrecognized tag strings are dropped (forward-compatible), like card roles.
         // Deck tags are stored + carried as slugs (Vec<String>); no enum parse.
@@ -180,6 +180,18 @@ mod tests {
             partner_commander_art_url: None,
             background_art_url: None,
             signature_spell_art_url: None,
+        }
+    }
+
+    #[test]
+    fn stored_name_reads_back_unchanged() {
+        for stored in ["   ", "  Spaced  ", "fuck"] {
+            let db = DatabaseDeckProfile {
+                name: stored.to_string(),
+                ..base_profile()
+            };
+            let profile = DeckProfile::try_from(db).unwrap();
+            assert_eq!(&*profile.name, stored, "stored name {stored:?}");
         }
     }
 

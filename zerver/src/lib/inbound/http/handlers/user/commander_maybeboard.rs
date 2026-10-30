@@ -46,7 +46,7 @@ pub async fn get_commander_maybeboard(
 ) -> Result<(StatusCode, Json<Vec<Card>>), ApiError> {
     state
         .deck_service
-        .get_commander_maybeboard(user.id)
+        .fetch_commander_maybeboard(user.id)
         .await
         .map_err(ApiError::from)
         .map(|cards| (StatusCode::OK, Json(cards)))

@@ -38,7 +38,7 @@ pub async fn get_user(
 
     state
         .user_service
-        .get_user(&request)
+        .fetch_user(&request)
         .await
         .map_err(ApiError::from)
         .map(|user| (StatusCode::OK, Json(user)))

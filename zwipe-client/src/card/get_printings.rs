@@ -13,7 +13,7 @@ impl ZwipeClient {
     ///
     /// Returns a [`ClientError`] when the request fails to complete, the server answers with an
     /// error status, or the reply doesn't decode.
-    pub async fn get_printings(&self, oracle_id: Uuid) -> Result<Vec<Card>, ClientError> {
+    pub async fn fetch_printings(&self, oracle_id: Uuid) -> Result<Vec<Card>, ClientError> {
         self.call(GetPrintings(oracle_id), None).await
     }
 }

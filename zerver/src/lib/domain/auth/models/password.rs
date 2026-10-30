@@ -37,7 +37,7 @@
 //!
 //! // Later: verify during authentication
 //! let provided = Password::new(user_input)?;
-//! let stored_hash = user_repo.get_password_hash(&user_id).await?;
+//! let stored_hash = user_repo.fetch_password_hash(&user_id).await?;
 //! stored_hash.verify(&provided)?; // Returns Ok(()) if matches
 //! ```
 
@@ -200,7 +200,7 @@ impl Display for Password {
 /// user_repo.create_user(username, email, hashed).await?;
 ///
 /// // During authentication
-/// let stored_hash: HashedPassword = user_repo.get_password_hash(&user_id).await?;
+/// let stored_hash: HashedPassword = user_repo.fetch_password_hash(&user_id).await?;
 /// let provided = Password::new(user_input)?;
 ///
 /// if stored_hash.verify(provided.read())? {
@@ -282,7 +282,7 @@ impl HashedPassword {
     /// # Example
     ///
     /// ```rust,ignore
-    /// let stored_hash: HashedPassword = user_repo.get_password_hash(&user_id).await?;
+    /// let stored_hash: HashedPassword = user_repo.fetch_password_hash(&user_id).await?;
     /// let user_input = "SecurePass123!";
     ///
     /// match stored_hash.verify(user_input)? {
