@@ -228,7 +228,7 @@ pub fn SwipeStack(
                                             Direction::Left => on_swipe_left.call(card.clone()),
                                             Direction::Right => on_swipe_right.call(card.clone()),
                                             Direction::Up => on_swipe_up.call(card.clone()),
-                                            _ => unreachable!(),
+                                            Direction::Down => unreachable!(),
                                         }
                                     }
                                 }
