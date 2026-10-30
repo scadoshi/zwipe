@@ -15,6 +15,7 @@ use crate::domain::deck::deck_metrics::deck_price;
 use crate::domain::deck::{DeckProfile, DeckWarning, Format, WarningAction};
 
 /// Cards in the command zone (stored on the profile, not in `deck_cards`).
+#[derive(Debug)]
 pub struct DeckCommandZone<'a> {
     /// Primary commander (or oathbreaker planeswalker).
     pub commander: Option<&'a Card>,

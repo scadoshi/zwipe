@@ -105,6 +105,7 @@ impl CreateDeckProfile {
 }
 
 /// Builder for [`CreateDeckProfile`].
+#[derive(Debug)]
 pub struct CreateDeckProfileBuilder {
     name: String,
     user_id: Uuid,

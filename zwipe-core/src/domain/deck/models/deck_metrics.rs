@@ -15,7 +15,7 @@ use crate::domain::deck::deck::DeckEntry;
 
 /// One chart-ready per-color mana balance row (see
 /// [`DeckMetrics::mana_balance_rows`]).
-#[derive(Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ManaBalanceRow {
     /// Color letter (W/U/B/R/G).
     pub label: &'static str,

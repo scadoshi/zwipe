@@ -140,6 +140,7 @@ impl UpdateDeckProfile {
 }
 
 /// Builder for [`UpdateDeckProfile`].
+#[derive(Debug)]
 pub struct UpdateDeckProfileBuilder {
     deck_id: Uuid,
     user_id: Uuid,
