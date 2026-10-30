@@ -19,7 +19,7 @@ use axum::http::StatusCode;
 use common::TestApp;
 use serde_json::json;
 use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
-use zwipe_core::http::helpers::Opdate;
+use zwipe_core::http::helpers::Patch;
 
 #[sqlx::test]
 async fn deck_profile_lifecycle(pool: sqlx::PgPool) {
@@ -60,7 +60,7 @@ async fn deck_profile_lifecycle(pool: sqlx::PgPool) {
         "deck list missing the created deck: {list}"
     );
 
-    // update the name (clean Opdate wire: absent = unchanged).
+    // update the name (clean Patch wire: absent = unchanged).
     let (status, updated) = app
         .patch(
             &deck_route(id.parse().unwrap()),
@@ -251,7 +251,7 @@ async fn deck_oracle_tags_round_trip(pool: sqlx::PgPool) {
     // the update's required fields are present, like the real client sends)
     let update_body = serde_json::to_value(
         HttpUpdateDeckProfile::builder()
-            .oracle_tags(Opdate::Set(Some(vec!["lifegain".to_string()])))
+            .oracle_tags(Patch::Set(Some(vec!["lifegain".to_string()])))
             .build(),
     )
     .unwrap();
@@ -264,7 +264,7 @@ async fn deck_oracle_tags_round_trip(pool: sqlx::PgPool) {
     // Set to an empty vec clears them
     let clear_body = serde_json::to_value(
         HttpUpdateDeckProfile::builder()
-            .oracle_tags(Opdate::Set(Some(vec![])))
+            .oracle_tags(Patch::Set(Some(vec![])))
             .build(),
     )
     .unwrap();

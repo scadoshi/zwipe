@@ -143,7 +143,7 @@ zwipe-core/src/
 │
 └── http/
     ├── paths.rs                    # API route path constants
-    ├── helpers.rs                  # Opdate<T> (partial update semantics)
+    ├── helpers.rs                  # Patch<T> (partial update semantics)
     └── contracts/
         ├── auth.rs                 # HttpLogin, HttpRegister, etc.
         ├── changelog.rs            # HttpChangelog, HttpRelease

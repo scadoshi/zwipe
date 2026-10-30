@@ -16,7 +16,7 @@ use zwipe_core::domain::deck::{
 };
 use zwipe_core::domain::user::models::hints::HINT_EDIT_DECK;
 use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
-use zwipe_core::http::helpers::Opdate;
+use zwipe_core::http::helpers::Patch;
 
 use super::components::deck_fields::{self, DeckFields, DeckFieldsHint};
 use super::components::format_select::FormatSelect;
@@ -337,52 +337,52 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     });
     let commander_id_update = use_memo(move || {
         if commander() == original_commander() {
-            Opdate::Unchanged
+            Patch::Unchanged
         } else {
-            Opdate::Set(commander().map(|c| c.scryfall_data.id))
+            Patch::Set(commander().map(|c| c.scryfall_data.id))
         }
     });
     let partner_id_update = use_memo(move || {
         if partner_commander() == original_partner() {
-            Opdate::Unchanged
+            Patch::Unchanged
         } else {
-            Opdate::Set(partner_commander().map(|c| c.scryfall_data.id))
+            Patch::Set(partner_commander().map(|c| c.scryfall_data.id))
         }
     });
     let background_id_update = use_memo(move || {
         if background() == original_background() {
-            Opdate::Unchanged
+            Patch::Unchanged
         } else {
-            Opdate::Set(background().map(|c| c.scryfall_data.id))
+            Patch::Set(background().map(|c| c.scryfall_data.id))
         }
     });
     let signature_spell_id_update = use_memo(move || {
         if signature_spell() == original_signature_spell() {
-            Opdate::Unchanged
+            Patch::Unchanged
         } else {
-            Opdate::Set(signature_spell().map(|c| c.scryfall_data.id))
+            Patch::Set(signature_spell().map(|c| c.scryfall_data.id))
         }
     });
     let format_update = use_memo(move || {
         if selected_format() == original_format() {
-            Opdate::Unchanged
+            Patch::Unchanged
         } else {
-            Opdate::Set(selected_format().map(|f| f.to_legality_key().to_string()))
+            Patch::Set(selected_format().map(|f| f.to_legality_key().to_string()))
         }
     });
     let tags_update = use_memo(move || {
         if selected_tags() == original_tags() {
-            Opdate::Unchanged
+            Patch::Unchanged
         } else {
-            Opdate::Set(Some(selected_tags()))
+            Patch::Set(Some(selected_tags()))
         }
     });
     let land_target_update = use_memo(move || {
         if land_target() == original_land_target() {
-            Opdate::Unchanged
+            Patch::Unchanged
         } else {
             // `None` here clears the override back to the heuristic.
-            Opdate::Set(land_target())
+            Patch::Set(land_target())
         }
     });
     let price_target_update = use_memo(move || {
@@ -392,31 +392,31 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             .ok()
             .filter(|v: &f64| *v > 0.0);
         if cur == orig {
-            Opdate::Unchanged
+            Patch::Unchanged
         } else {
             // Empty/zero parses to `None` → clears the budget.
-            Opdate::Set(cur)
+            Patch::Set(cur)
         }
     });
     let price_currency_update = use_memo(move || {
         if price_target_currency() == original_price_target_currency() {
-            Opdate::Unchanged
+            Patch::Unchanged
         } else {
-            Opdate::Set(Some(price_target_currency()))
+            Patch::Set(Some(price_target_currency()))
         }
     });
     let power_level_update = use_memo(move || {
         if power_level() == original_power_level() {
-            Opdate::Unchanged
+            Patch::Unchanged
         } else {
-            Opdate::Set(power_level().map(|p| p.to_string()))
+            Patch::Set(power_level().map(|p| p.to_string()))
         }
     });
     let other_tags_update = use_memo(move || {
         if other_tags() == original_other_tags() {
-            Opdate::Unchanged
+            Patch::Unchanged
         } else {
-            Opdate::Set(Some(
+            Patch::Set(Some(
                 other_tags()
                     .iter()
                     .map(ToString::to_string)
@@ -426,9 +426,9 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     });
     let oracle_tags_update = use_memo(move || {
         if oracle_tags() == original_oracle_tags() {
-            Opdate::Unchanged
+            Patch::Unchanged
         } else {
-            Opdate::Set(Some(oracle_tags()))
+            Patch::Set(Some(oracle_tags()))
         }
     });
     let has_made_changes = use_memo(move || {

@@ -292,7 +292,7 @@ async fn get_deck_carries_command_zone_cards(pool: sqlx::PgPool) {
     let bolt_oid = bolt.oracle_id().unwrap();
     seed_cards(&pool, &[commander, bolt]).await;
 
-    // Set the commander on the deck (clean Opdate wire: bare value = set,
+    // Set the commander on the deck (clean Patch wire: bare value = set,
     // absent = unchanged; the tagged dialect is not decoded).
     let (status, updated) = app
         .patch(

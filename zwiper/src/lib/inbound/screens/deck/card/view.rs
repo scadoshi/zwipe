@@ -26,7 +26,7 @@ use zwipe_core::domain::deck::{
 use zwipe_core::domain::user::models::hints::HINT_DECK_CARDS;
 use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
 use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpPatchDeckCard};
-use zwipe_core::http::helpers::Opdate;
+use zwipe_core::http::helpers::Patch;
 
 use super::components::card_row::{CardRow, OtagDescribe, OtagExamplesOpen, ShowRowArt};
 use super::components::filter_store::{FilterScope, FilterStore};
@@ -1110,7 +1110,7 @@ pub fn View(deck_id: Uuid) -> Element {
                 }
                 let card_name = old_card.scryfall_data.name.clone();
                 let old_id = old_card.scryfall_data.id;
-                let id = Opdate::Set(Some(old_id));
+                let id = Patch::Set(Some(old_id));
                 let request = match slot {
                     CommandZoneSlot::Commander => {
                         HttpUpdateDeckProfile::builder().commander_id(id).build()
@@ -1746,7 +1746,7 @@ pub fn View(deck_id: Uuid) -> Element {
 
                         if let Some(slot) = command_zone_slot() {
                             // Command zone card: update deck profile
-                            let id = Opdate::Set(Some(new_id));
+                            let id = Patch::Set(Some(new_id));
                             let request = match slot {
                                 CommandZoneSlot::Commander => HttpUpdateDeckProfile::builder().commander_id(id).build(),
                                 CommandZoneSlot::Partner => HttpUpdateDeckProfile::builder().partner_commander_id(id).build(),
