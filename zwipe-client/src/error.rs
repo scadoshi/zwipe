@@ -14,6 +14,8 @@
 //! comes from the framework rather than the server's `ApiError`, so its body
 //! is replaced with copy of the client's own.
 
+use std::sync::Arc;
+
 use reqwest::StatusCode;
 use thiserror::Error;
 
@@ -47,12 +49,13 @@ pub enum ClientError {
     /// 5xx, and any status without a variant of its own.
     #[error("{0}")]
     InternalServerError(String),
-    /// The request never completed: connection, TLS, timeout, DNS.
+    /// The request never completed (connection, TLS, timeout, DNS), or its
+    /// body couldn't be read off the wire. `Arc` keeps the error `Clone`.
     #[error("network error: {0}")]
-    Network(String),
-    /// The response arrived but its body couldn't be decoded.
+    Network(#[source] Arc<reqwest::Error>),
+    /// The response arrived but its body isn't the JSON the endpoint expects.
     #[error("decode error: {0}")]
-    Decode(String),
+    Decode(#[source] Arc<serde_json::Error>),
 }
 
 impl ClientError {
@@ -77,17 +80,13 @@ impl ClientError {
 
 impl From<reqwest::Error> for ClientError {
     fn from(value: reqwest::Error) -> Self {
-        if value.is_decode() {
-            Self::Decode(value.to_string())
-        } else {
-            Self::Network(value.to_string())
-        }
+        Self::Network(Arc::new(value))
     }
 }
 
 impl From<serde_json::Error> for ClientError {
     fn from(value: serde_json::Error) -> Self {
-        Self::Decode(value.to_string())
+        Self::Decode(Arc::new(value))
     }
 }
 
@@ -145,6 +144,20 @@ mod tests {
         }
     }
 
+    /// Transport and decode failures keep the underlying error as their
+    /// source, so a log or report can walk the chain.
+    #[test]
+    fn network_and_decode_errors_keep_their_source() {
+        let decode = ClientError::from(serde_json::from_str::<u32>("\"x\"").unwrap_err());
+        assert!(matches!(decode, ClientError::Decode(_)));
+        assert!(std::error::Error::source(&decode).is_some());
+
+        let builder = reqwest::Client::new().get("not a url").build().unwrap_err();
+        let network = ClientError::from(builder);
+        assert!(matches!(network, ClientError::Network(_)));
+        assert!(std::error::Error::source(&network).is_some());
+    }
+
     #[test]
     fn oversized_requests_say_so() {
         let error = ClientError::from((
@@ -173,13 +186,19 @@ mod tests {
             "something went wrong, please try again"
         );
 
-        let network = ClientError::Network("dns error: no such host api.zwipe.net".into());
+        let network = ClientError::from(
+            reqwest::Client::new()
+                .get("not a url: api.zwipe.net")
+                .build()
+                .unwrap_err(),
+        );
         assert_eq!(
             network.to_user_message(),
             "connection error, check your network and try again"
         );
 
-        let decode = ClientError::Decode("missing field `id` at line 1".into());
+        let decode =
+            ClientError::from(serde_json::from_str::<u32>("\"missing field\"").unwrap_err());
         assert_eq!(
             decode.to_user_message(),
             "something went wrong, please try again"
