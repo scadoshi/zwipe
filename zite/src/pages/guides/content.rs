@@ -37,6 +37,10 @@ pub(crate) enum Block {
 /// literal path, so each shipped image gets one arm here, added when the file
 /// lands (see `context/plans/guide_images.md`). `None` renders nothing, so an
 /// [`Block::Image`] without its registry arm is a wiring bug caught by eye.
+#[expect(
+    clippy::too_many_lines,
+    reason = "an asset table, one arm per screenshot"
+)]
 pub(crate) fn guide_image(file: &str) -> Option<Asset> {
     match file {
         "getting-started/01-create-deck.webp" => {
