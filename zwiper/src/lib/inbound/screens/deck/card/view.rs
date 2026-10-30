@@ -347,8 +347,7 @@ pub fn View(deck_id: Uuid) -> Element {
             .peek()
             .iter()
             .find(|e| e.card.scryfall_data.id == card_id)
-            .map(|e| *e.deck_card.quantity)
-            .unwrap_or(1)
+            .map_or(1, |e| *e.deck_card.quantity)
     };
 
     // Index deck entries by printing id so the card-row render resolves
@@ -780,8 +779,9 @@ pub fn View(deck_id: Uuid) -> Element {
             .peek()
             .iter()
             .find(|e| e.card.scryfall_data.id == card_id)
-            .map(|e| (e.deck_card.board, e.card.scryfall_data.name.clone()))
-            .unwrap_or((Board::Deck, String::new()));
+            .map_or((Board::Deck, String::new()), |e| {
+                (e.deck_card.board, e.card.scryfall_data.name.clone())
+            });
 
         if record {
             undo_log.push(UndoAction::MovedBoard {

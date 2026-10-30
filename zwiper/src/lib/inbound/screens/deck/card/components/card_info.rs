@@ -42,8 +42,7 @@ pub(crate) fn CardInfoDisplay(card: Card) -> Element {
         .scryfall_data
         .artist
         .filter(|a| !a.is_empty())
-        .map(|a| format!("Artist: {a}"))
-        .unwrap_or_else(|| "\u{00a0}".to_string());
+        .map_or_else(|| "\u{00a0}".to_string(), |a| format!("Artist: {a}"));
 
     rsx! {
         div { class: "card-info",

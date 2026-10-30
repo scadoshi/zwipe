@@ -99,7 +99,7 @@ pub(crate) fn OracleTags(mut dict_open: Signal<bool>, mut dict_exclude: Signal<b
     let excluded = read_excluded(&filter_builder());
 
     let cell_read = cell.read();
-    let tags: &[OracleTag] = cell_read.loaded().map(Vec::as_slice).unwrap_or(&[]);
+    let tags: &[OracleTag] = cell_read.loaded().map_or(&[], Vec::as_slice);
 
     rsx! {
         div { class: "flex-col gap-half",
