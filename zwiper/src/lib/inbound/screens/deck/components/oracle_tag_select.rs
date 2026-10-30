@@ -82,8 +82,7 @@ pub(crate) fn OracleTagSelect(
     });
 
     // Back, and the OS back gesture, revert to the snapshot and say so when
-    // there was something to revert. The gesture used to just close, which
-    // kept the edits: the one exit that behaved like Save without saying so.
+    // there was something to revert.
     let back = use_callback(move |(): ()| {
         let mut selected = selected;
         if !same_set(&selected.peek(), &snapshot.peek()) {
@@ -123,8 +122,8 @@ pub(crate) fn OracleTagSelect(
         Vec::new()
     } else if q.trim().is_empty() {
         // The server marks which tags the default grid shows, so retuning it
-        // is a deploy. A tag the backend stopped serving cannot be curated,
-        // which is why this no longer intersects against the served set.
+        // is a deploy. A tag the backend stopped serving cannot be curated, so
+        // the grid does not intersect against the served set.
         let mut curated: Vec<OracleTag> = tags
             .iter()
             .filter(|t| t.curated || sel.contains(&t.slug))

@@ -3,10 +3,9 @@
 //! Every swipe screen on every deck remembers its own filter for the session:
 //! each screen owns a local `Signal<CardQueryBuilder>` (provided as context so
 //! the filter modules bind to it), initialized from here on mount and parked
-//! back on drop. Independent contexts replace the old shared filter and its
-//! "move it across unless it looks like a default" guesswork: cross-screen
-//! contamination is structurally impossible. In-memory only: an app restart
-//! forgets. Plan: `context/plans/filter_persistence.md`.
+//! back on drop. With one context per screen, a filter cannot leak across
+//! screens. In-memory only: an app restart forgets. Plan:
+//! `context/plans/filter_persistence.md`.
 
 use std::collections::HashMap;
 

@@ -78,8 +78,6 @@ pub(crate) fn FormatSelect(
     // OS back gesture closes this overlay before touching the router. It maps
     // to Back, not Save: leaving a picker should abandon the pick, and the
     // parent's on_cancel restores the format + command-zone snapshot and closes.
-    // Without this the back swipe fell through to the router and left the whole
-    // edit screen (owner report 2026-08-17).
     let back = use_callback(move |(): ()| {
         if *selected_format.peek() != *snapshot.peek() {
             toast.info(

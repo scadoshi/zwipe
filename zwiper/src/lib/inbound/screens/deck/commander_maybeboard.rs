@@ -298,8 +298,8 @@ pub fn CommanderMaybeboard() -> Element {
 
     // Deck profiles back the same proactive create gate as the deck list's
     // Create button: unverified accounts are limited to 1 deck.
-    // Quiet: backs the create gate only; a failure just leaves the gate open
-    // the way the old Result-flattening did, and telemetry records it now.
+    // Quiet: backs the create gate only; a failure leaves the gate open and
+    // telemetry records it.
     let deck_profiles_resource: Resource<Option<Vec<DeckProfile>>> =
         use_resource(move || async move {
             authed

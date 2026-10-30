@@ -60,8 +60,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
     let mut deck_profile_resource: Resource<Result<DeckProfile, ClientError>> =
         use_resource(use_reactive!(|deck_id| async move {
             // try_run keeps the Result the downstream Ok/Err matches expect;
-            // reporting and the error toast live in the facade now (the old
-            // separate error-watching effect is gone).
+            // reporting and the error toast live in the facade.
             authed
                 .try_run("load_deck", |c, s| async move {
                     c.get_deck_profile(deck_id, &s).await
