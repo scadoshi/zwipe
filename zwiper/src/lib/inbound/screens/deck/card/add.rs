@@ -329,11 +329,11 @@ pub fn Add(deck_id: Uuid) -> Element {
                         .collect();
 
                     // Append unique cards to existing list
-                    if !unique_new_cards.is_empty() {
-                        stack.append(unique_new_cards);
-                    } else {
+                    if unique_new_cards.is_empty() {
                         pagination_exhausted.set(true);
                         usage_buffer().record_pile_end(deck_id, PileEndKind::Empty, synergy);
+                    } else {
+                        stack.append(unique_new_cards);
                     }
 
                     is_loading_more.set(false);

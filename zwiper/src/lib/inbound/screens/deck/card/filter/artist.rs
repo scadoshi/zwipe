@@ -171,7 +171,9 @@ pub fn Artist() -> Element {
                             .cloned()
                             .collect();
 
-                        if !results.is_empty() {
+                        if results.is_empty() {
+                            rsx! {}
+                        } else {
                             rsx! {
                                 div { class: "search-float-anchor",
                                     div { class: "search-float-results",
@@ -191,8 +193,6 @@ pub fn Artist() -> Element {
                                     }
                                 }
                             }
-                        } else {
-                            rsx! {}
                         }
                     }
                 }

@@ -157,7 +157,9 @@ pub(crate) fn Keywords() -> Element {
                         .cloned()
                         .collect();
 
-                    if !results.is_empty() {
+                    if results.is_empty() {
+                        rsx! {}
+                    } else {
                         rsx! {
                             div { class: "search-float-anchor",
                                 div { class: "search-float-results",
@@ -177,8 +179,6 @@ pub(crate) fn Keywords() -> Element {
                                 }
                             }
                         }
-                    } else {
-                        rsx! {}
                     }
                 }
             }
@@ -259,7 +259,9 @@ pub(crate) fn Keywords() -> Element {
                         .cloned()
                         .collect();
 
-                    if !results.is_empty() {
+                    if results.is_empty() {
+                        rsx! {}
+                    } else {
                         rsx! {
                             div { class: "search-float-anchor",
                                 div { class: "search-float-results",
@@ -278,8 +280,6 @@ pub(crate) fn Keywords() -> Element {
                                 }
                             }
                         }
-                    } else {
-                        rsx! {}
                     }
                 }
             }
