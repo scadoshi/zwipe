@@ -583,7 +583,7 @@ pub(crate) fn ActivitySections(
                     RateChips { kind }
                     // Keyed on the rate, so a switch mounts a fresh chart:
                     // patched in place, rows that re-sort and flip between a
-                    // chip and a plain label kept stale bar widths.
+                    // tappable chip and a grey one kept stale bar widths.
                     for rate in [kind().label()] {
                         div { key: "{rate}",
                             if role_bars.is_empty() {

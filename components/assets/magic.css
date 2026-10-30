@@ -67,6 +67,12 @@
     transform: none;
 }
 
+/* Grey, for a chip in a row of tappable ones that has nothing to open. */
+.keyword-chip.muted {
+    border-color: var(--border-muted);
+    color: var(--text-muted);
+}
+
 .keyword-chip.active {
     color: var(--bg-primary);
     background-color: var(--accent-secondary);

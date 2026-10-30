@@ -35,7 +35,11 @@ pub struct Release {
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[];
+pub const UPCOMING: &[Release] = &[Release {
+    version: "1.16.3",
+    date: None,
+    entries: &["Card roles with no Oracle tags to open show as grey chips"],
+}];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[

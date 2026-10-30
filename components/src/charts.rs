@@ -45,8 +45,7 @@ pub struct Bar {
     /// The bar's size as a percentage of the chart's tallest bar, 0 to 100.
     pub pct: u32,
     /// Whether a chip chart draws the label as a tappable chip. False draws
-    /// it as plain text, the way a chart without `on_bar` does, for a bar
-    /// with nothing to reveal.
+    /// it as a grey chip that takes no tap, for a bar with nothing to reveal.
     pub revealable: bool,
 }
 
@@ -64,7 +63,7 @@ impl Bar {
         }
     }
 
-    /// The same bar with a plain, untappable label in a chip chart.
+    /// The same bar with a grey, untappable chip in a chip chart.
     #[must_use]
     pub fn with_no_reveal(self) -> Self {
         Self {
@@ -159,8 +158,7 @@ fn reveal_at<'k>(selected: Option<&'k str>, shown: Option<&'k str>) -> Option<Re
 /// that label in the accent color. A horizontal chart draws each label as a
 /// `.keyword-chip`, active when open, and eases `reveal`'s content open
 /// directly under the open row, one row at a time. A bar that is not
-/// [`Bar::revealable`] keeps the plain label of a chart without `on_bar` there
-/// and reports no tap.
+/// [`Bar::revealable`] draws a grey chip there and reports no tap.
 #[component]
 pub fn BarChart(
     /// The [`ChartLabel`] over the bars; none renders the bars alone.
@@ -317,7 +315,7 @@ pub fn BarChart(
                                         "{chip_label(bar)}"
                                     }
                                 } else {
-                                    span { style: horizontal_label.clone(), "{bar.label}" }
+                                    span { class: "keyword-chip static muted", "{chip_label(bar)}" }
                                 }
                             }
                             div { style: "flex:1;height:0.9rem;background:var(--border-secondary);border-radius:0.15rem;overflow:hidden;",
@@ -352,7 +350,7 @@ fn tuple_bars(bars: &[(&'static str, usize, u32)]) -> Vec<Bar> {
 }
 
 /// Role bars whose roles reveal their tags: a role with none in
-/// `role_tags` is a plain label.
+/// `role_tags` is a grey chip.
 fn role_bars(
     bars: &[(&'static str, usize, u32)],
     role_tags: &BTreeMap<&'static str, Vec<String>>,
