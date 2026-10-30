@@ -339,6 +339,8 @@ fn api_error_kind(api: &ClientError) -> &'static str {
         ClientError::UnprocessableEntity(_) => "api_unprocessable",
         ClientError::TooManyRequests(_) => "api_too_many_requests",
         ClientError::Conflict(_) => "api_conflict",
+        ClientError::BadRequest(_) => "api_bad_request",
+        ClientError::PayloadTooLarge(_) => "api_payload_too_large",
         // Network and Decode are handled before this is reached.
         ClientError::InternalServerError(_) | ClientError::Network(_) | ClientError::Decode(_) => {
             "api_internal"
