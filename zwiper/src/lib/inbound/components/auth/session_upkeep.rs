@@ -43,6 +43,13 @@ use crate::outbound::theme_store::PersistTheme;
 /// `CFBundleShortVersionString`).
 const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 
+/// How often the upkeep loop refreshes the session and rechecks the minimum
+/// version.
+const UPKEEP_INTERVAL: Duration = Duration::from_secs(60);
+
+const SECS_PER_MINUTE: i64 = 60;
+const SECS_PER_HOUR: i64 = 3600;
+
 /// The featured flavor card cached for the Home screen, with the time it
 /// goes stale.
 ///
@@ -64,10 +71,11 @@ impl FlavorCard {
     pub fn new(card: Card) -> Self {
         use chrono::Timelike;
         let now = Utc::now();
-        let secs_into_hour = i64::from(now.minute()) * 60 + i64::from(now.second());
+        let secs_into_hour = i64::from(now.minute()) * SECS_PER_MINUTE + i64::from(now.second());
         Self {
             card,
-            expires_at: now + chrono::Duration::seconds(3600 - secs_into_hour.min(3599)),
+            expires_at: now
+                + chrono::Duration::seconds(SECS_PER_HOUR - secs_into_hour.min(SECS_PER_HOUR - 1)),
         }
     }
 
@@ -332,7 +340,7 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
     // the gate flipping re-renders the root, which re-runs this function.
     use_future(move || async move {
         // first tick fires immediately; this is the cold-start refresh
-        let mut interval = time::interval(Duration::from_secs(60));
+        let mut interval = time::interval(UPKEEP_INTERVAL);
         loop {
             interval.tick().await;
             // single-flight: free of races with any in-flight user action
