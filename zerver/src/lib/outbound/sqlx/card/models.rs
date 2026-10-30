@@ -16,7 +16,7 @@ use zwipe_core::domain::card::scryfall_data::rarity::Rarity;
 /// Fields that are domain newtypes in [`ScryfallData`] are stored here as
 /// primitives or `Json<T>` wrappers that SQLx handles natively.
 #[derive(Debug, FromRow)]
-#[allow(missing_docs)]
+#[expect(missing_docs, reason = "each field mirrors the column it is read from")]
 pub struct DatabaseScryfallData {
     // Core Card Fields
     pub arena_id: Option<i32>,

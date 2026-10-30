@@ -6,7 +6,7 @@ use zwipe_core::domain::card::oracle_tag::{CURATED_ORACLE_TAGS, OracleTag};
 /// Raw database oracle tag catalog record (from the `oracle_tags` table, with
 /// `parent_ids` already resolved to parent slugs by the query).
 #[derive(Debug, Clone, FromRow)]
-#[allow(missing_docs)]
+#[expect(missing_docs, reason = "each field mirrors the column it is read from")]
 pub struct DatabaseOracleTag {
     pub slug: String,
     pub label: String,

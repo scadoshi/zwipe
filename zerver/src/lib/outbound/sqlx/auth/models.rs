@@ -9,7 +9,7 @@ use crate::outbound::sqlx::auth::error::IntoUserWithPasswordHashError;
 
 /// raw database user with password hash record
 /// (unvalidated data from `PostgreSQL`)
-#[allow(missing_docs)]
+#[expect(missing_docs, reason = "each field mirrors the column it is read from")]
 #[derive(Debug, Clone, FromRow)]
 pub struct DatabaseUserWithPasswordHash {
     pub id: Uuid,
@@ -42,7 +42,7 @@ impl TryFrom<DatabaseUserWithPasswordHash> for UserWithPasswordHash {
 }
 
 /// raw database refresh token record
-#[allow(missing_docs)]
+#[expect(missing_docs, reason = "each field mirrors the column it is read from")]
 #[derive(Debug, Clone, FromRow)]
 pub struct DatabaseRefreshToken {
     pub id: i32,

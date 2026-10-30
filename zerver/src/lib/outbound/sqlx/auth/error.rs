@@ -19,7 +19,7 @@ use crate::outbound::sqlx::user::error::IntoUserError;
 
 /// Errors from converting a database user-with-password-hash row into domain types.
 #[derive(Debug, Error)]
-#[allow(missing_docs)]
+#[expect(missing_docs, reason = "each variant's message names the failure")]
 pub enum IntoUserWithPasswordHashError {
     #[error(transparent)]
     Username(#[from] InvalidUsername),

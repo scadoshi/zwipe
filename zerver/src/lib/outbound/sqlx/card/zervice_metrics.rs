@@ -130,7 +130,6 @@ impl Encode<'_, Postgres> for VecErrorMetrics {
 
 /// Raw database sync metrics record.
 #[derive(Debug, FromRow)]
-#[allow(missing_docs)]
 pub struct DatabaseZerviceMetrics {
     #[sqlx(rename = "id")]
     _id: Uuid,

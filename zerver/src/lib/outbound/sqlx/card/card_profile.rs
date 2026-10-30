@@ -10,7 +10,7 @@ use zwipe_core::domain::card::card_role::CardRole;
 
 /// Raw database card profile record (unvalidated data from PostgreSQL).
 #[derive(Debug, Clone, FromRow)]
-#[allow(missing_docs)]
+#[expect(missing_docs, reason = "each field mirrors the column it is read from")]
 pub struct DatabaseCardProfile {
     pub scryfall_data_id: Uuid,
     pub is_token: bool,

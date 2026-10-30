@@ -24,7 +24,10 @@ use crate::outbound::sqlx::user::models::DatabaseUser;
 /// Raw database preferences record.
 #[derive(Debug, Clone, sqlx::FromRow)]
 struct DatabaseUserPreferences {
-    #[allow(dead_code)]
+    #[expect(
+        dead_code,
+        reason = "the query selects it, but UserPreferences does not carry it"
+    )]
     user_id: Uuid,
     theme: String,
     dark_mode: bool,

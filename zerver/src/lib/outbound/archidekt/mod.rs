@@ -255,7 +255,6 @@ mod tests {
     /// card stripped of all category tags) must not fail the whole-deck parse.
     /// Regression for deck 21966480 ("Everybody gets a lightning bolt").
     #[test]
-    #[allow(clippy::expect_used)]
     fn null_card_categories_parses_to_empty() {
         let json = r#"{
             "categories": [{"name": "Maybeboard", "includedInDeck": false}],
@@ -285,7 +284,6 @@ mod tests {
     /// top-level `customCards`). It must not fail the whole-deck parse; it parses
     /// with an empty name + nil id so it surfaces as unresolved downstream.
     #[test]
-    #[allow(clippy::expect_used)]
     fn null_oracle_card_and_uid_parse_to_unresolved() {
         let json = r#"{
             "cards": [
@@ -315,7 +313,6 @@ mod tests {
     /// Top-level `cards`/`categories` sent as `null` must also degrade to empty
     /// rather than erroring.
     #[test]
-    #[allow(clippy::expect_used)]
     fn null_top_level_lists_parse_to_empty() {
         let raw: RawDeck =
             serde_json::from_str(r#"{"categories": null, "cards": null}"#).expect("must parse");
