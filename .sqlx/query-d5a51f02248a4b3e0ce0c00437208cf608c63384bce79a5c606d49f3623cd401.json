@@ -1,11 +1,11 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT COUNT(*) FROM decks WHERE user_id = $1",
+  "query": "SELECT COUNT(*) AS \"count!\" FROM decks WHERE user_id = $1",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "count",
+        "name": "count!",
         "type_info": "Int8",
         "origin": "Expression"
       }
@@ -19,5 +19,5 @@
       null
     ]
   },
-  "hash": "e4658f67bf10b34426e64f3ae37ac30eb04aa660fd3f404fa2e06f29bc735e28"
+  "hash": "d5a51f02248a4b3e0ce0c00437208cf608c63384bce79a5c606d49f3623cd401"
 }

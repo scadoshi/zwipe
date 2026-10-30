@@ -6,6 +6,12 @@
 //!
 //! Requires `DATABASE_URL`: `set -a; source zerver/.env; set +a`.
 
+#![expect(
+    clippy::unwrap_used,
+    clippy::indexing_slicing,
+    reason = "a test: helpers outside #[test] fns unwrap and index, and a panic is the failure report"
+)]
+
 use zwipe_core::http::paths::{DECK_ROUTE, clone_deck_route, deck_profile_route, deck_route};
 mod common;
 
@@ -267,4 +273,82 @@ async fn deck_oracle_tags_round_trip(pool: sqlx::PgPool) {
         .await;
     assert_eq!(status, StatusCode::OK, "clear: {cleared}");
     assert_eq!(cleared["oracle_tags"], json!([]));
+}
+
+/// Holds every deck insert until `hold` passes, so requests fired together
+/// all read the deck count before any of them writes.
+async fn hold_deck_inserts(pool: &sqlx::PgPool, hold: std::time::Duration) {
+    let mut tx = pool.begin().await.unwrap();
+    sqlx::query("LOCK TABLE decks IN SHARE ROW EXCLUSIVE MODE")
+        .execute(&mut *tx)
+        .await
+        .unwrap();
+    tokio::time::sleep(hold).await;
+    tx.commit().await.unwrap();
+}
+
+/// Registers a verified user with 19 decks, one below the cap, and returns
+/// `(token, user_id, source_deck_id)`.
+async fn user_one_below_the_cap(app: &TestApp, username: &str) -> (String, String, uuid::Uuid) {
+    let (token, uid) = app.register(username).await;
+    app.verify_email(&uid).await;
+    let (status, deck) = app
+        .post(DECK_ROUTE, json!({ "name": "Source" }), Some(&token))
+        .await;
+    assert_eq!(status, StatusCode::CREATED, "create: {deck}");
+    let source = deck["id"].as_str().unwrap().parse().unwrap();
+    sqlx::query(
+        "INSERT INTO decks (name, user_id) SELECT 'Filler ' || n, $1::uuid FROM generate_series(1, 18) AS n",
+    )
+    .bind(&uid)
+    .execute(&app.pool)
+    .await
+    .unwrap();
+    (token, uid, source)
+}
+
+async fn deck_count(pool: &sqlx::PgPool, uid: &str) -> i64 {
+    sqlx::query_scalar("SELECT COUNT(*) FROM decks WHERE user_id = $1::uuid")
+        .bind(uid)
+        .fetch_one(pool)
+        .await
+        .unwrap()
+}
+
+/// Two creates racing at the cap leave the user exactly at it: the count and
+/// the insert share one transaction under a lock on the user row.
+#[sqlx::test]
+async fn concurrent_creates_stop_at_the_deck_cap(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, uid, _) = user_one_below_the_cap(&app, "racer").await;
+
+    let ((first, _), (second, _), ()) = tokio::join!(
+        app.post(DECK_ROUTE, json!({ "name": "Race A" }), Some(&token)),
+        app.post(DECK_ROUTE, json!({ "name": "Race B" }), Some(&token)),
+        hold_deck_inserts(&pool, std::time::Duration::from_millis(300)),
+    );
+    assert_eq!(
+        deck_count(&pool, &uid).await,
+        20,
+        "statuses {first} and {second}"
+    );
+}
+
+/// Two clones racing at the cap leave the user exactly at it.
+#[sqlx::test]
+async fn concurrent_clones_stop_at_the_deck_cap(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, uid, source) = user_one_below_the_cap(&app, "cloneracer").await;
+
+    let route = clone_deck_route(source);
+    let ((first, _), (second, _), ()) = tokio::join!(
+        app.post(&route, json!({ "new_name": "Copy A" }), Some(&token)),
+        app.post(&route, json!({ "new_name": "Copy B" }), Some(&token)),
+        hold_deck_inserts(&pool, std::time::Duration::from_millis(300)),
+    );
+    assert_eq!(
+        deck_count(&pool, &uid).await,
+        20,
+        "statuses {first} and {second}"
+    );
 }

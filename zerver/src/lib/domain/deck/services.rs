@@ -133,24 +133,14 @@ where
         &self,
         request: &CreateDeckProfile,
     ) -> Result<DeckProfile, CreateDeckProfileError> {
-        let deck_count = self
-            .deck_repo
-            .count_decks_by_user(request.user_id)
-            .await
-            .map_err(CreateDeckProfileError::Database)?;
         let deck_limit = if request.email_verified {
             MAX_DECKS_PER_USER
         } else {
             UNVERIFIED_MAX_DECKS_PER_USER
         };
-        if deck_count >= deck_limit {
-            return Err(if request.email_verified {
-                CreateDeckProfileError::LimitReached
-            } else {
-                CreateDeckProfileError::UnverifiedLimitReached
-            });
-        }
-        self.deck_repo.create_deck_profile(request).await
+        self.deck_repo
+            .create_deck_profile(request, deck_limit)
+            .await
     }
 
     async fn create_deck_card(
@@ -1141,29 +1131,14 @@ where
             });
         }
 
-        // 2. Enforce the same deck-count limit as create_deck_profile.
-        let deck_count = self
-            .deck_repo
-            .count_decks_by_user(request.user_id)
-            .await
-            .map_err(CloneDeckError::Database)?;
+        // 2. The repo copies in one transaction and enforces the deck-count
+        //    limit there, under the user's row lock.
         let deck_limit = if request.email_verified {
             MAX_DECKS_PER_USER
         } else {
             UNVERIFIED_MAX_DECKS_PER_USER
         };
-        if deck_count >= deck_limit {
-            return Err(if request.email_verified {
-                CloneDeckError::LimitReached
-            } else {
-                CloneDeckError::UnverifiedLimitReached
-            });
-        }
-
-        // 3. Delegate to the repo for the transactional copy.
-        self.deck_repo
-            .clone_deck(request.source_deck_id, &request.new_name, request.user_id)
-            .await
+        self.deck_repo.clone_deck(request, deck_limit).await
     }
 
     // == share ==
