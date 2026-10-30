@@ -469,20 +469,19 @@ impl DeckRepository for Postgres {
         if request.mvp == Some(true) {
             // Board rule: the star lands on the mainboard; either the board
             // this request sets, or the row's current board when untouched.
-            let effective_board = match &request.board {
-                Some(board) => *board,
-                None => {
-                    let current: String = query_scalar!(
-                        "SELECT board FROM deck_cards WHERE deck_id = $1 AND scryfall_data_id = $2",
-                        request.deck_id,
-                        request.scryfall_data_id
-                    )
-                    .fetch_optional(&mut *tx)
-                    .await?
-                    .ok_or(UpdateDeckCardError::NotFound)?;
-                    Board::try_from(current.as_str())
-                        .map_err(|e| UpdateDeckCardError::Database(anyhow::anyhow!(e)))?
-                }
+            let effective_board = if let Some(board) = &request.board {
+                *board
+            } else {
+                let current: String = query_scalar!(
+                    "SELECT board FROM deck_cards WHERE deck_id = $1 AND scryfall_data_id = $2",
+                    request.deck_id,
+                    request.scryfall_data_id
+                )
+                .fetch_optional(&mut *tx)
+                .await?
+                .ok_or(UpdateDeckCardError::NotFound)?;
+                Board::try_from(current.as_str())
+                    .map_err(|e| UpdateDeckCardError::Database(anyhow::anyhow!(e)))?
             };
             if effective_board != Board::Deck {
                 return Err(UpdateDeckCardError::MvpNotMainboard);
