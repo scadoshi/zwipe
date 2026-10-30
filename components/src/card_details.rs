@@ -10,6 +10,8 @@
 //!
 //! [`CardRow`]: crate::CardRow
 
+use std::collections::BTreeMap;
+
 use dioxus::prelude::*;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ImageSize;
@@ -176,7 +178,7 @@ pub fn CardDetails(
             card.card_profile.other_oracle_tags.clone(),
         )
     } else {
-        (Vec::new(), Default::default(), Vec::new())
+        (Vec::new(), BTreeMap::default(), Vec::new())
     };
 
     let faces = build_rules(&card);

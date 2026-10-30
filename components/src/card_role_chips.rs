@@ -72,7 +72,7 @@ pub fn CardRoleChips(
     let open_idx = open();
     let reveal_tags: Vec<String> = shown()
         .and_then(|i| items.get(i))
-        .map(|(_, tags)| tags.to_vec())
+        .map(|(_, tags)| tags.clone())
         .unwrap_or_default();
     let reveal_class = if open_idx.is_some() {
         "keyword-reveal open"
