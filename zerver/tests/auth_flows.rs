@@ -70,3 +70,51 @@ async fn authed_route_without_token_is_401(pool: sqlx::PgPool) {
     let (status, _) = app.get(GET_USER_ROUTE, None).await;
     assert_eq!(status, StatusCode::UNAUTHORIZED);
 }
+
+/// Argon2 runs on the blocking pool: two logins at once both succeed, and a
+/// ticker on the same task keeps ticking while they hash, which it can't if
+/// the hashing holds the runtime thread.
+#[sqlx::test]
+async fn concurrent_logins_leave_the_runtime_free(pool: sqlx::PgPool) {
+    use std::sync::atomic::{AtomicBool, Ordering};
+    use std::time::{Duration, Instant};
+
+    let app = TestApp::new(pool);
+    app.register("hasher1").await;
+    app.register("hasher2").await;
+
+    let done = AtomicBool::new(false);
+    let ticker = async {
+        let mut longest = Duration::ZERO;
+        let mut last = Instant::now();
+        while !done.load(Ordering::SeqCst) {
+            tokio::time::sleep(Duration::from_millis(1)).await;
+            longest = longest.max(last.elapsed());
+            last = Instant::now();
+        }
+        longest
+    };
+    let logins = async {
+        let results = tokio::join!(
+            app.post(
+                LOGIN_ROUTE,
+                serde_json::json!({ "identifier": "hasher1", "password": "TestPass123!" }),
+                None,
+            ),
+            app.post(
+                LOGIN_ROUTE,
+                serde_json::json!({ "identifier": "hasher2", "password": "TestPass123!" }),
+                None,
+            ),
+        );
+        done.store(true, Ordering::SeqCst);
+        results
+    };
+    let (longest, ((first, first_body), (second, second_body))) = tokio::join!(ticker, logins);
+    assert_eq!(first, StatusCode::OK, "first login: {first_body}");
+    assert_eq!(second, StatusCode::OK, "second login: {second_body}");
+    assert!(
+        longest < Duration::from_millis(150),
+        "the runtime stalled for {longest:?} during the logins"
+    );
+}
