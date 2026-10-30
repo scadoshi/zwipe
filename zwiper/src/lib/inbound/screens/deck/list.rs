@@ -316,8 +316,8 @@ fn DeckRow(profile: DeckProfile) -> Element {
     }
     // Out of bounds only when the format defines a size rule the count breaks.
     let count_bad = profile.format.as_ref().is_some_and(|f| {
-        f.min_cards().is_some_and(|m| count < m as i64)
-            || f.max_cards().is_some_and(|m| count > m as i64)
+        f.min_cards().is_some_and(|m| count < i64::from(m))
+            || f.max_cards().is_some_and(|m| count > i64::from(m))
     });
     let pips = identity_colors(&profile);
     let art = command_zone_art(&profile);
