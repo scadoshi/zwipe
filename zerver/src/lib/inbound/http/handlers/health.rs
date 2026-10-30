@@ -66,7 +66,6 @@ pub async fn is_server_running() -> Json<Value> {
 pub async fn are_server_and_database_running(State(state): State<AppState>) -> Json<Value> {
     let result = match state.health_service.check_database().await {
         Ok(()) => "healthy",
-        // add more errors here if we check other things in the future
         Err(_) => "cannot connect to database",
     };
 

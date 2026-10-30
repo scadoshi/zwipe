@@ -66,7 +66,6 @@ impl ScryfallRequest {
             .json()
             .await
             .context("failed to parse json from get result")?;
-        // tracing::debug!("card response was {:#?}", get_json);
         let card_search_response: ScryfallDataSearchResponse =
             serde_json::from_value(get_json).context("failed to parse CardSearchResponse")?;
         Ok(card_search_response.data)

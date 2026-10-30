@@ -63,8 +63,8 @@ pub enum ApiError {
     #[error("{0}")]
     TooManyRequests(String),
     /// The request clashes with the current state: a name, address or card
-    /// that is already taken. A client from before 409 existed folds it into
-    /// a generic error, so this ships behind the client version floor.
+    /// that is already taken. An app older than the client version floor
+    /// folds it into a generic error.
     #[error("{0}")]
     Conflict(String),
 }
@@ -296,8 +296,6 @@ impl HttpServer {
         metrics_service: Arc<dyn ErasedMetricsService>,
         config: HttpServerConfig<'_>,
     ) -> anyhow::Result<Self> {
-        // RequestId is set by SetRequestIdLayer (below) before TraceLayer fires,
-        // so it's available as a request extension when we build the span.
         let jwt_secret = auth_service.jwt_secret().clone();
         let state = AppState {
             auth_service: Arc::new(auth_service),

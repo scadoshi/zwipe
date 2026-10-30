@@ -14,8 +14,7 @@ use crate::inbound::external::scryfall::request::{SCRYFALL_API_BASE, ScryfallReq
 
 /// Scryfall bulk data metadata response (contains the download URI).
 ///
-/// Scryfall retired the plain-JSON `download_uri` in late July 2026; bulk
-/// files are now served exclusively as gzipped JSON Lines via
+/// Scryfall serves bulk files only as gzipped JSON Lines, via
 /// `jsonl_download_uri` (one object per line). Line-by-line parsing also
 /// avoids holding the whole array in memory.
 #[derive(Deserialize, Debug)]

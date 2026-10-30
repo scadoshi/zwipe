@@ -23,8 +23,6 @@ use crate::inbound::http::{ApiError, AppState};
 ///
 /// `Cache-Control` declares freshness to the top of the UTC hour so edge
 /// caches (Cloudflare fronts prod) expire exactly when the pick flips.
-/// Without it, a CF cache rule edge-cached the response for ~20 hours and the
-/// whole world saw one card all day (2026-08-06).
 ///
 /// # Errors
 ///

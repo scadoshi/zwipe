@@ -92,9 +92,8 @@ use crate::inbound::http::middleware::{CfConnectingIpKeyExtractor, UserIdKeyExtr
 /// On those routes the governor layer runs *before* the `AuthenticatedUser`
 /// extractor, and it calls the key extractor to bucket the request. When the
 /// request has no valid Bearer token the extractor returns
-/// `GovernorError::UnableToExtractKey`, and `tower_governor`'s default maps that
-/// to a **500**, so an unauthenticated call to a private route answered 500
-/// instead of 401, polluting error logs and misleading health probes.
+/// `GovernorError::UnableToExtractKey`, which `tower_governor`'s default maps
+/// to a **500**.
 ///
 /// This remaps that one case to **401 Unauthorized** (the honest status for
 /// "you didn't authenticate"). `TooManyRequests` gets the stable 429 body
@@ -133,10 +132,10 @@ fn stable_rate_limit(error: GovernorError) -> Response<Body> {
 ///
 /// `tower_governor`'s default body interpolates the live countdown ("Too Many
 /// Requests! Wait for 1784s"); the client shows that text in a toast AND uses
-/// it in the error-report dedupe key, so every second of a lockout minted a
-/// fresh `client_errors` row (field-confirmed 2026-08-05). Bucketed copy keeps
-/// the message stable across an incident; machines that want precision read
-/// the header.
+/// it in the error-report dedupe key, so the countdown would mint a fresh
+/// `client_errors` row for every second of a lockout. Bucketed copy keeps the
+/// message stable across a lockout; machines that want precision read the
+/// header.
 fn too_many_requests_response(wait_time: u64, headers: Option<HeaderMap>) -> Response<Body> {
     let mut response = Response::new(Body::from(rate_limit_copy(wait_time)));
     *response.status_mut() = StatusCode::TOO_MANY_REQUESTS;
@@ -165,13 +164,12 @@ fn rate_limit_copy(wait_secs: u64) -> String {
 /// `Cache-Control: public, max-age=3600` for successful responses on the
 /// public read endpoints (card catalogs, marketing stats, changelog), so the
 /// CF edge (whose cache rules respect origin TTL) holds one copy per hour
-/// instead of falling back to its daily default, which held the flavor card
-/// ~20h on 2026-08-06. One simple number everywhere; only featured-flavor
-/// needs more (its content flips ON the hour, so its handler counts down to
-/// the boundary, and `if_not_present` lets that header win).
+/// instead of falling back to its daily default. One simple number
+/// everywhere; only featured-flavor needs more (its content flips ON the hour,
+/// so its handler counts down to the boundary, and `if_not_present` lets that
+/// header win).
 ///
-/// Success-only on purpose: without the guard a 429 or error body would leave
-/// browser-cacheable for an hour.
+/// Success-only, so a 429 or error body is never browser-cacheable.
 fn hourly_public_cache(response: &Response<Body>) -> Option<HeaderValue> {
     response
         .status()

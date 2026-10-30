@@ -73,7 +73,7 @@ pub async fn clone_deck(
     Path(source_deck_id): Path<Uuid>,
     Json(body): Json<HttpCloneDeck>,
 ) -> Result<(StatusCode, Json<HttpClonedDeck>), ApiError> {
-    // Fetch email_verified the same way create_deck_profile does (handler line 71).
+    // Fetch email_verified the same way create_deck_profile does.
     let db_user = state.user_service.get_user(&GetUser::from(user.id)).await?;
     let email_verified = db_user.email_verified_at.is_some();
 
