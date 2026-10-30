@@ -58,17 +58,12 @@ mod tests {
 
     #[test]
     fn empty_and_missing_are_fine() {
-        assert!(
+        assert_eq!(
             serde_json::from_str::<Wrap>(r#"{"roles":[]}"#)
                 .unwrap()
-                .roles
-                .is_empty()
+                .roles,
+            vec![]
         );
-        assert!(
-            serde_json::from_str::<Wrap>(r#"{}"#)
-                .unwrap()
-                .roles
-                .is_empty()
-        );
+        assert_eq!(serde_json::from_str::<Wrap>("{}").unwrap().roles, vec![]);
     }
 }

@@ -513,7 +513,7 @@ mod tests {
         let old =
             r#"{"swipes_right":1,"swipes_left":0,"swipes_up":0,"swipes_down":0,"searches":0}"#;
         let parsed: HttpUsageBatch = serde_json::from_str(old).unwrap();
-        assert!(parsed.pile_ends.is_empty());
+        assert_eq!(parsed.pile_ends, Vec::<PileEndReport>::new());
     }
 
     #[test]
