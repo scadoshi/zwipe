@@ -33,6 +33,31 @@ use crate::inbound::components::telemetry::vocabulary::{ProfileScreen, Screen};
 use crate::outbound::app_icon;
 use crate::outbound::session::Persist;
 
+/// Numbers one toggle's requests so a reply can tell whether a newer tap
+/// has gone out since.
+#[derive(Debug, Default, Clone, Copy)]
+struct RequestSeq {
+    latest: u64,
+}
+
+impl RequestSeq {
+    /// Numbers a new request; it is now the latest.
+    fn begin(&mut self) -> u64 {
+        self.latest = self.latest.wrapping_add(1);
+        self.latest
+    }
+}
+
+/// What a toggle shows once request `mine` answers: the server's value, or
+/// `prev` (the value from before that tap) on failure. `None` leaves the
+/// screen alone, since a newer tap's request owns it.
+fn settle<T>(seq: RequestSeq, mine: u64, reply: Option<T>, prev: T) -> Option<T> {
+    if seq.latest != mine {
+        return None;
+    }
+    Some(reply.unwrap_or(prev))
+}
+
 /// Config screen: the account's appearance and card preferences. Theme, pips
 /// and Universes Beyond save through the preferences API; the app icon is a
 /// device setting and only shows where the platform supports it.
@@ -120,10 +145,12 @@ pub fn Config() -> Element {
 
     // Show/Hide toggle for Universes Beyond: flips optimistically and persists
     // immediately, reverting on failure. Same shape as the dark-mode toggle.
+    let mut ub_seq = use_signal(RequestSeq::default);
     let mut toggle_universes_beyond = move || {
         let prev = *ub_hide.peek();
         let next = !prev;
         ub_hide.set(next);
+        let mine = ub_seq.write().begin();
         let request = HttpUpdatePreferences {
             theme: None,
             dark_mode: None,
@@ -134,21 +161,23 @@ pub fn Config() -> Element {
         spawn(async move {
             // try_run: the facade reports and toasts; the Err back here only
             // drives the optimistic revert.
-            match authed
+            let reply = authed
                 .try_run("update_preferences", |c, s| async move {
                     c.update_preferences(request, &s).await
                 })
                 .await
-            {
-                Ok(prefs) => {
-                    ub_hide.set(prefs.exclude_universes_beyond);
-                    said.call(if prefs.exclude_universes_beyond {
-                        "Universes Beyond hidden"
-                    } else {
-                        "Universes Beyond shown"
-                    });
-                }
-                Err(_) => ub_hide.set(prev),
+                .ok();
+            let saved = reply.map(|prefs| prefs.exclude_universes_beyond);
+            let Some(shown) = settle(*ub_seq.peek(), mine, saved, prev) else {
+                return;
+            };
+            ub_hide.set(shown);
+            if saved.is_some() {
+                said.call(if shown {
+                    "Universes Beyond hidden"
+                } else {
+                    "Universes Beyond shown"
+                });
             }
         });
     };
@@ -156,10 +185,12 @@ pub fn Config() -> Element {
     // Theme/Natural toggle for pips: recolors every pip at once, persists
     // immediately and reverts on failure. The stored session keeps the
     // saved style so the next launch opens with it.
+    let mut pip_seq = use_signal(RequestSeq::default);
     let mut toggle_pip_style = move || {
         let prev = *pip_style.peek();
         let next = prev.toggled();
         pip_style.set(next);
+        let mine = pip_seq.write().begin();
         let request = HttpUpdatePreferences {
             theme: None,
             dark_mode: None,
@@ -170,32 +201,35 @@ pub fn Config() -> Element {
         spawn(async move {
             // try_run: the facade reports and toasts; the Err back here only
             // drives the optimistic revert.
-            match authed
+            let reply = authed
                 .try_run("update_preferences", |c, s| async move {
                     c.update_preferences(request, &s).await
                 })
                 .await
-            {
-                Ok(prefs) => {
-                    pip_style.set(prefs.pip_style);
-                    let current = session.peek().clone();
-                    if let Some(mut current) = current {
-                        current.preferences.pip_style = prefs.pip_style;
-                        current.infallible_save();
-                        session.set(Some(current));
-                    }
-                    said.call(match prefs.pip_style {
-                        PipStyle::Theme => "Pips in theme colors",
-                        PipStyle::Natural => "Pips in natural colors",
-                    });
+                .ok();
+            let saved = reply.map(|prefs| prefs.pip_style);
+            let Some(shown) = settle(*pip_seq.peek(), mine, saved, prev) else {
+                return;
+            };
+            pip_style.set(shown);
+            if saved.is_some() {
+                let current = session.peek().clone();
+                if let Some(mut current) = current {
+                    current.preferences.pip_style = shown;
+                    current.infallible_save();
+                    session.set(Some(current));
                 }
-                Err(_) => pip_style.set(prev),
+                said.call(match shown {
+                    PipStyle::Theme => "Pips in theme colors",
+                    PipStyle::Natural => "Pips in natural colors",
+                });
             }
         });
     };
 
     // Dark-mode toggle in the Theme row: flips the theme live and persists it
     // immediately, reverting the UI if the save fails.
+    let mut dark_seq = use_signal(RequestSeq::default);
     let mut toggle_dark_mode = move || {
         let prev = theme_config.peek().clone();
         let next = ThemeConfig {
@@ -203,6 +237,7 @@ pub fn Config() -> Element {
             is_dark: !prev.is_dark,
         };
         theme_config.set(next.clone());
+        let mine = dark_seq.write().begin();
         let request = HttpUpdatePreferences {
             theme: Some(next.name.clone()),
             dark_mode: Some(next.is_dark),
@@ -213,24 +248,28 @@ pub fn Config() -> Element {
         spawn(async move {
             // try_run: reporting and toasts live in the facade; Err drives
             // the optimistic revert.
-            match authed
+            let reply = authed
                 .try_run("update_preferences", |c, s| async move {
                     c.update_preferences(request, &s).await
                 })
                 .await
-            {
-                Ok(prefs) => {
-                    let theme = components::theme_from_preferences(&prefs);
-                    app_icon::follow(&theme);
-                    app_icon_theme.set(app_icon::current());
-                    theme_config.set(theme);
-                    said.call(if prefs.dark_mode {
-                        "Dark mode on"
-                    } else {
-                        "Dark mode off"
-                    });
-                }
-                Err(_) => theme_config.set(prev),
+                .ok();
+            let saved_dark = reply.as_ref().map(|prefs| prefs.dark_mode);
+            let saved = reply.map(|prefs| components::theme_from_preferences(&prefs));
+            let Some(theme) = settle(*dark_seq.peek(), mine, saved, prev) else {
+                return;
+            };
+            if saved_dark.is_some() {
+                app_icon::follow(&theme);
+                app_icon_theme.set(app_icon::current());
+            }
+            theme_config.set(theme);
+            if let Some(dark_mode) = saved_dark {
+                said.call(if dark_mode {
+                    "Dark mode on"
+                } else {
+                    "Dark mode off"
+                });
             }
         });
     };
@@ -414,5 +453,43 @@ pub fn Config() -> Element {
                     hint_open: ub_hint_open,
                 }
             }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_reply_overtaken_by_a_newer_tap_changes_nothing() {
+        let mut seq = RequestSeq::default();
+        // Hide, then show again before the first reply.
+        let first = seq.begin();
+        let second = seq.begin();
+
+        assert_eq!(
+            settle(seq, second, Some(false), true),
+            Some(false),
+            "the newest reply lands"
+        );
+        assert_eq!(
+            settle(seq, first, Some(true), false),
+            None,
+            "a late older reply is dropped"
+        );
+        assert_eq!(
+            settle(seq, first, None, false),
+            None,
+            "and so is a late older failure"
+        );
+    }
+
+    #[test]
+    fn the_latest_failure_rolls_back_to_the_value_before_its_tap() {
+        let mut seq = RequestSeq::default();
+        let _first = seq.begin();
+        let second = seq.begin();
+        // The second tap flipped true back to false; its failure restores true.
+        assert_eq!(settle(seq, second, None, true), Some(true));
     }
 }
