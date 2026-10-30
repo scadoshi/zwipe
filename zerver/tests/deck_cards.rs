@@ -452,3 +452,75 @@ async fn oracle_id_comes_from_the_printing_not_the_client(pool: sqlx::PgPool) {
         .await;
     assert_eq!(status, StatusCode::OK, "printing swap to a reprint: {body}");
 }
+
+/// Two stars racing onto a deck with two MVPs end at the cap of three: the
+/// star count runs under the deck row lock.
+#[sqlx::test]
+async fn concurrent_stars_stop_at_the_mvp_cap(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, did) = deck_for(&app, "starrer").await;
+    let deck_id = did.parse().unwrap();
+
+    let cards = [
+        card("Sol Ring").type_line("Artifact"),
+        card("Arcane Signet").type_line("Artifact"),
+        card("Mind Stone").type_line("Artifact"),
+        card("Fellwar Stone").type_line("Artifact"),
+    ];
+    let ids: Vec<(uuid::Uuid, uuid::Uuid)> = cards
+        .iter()
+        .map(|c| (c.id(), c.oracle_id().unwrap()))
+        .collect();
+    seed_cards(&pool, &cards).await;
+    for (sid, oid) in &ids {
+        let (status, body) = app
+            .post(
+                &create_deck_card_route(deck_id),
+                json!({ "scryfall_data_id": sid.to_string(), "oracle_id": oid.to_string(), "quantity": 1 }),
+                Some(&token),
+            )
+            .await;
+        assert_eq!(status, StatusCode::CREATED, "add card: {body}");
+    }
+    for (sid, _) in &ids[..2] {
+        let (status, body) = app
+            .patch(
+                &update_deck_card_route(deck_id, *sid),
+                json!({ "mvp": true }),
+                Some(&token),
+            )
+            .await;
+        assert_eq!(status, StatusCode::OK, "star: {body}");
+    }
+
+    // Hold the deck card rows so both requests count the stars before
+    // either writes.
+    let hold = async {
+        let mut tx = pool.begin().await.unwrap();
+        sqlx::query("SELECT 1 FROM deck_cards WHERE deck_id = $1 FOR UPDATE")
+            .bind(deck_id)
+            .execute(&mut *tx)
+            .await
+            .unwrap();
+        tokio::time::sleep(std::time::Duration::from_millis(300)).await;
+        tx.commit().await.unwrap();
+    };
+    let star = json!({ "mvp": true });
+    let (third, fourth) = (
+        update_deck_card_route(deck_id, ids[2].0),
+        update_deck_card_route(deck_id, ids[3].0),
+    );
+    let ((first, _), (second, _), ()) = tokio::join!(
+        app.patch(&third, star.clone(), Some(&token)),
+        app.patch(&fourth, star.clone(), Some(&token)),
+        hold,
+    );
+    let starred: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM deck_cards WHERE deck_id = $1 AND mvp_at IS NOT NULL",
+    )
+    .bind(deck_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(starred, 3, "statuses {first} and {second}");
+}

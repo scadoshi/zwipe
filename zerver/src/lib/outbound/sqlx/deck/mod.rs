@@ -474,20 +474,25 @@ impl DeckRepository for Postgres {
     /// Supports setting quantity (absolute), board, printing, and/or
     /// MVP star. The database's check constraint on `quantity` stays as the
     /// backstop, surfacing as `QuantityUnderflow` if it ever trips. MVP rules (`context/plans/deck_mvps/`): mainboard
-    /// only, at most 3 per deck (checked in the tx), and moving a card off
+    /// only, at most 3 per deck (checked in the tx under the deck row lock), and moving a card off
     /// the mainboard clears its star in the same UPDATE.
     async fn update_deck_card(
         &self,
         request: &UpdateDeckCard,
     ) -> Result<DeckCard, UpdateDeckCardError> {
-        if !request
-            .user_id
-            .owns_deck(request.deck_id, &self.pool)
-            .await?
-        {
+        let mut tx = self.pool.begin().await?;
+        // Ownership + deck row lock in one shot, as in create_deck_card: the
+        // MVP count below can't race another star on the same deck.
+        let owned = query_scalar!(
+            "SELECT id FROM decks WHERE id = $1 AND user_id = $2 FOR UPDATE",
+            request.deck_id,
+            request.user_id
+        )
+        .fetch_optional(&mut *tx)
+        .await?;
+        if owned.is_none() {
             return Err(UpdateDeckCardError::Forbidden);
         }
-        let mut tx = self.pool.begin().await?;
         if let Some(new_id) = request.new_scryfall_data_id {
             // A printing swap stays within the card: the row keeps its
             // oracle_id, so a printing of another card would break the
