@@ -93,7 +93,6 @@ impl From<serde_json::Error> for ClientError {
 impl From<(StatusCode, String)> for ClientError {
     fn from(value: (StatusCode, String)) -> Self {
         let (status, message) = value;
-        let message = message.to_lowercase();
         match status {
             StatusCode::BAD_REQUEST => Self::BadRequest(message),
             StatusCode::UNAUTHORIZED => Self::Unauthorized(message),
@@ -171,9 +170,9 @@ mod tests {
     }
 
     #[test]
-    fn wire_messages_are_lowercased() {
+    fn wire_messages_pass_through_verbatim() {
         let error = ClientError::from((StatusCode::NOT_FOUND, "Deck Not Found".to_string()));
-        assert_eq!(error.to_user_message(), "deck not found");
+        assert_eq!(error.to_user_message(), "Deck Not Found");
     }
 
     /// Internal detail, transport noise, and decode noise all collapse to
