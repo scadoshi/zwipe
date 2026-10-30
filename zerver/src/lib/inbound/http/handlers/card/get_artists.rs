@@ -25,7 +25,7 @@ pub async fn get_artists(
 ) -> Result<(StatusCode, Json<Vec<String>>), ApiError> {
     state
         .card_service
-        .get_artists()
+        .fetch_artists()
         .await
         .map_err(ApiError::from)
         .map(|artists| (StatusCode::OK, Json(artists)))

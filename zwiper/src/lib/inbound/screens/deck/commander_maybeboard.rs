@@ -190,7 +190,7 @@ pub fn CommanderMaybeboard() -> Element {
         spawn(async move {
             match authed
                 .try_run("load_maybeboard", |c, s| async move {
-                    c.get_commander_maybeboard(&s).await
+                    c.fetch_commander_maybeboard(&s).await
                 })
                 .await
             {
@@ -304,7 +304,7 @@ pub fn CommanderMaybeboard() -> Element {
         use_resource(move || async move {
             authed
                 .run_quiet("load_deck_profiles", |c, s| async move {
-                    c.get_deck_profiles(&s).await
+                    c.fetch_deck_profiles(&s).await
                 })
                 .await
         });

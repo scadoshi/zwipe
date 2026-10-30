@@ -21,7 +21,7 @@ pub async fn get_printings(
         .map_err(|e| ApiError::UnprocessableEntity(format!("invalid oracle id: {e}")))?;
     state
         .card_service
-        .get_printings(oracle_id)
+        .fetch_printings(oracle_id)
         .await
         .map_err(ApiError::from)
         .map(|cards| (StatusCode::OK, Json(cards)))

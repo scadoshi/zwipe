@@ -41,7 +41,7 @@ pub async fn get_deck_profile(
 
     state
         .deck_service
-        .get_deck_profile(&request)
+        .fetch_deck_profile(&request)
         .await
         .map_err(ApiError::from)
         .map(|deck_profile| (StatusCode::OK, Json(deck_profile)))
