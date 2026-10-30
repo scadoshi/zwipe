@@ -281,7 +281,7 @@ fn visible(listed: &[(&HttpRelease, Place)], upcoming: usize, selection: &Select
 
 /// The element id of a release's card: `v` and the version with its dots as
 /// dashes, `v1-12-1` for 1.12.1, so it needs no escaping in a CSS selector.
-pub fn anchor_id(version: &str) -> String {
+pub(crate) fn anchor_id(version: &str) -> String {
     format!("v{}", version.replace('.', "-"))
 }
 

@@ -36,18 +36,18 @@ use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::http::contracts::suggestions::HttpColorMap;
 
 /// The fewest tiles a map with any colored card draws.
-pub const MIN_TILES: u32 = 23;
+pub(crate) const MIN_TILES: u32 = 23;
 /// The most tiles a map draws: the curve's value at 6,400 colored cards, so
 /// the cap and the curve meet with no step.
-pub const MAX_TILES: u32 = 295;
+pub(crate) const MAX_TILES: u32 = 295;
 /// Tenths of a tile per square root of the colored cards, past
 /// [`MIN_TILES`]: 3.4 tiles, about 130 tiles for 1,000 cards and 210 for
 /// 3,000. The square root over 6,400 is 80, and `23 + 3.4 * 80` is
 /// [`MAX_TILES`].
-pub const TILES_PER_ROOT_TENTHS: u32 = 34;
+pub(crate) const TILES_PER_ROOT_TENTHS: u32 = 34;
 /// One tile's pitch on screen, in CSS pixels: tiles keep this size and a
 /// map larger than the viewport scrolls.
-pub const PITCH_PX: f64 = 12.0;
+pub(crate) const PITCH_PX: f64 = 12.0;
 /// The gap between tiles, as a share of the pitch.
 const GAP_SHARE: f64 = 0.12;
 /// The tile corner radius, as a share of the pitch.
@@ -81,10 +81,10 @@ const STARTS: [(i32, i32); 5] = [(0, -2), (2, -1), (1, 2), (-1, 2), (-2, -1)];
 
 /// The bands of distance from the map's middle the entrance sweeps in, one
 /// after another.
-pub const SWEEP_RINGS: u32 = 7;
+pub(crate) const SWEEP_RINGS: u32 = 7;
 /// The wait between one ring's sweep and the next, in milliseconds. With
 /// orangui's 0.4s `heat-sweep`, the last ring lands about 700ms after mount.
-pub const SWEEP_STEP_MS: u32 = 50;
+pub(crate) const SWEEP_STEP_MS: u32 = 50;
 /// The counts a [`ColorMapGhost`] grows from: about 40 tiles, enough to
 /// branch like a real map while staying a small cluster.
 const GHOST_COUNTS: ColorMapCounts = ColorMapCounts {
@@ -95,7 +95,7 @@ const GHOST_COUNTS: ColorMapCounts = ColorMapCounts {
 /// shape.
 const GHOST_SEED: u64 = 0x5eed_c0de;
 /// The full shade, a color's own mana fill.
-pub const FULL_SHADE: u8 = 4;
+pub(crate) const FULL_SHADE: u8 = 4;
 /// Each shade's share of the mana fill over the panel, faintest first, the
 /// way orangui's `.heat-1` through `.heat-4` mix the accent.
 const SHADE_PERCENTS: [u8; 4] = [30, 55, 80, 100];
@@ -199,7 +199,7 @@ fn unit(h: u64) -> f64 {
 /// [`MAX_TILES`]; none without colored cards. The square root keeps a big
 /// collection from spreading the map far.
 #[must_use]
-pub fn tile_total(colored: u64) -> u32 {
+pub(crate) fn tile_total(colored: u64) -> u32 {
     if colored == 0 {
         return 0;
     }
@@ -215,7 +215,7 @@ pub fn tile_total(colored: u64) -> u32 {
 /// remainder, so they sum to `total`. Ties for a leftover tile go in WUBRG
 /// order.
 #[must_use]
-pub fn quotas(cards: [u32; 5], total: u32) -> [u32; 5] {
+pub(crate) fn quotas(cards: [u32; 5], total: u32) -> [u32; 5] {
     let sum: u64 = cards.iter().map(|&n| u64::from(n)).sum();
     if sum == 0 {
         return [0; 5];
@@ -567,7 +567,7 @@ fn shade_and_ring(tiles: &mut [Tile], columns: i32, rows: i32) {
 /// A tile's fill: its color's mana fill mixed over the panel background at
 /// its shade's share, the full fill at [`FULL_SHADE`].
 #[must_use]
-pub fn tile_fill(tile: &Tile) -> String {
+pub(crate) fn tile_fill(tile: &Tile) -> String {
     let var = mana_var(tile.color);
     let percent = usize::from(tile.shade)
         .checked_sub(1)
@@ -635,7 +635,7 @@ impl ColorMapModel {
 
 /// The CSS custom property holding `color`'s mana fill.
 #[must_use]
-pub fn mana_var(color: Color) -> &'static str {
+pub(crate) fn mana_var(color: Color) -> &'static str {
     match color {
         Color::White => "--mana-white",
         Color::Blue => "--mana-blue",
@@ -758,7 +758,7 @@ pub fn ColorMap(
 /// The map a [`ColorMapGhost`] draws: `GHOST_COUNTS` grown from
 /// `GHOST_SEED`, so it branches out to jagged tips like a real map.
 #[must_use]
-pub fn ghost_model() -> ColorMapModel {
+pub(crate) fn ghost_model() -> ColorMapModel {
     ColorMapModel::new(&GHOST_COUNTS, GHOST_SEED)
 }
 
