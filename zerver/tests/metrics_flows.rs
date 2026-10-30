@@ -175,7 +175,7 @@ async fn legacy_commander_field_is_ignored(pool: sqlx::PgPool) {
 #[sqlx::test]
 async fn anonymous_events_accept_the_three_kinds_no_auth(pool: sqlx::PgPool) {
     let app = TestApp::new(pool.clone());
-    let session = Uuid::from_u128(0x5e551047);
+    let session = Uuid::from_u128(0x5e55_1047);
 
     for kind in ["app_opened", "register_viewed", "register_submitted"] {
         let (status, _) = app

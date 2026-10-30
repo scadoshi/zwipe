@@ -23,7 +23,7 @@
 use zwipe::outbound::archidekt::ArchidektClient;
 
 const DECK_URL: &str = "https://archidekt.com/decks/11493358/satya";
-const DECK_ID: i64 = 11493358;
+const DECK_ID: i64 = 11_493_358;
 
 #[tokio::test]
 #[ignore = "hits archidekt.com live; run with `-- --ignored`"]
