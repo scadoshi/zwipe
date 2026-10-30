@@ -1,8 +1,8 @@
 //! The Magic pieces of the Zwipe UI, over [orangui](https://github.com/scadoshi/orangui).
 //!
 //! orangui is the generic kit: themes, panels, nav, charts, the entrance
-//! effects and the app and site kits. This crate re-exports all of it
-//! (`pub use orangui::*`) so `zwiper` (the app) and `zite` (the site) keep one
+//! effects and the app and site kits. This crate re-exports, by name, the
+//! orangui items `zwiper` (the app) and `zite` (the site) use, so they keep one
 //! import path, and adds what needs `zwipe-core`: [`CardDetails`], [`CardRow`],
 //! [`CardRoleChips`], [`RoleTags`], [`OtagDef`], [`KeywordChips`],
 //! [`OracleText`], [`FlippableCardImage`], [`Changelog`], the deck charts
@@ -53,7 +53,21 @@ pub use color_map::{ColorMap, ColorMapCounts, ColorMapGhost, ColorMapModel, seed
 pub use flippable_card_image::{FlippableCardImage, reset_image_ease};
 pub use keyword_chips::{KeywordChips, KeywordReminders};
 pub use oracle_text::OracleText;
-pub use orangui::*;
+pub use orangui::{
+    ALLOWED_THEMES, APP_CSS, ActionBar, ActionButton, AlertDialog, BOOT_BG, BOOT_HEAD,
+    BRAND_RESET_JS, Banner, BootReveal, BottomSheet, Button, ButtonVariant, COMPONENTS_CSS,
+    ChartTip, Chip, DarkModeButton, Decode, DialogAction, DialogHostView, GalleryFooter,
+    GalleryFrame, GridCells, HEAT_CELL, HEAT_ROWS, HeatCell, HeatGrid, HeatHit, HeatReadout,
+    HintBullet, HintBullets, HintDialog, HintKey, HintLine, InfoButton, ModeIcon, NAV_GLIDE_JS,
+    NavBar, PageHeader, PageMeta, Panel, PasswordInput, RETIRED_THEMES, REVEAL_JS, Replay,
+    SCROLL_FADE_JS, SITE_CSS, SiteMeta, Splash, SplashGate, StatsStrip, THEME_GROUPS, THEMES_CSS,
+    TOAST_LONG, TOAST_NORMAL, TOAST_QUICK, TextInput, ThemeConfig, ThemePicker, ThemeSheet,
+    heat_span, peak_indices, status_uses, use_dialog_host, use_heat_pick, use_os_back,
+    use_overlay_back, use_overlay_back_action, use_overlay_back_stack, use_persisted_theme,
+    use_theme_follow, use_theme_wipe, with_separators,
+};
+#[cfg(feature = "toast")]
+pub use orangui::{TOAST_CSS, ToastStack};
 pub use role_tags::{OtagDef, RoleTags};
 pub use theme::{pip_style_class, theme_from_preferences};
 
