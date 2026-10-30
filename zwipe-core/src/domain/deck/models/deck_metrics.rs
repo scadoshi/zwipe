@@ -353,21 +353,21 @@ impl DeckMetrics {
 
             // Price: prefer nonfoil → foil → etched
             let prices = &card.scryfall_data.prices;
-            if let Some(p) = parse_price(&prices.usd)
-                .or_else(|| parse_price(&prices.usd_foil))
-                .or_else(|| parse_price(&prices.usd_etched))
+            if let Some(p) = parse_price(prices.usd.as_deref())
+                .or_else(|| parse_price(prices.usd_foil.as_deref()))
+                .or_else(|| parse_price(prices.usd_etched.as_deref()))
             {
                 usd_sum += p * qty as f64;
                 usd_count += qty;
             }
-            if let Some(p) = parse_price(&prices.eur)
-                .or_else(|| parse_price(&prices.eur_foil))
-                .or_else(|| parse_price(&prices.eur_etched))
+            if let Some(p) = parse_price(prices.eur.as_deref())
+                .or_else(|| parse_price(prices.eur_foil.as_deref()))
+                .or_else(|| parse_price(prices.eur_etched.as_deref()))
             {
                 eur_sum += p * qty as f64;
                 eur_count += qty;
             }
-            if let Some(p) = parse_price(&prices.tix) {
+            if let Some(p) = parse_price(prices.tix.as_deref()) {
                 tix_sum += p * qty as f64;
                 tix_count += qty;
             }
@@ -621,8 +621,8 @@ fn produced_color_index(s: &str) -> Option<usize> {
 }
 
 /// Parse an optional price string (e.g. "1.50") into f64.
-fn parse_price(price: &Option<String>) -> Option<f64> {
-    price.as_ref().and_then(|s| s.parse::<f64>().ok())
+fn parse_price(price: Option<&str>) -> Option<f64> {
+    price.and_then(|s| s.parse::<f64>().ok())
 }
 
 /// Price of a single card in the given currency, preferring nonfoil → foil →
@@ -630,13 +630,13 @@ fn parse_price(price: &Option<String>) -> Option<f64> {
 pub fn card_price(scryfall_data: &ScryfallData, currency: PriceCurrency) -> Option<f64> {
     let prices = &scryfall_data.prices;
     match currency {
-        PriceCurrency::Usd => parse_price(&prices.usd)
-            .or_else(|| parse_price(&prices.usd_foil))
-            .or_else(|| parse_price(&prices.usd_etched)),
-        PriceCurrency::Eur => parse_price(&prices.eur)
-            .or_else(|| parse_price(&prices.eur_foil))
-            .or_else(|| parse_price(&prices.eur_etched)),
-        PriceCurrency::Tix => parse_price(&prices.tix),
+        PriceCurrency::Usd => parse_price(prices.usd.as_deref())
+            .or_else(|| parse_price(prices.usd_foil.as_deref()))
+            .or_else(|| parse_price(prices.usd_etched.as_deref())),
+        PriceCurrency::Eur => parse_price(prices.eur.as_deref())
+            .or_else(|| parse_price(prices.eur_foil.as_deref()))
+            .or_else(|| parse_price(prices.eur_etched.as_deref())),
+        PriceCurrency::Tix => parse_price(prices.tix.as_deref()),
     }
 }
 
