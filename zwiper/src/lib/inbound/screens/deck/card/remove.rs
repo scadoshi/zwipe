@@ -441,7 +441,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                         }
                         Err(e) => {
                             tracing::warn!("undo remove (create deck card) failed: {e}");
-                            toast.error(format!("Failed to undo: {}", e), ToastOptions::default());
+                            toast.error(format!("Failed to undo: {e}"), ToastOptions::default());
                             // The removal still stands server-side.
                             if let Some(action) = taken {
                                 undo_store.push(deck_id, action);
@@ -522,7 +522,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                         }
                         Err(e) => {
                             tracing::warn!("undo board move (update deck card) failed: {e}");
-                            toast.error(format!("Failed to undo: {}", e), ToastOptions::default());
+                            toast.error(format!("Failed to undo: {e}"), ToastOptions::default());
                             // The board move still stands server-side.
                             if let Some(action) = taken {
                                 undo_store.push(deck_id, action);

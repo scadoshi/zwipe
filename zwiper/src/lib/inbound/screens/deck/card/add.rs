@@ -540,7 +540,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                         }
                         Err(e) => {
                             tracing::warn!("undo add (delete deck card) failed: {e}");
-                            toast.error(format!("Failed to undo: {}", e), ToastOptions::default());
+                            toast.error(format!("Failed to undo: {e}"), ToastOptions::default());
                             // Don't restore action or index; the user can try again by adding the card
                             // The add still stands server-side, so its global entry does too.
                             if let Some(action) = taken {
@@ -607,7 +607,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                         }
                         Err(e) => {
                             tracing::warn!("undo maybeboard (delete deck card) failed: {e}");
-                            toast.error(format!("Failed to undo: {}", e), ToastOptions::default());
+                            toast.error(format!("Failed to undo: {e}"), ToastOptions::default());
                             // The maybeboard add still stands server-side.
                             if let Some(action) = taken {
                                 undo_store.push(deck_id, action);
@@ -1111,7 +1111,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                         }
                         Err(e) => {
                             tracing::warn!("undo promote failed: {e}");
-                            toast.error(format!("Failed to undo: {}", e), ToastOptions::default());
+                            toast.error(format!("Failed to undo: {e}"), ToastOptions::default());
                             // The promote still stands server-side.
                             if let Some(action) = taken {
                                 undo_store.push(deck_id, action);
