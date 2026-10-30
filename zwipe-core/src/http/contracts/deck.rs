@@ -47,13 +47,13 @@ pub struct HttpCreateDeckProfile {
     pub signature_spell_id: Option<Uuid>,
     /// Optional deck format.
     pub format: Option<String>,
-    /// Deck archetype/strategy tags (snake_case strings). Absent or empty = none.
+    /// Deck archetype/strategy tags (`snake_case` strings). Absent or empty = none.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub tags: Option<Vec<String>>,
-    /// Power level (snake_case bracket string). Absent = unset.
+    /// Power level (`snake_case` bracket string). Absent = unset.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub power_level: Option<String>,
-    /// Secondary, non-gameplay labels (snake_case strings). Absent or empty = none.
+    /// Secondary, non-gameplay labels (`snake_case` strings). Absent or empty = none.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub other_tags: Option<Vec<String>>,
     /// Granular oracle-tag slugs the deck declares. Absent or empty = none.
@@ -480,7 +480,7 @@ pub struct HttpSharedDeck {
     pub name: String,
     /// Deck format, if set.
     pub format: Option<Format>,
-    /// Power level (WotC bracket), if set.
+    /// Power level (official Commander Bracket), if set.
     #[serde(default)]
     pub power_level: Option<PowerLevel>,
     /// Deck archetype/strategy tags, as server-delivered **slugs** (`Vec<String>`)

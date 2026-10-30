@@ -142,7 +142,7 @@ pub struct HttpStaple {
 /// A card role the user's decks lean on.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct HttpProfileRole {
-    /// The card role slug (`CardRole`'s snake_case form).
+    /// The card role slug (`CardRole`'s `snake_case` form).
     pub role: String,
     /// Profiled decks with at least one oracle tag under the role, above 0.
     pub decks: u32,
@@ -208,7 +208,7 @@ pub struct HttpSuggestionReasons {
 pub struct HttpSharedTag {
     /// The oracle tag slug.
     pub slug: String,
-    /// The card role slug (`CardRole`'s snake_case form) the tag falls under,
+    /// The card role slug (`CardRole`'s `snake_case` form) the tag falls under,
     /// the same one the card's own `oracle_tags_by_role` files it beneath.
     /// `None` is the "Other" bucket.
     pub role: Option<String>,
@@ -521,7 +521,7 @@ pub struct HttpSwipeOutcomes {
 /// What one card role's dealt cards came to.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct HttpRoleRates {
-    /// The card role slug (`CardRole`'s snake_case form).
+    /// The card role slug (`CardRole`'s `snake_case` form).
     pub role: String,
     /// Its cards' outcomes.
     pub outcomes: HttpSwipeOutcomes,

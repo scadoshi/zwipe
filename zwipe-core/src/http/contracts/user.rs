@@ -33,6 +33,6 @@ pub struct HttpUpdatePreferences {
 /// place.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct HttpMarkHintShown {
-    /// Hint key (lowercase snake case, e.g. "add_swipes").
+    /// Hint key (lowercase snake case, e.g. `"add_swipes"`).
     pub hint: String,
 }
