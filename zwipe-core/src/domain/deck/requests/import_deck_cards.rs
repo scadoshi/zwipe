@@ -185,7 +185,7 @@ pub struct UnresolvedCard {
 /// Import operation result.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ImportDeckCardsResult {
-    /// Cards that were successfully imported.
+    /// Cards that were successfully imported, sorted by name.
     pub imported: Vec<ImportedCard>,
     /// Card names that couldn't be resolved.
     pub unresolved: Vec<UnresolvedCard>,
