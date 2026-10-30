@@ -622,8 +622,7 @@ pub(crate) async fn seed_cards(pool: &PgPool, cards: &[CardFixture]) {
             // word here would read back fine (try_from accepts both) but silently
             // break those filters, so mirror the real write form.
             let rarity = Rarity::try_from(c.rarity.as_str())
-                .map(|r| r.to_short_name())
-                .unwrap_or_else(|_| c.rarity.clone());
+                .map_or_else(|_| c.rarity.clone(), |r| r.to_short_name());
             b.push_bind(c.id)
                 .push_bind(c.lang.as_str())
                 .push_bind("card")
