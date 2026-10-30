@@ -1,3 +1,5 @@
+//! Loading skeletons for the deck screens.
+
 use dioxus::prelude::*;
 
 use crate::inbound::components::home_play_style::ColorMapSkeleton;

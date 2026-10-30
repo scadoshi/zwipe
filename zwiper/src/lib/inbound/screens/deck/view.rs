@@ -1,3 +1,5 @@
+//! The view deck screen: a deck's profile, sections and charts.
+
 use components::{
     ActionBar, AlertDialog, Button, ButtonVariant, DialogAction, HintBullet, HintBullets,
     HintDialog, HintKey, TOAST_NORMAL, TOAST_QUICK,

@@ -1,3 +1,5 @@
+//! The deck fields the create and edit screens share: name, format and the command-zone searches.
+
 use std::time::Duration;
 
 use components::{HintBullet, HintBullets, HintDialog, HintKey, TOAST_NORMAL, TextInput};

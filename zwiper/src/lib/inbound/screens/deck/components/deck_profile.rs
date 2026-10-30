@@ -1,3 +1,5 @@
+//! The deck profile section on the view deck screen.
+
 use dioxus::prelude::*;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::deck::deck_profile::DeckProfile;

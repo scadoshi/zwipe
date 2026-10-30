@@ -1,3 +1,5 @@
+//! The view deck screen's Buy and More bottom sheets.
+
 use components::{AlertDialog, BottomSheet, Button, DialogAction, TOAST_QUICK};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
