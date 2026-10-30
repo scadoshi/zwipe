@@ -5,7 +5,7 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::Email;
-use zwipe_core::domain::auth::password::validate;
+use zwipe_core::domain::auth::password;
 use zwipe_core::domain::user::username::Username;
 use zwipe_core::http::contracts::auth::HttpRegisterUser;
 use zwipe_core::http::contracts::metrics::AnonymousEventKind;
@@ -60,7 +60,7 @@ pub fn Register() -> Element {
     };
 
     let mut validate_password = move || {
-        if let Err(e) = validate(&password()) {
+        if let Err(e) = password::validate(&password()) {
             password_error.set(Some(e.to_string()));
         } else if password().as_str() != confirm_password().as_str()
             // Mid-typing the confirmation can't match yet; judge it once it

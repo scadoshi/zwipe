@@ -4,7 +4,7 @@ use chrono::{DateTime, Utc};
 use components::{Button, ButtonVariant, TOAST_LONG, TOAST_NORMAL};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use tokio::time::sleep;
+use tokio::time;
 use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_core::domain::auth::models::session::Session;
 
@@ -148,7 +148,7 @@ pub(crate) fn VerificationActions() -> Element {
                     is_resending.set(false);
                     // Drive the visible countdown to zero.
                     while *cooldown.peek() > 0 {
-                        sleep(Duration::from_secs(1)).await;
+                        time::sleep(Duration::from_secs(1)).await;
                         let remaining = *cooldown.peek();
                         cooldown.set(remaining.saturating_sub(1));
                     }

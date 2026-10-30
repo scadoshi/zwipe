@@ -4,7 +4,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 use components::{
     ActionBar, AlertDialog, Button, ButtonVariant, DialogAction, HintBullet, HintBullets,
-    HintDialog, HintKey, TOAST_QUICK, ThemeConfig, theme_from_preferences,
+    HintDialog, HintKey, TOAST_QUICK, ThemeConfig,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -12,7 +12,7 @@ use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
-use zwipe_core::domain::deck::deck_metrics::card_price;
+use zwipe_core::domain::deck::deck_metrics;
 use zwipe_core::domain::user::models::hints::HINT_FIRST_LOGIN;
 use zwipe_core::domain::user::preferences::PipStyle;
 
@@ -112,7 +112,7 @@ pub fn Home() -> Element {
         spawn(async move {
             match client().get_preferences(&s).await {
                 Ok(prefs) => {
-                    let theme = theme_from_preferences(&prefs);
+                    let theme = components::theme_from_preferences(&prefs);
                     app_icon::follow(&theme);
                     theme_config.set(theme);
                     pip_style.set(prefs.pip_style);
@@ -189,7 +189,7 @@ pub fn Home() -> Element {
                         Some(entry) => {
                             if let Some(flavor_text) = entry.card.scryfall_data.flavor_text.as_ref() {
                                 let sd = entry.card.scryfall_data.clone();
-                                let usd_price = card_price(&entry.card.scryfall_data, PriceCurrency::Usd)
+                                let usd_price = deck_metrics::card_price(&entry.card.scryfall_data, PriceCurrency::Usd)
                                     .map(|p| PriceCurrency::Usd.format_amount(p));
                                 rsx! {
                                     div { class: "settings-list-header", style: "justify-content: center;",

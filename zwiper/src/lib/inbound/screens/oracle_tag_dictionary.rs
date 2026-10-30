@@ -17,7 +17,7 @@ use components::{
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
-use zwipe_core::domain::card::oracle_tag::{OracleTag, search_oracle_tags};
+use zwipe_core::domain::card::oracle_tag::{self, OracleTag};
 use zwipe_core::domain::user::models::hints::HINT_ORACLE_TAG_DICTIONARY;
 
 use crate::inbound::components::catalog_cache::{CatalogCache, CatalogCell};
@@ -100,7 +100,7 @@ pub fn OracleTagDictionary(mut open: Signal<bool>, on_use: EventHandler<String>)
                         // Non-empty -> the shared ranked catalog search, capped.
                         let letter = selected_letter();
                         let rows: Vec<OracleTag> = if searching {
-                            let mut matches = search_oracle_tags(tags, &q);
+                            let mut matches = oracle_tag::search_oracle_tags(tags, &q);
                             matches.truncate(SEARCH_RESULT_CAP);
                             matches
                         } else {

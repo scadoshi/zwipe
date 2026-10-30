@@ -10,14 +10,12 @@ use std::collections::HashMap;
 use chrono::{Datelike, Duration, NaiveDate};
 use components::{
     Bar, BarChart, BarOrientation, ChartTip, Chip, HEAT_CELL, HEAT_ROWS, HeatCell, HeatGrid,
-    HeatHit, HeatReadout, LabelCase, OtagDef, RoleTags, heat_span, peak_indices, use_heat_pick,
-    with_separators,
+    HeatHit, HeatReadout, LabelCase, OtagDef, RoleTags, use_heat_pick,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
-use zwipe_core::domain::card::Card;
-use zwipe_core::domain::card::card_role::role_short_label;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
+use zwipe_core::domain::card::{Card, card_role};
 use zwipe_core::http::contracts::suggestions::{
     ACTIVITY_DAYS, HttpActivity, HttpActivityDay, HttpHardPass, HttpRoleRates, HttpSwipeOutcomes,
     HttpTagRates,
@@ -144,7 +142,7 @@ fn heat_layout(through: NaiveDate, days: &[HttpActivityDay]) -> HeatLayout {
         .iter()
         .map(|c| c.swipes.saturating_add(c.searches))
         .collect();
-    for i in peak_indices(&counts, PEAK_RATIO, MAX_PEAKS) {
+    for i in components::peak_indices(&counts, PEAK_RATIO, MAX_PEAKS) {
         if let Some(cell) = cells.get_mut(i) {
             cell.peak = true;
         }
@@ -160,7 +158,7 @@ fn heat_layout(through: NaiveDate, days: &[HttpActivityDay]) -> HeatLayout {
 /// `n` and its noun, singular for one.
 fn counted(n: u32, one: &str, many: &str) -> String {
     let noun = if n == 1 { one } else { many };
-    format!("{} {noun}", with_separators(u64::from(n)))
+    format!("{} {noun}", components::with_separators(u64::from(n)))
 }
 
 /// A tapped day's tags: its swipes, its searches and its date.
@@ -307,7 +305,7 @@ fn role_rate_bars(kind: RateKind, roles: &[HttpRoleRates], tags: &[HttpTagRates]
         .into_iter()
         .map(|(role, rate)| Bar {
             key: role.role.clone(),
-            label: role_short_label(&role.role),
+            label: card_role::role_short_label(&role.role),
             count: usize::try_from(rate).unwrap_or(100),
             pct: rate,
             revealable: tags.iter().any(|t| t.role == role.role),
@@ -386,8 +384,8 @@ fn ActivityHeatmap(through: NaiveDate, days: Vec<HttpActivityDay>) -> Element {
     let pick = use_heat_pick();
     let mut hover: Signal<Option<(String, f64, f64)>> = use_signal(|| None);
     let layout = heat_layout(through, &days);
-    let width = LEFT + heat_span(layout.columns);
-    let height = TOP + heat_span(HEAT_ROWS);
+    let width = LEFT + components::heat_span(layout.columns);
+    let height = TOP + components::heat_span(HEAT_ROWS);
     let tags: Vec<[String; 3]> = layout.cells.iter().map(day_tags).collect();
     let grid: Vec<HeatCell> = layout
         .cells
@@ -436,7 +434,7 @@ fn ActivityHeatmap(through: NaiveDate, days: Vec<HttpActivityDay>) -> Element {
                         text {
                             key: "m{column}",
                             class: "heat-label",
-                            x: "{LEFT + heat_span(*column)}",
+                            x: "{LEFT + components::heat_span(*column)}",
                             y: "{TOP - 4.0}",
                             "{name}"
                         }
@@ -446,7 +444,7 @@ fn ActivityHeatmap(through: NaiveDate, days: Vec<HttpActivityDay>) -> Element {
                             key: "d{row}",
                             class: "heat-label",
                             x: "0",
-                            y: "{TOP + heat_span(row) + HEAT_CELL - 2.0}",
+                            y: "{TOP + components::heat_span(row) + HEAT_CELL - 2.0}",
                             "{name}"
                         }
                     }
@@ -472,7 +470,7 @@ fn ActivityHeatmap(through: NaiveDate, days: Vec<HttpActivityDay>) -> Element {
 /// labels, which the loaded grid brings.
 #[component]
 pub(crate) fn HeatGhost() -> Element {
-    let height = TOP + heat_span(HEAT_ROWS);
+    let height = TOP + components::heat_span(HEAT_ROWS);
     rsx! {
         div { class: "chart-scroll activity-scroll",
             div { class: "activity-plot", style: "height:{height}px;" }

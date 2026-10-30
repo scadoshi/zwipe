@@ -8,7 +8,7 @@ use components::{
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_core::domain::logo::Z;
-use zwipe_core::domain::user::preferences::display_theme_name;
+use zwipe_core::domain::user::preferences;
 
 use crate::outbound::app_icon;
 
@@ -88,7 +88,7 @@ pub fn AppIconSheet(
                     name: name.clone(),
                     is_dark: icon.peek().is_dark,
                 },
-                format!("App icon: {}", display_theme_name(name)),
+                format!("App icon: {}", preferences::display_theme_name(name)),
             ),
         };
         let switched = app_icon::set_follows_theme(picked.is_none()).and_then(|()| {
@@ -137,7 +137,7 @@ pub fn AppIconSheet(
                 div { class: "pref-section-label", "{group.label}" }
                 for t in group.themes.iter().copied() {
                     IconRow {
-                        label: display_theme_name(t),
+                        label: preferences::display_theme_name(t),
                         pick: Some(t.to_string()),
                         tile: ThemeConfig { name: t.to_string(), is_dark: icon_mode },
                         draft,

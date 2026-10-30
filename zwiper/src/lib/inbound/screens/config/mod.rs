@@ -11,16 +11,17 @@ pub mod universes_beyond;
 use app_icon_sheet::AppIconSheet;
 use components::{
     ActionBar, Button, ButtonVariant, DarkModeButton, HintBullet, HintBullets, HintDialog, HintKey,
-    TOAST_NORMAL, ThemeConfig, theme_from_preferences,
+    TOAST_NORMAL, ThemeConfig,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use preferences::PreferencesSheet;
 use universes_beyond::UniversesBeyondExceptionsSheet;
 use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::card::scryfall_data::universe::franchise_by_slug;
+use zwipe_core::domain::card::scryfall_data::universe;
+use zwipe_core::domain::user;
 use zwipe_core::domain::user::models::hints::HINT_CONFIG;
-use zwipe_core::domain::user::preferences::{PipStyle, display_theme_name};
+use zwipe_core::domain::user::preferences::PipStyle;
 use zwipe_core::http::contracts::user::HttpUpdatePreferences;
 
 use crate::inbound::components::auth::authed::use_authed;
@@ -219,7 +220,7 @@ pub fn Config() -> Element {
                 .await
             {
                 Ok(prefs) => {
-                    let theme = theme_from_preferences(&prefs);
+                    let theme = components::theme_from_preferences(&prefs);
                     app_icon::follow(&theme);
                     app_icon_theme.set(app_icon::current());
                     theme_config.set(theme);
@@ -263,7 +264,7 @@ pub fn Config() -> Element {
                                     InfoButton { topic: HintTopic::Theme }
                                 }
                                 div { class: "settings-row-value",
-                                    span { { display_theme_name(&theme_config().name) } }
+                                    span { { user::preferences::display_theme_name(&theme_config().name) } }
                                     DarkModeButton {
                                         is_dark: theme_config().is_dark,
                                         onclick: move |_| toggle_dark_mode(),
@@ -305,7 +306,7 @@ pub fn Config() -> Element {
                                         if app_icon_follows() {
                                             span { "Matches theme" }
                                         } else {
-                                            span { { display_theme_name(&app_icon_theme().name) } }
+                                            span { { user::preferences::display_theme_name(&app_icon_theme().name) } }
                                             DarkModeButton {
                                                 is_dark: app_icon_theme().is_dark,
                                                 onclick: toggle_app_icon_dark,
@@ -370,7 +371,7 @@ pub fn Config() -> Element {
                                         {
                                             let mut names: Vec<&str> = ub_exceptions()
                                                 .iter()
-                                                .filter_map(|s| franchise_by_slug(s))
+                                                .filter_map(|s| universe::franchise_by_slug(s))
                                                 .map(|f| f.name)
                                                 .collect();
                                             names.sort_unstable();

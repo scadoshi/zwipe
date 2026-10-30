@@ -1,8 +1,6 @@
 //! User login screen.
 
-use components::{
-    ActionBar, Button, ButtonVariant, TOAST_NORMAL, TextInput, ThemeConfig, theme_from_preferences,
-};
+use components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL, TextInput, ThemeConfig};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
@@ -72,7 +70,7 @@ pub fn Login() -> Element {
                     new_session.infallible_save();
                     // Apply theme from preferences
                     let mut theme: Signal<ThemeConfig> = use_context();
-                    let picked = theme_from_preferences(&new_session.preferences);
+                    let picked = components::theme_from_preferences(&new_session.preferences);
                     app_icon::follow(&picked);
                     theme.set(picked);
                     pip_style.set(new_session.preferences.pip_style);

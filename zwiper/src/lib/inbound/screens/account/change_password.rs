@@ -5,7 +5,7 @@ use components::{
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use zwipe_core::domain::auth::password::validate;
+use zwipe_core::domain::auth::password;
 use zwipe_core::http::contracts::auth::HttpChangePassword;
 
 use crate::inbound::components::auth::authed::use_authed;
@@ -29,7 +29,7 @@ pub fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
     let mut password_touched = use_signal(|| false);
     let mut submit_attempted = use_signal(|| false);
     let mut validate_new_password = move || {
-        if let Err(e) = validate(&new_password()) {
+        if let Err(e) = password::validate(&new_password()) {
             password_error.set(Some(e.to_string()));
         } else if new_password().as_str() != confirm_password().as_str()
             // Mid-typing the confirmation can't match yet; judge it once it
