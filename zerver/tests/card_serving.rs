@@ -28,7 +28,8 @@ use serde_json::json;
 /// decode an empty result rather than fail if `cards` were renamed.
 fn deck_search_names(body: &serde_json::Value) -> Vec<String> {
     assert!(
-        body.get("synergy_applied").is_some_and(|v| v.is_boolean()),
+        body.get("synergy_applied")
+            .is_some_and(serde_json::Value::is_boolean),
         "deck search must carry synergy_applied: {body}"
     );
     names(body.get("cards").unwrap())

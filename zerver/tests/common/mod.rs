@@ -491,7 +491,7 @@ impl CardFixture {
         s
     }
     pub(crate) fn keywords(mut self, keywords: &[&str]) -> Self {
-        self.keywords = Some(keywords.iter().map(|k| k.to_string()).collect());
+        self.keywords = Some(keywords.iter().map(ToString::to_string).collect());
         self
     }
     pub(crate) fn mana_cost(mut self, mana_cost: &str) -> Self {
@@ -585,12 +585,12 @@ impl CardFixture {
     /// Mechanical categories (`snake_case`, e.g. `"ramp"`, `"graveyard_hate"`) —
     /// written to `card_profiles.card_roles`.
     pub(crate) fn categories(mut self, cats: &[&str]) -> Self {
-        self.card_roles = cats.iter().map(|c| c.to_string()).collect();
+        self.card_roles = cats.iter().map(ToString::to_string).collect();
         self
     }
     /// Oracle tags (e.g. `"spot-removal"`) — written to `card_profiles.oracle_tags`.
     pub(crate) fn oracle_tags(mut self, tags: &[&str]) -> Self {
-        self.oracle_tags = tags.iter().map(|t| t.to_string()).collect();
+        self.oracle_tags = tags.iter().map(ToString::to_string).collect();
         self
     }
 }
