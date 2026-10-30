@@ -9,13 +9,12 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::format::Format;
 use zwipe_core::domain::deck::{
-    DeckName, DeckOtherTag, DeckTagView, MAX_DECK_ORACLE_TAGS, PowerLevel,
-    seed_oracle_tags_from_catalog,
+    self, DeckName, DeckOtherTag, DeckTagView, MAX_DECK_ORACLE_TAGS, PowerLevel,
 };
 use zwipe_core::domain::user::models::hints::HINT_CREATE_DECK;
 use zwipe_core::http::contracts::deck::HttpCreateDeckProfile;
 
-use super::components::deck_fields::{DeckFields, DeckFieldsHint, autofill_named_partner};
+use super::components::deck_fields::{self, DeckFields, DeckFieldsHint};
 use super::components::format_select::FormatSelect;
 use super::components::oracle_tag_select::OracleTagSelect;
 use super::components::swipe_select::{SwipeMode, SwipeSelect};
@@ -244,7 +243,7 @@ pub fn CreateDeck() -> Element {
                 mode: commander_mode,
                 on_select: move |card: Card| {
                     commander_display.set(card.scryfall_data.name.clone());
-                    autofill_named_partner(
+                    deck_fields::autofill_named_partner(
                         &card,
                         auth_client,
                         session,
@@ -303,7 +302,7 @@ pub fn CreateDeck() -> Element {
                     // manual picks. Cap at MAX; toast if anything was auto-added.
                     // Seed from the server catalog so a newly-served tag's otags
                     // apply without a client release; empty catalog seeds nothing.
-                    let new_seed = seed_oracle_tags_from_catalog(
+                    let new_seed = deck::seed_oracle_tags_from_catalog(
                         &selected_tags(),
                         &deck_tags_catalog().unwrap_or_default(),
                     );

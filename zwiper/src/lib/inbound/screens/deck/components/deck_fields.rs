@@ -3,7 +3,7 @@ use std::time::Duration;
 use components::{HintBullet, HintBullets, HintDialog, HintKey, TOAST_NORMAL, TextInput};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, Toasts, use_toast};
-use tokio::time::sleep;
+use tokio::time;
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
@@ -11,12 +11,10 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::card::search_card::card_filter::error::InvalidCardCriteria;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
-use zwipe_core::domain::card::search_card::commander_eligibility::{
-    PartnerKind, has_choose_a_background, partner_kind,
-};
+use zwipe_core::domain::card::search_card::commander_eligibility::{self, PartnerKind};
 use zwipe_core::domain::deck::format::Format;
 use zwipe_core::domain::deck::{
-    DeckName, DeckOtherTag, MAX_DECK_ORACLE_TAGS, MAX_DECK_TAGS, PowerLevel, deck_tag_label,
+    self, DeckName, DeckOtherTag, MAX_DECK_ORACLE_TAGS, MAX_DECK_TAGS, PowerLevel,
 };
 
 use crate::inbound::components::hint_dialog::HintColored;
@@ -47,7 +45,7 @@ pub(crate) fn autofill_named_partner(
     mut partner_commander_display: Signal<String>,
     toast: Toasts,
 ) {
-    let Some(PartnerKind::Named(mate)) = partner_kind(selected) else {
+    let Some(PartnerKind::Named(mate)) = commander_eligibility::partner_kind(selected) else {
         return;
     };
     let selected_id = selected.scryfall_data.id;
@@ -201,11 +199,13 @@ pub(crate) fn DeckFields(
     let show_commander = use_memo(move || selected_format().is_some_and(|f| f.has_commander()));
 
     let show_partner = use_memo(move || {
-        show_commander() && commander().is_some_and(|c| partner_kind(&c).is_some())
+        show_commander()
+            && commander().is_some_and(|c| commander_eligibility::partner_kind(&c).is_some())
     });
 
     let show_background = use_memo(move || {
-        show_commander() && commander().is_some_and(|c| has_choose_a_background(&c))
+        show_commander()
+            && commander().is_some_and(|c| commander_eligibility::has_choose_a_background(&c))
     });
 
     let show_signature_spell =
@@ -280,7 +280,7 @@ pub(crate) fn DeckFields(
         cmd_show_dropdown.set(true);
 
         spawn(async move {
-            sleep(Duration::from_millis(800)).await;
+            time::sleep(Duration::from_millis(800)).await;
 
             if cmd_search_query() != query {
                 return;
@@ -329,7 +329,7 @@ pub(crate) fn DeckFields(
         partner_show_dropdown.set(true);
 
         spawn(async move {
-            sleep(Duration::from_millis(800)).await;
+            time::sleep(Duration::from_millis(800)).await;
 
             if partner_search_query() != query {
                 return;
@@ -378,7 +378,7 @@ pub(crate) fn DeckFields(
         bg_show_dropdown.set(true);
 
         spawn(async move {
-            sleep(Duration::from_millis(800)).await;
+            time::sleep(Duration::from_millis(800)).await;
 
             if bg_search_query() != query {
                 return;
@@ -427,7 +427,7 @@ pub(crate) fn DeckFields(
         spell_show_dropdown.set(true);
 
         spawn(async move {
-            sleep(Duration::from_millis(800)).await;
+            time::sleep(Duration::from_millis(800)).await;
 
             if spell_search_query() != query {
                 return;
@@ -1050,7 +1050,7 @@ pub(crate) fn DeckFields(
                         div {
                             key: "{tag}",
                             class: "chip selected flex items-center gap-05",
-                            "{deck_tag_label(&tag)}"
+                            "{deck::deck_tag_label(&tag)}"
                             // Remove just this tag; stop propagation so the
                             // chip-box's own onclick doesn't also open the picker.
                             button {

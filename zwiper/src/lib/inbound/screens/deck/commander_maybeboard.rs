@@ -23,7 +23,7 @@ use components::{
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use tokio::time::sleep;
+use tokio::time;
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
@@ -230,7 +230,7 @@ pub fn CommanderMaybeboard() -> Element {
         }
         is_searching.set(true);
         spawn(async move {
-            sleep(Duration::from_millis(DEBOUNCE_MS)).await;
+            time::sleep(Duration::from_millis(DEBOUNCE_MS)).await;
             if query() != q {
                 return;
             }

@@ -8,7 +8,7 @@
 use std::time::Duration;
 
 use dioxus::prelude::*;
-use tokio::time::sleep;
+use tokio::time;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ImageSize;
 
@@ -74,7 +74,7 @@ pub fn FeaturedCards(
     let mut timed_out: Signal<bool> = use_signal(|| false);
     let mut opened: Signal<bool> = use_signal(|| false);
     use_future(move || async move {
-        sleep(Duration::from_secs(4)).await;
+        time::sleep(Duration::from_secs(4)).await;
         timed_out.set(true);
     });
     let total = cards.len();

@@ -14,7 +14,7 @@ use components::{
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
-use zwipe_core::domain::card::oracle_tag::{OracleTag, search_oracle_tags};
+use zwipe_core::domain::card::oracle_tag::{self, OracleTag};
 use zwipe_core::domain::deck::MAX_DECK_ORACLE_TAGS;
 
 use crate::inbound::components::catalog_cache::CatalogCache;
@@ -132,7 +132,7 @@ pub(crate) fn OracleTagSelect(
         curated.sort_by(|a, b| a.slug.cmp(&b.slug));
         curated
     } else {
-        let mut matches = search_oracle_tags(tags, &q);
+        let mut matches = oracle_tag::search_oracle_tags(tags, &q);
         matches.truncate(40);
         matches
     };

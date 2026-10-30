@@ -4,8 +4,8 @@
 //! [`CollapsibleSection`](super::collapsible_section::CollapsibleSection).
 
 use dioxus::prelude::*;
+use zwipe_core::domain::deck;
 use zwipe_core::domain::deck::deck_profile::DeckProfile;
-use zwipe_core::domain::deck::deck_tag_label;
 
 use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::info_button::InfoButton;
@@ -34,7 +34,7 @@ pub(crate) fn DeckTagsSection(deck_profile: DeckProfile) -> Element {
                     }
                     span { class: "info-row-value info-row-tags",
                         for tag in deck_profile.tags.iter() {
-                            span { key: "{tag}", class: "stat-chip stat-chip-muted", "{deck_tag_label(tag)}" }
+                            span { key: "{tag}", class: "stat-chip stat-chip-muted", "{deck::deck_tag_label(tag)}" }
                         }
                     }
                 }

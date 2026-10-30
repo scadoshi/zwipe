@@ -19,8 +19,8 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::scryfall_data::colors::Color;
+use zwipe_core::domain::deck;
 use zwipe_core::domain::deck::deck_profile::DeckProfile;
-use zwipe_core::domain::deck::deck_tag_label;
 use zwipe_core::domain::deck::format::Format;
 use zwipe_core::domain::user::models::hints::HINT_DECK_LIST;
 
@@ -99,7 +99,7 @@ fn tag_labels(profile: &DeckProfile) -> Vec<(String, String)> {
     profile
         .tags
         .iter()
-        .map(|t| (t.clone(), deck_tag_label(t)))
+        .map(|t| (t.clone(), deck::deck_tag_label(t)))
         .chain(
             profile
                 .other_tags
@@ -380,7 +380,7 @@ fn DeckRow(profile: DeckProfile) -> Element {
                     span { class: "stat-chip stat-chip-p3", "{name}" }
                 }
                 for tag in profile.tags.iter() {
-                    span { key: "{tag}", class: "stat-chip stat-chip-muted", "{deck_tag_label(tag)}" }
+                    span { key: "{tag}", class: "stat-chip stat-chip-muted", "{deck::deck_tag_label(tag)}" }
                 }
                 for tag in profile.other_tags.iter() {
                     span { key: "{tag}", class: "stat-chip stat-chip-p5", "{tag.display_name()}" }

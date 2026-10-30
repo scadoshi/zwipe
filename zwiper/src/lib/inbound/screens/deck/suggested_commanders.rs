@@ -28,18 +28,17 @@ use std::collections::BTreeMap;
 use components::{
     ActionBar, AlertDialog, Bar, BarChart, BarOrientation, BottomSheet, Button, ButtonVariant,
     CardRoleChips, Chip, ColorMap, ColorMapCounts, DialogAction, HintBullet, HintBullets,
-    HintDialog, HintKey, HintLine, OtagDef, RoleTags, TOAST_LONG, TOAST_QUICK, seed_from_id,
+    HintDialog, HintKey, HintLine, OtagDef, RoleTags, TOAST_LONG, TOAST_QUICK,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::card::Card;
-use zwipe_core::domain::card::card_role::role_short_label;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
-use zwipe_core::domain::card::scryfall_data::colors::{Color, identity_name};
+use zwipe_core::domain::card::scryfall_data::colors::{self, Color};
 use zwipe_core::domain::card::search_card::card_type::CardType;
+use zwipe_core::domain::card::{Card, card_role};
 use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
 use zwipe_core::domain::deck::deck_profile::DeckProfile;
 use zwipe_core::domain::user::models::hints::HINT_SUGGESTED_COMMANDERS;
@@ -218,7 +217,7 @@ pub(crate) fn ShowIdentityChips(
 /// The name shown beside an identity's pips: none for a single color, the
 /// identity's name otherwise.
 pub(crate) fn identity_label(identity: &[Color]) -> Option<&'static str> {
-    (identity.len() != 1).then(|| identity_name(identity))
+    (identity.len() != 1).then(|| colors::identity_name(identity))
 }
 
 /// The list's empty state under a Show chip whose commanders are all gone,
@@ -226,7 +225,7 @@ pub(crate) fn identity_label(identity: &[Color]) -> Option<&'static str> {
 /// than name (colorless, mono-color, five-color) go lowercase mid-sentence.
 pub(crate) fn empty_identity_line(identity: &[Color]) -> String {
     let identity = identity_of(identity);
-    let name = identity_name(&identity);
+    let name = colors::identity_name(&identity);
     let name = match identity.len() {
         0 | 1 | 5 => name.to_lowercase(),
         _ => name.to_string(),
@@ -400,7 +399,7 @@ pub(crate) fn role_bars(roles: &[HttpProfileRole], tags: &[HttpProfileTag]) -> V
         |r| decks_usize(r.decks),
         |r, pct| Bar {
             key: r.role.clone(),
-            label: role_short_label(&r.role),
+            label: card_role::role_short_label(&r.role),
             count: decks_usize(r.decks),
             pct,
             revealable: tags
@@ -872,7 +871,7 @@ pub(crate) fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
     let map_seed = session
         .peek()
         .as_ref()
-        .map_or(0, |s| seed_from_id(s.user.id.as_u128()));
+        .map_or(0, |s| components::seed_from_id(s.user.id.as_u128()));
     let mut selected_role: Signal<Option<String>> = use_signal(|| None);
     let color_map = profile
         .color_map

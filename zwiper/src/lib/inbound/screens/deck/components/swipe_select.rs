@@ -49,7 +49,7 @@ use crate::inbound::screens::deck::card::components::card_info::{
 use crate::inbound::screens::deck::card::components::card_row::OtagExamplesOpen;
 use crate::inbound::screens::deck::card::components::printing_sheet::PrintingSheet;
 use crate::inbound::screens::deck::card::filter::card_filter_sheet::CardFilterSheet;
-use crate::inbound::screens::deck::suggested_commanders::{SuggestionReasons, empty_identity_line};
+use crate::inbound::screens::deck::suggested_commanders::{self, SuggestionReasons};
 
 /// Cards fetched per page (matches the backend default).
 const PAGE: u32 = 25;
@@ -578,7 +578,7 @@ pub(crate) fn SwipeSelect(
     let suggested_empty_line = suggested_pile
         .filter(|pile| suggested && pile.read().suggestions.is_empty())
         .and(suggested_identity.as_deref())
-        .map(empty_identity_line);
+        .map(suggested_commanders::empty_identity_line);
     let mut directions = vec![Direction::Left, Direction::Right, Direction::Down];
     if maybe_enabled {
         directions.push(Direction::Up);

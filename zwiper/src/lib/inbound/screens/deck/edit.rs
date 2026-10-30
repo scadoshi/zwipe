@@ -12,14 +12,13 @@ use zwipe_core::domain::deck::deck_profile::DeckProfile;
 use zwipe_core::domain::deck::format::Format;
 use zwipe_core::domain::deck::requests::update_deck_profile::InvalidUpdateDeckProfile;
 use zwipe_core::domain::deck::{
-    Deck, DeckName, DeckOtherTag, DeckTagView, MAX_DECK_ORACLE_TAGS, PowerLevel, seed_oracle_tags,
-    seed_oracle_tags_from_catalog,
+    self, Deck, DeckName, DeckOtherTag, DeckTagView, MAX_DECK_ORACLE_TAGS, PowerLevel,
 };
 use zwipe_core::domain::user::models::hints::HINT_EDIT_DECK;
 use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
 use zwipe_core::http::helpers::Opdate;
 
-use super::components::deck_fields::{DeckFields, DeckFieldsHint, autofill_named_partner};
+use super::components::deck_fields::{self, DeckFields, DeckFieldsHint};
 use super::components::format_select::FormatSelect;
 use super::components::oracle_tag_select::OracleTagSelect;
 use super::components::skeletons::EditDeckSkeleton;
@@ -176,7 +175,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             oracle_tags.set(deck.deck_profile.oracle_tags.clone());
             // Seed contribution the saved deck tags account for, so the next
             // deck-tag reconcile drops exactly those and keeps manual picks.
-            applied_seed.set(seed_oracle_tags(&deck.deck_profile.tags));
+            applied_seed.set(deck::seed_oracle_tags(&deck.deck_profile.tags));
         }
     });
 
@@ -577,7 +576,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                 mode: commander_mode,
                 on_select: move |card: Card| {
                     commander_display.set(card.scryfall_data.name.clone());
-                    autofill_named_partner(
+                    deck_fields::autofill_named_partner(
                         &card,
                         client,
                         session,
@@ -636,7 +635,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                     // manual picks. Cap at MAX; toast if anything was auto-added.
                     // Seed from the server catalog so a newly-served tag's otags
                     // apply without a client release; empty catalog seeds nothing.
-                    let new_seed = seed_oracle_tags_from_catalog(
+                    let new_seed = deck::seed_oracle_tags_from_catalog(
                         &selected_tags(),
                         &deck_tags_catalog().unwrap_or_default(),
                     );

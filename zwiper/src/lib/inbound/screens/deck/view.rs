@@ -19,12 +19,12 @@ use zwipe_core::http::helpers::Opdate;
 
 use super::components::clone_deck_dialog::CloneDeckDialog;
 use super::components::collapsible_section::CollapsibleSection;
-use super::components::deck_budget_section::{DeckBudgetSection, has_budget};
+use super::components::deck_budget_section::{self, DeckBudgetSection};
 use super::components::deck_charts::{
     ColorChart, DeckCharts, DrawOdds, ManaBalanceRow, ManaCurve, ManaFulfillment,
 };
 use super::components::deck_profile::DeckProfileSection;
-use super::components::deck_tags_section::{DeckTagsSection, has_any_tags, total_tag_count};
+use super::components::deck_tags_section::{self, DeckTagsSection};
 use super::components::deck_warnings::DeckWarnings;
 use super::components::more_buttons::MoreButtons;
 use super::components::skeletons::{DeckProfileSkeleton, DeckStatsSkeleton};
@@ -276,7 +276,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                     card_count: metrics.as_ref().map_or_else(|| deck_profile.card_count.max(0) as usize, |m| m.total_cards),
                                 }
 
-                                if has_budget(&deck_profile, metrics.is_some()) {
+                                if deck_budget_section::has_budget(&deck_profile, metrics.is_some()) {
                                     CollapsibleSection {
                                         title: "Budget",
                                         open_section: open_section,
@@ -305,10 +305,10 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                     }
                                 }
 
-                                if has_any_tags(&deck_profile) {
+                                if deck_tags_section::has_any_tags(&deck_profile) {
                                     CollapsibleSection {
                                         title: "Tags",
-                                        badge: format!("{}", total_tag_count(&deck_profile)),
+                                        badge: format!("{}", deck_tags_section::total_tag_count(&deck_profile)),
                                         open_section: open_section,
                                         DeckTagsSection { deck_profile }
                                     }
