@@ -981,7 +981,7 @@ impl DeckTag {
             seed_otags: self
                 .oracle_tag_slugs()
                 .iter()
-                .map(|s| s.to_string())
+                .map(ToString::to_string)
                 .collect(),
         }
     }
@@ -992,9 +992,10 @@ impl DeckTag {
 /// work off server slugs (`DeckProfile.tags`); a server-added tag shows a readable
 /// label without a client release, while known tags keep their curated labels.
 pub fn deck_tag_label(slug: &str) -> String {
-    DeckTag::try_from(slug)
-        .map(|t| t.display_name().to_string())
-        .unwrap_or_else(|_| prettify_deck_tag_slug(slug))
+    DeckTag::try_from(slug).map_or_else(
+        |_| prettify_deck_tag_slug(slug),
+        |t| t.display_name().to_string(),
+    )
 }
 
 /// Title-cases a `snake_case`/`kebab-case` slug (`extra_turns` → "Extra Turns").
@@ -1080,7 +1081,7 @@ mod tests {
     #[test]
     fn all_variants_have_unique_display_names() {
         let names: std::collections::HashSet<_> =
-            DeckTag::all().iter().map(|t| t.display_name()).collect();
+            DeckTag::all().iter().map(DeckTag::display_name).collect();
         assert_eq!(names.len(), DeckTag::all().len());
     }
 }

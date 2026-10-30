@@ -155,7 +155,7 @@ impl CreateDeckProfileBuilder {
     /// Sets the deck format from a string.
     #[must_use]
     pub fn format(mut self, format: Option<&str>) -> Self {
-        self.format = format.map(|s| s.to_string());
+        self.format = format.map(str::to_string);
         self
     }
 
@@ -169,7 +169,7 @@ impl CreateDeckProfileBuilder {
     /// Sets the power level from a string.
     #[must_use]
     pub fn power_level(mut self, power_level: Option<&str>) -> Self {
-        self.power_level = power_level.map(|s| s.to_string());
+        self.power_level = power_level.map(str::to_string);
         self
     }
 

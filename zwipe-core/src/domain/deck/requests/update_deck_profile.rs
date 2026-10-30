@@ -162,7 +162,7 @@ impl UpdateDeckProfileBuilder {
     /// Sets the new deck name.
     #[must_use]
     pub fn name(mut self, name: Option<&str>) -> Self {
-        self.name = name.map(|s| s.to_string());
+        self.name = name.map(str::to_string);
         self
     }
 
@@ -197,7 +197,7 @@ impl UpdateDeckProfileBuilder {
     /// Sets the format update.
     #[must_use]
     pub fn format(mut self, format: Option<Option<&str>>) -> Self {
-        self.format = format.map(|opt| opt.map(|s| s.to_string()));
+        self.format = format.map(|opt| opt.map(str::to_string));
         self
     }
 
@@ -214,7 +214,7 @@ impl UpdateDeckProfileBuilder {
     /// clears it. `None` leaves it untouched.
     #[must_use]
     pub fn power_level(mut self, power_level: Option<Option<&str>>) -> Self {
-        self.power_level = power_level.map(|opt| opt.map(|s| s.to_string()));
+        self.power_level = power_level.map(|opt| opt.map(str::to_string));
         self
     }
 
