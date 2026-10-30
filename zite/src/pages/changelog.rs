@@ -1,5 +1,4 @@
 use components::{Changelog as ChangelogContent, Panel};
-use dioxus::document::eval;
 use dioxus::prelude::*;
 
 use crate::components::{PageMeta, sleep_ms};
@@ -19,7 +18,7 @@ pub fn Changelog() -> Element {
     let mut anchor = use_signal(|| None::<String>);
     use_effect(move || {
         spawn(async move {
-            let mut read = eval(READ_HASH_JS);
+            let mut read = document::eval(READ_HASH_JS);
             let Ok(fragment) = read.recv::<String>().await else {
                 return;
             };
@@ -28,7 +27,7 @@ pub fn Changelog() -> Element {
             }
             anchor.set(Some(fragment.clone()));
             sleep_ms(MOUNT_WAIT_MS).await;
-            let _ = eval(&format!(
+            let _ = document::eval(&format!(
                 "document.getElementById({fragment:?})?.scrollIntoView({{ block: 'start' }});"
             ))
             .await;

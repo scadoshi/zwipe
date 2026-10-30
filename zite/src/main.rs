@@ -5,7 +5,6 @@ use ::components::{
     BRAND_RESET_JS, COMPONENTS_CSS, Decode, MAGIC_CSS, NAV_GLIDE_JS, NavBar, REVEAL_JS, Replay,
     SCROLL_FADE_JS, SITE_CSS, THEMES_CSS, ThemeConfig, ThemePicker, use_theme_wipe,
 };
-use dioxus::document::eval;
 use dioxus::prelude::*;
 use zwipe_core::domain::user::preferences::PipStyle;
 
@@ -159,7 +158,7 @@ fn App() -> Element {
     let mut splash = use_context_provider(|| SiteSplash(Signal::new(true))).0;
     use_effect(move || {
         spawn(async move {
-            let mut eval = eval(
+            let mut eval = document::eval(
                 "const root = document.documentElement; root.classList.add('splash-live'); dioxus.send(root.classList.contains('splash-skip'));",
             );
             if eval.recv::<bool>().await.unwrap_or(true) {
@@ -173,7 +172,7 @@ fn App() -> Element {
     // stylesheet holds until the app can run it.
     use_effect(move || {
         spawn(async {
-            let _ = eval("document.documentElement.classList.add('hydrated');").await;
+            let _ = document::eval("document.documentElement.classList.add('hydrated');").await;
         });
     });
 
@@ -183,7 +182,7 @@ fn App() -> Element {
     // and re-queries the nav fresh, so per-route nav remounts can't hold a
     // stale node. use_future: install exactly once, not per re-render.
     use_future(|| async {
-        let _ = eval(
+        let _ = document::eval(
             r"(() => {
                 const set = () => {
                     const nav = document.querySelector('.nav-wrapper');
@@ -202,7 +201,7 @@ fn App() -> Element {
         let class = theme.read().css_class();
         spawn(async move {
             // Swap only the theme class, leaving any other class on the body.
-            let _ = eval(&format!(
+            let _ = document::eval(&format!(
                 "Array.from(document.body.classList).forEach(c => /^theme-.+-(dark|light)$/.test(c) && document.body.classList.remove(c)); document.body.classList.add('{class}');"
             ))
             .await;
@@ -215,7 +214,7 @@ fn App() -> Element {
         let natural = pip_style() == PipStyle::Natural;
         let class = ::components::pip_style_class(PipStyle::Natural);
         spawn(async move {
-            let _ = eval(&format!(
+            let _ = document::eval(&format!(
                 "document.body.classList.toggle('{class}', {natural});"
             ))
             .await;
@@ -280,7 +279,7 @@ pub fn Nav() -> Element {
                         // On the home page this runs the entrance again.
                         replay += 1;
                         spawn(async {
-                            let _ = eval(BRAND_RESET_JS).await;
+                            let _ = document::eval(BRAND_RESET_JS).await;
                         });
                     },
                     span {

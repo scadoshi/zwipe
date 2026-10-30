@@ -20,7 +20,7 @@ use dioxus::prelude::*;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
-use zwipe_core::domain::deck::deck_metrics::card_price;
+use zwipe_core::domain::deck::deck_metrics;
 
 use crate::components::{OVERLAY_EXIT_MS, sleep_ms};
 
@@ -104,8 +104,8 @@ pub fn FeaturedFlavor(overlay: Signal<Option<ScryfallData>>) -> Element {
     let sd = card.scryfall_data;
     let name = sd.name.clone();
     let has_image = sd.primary_image_url(ImageSize::Normal).is_some();
-    let usd_price =
-        card_price(&sd, PriceCurrency::Usd).map(|p| PriceCurrency::Usd.format_amount(p));
+    let usd_price = deck_metrics::card_price(&sd, PriceCurrency::Usd)
+        .map(|p| PriceCurrency::Usd.format_amount(p));
     let tcgplayer = tcgplayer_url(&name, sd.tcgplayer_id);
     let cardkingdom = cardkingdom_url(&name);
 

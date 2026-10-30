@@ -2,7 +2,6 @@ use components::{InfoButton, Panel, PasswordInput};
 use dioxus::prelude::*;
 use zwipe_client::ClientError;
 use zwipe_core::domain::auth::models::secret::Secret;
-use zwipe_core::domain::auth::password::requirements;
 
 use crate::{Nav, api};
 
@@ -107,7 +106,7 @@ pub fn Reset(token: String) -> Element {
                             }
                         },
                         ul { class: "card-bullets",
-                            for line in requirements() {
+                            for line in zwipe_core::domain::auth::password::requirements() {
                                 li { "{line}" }
                             }
                         }

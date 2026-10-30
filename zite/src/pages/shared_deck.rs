@@ -18,7 +18,7 @@ use zwipe_core::domain::card::search_card::card_filter::sort_direction::SortDire
 use zwipe_core::domain::card::search_card::card_type::CardType;
 use zwipe_core::domain::card::search_card::cards::Cards;
 use zwipe_core::domain::card::search_card::group_cards::{GroupByOption, GroupCards};
-use zwipe_core::domain::deck::deck_metrics::{DeckMetrics, mainboard_total_price};
+use zwipe_core::domain::deck::deck_metrics::{self, DeckMetrics};
 use zwipe_core::domain::deck::{Board, DeckEntry, Format, deck_tag_label};
 use zwipe_core::http::contracts::deck::HttpSharedDeck;
 
@@ -554,7 +554,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
         .as_ref()
         .is_some_and(Format::has_signature_spell);
 
-    let price = mainboard_total_price(&deck.entries, PriceCurrency::Usd);
+    let price = deck_metrics::mainboard_total_price(&deck.entries, PriceCurrency::Usd);
 
     // Card count mirrors the app's deck-list tile: mainboard sum plus each
     // present command-zone slot (commander only when the format uses one).

@@ -1,5 +1,4 @@
 use components::Panel;
-use dioxus::document::eval;
 use dioxus::prelude::*;
 
 use crate::components::PageMeta;
@@ -18,7 +17,7 @@ pub fn Ios() -> Element {
     // hydrated client.
     use_effect(|| {
         spawn(async {
-            let _ = eval(&format!("window.location.replace('{APP_STORE_URL}');")).await;
+            let _ = document::eval(&format!("window.location.replace('{APP_STORE_URL}');")).await;
         });
     });
 
