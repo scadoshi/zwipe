@@ -1,6 +1,6 @@
 # zwipe-tui
 
-ZWIPE in the terminal. Sign in with your ZWIPE account, pick a deck, and swipe cards into it with the keyboard. It serves the same cards as the app, in the same order: your commander's synergy picks first, then cards like your deck.
+ZWIPE in the terminal. Sign in with your ZWIPE account to see the home screen's counters, color map and featured flavor card, look through your decks and their charts, and swipe cards into them with the keyboard. It serves the same cards as the app, in the same order: your commander's synergy picks first, then cards like your deck.
 
 ## Install
 
@@ -17,20 +17,30 @@ Needs Rust 1.88 or newer. Decks are made in the app; zwipe-tui builds them.
 | --- | --- | --- |
 | Sign in | `Tab` | Switch between username and password |
 | | `Enter` | Sign in |
-| Decks | `j` / `k` or arrows | Move |
-| | `Enter` | Swipe cards into the deck |
-| | `r` | Reload |
+| Home | `d` | Your decks |
+| | `s` | Switch the counters between everybody and only you |
+| | `r` | Refresh |
 | | `O` | Sign out |
+| Decks | `j` / `k` or arrows | Move |
+| | `Enter` | Open the deck |
+| | `r` | Reload |
+| | `Esc` | Home |
+| Deck | `Tab` / `Shift+Tab` | Next or previous section: budget, tags, distributions, mana, draw odds, warnings |
+| | `c` | Switch the budget between USD, EUR and TIX |
+| | `+` / `-` | Draw odds one turn later or earlier |
+| | `s` | Swipe cards into the deck |
+| | `Esc` | Back to decks |
 | Swipe | `l` or right | Add to the deck |
 | | `h` or left | Pass; the deck won't be served it again |
 | | `m` or up | Add to the maybeboard |
 | | `u` or down | Undo the last swipe |
-| | `Esc` | Back to decks |
-| Anywhere | `Ctrl+C` | Quit |
+| | `Esc` | Back to the deck |
+| Anywhere | `q` | Quit, except while typing |
+| | `Ctrl+C` | Quit |
 
 ## Theme
 
-zwipe-tui draws in the theme set on your account, dark or light, with each theme's own mana colors. Before you sign in it uses your terminal's colors. The themes are 24-bit color, which iTerm2, Ghostty, kitty, WezTerm and current Terminal.app show correctly; inside tmux, turn on its truecolor support.
+zwipe-tui draws in the theme set on your account, dark or light, with each theme's own mana colors. It remembers that theme for the sign-in screen next time; before any sign-in it uses gruvbox dark, like the app. The themes are 24-bit color, which iTerm2, Ghostty, kitty, WezTerm and current Terminal.app show correctly; inside tmux, turn on its truecolor support.
 
 ## Session
 
