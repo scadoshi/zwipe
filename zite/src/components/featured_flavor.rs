@@ -11,9 +11,9 @@
 //! Image, `TCGplayer` and Card Kingdom buttons. Image requests the full-art
 //! overlay via the `overlay` signal; the HOME PAGE renders the overlay itself
 //! at its top level, outside the `content-enter` content tree, mirroring the
-//! shared-deck page. Keeping the overlay nested here was the
-//! trapped-in-the-page-column bug: an animated ancestor's transform makes it
-//! the containing block for `position: fixed`.
+//! shared-deck page: nested here, an animated ancestor's transform would
+//! become the containing block for `position: fixed` and trap the overlay in
+//! the page column.
 
 use components::Panel;
 use dioxus::prelude::*;
@@ -24,12 +24,11 @@ use zwipe_core::domain::deck::deck_metrics::card_price;
 
 use crate::components::{OVERLAY_EXIT_MS, sleep_ms};
 
-/// A real card response (Research Assistant, M15) frozen 2026-08-07, decoded as
-/// the DEBUG-ONLY fallback while the live fetch is pending or failing, so
-/// `dx serve` with no backend still renders the element. Release builds hide
-/// the section until live data lands (`StatsStrip` parity): a stale-but-real
-/// card is indistinguishable from a live one, which is exactly how the
-/// CF-cached copy went unnoticed for a day (owner call 2026-08-06).
+/// A real card response (Research Assistant, M15), decoded as the DEBUG-ONLY
+/// fallback while the live fetch is pending or failing, so `dx serve` with no
+/// backend still renders the element. Release builds hide the section until
+/// live data lands (`StatsStrip` parity): a stale but real card looks exactly
+/// like a live one.
 #[cfg(debug_assertions)]
 const SPOOF_CARD_JSON: &str = include_str!("featured_flavor_spoof.json");
 

@@ -114,11 +114,9 @@ fn main() {
 /// automatically, which is right: their content is per-token.
 ///
 /// The guides are the exception. `/guides/:slug` is one dynamic route over a
-/// fixed set of articles, so `static_routes()` drops all of them and the
-/// deploy has nothing to serve: every `/guides/<slug>` fell back to
-/// `404.html`, answering a 404 to crawlers while still hydrating fine for
-/// anyone reading it. Appending them here prerenders each article at its own
-/// path. Slugs come from `GUIDES`, the same source `build.rs` checks its
+/// fixed set of articles, so `static_routes()` drops all of them, and an
+/// unprerendered path is served by `404.html` with a 404 status. Appending
+/// them here prerenders each article at its own path. Slugs come from `GUIDES`, the same source `build.rs` checks its
 /// sitemap list against.
 #[expect(
     clippy::unused_async,

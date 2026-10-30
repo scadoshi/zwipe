@@ -30,8 +30,7 @@ const ROUTES: &[(&str, &str, &str)] = &[
 
 /// Guide article slugs, each rendered at `/guides/<slug>` by `GuidePage`.
 /// Checked against `GUIDES` in `src/pages/guides/content.rs` at build time by
-/// [`assert_guide_slugs_match`], so a new guide can't quietly miss the sitemap
-/// the way three of them did before 2026-08-18.
+/// [`assert_guide_slugs_match`], so a new guide can't quietly miss the sitemap.
 const GUIDE_SLUGS: &[&str] = &[
     "getting-started",
     "swipe-to-build",
