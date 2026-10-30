@@ -121,7 +121,7 @@ pub(crate) fn PrintingSheet(
     // its own backdrop + `.bottom-sheet` markup instead of using the shared
     // `BottomSheet`, so it needs its own registration, and it mirrors the
     // backdrop exactly, warning when an unsaved printing is about to be lost.
-    let dismiss = use_callback(move |_: ()| {
+    let dismiss = use_callback(move |(): ()| {
         let mut open = open;
         if !read_only && has_changed {
             toast.warning(

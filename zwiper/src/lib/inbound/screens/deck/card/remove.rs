@@ -669,7 +669,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                 CardDetailsSheet {
                     open: show_details,
                     card: card.clone(),
-                    on_printings: move |_| printing_open.set(true),
+                    on_printings: move |()| printing_open.set(true),
                 }
                 PrintingSheet {
                     host_screen: screen::DECK_CARD_REMOVE,

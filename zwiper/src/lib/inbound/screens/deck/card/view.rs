@@ -208,7 +208,7 @@ pub fn View(deck_id: Uuid) -> Element {
                 let _ = authed
                     .run("flush_quantity", |c, s| async move {
                         if p.baseline + p.delta < 1 {
-                            c.delete_deck_card(deck_id, card_id, &s).await.map(|_| ())
+                            c.delete_deck_card(deck_id, card_id, &s).await.map(|()| ())
                         } else {
                             // PATCH: the burst's absolute target, replay-safe.
                             let request = HttpPatchDeckCard::new(Some(p.baseline + p.delta), None);
@@ -1550,7 +1550,7 @@ pub fn View(deck_id: Uuid) -> Element {
                                                 printing_sheet_open.set(true);
                                             },
                                             mvp: Some(is_mvp),
-                                            on_toggle_mvp: move |_| toggle_mvp(card_id, is_mvp),
+                                            on_toggle_mvp: move |()| toggle_mvp(card_id, is_mvp),
                                         }
                                     }
                                 }
@@ -1599,7 +1599,7 @@ pub fn View(deck_id: Uuid) -> Element {
                                                         printing_sheet_open.set(true);
                                                     },
                                                     mvp: Some(is_mvp),
-                                                    on_toggle_mvp: move |_| toggle_mvp(card_id, is_mvp),
+                                                    on_toggle_mvp: move |()| toggle_mvp(card_id, is_mvp),
                                                 }
                                             }
                                         }

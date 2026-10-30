@@ -524,7 +524,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                     };
 
                     match client().delete_deck_card(deck_id, card_id, &session).await {
-                        Ok(_) => {
+                        Ok(()) => {
                             // Remove from exclusion HashSet
                             if let Some(oid) = oracle_id {
                                 deck_cards_ids.write().remove(&oid);
@@ -591,7 +591,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                     };
 
                     match client().delete_deck_card(deck_id, card_id, &session).await {
-                        Ok(_) => {
+                        Ok(()) => {
                             if let Some(oid) = oracle_id {
                                 deck_cards_ids.write().remove(&oid);
                             }
@@ -1555,7 +1555,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                 CardDetailsSheet {
                     open: show_details,
                     card,
-                    on_printings: move |_| printing_open.set(true),
+                    on_printings: move |()| printing_open.set(true),
                 }
             }
 
@@ -1596,7 +1596,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                 // client-side and its default is a blank filter, so an empty
                 // Apply there (e.g. right after Reset) must commit, not warn.
                 validate_before_apply: add_source() == AddSource::Search,
-                on_clear: move |_| clear_filters(),
+                on_clear: move |()| clear_filters(),
             }
             }
     }
