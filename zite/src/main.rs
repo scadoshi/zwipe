@@ -1,3 +1,6 @@
+//! zite, the zwipe.net site: a Dioxus fullstack app that `dx build --ssg` prerenders to static
+//! pages. The per-token pages (shared deck, verify, confirm email, reset) render in the browser.
+
 use ::components::{
     BRAND_RESET_JS, COMPONENTS_CSS, Decode, MAGIC_CSS, NAV_GLIDE_JS, NavBar, REVEAL_JS, Replay,
     SCROLL_FADE_JS, SITE_CSS, THEMES_CSS, ThemeConfig, ThemePicker, use_theme_wipe,
@@ -255,6 +258,7 @@ fn App() -> Element {
     }
 }
 
+/// The site's top bar: the brand, the page links, the store buttons and the theme controls.
 #[component]
 pub fn Nav() -> Element {
     let (theme, shown) = use_theme_wipe(use_context::<Signal<ThemeConfig>>(), "body");
@@ -344,6 +348,8 @@ pub fn Nav() -> Element {
     }
 }
 
+/// The site footer: copyright, the privacy and community links, and the Scryfall and
+/// Wizards notices.
 #[component]
 pub fn Footer() -> Element {
     rsx! {
