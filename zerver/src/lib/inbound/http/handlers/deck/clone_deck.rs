@@ -50,7 +50,7 @@ impl From<InvalidCloneDeck> for ApiError {
     fn from(value: InvalidCloneDeck) -> Self {
         match value {
             InvalidCloneDeck::Name(e) => {
-                Self::UnprocessableEntity(format!("invalid deck name: {}", e))
+                Self::UnprocessableEntity(format!("invalid deck name: {e}"))
             }
         }
     }

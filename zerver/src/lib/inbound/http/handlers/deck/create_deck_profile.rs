@@ -37,22 +37,22 @@ impl From<InvalidCreateDeckProfile> for ApiError {
     fn from(value: InvalidCreateDeckProfile) -> Self {
         match value {
             InvalidCreateDeckProfile::DeckName(e) => {
-                Self::UnprocessableEntity(format!("invalid deck name: {}", e))
+                Self::UnprocessableEntity(format!("invalid deck name: {e}"))
             }
             InvalidCreateDeckProfile::Format(e) => {
-                Self::UnprocessableEntity(format!("invalid format: {}", e))
+                Self::UnprocessableEntity(format!("invalid format: {e}"))
             }
             InvalidCreateDeckProfile::DeckTag(e) => {
-                Self::UnprocessableEntity(format!("invalid deck tag: {}", e))
+                Self::UnprocessableEntity(format!("invalid deck tag: {e}"))
             }
             InvalidCreateDeckProfile::TooManyTags => {
                 Self::UnprocessableEntity("a deck may have at most 5 tags".to_string())
             }
             InvalidCreateDeckProfile::PowerLevel(e) => {
-                Self::UnprocessableEntity(format!("invalid power level: {}", e))
+                Self::UnprocessableEntity(format!("invalid power level: {e}"))
             }
             InvalidCreateDeckProfile::DeckOtherTag(e) => {
-                Self::UnprocessableEntity(format!("invalid other-tag: {}", e))
+                Self::UnprocessableEntity(format!("invalid other-tag: {e}"))
             }
             InvalidCreateDeckProfile::TooManyOtherTags => {
                 Self::UnprocessableEntity("a deck may have at most 5 other-tags".to_string())

@@ -49,16 +49,16 @@ impl From<InvalidUpdateDeckCard> for ApiError {
     fn from(value: InvalidUpdateDeckCard) -> Self {
         match value {
             InvalidUpdateDeckCard::DeckId(e) => {
-                Self::UnprocessableEntity(format!("invalid deck id: {}", e))
+                Self::UnprocessableEntity(format!("invalid deck id: {e}"))
             }
             InvalidUpdateDeckCard::ScryfallDataId(e) => {
-                Self::UnprocessableEntity(format!("invalid card id: {}", e))
+                Self::UnprocessableEntity(format!("invalid card id: {e}"))
             }
             InvalidUpdateDeckCard::Quantity(e) => {
-                Self::UnprocessableEntity(format!("invalid quantity: {}", e))
+                Self::UnprocessableEntity(format!("invalid quantity: {e}"))
             }
             InvalidUpdateDeckCard::NewScryfallDataId(e) => {
-                Self::UnprocessableEntity(format!("invalid printing id: {}", e))
+                Self::UnprocessableEntity(format!("invalid printing id: {e}"))
             }
             InvalidUpdateDeckCard::NothingToUpdate => {
                 Self::UnprocessableEntity(InvalidUpdateDeckCard::NothingToUpdate.to_string())

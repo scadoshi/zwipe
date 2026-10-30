@@ -22,10 +22,10 @@ impl From<InvalidDeleteDeck> for ApiError {
     fn from(value: InvalidDeleteDeck) -> Self {
         match value {
             InvalidDeleteDeck::UserId(e) => {
-                Self::UnprocessableEntity(format!("invalid user id: {}", e))
+                Self::UnprocessableEntity(format!("invalid user id: {e}"))
             }
             InvalidDeleteDeck::DeckId(e) => {
-                Self::UnprocessableEntity(format!("invalid deck id: {}", e))
+                Self::UnprocessableEntity(format!("invalid deck id: {e}"))
             }
         }
     }

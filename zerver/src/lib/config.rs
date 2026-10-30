@@ -172,19 +172,14 @@ impl Config {
             .unwrap_or_else(|_| MIN_CLIENT_VERSION_DEFAULT.to_string());
         if zwipe_core::version::parse_version(&min_client_version).is_none() {
             anyhow::bail!(
-                "invalid {}: {:?} (expected x.y.z)",
-                MIN_CLIENT_VERSION_KEY,
-                min_client_version
+                "invalid {MIN_CLIENT_VERSION_KEY}: {min_client_version:?} (expected x.y.z)"
             );
         }
         let access_token_minutes = match std::env::var(ACCESS_TOKEN_MINUTES_KEY) {
             Ok(raw) => match raw.trim().parse::<i64>() {
                 Ok(minutes) if (1..=ACCESS_TOKEN_MINUTES_MAX).contains(&minutes) => minutes,
                 _ => anyhow::bail!(
-                    "invalid {}: {:?} (expected a whole number of minutes from 1 to {})",
-                    ACCESS_TOKEN_MINUTES_KEY,
-                    raw,
-                    ACCESS_TOKEN_MINUTES_MAX
+                    "invalid {ACCESS_TOKEN_MINUTES_KEY}: {raw:?} (expected a whole number of minutes from 1 to {ACCESS_TOKEN_MINUTES_MAX})"
                 ),
             },
             Err(_) => ACCESS_TOKEN_MINUTES_DEFAULT,
@@ -279,5 +274,5 @@ impl ZerviceConfig {
 
 /// Retrieves an environment variable by key with a descriptive error on failure.
 fn env_var_by_key(key: &str) -> anyhow::Result<String> {
-    std::env::var(key).context(format!("failed to get variable from env: {}", key))
+    std::env::var(key).context(format!("failed to get variable from env: {key}"))
 }

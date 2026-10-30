@@ -36,7 +36,7 @@ impl From<InvalidCommanderDismissal> for ApiError {
     fn from(value: InvalidCommanderDismissal) -> Self {
         match value {
             InvalidCommanderDismissal::OracleId(e) => {
-                Self::UnprocessableEntity(format!("invalid oracle id: {}", e))
+                Self::UnprocessableEntity(format!("invalid oracle id: {e}"))
             }
         }
     }

@@ -73,13 +73,13 @@ impl From<InvalidRegisterUser> for ApiError {
     fn from(value: InvalidRegisterUser) -> Self {
         match value {
             InvalidRegisterUser::Username(e) => {
-                Self::UnprocessableEntity(format!("invalid username: {}", e))
+                Self::UnprocessableEntity(format!("invalid username: {e}"))
             }
             InvalidRegisterUser::Email(e) => {
-                Self::UnprocessableEntity(format!("invalid email: {}", e))
+                Self::UnprocessableEntity(format!("invalid email: {e}"))
             }
             InvalidRegisterUser::Password(e) => {
-                Self::UnprocessableEntity(format!("invalid password: {}", e))
+                Self::UnprocessableEntity(format!("invalid password: {e}"))
             }
             InvalidRegisterUser::FailedPasswordHash(e) => e.to_500(),
         }

@@ -27,9 +27,9 @@ impl From<ChangeEmailError> for ApiError {
 impl From<InvalidChangeEmail> for ApiError {
     fn from(value: InvalidChangeEmail) -> Self {
         match value {
-            InvalidChangeEmail::Id(e) => Self::UnprocessableEntity(format!("invalid id: {}", e)),
+            InvalidChangeEmail::Id(e) => Self::UnprocessableEntity(format!("invalid id: {e}")),
             InvalidChangeEmail::Email(e) => {
-                Self::UnprocessableEntity(format!("invalid email: {}", e))
+                Self::UnprocessableEntity(format!("invalid email: {e}"))
             }
         }
     }

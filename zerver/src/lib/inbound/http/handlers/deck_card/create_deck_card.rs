@@ -44,16 +44,16 @@ impl From<InvalidCreateDeckCard> for ApiError {
     fn from(value: InvalidCreateDeckCard) -> Self {
         match value {
             InvalidCreateDeckCard::ScryfallDataId(e) => {
-                Self::UnprocessableEntity(format!("invalid card id: {}", e))
+                Self::UnprocessableEntity(format!("invalid card id: {e}"))
             }
             InvalidCreateDeckCard::DeckId(e) => {
-                Self::UnprocessableEntity(format!("invalid deck id: {}", e))
+                Self::UnprocessableEntity(format!("invalid deck id: {e}"))
             }
             InvalidCreateDeckCard::OracleId(e) => {
-                Self::UnprocessableEntity(format!("invalid oracle id: {}", e))
+                Self::UnprocessableEntity(format!("invalid oracle id: {e}"))
             }
             InvalidCreateDeckCard::Quantity(e) => {
-                Self::UnprocessableEntity(format!("invalid quantity: {}", e))
+                Self::UnprocessableEntity(format!("invalid quantity: {e}"))
             }
         }
     }

@@ -23,10 +23,10 @@ impl From<InvalidSkipDeckCard> for ApiError {
     fn from(value: InvalidSkipDeckCard) -> Self {
         match value {
             InvalidSkipDeckCard::DeckId(e) => {
-                Self::UnprocessableEntity(format!("invalid deck id: {}", e))
+                Self::UnprocessableEntity(format!("invalid deck id: {e}"))
             }
             InvalidSkipDeckCard::OracleId(e) => {
-                Self::UnprocessableEntity(format!("invalid oracle id: {}", e))
+                Self::UnprocessableEntity(format!("invalid oracle id: {e}"))
             }
         }
     }

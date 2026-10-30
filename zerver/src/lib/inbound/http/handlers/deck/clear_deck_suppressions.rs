@@ -24,7 +24,7 @@ impl From<InvalidClearDeckSuppressions> for ApiError {
     fn from(value: InvalidClearDeckSuppressions) -> Self {
         match value {
             InvalidClearDeckSuppressions::DeckId(e) => {
-                Self::UnprocessableEntity(format!("invalid deck id: {}", e))
+                Self::UnprocessableEntity(format!("invalid deck id: {e}"))
             }
         }
     }

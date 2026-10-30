@@ -13,7 +13,7 @@ pub async fn get_printings(
     Path(oracle_id): Path<String>,
 ) -> Result<(StatusCode, Json<Vec<Card>>), ApiError> {
     let oracle_id = uuid::Uuid::try_parse(&oracle_id)
-        .map_err(|e| ApiError::UnprocessableEntity(format!("invalid oracle id: {}", e)))?;
+        .map_err(|e| ApiError::UnprocessableEntity(format!("invalid oracle id: {e}")))?;
     state
         .card_service
         .get_printings(oracle_id)

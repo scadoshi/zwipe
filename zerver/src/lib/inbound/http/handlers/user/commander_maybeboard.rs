@@ -28,7 +28,7 @@ impl From<InvalidCommanderMaybeboardCard> for ApiError {
     fn from(value: InvalidCommanderMaybeboardCard) -> Self {
         match value {
             InvalidCommanderMaybeboardCard::OracleId(e) => {
-                Self::UnprocessableEntity(format!("invalid oracle id: {}", e))
+                Self::UnprocessableEntity(format!("invalid oracle id: {e}"))
             }
         }
     }

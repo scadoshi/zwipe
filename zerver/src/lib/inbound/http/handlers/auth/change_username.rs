@@ -29,9 +29,9 @@ impl From<ChangeUsernameError> for ApiError {
 impl From<InvalidChangeUsername> for ApiError {
     fn from(value: InvalidChangeUsername) -> Self {
         match value {
-            InvalidChangeUsername::Id(e) => Self::UnprocessableEntity(format!("invalid id: {}", e)),
+            InvalidChangeUsername::Id(e) => Self::UnprocessableEntity(format!("invalid id: {e}")),
             InvalidChangeUsername::Username(e) => {
-                Self::UnprocessableEntity(format!("invalid username: {}", e))
+                Self::UnprocessableEntity(format!("invalid username: {e}"))
             }
         }
     }

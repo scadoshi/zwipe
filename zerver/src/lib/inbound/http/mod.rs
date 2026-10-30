@@ -77,7 +77,7 @@ impl From<anyhow::Error> for ApiError {
 
 impl From<uuid::Error> for ApiError {
     fn from(value: uuid::Error) -> Self {
-        Self::UnprocessableEntity(format!("failed to parse uuid: {}", value))
+        Self::UnprocessableEntity(format!("failed to parse uuid: {value}"))
     }
 }
 
