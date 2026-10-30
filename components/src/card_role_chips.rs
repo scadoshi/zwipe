@@ -21,7 +21,7 @@ use zwipe_core::domain::card::card_role::role_label;
 
 /// Card roles as chips; expandable to their grouped oracle tags, plus an "Other
 /// tags" bucket. `tags_by_role` is keyed by role slug (`CardRole`'s
-/// snake_case form); `other_tags` are the uncategorized functional tags.
+/// `snake_case` form); `other_tags` are the uncategorized functional tags.
 #[component]
 pub fn CardRoleChips(
     roles: Vec<String>,
