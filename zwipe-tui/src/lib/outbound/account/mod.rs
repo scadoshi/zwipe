@@ -8,6 +8,7 @@ use chrono::Duration;
 use tokio::sync::Mutex;
 use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::user::{User, UserPreferences};
 use zwipe_core::http::contracts::auth::{HttpAuthenticateUser, HttpRefreshSession};
 
 use super::files;
@@ -97,6 +98,30 @@ impl Account {
             }
             Err(e) => Err(e),
         }
+    }
+
+    /// Replaces the session's copy of the user, such as after a username change, and saves it.
+    pub(crate) async fn set_user(&self, user: User) {
+        let mut guard = self.session.lock().await;
+        if let Some(session) = guard.as_mut() {
+            session.user = user;
+            self.store.save(session).ok();
+        }
+    }
+
+    /// Replaces the session's copy of the preferences, so the next launch opens in them, and saves it.
+    pub(crate) async fn set_preferences(&self, preferences: UserPreferences) {
+        let mut guard = self.session.lock().await;
+        if let Some(session) = guard.as_mut() {
+            session.preferences = preferences;
+            self.store.save(session).ok();
+        }
+    }
+
+    /// Forgets the session here without telling the server, for an account the server has already deleted.
+    pub(crate) async fn forget(&self) {
+        self.session.lock().await.take();
+        self.store.clear().ok();
     }
 
     /// Ends the session on the server, best effort, and forgets it here.

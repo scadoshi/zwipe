@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Writes src/lib/domain/theme/palettes.rs from orangui's themes.
 
-Reads assets/themes.css, from an orangui checkout beside the zwipe checkout or the path given as the first argument. Run it again whenever orangui's themes change:
+Reads assets/themes.css for the colors and src/theme.rs for the picker's groups, from an orangui checkout beside the zwipe checkout or the path given as the first argument. Run it again whenever orangui's themes change:
 
     python3 -I zwipe-tui/scripts/gen_themes.py [path/to/orangui]
 """
@@ -49,6 +49,14 @@ def palettes(css):
     return found
 
 
+def groups(theme_rs):
+    body = theme_rs.split("pub const THEME_GROUPS", 1)[1].split("];", 1)[0]
+    return [
+        (label, re.findall(r'"([a-z0-9-]+)"', slugs))
+        for label, slugs in re.findall(r'label:\s*"([^"]+)",\s*themes:\s*&\[(.*?)\]', body, re.S)
+    ]
+
+
 def colors(c):
     fields = ", ".join(f"{role}: [{', '.join(f'0x{x:02x}' for x in c[role])}]" for role, _ in ROLES)
     return f"Colors {{ {fields} }}"
@@ -57,12 +65,16 @@ def colors(c):
 def main():
     css = (ORANGUI / "assets" / "themes.css").read_text()
     found = palettes(css)
+    grouped = groups((ORANGUI / "src" / "theme.rs").read_text())
 
     slugs = sorted({slug for slug, _ in found})
+    listed = [slug for _, members in grouped for slug in members]
+    if sorted(listed) != slugs:
+        raise SystemExit(f"groups and palettes disagree: {sorted(set(listed) ^ set(slugs))}")
     lines = [
-        "//! Orangui's theme palettes, written by `zwipe-tui/scripts/gen_themes.py` from orangui's `assets/themes.css`. Regenerate rather than edit.",
+        "//! Orangui's theme palettes, written by `zwipe-tui/scripts/gen_themes.py` from orangui's `assets/themes.css` and `src/theme.rs`. Regenerate rather than edit.",
         "",
-        "use super::{Colors, Family};",
+        "use super::{Colors, Family, Group};",
         "",
         "/// Every theme family, alphabetical by slug.",
         "pub(crate) const FAMILIES: &[Family] = &[",
@@ -75,10 +87,14 @@ def main():
             f"        light: {colors(found[(slug, 'light')])},",
             "    },",
         ]
+    lines += ["];", "", "/// The theme picker's sections, in orangui's order: warm to cool to neutral.", "pub(crate) const GROUPS: &[Group] = &["]
+    for label, members in grouped:
+        quoted = ", ".join(f'"{m}"' for m in members)
+        lines.append(f'    Group {{ label: "{label}", slugs: &[{quoted}] }},')
     lines.append("];")
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text("\n".join(lines) + "\n")
-    print(f"wrote {OUT.relative_to(CRATE)}: {len(slugs)} themes")
+    print(f"wrote {OUT.relative_to(CRATE)}: {len(slugs)} themes in {len(grouped)} groups")
 
 
 main()

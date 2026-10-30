@@ -9892,6 +9892,7 @@ dependencies = [
  "chrono",
  "crossterm",
  "dirs",
+ "email_address",
  "futures",
  "image",
  "ratatui",

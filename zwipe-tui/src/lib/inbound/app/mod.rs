@@ -1,5 +1,8 @@
 //! What the screens draw from: which screen is up and its state.
 
+mod account;
+mod config;
+
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fmt;
@@ -15,6 +18,10 @@ use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
 use zwipe_core::domain::deck::{Deck, DeckProfile};
 use zwipe_core::http::contracts::suggestions::HttpPlayStyleSummary;
 
+pub(crate) use self::account::{AccountRow, AccountView, Dialog, Form, FormKind, pending_note};
+pub(crate) use self::config::{
+    ConfigRow, ConfigView, ExceptionsEditor, PreferenceChange, ThemePicker,
+};
 use crate::domain::decode;
 use crate::domain::home::{Figures, Scope};
 use crate::domain::swipe::Stack;
@@ -27,6 +34,8 @@ pub(crate) struct App {
     /// The account's ZWIPE theme, or before sign-in the last account's, or gruvbox dark.
     pub(crate) palette: Palette,
     pub(crate) username: Option<String>,
+    /// The signed-in user as last fetched, which the account screen opens on.
+    pub(crate) user: Option<zwipe_core::domain::user::User>,
     /// A one-line message under the deck list and the swipe screen.
     pub(crate) status: String,
     /// How this terminal draws images, or `None` when card images are off.
@@ -36,7 +45,14 @@ pub(crate) struct App {
 impl App {
     /// Whether something on screen is moving, so the loop should redraw on a timer.
     pub(crate) fn animating(&self) -> bool {
-        matches!(&self.screen, Screen::Home(home) if home.logo_elapsed() < decode::DURATION)
+        match &self.screen {
+            Screen::Home(home) => home.logo_elapsed() < decode::DURATION,
+            Screen::Account(view) => {
+                view.resend_wait().is_some()
+                    || matches!(&view.dialog, Some(Dialog::Form(form)) if form.delete_wait().is_some())
+            }
+            _ => false,
+        }
     }
 
     pub(crate) fn new(palette: Palette) -> Self {
@@ -44,6 +60,7 @@ impl App {
             screen: Screen::Login(LoginForm::default()),
             palette,
             username: None,
+            user: None,
             status: String::new(),
             images: None,
         }
@@ -58,6 +75,8 @@ pub(crate) enum Screen {
     Decks(DeckList),
     Deck(Box<DeckView>),
     Swipe(Box<SwipeView>),
+    Account(Box<AccountView>),
+    Config(Box<ConfigView>),
     /// The server no longer accepts this version. Only quitting is possible.
     UpdateRequired,
 }

@@ -375,3 +375,106 @@ fn a_loaded_image_draws_beside_the_card_text_on_a_wide_terminal() {
         "i swaps the text for the image"
     );
 }
+
+fn account_user(verified: bool) -> zwipe_core::domain::user::User {
+    let mut user: zwipe_core::domain::user::User = serde_json::from_value(serde_json::json!({
+        "id": "00000000-0000-0000-0000-000000000001",
+        "username": "scotty",
+        "email": "scotty@zwipe.net",
+        "email_verified_at": null,
+        "hints_shown": {},
+    }))
+    .unwrap();
+    if verified {
+        user.email_verified_at = Some(chrono::Utc::now());
+    }
+    user
+}
+
+#[test]
+fn the_account_screen_shows_details_and_verification_rows() {
+    use crate::inbound::app::AccountView;
+
+    let mut app = App::new(Palette::terminal());
+    app.screen = Screen::Account(Box::new(AccountView::new(account_user(false))));
+    let screen = text(&app);
+    for expected in [
+        "> Username",
+        "scotty",
+        "scotty@zwipe.net",
+        "Unverified",
+        "Verification",
+        "Resend",
+        "Check",
+        "•••••••",
+        "Version",
+        "Log out",
+        "Delete account",
+    ] {
+        assert!(screen.contains(expected), "missing {expected}");
+    }
+}
+
+#[test]
+fn a_form_masks_passwords_and_the_delete_button_counts_down() {
+    use crate::inbound::app::{AccountView, Dialog, Form, FormKind};
+
+    let mut view = AccountView::new(account_user(true));
+    let mut form = Form::new(FormKind::Delete);
+    form.values = vec!["hunter2".to_owned()];
+    view.dialog = Some(Dialog::Form(form));
+    let mut app = App::new(Palette::terminal());
+    app.screen = Screen::Account(Box::new(view));
+    let screen = text(&app);
+    assert!(screen.contains("Delete account"));
+    assert!(screen.contains("permanently delete"));
+    assert!(screen.contains("•••••••"));
+    assert!(!screen.contains("hunter2"));
+    assert!(screen.contains("Delete (5)"));
+}
+
+#[test]
+fn the_config_screen_lines_up_every_row_and_marks_the_selection() {
+    use zwipe_core::domain::user::preferences::UserPreferences;
+
+    use crate::inbound::app::ConfigView;
+
+    let mut app = App::new(Palette::terminal());
+    app.screen = Screen::Config(Box::new(ConfigView {
+        saved: Some(UserPreferences::default()),
+        shown: Some(UserPreferences::default()),
+        ..ConfigView::default()
+    }));
+    let screen = text(&app);
+    for expected in [
+        "> Theme",
+        "Gruvbox",
+        "  Mode",
+        "Dark",
+        "  Pips",
+        "  Universes Beyond",
+        "Show",
+        "  Exceptions",
+    ] {
+        assert!(screen.contains(expected), "missing {expected:?}");
+    }
+}
+
+#[test]
+fn the_theme_list_shows_sections_and_names() {
+    use zwipe_core::domain::user::preferences::UserPreferences;
+
+    use crate::inbound::app::{ConfigView, ThemePicker};
+
+    let mut app = App::new(Palette::terminal());
+    app.screen = Screen::Config(Box::new(ConfigView {
+        saved: Some(UserPreferences::default()),
+        shown: Some(UserPreferences::default()),
+        picker: Some(ThemePicker::opening("gruvbox")),
+        ..ConfigView::default()
+    }));
+    let screen = text(&app);
+    assert!(screen.contains("Themes"));
+    assert!(screen.contains("Warm & earthy"));
+    assert!(screen.contains("> Gruvbox"));
+}

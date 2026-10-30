@@ -1,5 +1,7 @@
 //! What the screens draw, free of terminal and network code.
 
+/// The account forms' validation and copy.
+pub(crate) mod account;
 /// A card as text: faces, mana symbols, rules and stats.
 pub(crate) mod card;
 /// A deck's row in the deck list.

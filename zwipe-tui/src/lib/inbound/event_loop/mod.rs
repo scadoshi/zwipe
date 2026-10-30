@@ -18,13 +18,17 @@ use zwipe_client::ClientError;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ImageSize;
+use zwipe_core::domain::card::scryfall_data::universe::UbFranchiseView;
 use zwipe_core::domain::card::search_card::card_filter::CardQuery;
 use zwipe_core::domain::deck::{Deck, DeckProfile};
+use zwipe_core::domain::user::User;
+use zwipe_core::domain::user::preferences::UserPreferences;
 use zwipe_core::http::contracts::deck::HttpDeckCardSearch;
 use zwipe_core::http::contracts::deck_card::HttpCreateDeckCard;
 use zwipe_core::http::contracts::suggestions::HttpPlayStyleSummary;
 use zwipe_core::version::version_at_least;
 
+use self::settings::SettingsRequest;
 use super::app::{
     App, CardImage, DeckList, DeckView, HomeView, LoginField, LoginForm, Screen, Step, SwipeView,
 };
@@ -32,7 +36,6 @@ use super::ui;
 use crate::domain::decode;
 use crate::domain::home::{Figures, Scope};
 use crate::domain::swipe::{self, Effect, Stack, Swipe};
-use crate::domain::theme::Palette;
 use crate::outbound::account::Account;
 use crate::outbound::images;
 use crate::outbound::theme_file::{RememberedTheme, ThemeFile};
@@ -92,6 +95,8 @@ enum Request {
         card_id: Uuid,
         url: String,
     },
+    /// The account and config screens' work.
+    Settings(SettingsRequest),
     SignOut,
     /// Saves the account's theme for drawing before the next sign-in.
     RememberTheme(RememberedTheme),
@@ -124,6 +129,31 @@ enum Update {
         card_id: Uuid,
         image: Option<Box<DynamicImage>>,
     },
+    /// A fresh copy of the user, with a message to show when it answers a check.
+    User {
+        user: Box<User>,
+        message: Option<String>,
+    },
+    AccountChanged {
+        user: Option<Box<User>>,
+        message: String,
+    },
+    AccountChangeFailed(String),
+    AccountDeleted,
+    /// Sending the verification email failed, so it can be tried again at once.
+    ResendFailed(String),
+    Preferences(Box<UserPreferences>),
+    PreferencesUnavailable,
+    PreferencesSaved {
+        seq: u64,
+        preferences: Box<UserPreferences>,
+        message: &'static str,
+    },
+    PreferencesFailed {
+        seq: u64,
+        message: String,
+    },
+    Franchises(Vec<UbFranchiseView>),
     /// The server no longer accepts the session.
     SessionEnded,
     SignedOut,
@@ -199,15 +229,13 @@ impl EventLoop {
 
     /// Applies the account's theme, remembers it for the next launch, and goes home.
     fn signed_in(&mut self, app: &mut App, session: &Session) {
-        let preferences = &session.preferences;
-        app.palette = Palette::for_account(&preferences.theme, preferences.dark_mode);
-        self.pending.push(Request::RememberTheme(RememberedTheme {
-            theme: preferences.theme.clone(),
-            dark_mode: preferences.dark_mode,
-        }));
+        self.use_preferences(app, &session.preferences);
+        self.pending
+            .push(Request::Settings(SettingsRequest::LoadPreferences));
         let username = session.user.username.to_string();
         app.status = format!("Hello, {username}!");
         app.username = Some(username);
+        app.user = Some(session.user.clone());
         self.open_home(app);
     }
 
@@ -233,6 +261,7 @@ impl EventLoop {
     /// Back to sign-in, still in the account's theme, with `error` on the form.
     fn signed_out(app: &mut App, error: Option<String>) {
         app.username = None;
+        app.user = None;
         app.status.clear();
         app.screen = Screen::Login(LoginForm {
             error,
@@ -340,6 +369,27 @@ impl EventLoop {
                 self.pending.push(Request::SignOut);
             }
             Update::SignedOut => Self::signed_out(app, None),
+            Update::User { user, message } => Self::on_user(app, *user, message),
+            Update::AccountChanged { user, message } => {
+                Self::on_account_changed(app, user.map(|u| *u), message);
+            }
+            Update::AccountChangeFailed(error) => Self::on_account_change_failed(app, error),
+            Update::AccountDeleted => {
+                Self::signed_out(app, None);
+                "Account deleted".clone_into(&mut app.status);
+            }
+            Update::ResendFailed(error) => Self::on_resend_failed(app, error),
+            Update::Preferences(preferences) => self.on_preferences(app, *preferences),
+            Update::PreferencesUnavailable => {}
+            Update::PreferencesSaved {
+                seq,
+                preferences,
+                message,
+            } => self.on_preferences_saved(app, seq, *preferences, message),
+            Update::PreferencesFailed { seq, message } => {
+                Self::on_preferences_failed(app, seq, message);
+            }
+            Update::Franchises(franchises) => Self::on_franchises(app, franchises),
         }
     }
 
@@ -410,6 +460,8 @@ impl EventLoop {
             Screen::Decks(_) => return self.handle_decks_key(app, key.code),
             Screen::Deck(_) => return self.handle_deck_key(app, key.code),
             Screen::Swipe(_) => self.handle_swipe_key(app, key.code),
+            Screen::Account(_) => return self.handle_account_key(app, key.code),
+            Screen::Config(_) => return self.handle_config_key(app, key.code),
             Screen::UpdateRequired => {
                 if matches!(key.code, KeyCode::Esc | KeyCode::Char('q')) {
                     return Flow::Quit;
@@ -462,6 +514,8 @@ impl EventLoop {
         match code {
             KeyCode::Esc | KeyCode::Char('q') => return Flow::Quit,
             KeyCode::Char('d') | KeyCode::Enter => self.open_decks(app),
+            KeyCode::Char('a') => self.open_account(app),
+            KeyCode::Char('c') => self.open_config(app),
             KeyCode::Char('s') => {
                 home.scope = home.scope.toggled();
                 if home.scope == Scope::OnlyMe {
@@ -622,6 +676,7 @@ impl EventLoop {
 async fn perform(account: &Account, theme_file: &ThemeFile, request: Request) -> Option<Update> {
     let client = &account.client;
     match request {
+        Request::Settings(request) => settings::perform(account, request).await,
         Request::CheckVersion => {
             let minimum = client.fetch_min_client_version().await.ok()?;
             (!version_at_least(VERSION, &minimum.min_version)).then_some(Update::TooOld)
@@ -735,6 +790,8 @@ fn failure(error: &ClientError, report: impl FnOnce(String) -> Update) -> Update
         other => report(other.to_user_message()),
     }
 }
+
+mod settings;
 
 #[cfg(test)]
 mod tests;

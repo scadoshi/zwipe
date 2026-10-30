@@ -87,6 +87,8 @@ pub(super) fn draw(f: &mut Frame<'_>, palette: &Palette, app: &App, view: &HomeV
             palette,
             &[
                 ("d", "decks"),
+                ("a", "account"),
+                ("c", "config"),
                 ("s", "everybody/only me"),
                 ("r", "refresh"),
                 ("O", "sign out"),

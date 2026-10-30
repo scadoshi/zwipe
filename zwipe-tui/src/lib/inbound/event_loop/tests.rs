@@ -7,7 +7,9 @@ use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 
+use super::settings::{self, SettingsRequest};
 use super::*;
+use crate::domain::theme::Palette;
 use crate::inbound::app::Section;
 use crate::outbound::account::SessionFile;
 use crate::outbound::theme_file::ThemeFile;
@@ -560,4 +562,290 @@ fn without_images_no_image_is_requested_and_i_still_toggles() {
     );
     event_loop.handle_key(&mut app, key(KeyCode::Char('i')));
     assert!(swipe_view(&app).show_image);
+}
+
+fn test_user(verified: bool) -> zwipe_core::domain::user::User {
+    let mut user: zwipe_core::domain::user::User = serde_json::from_value(serde_json::json!({
+        "id": "00000000-0000-0000-0000-000000000001",
+        "username": "scotty",
+        "email": "scotty@zwipe.net",
+        "email_verified_at": null,
+        "hints_shown": {},
+    }))
+    .unwrap();
+    if verified {
+        user.email_verified_at = Some(chrono::Utc::now());
+    }
+    user
+}
+
+fn on_account(verified: bool) -> (EventLoop, App) {
+    let mut event_loop = event_loop();
+    let mut app = App::new(Palette::terminal());
+    app.user = Some(test_user(verified));
+    event_loop.open_home(&mut app);
+    event_loop.pending.clear();
+    event_loop.handle_key(&mut app, key(KeyCode::Char('a')));
+    (event_loop, app)
+}
+
+fn account_view(app: &App) -> &crate::inbound::app::AccountView {
+    match &app.screen {
+        Screen::Account(view) => view,
+        other => panic!("not on the account screen: {other:?}"),
+    }
+}
+
+fn config_view(app: &App) -> &crate::inbound::app::ConfigView {
+    match &app.screen {
+        Screen::Config(view) => view,
+        other => panic!("not on the config screen: {other:?}"),
+    }
+}
+
+#[test]
+fn a_opens_the_account_and_refreshes_the_user() {
+    let (event_loop, app) = on_account(true);
+    assert_eq!(account_view(&app).user.username.to_string(), "scotty");
+    assert_eq!(
+        event_loop.pending,
+        [Request::Settings(SettingsRequest::LoadUser)]
+    );
+}
+
+#[test]
+fn a_bad_username_is_refused_in_the_form_and_a_good_one_is_sent() {
+    use crate::inbound::app::Dialog;
+
+    let (mut event_loop, mut app) = on_account(true);
+    event_loop.pending.clear();
+    event_loop.handle_key(&mut app, key(KeyCode::Enter));
+    type_text(&mut event_loop, &mut app, "ab");
+    event_loop.handle_key(&mut app, key(KeyCode::Enter));
+    type_text(&mut event_loop, &mut app, "hunter2");
+    event_loop.handle_key(&mut app, key(KeyCode::Enter));
+    assert!(matches!(
+        &account_view(&app).dialog,
+        Some(Dialog::Form(form)) if form.error.as_deref() == Some("must be at least 3 characters long")
+    ));
+    assert_eq!(event_loop.pending, []);
+
+    event_loop.handle_key(&mut app, key(KeyCode::Tab));
+    type_text(&mut event_loop, &mut app, "cdef");
+    event_loop.handle_key(&mut app, key(KeyCode::Tab));
+    event_loop.handle_key(&mut app, key(KeyCode::Enter));
+    assert_eq!(
+        event_loop.pending,
+        [Request::Settings(SettingsRequest::ChangeAccount(
+            settings::AccountChange::Username {
+                username: "abcdef".to_owned(),
+                password: Password("hunter2".to_owned()),
+            }
+        ))]
+    );
+    assert!(!format!("{:?}", event_loop.pending).contains("hunter2"));
+
+    event_loop.apply(
+        &mut app,
+        Update::AccountChangeFailed("invalid password".to_owned()),
+    );
+    assert!(matches!(
+        &account_view(&app).dialog,
+        Some(Dialog::Form(form)) if !form.busy && form.error.as_deref() == Some("invalid password")
+    ));
+
+    let mut renamed = test_user(true);
+    renamed.username = zwipe_core::domain::user::Username::new("abcdef").unwrap();
+    event_loop.apply(
+        &mut app,
+        Update::AccountChanged {
+            user: Some(Box::new(renamed)),
+            message: "Username changed to abcdef".to_owned(),
+        },
+    );
+    assert!(account_view(&app).dialog.is_none());
+    assert_eq!(app.username.as_deref(), Some("abcdef"));
+    assert_eq!(app.status, "Username changed to abcdef");
+}
+
+#[test]
+fn a_password_change_asks_before_it_signs_out_other_devices() {
+    use crate::inbound::app::Dialog;
+
+    let (mut event_loop, mut app) = on_account(true);
+    event_loop.pending.clear();
+    for _ in 0..2 {
+        event_loop.handle_key(&mut app, key(KeyCode::Char('j')));
+    }
+    event_loop.handle_key(&mut app, key(KeyCode::Enter));
+    for value in ["Old!pass1", "New!pass22", "New!pass22"] {
+        type_text(&mut event_loop, &mut app, value);
+        event_loop.handle_key(&mut app, key(KeyCode::Enter));
+    }
+    assert!(matches!(
+        account_view(&app).dialog,
+        Some(Dialog::ConfirmPassword(_))
+    ));
+    assert_eq!(event_loop.pending, []);
+    event_loop.handle_key(&mut app, key(KeyCode::Char('y')));
+    assert!(matches!(
+        event_loop.pending.as_slice(),
+        [Request::Settings(SettingsRequest::ChangeAccount(
+            settings::AccountChange::Password { .. }
+        ))]
+    ));
+}
+
+#[test]
+fn delete_waits_five_seconds_and_log_out_asks_first() {
+    use crate::inbound::app::Dialog;
+
+    let (mut event_loop, mut app) = on_account(true);
+    event_loop.pending.clear();
+    for _ in 0..10 {
+        event_loop.handle_key(&mut app, key(KeyCode::Char('j')));
+    }
+    event_loop.handle_key(&mut app, key(KeyCode::Enter));
+    type_text(&mut event_loop, &mut app, "pw");
+    event_loop.handle_key(&mut app, key(KeyCode::Enter));
+    assert!(matches!(&account_view(&app).dialog, Some(Dialog::Form(form)) if !form.busy));
+    assert_eq!(
+        event_loop.pending,
+        [],
+        "the delete button is still counting down"
+    );
+    assert!(app.animating(), "the countdown redraws");
+
+    event_loop.handle_key(&mut app, key(KeyCode::Esc));
+    event_loop.handle_key(&mut app, key(KeyCode::Char('k')));
+    event_loop.handle_key(&mut app, key(KeyCode::Enter));
+    assert!(matches!(account_view(&app).dialog, Some(Dialog::LogOut)));
+    event_loop.handle_key(&mut app, key(KeyCode::Char('y')));
+    assert_eq!(event_loop.pending, [Request::SignOut]);
+}
+
+#[test]
+fn resend_waits_a_minute_between_emails_unless_it_failed() {
+    let (mut event_loop, mut app) = on_account(false);
+    event_loop.pending.clear();
+    for _ in 0..2 {
+        event_loop.handle_key(&mut app, key(KeyCode::Char('j')));
+    }
+    event_loop.handle_key(&mut app, key(KeyCode::Enter));
+    event_loop.handle_key(&mut app, key(KeyCode::Enter));
+    assert_eq!(
+        event_loop.pending,
+        [Request::Settings(SettingsRequest::Resend)]
+    );
+    assert!(account_view(&app).resend_wait().is_some());
+
+    event_loop.apply(&mut app, Update::ResendFailed("offline".to_owned()));
+    assert!(account_view(&app).resend_wait().is_none());
+    assert_eq!(app.status, "offline");
+}
+
+fn on_config() -> (EventLoop, App) {
+    let mut event_loop = event_loop();
+    let mut app = App::new(Palette::terminal());
+    event_loop.open_home(&mut app);
+    event_loop.handle_key(&mut app, key(KeyCode::Char('c')));
+    assert_eq!(
+        event_loop.pending.last(),
+        Some(&Request::Settings(SettingsRequest::LoadPreferences))
+    );
+    event_loop.apply(&mut app, Update::Preferences(Box::default()));
+    event_loop.pending.clear();
+    (event_loop, app)
+}
+
+#[test]
+fn loaded_preferences_set_the_theme_and_fill_the_screen() {
+    let (_, app) = on_config();
+    assert!(config_view(&app).shown.is_some());
+    assert_eq!(app.palette, Palette::for_account("gruvbox", true));
+}
+
+#[test]
+fn a_toggle_shows_at_once_and_a_failure_puts_it_back() {
+    use zwipe_core::domain::user::preferences::PipStyle;
+
+    let (mut event_loop, mut app) = on_config();
+    for _ in 0..2 {
+        event_loop.handle_key(&mut app, key(KeyCode::Char('j')));
+    }
+    let before = app.palette;
+    event_loop.handle_key(&mut app, key(KeyCode::Enter));
+    assert_eq!(
+        config_view(&app).shown.as_ref().map(|p| p.pip_style),
+        Some(PipStyle::Natural)
+    );
+    assert_ne!(
+        app.palette, before,
+        "natural pips change the mana colors at once"
+    );
+    assert!(matches!(
+        event_loop.pending.as_slice(),
+        [Request::Settings(SettingsRequest::SavePreferences {
+            seq: 1,
+            ..
+        })]
+    ));
+
+    event_loop.apply(
+        &mut app,
+        Update::PreferencesFailed {
+            seq: 1,
+            message: "offline".to_owned(),
+        },
+    );
+    assert_eq!(app.palette, before);
+    assert_eq!(app.status, "offline");
+}
+
+#[test]
+fn the_theme_list_previews_and_esc_puts_the_theme_back() {
+    let (mut event_loop, mut app) = on_config();
+    let before = app.palette;
+    event_loop.handle_key(&mut app, key(KeyCode::Enter));
+    assert!(config_view(&app).picker.is_some());
+    event_loop.handle_key(&mut app, key(KeyCode::Char('j')));
+    assert_ne!(app.palette, before, "the next theme previews");
+    event_loop.handle_key(&mut app, key(KeyCode::Esc));
+    assert_eq!(app.palette, before);
+    assert_eq!(event_loop.pending, []);
+    assert_eq!(app.status, "Theme unchanged");
+
+    event_loop.handle_key(&mut app, key(KeyCode::Enter));
+    event_loop.handle_key(&mut app, key(KeyCode::Char('j')));
+    event_loop.handle_key(&mut app, key(KeyCode::Enter));
+    assert!(config_view(&app).picker.is_none());
+    assert!(matches!(
+        event_loop.pending.as_slice(),
+        [Request::Settings(SettingsRequest::SavePreferences {
+            change: crate::inbound::app::PreferenceChange::Theme { .. },
+            ..
+        })]
+    ));
+}
+
+#[test]
+fn exceptions_stay_shut_while_universes_beyond_is_shown() {
+    let (mut event_loop, mut app) = on_config();
+    for _ in 0..4 {
+        event_loop.handle_key(&mut app, key(KeyCode::Char('j')));
+    }
+    event_loop.handle_key(&mut app, key(KeyCode::Enter));
+    assert!(config_view(&app).exceptions.is_none());
+    assert_eq!(event_loop.pending, []);
+
+    event_loop.handle_key(&mut app, key(KeyCode::Char('k')));
+    event_loop.handle_key(&mut app, key(KeyCode::Enter));
+    event_loop.handle_key(&mut app, key(KeyCode::Char('j')));
+    event_loop.pending.clear();
+    event_loop.handle_key(&mut app, key(KeyCode::Enter));
+    assert!(config_view(&app).exceptions.is_some());
+    assert_eq!(
+        event_loop.pending,
+        [Request::Settings(SettingsRequest::LoadFranchises)]
+    );
 }

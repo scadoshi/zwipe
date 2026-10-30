@@ -18,6 +18,8 @@ Needs Rust 1.88 or newer. Decks are made in the app; zwipe-tui builds them.
 | Sign in | `Tab` | Switch between username and password |
 | | `Enter` | Sign in |
 | Home | `d` | Your decks |
+| | `a` | Account |
+| | `c` | Config |
 | | `s` | Switch the counters between everybody and only you |
 | | `r` | Refresh |
 | | `O` | Sign out |
@@ -36,12 +38,17 @@ Needs Rust 1.88 or newer. Decks are made in the app; zwipe-tui builds them.
 | | `u` or down | Undo the last swipe |
 | | `i` | Switch between the card's image and its text, when the terminal is too narrow for both |
 | | `Esc` | Back to the deck |
+| Account | `j` / `k`, `Enter` | Pick a row: change your username, email or password, resend or check verification, log out, or delete the account |
+| | `Tab`, `Enter`, `Esc` | In a form: next field, save, back |
+| Config | `j` / `k`, `Enter` | Pick a row: theme, dark or light, pip colors, Universes Beyond and its exceptions |
+| | `j` / `k`, `Enter`, `Esc` | In the theme list: preview, save, put the old theme back |
+| | `Space`, `x`, `Enter` | In the exceptions list: pick, clear, save |
 | Anywhere | `q` | Quit, except while typing |
 | | `Ctrl+C` | Quit |
 
 ## Theme
 
-zwipe-tui draws in the theme set on your account, dark or light, with each theme's own mana colors. It remembers that theme for the sign-in screen next time; before any sign-in it uses gruvbox dark, like the app. The themes are 24-bit color, which iTerm2, Ghostty, kitty, WezTerm and current Terminal.app show correctly; inside tmux, turn on its truecolor support.
+zwipe-tui draws in the theme set on your account, dark or light, with each theme's own mana colors or Magic's natural ones. Config changes it the same way the app does, so a theme picked here shows on your phone too, and the other way round. It remembers that theme for the sign-in screen next time; before any sign-in it uses gruvbox dark, like the app. The themes are 24-bit color, which iTerm2, Ghostty, kitty, WezTerm and current Terminal.app show correctly; inside tmux, turn on its truecolor support.
 
 ## Card images
 

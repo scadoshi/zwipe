@@ -1,6 +1,6 @@
-//! Orangui's theme palettes, written by `zwipe-tui/scripts/gen_themes.py` from orangui's `assets/themes.css`. Regenerate rather than edit.
+//! Orangui's theme palettes, written by `zwipe-tui/scripts/gen_themes.py` from orangui's `assets/themes.css` and `src/theme.rs`. Regenerate rather than edit.
 
-use super::{Colors, Family};
+use super::{Colors, Family, Group};
 
 /// Every theme family, alphabetical by slug.
 pub(crate) const FAMILIES: &[Family] = &[
@@ -254,4 +254,15 @@ pub(crate) const FAMILIES: &[Family] = &[
         dark: Colors { background: [0x3f, 0x3f, 0x3f], text: [0xdc, 0xdc, 0xcc], muted: [0xae, 0xae, 0xa4], border: [0x6f, 0x6f, 0x6f], accent: [0xf0, 0xdf, 0xaf], success: [0x7f, 0x9f, 0x7f], error: [0xcc, 0x93, 0x93], warning: [0xf0, 0xdf, 0xaf], mana_white: [0xdc, 0xdc, 0xcc], mana_blue: [0x8c, 0xd0, 0xd3], mana_black: [0x6f, 0x6f, 0x6f], mana_red: [0xcc, 0x93, 0x93], mana_green: [0x7f, 0x9f, 0x7f] },
         light: Colors { background: [0xe8, 0xe6, 0xd8], text: [0x3f, 0x3f, 0x38], muted: [0x65, 0x65, 0x56], border: [0xbd, 0xbb, 0xa8], accent: [0x90, 0x81, 0x54], success: [0x5a, 0x7a, 0x5a], error: [0x9a, 0x5a, 0x5a], warning: [0x9a, 0x7a, 0x3a], mana_white: [0xe8, 0xe6, 0xd8], mana_blue: [0x4a, 0x7e, 0x9e], mana_black: [0x3f, 0x3f, 0x38], mana_red: [0x9a, 0x5a, 0x5a], mana_green: [0x5a, 0x7a, 0x5a] },
     },
+];
+
+/// The theme picker's sections, in orangui's order: warm to cool to neutral.
+pub(crate) const GROUPS: &[Group] = &[
+    Group { label: "Warm & earthy", slugs: &["darcula", "flexoki", "gruvbox", "kanagawa-dragon", "melange", "miasma", "rustbox", "zenburn"] },
+    Group { label: "Cool & blue", slugs: &["ayu", "bluloco", "kanagawa", "night-owl", "nightfox", "nord", "one-dark", "poimandres", "powershell", "solarized", "tokyo-night"] },
+    Group { label: "Green & teal", slugs: &["everforest", "hackerman", "osaka-jade", "terafox"] },
+    Group { label: "Purple & pink", slugs: &["catppuccin", "dracula", "rose-pine", "synthwave-84"] },
+    Group { label: "Black & gray", slugs: &["docs-rs", "eclipse", "github", "matte-black", "neovim", "oxocarbon", "vantablack", "vscode"] },
+    Group { label: "Bright & colorful", slugs: &["ethereal", "material", "monokai", "monokai-pro", "monokai-pro-machine", "monokai-pro-octagon", "monokai-pro-ristretto", "monokai-pro-spectrum", "xcode"] },
+    Group { label: "High contrast & color blind", slugs: &["achromatopsia", "deuteranopia", "github-high-contrast", "modus", "protanopia", "tritanopia"] },
 ];
