@@ -26,7 +26,7 @@ use zwipe_core::domain::deck::{
 use zwipe_core::domain::user::models::hints::HINT_DECK_CARDS;
 use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
 use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpPatchDeckCard};
-use zwipe_core::http::helpers::Opdate;
+use zwipe_core::http::helpers::Patch;
 
 use super::components::card_row::{CardRow, OtagDescribe, OtagExamplesOpen, ShowRowArt};
 use super::components::filter_store::{FilterScope, FilterStore};
@@ -400,18 +400,18 @@ pub fn View(deck_id: Uuid) -> Element {
     // Fetches deck entries, separates the commander into its own pinned slot.
     use_effect(move || {
         spawn(async move {
-            // The whole load rides one facade call: only get_deck's failure
+            // The whole load rides one facade call: only fetch_deck's failure
             // aborts (reported and toasted); the profile and command-zone fetches keep their
             // tolerant .ok() handling inside.
             let _ = authed
                 .run("load_deck", |c, s| async move {
-                    let deck = c.get_deck(deck_id, &s).await?;
+                    let deck = c.fetch_deck(deck_id, &s).await?;
                     command_zone_cards.set(deck.command_zone_cards);
                     let mut entries = deck.entries;
 
                     // Resolve commander and signature spell from profile.
                     // Pull from entries if present, otherwise fetch separately.
-                    if let Ok(profile) = c.get_deck_profile(deck_id, &s).await {
+                    if let Ok(profile) = c.fetch_deck_profile(deck_id, &s).await {
                         deck_name.set(profile.name.to_string());
                         deck_format.set(profile.format);
                         deck_power.set(profile.power_level);
@@ -432,7 +432,7 @@ pub fn View(deck_id: Uuid) -> Element {
                         // Resolve command zone cards by oracle_id (not printing-specific scryfall_data_id).
                         // Fetch the card first to get its oracle_id, then remove from entries by oracle_id.
                         if let Some(commander_id) = profile.commander_id {
-                            let fetched = c.get_card(commander_id).await.ok();
+                            let fetched = c.fetch_card(commander_id).await.ok();
                             if let Some(ref card) = fetched
                                 && let Some(oid) = card.scryfall_data.oracle_id
                             {
@@ -442,7 +442,7 @@ pub fn View(deck_id: Uuid) -> Element {
                         }
 
                         if let Some(spell_id) = profile.signature_spell_id {
-                            let fetched = c.get_card(spell_id).await.ok();
+                            let fetched = c.fetch_card(spell_id).await.ok();
                             if let Some(ref card) = fetched
                                 && let Some(oid) = card.scryfall_data.oracle_id
                             {
@@ -452,7 +452,7 @@ pub fn View(deck_id: Uuid) -> Element {
                         }
 
                         if let Some(partner_id) = profile.partner_commander_id {
-                            let fetched = c.get_card(partner_id).await.ok();
+                            let fetched = c.fetch_card(partner_id).await.ok();
                             if let Some(ref card) = fetched
                                 && let Some(oid) = card.scryfall_data.oracle_id
                             {
@@ -462,7 +462,7 @@ pub fn View(deck_id: Uuid) -> Element {
                         }
 
                         if let Some(bg_id) = profile.background_id {
-                            let fetched = c.get_card(bg_id).await.ok();
+                            let fetched = c.fetch_card(bg_id).await.ok();
                             if let Some(ref card) = fetched
                                 && let Some(oid) = card.scryfall_data.oracle_id
                             {
@@ -499,7 +499,7 @@ pub fn View(deck_id: Uuid) -> Element {
     let tokens_resource: Resource<Vec<Card>> = use_resource(move || async move {
         authed
             .run_quiet("load_tokens", |c, s| async move {
-                c.get_deck_tokens(deck_id, &s).await
+                c.fetch_deck_tokens(deck_id, &s).await
             })
             .await
             .unwrap_or_default()
@@ -1110,7 +1110,7 @@ pub fn View(deck_id: Uuid) -> Element {
                 }
                 let card_name = old_card.scryfall_data.name.clone();
                 let old_id = old_card.scryfall_data.id;
-                let id = Opdate::Set(Some(old_id));
+                let id = Patch::Set(Some(old_id));
                 let request = match slot {
                     CommandZoneSlot::Commander => {
                         HttpUpdateDeckProfile::builder().commander_id(id).build()
@@ -1746,7 +1746,7 @@ pub fn View(deck_id: Uuid) -> Element {
 
                         if let Some(slot) = command_zone_slot() {
                             // Command zone card: update deck profile
-                            let id = Opdate::Set(Some(new_id));
+                            let id = Patch::Set(Some(new_id));
                             let request = match slot {
                                 CommandZoneSlot::Commander => HttpUpdateDeckProfile::builder().commander_id(id).build(),
                                 CommandZoneSlot::Partner => HttpUpdateDeckProfile::builder().partner_commander_id(id).build(),

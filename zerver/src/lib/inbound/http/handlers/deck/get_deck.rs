@@ -38,7 +38,7 @@ pub async fn get_deck(
 
     state
         .deck_service
-        .get_deck(&request)
+        .fetch_deck(&request)
         .await
         .map_err(ApiError::from)
         .map(|deck| (StatusCode::OK, Json(deck)))

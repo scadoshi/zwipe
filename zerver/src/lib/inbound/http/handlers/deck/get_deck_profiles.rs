@@ -33,7 +33,7 @@ pub async fn get_deck_profiles(
     let request = GetDeckProfiles::new(user.id);
     state
         .deck_service
-        .get_deck_profiles(&request)
+        .fetch_deck_profiles(&request)
         .await
         .map_err(ApiError::from)
         .map(|deck_profiles| (StatusCode::OK, Json(deck_profiles)))

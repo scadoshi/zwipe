@@ -77,7 +77,7 @@ impl AuthRepository for Postgres {
     }
     // == get ==
     /// Looks up a user by ID, username, **or** email using a single `OR` query.
-    async fn get_user_with_password_hash(
+    async fn fetch_user_with_password_hash(
         &self,
         request: &AuthenticateUser,
     ) -> Result<UserWithPasswordHash, AuthenticateUserError> {
@@ -412,7 +412,7 @@ impl AuthRepository for Postgres {
 
     // == password reset ==
 
-    async fn get_user_id_by_email(&self, email: &str) -> Result<Option<Uuid>, anyhow::Error> {
+    async fn fetch_user_id_by_email(&self, email: &str) -> Result<Option<Uuid>, anyhow::Error> {
         let user_id: Option<Uuid> = query_scalar!("SELECT id FROM users WHERE email = $1", email)
             .fetch_optional(&self.pool)
             .await

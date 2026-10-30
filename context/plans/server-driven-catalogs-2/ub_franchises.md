@@ -15,7 +15,7 @@ It is also the one with a standing chore attached. `universe.rs` is hand-maintai
 - `zwipe-core`: `UbFranchiseView { slug, name }` and `selectable_franchise_views()` in `domain/card/models/scryfall_data/universe.rs`, sorted by display name so the server decides the order once. The view deliberately drops `UbFranchise.sets`: set codes drive server predicates and have no business on the wire.
 - `zwipe-core`: `GET_UB_FRANCHISES_ROUTE` in `http/paths.rs` (added to the route-pinning test) and a one-line `public_get!` `GetUbFranchises` in `http/endpoints/card.rs`.
 - `zerver`: `handlers/card/get_ub_franchises.rs`, built from the compiled table with no DB read, mirroring `get_card_roles`. Routed at `/api/card/ub-franchises`.
-- `zwipe-client`: `get_ub_franchises()`.
+- `zwipe-client`: `fetch_ub_franchises()`.
 - `zwiper`: a `ub_franchises` slot on `CatalogCache`, an `ensure_ub_franchises`, and entries in `prefetch_public` and `any_public_failed`.
 
 ## Also done

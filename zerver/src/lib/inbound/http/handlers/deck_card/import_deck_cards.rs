@@ -45,7 +45,10 @@ pub async fn import_deck_cards(
     Json(body): Json<HttpImportDeckCards>,
 ) -> Result<(StatusCode, Json<ImportDeckCardsResult>), ApiError> {
     let deck_id = uuid::Uuid::try_parse(&deck_id)?;
-    let db_user = state.user_service.get_user(&GetUser::from(user.id)).await?;
+    let db_user = state
+        .user_service
+        .fetch_user(&GetUser::from(user.id))
+        .await?;
     let email_verified = db_user.email_verified_at.is_some();
     let board_override = body
         .board

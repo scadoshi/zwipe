@@ -51,7 +51,7 @@ impl TryFrom<DatabaseUserPreferences> for UserPreferences {
 impl UserRepository for Postgres {
     // == get ==
 
-    async fn get_user(&self, user_id: Uuid) -> Result<User, GetUserError> {
+    async fn fetch_user(&self, user_id: Uuid) -> Result<User, GetUserError> {
         let database_user = query_as!(
             DatabaseUser,
             "SELECT id, username, email, email_verified_at, hints_shown FROM users WHERE id = $1",
@@ -100,7 +100,10 @@ impl UserRepository for Postgres {
 
     // == preferences ==
 
-    async fn get_preferences(&self, user_id: Uuid) -> Result<UserPreferences, GetPreferencesError> {
+    async fn fetch_preferences(
+        &self,
+        user_id: Uuid,
+    ) -> Result<UserPreferences, GetPreferencesError> {
         let result = query_as!(
             DatabaseUserPreferences,
             "SELECT user_id, theme, dark_mode, exclude_universes_beyond, universes_beyond_exceptions, \

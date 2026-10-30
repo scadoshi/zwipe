@@ -52,6 +52,7 @@ use super::components::skeletons::{BuilderProfileSkeleton, ShowChipRowSkeleton};
 use super::components::swipe_select::{SuggestedPile, SwipeMode, SwipeSelect};
 use crate::inbound::components::auth::authed::use_authed;
 use crate::inbound::components::catalog_cache::CatalogCache;
+use crate::inbound::components::generation::use_generation;
 use crate::inbound::components::hint_dialog::{HintColored, use_one_time_hint};
 use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::home_play_style::ColorMapEmpty;
@@ -1155,21 +1156,32 @@ pub fn SuggestedCommanders() -> Element {
     // its row in place. `reload` refetches: after a dismissal leaves the
     // filtered list short, when the Swipe overlay closes, and after Clear
     // skips. A refetch with entries present is silent (no skeleton flash).
+    // Each load takes a ticket, and only the newest one's reply lands; a
+    // dropped row restarts a load that is still out, since that reply left
+    // before the server knew and would bring the row back.
     let mut entries: Signal<Vec<HttpCommanderSuggestion>> = use_signal(Vec::new);
     let mut deck_count = use_signal(|| 0u32);
     let mut profile: Signal<Option<HttpBuilderProfile>> = use_signal(|| None);
     let mut is_loading = use_signal(|| true);
     let mut load_failed = use_signal(|| false);
     let mut reload = use_signal(|| 0u32);
+    let mut loads = use_generation();
+    let mut load_out = use_hook(|| CopyValue::new(false));
     use_effect(move || {
         let _tick = reload();
+        *load_out.write() = true;
+        let ticket = loads.next_ticket();
         spawn(async move {
-            match authed
+            let reply = authed
                 .try_run("load_suggestions", |c, s| async move {
                     c.commander_suggestions(HELD_SIZE, &s).await
                 })
-                .await
-            {
+                .await;
+            if !loads.is_current(ticket) {
+                return;
+            }
+            *load_out.write() = false;
+            match reply {
                 Ok(found) => {
                     deck_count.set(found.deck_count);
                     profile.set(found.profile);
@@ -1182,6 +1194,7 @@ pub fn SuggestedCommanders() -> Element {
         });
     });
     let mut refetch = move || {
+        loads.next_ticket();
         let tick = *reload.peek();
         reload.set(tick + 1);
     };
@@ -1219,7 +1232,7 @@ pub fn SuggestedCommanders() -> Element {
 
     // Drops a row in place; the next held suggestion of that identity moves
     // up, and the server is asked again only when the filtered list runs
-    // short of ten.
+    // short of ten or a load that predates the drop is still out.
     let mut drop_row = move |oracle_id: Uuid| {
         entries
             .write()
@@ -1230,7 +1243,7 @@ pub fn SuggestedCommanders() -> Element {
             active_identity.peek().as_deref(),
         )
         .len();
-        if remaining < LIST_SIZE {
+        if remaining < LIST_SIZE || *load_out.peek() {
             refetch();
         }
     };
@@ -1241,7 +1254,7 @@ pub fn SuggestedCommanders() -> Element {
         use_resource(move || async move {
             authed
                 .run_quiet("load_deck_profiles", |c, s| async move {
-                    c.get_deck_profiles(&s).await
+                    c.fetch_deck_profiles(&s).await
                 })
                 .await
         });
