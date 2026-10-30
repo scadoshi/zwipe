@@ -1186,25 +1186,24 @@ pub fn Add(deck_id: Uuid) -> Element {
                                                 deck_id,
                                                 filter_builder.peek().clone(),
                                             );
-                                            match store.restore(FilterScope::AddSearch, deck_id) {
-                                                Some(f) => filter_builder.set(f),
-                                                None => {
-                                                    // Fresh Search default: deck context in
-                                                    // synergy order, lands out at target.
-                                                    let mut fresh = CardQueryBuilder::default();
-                                                    if let Some(fmt) = deck_format() {
-                                                        fresh.set_legalities_contains_any(
-                                                            vec![fmt.to_legality_key().to_string()]
-                                                        );
-                                                    }
-                                                    if let Some(colors) = deck_color_identity() {
-                                                        fresh.set_color_identity_within(colors);
-                                                    }
-                                                    fresh.set_synergy(deck_has_commander());
-                                                    filter_builder.set(fresh);
-                                                    if lands_at_target() {
-                                                        ensure_lands_excluded(filter_builder);
-                                                    }
+                                            if let Some(f) = store.restore(FilterScope::AddSearch, deck_id) {
+                                                filter_builder.set(f);
+                                            } else {
+                                                // Fresh Search default: deck context in
+                                                // synergy order, lands out at target.
+                                                let mut fresh = CardQueryBuilder::default();
+                                                if let Some(fmt) = deck_format() {
+                                                    fresh.set_legalities_contains_any(
+                                                        vec![fmt.to_legality_key().to_string()]
+                                                    );
+                                                }
+                                                if let Some(colors) = deck_color_identity() {
+                                                    fresh.set_color_identity_within(colors);
+                                                }
+                                                fresh.set_synergy(deck_has_commander());
+                                                filter_builder.set(fresh);
+                                                if lands_at_target() {
+                                                    ensure_lands_excluded(filter_builder);
                                                 }
                                             }
                                         }

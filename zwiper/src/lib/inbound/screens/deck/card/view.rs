@@ -731,43 +731,41 @@ pub fn View(deck_id: Uuid) -> Element {
                     // a retried or replayed request lands on the same value.
                     let request =
                         HttpPatchDeckCard::new(Some(pending.baseline + pending.delta), None);
-                    match authed
+                    if authed
                         .try_run("change_quantity", |c, s| async move {
                             c.update_deck_card(deck_id, card_id, &request, &s).await
                         })
                         .await
+                        .is_ok()
                     {
-                        Ok(_) => {
-                            // One burst, one undo entry: recorded only once the
-                            // server took it, so undo never inverts a rolled-back
-                            // burst.
-                            if record
-                                && let Some(entry) = deck_entries
-                                    .peek()
-                                    .iter()
-                                    .find(|e| e.card.scryfall_data.id == card_id)
-                            {
-                                undo_log.push(UndoAction::QuantityChanged {
-                                    card_id,
-                                    card_name: entry.card.scryfall_data.name.clone(),
-                                    net: pending.delta,
-                                    baseline: pending.baseline,
-                                });
-                            }
-                        }
-                        Err(_) => {
-                            // Roll the whole burst back to its pre-burst quantity.
-                            if let Some(entry) = deck_entries
-                                .write()
-                                .iter_mut()
+                        // One burst, one undo entry: recorded only once the
+                        // server took it, so undo never inverts a rolled-back
+                        // burst.
+                        if record
+                            && let Some(entry) = deck_entries
+                                .peek()
+                                .iter()
                                 .find(|e| e.card.scryfall_data.id == card_id)
-                                && let Ok(reverted) = Quantity::new(pending.baseline)
-                            {
-                                entry.deck_card.quantity = reverted;
-                            }
-                            let current = *filter_reset_counter.peek();
-                            filter_reset_counter.set(current + 1);
+                        {
+                            undo_log.push(UndoAction::QuantityChanged {
+                                card_id,
+                                card_name: entry.card.scryfall_data.name.clone(),
+                                net: pending.delta,
+                                baseline: pending.baseline,
+                            });
                         }
+                    } else {
+                        // Roll the whole burst back to its pre-burst quantity.
+                        if let Some(entry) = deck_entries
+                            .write()
+                            .iter_mut()
+                            .find(|e| e.card.scryfall_data.id == card_id)
+                            && let Ok(reverted) = Quantity::new(pending.baseline)
+                        {
+                            entry.deck_card.quantity = reverted;
+                        }
+                        let current = *filter_reset_counter.peek();
+                        filter_reset_counter.set(current + 1);
                     }
                 }
             });
@@ -855,34 +853,31 @@ pub fn View(deck_id: Uuid) -> Element {
 
         let request = HttpPatchDeckCard::with_mvp(target);
         spawn(async move {
-            match authed
+            if let Ok(updated) = authed
                 .try_run("toggle_mvp", |c, s| async move {
                     c.update_deck_card(deck_id, card_id, &request, &s).await
                 })
                 .await
             {
-                Ok(updated) => {
-                    // Adopt the server's timestamp: the vesting clock.
-                    if let Some(entry) = deck_entries
-                        .write()
-                        .iter_mut()
-                        .find(|e| e.card.scryfall_data.id == card_id)
-                    {
-                        entry.deck_card.mvp_at = updated.mvp_at;
-                    }
+                // Adopt the server's timestamp: the vesting clock.
+                if let Some(entry) = deck_entries
+                    .write()
+                    .iter_mut()
+                    .find(|e| e.card.scryfall_data.id == card_id)
+                {
+                    entry.deck_card.mvp_at = updated.mvp_at;
                 }
-                Err(_) => {
-                    // Rollback
-                    if let Some(entry) = deck_entries
-                        .write()
-                        .iter_mut()
-                        .find(|e| e.card.scryfall_data.id == card_id)
-                    {
-                        entry.deck_card.mvp_at = old_mvp_at;
-                    }
-                    let current = *filter_reset_counter.peek();
-                    filter_reset_counter.set(current + 1);
+            } else {
+                // Rollback
+                if let Some(entry) = deck_entries
+                    .write()
+                    .iter_mut()
+                    .find(|e| e.card.scryfall_data.id == card_id)
+                {
+                    entry.deck_card.mvp_at = old_mvp_at;
                 }
+                let current = *filter_reset_counter.peek();
+                filter_reset_counter.set(current + 1);
             }
         });
     };
@@ -962,29 +957,26 @@ pub fn View(deck_id: Uuid) -> Element {
                 toast.info(format!("Re-added {card_name}"), short);
 
                 spawn(async move {
-                    match authed
+                    if let Ok(deck_card) = authed
                         .try_run("undo", |c, s| async move {
                             c.create_deck_card(deck_id, &request, &s).await
                         })
                         .await
                     {
-                        Ok(deck_card) => {
-                            // Adopt the server row (fresh ids).
-                            if let Some(entry) = deck_entries
-                                .write()
-                                .iter_mut()
-                                .find(|e| e.card.scryfall_data.id == card_id)
-                            {
-                                entry.deck_card = deck_card;
-                            }
+                        // Adopt the server row (fresh ids).
+                        if let Some(entry) = deck_entries
+                            .write()
+                            .iter_mut()
+                            .find(|e| e.card.scryfall_data.id == card_id)
+                        {
+                            entry.deck_card = deck_card;
                         }
-                        Err(_) => {
-                            deck_entries
-                                .write()
-                                .retain(|e| e.card.scryfall_data.id != card_id);
-                            let current = *filter_reset_counter.peek();
-                            filter_reset_counter.set(current + 1);
-                        }
+                    } else {
+                        deck_entries
+                            .write()
+                            .retain(|e| e.card.scryfall_data.id != card_id);
+                        let current = *filter_reset_counter.peek();
+                        filter_reset_counter.set(current + 1);
                     }
                 });
             }
@@ -1702,69 +1694,66 @@ pub fn View(deck_id: Uuid) -> Element {
                         let old_id = card.scryfall_data.id;
                         let new_id = new_card.scryfall_data.id;
 
-                        match command_zone_slot() {
-                            Some(slot) => {
-                                // Command zone card: update deck profile
-                                let id = Opdate::Set(Some(new_id));
-                                let request = match slot {
-                                    CommandZoneSlot::Commander => HttpUpdateDeckProfile::builder().commander_id(id).build(),
-                                    CommandZoneSlot::Partner => HttpUpdateDeckProfile::builder().partner_commander_id(id).build(),
-                                    CommandZoneSlot::Background => HttpUpdateDeckProfile::builder().background_id(id).build(),
-                                    CommandZoneSlot::SignatureSpell => HttpUpdateDeckProfile::builder().signature_spell_id(id).build(),
-                                };
-                                let old_card = card.clone();
-                                spawn(async move {
-                                    // Was fully silent on failure; the facade
-                                    // now reports and toasts (new op).
-                                    if authed
-                                        .run("change_printing", |c, s| async move {
-                                            c.update_deck_profile(deck_id, &request, &s).await
-                                        })
-                                        .await
-                                        .is_some()
-                                    {
-                                        match slot {
-                                            CommandZoneSlot::Commander => commander_card.set(Some(new_card.clone())),
-                                            CommandZoneSlot::Partner => partner_card.set(Some(new_card.clone())),
-                                            CommandZoneSlot::Background => background_card.set(Some(new_card.clone())),
-                                            CommandZoneSlot::SignatureSpell => signature_spell_card.set(Some(new_card.clone())),
-                                        }
-                                        undo_log.push(UndoAction::CommandZonePrintingChanged { slot, old_card, new_id });
-                                        printing_sheet_card.set(Some(new_card));
-                                        let next = filter_reset_counter() + 1;
-                                        filter_reset_counter.set(next);
+                        if let Some(slot) = command_zone_slot() {
+                            // Command zone card: update deck profile
+                            let id = Opdate::Set(Some(new_id));
+                            let request = match slot {
+                                CommandZoneSlot::Commander => HttpUpdateDeckProfile::builder().commander_id(id).build(),
+                                CommandZoneSlot::Partner => HttpUpdateDeckProfile::builder().partner_commander_id(id).build(),
+                                CommandZoneSlot::Background => HttpUpdateDeckProfile::builder().background_id(id).build(),
+                                CommandZoneSlot::SignatureSpell => HttpUpdateDeckProfile::builder().signature_spell_id(id).build(),
+                            };
+                            let old_card = card.clone();
+                            spawn(async move {
+                                // Was fully silent on failure; the facade
+                                // now reports and toasts (new op).
+                                if authed
+                                    .run("change_printing", |c, s| async move {
+                                        c.update_deck_profile(deck_id, &request, &s).await
+                                    })
+                                    .await
+                                    .is_some()
+                                {
+                                    match slot {
+                                        CommandZoneSlot::Commander => commander_card.set(Some(new_card.clone())),
+                                        CommandZoneSlot::Partner => partner_card.set(Some(new_card.clone())),
+                                        CommandZoneSlot::Background => background_card.set(Some(new_card.clone())),
+                                        CommandZoneSlot::SignatureSpell => signature_spell_card.set(Some(new_card.clone())),
                                     }
-                                });
-                            }
-                            None => {
-                                // Regular deck card: update deck card
-                                let request = HttpPatchDeckCard::with_printing(&new_id.to_string());
-                                let old_card = card.clone();
-                                spawn(async move {
-                                    // Was fully silent on failure; the facade
-                                    // now reports and toasts (new op).
-                                    if authed
-                                        .run("change_printing", |c, s| async move {
-                                            c.update_deck_card(deck_id, old_id, &request, &s).await
-                                        })
-                                        .await
-                                        .is_some()
+                                    undo_log.push(UndoAction::CommandZonePrintingChanged { slot, old_card, new_id });
+                                    printing_sheet_card.set(Some(new_card));
+                                    let next = filter_reset_counter() + 1;
+                                    filter_reset_counter.set(next);
+                                }
+                            });
+                        } else {
+                            // Regular deck card: update deck card
+                            let request = HttpPatchDeckCard::with_printing(&new_id.to_string());
+                            let old_card = card.clone();
+                            spawn(async move {
+                                // Was fully silent on failure; the facade
+                                // now reports and toasts (new op).
+                                if authed
+                                    .run("change_printing", |c, s| async move {
+                                        c.update_deck_card(deck_id, old_id, &request, &s).await
+                                    })
+                                    .await
+                                    .is_some()
+                                {
+                                    if let Some(entry) = deck_entries
+                                        .write()
+                                        .iter_mut()
+                                        .find(|e| e.card.scryfall_data.id == old_id)
                                     {
-                                        if let Some(entry) = deck_entries
-                                            .write()
-                                            .iter_mut()
-                                            .find(|e| e.card.scryfall_data.id == old_id)
-                                        {
-                                            entry.card = new_card.clone();
-                                            entry.deck_card.scryfall_data_id = new_id;
-                                        }
-                                        undo_log.push(UndoAction::PrintingChanged { old_card, new_id });
-                                        printing_sheet_card.set(Some(new_card));
-                                        let next = filter_reset_counter() + 1;
-                                        filter_reset_counter.set(next);
+                                        entry.card = new_card.clone();
+                                        entry.deck_card.scryfall_data_id = new_id;
                                     }
-                                });
-                            }
+                                    undo_log.push(UndoAction::PrintingChanged { old_card, new_id });
+                                    printing_sheet_card.set(Some(new_card));
+                                    let next = filter_reset_counter() + 1;
+                                    filter_reset_counter.set(next);
+                                }
+                            });
                         }
                     },
                 }
