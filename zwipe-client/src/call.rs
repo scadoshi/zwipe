@@ -42,7 +42,7 @@ impl ZwipeClient {
             let Some(session) = session else {
                 return Err(ClientError::Unauthorized("not logged in".to_string()));
             };
-            request = request.bearer_auth(&*session.access_token.value);
+            request = request.bearer_auth(session.access_token.value.as_str());
         }
 
         if let Some(body) = endpoint.body() {
