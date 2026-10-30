@@ -20,14 +20,8 @@ use crate::http::contracts::deck_card::{
     HttpCreateDeckCard, HttpImportDeckCards, HttpPatchDeckCard,
 };
 use crate::http::endpoint::{Endpoint, Method};
-use crate::http::paths::{
-    CREATE_DECK_ROUTE, GET_DECK_PROFILES_ROUTE, GET_DECK_TAGS_ROUTE, clear_deck_suppressions_route,
-    clone_deck_route, create_deck_card_route, delete_deck_card_route, delete_deck_route,
-    get_deck_profile_route, get_deck_route, get_deck_tokens_route, get_shared_deck_route,
-    import_archidekt_deck_route, import_deck_cards_route, search_deck_cards_route,
-    share_deck_route, skip_deck_card_route, unskip_deck_card_route, update_deck_card_route,
-    update_deck_route,
-};
+use crate::http::paths;
+use crate::http::paths::{CREATE_DECK_ROUTE, GET_DECK_PROFILES_ROUTE, GET_DECK_TAGS_ROUTE};
 
 /// Every deck profile the user owns.
 #[derive(Debug)]
@@ -64,7 +58,7 @@ impl Endpoint for GetDeck {
     type Request = ();
     type Response = Deck;
     fn path(&self) -> Cow<'static, str> {
-        Cow::Owned(get_deck_route(self.0))
+        Cow::Owned(paths::get_deck_route(self.0))
     }
 }
 
@@ -76,7 +70,7 @@ impl Endpoint for GetDeckProfile {
     type Request = ();
     type Response = DeckProfile;
     fn path(&self) -> Cow<'static, str> {
-        Cow::Owned(get_deck_profile_route(self.0))
+        Cow::Owned(paths::get_deck_profile_route(self.0))
     }
 }
 
@@ -88,7 +82,7 @@ impl Endpoint for UpdateDeckProfile {
     type Request = HttpUpdateDeckProfile;
     type Response = DeckProfile;
     fn path(&self) -> Cow<'static, str> {
-        Cow::Owned(update_deck_route(self.0))
+        Cow::Owned(paths::update_deck_route(self.0))
     }
     fn body(&self) -> Option<&Self::Request> {
         Some(&self.1)
@@ -103,7 +97,7 @@ impl Endpoint for DeleteDeck {
     type Request = ();
     type Response = ();
     fn path(&self) -> Cow<'static, str> {
-        Cow::Owned(delete_deck_route(self.0))
+        Cow::Owned(paths::delete_deck_route(self.0))
     }
 }
 
@@ -115,7 +109,7 @@ impl Endpoint for CloneDeck {
     type Request = HttpCloneDeck;
     type Response = HttpClonedDeck;
     fn path(&self) -> Cow<'static, str> {
-        Cow::Owned(clone_deck_route(self.0))
+        Cow::Owned(paths::clone_deck_route(self.0))
     }
     fn body(&self) -> Option<&Self::Request> {
         Some(&self.1)
@@ -131,7 +125,7 @@ impl Endpoint for SearchDeckCards {
     type Request = CardQuery;
     type Response = HttpDeckCardSearch;
     fn path(&self) -> Cow<'static, str> {
-        Cow::Owned(search_deck_cards_route(self.0))
+        Cow::Owned(paths::search_deck_cards_route(self.0))
     }
     fn body(&self) -> Option<&Self::Request> {
         Some(&self.1)
@@ -146,7 +140,7 @@ impl Endpoint for GetDeckTokens {
     type Request = ();
     type Response = Vec<Card>;
     fn path(&self) -> Cow<'static, str> {
-        Cow::Owned(get_deck_tokens_route(self.0))
+        Cow::Owned(paths::get_deck_tokens_route(self.0))
     }
 }
 
@@ -170,7 +164,7 @@ impl Endpoint for ShareDeck {
     type Request = ();
     type Response = HttpDeckShareToken;
     fn path(&self) -> Cow<'static, str> {
-        Cow::Owned(share_deck_route(self.0))
+        Cow::Owned(paths::share_deck_route(self.0))
     }
 }
 
@@ -182,7 +176,7 @@ impl Endpoint for UnshareDeck {
     type Request = ();
     type Response = ();
     fn path(&self) -> Cow<'static, str> {
-        Cow::Owned(share_deck_route(self.0))
+        Cow::Owned(paths::share_deck_route(self.0))
     }
 }
 
@@ -194,7 +188,7 @@ impl Endpoint for SkipDeckCard {
     type Request = HttpSkipDeckCard;
     type Response = ();
     fn path(&self) -> Cow<'static, str> {
-        Cow::Owned(skip_deck_card_route(self.0))
+        Cow::Owned(paths::skip_deck_card_route(self.0))
     }
     fn body(&self) -> Option<&Self::Request> {
         Some(&self.1)
@@ -209,7 +203,7 @@ impl Endpoint for UnskipDeckCard {
     type Request = ();
     type Response = ();
     fn path(&self) -> Cow<'static, str> {
-        Cow::Owned(unskip_deck_card_route(self.0, self.1))
+        Cow::Owned(paths::unskip_deck_card_route(self.0, self.1))
     }
 }
 
@@ -221,7 +215,7 @@ impl Endpoint for ClearDeckSuppressions {
     type Request = ();
     type Response = HttpClearedSuppressions;
     fn path(&self) -> Cow<'static, str> {
-        Cow::Owned(clear_deck_suppressions_route(self.0))
+        Cow::Owned(paths::clear_deck_suppressions_route(self.0))
     }
 }
 
@@ -233,7 +227,7 @@ impl Endpoint for CreateDeckCard {
     type Request = HttpCreateDeckCard;
     type Response = DeckCard;
     fn path(&self) -> Cow<'static, str> {
-        Cow::Owned(create_deck_card_route(self.0))
+        Cow::Owned(paths::create_deck_card_route(self.0))
     }
     fn body(&self) -> Option<&Self::Request> {
         Some(&self.1)
@@ -248,7 +242,7 @@ impl Endpoint for UpdateDeckCard {
     type Request = HttpPatchDeckCard;
     type Response = DeckCard;
     fn path(&self) -> Cow<'static, str> {
-        Cow::Owned(update_deck_card_route(self.0, self.1))
+        Cow::Owned(paths::update_deck_card_route(self.0, self.1))
     }
     fn body(&self) -> Option<&Self::Request> {
         Some(&self.2)
@@ -263,7 +257,7 @@ impl Endpoint for DeleteDeckCard {
     type Request = ();
     type Response = ();
     fn path(&self) -> Cow<'static, str> {
-        Cow::Owned(delete_deck_card_route(self.0, self.1))
+        Cow::Owned(paths::delete_deck_card_route(self.0, self.1))
     }
 }
 
@@ -275,7 +269,7 @@ impl Endpoint for ImportDeckCards {
     type Request = HttpImportDeckCards;
     type Response = ImportDeckCardsResult;
     fn path(&self) -> Cow<'static, str> {
-        Cow::Owned(import_deck_cards_route(self.0))
+        Cow::Owned(paths::import_deck_cards_route(self.0))
     }
     fn body(&self) -> Option<&Self::Request> {
         Some(&self.1)
@@ -290,7 +284,7 @@ impl Endpoint for ImportArchidektDeck {
     type Request = HttpImportArchidektDeck;
     type Response = ImportDeckCardsResult;
     fn path(&self) -> Cow<'static, str> {
-        Cow::Owned(import_archidekt_deck_route(self.0))
+        Cow::Owned(paths::import_archidekt_deck_route(self.0))
     }
     fn body(&self) -> Option<&Self::Request> {
         Some(&self.1)
@@ -309,6 +303,6 @@ impl Endpoint for GetSharedDeck {
     type Request = ();
     type Response = HttpSharedDeck;
     fn path(&self) -> Cow<'static, str> {
-        Cow::Owned(get_shared_deck_route(self.0))
+        Cow::Owned(paths::get_shared_deck_route(self.0))
     }
 }

@@ -9,9 +9,9 @@ use crate::http::contracts::suggestions::{
     HttpPlayStyleSummary,
 };
 use crate::http::endpoint::{Endpoint, Method};
+use crate::http::paths;
 use crate::http::paths::{
     ACTIVITY_ROUTE, COMMANDER_DISMISSALS_ROUTE, COMMANDER_SUGGESTIONS_ROUTE, PLAYSTYLE_ROUTE,
-    undismiss_commander_route,
 };
 
 /// The user's deck count and color map, for Home's play
@@ -79,7 +79,7 @@ impl Endpoint for UndismissCommander {
     type Request = ();
     type Response = ();
     fn path(&self) -> Cow<'static, str> {
-        Cow::Owned(undismiss_commander_route(self.0))
+        Cow::Owned(paths::undismiss_commander_route(self.0))
     }
 }
 

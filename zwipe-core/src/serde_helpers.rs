@@ -37,8 +37,6 @@ where
 mod tests {
     use serde::Deserialize;
 
-    use super::lossy_vec;
-
     #[derive(Debug, PartialEq, Deserialize)]
     #[serde(rename_all = "snake_case")]
     enum Role {
@@ -48,7 +46,7 @@ mod tests {
 
     #[derive(Debug, PartialEq, Deserialize)]
     struct Wrap {
-        #[serde(default, deserialize_with = "lossy_vec")]
+        #[serde(default, deserialize_with = "super::lossy_vec")]
         roles: Vec<Role>,
     }
 
