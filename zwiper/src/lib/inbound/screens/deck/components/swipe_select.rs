@@ -36,6 +36,7 @@ use zwipe_core::domain::deck::format::Format;
 use zwipe_core::domain::user::models::hints::HINT_SWIPE_SELECT;
 use zwipe_core::http::contracts::suggestions::HttpCommanderSuggestion;
 
+use crate::inbound::components::generation::use_generation;
 use crate::inbound::components::hint_dialog::{self, HintColored};
 use crate::inbound::components::interactions::swipe::config::SwipeConfig;
 use crate::inbound::components::interactions::swipe::direction::Direction;
@@ -242,6 +243,10 @@ pub(crate) fn SwipeSelect(
     let mut last_mode = use_signal(|| Option::<SwipeMode>::None);
     let mut is_loading_cards = use_signal(|| false);
     let mut is_loading_more = use_signal(|| false);
+    // A fresh search starts a generation and a load-more joins the current
+    // one, so neither an older search nor a page of the pile it replaced
+    // lands on the new pile.
+    let mut pile_loads = use_generation();
     let mut entering = use_signal(|| Option::<Direction>::None);
     // One entry per pile-advancing swipe (left/up), popped by the down-swipe
     // undo so it knows whether to also un-save a maybeboard entry.
@@ -286,6 +291,7 @@ pub(crate) fn SwipeSelect(
             return;
         }
         is_loading_more.set(true);
+        let ticket = pile_loads.current();
         spawn(async move {
             for _ in 0..4 {
                 let off = *offset.peek();
@@ -293,7 +299,12 @@ pub(crate) fn SwipeSelect(
                 let (Some(session), Ok(filter)) = (session.peek().clone(), builder.build()) else {
                     break;
                 };
-                match client().search_commanders(&filter, &session).await {
+                let reply = client().search_commanders(&filter, &session).await;
+                // A fresh search replaced the pile this page was for.
+                if !pile_loads.is_current(ticket) {
+                    break;
+                }
+                match reply {
                     Ok(found) => {
                         let raw_empty = found.is_empty();
                         let seen: HashSet<Uuid> =
@@ -351,6 +362,11 @@ pub(crate) fn SwipeSelect(
         }
         last_searched.set(counter);
         last_mode.set(Some(current_mode.clone()));
+        let ticket = pile_loads.next_ticket();
+        // A search still out no longer lands, so it can't end the skeleton.
+        if *is_loading_cards.peek() {
+            is_loading_cards.set(false);
+        }
         cards.set(Vec::new());
         current_index.set(0);
         offset.set(0);
@@ -373,7 +389,11 @@ pub(crate) fn SwipeSelect(
         is_loading_cards.set(true);
         usage_buffer().record_search();
         spawn(async move {
-            match client().search_commanders(&filter, &session).await {
+            let reply = client().search_commanders(&filter, &session).await;
+            if !pile_loads.is_current(ticket) {
+                return;
+            }
+            match reply {
                 Ok(found) => {
                     let raw_empty = found.is_empty();
                     let excluded = excluded_now();

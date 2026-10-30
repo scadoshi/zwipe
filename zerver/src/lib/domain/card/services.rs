@@ -98,10 +98,10 @@ impl<R: CardRepository> CardService for Service<R> {
         let otag_rows = self.repo.derive_oracle_tag_categories().await?;
 
         // 2. Merge the 4 heuristic stragglers otags can't express (oracle_tag_gaps).
-        let ids = self.repo.get_card_ids_with_oracle_text().await?;
+        let ids = self.repo.fetch_card_ids_with_oracle_text().await?;
         let mut merged = 0u32;
         for chunk in ids.chunks(batch_size) {
-            let cards = self.repo.get_cards_batch(chunk).await?;
+            let cards = self.repo.fetch_cards_batch(chunk).await?;
             let updates: Vec<_> = cards
                 .iter()
                 .filter_map(|card| {
@@ -176,19 +176,19 @@ impl<R: CardRepository> CardService for Service<R> {
         // Infallible parse: the id came out of the database as a Uuid.
         let request =
             GetScryfallData::new(&id.to_string()).map_err(|_| GetScryfallDataError::NotFound)?;
-        self.repo.get_card(&request).await
+        self.repo.fetch_card(&request).await
     }
 
-    async fn get_card(&self, request: &GetScryfallData) -> Result<Card, GetCardError> {
-        self.repo.get_card(request).await
+    async fn fetch_card(&self, request: &GetScryfallData) -> Result<Card, GetCardError> {
+        self.repo.fetch_card(request).await
     }
 
-    async fn get_cards(&self, request: &ScryfallDataIds) -> Result<Vec<Card>, GetCardError> {
-        self.repo.get_cards(request).await
+    async fn fetch_cards(&self, request: &ScryfallDataIds) -> Result<Vec<Card>, GetCardError> {
+        self.repo.fetch_cards(request).await
     }
 
-    async fn get_printings(&self, oracle_id: uuid::Uuid) -> Result<Vec<Card>, GetCardError> {
-        self.repo.get_printings(oracle_id).await
+    async fn fetch_printings(&self, oracle_id: uuid::Uuid) -> Result<Vec<Card>, GetCardError> {
+        self.repo.fetch_printings(oracle_id).await
     }
 
     async fn search_cards(
@@ -203,7 +203,7 @@ impl<R: CardRepository> CardService for Service<R> {
         // A failed read degrades to serving everything.
         let (exclude_universes_beyond, universes_beyond_exception_set_names) = self
             .repo
-            .get_universes_beyond_preferences(user_id)
+            .fetch_universes_beyond_preferences(user_id)
             .await
             .unwrap_or_default();
         self.repo
@@ -226,68 +226,68 @@ impl<R: CardRepository> CardService for Service<R> {
         self.repo.search_commanders(request, user_id).await
     }
 
-    async fn get_artists(&self) -> Result<Vec<String>, GetArtistsError> {
-        self.repo.get_artists().await
+    async fn fetch_artists(&self) -> Result<Vec<String>, GetArtistsError> {
+        self.repo.fetch_artists().await
     }
 
-    async fn get_card_types(&self) -> Result<Vec<String>, GetCardTypesError> {
-        self.repo.get_card_types().await
+    async fn fetch_card_types(&self) -> Result<Vec<String>, GetCardTypesError> {
+        self.repo.fetch_card_types().await
     }
 
-    async fn get_keywords(&self) -> Result<Vec<String>, GetKeywordsError> {
-        self.repo.get_keywords().await
+    async fn fetch_keywords(&self) -> Result<Vec<String>, GetKeywordsError> {
+        self.repo.fetch_keywords().await
     }
 
-    async fn get_oracle_tags(&self) -> Result<Vec<OracleTag>, GetOracleTagsError> {
-        self.repo.get_oracle_tags().await
+    async fn fetch_oracle_tags(&self) -> Result<Vec<OracleTag>, GetOracleTagsError> {
+        self.repo.fetch_oracle_tags().await
     }
 
-    async fn get_oracle_words(&self) -> Result<Vec<String>, GetOracleWordsError> {
-        self.repo.get_oracle_words().await
+    async fn fetch_oracle_words(&self) -> Result<Vec<String>, GetOracleWordsError> {
+        self.repo.fetch_oracle_words().await
     }
 
-    async fn get_sets(&self) -> Result<Vec<String>, GetSetsError> {
-        self.repo.get_sets().await
+    async fn fetch_sets(&self) -> Result<Vec<String>, GetSetsError> {
+        self.repo.fetch_sets().await
     }
 
-    async fn get_languages(&self) -> Result<Vec<String>, GetLanguagesError> {
-        self.repo.get_languages().await
+    async fn fetch_languages(&self) -> Result<Vec<String>, GetLanguagesError> {
+        self.repo.fetch_languages().await
     }
 
-    async fn get_card_profile_with_id(
+    async fn fetch_card_profile_with_id(
         &self,
         request: &GetCardProfile,
     ) -> Result<CardProfile, GetCardProfileError> {
-        self.repo.get_card_profile_with_id(request).await
+        self.repo.fetch_card_profile_with_id(request).await
     }
 
-    async fn get_card_profile_with_scryfall_data_id(
+    async fn fetch_card_profile_with_scryfall_data_id(
         &self,
         request: &GetScryfallData,
     ) -> Result<CardProfile, GetCardProfileError> {
         self.repo
-            .get_card_profile_with_scryfall_data_id(request)
+            .fetch_card_profile_with_scryfall_data_id(request)
             .await
     }
 
-    async fn get_card_profiles_with_ids(
+    async fn fetch_card_profiles_with_ids(
         &self,
         request: &CardProfileIds,
     ) -> Result<Vec<CardProfile>, GetCardProfileError> {
-        self.repo.get_card_profiles_with_ids(request).await
+        self.repo.fetch_card_profiles_with_ids(request).await
     }
 
-    async fn get_card_profiles_with_scryfall_data_ids(
+    async fn fetch_card_profiles_with_scryfall_data_ids(
         &self,
         request: &ScryfallDataIds,
     ) -> Result<Vec<CardProfile>, GetCardProfileError> {
         self.repo
-            .get_card_profiles_with_scryfall_data_ids(request)
+            .fetch_card_profiles_with_scryfall_data_ids(request)
             .await
     }
 
-    async fn get_last_sync_date(&self) -> anyhow::Result<Option<DateTime<Utc>>> {
-        self.repo.get_last_sync_date().await
+    async fn fetch_last_sync_date(&self) -> anyhow::Result<Option<DateTime<Utc>>> {
+        self.repo.fetch_last_sync_date().await
     }
 
     async fn find_cards_by_exact_names(

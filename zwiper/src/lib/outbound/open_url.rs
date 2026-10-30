@@ -70,6 +70,12 @@ mod platform {
 mod platform {
     use jni::objects::JObject;
 
+    /// Local references `open` creates: the URL string, the `Uri`, the action
+    /// string and the `Intent`. A hint to the VM, not a cap.
+    const LOCAL_FRAME_CAPACITY: i32 = 8;
+
+    /// Fires the intent from its own local reference frame, so the references
+    /// it creates are freed on return even on an already attached thread.
     pub(crate) fn open(url: &str) -> anyhow::Result<()> {
         let ctx = ndk_context::android_context();
         // SAFETY: ndk-context guarantees a valid JavaVM and Activity jobject for
@@ -80,39 +86,41 @@ mod platform {
         // which stays alive for the running app.
         let context = unsafe { JObject::from_raw(ctx.context().cast()) };
 
-        // Uri uri = Uri.parse(url);
-        let url_jstring = env.new_string(url)?;
-        let uri = env
-            .call_static_method(
-                "android/net/Uri",
-                "parse",
-                "(Ljava/lang/String;)Landroid/net/Uri;",
-                &[(&url_jstring).into()],
-            )?
-            .l()?;
+        env.with_local_frame(LOCAL_FRAME_CAPACITY, |env| -> anyhow::Result<()> {
+            // Uri uri = Uri.parse(url);
+            let url_jstring = env.new_string(url)?;
+            let uri = env
+                .call_static_method(
+                    "android/net/Uri",
+                    "parse",
+                    "(Ljava/lang/String;)Landroid/net/Uri;",
+                    &[(&url_jstring).into()],
+                )?
+                .l()?;
 
-        // Intent intent = new Intent(Intent.ACTION_VIEW, uri);
-        let action_view = env
-            .get_static_field(
+            // Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+            let action_view = env
+                .get_static_field(
+                    "android/content/Intent",
+                    "ACTION_VIEW",
+                    "Ljava/lang/String;",
+                )?
+                .l()?;
+            let intent = env.new_object(
                 "android/content/Intent",
-                "ACTION_VIEW",
-                "Ljava/lang/String;",
-            )?
-            .l()?;
-        let intent = env.new_object(
-            "android/content/Intent",
-            "(Ljava/lang/String;Landroid/net/Uri;)V",
-            &[(&action_view).into(), (&uri).into()],
-        )?;
+                "(Ljava/lang/String;Landroid/net/Uri;)V",
+                &[(&action_view).into(), (&uri).into()],
+            )?;
 
-        // context.startActivity(intent);
-        env.call_method(
-            &context,
-            "startActivity",
-            "(Landroid/content/Intent;)V",
-            &[(&intent).into()],
-        )?;
-        Ok(())
+            // context.startActivity(intent);
+            env.call_method(
+                &context,
+                "startActivity",
+                "(Landroid/content/Intent;)V",
+                &[(&intent).into()],
+            )?;
+            Ok(())
+        })
     }
 }
 

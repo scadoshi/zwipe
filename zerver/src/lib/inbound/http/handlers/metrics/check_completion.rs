@@ -26,7 +26,7 @@ pub async fn check_deck_completion(
     deck_id: Uuid,
 ) {
     let request = GetDeckProfile::new(user_id, deck_id);
-    let deck = match deck_service.get_deck(&request).await {
+    let deck = match deck_service.fetch_deck(&request).await {
         Ok(d) => d,
         Err(e) => {
             tracing::warn!(error = ?e, %deck_id, "metrics: get_deck failed during completion check");
