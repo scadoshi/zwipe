@@ -167,8 +167,8 @@ mod platform {
 
     fn follows_entry() -> Result<crate::outbound::keyring_entry::Entry, keyring::Error> {
         crate::outbound::keyring_entry::entry(
-            &(env!("CARGO_PKG_NAME").to_string() + "-service"),
-            &(env!("CARGO_PKG_NAME").to_string() + "-icon-follows-theme"),
+            concat!(env!("CARGO_PKG_NAME"), "-service"),
+            concat!(env!("CARGO_PKG_NAME"), "-icon-follows-theme"),
         )
     }
 

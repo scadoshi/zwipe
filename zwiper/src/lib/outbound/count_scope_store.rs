@@ -78,16 +78,11 @@ impl CountScope {
 mod platform {
     use crate::outbound::keyring_entry::{self, Entry};
 
-    fn service() -> String {
-        env!("CARGO_PKG_NAME").to_string() + "-service"
-    }
-
-    fn username() -> String {
-        env!("CARGO_PKG_NAME").to_string() + "-count-scope"
-    }
+    const SERVICE: &str = concat!(env!("CARGO_PKG_NAME"), "-service");
+    const USERNAME: &str = concat!(env!("CARGO_PKG_NAME"), "-count-scope");
 
     fn entry() -> Result<Entry, keyring::Error> {
-        keyring_entry::entry(&service(), &username())
+        keyring_entry::entry(SERVICE, USERNAME)
     }
 
     pub fn save(bytes: &[u8]) -> anyhow::Result<()> {

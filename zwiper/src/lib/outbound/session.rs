@@ -71,18 +71,13 @@ mod platform {
     use super::Session;
     use crate::outbound::keyring_entry::{self, Entry};
 
-    fn service() -> String {
-        env!("CARGO_PKG_NAME").to_string() + "-service"
-    }
-
-    fn username() -> String {
-        env!("CARGO_PKG_NAME").to_string() + "-user"
-    }
+    const SERVICE: &str = concat!(env!("CARGO_PKG_NAME"), "-service");
+    const USERNAME: &str = concat!(env!("CARGO_PKG_NAME"), "-user");
 
     /// (service, username) must keep mapping to the Keychain item the
     /// keyring-3 backend wrote, or existing sessions drop on upgrade.
     fn entry() -> Result<Entry, keyring::Error> {
-        keyring_entry::entry(&service(), &username())
+        keyring_entry::entry(SERVICE, USERNAME)
     }
 
     pub fn save(session: &Session) -> anyhow::Result<()> {
