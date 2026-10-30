@@ -61,6 +61,10 @@ fn canonical_color_identity(colors: &[String]) -> String {
 use crate::outbound::sqlx::deck::MAX_SUPPRESSIONS_PER_DECK;
 
 impl MetricsRepository for Postgres {
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one usage flush in one transaction, each counter table written in turn"
+    )]
     async fn apply_usage(&self, user_id: Uuid, batch: &HttpUsageBatch) -> Result<(), MetricsError> {
         // Clamp untrusted counts before they touch any counter: stops a client
         // inflating lifetime / marketing totals, and bounds the i32 casts for

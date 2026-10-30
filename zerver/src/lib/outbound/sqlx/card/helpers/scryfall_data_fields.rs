@@ -154,6 +154,10 @@ pub trait BindScryfallDataFields {
 }
 
 impl BindScryfallDataFields for QueryBuilder<Postgres> {
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one bind per scryfall_data column, in SCRYFALL_DATA_FIELDS order"
+    )]
     fn bind_scryfall_fields(&mut self, card: &ScryfallData) -> &mut Self {
         self.push("(");
         // core card fields

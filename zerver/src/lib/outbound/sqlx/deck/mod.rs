@@ -852,6 +852,10 @@ impl DeckRepository for Postgres {
             .collect())
     }
 
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one query per activity panel, read in order into one ActivityCounts"
+    )]
     async fn fetch_activity_counts(
         &self,
         user_id: uuid::Uuid,
@@ -1167,6 +1171,10 @@ impl DeckRepository for Postgres {
         Ok(())
     }
 
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one transaction: the ownership lock, the card limit, the upserts, then the replace-mode deletes"
+    )]
     async fn apply_import_batch(
         &self,
         user_id: uuid::Uuid,

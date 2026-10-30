@@ -413,6 +413,10 @@ impl CardRepository for MyPostgres {
     /// `{user_id}:{date}`, no deck required), and token/emblem printings
     /// excluded from the candidate pool. Exposed as `search_commanders`; every
     /// other caller passes a default context and is unaffected.
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one QueryBuilder composed in order: the filters, the deck extras, then the ordering"
+    )]
     async fn search_scryfall_data_deck_aware(
         &self,
         request: &CardQuery,
