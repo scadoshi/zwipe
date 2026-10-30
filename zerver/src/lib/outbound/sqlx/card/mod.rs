@@ -413,11 +413,15 @@ impl CardRepository for MyPostgres {
         request: &CardQuery,
         context: DeckServeContext<'_>,
     ) -> Result<Vec<ScryfallData>, SearchScryfallDataError> {
-        // Strip punctuation from DB columns for punctuation-insensitive text search.
-        // The query values are already stripped by CardQueryBuilder setters.
-        const STRIP_NAME: &str = "regexp_replace(name, '[^a-zA-Z0-9 ]', '', 'g') ILIKE ";
-        const STRIP_TYPE: &str = "regexp_replace(type_line, '[^a-zA-Z0-9 ]', '', 'g') ILIKE ";
-        const STRIP_ORACLE: &str = "regexp_replace(oracle_text, '[^a-zA-Z0-9 ]', '', 'g') ILIKE ";
+        // Fold accents, then strip punctuation, from DB columns for accent- and
+        // punctuation-insensitive text search. The query values are already
+        // folded and stripped the same way by CardQueryBuilder setters.
+        const STRIP_NAME: &str =
+            "regexp_replace(f_unaccent(name), '[^a-zA-Z0-9 ]', '', 'g') ILIKE ";
+        const STRIP_TYPE: &str =
+            "regexp_replace(f_unaccent(type_line), '[^a-zA-Z0-9 ]', '', 'g') ILIKE ";
+        const STRIP_ORACLE: &str =
+            "regexp_replace(f_unaccent(oracle_text), '[^a-zA-Z0-9 ]', '', 'g') ILIKE ";
 
         // Deck-serving inputs arrive bundled; unpack them into the locals the
         // QueryBuilder threads them into (never stored beyond this call).
@@ -943,12 +947,12 @@ impl CardRepository for MyPostgres {
         }
 
         if let Some(query_string) = &criteria.flavor_text_contains() {
-            sep.push("regexp_replace(flavor_text, '[^a-zA-Z0-9 ]', '', 'g') ILIKE ");
+            sep.push("regexp_replace(f_unaccent(flavor_text), '[^a-zA-Z0-9 ]', '', 'g') ILIKE ");
             sep.push_bind_unseparated(format!("%{query_string}%"));
         }
 
         if let Some(query_string) = &criteria.flavor_text_not_contains() {
-            sep.push("(flavor_text IS NULL OR NOT (regexp_replace(flavor_text, '[^a-zA-Z0-9 ]', '', 'g') ILIKE ");
+            sep.push("(flavor_text IS NULL OR NOT (regexp_replace(f_unaccent(flavor_text), '[^a-zA-Z0-9 ]', '', 'g') ILIKE ");
             sep.push_bind_unseparated(format!("%{query_string}%"));
             sep.push_unseparated("))");
         }
