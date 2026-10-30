@@ -49,7 +49,10 @@ use crate::inbound::http::routes::{private_routes, public_routes};
 /// `(status, body)` in their own error layer (zwiper's `ClientError`); transport
 /// failures never enter this type.
 #[derive(Debug, Error, Clone)]
-#[allow(missing_docs)]
+#[expect(
+    missing_docs,
+    reason = "each variant is named for the HTTP status it answers with"
+)]
 pub enum ApiError {
     #[error("{0}")]
     InternalServerError(String),
@@ -171,7 +174,10 @@ pub struct HttpServerConfig<'a> {
 /// twins in each domain's ports) so handlers stay free of generic parameters;
 /// mock implementations still satisfy the fields via the blanket impls.
 #[derive(Clone)]
-#[allow(missing_docs)]
+#[expect(
+    missing_docs,
+    reason = "each service field is named for the service it holds"
+)]
 pub struct AppState {
     pub auth_service: Arc<dyn ErasedAuthService>,
     pub user_service: Arc<dyn ErasedUserService>,
@@ -342,7 +348,6 @@ async fn shutdown_signal() {
 
 #[cfg(test)]
 mod tests {
-    #![allow(clippy::unwrap_used, clippy::panic)]
     use http_body_util::BodyExt;
 
     use super::*;

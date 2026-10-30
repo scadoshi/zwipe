@@ -220,7 +220,6 @@ impl FromRequestParts<AppState> for AuthenticatedUser {
 }
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used)]
 mod tests {
     use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 

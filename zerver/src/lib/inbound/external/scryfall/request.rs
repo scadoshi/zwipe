@@ -46,7 +46,10 @@ impl ScryfallRequest {
     }
 
     /// Searches for a card by name via the Scryfall search endpoint.
-    #[allow(dead_code)]
+    #[expect(
+        dead_code,
+        reason = "a by-name search kept beside the bulk fetches, with no caller yet"
+    )]
     pub(super) async fn search_cards(
         client: Client,
         search_str: &str,
@@ -71,7 +74,10 @@ impl ScryfallRequest {
 }
 
 /// Extension trait for building a [`ScryfallRequest`] from a reqwest `Client`.
-#[allow(dead_code)]
+#[expect(
+    dead_code,
+    reason = "kept for building requests from a client, with no caller yet"
+)]
 pub(super) trait IntoScryfallRequest {
     /// Builds a request targeting the given Scryfall endpoint.
     fn into_scryfall_request(self, endpoint: &str) -> ScryfallRequest;

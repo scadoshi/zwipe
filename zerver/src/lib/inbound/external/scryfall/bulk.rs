@@ -23,7 +23,10 @@ pub(super) struct BulkDataObject {
 
 /// Scryfall's bulk data download categories.
 #[derive(Debug, Clone, Copy)]
-#[allow(missing_docs)]
+#[expect(
+    missing_docs,
+    reason = "each variant names the Scryfall bulk file it fetches"
+)]
 pub enum BulkEndpoint {
     OracleCards,
     UniqueArtwork,
@@ -122,7 +125,6 @@ fn parse_jsonl_gz<T: DeserializeOwned>(bytes: &[u8]) -> anyhow::Result<Vec<T>> {
 }
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used)]
 mod tests {
     use std::io::Write;
 

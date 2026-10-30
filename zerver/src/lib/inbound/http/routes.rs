@@ -199,7 +199,10 @@ fn private_no_store_layer() -> SetResponseHeaderLayer<HeaderValue> {
 }
 
 /// Routes that don't require authentication.
-#[allow(clippy::expect_used)]
+#[expect(
+    clippy::expect_used,
+    reason = "every governor config has a non-zero period and burst, so finish never returns None"
+)]
 pub fn public_routes() -> Router<AppState> {
     // 5 req / 30s: tight limit, brute-force target
     let login_config = Arc::new(
@@ -483,7 +486,10 @@ pub fn public_routes() -> Router<AppState> {
 }
 
 /// Routes that require `AuthenticatedUser` (JWT Bearer token).
-#[allow(clippy::expect_used)]
+#[expect(
+    clippy::expect_used,
+    reason = "every governor config has a non-zero period and burst, so finish never returns None"
+)]
 pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
     // 500 req / 5min (~1.67/s avg): generous for swiping, keyed by user ID
     let private_config = Arc::new(
