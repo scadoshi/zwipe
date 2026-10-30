@@ -245,7 +245,9 @@ where
         .flatten()
         .collect();
 
-        let cz_cards: HashMap<Uuid, Card> = if !cz_ids.is_empty() {
+        let cz_cards: HashMap<Uuid, Card> = if cz_ids.is_empty() {
+            HashMap::new()
+        } else {
             self.card_repo
                 .get_cards(&cz_ids)
                 .await
@@ -253,8 +255,6 @@ where
                 .into_iter()
                 .map(|c| (c.scryfall_data.id, c))
                 .collect()
-        } else {
-            HashMap::new()
         };
 
         let commander_card = deck_profile
