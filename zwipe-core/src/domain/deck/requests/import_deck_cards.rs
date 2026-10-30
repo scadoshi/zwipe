@@ -2,7 +2,8 @@
 //!
 //! Parses plain-text decklists (`[qty] [card name]` per line),
 //! resolves card names against the database, and bulk-inserts matched cards.
-//! Supports `// Sideboard` and `// Maybeboard` section headers.
+//! Supports `// Sideboard` and `// Maybeboard` section headers, and MTGA's bare
+//! `Sideboard` line.
 
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -62,6 +63,14 @@ impl ImportDeckCards {
                 continue;
             }
 
+            // MTGA marks its sideboard with a bare "Sideboard" line.
+            if trimmed.eq_ignore_ascii_case("sideboard") {
+                if board_override.is_none() {
+                    current_board = Board::Sideboard;
+                }
+                continue;
+            }
+
             // Detect section headers: "// Sideboard", "// Maybeboard", "//Sideboard", etc.
             // Skip header detection entirely when a board override is active.
             if board_override.is_none() {
@@ -92,11 +101,12 @@ impl ImportDeckCards {
 
             let (quantity, rest) = match trimmed.split_once(char::is_whitespace) {
                 Some((first, rest)) => {
-                    // Handle "4" or "4x" quantity prefix
+                    // Handle "4" or "4x" quantity prefix. A leading `+` is part
+                    // of the name ("+2 Mace"), though `i32` parsing accepts it.
                     let stripped = first.strip_suffix('x').unwrap_or(first);
                     match stripped.parse::<i32>() {
-                        Ok(qty) => (qty, rest.trim()),
-                        Err(_) => (1, trimmed),
+                        Ok(qty) if !stripped.starts_with('+') => (qty, rest.trim()),
+                        _ => (1, trimmed),
                     }
                 }
                 None => (1, trimmed),
@@ -385,6 +395,61 @@ mod tests {
         )
         .lines;
         assert_eq!(lines.len(), 3);
+        assert!(lines.iter().all(|l| l.board == Board::Maybeboard));
+    }
+
+    #[test]
+    fn quantity_prefixes() {
+        let quantities_and_names = |text: &str| -> Vec<(i32, String)> {
+            parse_lines(text)
+                .into_iter()
+                .map(|l| (l.quantity, l.card_name))
+                .collect()
+        };
+        assert_eq!(
+            quantities_and_names("2 Sol Ring"),
+            [(2, "Sol Ring".to_string())]
+        );
+        assert_eq!(
+            quantities_and_names("2x Sol Ring"),
+            [(2, "Sol Ring".to_string())]
+        );
+        assert_eq!(
+            quantities_and_names("Sol Ring"),
+            [(1, "Sol Ring".to_string())]
+        );
+        assert_eq!(quantities_and_names("-1 Sol Ring"), Vec::new());
+    }
+
+    #[test]
+    fn card_name_starting_with_a_plus_sign() {
+        let lines = parse_lines("+2 Mace");
+        assert_eq!(lines.len(), 1);
+        assert_eq!(lines[0].quantity, 1);
+        assert_eq!(lines[0].card_name, "+2 Mace");
+    }
+
+    #[test]
+    fn mtga_sideboard_header_without_slashes() {
+        let lines = parse_lines("4 Lightning Bolt\n\n  sideboard \n2 Rest in Peace");
+        assert_eq!(lines.len(), 2);
+        assert_eq!(lines[0].board, Board::Deck);
+        assert_eq!(lines[1].board, Board::Sideboard);
+        assert_eq!(lines[1].card_name, "Rest in Peace");
+    }
+
+    #[test]
+    fn mtga_sideboard_header_skipped_under_board_override() {
+        let lines = ImportDeckCards::parse(
+            Uuid::nil(),
+            Uuid::nil(),
+            "1 Sol Ring\nSideboard\n1 Rest in Peace",
+            /* email_verified */ false,
+            Some(Board::Maybeboard),
+            ImportMode::Add,
+        )
+        .lines;
+        assert_eq!(lines.len(), 2);
         assert!(lines.iter().all(|l| l.board == Board::Maybeboard));
     }
 }

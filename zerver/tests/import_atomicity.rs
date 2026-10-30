@@ -12,7 +12,7 @@
 )]
 
 use zwipe_core::http::paths::{
-    DECK_ROUTE, get_deck_route, import_deck_cards_route, update_deck_card_route,
+    DECK_ROUTE, deck_route, import_deck_cards_route, update_deck_card_route,
 };
 mod common;
 
@@ -83,7 +83,7 @@ async fn over_limit_import_writes_nothing(pool: sqlx::PgPool) {
 
     // Nothing changed: Bolt still there, no Islands, total untouched.
     let (_, full) = app
-        .get(&get_deck_route(did.parse().unwrap()), Some(&token))
+        .get(&deck_route(did.parse().unwrap()), Some(&token))
         .await;
     let names: Vec<&str> = full["entries"]
         .as_array()
@@ -133,7 +133,7 @@ async fn replace_reconciles_only_boards_present_in_the_import(pool: sqlx::PgPool
     assert_eq!(status, StatusCode::OK, "replace import: {r}");
 
     let (_, full) = app
-        .get(&get_deck_route(did.parse().unwrap()), Some(&token))
+        .get(&deck_route(did.parse().unwrap()), Some(&token))
         .await;
     let names: Vec<&str> = full["entries"]
         .as_array()

@@ -15,7 +15,7 @@
 )]
 
 use zwipe_core::http::paths::{
-    DECK_ROUTE, clone_deck_route, create_deck_card_route, get_deck_route, import_deck_cards_route,
+    DECK_ROUTE, clone_deck_route, create_deck_card_route, deck_route, import_deck_cards_route,
     update_deck_card_route,
 };
 mod common;
@@ -97,7 +97,7 @@ async fn deck_card_add_bump_remove(pool: sqlx::PgPool) {
 
     // the full deck reflects the card + quantity
     let (_, full) = app
-        .get(&get_deck_route(did.parse().unwrap()), Some(&token))
+        .get(&deck_route(did.parse().unwrap()), Some(&token))
         .await;
     let entries = full["entries"].as_array().unwrap();
     assert_eq!(entries.len(), 1, "one entry expected: {full}");
@@ -116,7 +116,7 @@ async fn deck_card_add_bump_remove(pool: sqlx::PgPool) {
         .await;
     assert_eq!(status, StatusCode::NO_CONTENT, "delete card");
     let (_, full) = app
-        .get(&get_deck_route(did.parse().unwrap()), Some(&token))
+        .get(&deck_route(did.parse().unwrap()), Some(&token))
         .await;
     assert_eq!(
         full["entries"].as_array().unwrap().len(),
@@ -151,7 +151,7 @@ async fn deck_card_added_to_maybeboard(pool: sqlx::PgPool) {
     assert_eq!(dc["board"], "maybeboard");
 
     let (_, full) = app
-        .get(&get_deck_route(did.parse().unwrap()), Some(&token))
+        .get(&deck_route(did.parse().unwrap()), Some(&token))
         .await;
     let entries = full["entries"].as_array().unwrap();
     assert_eq!(entries.len(), 1);
@@ -194,7 +194,7 @@ async fn clone_copies_the_cards(pool: sqlx::PgPool) {
 
     // the clone carries both cards with their quantities
     let (_, full) = app
-        .get(&get_deck_route(clone_id.parse().unwrap()), Some(&token))
+        .get(&deck_route(clone_id.parse().unwrap()), Some(&token))
         .await;
     let entries = full["entries"].as_array().unwrap();
     assert_eq!(entries.len(), 2, "clone should copy both cards: {full}");
@@ -256,7 +256,7 @@ async fn import_resolves_known_cards_and_reports_the_rest(pool: sqlx::PgPool) {
 
     // the imported card really landed in the deck
     let (_, full) = app
-        .get(&get_deck_route(did.parse().unwrap()), Some(&token))
+        .get(&deck_route(did.parse().unwrap()), Some(&token))
         .await;
     let names: Vec<&str> = full["entries"]
         .as_array()
@@ -296,7 +296,7 @@ async fn get_deck_carries_command_zone_cards(pool: sqlx::PgPool) {
     // absent = unchanged; the tagged dialect is not decoded).
     let (status, updated) = app
         .patch(
-            &get_deck_route(did.parse().unwrap()),
+            &deck_route(did.parse().unwrap()),
             json!({ "commander_id": cmd_sid.to_string() }),
             Some(&token),
         )
@@ -314,7 +314,7 @@ async fn get_deck_carries_command_zone_cards(pool: sqlx::PgPool) {
     assert_eq!(status, StatusCode::CREATED, "add bolt: {dc}");
 
     let (status, full) = app
-        .get(&get_deck_route(did.parse().unwrap()), Some(&token))
+        .get(&deck_route(did.parse().unwrap()), Some(&token))
         .await;
     assert_eq!(status, StatusCode::OK, "get deck: {full}");
 

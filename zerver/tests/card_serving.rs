@@ -12,7 +12,7 @@
 )]
 
 use zwipe_core::http::paths::{
-    DECK_ROUTE, PREFERENCES_ROUTE, SEARCH_CARDS_ROUTE, get_card_route, get_deck_route,
+    DECK_ROUTE, PREFERENCES_ROUTE, SEARCH_CARDS_ROUTE, card_route, deck_route,
     search_deck_cards_route,
 };
 mod common;
@@ -60,7 +60,7 @@ async fn get_card_by_id_round_trips(pool: sqlx::PgPool) {
 
     // Public route, no token. If any NOT NULL column or JSONB shape were wrong
     // the read-path `try_from` would 500 here instead of 200.
-    let (status, c) = app.get(&get_card_route(id), None).await;
+    let (status, c) = app.get(&card_route(id), None).await;
     assert_eq!(status, StatusCode::OK, "get card: {c}");
     let sd = &c["scryfall_data"];
     assert_eq!(sd["name"], "Goblin Guide");
@@ -76,7 +76,7 @@ async fn get_missing_card_is_404(pool: sqlx::PgPool) {
     let app = TestApp::new(pool.clone());
     seed_cards(&pool, &[]).await; // populate the (empty) view so queries don't error
     let missing = uuid::Uuid::from_u128(0xdead_beef);
-    let (status, _) = app.get(&get_card_route(missing), None).await;
+    let (status, _) = app.get(&card_route(missing), None).await;
     assert_eq!(status, StatusCode::NOT_FOUND);
 }
 
@@ -290,7 +290,7 @@ async fn deck_selected_otags_lift_matching_cards_end_to_end(pool: sqlx::PgPool) 
     // Set the commander and the deck's selected oracle tag.
     let (status, updated) = app
         .patch(
-            &get_deck_route(did.parse().unwrap()),
+            &deck_route(did.parse().unwrap()),
             json!({
                 "commander_id": cmd_sid.to_string(),
                 "oracle_tags": ["spot-removal"]
@@ -321,7 +321,7 @@ async fn deck_selected_otags_lift_matching_cards_end_to_end(pool: sqlx::PgPool) 
     // Clear the otag: matching cards fall back to band 1, off the first page.
     let (status, cleared) = app
         .patch(
-            &get_deck_route(did.parse().unwrap()),
+            &deck_route(did.parse().unwrap()),
             json!({ "oracle_tags": [] }),
             Some(&token),
         )
@@ -487,7 +487,7 @@ async fn synergy_pool_runs_out_into_related_cards(pool: sqlx::PgPool) {
     let did = deck["id"].as_str().unwrap().to_string();
     let (status, updated) = app
         .patch(
-            &get_deck_route(did.parse().unwrap()),
+            &deck_route(did.parse().unwrap()),
             json!({ "commander_id": cmd_sid.to_string() }),
             Some(&token),
         )

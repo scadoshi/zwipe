@@ -1,5 +1,7 @@
 //! Authentication HTTP request contracts.
 
+use std::fmt;
+
 use serde::{Deserialize, Serialize};
 
 use crate::domain::auth::models::platform::ClientPlatform;
@@ -188,17 +190,35 @@ pub struct HttpDeleteUser {
 }
 
 /// Email verification request body.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Deserialize, Serialize)]
 pub struct HttpVerifyEmail {
     /// The verification token from the email link.
     pub token: String,
 }
 
+/// Redacted: the token is a single-use credential.
+impl fmt::Debug for HttpVerifyEmail {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("HttpVerifyEmail")
+            .field("token", &"REDACTED")
+            .finish()
+    }
+}
+
 /// Email change confirmation request body.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Deserialize, Serialize)]
 pub struct HttpConfirmEmailChange {
     /// The token from the confirmation link.
     pub token: String,
+}
+
+/// Redacted: the token is a single-use credential.
+impl fmt::Debug for HttpConfirmEmailChange {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("HttpConfirmEmailChange")
+            .field("token", &"REDACTED")
+            .finish()
+    }
 }
 
 /// Password reset initiation request body.
@@ -218,12 +238,22 @@ impl HttpRequestPasswordReset {
 }
 
 /// Password reset completion request body.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Deserialize, Serialize)]
 pub struct HttpResetPassword {
     /// The reset token from the email link.
     pub token: String,
     /// The password to set.
     pub new_password: Secret,
+}
+
+/// Redacted: the token is a single-use credential.
+impl fmt::Debug for HttpResetPassword {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("HttpResetPassword")
+            .field("token", &"REDACTED")
+            .field("new_password", &self.new_password)
+            .finish()
+    }
 }
 
 #[cfg(test)]
@@ -339,5 +369,33 @@ mod tests {
         let wire = serde_json::to_string(&req).unwrap();
         let back: HttpRefreshSession = serde_json::from_str(&wire).unwrap();
         assert_eq!(back.client_version.as_deref(), Some("1.6.2"));
+    }
+
+    #[test]
+    fn token_bodies_debug_without_the_token() {
+        let token = "single-use-token-4f2a";
+        let verify = format!(
+            "{:?}",
+            HttpVerifyEmail {
+                token: token.to_string(),
+            }
+        );
+        let confirm = format!(
+            "{:?}",
+            HttpConfirmEmailChange {
+                token: token.to_string(),
+            }
+        );
+        let reset = format!(
+            "{:?}",
+            HttpResetPassword {
+                token: token.to_string(),
+                new_password: Secret::new("hunter22hunter22"),
+            }
+        );
+        for debug in [verify, confirm, reset] {
+            assert!(!debug.contains(token), "token leaked: {debug}");
+            assert!(debug.contains("REDACTED"), "no redaction marker: {debug}");
+        }
     }
 }

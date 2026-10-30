@@ -8,7 +8,25 @@ impl From<GetDeckCardError> for ApiError {
         match value {
             GetDeckCardError::NotFound => Self::NotFound("deck card not found".to_string()),
             GetDeckCardError::Database(e) | GetDeckCardError::DeckCardFromDb(e) => e.to_500(),
-            GetDeckCardError::Forbidden => Self::Forbidden(GetDeckCardError::Forbidden.to_string()),
+            // Someone else's deck and no deck at all read the same, as on
+            // the deck routes.
+            GetDeckCardError::Forbidden => Self::NotFound("deck not found".to_string()),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Someone else's deck reads the same as no deck, as on the other deck
+    /// routes.
+    #[test]
+    fn foreign_deck_answers_not_found() {
+        let error = ApiError::from(GetDeckCardError::Forbidden);
+        assert!(
+            matches!(&error, ApiError::NotFound(message) if message == "deck not found"),
+            "got {error:?}"
+        );
     }
 }
