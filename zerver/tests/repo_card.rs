@@ -577,7 +577,7 @@ async fn set_filters_are_printing_aware(pool: sqlx::PgPool) {
         .await
         .unwrap();
     let mut names: Vec<&str> = served.iter().map(|s| s.name.as_str()).collect();
-    names.sort();
+    names.sort_unstable();
     assert_eq!(
         names,
         vec!["Beyond Only", "Universal Staple"],
