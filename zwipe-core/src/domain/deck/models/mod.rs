@@ -10,7 +10,6 @@ pub mod power_level;
 pub mod quantity;
 
 // Entities
-#[allow(clippy::module_inception)]
 pub mod deck;
 pub mod deck_card;
 pub mod deck_metrics;

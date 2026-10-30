@@ -14,7 +14,7 @@ pub struct InvalidFormat;
 /// Magic: The Gathering deck format.
 ///
 /// Variants match the field names in [`Legalities`](crate::domain::card::models::scryfall_data::legalities::Legalities) for direct lookup.
-#[allow(missing_docs)]
+#[expect(missing_docs, reason = "the variants are the format names")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Format {
     Standard,
