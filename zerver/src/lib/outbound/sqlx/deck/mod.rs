@@ -7,6 +7,7 @@ pub mod models;
 use sqlx::{QueryBuilder, query, query_as, query_scalar};
 use zwipe_core::domain::deck::deck_profile::DeckProfile;
 use zwipe_core::domain::deck::requests::clear_deck_suppressions::ClearDeckSuppressions;
+use zwipe_core::domain::deck::requests::clone_deck::CloneDeck;
 use zwipe_core::domain::deck::requests::commander_maybeboard::CommanderMaybeboardCard;
 use zwipe_core::domain::deck::requests::create_deck_card::CreateDeckCard;
 use zwipe_core::domain::deck::requests::create_deck_profile::CreateDeckProfile;
@@ -18,7 +19,7 @@ use zwipe_core::domain::deck::requests::skip_deck_card::SkipDeckCard;
 use zwipe_core::domain::deck::requests::update_deck_card::UpdateDeckCard;
 use zwipe_core::domain::deck::requests::update_deck_profile::UpdateDeckProfile;
 use zwipe_core::domain::deck::tag_profile::PROFILE_EXCLUDED_TAG_PREFIX;
-use zwipe_core::domain::deck::{Board, DeckCard, DeckName, DeckOtherTag, DeckTag};
+use zwipe_core::domain::deck::{Board, DeckCard, DeckOtherTag, DeckTag};
 use zwipe_core::http::contracts::suggestions::{
     ACTIVITY_DAYS, ACTIVITY_MIN_SEEN, ACTIVITY_PASSES_SENT, ACTIVITY_TAGS_SENT,
 };
@@ -82,13 +83,45 @@ fn deck_oracle_tags_to_json(tags: &[String]) -> serde_json::Value {
     )
 }
 
+/// Locks the user's row and counts their decks inside `tx`.
+///
+/// `FOR NO KEY UPDATE` serializes deck creates and clones per user, so two
+/// requests at the cap can't both pass the count, while the deck insert's own
+/// foreign key check on the row still goes through.
+async fn lock_user_and_count_decks(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    user_id: uuid::Uuid,
+) -> Result<i64, sqlx::Error> {
+    query_scalar!(
+        "SELECT id FROM users WHERE id = $1 FOR NO KEY UPDATE",
+        user_id
+    )
+    .fetch_optional(&mut **tx)
+    .await?;
+    let count = query_scalar!(
+        r#"SELECT COUNT(*) AS "count!" FROM decks WHERE user_id = $1"#,
+        user_id
+    )
+    .fetch_one(&mut **tx)
+    .await?;
+    Ok(count)
+}
+
 impl DeckRepository for Postgres {
     // == create ==
     async fn create_deck_profile(
         &self,
         request: &CreateDeckProfile,
+        deck_limit: i64,
     ) -> Result<DeckProfile, CreateDeckProfileError> {
         let mut tx = self.pool.begin().await?;
+        if lock_user_and_count_decks(&mut tx, request.user_id).await? >= deck_limit {
+            return Err(if request.email_verified {
+                CreateDeckProfileError::LimitReached
+            } else {
+                CreateDeckProfileError::UnverifiedLimitReached
+            });
+        }
         let tags_json = deck_tags_to_json(&request.tags);
         let other_tags_json = deck_other_tags_to_json(&request.other_tags);
         let oracle_tags_json = deck_oracle_tags_to_json(&request.oracle_tags);
@@ -191,14 +224,6 @@ impl DeckRepository for Postgres {
     }
 
     // == count ==
-    async fn count_decks_by_user(&self, user_id: uuid::Uuid) -> Result<i64, anyhow::Error> {
-        let count = sqlx::query_scalar!("SELECT COUNT(*) FROM decks WHERE user_id = $1", user_id)
-            .fetch_one(&self.pool)
-            .await?
-            .unwrap_or(0);
-        Ok(count)
-    }
-
     async fn count_cards_in_deck(&self, deck_id: uuid::Uuid) -> Result<i64, anyhow::Error> {
         // Counts ALL boards (mainboard + maybeboard + sideboard); this feeds the
         // per-deck card cap, which applies across every board.
@@ -1335,11 +1360,17 @@ impl DeckRepository for Postgres {
     // == clone ==
     async fn clone_deck(
         &self,
-        source_deck_id: uuid::Uuid,
-        new_name: &DeckName,
-        owner_id: uuid::Uuid,
+        request: &CloneDeck,
+        deck_limit: i64,
     ) -> Result<uuid::Uuid, CloneDeckError> {
         let mut tx = self.pool.begin().await?;
+        if lock_user_and_count_decks(&mut tx, request.user_id).await? >= deck_limit {
+            return Err(if request.email_verified {
+                CloneDeckError::LimitReached
+            } else {
+                CloneDeckError::UnverifiedLimitReached
+            });
+        }
 
         // 1. Insert the new deck row by SELECT-ing from the source. Name and
         //    owner are caller-supplied; commander / partner / background /
@@ -1363,9 +1394,9 @@ impl DeckRepository for Postgres {
             WHERE id = $3
             RETURNING id
             "#,
-            new_name.to_string(),
-            owner_id,
-            source_deck_id,
+            request.new_name.to_string(),
+            request.user_id,
+            request.source_deck_id,
         )
         .fetch_one(&mut *tx)
         .await?;
@@ -1381,7 +1412,7 @@ impl DeckRepository for Postgres {
             WHERE deck_id = $2
             "#,
             new_deck_id,
-            source_deck_id,
+            request.source_deck_id,
         )
         .execute(&mut *tx)
         .await?;

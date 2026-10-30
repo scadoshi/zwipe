@@ -23,7 +23,7 @@ use zwipe_core::domain::deck::requests::import_deck_cards::{
 use zwipe_core::domain::deck::requests::skip_deck_card::SkipDeckCard;
 use zwipe_core::domain::deck::requests::update_deck_card::UpdateDeckCard;
 use zwipe_core::domain::deck::requests::update_deck_profile::UpdateDeckProfile;
-use zwipe_core::domain::deck::{Deck, DeckCard, DeckName};
+use zwipe_core::domain::deck::{Deck, DeckCard};
 
 use crate::domain::BoxFuture;
 use crate::domain::deck::models::deck::activity::{Activity, ActivityCounts};
@@ -56,10 +56,14 @@ use crate::domain::deck::models::deck_card::update_deck_card::UpdateDeckCardErro
 pub trait DeckRepository: Clone + Send + Sync + 'static {
     // == create ==
 
-    /// Creates a new deck profile.
+    /// Creates a new deck profile. The user's row lock, the deck-count check
+    /// and the insert run in one transaction, so concurrent creates can't
+    /// pass `deck_limit` together. `deck_limit` is resolved by the domain; the
+    /// request's `email_verified` picks the error variant.
     fn create_deck_profile(
         &self,
         request: &CreateDeckProfile,
+        deck_limit: i64,
     ) -> impl Future<Output = Result<DeckProfile, CreateDeckProfileError>> + Send;
 
     /// Adds a card to a deck. Ownership + row lock, the card-limit check, and
@@ -73,12 +77,6 @@ pub trait DeckRepository: Clone + Send + Sync + 'static {
     ) -> impl Future<Output = Result<DeckCard, CreateDeckCardError>> + Send;
 
     // == count ==
-
-    /// Returns the number of decks owned by a user.
-    fn count_decks_by_user(
-        &self,
-        user_id: uuid::Uuid,
-    ) -> impl Future<Output = Result<i64, anyhow::Error>> + Send;
 
     /// Returns the total card quantity (sum of all copies) in a deck.
     fn count_cards_in_deck(
@@ -261,15 +259,16 @@ pub trait DeckRepository: Clone + Send + Sync + 'static {
     // == clone ==
 
     /// Transactionally copies a source deck's profile and all entries into a
-    /// new deck owned by `owner_id` with the given `new_name`. Returns the
-    /// new deck's id. The caller must have already verified `owner_id` owns
-    /// `source_deck_id`: this method performs no authorization check.
+    /// new deck owned by the requesting user with the given `new_name`.
+    /// Returns the new deck's id. The deck-count check against `deck_limit`
+    /// runs in the same transaction under the user's row lock, as in
+    /// `create_deck_profile`. The caller must have already verified the user
+    /// owns `source_deck_id`: this method performs no authorization check.
     /// `share_token` is deliberately not copied: clones start private.
     fn clone_deck(
         &self,
-        source_deck_id: uuid::Uuid,
-        new_name: &DeckName,
-        owner_id: uuid::Uuid,
+        request: &CloneDeck,
+        deck_limit: i64,
     ) -> impl Future<Output = Result<uuid::Uuid, CloneDeckError>> + Send;
 
     // == share ==
