@@ -136,8 +136,7 @@ pub fn Artist() -> Element {
                     for artist in selected_artists.iter().cloned() {
                         div {
                             class: match mode() {
-                                IncludeExclude::Include => "chip selected flex items-center gap-05",
-                                IncludeExclude::Exclude => "chip selected flex items-center gap-05",
+                                IncludeExclude::Include | IncludeExclude::Exclude => "chip selected flex items-center gap-05",
                             },
                             {artist.clone()}
                             button { class: "chip-remove",

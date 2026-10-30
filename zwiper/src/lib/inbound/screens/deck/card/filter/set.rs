@@ -132,8 +132,7 @@ pub fn Set() -> Element {
                     for set in selected_sets.iter().cloned() {
                         div {
                             class: match mode() {
-                                IncludeExclude::Include => "chip selected flex items-center gap-05",
-                                IncludeExclude::Exclude => "chip selected flex items-center gap-05",
+                                IncludeExclude::Include | IncludeExclude::Exclude => "chip selected flex items-center gap-05",
                             },
                             {set.clone()}
                             button { class: "chip-remove",
