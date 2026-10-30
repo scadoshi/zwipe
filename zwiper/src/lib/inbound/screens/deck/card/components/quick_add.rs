@@ -162,7 +162,7 @@ pub fn QuickAdd(deck_id: Uuid, deck_entries: Signal<Vec<DeckEntry>>) -> Element 
             {
                 deck_entries.write().push(DeckEntry { card, deck_card });
                 let current = *filter_reset_counter.peek();
-                filter_reset_counter.set(current + 1);
+                filter_reset_counter.set(current.wrapping_add(1));
                 undo_log.push(UndoAction::Added {
                     card_id,
                     card_name: card_name.clone(),

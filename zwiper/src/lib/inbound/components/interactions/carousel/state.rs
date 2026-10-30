@@ -114,8 +114,11 @@ impl CarouselState {
 
         // Edge resistance: rubber-band when dragging past first or last page
         let at_start = self.current_index == 0 && raw_delta > 0.0;
-        let at_end =
-            self.page_count > 0 && self.current_index >= self.page_count - 1 && raw_delta < 0.0;
+        let at_end = self
+            .page_count
+            .checked_sub(1)
+            .is_some_and(|last| self.current_index >= last)
+            && raw_delta < 0.0;
 
         if self.page_width_px > 0.0 && (at_start || at_end) {
             self.drag_offset_px =
@@ -127,7 +130,7 @@ impl CarouselState {
         // Update velocity tracking
         let now = Utc::now().naive_utc();
         if let (Some(px), Some(pt)) = (self.prev_x, self.prev_time) {
-            let dt_ms = gesture_math::gap_millis(now - pt);
+            let dt_ms = gesture_math::gap_millis(now.signed_duration_since(pt));
             if dt_ms > 0.0 {
                 self.velocity_px_ms = (client_x - px) / dt_ms;
             }
@@ -151,12 +154,19 @@ impl CarouselState {
                 && velocity_abs > VELOCITY_THRESHOLD);
 
         if should_advance {
-            if self.drag_offset_px < 0.0 && self.current_index < self.page_count - 1 {
+            if self.drag_offset_px < 0.0
+                && let Some(next) = self
+                    .current_index
+                    .checked_add(1)
+                    .filter(|&next| next < self.page_count)
+            {
                 // Swiped left → next page
-                self.current_index += 1;
-            } else if self.drag_offset_px > 0.0 && self.current_index > 0 {
+                self.current_index = next;
+            } else if self.drag_offset_px > 0.0
+                && let Some(previous) = self.current_index.checked_sub(1)
+            {
                 // Swiped right → previous page
-                self.current_index -= 1;
+                self.current_index = previous;
             }
         }
 

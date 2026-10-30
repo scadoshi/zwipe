@@ -298,21 +298,18 @@ fn group_decks(profiles: &[DeckProfile], by: DeckGroupBy) -> Vec<DeckGroup> {
 
 /// The row's card count: the deck's cards plus its command zone.
 fn row_card_count(profile: &DeckProfile) -> i64 {
-    let mut count = profile.card_count;
-    if profile.format.as_ref().is_some_and(Format::has_commander) && profile.commander_id.is_some()
-    {
-        count += 1;
-    }
-    if profile.partner_commander_id.is_some() {
-        count += 1;
-    }
-    if profile.background_id.is_some() {
-        count += 1;
-    }
-    if profile.signature_spell_id.is_some() {
-        count += 1;
-    }
-    count
+    let command_zone = [
+        profile.format.as_ref().is_some_and(Format::has_commander)
+            && profile.commander_id.is_some(),
+        profile.partner_commander_id.is_some(),
+        profile.background_id.is_some(),
+        profile.signature_spell_id.is_some(),
+    ];
+    // A display count: a server count at the cap stays there.
+    command_zone
+        .into_iter()
+        .filter(|&held| held)
+        .fold(profile.card_count, |count, _| count.saturating_add(1))
 }
 
 /// One tappable deck row: name, identity pips, and the stat chips.

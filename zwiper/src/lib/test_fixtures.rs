@@ -1,6 +1,11 @@
 //! Domain values for unit tests. zwipe-core's own builders sit behind its
 //! `cfg(test)`, so this crate deserializes a fixture instead.
 
+#![expect(
+    clippy::arithmetic_side_effects,
+    reason = "test fixtures; overflow fails the test"
+)]
+
 use std::str::FromStr;
 
 use chrono::{Duration, Utc};

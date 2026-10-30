@@ -164,7 +164,13 @@ fn my_figures(metrics: Option<&HttpLifetimeCounters>) -> Vec<(Option<u64>, &'sta
     figures(
         metrics.map(|m| i64::from(m.decks_created)),
         metrics.map(|m| m.searches),
-        metrics.map(|m| m.swipes_right + m.swipes_left + m.swipes_up + m.swipes_down),
+        // A sum past i64 is no number to show, so it waits like a loading one.
+        metrics.and_then(|m| {
+            m.swipes_right
+                .checked_add(m.swipes_left)?
+                .checked_add(m.swipes_up)?
+                .checked_add(m.swipes_down)
+        }),
     )
 }
 

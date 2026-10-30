@@ -70,9 +70,10 @@ impl<T> CatalogCell<T> {
     /// Whether this is `Loaded` but past its TTL and due for a background refresh.
     fn is_stale(&self) -> bool {
         match self {
-            CatalogCell::Loaded { fetched_at, .. } => {
-                Utc::now() >= *fetched_at + chrono::Duration::hours(CATALOG_TTL_HOURS)
-            }
+            // A deadline past the last representable instant never comes.
+            CatalogCell::Loaded { fetched_at, .. } => fetched_at
+                .checked_add_signed(chrono::Duration::hours(CATALOG_TTL_HOURS))
+                .is_some_and(|deadline| Utc::now() >= deadline),
             _ => false,
         }
     }
@@ -338,6 +339,10 @@ impl CatalogCache {
 }
 
 #[cfg(test)]
+#[expect(
+    clippy::arithmetic_side_effects,
+    reason = "test fixtures; overflow fails the test"
+)]
 mod tests {
     use std::cell::RefCell;
     use std::time::Duration;

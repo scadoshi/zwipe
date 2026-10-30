@@ -82,7 +82,7 @@ struct PendingQty {
 impl PendingQty {
     /// The burst's absolute target, `None` when it leaves `i32`.
     fn target(&self) -> Option<i32> {
-        Some(self.baseline + self.delta)
+        self.baseline.checked_add(self.delta)
     }
 }
 
@@ -90,7 +90,10 @@ impl PendingQty {
 /// delta (`net` is the burst so far, `None` with no burst open). `None` when
 /// either leaves `i32`, and the tap is dropped.
 fn fold_tap(current_qty: i32, net: Option<i32>, delta: i32) -> Option<(i32, i32)> {
-    Some((current_qty + delta, net.unwrap_or(0) + delta))
+    Some((
+        current_qty.checked_add(delta)?,
+        net.unwrap_or(0).checked_add(delta)?,
+    ))
 }
 
 /// Quiet period after the last quantity tap before the net delta posts.
@@ -190,7 +193,8 @@ pub fn View(deck_id: Uuid) -> Element {
     // Filter overlay state
     let mut filters_overlay_open = use_signal(|| false);
 
-    // Incrementing this re-runs the filter + group effect
+    // Incrementing this re-runs the filter + group effect. Readers only see
+    // that it moved, so bumps wrap.
     let mut filter_reset_counter: Signal<u32> = use_signal(|| 0);
     use_context_provider(|| filter_reset_counter);
 
@@ -504,7 +508,7 @@ pub fn View(deck_id: Uuid) -> Element {
                     }
 
                     let current = *filter_reset_counter.peek();
-                    filter_reset_counter.set(current + 1);
+                    filter_reset_counter.set(current.wrapping_add(1));
                     Ok(())
                 })
                 .await;
@@ -711,7 +715,7 @@ pub fn View(deck_id: Uuid) -> Element {
                     .retain(|e| e.card.scryfall_data.id != card_id);
                 // Trigger re-filter
                 let current = *filter_reset_counter.peek();
-                filter_reset_counter.set(current + 1);
+                filter_reset_counter.set(current.wrapping_add(1));
 
                 warn_land_crossing(before_lands, main_land_count());
                 warn_budget_crossing(before_price, total_price());
@@ -732,7 +736,7 @@ pub fn View(deck_id: Uuid) -> Element {
                 }
                 // Trigger re-render so qty display updates
                 let current = *filter_reset_counter.peek();
-                filter_reset_counter.set(current + 1);
+                filter_reset_counter.set(current.wrapping_add(1));
 
                 warn_land_crossing(before_lands, main_land_count());
                 warn_budget_crossing(before_price, total_price());
@@ -800,7 +804,7 @@ pub fn View(deck_id: Uuid) -> Element {
                             pending.baseline,
                         );
                         let current = *filter_reset_counter.peek();
-                        filter_reset_counter.set(current + 1);
+                        filter_reset_counter.set(current.wrapping_add(1));
                     }
                 } else {
                     // PATCH: the burst's absolute target (baseline + net), so
@@ -840,7 +844,7 @@ pub fn View(deck_id: Uuid) -> Element {
                             entry.deck_card.quantity = reverted;
                         }
                         let current = *filter_reset_counter.peek();
-                        filter_reset_counter.set(current + 1);
+                        filter_reset_counter.set(current.wrapping_add(1));
                     }
                 }
             });
@@ -873,7 +877,7 @@ pub fn View(deck_id: Uuid) -> Element {
             entry.deck_card.board = target;
         }
         let current = *filter_reset_counter.peek();
-        filter_reset_counter.set(current + 1);
+        filter_reset_counter.set(current.wrapping_add(1));
 
         let request = HttpPatchDeckCard::new(None, Some(target.display_name().to_string()));
         spawn(async move {
@@ -893,7 +897,7 @@ pub fn View(deck_id: Uuid) -> Element {
                     entry.deck_card.board = old_board;
                 }
                 let current = *filter_reset_counter.peek();
-                filter_reset_counter.set(current + 1);
+                filter_reset_counter.set(current.wrapping_add(1));
             }
         });
 
@@ -924,7 +928,7 @@ pub fn View(deck_id: Uuid) -> Element {
             entry.deck_card.mvp_at = target.then(chrono::Utc::now);
         }
         let current = *filter_reset_counter.peek();
-        filter_reset_counter.set(current + 1);
+        filter_reset_counter.set(current.wrapping_add(1));
 
         let request = HttpPatchDeckCard::with_mvp(target);
         spawn(async move {
@@ -952,7 +956,7 @@ pub fn View(deck_id: Uuid) -> Element {
                     entry.deck_card.mvp_at = old_mvp_at;
                 }
                 let current = *filter_reset_counter.peek();
-                filter_reset_counter.set(current + 1);
+                filter_reset_counter.set(current.wrapping_add(1));
             }
         });
     };
@@ -992,7 +996,7 @@ pub fn View(deck_id: Uuid) -> Element {
                     .write()
                     .retain(|e| e.card.scryfall_data.id != card_id);
                 let current = *filter_reset_counter.peek();
-                filter_reset_counter.set(current + 1);
+                filter_reset_counter.set(current.wrapping_add(1));
                 toast.info(format!("Removed {card_name}"), short);
 
                 spawn(async move {
@@ -1025,7 +1029,7 @@ pub fn View(deck_id: Uuid) -> Element {
                 }
                 deck_entries.write().push(restored);
                 let current = *filter_reset_counter.peek();
-                filter_reset_counter.set(current + 1);
+                filter_reset_counter.set(current.wrapping_add(1));
                 toast.info(format!("Re-added {card_name}"), short);
 
                 spawn(async move {
@@ -1048,7 +1052,7 @@ pub fn View(deck_id: Uuid) -> Element {
                             .write()
                             .retain(|e| e.card.scryfall_data.id != card_id);
                         let current = *filter_reset_counter.peek();
-                        filter_reset_counter.set(current + 1);
+                        filter_reset_counter.set(current.wrapping_add(1));
                     }
                 });
             }
@@ -1058,12 +1062,13 @@ pub fn View(deck_id: Uuid) -> Element {
                 net,
                 baseline,
             } => {
-                if !entry_exists(card_id) {
+                // A net of i32::MIN has no inverse in i32: nothing to undo to.
+                let (true, Some(inverse)) = (entry_exists(card_id), net.checked_neg()) else {
                     stale();
                     return;
-                }
+                };
                 change_quantity(
-                    card_id, -net, /* is_basic_land */ false, /* record */ false,
+                    card_id, inverse, /* is_basic_land */ false, /* record */ false,
                 );
                 toast.info(format!("{card_name} back to \u{00d7}{baseline}"), short);
             }
@@ -1099,7 +1104,7 @@ pub fn View(deck_id: Uuid) -> Element {
                     entry.deck_card.scryfall_data_id = old_id;
                 }
                 let current = *filter_reset_counter.peek();
-                filter_reset_counter.set(current + 1);
+                filter_reset_counter.set(current.wrapping_add(1));
                 toast.info(format!("{card_name} printing restored"), short);
 
                 spawn(async move {
@@ -1154,7 +1159,7 @@ pub fn View(deck_id: Uuid) -> Element {
                 // pinned slot (the featured strip updates in place).
                 slot_signal.set(Some(old_card));
                 let current = *filter_reset_counter.peek();
-                filter_reset_counter.set(current + 1);
+                filter_reset_counter.set(current.wrapping_add(1));
                 toast.info(format!("{card_name} printing restored"), short);
 
                 spawn(async move {
@@ -1292,7 +1297,7 @@ pub fn View(deck_id: Uuid) -> Element {
                                     }
                                     should_collapse_expanded.set(true);
                                     let current = *filter_reset_counter.peek();
-                                    filter_reset_counter.set(current + 1);
+                                    filter_reset_counter.set(current.wrapping_add(1));
                                 },
                                 "Main"
                             }
@@ -1307,7 +1312,7 @@ pub fn View(deck_id: Uuid) -> Element {
                                     }
                                     should_collapse_expanded.set(true);
                                     let current = *filter_reset_counter.peek();
-                                    filter_reset_counter.set(current + 1);
+                                    filter_reset_counter.set(current.wrapping_add(1));
                                 },
                                 "Maybe"
                             }
@@ -1322,7 +1327,7 @@ pub fn View(deck_id: Uuid) -> Element {
                                     }
                                     should_collapse_expanded.set(true);
                                     let current = *filter_reset_counter.peek();
-                                    filter_reset_counter.set(current + 1);
+                                    filter_reset_counter.set(current.wrapping_add(1));
                                 },
                                 "Side"
                             }
@@ -1727,7 +1732,7 @@ pub fn View(deck_id: Uuid) -> Element {
                             filter_builder.write().clear();
                             should_collapse_expanded.set(true);
                             let current = *filter_reset_counter.peek();
-                            filter_reset_counter.set(current + 1);
+                            filter_reset_counter.set(current.wrapping_add(1));
                             toast.info(
                                 "Filter reset".to_string(),
                                 ToastOptions::default().duration(TOAST_QUICK),

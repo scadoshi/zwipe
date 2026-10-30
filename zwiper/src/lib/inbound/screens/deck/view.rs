@@ -205,7 +205,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
     // far holds only its command zone (no mainboard cards to distribute).
     let chart_metrics = metrics
         .as_ref()
-        .filter(|m| m.land_count + m.nonland_count > 0);
+        .filter(|m| m.land_count > 0 || m.nonland_count > 0);
 
     let command_zone_names: Vec<String> = deck_profile_resource()
         .and_then(Result::ok)

@@ -47,8 +47,9 @@ const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 /// version.
 const UPKEEP_INTERVAL: Duration = Duration::from_secs(60);
 
-const SECS_PER_MINUTE: i64 = 60;
-const SECS_PER_HOUR: i64 = 3600;
+/// The latest point into an hour [`next_hour`] counts, so the gap it adds is
+/// always at least a second.
+const LAST_SECOND_OF_HOUR: chrono::Duration = chrono::Duration::seconds(3599);
 
 /// The featured flavor card cached for the Home screen, with the time it
 /// goes stale.
@@ -82,10 +83,21 @@ impl FlavorCard {
 }
 
 /// The top of the UTC hour after `now`, keeping `now`'s fraction of a second.
+/// Past the last representable instant, the end of time.
 fn next_hour(now: DateTime<Utc>) -> DateTime<Utc> {
     use chrono::Timelike;
-    let secs_into_hour = i64::from(now.minute()) * SECS_PER_MINUTE + i64::from(now.second());
-    now + chrono::Duration::seconds(SECS_PER_HOUR - secs_into_hour.min(SECS_PER_HOUR - 1))
+    // Same fraction of a second as `now`, so the gap is whole seconds.
+    let hour_start = now
+        .with_minute(0)
+        .and_then(|t| t.with_second(0))
+        .unwrap_or(now);
+    let into_hour = now
+        .signed_duration_since(hour_start)
+        .min(LAST_SECOND_OF_HOUR);
+    chrono::Duration::hours(1)
+        .checked_sub(&into_hour)
+        .and_then(|gap| now.checked_add_signed(gap))
+        .unwrap_or(DateTime::<Utc>::MAX_UTC)
 }
 
 /// App-wide changelog cache, populated by a background fetch at startup.
