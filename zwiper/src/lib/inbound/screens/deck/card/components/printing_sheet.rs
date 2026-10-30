@@ -221,9 +221,7 @@ pub(crate) fn PrintingSheet(
                 }
 
                 // Always there when saving is possible at all, grayed until
-                // the carousel has moved off the printing it opened on. It
-                // used to appear only once changed, which read as a button
-                // arriving from nowhere.
+                // the carousel has moved off the printing it opened on.
                 if !read_only {
                     Button {
                         variant: ButtonVariant::Action,

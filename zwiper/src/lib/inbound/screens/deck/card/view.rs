@@ -156,7 +156,7 @@ pub fn View(deck_id: Uuid) -> Element {
     use_context_provider(|| filter_reset_counter);
 
     // session + client feed the hint recorder; usage_buffer records swipes
-    // and removals (its error reporting now rides the facade).
+    // and removals (its error reporting rides the facade).
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
     let usage_buffer: Signal<UsageBuffer> = use_context();
@@ -1705,8 +1705,7 @@ pub fn View(deck_id: Uuid) -> Element {
                             };
                             let old_card = card.clone();
                             spawn(async move {
-                                // Was fully silent on failure; the facade
-                                // now reports and toasts (new op).
+                                // The facade reports and toasts a failure.
                                 if authed
                                     .run("change_printing", |c, s| async move {
                                         c.update_deck_profile(deck_id, &request, &s).await
@@ -1731,8 +1730,7 @@ pub fn View(deck_id: Uuid) -> Element {
                             let request = HttpPatchDeckCard::with_printing(&new_id.to_string());
                             let old_card = card.clone();
                             spawn(async move {
-                                // Was fully silent on failure; the facade
-                                // now reports and toasts (new op).
+                                // The facade reports and toasts a failure.
                                 if authed
                                     .run("change_printing", |c, s| async move {
                                         c.update_deck_card(deck_id, old_id, &request, &s).await

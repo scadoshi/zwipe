@@ -852,10 +852,10 @@ mod tests {
     use super::{ApplyAction, apply_action};
 
     /// The four states Apply can be pressed in, all with an edited draft. The
-    /// third line is the bug this function exists for: judging the draft alone
-    /// refuses a deliberate clear, so a filter can never be turned off. The
-    /// second is the regression that followed, where every apply over an
-    /// existing filter read as a clear.
+    /// third line is the case this function exists for: judging the draft
+    /// alone refuses a deliberate clear, so a filter can never be turned off.
+    /// The second keeps an apply over an existing filter from reading as a
+    /// clear.
     #[test]
     fn apply_reads_the_transition_not_just_the_draft() {
         assert_eq!(

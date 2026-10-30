@@ -295,8 +295,8 @@ pub fn Add(deck_id: Uuid) -> Element {
 
         usage_buffer().record_search();
         spawn(async move {
-            // Owner decision (2026-09-02): load-more failures toast. The old
-            // silence meant the pile just stopped growing with no warning.
+            // A failed load-more toasts, so the pile never stops growing
+            // without a word.
             match authed
                 .try_run("load_more", |c, s| async move {
                     c.search_deck_cards(deck_id, &filter, &s).await
@@ -386,7 +386,7 @@ pub fn Add(deck_id: Uuid) -> Element {
     };
 
     let add_card_to_deck = move |card: Card| {
-        // For now, always add quantity 1 (will add quantity picker later)
+        // A swipe adds one copy.
         let request = HttpCreateDeckCard::new(&card.scryfall_data, 1, None);
         let oracle_id = card.scryfall_data.oracle_id;
         let card_id = card.scryfall_data.id;
@@ -672,8 +672,8 @@ pub fn Add(deck_id: Uuid) -> Element {
     // Fetch deck cards on mount for filtering
     use_effect(move || {
         spawn(async move {
-            // Quiet: the screen deliberately works without deck context (the
-            // Err arm below always just logged); telemetry still records now.
+            // Quiet: the screen works without deck context; telemetry still
+            // records the failure.
             let fetched = authed
                 .run_quiet("load_deck_context", |c, s| async move {
                     c.get_deck(deck_id, &s).await

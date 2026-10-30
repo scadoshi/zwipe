@@ -107,10 +107,9 @@ impl UndoLog {
 }
 
 /// App-scoped park/restore for per-deck undo stacks, so the log survives
-/// navigating away and back (mirroring `FilterStore`'s filter parking,
-/// filters surviving while undo evaporated read as a bug). In-memory only:
-/// an app restart forgets. The stale-entry guards in `apply_undo` cover the
-/// deck refetching fresher state between visits.
+/// navigating away and back (mirroring `FilterStore`'s filter parking).
+/// In-memory only: an app restart forgets. The stale-entry guards in
+/// `apply_undo` cover the deck refetching fresher state between visits.
 #[derive(Clone, Copy)]
 pub(crate) struct UndoStore {
     entries: Signal<HashMap<Uuid, Vec<UndoAction>>>,
@@ -164,8 +163,8 @@ impl UndoStore {
     }
 
     /// Drops the deck's whole stack: import overwrites the deck, so every
-    /// entry recorded before it is semantically void (owner decision in the
-    /// plan; the import screen's hint discloses it).
+    /// entry recorded before it is semantically void (the import screen's
+    /// hint says so).
     pub(crate) fn clear(&mut self, deck_id: Uuid) {
         self.entries.write().remove(&deck_id);
     }
