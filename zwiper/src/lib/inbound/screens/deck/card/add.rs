@@ -26,6 +26,7 @@ use super::components::card_info::{CardDetailsSheet, CardInfoDisplay, CardSkelet
 use super::components::printing_sheet::PrintingSheet;
 use crate::inbound::components::auth::authed::use_authed;
 use crate::inbound::components::auth::ensure_session::EnsureFresh;
+use crate::inbound::components::generation::use_generation;
 use crate::inbound::components::hint_dialog::{HintColored, use_one_time_hint};
 use crate::inbound::components::interactions::swipe::SwipeStack;
 use crate::inbound::components::interactions::swipe::config::SwipeConfig;
@@ -238,6 +239,10 @@ pub fn Add(deck_id: Uuid) -> Element {
     let mut pagination_exhausted = use_signal(|| false);
 
     let mut is_loading_cards = use_signal(|| false);
+    // A fresh search (the filter effect, Refresh) starts a generation and a
+    // load-more joins the current one, so neither an older search nor a page
+    // of the stack it replaced lands on the new stack.
+    let mut stack_loads = use_generation();
 
     // Park this deck's stack on leave so returning resumes mid-stack. Only a
     // served stack parks, an empty one, or one with no recorded filter,
@@ -301,17 +306,23 @@ pub fn Add(deck_id: Uuid) -> Element {
             return;
         };
         let synergy = builder.synergy();
+        let ticket = stack_loads.current();
 
         usage_buffer().record_search();
         spawn(async move {
             // A failed load-more toasts, so the pile never stops growing
             // without a word.
-            match authed
+            let reply = authed
                 .try_run("load_more", |c, s| async move {
                     c.search_deck_cards(deck_id, &filter, &s).await
                 })
-                .await
-            {
+                .await;
+            if !stack_loads.is_current(ticket) {
+                // A fresh search replaced the stack this page was for.
+                is_loading_more.set(false);
+                return;
+            }
+            match reply {
                 Ok(page) => {
                     synergy_warming.set(!page.synergy_applied);
                     related_ids.write().extend(related_ids_of(&page));
@@ -896,6 +907,11 @@ pub fn Add(deck_id: Uuid) -> Element {
         //   - explicit user action (refresh / apply filter), OR
         //   - initial mount with a different/new filter, OR
         //   - initial mount with no existing cards
+        let ticket = stack_loads.next_ticket();
+        // A search still out no longer lands, so it can't end the skeleton.
+        if *is_loading_cards.peek() {
+            is_loading_cards.set(false);
+        }
         stack.reset();
         // Fresh results ease in again, even previously seen images.
         flippable_card_image::reset_image_ease();
@@ -945,12 +961,15 @@ pub fn Add(deck_id: Uuid) -> Element {
             // Flush buffered usage (signals feed synergy ordering) before the
             // refetch. Skips post directly at swipe time.
             flush_loop::flush_once(&usage_buffer(), &client, &session).await;
-            match authed
+            let reply = authed
                 .try_run("search_cards", |c, s| async move {
                     c.search_deck_cards(deck_id, &filter, &s).await
                 })
-                .await
-            {
+                .await;
+            if !stack_loads.is_current(ticket) {
+                return;
+            }
+            match reply {
                 Ok(page) => {
                     let warming = !page.synergy_applied;
                     synergy_warming.set(warming);
@@ -1537,6 +1556,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 return;
                             };
 
+                            let ticket = stack_loads.next_ticket();
                             stack.reset();
                             flippable_card_image::reset_image_ease();
                             last_search_filter.set(None);
@@ -1551,12 +1571,15 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 // ordering) before the refetch. Skips post
                                 // directly at swipe time.
                                 flush_loop::flush_once(&usage_buffer(), &client, &session).await;
-                                match authed
+                                let reply = authed
                                     .try_run("search_cards", |c, s| async move {
                                         c.search_deck_cards(deck_id, &filter, &s).await
                                     })
-                                    .await
-                                {
+                                    .await;
+                                if !stack_loads.is_current(ticket) {
+                                    return;
+                                }
+                                match reply {
                                     Ok(page) => {
                                         synergy_warming.set(!page.synergy_applied);
                                         related_ids.set(related_ids_of(&page));

@@ -41,6 +41,7 @@ use super::components::skeletons::{ChipRowSkeleton, QuickAddSkeleton};
 use super::components::swipe_select::{SwipeMode, SwipeSelect};
 use crate::inbound::components::auth::authed::use_authed;
 use crate::inbound::components::catalog_cache::CatalogCache;
+use crate::inbound::components::generation::{Generation, Ticket, use_generation};
 use crate::inbound::components::hint_dialog::{HintColored, use_one_time_hint};
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
@@ -106,6 +107,77 @@ fn MaybeboardRow(
                 }
             },
         }
+    }
+}
+
+/// The saved list and its load state. Entries live in a plain signal (not a
+/// Resource) so Remove and the search-to-add chips can edit the list in
+/// place. Each load takes a ticket, and an edit made while a load is out
+/// starts a new one: that reply left before the edit reached the server, so
+/// it could bring a removed row back.
+#[derive(Clone, Copy)]
+struct SavedList {
+    entries: Signal<Vec<Card>>,
+    is_loading: Signal<bool>,
+    load_failed: Signal<bool>,
+    /// Bumped to refetch; the load effect reads it.
+    reload: Signal<u32>,
+    loads: Generation,
+    /// Whether the newest load's reply is still out.
+    load_out: CopyValue<bool>,
+}
+
+impl SavedList {
+    /// Takes the ticket for a load about to go out.
+    fn begin_load(&mut self) -> Ticket {
+        *self.load_out.write() = true;
+        self.loads.next_ticket()
+    }
+
+    /// Lands a load's reply (`None` on failure) unless a newer load or an
+    /// edit has taken a ticket since.
+    fn land(&mut self, ticket: Ticket, reply: Option<Vec<Card>>) {
+        if !self.loads.is_current(ticket) {
+            return;
+        }
+        *self.load_out.write() = false;
+        if let Some(cards) = reply {
+            self.entries.set(cards);
+            self.load_failed.set(false);
+        } else {
+            let empty = self.entries.peek().is_empty();
+            self.load_failed.set(empty);
+        }
+        self.is_loading.set(false);
+    }
+
+    /// Drops any load still out and fetches again. Silent while entries are
+    /// showing.
+    fn refetch(&mut self) {
+        self.loads.next_ticket();
+        let tick = *self.reload.peek();
+        self.reload.set(tick + 1);
+    }
+
+    /// Restarts a load that went out before a local edit.
+    fn restart_stale_load(&mut self) {
+        if *self.load_out.peek() {
+            self.refetch();
+        }
+    }
+
+    /// Drops a removed commander's row.
+    fn remove(&mut self, oracle_id: Uuid) {
+        self.entries
+            .write()
+            .retain(|c| c.scryfall_data.oracle_id != Some(oracle_id));
+        self.restart_stale_load();
+    }
+
+    /// Empties the list after the server cleared it.
+    fn clear(&mut self) {
+        self.entries.set(Vec::new());
+        self.restart_stale_load();
     }
 }
 
@@ -176,31 +248,34 @@ pub fn CommanderMaybeboard() -> Element {
     let mut show_more_sheet = use_signal(|| false);
     let mut show_clear_dialog = use_signal(|| false);
 
-    // Entries live in a plain signal (not a Resource) so Remove and the
-    // search-to-add chips can edit the list in place. `reload` refetches:
-    // bumped when the Swipe overlay closes, since up-swipes in there add
-    // entries server-side. A refetch with entries present is silent (no
-    // skeleton flash).
-    let mut entries: Signal<Vec<Card>> = use_signal(Vec::new);
-    let mut is_loading = use_signal(|| true);
-    let mut load_failed = use_signal(|| false);
-    let mut reload = use_signal(|| 0u32);
+    // `reload` refetches: bumped when the Swipe overlay closes, since
+    // up-swipes in there add entries server-side. A refetch with entries
+    // present is silent (no skeleton flash).
+    let mut list = SavedList {
+        entries: use_signal(Vec::new),
+        is_loading: use_signal(|| true),
+        load_failed: use_signal(|| false),
+        reload: use_signal(|| 0u32),
+        loads: use_generation(),
+        load_out: use_hook(|| CopyValue::new(false)),
+    };
+    let SavedList {
+        mut entries,
+        is_loading,
+        load_failed,
+        reload,
+        ..
+    } = list;
     use_effect(move || {
         let _tick = reload();
+        let ticket = list.begin_load();
         spawn(async move {
-            match authed
+            let reply = authed
                 .try_run("load_maybeboard", |c, s| async move {
                     c.fetch_commander_maybeboard(&s).await
                 })
-                .await
-            {
-                Ok(cards) => {
-                    entries.set(cards);
-                    load_failed.set(false);
-                }
-                Err(_) => load_failed.set(entries.peek().is_empty()),
-            }
-            is_loading.set(false);
+                .await;
+            list.land(ticket, reply.ok());
         });
     });
 
@@ -211,18 +286,21 @@ pub fn CommanderMaybeboard() -> Element {
             swipe_was_open.set(true);
         } else if *swipe_was_open.peek() {
             swipe_was_open.set(false);
-            let tick = *reload.peek();
-            reload.set(tick + 1);
+            list.refetch();
         }
     });
 
     // Debounced commander-name search feeding the result chips under the bar.
     // Mirrors quick add: sleep, bail if the query moved on, explicit name sort
     // so the server's popularity ordering doesn't apply to a typed name.
+    // Every edit takes a ticket, so a reply for an older query never lands
+    // over a newer one.
     let mut search_results: Signal<Vec<Card>> = use_signal(Vec::new);
     let mut is_searching = use_signal(|| false);
+    let mut searches = use_generation();
     use_effect(move || {
         let q = query();
+        let ticket = searches.next_ticket();
         if q.trim().len() < MIN_QUERY_LEN {
             is_searching.set(false);
             search_results.set(Vec::new());
@@ -231,7 +309,7 @@ pub fn CommanderMaybeboard() -> Element {
         is_searching.set(true);
         spawn(async move {
             time::sleep(Duration::from_millis(DEBOUNCE_MS)).await;
-            if query() != q {
+            if !searches.is_current(ticket) {
                 return;
             }
             let mut builder = CardQueryBuilder::with_name_contains(q.trim());
@@ -246,12 +324,15 @@ pub fn CommanderMaybeboard() -> Element {
             usage_buffer().record_search();
             // Quiet: fires per debounced keystroke; a toast per failed keypress
             // would bury the screen, and the results simply stay stale.
-            if let Some(found) = authed
+            let found = authed
                 .run_quiet("maybeboard_search", |c, s| async move {
                     c.search_commanders(&filter, &s).await
                 })
-                .await
-            {
+                .await;
+            if !searches.is_current(ticket) {
+                return;
+            }
+            if let Some(found) = found {
                 search_results.set(found);
             }
             is_searching.set(false);
@@ -286,8 +367,7 @@ pub fn CommanderMaybeboard() -> Element {
                 // Belt and braces: a silent refetch reconciles to server
                 // truth (order + preferred printing) behind the
                 // optimistic insert.
-                let tick = *reload.peek();
-                reload.set(tick + 1);
+                list.refetch();
                 toast.info(
                     format!("Added {name}"),
                     ToastOptions::default().duration(TOAST_QUICK),
@@ -345,7 +425,7 @@ pub fn CommanderMaybeboard() -> Element {
                 .await
                 .is_some()
             {
-                entries.set(Vec::new());
+                list.clear();
                 toast.info(
                     "Maybeboard cleared".to_string(),
                     ToastOptions::default().duration(TOAST_QUICK),
@@ -363,9 +443,7 @@ pub fn CommanderMaybeboard() -> Element {
                 .await
                 .is_some()
             {
-                entries
-                    .write()
-                    .retain(|c| c.scryfall_data.oracle_id != Some(oracle_id));
+                list.remove(oracle_id);
                 toast.info(
                     "Removed".to_string(),
                     ToastOptions::default().duration(TOAST_QUICK),
@@ -688,5 +766,82 @@ pub fn CommanderMaybeboard() -> Element {
 
             ImagePreview { card: preview_card, dismissing: preview_dismissing }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::cell::Cell;
+
+    use super::*;
+    use crate::test_fixtures;
+
+    thread_local! {
+        static LIST: Cell<Option<SavedList>> = const { Cell::new(None) };
+    }
+
+    #[component]
+    fn Root() -> Element {
+        let list = SavedList {
+            entries: use_signal(Vec::new),
+            is_loading: use_signal(|| true),
+            load_failed: use_signal(|| false),
+            reload: use_signal(|| 0u32),
+            loads: use_generation(),
+            load_out: use_hook(|| CopyValue::new(false)),
+        };
+        LIST.with(|l| l.set(Some(list)));
+        rsx! {}
+    }
+
+    fn commander(name: &str) -> (Card, Uuid) {
+        let mut card = test_fixtures::deck_entry(name, 1).card;
+        let oracle_id = Uuid::new_v4();
+        card.scryfall_data.oracle_id = Some(oracle_id);
+        (card, oracle_id)
+    }
+
+    fn names(cards: &[Card]) -> Vec<String> {
+        cards.iter().map(|c| c.scryfall_data.name.clone()).collect()
+    }
+
+    #[test]
+    fn a_load_sent_before_a_remove_does_not_bring_the_row_back() {
+        let mut dom = VirtualDom::new(Root);
+        dom.rebuild_in_place();
+        let mut list = LIST.with(|l| l.get().expect("the root rendered"));
+        let (atraxa, atraxa_id) = commander("Atraxa");
+        let (krenko, _) = commander("Krenko");
+
+        dom.in_runtime(|| {
+            let first = list.begin_load();
+            list.land(first, Some(vec![atraxa.clone(), krenko.clone()]));
+            // A refetch goes out, then the user removes Atraxa before it lands.
+            let refetch = list.begin_load();
+            list.remove(atraxa_id);
+            list.land(refetch, Some(vec![atraxa.clone(), krenko.clone()]));
+        });
+
+        let shown = dom.in_runtime(|| names(&list.entries.peek()));
+        assert_eq!(shown, ["Krenko"], "the older load put the removed row back");
+        let reload = dom.in_runtime(|| *list.reload.peek());
+        assert_eq!(reload, 1, "the dropped load was not fetched again");
+    }
+
+    #[test]
+    fn a_remove_with_no_load_out_fetches_nothing() {
+        let mut dom = VirtualDom::new(Root);
+        dom.rebuild_in_place();
+        let mut list = LIST.with(|l| l.get().expect("the root rendered"));
+        let (atraxa, atraxa_id) = commander("Atraxa");
+
+        dom.in_runtime(|| {
+            let load = list.begin_load();
+            list.land(load, Some(vec![atraxa.clone()]));
+            list.remove(atraxa_id);
+        });
+
+        let reload = dom.in_runtime(|| *list.reload.peek());
+        assert_eq!(reload, 0, "a settled list refetched on remove");
     }
 }
