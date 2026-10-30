@@ -867,3 +867,23 @@ impl MetricsRepository for Postgres {
         Ok(result.rows_affected() > 0)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn int_column_passes_tallies_that_fit() {
+        assert!(matches!(
+            int_column(HttpUsageBatch::MAX_PER_FLUSH),
+            Ok(10_000)
+        ));
+        assert!(matches!(int_column(-5_i64), Ok(-5)));
+    }
+
+    #[test]
+    fn int_column_rejects_tallies_past_i32() {
+        assert!(int_column(u32::MAX).is_err());
+        assert!(int_column(i64::MAX).is_err());
+    }
+}

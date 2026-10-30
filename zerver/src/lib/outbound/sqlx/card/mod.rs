@@ -2179,3 +2179,19 @@ impl CardRepository for MyPostgres {
         Ok(ids)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn clamped_offset_keeps_offsets_that_fit() {
+        assert_eq!(clamped_offset(0), 0);
+        assert_eq!(clamped_offset(500), 500);
+    }
+
+    #[test]
+    fn clamped_offset_caps_instead_of_wrapping_negative() {
+        assert_eq!(clamped_offset(u32::MAX), i32::MAX);
+    }
+}

@@ -369,3 +369,32 @@ impl std::fmt::Display for ZerviceMetrics {
         )
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn count_column_caps_at_the_integer_column() {
+        assert_eq!(count_column(118_000), 118_000);
+        assert_eq!(count_column(usize::MAX), i32::MAX);
+    }
+
+    fn status_after(received: i32, upserted: i32, errors: usize) -> SyncStatus {
+        let mut metrics = ZerviceMetrics::new();
+        metrics.set_received_count(received);
+        metrics.set_upserted_count(upserted);
+        for _ in 0..errors {
+            metrics.add_error(ErrorMetrics::new(Uuid::nil(), "card", "failed"));
+        }
+        metrics.mark_as_completed();
+        metrics.status()
+    }
+
+    #[test]
+    fn status_follows_the_upserted_share() {
+        assert!(matches!(status_after(10, 10, 0), SyncStatus::Success));
+        assert!(matches!(status_after(10, 7, 3), SyncStatus::PartialSuccess));
+        assert!(matches!(status_after(10, 6, 4), SyncStatus::Failure));
+    }
+}
