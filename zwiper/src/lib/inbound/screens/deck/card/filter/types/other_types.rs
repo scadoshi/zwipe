@@ -100,7 +100,7 @@ pub(crate) fn OtherTypes() -> Element {
     let excluded_other_types = read_excluded(&filter_builder());
 
     rsx! {
-        // ── type line includes ────────────────────────────────────
+        // == type line includes ==
         div { class: "label-row mt-2",
             label { class: "label-xs", r#for: "other-type", "Type line include" }
             button {
@@ -219,7 +219,7 @@ pub(crate) fn OtherTypes() -> Element {
             }
         }
 
-        // ── type line excludes ────────────────────────────────────
+        // == type line excludes ==
         div { class: "label-row mt-2",
             label { class: "label-xs", r#for: "type-excludes-search", "Type line exclude" }
             if !excluded_other_types.is_empty() {

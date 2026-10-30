@@ -818,7 +818,7 @@ pub fn Add(deck_id: Uuid) -> Element {
         builder.set_offset(0);
 
         if first {
-            // ── Initial mount ─────────────────────────────────────────
+            // == Initial mount ==
             // Un-park this deck's stack if its filter still matches.
             if let Some(parked) = stack_cache.take(deck_id) {
                 let mut prev_b = parked.filter.clone();
@@ -835,7 +835,7 @@ pub fn Add(deck_id: Uuid) -> Element {
             }
         }
 
-        // ── Clear and re-fetch ────────────────────────────────────────
+        // == Clear and re-fetch ==
         // Reaches here when:
         //   - explicit user action (refresh / apply filter), OR
         //   - initial mount with a different/new filter, OR

@@ -103,7 +103,7 @@ pub(crate) fn OracleTags(mut dict_open: Signal<bool>, mut dict_exclude: Signal<b
 
     rsx! {
         div { class: "flex-col gap-half",
-            // ── includes ──────────────────────────────────────────
+            // == includes ==
             div { class: "label-row mt-2",
                 label { class: "label-xs", r#for: "oracle-tags-search", "Oracle tags include" }
                 button {
@@ -215,7 +215,7 @@ pub(crate) fn OracleTags(mut dict_open: Signal<bool>, mut dict_exclude: Signal<b
                 }
             }
 
-            // ── excludes ──────────────────────────────────────────
+            // == excludes ==
             div { class: "label-row mt-2",
                 label { class: "label-xs", r#for: "oracle-tags-excludes-search", "Oracle tags exclude" }
                 button {

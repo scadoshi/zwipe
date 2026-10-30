@@ -84,7 +84,7 @@ pub fn CardRole() -> Element {
 
     rsx! {
         div { class: "flex-col gap-half",
-            // ── role includes ─────────────────────────────────────
+            // == role includes ==
             div { class: "label-row mt-2",
                 label { class: "label-xs", "Card roles include" }
                 if !selected.is_empty() {
@@ -136,7 +136,7 @@ pub fn CardRole() -> Element {
                 }
             }
 
-            // ── role excludes ─────────────────────────────────────
+            // == role excludes ==
             div { class: "label-row mt-2",
                 label { class: "label-xs", "Card roles exclude" }
                 if !excluded.is_empty() {

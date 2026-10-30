@@ -46,7 +46,7 @@ pub(crate) fn use_card_stack<A: 'static>() -> CardStack<A> {
 }
 
 impl<A: 'static> CardStack<A> {
-    // ── reads ────────────────────────────────────────────────────────────
+    // == reads ==
 
     /// Clones the full card list (reactive read).
     pub(crate) fn cards(&self) -> Vec<Card> {
@@ -107,7 +107,7 @@ impl<A: 'static> CardStack<A> {
         self.entering
     }
 
-    // ── contents ─────────────────────────────────────────────────────────
+    // == contents ==
 
     /// Swaps in a new card list and rewinds the cursor. History survives,
     /// undo semantics across a re-filter are the caller's call (see `rewind`).
@@ -181,7 +181,7 @@ impl<A: 'static> CardStack<A> {
         }
     }
 
-    // ── cursor ───────────────────────────────────────────────────────────
+    // == cursor ==
 
     /// Moves the cursor forward one card (linear stacks). The cursor may land
     /// one past the end: the just-swiped last card leaves the window and undo
@@ -217,7 +217,7 @@ impl<A: 'static> CardStack<A> {
         true
     }
 
-    // ── history + animation ──────────────────────────────────────────────
+    // == history + animation ==
 
     /// Pushes a committed swipe onto the undo history.
     pub(crate) fn record(&mut self, action: A) {

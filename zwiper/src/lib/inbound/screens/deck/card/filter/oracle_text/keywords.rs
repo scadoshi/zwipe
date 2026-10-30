@@ -96,7 +96,7 @@ pub(crate) fn Keywords() -> Element {
     let excluded_keywords = read_excluded(&filter_builder());
 
     rsx! {
-        // ── includes ──────────────────────────────────────────────
+        // == includes ==
         div { class: "label-row mt-2",
             label { class: "label-xs", r#for: "keyword-search", "Keywords include" }
             button {
@@ -209,7 +209,7 @@ pub(crate) fn Keywords() -> Element {
             }
         }
 
-        // ── excludes ──────────────────────────────────────────────
+        // == excludes ==
         div { class: "label-row mt-2",
             label { class: "label-xs", r#for: "keyword-excludes-search", "Keywords exclude" }
             if !excluded_keywords.is_empty() {

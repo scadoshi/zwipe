@@ -74,7 +74,7 @@ pub(crate) fn ProducedManaFilter() -> Element {
     let excluded = read_excluded(&filter_builder());
 
     rsx! {
-        // ── produces (include) ────────────────────────────────────
+        // == produces (include) ==
         div { class: "label-row mt-2",
             label { class: "label-xs", "Produces" }
             button {
@@ -119,7 +119,7 @@ pub(crate) fn ProducedManaFilter() -> Element {
             }
         }
 
-        // ── does not produce (exclude) ────────────────────────────
+        // == does not produce (exclude) ==
         div { class: "label-row mt-2",
             label { class: "label-xs", "Doesn't produce" }
             if !excluded.is_empty() {

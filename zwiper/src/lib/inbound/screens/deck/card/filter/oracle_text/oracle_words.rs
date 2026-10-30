@@ -95,7 +95,7 @@ pub(crate) fn OracleWords() -> Element {
     let excluded_oracle_words = read_excluded(&filter_builder());
 
     rsx! {
-        // ── includes ──────────────────────────────────────────────
+        // == includes ==
         div { class: "label-row mt-2",
             label { class: "label-xs", r#for: "oracle-words-search", "Oracle words include" }
             button {
@@ -208,7 +208,7 @@ pub(crate) fn OracleWords() -> Element {
             }
         }
 
-        // ── excludes ──────────────────────────────────────────────
+        // == excludes ==
         div { class: "label-row mt-2",
             label { class: "label-xs", r#for: "oracle-words-excludes-search", "Oracle words exclude" }
             if !excluded_oracle_words.is_empty() {
