@@ -25,6 +25,9 @@ use zwipe_core::http::contracts::deck::HttpSharedDeck;
 use crate::components::{PageMeta, sleep_ms};
 use crate::{Footer, Nav, api};
 
+/// Desktop columns the deck sections split into, in order.
+const SECTION_COLUMNS: usize = 3;
+
 /// How a shared-deck fetch can fail, from the reader's point of view.
 #[derive(Clone, PartialEq)]
 enum FetchError {
@@ -869,7 +872,6 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
         Vec::new()
     };
 
-    const COLS: usize = 3;
     // Partition the ordered sections into contiguous runs, one per column,
     // picking the two cut points that minimize the tallest column. Contiguous
     // (not shortest-column greedy) so section order survives both layouts:
@@ -890,7 +892,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
             }
         }
     }
-    let mut columns: Vec<Vec<Section>> = (0..COLS).map(|_| Vec::new()).collect();
+    let mut columns: Vec<Vec<Section>> = (0..SECTION_COLUMNS).map(|_| Vec::new()).collect();
     for (idx, section) in sections.into_iter().enumerate() {
         let ci = if idx < cuts.0 {
             0
