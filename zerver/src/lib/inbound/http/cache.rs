@@ -12,9 +12,14 @@
 //! is the struct itself, so every cached type is known at compile time and
 //! there are no string keys to collide.
 
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use tokio::sync::RwLock;
+
+/// How long a stale value is served after a failed refresh before the next
+/// attempt, so a database outage costs one refresh per window rather than one
+/// per request.
+const REFRESH_RETRY_BACKOFF: Duration = Duration::from_secs(30);
 
 /// One-slot, deadline-based cache. See the module docs for the model.
 #[derive(Debug)]
@@ -46,7 +51,9 @@ impl<V: Clone> TtlSlot<V> {
     /// value; one refresh per expiry no matter the request load.
     ///
     /// Stale grace: if the refresh fails but an expired value exists, the
-    /// stale value is served and the error logged; for content like the
+    /// stale value is served, the error logged, and the deadline pushed out by
+    /// `REFRESH_RETRY_BACKOFF` so callers don't queue on the write lock to
+    /// retry a failing refresh one after another; for content like the
     /// featured flavor, an hour-stale card beats a 5xx.
     ///
     /// # Errors
@@ -81,9 +88,11 @@ impl<V: Clone> TtlSlot<V> {
                 *write = Some((expires_at, value.clone()));
                 Ok(value)
             }
-            Err(error) => match write.as_ref() {
-                Some((_, stale)) => {
+            Err(error) => match write.as_mut() {
+                Some((expires_at, stale)) => {
                     tracing::warn!("TtlSlot refresh failed, serving stale value: {error}");
+                    let now = Instant::now();
+                    *expires_at = now.checked_add(REFRESH_RETRY_BACKOFF).unwrap_or(now);
                     Ok(stale.clone())
                 }
                 None => Err(error),
@@ -176,5 +185,28 @@ mod tests {
             assert_eq!(task.await.unwrap(), 42);
         }
         assert_eq!(calls.load(Ordering::SeqCst), 1);
+    }
+
+    #[tokio::test]
+    async fn failed_refresh_backs_off_before_retrying() {
+        let slot = TtlSlot::new();
+        let _: Result<i32, String> = slot
+            .get_or_refresh(|| async { Ok((1, Instant::now())) })
+            .await;
+        let calls = AtomicU32::new(0);
+        for _ in 0..2 {
+            let value = slot
+                .get_or_refresh(|| async {
+                    calls.fetch_add(1, Ordering::SeqCst);
+                    Err::<(i32, Instant), _>("db down".to_string())
+                })
+                .await;
+            assert_eq!(value.unwrap(), 1);
+        }
+        assert_eq!(
+            calls.load(Ordering::SeqCst),
+            1,
+            "the second call retried at once"
+        );
     }
 }
