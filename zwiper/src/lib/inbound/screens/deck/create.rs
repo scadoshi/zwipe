@@ -33,7 +33,7 @@ use crate::inbound::router::Router;
 type FormatSnapshot = (Option<Format>, Option<Card>, String, Option<Card>, String);
 
 /// Context: one-shot commander seed from the commander maybeboard's "Create
-/// deck" action. Parked above the router (session_upkeep) so it survives the
+/// deck" action. Parked above the router (`session_upkeep`) so it survives the
 /// navigation; taken (and cleared) by [`CreateDeck`] at mount.
 #[derive(Clone, Copy)]
 pub(crate) struct CreateDeckCommanderSeed(pub(crate) Signal<Option<Card>>);

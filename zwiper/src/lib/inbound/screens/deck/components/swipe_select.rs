@@ -166,7 +166,7 @@ enum SelectSwipe {
 /// Layers the mode constraint, no-tokens, and pagination onto a user-built
 /// filter. No default sort is pinned: a sortless filter reaches the server as
 /// sortless, so the deck-aware search serves its popularity-based, banded,
-/// wildcard ordering (context/archive/commander_select_ordering.md). An explicit
+/// wildcard ordering (`context/archive/commander_select_ordering.md`). An explicit
 /// user sort still flows through untouched.
 fn mode_filter(mode: &SwipeMode, mut builder: CardQueryBuilder, offset: u32) -> CardQueryBuilder {
     mode.apply(&mut builder);
