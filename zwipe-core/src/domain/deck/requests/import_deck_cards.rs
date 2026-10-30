@@ -128,13 +128,10 @@ impl ImportDeckCards {
 /// - Archidekt: `"Aether Hub (drc) 145 [Land]"` → `"Aether Hub"`
 /// - Archidekt foil: `"Dr. Madison Li (pip) 531 *F* [Draw]"` → `"Dr. Madison Li"`
 fn strip_trailing_metadata(s: &str) -> String {
-    let name = if let Some(idx) = s.find('(') {
-        &s[..idx]
-    } else if let Some(idx) = s.find('[') {
-        &s[..idx]
-    } else {
-        s
-    };
+    let name = s
+        .split_once('(')
+        .or_else(|| s.split_once('['))
+        .map_or(s, |(name, _)| name);
     name.trim().to_string()
 }
 
