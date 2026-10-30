@@ -7,9 +7,10 @@ use ratatui::text::{Line, Text};
 use ratatui::widgets::{Block, Paragraph, Wrap};
 use zwipe_core::domain::logo;
 
-use super::{cursor_after, height_of, hints, panel, width_of};
-use crate::domain::theme::Palette;
-use crate::inbound::app::{LoginField, LoginForm};
+use super::{LoginField, LoginForm};
+use crate::inbound::app::Shared;
+use crate::inbound::widgets::measure::{cursor_after, height_of, width_of};
+use crate::inbound::widgets::{action_bar, panel};
 
 /// The form is this wide inside its panel, in cells.
 const FORM_WIDTH: u16 = 48;
@@ -17,7 +18,8 @@ const FORM_WIDTH: u16 = 48;
 /// Replaces each typed password character on screen.
 const MASK: char = '•';
 
-pub(super) fn draw(f: &mut Frame<'_>, palette: &Palette, form: &LoginForm) {
+pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &LoginForm) {
+    let palette = &shared.palette;
     let logo_lines: Vec<&str> = logo::ZWIPE.lines().collect();
     let logo_width = logo_lines.iter().map(|l| width_of(l)).max().unwrap_or(0);
     let logo_height = height_of(logo_lines.len());
@@ -49,7 +51,7 @@ pub(super) fn draw(f: &mut Frame<'_>, palette: &Palette, form: &LoginForm) {
         logo_area.centered_horizontally(Constraint::Length(logo_width)),
     );
 
-    let inner = panel(f, palette, form_area, FORM_WIDTH, form_height);
+    let inner = panel::draw(f, palette, form_area, FORM_WIDTH, form_height);
     let [identifier_area, password_area, error_area, _, hints_area] = Layout::vertical([
         Constraint::Length(3),
         Constraint::Length(3),
@@ -88,7 +90,7 @@ pub(super) fn draw(f: &mut Frame<'_>, palette: &Palette, form: &LoginForm) {
     let keys = if form.busy {
         Line::from("Signing in...").style(palette.muted).bold()
     } else {
-        hints(
+        action_bar::line(
             palette,
             &[("Tab", "switch"), ("Enter", "sign in"), ("Esc", "quit")],
         )

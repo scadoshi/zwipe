@@ -13,14 +13,14 @@ const FILL: char = '█';
 
 /// One column of a vertical chart.
 #[derive(Debug)]
-pub(super) struct Column {
-    pub(super) label: String,
-    pub(super) count: usize,
-    pub(super) style: Style,
+pub(crate) struct Column {
+    pub(crate) label: String,
+    pub(crate) count: usize,
+    pub(crate) style: Style,
 }
 
 /// A titled vertical bar chart, each column labeled below and counted above.
-pub(super) fn columns(
+pub(crate) fn columns(
     f: &mut Frame<'_>,
     palette: &Palette,
     title: &str,
@@ -57,7 +57,7 @@ pub(super) fn columns(
 }
 
 /// A row of a horizontal chart: `label`, a bar filled to `pct` percent of `width`, then `tail`.
-pub(super) fn row(
+pub(crate) fn row(
     label: Span<'static>,
     label_width: usize,
     pct: u32,

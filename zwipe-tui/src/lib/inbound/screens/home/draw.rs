@@ -10,12 +10,14 @@ use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCur
 use zwipe_core::domain::deck::deck_metrics;
 use zwipe_core::domain::logo;
 
-use super::charts::row;
-use super::{height_of, hints, width_of};
+use super::HomeView;
 use crate::domain::decode;
 use crate::domain::home::{self, Figures};
 use crate::domain::theme::Palette;
-use crate::inbound::app::{App, HomeView};
+use crate::inbound::app::Shared;
+use crate::inbound::widgets::action_bar;
+use crate::inbound::widgets::charts::row;
+use crate::inbound::widgets::measure::{height_of, width_of};
 
 /// The two panels sit side by side from this width, in cells.
 const SIDE_BY_SIDE: u16 = 90;
@@ -26,7 +28,8 @@ const PANEL_HEIGHT: u16 = 11;
 /// Pairs listed under the color map.
 const PAIRS_SHOWN: usize = 3;
 
-pub(super) fn draw(f: &mut Frame<'_>, palette: &Palette, app: &App, view: &HomeView) {
+pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &HomeView) {
+    let palette = &shared.palette;
     let area = f.area().inner(ratatui::layout::Margin::new(1, 1));
     let logo_text = pick_logo(area);
     let logo_height = logo_text.map_or(0, |l| height_of(l.lines().count()));
@@ -48,7 +51,7 @@ pub(super) fn draw(f: &mut Frame<'_>, palette: &Palette, app: &App, view: &HomeV
         Line::from(vec![
             Span::styled("Home", palette.accent).bold(),
             Span::styled(
-                format!("  {}", app.username.as_deref().unwrap_or_default()),
+                format!("  {}", shared.username.as_deref().unwrap_or_default()),
                 palette.muted,
             ),
         ]),
@@ -81,9 +84,12 @@ pub(super) fn draw(f: &mut Frame<'_>, palette: &Palette, app: &App, view: &HomeV
     );
 
     draw_panels(f, palette, view, panels);
-    f.render_widget(Line::from(app.status.clone()).style(palette.muted), status);
     f.render_widget(
-        hints(
+        Line::from(shared.status.clone()).style(palette.muted),
+        status,
+    );
+    f.render_widget(
+        action_bar::line(
             palette,
             &[
                 ("d", "decks"),

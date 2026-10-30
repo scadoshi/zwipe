@@ -58,7 +58,7 @@ pub async fn run() -> Result<()> {
     ));
 
     let mut terminal = ratatui::try_init()?;
-    app.images = card_images();
+    app.shared.images = card_images();
     let result = EventLoop::new(account, Arc::new(theme_file))
         .run(&mut terminal, &mut app)
         .await;

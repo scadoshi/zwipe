@@ -8,12 +8,14 @@ use ratatui::widgets::{Block, HighlightSpacing, List, ListItem, ListState, Parag
 use zwipe_core::domain::deck::DeckProfile;
 use zwipe_core::domain::deck::deck_tag::deck_tag_label;
 
-use super::hints;
+use super::DeckList;
 use crate::domain;
 use crate::domain::theme::Palette;
-use crate::inbound::app::{App, DeckList};
+use crate::inbound::app::Shared;
+use crate::inbound::widgets::action_bar;
 
-pub(super) fn draw(f: &mut Frame<'_>, palette: &Palette, app: &App, list: &DeckList) {
+pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, list: &DeckList) {
+    let palette = &shared.palette;
     let [header, body, status, keys] = Layout::vertical([
         Constraint::Length(1),
         Constraint::Fill(1),
@@ -23,7 +25,7 @@ pub(super) fn draw(f: &mut Frame<'_>, palette: &Palette, app: &App, list: &DeckL
     .margin(1)
     .areas(f.area());
 
-    let user = app.username.as_deref().unwrap_or_default();
+    let user = shared.username.as_deref().unwrap_or_default();
     f.render_widget(
         Line::from(vec![
             Span::styled("ZWIPE", palette.accent).bold(),
@@ -65,9 +67,12 @@ pub(super) fn draw(f: &mut Frame<'_>, palette: &Palette, app: &App, list: &DeckL
         );
     }
 
-    f.render_widget(Line::from(app.status.clone()).style(palette.muted), status);
     f.render_widget(
-        hints(
+        Line::from(shared.status.clone()).style(palette.muted),
+        status,
+    );
+    f.render_widget(
+        action_bar::line(
             palette,
             &[
                 ("j/k", "move"),

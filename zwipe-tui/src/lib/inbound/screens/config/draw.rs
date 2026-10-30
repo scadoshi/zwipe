@@ -10,9 +10,10 @@ use ratatui::widgets::{
 use zwipe_core::domain::card::scryfall_data::universe::franchise_by_slug;
 use zwipe_core::domain::user::preferences::{PipStyle, UserPreferences, display_theme_name};
 
-use super::hints;
+use super::{ConfigRow, ConfigView, ExceptionsEditor, ThemePicker};
 use crate::domain::theme::{self, Palette, PickerRow};
-use crate::inbound::app::{App, ConfigRow, ConfigView, ExceptionsEditor, ThemePicker};
+use crate::inbound::app::Shared;
+use crate::inbound::widgets::action_bar;
 
 /// The labels take this many cells before their values.
 const LABEL_WIDTH: usize = 20;
@@ -21,7 +22,8 @@ const LABEL_WIDTH: usize = 20;
 const LIST_WIDTH: u16 = 48;
 const LIST_HEIGHT: u16 = 30;
 
-pub(super) fn draw(f: &mut Frame<'_>, palette: &Palette, app: &App, view: &ConfigView) {
+pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &ConfigView) {
+    let palette = &shared.palette;
     let [header, body, status, keys] = Layout::vertical([
         Constraint::Length(1),
         Constraint::Fill(1),
@@ -45,9 +47,12 @@ pub(super) fn draw(f: &mut Frame<'_>, palette: &Palette, app: &App, view: &Confi
             .block(Block::bordered().border_style(palette.border)),
         body,
     );
-    f.render_widget(Line::from(app.status.clone()).style(palette.muted), status);
     f.render_widget(
-        hints(
+        Line::from(shared.status.clone()).style(palette.muted),
+        status,
+    );
+    f.render_widget(
+        action_bar::line(
             palette,
             &[
                 ("j/k", "move"),
@@ -200,7 +205,7 @@ fn draw_list(
         .block(
             Block::bordered()
                 .title(format!(" {title} "))
-                .title_bottom(hints(palette, keys))
+                .title_bottom(action_bar::line(palette, keys))
                 .border_style(palette.add)
                 .style(palette.base),
         )

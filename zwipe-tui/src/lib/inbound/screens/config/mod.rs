@@ -1,9 +1,20 @@
-//! The config screen's state: the preferences as saved and as shown, the selected row, and the open picker.
+//! The config screen: the preferences as saved and as shown, the selected row, and the theme and exceptions lists.
+
+pub(crate) mod draw;
+pub(crate) mod keys;
+#[cfg(test)]
+mod tests;
 
 use zwipe_core::domain::card::scryfall_data::universe::UbFranchiseView;
 use zwipe_core::domain::user::preferences::UserPreferences;
+use zwipe_core::http::contracts::user::HttpUpdatePreferences;
 
-use crate::domain::theme::{self, PickerRow};
+use super::{Screen, failure};
+use crate::domain::theme::{self, Palette, PickerRow};
+use crate::inbound::app::Context;
+use crate::inbound::nav::Nav;
+use crate::inbound::screens;
+use crate::outbound::account::Account;
 
 /// A change to one preference, as the config screen sends it.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -260,95 +271,173 @@ impl ExceptionsEditor {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use zwipe_core::domain::user::preferences::PipStyle;
-
-    use super::*;
-
-    fn loaded() -> ConfigView {
-        ConfigView {
-            saved: Some(UserPreferences::default()),
-            shown: Some(UserPreferences::default()),
-            ..ConfigView::default()
-        }
-    }
-
-    #[test]
-    fn a_change_shows_at_once_and_a_failure_puts_it_back() {
-        let mut view = loaded();
-        let seq = view
-            .begin(&PreferenceChange::Pips(PipStyle::Natural))
-            .unwrap();
-        assert_eq!(view.shown.as_ref().unwrap().pip_style, PipStyle::Natural);
-        assert!(view.revert(seq));
-        assert_eq!(view.shown.as_ref().unwrap().pip_style, PipStyle::Theme);
-    }
-
-    #[test]
-    fn only_the_latest_change_is_answered() {
-        let mut view = loaded();
-        let first = view
-            .begin(&PreferenceChange::HideUniversesBeyond(true))
-            .unwrap();
-        let second = view
-            .begin(&PreferenceChange::HideUniversesBeyond(false))
-            .unwrap();
-        assert!(
-            !view.revert(first),
-            "a late failure of an older change is ignored"
-        );
-        assert!(!view.shown.as_ref().unwrap().exclude_universes_beyond);
-        let answer = UserPreferences::default();
-        assert!(view.confirm(second, answer));
-    }
-
-    #[test]
-    fn nothing_changes_before_the_preferences_load() {
-        assert_eq!(
-            ConfigView::default().begin(&PreferenceChange::Pips(PipStyle::Natural)),
-            None
-        );
-        assert!(!ConfigView::default().exceptions_open());
-    }
-
-    #[test]
-    fn the_picker_opens_on_the_current_theme_and_skips_headers() {
-        let mut picker = ThemePicker::opening("gruvbox");
-        assert_eq!(picker.theme(), Some("gruvbox"));
-        let renamed = ThemePicker::opening("ristretto");
-        assert_eq!(renamed.theme(), Some("monokai-pro-ristretto"));
-        for _ in 0..200 {
-            picker.down();
-        }
-        assert!(picker.theme().is_some());
-        for _ in 0..200 {
-            picker.up();
-        }
-        assert_eq!(
-            picker.theme(),
-            Some("darcula"),
-            "the first theme, past the first header"
-        );
-    }
-
-    #[test]
-    fn exceptions_toggle_in_pick_order_and_compare_as_a_set() {
-        let franchise = |slug: &str| UbFranchiseView {
-            slug: slug.to_owned(),
-            name: slug.to_uppercase(),
+impl From<PreferenceChange> for HttpUpdatePreferences {
+    fn from(change: PreferenceChange) -> Self {
+        let mut request = Self {
+            theme: None,
+            dark_mode: None,
+            exclude_universes_beyond: None,
+            universes_beyond_exceptions: None,
+            pip_style: None,
         };
-        let mut editor = ExceptionsEditor::opening(&["b".to_owned()]);
-        editor.franchises = Some(vec![franchise("a"), franchise("b")]);
-        editor.toggle();
-        assert_eq!(editor.draft, ["b", "a"]);
-        assert!(editor.changed());
-        editor.down();
-        editor.toggle();
-        editor.toggle();
-        assert_eq!(editor.draft, ["a", "b"]);
-        editor.up();
-        editor.toggle();
-        assert!(!editor.changed(), "back to just b");
+        match change {
+            PreferenceChange::Theme { theme, dark_mode }
+            | PreferenceChange::DarkMode { theme, dark_mode } => {
+                request.theme = Some(theme);
+                request.dark_mode = Some(dark_mode);
+            }
+            PreferenceChange::Pips(style) => request.pip_style = Some(style),
+            PreferenceChange::HideUniversesBeyond(hide) => {
+                request.exclude_universes_beyond = Some(hide);
+            }
+            PreferenceChange::Exceptions(slugs) => {
+                request.universes_beyond_exceptions = Some(slugs);
+            }
+        }
+        request
+    }
+}
+
+/// The config screen's work.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum Request {
+    /// Fetches the preferences. Also sent at sign-in, to draw in the account's theme.
+    LoadPreferences,
+    SavePreferences {
+        seq: u64,
+        change: PreferenceChange,
+    },
+    /// Fetches the franchises the exceptions can name.
+    LoadFranchises,
+}
+
+/// The config screen's results.
+#[derive(Debug)]
+pub(crate) enum Update {
+    Preferences(Box<UserPreferences>),
+    PreferencesUnavailable,
+    Saved {
+        seq: u64,
+        preferences: Box<UserPreferences>,
+        message: &'static str,
+    },
+    SaveFailed {
+        seq: u64,
+        message: String,
+    },
+    Franchises(Vec<UbFranchiseView>),
+}
+
+impl From<Request> for screens::Request {
+    fn from(request: Request) -> Self {
+        Self::Config(request)
+    }
+}
+
+impl From<Update> for screens::Update {
+    fn from(update: Update) -> Self {
+        Self::Config(update)
+    }
+}
+
+fn pick(screen: &mut Screen) -> Option<&mut ConfigView> {
+    match screen {
+        Screen::Config(view) => Some(view),
+        _ => None,
+    }
+}
+
+/// Opens the config screen over the current one and fetches the preferences it shows.
+pub(crate) fn open(cx: &mut Context<'_>) {
+    cx.shared.status.clear();
+    cx.push(Screen::Config(Box::default()));
+    cx.request(Request::LoadPreferences.into());
+}
+
+pub(crate) async fn perform(account: &Account, request: Request) -> Option<screens::Update> {
+    let client = &account.client;
+    match request {
+        Request::LoadPreferences => {
+            match async { client.fetch_preferences(&account.fresh().await?).await }.await {
+                Ok(preferences) => {
+                    account.set_preferences(preferences.clone()).await;
+                    Some(Update::Preferences(Box::new(preferences)).into())
+                }
+                // A launch that cannot fetch the preferences keeps the session's copy.
+                Err(e) => Some(failure(&e, |_| Update::PreferencesUnavailable.into())),
+            }
+        }
+        Request::SavePreferences { seq, change } => {
+            let message = change.saved_message();
+            let result = async {
+                let session = account.fresh().await?;
+                client
+                    .update_preferences(HttpUpdatePreferences::from(change), &session)
+                    .await
+            }
+            .await;
+            Some(match result {
+                Ok(preferences) => {
+                    account.set_preferences(preferences.clone()).await;
+                    Update::Saved {
+                        seq,
+                        preferences: Box::new(preferences),
+                        message,
+                    }
+                    .into()
+                }
+                Err(e) => failure(&e, |message| Update::SaveFailed { seq, message }.into()),
+            })
+        }
+        Request::LoadFranchises => client
+            .fetch_ub_franchises()
+            .await
+            .ok()
+            .map(|franchises| Update::Franchises(franchises).into()),
+    }
+}
+
+pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
+    let view = nav.find_mut(pick);
+    match update {
+        Update::Preferences(preferences) => {
+            // Fills the config screen when it is waiting, and draws in the preferences either way.
+            if let Some(view) = view {
+                if view.saved.is_some() {
+                    return;
+                }
+                view.saved = Some((*preferences).clone());
+                view.shown = Some((*preferences).clone());
+            }
+            cx.use_preferences(&preferences);
+        }
+        Update::PreferencesUnavailable => {}
+        Update::Saved {
+            seq,
+            preferences,
+            message,
+        } => {
+            if let Some(view) = view
+                && view.confirm(seq, (*preferences).clone())
+            {
+                message.clone_into(&mut cx.shared.status);
+                cx.use_preferences(&preferences);
+            }
+        }
+        Update::SaveFailed { seq, message } => {
+            if let Some(view) = view
+                && view.revert(seq)
+            {
+                if let Some(shown) = &view.shown {
+                    cx.shared.palette = Palette::for_preferences(shown);
+                }
+                cx.shared.status = message;
+            }
+        }
+        Update::Franchises(franchises) => {
+            if let Some(editor) = view.and_then(|view| view.exceptions.as_mut()) {
+                editor.franchises = Some(franchises);
+            }
+        }
     }
 }

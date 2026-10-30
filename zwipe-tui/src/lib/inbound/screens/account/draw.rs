@@ -7,12 +7,12 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Paragraph, Wrap};
 use zwipe_core::domain::site::WEB_BASE;
 
-use super::{cursor_after, height_of, hints, panel};
+use super::{AccountRow, AccountView, Dialog, Form, FormKind, pending_note};
 use crate::domain::theme::Palette;
-use crate::inbound::app::{AccountRow, AccountView, App, Dialog, Form, FormKind, pending_note};
-
-/// This build's version, shown in the about rows.
-const VERSION: &str = env!("CARGO_PKG_VERSION");
+use crate::inbound::app::Shared;
+use crate::inbound::screens::VERSION;
+use crate::inbound::widgets::measure::{cursor_after, height_of};
+use crate::inbound::widgets::{action_bar, panel};
 
 /// The labels take this many cells before their values.
 const LABEL_WIDTH: usize = 14;
@@ -23,7 +23,8 @@ const MASK: char = '•';
 /// A dialog is at most this wide inside its panel, in cells.
 const DIALOG_WIDTH: u16 = 56;
 
-pub(super) fn draw(f: &mut Frame<'_>, palette: &Palette, app: &App, view: &AccountView) {
+pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &AccountView) {
+    let palette = &shared.palette;
     let [header, body, status, keys] = Layout::vertical([
         Constraint::Length(1),
         Constraint::Fill(1),
@@ -41,9 +42,12 @@ pub(super) fn draw(f: &mut Frame<'_>, palette: &Palette, app: &App, view: &Accou
         Paragraph::new(lines(palette, view)).block(Block::bordered().border_style(palette.border)),
         body,
     );
-    f.render_widget(Line::from(app.status.clone()).style(palette.muted), status);
     f.render_widget(
-        hints(
+        Line::from(shared.status.clone()).style(palette.muted),
+        status,
+    );
+    f.render_widget(
+        action_bar::line(
             palette,
             &[
                 ("j/k", "move"),
@@ -178,7 +182,7 @@ fn draw_form(f: &mut Frame<'_>, palette: &Palette, form: &Form) {
         .saturating_add(error_height)
         .saturating_add(2);
 
-    let inner = panel(f, palette, f.area(), DIALOG_WIDTH, height.saturating_add(1));
+    let inner = panel::draw(f, palette, f.area(), DIALOG_WIDTH, height.saturating_add(1));
     let [title_area, rest] =
         Layout::vertical([Constraint::Length(1), Constraint::Fill(1)]).areas(inner);
     f.render_widget(Line::from(form.kind.title()).bold(), title_area);
@@ -236,7 +240,7 @@ fn form_keys(palette: &Palette, form: &Form) -> Line<'static> {
         (FormKind::Delete, None) => "Delete".to_owned(),
         _ => "Save changes".to_owned(),
     };
-    hints(
+    action_bar::line(
         palette,
         &[
             ("Tab", "next field"),
@@ -249,7 +253,7 @@ fn form_keys(palette: &Palette, form: &Form) -> Line<'static> {
 fn draw_confirm(f: &mut Frame<'_>, palette: &Palette, title: &str, body: &str, action: &str) {
     let body = Paragraph::new(body.to_owned()).wrap(Wrap { trim: true });
     let body_height = height_of(body.line_count(DIALOG_WIDTH));
-    let inner = panel(
+    let inner = panel::draw(
         f,
         palette,
         f.area(),
@@ -265,5 +269,8 @@ fn draw_confirm(f: &mut Frame<'_>, palette: &Palette, title: &str, body: &str, a
     .areas(inner);
     f.render_widget(Line::from(title.to_owned()).bold(), title_area);
     f.render_widget(body, body_area);
-    f.render_widget(hints(palette, &[("y", action), ("n", "cancel")]), keys_area);
+    f.render_widget(
+        action_bar::line(palette, &[("y", action), ("n", "cancel")]),
+        keys_area,
+    );
 }

@@ -1,8 +1,14 @@
 //! Builders for tests, starting from one real card served by the API.
 
+use ratatui::Terminal;
+use ratatui::backend::TestBackend;
+use ratatui::buffer::Cell;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::deck::{Board, Deck, DeckCard, DeckEntry, DeckProfile, Quantity};
+use zwipe_core::domain::user::User;
+
+use crate::inbound::app::App;
 
 const CARD_JSON: &str = include_str!("card.json");
 
@@ -73,4 +79,38 @@ pub(crate) fn deck(deck_profile: DeckProfile, cards: Vec<Card>) -> Deck {
         warnings: Vec::new(),
         command_zone_cards: Vec::new(),
     }
+}
+
+/// A user named scotty, with the email verified or not.
+pub(crate) fn user(verified: bool) -> User {
+    let mut user: User = serde_json::from_value(serde_json::json!({
+        "id": "00000000-0000-0000-0000-000000000001",
+        "username": "scotty",
+        "email": "scotty@zwipe.net",
+        "email_verified_at": null,
+        "hints_shown": {},
+    }))
+    .unwrap();
+    if verified {
+        user.email_verified_at = Some(chrono::Utc::now());
+    }
+    user
+}
+
+/// `app` drawn into a test terminal of the given size.
+pub(crate) fn render(app: &App, width: u16, height: u16) -> Terminal<TestBackend> {
+    let mut terminal = Terminal::new(TestBackend::new(width, height)).unwrap();
+    terminal.draw(|f| app.draw(f)).unwrap();
+    terminal
+}
+
+/// Every cell's symbol of `app` drawn at 100 by 40, row after row.
+pub(crate) fn screen_text(app: &App) -> String {
+    render(app, 100, 40)
+        .backend()
+        .buffer()
+        .content()
+        .iter()
+        .map(Cell::symbol)
+        .collect()
 }

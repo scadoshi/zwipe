@@ -10,10 +10,11 @@ use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
 use zwipe_core::domain::deck::deck_tag::deck_tag_label;
 use zwipe_core::domain::deck::draw_odds;
 
-use super::charts::{Column, columns, row};
-use super::hints;
+use super::{DeckView, Section};
 use crate::domain::theme::Palette;
-use crate::inbound::app::{App, DeckView, Section};
+use crate::inbound::app::Shared;
+use crate::inbound::widgets::action_bar;
+use crate::inbound::widgets::charts::{Column, columns, row};
 
 /// A vertical chart is at most this tall, frame included, so a small deck's bars stay short.
 const CHART_HEIGHT: u16 = 14;
@@ -30,7 +31,8 @@ const OPENING_HAND: u32 = 7;
 /// The color chart's labels, by WUBRG place, for coloring each column.
 const COLOR_LABELS: [&str; 5] = ["white", "blue", "black", "red", "green"];
 
-pub(super) fn draw(f: &mut Frame<'_>, palette: &Palette, app: &App, view: &DeckView) {
+pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &DeckView) {
+    let palette = &shared.palette;
     let [header, body, status, keys] = Layout::vertical([
         Constraint::Length(1),
         Constraint::Fill(1),
@@ -50,7 +52,10 @@ pub(super) fn draw(f: &mut Frame<'_>, palette: &Palette, app: &App, view: &DeckV
     draw_profile(f, palette, view, profile_area);
     draw_stats(f, palette, view, stats_area);
 
-    f.render_widget(Line::from(app.status.clone()).style(palette.muted), status);
+    f.render_widget(
+        Line::from(shared.status.clone()).style(palette.muted),
+        status,
+    );
     let mut keys_shown = vec![("Tab", "section")];
     match view.section {
         Section::Budget => keys_shown.push(("c", "currency")),
@@ -61,7 +66,7 @@ pub(super) fn draw(f: &mut Frame<'_>, palette: &Palette, app: &App, view: &DeckV
         keys_shown.push(("s", "swipe"));
     }
     keys_shown.extend([("r", "reload"), ("Esc", "decks"), ("q", "quit")]);
-    f.render_widget(hints(palette, &keys_shown), keys);
+    f.render_widget(action_bar::line(palette, &keys_shown), keys);
 }
 
 fn draw_profile(f: &mut Frame<'_>, palette: &Palette, view: &DeckView, area: Rect) {

@@ -8,11 +8,12 @@ use ratatui::widgets::{Block, Padding, Paragraph, Wrap};
 use ratatui_image::StatefulImage;
 use zwipe_core::domain::card::Card;
 
-use super::hints;
+use super::{CardImage, SwipeView};
 use crate::domain;
 use crate::domain::card::{self, Face};
 use crate::domain::theme::Palette;
-use crate::inbound::app::{App, CardImage, SwipeView};
+use crate::inbound::app::Shared;
+use crate::inbound::widgets::action_bar;
 
 /// The card is at most this wide, in cells, so it reads like a card on a wide terminal.
 const CARD_WIDTH: u16 = 64;
@@ -26,7 +27,8 @@ const GAP: u16 = 2;
 /// The card's border and padding, across both sides.
 const CARD_FRAME: u16 = 4;
 
-pub(super) fn draw(f: &mut Frame<'_>, palette: &Palette, app: &App, view: &SwipeView) {
+pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &SwipeView) {
+    let palette = &shared.palette;
     let [header, body, footer, status, keys] = Layout::vertical([
         Constraint::Length(1),
         Constraint::Fill(1),
@@ -57,7 +59,7 @@ pub(super) fn draw(f: &mut Frame<'_>, palette: &Palette, app: &App, view: &Swipe
 
     let current = view.stack.as_ref().and_then(|s| s.current());
     match (current, placeholder(view)) {
-        (Some(card), _) => draw_current(f, palette, app, view, card, body),
+        (Some(card), _) => draw_current(f, shared, view, card, body),
         (None, Some(message)) => {
             f.render_widget(
                 Paragraph::new(message.style(palette.muted))
@@ -85,13 +87,13 @@ pub(super) fn draw(f: &mut Frame<'_>, palette: &Palette, app: &App, view: &Swipe
         footer,
     );
     f.render_widget(
-        Line::from(app.status.clone())
+        Line::from(shared.status.clone())
             .style(palette.accent)
             .centered(),
         status,
     );
     f.render_widget(
-        hints(
+        action_bar::line(
             palette,
             &[
                 ("h", "pass"),
@@ -122,15 +124,9 @@ fn placeholder(view: &SwipeView) -> Option<Line<'static>> {
 }
 
 /// Draws the card on screen: its image beside its text when the terminal is wide enough, else the one `i` picks.
-fn draw_current(
-    f: &mut Frame<'_>,
-    palette: &Palette,
-    app: &App,
-    view: &SwipeView,
-    card: &Card,
-    area: Rect,
-) {
-    if app.images.is_none() {
+fn draw_current(f: &mut Frame<'_>, shared: &Shared, view: &SwipeView, card: &Card, area: Rect) {
+    let palette = &shared.palette;
+    if shared.images.is_none() {
         draw_card(f, palette, card, area);
         return;
     }
