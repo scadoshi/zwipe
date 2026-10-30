@@ -2,7 +2,7 @@
 //! HTTP. Constructs `Postgres { pool }` and calls `CardRepository` methods
 //! directly (no router). Covers the default synergy ordering, the
 //! `card_signal_rollup` math, and the deck-aware serve's NULL-`oracle_id`
-//! handling (the 2026-07-06 regression: `NULL || seed` NULLed the shuffle key).
+//! handling (the 2026-07-06 regression: `NULL || seed` nulled the shuffle key).
 //!
 //! Requires `DATABASE_URL`: `set -a; source zerver/.env; set +a`.
 
@@ -92,7 +92,7 @@ async fn card_signal_rollup_math(pool: sqlx::PgPool) {
 
 /// With no deck seed, the deck-aware serve is pure score order: scored cards by
 /// synergy score descending, unscored cards anchored below the floor
-/// (UNSCORED_ANCHOR). No banding, no shuffle — deterministic.
+/// (`UNSCORED_ANCHOR`). No banding, no shuffle — deterministic.
 #[sqlx::test]
 async fn synergy_ordering_scored_before_unscored(pool: sqlx::PgPool) {
     seed_cards(
@@ -156,7 +156,7 @@ async fn deck_aware_serve_excludes_oracle_ids(pool: sqlx::PgPool) {
 /// Regression (2026-07-06): a card with a NULL `oracle_id` must survive the
 /// deck-seeded banded shuffle. The shuffle key is
 /// `hashtext(COALESCE(oracle_id::text, '') || seed)`; before the COALESCE,
-/// `NULL || seed` NULLed the key and mis-ordered/hid these cards. Here we assert
+/// `NULL || seed` nulled the key and mis-ordered/hid these cards. Here we assert
 /// the NULL-oracle card is still served, the whole set comes back, and the
 /// order is deterministic for a fixed deck seed.
 #[sqlx::test]
@@ -278,7 +278,7 @@ async fn deck_oracle_tags_lift_matching_cards(pool: sqlx::PgPool) {
 }
 
 /// Phase 4 (production path): the otag term must reorder within the *banded /
-/// wildcard* serve (deck_id present), not just the pure-score path. 30 unscored
+/// wildcard* serve (`deck_id` present), not just the pure-score path. 30 unscored
 /// cards; four otag-matching cards are named to sort last, so absent otags they
 /// land in band 1 (off the 24-card first page). With the deck's selected otag
 /// the `W_ORACLE_TAG` lift pulls them into band 0 and onto the first page. This
@@ -464,7 +464,7 @@ async fn mvp_roles_lift_matching_cards(pool: sqlx::PgPool) {
     );
 }
 
-/// The oou_sets overlay inside `refresh_latest_cards` must make the table
+/// The `oou_sets` overlay inside `refresh_latest_cards` must make the table
 /// exactly mirror zwipe-core's universe franchise codes: additions land,
 /// removals prune, and the migration seed drifting from the const self-heals
 /// on the next run.
@@ -496,7 +496,7 @@ async fn oou_sets_overlay_syncs_table_to_const(pool: sqlx::PgPool) {
 
 /// The in-universe ORDER BY tiebreaker: with two same-day printings of one
 /// card, the pick must be the in-universe one, and an OOU-only card keeps its
-/// OOU pick (all rows tie on the term). Also proves printing_set_names
+/// OOU pick (all rows tie on the term). Also proves `printing_set_names`
 /// aggregates both printings.
 #[sqlx::test]
 async fn latest_cards_pick_prefers_in_universe_printing(pool: sqlx::PgPool) {
@@ -676,7 +676,7 @@ async fn universes_beyond_preference_filters_serve(pool: sqlx::PgPool) {
 }
 
 /// The Secret Lair exception: a card that exists only as a triangle-stamped
-/// Secret Lair printing (the PlayStation drop's Kratos, SpongeBob, Furby) is
+/// Secret Lair printing (the `PlayStation` drop's Kratos, `SpongeBob`, Furby) is
 /// hidden by the UB exclusion, and whitelisting Secret Lair brings it back.
 /// Rescue-only semantics: in-universe Secret Lair cards were never hidden.
 #[sqlx::test]

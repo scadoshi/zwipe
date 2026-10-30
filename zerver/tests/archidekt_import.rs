@@ -5,9 +5,11 @@
 //! the Archidekt client or when Archidekt might have changed their (undocumented)
 //! JSON shape:
 //!
-//!   cargo test -p zerver --test archidekt_import -- --ignored
+//! ```text
+//! cargo test -p zerver --test archidekt_import -- --ignored
+//! ```
 //!
-//! The deck — https://archidekt.com/decks/11493358/satya — is owned by the
+//! The deck, <https://archidekt.com/decks/11493358/satya>, is owned by the
 //! maintainer and will not be deleted. The `extract_deck_id` parsing and the
 //! null-field handling already have offline unit tests in
 //! `outbound::archidekt::tests`; this guards the one thing those can't: that the

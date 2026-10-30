@@ -1,4 +1,4 @@
-//! Server-driven catalog endpoints (server_driven_catalogs.md Parts B/C): the
+//! Server-driven catalog endpoints (`server_driven_catalogs.md` Parts B/C): the
 //! card-role catalog (`GET /api/card/roles`, public) and the deck-tag catalog
 //! (`GET /api/deck/tags`, authed). Both are built straight from the enums.
 //!

@@ -453,8 +453,8 @@ impl CardFixture {
     }
     /// Marks this card as one half of a meld, or as the melded result.
     ///
-    /// `role` is the card's own `component` entry: "meld_result" for the
-    /// melded permanent, "meld_part" for a component. Both sides carry
+    /// `role` is the card's own `component` entry: `"meld_result"` for the
+    /// melded permanent, `"meld_part"` for a component. Both sides carry
     /// `layout = "meld"`, so this entry is the only thing separating them.
     pub(crate) fn meld(mut self, role: &str) -> Self {
         self.layout = "meld".to_string();
@@ -582,7 +582,7 @@ impl CardFixture {
         self.layout = "token".to_string();
         self
     }
-    /// Mechanical categories (snake_case, e.g. `"ramp"`, `"graveyard_hate"`) —
+    /// Mechanical categories (`snake_case`, e.g. `"ramp"`, `"graveyard_hate"`) —
     /// written to `card_profiles.card_roles`.
     pub(crate) fn categories(mut self, cats: &[&str]) -> Self {
         self.card_roles = cats.iter().map(|c| c.to_string()).collect();

@@ -13,7 +13,7 @@ use zwipe::domain::upkeep::ports::UpkeepRepository;
 use zwipe::domain::upkeep::services::{DIAGNOSTIC_RETENTION_DAYS, REPLACED_TOKEN_RETENTION_DAYS};
 use zwipe::outbound::sqlx::postgres::Postgres;
 
-/// Inserts a client_errors row with `received_at` backdated by `days`.
+/// Inserts a `client_errors` row with `received_at` backdated by `days`.
 async fn seed_client_error(pool: &sqlx::PgPool, days: i32) {
     sqlx::query(
         "INSERT INTO client_errors
@@ -26,7 +26,7 @@ async fn seed_client_error(pool: &sqlx::PgPool, days: i32) {
     .unwrap();
 }
 
-/// Inserts a crash_reports row with `received_at` backdated by `days`.
+/// Inserts a `crash_reports` row with `received_at` backdated by `days`.
 async fn seed_crash(pool: &sqlx::PgPool, days: i32) {
     sqlx::query(
         "INSERT INTO crash_reports
