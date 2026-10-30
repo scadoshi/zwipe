@@ -36,8 +36,8 @@ const TEST_JWT_SECRET: &str = "test-jwt-secret-that-is-at-least-32-characters-lo
 /// Captures every outbound email instead of hitting Resend. Later slices read
 /// the verify/reset token out of the last captured body.
 #[derive(Clone, Default)]
-pub struct FakeEmailSender {
-    pub sent: Arc<Mutex<Vec<SendEmail>>>,
+pub(crate) struct FakeEmailSender {
+    pub(crate) sent: Arc<Mutex<Vec<SendEmail>>>,
 }
 
 impl EmailSender for FakeEmailSender {
@@ -49,7 +49,7 @@ impl EmailSender for FakeEmailSender {
 
 impl FakeEmailSender {
     /// HTML body of the most recently sent email.
-    pub fn last_body(&self) -> Option<String> {
+    pub(crate) fn last_body(&self) -> Option<String> {
         self.sent
             .lock()
             .unwrap()
@@ -59,7 +59,7 @@ impl FakeEmailSender {
 
     /// Waits for at least `count` captured emails, for sends that run in the
     /// background after the response. Panics after two seconds.
-    pub async fn wait_for(&self, count: usize) {
+    pub(crate) async fn wait_for(&self, count: usize) {
         for _ in 0..200 {
             if self.count() >= count {
                 break;
@@ -74,12 +74,12 @@ impl FakeEmailSender {
     }
 
     /// Number of emails captured so far.
-    pub fn count(&self) -> usize {
+    pub(crate) fn count(&self) -> usize {
         self.sent.lock().unwrap().len()
     }
 
     /// Recipient of the most recently sent email.
-    pub fn last_to(&self) -> Option<String> {
+    pub(crate) fn last_to(&self) -> Option<String> {
         self.sent.lock().unwrap().last().map(|e| e.to.clone())
     }
 
@@ -87,7 +87,7 @@ impl FakeEmailSender {
     /// recent email body — the verify/reset flows embed the raw token there
     /// (`{web_base_url}/verify/{raw}`, `.../reset/{raw}`), exactly as a user
     /// would receive it. Returns `None` if no such link is present.
-    pub fn last_token(&self, segment: &str) -> Option<String> {
+    pub(crate) fn last_token(&self, segment: &str) -> Option<String> {
         let body = self.last_body()?;
         let marker = format!("/{segment}/");
         let start = body.find(&marker)? + marker.len();
@@ -103,15 +103,15 @@ impl FakeEmailSender {
 // state across tests running in parallel.
 static IP_COUNTER: AtomicU32 = AtomicU32::new(1);
 
-pub struct TestApp {
-    pub router: axum::Router,
-    pub pool: PgPool,
-    pub emails: FakeEmailSender,
+pub(crate) struct TestApp {
+    pub(crate) router: axum::Router,
+    pub(crate) pool: PgPool,
+    pub(crate) emails: FakeEmailSender,
     fake_ip: SocketAddr,
 }
 
 impl TestApp {
-    pub fn new(pool: PgPool) -> Self {
+    pub(crate) fn new(pool: PgPool) -> Self {
         let db = Postgres { pool: pool.clone() };
         let emails = FakeEmailSender::default();
         let jwt_secret = JwtSecret::new(TEST_JWT_SECRET).unwrap();
@@ -164,7 +164,7 @@ impl TestApp {
         }
     }
 
-    pub async fn send(
+    pub(crate) async fn send(
         &self,
         method: Method,
         path: &str,
@@ -176,7 +176,7 @@ impl TestApp {
     }
 
     /// `send` from a chosen peer address, for tests about per-address limits.
-    pub async fn send_from(
+    pub(crate) async fn send_from(
         &self,
         peer: SocketAddr,
         method: Method,
@@ -211,29 +211,29 @@ impl TestApp {
         (status, value)
     }
 
-    pub async fn post(&self, path: &str, json: Value, token: Option<&str>) -> (StatusCode, Value) {
+    pub(crate) async fn post(&self, path: &str, json: Value, token: Option<&str>) -> (StatusCode, Value) {
         self.send(Method::POST, path, Some(json), token).await
     }
 
-    pub async fn get(&self, path: &str, token: Option<&str>) -> (StatusCode, Value) {
+    pub(crate) async fn get(&self, path: &str, token: Option<&str>) -> (StatusCode, Value) {
         self.send(Method::GET, path, None, token).await
     }
 
-    pub async fn put(&self, path: &str, json: Value, token: Option<&str>) -> (StatusCode, Value) {
+    pub(crate) async fn put(&self, path: &str, json: Value, token: Option<&str>) -> (StatusCode, Value) {
         self.send(Method::PUT, path, Some(json), token).await
     }
 
-    pub async fn patch(&self, path: &str, json: Value, token: Option<&str>) -> (StatusCode, Value) {
+    pub(crate) async fn patch(&self, path: &str, json: Value, token: Option<&str>) -> (StatusCode, Value) {
         self.send(Method::PATCH, path, Some(json), token).await
     }
 
-    pub async fn delete(&self, path: &str, token: Option<&str>) -> (StatusCode, Value) {
+    pub(crate) async fn delete(&self, path: &str, token: Option<&str>) -> (StatusCode, Value) {
         self.send(Method::DELETE, path, None, token).await
     }
 
     /// DELETE carrying a JSON body (e.g. `delete-user`, which re-auths on a
     /// password in the request body).
-    pub async fn delete_json(
+    pub(crate) async fn delete_json(
         &self,
         path: &str,
         json: Value,
@@ -244,7 +244,7 @@ impl TestApp {
 
     /// Mark a user's email verified via a direct write. Unverified accounts hit
     /// the deck/card caps; tests that need the higher limits call this.
-    pub async fn verify_email(&self, user_id: &str) {
+    pub(crate) async fn verify_email(&self, user_id: &str) {
         let uid: uuid::Uuid = user_id.parse().unwrap();
         sqlx::query("UPDATE users SET email_verified_at = now() WHERE id = $1")
             .bind(uid)
@@ -257,7 +257,7 @@ impl TestApp {
     /// returns `(access_token, user_id)`. Register answers without a session,
     /// so this is what the app does too. The login comes from its own address
     /// so it doesn't spend the test's login budget.
-    pub async fn register(&self, username: &str) -> (String, String) {
+    pub(crate) async fn register(&self, username: &str) -> (String, String) {
         let emails_before = self.emails.count();
         let body = serde_json::json!({
             "username": username,
@@ -312,7 +312,7 @@ const ORACLE_NS: u128 = 0x2000_0000_0000_0000_0000_0000_0000_0000;
 /// A card row to seed. Build with [`card`] and the chainable setters; only the
 /// fields tests care about are exposed, the rest are sane constants.
 #[derive(Clone)]
-pub struct CardFixture {
+pub(crate) struct CardFixture {
     id: Uuid,
     oracle_id: Option<Uuid>,
     name: String,
@@ -351,7 +351,7 @@ pub struct CardFixture {
 /// Start a card fixture. Distinct `id` and `oracle_id` are assigned up front so
 /// tests can reference them (`.id()`, `.oracle_id()`) for `/api/card/{id}`
 /// lookups and ordering checks before seeding.
-pub fn card(name: &str) -> CardFixture {
+pub(crate) fn card(name: &str) -> CardFixture {
     let n = u128::from(CARD_SEQ.fetch_add(1, Ordering::Relaxed));
     CardFixture {
         id: Uuid::from_u128(ID_NS | n),
@@ -403,28 +403,28 @@ fn colors_of(s: &str) -> Vec<String> {
 }
 
 impl CardFixture {
-    pub fn id(&self) -> Uuid {
+    pub(crate) fn id(&self) -> Uuid {
         self.id
     }
-    pub fn oracle_id(&self) -> Option<Uuid> {
+    pub(crate) fn oracle_id(&self) -> Option<Uuid> {
         self.oracle_id
     }
-    pub fn name(&self) -> &str {
+    pub(crate) fn name(&self) -> &str {
         &self.name
     }
 
     /// Set both `id` and `oracle_id` — use when a test needs two printings of
     /// the same card (same `oracle_id`, different `id`).
-    pub fn with_ids(mut self, id: Uuid, oracle_id: Option<Uuid>) -> Self {
+    pub(crate) fn with_ids(mut self, id: Uuid, oracle_id: Option<Uuid>) -> Self {
         self.id = id;
         self.oracle_id = oracle_id;
         self
     }
-    pub fn oracle(mut self, oracle_id: Option<Uuid>) -> Self {
+    pub(crate) fn oracle(mut self, oracle_id: Option<Uuid>) -> Self {
         self.oracle_id = oracle_id;
         self
     }
-    pub fn layout(mut self, layout: &str) -> Self {
+    pub(crate) fn layout(mut self, layout: &str) -> Self {
         self.layout = layout.to_string();
         self
     }
@@ -433,7 +433,7 @@ impl CardFixture {
     /// `role` is the card's own `component` entry: "meld_result" for the
     /// melded permanent, "meld_part" for a component. Both sides carry
     /// `layout = "meld"`, so this entry is the only thing separating them.
-    pub fn meld(mut self, role: &str) -> Self {
+    pub(crate) fn meld(mut self, role: &str) -> Self {
         self.layout = "meld".to_string();
         self.all_parts = Some(json!([{
             "id": Uuid::nil(),
@@ -445,128 +445,128 @@ impl CardFixture {
         }]));
         self
     }
-    pub fn cmc(mut self, cmc: f64) -> Self {
+    pub(crate) fn cmc(mut self, cmc: f64) -> Self {
         self.cmc = Some(cmc);
         self
     }
     /// Card colors, compact form (`"R"`, `"WU"`, `""` for colorless).
-    pub fn colors(mut self, colors: &str) -> Self {
+    pub(crate) fn colors(mut self, colors: &str) -> Self {
         self.colors = colors_of(colors);
         self
     }
     /// Color identity, compact form. Defaults to whatever `colors` was set to
     /// is NOT assumed — set both explicitly when they differ.
-    pub fn color_identity(mut self, ci: &str) -> Self {
+    pub(crate) fn color_identity(mut self, ci: &str) -> Self {
         self.color_identity = colors_of(ci);
         self
     }
     /// Shorthand: set `colors` and `color_identity` to the same value.
-    pub fn mono(self, colors: &str) -> Self {
+    pub(crate) fn mono(self, colors: &str) -> Self {
         let v = colors_of(colors);
         let mut s = self.colors(colors);
         s.color_identity = v;
         s
     }
-    pub fn keywords(mut self, keywords: &[&str]) -> Self {
+    pub(crate) fn keywords(mut self, keywords: &[&str]) -> Self {
         self.keywords = Some(keywords.iter().map(|k| k.to_string()).collect());
         self
     }
-    pub fn mana_cost(mut self, mana_cost: &str) -> Self {
+    pub(crate) fn mana_cost(mut self, mana_cost: &str) -> Self {
         self.mana_cost = Some(mana_cost.to_string());
         self
     }
-    pub fn oracle_text(mut self, text: &str) -> Self {
+    pub(crate) fn oracle_text(mut self, text: &str) -> Self {
         self.oracle_text = Some(text.to_string());
         self
     }
-    pub fn power(mut self, power: &str) -> Self {
+    pub(crate) fn power(mut self, power: &str) -> Self {
         self.power = Some(power.to_string());
         self
     }
-    pub fn toughness(mut self, toughness: &str) -> Self {
+    pub(crate) fn toughness(mut self, toughness: &str) -> Self {
         self.toughness = Some(toughness.to_string());
         self
     }
-    pub fn produced_mana(mut self, colors: &str) -> Self {
+    pub(crate) fn produced_mana(mut self, colors: &str) -> Self {
         self.produced_mana = Some(colors_of(colors));
         self
     }
-    pub fn type_line(mut self, type_line: &str) -> Self {
+    pub(crate) fn type_line(mut self, type_line: &str) -> Self {
         self.type_line = Some(type_line.to_string());
         self
     }
-    pub fn rarity(mut self, rarity: &str) -> Self {
+    pub(crate) fn rarity(mut self, rarity: &str) -> Self {
         self.rarity = rarity.to_string();
         self
     }
-    pub fn edhrec_rank(mut self, rank: i32) -> Self {
+    pub(crate) fn edhrec_rank(mut self, rank: i32) -> Self {
         self.edhrec_rank = Some(rank);
         self
     }
-    pub fn usd(mut self, usd: &str) -> Self {
+    pub(crate) fn usd(mut self, usd: &str) -> Self {
         self.usd = Some(usd.to_string());
         self
     }
-    pub fn set(mut self, code: &str, name: &str) -> Self {
+    pub(crate) fn set(mut self, code: &str, name: &str) -> Self {
         self.set = code.to_string();
         self.set_name = name.to_string();
         self
     }
     /// Security stamp on the printing (e.g. "triangle" for Universes Beyond).
-    pub fn stamp(mut self, stamp: &str) -> Self {
+    pub(crate) fn stamp(mut self, stamp: &str) -> Self {
         self.security_stamp = Some(stamp.to_string());
         self
     }
     /// Mark this card legal in a format (e.g. `"commander"`). Repeatable.
-    pub fn legal(mut self, format: &str) -> Self {
+    pub(crate) fn legal(mut self, format: &str) -> Self {
         self.legalities[format] = json!("legal");
         self
     }
-    pub fn commander_legal(self) -> Self {
+    pub(crate) fn commander_legal(self) -> Self {
         self.legal("commander")
     }
-    pub fn flavor_text(mut self, text: &str) -> Self {
+    pub(crate) fn flavor_text(mut self, text: &str) -> Self {
         self.flavor_text = Some(text.to_string());
         self
     }
-    pub fn artist(mut self, artist: &str) -> Self {
+    pub(crate) fn artist(mut self, artist: &str) -> Self {
         self.artist = Some(artist.to_string());
         self
     }
-    pub fn lang(mut self, lang: &str) -> Self {
+    pub(crate) fn lang(mut self, lang: &str) -> Self {
         self.lang = lang.to_string();
         self
     }
-    pub fn digital(mut self, digital: bool) -> Self {
+    pub(crate) fn digital(mut self, digital: bool) -> Self {
         self.digital = digital;
         self
     }
-    pub fn oversized(mut self, oversized: bool) -> Self {
+    pub(crate) fn oversized(mut self, oversized: bool) -> Self {
         self.oversized = oversized;
         self
     }
-    pub fn promo(mut self, promo: bool) -> Self {
+    pub(crate) fn promo(mut self, promo: bool) -> Self {
         self.promo = promo;
         self
     }
-    pub fn content_warning(mut self, warning: bool) -> Self {
+    pub(crate) fn content_warning(mut self, warning: bool) -> Self {
         self.content_warning = Some(warning);
         self
     }
     /// A token card (`layout = "token"`); the seeded `card_profiles.is_token`
     /// tracks the layout, so this also flips the `is_token` flag.
-    pub fn token(mut self) -> Self {
+    pub(crate) fn token(mut self) -> Self {
         self.layout = "token".to_string();
         self
     }
     /// Mechanical categories (snake_case, e.g. `"ramp"`, `"graveyard_hate"`) —
     /// written to `card_profiles.card_roles`.
-    pub fn categories(mut self, cats: &[&str]) -> Self {
+    pub(crate) fn categories(mut self, cats: &[&str]) -> Self {
         self.card_roles = cats.iter().map(|c| c.to_string()).collect();
         self
     }
     /// Oracle tags (e.g. `"spot-removal"`) — written to `card_profiles.oracle_tags`.
-    pub fn oracle_tags(mut self, tags: &[&str]) -> Self {
+    pub(crate) fn oracle_tags(mut self, tags: &[&str]) -> Self {
         self.oracle_tags = tags.iter().map(|t| t.to_string()).collect();
         self
     }
@@ -576,7 +576,7 @@ impl CardFixture {
 /// refresh the `latest_cards` / `card_signal_rollup` materialized views (both
 /// start empty — the views must be refreshed before any card query, even with
 /// zero rows, or Postgres errors that they are unpopulated).
-pub async fn seed_cards(pool: &PgPool, cards: &[CardFixture]) {
+pub(crate) async fn seed_cards(pool: &PgPool, cards: &[CardFixture]) {
     if !cards.is_empty() {
         let released = NaiveDate::from_ymd_opt(2020, 1, 1).unwrap();
         let mut qb = QueryBuilder::new(
@@ -675,7 +675,7 @@ pub async fn seed_cards(pool: &PgPool, cards: &[CardFixture]) {
 
 /// Refresh the card materialized views. Call after mutating
 /// `commander_card_signal` in a signal test (`seed_cards` already refreshes).
-pub async fn refresh_card_views(pool: &PgPool) {
+pub(crate) async fn refresh_card_views(pool: &PgPool) {
     sqlx::query("REFRESH MATERIALIZED VIEW latest_cards")
         .execute(pool)
         .await
