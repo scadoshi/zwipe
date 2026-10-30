@@ -24,6 +24,9 @@ pub enum InvalidDeckname {
     BadWord,
 }
 
+/// Longest name [`DeckName::new`] accepts, measured with `str::len`.
+const MAX_LENGTH: usize = 64;
+
 /// Validated deck name (1-64 characters, no profanity).
 ///
 /// # Validation Rules
@@ -54,7 +57,7 @@ impl DeckName {
         if name.is_empty() {
             return Err(InvalidDeckname::TooShort);
         }
-        if name.len() > 64 {
+        if name.len() > MAX_LENGTH {
             return Err(InvalidDeckname::TooLong);
         }
         if name.contains_bad_word() {

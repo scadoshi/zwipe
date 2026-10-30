@@ -109,7 +109,7 @@ impl DeckMetrics {
     /// 100, any nonzero count reads at least 4 (a visible sliver), zero is 0.
     pub fn bar_pct(count: usize, max: usize) -> u32 {
         if max > 0 && count > 0 {
-            (((count * 100) / max).max(4)) as u32
+            (((count * 100) / max).max(BAR_SLIVER_PCT)) as u32
         } else {
             0
         }
@@ -186,7 +186,10 @@ impl DeckMetrics {
             .map(|(label, (consumed, produced))| {
                 let bar_max = (*consumed).max(*produced);
                 let fill_pct = if *produced > 0 {
-                    (produced * 100).checked_div(bar_max).unwrap_or(0).max(4) as u32
+                    (produced * 100)
+                        .checked_div(bar_max)
+                        .unwrap_or(0)
+                        .max(BAR_SLIVER_PCT) as u32
                 } else {
                     0
                 };
@@ -240,8 +243,8 @@ impl DeckMetrics {
             .collect();
         let entries = &active_entries;
         let mut cmc_histogram = [0usize; 7];
-        let mut type_buckets = [0usize; 8];
-        let mut color_buckets = [0usize; 7];
+        let mut type_buckets = [0usize; TYPE_LABELS.len()];
+        let mut color_buckets = [0usize; COLOR_LABELS.len()];
         let mut land_count = 0usize;
         let mut cmc_sum = 0.0f64;
         let mut total_cards = 0usize;
@@ -544,6 +547,15 @@ mod budget_tests {
     }
 }
 
+/// Smallest bar height, in percent, for a nonzero count, so it shows as a sliver.
+const BAR_SLIVER_PCT: usize = 4;
+
+/// Bucket index of "other" in [`TYPE_LABELS`], after the seven checked types.
+const OTHER_CARD_TYPE: usize = 7;
+
+/// Bucket index of "6+", the last mana value bucket.
+const CMC_SIX_PLUS: usize = 6;
+
 /// Chart labels for the type buckets, in [`classify_type`] order.
 const TYPE_LABELS: [&str; 8] = [
     "lands",
@@ -579,18 +591,18 @@ fn classify_type(card: &Card) -> usize {
     ];
     let type_line = match &card.scryfall_data.type_line {
         Some(tl) => tl.as_str(),
-        None => return 7, // "other"
+        None => return OTHER_CARD_TYPE,
     };
     CHECKS
         .iter()
         .position(|keyword| type_line.contains(keyword))
-        .unwrap_or(7)
+        .unwrap_or(OTHER_CARD_TYPE)
 }
 
 /// CMC classification: floor to integer, cap at 6.
 fn classify_cmc(card: &Card) -> usize {
     let cmc = card.scryfall_data.cmc.unwrap_or(0.0);
-    (cmc.floor() as usize).min(6)
+    (cmc.floor() as usize).min(CMC_SIX_PLUS)
 }
 
 /// Count colored pip symbols in a Scryfall `mana_cost` string (e.g. "{2}{R}{R}").
