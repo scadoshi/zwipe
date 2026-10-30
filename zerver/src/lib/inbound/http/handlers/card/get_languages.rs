@@ -25,7 +25,7 @@ pub async fn get_languages(
 ) -> Result<(StatusCode, Json<Vec<String>>), ApiError> {
     state
         .card_service
-        .get_languages()
+        .fetch_languages()
         .await
         .map_err(ApiError::from)
         .map(|languages| (StatusCode::OK, Json(languages)))

@@ -12,7 +12,7 @@ impl ZwipeClient {
     ///
     /// Returns a [`ClientError`] when the request fails to complete, the server answers with an
     /// error status, or the reply doesn't decode.
-    pub async fn get_oracle_tags(&self) -> Result<Vec<OracleTag>, ClientError> {
+    pub async fn fetch_oracle_tags(&self) -> Result<Vec<OracleTag>, ClientError> {
         self.call(GetOracleTags, None).await
     }
 }

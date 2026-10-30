@@ -2,7 +2,6 @@
 
 use thiserror::Error;
 use zwipe_core::domain::InvalidEmail;
-use zwipe_core::domain::user::username::InvalidUsername;
 
 use crate::domain::auth::requests::authenticate_user::AuthenticateUserError;
 use crate::domain::auth::requests::change_email::ChangeEmailError;
@@ -21,8 +20,6 @@ use crate::outbound::sqlx::user::error::IntoUserError;
 #[derive(Debug, Error)]
 #[expect(missing_docs, reason = "each variant's message names the failure")]
 pub enum IntoUserWithPasswordHashError {
-    #[error(transparent)]
-    Username(#[from] InvalidUsername),
     #[error(transparent)]
     Email(#[from] InvalidEmail),
     #[error(transparent)]

@@ -35,10 +35,9 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
         // try_run keeps the Result the memo below flattens; reporting and the
         // error toast live in the facade.
         authed
-            .try_run(
-                "load_deck",
-                |c, s| async move { c.get_deck(deck_id, &s).await },
-            )
+            .try_run("load_deck", |c, s| async move {
+                c.fetch_deck(deck_id, &s).await
+            })
             .await
     });
 

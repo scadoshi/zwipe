@@ -24,14 +24,15 @@ pub enum InvalidDeckname {
     BadWord,
 }
 
-/// Longest name [`DeckName::new`] accepts, measured with `str::len`.
+/// Longest name [`DeckName::new`] accepts, counted in characters after trimming.
 const MAX_LENGTH: usize = 64;
 
 /// Validated deck name (1-64 characters, no profanity).
 ///
 /// # Validation Rules
 ///
-/// - **Length**: 1-64 characters (inclusive)
+/// - **Length**: 1-64 characters (inclusive), counted after trimming
+/// - **Trimmed**: Leading/trailing whitespace removed
 /// - **Content**: No profanity (uses two-tier filtering)
 ///
 /// # Example
@@ -40,7 +41,14 @@ const MAX_LENGTH: usize = 64;
 /// let name = DeckName::new("Sultai Control")?;
 /// println!("Deck: {}", name.as_str());
 /// ```
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+///
+/// # Deserializing
+///
+/// Deserializing trusts the value, like [`DeckName::from_stored`], because
+/// serde only ever sees names the server already accepted: deck profiles in
+/// API responses. Request bodies carry a plain `String` that goes through
+/// [`DeckName::new`].
+#[derive(Debug, Clone, PartialEq)]
 pub struct DeckName(String);
 
 impl DeckName {
@@ -49,21 +57,34 @@ impl DeckName {
     /// # Errors
     ///
     /// Returns [`InvalidDeckname`] if:
-    /// - Name is empty
+    /// - Name is empty or only whitespace
     /// - Name exceeds 64 characters
     /// - Name contains profanity
     pub fn new(name: impl Into<String>) -> Result<Self, InvalidDeckname> {
         let name = name.into();
+        let name = name.trim();
         if name.is_empty() {
             return Err(InvalidDeckname::TooShort);
         }
-        if name.len() > MAX_LENGTH {
+        if name.chars().count() > MAX_LENGTH {
             return Err(InvalidDeckname::TooLong);
         }
         if name.contains_bad_word() {
             return Err(InvalidDeckname::BadWord);
         }
-        Ok(Self(name))
+        Ok(Self(name.to_string()))
+    }
+
+    /// Wraps a deck name that already passed [`DeckName::new`] once, such as
+    /// one read from the database or a server response.
+    ///
+    /// Nothing is checked or trimmed, so the name reads back exactly as
+    /// stored. Names saved before the rules tightened (whitespace only, or
+    /// with surrounding spaces) must keep loading. New input from a user goes
+    /// through [`DeckName::new`].
+    #[must_use]
+    pub fn from_stored(stored: String) -> Self {
+        Self(stored)
     }
 }
 
@@ -86,6 +107,15 @@ impl Serialize for DeckName {
         S: serde::Serializer,
     {
         serializer.serialize_str(self)
+    }
+}
+
+impl<'de> Deserialize<'de> for DeckName {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        String::deserialize(deserializer).map(DeckName::from_stored)
     }
 }
 
@@ -122,6 +152,37 @@ mod tests {
     }
 
     #[test]
+    fn test_deck_name_new_rejects_whitespace_only() {
+        assert!(matches!(
+            DeckName::new("   "),
+            Err(InvalidDeckname::TooShort)
+        ));
+    }
+
+    #[test]
+    fn test_deck_name_new_stores_trimmed_value() {
+        assert_eq!(&*DeckName::new("  My Deck  ").unwrap(), "My Deck");
+    }
+
+    #[test]
+    fn test_deck_name_new_accepts_max_chars_of_two_byte_chars() {
+        assert!(DeckName::new("é".repeat(MAX_LENGTH)).is_ok());
+    }
+
+    #[test]
+    fn test_deck_name_new_accepts_max_chars_of_four_byte_chars() {
+        assert!(DeckName::new("🐉".repeat(MAX_LENGTH)).is_ok());
+    }
+
+    #[test]
+    fn test_deck_name_new_rejects_one_char_over_max_of_multibyte_chars() {
+        assert!(matches!(
+            DeckName::new("é".repeat(MAX_LENGTH + 1)),
+            Err(InvalidDeckname::TooLong)
+        ));
+    }
+
+    #[test]
     fn test_deck_name_new_rejects_bad_word() {
         assert!(matches!(
             DeckName::new("fuck"),
@@ -132,6 +193,21 @@ mod tests {
     #[test]
     fn test_deck_name_new_allows_spaces() {
         assert!(DeckName::new("Got Ya Satya").is_ok());
+    }
+
+    #[test]
+    fn test_deck_name_from_stored_keeps_value_as_is() {
+        assert_eq!(&*DeckName::from_stored("   ".to_string()), "   ");
+        assert_eq!(
+            &*DeckName::from_stored("  Spaced  ".to_string()),
+            "  Spaced  "
+        );
+    }
+
+    #[test]
+    fn test_deck_name_deserialize_keeps_stored_value() {
+        let name: DeckName = serde_json::from_str("\"  Spaced  \"").unwrap();
+        assert_eq!(&*name, "  Spaced  ");
     }
 
     #[test]

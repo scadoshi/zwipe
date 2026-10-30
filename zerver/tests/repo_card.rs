@@ -398,7 +398,7 @@ async fn mvp_card_roles_are_mainboard_stars_deduped(pool: sqlx::PgPool) {
 
     let repo = Postgres { pool: pool.clone() };
     let request = GetDeckProfile { user_id, deck_id };
-    let mut roles = repo.get_mvp_card_roles(&request).await.unwrap();
+    let mut roles = repo.fetch_mvp_card_roles(&request).await.unwrap();
     roles.sort();
 
     // "ramp" is on both mainboard MVPs but must appear once; "wipe" sits on an

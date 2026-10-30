@@ -43,30 +43,47 @@ pub struct Config {
 impl Config {
     /// Loads configuration from compile-time environment variables.
     ///
-    /// # Panics
+    /// # Errors
     ///
-    /// Panics if `BACKEND_URL` doesn't parse. `build.rs` checks the variable is
-    /// present and well-formed, so reaching this is a build-configuration bug
-    /// rather than anything a user can trigger: the value is identical in every
-    /// copy of a given binary, so a bad one fails on the first launch of any
-    /// build rather than for some users and not others.
-    #[expect(
-        clippy::unwrap_used,
-        reason = "build.rs checks BACKEND_URL, so a parse failure is a build bug"
-    )]
-    pub fn from_env() -> Self {
-        let backend_url = Url::from_str(BACKEND_URL)
-            .context(format!("invalid url in BACKEND_URL: {BACKEND_URL}"))
-            .unwrap();
+    /// Fails if `BACKEND_URL` doesn't parse. `build.rs` checks the variable is
+    /// present and well-formed, so this is a build-configuration bug rather
+    /// than anything a user can trigger: every copy of a given binary carries
+    /// the same value and fails the same way on its first launch.
+    pub fn from_env() -> anyhow::Result<Self> {
+        Self::from_values(BACKEND_URL, RUST_LOG, RUST_BACKTRACE)
+    }
 
-        let rust_log = RUST_LOG.to_string();
-
-        let rust_backtrace = RUST_BACKTRACE.to_string();
-
-        Self {
+    /// Builds a configuration from raw values, parsing the backend URL.
+    fn from_values(
+        backend_url: &str,
+        rust_log: &str,
+        rust_backtrace: &str,
+    ) -> anyhow::Result<Self> {
+        let backend_url = Url::from_str(backend_url)
+            .with_context(|| format!("invalid url in BACKEND_URL: {backend_url}"))?;
+        Ok(Self {
             backend_url,
-            rust_log,
-            rust_backtrace,
-        }
+            rust_log: rust_log.to_string(),
+            rust_backtrace: rust_backtrace.to_string(),
+        })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_malformed_backend_url_is_an_error() {
+        let config = Config::from_values("not a url", "info", "0");
+        assert!(config.is_err(), "parsed a malformed url: {config:?}");
+    }
+
+    #[test]
+    fn a_well_formed_backend_url_parses() {
+        let config = Config::from_values("https://api.zwipe.net", "info", "0")
+            .expect("a well-formed url parses");
+        assert_eq!(config.backend_url.as_str(), "https://api.zwipe.net/");
+        assert_eq!(config.rust_log, "info");
     }
 }

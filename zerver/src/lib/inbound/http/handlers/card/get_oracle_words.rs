@@ -25,7 +25,7 @@ pub async fn get_oracle_words(
 ) -> Result<(StatusCode, Json<Vec<String>>), ApiError> {
     state
         .card_service
-        .get_oracle_words()
+        .fetch_oracle_words()
         .await
         .map_err(ApiError::from)
         .map(|all_words| (StatusCode::OK, Json(all_words)))

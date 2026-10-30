@@ -13,7 +13,7 @@ impl ZwipeClient {
     ///
     /// Returns a [`ClientError`] when the request fails to complete, the server answers with an
     /// error status, or the reply doesn't decode.
-    pub async fn get_deck_profiles(
+    pub async fn fetch_deck_profiles(
         &self,
         session: &Session,
     ) -> Result<Vec<DeckProfile>, ClientError> {
