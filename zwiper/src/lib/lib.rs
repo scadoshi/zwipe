@@ -16,3 +16,6 @@ pub mod domain;
 pub mod inbound;
 /// The session, on-device stores and platform calls.
 pub mod outbound;
+
+#[cfg(test)]
+mod test_fixtures;
