@@ -4,9 +4,8 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use zwipe::config::ZerviceConfig;
 use zwipe::domain::card::ports::CardService;
-use zwipe::domain::card::services::Service as CardService_;
 use zwipe::domain::upkeep::ports::UpkeepService;
-use zwipe::domain::upkeep::services::Service as UpkeepService_;
+use zwipe::domain::{card, upkeep};
 use zwipe::inbound::external::scryfall::bulk::BulkEndpoint;
 use zwipe::outbound::sqlx::postgres::Postgres;
 use zwipe_core::domain::logo;
@@ -51,8 +50,8 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("zervice running v{}", env!("CARGO_PKG_VERSION"));
 
     let db = Postgres::new(&config.database_url).await?;
-    let card_service = CardService_::new(db.clone());
-    let upkeep_service = UpkeepService_::new(db.clone());
+    let card_service = card::services::Service::new(db.clone());
+    let upkeep_service = upkeep::services::Service::new(db.clone());
 
     // Every step runs non-fatally: a failure logs and the pipeline continues, so one
     // broken step can't skip the rest (e.g. the serve-critical matview refreshes).
