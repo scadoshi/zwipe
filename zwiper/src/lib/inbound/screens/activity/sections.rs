@@ -925,7 +925,7 @@ mod tests {
     #[test]
     fn a_tag_the_user_passes_on_less_than_others_is_left_out() {
         let kept = tag("kept", "ramp", outcomes(8, 2, 0, 0), outcomes(10, 90, 0, 0));
-        assert!(tag_rate_bars(RateKind::Skipped, &[kept]).is_empty());
+        assert_eq!(tag_rate_bars(RateKind::Skipped, &[kept]), Vec::<Bar>::new());
     }
 
     #[test]
