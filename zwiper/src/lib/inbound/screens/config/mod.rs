@@ -131,7 +131,7 @@ pub fn Config() -> Element {
         spawn(async move {
             if let Some(prefs) = authed
                 .run_quiet("get_preferences", |c, s| async move {
-                    c.get_preferences(&s).await
+                    c.fetch_preferences(&s).await
                 })
                 .await
             {

@@ -11,7 +11,7 @@ impl ZwipeClient {
     ///
     /// Returns a [`ClientError`] when the request fails to complete, the server answers with an
     /// error status, or the reply doesn't decode.
-    pub async fn get_keywords(&self) -> Result<Vec<String>, ClientError> {
+    pub async fn fetch_keywords(&self) -> Result<Vec<String>, ClientError> {
         self.call(GetKeywords, None).await
     }
 }

@@ -52,7 +52,7 @@ pub async fn get_card(
     let request = GetScryfallData::new(&scryfall_data_id)?;
     state
         .card_service
-        .get_card(&request)
+        .fetch_card(&request)
         .await
         .map_err(ApiError::from)
         .map(|card| (StatusCode::OK, Json(card)))

@@ -34,14 +34,17 @@ where
 impl<R: UserRepository> UserService for Service<R> {
     // == get ==
 
-    async fn get_user(&self, request: &GetUser) -> Result<User, GetUserError> {
-        self.repo.get_user(request.user_id).await
+    async fn fetch_user(&self, request: &GetUser) -> Result<User, GetUserError> {
+        self.repo.fetch_user(request.user_id).await
     }
 
     // == preferences ==
 
-    async fn get_preferences(&self, user_id: Uuid) -> Result<UserPreferences, GetPreferencesError> {
-        self.repo.get_preferences(user_id).await
+    async fn fetch_preferences(
+        &self,
+        user_id: Uuid,
+    ) -> Result<UserPreferences, GetPreferencesError> {
+        self.repo.fetch_preferences(user_id).await
     }
 
     async fn update_preferences(
