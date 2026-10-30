@@ -603,25 +603,22 @@ pub trait CardService: Clone + Send + Sync + 'static {
 /// out of the generic parameter list. Auto-implemented for any `CardService`.
 pub trait ErasedCardService: Send + Sync + 'static {
     /// See [`CardService::upsert`].
-    fn upsert<'a>(
-        &'a self,
-        scryfall_data: ScryfallData,
-    ) -> BoxFuture<'a, Result<Card, CreateCardError>>;
+    fn upsert(&self, scryfall_data: ScryfallData) -> BoxFuture<'_, Result<Card, CreateCardError>>;
 
     /// See [`CardService::scryfall_sync`].
-    fn scryfall_sync<'a>(
-        &'a self,
+    fn scryfall_sync(
+        &self,
         bulk_endpoint: BulkEndpoint,
-    ) -> BoxFuture<'a, anyhow::Result<ZerviceMetrics>>;
+    ) -> BoxFuture<'_, anyhow::Result<ZerviceMetrics>>;
 
     /// See [`CardService::refresh_latest_cards`].
-    fn refresh_latest_cards<'a>(&'a self) -> BoxFuture<'a, anyhow::Result<()>>;
+    fn refresh_latest_cards(&self) -> BoxFuture<'_, anyhow::Result<()>>;
 
     /// See [`CardService::refresh_card_signal_rollup`].
-    fn refresh_card_signal_rollup<'a>(&'a self) -> BoxFuture<'a, anyhow::Result<()>>;
+    fn refresh_card_signal_rollup(&self) -> BoxFuture<'_, anyhow::Result<()>>;
 
     /// See [`CardService::refresh_otag_context_signal_rollup`].
-    fn refresh_otag_context_signal_rollup<'a>(&'a self) -> BoxFuture<'a, anyhow::Result<()>>;
+    fn refresh_otag_context_signal_rollup(&self) -> BoxFuture<'_, anyhow::Result<()>>;
 
     /// See [`CardService::featured_flavor`].
     fn featured_flavor<'a>(
@@ -642,10 +639,10 @@ pub trait ErasedCardService: Send + Sync + 'static {
     ) -> BoxFuture<'a, Result<Vec<Card>, GetCardError>>;
 
     /// See [`CardService::get_printings`].
-    fn get_printings<'a>(
-        &'a self,
+    fn get_printings(
+        &self,
         oracle_id: uuid::Uuid,
-    ) -> BoxFuture<'a, Result<Vec<Card>, GetCardError>>;
+    ) -> BoxFuture<'_, Result<Vec<Card>, GetCardError>>;
 
     /// See [`CardService::search_cards`].
     fn search_cards<'a>(
@@ -662,25 +659,25 @@ pub trait ErasedCardService: Send + Sync + 'static {
     ) -> BoxFuture<'a, Result<Vec<Card>, SearchCardsError>>;
 
     /// See [`CardService::get_artists`].
-    fn get_artists<'a>(&'a self) -> BoxFuture<'a, Result<Vec<String>, GetArtistsError>>;
+    fn get_artists(&self) -> BoxFuture<'_, Result<Vec<String>, GetArtistsError>>;
 
     /// See [`CardService::get_card_types`].
-    fn get_card_types<'a>(&'a self) -> BoxFuture<'a, Result<Vec<String>, GetCardTypesError>>;
+    fn get_card_types(&self) -> BoxFuture<'_, Result<Vec<String>, GetCardTypesError>>;
 
     /// See [`CardService::get_keywords`].
-    fn get_keywords<'a>(&'a self) -> BoxFuture<'a, Result<Vec<String>, GetKeywordsError>>;
+    fn get_keywords(&self) -> BoxFuture<'_, Result<Vec<String>, GetKeywordsError>>;
 
     /// See [`CardService::get_oracle_tags`].
-    fn get_oracle_tags<'a>(&'a self) -> BoxFuture<'a, Result<Vec<OracleTag>, GetOracleTagsError>>;
+    fn get_oracle_tags(&self) -> BoxFuture<'_, Result<Vec<OracleTag>, GetOracleTagsError>>;
 
     /// See [`CardService::get_oracle_words`].
-    fn get_oracle_words<'a>(&'a self) -> BoxFuture<'a, Result<Vec<String>, GetOracleWordsError>>;
+    fn get_oracle_words(&self) -> BoxFuture<'_, Result<Vec<String>, GetOracleWordsError>>;
 
     /// See [`CardService::get_sets`].
-    fn get_sets<'a>(&'a self) -> BoxFuture<'a, Result<Vec<String>, GetSetsError>>;
+    fn get_sets(&self) -> BoxFuture<'_, Result<Vec<String>, GetSetsError>>;
 
     /// See [`CardService::get_languages`].
-    fn get_languages<'a>(&'a self) -> BoxFuture<'a, Result<Vec<String>, GetLanguagesError>>;
+    fn get_languages(&self) -> BoxFuture<'_, Result<Vec<String>, GetLanguagesError>>;
 
     /// See [`CardService::get_card_profile_with_id`].
     fn get_card_profile_with_id<'a>(
@@ -707,7 +704,7 @@ pub trait ErasedCardService: Send + Sync + 'static {
     ) -> BoxFuture<'a, Result<Vec<CardProfile>, GetCardProfileError>>;
 
     /// See [`CardService::get_last_sync_date`].
-    fn get_last_sync_date<'a>(&'a self) -> BoxFuture<'a, anyhow::Result<Option<DateTime<Utc>>>>;
+    fn get_last_sync_date(&self) -> BoxFuture<'_, anyhow::Result<Option<DateTime<Utc>>>>;
 
     /// See [`CardService::find_cards_by_exact_names`].
     fn find_cards_by_exact_names<'a>(
@@ -720,29 +717,26 @@ impl<T> ErasedCardService for T
 where
     T: CardService,
 {
-    fn upsert<'a>(
-        &'a self,
-        scryfall_data: ScryfallData,
-    ) -> BoxFuture<'a, Result<Card, CreateCardError>> {
+    fn upsert(&self, scryfall_data: ScryfallData) -> BoxFuture<'_, Result<Card, CreateCardError>> {
         Box::pin(CardService::upsert(self, scryfall_data))
     }
 
-    fn scryfall_sync<'a>(
-        &'a self,
+    fn scryfall_sync(
+        &self,
         bulk_endpoint: BulkEndpoint,
-    ) -> BoxFuture<'a, anyhow::Result<ZerviceMetrics>> {
+    ) -> BoxFuture<'_, anyhow::Result<ZerviceMetrics>> {
         Box::pin(CardService::scryfall_sync(self, bulk_endpoint))
     }
 
-    fn refresh_card_signal_rollup<'a>(&'a self) -> BoxFuture<'a, anyhow::Result<()>> {
+    fn refresh_card_signal_rollup(&self) -> BoxFuture<'_, anyhow::Result<()>> {
         Box::pin(CardService::refresh_card_signal_rollup(self))
     }
 
-    fn refresh_otag_context_signal_rollup<'a>(&'a self) -> BoxFuture<'a, anyhow::Result<()>> {
+    fn refresh_otag_context_signal_rollup(&self) -> BoxFuture<'_, anyhow::Result<()>> {
         Box::pin(CardService::refresh_otag_context_signal_rollup(self))
     }
 
-    fn refresh_latest_cards<'a>(&'a self) -> BoxFuture<'a, anyhow::Result<()>> {
+    fn refresh_latest_cards(&self) -> BoxFuture<'_, anyhow::Result<()>> {
         Box::pin(CardService::refresh_latest_cards(self))
     }
 
@@ -767,10 +761,10 @@ where
         Box::pin(CardService::get_cards(self, request))
     }
 
-    fn get_printings<'a>(
-        &'a self,
+    fn get_printings(
+        &self,
         oracle_id: uuid::Uuid,
-    ) -> BoxFuture<'a, Result<Vec<Card>, GetCardError>> {
+    ) -> BoxFuture<'_, Result<Vec<Card>, GetCardError>> {
         Box::pin(CardService::get_printings(self, oracle_id))
     }
 
@@ -790,31 +784,31 @@ where
         Box::pin(CardService::search_commanders(self, request, user_id))
     }
 
-    fn get_artists<'a>(&'a self) -> BoxFuture<'a, Result<Vec<String>, GetArtistsError>> {
+    fn get_artists(&self) -> BoxFuture<'_, Result<Vec<String>, GetArtistsError>> {
         Box::pin(CardService::get_artists(self))
     }
 
-    fn get_card_types<'a>(&'a self) -> BoxFuture<'a, Result<Vec<String>, GetCardTypesError>> {
+    fn get_card_types(&self) -> BoxFuture<'_, Result<Vec<String>, GetCardTypesError>> {
         Box::pin(CardService::get_card_types(self))
     }
 
-    fn get_keywords<'a>(&'a self) -> BoxFuture<'a, Result<Vec<String>, GetKeywordsError>> {
+    fn get_keywords(&self) -> BoxFuture<'_, Result<Vec<String>, GetKeywordsError>> {
         Box::pin(CardService::get_keywords(self))
     }
 
-    fn get_oracle_tags<'a>(&'a self) -> BoxFuture<'a, Result<Vec<OracleTag>, GetOracleTagsError>> {
+    fn get_oracle_tags(&self) -> BoxFuture<'_, Result<Vec<OracleTag>, GetOracleTagsError>> {
         Box::pin(CardService::get_oracle_tags(self))
     }
 
-    fn get_oracle_words<'a>(&'a self) -> BoxFuture<'a, Result<Vec<String>, GetOracleWordsError>> {
+    fn get_oracle_words(&self) -> BoxFuture<'_, Result<Vec<String>, GetOracleWordsError>> {
         Box::pin(CardService::get_oracle_words(self))
     }
 
-    fn get_sets<'a>(&'a self) -> BoxFuture<'a, Result<Vec<String>, GetSetsError>> {
+    fn get_sets(&self) -> BoxFuture<'_, Result<Vec<String>, GetSetsError>> {
         Box::pin(CardService::get_sets(self))
     }
 
-    fn get_languages<'a>(&'a self) -> BoxFuture<'a, Result<Vec<String>, GetLanguagesError>> {
+    fn get_languages(&self) -> BoxFuture<'_, Result<Vec<String>, GetLanguagesError>> {
         Box::pin(CardService::get_languages(self))
     }
 
@@ -850,7 +844,7 @@ where
         ))
     }
 
-    fn get_last_sync_date<'a>(&'a self) -> BoxFuture<'a, anyhow::Result<Option<DateTime<Utc>>>> {
+    fn get_last_sync_date(&self) -> BoxFuture<'_, anyhow::Result<Option<DateTime<Utc>>>> {
         Box::pin(CardService::get_last_sync_date(self))
     }
 

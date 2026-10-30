@@ -95,10 +95,10 @@ pub trait ErasedUserService: Send + Sync + 'static {
     fn get_user<'a>(&'a self, request: &'a GetUser) -> BoxFuture<'a, Result<User, GetUserError>>;
 
     /// See [`UserService::get_preferences`].
-    fn get_preferences<'a>(
-        &'a self,
+    fn get_preferences(
+        &self,
         user_id: Uuid,
-    ) -> BoxFuture<'a, Result<UserPreferences, GetPreferencesError>>;
+    ) -> BoxFuture<'_, Result<UserPreferences, GetPreferencesError>>;
 
     /// See [`UserService::update_preferences`].
     fn update_preferences<'a>(
@@ -121,10 +121,10 @@ where
         Box::pin(UserService::get_user(self, request))
     }
 
-    fn get_preferences<'a>(
-        &'a self,
+    fn get_preferences(
+        &self,
         user_id: Uuid,
-    ) -> BoxFuture<'a, Result<UserPreferences, GetPreferencesError>> {
+    ) -> BoxFuture<'_, Result<UserPreferences, GetPreferencesError>> {
         Box::pin(UserService::get_preferences(self, user_id))
     }
 
