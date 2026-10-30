@@ -17,11 +17,11 @@
 use std::collections::BTreeMap;
 
 use dioxus::prelude::*;
-use zwipe_core::domain::card::card_role::role_label;
+use zwipe_core::domain::card::card_role;
 
 /// Card roles as chips; expandable to their grouped oracle tags, plus an "Other
 /// tags" bucket. `tags_by_role` is keyed by role slug (`CardRole`'s
-/// snake_case form); `other_tags` are the uncategorized functional tags.
+/// `snake_case` form); `other_tags` are the uncategorized functional tags.
 #[component]
 pub fn CardRoleChips(
     roles: Vec<String>,
@@ -57,7 +57,7 @@ pub fn CardRoleChips(
         .iter()
         .map(|slug| {
             let tags = tags_by_role.get(slug).cloned().unwrap_or_default();
-            (role_label(slug), tags)
+            (card_role::role_label(slug), tags)
         })
         .collect();
     if !other_tags.is_empty() {
@@ -72,7 +72,7 @@ pub fn CardRoleChips(
     let open_idx = open();
     let reveal_tags: Vec<String> = shown()
         .and_then(|i| items.get(i))
-        .map(|(_, tags)| tags.to_vec())
+        .map(|(_, tags)| tags.clone())
         .unwrap_or_default();
     let reveal_class = if open_idx.is_some() {
         "keyword-reveal open"

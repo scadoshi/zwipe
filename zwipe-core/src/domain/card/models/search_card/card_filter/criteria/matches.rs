@@ -7,8 +7,7 @@ use crate::domain::card::Card;
 use crate::domain::card::scryfall_data::legalities::LegalityKind;
 use crate::domain::card::search_card::card_filter::criteria::CardCriteria;
 use crate::domain::card::search_card::card_filter::price_currency::PriceCurrency;
-use crate::domain::card::search_card::card_filter::strip_punctuation;
-use crate::domain::card::search_card::commander_eligibility::is_valid_commander;
+use crate::domain::card::search_card::{card_filter, commander_eligibility};
 use crate::domain::deck::Format;
 
 /// Layouts representing cards playable in Magic formats.
@@ -38,16 +37,19 @@ impl CardCriteria {
     ///
     /// Unset criteria (`None`) never exclude a card, so an empty criteria set
     /// matches everything. Parity note: `is_partner` / `is_background` /
-    /// `is_signature_spell` are **not** evaluated here (matching the old
-    /// in-memory filter); they are command-zone pool constraints only the
-    /// server-side search applies.
+    /// `is_signature_spell` are **not** evaluated here; they are command-zone
+    /// pool constraints only the server-side search applies.
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one short check per criterion, in field order"
+    )]
     pub fn matches(&self, card: &Card) -> bool {
         let sd = &card.scryfall_data;
         let cp = &card.card_profile;
 
-        // ── text ──────────────────────────────────────────────────────
+        // == text ==
         if let Some(q) = self.name_contains()
-            && !strip_punctuation(&sd.name)
+            && !card_filter::strip_punctuation(&sd.name)
                 .to_lowercase()
                 .contains(&q.to_lowercase())
         {
@@ -55,7 +57,7 @@ impl CardCriteria {
         }
 
         if let Some(q) = self.name_not_contains()
-            && strip_punctuation(&sd.name)
+            && card_filter::strip_punctuation(&sd.name)
                 .to_lowercase()
                 .contains(&q.to_lowercase())
         {
@@ -65,7 +67,7 @@ impl CardCriteria {
         if let Some(q) = self.oracle_text_contains() {
             match &sd.oracle_text {
                 Some(text)
-                    if strip_punctuation(text)
+                    if card_filter::strip_punctuation(text)
                         .to_lowercase()
                         .contains(&q.to_lowercase()) => {}
                 _ => return false,
@@ -74,7 +76,7 @@ impl CardCriteria {
 
         if let Some(q) = self.oracle_text_not_contains()
             && sd.oracle_text.as_ref().is_some_and(|text| {
-                strip_punctuation(text)
+                card_filter::strip_punctuation(text)
                     .to_lowercase()
                     .contains(&q.to_lowercase())
             })
@@ -85,7 +87,7 @@ impl CardCriteria {
         if let Some(values) = self.oracle_text_contains_any() {
             let matches = match &sd.oracle_text {
                 Some(text) => {
-                    let stripped = strip_punctuation(text).to_lowercase();
+                    let stripped = card_filter::strip_punctuation(text).to_lowercase();
                     values.iter().any(|v| stripped.contains(&v.to_lowercase()))
                 }
                 None => false,
@@ -98,7 +100,7 @@ impl CardCriteria {
         if let Some(values) = self.oracle_text_contains_all() {
             let matches = match &sd.oracle_text {
                 Some(text) => {
-                    let stripped = strip_punctuation(text).to_lowercase();
+                    let stripped = card_filter::strip_punctuation(text).to_lowercase();
                     values.iter().all(|v| stripped.contains(&v.to_lowercase()))
                 }
                 None => false,
@@ -111,7 +113,7 @@ impl CardCriteria {
         if let Some(values) = self.oracle_text_excludes_any() {
             let excluded = match &sd.oracle_text {
                 Some(text) => {
-                    let stripped = strip_punctuation(text).to_lowercase();
+                    let stripped = card_filter::strip_punctuation(text).to_lowercase();
                     values.iter().any(|v| stripped.contains(&v.to_lowercase()))
                 }
                 None => false,
@@ -121,7 +123,7 @@ impl CardCriteria {
             }
         }
 
-        // ── keywords ──────────────────────────────────────────────────
+        // == keywords ==
         if let Some(values) = self.keywords_contains_any() {
             let matches = match &sd.keywords {
                 Some(kw) => values
@@ -158,7 +160,7 @@ impl CardCriteria {
             }
         }
 
-        // ── card roles ──────────────────────────────────────────────
+        // == card roles ==
         if let Some(values) = self.card_roles_contains_any() {
             let matches = card
                 .card_profile
@@ -193,7 +195,7 @@ impl CardCriteria {
             }
         }
 
-        // ── oracle tags ─────────────────────────────────────────────
+        // == oracle tags ==
         if let Some(values) = self.oracle_tags_contains_any() {
             let matches = card
                 .card_profile
@@ -228,7 +230,7 @@ impl CardCriteria {
             }
         }
 
-        // ── produced mana ────────────────────────────────────────────
+        // == produced mana ==
         if let Some(values) = self.produced_mana_contains_any() {
             let matches = match &sd.produced_mana {
                 Some(pm) => values
@@ -268,7 +270,7 @@ impl CardCriteria {
         if let Some(q) = self.flavor_text_contains() {
             match &sd.flavor_text {
                 Some(text)
-                    if strip_punctuation(text)
+                    if card_filter::strip_punctuation(text)
                         .to_lowercase()
                         .contains(&q.to_lowercase()) => {}
                 _ => return false,
@@ -277,7 +279,7 @@ impl CardCriteria {
 
         if let Some(q) = self.flavor_text_not_contains()
             && sd.flavor_text.as_ref().is_some_and(|text| {
-                strip_punctuation(text)
+                card_filter::strip_punctuation(text)
                     .to_lowercase()
                     .contains(&q.to_lowercase())
             })
@@ -286,21 +288,17 @@ impl CardCriteria {
         }
 
         if let Some(want_flavor) = self.has_flavor_text() {
-            let has = sd
-                .flavor_text
-                .as_ref()
-                .map(|t| !t.is_empty())
-                .unwrap_or(false);
+            let has = sd.flavor_text.as_ref().is_some_and(|t| !t.is_empty());
             if has != want_flavor {
                 return false;
             }
         }
 
-        // ── types ─────────────────────────────────────────────────────
+        // == types ==
         if let Some(q) = self.type_line_contains() {
             match &sd.type_line {
                 Some(tl)
-                    if strip_punctuation(tl)
+                    if card_filter::strip_punctuation(tl)
                         .to_lowercase()
                         .contains(&q.to_lowercase()) => {}
                 _ => return false,
@@ -309,7 +307,7 @@ impl CardCriteria {
 
         if let Some(q) = self.type_line_not_contains()
             && sd.type_line.as_ref().is_some_and(|tl| {
-                strip_punctuation(tl)
+                card_filter::strip_punctuation(tl)
                     .to_lowercase()
                     .contains(&q.to_lowercase())
             })
@@ -320,7 +318,7 @@ impl CardCriteria {
         if let Some(values) = self.type_line_contains_any() {
             let matches = match &sd.type_line {
                 Some(tl) => {
-                    let stripped = strip_punctuation(tl).to_lowercase();
+                    let stripped = card_filter::strip_punctuation(tl).to_lowercase();
                     values.iter().any(|v| stripped.contains(&v.to_lowercase()))
                 }
                 None => false,
@@ -333,7 +331,7 @@ impl CardCriteria {
         if let Some(card_types) = self.card_type_contains_any() {
             let matches = match &sd.type_line {
                 Some(tl) => {
-                    let stripped = strip_punctuation(tl).to_lowercase();
+                    let stripped = card_filter::strip_punctuation(tl).to_lowercase();
                     card_types
                         .iter()
                         .any(|ct| stripped.contains(&ct.to_string().to_lowercase()))
@@ -348,7 +346,7 @@ impl CardCriteria {
         if let Some(values) = self.type_line_contains_all() {
             let matches = match &sd.type_line {
                 Some(tl) => {
-                    let stripped = strip_punctuation(tl).to_lowercase();
+                    let stripped = card_filter::strip_punctuation(tl).to_lowercase();
                     values.iter().all(|v| stripped.contains(&v.to_lowercase()))
                 }
                 None => false,
@@ -373,7 +371,7 @@ impl CardCriteria {
         if let Some(values) = self.type_line_excludes_any() {
             let excluded = match &sd.type_line {
                 Some(tl) => {
-                    let stripped = strip_punctuation(tl).to_lowercase();
+                    let stripped = card_filter::strip_punctuation(tl).to_lowercase();
                     values.iter().any(|v| stripped.contains(&v.to_lowercase()))
                 }
                 None => false,
@@ -386,7 +384,7 @@ impl CardCriteria {
         if let Some(card_types) = self.card_type_excludes_any() {
             let excluded = match &sd.type_line {
                 Some(tl) => {
-                    let stripped = strip_punctuation(tl).to_lowercase();
+                    let stripped = card_filter::strip_punctuation(tl).to_lowercase();
                     card_types
                         .iter()
                         .any(|ct| stripped.contains(&ct.to_string().to_lowercase()))
@@ -398,7 +396,7 @@ impl CardCriteria {
             }
         }
 
-        // ── legality (any-of-formats) ────────────────────────────────
+        // == legality (any-of-formats) ==
         if let Some(formats) = self.legalities_contains_any() {
             let is_legal_in_any = formats.iter().any(|format_key| {
                 Format::try_from(format_key.as_str())
@@ -411,14 +409,14 @@ impl CardCriteria {
             }
         }
 
-        // ── commander eligibility ────────────────────────────────────
+        // == commander eligibility ==
         if let Some(format) = self.is_commander_in_format()
-            && !is_valid_commander(card, format)
+            && !commander_eligibility::is_valid_commander(card, format)
         {
             return false;
         }
 
-        // ── mana ──────────────────────────────────────────────────────
+        // == mana ==
         if let Some(val) = self.cmc_equals()
             && sd.cmc != Some(val)
         {
@@ -434,7 +432,7 @@ impl CardCriteria {
             }
         }
 
-        // ── price ─────────────────────────────────────────────────────
+        // == price ==
         if self.price_min().is_some() || self.price_max().is_some() {
             let price = match self.price_currency().unwrap_or_default() {
                 PriceCurrency::Usd => sd.prices.usd.as_deref(),
@@ -471,7 +469,7 @@ impl CardCriteria {
             return false;
         }
 
-        // ── combat ────────────────────────────────────────────────────
+        // == combat ==
         if let Some(val) = self.power_equals() {
             let parsed = sd.power.as_deref().and_then(|p| p.parse::<i32>().ok());
             if parsed != Some(val) {
@@ -504,7 +502,7 @@ impl CardCriteria {
             }
         }
 
-        // ── metadata ──────────────────────────────────────────────────
+        // == metadata ==
         if let Some(rarities) = self.rarity_equals_any()
             && !rarities.contains(&sd.rarity)
         {
@@ -517,7 +515,7 @@ impl CardCriteria {
             return false;
         }
 
-        // Known divergence from the server (2026-09-01): zerver matches set
+        // Known divergence from the server: zerver matches set
         // filters against printing_set_names, the card's full printing
         // history; here only the wire card's own printing is visible, so the
         // check stays pick-based. Acceptable for the small in-memory
@@ -556,7 +554,7 @@ impl CardCriteria {
             return false;
         }
 
-        // ── flags ─────────────────────────────────────────────────────
+        // == flags ==
 
         if let Some(val) = self.is_token()
             && cp.is_token != val

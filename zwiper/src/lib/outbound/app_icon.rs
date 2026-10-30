@@ -41,7 +41,7 @@ pub fn current() -> ThemeConfig {
         .unwrap_or_else(primary)
 }
 
-/// Moves an icon this build no longer bundles (a retired theme's) onto the one
+/// Moves an icon this build does not bundle (a retired theme's) onto the one
 /// [`current`] reads it as. A no-op once they match; on iOS the OS shows its
 /// own alert when it switches.
 pub fn replace_retired() {
@@ -59,6 +59,10 @@ pub fn replace_retired() {
 
 /// Switches the icon to `icon`'s colors. On iOS the OS shows its own alert
 /// saying the icon changed.
+///
+/// # Errors
+///
+/// Fails when the platform rejects the switch.
 pub fn set(icon: &ThemeConfig) -> anyhow::Result<()> {
     platform::set(alternate_name(icon).as_deref())
 }
@@ -69,6 +73,10 @@ pub fn follows_theme() -> bool {
 }
 
 /// Turns following the app's theme on or off for this device.
+///
+/// # Errors
+///
+/// Fails when the platform cannot store or clear the flag.
 pub fn set_follows_theme(on: bool) -> anyhow::Result<()> {
     platform::set_follows_theme(on)
 }
@@ -138,14 +146,14 @@ mod platform {
         app.ok_or_else(|| anyhow::anyhow!("UIApplication is NULL"))
     }
 
-    pub fn current() -> Option<String> {
+    pub(crate) fn current() -> Option<String> {
         let app = app().ok()?;
         // SAFETY: `alternateIconName` is a nullable NSString getter.
         let name: Option<Retained<NSString>> = unsafe { msg_send![&*app, alternateIconName] };
         name.map(|n| n.to_string())
     }
 
-    pub fn set(name: Option<&str>) -> anyhow::Result<()> {
+    pub(crate) fn set(name: Option<&str>) -> anyhow::Result<()> {
         let app = app()?;
         // False only when Info.plist lists no alternates, which is a build
         // that skipped zcripts/ios/icons.sh.
@@ -167,16 +175,16 @@ mod platform {
 
     fn follows_entry() -> Result<crate::outbound::keyring_entry::Entry, keyring::Error> {
         crate::outbound::keyring_entry::entry(
-            &(env!("CARGO_PKG_NAME").to_string() + "-service"),
-            &(env!("CARGO_PKG_NAME").to_string() + "-icon-follows-theme"),
+            concat!(env!("CARGO_PKG_NAME"), "-service"),
+            concat!(env!("CARGO_PKG_NAME"), "-icon-follows-theme"),
         )
     }
 
-    pub fn follows_theme() -> bool {
+    pub(crate) fn follows_theme() -> bool {
         follows_entry().is_ok_and(|entry| entry.get_secret().is_ok())
     }
 
-    pub fn set_follows_theme(on: bool) -> anyhow::Result<()> {
+    pub(crate) fn set_follows_theme(on: bool) -> anyhow::Result<()> {
         let entry = follows_entry()?;
         if on {
             entry.set_secret(b"1")?;
@@ -199,22 +207,28 @@ mod platform {
     static PICKED: Mutex<Option<String>> = Mutex::new(None);
     static FOLLOWS: AtomicBool = AtomicBool::new(false);
 
-    pub fn follows_theme() -> bool {
+    pub(crate) fn follows_theme() -> bool {
         FOLLOWS.load(Ordering::Relaxed)
     }
 
-    #[allow(clippy::unnecessary_wraps)]
-    pub fn set_follows_theme(on: bool) -> anyhow::Result<()> {
+    #[expect(
+        clippy::unnecessary_wraps,
+        reason = "signature is shared with the ios variant, which can fail"
+    )]
+    pub(crate) fn set_follows_theme(on: bool) -> anyhow::Result<()> {
         FOLLOWS.store(on, Ordering::Relaxed);
         Ok(())
     }
 
-    pub fn current() -> Option<String> {
+    pub(crate) fn current() -> Option<String> {
         PICKED.lock().ok()?.clone()
     }
 
-    #[allow(clippy::unnecessary_wraps)]
-    pub fn set(name: Option<&str>) -> anyhow::Result<()> {
+    #[expect(
+        clippy::unnecessary_wraps,
+        reason = "signature is shared with the ios variant, which can fail"
+    )]
+    pub(crate) fn set(name: Option<&str>) -> anyhow::Result<()> {
         if let Ok(mut picked) = PICKED.lock() {
             *picked = name.map(str::to_string);
         }
@@ -260,18 +274,21 @@ mod tests {
     fn a_retired_icon_reads_as_its_replacement() {
         let _platform = platform_lock();
         assert!(platform::set(Some("AppIcon-visual-studio-light")).is_ok());
-        assert!(current() == icon("vscode", false));
+        assert_eq!(current(), icon("vscode", false));
         replace_retired();
         assert_eq!(platform::current().as_deref(), Some("AppIcon-vscode-light"));
         assert!(platform::set(Some("AppIcon-no-such-theme-dark")).is_ok());
-        assert!(current() == primary());
+        assert_eq!(current(), primary());
         assert!(platform::set(None).is_ok());
     }
 
     #[test]
     fn a_bundle_name_parses_back_keeping_the_themes_hyphens() {
-        assert!(parse("AppIcon-tokyo-night-light") == Some(icon("tokyo-night", false)));
-        assert!(parse("AppIcon-nord-dark") == Some(icon("nord", true)));
+        assert_eq!(
+            parse("AppIcon-tokyo-night-light"),
+            Some(icon("tokyo-night", false))
+        );
+        assert_eq!(parse("AppIcon-nord-dark"), Some(icon("nord", true)));
         assert!(parse("AppIcon-nord").is_none());
     }
 
@@ -302,18 +319,18 @@ mod tests {
     fn a_pick_reads_back_and_the_icon_follows_only_when_asked() {
         let _platform = platform_lock();
         assert!(set(&icon("nord", false)).is_ok());
-        assert!(current() == icon("nord", false));
+        assert_eq!(current(), icon("nord", false));
 
         follow(&icon("dracula", true));
-        assert!(current() == icon("nord", false));
+        assert_eq!(current(), icon("nord", false));
 
         assert!(set_follows_theme(true).is_ok());
         assert!(follows_theme());
         follow(&icon("dracula", true));
-        assert!(current() == icon("dracula", true));
+        assert_eq!(current(), icon("dracula", true));
 
         assert!(set_follows_theme(false).is_ok());
         assert!(set(&primary()).is_ok());
-        assert!(current() == primary());
+        assert_eq!(current(), primary());
     }
 }

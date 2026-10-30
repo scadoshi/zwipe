@@ -1,3 +1,5 @@
+//! Email change handler.
+
 use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
@@ -15,8 +17,7 @@ impl From<ChangeEmailError> for ApiError {
     fn from(value: ChangeEmailError) -> Self {
         match value {
             ChangeEmailError::UserNotFound => Self::NotFound("user not found".to_string()),
-            ChangeEmailError::Database(e) => e.to_500(),
-            ChangeEmailError::UserFromDb(e) => e.to_500(),
+            ChangeEmailError::Database(e) | ChangeEmailError::UserFromDb(e) => e.to_500(),
             ChangeEmailError::AuthenticateUserError(e) => ApiError::from(e),
         }
     }
@@ -25,9 +26,9 @@ impl From<ChangeEmailError> for ApiError {
 impl From<InvalidChangeEmail> for ApiError {
     fn from(value: InvalidChangeEmail) -> Self {
         match value {
-            InvalidChangeEmail::Id(e) => Self::UnprocessableEntity(format!("invalid id: {}", e)),
+            InvalidChangeEmail::Id(e) => Self::UnprocessableEntity(format!("invalid id: {e}")),
             InvalidChangeEmail::Email(e) => {
-                Self::UnprocessableEntity(format!("invalid email: {}", e))
+                Self::UnprocessableEntity(format!("invalid email: {e}"))
             }
         }
     }
@@ -37,6 +38,11 @@ impl From<InvalidChangeEmail> for ApiError {
 ///
 /// The response is the same whether or not another account has the address;
 /// the switch happens when the link sent to it is clicked.
+///
+/// # Errors
+///
+/// Returns 422 for an invalid address, 401 for a wrong password, 404 when the
+/// user is gone, and 500 on a database failure.
 pub async fn change_email(
     user: AuthenticatedUser,
     State(state): State<AppState>,

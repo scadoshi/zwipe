@@ -1,4 +1,4 @@
-//! Deck power level: the official WotC Commander Bracket a deck is built for.
+//! Deck power level: the official Commander Bracket a deck is built for.
 //!
 //! A single-select rating (not a tag): a deck has exactly one, and it's worth
 //! sorting/filtering on. Distinct from [`DeckTag`](super::deck_tag::DeckTag)
@@ -7,13 +7,13 @@
 //!
 //! Brackets are Commander-coined but players apply them loosely to any deck, so
 //! this isn't gated by format. Variants are only ever added, never removed or
-//! renamed, so previously-stored values keep parsing.
+//! renamed, so stored values keep parsing.
 
 use std::fmt;
 
 use serde::{Deserialize, Serialize};
 
-/// The WotC Commander Bracket a deck targets (1–5).
+/// The official Commander Bracket a deck targets (1–5).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum PowerLevel {
@@ -64,7 +64,7 @@ impl PowerLevel {
     }
 }
 
-/// Display as snake_case (matches serde serialization).
+/// Display as `snake_case` (matches serde serialization).
 impl fmt::Display for PowerLevel {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let s = serde_json::to_string(self).unwrap_or_default();

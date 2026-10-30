@@ -1,16 +1,19 @@
-//! Upkeep (nightly maintenance) prune behavior against real rows — the local
-//! zervice runs only proved the grants on empty tables. Constructs
+//! Upkeep (nightly maintenance) prune behavior against real rows, which a
+//! zervice run on empty tables can't show. Constructs
 //! `Postgres { pool }` and calls `UpkeepRepository` methods directly.
 //!
 //! Requires `DATABASE_URL`: `set -a; source zerver/.env; set +a`.
 
-#![allow(clippy::unwrap_used)]
+#![expect(
+    clippy::unwrap_used,
+    reason = "a test: helpers outside #[test] fns unwrap, and a panic is the failure report"
+)]
 
 use zwipe::domain::upkeep::ports::UpkeepRepository;
 use zwipe::domain::upkeep::services::{DIAGNOSTIC_RETENTION_DAYS, REPLACED_TOKEN_RETENTION_DAYS};
 use zwipe::outbound::sqlx::postgres::Postgres;
 
-/// Inserts a client_errors row with `received_at` backdated by `days`.
+/// Inserts a `client_errors` row with `received_at` backdated by `days`.
 async fn seed_client_error(pool: &sqlx::PgPool, days: i32) {
     sqlx::query(
         "INSERT INTO client_errors
@@ -23,7 +26,7 @@ async fn seed_client_error(pool: &sqlx::PgPool, days: i32) {
     .unwrap();
 }
 
-/// Inserts a crash_reports row with `received_at` backdated by `days`.
+/// Inserts a `crash_reports` row with `received_at` backdated by `days`.
 async fn seed_crash(pool: &sqlx::PgPool, days: i32) {
     sqlx::query(
         "INSERT INTO crash_reports
@@ -73,7 +76,7 @@ async fn diagnostic_prunes_kill_old_and_spare_fresh(pool: sqlx::PgPool) {
 async fn session_prune_kills_expired_across_users(pool: sqlx::PgPool) {
     let repo = Postgres { pool: pool.clone() };
 
-    // Two dormant users, expired + live tokens each — the global sweep case
+    // Two dormant users, expired + live tokens each: the global sweep case
     // the insert-time drive-by never reaches.
     for who in ["ghost_one", "ghost_two"] {
         let user_id: uuid::Uuid = sqlx::query_scalar(

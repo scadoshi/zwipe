@@ -1,3 +1,5 @@
+//! Deck clone handler.
+
 use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
@@ -9,7 +11,7 @@ use zwipe_core::http::contracts::deck::{HttpCloneDeck, HttpClonedDeck};
 use crate::domain::deck::models::deck::clone_deck::CloneDeckError;
 use crate::domain::deck::models::deck::get_deck_profile::GetDeckProfileError;
 use crate::domain::metrics::models::kinds::EventKind;
-use crate::inbound::http::handlers::metrics::check_completion::check_deck_completion;
+use crate::inbound::http::handlers::metrics::check_completion;
 use crate::inbound::http::middleware::AuthenticatedUser;
 use crate::inbound::http::{ApiError, AppState, To500};
 
@@ -36,8 +38,9 @@ impl From<CloneDeckError> for ApiError {
                     Self::NotFound("source deck not found".to_string())
                 }
                 GetDeckProfileError::Forbidden => Self::NotFound("deck not found".to_string()),
-                GetDeckProfileError::Database(e) => e.to_500(),
-                GetDeckProfileError::DeckProfileFromDb(e) => e.to_500(),
+                GetDeckProfileError::Database(e) | GetDeckProfileError::DeckProfileFromDb(e) => {
+                    e.to_500()
+                }
             },
             CloneDeckError::Database(e) => e.to_500(),
         }
@@ -48,7 +51,7 @@ impl From<InvalidCloneDeck> for ApiError {
     fn from(value: InvalidCloneDeck) -> Self {
         match value {
             InvalidCloneDeck::Name(e) => {
-                Self::UnprocessableEntity(format!("invalid deck name: {}", e))
+                Self::UnprocessableEntity(format!("invalid deck name: {e}"))
             }
         }
     }
@@ -59,13 +62,18 @@ impl From<InvalidCloneDeck> for ApiError {
 /// The source deck id is taken from the URL path; the new deck name comes
 /// from the JSON body. The response contains only the new deck's id;
 /// the client navigates to the deck view which loads the full aggregate.
+///
+/// # Errors
+///
+/// Returns 422 for an invalid name or the deck limit, 404 when the source isn't
+/// the caller's, 409 when the name is taken, and 500 on a database failure.
 pub async fn clone_deck(
     user: AuthenticatedUser,
     State(state): State<AppState>,
     Path(source_deck_id): Path<Uuid>,
     Json(body): Json<HttpCloneDeck>,
 ) -> Result<(StatusCode, Json<HttpClonedDeck>), ApiError> {
-    // Fetch email_verified the same way create_deck_profile does (handler line 71).
+    // Fetch email_verified the same way create_deck_profile does.
     let db_user = state.user_service.get_user(&GetUser::from(user.id)).await?;
     let email_verified = db_user.email_verified_at.is_some();
 
@@ -92,7 +100,7 @@ pub async fn clone_deck(
         }
         // A clone is a complete copy of an existing deck, so it may already be
         // valid, so run the completion check immediately.
-        check_deck_completion(deck_service, metrics, uid, new_deck_id).await;
+        check_completion::check_deck_completion(deck_service, metrics, uid, new_deck_id).await;
     });
 
     Ok((

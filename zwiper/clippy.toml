@@ -1,3 +1,19 @@
+# Thresholds and behavior only. Lint levels live in Cargo.toml [lints.clippy].
+
+too-many-arguments-threshold = 7
+type-complexity-threshold = 250
+cognitive-complexity-threshold = 25
+
+# Google's bool rule: flag functions with several bools, not every bool.
+# Single bool setters stay; an unclear lone bool gets a call-site comment.
+max-fn-params-bools = 2
+
+# Panicking is the right failure mode in a test.
+allow-unwrap-in-tests = true
+allow-expect-in-tests = true
+allow-panic-in-tests = true
+allow-indexing-slicing-in-tests = true
+
 await-holding-invalid-types = [
   "generational_box::GenerationalRef",
   { path = "generational_box::GenerationalRef", reason = "Reads should not be held over an await point. This will cause any writes to fail while the await is pending since the read borrow is still active." },

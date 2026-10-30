@@ -8,11 +8,14 @@
 use std::time::Duration;
 
 use dioxus::prelude::*;
-use tokio::time::sleep;
+use tokio::time;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ImageSize;
 
 use super::super::card::components::flippable_card_image::FlippableCardImage;
+
+/// Seconds the row waits for the card images before it opens anyway.
+const REVEAL_TIMEOUT_SECS: u64 = 4;
 
 /// One labeled featured card: image (when available) above name + role chip.
 /// Tapping it fires `on_tap` with the card so the host can open its image
@@ -43,7 +46,7 @@ fn FeaturedCard(
                     size: ImageSize::Normal,
                     class: "deck-featured-image".to_string(),
                     draggable: false,
-                    on_load: move |_| on_load.call(()),
+                    on_load: move |()| on_load.call(()),
                 }
             }
             div { class: "deck-featured-name", "{name}" }
@@ -74,7 +77,7 @@ pub fn FeaturedCards(
     let mut timed_out: Signal<bool> = use_signal(|| false);
     let mut opened: Signal<bool> = use_signal(|| false);
     use_future(move || async move {
-        sleep(Duration::from_secs(4)).await;
+        time::sleep(Duration::from_secs(REVEAL_TIMEOUT_SECS)).await;
         timed_out.set(true);
     });
     let total = cards.len();
@@ -100,7 +103,7 @@ pub fn FeaturedCards(
                         card,
                         role,
                         on_tap,
-                        on_load: move |_| images_loaded += 1,
+                        on_load: move |()| images_loaded += 1,
                     }
                 }
             }

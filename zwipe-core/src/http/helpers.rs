@@ -43,10 +43,9 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 /// hard error on purpose: without the skip attr it would emit `null`,
 /// which decodes as "clear this field" and silently wipes data.
 ///
-/// The pre-1.7.5 legacy dialect (`"Unchanged"` string, `{"Set": value}`
+/// The externally tagged dialect (`"Unchanged"` string, `{"Set": value}`
 /// wrappers) is not decoded: the 1.7.5 version gate guarantees every
-/// client speaks the clean shape (`context/plans/patch_idempotent_updates.md`,
-/// Phase 5).
+/// client speaks the clean shape.
 ///
 /// # Etymology
 ///

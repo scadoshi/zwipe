@@ -4,7 +4,7 @@ use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 
-use super::deck_cards::{DeckCards, extract_artists};
+use super::deck_cards::{self, DeckCards};
 use crate::inbound::components::catalog_cache::CatalogCache;
 
 /// Whether the artist filter is in include or exclude mode.
@@ -34,11 +34,11 @@ fn read_artists(fb: &CardQueryBuilder, mode: IncludeExclude) -> Vec<String> {
     match mode {
         IncludeExclude::Include => fb
             .artist_equals_any()
-            .map(|v| v.to_vec())
+            .map(<[_]>::to_vec)
             .unwrap_or_default(),
         IncludeExclude::Exclude => fb
             .artist_excludes_any()
-            .map(|v| v.to_vec())
+            .map(<[_]>::to_vec)
             .unwrap_or_default(),
     }
 }
@@ -77,7 +77,7 @@ pub fn Artist() -> Element {
     });
     let all_artists = use_memo(move || -> Option<Vec<String>> {
         if let Some(dc) = deck_ctx {
-            Some(extract_artists(&dc.0()))
+            Some(deck_cards::extract_artists(&dc.0()))
         } else {
             cache.artists.cell().read().loaded().cloned()
         }
@@ -136,8 +136,7 @@ pub fn Artist() -> Element {
                     for artist in selected_artists.iter().cloned() {
                         div {
                             class: match mode() {
-                                IncludeExclude::Include => "chip selected flex items-center gap-05",
-                                IncludeExclude::Exclude => "chip selected flex items-center gap-05",
+                                IncludeExclude::Include | IncludeExclude::Exclude => "chip selected flex items-center gap-05",
                             },
                             {artist.clone()}
                             button { class: "chip-remove",
@@ -171,7 +170,9 @@ pub fn Artist() -> Element {
                             .cloned()
                             .collect();
 
-                        if !results.is_empty() {
+                        if results.is_empty() {
+                            rsx! {}
+                        } else {
                             rsx! {
                                 div { class: "search-float-anchor",
                                     div { class: "search-float-results",
@@ -191,8 +192,6 @@ pub fn Artist() -> Element {
                                     }
                                 }
                             }
-                        } else {
-                            rsx! {}
                         }
                     }
                 }

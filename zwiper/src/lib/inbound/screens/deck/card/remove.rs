@@ -12,8 +12,7 @@ use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilde
 use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::card::search_card::cards::Cards;
-use zwipe_core::domain::deck::deck_metrics::{budget_tier, deck_price};
-use zwipe_core::domain::deck::{Board, DeckEntry};
+use zwipe_core::domain::deck::{Board, DeckEntry, deck_metrics};
 use zwipe_core::domain::user::models::hints::HINT_REMOVE_DECK_CARDS;
 use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpPatchDeckCard};
 
@@ -34,6 +33,11 @@ use crate::inbound::screens::deck::card::components::card_stack::use_card_stack;
 use crate::inbound::screens::deck::card::components::undo_log::{UndoAction, UndoStore};
 use crate::inbound::screens::deck::card::filter::card_filter_sheet::CardFilterSheet;
 use crate::inbound::screens::deck::card::filter::deck_cards::DeckCards;
+
+/// Pixels a swipe travels to commit.
+const SWIPE_DISTANCE_PX: f64 = 90.0;
+/// Pixels per millisecond a flick needs to commit.
+const SWIPE_SPEED_PX_PER_MS: f64 = 2.5;
 
 /// Board filter for the remove screen.
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
@@ -117,8 +121,8 @@ pub fn Remove(deck_id: Uuid) -> Element {
     let mut price_budget_currency: Signal<PriceCurrency> = use_signal(|| PriceCurrency::Usd);
 
     // Swipe config: the stack owns its own SwipeState internally.
-    // Thresholds tuned for responsive rapid swiping: a short drag (60px) OR
-    // a quick flick (1.5 px/ms over the 10px minimum) commits.
+    // Thresholds tuned for responsive rapid swiping: a drag past 90px OR a
+    // flick faster than 2.5 px/ms (after the 32px minimum) commits.
     let swipe_config = SwipeConfig::new(
         vec![
             Direction::Left,
@@ -126,8 +130,8 @@ pub fn Remove(deck_id: Uuid) -> Element {
             Direction::Up,
             Direction::Down,
         ],
-        90.0,
-        2.5,
+        SWIPE_DISTANCE_PX,
+        SWIPE_SPEED_PX_PER_MS,
     );
 
     let current_card = move || stack.current_wrapping();
@@ -158,7 +162,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
 
     // Mainboard total in the budget currency from the source of truth.
     let total_price = move || -> f64 {
-        deck_price(
+        deck_metrics::deck_price(
             &deck_entries.peek(),
             &command_zone_cards.peek(),
             price_budget_currency(),
@@ -175,7 +179,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
         if budget <= 0.0 {
             return;
         }
-        if budget_tier(budget, after) > budget_tier(budget, before) {
+        if deck_metrics::budget_tier(budget, after) > deck_metrics::budget_tier(budget, before) {
             let pct = after / budget * 100.0;
             let amount = price_budget_currency().format_amount(budget);
             let msg = format!("Deck at {pct:.2}% of your {amount} budget");
@@ -441,7 +445,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                         }
                         Err(e) => {
                             tracing::warn!("undo remove (create deck card) failed: {e}");
-                            toast.error(format!("Failed to undo: {}", e), ToastOptions::default());
+                            toast.error(format!("Failed to undo: {e}"), ToastOptions::default());
                             // The removal still stands server-side.
                             if let Some(action) = taken {
                                 undo_store.push(deck_id, action);
@@ -522,7 +526,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                         }
                         Err(e) => {
                             tracing::warn!("undo board move (update deck card) failed: {e}");
-                            toast.error(format!("Failed to undo: {}", e), ToastOptions::default());
+                            toast.error(format!("Failed to undo: {e}"), ToastOptions::default());
                             // The board move still stands server-side.
                             if let Some(action) = taken {
                                 undo_store.push(deck_id, action);
@@ -669,7 +673,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                 CardDetailsSheet {
                     open: show_details,
                     card: card.clone(),
-                    on_printings: move |_| printing_open.set(true),
+                    on_printings: move |()| printing_open.set(true),
                 }
                 PrintingSheet {
                     host_screen: screen::DECK_CARD_REMOVE,

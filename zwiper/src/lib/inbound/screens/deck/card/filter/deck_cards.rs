@@ -8,7 +8,7 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::stop_words::{ORACLE_STOP_WORDS, TYPE_STOP_WORDS};
 
 /// Newtype so `try_use_context` doesn't collide with other `Signal<Vec<Card>>` contexts.
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct DeckCards(pub Signal<Vec<Card>>);
 
 /// Extracts distinct type words from deck cards' `type_line` fields.
@@ -18,7 +18,7 @@ pub fn extract_type_words(cards: &[Card]) -> Vec<String> {
         .filter_map(|c| c.scryfall_data.type_line.as_deref())
         .flat_map(|line| line.split_whitespace())
         .map(|w| w.trim_matches(|c: char| matches!(c, ':' | '-' | '?' | ',' | ' ')))
-        .map(|w| w.to_lowercase())
+        .map(str::to_lowercase)
         .filter(|w| !w.is_empty() && !TYPE_STOP_WORDS.contains(&w.as_str()))
         .collect();
     words.sort();
@@ -34,7 +34,7 @@ pub fn extract_oracle_words(cards: &[Card]) -> Vec<String> {
         .flat_map(|text| text.split_whitespace())
         .map(|w| {
             w.chars()
-                .filter(|c| c.is_ascii_alphabetic())
+                .filter(char::is_ascii_alphabetic)
                 .collect::<String>()
                 .to_lowercase()
         })
@@ -65,7 +65,7 @@ pub fn extract_artists(cards: &[Card]) -> Vec<String> {
         .iter()
         .filter_map(|c| c.scryfall_data.artist.as_deref())
         .filter(|a| !a.is_empty())
-        .map(|a| a.to_string())
+        .map(ToString::to_string)
         .collect();
     artists.sort();
     artists.dedup();

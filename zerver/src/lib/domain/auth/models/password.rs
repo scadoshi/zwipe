@@ -254,6 +254,10 @@ impl HashedPassword {
     /// let password = Password::new("SecurePass123!")?;
     /// let hashed = HashedPassword::generate(password)?;
     /// ```
+    #[expect(
+        clippy::needless_pass_by_value,
+        reason = "takes the plaintext so the caller gives it up once it is hashed"
+    )]
     pub fn generate(password: Password) -> Result<Self, password_hash::Error> {
         let salt = SaltString::generate(&mut OsRng);
         let hash = Argon2::default()
@@ -285,6 +289,11 @@ impl HashedPassword {
     ///     false => println!("Invalid password"),
     /// }
     /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns the `password_hash` error when the stored hash doesn't parse or
+    /// verification fails for any reason other than a wrong password.
     pub fn verify(&self, password: &str) -> Result<bool, password_hash::Error> {
         let parsed_hash = argon2::PasswordHash::new(&self.0)?;
 
@@ -338,7 +347,7 @@ mod tests {
         assert!(result.is_ok());
 
         let hash = result.unwrap();
-        assert!(!hash.0.is_empty());
+        assert_ne!(hash.0, "");
 
         // Argon2 hashes should start with $argon2 and have multiple $ delimited sections
         assert!(hash.0.starts_with("$argon2"));
@@ -354,7 +363,7 @@ mod tests {
         assert!(result.is_ok());
 
         let hash = result.unwrap();
-        assert!(!hash.to_string().is_empty());
+        assert_ne!(hash.to_string(), "");
         assert!(hash.to_string().starts_with("$argon2"));
     }
 
@@ -466,18 +475,18 @@ mod tests {
         // 128 chars is the maximum: use "abc" pattern to avoid TooManyRepeats
         let suffix = "A1!";
         let padding: String = "abcdef".chars().cycle().take(128 - suffix.len()).collect();
-        let long_password = format!("{}{}", padding, suffix);
+        let long_password = format!("{padding}{suffix}");
         assert_eq!(long_password.len(), 128);
         let password = Password::new(&long_password).unwrap();
         let hash = HashedPassword::generate(password).unwrap();
-        assert!(!hash.0.is_empty());
+        assert_ne!(hash.0, "");
     }
 
     #[test]
     fn test_hash_password_rejects_over_max_length() {
         let suffix = "A1!";
         let padding: String = "abcdef".chars().cycle().take(129 - suffix.len()).collect();
-        let too_long = format!("{}{}", padding, suffix);
+        let too_long = format!("{padding}{suffix}");
         assert_eq!(too_long.len(), 129);
         assert!(matches!(
             Password::new(&too_long),
@@ -493,7 +502,7 @@ mod tests {
         assert!(result.is_ok());
 
         let hash = result.unwrap();
-        assert!(!hash.0.is_empty());
+        assert_ne!(hash.0, "");
     }
 
     #[test]
@@ -504,7 +513,7 @@ mod tests {
         assert!(result.is_ok());
 
         let hash = result.unwrap();
-        assert!(!hash.0.is_empty());
+        assert_ne!(hash.0, "");
     }
 
     // == password verification ==
@@ -663,7 +672,7 @@ mod tests {
                 // Long password under 128, cycling chars to avoid TooManyRepeats
                 let suffix = "A1!";
                 let padding: String = "abcdef".chars().cycle().take(96 - suffix.len()).collect();
-                format!("{}{}", padding, suffix)
+                format!("{padding}{suffix}")
             },
             "Emoji🚀🔒💻1!Ab".to_string(), // With emoji
         ];
@@ -674,7 +683,7 @@ mod tests {
             assert!(hash.verify(&password_str).unwrap());
 
             // Verify that a slightly different password fails
-            let wrong_password = format!("{}x", password_str);
+            let wrong_password = format!("{password_str}x");
             assert!(!hash.verify(&wrong_password).unwrap());
         }
     }
@@ -731,7 +740,7 @@ mod tests {
 
         for invalid_hash in invalid_hashes {
             let result = HashedPassword::new(invalid_hash);
-            assert!(result.is_err(), "Should reject: {}", invalid_hash);
+            assert!(result.is_err(), "Should reject: {invalid_hash}");
         }
     }
 
@@ -750,7 +759,7 @@ mod tests {
         let hash_string = valid_hash.to_string();
 
         // Test with leading/trailing whitespace
-        let with_whitespace = format!("  {}  ", hash_string);
+        let with_whitespace = format!("  {hash_string}  ");
         let result = HashedPassword::new(&with_whitespace);
         assert!(result.is_err(), "Should reject hash with whitespace");
     }

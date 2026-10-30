@@ -11,6 +11,18 @@ const UNIQUE_CONSTRAINT_VIOLATION_CODE: &str = "23505";
 /// PostgreSQL error code for check constraint violations (SQLSTATE 23514).
 const CHECK_CONSTRAINT_VIOLATION_CODE: &str = "23514";
 
+/// Connections the pool keeps open while idle.
+const MIN_CONNECTIONS: u32 = 2;
+
+/// Most connections the pool opens at once.
+const MAX_CONNECTIONS: u32 = 10;
+
+/// How long an unused connection stays open before the pool closes it.
+const IDLE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(300);
+
+/// How long a caller waits for a free connection before the acquire fails.
+const ACQUIRE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(5);
+
 /// Extension trait for detecting PostgreSQL constraint violations.
 ///
 /// Allows code to handle specific constraint errors differently from
@@ -57,16 +69,17 @@ impl IsConstraintViolation for sqlx::Error {
 /// - 10 maximum connections (prevents overloading the database)
 /// - 5 minute idle timeout (releases unused connections)
 /// - 5 second acquire timeout (fails fast on pool exhaustion)
+#[derive(Debug)]
 pub struct PostgresPoolOptions(sqlx::postgres::PgPoolOptions);
 
 impl Default for PostgresPoolOptions {
     fn default() -> Self {
         Self(
             sqlx::postgres::PgPoolOptions::new()
-                .min_connections(2)
-                .max_connections(10)
-                .idle_timeout(Some(std::time::Duration::from_secs(300)))
-                .acquire_timeout(std::time::Duration::from_secs(5))
+                .min_connections(MIN_CONNECTIONS)
+                .max_connections(MAX_CONNECTIONS)
+                .idle_timeout(Some(IDLE_TIMEOUT))
+                .acquire_timeout(ACQUIRE_TIMEOUT)
                 // Pin every connection's session to UTC so NOW(), CURRENT_DATE,
                 // and any other clock-derived defaults are deterministic
                 // regardless of where the process runs. TIMESTAMP columns
@@ -90,6 +103,10 @@ impl PostgresPoolOptions {
     }
 
     /// Establishes a connection pool to the database at the given URL.
+    ///
+    /// # Errors
+    ///
+    /// Returns the [`sqlx::Error`] when the pool cannot connect.
     pub async fn connect(self, path: &str) -> Result<sqlx::postgres::PgPool, sqlx::Error> {
         self.0.connect(path).await
     }
@@ -103,7 +120,7 @@ impl PostgresPoolOptions {
 /// at application startup and clone it for each request handler.
 #[derive(Debug, Clone)]
 pub struct Postgres {
-    /// The underlying SQLx connection pool.
+    /// The underlying `SQLx` connection pool.
     pub pool: sqlx::PgPool,
 }
 

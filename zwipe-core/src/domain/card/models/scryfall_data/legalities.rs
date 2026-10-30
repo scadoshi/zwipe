@@ -1,3 +1,5 @@
+//! Format legality status (Standard, Modern, Commander, etc.).
+
 use serde::{Deserialize, Serialize};
 
 use crate::domain::deck::Format;
@@ -48,7 +50,7 @@ pub struct Legalities {
     pub oldschool: Option<LegalityKind>,
     /// Premodern format (4th Edition through Scourge).
     pub premodern: Option<LegalityKind>,
-    /// PreDH format (Commander with pre-Modern card pool).
+    /// `PreDH` format (Commander with pre-Modern card pool).
     pub predh: Option<LegalityKind>,
     /// Explorer format (MTG Arena Pioneer equivalent).
     pub explorer: Option<LegalityKind>,
@@ -91,7 +93,7 @@ impl Legalities {
 ///
 /// # Variants
 /// - **Legal**: Card is legal to play in the format
-/// - **NotLegal**: Card is not legal (not in format's card pool)
+/// - **`NotLegal`**: Card is not legal (not in format's card pool)
 /// - **Restricted**: Card is restricted to 1 copy (Vintage only)
 /// - **Banned**: Card is explicitly banned in the format
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]

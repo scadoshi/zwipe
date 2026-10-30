@@ -24,14 +24,14 @@ pub trait HealthService: Clone + Send + Sync + 'static {
 /// out of the generic parameter list. Auto-implemented for any `HealthService`.
 pub trait ErasedHealthService: Send + Sync + 'static {
     /// See [`HealthService::check_database`].
-    fn check_database<'a>(&'a self) -> BoxFuture<'a, Result<(), HealthCheckFailed>>;
+    fn check_database(&self) -> BoxFuture<'_, Result<(), HealthCheckFailed>>;
 }
 
 impl<T> ErasedHealthService for T
 where
     T: HealthService,
 {
-    fn check_database<'a>(&'a self) -> BoxFuture<'a, Result<(), HealthCheckFailed>> {
+    fn check_database(&self) -> BoxFuture<'_, Result<(), HealthCheckFailed>> {
         Box::pin(HealthService::check_database(self))
     }
 }

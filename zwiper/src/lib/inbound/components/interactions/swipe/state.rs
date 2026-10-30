@@ -52,7 +52,7 @@ impl Default for SwipeState {
 }
 
 impl SwipeState {
-    /// Creates a new SwipeState with default values.
+    /// Creates a new `SwipeState` with default values.
     pub fn new() -> Self {
         Self::default()
     }
@@ -247,7 +247,6 @@ impl SwipeState {
 }
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used)]
 mod tests {
     use chrono::NaiveDate;
     use dioxus::html::geometry::euclid::Point2D;
@@ -257,7 +256,7 @@ mod tests {
     use crate::inbound::components::interactions::swipe::direction::Direction;
     use crate::inbound::components::interactions::swipe::time_point::TimePoint;
 
-    /// Builds a TimePoint at (x, y) offset by `ms` milliseconds from a fixed base time.
+    /// Builds a `TimePoint` at (x, y) offset by `ms` milliseconds from a fixed base time.
     fn tp(x: f64, y: f64, ms: i64) -> TimePoint {
         let base = NaiveDate::from_ymd_opt(2024, 1, 1)
             .unwrap()

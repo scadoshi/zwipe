@@ -30,6 +30,11 @@ impl From<MarkHintShownError> for ApiError {
 ///
 /// Idempotent: marking an already-shown hint is a no-op. Responds with the
 /// updated user so the client can sync its session in place.
+///
+/// # Errors
+///
+/// Returns 422 for an unknown hint key, 404 when the user is gone, and 500 on a
+/// database failure.
 pub async fn mark_hint_shown(
     user: AuthenticatedUser,
     State(state): State<AppState>,

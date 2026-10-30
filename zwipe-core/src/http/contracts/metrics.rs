@@ -234,18 +234,17 @@ fn truncated_chars(s: &str, max: usize) -> String {
 /// from it. `shown` is the impression denominator; currently the client sends
 /// `added + skipped + maybed`, leaving room for true impressions later.
 ///
-/// The legacy `commander_oracle_id` wire field was dropped 2026-07-24 (Phase 5S
-/// step 3), after `MIN_CLIENT_VERSION` was floored to 1.7.0; every serving
-/// client sends `deck_id`. A straggler payload still carrying the old field
-/// deserializes fine (serde ignores unknown fields).
+/// Every client at or above the 1.7.0 version floor sends `deck_id`. A
+/// payload carrying a `commander_oracle_id` field instead deserializes fine
+/// (serde ignores unknown fields).
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
 pub struct CardSignalDelta {
     /// Card oracle id.
     pub card_oracle_id: Uuid,
     /// Deck the swipe belongs to. The sole context key: the server derives the
-    /// deck's commander, format, color identity, and tags from it
-    /// (context/plans/otags/ Phase 5). Kept `Option` for wire leniency; the
-    /// server drops signals it can't resolve to an owned deck.
+    /// deck's commander, format, color identity, and tags from it. Kept
+    /// `Option` for wire leniency; the server drops signals it can't resolve
+    /// to an owned deck.
     #[serde(default)]
     pub deck_id: Option<Uuid>,
     /// Times the card was shown for a decision (add-stack impressions).
@@ -513,7 +512,7 @@ mod tests {
         let old =
             r#"{"swipes_right":1,"swipes_left":0,"swipes_up":0,"swipes_down":0,"searches":0}"#;
         let parsed: HttpUsageBatch = serde_json::from_str(old).unwrap();
-        assert!(parsed.pile_ends.is_empty());
+        assert_eq!(parsed.pile_ends, Vec::<PileEndReport>::new());
     }
 
     #[test]

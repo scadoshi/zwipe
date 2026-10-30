@@ -15,7 +15,7 @@ use crate::domain::deck::deck::DeckEntry;
 
 /// One chart-ready per-color mana balance row (see
 /// [`DeckMetrics::mana_balance_rows`]).
-#[derive(Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ManaBalanceRow {
     /// Color letter (W/U/B/R/G).
     pub label: &'static str,
@@ -46,7 +46,7 @@ pub struct DeckMetrics {
     pub type_counts: Vec<(&'static str, usize)>,
     /// Non-empty color counts in fixed order.
     pub color_counts: Vec<(&'static str, usize)>,
-    /// Per-color (WUBRG) mana balance: (consumed_pips, produced_pips).
+    /// Per-color (WUBRG) mana balance: `(consumed_pips, produced_pips)`.
     /// Index 0=White 1=Blue 2=Black 3=Red 4=Green.
     pub mana_balance: [(usize, usize); 5],
     /// Total deck price in USD (nonfoil preferred, foil/etched fallback). `None` if no cards priced.
@@ -109,7 +109,7 @@ impl DeckMetrics {
     /// 100, any nonzero count reads at least 4 (a visible sliver), zero is 0.
     pub fn bar_pct(count: usize, max: usize) -> u32 {
         if max > 0 && count > 0 {
-            (((count * 100) / max).max(4)) as u32
+            (((count * 100) / max).max(BAR_SLIVER_PCT)) as u32
         } else {
             0
         }
@@ -186,7 +186,10 @@ impl DeckMetrics {
             .map(|(label, (consumed, produced))| {
                 let bar_max = (*consumed).max(*produced);
                 let fill_pct = if *produced > 0 {
-                    (produced * 100).checked_div(bar_max).unwrap_or(0).max(4) as u32
+                    (produced * 100)
+                        .checked_div(bar_max)
+                        .unwrap_or(0)
+                        .max(BAR_SLIVER_PCT) as u32
                 } else {
                     0
                 };
@@ -228,6 +231,10 @@ impl DeckMetrics {
     /// *not* mixed into the type/color/mana/category distributions (those reflect
     /// the mainboard). Cards already present as active entries are skipped so a
     /// commander that also sits in the deck list is not double-counted.
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one pass over the entries that fills every metric at once"
+    )]
     pub fn from_entries_and_command_zone(entries: &[DeckEntry], command_zone: &[Card]) -> Self {
         let active_entries: Vec<DeckEntry> = entries
             .iter()
@@ -236,8 +243,8 @@ impl DeckMetrics {
             .collect();
         let entries = &active_entries;
         let mut cmc_histogram = [0usize; 7];
-        let mut type_buckets = [0usize; 8];
-        let mut color_buckets = [0usize; 7];
+        let mut type_buckets = [0usize; TYPE_LABELS.len()];
+        let mut color_buckets = [0usize; COLOR_LABELS.len()];
         let mut land_count = 0usize;
         let mut cmc_sum = 0.0f64;
         let mut total_cards = 0usize;
@@ -353,21 +360,21 @@ impl DeckMetrics {
 
             // Price: prefer nonfoil → foil → etched
             let prices = &card.scryfall_data.prices;
-            if let Some(p) = parse_price(&prices.usd)
-                .or_else(|| parse_price(&prices.usd_foil))
-                .or_else(|| parse_price(&prices.usd_etched))
+            if let Some(p) = parse_price(prices.usd.as_deref())
+                .or_else(|| parse_price(prices.usd_foil.as_deref()))
+                .or_else(|| parse_price(prices.usd_etched.as_deref()))
             {
                 usd_sum += p * qty as f64;
                 usd_count += qty;
             }
-            if let Some(p) = parse_price(&prices.eur)
-                .or_else(|| parse_price(&prices.eur_foil))
-                .or_else(|| parse_price(&prices.eur_etched))
+            if let Some(p) = parse_price(prices.eur.as_deref())
+                .or_else(|| parse_price(prices.eur_foil.as_deref()))
+                .or_else(|| parse_price(prices.eur_etched.as_deref()))
             {
                 eur_sum += p * qty as f64;
                 eur_count += qty;
             }
-            if let Some(p) = parse_price(&prices.tix) {
+            if let Some(p) = parse_price(prices.tix.as_deref()) {
                 tix_sum += p * qty as f64;
                 tix_count += qty;
             }
@@ -413,16 +420,6 @@ impl DeckMetrics {
             }
         }
 
-        const TYPE_LABELS: [&str; 8] = [
-            "lands",
-            "creatures",
-            "planeswalkers",
-            "artifacts",
-            "enchantments",
-            "instants",
-            "sorceries",
-            "other",
-        ];
         let type_counts: Vec<(&'static str, usize)> = TYPE_LABELS
             .iter()
             .zip(type_buckets.iter())
@@ -430,15 +427,6 @@ impl DeckMetrics {
             .map(|(&label, &count)| (label, count))
             .collect();
 
-        const COLOR_LABELS: [&str; 7] = [
-            "white",
-            "blue",
-            "black",
-            "red",
-            "green",
-            "multicolor",
-            "colorless",
-        ];
         let color_counts: Vec<(&'static str, usize)> = COLOR_LABELS
             .iter()
             .zip(color_buckets.iter())
@@ -527,7 +515,6 @@ fn numeric_stat(top: Option<&str>, front_face: Option<&str>) -> Option<f64> {
     top.or(front_face).and_then(|v| v.parse::<f64>().ok())
 }
 
-/// Card type classification; first match wins (matches group_cards.rs logic).
 #[cfg(test)]
 mod budget_tests {
     use super::budget_tier;
@@ -559,11 +546,40 @@ mod budget_tests {
     }
 }
 
+/// Smallest bar height, in percent, for a nonzero count, so it shows as a sliver.
+const BAR_SLIVER_PCT: usize = 4;
+
+/// Bucket index of "other" in [`TYPE_LABELS`], after the seven checked types.
+const OTHER_CARD_TYPE: usize = 7;
+
+/// Bucket index of "6+", the last mana value bucket.
+const CMC_SIX_PLUS: usize = 6;
+
+/// Chart labels for the type buckets, in [`classify_type`] order.
+const TYPE_LABELS: [&str; 8] = [
+    "lands",
+    "creatures",
+    "planeswalkers",
+    "artifacts",
+    "enchantments",
+    "instants",
+    "sorceries",
+    "other",
+];
+
+/// Chart labels for the color buckets.
+const COLOR_LABELS: [&str; 7] = [
+    "white",
+    "blue",
+    "black",
+    "red",
+    "green",
+    "multicolor",
+    "colorless",
+];
+
+/// Card type classification; first match wins (matches `group_cards.rs` logic).
 fn classify_type(card: &Card) -> usize {
-    let type_line = match &card.scryfall_data.type_line {
-        Some(tl) => tl.as_str(),
-        None => return 7, // "other"
-    };
     const CHECKS: &[&str] = &[
         "Land",
         "Creature",
@@ -573,19 +589,23 @@ fn classify_type(card: &Card) -> usize {
         "Instant",
         "Sorcery",
     ];
+    let type_line = match &card.scryfall_data.type_line {
+        Some(tl) => tl.as_str(),
+        None => return OTHER_CARD_TYPE,
+    };
     CHECKS
         .iter()
         .position(|keyword| type_line.contains(keyword))
-        .unwrap_or(7)
+        .unwrap_or(OTHER_CARD_TYPE)
 }
 
 /// CMC classification: floor to integer, cap at 6.
 fn classify_cmc(card: &Card) -> usize {
     let cmc = card.scryfall_data.cmc.unwrap_or(0.0);
-    (cmc.floor() as usize).min(6)
+    (cmc.floor() as usize).min(CMC_SIX_PLUS)
 }
 
-/// Count colored pip symbols in a Scryfall mana_cost string (e.g. "{2}{R}{R}").
+/// Count colored pip symbols in a Scryfall `mana_cost` string (e.g. "{2}{R}{R}").
 /// Only counts pure single-color symbols; skips hybrid ({W/U}), phyrexian ({W/P}), etc.
 fn count_color_pips(mana_cost: &str) -> [usize; 5] {
     let mut counts = [0usize; 5];
@@ -603,7 +623,7 @@ fn count_color_pips(mana_cost: &str) -> [usize; 5] {
     counts
 }
 
-/// Map a produced_mana string ("W","U","B","R","G") to WUBRG index.
+/// Map a `produced_mana` string ("W","U","B","R","G") to WUBRG index.
 /// Returns None for "C" (colorless), "S" (snow), or unknown values.
 fn produced_color_index(s: &str) -> Option<usize> {
     match s {
@@ -617,8 +637,8 @@ fn produced_color_index(s: &str) -> Option<usize> {
 }
 
 /// Parse an optional price string (e.g. "1.50") into f64.
-fn parse_price(price: &Option<String>) -> Option<f64> {
-    price.as_ref().and_then(|s| s.parse::<f64>().ok())
+fn parse_price(price: Option<&str>) -> Option<f64> {
+    price.and_then(|s| s.parse::<f64>().ok())
 }
 
 /// Price of a single card in the given currency, preferring nonfoil → foil →
@@ -626,13 +646,13 @@ fn parse_price(price: &Option<String>) -> Option<f64> {
 pub fn card_price(scryfall_data: &ScryfallData, currency: PriceCurrency) -> Option<f64> {
     let prices = &scryfall_data.prices;
     match currency {
-        PriceCurrency::Usd => parse_price(&prices.usd)
-            .or_else(|| parse_price(&prices.usd_foil))
-            .or_else(|| parse_price(&prices.usd_etched)),
-        PriceCurrency::Eur => parse_price(&prices.eur)
-            .or_else(|| parse_price(&prices.eur_foil))
-            .or_else(|| parse_price(&prices.eur_etched)),
-        PriceCurrency::Tix => parse_price(&prices.tix),
+        PriceCurrency::Usd => parse_price(prices.usd.as_deref())
+            .or_else(|| parse_price(prices.usd_foil.as_deref()))
+            .or_else(|| parse_price(prices.usd_etched.as_deref())),
+        PriceCurrency::Eur => parse_price(prices.eur.as_deref())
+            .or_else(|| parse_price(prices.eur_foil.as_deref()))
+            .or_else(|| parse_price(prices.eur_etched.as_deref())),
+        PriceCurrency::Tix => parse_price(prices.tix.as_deref()),
     }
 }
 
@@ -649,10 +669,8 @@ pub fn budget_tier(budget: f64, total: f64) -> u8 {
         3
     } else if total >= 0.75 * budget {
         2
-    } else if total >= 0.5 * budget {
-        1
     } else {
-        0
+        u8::from(total >= 0.5 * budget)
     }
 }
 
@@ -665,7 +683,7 @@ pub fn mainboard_total_price(entries: &[DeckEntry], currency: PriceCurrency) -> 
         .filter(|e| e.deck_card.board.is_active())
         .map(|e| {
             card_price(&e.card.scryfall_data, currency).unwrap_or(0.0)
-                * (*e.deck_card.quantity as f64)
+                * f64::from(*e.deck_card.quantity)
         })
         .sum()
 }
@@ -721,8 +739,8 @@ mod tests {
         assert_eq!(metrics.land_count, 0);
         assert_eq!(metrics.nonland_count, 0);
         assert_eq!(metrics.cmc_histogram, [0; 7]);
-        assert!(metrics.type_counts.is_empty());
-        assert!(metrics.color_counts.is_empty());
+        assert_eq!(metrics.type_counts, Vec::<(&str, usize)>::new());
+        assert_eq!(metrics.color_counts, Vec::<(&str, usize)>::new());
         assert_eq!(metrics.total_price_usd, None);
         assert_eq!(metrics.avg_price_usd, None);
         assert_eq!(metrics.total_price_eur, None);

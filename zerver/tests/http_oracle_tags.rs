@@ -1,13 +1,11 @@
 //! Public oracle-tag catalog endpoint. Serves the full tag catalog (with our
-//! overlaid descriptions) that the in-app oracle-tag dictionary reads. No auth —
+//! overlaid descriptions) that the in-app oracle-tag dictionary reads. No auth:
 //! the route lives under `/api/card/` so Cloudflare edge-caches it, and CF bypasses
 //! cache for any request carrying `Authorization`. The **no-auth** assertion here is
 //! the regression guard for that cache contract: make this route require auth and
 //! cache HITs silently vanish, 100x'ing origin load.
 //!
 //! Requires `DATABASE_URL`: `set -a; source zerver/.env; set +a`.
-
-#![allow(clippy::unwrap_used, clippy::indexing_slicing)]
 
 use zwipe_core::http::paths::GET_ORACLE_TAGS_ROUTE;
 mod common;

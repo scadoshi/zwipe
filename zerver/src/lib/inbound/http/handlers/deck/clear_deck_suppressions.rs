@@ -1,3 +1,5 @@
+//! Deck suppression-clear handler.
+
 use axum::Json;
 use axum::extract::{Path, State};
 use zwipe_core::domain::deck::requests::clear_deck_suppressions::{
@@ -22,7 +24,7 @@ impl From<InvalidClearDeckSuppressions> for ApiError {
     fn from(value: InvalidClearDeckSuppressions) -> Self {
         match value {
             InvalidClearDeckSuppressions::DeckId(e) => {
-                Self::UnprocessableEntity(format!("invalid deck id: {}", e))
+                Self::UnprocessableEntity(format!("invalid deck id: {e}"))
             }
         }
     }
@@ -30,6 +32,11 @@ impl From<InvalidClearDeckSuppressions> for ApiError {
 
 /// Clears a deck's suppression set (skipped/removed cards) after ownership
 /// verification, returning the number of rows removed.
+///
+/// # Errors
+///
+/// Returns 422 for a malformed deck id, 404 when the deck isn't the caller's,
+/// and 500 on a database failure.
 pub async fn clear_deck_suppressions(
     State(state): State<AppState>,
     Path(deck_id): Path<String>,

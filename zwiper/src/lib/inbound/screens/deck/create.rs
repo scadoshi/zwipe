@@ -9,13 +9,12 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::format::Format;
 use zwipe_core::domain::deck::{
-    DeckName, DeckOtherTag, DeckTagView, MAX_DECK_ORACLE_TAGS, PowerLevel,
-    seed_oracle_tags_from_catalog,
+    self, DeckName, DeckOtherTag, DeckTagView, MAX_DECK_ORACLE_TAGS, PowerLevel,
 };
 use zwipe_core::domain::user::models::hints::HINT_CREATE_DECK;
 use zwipe_core::http::contracts::deck::HttpCreateDeckProfile;
 
-use super::components::deck_fields::{DeckFields, DeckFieldsHint, autofill_named_partner};
+use super::components::deck_fields::{self, DeckFields, DeckFieldsHint};
 use super::components::format_select::FormatSelect;
 use super::components::oracle_tag_select::OracleTagSelect;
 use super::components::swipe_select::{SwipeMode, SwipeSelect};
@@ -33,7 +32,7 @@ use crate::inbound::router::Router;
 type FormatSnapshot = (Option<Format>, Option<Card>, String, Option<Card>, String);
 
 /// Context: one-shot commander seed from the commander maybeboard's "Create
-/// deck" action. Parked above the router (session_upkeep) so it survives the
+/// deck" action. Parked above the router (`session_upkeep`) so it survives the
 /// navigation; taken (and cleared) by [`CreateDeck`] at mount.
 #[derive(Clone, Copy)]
 pub(crate) struct CreateDeckCommanderSeed(pub(crate) Signal<Option<Card>>);
@@ -144,8 +143,8 @@ pub fn CreateDeck() -> Element {
         spawn(async move {
             let commander_id = commander().map(|c| c.scryfall_data.id);
             let format_str = selected_format().map(|f| f.to_legality_key().to_string());
-            let tags: Vec<String> = selected_tags().iter().map(|t| t.to_string()).collect();
-            let other: Vec<String> = other_tags().iter().map(|t| t.to_string()).collect();
+            let tags: Vec<String> = selected_tags();
+            let other: Vec<String> = other_tags().iter().map(ToString::to_string).collect();
             let price_target_val: Option<f64> =
                 price_target().parse().ok().filter(|v: &f64| *v > 0.0);
             let request = HttpCreateDeckProfile::builder(&deck_name())
@@ -244,7 +243,7 @@ pub fn CreateDeck() -> Element {
                 mode: commander_mode,
                 on_select: move |card: Card| {
                     commander_display.set(card.scryfall_data.name.clone());
-                    autofill_named_partner(
+                    deck_fields::autofill_named_partner(
                         &card,
                         auth_client,
                         session,
@@ -256,7 +255,7 @@ pub fn CreateDeck() -> Element {
                     commander.set(Some(card));
                     show_commander_swipe.set(false);
                 },
-                on_close: move |_| show_commander_swipe.set(false),
+                on_close: move |()| show_commander_swipe.set(false),
             }
             SwipeSelect {
             host_screen: screen::DECK_CREATE,
@@ -267,7 +266,7 @@ pub fn CreateDeck() -> Element {
                     partner_commander.set(Some(card));
                     show_partner_swipe.set(false);
                 },
-                on_close: move |_| show_partner_swipe.set(false),
+                on_close: move |()| show_partner_swipe.set(false),
             }
             SwipeSelect {
             host_screen: screen::DECK_CREATE,
@@ -278,7 +277,7 @@ pub fn CreateDeck() -> Element {
                     background.set(Some(card));
                     show_background_swipe.set(false);
                 },
-                on_close: move |_| show_background_swipe.set(false),
+                on_close: move |()| show_background_swipe.set(false),
             }
             SwipeSelect {
             host_screen: screen::DECK_CREATE,
@@ -289,21 +288,21 @@ pub fn CreateDeck() -> Element {
                     signature_spell.set(Some(card));
                     show_signature_spell_swipe.set(false);
                 },
-                on_close: move |_| show_signature_spell_swipe.set(false),
+                on_close: move |()| show_signature_spell_swipe.set(false),
             }
 
             TagSelect {
                 open: show_tags_select,
                 selected_tags,
                 catalog: deck_tags_catalog().unwrap_or_default(),
-                on_close: move |_| {
+                on_close: move |()| {
                     show_tags_select.set(false);
                     // Reconcile seeded oracle tags with the final deck-tag set:
                     // drop the previous seed contribution, add the new one, keep
                     // manual picks. Cap at MAX; toast if anything was auto-added.
                     // Seed from the server catalog so a newly-served tag's otags
                     // apply without a client release; empty catalog seeds nothing.
-                    let new_seed = seed_oracle_tags_from_catalog(
+                    let new_seed = deck::seed_oracle_tags_from_catalog(
                         &selected_tags(),
                         &deck_tags_catalog().unwrap_or_default(),
                     );
@@ -333,7 +332,7 @@ pub fn CreateDeck() -> Element {
             OracleTagSelect {
                 open: show_oracle_tags_select,
                 selected: oracle_tags,
-                on_close: move |_| show_oracle_tags_select.set(false),
+                on_close: move |()| show_oracle_tags_select.set(false),
             }
 
             FormatSelect {
@@ -348,15 +347,15 @@ pub fn CreateDeck() -> Element {
                         signature_spell_display.set(String::new());
                     }
                 },
-                on_clear: move |_| {
+                on_clear: move |()| {
                     selected_format.set(None);
                     commander.set(None);
                     commander_display.set(String::new());
                     signature_spell.set(None);
                     signature_spell_display.set(String::new());
                 },
-                on_close: move |_| show_format_select.set(false),
-                on_cancel: move |_| {
+                on_close: move |()| show_format_select.set(false),
+                on_cancel: move |()| {
                     let (f, c, cd, ss, ssd) = fmt_snapshot();
                     selected_format.set(f);
                     commander.set(c);

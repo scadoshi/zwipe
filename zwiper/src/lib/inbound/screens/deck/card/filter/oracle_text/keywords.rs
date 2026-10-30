@@ -4,7 +4,7 @@ use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 
-use super::super::deck_cards::{DeckCards, extract_keywords};
+use super::super::deck_cards::{self, DeckCards};
 use super::super::match_mode::MatchMode;
 use crate::inbound::components::catalog_cache::CatalogCache;
 
@@ -12,11 +12,11 @@ fn read_keywords(fb: &CardQueryBuilder, mode: MatchMode) -> Vec<String> {
     match mode {
         MatchMode::Any => fb
             .keywords_contains_any()
-            .map(|v| v.to_vec())
+            .map(<[_]>::to_vec)
             .unwrap_or_default(),
         MatchMode::All => fb
             .keywords_contains_all()
-            .map(|v| v.to_vec())
+            .map(<[_]>::to_vec)
             .unwrap_or_default(),
     }
 }
@@ -38,7 +38,7 @@ fn write_keywords(fb: &mut CardQueryBuilder, mode: MatchMode, values: Vec<String
 
 fn read_excluded(fb: &CardQueryBuilder) -> Vec<String> {
     fb.keywords_excludes()
-        .map(|v| v.to_vec())
+        .map(<[_]>::to_vec)
         .unwrap_or_default()
 }
 
@@ -69,7 +69,7 @@ pub(crate) fn Keywords() -> Element {
     });
     let all_keywords = use_memo(move || -> Option<Vec<String>> {
         if let Some(dc) = deck_ctx {
-            Some(extract_keywords(&dc.0()))
+            Some(deck_cards::extract_keywords(&dc.0()))
         } else {
             cache.keywords.cell().read().loaded().cloned()
         }
@@ -96,7 +96,7 @@ pub(crate) fn Keywords() -> Element {
     let excluded_keywords = read_excluded(&filter_builder());
 
     rsx! {
-        // ── includes ──────────────────────────────────────────────
+        // == includes ==
         div { class: "label-row mt-2",
             label { class: "label-xs", r#for: "keyword-search", "Keywords include" }
             button {
@@ -157,7 +157,9 @@ pub(crate) fn Keywords() -> Element {
                         .cloned()
                         .collect();
 
-                    if !results.is_empty() {
+                    if results.is_empty() {
+                        rsx! {}
+                    } else {
                         rsx! {
                             div { class: "search-float-anchor",
                                 div { class: "search-float-results",
@@ -177,8 +179,6 @@ pub(crate) fn Keywords() -> Element {
                                 }
                             }
                         }
-                    } else {
-                        rsx! {}
                     }
                 }
             }
@@ -209,7 +209,7 @@ pub(crate) fn Keywords() -> Element {
             }
         }
 
-        // ── excludes ──────────────────────────────────────────────
+        // == excludes ==
         div { class: "label-row mt-2",
             label { class: "label-xs", r#for: "keyword-excludes-search", "Keywords exclude" }
             if !excluded_keywords.is_empty() {
@@ -259,7 +259,9 @@ pub(crate) fn Keywords() -> Element {
                         .cloned()
                         .collect();
 
-                    if !results.is_empty() {
+                    if results.is_empty() {
+                        rsx! {}
+                    } else {
                         rsx! {
                             div { class: "search-float-anchor",
                                 div { class: "search-float-results",
@@ -278,8 +280,6 @@ pub(crate) fn Keywords() -> Element {
                                 }
                             }
                         }
-                    } else {
-                        rsx! {}
                     }
                 }
             }

@@ -19,12 +19,13 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::scryfall_data::colors::Color;
+use zwipe_core::domain::deck;
 use zwipe_core::domain::deck::deck_profile::DeckProfile;
-use zwipe_core::domain::deck::deck_tag_label;
+use zwipe_core::domain::deck::format::Format;
 use zwipe_core::domain::user::models::hints::HINT_DECK_LIST;
 
 use crate::inbound::components::auth::authed::use_authed;
-use crate::inbound::components::hint_dialog::open_and_record_hint;
+use crate::inbound::components::hint_dialog;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen};
 use crate::inbound::router::Router;
@@ -98,7 +99,7 @@ fn tag_labels(profile: &DeckProfile) -> Vec<(String, String)> {
     profile
         .tags
         .iter()
-        .map(|t| (t.clone(), deck_tag_label(t)))
+        .map(|t| (t.clone(), deck::deck_tag_label(t)))
         .chain(
             profile
                 .other_tags
@@ -143,12 +144,7 @@ impl DeckGroup {
         }
         self.pips
             .as_ref()
-            .map(|pips| {
-                pips.iter()
-                    .map(Color::to_short_name)
-                    .collect::<Vec<_>>()
-                    .join("")
-            })
+            .map(|pips| pips.iter().map(Color::to_short_name).collect::<String>())
             .unwrap_or_default()
     }
 }
@@ -221,8 +217,7 @@ fn group_decks(profiles: &[DeckProfile], by: DeckGroupBy) -> Vec<DeckGroup> {
                 let header = profile
                     .format
                     .as_ref()
-                    .map(|f| f.display_name().to_string())
-                    .unwrap_or_else(|| "No format".to_string());
+                    .map_or_else(|| "No format".to_string(), |f| f.display_name().to_string());
                 match groups.iter_mut().find(|g| g.header == header) {
                     Some(group) => group.decks.push(profile.clone()),
                     None => groups.push(DeckGroup {
@@ -306,7 +301,7 @@ fn group_decks(profiles: &[DeckProfile], by: DeckGroupBy) -> Vec<DeckGroup> {
 fn DeckRow(profile: DeckProfile) -> Element {
     let navigator = use_navigator();
     let mut count = profile.card_count;
-    if profile.format.as_ref().is_some_and(|f| f.has_commander()) && profile.commander_id.is_some()
+    if profile.format.as_ref().is_some_and(Format::has_commander) && profile.commander_id.is_some()
     {
         count += 1;
     }
@@ -321,8 +316,8 @@ fn DeckRow(profile: DeckProfile) -> Element {
     }
     // Out of bounds only when the format defines a size rule the count breaks.
     let count_bad = profile.format.as_ref().is_some_and(|f| {
-        f.min_cards().is_some_and(|m| count < m as i64)
-            || f.max_cards().is_some_and(|m| count > m as i64)
+        f.min_cards().is_some_and(|m| count < i64::from(m))
+            || f.max_cards().is_some_and(|m| count > i64::from(m))
     });
     let pips = identity_colors(&profile);
     let art = command_zone_art(&profile);
@@ -385,7 +380,7 @@ fn DeckRow(profile: DeckProfile) -> Element {
                     span { class: "stat-chip stat-chip-p3", "{name}" }
                 }
                 for tag in profile.tags.iter() {
-                    span { key: "{tag}", class: "stat-chip stat-chip-muted", "{deck_tag_label(tag)}" }
+                    span { key: "{tag}", class: "stat-chip stat-chip-muted", "{deck::deck_tag_label(tag)}" }
                 }
                 for tag in profile.other_tags.iter() {
                     span { key: "{tag}", class: "stat-chip stat-chip-p5", "{tag.display_name()}" }
@@ -468,7 +463,12 @@ pub fn DeckList() -> Element {
             .is_some_and(|p| !p.is_empty());
         if has_decks && !*decks_hint_fired.peek() {
             decks_hint_fired.set(true);
-            open_and_record_hint(HINT_DECK_LIST, session, auth_client, decks_hint_open);
+            hint_dialog::open_and_record_hint(
+                HINT_DECK_LIST,
+                session,
+                auth_client,
+                decks_hint_open,
+            );
         }
     });
 
@@ -634,7 +634,7 @@ pub fn DeckList() -> Element {
                                 }
                             } else if loading {
                                 DeckListSkeleton {}
-                            } else if profiles.as_ref().is_some_and(|p| p.is_empty()) {
+                            } else if profiles.as_ref().is_some_and(Vec::is_empty) {
                                 div { class: "message-empty",
                                     span { class: "chip-note", "No decks" }
                                 }

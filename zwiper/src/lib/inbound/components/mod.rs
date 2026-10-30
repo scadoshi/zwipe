@@ -1,6 +1,6 @@
 //! Reusable UI components.
 //!
-//! Provides Leptos components used throughout the application for consistent UX.
+//! Provides Dioxus components used throughout the application for consistent UX.
 
 /// Expandable accordion component.
 pub mod accordion;
@@ -33,7 +33,10 @@ pub mod support;
 /// Usage telemetry buffer + flush loop.
 pub mod telemetry;
 /// Three-state toggle component (true/false/any).
-#[allow(unpredictable_function_pointer_comparisons)]
+#[expect(
+    unpredictable_function_pointer_comparisons,
+    reason = "TriToggle's generated props derive PartialEq over its fn pointer props, which always hold the same fn items"
+)]
 pub mod tri_toggle;
 /// Blocking "Update required" screen (min-version gate).
 pub mod update_required;

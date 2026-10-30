@@ -1,9 +1,11 @@
+//! The deck fields the create and edit screens share: name, format and the command-zone searches.
+
 use std::time::Duration;
 
 use components::{HintBullet, HintBullets, HintDialog, HintKey, TOAST_NORMAL, TextInput};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, Toasts, use_toast};
-use tokio::time::sleep;
+use tokio::time;
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
@@ -11,21 +13,33 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::card::search_card::card_filter::error::InvalidCardCriteria;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
-use zwipe_core::domain::card::search_card::commander_eligibility::{
-    PartnerKind, has_choose_a_background, partner_kind,
-};
+use zwipe_core::domain::card::search_card::commander_eligibility::{self, PartnerKind};
 use zwipe_core::domain::deck::format::Format;
 use zwipe_core::domain::deck::{
-    DeckName, DeckOtherTag, MAX_DECK_ORACLE_TAGS, MAX_DECK_TAGS, PowerLevel, deck_tag_label,
+    self, DeckName, DeckOtherTag, MAX_DECK_ORACLE_TAGS, MAX_DECK_TAGS, PowerLevel,
 };
 
 use crate::inbound::components::hint_dialog::HintColored;
 use crate::inbound::components::hint_host::HintTopic;
-use crate::inbound::components::info_button::{InfoButton, open_topic};
+use crate::inbound::components::info_button::{self, InfoButton};
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 
 /// Upper bound for the land-target stepper: no deck runs more lands than this.
 const MAX_LAND_TARGET: i32 = 100;
+
+/// Pause after the last keystroke before a command-zone search fires.
+const SEARCH_DEBOUNCE_MS: u64 = 800;
+
+/// Characters the commander and signature spell searches wait for. Partner and
+/// background search from one character, their pools being small.
+const MIN_NAME_QUERY_LEN: usize = 3;
+
+/// Results fetched by a by-name lookup: the commander and signature spell
+/// searches and the named partner autofill.
+const NAME_RESULT_LIMIT: u32 = 5;
+
+/// Results fetched by the partner and background searches.
+const POOL_RESULT_LIMIT: u32 = 10;
 
 /// "Partner with [Name]" names exactly one legal partner, so a commander pick
 /// fills the partner slot automatically: fetch the named mate and set it, with
@@ -47,7 +61,7 @@ pub(crate) fn autofill_named_partner(
     mut partner_commander_display: Signal<String>,
     toast: Toasts,
 ) {
-    let Some(PartnerKind::Named(mate)) = partner_kind(selected) else {
+    let Some(PartnerKind::Named(mate)) = commander_eligibility::partner_kind(selected) else {
         return;
     };
     let selected_id = selected.scryfall_data.id;
@@ -56,7 +70,7 @@ pub(crate) fn autofill_named_partner(
             return;
         };
         let mut builder = CardQueryBuilder::with_name_contains(&mate);
-        builder.set_limit(5);
+        builder.set_limit(NAME_RESULT_LIMIT);
         let Ok(filter) = builder.build() else {
             return;
         };
@@ -201,11 +215,13 @@ pub(crate) fn DeckFields(
     let show_commander = use_memo(move || selected_format().is_some_and(|f| f.has_commander()));
 
     let show_partner = use_memo(move || {
-        show_commander() && commander().is_some_and(|c| partner_kind(&c).is_some())
+        show_commander()
+            && commander().is_some_and(|c| commander_eligibility::partner_kind(&c).is_some())
     });
 
     let show_background = use_memo(move || {
-        show_commander() && commander().is_some_and(|c| has_choose_a_background(&c))
+        show_commander()
+            && commander().is_some_and(|c| commander_eligibility::has_choose_a_background(&c))
     });
 
     let show_signature_spell =
@@ -267,7 +283,7 @@ pub(crate) fn DeckFields(
     use_effect(move || {
         let query = cmd_search_query();
 
-        if query.len() < 3 {
+        if query.len() < MIN_NAME_QUERY_LEN {
             cmd_show_dropdown.set(false);
             cmd_is_searching.set(false);
             return;
@@ -280,7 +296,7 @@ pub(crate) fn DeckFields(
         cmd_show_dropdown.set(true);
 
         spawn(async move {
-            sleep(Duration::from_millis(800)).await;
+            time::sleep(Duration::from_millis(SEARCH_DEBOUNCE_MS)).await;
 
             if cmd_search_query() != query {
                 return;
@@ -293,7 +309,7 @@ pub(crate) fn DeckFields(
                 {
                     builder.set_is_commander_in_format(fmt);
                 }
-                builder.set_limit(5);
+                builder.set_limit(NAME_RESULT_LIMIT);
                 let Ok(card_filter) = builder.build() else {
                     tracing::error!("{}", InvalidCardCriteria::Empty.to_string());
                     return;
@@ -329,7 +345,7 @@ pub(crate) fn DeckFields(
         partner_show_dropdown.set(true);
 
         spawn(async move {
-            sleep(Duration::from_millis(800)).await;
+            time::sleep(Duration::from_millis(SEARCH_DEBOUNCE_MS)).await;
 
             if partner_search_query() != query {
                 return;
@@ -343,7 +359,7 @@ pub(crate) fn DeckFields(
                 if partner_filter_on() {
                     builder.set_is_partner(true);
                 }
-                builder.set_limit(10);
+                builder.set_limit(POOL_RESULT_LIMIT);
                 let Ok(card_filter) = builder.build() else {
                     return;
                 };
@@ -378,7 +394,7 @@ pub(crate) fn DeckFields(
         bg_show_dropdown.set(true);
 
         spawn(async move {
-            sleep(Duration::from_millis(800)).await;
+            time::sleep(Duration::from_millis(SEARCH_DEBOUNCE_MS)).await;
 
             if bg_search_query() != query {
                 return;
@@ -392,7 +408,7 @@ pub(crate) fn DeckFields(
                 if bg_filter_on() {
                     builder.set_is_background(true);
                 }
-                builder.set_limit(10);
+                builder.set_limit(POOL_RESULT_LIMIT);
                 let Ok(card_filter) = builder.build() else {
                     return;
                 };
@@ -417,7 +433,7 @@ pub(crate) fn DeckFields(
     use_effect(move || {
         let query = spell_search_query();
 
-        if query.len() < 3 {
+        if query.len() < MIN_NAME_QUERY_LEN {
             spell_show_dropdown.set(false);
             spell_is_searching.set(false);
             return;
@@ -427,7 +443,7 @@ pub(crate) fn DeckFields(
         spell_show_dropdown.set(true);
 
         spawn(async move {
-            sleep(Duration::from_millis(800)).await;
+            time::sleep(Duration::from_millis(SEARCH_DEBOUNCE_MS)).await;
 
             if spell_search_query() != query {
                 return;
@@ -442,7 +458,7 @@ pub(crate) fn DeckFields(
                         builder.set_color_identity_within(ob.scryfall_data.color_identity);
                     }
                 }
-                builder.set_limit(5);
+                builder.set_limit(NAME_RESULT_LIMIT);
                 let Ok(card_filter) = builder.build() else {
                     return;
                 };
@@ -472,7 +488,7 @@ pub(crate) fn DeckFields(
         // Deck name
         TextInput {
             label: "Deck name",
-            on_info: open_topic(HintTopic::DeckName),
+            on_info: info_button::open_topic(HintTopic::DeckName),
             value: deck_name,
             id: "deck_name",
             placeholder: "Not set",
@@ -1050,7 +1066,7 @@ pub(crate) fn DeckFields(
                         div {
                             key: "{tag}",
                             class: "chip selected flex items-center gap-05",
-                            "{deck_tag_label(&tag)}"
+                            "{deck::deck_tag_label(&tag)}"
                             // Remove just this tag; stop propagation so the
                             // chip-box's own onclick doesn't also open the picker.
                             button {

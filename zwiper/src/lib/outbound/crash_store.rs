@@ -7,7 +7,7 @@
 //! accumulates. WITHIN a process the first panic wins: a panic that unwinds
 //! into a no-unwind frame (an FFI callback) raises a second panic before the
 //! abort, and letting it write would replace the real cause with "panic in a
-//! function that cannot unwind" (seen twice in the field on 1.9.3 iOS).
+//! function that cannot unwind".
 //! The `crash_id` is stamped at panic time, so however many launches retry
 //! the send, the server stores exactly one row per crash.
 
@@ -80,7 +80,6 @@ pub fn clear() {
 
 #[cfg(all(test, not(target_arch = "wasm32")))]
 mod tests {
-    #![allow(clippy::expect_used, clippy::unwrap_used)]
     use uuid::Uuid;
     use zwipe_core::domain::auth::models::platform::ClientPlatform;
 
@@ -143,7 +142,7 @@ mod platform {
 
     /// Android: the app's private files dir (same home as session/theme).
     #[cfg(target_os = "android")]
-    pub fn crash_file() -> Option<PathBuf> {
+    pub(crate) fn crash_file() -> Option<PathBuf> {
         Some(
             crate::outbound::android_fs::files_dir()
                 .ok()?
@@ -153,7 +152,7 @@ mod platform {
 
     /// iOS: the sandbox's Documents dir, always writable, survives restarts.
     #[cfg(target_os = "ios")]
-    pub fn crash_file() -> Option<PathBuf> {
+    pub(crate) fn crash_file() -> Option<PathBuf> {
         Some(
             PathBuf::from(std::env::var_os("HOME")?)
                 .join("Documents")
@@ -168,7 +167,7 @@ mod platform {
         clippy::unnecessary_wraps,
         reason = "signature is shared with the android and ios variants, which can fail"
     )]
-    pub fn crash_file() -> Option<PathBuf> {
+    pub(crate) fn crash_file() -> Option<PathBuf> {
         Some(std::env::temp_dir().join(CRASH_FILE))
     }
 }

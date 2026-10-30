@@ -128,13 +128,10 @@ impl ImportDeckCards {
 /// - Archidekt: `"Aether Hub (drc) 145 [Land]"` → `"Aether Hub"`
 /// - Archidekt foil: `"Dr. Madison Li (pip) 531 *F* [Draw]"` → `"Dr. Madison Li"`
 fn strip_trailing_metadata(s: &str) -> String {
-    let name = if let Some(idx) = s.find('(') {
-        &s[..idx]
-    } else if let Some(idx) = s.find('[') {
-        &s[..idx]
-    } else {
-        s
-    };
+    let name = s
+        .split_once('(')
+        .or_else(|| s.split_once('['))
+        .map_or(s, |(name, _)| name);
     name.trim().to_string()
 }
 
@@ -185,12 +182,19 @@ pub struct ImportDeckCardsResult {
 }
 
 #[cfg(test)]
-#[allow(clippy::indexing_slicing)]
 mod tests {
     use super::*;
 
     fn parse_lines(text: &str) -> Vec<ImportLine> {
-        ImportDeckCards::parse(Uuid::nil(), Uuid::nil(), text, false, None, ImportMode::Add).lines
+        ImportDeckCards::parse(
+            Uuid::nil(),
+            Uuid::nil(),
+            text,
+            /* email_verified */ false,
+            None,
+            ImportMode::Add,
+        )
+        .lines
     }
 
     /// Does an entry (as the user typed it) resolve to a card stored under
@@ -375,7 +379,7 @@ mod tests {
             Uuid::nil(),
             Uuid::nil(),
             text,
-            false,
+            /* email_verified */ false,
             Some(Board::Maybeboard),
             ImportMode::Add,
         )

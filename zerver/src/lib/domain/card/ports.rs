@@ -67,7 +67,7 @@ pub struct DeckServeContext<'a> {
     /// term. Empty (the default) leaves ordering byte-identical.
     pub mvp_card_roles: &'a [String],
     /// User preference: hide cards with no in-universe printing. The pick
-    /// preference in latest_cards makes the picked printing's stamp/set a
+    /// preference in `latest_cards` makes the picked printing's stamp/set a
     /// card-level truth, so the predicate reads the row directly.
     pub exclude_universes_beyond: bool,
     /// Set NAMES whose printings are served despite the exclusion (the
@@ -161,7 +161,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         request: &CardQuery,
     ) -> impl Future<Output = Result<Vec<ScryfallData>, SearchScryfallDataError>> + Send;
 
-    /// `search_scryfall_data` plus deck-aware extras: oracle_id exclusion,
+    /// `search_scryfall_data` plus deck-aware extras: `oracle_id` exclusion,
     /// suppression filtering (skipped/removed cards for `deck_id`),
     /// synergy-score default ordering, and (when `synergy_only`) constraining
     /// results to the commander's synergy pool. With `synergy_only` set and a
@@ -197,7 +197,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         request: &ScryfallDataIds,
     ) -> impl Future<Output = Result<Vec<Card>, GetCardError>> + Send;
 
-    /// Returns all printings of a card by oracle_id, ordered by release date.
+    /// Returns all printings of a card by `oracle_id`, ordered by release date.
     fn get_printings(
         &self,
         oracle_id: uuid::Uuid,
@@ -301,7 +301,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         names: &[String],
     ) -> impl Future<Output = Result<Vec<Card>, SearchCardsError>> + Send;
 
-    /// `search_cards` with deck awareness: rows whose oracle_id is in
+    /// `search_cards` with deck awareness: rows whose `oracle_id` is in
     /// `exclude_oracle_ids` are omitted, the deck's suppression set (skipped
     /// / removed cards) is filtered out when `deck_id` is given, and when
     /// `synergy_scores` is given (lowercased card name → score) results are
@@ -315,7 +315,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         context: DeckServeContext<'_>,
     ) -> impl Future<Output = Result<Vec<Card>, SearchCardsError>> + Send;
 
-    /// First-class commander search (context/archive/commander_select_ordering.md):
+    /// First-class commander search (`context/archive/commander_select_ordering.md`):
     /// results ordered by decks-helmed popularity, banded + wildcarded per user
     /// per day (deck-independent), with token/emblem printings excluded so a
     /// same-named token is never offered as a commander. An explicit sort in
@@ -390,7 +390,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         ids: &[uuid::Uuid],
     ) -> impl Future<Output = Result<Vec<Card>, anyhow::Error>> + Send;
 
-    /// Updates card_roles for a batch of cards.
+    /// Updates `card_roles` for a batch of cards.
     fn update_card_roles(
         &self,
         updates: &[(
@@ -408,7 +408,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     /// server-grouped card display). Returns rows affected.
     fn refresh_oracle_tag_groups(&self) -> impl Future<Output = anyhow::Result<u64>> + Send;
 
-    /// IDs of every card with oracle text (candidates for the oracle_tag_gaps merge).
+    /// IDs of every card with oracle text (candidates for the `oracle_tag_gaps` merge).
     fn get_card_ids_with_oracle_text(
         &self,
     ) -> impl Future<Output = Result<Vec<uuid::Uuid>, anyhow::Error>> + Send;
@@ -426,7 +426,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
 ///
 /// `scryfall_sync()` is the primary sync operation:
 /// 1. Download bulk JSON from Scryfall (~150MB)
-/// 2. Parse JSON into ScryfallData structs
+/// 2. Parse JSON into `ScryfallData` structs
 /// 3. Batch delta upsert (only update changed cards)
 /// 4. Record metrics (duration, cards processed)
 ///
@@ -450,23 +450,23 @@ pub trait CardService: Clone + Send + Sync + 'static {
 
     /// Derives `card_roles` from Oracle Tags (18 subtrees + Tokens via
     /// `all_parts`), then merges the 4 heuristic stragglers (Pump/Stax/Protection/
-    /// GraveyardHate) via `oracle_tag_gaps`. Returns `(otag_rows_written, gap_merges)`.
+    /// `GraveyardHate`) via `oracle_tag_gaps`. Returns `(otag_rows_written, gap_merges)`.
     fn derive_card_categories(
         &self,
         batch_size: usize,
     ) -> impl Future<Output = anyhow::Result<(u32, u32)>> + Send;
 
-    /// Refreshes the latest_cards materialized view after data changes.
+    /// Refreshes the `latest_cards` materialized view after data changes.
     fn refresh_latest_cards(&self) -> impl Future<Output = anyhow::Result<()>> + Send;
 
-    /// Refreshes the card_signal_rollup materialized view (nightly, zervice).
+    /// Refreshes the `card_signal_rollup` materialized view (nightly, zervice).
     fn refresh_card_signal_rollup(&self) -> impl Future<Output = anyhow::Result<()>> + Send;
 
-    /// Refreshes the otag_context_signal_rollup materialized view (nightly, zervice).
+    /// Refreshes the `otag_context_signal_rollup` materialized view (nightly, zervice).
     fn refresh_otag_context_signal_rollup(&self)
     -> impl Future<Output = anyhow::Result<()>> + Send;
 
-    /// Syncs the oracle_tag catalog + card correlation from Scryfall's Oracle
+    /// Syncs the `oracle_tag` catalog + card correlation from Scryfall's Oracle
     /// Tags bulk file (nightly, zervice). Returns `(catalog_rows, correlation_rows)`.
     fn sync_oracle_tags(&self) -> impl Future<Output = anyhow::Result<(u32, u32)>> + Send;
 
@@ -498,7 +498,7 @@ pub trait CardService: Clone + Send + Sync + 'static {
         request: &ScryfallDataIds,
     ) -> impl Future<Output = Result<Vec<Card>, GetCardError>> + Send;
 
-    /// Returns all printings of a card by oracle_id, ordered by release date.
+    /// Returns all printings of a card by `oracle_id`, ordered by release date.
     fn get_printings(
         &self,
         oracle_id: uuid::Uuid,
@@ -514,7 +514,7 @@ pub trait CardService: Clone + Send + Sync + 'static {
         user_id: uuid::Uuid,
     ) -> impl Future<Output = Result<Vec<Card>, SearchCardsError>> + Send;
 
-    /// Searches for commanders (context/archive/commander_select_ordering.md):
+    /// Searches for commanders (`context/archive/commander_select_ordering.md`):
     /// popularity-ordered, banded + wildcarded per user per day, token-free.
     fn search_commanders(
         &self,
@@ -603,25 +603,22 @@ pub trait CardService: Clone + Send + Sync + 'static {
 /// out of the generic parameter list. Auto-implemented for any `CardService`.
 pub trait ErasedCardService: Send + Sync + 'static {
     /// See [`CardService::upsert`].
-    fn upsert<'a>(
-        &'a self,
-        scryfall_data: ScryfallData,
-    ) -> BoxFuture<'a, Result<Card, CreateCardError>>;
+    fn upsert(&self, scryfall_data: ScryfallData) -> BoxFuture<'_, Result<Card, CreateCardError>>;
 
     /// See [`CardService::scryfall_sync`].
-    fn scryfall_sync<'a>(
-        &'a self,
+    fn scryfall_sync(
+        &self,
         bulk_endpoint: BulkEndpoint,
-    ) -> BoxFuture<'a, anyhow::Result<ZerviceMetrics>>;
+    ) -> BoxFuture<'_, anyhow::Result<ZerviceMetrics>>;
 
     /// See [`CardService::refresh_latest_cards`].
-    fn refresh_latest_cards<'a>(&'a self) -> BoxFuture<'a, anyhow::Result<()>>;
+    fn refresh_latest_cards(&self) -> BoxFuture<'_, anyhow::Result<()>>;
 
     /// See [`CardService::refresh_card_signal_rollup`].
-    fn refresh_card_signal_rollup<'a>(&'a self) -> BoxFuture<'a, anyhow::Result<()>>;
+    fn refresh_card_signal_rollup(&self) -> BoxFuture<'_, anyhow::Result<()>>;
 
     /// See [`CardService::refresh_otag_context_signal_rollup`].
-    fn refresh_otag_context_signal_rollup<'a>(&'a self) -> BoxFuture<'a, anyhow::Result<()>>;
+    fn refresh_otag_context_signal_rollup(&self) -> BoxFuture<'_, anyhow::Result<()>>;
 
     /// See [`CardService::featured_flavor`].
     fn featured_flavor<'a>(
@@ -642,10 +639,10 @@ pub trait ErasedCardService: Send + Sync + 'static {
     ) -> BoxFuture<'a, Result<Vec<Card>, GetCardError>>;
 
     /// See [`CardService::get_printings`].
-    fn get_printings<'a>(
-        &'a self,
+    fn get_printings(
+        &self,
         oracle_id: uuid::Uuid,
-    ) -> BoxFuture<'a, Result<Vec<Card>, GetCardError>>;
+    ) -> BoxFuture<'_, Result<Vec<Card>, GetCardError>>;
 
     /// See [`CardService::search_cards`].
     fn search_cards<'a>(
@@ -662,25 +659,25 @@ pub trait ErasedCardService: Send + Sync + 'static {
     ) -> BoxFuture<'a, Result<Vec<Card>, SearchCardsError>>;
 
     /// See [`CardService::get_artists`].
-    fn get_artists<'a>(&'a self) -> BoxFuture<'a, Result<Vec<String>, GetArtistsError>>;
+    fn get_artists(&self) -> BoxFuture<'_, Result<Vec<String>, GetArtistsError>>;
 
     /// See [`CardService::get_card_types`].
-    fn get_card_types<'a>(&'a self) -> BoxFuture<'a, Result<Vec<String>, GetCardTypesError>>;
+    fn get_card_types(&self) -> BoxFuture<'_, Result<Vec<String>, GetCardTypesError>>;
 
     /// See [`CardService::get_keywords`].
-    fn get_keywords<'a>(&'a self) -> BoxFuture<'a, Result<Vec<String>, GetKeywordsError>>;
+    fn get_keywords(&self) -> BoxFuture<'_, Result<Vec<String>, GetKeywordsError>>;
 
     /// See [`CardService::get_oracle_tags`].
-    fn get_oracle_tags<'a>(&'a self) -> BoxFuture<'a, Result<Vec<OracleTag>, GetOracleTagsError>>;
+    fn get_oracle_tags(&self) -> BoxFuture<'_, Result<Vec<OracleTag>, GetOracleTagsError>>;
 
     /// See [`CardService::get_oracle_words`].
-    fn get_oracle_words<'a>(&'a self) -> BoxFuture<'a, Result<Vec<String>, GetOracleWordsError>>;
+    fn get_oracle_words(&self) -> BoxFuture<'_, Result<Vec<String>, GetOracleWordsError>>;
 
     /// See [`CardService::get_sets`].
-    fn get_sets<'a>(&'a self) -> BoxFuture<'a, Result<Vec<String>, GetSetsError>>;
+    fn get_sets(&self) -> BoxFuture<'_, Result<Vec<String>, GetSetsError>>;
 
     /// See [`CardService::get_languages`].
-    fn get_languages<'a>(&'a self) -> BoxFuture<'a, Result<Vec<String>, GetLanguagesError>>;
+    fn get_languages(&self) -> BoxFuture<'_, Result<Vec<String>, GetLanguagesError>>;
 
     /// See [`CardService::get_card_profile_with_id`].
     fn get_card_profile_with_id<'a>(
@@ -707,7 +704,7 @@ pub trait ErasedCardService: Send + Sync + 'static {
     ) -> BoxFuture<'a, Result<Vec<CardProfile>, GetCardProfileError>>;
 
     /// See [`CardService::get_last_sync_date`].
-    fn get_last_sync_date<'a>(&'a self) -> BoxFuture<'a, anyhow::Result<Option<DateTime<Utc>>>>;
+    fn get_last_sync_date(&self) -> BoxFuture<'_, anyhow::Result<Option<DateTime<Utc>>>>;
 
     /// See [`CardService::find_cards_by_exact_names`].
     fn find_cards_by_exact_names<'a>(
@@ -720,29 +717,26 @@ impl<T> ErasedCardService for T
 where
     T: CardService,
 {
-    fn upsert<'a>(
-        &'a self,
-        scryfall_data: ScryfallData,
-    ) -> BoxFuture<'a, Result<Card, CreateCardError>> {
+    fn upsert(&self, scryfall_data: ScryfallData) -> BoxFuture<'_, Result<Card, CreateCardError>> {
         Box::pin(CardService::upsert(self, scryfall_data))
     }
 
-    fn scryfall_sync<'a>(
-        &'a self,
+    fn scryfall_sync(
+        &self,
         bulk_endpoint: BulkEndpoint,
-    ) -> BoxFuture<'a, anyhow::Result<ZerviceMetrics>> {
+    ) -> BoxFuture<'_, anyhow::Result<ZerviceMetrics>> {
         Box::pin(CardService::scryfall_sync(self, bulk_endpoint))
     }
 
-    fn refresh_card_signal_rollup<'a>(&'a self) -> BoxFuture<'a, anyhow::Result<()>> {
+    fn refresh_card_signal_rollup(&self) -> BoxFuture<'_, anyhow::Result<()>> {
         Box::pin(CardService::refresh_card_signal_rollup(self))
     }
 
-    fn refresh_otag_context_signal_rollup<'a>(&'a self) -> BoxFuture<'a, anyhow::Result<()>> {
+    fn refresh_otag_context_signal_rollup(&self) -> BoxFuture<'_, anyhow::Result<()>> {
         Box::pin(CardService::refresh_otag_context_signal_rollup(self))
     }
 
-    fn refresh_latest_cards<'a>(&'a self) -> BoxFuture<'a, anyhow::Result<()>> {
+    fn refresh_latest_cards(&self) -> BoxFuture<'_, anyhow::Result<()>> {
         Box::pin(CardService::refresh_latest_cards(self))
     }
 
@@ -767,10 +761,10 @@ where
         Box::pin(CardService::get_cards(self, request))
     }
 
-    fn get_printings<'a>(
-        &'a self,
+    fn get_printings(
+        &self,
         oracle_id: uuid::Uuid,
-    ) -> BoxFuture<'a, Result<Vec<Card>, GetCardError>> {
+    ) -> BoxFuture<'_, Result<Vec<Card>, GetCardError>> {
         Box::pin(CardService::get_printings(self, oracle_id))
     }
 
@@ -790,31 +784,31 @@ where
         Box::pin(CardService::search_commanders(self, request, user_id))
     }
 
-    fn get_artists<'a>(&'a self) -> BoxFuture<'a, Result<Vec<String>, GetArtistsError>> {
+    fn get_artists(&self) -> BoxFuture<'_, Result<Vec<String>, GetArtistsError>> {
         Box::pin(CardService::get_artists(self))
     }
 
-    fn get_card_types<'a>(&'a self) -> BoxFuture<'a, Result<Vec<String>, GetCardTypesError>> {
+    fn get_card_types(&self) -> BoxFuture<'_, Result<Vec<String>, GetCardTypesError>> {
         Box::pin(CardService::get_card_types(self))
     }
 
-    fn get_keywords<'a>(&'a self) -> BoxFuture<'a, Result<Vec<String>, GetKeywordsError>> {
+    fn get_keywords(&self) -> BoxFuture<'_, Result<Vec<String>, GetKeywordsError>> {
         Box::pin(CardService::get_keywords(self))
     }
 
-    fn get_oracle_tags<'a>(&'a self) -> BoxFuture<'a, Result<Vec<OracleTag>, GetOracleTagsError>> {
+    fn get_oracle_tags(&self) -> BoxFuture<'_, Result<Vec<OracleTag>, GetOracleTagsError>> {
         Box::pin(CardService::get_oracle_tags(self))
     }
 
-    fn get_oracle_words<'a>(&'a self) -> BoxFuture<'a, Result<Vec<String>, GetOracleWordsError>> {
+    fn get_oracle_words(&self) -> BoxFuture<'_, Result<Vec<String>, GetOracleWordsError>> {
         Box::pin(CardService::get_oracle_words(self))
     }
 
-    fn get_sets<'a>(&'a self) -> BoxFuture<'a, Result<Vec<String>, GetSetsError>> {
+    fn get_sets(&self) -> BoxFuture<'_, Result<Vec<String>, GetSetsError>> {
         Box::pin(CardService::get_sets(self))
     }
 
-    fn get_languages<'a>(&'a self) -> BoxFuture<'a, Result<Vec<String>, GetLanguagesError>> {
+    fn get_languages(&self) -> BoxFuture<'_, Result<Vec<String>, GetLanguagesError>> {
         Box::pin(CardService::get_languages(self))
     }
 
@@ -850,7 +844,7 @@ where
         ))
     }
 
-    fn get_last_sync_date<'a>(&'a self) -> BoxFuture<'a, anyhow::Result<Option<DateTime<Utc>>>> {
+    fn get_last_sync_date(&self) -> BoxFuture<'_, anyhow::Result<Option<DateTime<Utc>>>> {
         Box::pin(CardService::get_last_sync_date(self))
     }
 

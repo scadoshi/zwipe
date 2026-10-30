@@ -96,7 +96,6 @@ impl From<(StatusCode, String)> for ClientError {
 
 #[cfg(test)]
 mod tests {
-    #![allow(clippy::panic)]
     use super::*;
 
     #[test]

@@ -1,10 +1,8 @@
 //! Keyword-reminder catalog: the public endpoint serves every keyword the
-//! database knows, mapped through the core reminder table — so definition
+//! database knows, mapped through the core reminder table, so definition
 //! fixes ship on server deploy while app binaries keep the compiled fallback.
 //!
 //! Requires `DATABASE_URL`: `set -a; source zerver/.env; set +a`.
-
-#![allow(clippy::unwrap_used, clippy::indexing_slicing)]
 
 use zwipe_core::http::paths::GET_KEYWORD_REMINDERS_ROUTE;
 mod common;
@@ -24,7 +22,7 @@ async fn serves_reminders_for_database_keywords(pool: sqlx::PgPool) {
     let (status, body) = app.get(GET_KEYWORD_REMINDERS_ROUTE, None).await;
     assert_eq!(status, StatusCode::OK, "catalog get: {body}");
 
-    // Keys are lowercase — the catalog query normalizes names, and the chips
+    // Keys are lowercase: the catalog query normalizes names, and the chips
     // component lowercases its lookups to match.
     let map = body.as_object().unwrap();
     assert_eq!(

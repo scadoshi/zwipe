@@ -21,7 +21,7 @@ pub enum GetDeckError {
     /// Error retrieving deck profile (metadata).
     #[error(transparent)]
     GetDeckProfileError(#[from] GetDeckProfileError),
-    /// Error retrieving deck_card entries.
+    /// Error retrieving `deck_card` entries.
     #[error(transparent)]
     GetDeckCardError(#[from] GetDeckCardError),
     /// Error retrieving card profile (application metadata).

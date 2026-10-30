@@ -5,25 +5,25 @@
 //! the Archidekt client or when Archidekt might have changed their (undocumented)
 //! JSON shape:
 //!
-//!   cargo test -p zerver --test archidekt_import -- --ignored
+//! ```text
+//! cargo test -p zerver --test archidekt_import -- --ignored
+//! ```
 //!
-//! The deck — https://archidekt.com/decks/11493358/satya — is owned by the
+//! The deck, <https://archidekt.com/decks/11493358/satya>, is owned by the
 //! maintainer and will not be deleted. The `extract_deck_id` parsing and the
 //! null-field handling already have offline unit tests in
 //! `outbound::archidekt::tests`; this guards the one thing those can't: that the
 //! live API still returns the shape the parser expects.
 
-#![allow(
-    clippy::unwrap_used,
-    clippy::expect_used,
-    clippy::indexing_slicing,
-    clippy::print_stderr
+#![expect(
+    clippy::print_stderr,
+    reason = "a live smoke test: it prints what it fetched so a parser drift is easy to read"
 )]
 
 use zwipe::outbound::archidekt::ArchidektClient;
 
 const DECK_URL: &str = "https://archidekt.com/decks/11493358/satya";
-const DECK_ID: i64 = 11493358;
+const DECK_ID: i64 = 11_493_358;
 
 #[tokio::test]
 #[ignore = "hits archidekt.com live; run with `-- --ignored`"]

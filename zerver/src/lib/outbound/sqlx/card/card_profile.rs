@@ -10,7 +10,7 @@ use zwipe_core::domain::card::card_role::CardRole;
 
 /// Raw database card profile record (unvalidated data from PostgreSQL).
 #[derive(Debug, Clone, FromRow)]
-#[allow(missing_docs)]
+#[expect(missing_docs, reason = "each field mirrors the column it is read from")]
 pub struct DatabaseCardProfile {
     pub scryfall_data_id: Uuid,
     pub is_token: bool,
@@ -55,7 +55,7 @@ impl From<DatabaseCardProfile> for CardProfile {
             is_token: value.is_token,
             // The `card_profiles.card_roles` column holds role slugs;
             // serve them as `card_roles` (validated against the known role set).
-            card_roles: card_roles.iter().map(|r| r.to_string()).collect(),
+            card_roles: card_roles.iter().map(ToString::to_string).collect(),
             oracle_tags,
             oracle_tags_by_role,
             other_oracle_tags,

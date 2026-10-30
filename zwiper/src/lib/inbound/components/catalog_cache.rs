@@ -1,7 +1,7 @@
 //! App-wide catalog cache: slow-changing card/deck filter metadata, fetched
 //! once at startup and held above the router for the session.
 //!
-//! The filter subsections, pickers, and (soon) the oracle-tag dictionary all read
+//! The filter subsections, pickers, and the oracle-tag dictionary all read
 //! the same lists: artists, sets, keywords, oracle words, card types, card roles,
 //! oracle tags, and deck tags. Those lists only change when Scryfall / `zervice`
 //! refreshes (daily) or when we deploy catalog consts, not when a user opens a
@@ -37,7 +37,7 @@ const CATALOG_TTL_HOURS: i64 = 24;
 /// Mirrors [`ChangelogCache`](super::auth::session_upkeep::ChangelogCache): a
 /// consumer shows a skeleton on `Loading`, renders on `Loaded`, and falls back to
 /// an empty list (or its own error state) on `Failed`.
-#[derive(Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum CatalogCell<T> {
     /// No successful fetch yet; a fetch is in flight or about to be.
     Loading,
@@ -79,6 +79,7 @@ impl<T> CatalogCell<T> {
 
 /// One cached catalog: the cell plus a single-flight guard so N racing consumers
 /// (and the startup prefetch) trigger at most one fetch.
+#[derive(Debug)]
 pub struct CatalogSlot<T: 'static> {
     cell: Signal<CatalogCell<T>>,
     fetching: Signal<bool>,
@@ -159,7 +160,7 @@ impl<T: Clone + PartialEq + 'static> CatalogSlot<T> {
 /// A `Copy` handle over per-catalog signals: cheap to pass around, one context
 /// lookup, one place to reason about TTL. Public catalogs warm at startup; deck
 /// tags warm once a session exists.
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct CatalogCache {
     /// Unique artist names (`GET /api/card/artists`).
     pub artists: CatalogSlot<Vec<String>>,

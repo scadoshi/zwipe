@@ -1,3 +1,5 @@
+//! Rarity types (Common, Uncommon, Rare, Mythic).
+
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -10,7 +12,7 @@ pub struct InvalidRarity;
 ///
 /// Variants are declared in tier order so the derived `Ord` produces
 /// `Common < Uncommon < Rare < Mythic < Bonus < Special`; do not reorder.
-#[allow(missing_docs)]
+#[expect(missing_docs, reason = "the variants are the rarity names")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Rarity {
     Common,
@@ -117,14 +119,14 @@ impl std::ops::Deref for Rarities {
 }
 
 impl Rarities {
-    /// Converts all rarities to short codes (e.g., ["C", "M", "R"]).
+    /// Converts all rarities to short codes (e.g., `["C", "M", "R"]`).
     pub fn to_short_names(&self) -> Vec<String> {
-        self.0.iter().map(|c| c.to_short_name()).collect()
+        self.0.iter().map(Rarity::to_short_name).collect()
     }
 
-    /// Converts all rarities to long names (e.g., ["Common", "Mythic", "Rare"]).
+    /// Converts all rarities to long names (e.g., `["Common", "Mythic", "Rare"]`).
     pub fn to_long_names(&self) -> Vec<String> {
-        self.0.iter().map(|c| c.to_long_name()).collect()
+        self.0.iter().map(Rarity::to_long_name).collect()
     }
 }
 

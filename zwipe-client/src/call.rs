@@ -15,6 +15,12 @@ impl ZwipeClient {
     /// `session` is required when `E::AUTH`; passing `None` there is a bug in
     /// the caller, so it fails as an unauthorized error rather than sending an
     /// anonymous request the server would reject anyway.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ClientError::Unauthorized`] when `E::AUTH` is set and `session` is `None`, and
+    /// otherwise a [`ClientError`] when the request fails to complete, the server answers with an
+    /// error status, or the reply doesn't decode.
     pub async fn call<E: Endpoint>(
         &self,
         endpoint: E,
@@ -61,6 +67,10 @@ async fn hold_for_skeleton_audit(method: Method) {
 }
 
 #[cfg(target_arch = "wasm32")]
+#[expect(
+    clippy::unused_async,
+    reason = "keeps the native version's async signature, which sleeps"
+)]
 async fn hold_for_skeleton_audit(_method: Method) {}
 
 /// Splits the response into success and failure, and turns a success body into

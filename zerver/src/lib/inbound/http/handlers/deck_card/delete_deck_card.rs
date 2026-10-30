@@ -1,9 +1,11 @@
+//! Remove card from deck handler.
+
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use zwipe_core::domain::deck::requests::delete_deck_card::{DeleteDeckCard, InvalidDeleteDeckCard};
 
 use crate::domain::deck::models::deck_card::delete_deck_card::DeleteDeckCardError;
-use crate::inbound::http::handlers::metrics::check_completion::check_deck_completion;
+use crate::inbound::http::handlers::metrics::check_completion;
 use crate::inbound::http::middleware::AuthenticatedUser;
 use crate::inbound::http::{ApiError, AppState, To500};
 
@@ -24,16 +26,21 @@ impl From<InvalidDeleteDeckCard> for ApiError {
     fn from(value: InvalidDeleteDeckCard) -> Self {
         match value {
             InvalidDeleteDeckCard::DeckId(e) => {
-                Self::UnprocessableEntity(format!("invalid deck id: {}", e))
+                Self::UnprocessableEntity(format!("invalid deck id: {e}"))
             }
             InvalidDeleteDeckCard::ScryfallDataId(e) => {
-                Self::UnprocessableEntity(format!("invalid card profile id: {}", e))
+                Self::UnprocessableEntity(format!("invalid card profile id: {e}"))
             }
         }
     }
 }
 
 /// Removes a card from a deck.
+///
+/// # Errors
+///
+/// Returns 422 for an invalid id or a card not in the deck, 404 when the deck
+/// isn't the caller's, and 500 on a database failure.
 pub async fn delete_deck_card(
     user: AuthenticatedUser,
     State(state): State<AppState>,
@@ -51,7 +58,12 @@ pub async fn delete_deck_card(
     let deck_service = std::sync::Arc::clone(&state.deck_service);
     let uid = user.id;
     let did = request.deck_id;
-    tokio::spawn(check_deck_completion(deck_service, metrics, uid, did));
+    tokio::spawn(check_completion::check_deck_completion(
+        deck_service,
+        metrics,
+        uid,
+        did,
+    ));
 
     Ok(StatusCode::NO_CONTENT)
 }

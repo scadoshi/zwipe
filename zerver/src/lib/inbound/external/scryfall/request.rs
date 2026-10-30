@@ -27,7 +27,7 @@ pub(super) struct ScryfallRequest(RequestBuilder);
 
 impl ScryfallRequest {
     /// Builds a GET request carrying the Scryfall headers.
-    pub(super) fn get(client: Client, full_url: &str) -> Self {
+    pub(super) fn get(client: &Client, full_url: &str) -> Self {
         Self(
             client
                 .get(full_url)
@@ -46,9 +46,12 @@ impl ScryfallRequest {
     }
 
     /// Searches for a card by name via the Scryfall search endpoint.
-    #[allow(dead_code)]
+    #[expect(
+        dead_code,
+        reason = "a by-name search kept beside the bulk fetches, with no caller yet"
+    )]
     pub(super) async fn search_cards(
-        client: Client,
+        client: &Client,
         search_str: &str,
     ) -> anyhow::Result<Vec<ScryfallData>> {
         let url = SCRYFALL_API_BASE.to_string() + CARDS_SEARCH_ENDPOINT;
@@ -63,7 +66,6 @@ impl ScryfallRequest {
             .json()
             .await
             .context("failed to parse json from get result")?;
-        // tracing::debug!("card response was {:#?}", get_json);
         let card_search_response: ScryfallDataSearchResponse =
             serde_json::from_value(get_json).context("failed to parse CardSearchResponse")?;
         Ok(card_search_response.data)
@@ -71,7 +73,10 @@ impl ScryfallRequest {
 }
 
 /// Extension trait for building a [`ScryfallRequest`] from a reqwest `Client`.
-#[allow(dead_code)]
+#[expect(
+    dead_code,
+    reason = "kept for building requests from a client, with no caller yet"
+)]
 pub(super) trait IntoScryfallRequest {
     /// Builds a request targeting the given Scryfall endpoint.
     fn into_scryfall_request(self, endpoint: &str) -> ScryfallRequest;
@@ -79,6 +84,6 @@ pub(super) trait IntoScryfallRequest {
 
 impl IntoScryfallRequest for Client {
     fn into_scryfall_request(self, endpoint: &str) -> ScryfallRequest {
-        ScryfallRequest::get(self, endpoint)
+        ScryfallRequest::get(&self, endpoint)
     }
 }

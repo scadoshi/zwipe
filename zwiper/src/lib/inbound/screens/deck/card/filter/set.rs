@@ -4,7 +4,7 @@ use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 
-use super::deck_cards::{DeckCards, extract_sets};
+use super::deck_cards::{self, DeckCards};
 use crate::inbound::components::catalog_cache::CatalogCache;
 
 /// Whether the set filter is in include or exclude mode.
@@ -32,11 +32,8 @@ impl IncludeExclude {
 
 fn read_sets(fb: &CardQueryBuilder, mode: IncludeExclude) -> Vec<String> {
     match mode {
-        IncludeExclude::Include => fb.set_equals_any().map(|v| v.to_vec()).unwrap_or_default(),
-        IncludeExclude::Exclude => fb
-            .set_excludes_any()
-            .map(|v| v.to_vec())
-            .unwrap_or_default(),
+        IncludeExclude::Include => fb.set_equals_any().map(<[_]>::to_vec).unwrap_or_default(),
+        IncludeExclude::Exclude => fb.set_excludes_any().map(<[_]>::to_vec).unwrap_or_default(),
     }
 }
 
@@ -73,7 +70,7 @@ pub fn Set() -> Element {
     });
     let all_sets = use_memo(move || -> Option<Vec<String>> {
         if let Some(dc) = deck_ctx {
-            Some(extract_sets(&dc.0()))
+            Some(deck_cards::extract_sets(&dc.0()))
         } else {
             cache.sets.cell().read().loaded().cloned()
         }
@@ -135,8 +132,7 @@ pub fn Set() -> Element {
                     for set in selected_sets.iter().cloned() {
                         div {
                             class: match mode() {
-                                IncludeExclude::Include => "chip selected flex items-center gap-05",
-                                IncludeExclude::Exclude => "chip selected flex items-center gap-05",
+                                IncludeExclude::Include | IncludeExclude::Exclude => "chip selected flex items-center gap-05",
                             },
                             {set.clone()}
                             button { class: "chip-remove",
@@ -171,7 +167,9 @@ pub fn Set() -> Element {
                             .cloned()
                             .collect();
 
-                        if !results.is_empty() {
+                        if results.is_empty() {
+                            rsx! {}
+                        } else {
                             rsx! {
                                 div { class: "search-float-anchor",
                                     div { class: "search-float-results",
@@ -191,8 +189,6 @@ pub fn Set() -> Element {
                                     }
                                 }
                             }
-                        } else {
-                            rsx! {}
                         }
                     }
                 }

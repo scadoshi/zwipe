@@ -10,7 +10,7 @@ use zwipe_core::domain::user::requests::get_user::GetUser;
 use zwipe_core::http::contracts::deck_card::HttpImportDeckCards;
 
 use crate::domain::deck::models::deck_card::import_deck_cards::ImportDeckCardsError;
-use crate::inbound::http::handlers::metrics::check_completion::check_deck_completion;
+use crate::inbound::http::handlers::metrics::check_completion;
 use crate::inbound::http::middleware::AuthenticatedUser;
 use crate::inbound::http::{ApiError, AppState, To500};
 
@@ -33,6 +33,11 @@ impl From<ImportDeckCardsError> for ApiError {
 }
 
 /// Imports cards from plain-text decklist into a deck.
+///
+/// # Errors
+///
+/// Returns 422 for a malformed deck id or board or a full deck, 404 when the
+/// deck isn't the caller's, and 500 on a database failure.
 pub async fn import_deck_cards(
     user: AuthenticatedUser,
     State(state): State<AppState>,
@@ -66,7 +71,12 @@ pub async fn import_deck_cards(
     let metrics = std::sync::Arc::clone(&state.metrics_service);
     let deck_service = std::sync::Arc::clone(&state.deck_service);
     let uid = user.id;
-    tokio::spawn(check_deck_completion(deck_service, metrics, uid, deck_id));
+    tokio::spawn(check_completion::check_deck_completion(
+        deck_service,
+        metrics,
+        uid,
+        deck_id,
+    ));
 
     Ok((StatusCode::OK, Json(result)))
 }

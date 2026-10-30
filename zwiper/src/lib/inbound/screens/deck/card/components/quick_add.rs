@@ -13,7 +13,7 @@ use std::time::Duration;
 use components::TOAST_QUICK;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use tokio::time::sleep;
+use tokio::time;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
@@ -42,7 +42,7 @@ const RESULT_LIMIT: u32 = 5;
 /// signed deficit to the anchor's current height, so it converges as results
 /// change. Runs on the next frame (post-layout) and once more after the
 /// focus smooth-scroll has settled.
-const QUICK_ADD_FIT_JS: &str = r#"
+const QUICK_ADD_FIT_JS: &str = r"
 const fit = () => {
     const anchor = document.getElementById('quick-add-anchor');
     const results = document.getElementById('quick-add-results');
@@ -58,7 +58,7 @@ const fit = () => {
 };
 requestAnimationFrame(fit);
 setTimeout(fit, 400);
-"#;
+";
 
 /// Live card-name search that adds the picked card straight to the mainboard.
 ///
@@ -94,7 +94,7 @@ pub fn QuickAdd(deck_id: Uuid, deck_entries: Signal<Vec<DeckEntry>>) -> Element 
         show_dropdown.set(true);
 
         spawn(async move {
-            sleep(Duration::from_millis(DEBOUNCE_MS)).await;
+            time::sleep(Duration::from_millis(DEBOUNCE_MS)).await;
 
             if query() != q {
                 return;
@@ -119,7 +119,7 @@ pub fn QuickAdd(deck_id: Uuid, deck_entries: Signal<Vec<DeckEntry>>) -> Element 
 
             usage_buffer().record_search();
             // Quiet: fires per debounced keystroke; the dropdown just closes.
-            match authed
+            if let Some(page) = authed
                 .run_quiet_at(
                     component::QUICK_ADD,
                     "quick_add_search",
@@ -127,15 +127,12 @@ pub fn QuickAdd(deck_id: Uuid, deck_entries: Signal<Vec<DeckEntry>>) -> Element 
                 )
                 .await
             {
-                Some(page) => {
-                    results.set(page.cards);
-                    is_searching.set(false);
-                    show_dropdown.set(true);
-                }
-                None => {
-                    is_searching.set(false);
-                    show_dropdown.set(false);
-                }
+                results.set(page.cards);
+                is_searching.set(false);
+                show_dropdown.set(true);
+            } else {
+                is_searching.set(false);
+                show_dropdown.set(false);
             }
         });
     });

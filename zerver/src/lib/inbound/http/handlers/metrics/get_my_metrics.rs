@@ -1,3 +1,5 @@
+//! Returns the caller's lifetime counters.
+
 use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
@@ -7,6 +9,10 @@ use crate::inbound::http::middleware::AuthenticatedUser;
 use crate::inbound::http::{ApiError, AppState};
 
 /// Returns the caller's lifetime metric totals.
+///
+/// # Errors
+///
+/// Returns 404 when the user has no metrics row, and 500 on a database failure.
 pub async fn get_my_metrics(
     user: AuthenticatedUser,
     State(state): State<AppState>,

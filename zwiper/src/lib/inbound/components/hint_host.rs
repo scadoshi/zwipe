@@ -7,7 +7,7 @@
 
 use components::{AlertDialog, DialogAction, HintBullet, HintBullets, HintKey, HintLine, ModeIcon};
 use dioxus::prelude::*;
-use zwipe_core::domain::auth::password::requirements;
+use zwipe_core::domain::auth::password;
 
 use crate::inbound::components::concept_explainers::{DeckTagsExplainer, OracleTagsExplainer};
 
@@ -16,7 +16,7 @@ use crate::inbound::components::concept_explainers::{DeckTagsExplainer, OracleTa
 /// One per field or row rather than one per screen: a dialog that explains
 /// ten fields at once gets skipped, and the reader only wanted the one they
 /// tapped. Each body says only what looking at the control does not.
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum HintTopic {
     /// The archetype tags you pick on a deck.
     DeckTags,
@@ -34,7 +34,7 @@ pub enum HintTopic {
     Background,
     /// The oathbreaker signature spell field.
     SignatureSpell,
-    /// The WotC bracket the deck targets.
+    /// The Commander bracket the deck targets.
     PowerLevel,
     /// The deck's land count target.
     LandTarget,
@@ -190,7 +190,7 @@ impl HintTopic {
             },
             Self::Password => rsx! {
                 HintBullets {
-                    for line in requirements() {
+                    for line in password::requirements() {
                         HintBullet { "{line}" }
                     }
                 }

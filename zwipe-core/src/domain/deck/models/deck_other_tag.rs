@@ -6,8 +6,8 @@
 //! aren't about the game plan (Budget, Jank, Meme, Precon, …) and is meant to
 //! grow freely over time.
 //!
-//! Variants are only ever added, never removed or renamed, so previously-stored
-//! values keep parsing.
+//! Variants are only ever added, never removed or renamed, so stored values
+//! keep parsing.
 
 use std::fmt;
 
@@ -67,7 +67,7 @@ impl DeckOtherTag {
     }
 }
 
-/// Display as snake_case (matches serde serialization).
+/// Display as `snake_case` (matches serde serialization).
 impl fmt::Display for DeckOtherTag {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let s = serde_json::to_string(self).unwrap_or_default();
@@ -92,6 +92,10 @@ impl TryFrom<&str> for DeckOtherTag {
 /// Parses raw strings into validated other-tags, dropping duplicates while
 /// preserving order. Returns an error on the first unrecognized string. Callers
 /// enforce [`MAX_DECK_OTHER_TAGS`] separately so they can surface their own error.
+///
+/// # Errors
+///
+/// Returns [`InvalidDeckOtherTag`] for the first string that is not an other-tag slug.
 pub fn parse_other_tags(raw: &[String]) -> Result<Vec<DeckOtherTag>, InvalidDeckOtherTag> {
     let mut out: Vec<DeckOtherTag> = Vec::with_capacity(raw.len());
     for s in raw {
@@ -137,7 +141,7 @@ mod tests {
     fn display_names_unique() {
         let names: std::collections::HashSet<_> = DeckOtherTag::all()
             .iter()
-            .map(|t| t.display_name())
+            .map(DeckOtherTag::display_name)
             .collect();
         assert_eq!(names.len(), DeckOtherTag::all().len());
     }

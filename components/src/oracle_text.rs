@@ -16,18 +16,18 @@ fn parse(text: &str) -> Vec<Segment> {
     let mut out = Vec::new();
     let mut buf = String::new();
     let mut rest = text;
-    while let Some(open) = rest.find('{') {
-        buf.push_str(&rest[..open]);
-        let after = &rest[open + 1..];
-        if let Some(close) = after.find('}') {
+    while let Some((before, after)) = rest.split_once('{') {
+        buf.push_str(before);
+        if let Some((symbol, after_close)) = after.split_once('}') {
             if !buf.is_empty() {
                 out.push(Segment::Text(std::mem::take(&mut buf)));
             }
-            out.push(Segment::Symbol(symbol_class(&after[..close])));
-            rest = &after[close + 1..];
+            out.push(Segment::Symbol(symbol_class(symbol)));
+            rest = after_close;
         } else {
             // Unterminated brace: keep the remainder as literal text.
-            buf.push_str(&rest[open..]);
+            buf.push('{');
+            buf.push_str(after);
             rest = "";
         }
     }

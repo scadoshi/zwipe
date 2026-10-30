@@ -4,7 +4,10 @@
 //! Every path is absolute, so both `Url::set_path` and a plain
 //! `format!("{base}{path}")` join produce the same URL.
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "each route constant and builder is named for the path it holds"
+)]
 
 use uuid::Uuid;
 

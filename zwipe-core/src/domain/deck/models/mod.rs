@@ -1,3 +1,5 @@
+//! Deck entities and their value objects.
+
 // Value objects
 pub mod board;
 pub mod deck_name;
@@ -10,7 +12,6 @@ pub mod power_level;
 pub mod quantity;
 
 // Entities
-#[allow(clippy::module_inception)]
 pub mod deck;
 pub mod deck_card;
 pub mod deck_metrics;

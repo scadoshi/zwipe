@@ -1,9 +1,9 @@
 //! Heuristic classification for the handful of `CardRole` variants that
 //! Oracle Tags cannot cleanly express: `Pump`, `Stax`, `Protection`, `GraveyardHate`.
 //!
-//! As of 2026-07-11 the other ~18 categories are derived from Oracle-tag subtrees
-//! (the community gold standard) and `Tokens` from `all_parts`; see
-//! `context/plans/otags/` (Phase 2). Those concepts map cleanly to otags. These four
+//! The other ~18 categories are derived from Oracle-tag subtrees (the
+//! community gold standard) and `Tokens` from `all_parts`; see
+//! `context/plans/archive/otags/`. Those concepts map cleanly to otags. These four
 //! do NOT: the otag taxonomy carves the space differently (no single "single-target
 //! pump" or "tax/denial" concept, and `hate-graveyard` under-covers graveyard hate).
 //! So we keep a small, stable regex heuristic *only* for them.
@@ -24,12 +24,10 @@ use crate::domain::card::Card;
 pub fn classify_oracle_tag_gaps(card: &Card) -> Vec<CardRole> {
     let sd = &card.scryfall_data;
     // Reminder text (parenthesized) smuggles pattern matches: split second's
-    // "(...players can't cast spells...)" made every split second card Stax,
-    // and delve/embalm/escape reminders ("exile ... from your graveyard")
-    // tagged own-graveyard costs as GraveyardHate: 187 misroled cards across
-    // the four rules when audited 2026-08-06. Rules text a card actually
-    // carries always exists outside the parens, so classification reads the
-    // stripped text only.
+    // "(...players can't cast spells...)" reads as Stax, and
+    // delve/embalm/escape reminders ("exile ... from your graveyard") read as
+    // GraveyardHate. Rules text a card actually carries always exists outside
+    // the parens, so classification reads the stripped text only.
     let oracle = REMINDER
         .replace_all(&sd.oracle_text.as_deref().unwrap_or("").to_lowercase(), "")
         .into_owned();
@@ -70,30 +68,37 @@ pub fn classify_oracle_tag_gaps(card: &Card) -> Vec<CardRole> {
         cats.push(CardRole::GraveyardHate);
     }
 
+    #[expect(
+        clippy::as_conversions,
+        reason = "a fieldless enum's discriminant, which is its declaration order"
+    )]
     cats.sort_by_key(|c| *c as u8);
     cats.dedup();
     cats
 }
 
-// Compiled regex patterns (lazy-initialized). Compile-time-known valid patterns.
-#[allow(clippy::expect_used)]
+// Compiled regex patterns (lazy-initialized).
+#[expect(
+    clippy::expect_used,
+    reason = "literal patterns; the unit tests exercise every one"
+)]
 mod patterns {
-    use super::*;
+    use super::{LazyLock, Regex};
 
     /// Parenthesized reminder text, stripped before classification.
-    pub static REMINDER: LazyLock<Regex> =
+    pub(crate) static REMINDER: LazyLock<Regex> =
         LazyLock::new(|| Regex::new(r"\([^)]*\)").expect("valid regex"));
-    pub static PUMP: LazyLock<Regex> = LazyLock::new(|| {
+    pub(crate) static PUMP: LazyLock<Regex> = LazyLock::new(|| {
         Regex::new(r"(target|equipped|enchanted) creature.{0,15}gets? \+\d+/\+\d+")
             .expect("valid regex")
     });
-    pub static STAX_CANT: LazyLock<Regex> =
+    pub(crate) static STAX_CANT: LazyLock<Regex> =
         LazyLock::new(|| Regex::new(r"(opponents?|players?) can'?t").expect("valid regex"));
-    pub static STAX_EACH: LazyLock<Regex> = LazyLock::new(|| {
+    pub(crate) static STAX_EACH: LazyLock<Regex> = LazyLock::new(|| {
         Regex::new(r"(each|all) (player|opponent).{0,30}(sacrifice|discard|lose|pay)")
             .expect("valid regex")
     });
-    pub static GRAVEYARD_HATE: LazyLock<Regex> = LazyLock::new(|| {
+    pub(crate) static GRAVEYARD_HATE: LazyLock<Regex> = LazyLock::new(|| {
         Regex::new(r"exile.{0,30}(graveyard|all cards from)").expect("valid regex")
     });
 }
@@ -158,7 +163,10 @@ mod tests {
 
     #[test]
     fn no_false_positive_on_vanilla() {
-        assert!(classify_oracle_tag_gaps(&card_with("Flying")).is_empty());
+        assert_eq!(
+            classify_oracle_tag_gaps(&card_with("Flying")),
+            Vec::<CardRole>::new()
+        );
     }
 
     #[test]

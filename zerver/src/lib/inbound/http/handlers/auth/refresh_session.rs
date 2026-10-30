@@ -1,9 +1,11 @@
+//! Session refresh handler.
+
 use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::http::contracts::auth::HttpRefreshSession;
-use zwipe_core::version::canonical_version;
+use zwipe_core::version;
 
 use crate::domain::auth::requests::refresh_session::{
     InvalidRefreshSession, RefreshSession, RefreshSessionError,
@@ -57,12 +59,20 @@ impl TryFrom<HttpRefreshSession> for RefreshSession {
     type Error = InvalidRefreshSession;
     fn try_from(value: HttpRefreshSession) -> Result<Self, Self::Error> {
         let mut request = Self::new(&value.user_id, &value.refresh_token)?;
-        request.client_version = value.client_version.as_deref().and_then(canonical_version);
+        request.client_version = value
+            .client_version
+            .as_deref()
+            .and_then(version::canonical_version);
         Ok(request)
     }
 }
 
 /// Rotates a refresh token, consuming the old one and issuing a new session.
+///
+/// # Errors
+///
+/// Returns 422 for a malformed user id, 401 for an unknown, expired or revoked
+/// token, 403 when the token isn't the user's, and 500 on a database failure.
 pub async fn refresh_session(
     State(state): State<AppState>,
     Json(body): Json<HttpRefreshSession>,

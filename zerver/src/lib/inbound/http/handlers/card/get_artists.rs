@@ -1,3 +1,5 @@
+//! Distinct artist names handler.
+
 use axum::Json;
 use axum::extract::State;
 use reqwest::StatusCode;
@@ -14,6 +16,10 @@ impl From<GetArtistsError> for ApiError {
 }
 
 /// Returns distinct artist names.
+///
+/// # Errors
+///
+/// Returns 500 on a database failure.
 pub async fn get_artists(
     State(state): State<AppState>,
 ) -> Result<(StatusCode, Json<Vec<String>>), ApiError> {

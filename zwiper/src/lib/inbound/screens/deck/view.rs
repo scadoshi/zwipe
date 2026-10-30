@@ -1,3 +1,5 @@
+//! The view deck screen: a deck's profile, sections and charts.
+
 use components::{
     ActionBar, AlertDialog, Button, ButtonVariant, DialogAction, HintBullet, HintBullets,
     HintDialog, HintKey, TOAST_NORMAL, TOAST_QUICK,
@@ -11,6 +13,7 @@ use zwipe_core::domain::deck::DeckEntry;
 use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
 use zwipe_core::domain::deck::deck_profile::DeckProfile;
 use zwipe_core::domain::deck::deck_warning::DeckWarning;
+use zwipe_core::domain::deck::format::Format;
 use zwipe_core::domain::user::models::hints::HINT_FIRST_DECK;
 use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
 use zwipe_core::http::contracts::deck_card::HttpPatchDeckCard;
@@ -18,12 +21,12 @@ use zwipe_core::http::helpers::Opdate;
 
 use super::components::clone_deck_dialog::CloneDeckDialog;
 use super::components::collapsible_section::CollapsibleSection;
-use super::components::deck_budget_section::{DeckBudgetSection, has_budget};
+use super::components::deck_budget_section::{self, DeckBudgetSection};
 use super::components::deck_charts::{
     ColorChart, DeckCharts, DrawOdds, ManaBalanceRow, ManaCurve, ManaFulfillment,
 };
 use super::components::deck_profile::DeckProfileSection;
-use super::components::deck_tags_section::{DeckTagsSection, has_any_tags, total_tag_count};
+use super::components::deck_tags_section::{self, DeckTagsSection};
 use super::components::deck_warnings::DeckWarnings;
 use super::components::more_buttons::MoreButtons;
 use super::components::skeletons::{DeckProfileSkeleton, DeckStatsSkeleton};
@@ -59,8 +62,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
     let mut deck_profile_resource: Resource<Result<DeckProfile, ClientError>> =
         use_resource(use_reactive!(|deck_id| async move {
             // try_run keeps the Result the downstream Ok/Err matches expect;
-            // reporting and the error toast live in the facade now (the old
-            // separate error-watching effect is gone).
+            // reporting and the error toast live in the facade.
             authed
                 .try_run("load_deck", |c, s| async move {
                     c.get_deck_profile(deck_id, &s).await
@@ -185,7 +187,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
     // commander but no cards never produces metrics, and an absence-keyed
     // skeleton pulses forever on exactly that deck.
     let deck_loading = deck_resource().is_none();
-    let deck_data = deck_resource().and_then(|r| r.ok());
+    let deck_data = deck_resource().and_then(Result::ok);
     let warnings: Vec<DeckWarning> = deck_data
         .as_ref()
         .map(|(_, w, _)| w.clone())
@@ -206,7 +208,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
         .filter(|m| m.land_count + m.nonland_count > 0);
 
     let command_zone_names: Vec<String> = deck_profile_resource()
-        .and_then(|r| r.ok())
+        .and_then(Result::ok)
         .map(|p| {
             [
                 p.commander_name.as_deref(),
@@ -216,11 +218,11 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
             ]
             .into_iter()
             .flatten()
-            .map(|s| s.to_string())
+            .map(str::to_string)
             .collect()
         })
         .unwrap_or_default();
-    let cz_refs: Vec<&str> = command_zone_names.iter().map(|s| s.as_str()).collect();
+    let cz_refs: Vec<&str> = command_zone_names.iter().map(String::as_str).collect();
 
     let tcg_url = deck_data.as_ref().map(|(entries, _, _)| {
         let active: Vec<_> = entries
@@ -239,17 +241,18 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
         buy_links::cardkingdom_url(&active, &cz_refs)
     });
 
-    let mana_curve_bars: Option<[(usize, u32); 7]> = chart_metrics.map(|m| m.mana_curve_bars());
-    let type_bars: Option<Vec<(&str, usize, u32)>> = chart_metrics.map(|m| m.type_bars());
-    let color_bars: Option<Vec<(&str, usize, u32)>> = chart_metrics.map(|m| m.color_bars());
+    let mana_curve_bars: Option<[(usize, u32); 7]> =
+        chart_metrics.map(DeckMetrics::mana_curve_bars);
+    let type_bars: Option<Vec<(&str, usize, u32)>> = chart_metrics.map(DeckMetrics::type_bars);
+    let color_bars: Option<Vec<(&str, usize, u32)>> = chart_metrics.map(DeckMetrics::color_bars);
     let category_bars: Option<Vec<(&str, usize, u32)>> =
-        chart_metrics.and_then(|m| m.card_role_bars());
+        chart_metrics.and_then(DeckMetrics::card_role_bars);
     let role_tags = chart_metrics.map(|m| m.card_role_tags.clone());
 
     let draw_odds_data: Option<(u32, Vec<(&'static str, u32)>)> =
-        chart_metrics.map(|m| m.draw_odds_buckets());
+        chart_metrics.map(DeckMetrics::draw_odds_buckets);
     let mana_balance_rows: Option<Vec<ManaBalanceRow>> =
-        chart_metrics.map(|m| m.mana_balance_rows());
+        chart_metrics.map(DeckMetrics::mana_balance_rows);
 
     rsx! {
             div { class: "screen",
@@ -272,10 +275,10 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                 DeckProfileSection {
                                     deck_profile: deck_profile.clone(),
                                     commander: commander(),
-                                    card_count: metrics.as_ref().map(|m| m.total_cards).unwrap_or_else(|| deck_profile.card_count.max(0) as usize),
+                                    card_count: metrics.as_ref().map_or_else(|| deck_profile.card_count.max(0) as usize, |m| m.total_cards),
                                 }
 
-                                if has_budget(&deck_profile, metrics.is_some()) {
+                                if deck_budget_section::has_budget(&deck_profile, metrics.is_some()) {
                                     CollapsibleSection {
                                         title: "Budget",
                                         open_section: open_section,
@@ -304,10 +307,10 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                     }
                                 }
 
-                                if has_any_tags(&deck_profile) {
+                                if deck_tags_section::has_any_tags(&deck_profile) {
                                     CollapsibleSection {
                                         title: "Tags",
-                                        badge: format!("{}", total_tag_count(&deck_profile)),
+                                        badge: format!("{}", deck_tags_section::total_tag_count(&deck_profile)),
                                         open_section: open_section,
                                         DeckTagsSection { deck_profile }
                                     }
@@ -318,7 +321,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                     // section: a curve (mainboard cards) OR just a land
                                     // target set, so the Lands goal-vs-actual stays
                                     // visible even on an otherwise-empty deck.
-                                    let land_count = metrics.as_ref().map(|m| m.land_count).unwrap_or(0);
+                                    let land_count = metrics.as_ref().map_or(0, |m| m.land_count);
                                     rsx! {
                                         if mana_curve_bars.is_some() || land_target.is_some() {
                                           // Nested column: keep its gap equal to the outer
@@ -430,7 +433,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                     DeckWarnings {
                                         warnings: warnings,
                                         deck_id: deck_id,
-                                        on_remove: move |_| {
+                                        on_remove: move |()| {
                                             deck_resource.restart();
                                         },
                                         on_fix_quantity: move |(card_id, target_qty): (Uuid, i32)| {
@@ -454,7 +457,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                                 }
                                             });
                                         },
-                                        on_clear_commander: move |_| {
+                                        on_clear_commander: move |()| {
                                             let request = HttpUpdateDeckProfile::builder()
                                                 .commander_id(Opdate::Set(None))
                                                 .build();
@@ -467,7 +470,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                                     .await
                                                     .is_some()
                                                 {
-                                                        let label = if deck_profile_resource().is_some_and(|r| r.as_ref().ok().is_some_and(|p| p.format.as_ref().is_some_and(|f| f.has_signature_spell()))) {
+                                                        let label = if deck_profile_resource().is_some_and(|r| r.as_ref().is_ok_and(|p| p.format.as_ref().is_some_and(Format::has_signature_spell))) {
                                                             "Oathbreaker"
                                                         } else {
                                                             "Commander"
@@ -558,7 +561,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
             CloneDeckDialog {
                 source_deck_id: deck_id,
                 default_name: deck_profile_resource()
-                    .and_then(|r| r.ok())
+                    .and_then(Result::ok)
                     .map(|p| format!("{} (clone)", p.name))
                     .unwrap_or_default(),
                 open: show_clone_dialog,

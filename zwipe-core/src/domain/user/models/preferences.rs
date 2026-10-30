@@ -64,10 +64,10 @@ pub const ALLOWED_THEMES: &[&str] = &[
     "zenburn",
 ];
 
-/// Slugs the list no longer has, each mapped to the theme its users move to
-/// (a renamed theme's new slug, a removed theme's closest look), so a client
-/// built before the change keeps working until it updates. The server's
-/// migrations move stored rows the same way.
+/// Slugs missing from [`ALLOWED_THEMES`], each mapped to the theme its users
+/// move to (a renamed theme's new slug, a removed theme's closest look), so an
+/// outdated client keeps working until it updates. The server's migrations
+/// move stored rows the same way.
 pub const RENAMED_THEMES: &[(&str, &str)] = &[
     ("ristretto", "monokai-pro-ristretto"),
     ("visual-studio", "vscode"),
@@ -169,8 +169,8 @@ pub struct UserPreferences {
     /// Whether dark mode is active.
     pub dark_mode: bool,
     /// Hide Universes Beyond cards (no in-universe printing) from card
-    /// serving and commander select. serde(default) keeps JWT claims and
-    /// payloads minted before this field existed deserializing.
+    /// serving and commander select. Claims and payloads without the field
+    /// read as `false`.
     #[serde(default)]
     pub exclude_universes_beyond: bool,
     /// Franchise slugs served anyway while the exclusion is on
@@ -178,8 +178,8 @@ pub struct UserPreferences {
     /// is toggled off so re-enabling restores the whitelist.
     #[serde(default)]
     pub universes_beyond_exceptions: Vec<String>,
-    /// How mana pips are colored. serde(default) reads claims and payloads
-    /// from before the field as [`PipStyle::Theme`].
+    /// How mana pips are colored. Claims and payloads without the field read
+    /// as [`PipStyle::Theme`].
     #[serde(default)]
     pub pip_style: PipStyle,
 }
@@ -217,7 +217,15 @@ pub struct UpdatePreferences {
 }
 
 impl UpdatePreferences {
-    /// Validates and constructs the request.
+    /// Validates and constructs the request. A slug in [`RENAMED_THEMES`]
+    /// becomes the theme it maps to.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`InvalidUpdatePreferences::InvalidTheme`] when `theme` is not
+    /// in [`ALLOWED_THEMES`], and
+    /// [`InvalidUpdatePreferences::InvalidFranchise`] when an exception slug
+    /// names no known Universes Beyond franchise.
     pub fn new(
         user_id: Uuid,
         theme: Option<&str>,
@@ -246,7 +254,7 @@ impl UpdatePreferences {
         }
         Ok(Self {
             user_id,
-            theme: theme.map(|t| t.to_string()),
+            theme: theme.map(ToString::to_string),
             dark_mode,
             exclude_universes_beyond,
             universes_beyond_exceptions,
@@ -498,7 +506,7 @@ mod tests {
         let prefs: UserPreferences =
             serde_json::from_str(r#"{"theme":"gruvbox","dark_mode":true}"#).unwrap();
         assert!(!prefs.exclude_universes_beyond);
-        assert!(prefs.universes_beyond_exceptions.is_empty());
+        assert_eq!(prefs.universes_beyond_exceptions, Vec::<String>::new());
         assert_eq!(prefs.pip_style, PipStyle::Theme);
     }
 

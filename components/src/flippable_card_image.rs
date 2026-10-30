@@ -85,8 +85,7 @@ pub fn FlippableCardImage(
             .card_faces
             .as_ref()
             .and_then(|f| f.get(cur))
-            .map(|f| f.name.clone())
-            .unwrap_or_else(|| sd_read.name.clone())
+            .map_or_else(|| sd_read.name.clone(), |f| f.name.clone())
     };
     let image_url: Option<String> = sd.read().face_image_url(cur, size).map(str::to_owned);
     let is_no_image = image_url.is_none();
@@ -97,9 +96,10 @@ pub fn FlippableCardImage(
     let (mana_cost, type_line, rarity, set_name, oracle_text, flavor_text, pt) = if is_no_image {
         let sd_read = sd.read();
         let face = sd_read.card_faces.as_ref().and_then(|f| f.get(cur));
-        let mana = face
-            .map(|f| f.mana_cost.clone())
-            .unwrap_or_else(|| sd_read.mana_cost.clone().unwrap_or_default());
+        let mana = face.map_or_else(
+            || sd_read.mana_cost.clone().unwrap_or_default(),
+            |f| f.mana_cost.clone(),
+        );
         let (power, toughness, loyalty) = match face {
             Some(f) => (f.power.clone(), f.toughness.clone(), f.loyalty.clone()),
             None => (
@@ -128,12 +128,9 @@ pub fn FlippableCardImage(
         (None, None, None, None, None, None, None)
     };
 
-    let already_loaded = image_url.as_ref().is_some_and(|u| {
-        seen_urls()
-            .lock()
-            .map(|seen| seen.contains(u))
-            .unwrap_or(false)
-    });
+    let already_loaded = image_url
+        .as_ref()
+        .is_some_and(|u| seen_urls().lock().is_ok_and(|seen| seen.contains(u)));
 
     // A cached image or a no-art card is settled before any load event.
     let settled = already_loaded || is_no_image;

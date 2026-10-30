@@ -11,6 +11,11 @@ use crate::{ClientError, ZwipeClient};
 
 impl ZwipeClient {
     /// Imports cards into a deck from plain text.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`ClientError`] when the request fails to complete, the server answers with an
+    /// error status, or the reply doesn't decode.
     pub async fn import_deck_cards(
         &self,
         deck_id: Uuid,
@@ -24,7 +29,7 @@ impl ZwipeClient {
                 deck_id,
                 HttpImportDeckCards {
                     text: text.to_string(),
-                    board: board.map(|b| b.to_string()),
+                    board: board.map(ToString::to_string),
                     mode,
                 },
             ),

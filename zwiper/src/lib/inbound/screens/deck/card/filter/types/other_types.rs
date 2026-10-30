@@ -4,7 +4,7 @@ use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 
-use super::super::deck_cards::{DeckCards, extract_type_words};
+use super::super::deck_cards::{self, DeckCards};
 use super::super::match_mode::MatchMode;
 use crate::inbound::components::catalog_cache::CatalogCache;
 
@@ -12,11 +12,11 @@ fn read_other_types(fb: &CardQueryBuilder, mode: MatchMode) -> Vec<String> {
     match mode {
         MatchMode::Any => fb
             .type_line_contains_any()
-            .map(|v| v.to_vec())
+            .map(<[_]>::to_vec)
             .unwrap_or_default(),
         MatchMode::All => fb
             .type_line_contains_all()
-            .map(|v| v.to_vec())
+            .map(<[_]>::to_vec)
             .unwrap_or_default(),
     }
 }
@@ -38,7 +38,7 @@ fn write_other_types(fb: &mut CardQueryBuilder, mode: MatchMode, values: Vec<Str
 
 fn read_excluded(fb: &CardQueryBuilder) -> Vec<String> {
     fb.type_line_excludes_any()
-        .map(|v| v.to_vec())
+        .map(<[_]>::to_vec)
         .unwrap_or_default()
 }
 
@@ -67,7 +67,7 @@ pub(crate) fn OtherTypes() -> Element {
     });
     let all_card_types = use_memo(move || -> Option<Vec<String>> {
         if let Some(dc) = deck_ctx {
-            Some(extract_type_words(&dc.0()))
+            Some(deck_cards::extract_type_words(&dc.0()))
         } else {
             cache.card_types.cell().read().loaded().cloned()
         }
@@ -100,7 +100,7 @@ pub(crate) fn OtherTypes() -> Element {
     let excluded_other_types = read_excluded(&filter_builder());
 
     rsx! {
-        // ── type line includes ────────────────────────────────────
+        // == type line includes ==
         div { class: "label-row mt-2",
             label { class: "label-xs", r#for: "other-type", "Type line include" }
             button {
@@ -161,7 +161,9 @@ pub(crate) fn OtherTypes() -> Element {
                         .map(|x| x.to_lowercase())
                         .collect();
 
-                    if !results.is_empty() {
+                    if results.is_empty() {
+                        rsx! {}
+                    } else {
                         rsx! {
                             div { class: "search-float-anchor",
                                 div { class: "search-float-results",
@@ -182,8 +184,6 @@ pub(crate) fn OtherTypes() -> Element {
                                 }
                             }
                         }
-                    } else {
-                        rsx! {}
                     }
                 }
             }
@@ -219,7 +219,7 @@ pub(crate) fn OtherTypes() -> Element {
             }
         }
 
-        // ── type line excludes ────────────────────────────────────
+        // == type line excludes ==
         div { class: "label-row mt-2",
             label { class: "label-xs", r#for: "type-excludes-search", "Type line exclude" }
             if !excluded_other_types.is_empty() {
@@ -269,7 +269,9 @@ pub(crate) fn OtherTypes() -> Element {
                         .map(|x| x.to_lowercase())
                         .collect();
 
-                    if !results.is_empty() {
+                    if results.is_empty() {
+                        rsx! {}
+                    } else {
                         rsx! {
                             div { class: "search-float-anchor",
                                 div { class: "search-float-results",
@@ -289,8 +291,6 @@ pub(crate) fn OtherTypes() -> Element {
                                 }
                             }
                         }
-                    } else {
-                        rsx! {}
                     }
                 }
             }

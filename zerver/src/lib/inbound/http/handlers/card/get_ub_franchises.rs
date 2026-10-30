@@ -1,8 +1,9 @@
+//! Universes Beyond franchise catalog handler.
+
 use axum::Json;
 use reqwest::StatusCode;
-use zwipe_core::domain::card::scryfall_data::universe::{
-    UbFranchiseView, selectable_franchise_views,
-};
+use zwipe_core::domain::card::scryfall_data::universe;
+use zwipe_core::domain::card::scryfall_data::universe::UbFranchiseView;
 
 /// Returns the Universes Beyond franchises the exceptions picker offers, built
 /// straight from the compiled franchise table, no DB read.
@@ -12,5 +13,5 @@ use zwipe_core::domain::card::scryfall_data::universe::{
 /// new franchise becomes selectable on a deploy instead of a store train.
 /// Sorted by display name here so every client shows the same order.
 pub async fn get_ub_franchises() -> (StatusCode, Json<Vec<UbFranchiseView>>) {
-    (StatusCode::OK, Json(selectable_franchise_views()))
+    (StatusCode::OK, Json(universe::selectable_franchise_views()))
 }

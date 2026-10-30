@@ -4,7 +4,7 @@ use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 
-use super::super::deck_cards::{DeckCards, extract_oracle_words};
+use super::super::deck_cards::{self, DeckCards};
 use super::super::match_mode::MatchMode;
 use crate::inbound::components::catalog_cache::CatalogCache;
 
@@ -12,11 +12,11 @@ fn read_oracle_words(fb: &CardQueryBuilder, mode: MatchMode) -> Vec<String> {
     match mode {
         MatchMode::Any => fb
             .oracle_text_contains_any()
-            .map(|v| v.to_vec())
+            .map(<[_]>::to_vec)
             .unwrap_or_default(),
         MatchMode::All => fb
             .oracle_text_contains_all()
-            .map(|v| v.to_vec())
+            .map(<[_]>::to_vec)
             .unwrap_or_default(),
     }
 }
@@ -38,7 +38,7 @@ fn write_oracle_words(fb: &mut CardQueryBuilder, mode: MatchMode, values: Vec<St
 
 fn read_excluded(fb: &CardQueryBuilder) -> Vec<String> {
     fb.oracle_text_excludes_any()
-        .map(|v| v.to_vec())
+        .map(<[_]>::to_vec)
         .unwrap_or_default()
 }
 
@@ -68,7 +68,7 @@ pub(crate) fn OracleWords() -> Element {
     });
     let all_oracle_words = use_memo(move || -> Option<Vec<String>> {
         if let Some(dc) = deck_ctx {
-            Some(extract_oracle_words(&dc.0()))
+            Some(deck_cards::extract_oracle_words(&dc.0()))
         } else {
             cache.oracle_words.cell().read().loaded().cloned()
         }
@@ -95,7 +95,7 @@ pub(crate) fn OracleWords() -> Element {
     let excluded_oracle_words = read_excluded(&filter_builder());
 
     rsx! {
-        // ── includes ──────────────────────────────────────────────
+        // == includes ==
         div { class: "label-row mt-2",
             label { class: "label-xs", r#for: "oracle-words-search", "Oracle words include" }
             button {
@@ -156,7 +156,9 @@ pub(crate) fn OracleWords() -> Element {
                         .cloned()
                         .collect();
 
-                    if !results.is_empty() {
+                    if results.is_empty() {
+                        rsx! {}
+                    } else {
                         rsx! {
                             div { class: "search-float-anchor",
                                 div { class: "search-float-results",
@@ -176,8 +178,6 @@ pub(crate) fn OracleWords() -> Element {
                                 }
                             }
                         }
-                    } else {
-                        rsx! {}
                     }
                 }
             }
@@ -208,7 +208,7 @@ pub(crate) fn OracleWords() -> Element {
             }
         }
 
-        // ── excludes ──────────────────────────────────────────────
+        // == excludes ==
         div { class: "label-row mt-2",
             label { class: "label-xs", r#for: "oracle-words-excludes-search", "Oracle words exclude" }
             if !excluded_oracle_words.is_empty() {
@@ -258,7 +258,9 @@ pub(crate) fn OracleWords() -> Element {
                         .cloned()
                         .collect();
 
-                    if !results.is_empty() {
+                    if results.is_empty() {
+                        rsx! {}
+                    } else {
                         rsx! {
                             div { class: "search-float-anchor",
                                 div { class: "search-float-results",
@@ -277,8 +279,6 @@ pub(crate) fn OracleWords() -> Element {
                                 }
                             }
                         }
-                    } else {
-                        rsx! {}
                     }
                 }
             }

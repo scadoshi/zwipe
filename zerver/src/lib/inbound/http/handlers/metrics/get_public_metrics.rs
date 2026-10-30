@@ -1,3 +1,5 @@
+//! Returns public app-wide aggregate metrics (no auth).
+
 use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
@@ -9,6 +11,10 @@ use crate::inbound::http::{ApiError, AppState};
 ///
 /// Public: no auth required. Cached at the CF edge for ~1h so the origin
 /// only sees one hit per POP per TTL window.
+///
+/// # Errors
+///
+/// Returns 500 on a database failure.
 pub async fn get_public_metrics(
     State(state): State<AppState>,
 ) -> Result<(StatusCode, Json<HttpPublicMetrics>), ApiError> {

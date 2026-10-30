@@ -15,9 +15,8 @@ use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilde
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::card::search_card::card_type::CardType;
 use zwipe_core::domain::card::search_card::cards::Cards;
-use zwipe_core::domain::deck::deck_metrics::{budget_tier, card_price, deck_price};
 use zwipe_core::domain::deck::format::Format;
-use zwipe_core::domain::deck::{Board, DeckEntry, Quantity};
+use zwipe_core::domain::deck::{Board, DeckEntry, Quantity, deck_metrics};
 use zwipe_core::domain::user::models::hints::HINT_ADD_DECK_CARDS;
 use zwipe_core::http::contracts::deck::HttpDeckCardSearch;
 use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpPatchDeckCard};
@@ -32,7 +31,7 @@ use crate::inbound::components::interactions::swipe::SwipeStack;
 use crate::inbound::components::interactions::swipe::config::SwipeConfig;
 use crate::inbound::components::interactions::swipe::direction::Direction;
 use crate::inbound::components::screen_header::ScreenHeader;
-use crate::inbound::components::telemetry::flush_loop::flush_once;
+use crate::inbound::components::telemetry::flush_loop;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen, component, screen};
 use crate::inbound::screens::deck::card::components::action_history::{
@@ -43,7 +42,7 @@ use crate::inbound::screens::deck::card::components::add_stack_cache::{
 };
 use crate::inbound::screens::deck::card::components::card_stack::{CardStack, use_card_stack};
 use crate::inbound::screens::deck::card::components::filter_store::{FilterScope, FilterStore};
-use crate::inbound::screens::deck::card::components::flippable_card_image::reset_image_ease;
+use crate::inbound::screens::deck::card::components::flippable_card_image;
 use crate::inbound::screens::deck::card::components::undo_log::{UndoAction, UndoStore};
 use crate::inbound::screens::deck::card::filter::card_filter_sheet::CardFilterSheet;
 
@@ -53,6 +52,15 @@ enum AddSource {
     Search,
     Maybeboard,
 }
+
+/// Pixels a swipe travels to commit.
+const SWIPE_DISTANCE_PX: f64 = 90.0;
+/// Pixels per millisecond a flick needs to commit.
+const SWIPE_SPEED_PX_PER_MS: f64 = 2.5;
+/// Pixels a downward pull on the end card travels to undo the last swipe.
+const BACK_PULL_PX: f64 = 60.0;
+/// The stack-limit warning repeats every this many cards.
+const STACK_WARNING_EVERY: usize = 100;
 
 /// Applies the "lands already at target" state to the search filter: adds
 /// `CardType::Land` to the excludes and drops it from either include list, so we
@@ -295,8 +303,8 @@ pub fn Add(deck_id: Uuid) -> Element {
 
         usage_buffer().record_search();
         spawn(async move {
-            // Owner decision (2026-09-02): load-more failures toast. The old
-            // silence meant the pile just stopped growing with no warning.
+            // A failed load-more toasts, so the pile never stops growing
+            // without a word.
             match authed
                 .try_run("load_more", |c, s| async move {
                     c.search_deck_cards(deck_id, &filter, &s).await
@@ -329,11 +337,11 @@ pub fn Add(deck_id: Uuid) -> Element {
                         .collect();
 
                     // Append unique cards to existing list
-                    if !unique_new_cards.is_empty() {
-                        stack.append(unique_new_cards);
-                    } else {
+                    if unique_new_cards.is_empty() {
                         pagination_exhausted.set(true);
                         usage_buffer().record_pile_end(deck_id, PileEndKind::Empty, synergy);
+                    } else {
+                        stack.append(unique_new_cards);
                     }
 
                     is_loading_more.set(false);
@@ -346,8 +354,8 @@ pub fn Add(deck_id: Uuid) -> Element {
     };
 
     // Swipe config: the stack owns its own SwipeState internally.
-    // Thresholds tuned for responsive rapid swiping: a short drag (60px) OR
-    // a quick flick (1.5 px/ms over the 10px minimum) commits.
+    // Thresholds tuned for responsive rapid swiping: a drag past 90px OR a
+    // flick faster than 2.5 px/ms (after the 32px minimum) commits.
     let swipe_config = SwipeConfig::new(
         vec![
             Direction::Left,
@@ -355,8 +363,8 @@ pub fn Add(deck_id: Uuid) -> Element {
             Direction::Up,
             Direction::Down,
         ],
-        90.0, // distance threshold in px
-        2.5,  // speed threshold in px/ms
+        SWIPE_DISTANCE_PX,
+        SWIPE_SPEED_PX_PER_MS,
     );
 
     // Advance past the just-committed card. The stack fires its on_swipe_*
@@ -369,7 +377,7 @@ pub fn Add(deck_id: Uuid) -> Element {
             return;
         }
         if (CARDS_WARNING_THRESHOLD..MAX_CARDS_IN_STACK).contains(&total)
-            && total.is_multiple_of(100)
+            && total.is_multiple_of(STACK_WARNING_EVERY)
         {
             toast.info(
                 "Approaching the card stack limit, refresh your search to continue".to_string(),
@@ -386,7 +394,7 @@ pub fn Add(deck_id: Uuid) -> Element {
     };
 
     let add_card_to_deck = move |card: Card| {
-        // For now, always add quantity 1 (will add quantity picker later)
+        // A swipe adds one copy.
         let request = HttpCreateDeckCard::new(&card.scryfall_data, 1, None);
         let oracle_id = card.scryfall_data.oracle_id;
         let card_id = card.scryfall_data.id;
@@ -479,7 +487,8 @@ pub fn Add(deck_id: Uuid) -> Element {
                 let oracle_id = card.scryfall_data.oracle_id;
                 let was_land = card.scryfall_data.is_land();
                 let was_price =
-                    card_price(&card.scryfall_data, price_budget_currency()).unwrap_or(0.0);
+                    deck_metrics::card_price(&card.scryfall_data, price_budget_currency())
+                        .unwrap_or(0.0);
 
                 // Reconcile with the global stack: take this add's entry
                 // back. Entry gone AND card gone from the deck means the
@@ -524,7 +533,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                     };
 
                     match client().delete_deck_card(deck_id, card_id, &session).await {
-                        Ok(_) => {
+                        Ok(()) => {
                             // Remove from exclusion HashSet
                             if let Some(oid) = oracle_id {
                                 deck_cards_ids.write().remove(&oid);
@@ -540,7 +549,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                         }
                         Err(e) => {
                             tracing::warn!("undo add (delete deck card) failed: {e}");
-                            toast.error(format!("Failed to undo: {}", e), ToastOptions::default());
+                            toast.error(format!("Failed to undo: {e}"), ToastOptions::default());
                             // Don't restore action or index; the user can try again by adding the card
                             // The add still stands server-side, so its global entry does too.
                             if let Some(action) = taken {
@@ -591,7 +600,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                     };
 
                     match client().delete_deck_card(deck_id, card_id, &session).await {
-                        Ok(_) => {
+                        Ok(()) => {
                             if let Some(oid) = oracle_id {
                                 deck_cards_ids.write().remove(&oid);
                             }
@@ -607,7 +616,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                         }
                         Err(e) => {
                             tracing::warn!("undo maybeboard (delete deck card) failed: {e}");
-                            toast.error(format!("Failed to undo: {}", e), ToastOptions::default());
+                            toast.error(format!("Failed to undo: {e}"), ToastOptions::default());
                             // The maybeboard add still stands server-side.
                             if let Some(action) = taken {
                                 undo_store.push(deck_id, action);
@@ -672,8 +681,8 @@ pub fn Add(deck_id: Uuid) -> Element {
     // Fetch deck cards on mount for filtering
     use_effect(move || {
         spawn(async move {
-            // Quiet: the screen deliberately works without deck context (the
-            // Err arm below always just logged); telemetry still records now.
+            // Quiet: the screen works without deck context; telemetry still
+            // records the failure.
             let fetched = authed
                 .run_quiet("load_deck_context", |c, s| async move {
                     c.get_deck(deck_id, &s).await
@@ -700,7 +709,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                         && let Some(oid) = card.scryfall_data.oracle_id
                     {
                         ids.insert(oid);
-                        identity_colors.extend(card.scryfall_data.color_identity.iter().cloned());
+                        identity_colors.extend(card.scryfall_data.color_identity.iter().copied());
                     }
                 }
                 // Signature spell: oracle_id exclusion only (doesn't contribute to color identity)
@@ -765,7 +774,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                     .deck_profile
                     .price_target_currency
                     .unwrap_or(PriceCurrency::Usd);
-                deck_total_price.set(deck_price(
+                deck_total_price.set(deck_metrics::deck_price(
                     &deck.entries,
                     &deck.command_zone_cards,
                     currency,
@@ -818,7 +827,7 @@ pub fn Add(deck_id: Uuid) -> Element {
         builder.set_offset(0);
 
         if first {
-            // ── Initial mount ─────────────────────────────────────────
+            // == Initial mount ==
             // Un-park this deck's stack if its filter still matches.
             if let Some(parked) = stack_cache.take(deck_id) {
                 let mut prev_b = parked.filter.clone();
@@ -835,14 +844,14 @@ pub fn Add(deck_id: Uuid) -> Element {
             }
         }
 
-        // ── Clear and re-fetch ────────────────────────────────────────
+        // == Clear and re-fetch ==
         // Reaches here when:
         //   - explicit user action (refresh / apply filter), OR
         //   - initial mount with a different/new filter, OR
         //   - initial mount with no existing cards
         stack.reset();
         // Fresh results ease in again, even previously seen images.
-        reset_image_ease();
+        flippable_card_image::reset_image_ease();
         last_search_filter.set(None);
         pagination_exhausted.set(false);
 
@@ -888,7 +897,7 @@ pub fn Add(deck_id: Uuid) -> Element {
         spawn(async move {
             // Flush buffered usage (signals feed synergy ordering) before the
             // refetch. Skips post directly at swipe time.
-            flush_once(&usage_buffer(), &client, &session).await;
+            flush_loop::flush_once(&usage_buffer(), &client, &session).await;
             match authed
                 .try_run("search_cards", |c, s| async move {
                     c.search_deck_cards(deck_id, &filter, &s).await
@@ -1111,7 +1120,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                         }
                         Err(e) => {
                             tracing::warn!("undo promote failed: {e}");
-                            toast.error(format!("Failed to undo: {}", e), ToastOptions::default());
+                            toast.error(format!("Failed to undo: {e}"), ToastOptions::default());
                             // The promote still stands server-side.
                             if let Some(action) = taken {
                                 undo_store.push(deck_id, action);
@@ -1141,9 +1150,11 @@ pub fn Add(deck_id: Uuid) -> Element {
             "That's every synergy pick. Showing cards like your deck".to_string(),
             ToastOptions::default().duration(TOAST_NORMAL),
         );
-        usage_buffer
-            .peek()
-            .record_pile_end(deck_id, PileEndKind::SynergyExhausted, true);
+        usage_buffer.peek().record_pile_end(
+            deck_id,
+            PileEndKind::SynergyExhausted,
+            /* synergy */ true,
+        );
     });
 
     rsx! {
@@ -1186,25 +1197,24 @@ pub fn Add(deck_id: Uuid) -> Element {
                                                 deck_id,
                                                 filter_builder.peek().clone(),
                                             );
-                                            match store.restore(FilterScope::AddSearch, deck_id) {
-                                                Some(f) => filter_builder.set(f),
-                                                None => {
-                                                    // Fresh Search default: deck context in
-                                                    // synergy order, lands out at target.
-                                                    let mut fresh = CardQueryBuilder::default();
-                                                    if let Some(fmt) = deck_format() {
-                                                        fresh.set_legalities_contains_any(
-                                                            vec![fmt.to_legality_key().to_string()]
-                                                        );
-                                                    }
-                                                    if let Some(colors) = deck_color_identity() {
-                                                        fresh.set_color_identity_within(colors);
-                                                    }
-                                                    fresh.set_synergy(deck_has_commander());
-                                                    filter_builder.set(fresh);
-                                                    if lands_at_target() {
-                                                        ensure_lands_excluded(filter_builder);
-                                                    }
+                                            if let Some(f) = store.restore(FilterScope::AddSearch, deck_id) {
+                                                filter_builder.set(f);
+                                            } else {
+                                                // Fresh Search default: deck context in
+                                                // synergy order, lands out at target.
+                                                let mut fresh = CardQueryBuilder::default();
+                                                if let Some(fmt) = deck_format() {
+                                                    fresh.set_legalities_contains_any(
+                                                        vec![fmt.to_legality_key().to_string()]
+                                                    );
+                                                }
+                                                if let Some(colors) = deck_color_identity() {
+                                                    fresh.set_color_identity_within(colors);
+                                                }
+                                                fresh.set_synergy(deck_has_commander());
+                                                filter_builder.set(fresh);
+                                                if lands_at_target() {
+                                                    ensure_lands_excluded(filter_builder);
                                                 }
                                             }
                                         }
@@ -1274,7 +1284,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                     usage_buffer().record_signal(deck_id, card.scryfall_data.oracle_id, Direction::Right);
                                     stack.record(AddAction::Add);
                                     let added_land = card.scryfall_data.is_land();
-                                    let added_price = card_price(&card.scryfall_data, price_budget_currency()).unwrap_or(0.0);
+                                    let added_price = deck_metrics::card_price(&card.scryfall_data, price_budget_currency()).unwrap_or(0.0);
                                     add_card_to_deck(card);
                                     toast.success("Added to deck".to_string(), ToastOptions::default().duration(TOAST_QUICK));
                                     if added_land {
@@ -1303,7 +1313,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                         let before = deck_total_price();
                                         let after = before + added_price;
                                         deck_total_price.set(after);
-                                        if budget_tier(budget, after) > budget_tier(budget, before) {
+                                        if deck_metrics::budget_tier(budget, after) > deck_metrics::budget_tier(budget, before) {
                                             let pct = after / budget * 100.0;
                                             let amount = price_budget_currency().format_amount(budget);
                                             let msg = format!("Deck at {pct:.2}% of your {amount} budget");
@@ -1357,7 +1367,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                         end_swipe_start.set(None);
                                         if let Some(t) = e.touches_changed().into_iter().next() {
                                             let p = t.client_coordinates();
-                                            if p.y - sy >= 60.0 && (p.y - sy).abs() > (p.x - sx).abs() {
+                                            if p.y - sy >= BACK_PULL_PX && (p.y - sy).abs() > (p.x - sx).abs() {
                                                 undo_last_action();
                                             }
                                         }
@@ -1372,7 +1382,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                         };
                                         end_swipe_start.set(None);
                                         let p = e.client_coordinates();
-                                        if p.y - sy >= 60.0 && (p.y - sy).abs() > (p.x - sx).abs() {
+                                        if p.y - sy >= BACK_PULL_PX && (p.y - sy).abs() > (p.x - sx).abs() {
                                             undo_last_action();
                                         }
                                     },
@@ -1481,7 +1491,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                             };
 
                             stack.reset();
-                            reset_image_ease();
+                            flippable_card_image::reset_image_ease();
                             last_search_filter.set(None);
                             pagination_exhausted.set(false);
                             is_loading_cards.set(true);
@@ -1493,7 +1503,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 // Flush buffered usage (signals feed synergy
                                 // ordering) before the refetch. Skips post
                                 // directly at swipe time.
-                                flush_once(&usage_buffer(), &client, &session).await;
+                                flush_loop::flush_once(&usage_buffer(), &client, &session).await;
                                 match authed
                                     .try_run("search_cards", |c, s| async move {
                                         c.search_deck_cards(deck_id, &filter, &s).await
@@ -1555,7 +1565,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                 CardDetailsSheet {
                     open: show_details,
                     card,
-                    on_printings: move |_| printing_open.set(true),
+                    on_printings: move |()| printing_open.set(true),
                 }
             }
 
@@ -1596,7 +1606,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                 // client-side and its default is a blank filter, so an empty
                 // Apply there (e.g. right after Reset) must commit, not warn.
                 validate_before_apply: add_source() == AddSource::Search,
-                on_clear: move |_| clear_filters(),
+                on_clear: move |()| clear_filters(),
             }
             }
     }

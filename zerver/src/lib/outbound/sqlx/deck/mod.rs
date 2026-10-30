@@ -1,10 +1,7 @@
 //! Deck management repository implementation.
 
-/// SQLx error-to-domain error mappings and intermediate conversion errors.
 pub mod error;
-/// Query-based deck ownership verification.
 pub mod helper;
-/// Database-to-domain deck model conversions.
 pub mod models;
 
 use sqlx::{QueryBuilder, query, query_as, query_scalar};
@@ -58,7 +55,7 @@ use crate::outbound::sqlx::postgres::Postgres;
 /// oldest `suppressed_at` beyond it.
 pub(crate) const MAX_SUPPRESSIONS_PER_DECK: i64 = 5_000;
 
-/// Serializes deck tags to a JSONB array of snake_case strings for storage.
+/// Serializes deck tags to a JSONB array of `snake_case` strings for storage.
 fn deck_tags_to_json(tags: &[DeckTag]) -> serde_json::Value {
     serde_json::Value::Array(
         tags.iter()
@@ -67,7 +64,7 @@ fn deck_tags_to_json(tags: &[DeckTag]) -> serde_json::Value {
     )
 }
 
-/// Serializes deck other-tags to a JSONB array of snake_case strings for storage.
+/// Serializes deck other-tags to a JSONB array of `snake_case` strings for storage.
 fn deck_other_tags_to_json(tags: &[DeckOtherTag]) -> serde_json::Value {
     serde_json::Value::Array(
         tags.iter()
@@ -293,7 +290,7 @@ impl DeckRepository for Postgres {
         .await?;
         let deck_profiles: Vec<DeckProfile> = database_deck_profiles
             .into_iter()
-            .map(|x| x.try_into())
+            .map(TryInto::try_into)
             .collect::<Result<Vec<DeckProfile>, IntoDeckProfileError>>()?;
         Ok(deck_profiles)
     }
@@ -318,7 +315,7 @@ impl DeckRepository for Postgres {
         .await?;
         let deck_cards: Vec<DeckCard> = database_deck_cards
             .into_iter()
-            .map(|x| x.try_into())
+            .map(TryInto::try_into)
             .collect::<Result<Vec<DeckCard>, IntoDeckCardError>>()?;
         Ok(deck_cards)
     }
@@ -426,7 +423,7 @@ impl DeckRepository for Postgres {
 
         qb.push(" WHERE id = ")
             .push_bind(request.deck_id)
-            .push(r#" RETURNING id, name, commander_id, partner_commander_id, background_id, signature_spell_id, format, tags, power_level, other_tags, oracle_tags, land_target, price_target, price_target_currency, share_token, user_id,
+            .push(r" RETURNING id, name, commander_id, partner_commander_id, background_id, signature_spell_id, format, tags, power_level, other_tags, oracle_tags, land_target, price_target, price_target_currency, share_token, user_id,
                        (SELECT COALESCE(SUM(dc.quantity) FILTER (WHERE dc.board = 'deck'), 0) FROM deck_cards dc WHERE dc.deck_id = decks.id) as card_count,
                        (SELECT sd.name FROM scryfall_data sd WHERE sd.id = decks.commander_id) as commander_name,
                        (SELECT sd.name FROM scryfall_data sd WHERE sd.id = decks.partner_commander_id) as partner_commander_name,
@@ -439,7 +436,7 @@ impl DeckRepository for Postgres {
                        (SELECT array_agg(DISTINCT ci)
                           FROM scryfall_data sci, unnest(sci.color_identity) AS ci
                          WHERE sci.id = ANY(ARRAY[decks.commander_id, decks.partner_commander_id, decks.background_id, decks.signature_spell_id]
-                                            || ARRAY(SELECT dc2.scryfall_data_id FROM deck_cards dc2 WHERE dc2.deck_id = decks.id AND dc2.board = 'deck'))) as color_identity"#);
+                                            || ARRAY(SELECT dc2.scryfall_data_id FROM deck_cards dc2 WHERE dc2.deck_id = decks.id AND dc2.board = 'deck'))) as color_identity");
         let database_deck: DatabaseDeckProfile = qb.build_query_as().fetch_one(&mut *tx).await?;
         let deck_profile: DeckProfile = database_deck.try_into()?;
 
@@ -451,7 +448,7 @@ impl DeckRepository for Postgres {
     ///
     /// Supports setting quantity (absolute), board, printing, and/or
     /// MVP star. The database's check constraint on `quantity` stays as the
-    /// backstop, surfacing as `QuantityUnderflow` if it ever trips. MVP rules (context/plans/deck_mvps/): mainboard
+    /// backstop, surfacing as `QuantityUnderflow` if it ever trips. MVP rules (`context/plans/deck_mvps/`): mainboard
     /// only, at most 3 per deck (checked in the tx), and moving a card off
     /// the mainboard clears its star in the same UPDATE.
     async fn update_deck_card(
@@ -469,20 +466,19 @@ impl DeckRepository for Postgres {
         if request.mvp == Some(true) {
             // Board rule: the star lands on the mainboard; either the board
             // this request sets, or the row's current board when untouched.
-            let effective_board = match &request.board {
-                Some(board) => *board,
-                None => {
-                    let current: String = query_scalar!(
-                        "SELECT board FROM deck_cards WHERE deck_id = $1 AND scryfall_data_id = $2",
-                        request.deck_id,
-                        request.scryfall_data_id
-                    )
-                    .fetch_optional(&mut *tx)
-                    .await?
-                    .ok_or(UpdateDeckCardError::NotFound)?;
-                    Board::try_from(current.as_str())
-                        .map_err(|e| UpdateDeckCardError::Database(anyhow::anyhow!(e)))?
-                }
+            let effective_board = if let Some(board) = &request.board {
+                *board
+            } else {
+                let current: String = query_scalar!(
+                    "SELECT board FROM deck_cards WHERE deck_id = $1 AND scryfall_data_id = $2",
+                    request.deck_id,
+                    request.scryfall_data_id
+                )
+                .fetch_optional(&mut *tx)
+                .await?
+                .ok_or(UpdateDeckCardError::NotFound)?;
+                Board::try_from(current.as_str())
+                    .map_err(|e| UpdateDeckCardError::Database(anyhow::anyhow!(e)))?
             };
             if effective_board != Board::Deck {
                 return Err(UpdateDeckCardError::MvpNotMainboard);
@@ -853,6 +849,10 @@ impl DeckRepository for Postgres {
             .collect())
     }
 
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one query per activity panel, read in order into one ActivityCounts"
+    )]
     async fn fetch_activity_counts(
         &self,
         user_id: uuid::Uuid,
@@ -1168,6 +1168,10 @@ impl DeckRepository for Postgres {
         Ok(())
     }
 
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one transaction: the ownership lock, the card limit, the upserts, then the replace-mode deletes"
+    )]
     async fn apply_import_batch(
         &self,
         user_id: uuid::Uuid,

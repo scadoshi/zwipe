@@ -53,13 +53,13 @@ impl CardQueryBuilder {
     {
         let v: Vec<String> = oracle_text_contains_any
             .into_iter()
-            .map(|s| s.into())
+            .map(Into::into)
             .collect();
         self.oracle_text_contains_any = if v.is_empty() { None } else { Some(v) };
         self
     }
 
-    /// Clears the oracle_text_contains_any filter.
+    /// Clears the `oracle_text_contains_any` filter.
     pub fn unset_oracle_text_contains_any(&mut self) -> &mut Self {
         self.oracle_text_contains_any = None;
         self
@@ -73,13 +73,13 @@ impl CardQueryBuilder {
     {
         let v: Vec<String> = oracle_text_contains_all
             .into_iter()
-            .map(|s| s.into())
+            .map(Into::into)
             .collect();
         self.oracle_text_contains_all = if v.is_empty() { None } else { Some(v) };
         self
     }
 
-    /// Clears the oracle_text_contains_all filter.
+    /// Clears the `oracle_text_contains_all` filter.
     pub fn unset_oracle_text_contains_all(&mut self) -> &mut Self {
         self.oracle_text_contains_all = None;
         self
@@ -95,14 +95,14 @@ impl CardQueryBuilder {
     {
         let v: Vec<String> = keywords_contains_any
             .into_iter()
-            .map(|s| s.into())
+            .map(Into::into)
             .filter(|s| !s.is_empty())
             .collect();
         self.keywords_contains_any = if v.is_empty() { None } else { Some(v) };
         self
     }
 
-    /// Clears the keywords_contains_any filter.
+    /// Clears the `keywords_contains_any` filter.
     pub fn unset_keywords_contains_any(&mut self) -> &mut Self {
         self.keywords_contains_any = None;
         self
@@ -116,14 +116,14 @@ impl CardQueryBuilder {
     {
         let v: Vec<String> = keywords_contains_all
             .into_iter()
-            .map(|s| s.into())
+            .map(Into::into)
             .filter(|s| !s.is_empty())
             .collect();
         self.keywords_contains_all = if v.is_empty() { None } else { Some(v) };
         self
     }
 
-    /// Clears the keywords_contains_all filter.
+    /// Clears the `keywords_contains_all` filter.
     pub fn unset_keywords_contains_all(&mut self) -> &mut Self {
         self.keywords_contains_all = None;
         self
@@ -150,7 +150,7 @@ impl CardQueryBuilder {
         self
     }
 
-    /// Clears the has_flavor_text filter.
+    /// Clears the `has_flavor_text` filter.
     pub fn unset_has_flavor_text(&mut self) -> &mut Self {
         self.has_flavor_text = None;
         self
@@ -177,15 +177,12 @@ impl CardQueryBuilder {
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        let v: Vec<String> = type_line_contains_any
-            .into_iter()
-            .map(|s| s.into())
-            .collect();
+        let v: Vec<String> = type_line_contains_any.into_iter().map(Into::into).collect();
         self.type_line_contains_any = if v.is_empty() { None } else { Some(v) };
         self
     }
 
-    /// Clears the type_line_contains_any filter.
+    /// Clears the `type_line_contains_any` filter.
     pub fn unset_type_line_contains_any(&mut self) -> &mut Self {
         self.type_line_contains_any = None;
         self
@@ -201,7 +198,7 @@ impl CardQueryBuilder {
         self
     }
 
-    /// Clears the card_type_contains_any filter.
+    /// Clears the `card_type_contains_any` filter.
     pub fn unset_card_type_contains_any(&mut self) -> &mut Self {
         self.card_type_contains_any = None;
         self
@@ -213,15 +210,12 @@ impl CardQueryBuilder {
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        let v: Vec<String> = type_line_contains_all
-            .into_iter()
-            .map(|s| s.into())
-            .collect();
+        let v: Vec<String> = type_line_contains_all.into_iter().map(Into::into).collect();
         self.type_line_contains_all = if v.is_empty() { None } else { Some(v) };
         self
     }
 
-    /// Clears the type_line_contains_all filter.
+    /// Clears the `type_line_contains_all` filter.
     pub fn unset_type_line_contains_all(&mut self) -> &mut Self {
         self.type_line_contains_all = None;
         self
@@ -237,7 +231,7 @@ impl CardQueryBuilder {
         self
     }
 
-    /// Clears the card_type_contains_all filter.
+    /// Clears the `card_type_contains_all` filter.
     pub fn unset_card_type_contains_all(&mut self) -> &mut Self {
         self.card_type_contains_all = None;
         self
@@ -252,14 +246,14 @@ impl CardQueryBuilder {
     ) -> &mut Self {
         let s: Vec<String> = set_equals_any
             .into_iter()
-            .map(|x| x.into())
+            .map(Into::into)
             .filter(|s| !s.is_empty())
             .collect();
         self.set_equals_any = if s.is_empty() { None } else { Some(s) };
         self
     }
 
-    /// Clears the set_equals_any filter.
+    /// Clears the `set_equals_any` filter.
     pub fn unset_set_equals_any(&mut self) -> &mut Self {
         self.set_equals_any = None;
         self
@@ -272,14 +266,14 @@ impl CardQueryBuilder {
     ) -> &mut Self {
         let s: Vec<String> = artist_equals_any
             .into_iter()
-            .map(|x| x.into())
+            .map(Into::into)
             .filter(|s| !s.is_empty())
             .collect();
         self.artist_equals_any = if s.is_empty() { None } else { Some(s) };
         self
     }
 
-    /// Clears the artist_equals_any filter.
+    /// Clears the `artist_equals_any` filter.
     pub fn unset_artist_equals_any(&mut self) -> &mut Self {
         self.artist_equals_any = None;
         self
@@ -295,7 +289,7 @@ impl CardQueryBuilder {
         self
     }
 
-    /// Clears the rarity_equals_any filter.
+    /// Clears the `rarity_equals_any` filter.
     pub fn unset_rarity_equals_any(&mut self) -> &mut Self {
         self.rarity_equals_any = None;
         self
@@ -309,7 +303,7 @@ impl CardQueryBuilder {
         self
     }
 
-    /// Clears the cmc_equals filter.
+    /// Clears the `cmc_equals` filter.
     pub fn unset_cmc_equals(&mut self) -> &mut Self {
         self.cmc_equals = None;
         self
@@ -321,7 +315,7 @@ impl CardQueryBuilder {
         self
     }
 
-    /// Clears the cmc_range filter.
+    /// Clears the `cmc_range` filter.
     pub fn unset_cmc_range(&mut self) -> &mut Self {
         self.cmc_range = None;
         self
@@ -369,7 +363,7 @@ impl CardQueryBuilder {
         self
     }
 
-    /// Clears the color_identity_equals filter.
+    /// Clears the `color_identity_equals` filter.
     pub fn unset_color_identity_equals(&mut self) -> &mut Self {
         self.color_identity_equals = None;
         self
@@ -381,7 +375,7 @@ impl CardQueryBuilder {
         self
     }
 
-    /// Clears the color_identity_within filter.
+    /// Clears the `color_identity_within` filter.
     pub fn unset_color_identity_within(&mut self) -> &mut Self {
         self.color_identity_within = None;
         self
@@ -406,7 +400,7 @@ impl CardQueryBuilder {
         self
     }
 
-    /// Clears the produced_mana_contains_any filter.
+    /// Clears the `produced_mana_contains_any` filter.
     pub fn unset_produced_mana_contains_any(&mut self) -> &mut Self {
         self.produced_mana_contains_any = None;
         self
@@ -429,7 +423,7 @@ impl CardQueryBuilder {
         self
     }
 
-    /// Clears the produced_mana_contains_all filter.
+    /// Clears the `produced_mana_contains_all` filter.
     pub fn unset_produced_mana_contains_all(&mut self) -> &mut Self {
         self.produced_mana_contains_all = None;
         self
@@ -443,7 +437,7 @@ impl CardQueryBuilder {
         self
     }
 
-    /// Clears the power_equals filter.
+    /// Clears the `power_equals` filter.
     pub fn unset_power_equals(&mut self) -> &mut Self {
         self.power_equals = None;
         self
@@ -455,7 +449,7 @@ impl CardQueryBuilder {
         self
     }
 
-    /// Clears the power_range filter.
+    /// Clears the `power_range` filter.
     pub fn unset_power_range(&mut self) -> &mut Self {
         self.power_range = None;
         self
@@ -467,7 +461,7 @@ impl CardQueryBuilder {
         self
     }
 
-    /// Clears the toughness_equals filter.
+    /// Clears the `toughness_equals` filter.
     pub fn unset_toughness_equals(&mut self) -> &mut Self {
         self.toughness_equals = None;
         self
@@ -479,7 +473,7 @@ impl CardQueryBuilder {
         self
     }
 
-    /// Clears the toughness_range filter.
+    /// Clears the `toughness_range` filter.
     pub fn unset_toughness_range(&mut self) -> &mut Self {
         self.toughness_range = None;
         self
@@ -493,7 +487,7 @@ impl CardQueryBuilder {
         self
     }
 
-    /// Clears the is_token filter.
+    /// Clears the `is_token` filter.
     pub fn unset_is_token(&mut self) -> &mut Self {
         self.is_token = None;
         self
@@ -505,7 +499,7 @@ impl CardQueryBuilder {
         self
     }
 
-    /// Clears the is_playable filter (defaults to true).
+    /// Clears the `is_playable` filter (defaults to true).
     pub fn unset_is_playable(&mut self) -> &mut Self {
         self.is_playable = None;
         self
@@ -553,7 +547,7 @@ impl CardQueryBuilder {
         self
     }
 
-    /// Clears the content_warning filter (defaults to false).
+    /// Clears the `content_warning` filter (defaults to false).
     pub fn unset_content_warning(&mut self) -> &mut Self {
         self.content_warning = None;
         self
@@ -587,7 +581,7 @@ impl CardQueryBuilder {
         self
     }
 
-    /// Clears the legalities_contains_any filter.
+    /// Clears the `legalities_contains_any` filter.
     pub fn unset_legalities_contains_any(&mut self) -> &mut Self {
         self.legalities_contains_any = None;
         self
@@ -653,7 +647,7 @@ impl CardQueryBuilder {
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        let v: Vec<String> = categories.into_iter().map(|s| s.into()).collect();
+        let v: Vec<String> = categories.into_iter().map(Into::into).collect();
         self.card_roles_contains_any = if v.is_empty() { None } else { Some(v) };
         self
     }
@@ -670,7 +664,7 @@ impl CardQueryBuilder {
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        let v: Vec<String> = categories.into_iter().map(|s| s.into()).collect();
+        let v: Vec<String> = categories.into_iter().map(Into::into).collect();
         self.card_roles_contains_all = if v.is_empty() { None } else { Some(v) };
         self
     }
@@ -687,7 +681,7 @@ impl CardQueryBuilder {
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        let v: Vec<String> = tags.into_iter().map(|s| s.into()).collect();
+        let v: Vec<String> = tags.into_iter().map(Into::into).collect();
         self.oracle_tags_contains_any = if v.is_empty() { None } else { Some(v) };
         self
     }
@@ -704,7 +698,7 @@ impl CardQueryBuilder {
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        let v: Vec<String> = tags.into_iter().map(|s| s.into()).collect();
+        let v: Vec<String> = tags.into_iter().map(Into::into).collect();
         self.oracle_tags_contains_all = if v.is_empty() { None } else { Some(v) };
         self
     }
@@ -824,7 +818,7 @@ impl CardQueryBuilder {
     {
         let v: Vec<String> = oracle_text_excludes_any
             .into_iter()
-            .map(|s| s.into())
+            .map(Into::into)
             .collect();
         self.oracle_text_excludes_any = if v.is_empty() { None } else { Some(v) };
         self
@@ -895,10 +889,7 @@ impl CardQueryBuilder {
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        let v: Vec<String> = type_line_excludes_any
-            .into_iter()
-            .map(|s| s.into())
-            .collect();
+        let v: Vec<String> = type_line_excludes_any.into_iter().map(Into::into).collect();
         self.type_line_excludes_any = if v.is_empty() { None } else { Some(v) };
         self
     }

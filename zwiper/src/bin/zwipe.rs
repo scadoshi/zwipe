@@ -1,10 +1,12 @@
+//! The zwiper app: logging, crash capture, then the Dioxus launch.
+
 use components::{DialogHostView, ThemeConfig, ToastStack, use_dialog_host};
 use dioxus::prelude::*;
 use tracing_subscriber::EnvFilter;
 use zwipe_core::domain::logo;
 use zwipe_core::domain::user::preferences::PipStyle;
 use zwiper::config::Config;
-use zwiper::inbound::components::auth::session_upkeep::spawn_upkeeper;
+use zwiper::inbound::components::auth::session_upkeep;
 use zwiper::inbound::components::hint_host::HintHost;
 use zwiper::inbound::components::update_required::UpdateRequired;
 use zwiper::inbound::router::Router;
@@ -92,7 +94,7 @@ fn App() -> Element {
     // so calling this earlier would silently do nothing.
     use_hook(zwiper::outbound::shake_to_edit::disable);
 
-    let upgrade_required = spawn_upkeeper();
+    let upgrade_required = session_upkeep::spawn_upkeeper();
     let dialogs = use_dialog_host();
     use_context_provider(|| dialogs);
     // Closed until the splash starts to fade; the entrances wait on it.

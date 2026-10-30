@@ -2,9 +2,7 @@
 //!
 //! Provides fluent API for building card filters with validation.
 
-/// Getter methods for accessing filter values.
 pub mod getters;
-/// Setter methods for modifying filter values.
 pub mod setters;
 
 use std::fmt::Debug;
@@ -269,7 +267,7 @@ impl Default for CardQueryBuilder {
             oracle_tags_contains_any: None,
             oracle_tags_contains_all: None,
             oracle_tags_excludes: None,
-            limit: 25,
+            limit: Limit::DEFAULT,
             offset: 0,
             sort: None,
             direction: SortDirection::Ascending,
@@ -366,7 +364,7 @@ impl CardQueryBuilder {
     {
         let v: Vec<String> = oracle_text_contains_any
             .into_iter()
-            .map(|s| s.into())
+            .map(Into::into)
             .collect();
         CardQueryBuilder {
             oracle_text_contains_any: if v.is_empty() { None } else { Some(v) },
@@ -382,7 +380,7 @@ impl CardQueryBuilder {
     {
         let v: Vec<String> = oracle_text_contains_all
             .into_iter()
-            .map(|s| s.into())
+            .map(Into::into)
             .collect();
         CardQueryBuilder {
             oracle_text_contains_all: if v.is_empty() { None } else { Some(v) },
@@ -476,10 +474,7 @@ impl CardQueryBuilder {
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        let v: Vec<String> = type_line_contains_any
-            .into_iter()
-            .map(|s| s.into())
-            .collect();
+        let v: Vec<String> = type_line_contains_any.into_iter().map(Into::into).collect();
         CardQueryBuilder {
             type_line_contains_any: if v.is_empty() { None } else { Some(v) },
             ..CardQueryBuilder::default()
@@ -527,7 +522,7 @@ impl CardQueryBuilder {
         set_equals_any: impl IntoIterator<Item = impl Into<String>>,
     ) -> CardQueryBuilder {
         CardQueryBuilder {
-            set_equals_any: Some(set_equals_any.into_iter().map(|x| x.into()).collect()),
+            set_equals_any: Some(set_equals_any.into_iter().map(Into::into).collect()),
             ..CardQueryBuilder::default()
         }
     }
@@ -742,6 +737,10 @@ impl CardQueryBuilder {
     /// # Errors
     ///
     /// Same as [`build`](Self::build).
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one check or cleanup per criteria field, in field order"
+    )]
     pub fn build_criteria(&self) -> Result<CardCriteria, InvalidCardCriteria> {
         // Reject only the true firehose: no criteria, no sort, synergy off. An
         // explicit sort or synergy mode is intent enough to serve all cards

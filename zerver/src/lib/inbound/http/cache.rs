@@ -1,6 +1,6 @@
 //! Serving-layer caches.
 //!
-//! [`TtlSlot`](crate::inbound::http::cache::TtlSlot) is a cached *variable*, not a cache store: one global value
+//! [`TtlSlot`] is a cached *variable*, not a cache store: one global value
 //! that knows how to refresh itself. There are no keys and no lookups; the
 //! slot holds THE current value (the featured flavor card, a metrics blob)
 //! plus the deadline after which it must be rebuilt. Overwrite-on-expiry is
@@ -8,7 +8,7 @@
 //!
 //! Deadlines are pinned instants, not durations, so each use case aligns
 //! expiry to whatever boundary it wants (top of the UTC hour, +5 minutes,
-//! next sync). AppState carries one typed slot per use case; the "registry"
+//! next sync). `AppState` carries one typed slot per use case; the "registry"
 //! is the struct itself, so every cached type is known at compile time and
 //! there are no string keys to collide.
 
@@ -17,6 +17,7 @@ use std::time::Instant;
 use tokio::sync::RwLock;
 
 /// One-slot, deadline-based cache. See the module docs for the model.
+#[derive(Debug)]
 pub struct TtlSlot<V> {
     slot: RwLock<Option<(Instant, V)>>,
 }
@@ -47,6 +48,11 @@ impl<V: Clone> TtlSlot<V> {
     /// Stale grace: if the refresh fails but an expired value exists, the
     /// stale value is served and the error logged; for content like the
     /// featured flavor, an hour-stale card beats a 5xx.
+    ///
+    /// # Errors
+    ///
+    /// Returns `refresh`'s error only when the slot is empty; with a stale
+    /// value on hand, the error is logged and the stale value served.
     pub async fn get_or_refresh<F, Fut, E>(&self, refresh: F) -> Result<V, E>
     where
         F: FnOnce() -> Fut,
@@ -94,7 +100,9 @@ mod tests {
     use super::*;
 
     fn far() -> Instant {
-        Instant::now() + Duration::from_secs(3600)
+        Instant::now()
+            .checked_add(Duration::from_secs(3600))
+            .unwrap()
     }
 
     #[tokio::test]

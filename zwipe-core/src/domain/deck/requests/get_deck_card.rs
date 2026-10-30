@@ -2,7 +2,10 @@
 
 use thiserror::Error;
 
-#[allow(missing_docs)]
+#[expect(
+    missing_docs,
+    reason = "each variant names the id that failed to parse"
+)]
 #[derive(Debug, Error)]
 pub enum InvalidGetDeckCard {
     #[error(transparent)]

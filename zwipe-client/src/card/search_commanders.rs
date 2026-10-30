@@ -14,6 +14,11 @@ use crate::{ClientError, ZwipeClient};
 
 impl ZwipeClient {
     /// Searches commander candidates.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`ClientError`] when the request fails to complete, the server answers with an
+    /// error status, or the reply doesn't decode.
     pub async fn search_commanders(
         &self,
         card_filter: &CardQuery,

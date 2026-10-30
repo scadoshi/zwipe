@@ -6,15 +6,19 @@ use dioxus::html::geometry::euclid::{Point2D, UnknownUnit};
 pub type ScreenOffset = Point2D<i32, UnknownUnit>;
 
 /// Extension methods for creating and composing screen offsets.
-#[allow(missing_docs)]
+#[expect(missing_docs, reason = "each method names the step it takes")]
 pub trait ScreenOffsetMethods {
     fn left() -> Self;
     fn right() -> Self;
     fn up() -> Self;
     fn down() -> Self;
+    #[must_use]
     fn and_left(&self) -> Self;
+    #[must_use]
     fn and_right(&self) -> Self;
+    #[must_use]
     fn and_up(&self) -> Self;
+    #[must_use]
     fn and_down(&self) -> Self;
 }
 

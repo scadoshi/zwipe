@@ -73,6 +73,12 @@ impl MarkHintShown {
     /// Keys are deliberately not checked against a fixed list: new hints are
     /// shipped client-side as new keys without a server deploy. Validation
     /// only enforces the key shape.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`InvalidHintKey`] when the trimmed key is empty, longer than
+    /// [`HINT_KEY_MAX_LEN`] bytes, or has characters outside lowercase snake
+    /// case.
     pub fn new(user_id: Uuid, hint: &str) -> Result<Self, InvalidHintKey> {
         let hint = hint.trim();
         if hint.is_empty() {

@@ -37,7 +37,7 @@ mod platform {
         const ENCODING: Encoding = Encoding::Block;
     }
 
-    pub fn open(url: &str) -> anyhow::Result<()> {
+    pub(crate) fn open(url: &str) -> anyhow::Result<()> {
         // `sharedApplication` and `openURL:` must be used on the main thread. A
         // UI tap handler already runs there, so the marker is available.
         let _mtm = MainThreadMarker::new()
@@ -70,12 +70,14 @@ mod platform {
 mod platform {
     use jni::objects::JObject;
 
-    pub fn open(url: &str) -> anyhow::Result<()> {
+    pub(crate) fn open(url: &str) -> anyhow::Result<()> {
         let ctx = ndk_context::android_context();
         // SAFETY: ndk-context guarantees a valid JavaVM and Activity jobject for
         // the running app.
         let vm = unsafe { jni::JavaVM::from_raw(ctx.vm().cast()) }?;
         let mut env = vm.attach_current_thread()?;
+        // SAFETY: the same ndk-context guarantee covers the Activity jobject,
+        // which stays alive for the running app.
         let context = unsafe { JObject::from_raw(ctx.context().cast()) };
 
         // Uri uri = Uri.parse(url);
@@ -117,7 +119,7 @@ mod platform {
 // Desktop (dev): webbrowser, which handles mailto: on macOS/Windows/Linux.
 #[cfg(not(any(target_os = "ios", target_os = "android")))]
 mod platform {
-    pub fn open(url: &str) -> anyhow::Result<()> {
+    pub(crate) fn open(url: &str) -> anyhow::Result<()> {
         webbrowser::open(url)?;
         Ok(())
     }

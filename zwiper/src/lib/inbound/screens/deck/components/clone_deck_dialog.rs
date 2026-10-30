@@ -1,3 +1,5 @@
+//! The clone deck dialog: a new name, then the clone.
+
 use components::{ActionButton, AlertDialog, DialogAction, TOAST_QUICK};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};

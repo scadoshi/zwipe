@@ -15,6 +15,7 @@ use crate::http::paths::{
 };
 
 /// Exchange credentials for a session.
+#[derive(Debug)]
 pub struct Login(pub HttpAuthenticateUser);
 impl Endpoint for Login {
     const METHOD: Method = Method::Post;
@@ -33,6 +34,7 @@ impl Endpoint for Login {
 ///
 /// Answers 202 and the same body whether or not the email already has an
 /// account.
+#[derive(Debug)]
 pub struct Register(pub HttpRegisterUser);
 impl Endpoint for Register {
     const METHOD: Method = Method::Post;
@@ -48,6 +50,7 @@ impl Endpoint for Register {
 }
 
 /// Rotate a refresh token into a fresh session.
+#[derive(Debug)]
 pub struct Refresh(pub HttpRefreshSession);
 impl Endpoint for Refresh {
     const METHOD: Method = Method::Post;
@@ -63,6 +66,7 @@ impl Endpoint for Refresh {
 }
 
 /// Revoke the current session.
+#[derive(Debug)]
 pub struct Logout;
 impl Endpoint for Logout {
     const METHOD: Method = Method::Post;
@@ -74,6 +78,7 @@ impl Endpoint for Logout {
 }
 
 /// Send another verification email to the signed-in user.
+#[derive(Debug)]
 pub struct ResendVerification;
 impl Endpoint for ResendVerification {
     const METHOD: Method = Method::Post;
@@ -85,6 +90,7 @@ impl Endpoint for ResendVerification {
 }
 
 /// Start a password reset by email.
+#[derive(Debug)]
 pub struct RequestPasswordReset(pub HttpRequestPasswordReset);
 impl Endpoint for RequestPasswordReset {
     const METHOD: Method = Method::Post;
@@ -102,6 +108,7 @@ impl Endpoint for RequestPasswordReset {
 /// Confirm an email address with the token from the verification link.
 ///
 /// Unauthenticated: the link is opened in a browser that has no session.
+#[derive(Debug)]
 pub struct VerifyEmail(pub HttpVerifyEmail);
 impl Endpoint for VerifyEmail {
     const METHOD: Method = Method::Post;
@@ -119,6 +126,7 @@ impl Endpoint for VerifyEmail {
 /// Switch to a pending email address with the token from the link sent to it.
 ///
 /// Unauthenticated, for the same reason as [`VerifyEmail`].
+#[derive(Debug)]
 pub struct ConfirmEmailChange(pub HttpConfirmEmailChange);
 impl Endpoint for ConfirmEmailChange {
     const METHOD: Method = Method::Post;
@@ -136,6 +144,7 @@ impl Endpoint for ConfirmEmailChange {
 /// Finish a password reset with the token from the reset link.
 ///
 /// Unauthenticated, for the same reason as [`VerifyEmail`].
+#[derive(Debug)]
 pub struct ResetPassword(pub HttpResetPassword);
 impl Endpoint for ResetPassword {
     const METHOD: Method = Method::Post;

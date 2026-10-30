@@ -1,3 +1,5 @@
+//! Pending email change confirmation handler.
+
 use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
@@ -18,14 +20,20 @@ impl From<ConfirmEmailChangeError> for ApiError {
             ConfirmEmailChangeError::AddressTaken => {
                 Self::Conflict("that address is already in use by another account".to_string())
             }
-            ConfirmEmailChangeError::UserFromDb(e) => e.to_500(),
-            ConfirmEmailChangeError::Database(e) => e.to_500(),
+            ConfirmEmailChangeError::UserFromDb(e) | ConfirmEmailChangeError::Database(e) => {
+                e.to_500()
+            }
         }
     }
 }
 
 /// Switches a user to their pending email using the token from the link sent
 /// to it.
+///
+/// # Errors
+///
+/// Returns 422 for an unknown or expired token, 409 when another account took
+/// the address first, and 500 on a database failure.
 pub async fn confirm_email_change(
     State(state): State<AppState>,
     Json(body): Json<HttpConfirmEmailChange>,

@@ -1,8 +1,10 @@
+//! zite, the zwipe.net site: a Dioxus fullstack app that `dx build --ssg` prerenders to static
+//! pages. The per-token pages (shared deck, verify, confirm email, reset) render in the browser.
+
 use ::components::{
     BRAND_RESET_JS, COMPONENTS_CSS, Decode, MAGIC_CSS, NAV_GLIDE_JS, NavBar, REVEAL_JS, Replay,
     SCROLL_FADE_JS, SITE_CSS, THEMES_CSS, ThemeConfig, ThemePicker, use_theme_wipe,
 };
-use dioxus::document::eval;
 use dioxus::prelude::*;
 use zwipe_core::domain::user::preferences::PipStyle;
 
@@ -111,14 +113,14 @@ fn main() {
 /// automatically, which is right: their content is per-token.
 ///
 /// The guides are the exception. `/guides/:slug` is one dynamic route over a
-/// fixed set of articles, so `static_routes()` drops all of them and the
-/// deploy has nothing to serve: every `/guides/<slug>` fell back to
-/// `404.html`, answering a 404 to crawlers while still hydrating fine for
-/// anyone reading it. Appending them here prerenders each article at its own
-/// path. Slugs come from `GUIDES`, the same source `build.rs` checks its
+/// fixed set of articles, so `static_routes()` drops all of them, and an
+/// unprerendered path is served by `404.html` with a 404 status. Appending
+/// them here prerenders each article at its own path. Slugs come from `GUIDES`, the same source `build.rs` checks its
 /// sitemap list against.
-// `#[server]` requires an async fn; this one has nothing to await.
-#[allow(clippy::unused_async)]
+#[expect(
+    clippy::unused_async,
+    reason = "`#[server]` requires an async fn; this one has nothing to await"
+)]
 #[server(endpoint = "static_routes")]
 async fn static_routes() -> ServerFnResult<Vec<String>> {
     let mut routes: Vec<String> = Route::static_routes()
@@ -132,7 +134,7 @@ async fn static_routes() -> ServerFnResult<Vec<String>> {
 /// Whether this load's splash is still to come or playing. The home page
 /// draws it; it goes false once the splash has faded, or at once on a load
 /// that skips it, so coming back to the home page never plays it again.
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct SiteSplash(pub Signal<bool>);
 
 #[component]
@@ -156,7 +158,7 @@ fn App() -> Element {
     let mut splash = use_context_provider(|| SiteSplash(Signal::new(true))).0;
     use_effect(move || {
         spawn(async move {
-            let mut eval = eval(
+            let mut eval = document::eval(
                 "const root = document.documentElement; root.classList.add('splash-live'); dioxus.send(root.classList.contains('splash-skip'));",
             );
             if eval.recv::<bool>().await.unwrap_or(true) {
@@ -170,7 +172,7 @@ fn App() -> Element {
     // stylesheet holds until the app can run it.
     use_effect(move || {
         spawn(async {
-            let _ = eval("document.documentElement.classList.add('hydrated');").await;
+            let _ = document::eval("document.documentElement.classList.add('hydrated');").await;
         });
     });
 
@@ -180,15 +182,15 @@ fn App() -> Element {
     // and re-queries the nav fresh, so per-route nav remounts can't hold a
     // stale node. use_future: install exactly once, not per re-render.
     use_future(|| async {
-        let _ = eval(
-            r#"(() => {
+        let _ = document::eval(
+            r"(() => {
                 const set = () => {
                     const nav = document.querySelector('.nav-wrapper');
                     if (nav) document.documentElement.style.setProperty('--nav-height', nav.offsetHeight + 'px');
                 };
                 new ResizeObserver(set).observe(document.body);
                 set();
-            })();"#,
+            })();",
         )
         .await;
     });
@@ -199,7 +201,7 @@ fn App() -> Element {
         let class = theme.read().css_class();
         spawn(async move {
             // Swap only the theme class, leaving any other class on the body.
-            let _ = eval(&format!(
+            let _ = document::eval(&format!(
                 "Array.from(document.body.classList).forEach(c => /^theme-.+-(dark|light)$/.test(c) && document.body.classList.remove(c)); document.body.classList.add('{class}');"
             ))
             .await;
@@ -212,7 +214,7 @@ fn App() -> Element {
         let natural = pip_style() == PipStyle::Natural;
         let class = ::components::pip_style_class(PipStyle::Natural);
         spawn(async move {
-            let _ = eval(&format!(
+            let _ = document::eval(&format!(
                 "document.body.classList.toggle('{class}', {natural});"
             ))
             .await;
@@ -255,6 +257,7 @@ fn App() -> Element {
     }
 }
 
+/// The site's top bar: the brand, the page links, the store buttons and the theme controls.
 #[component]
 pub fn Nav() -> Element {
     let (theme, shown) = use_theme_wipe(use_context::<Signal<ThemeConfig>>(), "body");
@@ -276,7 +279,7 @@ pub fn Nav() -> Element {
                         // On the home page this runs the entrance again.
                         replay += 1;
                         spawn(async {
-                            let _ = eval(BRAND_RESET_JS).await;
+                            let _ = document::eval(BRAND_RESET_JS).await;
                         });
                     },
                     span {
@@ -344,6 +347,8 @@ pub fn Nav() -> Element {
     }
 }
 
+/// The site footer: copyright, the privacy and community links, and the Scryfall and
+/// Wizards notices.
 #[component]
 pub fn Footer() -> Element {
     rsx! {

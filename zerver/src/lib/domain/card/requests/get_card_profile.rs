@@ -40,10 +40,11 @@ impl From<uuid::Error> for InvalidCardProfileIds {
 /// Request to get a single card profile by Scryfall ID.
 ///
 /// Wraps a UUID parsed from a string ID.
+#[derive(Debug)]
 pub struct GetCardProfile(Uuid);
 
 impl GetCardProfile {
-    /// Creates a new GetCardProfile request by parsing a UUID string.
+    /// Creates a new `GetCardProfile` request by parsing a UUID string.
     ///
     /// # Errors
     /// Returns `uuid::Error` if the string is not a valid UUID.
@@ -75,6 +76,6 @@ impl std::ops::Deref for CardProfileIds {
 
 impl From<&[ScryfallData]> for CardProfileIds {
     fn from(value: &[ScryfallData]) -> Self {
-        Self(value.iter().map(|sfd| sfd.id.to_owned()).collect())
+        Self(value.iter().map(|sfd| sfd.id).collect())
     }
 }

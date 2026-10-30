@@ -11,8 +11,6 @@
 //!
 //! Requires `DATABASE_URL`: `set -a; source zerver/.env; set +a`.
 
-#![allow(clippy::unwrap_used, clippy::indexing_slicing)]
-
 mod common;
 
 use std::collections::BTreeSet;

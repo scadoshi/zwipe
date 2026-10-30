@@ -2,7 +2,7 @@
 
 /// Whether a multi-select filter uses OR ("any") or AND ("all") matching.
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
-#[allow(missing_docs)]
+#[expect(missing_docs, reason = "the variants name the modes")]
 pub enum MatchMode {
     #[default]
     Any,
@@ -11,6 +11,7 @@ pub enum MatchMode {
 
 impl MatchMode {
     /// Toggles between Any and All modes.
+    #[must_use]
     pub fn toggle(self) -> Self {
         match self {
             Self::Any => Self::All,

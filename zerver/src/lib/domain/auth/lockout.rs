@@ -19,9 +19,9 @@ use uuid::Uuid;
 /// Wrong passwords from one address before the pair is locked.
 pub const MAX_FAILURES: u32 = 5;
 /// Failures older than this no longer count.
-pub const FAILURE_WINDOW: Duration = Duration::from_secs(30 * 60);
+pub const FAILURE_WINDOW: Duration = Duration::from_mins(30);
 /// How long a locked pair stays locked.
-pub const LOCKOUT: Duration = Duration::from_secs(30 * 60);
+pub const LOCKOUT: Duration = Duration::from_mins(30);
 
 /// Entries are swept this often, counted in recorded failures.
 const SWEEP_EVERY: usize = 1024;

@@ -1,3 +1,5 @@
+//! Oracle tag catalog handler.
+
 use axum::Json;
 use axum::extract::State;
 use reqwest::StatusCode;
@@ -15,6 +17,10 @@ impl From<GetOracleTagsError> for ApiError {
 }
 
 /// Returns the full oracle tag catalog (slug, label, description, parent slugs).
+///
+/// # Errors
+///
+/// Returns 500 on a database failure.
 pub async fn get_oracle_tags(
     State(state): State<AppState>,
 ) -> Result<(StatusCode, Json<Vec<OracleTag>>), ApiError> {

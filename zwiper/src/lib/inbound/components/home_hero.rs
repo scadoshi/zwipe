@@ -26,7 +26,7 @@ const COUNTS_FRESH: Duration = Duration::from_secs(60);
 /// The counters as last fetched, kept above the router (as
 /// `Signal<Option<CachedCounts>>`) so every screen with the panel shares one
 /// copy and one fetch per minute.
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct CachedCounts {
     /// What zerver answered.
     pub metrics: HttpPublicMetrics,
@@ -54,7 +54,7 @@ impl CachedCounts {
 /// The user's own counters as last fetched, kept above the router (as
 /// `Signal<Option<CachedMyCounts>>`) beside [`CachedCounts`] on the same
 /// minute. Never saved across launches.
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct CachedMyCounts {
     /// The user the counts belong to; another user's copy is never shown.
     pub user_id: Uuid,

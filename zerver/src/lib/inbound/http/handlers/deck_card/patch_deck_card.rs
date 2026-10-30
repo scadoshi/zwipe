@@ -17,7 +17,7 @@ use zwipe_core::http::contracts::deck_card::HttpPatchDeckCard;
 use zwipe_core::http::helpers::Opdate;
 
 use crate::domain::deck::models::deck_card::update_deck_card::UpdateDeckCardError;
-use crate::inbound::http::handlers::metrics::check_completion::check_deck_completion;
+use crate::inbound::http::handlers::metrics::check_completion;
 use crate::inbound::http::middleware::AuthenticatedUser;
 use crate::inbound::http::{ApiError, AppState, To500};
 
@@ -37,8 +37,7 @@ impl From<UpdateDeckCardError> for ApiError {
             UpdateDeckCardError::MvpNotMainboard => {
                 Self::UnprocessableEntity("Only cards in the deck can be MVPs".to_string())
             }
-            UpdateDeckCardError::Database(e) => e.to_500(),
-            UpdateDeckCardError::DeckCardFromDb(e) => e.to_500(),
+            UpdateDeckCardError::Database(e) | UpdateDeckCardError::DeckCardFromDb(e) => e.to_500(),
             UpdateDeckCardError::GetDeckProfileError(e) => ApiError::from(e),
             UpdateDeckCardError::Forbidden => Self::NotFound("deck not found".to_string()),
         }
@@ -49,16 +48,16 @@ impl From<InvalidUpdateDeckCard> for ApiError {
     fn from(value: InvalidUpdateDeckCard) -> Self {
         match value {
             InvalidUpdateDeckCard::DeckId(e) => {
-                Self::UnprocessableEntity(format!("invalid deck id: {}", e))
+                Self::UnprocessableEntity(format!("invalid deck id: {e}"))
             }
             InvalidUpdateDeckCard::ScryfallDataId(e) => {
-                Self::UnprocessableEntity(format!("invalid card id: {}", e))
+                Self::UnprocessableEntity(format!("invalid card id: {e}"))
             }
             InvalidUpdateDeckCard::Quantity(e) => {
-                Self::UnprocessableEntity(format!("invalid quantity: {}", e))
+                Self::UnprocessableEntity(format!("invalid quantity: {e}"))
             }
             InvalidUpdateDeckCard::NewScryfallDataId(e) => {
-                Self::UnprocessableEntity(format!("invalid printing id: {}", e))
+                Self::UnprocessableEntity(format!("invalid printing id: {e}"))
             }
             InvalidUpdateDeckCard::NothingToUpdate => {
                 Self::UnprocessableEntity(InvalidUpdateDeckCard::NothingToUpdate.to_string())
@@ -70,6 +69,10 @@ impl From<InvalidUpdateDeckCard> for ApiError {
 /// Flattens a non-clearable field: absent passes through as no-op, a value
 /// passes through as set, and explicit `null` is a 422 (the field always
 /// has a value, so "clear" is meaningless).
+///
+/// # Errors
+///
+/// Returns 422 naming `name` when the field is an explicit `null`.
 pub fn reject_null<T>(field: Opdate<T>, name: &str) -> Result<Option<T>, ApiError> {
     match field {
         Opdate::Unchanged => Ok(None),
@@ -81,6 +84,12 @@ pub fn reject_null<T>(field: Opdate<T>, name: &str) -> Result<Option<T>, ApiErro
 }
 
 /// Sets a card's quantity (absolute), board, printing, and/or MVP star.
+///
+/// # Errors
+///
+/// Returns 422 for a `null` field, an invalid id, quantity or board, a card not
+/// in the deck, or a broken MVP rule, 404 when the deck isn't the caller's, and
+/// 500 on a database failure.
 pub async fn patch_deck_card(
     user: AuthenticatedUser,
     State(state): State<AppState>,
@@ -117,7 +126,12 @@ pub async fn patch_deck_card(
     let deck_service = std::sync::Arc::clone(&state.deck_service);
     let uid = user.id;
     let did = request.deck_id;
-    tokio::spawn(check_deck_completion(deck_service, metrics, uid, did));
+    tokio::spawn(check_completion::check_deck_completion(
+        deck_service,
+        metrics,
+        uid,
+        did,
+    ));
 
     Ok((StatusCode::OK, Json(deck_card)))
 }

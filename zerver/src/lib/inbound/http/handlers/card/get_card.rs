@@ -1,3 +1,5 @@
+//! Single card lookup handler.
+
 use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
@@ -12,8 +14,9 @@ impl From<GetCardProfileError> for ApiError {
     fn from(value: GetCardProfileError) -> Self {
         match value {
             GetCardProfileError::NotFound => Self::NotFound("card profile not found".to_string()),
-            GetCardProfileError::CardProfileFromDb(e) => e.to_500(),
-            GetCardProfileError::Database(e) => e.to_500(),
+            GetCardProfileError::CardProfileFromDb(e) | GetCardProfileError::Database(e) => {
+                e.to_500()
+            }
         }
     }
 }
@@ -37,6 +40,11 @@ impl From<GetCardError> for ApiError {
 }
 
 /// Returns a single card by Scryfall data ID.
+///
+/// # Errors
+///
+/// Returns 422 for a malformed id, 404 when the card is missing, and 500 on a
+/// database failure.
 pub async fn get_card(
     State(state): State<AppState>,
     Path(scryfall_data_id): Path<String>,

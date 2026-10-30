@@ -1,10 +1,8 @@
-//! Server-driven catalog endpoints (server_driven_catalogs.md Parts B/C): the
+//! Server-driven catalog endpoints (`server_driven_catalogs.md` Parts B/C): the
 //! card-role catalog (`GET /api/card/roles`, public) and the deck-tag catalog
 //! (`GET /api/deck/tags`, authed). Both are built straight from the enums.
 //!
 //! Requires `DATABASE_URL`: `set -a; source zerver/.env; set +a`.
-
-#![allow(clippy::unwrap_used, clippy::indexing_slicing, clippy::expect_used)]
 
 use zwipe_core::http::paths::{GET_CARD_ROLES_ROUTE, GET_DECK_TAGS_ROUTE};
 mod common;
@@ -16,7 +14,7 @@ use serde_json::json;
 #[sqlx::test]
 async fn card_roles_catalog_is_public_and_lists_all_roles(pool: sqlx::PgPool) {
     let app = TestApp::new(pool);
-    // Public — no auth token.
+    // Public: no auth token.
     let (status, body) = app.get(GET_CARD_ROLES_ROUTE, None).await;
     assert_eq!(
         status,
@@ -40,7 +38,7 @@ async fn deck_tags_catalog_routes_correctly_and_carries_seeds(pool: sqlx::PgPool
     let app = TestApp::new(pool);
     let (token, _) = app.register("tagfetcher").await;
 
-    // The static `/tags` route must win over `/{deck_id}` (get_deck) — a 200 here
+    // The static `/tags` route must win over `/{deck_id}` (`get_deck`); a 200 here
     // proves it isn't shadowed by the param route.
     let (status, body) = app.get(GET_DECK_TAGS_ROUTE, Some(&token)).await;
     assert_eq!(status, StatusCode::OK, "deck tags catalog: {body}");
@@ -60,7 +58,7 @@ async fn deck_tags_catalog_routes_correctly_and_carries_seeds(pool: sqlx::PgPool
 #[sqlx::test]
 async fn deck_tags_catalog_requires_auth(pool: sqlx::PgPool) {
     let app = TestApp::new(pool);
-    // Under the private /deck nest — no token → unauthorized.
+    // Under the private /deck nest, so no token means unauthorized.
     let (status, _) = app.get(GET_DECK_TAGS_ROUTE, None).await;
     assert_eq!(status, StatusCode::UNAUTHORIZED, "deck tags is authed");
 }

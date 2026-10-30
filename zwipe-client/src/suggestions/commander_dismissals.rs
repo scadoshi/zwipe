@@ -11,6 +11,11 @@ use crate::{ClientError, ZwipeClient};
 
 impl ZwipeClient {
     /// Hides a commander from the suggestions for a week.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`ClientError`] when the request fails to complete, the server answers with an
+    /// error status, or the reply doesn't decode.
     pub async fn dismiss_commander(
         &self,
         oracle_id: Uuid,
@@ -24,6 +29,11 @@ impl ZwipeClient {
     }
 
     /// Undoes one dismissal.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`ClientError`] when the request fails to complete, the server answers with an
+    /// error status, or the reply doesn't decode.
     pub async fn undismiss_commander(
         &self,
         oracle_id: Uuid,
@@ -34,6 +44,11 @@ impl ZwipeClient {
     }
 
     /// Lifts every dismissal and answers how many were lifted.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`ClientError`] when the request fails to complete, the server answers with an
+    /// error status, or the reply doesn't decode.
     pub async fn clear_commander_dismissals(&self, session: &Session) -> Result<u32, ClientError> {
         self.call(ClearCommanderDismissals, Some(session))
             .await

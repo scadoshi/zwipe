@@ -78,7 +78,7 @@ portfolio, cairn ──(git)──→ orangui
 zwipe-core owns all shared domain types, including every `Http*` contract (`zwipe-core/src/http/contracts/`) and the route path constants. zerver re-exports them and adds server-specific layers (ports, services, database adapters, HTTP handlers).
 
 - No client depends on zerver. zwiper and zite both take their domain and contract types from zwipe-core, and zerver is the server only.
-- components is the Magic half of the UI (card rows and details, oracle text, keyword chips, the changelog, the deck charts, plus `magic.css`). It sits over orangui, the generic kit (themes, panels, nav, charts, the entrance effects), which it takes as a git dependency and re-exports whole.
+- components is the Magic half of the UI (card rows and details, oracle text, keyword chips, the changelog, the deck charts, plus `magic.css`). It sits over orangui, the generic kit (themes, panels, nav, charts, the entrance effects), which it takes as a git dependency and re-exports by name: the items zwiper and zite use, listed in `components/src/lib.rs`.
 - So both clients import everything as `components::` (`::components::` in a module that has its own `components` submodule), and `cargo update -p orangui` moves the pin.
 - The portfolio site and cairn (the counter app) take orangui directly as a git dependency. Nothing outside this repo imports components.
 - zwipe-client holds the typed API client and depends on zwipe-core and reqwest only, so it carries no Dioxus and no platform code. Both clients use it; neither builds a request by hand.
@@ -113,10 +113,11 @@ The frontend's API client lives in the `zwipe-client` crate, which both clients 
 
 ## Linting
 
-22 Clippy warnings configured in workspace `Cargo.toml`. Thresholds in `clippy.toml`:
-- `too-many-arguments-threshold = 7` (refactor to builder pattern above this)
-- `type-complexity-threshold = 250`
-- `cognitive-complexity-threshold = 25`
+The workspace `Cargo.toml` carries the scadoshi-rust lint set (clippy `all` and `pedantic`, `missing_docs`, no `unwrap`/`expect`/`panic`/indexing outside tests). Every member opts in with `[lints] workspace = true`. Lints that still have findings sit in the phase 2 block at the bottom as `"allow"`, each with its remaining count; fix a lint's findings, then delete its line.
+
+Thresholds and test allowances live in `clippy.toml` (zwiper has its own copy). Above 7 arguments, refactor to a builder.
+
+A suppression is `#[expect(lint, reason = "...")]` on the narrowest item, never `#[allow]`, so a stale one fails the build. A public function that returns `Result` documents its failures under `# Errors`.
 
 ## Environment Files
 

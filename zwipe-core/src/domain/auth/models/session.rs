@@ -35,6 +35,7 @@ pub struct Session {
 
 impl Session {
     /// Checks if the refresh token has expired.
+    #[must_use]
     pub fn is_expired(&self) -> bool {
         self.refresh_token.expires_at < Utc::now()
     }
@@ -60,7 +61,7 @@ mod tests {
         );
         let access_token = AccessToken {
             value: Jwt::from_str("header.payload.signature").unwrap(),
-            expires_at: Utc::now() + Duration::hours(24),
+            expires_at: Utc::now().checked_add_signed(Duration::hours(24)).unwrap(),
         };
         let refresh_token = RefreshToken {
             value: "x".repeat(64),

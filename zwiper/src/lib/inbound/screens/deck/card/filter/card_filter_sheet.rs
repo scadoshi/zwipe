@@ -14,7 +14,7 @@ use crate::inbound::components::accordion::{
     Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 };
 use crate::inbound::components::catalog_cache::CatalogCache;
-use crate::inbound::components::hint_dialog::{HintColored, open_and_record_hint};
+use crate::inbound::components::hint_dialog::{self, HintColored};
 use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::info_button::InfoButton;
 use crate::inbound::screens::deck::card::filter::artist::Artist;
@@ -26,9 +26,7 @@ use crate::inbound::screens::deck::card::filter::format::FormatFilter;
 use crate::inbound::screens::deck::card::filter::mana::Mana;
 use crate::inbound::screens::deck::card::filter::match_mode::MatchMode;
 use crate::inbound::screens::deck::card::filter::name::Name;
-use crate::inbound::screens::deck::card::filter::oracle_tags::{
-    OracleTags, read_excluded, read_selected, write_excluded, write_selected,
-};
+use crate::inbound::screens::deck::card::filter::oracle_tags::{self, OracleTags};
 use crate::inbound::screens::deck::card::filter::oracle_text::OracleText;
 use crate::inbound::screens::deck::card::filter::price::PriceFilter;
 use crate::inbound::screens::deck::card::filter::rarity::Rarity;
@@ -99,7 +97,7 @@ pub(crate) fn apply_action(
 
 /// Shared bottom-sheet filter accordion used by add, view, and remove card screens.
 ///
-/// Reads `Signal<CardQueryBuilder>` and `Signal<u32>` (filter_reset_counter) from context.
+/// Reads `Signal<CardQueryBuilder>` and `Signal<u32>` (`filter_reset_counter`) from context.
 #[component]
 pub(crate) fn CardFilterSheet(
     mut open: Signal<bool>,
@@ -125,7 +123,7 @@ pub(crate) fn CardFilterSheet(
     use_effect(move || {
         if open() && !*hint_fired.peek() {
             hint_fired.set(true);
-            open_and_record_hint(HINT_FILTER, session, client, hint_open);
+            hint_dialog::open_and_record_hint(HINT_FILTER, session, client, hint_open);
         }
     });
 
@@ -195,9 +193,9 @@ pub(crate) fn CardFilterSheet(
             MatchMode::Any
         };
         let already = if otag_dict_exclude() {
-            read_excluded(&filter_builder()).contains(&slug)
+            oracle_tags::read_excluded(&filter_builder()).contains(&slug)
         } else {
-            read_selected(&filter_builder(), mode).contains(&slug)
+            oracle_tags::read_selected(&filter_builder(), mode).contains(&slug)
         };
         if already {
             toast.info(
@@ -207,13 +205,13 @@ pub(crate) fn CardFilterSheet(
             return;
         }
         if otag_dict_exclude() {
-            let mut current = read_excluded(&filter_builder());
+            let mut current = oracle_tags::read_excluded(&filter_builder());
             current.push(slug);
-            write_excluded(&mut filter_builder.write(), current);
+            oracle_tags::write_excluded(&mut filter_builder.write(), current);
         } else {
-            let mut current = read_selected(&filter_builder(), mode);
+            let mut current = oracle_tags::read_selected(&filter_builder(), mode);
             current.push(slug);
-            write_selected(&mut filter_builder.write(), mode, current);
+            oracle_tags::write_selected(&mut filter_builder.write(), mode, current);
         }
         toast.success(
             "Added to filter".to_string(),
@@ -761,7 +759,7 @@ pub(crate) fn CardFilterSheet(
                             applied_snapshot
                                 .read()
                                 .as_ref()
-                                .is_some_and(|previous| previous.has_search_intent()),
+                                .is_some_and(CardQueryBuilder::has_search_intent),
                         );
                         // Nothing edited since the sheet opened: closing must
                         // not refetch, or a look at the filters throws away the
@@ -852,10 +850,10 @@ mod tests {
     use super::{ApplyAction, apply_action};
 
     /// The four states Apply can be pressed in, all with an edited draft. The
-    /// third line is the bug this function exists for: judging the draft alone
-    /// refuses a deliberate clear, so a filter can never be turned off. The
-    /// second is the regression that followed, where every apply over an
-    /// existing filter read as a clear.
+    /// third line is the case this function exists for: judging the draft
+    /// alone refuses a deliberate clear, so a filter can never be turned off.
+    /// The second keeps an apply over an existing filter from reading as a
+    /// clear.
     #[test]
     fn apply_reads_the_transition_not_just_the_draft() {
         assert_eq!(

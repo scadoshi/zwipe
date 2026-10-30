@@ -36,7 +36,7 @@ use zwipe_core::domain::deck::format::Format;
 use zwipe_core::domain::user::models::hints::HINT_SWIPE_SELECT;
 use zwipe_core::http::contracts::suggestions::HttpCommanderSuggestion;
 
-use crate::inbound::components::hint_dialog::{HintColored, open_and_record_hint};
+use crate::inbound::components::hint_dialog::{self, HintColored};
 use crate::inbound::components::interactions::swipe::config::SwipeConfig;
 use crate::inbound::components::interactions::swipe::direction::Direction;
 use crate::inbound::components::interactions::swipe::{STACK_DEPTH, SwipeStack};
@@ -49,12 +49,18 @@ use crate::inbound::screens::deck::card::components::card_info::{
 use crate::inbound::screens::deck::card::components::card_row::OtagExamplesOpen;
 use crate::inbound::screens::deck::card::components::printing_sheet::PrintingSheet;
 use crate::inbound::screens::deck::card::filter::card_filter_sheet::CardFilterSheet;
-use crate::inbound::screens::deck::suggested_commanders::{SuggestionReasons, empty_identity_line};
+use crate::inbound::screens::deck::suggested_commanders::{self, SuggestionReasons};
 
 /// Cards fetched per page (matches the backend default).
 const PAGE: u32 = 25;
 /// Prefetch the next page when this many or fewer cards remain ahead of the top.
 const LOAD_MORE_AT: usize = 5;
+/// How long the maybeboard save toast stays up.
+const MAYBEBOARD_TOAST_MS: u64 = 1500;
+/// Pixels a drag travels to commit a swipe.
+const SWIPE_DISTANCE_PX: f64 = 90.0;
+/// Pixels per millisecond a flick needs to commit.
+const SWIPE_SPEED_PX_PER_MS: f64 = 2.5;
 
 /// The ranking a [`SwipeMode::Suggested`] overlay deals, held by its host.
 #[derive(Debug, Clone, PartialEq, Default)]
@@ -166,7 +172,7 @@ enum SelectSwipe {
 /// Layers the mode constraint, no-tokens, and pagination onto a user-built
 /// filter. No default sort is pinned: a sortless filter reaches the server as
 /// sortless, so the deck-aware search serves its popularity-based, banded,
-/// wildcard ordering (context/archive/commander_select_ordering.md). An explicit
+/// wildcard ordering (`context/archive/commander_select_ordering.md`). An explicit
 /// user sort still flows through untouched.
 fn mode_filter(mode: &SwipeMode, mut builder: CardQueryBuilder, offset: u32) -> CardQueryBuilder {
     mode.apply(&mut builder);
@@ -253,7 +259,7 @@ pub(crate) fn SwipeSelect(
     use_effect(move || {
         if open() && !*hint_fired.peek() {
             hint_fired.set(true);
-            open_and_record_hint(HINT_SWIPE_SELECT, session, client, hint_open);
+            hint_dialog::open_and_record_hint(HINT_SWIPE_SELECT, session, client, hint_open);
         }
     });
 
@@ -544,7 +550,7 @@ pub(crate) fn SwipeSelect(
     } else {
         (Vec::new(), None, false)
     };
-    let noun = mode().as_ref().map(SwipeMode::noun).unwrap_or("card");
+    let noun = mode().as_ref().map_or("card", SwipeMode::noun);
     let suggested = mode() == Some(SwipeMode::Suggested);
     // Up-swipe = "maybe this commander" (per-user save), so it's only live in
     // the modes whose pool is commanders. Background/signature-spell picks
@@ -578,12 +584,12 @@ pub(crate) fn SwipeSelect(
     let suggested_empty_line = suggested_pile
         .filter(|pile| suggested && pile.read().suggestions.is_empty())
         .and(suggested_identity.as_deref())
-        .map(empty_identity_line);
+        .map(suggested_commanders::empty_identity_line);
     let mut directions = vec![Direction::Left, Direction::Right, Direction::Down];
     if maybe_enabled {
         directions.push(Direction::Up);
     }
-    let swipe_config = SwipeConfig::new(directions, 90.0, 2.5);
+    let swipe_config = SwipeConfig::new(directions, SWIPE_DISTANCE_PX, SWIPE_SPEED_PX_PER_MS);
 
     rsx! {
         div { class: "{screen_class}",
@@ -671,7 +677,7 @@ pub(crate) fn SwipeSelect(
                                             toast.success(
                                                 "Added to your commander maybeboard".to_string(),
                                                 ToastOptions::default()
-                                                    .duration(Duration::from_millis(1500)),
+                                                    .duration(Duration::from_millis(MAYBEBOARD_TOAST_MS)),
                                             );
                                         }
                                         Err(e) => {
@@ -757,7 +763,7 @@ pub(crate) fn SwipeSelect(
                     CardDetailsSheet {
                         open: show_details,
                         card,
-                        on_printings: move |_| printing_open.set(true),
+                        on_printings: move |()| printing_open.set(true),
                         footer: current_reasons.map(|reasons| rsx! {
                             SuggestionReasons {
                                 reasons,
@@ -790,7 +796,7 @@ pub(crate) fn SwipeSelect(
                     open: filters_overlay_open,
                     show_format_filter: false,
                     show_active_indicators: true,
-                    on_clear: move |_| clear_filter(),
+                    on_clear: move |()| clear_filter(),
                 }
 
                 // A chip applies as it is tapped and the stack re-deals behind

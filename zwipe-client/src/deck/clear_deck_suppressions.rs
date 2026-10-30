@@ -9,6 +9,11 @@ use crate::{ClientError, ZwipeClient};
 
 impl ZwipeClient {
     /// Clears a deck's suppression set.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`ClientError`] when the request fails to complete, the server answers with an
+    /// error status, or the reply doesn't decode.
     pub async fn clear_deck_suppressions(
         &self,
         deck_id: Uuid,

@@ -1,6 +1,6 @@
 //! Deck entity and related operations: server-side error types only.
 //!
-//! Domain types (Deck, DeckEntry, DeckProfile, etc.) live in zwipe-core.
+//! Domain types (`Deck`, `DeckEntry`, `DeckProfile`, etc.) live in zwipe-core.
 
 /// The Activity screen's data.
 pub mod activity;

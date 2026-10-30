@@ -1,3 +1,5 @@
+//! Re-send email verification handler (private).
+
 use axum::extract::State;
 use axum::http::StatusCode;
 use zwipe_core::domain::user::requests::get_user::GetUser;
@@ -8,6 +10,11 @@ use crate::inbound::http::{ApiError, AppState};
 /// Re-sends the email verification link to the authenticated user.
 ///
 /// Returns `422` if the email is already verified.
+///
+/// # Errors
+///
+/// Returns 422 when the email is already verified, 404 when the user is gone,
+/// and 500 when the lookup or the send fails.
 pub async fn resend_verification(
     user: AuthenticatedUser,
     State(state): State<AppState>,
@@ -29,5 +36,5 @@ pub async fn resend_verification(
         .send_verification_email(user.id, profile.email.as_ref())
         .await
         .map_err(ApiError::from)
-        .map(|_| StatusCode::OK)
+        .map(|()| StatusCode::OK)
 }

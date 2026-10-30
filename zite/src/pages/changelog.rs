@@ -1,9 +1,11 @@
 use components::{Changelog as ChangelogContent, Panel};
-use dioxus::document::eval;
 use dioxus::prelude::*;
 
 use crate::components::{PageMeta, sleep_ms};
 use crate::{Footer, Nav};
+
+/// One frame for the selected month's cards to mount before the scroll.
+const MOUNT_WAIT_MS: u32 = 50;
 
 /// Reads the URL fragment on the client, as text without its `#`.
 const READ_HASH_JS: &str = "dioxus.send(decodeURIComponent(window.location.hash.slice(1)))";
@@ -16,7 +18,7 @@ pub fn Changelog() -> Element {
     let mut anchor = use_signal(|| None::<String>);
     use_effect(move || {
         spawn(async move {
-            let mut read = eval(READ_HASH_JS);
+            let mut read = document::eval(READ_HASH_JS);
             let Ok(fragment) = read.recv::<String>().await else {
                 return;
             };
@@ -24,9 +26,8 @@ pub fn Changelog() -> Element {
                 return;
             }
             anchor.set(Some(fragment.clone()));
-            // One frame for the selected month's cards to mount.
-            sleep_ms(50).await;
-            let _ = eval(&format!(
+            sleep_ms(MOUNT_WAIT_MS).await;
+            let _ = document::eval(&format!(
                 "document.getElementById({fragment:?})?.scrollIntoView({{ block: 'start' }});"
             ))
             .await;

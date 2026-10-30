@@ -1,3 +1,5 @@
+//! Card image URIs at various resolutions.
+
 use serde::{Deserialize, Serialize};
 
 /// Which Scryfall image size variant to read. Used by [`ImageUris::at_size`] and
@@ -16,7 +18,7 @@ pub enum ImageSize {
 ///
 /// Scryfall provides images in multiple formats optimized for different use cases:
 /// - **Size variants**: small, normal, large, png (increasing quality/resolution)
-/// - **Crop variants**: border_crop (card edges cropped), art_crop (only artwork)
+/// - **Crop variants**: `border_crop` (card edges cropped), `art_crop` (only artwork)
 ///
 /// # Image Sizes (approximate)
 /// - **small**: ~146×204px - thumbnails, list views

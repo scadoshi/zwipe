@@ -123,7 +123,7 @@ pub fn Account() -> Element {
                                         EmailVerification {
                                             email: s.user.email.to_string(),
                                             is_verified: s.user.email_verified_at.is_some(),
-                                            on_change: move |_| change_email_open.set(true),
+                                            on_change: move |()| change_email_open.set(true),
                                         }
                                     }
                                 }

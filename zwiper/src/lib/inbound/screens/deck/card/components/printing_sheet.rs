@@ -18,6 +18,9 @@ use crate::inbound::components::interactions::carousel::state::CarouselState;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::component;
 
+/// Page width in pixels when the viewport can't be measured.
+const FALLBACK_PAGE_WIDTH_PX: f64 = 375.0;
+
 /// Bottom sheet for browsing all printings of a card and selecting one.
 #[component]
 pub(crate) fn PrintingSheet(
@@ -34,7 +37,7 @@ pub(crate) fn PrintingSheet(
     #[props(default)]
     read_only: bool,
     /// Confirmation shown after Save. Host-specific because only some hosts
-    /// persist: the deck view PATCHes the deck card, while the add screen just
+    /// persist: the deck view sends a `PATCH` for the deck card, while the add screen just
     /// re-skins the card still sitting in the swipe stack, where "saved" would
     /// claim a deck change that never happened.
     #[props(default = "Printing saved")]
@@ -93,7 +96,8 @@ pub(crate) fn PrintingSheet(
 
                     // Measure viewport width (sheet-content uses no-pad-x so carousel is full-width)
                     let mut eval = document::eval("dioxus.send(window.innerWidth)");
-                    let page_width: f64 = eval.recv::<f64>().await.unwrap_or(375.0);
+                    let page_width: f64 =
+                        eval.recv::<f64>().await.unwrap_or(FALLBACK_PAGE_WIDTH_PX);
                     carousel_state.set(CarouselState::new(count, idx, page_width));
                 }
                 Err(e) => {
@@ -121,7 +125,7 @@ pub(crate) fn PrintingSheet(
     // its own backdrop + `.bottom-sheet` markup instead of using the shared
     // `BottomSheet`, so it needs its own registration, and it mirrors the
     // backdrop exactly, warning when an unsaved printing is about to be lost.
-    let dismiss = use_callback(move |_: ()| {
+    let dismiss = use_callback(move |(): ()| {
         let mut open = open;
         if !read_only && has_changed {
             toast.warning(
@@ -221,9 +225,7 @@ pub(crate) fn PrintingSheet(
                 }
 
                 // Always there when saving is possible at all, grayed until
-                // the carousel has moved off the printing it opened on. It
-                // used to appear only once changed, which read as a button
-                // arriving from nowhere.
+                // the carousel has moved off the printing it opened on.
                 if !read_only {
                     Button {
                         variant: ButtonVariant::Action,

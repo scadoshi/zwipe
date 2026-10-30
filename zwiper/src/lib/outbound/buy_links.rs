@@ -15,7 +15,7 @@ fn encode_name(name: &str) -> String {
         .replace('\'', "%27")
 }
 
-/// Builds a TCGplayer mass-entry URL for the given deck entries.
+/// Builds a `TCGplayer` mass-entry URL for the given deck entries.
 ///
 /// `command_zone_names` are cards stored on the deck profile (commander, partner, etc.)
 /// that are not part of the entries array. Each is added with quantity 1.
@@ -38,7 +38,7 @@ pub fn tcgplayer_url(entries: &[DeckEntry], command_zone_names: &[&str]) -> Stri
     format!("https://www.tcgplayer.com/massentry?c={}", cards.join("||"))
 }
 
-/// Builds a CardKingdom builder URL for the given deck entries.
+/// Builds a `CardKingdom` builder URL for the given deck entries.
 ///
 /// `command_zone_names` are cards stored on the deck profile (commander, partner, etc.)
 /// that are not part of the entries array. Each is added with quantity 1.
@@ -64,7 +64,7 @@ pub fn cardkingdom_url(entries: &[DeckEntry], command_zone_names: &[&str]) -> St
     )
 }
 
-/// Single-card TCGplayer link: the exact product page when the card's TCGplayer
+/// Single-card `TCGplayer` link: the exact product page when the card's `TCGplayer`
 /// id is known, else a one-copy mass-entry by name.
 pub fn tcgplayer_card_url(name: &str, tcgplayer_id: Option<i32>) -> String {
     match tcgplayer_id {
@@ -76,7 +76,7 @@ pub fn tcgplayer_card_url(name: &str, tcgplayer_id: Option<i32>) -> String {
     }
 }
 
-/// Single-card CardKingdom builder link (one copy).
+/// Single-card `CardKingdom` builder link (one copy).
 pub fn cardkingdom_card_url(name: &str) -> String {
     format!(
         "https://www.cardkingdom.com/builder?c=1+{}",

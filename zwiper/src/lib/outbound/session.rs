@@ -16,14 +16,26 @@ use zwipe_core::domain::auth::models::session::Session;
 /// Trait for persisting sessions across application restarts.
 pub trait Persist {
     /// Saves the session to persistent storage.
+    ///
+    /// # Errors
+    ///
+    /// Fails when the session cannot be serialized or written.
     fn save(&self) -> anyhow::Result<()>;
     /// Saves the session, logging errors instead of returning them.
     fn infallible_save(&self);
     /// Loads a session from storage, returning `None` if not found or expired.
+    ///
+    /// # Errors
+    ///
+    /// Fails when the store cannot be read or the session does not parse.
     fn load() -> anyhow::Result<Option<Session>>;
     /// Loads a session, logging errors and returning `None` on failure.
     fn infallible_load() -> Option<Session>;
     /// Deletes the session from storage.
+    ///
+    /// # Errors
+    ///
+    /// Fails when the store cannot remove the session.
     fn delete(&self) -> anyhow::Result<()>;
     /// Deletes the session, logging errors instead of returning them.
     fn infallible_delete(&self);
@@ -71,27 +83,22 @@ mod platform {
     use super::Session;
     use crate::outbound::keyring_entry::{self, Entry};
 
-    fn service() -> String {
-        env!("CARGO_PKG_NAME").to_string() + "-service"
-    }
+    const SERVICE: &str = concat!(env!("CARGO_PKG_NAME"), "-service");
+    const USERNAME: &str = concat!(env!("CARGO_PKG_NAME"), "-user");
 
-    fn username() -> String {
-        env!("CARGO_PKG_NAME").to_string() + "-user"
-    }
-
-    /// (service, username) must keep mapping to the Keychain item the
-    /// keyring-3 backend wrote, or existing sessions drop on upgrade.
+    /// `SERVICE` and `USERNAME` name the Keychain item existing installs hold;
+    /// changing either logs every user out.
     fn entry() -> Result<Entry, keyring::Error> {
-        keyring_entry::entry(&service(), &username())
+        keyring_entry::entry(SERVICE, USERNAME)
     }
 
-    pub fn save(session: &Session) -> anyhow::Result<()> {
+    pub(crate) fn save(session: &Session) -> anyhow::Result<()> {
         let bytes = serde_json::to_vec(session)?;
         entry()?.set_secret(&bytes)?;
         Ok(())
     }
 
-    pub fn load() -> anyhow::Result<Option<Session>> {
+    pub(crate) fn load() -> anyhow::Result<Option<Session>> {
         let entry = entry()?;
         match entry.get_secret() {
             Err(keyring::Error::NoEntry) => Ok(None),
@@ -107,7 +114,7 @@ mod platform {
         }
     }
 
-    pub fn delete() -> anyhow::Result<()> {
+    pub(crate) fn delete() -> anyhow::Result<()> {
         entry()?.delete_credential()?;
         Ok(())
     }
@@ -120,25 +127,24 @@ mod platform {
     use std::path::PathBuf;
 
     use super::Session;
-    use crate::outbound::android_fs::files_dir;
-    use crate::outbound::android_keystore;
+    use crate::outbound::{android_fs, android_keystore};
 
     fn session_path() -> anyhow::Result<PathBuf> {
-        Ok(files_dir()?.join("session.json"))
+        Ok(android_fs::files_dir()?.join("session.json"))
     }
 
-    pub fn save(session: &Session) -> anyhow::Result<()> {
+    pub(crate) fn save(session: &Session) -> anyhow::Result<()> {
         let bytes = serde_json::to_vec(session)?;
         let blob = android_keystore::seal(&bytes)?;
         std::fs::write(session_path()?, blob)?;
         Ok(())
     }
 
-    /// A file that starts with `{` is plaintext JSON from a build before the
-    /// Keystore; it is read as is and rewritten sealed. A sealed file that does
+    /// A file that starts with `{` is plaintext JSON; it is read as is and
+    /// rewritten sealed. A sealed file that does
     /// not open (the key is gone after a reinstall, or the file is corrupt)
     /// counts as logged out and is removed.
-    pub fn load() -> anyhow::Result<Option<Session>> {
+    pub(crate) fn load() -> anyhow::Result<Option<Session>> {
         let path = session_path()?;
         let bytes = match std::fs::read(&path) {
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(None),
@@ -179,7 +185,7 @@ mod platform {
         Ok(Some(session))
     }
 
-    pub fn delete() -> anyhow::Result<()> {
+    pub(crate) fn delete() -> anyhow::Result<()> {
         match std::fs::remove_file(session_path()?) {
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(()),
             other => Ok(other?),

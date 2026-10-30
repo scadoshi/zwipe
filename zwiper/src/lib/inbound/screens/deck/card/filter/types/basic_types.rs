@@ -10,11 +10,11 @@ fn read_card_types(fb: &CardQueryBuilder, mode: MatchMode) -> Vec<CardType> {
     match mode {
         MatchMode::Any => fb
             .card_type_contains_any()
-            .map(|v| v.to_vec())
+            .map(<[_]>::to_vec)
             .unwrap_or_default(),
         MatchMode::All => fb
             .card_type_contains_all()
-            .map(|v| v.to_vec())
+            .map(<[_]>::to_vec)
             .unwrap_or_default(),
     }
 }
@@ -36,7 +36,7 @@ fn write_card_types(fb: &mut CardQueryBuilder, mode: MatchMode, values: Vec<Card
 
 fn read_excluded(fb: &CardQueryBuilder) -> Vec<CardType> {
     fb.card_type_excludes_any()
-        .map(|v| v.to_vec())
+        .map(<[_]>::to_vec)
         .unwrap_or_default()
 }
 
@@ -65,7 +65,7 @@ pub(crate) fn BasicTypes() -> Element {
     let excluded = read_excluded(&filter_builder());
 
     rsx! {
-        // ── basic types (include) ─────────────────────────────────
+        // == basic types (include) ==
         div { class: "label-row mt-2",
             label { class: "label-xs", r#for: "card-type", "Basic types include" }
             if !selected.is_empty() {
@@ -109,7 +109,7 @@ pub(crate) fn BasicTypes() -> Element {
             }
         }
 
-        // ── basic types excludes ──────────────────────────────────
+        // == basic types excludes ==
         div { class: "label-row mt-2",
             label { class: "label-xs", "Basic types exclude" }
             if !excluded.is_empty() {

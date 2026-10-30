@@ -1,3 +1,5 @@
+//! Bulk data download endpoints.
+
 use std::io::{BufRead, BufReader};
 
 use anyhow::Context;
@@ -12,8 +14,7 @@ use crate::inbound::external::scryfall::request::{SCRYFALL_API_BASE, ScryfallReq
 
 /// Scryfall bulk data metadata response (contains the download URI).
 ///
-/// Scryfall retired the plain-JSON `download_uri` in late July 2026; bulk
-/// files are now served exclusively as gzipped JSON Lines via
+/// Scryfall serves bulk files only as gzipped JSON Lines, via
 /// `jsonl_download_uri` (one object per line). Line-by-line parsing also
 /// avoids holding the whole array in memory.
 #[derive(Deserialize, Debug)]
@@ -23,7 +24,10 @@ pub(super) struct BulkDataObject {
 
 /// Scryfall's bulk data download categories.
 #[derive(Debug, Clone, Copy)]
-#[allow(missing_docs)]
+#[expect(
+    missing_docs,
+    reason = "each variant names the Scryfall bulk file it fetches"
+)]
 pub enum BulkEndpoint {
     OracleCards,
     UniqueArtwork,
@@ -34,7 +38,7 @@ pub enum BulkEndpoint {
 }
 
 impl BulkEndpoint {
-    pub(super) fn resolve(&self) -> String {
+    pub(super) fn resolve(self) -> String {
         match self {
             Self::OracleCards => "/bulk-data/oracle-cards".to_string(),
             Self::UniqueArtwork => "/bulk-data/unique-artworks".to_string(),
@@ -45,7 +49,7 @@ impl BulkEndpoint {
         }
     }
 
-    /// Returns the snake_case name for file naming.
+    /// Returns the `snake_case` name for file naming.
     pub fn to_snake_case(&self) -> String {
         match self {
             Self::OracleCards => "oracle_cards".to_string(),
@@ -63,7 +67,7 @@ impl BulkEndpoint {
     /// partial data).
     async fn fetch_jsonl_gz<T: DeserializeOwned>(&self, what: &str) -> anyhow::Result<Vec<T>> {
         let url = format!("{}{}", SCRYFALL_API_BASE, self.resolve());
-        let request = ScryfallRequest::get(Client::new(), &url);
+        let request = ScryfallRequest::get(&Client::new(), &url);
 
         let bulk_data_object: BulkDataObject = request
             .send()
@@ -73,7 +77,7 @@ impl BulkEndpoint {
             .await
             .with_context(|| format!("failed to parse BulkDataObject for {what}"))?;
 
-        let request = ScryfallRequest::get(Client::new(), &bulk_data_object.jsonl_download_uri);
+        let request = ScryfallRequest::get(&Client::new(), &bulk_data_object.jsonl_download_uri);
         let bytes = request
             .send()
             .await
@@ -90,6 +94,11 @@ impl BulkEndpoint {
     /// Reversible cards arrive with no top-level `oracle_id`, so it is lifted
     /// from their faces here, before the delta comparison and the upsert both
     /// see the card.
+    ///
+    /// # Errors
+    ///
+    /// Fails when Scryfall can't be reached, a response doesn't parse, or any
+    /// line of the file isn't a card.
     pub async fn fetch_cards(&self) -> anyhow::Result<Vec<ScryfallData>> {
         let mut cards: Vec<ScryfallData> = self.fetch_jsonl_gz(&self.to_snake_case()).await?;
         for card in &mut cards {
@@ -99,6 +108,11 @@ impl BulkEndpoint {
     }
 
     /// Downloads and parses the Oracle Tags bulk file (`Vec<OracleTag>`).
+    ///
+    /// # Errors
+    ///
+    /// Fails when Scryfall can't be reached, a response doesn't parse, or any
+    /// line of the file isn't a tag.
     pub async fn fetch_oracle_tags(&self) -> anyhow::Result<Vec<OracleTag>> {
         self.fetch_jsonl_gz("oracle-tags").await
     }
@@ -122,14 +136,11 @@ fn parse_jsonl_gz<T: DeserializeOwned>(bytes: &[u8]) -> anyhow::Result<Vec<T>> {
 }
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used)]
 mod tests {
     use std::io::Write;
 
     use flate2::Compression;
     use flate2::write::GzEncoder;
-
-    use super::parse_jsonl_gz;
 
     fn gz(lines: &str) -> Vec<u8> {
         let mut enc = GzEncoder::new(Vec::new(), Compression::default());
@@ -145,7 +156,7 @@ mod tests {
     #[test]
     fn parses_one_object_per_line_skipping_blanks() {
         let bytes = gz("{\"name\":\"a\"}\n\n{\"name\":\"b\"}\n");
-        let rows: Vec<Row> = parse_jsonl_gz(&bytes).unwrap();
+        let rows: Vec<Row> = super::parse_jsonl_gz(&bytes).unwrap();
         assert_eq!(
             rows,
             vec![
@@ -162,7 +173,7 @@ mod tests {
     #[test]
     fn malformed_line_fails_loudly_with_line_number() {
         let bytes = gz("{\"name\":\"a\"}\nnot json\n");
-        let err = parse_jsonl_gz::<Row>(&bytes).unwrap_err();
+        let err = super::parse_jsonl_gz::<Row>(&bytes).unwrap_err();
         assert!(format!("{err:#}").contains("line 2"), "{err:#}");
     }
 }

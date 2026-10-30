@@ -123,7 +123,8 @@ fn minor_of(version: &str) -> &str {
     version
         .match_indices('.')
         .nth(1)
-        .map_or(version, |(dot, _)| &version[..dot])
+        .and_then(|(dot, _)| version.get(..dot))
+        .unwrap_or(version)
 }
 
 /// One chip: its label, whether it lights up, and what clicking it selects.
@@ -281,7 +282,7 @@ fn visible(listed: &[(&HttpRelease, Place)], upcoming: usize, selection: &Select
 
 /// The element id of a release's card: `v` and the version with its dots as
 /// dashes, `v1-12-1` for 1.12.1, so it needs no escaping in a CSS selector.
-pub fn anchor_id(version: &str) -> String {
+pub(crate) fn anchor_id(version: &str) -> String {
     format!("v{}", version.replace('.', "-"))
 }
 
@@ -394,7 +395,6 @@ pub fn Changelog(
 }
 
 #[cfg(test)]
-#[allow(clippy::indexing_slicing)]
 mod tests {
     use super::*;
 

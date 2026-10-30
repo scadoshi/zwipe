@@ -3,8 +3,6 @@
 //!
 //! Requires `DATABASE_URL`: `set -a; source zerver/.env; set +a`.
 
-#![allow(clippy::unwrap_used)]
-
 use zwipe_core::http::paths::{DATABASE_HEALTH_ROUTE, HEALTH_ROUTE, SERVER_HEALTH_ROUTE};
 mod common;
 

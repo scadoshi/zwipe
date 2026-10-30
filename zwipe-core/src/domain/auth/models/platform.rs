@@ -26,6 +26,7 @@ pub enum ClientPlatform {
 
 impl ClientPlatform {
     /// Lowercase wire/storage token.
+    #[must_use]
     pub fn as_str(&self) -> &'static str {
         match self {
             ClientPlatform::Ios => "ios",

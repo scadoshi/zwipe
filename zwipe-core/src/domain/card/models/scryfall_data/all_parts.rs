@@ -1,3 +1,5 @@
+//! Multi-part card relationships (split cards, double-faced cards, etc.).
+
 use std::ops::Deref;
 
 use serde::{Deserialize, Serialize};
@@ -8,17 +10,17 @@ use uuid::Uuid;
 /// Used to link cards that work together or are part of the same card object.
 ///
 /// # Component Types
-/// - **"combo_piece"**: Meld pair (e.g., Urza + Mishra → Urza and Mishra)
+/// - **`"combo_piece"`**: Meld pair (e.g., Urza + Mishra → Urza and Mishra)
 /// - **"token"**: Token created by the card
-/// - **"meld_part"**: Part of a meld combination
-/// - **"meld_result"**: Result of melding
+/// - **`"meld_part"`**: Part of a meld combination
+/// - **`"meld_result"`**: Result of melding
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct RelatedCard {
     /// Scryfall UUID for the related card.
     pub id: Uuid,
-    /// Scryfall object type. Always "related_card".
+    /// Scryfall object type. Always `"related_card"`.
     pub object: String,
-    /// Component relationship type (e.g., "token", "combo_piece", "meld_part").
+    /// Component relationship type (e.g., `"token"`, `"combo_piece"`, `"meld_part"`).
     pub component: String,
     /// Name of the related card.
     pub name: String,

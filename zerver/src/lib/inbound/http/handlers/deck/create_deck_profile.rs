@@ -1,3 +1,5 @@
+//! Deck creation handler.
+
 use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
@@ -25,8 +27,9 @@ impl From<CreateDeckProfileError> for ApiError {
             CreateDeckProfileError::UnverifiedLimitReached => Self::UnprocessableEntity(
                 "deck limit reached, verify your email to unlock more".to_string(),
             ),
-            CreateDeckProfileError::Database(e) => e.to_500(),
-            CreateDeckProfileError::DeckFromDb(e) => e.to_500(),
+            CreateDeckProfileError::Database(e) | CreateDeckProfileError::DeckFromDb(e) => {
+                e.to_500()
+            }
         }
     }
 }
@@ -35,22 +38,22 @@ impl From<InvalidCreateDeckProfile> for ApiError {
     fn from(value: InvalidCreateDeckProfile) -> Self {
         match value {
             InvalidCreateDeckProfile::DeckName(e) => {
-                Self::UnprocessableEntity(format!("invalid deck name: {}", e))
+                Self::UnprocessableEntity(format!("invalid deck name: {e}"))
             }
             InvalidCreateDeckProfile::Format(e) => {
-                Self::UnprocessableEntity(format!("invalid format: {}", e))
+                Self::UnprocessableEntity(format!("invalid format: {e}"))
             }
             InvalidCreateDeckProfile::DeckTag(e) => {
-                Self::UnprocessableEntity(format!("invalid deck tag: {}", e))
+                Self::UnprocessableEntity(format!("invalid deck tag: {e}"))
             }
             InvalidCreateDeckProfile::TooManyTags => {
                 Self::UnprocessableEntity("a deck may have at most 5 tags".to_string())
             }
             InvalidCreateDeckProfile::PowerLevel(e) => {
-                Self::UnprocessableEntity(format!("invalid power level: {}", e))
+                Self::UnprocessableEntity(format!("invalid power level: {e}"))
             }
             InvalidCreateDeckProfile::DeckOtherTag(e) => {
-                Self::UnprocessableEntity(format!("invalid other-tag: {}", e))
+                Self::UnprocessableEntity(format!("invalid other-tag: {e}"))
             }
             InvalidCreateDeckProfile::TooManyOtherTags => {
                 Self::UnprocessableEntity("a deck may have at most 5 other-tags".to_string())
@@ -63,6 +66,11 @@ impl From<InvalidCreateDeckProfile> for ApiError {
 }
 
 /// Creates a new deck for the authenticated user.
+///
+/// # Errors
+///
+/// Returns 422 for an invalid field or the deck limit, 409 when the name is
+/// taken, 404 when the user is gone, and 500 on a database failure.
 pub async fn create_deck_profile(
     user: AuthenticatedUser,
     State(state): State<AppState>,

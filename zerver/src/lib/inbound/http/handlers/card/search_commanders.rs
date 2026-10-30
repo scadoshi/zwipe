@@ -1,3 +1,5 @@
+//! Commander search handler (popularity-ordered, banded, wildcarded).
+
 use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
@@ -11,7 +13,11 @@ use crate::inbound::http::{ApiError, AppState};
 /// results are ordered by decks-helmed popularity, banded + wildcarded per user
 /// per day, with token/emblem printings excluded. The shuffle seed is derived
 /// from the authenticated user, so it needs no deck (works in create and edit).
-/// (context/archive/commander_select_ordering.md)
+/// (`context/archive/commander_select_ordering.md`)
+///
+/// # Errors
+///
+/// Returns 500 when the search fails.
 pub async fn search_commanders(
     user: AuthenticatedUser,
     State(state): State<AppState>,

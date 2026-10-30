@@ -7,6 +7,9 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+/// Share of the intended cards a sync must upsert to count as a partial success.
+const PARTIAL_SUCCESS_SHARE: f32 = 0.7;
+
 // == parts ==
 
 /// Scryfall sync operation status.
@@ -14,9 +17,9 @@ use uuid::Uuid;
 /// # Status Evaluation
 ///
 /// - **Success**: All cards upserted, no errors
-/// - **PartialSuccess**: ≥70% of cards upserted successfully
+/// - **`PartialSuccess`**: ≥70% of cards upserted successfully
 /// - **Failure**: <70% success rate or catastrophic errors
-/// - **InProgress**: Sync currently running
+/// - **`InProgress`**: Sync currently running
 #[derive(Debug, Clone, Serialize, Deserialize, Copy)]
 #[serde(rename_all = "snake_case")]
 pub enum SyncStatus {
@@ -142,7 +145,7 @@ impl std::ops::Deref for VecErrorMetrics {
 /// ```
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ZerviceMetrics {
-    /// Final status (Success, PartialSuccess, Failure, InProgress).
+    /// Final status (`Success`, `PartialSuccess`, `Failure`, `InProgress`).
     status: SyncStatus,
     /// When sync started (UTC).
     started_at: DateTime<Utc>,
@@ -263,10 +266,10 @@ impl ZerviceMetrics {
     /// Marks sync as completed, evaluates status, and calculates duration.
     ///
     /// Call this when sync finishes (success or failure). This method:
-    /// - Updates error_count from errors.len()
+    /// - Updates `error_count` from `errors.len()`
     /// - Evaluates final status based on success rate
-    /// - Sets ended_at timestamp
-    /// - Calculates duration_in_seconds
+    /// - Sets `ended_at` timestamp
+    /// - Calculates `duration_in_seconds`
     pub fn mark_as_completed(&mut self) {
         self.error_count = self.errors.len() as i32;
         self.evaluate_status();
@@ -324,14 +327,14 @@ impl ZerviceMetrics {
     /// Evaluates final status based on success rate.
     ///
     /// - **Success**: All intended cards upserted, no errors
-    /// - **PartialSuccess**: ≥70% intended cards upserted
+    /// - **`PartialSuccess`**: ≥70% intended cards upserted
     /// - **Failure**: <70% success rate
     ///
-    /// Intended cards = received_count - skipped_count
+    /// Intended cards = `received_count - skipped_count`
     fn evaluate_status(&mut self) -> &mut Self {
         self.status = SyncStatus::Failure;
         let intended_to_import = self.received_count - self.skipped_count;
-        if self.upserted_count as f32 >= intended_to_import as f32 * 0.7 {
+        if self.upserted_count as f32 >= intended_to_import as f32 * PARTIAL_SUCCESS_SHARE {
             self.status = SyncStatus::PartialSuccess;
         }
         if self.upserted_count == intended_to_import && self.error_count == 0 {

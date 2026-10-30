@@ -1,17 +1,18 @@
 //! Scryfall data field helpers for SQL query building.
 //!
-//! Provides utilities for binding all 87 Scryfall card fields to SQLx query builders,
+//! Provides utilities for binding all 87 Scryfall card fields to `SQLx` query builders,
 //! enabling efficient bulk insert/update operations.
 
 use sqlx::types::Json;
 use sqlx::{Postgres, QueryBuilder};
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
+use zwipe_core::domain::card::scryfall_data::colors::Colors;
 
 /// Every [`ScryfallData`] field name, line-separated for SQL generation.
 ///
 /// This constant serves as the single source of truth for field ordering,
 /// ensuring consistency between INSERT column lists and VALUES bindings.
-const SCRYFALL_DATA_FIELDS: &str = r#"
+const SCRYFALL_DATA_FIELDS: &str = r"
     arena_id
     id
     lang
@@ -99,7 +100,7 @@ const SCRYFALL_DATA_FIELDS: &str = r#"
     preview_previewed_at
     preview_source_uri
     preview_source
-"#;
+";
 
 /// Returns a comma-separated list of all Scryfall data field names.
 ///
@@ -121,7 +122,7 @@ pub fn scryfall_data_field_count() -> usize {
     SCRYFALL_DATA_FIELDS
         .trim()
         .lines()
-        .map(|line| line.trim())
+        .map(str::trim)
         .filter(|line| !line.is_empty())
         .count()
 }
@@ -153,6 +154,10 @@ pub trait BindScryfallDataFields {
 }
 
 impl BindScryfallDataFields for QueryBuilder<Postgres> {
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one bind per scryfall_data column, in SCRYFALL_DATA_FIELDS order"
+    )]
     fn bind_scryfall_fields(&mut self, card: &ScryfallData) -> &mut Self {
         self.push("(");
         // core card fields
@@ -199,9 +204,9 @@ impl BindScryfallDataFields for QueryBuilder<Postgres> {
         self.push(", ");
         self.push_bind(card.color_identity.to_short_names());
         self.push(", ");
-        self.push_bind(card.color_indicator.as_ref().map(|c| c.to_short_names()));
+        self.push_bind(card.color_indicator.as_ref().map(Colors::to_short_names));
         self.push(", ");
-        self.push_bind(card.colors.as_ref().map(|c| c.to_short_names()));
+        self.push_bind(card.colors.as_ref().map(Colors::to_short_names));
         self.push(", ");
         self.push_bind(card.defense.clone());
         self.push(", ");

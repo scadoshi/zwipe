@@ -10,6 +10,9 @@ use crate::{Footer, Nav, Route, SiteSplash};
 
 const LOGO_ASCII: &str = zwipe_core::domain::logo::ZWIPE;
 
+/// The splash's fade out, the `.splash` opacity transition in `assets/style.css`.
+const SPLASH_FADE_MS: u32 = 300;
+
 /// Newest shipped version, for the release banner. Reads `RELEASES`, never
 /// `UPCOMING`: an unreleased version must not be announced as shipped. Falls
 /// back to the crate version if the list is ever empty.
@@ -201,7 +204,10 @@ pub fn Home() -> Element {
     ];
     let total = demos.len();
     let index = use_signal(|| 0usize);
-    #[allow(clippy::indexing_slicing)]
+    #[expect(
+        clippy::indexing_slicing,
+        reason = "orangui's GalleryFrame keeps index below total, the length of demos"
+    )]
     let (current_src, current_caption, current_label) = demos[index()];
 
     // Featured flavor's full-art overlay state. The overlay is rendered HERE,
@@ -219,7 +225,7 @@ pub fn Home() -> Element {
     use_effect(move || {
         if gate() && splash() {
             spawn(async move {
-                sleep_ms(300).await;
+                sleep_ms(SPLASH_FADE_MS).await;
                 splash.set(false);
             });
         }

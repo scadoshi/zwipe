@@ -18,6 +18,7 @@
 /// `Protection`). Land-type walks (`Islandwalk`, …) and type cycling
 /// (`Landcycling`, …) share one generic reminder each. Unrecognized keywords
 /// fall back to a generic note rather than returning nothing.
+#[expect(clippy::too_many_lines, reason = "a lookup table, one arm per keyword")]
 pub fn keyword_reminder(name: &str) -> &'static str {
     let key = name.trim().to_ascii_lowercase();
 
@@ -239,7 +240,9 @@ pub fn keyword_reminder(name: &str) -> &'static str {
         "flashback" => {
             "You may cast it from your graveyard for its flashback cost, then it's exiled."
         }
-        "jump-start" => "Cast it from your graveyard by also discarding a card, then exile it.",
+        "jump-start" | "jump" => {
+            "Cast it from your graveyard by also discarding a card, then exile it."
+        }
         "retrace" => "You may cast it from your graveyard by also discarding a land card.",
         "aftermath" => "Cast this half only from your graveyard, then exile the card.",
         "escape" => {
@@ -678,8 +681,7 @@ pub fn keyword_reminder(name: &str) -> &'static str {
         }
 
         // --- 2026 sets & crossover mechanics ---
-        // (Definitions grounded in the cards' own reminder text, swept
-        // 2026-08-14 against every keyword on 4+ cards in the database.)
+        // (Definitions grounded in the cards' own reminder text.)
         "prepared" => {
             "It's a creature with a spell face; while it's prepared, you may cast a copy of that spell, which unprepares it."
         }
@@ -731,7 +733,6 @@ pub fn keyword_reminder(name: &str) -> &'static str {
             "Triggers when it's put into a graveyard, granting the players the listed reward (a Horde-deck mechanic)."
         }
         "heal" => "Healing a creature removes all damage marked on it.",
-        "jump" => "Cast it from your graveyard by also discarding a card, then exile it.",
 
         // --- Arena-only (digital) mechanics ---
         "draft from a spellbook" => {

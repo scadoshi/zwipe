@@ -8,7 +8,10 @@
 //!
 //! Requires `DATABASE_URL`: `set -a; source zerver/.env; set +a`.
 
-#![allow(clippy::unwrap_used, clippy::indexing_slicing)]
+#![expect(
+    clippy::unwrap_used,
+    reason = "a test: helpers outside #[test] fns unwrap, and a panic is the failure report"
+)]
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -125,7 +128,7 @@ async fn sql_and_core_role_membership_match(pool: sqlx::PgPool) {
         "exclusions are exact"
     );
     assert_eq!(roles("ramp-removal-child"), ["ramp", "removal"]);
-    assert!(roles("twiddle").is_empty());
+    assert_eq!(roles("twiddle"), Vec::<&str>::new());
     assert_eq!(roles("repeatable-maps"), ["tokens"]);
     assert_eq!(roles("pinger"), ["burn"]);
     assert!(roles("pinger-child").is_empty(), "overrides never expand");

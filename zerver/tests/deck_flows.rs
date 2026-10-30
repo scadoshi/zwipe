@@ -6,8 +6,6 @@
 //!
 //! Requires `DATABASE_URL`: `set -a; source zerver/.env; set +a`.
 
-#![allow(clippy::unwrap_used, clippy::indexing_slicing)]
-
 use zwipe_core::http::paths::{
     DECK_ROUTE, clone_deck_route, get_deck_profile_route, get_deck_route,
 };
@@ -163,7 +161,7 @@ async fn cannot_touch_another_users_deck(pool: sqlx::PgPool) {
         .await;
     let id = deck["id"].as_str().unwrap().to_string();
 
-    // 404 (not 403) — another user's deck must look nonexistent, no existence leak.
+    // 404 (not 403): another user's deck must look nonexistent, no existence leak.
     let (b_token, _) = app.register("erin").await;
     let (status, _) = app
         .get(&get_deck_route(id.parse().unwrap()), Some(&b_token))

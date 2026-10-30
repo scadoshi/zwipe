@@ -34,7 +34,7 @@ pub struct OracleTag {
 /// and deck selection): the 24 original mechanical categories mapped to their
 /// best-populated real slug, plus hand-picked functional fills. The full catalog
 /// (~4,500) stays reachable via search; a picker renders only the entries its
-/// fetched catalog still serves. Tuned over time.
+/// fetched catalog still serves.
 pub const CURATED_ORACLE_TAGS: &[&str] = &[
     // the original mechanical categories -> best-populated slug
     "spot-removal",
@@ -170,7 +170,6 @@ pub fn search_oracle_tags(tags: &[OracleTag], query: &str) -> Vec<OracleTag> {
 }
 
 #[cfg(test)]
-#[allow(clippy::indexing_slicing, clippy::unwrap_used)]
 mod tests {
     use super::*;
 
@@ -262,14 +261,17 @@ mod tests {
     #[test]
     fn search_blank_query_returns_nothing() {
         let tags = vec![tag("ramp", "Ramp", None)];
-        assert!(search_oracle_tags(&tags, "").is_empty());
-        assert!(search_oracle_tags(&tags, "   ").is_empty());
+        assert_eq!(search_oracle_tags(&tags, ""), Vec::<OracleTag>::new());
+        assert_eq!(search_oracle_tags(&tags, "   "), Vec::<OracleTag>::new());
     }
 
     #[test]
     fn search_skips_nonmatches() {
         let tags = vec![tag("ramp", "Ramp", Some("Accelerates your mana."))];
-        assert!(search_oracle_tags(&tags, "graveyard").is_empty());
+        assert_eq!(
+            search_oracle_tags(&tags, "graveyard"),
+            Vec::<OracleTag>::new()
+        );
     }
 
     #[test]

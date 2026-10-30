@@ -1,3 +1,5 @@
+//! Session, token, password and platform types.
+
 pub mod access_token;
 pub mod password;
 pub mod platform;

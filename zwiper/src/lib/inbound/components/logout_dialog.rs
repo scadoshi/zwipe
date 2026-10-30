@@ -1,3 +1,5 @@
+//! Logout confirmation dialog.
+
 use components::{AlertDialog, DialogAction};
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;

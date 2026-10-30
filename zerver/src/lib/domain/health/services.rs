@@ -8,7 +8,7 @@ use crate::domain::health::ports::{HealthRepository, HealthService};
 ///
 /// Used by Kubernetes/Docker health probes and monitoring systems.
 #[derive(Debug, Clone)]
-pub struct Service<R: HealthRepository> {
+pub struct Service<R> {
     repo: R,
 }
 

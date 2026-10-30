@@ -1,3 +1,5 @@
+//! All printings of a card by oracle ID.
+
 use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
@@ -6,12 +8,17 @@ use zwipe_core::domain::card::Card;
 use crate::inbound::http::{ApiError, AppState};
 
 /// Returns all printings of a card by oracle ID, ordered by release date.
+///
+/// # Errors
+///
+/// Returns 422 for a malformed oracle id, 404 when a card is missing, and 500
+/// on a database failure.
 pub async fn get_printings(
     State(state): State<AppState>,
     Path(oracle_id): Path<String>,
 ) -> Result<(StatusCode, Json<Vec<Card>>), ApiError> {
     let oracle_id = uuid::Uuid::try_parse(&oracle_id)
-        .map_err(|e| ApiError::UnprocessableEntity(format!("invalid oracle id: {}", e)))?;
+        .map_err(|e| ApiError::UnprocessableEntity(format!("invalid oracle id: {e}")))?;
     state
         .card_service
         .get_printings(oracle_id)

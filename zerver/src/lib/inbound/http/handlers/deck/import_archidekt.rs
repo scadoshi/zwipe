@@ -16,7 +16,7 @@ use zwipe_core::domain::deck::requests::import_deck_cards::ImportDeckCardsResult
 use zwipe_core::domain::user::requests::get_user::GetUser;
 use zwipe_core::http::contracts::deck::HttpImportArchidektDeck;
 
-use crate::inbound::http::handlers::metrics::check_completion::check_deck_completion;
+use crate::inbound::http::handlers::metrics::check_completion;
 use crate::inbound::http::middleware::AuthenticatedUser;
 use crate::inbound::http::{ApiError, AppState, To500};
 use crate::outbound::archidekt::{ArchidektClient, ArchidektError};
@@ -42,6 +42,12 @@ impl From<ArchidektError> for ApiError {
 
 /// Imports an Archidekt deck's cards into an existing deck owned by the
 /// authenticated user.
+///
+/// # Errors
+///
+/// Returns 422 for a URL with no deck id, a bad board or an oversized deck, 404
+/// when the Archidekt deck is missing or private or the target deck isn't the
+/// caller's, 500 when Archidekt fails, and 500 on a database failure.
 pub async fn import_archidekt_deck(
     user: AuthenticatedUser,
     Path(deck_id): Path<Uuid>,
@@ -84,7 +90,7 @@ pub async fn import_archidekt_deck(
     // Fire-and-forget metrics: check whether the import completed the deck.
     let deck_service = std::sync::Arc::clone(&state.deck_service);
     let metrics = std::sync::Arc::clone(&state.metrics_service);
-    tokio::spawn(check_deck_completion(
+    tokio::spawn(check_completion::check_deck_completion(
         deck_service,
         metrics,
         user.id,

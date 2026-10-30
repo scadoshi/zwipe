@@ -1,3 +1,5 @@
+//! Full deck with cards handler.
+
 use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
@@ -20,6 +22,11 @@ impl From<GetDeckError> for ApiError {
 }
 
 /// Returns the full deck including all cards (`get_deck_profile` returns only the metadata).
+///
+/// # Errors
+///
+/// Returns 404 when the deck is missing or isn't the caller's, and 500 on a
+/// database failure.
 pub async fn get_deck(
     user: AuthenticatedUser,
     State(state): State<AppState>,

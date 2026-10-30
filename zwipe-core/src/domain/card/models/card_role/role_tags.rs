@@ -19,7 +19,7 @@ use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 use uuid::Uuid;
 
-/// `CardRole` (serde snake_case) to the oracle-tag root slugs whose subtree
+/// `CardRole` (serde `snake_case`) to the oracle-tag root slugs whose subtree
 /// defines it. Each root is expanded through `oracle_tags.parent_ids`.
 ///
 /// `pump`, `stax`, `protection`, `graveyard_hate` and `tokens` are supplements:
@@ -120,7 +120,7 @@ pub const CATEGORY_ROOTS: &[(&str, &[&str])] = &[
 /// hierarchy but clearly belong to a role. Unlike [`CATEGORY_ROOTS`], these are
 /// matched **exactly** (never subtree-expanded), so an entry adds precisely that
 /// tag and nothing beneath it, whether or not the catalog carries it. Key = a
-/// real `CardRole` (snake_case), checked by unit test; value = real oracle-tag
+/// real `CardRole` (`snake_case`), checked by unit test; value = real oracle-tag
 /// slugs, checked by a non-fatal `zervice` warn. Grow as you audit; applies on
 /// the next `zervice` run.
 pub const ROLE_TAG_OVERRIDES: &[(&str, &[&str])] = &[

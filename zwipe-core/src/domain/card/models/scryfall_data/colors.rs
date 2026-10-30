@@ -1,3 +1,5 @@
+//! Color and color identity types and conversions.
+
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -7,7 +9,7 @@ use thiserror::Error;
 pub struct InvalidColor;
 
 /// Magic: The Gathering's five colors.
-#[allow(missing_docs)]
+#[expect(missing_docs, reason = "the variants are the color names")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Color {
     White,
@@ -126,10 +128,7 @@ impl<'de> Deserialize<'de> for Color {
             "b" => Ok(Self::Black),
             "r" => Ok(Self::Red),
             "g" => Ok(Self::Green),
-            _ => Err(serde::de::Error::custom(format!(
-                "{} is an invalid color",
-                s
-            ))),
+            _ => Err(serde::de::Error::custom(format!("{s} is an invalid color"))),
         }
     }
 }
@@ -157,6 +156,10 @@ impl TryFrom<String> for Color {
 
 impl Colors {
     /// Parses a `Vec<String>` of short color codes into `Colors`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`InvalidColor`] for the first name that is not a color code.
     pub fn from_short_names(names: Vec<String>) -> Result<Self, InvalidColor> {
         names
             .into_iter()
@@ -180,14 +183,14 @@ impl std::ops::Deref for Colors {
 }
 
 impl Colors {
-    /// Converts all colors to short codes (e.g., ["W", "U", "B"]).
+    /// Converts all colors to short codes (e.g., `["W", "U", "B"]`).
     pub fn to_short_names(&self) -> Vec<String> {
-        self.0.iter().map(|c| c.to_short_name()).collect()
+        self.0.iter().map(Color::to_short_name).collect()
     }
 
-    /// Converts all colors to long names (e.g., ["White", "Blue", "Black"]).
+    /// Converts all colors to long names (e.g., `["White", "Blue", "Black"]`).
     pub fn to_long_names(&self) -> Vec<String> {
-        self.0.iter().map(|c| c.to_long_name()).collect()
+        self.0.iter().map(Color::to_long_name).collect()
     }
 }
 

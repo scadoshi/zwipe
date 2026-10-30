@@ -10,17 +10,19 @@ use crate::domain::card::oracle_tag::OracleTag;
 use crate::domain::card::scryfall_data::universe::UbFranchiseView;
 use crate::domain::card::search_card::card_filter::CardQuery;
 use crate::http::endpoint::{Endpoint, Method};
+use crate::http::paths;
 use crate::http::paths::{
     FEATURED_FLAVOR_ROUTE, GET_ARTISTS_ROUTE, GET_CARD_ROLES_ROUTE, GET_CARD_TYPES_ROUTE,
     GET_KEYWORD_REMINDERS_ROUTE, GET_KEYWORDS_ROUTE, GET_LANGUAGES_ROUTE, GET_ORACLE_TAGS_ROUTE,
     GET_ORACLE_WORDS_ROUTE, GET_SETS_ROUTE, GET_UB_FRANCHISES_ROUTE, SEARCH_CARDS_ROUTE,
-    SEARCH_COMMANDERS_ROUTE, get_card_route, get_printings_route,
+    SEARCH_COMMANDERS_ROUTE,
 };
 
 /// Builds an unauthed GET returning `$resp` from a fixed path.
 macro_rules! public_get {
     ($(#[$doc:meta])* $name:ident => $path:expr, $resp:ty) => {
         $(#[$doc])*
+        #[derive(Debug)]
         pub struct $name;
         impl Endpoint for $name {
             const METHOD: Method = Method::Get;
@@ -76,6 +78,7 @@ public_get!(
 );
 
 /// One card by its Scryfall printing id.
+#[derive(Debug)]
 pub struct GetCard(pub Uuid);
 impl Endpoint for GetCard {
     const METHOD: Method = Method::Get;
@@ -83,11 +86,12 @@ impl Endpoint for GetCard {
     type Request = ();
     type Response = Card;
     fn path(&self) -> Cow<'static, str> {
-        Cow::Owned(get_card_route(self.0))
+        Cow::Owned(paths::get_card_route(self.0))
     }
 }
 
 /// Every printing of one oracle id.
+#[derive(Debug)]
 pub struct GetPrintings(pub Uuid);
 impl Endpoint for GetPrintings {
     const METHOD: Method = Method::Get;
@@ -95,12 +99,13 @@ impl Endpoint for GetPrintings {
     type Request = ();
     type Response = Vec<Card>;
     fn path(&self) -> Cow<'static, str> {
-        Cow::Owned(get_printings_route(self.0))
+        Cow::Owned(paths::get_printings_route(self.0))
     }
 }
 
 /// Filtered card search. The filter is pre-serialized so this type stays free
 /// of the query builder's generics.
+#[derive(Debug)]
 pub struct SearchCards(pub CardQuery);
 impl Endpoint for SearchCards {
     const METHOD: Method = Method::Post;
@@ -115,6 +120,7 @@ impl Endpoint for SearchCards {
 }
 
 /// Filtered search restricted to commander-eligible cards.
+#[derive(Debug)]
 pub struct SearchCommanders(pub CardQuery);
 impl Endpoint for SearchCommanders {
     const METHOD: Method = Method::Post;

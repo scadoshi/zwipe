@@ -136,12 +136,14 @@ pub struct AccessToken {
 }
 
 impl AccessToken {
-    /// Checks if the access token has expired (current time >= expires_at).
+    /// Checks if the access token has expired (`expires_at` is before now).
+    #[must_use]
     pub fn is_expired(&self) -> bool {
         self.expires_at < Utc::now()
     }
 
     /// Checks if the access token expires within `window` of now, or already has.
+    #[must_use]
     pub fn expires_within(&self, window: Duration) -> bool {
         self.expires_at < Utc::now() + window
     }
@@ -210,8 +212,8 @@ mod tests {
             user_id,
             username,
             email,
-            exp: 1234567890,
-            iat: 1234567890,
+            exp: 1_234_567_890,
+            iat: 1_234_567_890,
         };
 
         let serialized = serde_json::to_string(&claims).unwrap();
@@ -230,22 +232,22 @@ mod tests {
             user_id: id1,
             username: username.clone(),
             email: email.clone(),
-            exp: 1234567890,
-            iat: 1234567890,
+            exp: 1_234_567_890,
+            iat: 1_234_567_890,
         };
         let claims2 = UserClaims {
             user_id: id1,
             username: username.clone(),
             email: email.clone(),
-            exp: 1234567890,
-            iat: 1234567890,
+            exp: 1_234_567_890,
+            iat: 1_234_567_890,
         };
         let claims3 = UserClaims {
             user_id: id2,
             username,
             email,
-            exp: 1234567890,
-            iat: 1234567890,
+            exp: 1_234_567_890,
+            iat: 1_234_567_890,
         };
 
         assert_eq!(claims1, claims2);
@@ -277,7 +279,9 @@ mod tests {
     fn token_expiring_in(seconds: i64) -> AccessToken {
         AccessToken {
             value: Jwt::from_str("header.payload.signature").unwrap(),
-            expires_at: Utc::now() + Duration::seconds(seconds),
+            expires_at: Utc::now()
+                .checked_add_signed(Duration::seconds(seconds))
+                .unwrap(),
         }
     }
 

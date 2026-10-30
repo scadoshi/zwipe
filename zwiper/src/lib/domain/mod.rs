@@ -1,8 +1,5 @@
-//! Shared domain logic for the ZWIPE application.
-//!
-//! This crate provides common domain utilities used across both client and server:
-//! - **Error handling**: User-facing error message formatting
-//! - **Language support**: MTG card language code translations
+//! The app's own domain helpers: user-facing error messages and card
+//! language names.
 
 /// User-facing error message formatting.
 pub mod error;

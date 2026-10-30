@@ -7,9 +7,9 @@
 use std::time::Duration;
 
 use chrono::{DateTime, Utc};
-use components::{KeywordReminders, ThemeConfig, theme_from_preferences, use_overlay_back_stack};
+use components::{KeywordReminders, ThemeConfig, use_overlay_back_stack};
 use dioxus::prelude::*;
-use tokio::time::interval;
+use tokio::time;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
@@ -17,7 +17,7 @@ use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilde
 use zwipe_core::domain::user::preferences::PipStyle;
 use zwipe_core::http::contracts::changelog::HttpChangelog;
 use zwipe_core::http::contracts::metrics::AnonymousEventKind;
-use zwipe_core::version::version_at_least;
+use zwipe_core::version;
 
 use crate::config::Config;
 use crate::inbound::components::auth::ensure_session::EnsureFresh;
@@ -25,11 +25,8 @@ use crate::inbound::components::catalog_cache::use_catalog_cache;
 use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::home_hero::{CachedCounts, CachedMyCounts};
 use crate::inbound::components::home_play_style::CachedPlayStyle;
-use crate::inbound::components::telemetry::anonymous::record_anonymous_event;
-use crate::inbound::components::telemetry::flush_loop::{
-    spawn_usage_flusher, spawn_visibility_flusher,
-};
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
+use crate::inbound::components::telemetry::{anonymous, flush_loop};
 use crate::inbound::screens::auth::login::LoginPrefill;
 use crate::inbound::screens::deck::card::components::action_history::AddAction;
 use crate::inbound::screens::deck::card::components::add_stack_cache::use_add_stack_cache;
@@ -43,8 +40,15 @@ use crate::outbound::session::Persist;
 use crate::outbound::theme_store::PersistTheme;
 
 /// The running app version, baked in at compile time (matches
-/// CFBundleShortVersionString since 1.0.3).
+/// `CFBundleShortVersionString`).
 const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
+
+/// How often the upkeep loop refreshes the session and rechecks the minimum
+/// version.
+const UPKEEP_INTERVAL: Duration = Duration::from_secs(60);
+
+const SECS_PER_MINUTE: i64 = 60;
+const SECS_PER_HOUR: i64 = 3600;
 
 /// The featured flavor card cached for the Home screen, with the time it
 /// goes stale.
@@ -53,7 +57,7 @@ const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 /// navigation: Home reads it and only refetches when empty or expired. The
 /// server serves ONE shared pick per UTC hour, so expiry pins to the top of
 /// the next hour: the app flips exactly when the server does.
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct FlavorCard {
     /// The card whose flavor text is shown.
     pub card: Card,
@@ -67,10 +71,11 @@ impl FlavorCard {
     pub fn new(card: Card) -> Self {
         use chrono::Timelike;
         let now = Utc::now();
-        let secs_into_hour = i64::from(now.minute()) * 60 + i64::from(now.second());
+        let secs_into_hour = i64::from(now.minute()) * SECS_PER_MINUTE + i64::from(now.second());
         Self {
             card,
-            expires_at: now + chrono::Duration::seconds(3600 - secs_into_hour.min(3599)),
+            expires_at: now
+                + chrono::Duration::seconds(SECS_PER_HOUR - secs_into_hour.min(SECS_PER_HOUR - 1)),
         }
     }
 
@@ -87,7 +92,7 @@ impl FlavorCard {
 /// reads this: `Loading` shows a skeleton, `Loaded` renders the fetched copy,
 /// and `Failed` says so. No compiled fallback: zwiper renders served data
 /// only (`context/plans/server-driven-catalogs-2/overview.md`).
-#[derive(Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum ChangelogCache {
     /// Startup fetch still in flight.
     Loading,
@@ -100,10 +105,8 @@ pub enum ChangelogCache {
 /// Min-version gate state: true when this build is below the server minimum.
 ///
 /// Newtype so `try_use_context` / `use_context` lookups can't collide with
-/// other `Signal<bool>` contexts: a bare `Signal<bool>` here was once grabbed
-/// by the filter sheet's collapse lookup, which flashed the blocking
-/// "Update required" screen every time Apply was hit on add/remove cards.
-#[derive(Clone, Copy)]
+/// other `Signal<bool>` contexts, such as the filter sheet's collapse lookup.
+#[derive(Debug, Clone, Copy)]
 pub struct UpgradeRequired(Signal<bool>);
 
 impl UpgradeRequired {
@@ -267,7 +270,7 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
         session
             .peek()
             .as_ref()
-            .map(|s| theme_from_preferences(&s.preferences))
+            .map(|s| components::theme_from_preferences(&s.preferences))
             .or_else(ThemeConfig::infallible_load)
             .unwrap_or_default()
     });
@@ -301,13 +304,13 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
     let usage_buffer = use_signal(UsageBuffer::new);
     use_context_provider(|| usage_buffer);
     use_hook(|| {
-        spawn_usage_flusher(usage_buffer.peek().clone(), client, session);
-        spawn_visibility_flusher(usage_buffer.peek().clone(), client, session);
+        flush_loop::spawn_usage_flusher(usage_buffer.peek().clone(), client, session);
+        flush_loop::spawn_visibility_flusher(usage_buffer.peek().clone(), client, session);
 
         // Pre-auth funnel: a logged-out launch is the top of the register
         // funnel. Logged-in launches are already covered by last_active_at.
         if session.peek().is_none() {
-            record_anonymous_event(client, AnonymousEventKind::AppOpened);
+            anonymous::record_anonymous_event(client, AnonymousEventKind::AppOpened);
         }
 
         // A previous run crashed: post its report (unauthed endpoint) and
@@ -337,7 +340,7 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
     // the gate flipping re-renders the root, which re-runs this function.
     use_future(move || async move {
         // first tick fires immediately; this is the cold-start refresh
-        let mut interval = interval(Duration::from_secs(60));
+        let mut interval = time::interval(UPKEEP_INTERVAL);
         loop {
             interval.tick().await;
             // single-flight: free of races with any in-flight user action
@@ -347,7 +350,7 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
             // can flip the gate; a network hiccup never locks anyone out.
             let http = client.peek().clone();
             if let Ok(min) = http.get_min_client_version().await {
-                let required = !version_at_least(APP_VERSION, &min.min_version);
+                let required = !version::version_at_least(APP_VERSION, &min.min_version);
                 if required != *upgrade_required.peek() {
                     tracing::info!(
                         app = APP_VERSION,

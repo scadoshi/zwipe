@@ -78,24 +78,19 @@ impl CountScope {
 mod platform {
     use crate::outbound::keyring_entry::{self, Entry};
 
-    fn service() -> String {
-        env!("CARGO_PKG_NAME").to_string() + "-service"
-    }
-
-    fn username() -> String {
-        env!("CARGO_PKG_NAME").to_string() + "-count-scope"
-    }
+    const SERVICE: &str = concat!(env!("CARGO_PKG_NAME"), "-service");
+    const USERNAME: &str = concat!(env!("CARGO_PKG_NAME"), "-count-scope");
 
     fn entry() -> Result<Entry, keyring::Error> {
-        keyring_entry::entry(&service(), &username())
+        keyring_entry::entry(SERVICE, USERNAME)
     }
 
-    pub fn save(bytes: &[u8]) -> anyhow::Result<()> {
+    pub(crate) fn save(bytes: &[u8]) -> anyhow::Result<()> {
         entry()?.set_secret(bytes)?;
         Ok(())
     }
 
-    pub fn load() -> anyhow::Result<Option<Vec<u8>>> {
+    pub(crate) fn load() -> anyhow::Result<Option<Vec<u8>>> {
         match entry()?.get_secret() {
             Err(keyring::Error::NoEntry) => Ok(None),
             Err(e) => Err(e.into()),
@@ -109,18 +104,18 @@ mod platform {
 mod platform {
     use std::path::PathBuf;
 
-    use crate::outbound::android_fs::files_dir;
+    use crate::outbound::android_fs;
 
     fn scope_path() -> anyhow::Result<PathBuf> {
-        Ok(files_dir()?.join("count_scope"))
+        Ok(android_fs::files_dir()?.join("count_scope"))
     }
 
-    pub fn save(bytes: &[u8]) -> anyhow::Result<()> {
+    pub(crate) fn save(bytes: &[u8]) -> anyhow::Result<()> {
         std::fs::write(scope_path()?, bytes)?;
         Ok(())
     }
 
-    pub fn load() -> anyhow::Result<Option<Vec<u8>>> {
+    pub(crate) fn load() -> anyhow::Result<Option<Vec<u8>>> {
         match std::fs::read(scope_path()?) {
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
             Err(e) => Err(e.into()),

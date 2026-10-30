@@ -1,10 +1,13 @@
+//! Sort key options (name, CMC, rarity, etc.).
+
 use std::cmp::Ordering;
 
 use serde::{Deserialize, Serialize};
 
 use crate::domain::card::scryfall_data::ScryfallData;
 
-#[allow(missing_docs)]
+/// The field a card search orders by.
+#[expect(missing_docs, reason = "each variant names the field it sorts by")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum CardSortKey {
     Name,
@@ -20,7 +23,7 @@ pub enum CardSortKey {
     Random,
 }
 
-#[allow(missing_docs)]
+#[expect(missing_docs, reason = "the method names say what each returns")]
 impl CardSortKey {
     pub fn all() -> Vec<Self> {
         vec![

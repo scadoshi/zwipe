@@ -18,12 +18,27 @@ use zwipe_core::domain::card::search_card::card_filter::sort_direction::SortDire
 use zwipe_core::domain::card::search_card::card_type::CardType;
 use zwipe_core::domain::card::search_card::cards::Cards;
 use zwipe_core::domain::card::search_card::group_cards::{GroupByOption, GroupCards};
-use zwipe_core::domain::deck::deck_metrics::{DeckMetrics, mainboard_total_price};
-use zwipe_core::domain::deck::{Board, DeckEntry, deck_tag_label};
+use zwipe_core::domain::deck::deck_metrics::{self, DeckMetrics};
+use zwipe_core::domain::deck::{Board, DeckEntry, Format, deck_tag_label};
 use zwipe_core::http::contracts::deck::HttpSharedDeck;
 
-use crate::components::{PageMeta, sleep_ms};
+use crate::components::{OVERLAY_EXIT_MS, PageMeta, sleep_ms};
 use crate::{Footer, Nav, api};
+
+/// Desktop columns the deck sections split into, in order.
+const SECTION_COLUMNS: usize = 3;
+
+/// How long a hover preview stays up once the cursor leaves its row or the row flips.
+const PREVIEW_LIFE_MS: u32 = 2000;
+
+/// A hover preview's fade out, `sd-preview-out` in `assets/style.css`.
+const PREVIEW_FADE_MS: u32 = 400;
+
+/// Shortest the retry spinner shows, so an instant failure still reads as a click.
+const RETRY_SPINNER_MIN_MS: u32 = 500;
+
+/// Longest the featured row waits for its images before it opens anyway.
+const FEATURED_WAIT_MS: u32 = 4000;
 
 /// How a shared-deck fetch can fail, from the reader's point of view.
 #[derive(Clone, PartialEq)]
@@ -159,7 +174,7 @@ fn CommandZoneCard(
                         class: "sd-cz-image".to_string(),
                         draggable: false,
                         on_face_change: move |face: usize| current_face.set(face),
-                        on_load: move |_| on_load.call(()),
+                        on_load: move |()| on_load.call(()),
                     }
                 }
             }
@@ -235,13 +250,13 @@ fn CardRow(
                     s.truncate(5);
                 });
                 spawn(async move {
-                    sleep_ms(2000).await;
+                    sleep_ms(PREVIEW_LIFE_MS).await;
                     preview_stack.with_mut(|s| {
                         if let Some(c) = s.iter_mut().find(|c| c.id == id) {
                             c.leaving = true;
                         }
                     });
-                    sleep_ms(400).await;
+                    sleep_ms(PREVIEW_FADE_MS).await;
                     preview_stack.with_mut(|s| s.retain(|c| c.id != id));
                 });
             },
@@ -271,13 +286,13 @@ fn CardRow(
                 my_preview_id.set(None);
                 // Now the card's 2s life runs; then a short fade-out, then drop.
                 spawn(async move {
-                    sleep_ms(2000).await;
+                    sleep_ms(PREVIEW_LIFE_MS).await;
                     preview_stack.with_mut(|s| {
                         if let Some(c) = s.iter_mut().find(|c| c.id == id) {
                             c.leaving = true;
                         }
                     });
-                    sleep_ms(400).await;
+                    sleep_ms(PREVIEW_FADE_MS).await;
                     preview_stack.with_mut(|s| s.retain(|c| c.id != id));
                 });
             },
@@ -392,9 +407,7 @@ pub fn SharedDeck(token: String) -> Element {
                                     retrying.set(true);
                                     result.restart();
                                     spawn(async move {
-                                        // Minimum visible spinner so an instant
-                                        // failure still reads as a click.
-                                        sleep_ms(500).await;
+                                        sleep_ms(RETRY_SPINNER_MIN_MS).await;
                                         retrying.set(false);
                                     });
                                 },
@@ -440,7 +453,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
     let mut featured_loaded = use_signal(|| 0usize);
     let mut featured_timed_out = use_signal(|| false);
     use_future(move || async move {
-        sleep_ms(4000).await;
+        sleep_ms(FEATURED_WAIT_MS).await;
         featured_timed_out.set(true);
     });
     // Budget panel currency, mirroring the app's Budget section chips.
@@ -533,20 +546,20 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
     } else {
         "sd-featured"
     };
-    let on_featured_load = move |_| featured_loaded += 1;
+    let on_featured_load = move |()| featured_loaded += 1;
     // A format with a signature spell is Oathbreaker: the "commander" is the
     // oathbreaker planeswalker.
     let is_oathbreaker = deck
         .format
         .as_ref()
-        .is_some_and(|f| f.has_signature_spell());
+        .is_some_and(Format::has_signature_spell);
 
-    let price = mainboard_total_price(&deck.entries, PriceCurrency::Usd);
+    let price = deck_metrics::mainboard_total_price(&deck.entries, PriceCurrency::Usd);
 
     // Card count mirrors the app's deck-list tile: mainboard sum plus each
     // present command-zone slot (commander only when the format uses one).
     let mut display_count = card_count;
-    if deck.format.as_ref().is_some_and(|f| f.has_commander()) && deck.commander.is_some() {
+    if deck.format.as_ref().is_some_and(Format::has_commander) && deck.commander.is_some() {
         display_count += 1;
     }
     if deck.partner_commander.is_some() {
@@ -869,7 +882,6 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
         Vec::new()
     };
 
-    const COLS: usize = 3;
     // Partition the ordered sections into contiguous runs, one per column,
     // picking the two cut points that minimize the tallest column. Contiguous
     // (not shortest-column greedy) so section order survives both layouts:
@@ -890,7 +902,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
             }
         }
     }
-    let mut columns: Vec<Vec<Section>> = (0..COLS).map(|_| Vec::new()).collect();
+    let mut columns: Vec<Vec<Section>> = (0..SECTION_COLUMNS).map(|_| Vec::new()).collect();
     for (idx, section) in sections.into_iter().enumerate() {
         let ci = if idx < cuts.0 {
             0
@@ -937,7 +949,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
                 onclick: move |_| {
                     overlay_dismissing.set(true);
                     spawn(async move {
-                        sleep_ms(200).await;
+                        sleep_ms(OVERLAY_EXIT_MS).await;
                         overlay_card.set(None);
                         overlay_dismissing.set(false);
                     });

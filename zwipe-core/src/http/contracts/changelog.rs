@@ -48,7 +48,7 @@ impl From<&Release> for HttpRelease {
                 .map(|date| date.format(DISPLAY_DATE_FORMAT).to_string())
                 .unwrap_or_default(),
             released_on: release.date,
-            entries: release.entries.iter().map(|e| e.to_string()).collect(),
+            entries: release.entries.iter().map(ToString::to_string).collect(),
         }
     }
 }
@@ -78,7 +78,6 @@ impl HttpChangelog {
 }
 
 #[cfg(test)]
-#[allow(clippy::expect_used, clippy::indexing_slicing)]
 mod tests {
     use super::*;
 

@@ -1,6 +1,6 @@
 //! The in-memory card collection.
 //!
-//! [`Cards`](crate::domain::card::models::search_card::cards::Cards) wraps a `Vec<Card>` already in hand (a loaded deck, a fetched
+//! [`Cards`] wraps a `Vec<Card>` already in hand (a loaded deck, a fetched
 //! stack) and exposes the two in-memory operations as explicit steps:
 //! [`matching`](crate::domain::card::models::search_card::cards::Cards::matching) (predicate, via
 //! [`CardCriteria::matches`](crate::domain::card::models::search_card::card_filter::criteria::CardCriteria::matches)) and [`sorted`](crate::domain::card::models::search_card::cards::Cards::sorted) (ordering, via
@@ -61,6 +61,7 @@ impl IntoIterator for Cards {
 
 impl Cards {
     /// Keeps only the cards matching `criteria`.
+    #[must_use]
     pub fn matching(self, criteria: &CardCriteria) -> Cards {
         Cards(
             self.0
@@ -73,6 +74,7 @@ impl Cards {
     /// Returns the cards ordered by `sort`. `None` is a no-op (pass a
     /// [`CardSortKey`] directly or a builder's `sort()`); `Random` shuffles and
     /// ignores `direction`.
+    #[must_use]
     pub fn sorted(
         mut self,
         sort: impl Into<Option<CardSortKey>>,
@@ -126,8 +128,9 @@ pub fn sort_deck_entries(
     });
 }
 #[cfg(test)]
-#[allow(clippy::indexing_slicing)]
 mod tests {
+    use std::collections::BTreeMap;
+
     use chrono::NaiveDate;
     use uuid::Uuid;
 
@@ -143,6 +146,10 @@ mod tests {
     use crate::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
     use crate::domain::card::search_card::card_filter::sort_direction::SortDirection;
 
+    #[expect(
+        clippy::too_many_lines,
+        reason = "a fixture that fills every Scryfall field"
+    )]
     fn make_card(name: &str) -> Card {
         Card {
             card_profile: CardProfile {
@@ -150,7 +157,7 @@ mod tests {
                 is_token: false,
                 card_roles: vec![],
                 oracle_tags: vec![],
-                oracle_tags_by_role: Default::default(),
+                oracle_tags_by_role: BTreeMap::default(),
                 other_oracle_tags: vec![],
                 created_at: NaiveDate::from_ymd_opt(2021, 1, 1)
                     .unwrap()
@@ -266,7 +273,7 @@ mod tests {
         }
     }
 
-    // ── keywords_contains_any ────────────────────────────────────────────────
+    // == keywords_contains_any ==
 
     #[test]
     fn test_keywords_contains_any_matches_when_one_keyword_present() {
@@ -326,7 +333,7 @@ mod tests {
         assert_eq!(result.len(), 1);
     }
 
-    // ── keywords_contains_all ────────────────────────────────────────────────
+    // == keywords_contains_all ==
 
     #[test]
     fn test_keywords_contains_all_matches_when_all_keywords_present() {
@@ -383,7 +390,7 @@ mod tests {
         assert_eq!(result.len(), 1);
     }
 
-    // ── produced_mana_contains_any ──────────────────────────────────────────
+    // == produced_mana_contains_any ==
 
     #[test]
     fn test_produced_mana_contains_any_matches_when_one_color_present() {
@@ -449,7 +456,7 @@ mod tests {
         assert_eq!(result.len(), 1);
     }
 
-    // ── produced_mana_contains_all ──────────────────────────────────────────
+    // == produced_mana_contains_all ==
 
     #[test]
     fn test_produced_mana_contains_all_matches_when_all_colors_present() {
@@ -506,7 +513,7 @@ mod tests {
         assert_eq!(result.len(), 1);
     }
 
-    // ── text ──────────────────────────────────────────────────────────────────
+    // == text ==
 
     #[test]
     fn test_name_contains_case_insensitive() {
@@ -750,7 +757,7 @@ mod tests {
         assert_eq!(result[0].scryfall_data.name, "Shivan Dragon");
     }
 
-    // ── mana ──────────────────────────────────────────────────────────────────
+    // == mana ==
 
     #[test]
     fn test_cmc_equals() {
@@ -781,7 +788,7 @@ mod tests {
         assert_eq!(result.len(), 2);
     }
 
-    // ── color identity ─────────────────────────────────────────────────────────
+    // == color identity ==
 
     #[test]
     fn test_color_identity_equals_exact() {
@@ -812,7 +819,7 @@ mod tests {
         assert_eq!(result[0].scryfall_data.name, "Bolt");
     }
 
-    // ── combat ────────────────────────────────────────────────────────────────
+    // == combat ==
 
     #[test]
     fn test_power_equals() {
@@ -855,7 +862,7 @@ mod tests {
         assert_eq!(result[0].scryfall_data.name, "B");
     }
 
-    // ── flags ─────────────────────────────────────────────────────────────────
+    // == flags ==
 
     #[test]
     fn test_is_playable_filters_token_layout() {
@@ -875,7 +882,7 @@ mod tests {
         assert_eq!(result[0].scryfall_data.name, "Forest");
     }
 
-    // ── metadata ──────────────────────────────────────────────────────────────
+    // == metadata ==
 
     #[test]
     fn test_rarity_equals_any_single() {
@@ -911,17 +918,17 @@ mod tests {
     fn test_set_equals_any() {
         let mut m21_card = make_card("M21 Card");
         m21_card.scryfall_data.set_name = "m21".to_string();
-        let mut mh2_card = make_card("MH2 Card");
-        mh2_card.scryfall_data.set_name = "mh2".to_string();
+        let mut horizons_card = make_card("MH2 Card");
+        horizons_card.scryfall_data.set_name = "mh2".to_string();
         let filter = CardQueryBuilder::with_set_contains(["mh2"])
             .build_criteria()
             .unwrap();
-        let result = Cards::from(vec![m21_card, mh2_card]).matching(&filter);
+        let result = Cards::from(vec![m21_card, horizons_card]).matching(&filter);
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].scryfall_data.name, "MH2 Card");
     }
 
-    // ── sort ──────────────────────────────────────────────────────────────────
+    // == sort ==
 
     #[test]
     fn test_sorted_by_name_ascending() {

@@ -1,3 +1,5 @@
+//! Deck metadata handler.
+
 use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
@@ -14,15 +16,22 @@ impl From<GetDeckProfileError> for ApiError {
         use crate::inbound::http::To500;
 
         match value {
-            GetDeckProfileError::Database(e) => e.to_500(),
-            GetDeckProfileError::DeckProfileFromDb(e) => e.to_500(),
-            GetDeckProfileError::Forbidden => Self::NotFound("deck not found".to_string()),
-            GetDeckProfileError::NotFound => Self::NotFound("deck not found".to_string()),
+            GetDeckProfileError::Database(e) | GetDeckProfileError::DeckProfileFromDb(e) => {
+                e.to_500()
+            }
+            GetDeckProfileError::Forbidden | GetDeckProfileError::NotFound => {
+                Self::NotFound("deck not found".to_string())
+            }
         }
     }
 }
 
 /// Returns deck metadata with ownership verification.
+///
+/// # Errors
+///
+/// Returns 404 when the deck is missing or isn't the caller's, and 500 on a
+/// database failure.
 pub async fn get_deck_profile(
     user: AuthenticatedUser,
     State(state): State<AppState>,

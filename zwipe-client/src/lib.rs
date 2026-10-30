@@ -62,7 +62,10 @@ impl ZwipeClient {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-#[allow(clippy::expect_used)]
+#[expect(
+    clippy::expect_used,
+    reason = "a builder with only a timeout set has nothing to fail on"
+)]
 fn build_client() -> Client {
     Client::builder()
         .timeout(REQUEST_TIMEOUT)

@@ -12,14 +12,13 @@ use zwipe_core::domain::deck::deck_profile::DeckProfile;
 use zwipe_core::domain::deck::format::Format;
 use zwipe_core::domain::deck::requests::update_deck_profile::InvalidUpdateDeckProfile;
 use zwipe_core::domain::deck::{
-    Deck, DeckName, DeckOtherTag, DeckTagView, MAX_DECK_ORACLE_TAGS, PowerLevel, seed_oracle_tags,
-    seed_oracle_tags_from_catalog,
+    self, Deck, DeckName, DeckOtherTag, DeckTagView, MAX_DECK_ORACLE_TAGS, PowerLevel,
 };
 use zwipe_core::domain::user::models::hints::HINT_EDIT_DECK;
 use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
 use zwipe_core::http::helpers::Opdate;
 
-use super::components::deck_fields::{DeckFields, DeckFieldsHint, autofill_named_partner};
+use super::components::deck_fields::{self, DeckFields, DeckFieldsHint};
 use super::components::format_select::FormatSelect;
 use super::components::oracle_tag_select::OracleTagSelect;
 use super::components::skeletons::EditDeckSkeleton;
@@ -176,7 +175,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             oracle_tags.set(deck.deck_profile.oracle_tags.clone());
             // Seed contribution the saved deck tags account for, so the next
             // deck-tag reconcile drops exactly those and keeps manual picks.
-            applied_seed.set(seed_oracle_tags(&deck.deck_profile.tags));
+            applied_seed.set(deck::seed_oracle_tags(&deck.deck_profile.tags));
         }
     });
 
@@ -330,65 +329,60 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
 
     // Change tracking
     let deck_name_update = use_memo(move || {
-        if deck_name() != original_deck_name() {
-            Some(deck_name())
-        } else {
+        if deck_name() == original_deck_name() {
             None
+        } else {
+            Some(deck_name())
         }
     });
     let commander_id_update = use_memo(move || {
-        if commander() != original_commander() {
-            Opdate::Set(commander().map(|c| c.scryfall_data.id))
-        } else {
+        if commander() == original_commander() {
             Opdate::Unchanged
+        } else {
+            Opdate::Set(commander().map(|c| c.scryfall_data.id))
         }
     });
     let partner_id_update = use_memo(move || {
-        if partner_commander() != original_partner() {
-            Opdate::Set(partner_commander().map(|c| c.scryfall_data.id))
-        } else {
+        if partner_commander() == original_partner() {
             Opdate::Unchanged
+        } else {
+            Opdate::Set(partner_commander().map(|c| c.scryfall_data.id))
         }
     });
     let background_id_update = use_memo(move || {
-        if background() != original_background() {
-            Opdate::Set(background().map(|c| c.scryfall_data.id))
-        } else {
+        if background() == original_background() {
             Opdate::Unchanged
+        } else {
+            Opdate::Set(background().map(|c| c.scryfall_data.id))
         }
     });
     let signature_spell_id_update = use_memo(move || {
-        if signature_spell() != original_signature_spell() {
-            Opdate::Set(signature_spell().map(|c| c.scryfall_data.id))
-        } else {
+        if signature_spell() == original_signature_spell() {
             Opdate::Unchanged
+        } else {
+            Opdate::Set(signature_spell().map(|c| c.scryfall_data.id))
         }
     });
     let format_update = use_memo(move || {
-        if selected_format() != original_format() {
-            Opdate::Set(selected_format().map(|f| f.to_legality_key().to_string()))
-        } else {
+        if selected_format() == original_format() {
             Opdate::Unchanged
+        } else {
+            Opdate::Set(selected_format().map(|f| f.to_legality_key().to_string()))
         }
     });
     let tags_update = use_memo(move || {
-        if selected_tags() != original_tags() {
-            Opdate::Set(Some(
-                selected_tags()
-                    .iter()
-                    .map(|t| t.to_string())
-                    .collect::<Vec<_>>(),
-            ))
-        } else {
+        if selected_tags() == original_tags() {
             Opdate::Unchanged
+        } else {
+            Opdate::Set(Some(selected_tags()))
         }
     });
     let land_target_update = use_memo(move || {
-        if land_target() != original_land_target() {
+        if land_target() == original_land_target() {
+            Opdate::Unchanged
+        } else {
             // `None` here clears the override back to the heuristic.
             Opdate::Set(land_target())
-        } else {
-            Opdate::Unchanged
         }
     });
     let price_target_update = use_memo(move || {
@@ -397,44 +391,44 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             .parse()
             .ok()
             .filter(|v: &f64| *v > 0.0);
-        if cur != orig {
+        if cur == orig {
+            Opdate::Unchanged
+        } else {
             // Empty/zero parses to `None` → clears the budget.
             Opdate::Set(cur)
-        } else {
-            Opdate::Unchanged
         }
     });
     let price_currency_update = use_memo(move || {
-        if price_target_currency() != original_price_target_currency() {
-            Opdate::Set(Some(price_target_currency()))
-        } else {
+        if price_target_currency() == original_price_target_currency() {
             Opdate::Unchanged
+        } else {
+            Opdate::Set(Some(price_target_currency()))
         }
     });
     let power_level_update = use_memo(move || {
-        if power_level() != original_power_level() {
-            Opdate::Set(power_level().map(|p| p.to_string()))
-        } else {
+        if power_level() == original_power_level() {
             Opdate::Unchanged
+        } else {
+            Opdate::Set(power_level().map(|p| p.to_string()))
         }
     });
     let other_tags_update = use_memo(move || {
-        if other_tags() != original_other_tags() {
+        if other_tags() == original_other_tags() {
+            Opdate::Unchanged
+        } else {
             Opdate::Set(Some(
                 other_tags()
                     .iter()
-                    .map(|t| t.to_string())
+                    .map(ToString::to_string)
                     .collect::<Vec<_>>(),
             ))
-        } else {
-            Opdate::Unchanged
         }
     });
     let oracle_tags_update = use_memo(move || {
-        if oracle_tags() != original_oracle_tags() {
-            Opdate::Set(Some(oracle_tags()))
-        } else {
+        if oracle_tags() == original_oracle_tags() {
             Opdate::Unchanged
+        } else {
+            Opdate::Set(Some(oracle_tags()))
         }
     });
     let has_made_changes = use_memo(move || {
@@ -582,7 +576,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                 mode: commander_mode,
                 on_select: move |card: Card| {
                     commander_display.set(card.scryfall_data.name.clone());
-                    autofill_named_partner(
+                    deck_fields::autofill_named_partner(
                         &card,
                         client,
                         session,
@@ -594,7 +588,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                     commander.set(Some(card));
                     show_commander_swipe.set(false);
                 },
-                on_close: move |_| show_commander_swipe.set(false),
+                on_close: move |()| show_commander_swipe.set(false),
             }
             SwipeSelect {
             host_screen: screen::DECK_EDIT,
@@ -605,7 +599,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                     partner_commander.set(Some(card));
                     show_partner_swipe.set(false);
                 },
-                on_close: move |_| show_partner_swipe.set(false),
+                on_close: move |()| show_partner_swipe.set(false),
             }
             SwipeSelect {
             host_screen: screen::DECK_EDIT,
@@ -616,7 +610,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                     background.set(Some(card));
                     show_background_swipe.set(false);
                 },
-                on_close: move |_| show_background_swipe.set(false),
+                on_close: move |()| show_background_swipe.set(false),
             }
             SwipeSelect {
             host_screen: screen::DECK_EDIT,
@@ -627,21 +621,21 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                     signature_spell.set(Some(card));
                     show_signature_spell_swipe.set(false);
                 },
-                on_close: move |_| show_signature_spell_swipe.set(false),
+                on_close: move |()| show_signature_spell_swipe.set(false),
             }
 
             TagSelect {
                 open: show_tags_select,
                 selected_tags,
                 catalog: deck_tags_catalog().unwrap_or_default(),
-                on_close: move |_| {
+                on_close: move |()| {
                     show_tags_select.set(false);
                     // Reconcile seeded oracle tags with the final deck-tag set:
                     // drop the previous seed contribution, add the new one, keep
                     // manual picks. Cap at MAX; toast if anything was auto-added.
                     // Seed from the server catalog so a newly-served tag's otags
                     // apply without a client release; empty catalog seeds nothing.
-                    let new_seed = seed_oracle_tags_from_catalog(
+                    let new_seed = deck::seed_oracle_tags_from_catalog(
                         &selected_tags(),
                         &deck_tags_catalog().unwrap_or_default(),
                     );
@@ -671,7 +665,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             OracleTagSelect {
                 open: show_oracle_tags_select,
                 selected: oracle_tags,
-                on_close: move |_| show_oracle_tags_select.set(false),
+                on_close: move |()| show_oracle_tags_select.set(false),
             }
 
             FormatSelect {
@@ -686,15 +680,15 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                         signature_spell_display.set(String::new());
                     }
                 },
-                on_clear: move |_| {
+                on_clear: move |()| {
                     selected_format.set(None);
                     commander.set(None);
                     commander_display.set(String::new());
                     signature_spell.set(None);
                     signature_spell_display.set(String::new());
                 },
-                on_close: move |_| show_format_select.set(false),
-                on_cancel: move |_| {
+                on_close: move |()| show_format_select.set(false),
+                on_cancel: move |()| {
                     let (f, c, cd, ss, ssd) = fmt_snapshot();
                     selected_format.set(f);
                     commander.set(c);

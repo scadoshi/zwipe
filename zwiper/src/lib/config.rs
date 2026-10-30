@@ -3,8 +3,6 @@
 //! Loads compile-time environment variables baked in by `build.rs`. Values are
 //! fixed per build, so every device running a given binary sees the same ones.
 
-#![allow(clippy::unwrap_used)]
-
 use std::str::FromStr;
 
 use anyhow::Context;
@@ -19,7 +17,7 @@ const RUST_BACKTRACE: &str = env!("RUST_BACKTRACE");
 /// # Build-Time Configuration
 ///
 /// These values are baked into the WASM binary at compile time using `env!()` macro:
-/// - `BACKEND_URL`: API server URL (e.g., "http://localhost:3000")
+/// - `BACKEND_URL`: API server URL (e.g., `http://localhost:3000`)
 /// - `RUST_LOG`: Tracing directive (e.g., "info" or "info,zwiper=debug"),
 ///   parsed by `tracing_subscriber::EnvFilter` at startup.
 /// - `RUST_BACKTRACE`: Backtrace configuration ("0", "1", "full")
@@ -52,9 +50,13 @@ impl Config {
     /// rather than anything a user can trigger: the value is identical in every
     /// copy of a given binary, so a bad one fails on the first launch of any
     /// build rather than for some users and not others.
+    #[expect(
+        clippy::unwrap_used,
+        reason = "build.rs checks BACKEND_URL, so a parse failure is a build bug"
+    )]
     pub fn from_env() -> Self {
         let backend_url = Url::from_str(BACKEND_URL)
-            .context(format!("invalid url in BACKEND_URL: {}", BACKEND_URL))
+            .context(format!("invalid url in BACKEND_URL: {BACKEND_URL}"))
             .unwrap();
 
         let rust_log = RUST_LOG.to_string();

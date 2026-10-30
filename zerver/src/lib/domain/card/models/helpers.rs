@@ -19,10 +19,8 @@ pub trait SleeveScryfallData {
 
 impl SleeveScryfallData for Vec<ScryfallData> {
     fn sleeve(self, card_profiles: Vec<CardProfile>) -> Vec<Card> {
-        let mut data_map: HashMap<Uuid, ScryfallData> = self
-            .into_iter()
-            .map(|sfd| (sfd.id.to_owned(), sfd))
-            .collect();
+        let mut data_map: HashMap<Uuid, ScryfallData> =
+            self.into_iter().map(|sfd| (sfd.id, sfd)).collect();
 
         card_profiles
             .into_iter()

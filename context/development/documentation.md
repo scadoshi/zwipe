@@ -42,7 +42,8 @@ Documentation should add information that cannot be inferred from well-chosen na
 
 5. **Public APIs**
    - All public modules, functions, types, and traits need doc comments
-   - Explain purpose, parameters, return values, and errors
+   - Explain purpose, parameters and return values
+   - A function that returns `Result` gets an `# Errors` section saying when it fails
 
 ---
 
@@ -53,7 +54,7 @@ Documentation should add information that cannot be inferred from well-chosen na
 1. **Self-explanatory domain concepts**
    ```rust
    /// Magic: The Gathering's five colors.
-   #[allow(missing_docs)]
+   #[expect(missing_docs, reason = "the variants are the color names")]
    pub enum Color {
        White,  // ❌ Don't add: /// The white color.
        Blue,   // ❌ Don't add: /// The blue color.
@@ -86,16 +87,16 @@ Documentation should add information that cannot be inferred from well-chosen na
 
 ---
 
-## Using `#[allow(missing_docs)]`
+## Using `#[expect(missing_docs)]`
 
-Apply `#[allow(missing_docs)]` strategically **at the container level** when all contained items are self-documenting.
+Apply `#[expect(missing_docs, reason = "...")]` **at the container level** when all contained items are self-documenting. Never `#[allow]`: an expect fails the build once the docs exist, so stale suppressions don't pile up.
 
 ### ✅ Good Use Cases
 
 **Domain enums with obvious variants:**
 ```rust
 /// Card rarity classification in Magic: The Gathering.
-#[allow(missing_docs)]
+#[expect(missing_docs, reason = "the variants are the rarity names")]
 pub enum Rarity {
     Common,
     Uncommon,
@@ -155,7 +156,7 @@ Use container-level docs for architectural notes:
 ```rust
 /// raw database deck record
 /// (unvalidated data from `PostgreSQL`)
-#[allow(missing_docs)]
+#[expect(missing_docs, reason = "each field mirrors the column it is read from")]
 #[derive(Debug, Clone, FromRow)]
 pub struct DatabaseDeckProfile { /* primitive fields only */ }
 ```
@@ -176,7 +177,7 @@ The note that earns its place here is *why the wrapper exists at all*: `FromRow`
 2. Does this doc add information beyond the name and type?
 3. Would I want to read this doc, or would it feel like clutter?
 
-If you answer "no" to all three, consider using `#[allow(missing_docs)]` or improving the naming instead of adding docs.
+If you answer "no" to all three, consider `#[expect(missing_docs, reason = "...")]` or improving the naming instead of adding docs.
 
 ---
 
@@ -210,9 +211,9 @@ Document the semantic meaning of empty/special states.
 |----------|--------|
 | External API fields | ✅ Document all with API semantics |
 | Non-obvious behavior | ✅ Document the surprise |
-| Domain-specific enums (MTG colors/rarities) | ✅ Container doc + `#[allow(missing_docs)]` |
+| Domain-specific enums (MTG colors/rarities) | ✅ Container doc + `#[expect(missing_docs, reason)]` |
 | Public APIs | ✅ Always document |
-| Self-explanatory getters | ❌ Skip or use `#[allow(missing_docs)]` |
+| Self-explanatory getters | ❌ Skip, or `#[expect(missing_docs, reason)]` on the container |
 | Restating the obvious | ❌ Never do this |
 
 **Golden Rule:** If documentation makes you think "well, obviously," it's probably noise. If it makes you think "oh, I didn't know that," it's valuable signal.

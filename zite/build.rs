@@ -1,6 +1,12 @@
-#![allow(clippy::expect_used)]
+//! Build script: checks `GUIDE_SLUGS` against the guides in `src/pages/guides/content.rs`
+//! and writes `public/sitemap.xml`.
 
-/// Public base URL — must match the release `WEB_BASE` in zwipe-core's
+#![expect(
+    clippy::expect_used,
+    reason = "a build script fails the build by panicking"
+)]
+
+/// Public base URL. Must match the release `WEB_BASE` in zwipe-core's
 /// `domain::site` (build scripts can't import the lib, so this is the one
 /// mirrored literal).
 const WEB_BASE: &str = "https://zwipe.net";
@@ -8,7 +14,7 @@ const WEB_BASE: &str = "https://zwipe.net";
 /// Every prerendered, indexable route with its sitemap hints. Kept here as the
 /// single source of truth so `public/sitemap.xml` can't drift from the routes
 /// the way a hand-edited file does. Dynamic routes (`/verify/:token`, `/confirm-email/:token`,
-/// `/reset/:token`) are excluded — they're `Disallow`ed in robots.txt.
+/// `/reset/:token`) are excluded: robots.txt `Disallow`s them.
 /// `(path, changefreq, priority)`.
 const ROUTES: &[(&str, &str, &str)] = &[
     ("/", "weekly", "1.0"),
@@ -24,8 +30,7 @@ const ROUTES: &[(&str, &str, &str)] = &[
 
 /// Guide article slugs, each rendered at `/guides/<slug>` by `GuidePage`.
 /// Checked against `GUIDES` in `src/pages/guides/content.rs` at build time by
-/// [`assert_guide_slugs_match`], so a new guide can't quietly miss the sitemap
-/// the way three of them did before 2026-08-18.
+/// [`assert_guide_slugs_match`], so a new guide can't quietly miss the sitemap.
 const GUIDE_SLUGS: &[&str] = &[
     "getting-started",
     "swipe-to-build",
@@ -86,23 +91,29 @@ fn assert_guide_slugs_match() {
 }
 
 fn generate_sitemap() {
+    use std::fmt::Write as _;
+
     let mut xml = String::from(
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
          <urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n",
     );
     for (path, changefreq, priority) in ROUTES {
-        xml.push_str(&format!(
+        write!(
+            xml,
             "  <url>\n    <loc>{WEB_BASE}{path}</loc>\n    \
              <changefreq>{changefreq}</changefreq>\n    \
              <priority>{priority}</priority>\n  </url>\n",
-        ));
+        )
+        .expect("writing to a String cannot fail");
     }
     for slug in GUIDE_SLUGS {
-        xml.push_str(&format!(
+        write!(
+            xml,
             "  <url>\n    <loc>{WEB_BASE}/guides/{slug}</loc>\n    \
              <changefreq>monthly</changefreq>\n    \
              <priority>0.6</priority>\n  </url>\n",
-        ));
+        )
+        .expect("writing to a String cannot fail");
     }
     xml.push_str("</urlset>\n");
 

@@ -52,29 +52,89 @@ features = [
     "serde",
 ]
 
+# scadoshi-rust lints, from scadoshi-rust/lints/lints.toml. Every member opts
+# in with `[lints] workspace = true`. Thresholds live in clippy.toml.
+#
+# CI makes warnings errors: cargo clippy --all-targets -- -D warnings
+# Silence a lint on one item, with a reason:
+#     #[expect(clippy::as_conversions, reason = "u8 to char is lossless here")]
+
+[workspace.lints.rust]
+unsafe_op_in_unsafe_fn = "deny"
+missing_docs = "warn"
+missing_debug_implementations = "warn"
+unreachable_pub = "warn"
+rust_2018_idioms = { level = "warn", priority = -1 }
+
 [workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+
+# Pedantic lints that cost more than they catch.
+module_name_repetitions = "allow"
+# Library crates flip this to "warn": builders and pure functions get #[must_use].
+must_use_candidate = "allow"
+
+# Docs: # Errors and # Panics sections everywhere.
+missing_errors_doc = "warn"
+missing_panics_doc = "warn"
+
+# Never ship.
+todo = "deny"
+dbg_macro = "deny"
+unimplemented = "deny"
+
+# No panics outside tests (clippy.toml allows them inside tests).
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+indexing_slicing = "deny"
+panic_in_result_fn = "deny"
+exit = "deny"
+
+# Suppressions are #[expect] with a reason, so stale ones surface.
+allow_attributes = "warn"
+allow_attributes_without_reason = "warn"
+
+# Unsafe explains itself, one operation per block.
+undocumented_unsafe_blocks = "deny"
+multiple_unsafe_ops_per_block = "warn"
+
+# Casts and arithmetic that can silently lose information: as_conversions
+# and arithmetic_side_effects, in the phase 2 block below.
+
+# API shape.
+fn_params_excessive_bools = "warn"
+struct_excessive_bools = "warn"
 clone_on_ref_ptr = "warn"
-dbg_macro = "warn"
-expect_used = "warn"
-indexing_slicing = "warn"
-inefficient_to_string = "warn"
-large_enum_variant = "warn"
-needless_borrow = "warn"
-needless_collect = "warn"
-needless_range_loop = "warn"
-or_fun_call = "warn"
-panic = "warn"
-print_stderr = "warn"
-print_stdout = "warn"
-redundant_clone = "warn"
-single_char_pattern = "warn"
-todo = "warn"
 too_many_arguments = "warn"
-type_complexity = "warn"
-unnecessary_to_owned = "warn"
+large_enum_variant = "warn"
+redundant_clone = "warn"
+needless_collect = "warn"
+or_fun_call = "warn"
 unnecessary_wraps = "warn"
 unused_async = "warn"
-unwrap_used = "warn"
+
+# Logging goes through tracing; a CLI's own output takes an #[expect].
+print_stdout = "warn"
+print_stderr = "warn"
+
+# Phase 2 turns these on as their findings are fixed; each line names how
+# many remain. The lint set's level for each is in brackets.
+arithmetic_side_effects = "allow"   # 241 remain [warn]
+as_conversions = "allow"            # 83 remain [warn]
+cast_possible_truncation = "allow"  # 28 remain [pedantic warn]
+cast_precision_loss = "allow"       # 19 remain [pedantic warn]
+cast_possible_wrap = "allow"        # 16 remain [pedantic warn]
+cast_lossless = "allow"             # 14 remain [pedantic warn]
+cast_sign_loss = "allow"            # 8 remain [pedantic warn]
+unreachable = "allow"               # 5 remain [deny]
+needless_pass_by_value = "allow"    # 3 remain [pedantic warn]
+string_slice = "allow"              # 2 remain [deny]
+match_same_arms = "allow"           # 2 remain [pedantic warn]
+too_many_lines = "allow"            # 2 remain [pedantic warn]
+many_single_char_names = "allow"    # 2 remain [pedantic warn]
+unchecked_time_subtraction = "allow" # 1 remains [pedantic warn]
 
 [profile.android-dev]
 inherits = "dev"

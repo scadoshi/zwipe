@@ -97,7 +97,7 @@ pub struct TooFewUniqueChars(u8);
 /// Required symbols for password policy.
 ///
 /// At least one of these characters must be present in every password.
-pub const SYMBOLS: &str = r#"~!@#$%^&*()_+=[]{}\/?|:;<>,."#;
+pub const SYMBOLS: &str = r"~!@#$%^&*()_+=[]{}\/?|:;<>,.";
 
 /// Fewest characters a password may have.
 pub const MIN_LENGTH: usize = 8;
@@ -114,6 +114,7 @@ pub const MAX_REPEATS: u8 = 3;
 /// The policy as lines a client can show before the user types, one per rule
 /// [`validate`] checks, in the order it checks them. Built from the same
 /// constants, so the list cannot drift from what is enforced.
+#[must_use]
 pub fn requirements() -> Vec<String> {
     vec![
         format!("{MIN_LENGTH} to {MAX_LENGTH} characters"),
@@ -134,6 +135,11 @@ pub fn requirements() -> Vec<String> {
 /// Returns `Ok(())` if all requirements are met, or an `Err(InvalidPassword)`
 /// indicating the first requirement that failed.
 ///
+/// # Errors
+///
+/// Returns the [`InvalidPassword`] variant for the first rule `password`
+/// breaks, checked in the order [`requirements`] lists them.
+///
 /// # Example
 ///
 /// ```
@@ -149,19 +155,19 @@ pub fn validate(password: &str) -> Result<(), InvalidPassword> {
     if password.len() > MAX_LENGTH {
         return Err(InvalidPassword::TooLong);
     }
-    if !password.chars().any(|x| x.is_uppercase()) {
+    if !password.chars().any(char::is_uppercase) {
         return Err(InvalidPassword::MissingUpperCase);
     }
-    if !password.chars().any(|x| x.is_lowercase()) {
+    if !password.chars().any(char::is_lowercase) {
         return Err(InvalidPassword::MissingLowerCase);
     }
-    if !password.chars().any(|x| x.is_numeric()) {
+    if !password.chars().any(char::is_numeric) {
         return Err(InvalidPassword::MissingNumber);
     }
     if !password.chars().any(|x| SYMBOLS.contains(x)) {
         return Err(InvalidPassword::MissingSymbol(SYMBOLS.to_string()));
     }
-    if password.chars().any(|x| x.is_whitespace()) {
+    if password.chars().any(char::is_whitespace) {
         return Err(InvalidPassword::ContainsWhitespace);
     }
 
@@ -179,7 +185,8 @@ pub fn validate(password: &str) -> Result<(), InvalidPassword> {
         }
         if let Some(last_char) = last_char_opt {
             if ch == last_char {
-                repeat_count += 1;
+                // Tops out at MAX_REPEATS + 1: the check below returns there.
+                repeat_count = repeat_count.saturating_add(1);
                 if repeat_count > MAX_REPEATS {
                     return Err(TooManyRepeats(MAX_REPEATS).into());
                 }

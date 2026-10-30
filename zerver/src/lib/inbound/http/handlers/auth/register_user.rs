@@ -1,3 +1,5 @@
+//! Registration handler.
+
 use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
@@ -61,8 +63,7 @@ impl From<RegisterUserError> for ApiError {
             RegisterUserError::UsernameTaken => {
                 Self::Conflict("username already taken".to_string())
             }
-            RegisterUserError::Database(e) => e.to_500(),
-            RegisterUserError::UserFromDb(e) => e.to_500(),
+            RegisterUserError::Database(e) | RegisterUserError::UserFromDb(e) => e.to_500(),
         }
     }
 }
@@ -71,13 +72,13 @@ impl From<InvalidRegisterUser> for ApiError {
     fn from(value: InvalidRegisterUser) -> Self {
         match value {
             InvalidRegisterUser::Username(e) => {
-                Self::UnprocessableEntity(format!("invalid username: {}", e))
+                Self::UnprocessableEntity(format!("invalid username: {e}"))
             }
             InvalidRegisterUser::Email(e) => {
-                Self::UnprocessableEntity(format!("invalid email: {}", e))
+                Self::UnprocessableEntity(format!("invalid email: {e}"))
             }
             InvalidRegisterUser::Password(e) => {
-                Self::UnprocessableEntity(format!("invalid password: {}", e))
+                Self::UnprocessableEntity(format!("invalid password: {e}"))
             }
             InvalidRegisterUser::FailedPasswordHash(e) => e.to_500(),
         }
@@ -95,6 +96,11 @@ impl TryFrom<HttpRegisterUser> for RegisterUser {
 ///
 /// Answers `202` and the same body whether the email is new or already has an
 /// account; the caller logs in afterwards.
+///
+/// # Errors
+///
+/// Returns 422 for an invalid username, email or password, 409 when the
+/// username is taken, and 500 on a database failure.
 pub async fn register_user(
     State(state): State<AppState>,
     Json(body): Json<HttpRegisterUser>,

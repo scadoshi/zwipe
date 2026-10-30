@@ -12,7 +12,7 @@ pub fn FormatFilter() -> Element {
     rsx! {
         div { class: "flex-col gap-half",
 
-            // ── Commander Eligibility ──────────────────────────────
+            // == Commander Eligibility ==
             div { class: "label-row mt-2",
                 label { class: "label-xs", "Is commander in" }
                 if filter_builder().is_commander_in_format().is_some() {
@@ -53,7 +53,7 @@ pub fn FormatFilter() -> Element {
                 }
             }
 
-            // ── Format Legality ───────────────────────────────────
+            // == Format Legality ==
             div { class: "label-row mt-2",
                 label { class: "label-xs", "Is legal in" }
                 if filter_builder().legalities_contains_any().is_some() {
@@ -81,7 +81,7 @@ pub fn FormatFilter() -> Element {
                         onclick: move |_| {
                             let mut current = filter_builder()
                                 .legalities_contains_any()
-                                .map(|v| v.to_vec())
+                                .map(<[_]>::to_vec)
                                 .unwrap_or_default();
 
                             let key = fmt.to_legality_key().to_string();

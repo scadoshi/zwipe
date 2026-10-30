@@ -1,10 +1,12 @@
+//! The Account email row: the address, its verification badge and the resend actions.
+
 use std::time::Duration;
 
 use chrono::{DateTime, Utc};
 use components::{Button, ButtonVariant, TOAST_LONG, TOAST_NORMAL};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use tokio::time::sleep;
+use tokio::time;
 use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_core::domain::auth::models::session::Session;
 
@@ -17,6 +19,9 @@ use crate::inbound::components::telemetry::vocabulary::{ProfileScreen, Screen, c
 /// resend-verification rate-limit window (burst 1, then 1/60s per user) so the
 /// visible countdown and the 429 window agree.
 const RESEND_COOLDOWN_SECS: u32 = 60;
+
+const SECS_PER_MINUTE: i64 = 60;
+const MINUTES_PER_HOUR: i64 = 60;
 
 /// Email display line: address, verified/unverified badge, and the Change
 /// button. Verification actions live in [`VerificationActions`], rendered as
@@ -65,14 +70,14 @@ fn link_expiry_text(expires_at: DateTime<Utc>, now: DateTime<Utc>) -> String {
     if left <= chrono::Duration::zero() {
         return "Link expired; tap Change to send a new one".to_string();
     }
-    let minutes = (left.num_seconds() + 59) / 60;
-    if minutes < 60 {
+    let minutes = (left.num_seconds() + SECS_PER_MINUTE - 1) / SECS_PER_MINUTE;
+    if minutes < MINUTES_PER_HOUR {
         return match minutes {
             1 => "Link expires in 1 minute".to_string(),
             n => format!("Link expires in {n} minutes"),
         };
     }
-    match (minutes + 30) / 60 {
+    match (minutes + MINUTES_PER_HOUR / 2) / MINUTES_PER_HOUR {
         1 => "Link expires in 1 hour".to_string(),
         n => format!("Link expires in {n} hours"),
     }
@@ -148,7 +153,7 @@ pub(crate) fn VerificationActions() -> Element {
                     is_resending.set(false);
                     // Drive the visible countdown to zero.
                     while *cooldown.peek() > 0 {
-                        sleep(Duration::from_secs(1)).await;
+                        time::sleep(Duration::from_secs(1)).await;
                         let remaining = *cooldown.peek();
                         cooldown.set(remaining.saturating_sub(1));
                     }

@@ -2,7 +2,7 @@
 //!
 //! The file is a JSON array of tag objects; each carries its metadata plus the
 //! list of cards (`taggings`) that hold it. We invert this at ingest into a
-//! normalized `card_otags` (oracle_id -> otag) correlation. See
+//! normalized `card_otags` (`oracle_id` -> otag) correlation. See
 //! `context/plans/otags/` for the wider design.
 
 use serde::Deserialize;
@@ -83,8 +83,8 @@ mod tests {
             r#"{ "id": "00155182-3099-4742-be68-f8b4ea259d78", "slug": "ramp", "label": "Ramp" }"#;
         let tag: OracleTag = serde_json::from_str(json).unwrap();
         assert!(tag.description.is_none());
-        assert!(tag.parent_ids.is_empty());
-        assert!(tag.aliases.is_empty());
+        assert_eq!(tag.parent_ids, Vec::<Uuid>::new());
+        assert_eq!(tag.aliases, Vec::<String>::new());
         assert!(tag.taggings.is_empty());
     }
 }

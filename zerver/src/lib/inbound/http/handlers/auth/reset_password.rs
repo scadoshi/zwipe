@@ -1,3 +1,5 @@
+//! Password reset completion handler.
+
 use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
@@ -22,6 +24,11 @@ impl From<ResetPasswordError> for ApiError {
 /// Completes the password reset flow using a one-time token.
 ///
 /// Revokes all existing sessions after a successful reset.
+///
+/// # Errors
+///
+/// Returns 422 for a weak password, 401 for an unknown or expired token, and
+/// 500 on a database failure.
 pub async fn reset_password(
     State(state): State<AppState>,
     Json(body): Json<HttpResetPassword>,

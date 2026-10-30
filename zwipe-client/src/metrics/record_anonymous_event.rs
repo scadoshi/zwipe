@@ -7,6 +7,11 @@ use crate::{ClientError, ZwipeClient};
 
 impl ZwipeClient {
     /// Posts a pre-auth funnel event.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`ClientError`] when the request fails to complete, the server answers with an
+    /// error status, or the reply doesn't decode.
     pub async fn record_anonymous_event(
         &self,
         event: &HttpAnonymousEvent,

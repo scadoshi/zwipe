@@ -41,6 +41,7 @@ impl Secret {
     ///
     /// The only way past the redacted formatters. Use it for verification and
     /// hashing, never for logging or an API response.
+    #[must_use]
     pub fn read(&self) -> &str {
         &self.0
     }
@@ -70,7 +71,6 @@ impl Display for Secret {
 
 #[cfg(test)]
 mod tests {
-    #![allow(clippy::unwrap_used)]
     use super::*;
 
     /// Catches a re-derived `Debug` or `Display`, either of which prints the
@@ -101,6 +101,10 @@ mod tests {
         struct New {
             password: Secret,
         }
+        #[derive(Deserialize)]
+        struct Incoming {
+            password: Secret,
+        }
 
         let old = serde_json::to_string(&Old {
             password: "hunter2".to_string(),
@@ -112,10 +116,6 @@ mod tests {
         .unwrap();
         assert_eq!(old, new);
 
-        #[derive(Deserialize)]
-        struct Incoming {
-            password: Secret,
-        }
         let from_shipped_client = r#"{"password":"hunter2"}"#;
         let parsed: Incoming = serde_json::from_str(from_shipped_client).unwrap();
         assert_eq!(parsed.password.read(), "hunter2");

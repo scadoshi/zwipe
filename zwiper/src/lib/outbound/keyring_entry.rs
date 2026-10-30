@@ -10,10 +10,9 @@
 //! (`keyring::Error` is a re-export of `keyring_core::Error`), so callers
 //! don't cfg.
 //!
-//! Continuity: the protected store keys items as generic passwords by
-//! (service, account) via the same Security-framework calls the keyring-3 iOS
-//! backend used, so sessions written by 1.7.5 stay readable after upgrade;
-//! the iOS sibling of the keyring-3→4 macOS bridge proof (2026-08-06).
+//! The protected store keys items as generic passwords by (service, account)
+//! through the same Security-framework calls existing installs wrote with, so
+//! their stored sessions stay readable.
 
 #[cfg(not(target_os = "ios"))]
 pub use keyring::Entry;
@@ -22,6 +21,10 @@ pub use keyring_core::Entry;
 
 /// Opens the entry for `(service, user)`, installing the iOS store first if
 /// this is the process's first use.
+///
+/// # Errors
+///
+/// Fails when the platform store cannot open the entry.
 pub fn entry(service: &str, user: &str) -> Result<Entry, keyring::Error> {
     #[cfg(target_os = "ios")]
     {

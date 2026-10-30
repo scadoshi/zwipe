@@ -1,13 +1,11 @@
-//! Phase 5 (otags): the generalized-context per-otag signal — the cross-format
-//! moat dataset, shipped dark. An add-stack usage batch must credit
+//! The generalized-context per-otag signal, the cross-format moat dataset,
+//! shipped dark. An add-stack usage batch must credit
 //! `otag_context_signal`, one row per OTAG OF THE SWIPED CARD, keyed by the
 //! deck's generalized context, derived server-side from `deck_id`: the deck's
 //! commander, or its `(format, color identity)` for a non-Commander deck.
-//! Nothing about otags, commander, or format/CI is on the wire (Phase 5S step 3).
+//! Nothing about otags, commander, or format/CI is on the wire.
 //!
 //! Requires `DATABASE_URL`: `set -a; source zerver/.env; set +a`.
-
-#![allow(clippy::unwrap_used, clippy::indexing_slicing)]
 
 use zwipe_core::http::paths::{DECK_ROUTE, RECORD_USAGE_ROUTE};
 mod common;
@@ -19,8 +17,8 @@ use uuid::Uuid;
 
 #[sqlx::test]
 async fn legacy_commander_field_credits_no_otag_rows(pool: sqlx::PgPool) {
-    // Phase 5S step 3: the legacy client-sent commander no longer keys the otag
-    // context — only the deck-derived commander does. A straggler payload
+    // The old client-sent commander does not key the otag context; only the
+    // deck-derived commander does. A straggler payload
     // carrying the old field (and no deck_id) is accepted but credits nothing.
     let app = TestApp::new(pool.clone());
     let (token, _) = app.register("edh").await;
@@ -165,7 +163,7 @@ async fn commander_deck_derives_commander_from_deck_id(pool: sqlx::PgPool) {
         .await
         .unwrap();
 
-    // deck_id only — commander_oracle_id is omitted (→ None).
+    // `deck_id` only: `commander_oracle_id` is omitted (so `None`).
     let (status, _) = app
         .post(
             RECORD_USAGE_ROUTE,
@@ -300,7 +298,7 @@ async fn rollup_refresh_computes_net_and_shown(pool: sqlx::PgPool) {
     // The nightly zervice refresh condenses the raw tallies into the
     // serving-ready rollup: net = added + 0.5*maybed - removed, shown = SUM.
     // Base-table crediting is covered above; this guards the condensing step
-    // itself — the numbers Phase 6 will trust.
+    // itself, the numbers the serve will trust.
     use zwipe::domain::card::ports::CardRepository;
     use zwipe::outbound::sqlx::postgres::Postgres;
 

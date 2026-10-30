@@ -11,7 +11,7 @@ use std::collections::BTreeMap;
 
 use dioxus::prelude::*;
 use zwipe_core::domain::deck::deck_metrics::ManaBalanceRow;
-use zwipe_core::domain::deck::draw_odds::p_at_least_one;
+use zwipe_core::domain::deck::draw_odds;
 
 use crate::role_tags::RoleTags;
 
@@ -498,7 +498,7 @@ pub fn DrawOdds(
     let rows = buckets.iter().map(|(label, k)| {
         (
             *label,
-            (p_at_least_one(deck_size, *k, draws) * 100.0).round() as u32,
+            (draw_odds::p_at_least_one(deck_size, *k, draws) * 100.0).round() as u32,
         )
     });
     rsx! {

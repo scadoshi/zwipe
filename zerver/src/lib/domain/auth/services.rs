@@ -39,13 +39,28 @@ use crate::domain::email::models::SendEmail;
 use crate::domain::email::ports::EmailSender;
 use crate::domain::user::ports::UserRepository;
 
+/// Random bytes in a verify, reset or email change token, before hex encoding.
+const TOKEN_BYTES: usize = 32;
+
+/// How long an email verification link stays valid.
+const VERIFY_EMAIL_LINK_LIFETIME: Duration = Duration::hours(24);
+
+/// How long an email change confirmation link stays valid.
+const EMAIL_CHANGE_LINK_LIFETIME: Duration = Duration::hours(24);
+
+/// How long a password reset link stays valid.
+const PASSWORD_RESET_LINK_LIFETIME: Duration = Duration::minutes(15);
+
 /// A throwaway Argon2 hash used to equalize login timing for non-existent
 /// accounts. Generated lazily with the same default Argon2 params as real
 /// hashes, so verifying against it costs the same as verifying a real one. It
 /// never matches any input; its only job is to burn equivalent CPU so a
 /// missing account isn't measurably faster to reject than a real one with a
 /// wrong password (which would leak whether the account exists: enumeration).
-#[allow(clippy::expect_used)]
+#[expect(
+    clippy::expect_used,
+    reason = "a fixed literal that meets the password policy; a unit test forces it"
+)]
 static TIMING_EQUALIZER_HASH: LazyLock<HashedPassword> = LazyLock::new(|| {
     Password::new("Zw1pe!Dummy#Hash7")
         .expect("timing-equalizer dummy password must satisfy the password policy")
@@ -56,21 +71,16 @@ static TIMING_EQUALIZER_HASH: LazyLock<HashedPassword> = LazyLock::new(|| {
 /// Authentication service implementation handling user registration, login, and session management.
 ///
 /// This service orchestrates authentication operations by coordinating between:
-/// - **AuthRepository**: Password hashing, refresh token rotation, credential updates
-/// - **UserRepository**: User data retrieval
-/// - **EmailSender**: Transactional email delivery (verification, password reset)
+/// - **[`AuthRepository`]**: Password hashing, refresh token rotation, credential updates
+/// - **[`UserRepository`]**: User data retrieval
+/// - **[`EmailSender`]**: Transactional email delivery (verification, password reset)
 /// - **JWT Secret**: Access token generation
 ///
 /// # Authorization Pattern
 /// Operations that modify user data (change username/email/password, delete user)
 /// require password re-authentication for security, even with a valid session.
 #[derive(Debug, Clone)]
-pub struct Service<AR, UR, ES>
-where
-    AR: AuthRepository,
-    UR: UserRepository,
-    ES: EmailSender,
-{
+pub struct Service<AR, UR, ES> {
     auth_repo: AR,
     user_repo: UR,
     email_sender: ES,
@@ -197,9 +207,11 @@ where
         &self,
         request: &AuthenticateUser,
     ) -> Result<User, AuthenticateUserError> {
-        let user_with_password_hash = self.auth_repo.get_user_with_password_hash(request).await?;
-        let password_hash = user_with_password_hash.password_hash.clone();
-        let user: User = user_with_password_hash.into();
+        let (user, password_hash) = self
+            .auth_repo
+            .get_user_with_password_hash(request)
+            .await?
+            .into_parts();
 
         let verified = password_hash
             .verify(request.password.read())
@@ -230,7 +242,7 @@ fn escape_html(value: &str) -> String {
 /// 32 random bytes → hex-encode → raw token sent to client.
 /// SHA-256 hash of raw → stored in database.
 fn generate_hex_token() -> (String, String) {
-    let mut bytes = [0u8; 32];
+    let mut bytes = [0u8; TOKEN_BYTES];
     rand::rng().fill_bytes(&mut bytes);
     let raw = hex::encode(bytes);
     let hash = hex::encode(sha2::Sha256::digest(raw.as_bytes()));
@@ -325,9 +337,7 @@ where
             return Err(AuthenticateUserError::AccountLocked);
         }
 
-        let password_hash = user_with_password_hash.password_hash.clone();
-
-        let user: User = user_with_password_hash.into();
+        let (user, password_hash) = user_with_password_hash.into_parts();
 
         let verified = password_hash
             .verify(request.password.read())
@@ -475,7 +485,7 @@ where
         let mut user = self.verify_password(&request.into()).await?;
 
         let (raw, hash) = generate_hex_token();
-        let expires_at = Utc::now() + Duration::hours(24);
+        let expires_at = Utc::now() + EMAIL_CHANGE_LINK_LIFETIME;
         self.auth_repo
             .store_email_change_request(user.id, &request.email, hash, expires_at)
             .await?;
@@ -543,7 +553,7 @@ where
             .await?;
 
         let (raw, hash) = generate_hex_token();
-        let expires_at = Utc::now() + Duration::hours(24);
+        let expires_at = Utc::now() + VERIFY_EMAIL_LINK_LIFETIME;
 
         self.auth_repo
             .store_email_verification_token(user_id, hash, expires_at)
@@ -590,13 +600,10 @@ where
         &self,
         request: &RequestPasswordReset,
     ) -> Result<(), RequestPasswordResetError> {
-        let user_id = match self.auth_repo.get_user_id_by_email(&request.email).await? {
-            Some(id) => id,
-            // Silently return Ok; never reveal whether an email is registered
-            None => {
-                tracing::debug!(event = "password_reset_unknown_email");
-                return Ok(());
-            }
+        // Silently return Ok; never reveal whether an email is registered
+        let Some(user_id) = self.auth_repo.get_user_id_by_email(&request.email).await? else {
+            tracing::debug!(event = "password_reset_unknown_email");
+            return Ok(());
         };
 
         if self
@@ -611,7 +618,7 @@ where
         self.auth_repo.delete_password_reset_tokens(user_id).await?;
 
         let (raw, hash) = generate_hex_token();
-        let expires_at = Utc::now() + Duration::minutes(15);
+        let expires_at = Utc::now() + PASSWORD_RESET_LINK_LIFETIME;
 
         self.auth_repo
             .store_password_reset_token(user_id, hash, expires_at)

@@ -1,4 +1,4 @@
-//! Error mappings between SQLx errors and deck domain errors.
+//! Error mappings between `SQLx` errors and deck domain errors.
 
 use thiserror::Error;
 use zwipe_core::domain::deck::board::InvalidBoard;
@@ -18,7 +18,7 @@ use crate::outbound::sqlx::postgres::IsConstraintViolation;
 
 /// Errors from converting a database deck profile row into domain types.
 #[derive(Debug, Error)]
-#[allow(missing_docs)]
+#[expect(missing_docs, reason = "each variant's message names the failure")]
 pub enum IntoDeckProfileError {
     #[error(transparent)]
     DeckName(#[from] InvalidDeckname),
@@ -82,7 +82,7 @@ impl From<sqlx::Error> for DeleteDeckError {
 
 /// Errors from converting a database deck card row into domain types.
 #[derive(Debug, Error)]
-#[allow(missing_docs)]
+#[expect(missing_docs, reason = "each variant's message names the failure")]
 pub enum IntoDeckCardError {
     #[error(transparent)]
     InvalidId(uuid::Error),

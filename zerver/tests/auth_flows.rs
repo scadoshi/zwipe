@@ -4,8 +4,6 @@
 //!
 //! Requires `DATABASE_URL` (dev's value works): `set -a; source zerver/.env`.
 
-#![allow(clippy::unwrap_used, clippy::indexing_slicing)]
-
 use zwipe_core::http::paths::{GET_USER_ROUTE, LOGIN_ROUTE, REFRESH_SESSION_ROUTE};
 mod common;
 
@@ -18,7 +16,7 @@ async fn register_authed_login_refresh(pool: sqlx::PgPool) {
 
     // 1. Register, then log in: the helper does both.
     let (token, user_id) = app.register("alice").await;
-    assert!(!token.is_empty());
+    assert_ne!(token, "");
 
     // 2. Authed request with the access token.
     let (status, me) = app.get(GET_USER_ROUTE, Some(&token)).await;
@@ -39,7 +37,7 @@ async fn register_authed_login_refresh(pool: sqlx::PgPool) {
         .unwrap()
         .to_string();
 
-    // 4. Refresh — old token rotates into a new session.
+    // 4. Refresh: the old token rotates into a new session.
     let (status, refreshed) = app
         .post(
             REFRESH_SESSION_ROUTE,

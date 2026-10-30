@@ -13,20 +13,20 @@ mod reset;
 mod shared_deck;
 mod verify;
 
-pub use about::About;
-pub use android::Android;
-pub use changelog::Changelog;
-pub use community::Community;
-pub use confirm_email::ConfirmEmail;
-pub use contribute::Contribute;
+pub(crate) use about::About;
+pub(crate) use android::Android;
+pub(crate) use changelog::Changelog;
+pub(crate) use community::Community;
+pub(crate) use confirm_email::ConfirmEmail;
+pub(crate) use contribute::Contribute;
 // SSG prerender list only, which `#[server]` compiles under this feature.
 #[cfg(feature = "server")]
 pub(crate) use guides::slugs as guide_slugs;
-pub use guides::{GuidePage, Guides};
-pub use home::Home;
-pub use ios::Ios;
-pub use not_found::NotFound;
-pub use privacy::Privacy;
-pub use reset::Reset;
-pub use shared_deck::SharedDeck;
-pub use verify::Verify;
+pub(crate) use guides::{GuidePage, Guides};
+pub(crate) use home::Home;
+pub(crate) use ios::Ios;
+pub(crate) use not_found::NotFound;
+pub(crate) use privacy::Privacy;
+pub(crate) use reset::Reset;
+pub(crate) use shared_deck::SharedDeck;
+pub(crate) use verify::Verify;

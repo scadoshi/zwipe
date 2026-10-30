@@ -61,17 +61,21 @@ fn canonical_color_identity(colors: &[String]) -> String {
 use crate::outbound::sqlx::deck::MAX_SUPPRESSIONS_PER_DECK;
 
 impl MetricsRepository for Postgres {
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one usage flush in one transaction, each counter table written in turn"
+    )]
     async fn apply_usage(&self, user_id: Uuid, batch: &HttpUsageBatch) -> Result<(), MetricsError> {
         // Clamp untrusted counts before they touch any counter: stops a client
         // inflating lifetime / marketing totals, and bounds the i32 casts for
         // the weekly INTEGER columns. Lifetime and daily counters are BIGINT.
         let batch = batch.clamped();
 
-        let r = batch.swipes_right as i64;
-        let l = batch.swipes_left as i64;
-        let u = batch.swipes_up as i64;
-        let d = batch.swipes_down as i64;
-        let s = batch.searches as i64;
+        let r = i64::from(batch.swipes_right);
+        let l = i64::from(batch.swipes_left);
+        let u = i64::from(batch.swipes_up);
+        let d = i64::from(batch.swipes_down);
+        let s = i64::from(batch.searches);
 
         let mut tx = self.pool.begin().await.map_err(db)?;
 
@@ -123,7 +127,7 @@ impl MetricsRepository for Postgres {
         let s32 = batch.searches as i32;
 
         // Resolve every deck's context from `deck_id`: the client sends only the
-        // deck now, the backend derives the rest. Ownership-scoped (`user_id`), so a
+        // deck, the backend derives the rest. Ownership-scoped (`user_id`), so a
         // client can only attribute signal to decks it owns. Per owned deck we resolve
         // its commander's oracle id (EDH) and its `format_ci` key (non-EDH), used by
         // the three signal sinks below.
@@ -197,8 +201,11 @@ impl MetricsRepository for Postgres {
         // A day's worth of impressions per user. Past the cap the flush is
         // still accepted, but none of its signals reach the pooled tables, so
         // one account cannot steer what every other user of a commander sees.
-        let shown_total: i64 = signals.iter().map(|s| s.shown as i64).sum::<i64>()
-            + select_signals.iter().map(|s| s.shown as i64).sum::<i64>();
+        let shown_total: i64 = signals.iter().map(|s| i64::from(s.shown)).sum::<i64>()
+            + select_signals
+                .iter()
+                .map(|s| i64::from(s.shown))
+                .sum::<i64>();
         if shown_total > 0 {
             let today_total = sqlx::query_scalar!(
                 r#"INSERT INTO usage_signal_budget (user_id, day, shown)
@@ -231,8 +238,7 @@ impl MetricsRepository for Postgres {
         }
 
         // First-party suggestion signal: aggregate per-(commander, card) tallies,
-        // commander resolved from the deck (clients at or above the 1.7.0
-        // `MIN_CLIENT_VERSION` floor never send one). Pure aggregate, no user_id. A deck
+        // commander resolved from the deck. Pure aggregate, no user_id. A deck
         // with no commander (a non-Commander deck) is skipped here: it has no lead
         // key for this table and feeds the otag-context signal below via (format, CI).
         for sig in &signals {
@@ -303,11 +309,11 @@ impl MetricsRepository for Postgres {
             .map_err(db)?;
         }
 
-        // Generalized-context per-otag signal (Phase 5, the cross-format moat
-        // dataset, context/plans/otags/moat.md; shipped dark). For every add-stack
+        // Generalized-context per-otag signal (the cross-format dataset,
+        // context/plans/otags/moat.md). For every add-stack
         // signal we credit each OTAG OF THE SWIPED CARD (card_profiles.oracle_tags),
         // keyed by the deck's generalized context:
-        //   * commander present → 'commander:<oracle_id>' (every existing client),
+        //   * commander present → 'commander:<oracle_id>',
         //   * else deck_id present → 'format_ci:<format>:<CI>' from the deck row
         //     (non-Commander decks; ownership-scoped). Nothing otag/format/CI is on
         //     the wire; it is all derived here. Pure aggregate, no user_id.
@@ -365,11 +371,11 @@ impl MetricsRepository for Postgres {
                     let t = otag_tallies
                         .entry((context_key.clone(), otag.clone()))
                         .or_default();
-                    t.shown += sig.shown as i64;
-                    t.added += sig.added as i64;
-                    t.skipped += sig.skipped as i64;
-                    t.maybed += sig.maybed as i64;
-                    t.removed += sig.removed as i64;
+                    t.shown += i64::from(sig.shown);
+                    t.added += i64::from(sig.added);
+                    t.skipped += i64::from(sig.skipped);
+                    t.maybed += i64::from(sig.maybed);
+                    t.removed += i64::from(sig.removed);
                 }
             }
 
@@ -424,10 +430,10 @@ impl MetricsRepository for Postgres {
 
         // Weekly scalar counters (ISO week, Monday UTC). Clamped inputs keep
         // the per-flush sums (≤1,000 signals × ≤200 each) well inside i32.
-        let added_sum: i64 = signals.iter().map(|s| s.added as i64).sum();
-        let skipped_sum: i64 = signals.iter().map(|s| s.skipped as i64).sum();
-        let maybed_sum: i64 = signals.iter().map(|s| s.maybed as i64).sum();
-        let removed_sum: i64 = signals.iter().map(|s| s.removed as i64).sum();
+        let added_sum: i64 = signals.iter().map(|s| i64::from(s.added)).sum();
+        let skipped_sum: i64 = signals.iter().map(|s| i64::from(s.skipped)).sum();
+        let maybed_sum: i64 = signals.iter().map(|s| i64::from(s.maybed)).sum();
+        let removed_sum: i64 = signals.iter().map(|s| i64::from(s.removed)).sum();
         query!(
             r#"INSERT INTO user_week_signal
                    (user_id, week_start, swipes_right, swipes_left, swipes_up, swipes_down, searches, added, skipped, maybed, removed)
@@ -501,7 +507,7 @@ impl MetricsRepository for Postgres {
                 let Some((colors, categories)) = card_facets.get(&sig.card_oracle_id) else {
                     continue;
                 };
-                let added = sig.added as i64;
+                let added = i64::from(sig.added);
                 for category in categories {
                     *tallies.entry(("category", category.clone())).or_default() += added;
                 }
@@ -800,7 +806,7 @@ impl MetricsRepository for Postgres {
         Ok(PublicMetrics {
             cards_swiped: row.cards_swiped,
             searches: row.searches,
-            decks_created: row.decks_created as i64,
+            decks_created: row.decks_created,
         })
     }
 

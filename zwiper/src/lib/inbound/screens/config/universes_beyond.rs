@@ -13,7 +13,7 @@ use zwipe_core::http::contracts::user::HttpUpdatePreferences;
 
 use crate::inbound::components::auth::authed::use_authed;
 use crate::inbound::components::catalog_cache::CatalogCache;
-use crate::inbound::components::hint_dialog::open_and_record_hint;
+use crate::inbound::components::hint_dialog;
 use crate::inbound::components::telemetry::vocabulary::{ProfileScreen, Screen};
 
 /// Whether two slug lists pick the same franchises. Order is tap order and
@@ -64,7 +64,12 @@ pub fn UniversesBeyondExceptionsSheet(
             draft.set(exceptions.peek().clone());
             if !*hint_fired.peek() {
                 hint_fired.set(true);
-                open_and_record_hint(HINT_UNIVERSES_BEYOND_EXCEPTIONS, session, client, hint_open);
+                hint_dialog::open_and_record_hint(
+                    HINT_UNIVERSES_BEYOND_EXCEPTIONS,
+                    session,
+                    client,
+                    hint_open,
+                );
             }
         }
     });
@@ -112,7 +117,7 @@ pub fn UniversesBeyondExceptionsSheet(
             open,
             title: "Exceptions".to_string(),
             hint: hint_open,
-            on_dismiss: move |_| discard.call(()),
+            on_dismiss: move |()| discard.call(()),
             footer: rsx! {
                 Button {
                     variant: ButtonVariant::Action,

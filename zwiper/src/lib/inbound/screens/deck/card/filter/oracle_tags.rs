@@ -9,7 +9,7 @@
 
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
-use zwipe_core::domain::card::oracle_tag::{OracleTag, search_oracle_tags};
+use zwipe_core::domain::card::oracle_tag::{self, OracleTag};
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 
 use super::match_mode::MatchMode;
@@ -19,11 +19,11 @@ pub(super) fn read_selected(fb: &CardQueryBuilder, mode: MatchMode) -> Vec<Strin
     match mode {
         MatchMode::Any => fb
             .oracle_tags_contains_any()
-            .map(|v| v.to_vec())
+            .map(<[_]>::to_vec)
             .unwrap_or_default(),
         MatchMode::All => fb
             .oracle_tags_contains_all()
-            .map(|v| v.to_vec())
+            .map(<[_]>::to_vec)
             .unwrap_or_default(),
     }
 }
@@ -45,7 +45,7 @@ pub(super) fn write_selected(fb: &mut CardQueryBuilder, mode: MatchMode, values:
 
 pub(super) fn read_excluded(fb: &CardQueryBuilder) -> Vec<String> {
     fb.oracle_tags_excludes()
-        .map(|v| v.to_vec())
+        .map(<[_]>::to_vec)
         .unwrap_or_default()
 }
 
@@ -99,11 +99,11 @@ pub(crate) fn OracleTags(mut dict_open: Signal<bool>, mut dict_exclude: Signal<b
     let excluded = read_excluded(&filter_builder());
 
     let cell_read = cell.read();
-    let tags: &[OracleTag] = cell_read.loaded().map(Vec::as_slice).unwrap_or(&[]);
+    let tags: &[OracleTag] = cell_read.loaded().map_or(&[], Vec::as_slice);
 
     rsx! {
         div { class: "flex-col gap-half",
-            // ── includes ──────────────────────────────────────────
+            // == includes ==
             div { class: "label-row mt-2",
                 label { class: "label-xs", r#for: "oracle-tags-search", "Oracle tags include" }
                 button {
@@ -160,7 +160,7 @@ pub(crate) fn OracleTags(mut dict_open: Signal<bool>, mut dict_exclude: Signal<b
             // search-to-add over the full catalog
             if !includes_search().is_empty() {
                 {
-                    let results: Vec<OracleTag> = search_oracle_tags(tags, &includes_search())
+                    let results: Vec<OracleTag> = oracle_tag::search_oracle_tags(tags, &includes_search())
                         .into_iter()
                         .filter(|t| !selected.contains(&t.slug))
                         .take(8)
@@ -215,7 +215,7 @@ pub(crate) fn OracleTags(mut dict_open: Signal<bool>, mut dict_exclude: Signal<b
                 }
             }
 
-            // ── excludes ──────────────────────────────────────────
+            // == excludes ==
             div { class: "label-row mt-2",
                 label { class: "label-xs", r#for: "oracle-tags-excludes-search", "Oracle tags exclude" }
                 button {
@@ -260,7 +260,7 @@ pub(crate) fn OracleTags(mut dict_open: Signal<bool>, mut dict_exclude: Signal<b
 
             if !excludes_search().is_empty() {
                 {
-                    let results: Vec<OracleTag> = search_oracle_tags(tags, &excludes_search())
+                    let results: Vec<OracleTag> = oracle_tag::search_oracle_tags(tags, &excludes_search())
                         .into_iter()
                         .filter(|t| !selected.contains(&t.slug) && !excluded.contains(&t.slug))
                         .take(8)

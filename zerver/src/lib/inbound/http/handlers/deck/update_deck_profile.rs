@@ -1,3 +1,5 @@
+//! Deck metadata update handler.
+
 use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
@@ -9,8 +11,8 @@ use zwipe_core::domain::deck::requests::update_deck_profile::{
 use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
 
 use crate::domain::deck::models::deck::update_deck_profile::UpdateDeckProfileError;
-use crate::inbound::http::handlers::deck_card::patch_deck_card::reject_null;
-use crate::inbound::http::handlers::metrics::check_completion::check_deck_completion;
+use crate::inbound::http::handlers::deck_card::patch_deck_card;
+use crate::inbound::http::handlers::metrics::check_completion;
 use crate::inbound::http::middleware::AuthenticatedUser;
 use crate::inbound::http::{ApiError, AppState, To500};
 
@@ -24,8 +26,9 @@ impl From<UpdateDeckProfileError> for ApiError {
                 Self::Conflict("deck with name and user combination already exists".to_string())
             }
             UpdateDeckProfileError::GetDeckProfileError(e) => ApiError::from(e),
-            UpdateDeckProfileError::DeckFromDb(e) => e.to_500(),
-            UpdateDeckProfileError::Database(e) => e.to_500(),
+            UpdateDeckProfileError::DeckFromDb(e) | UpdateDeckProfileError::Database(e) => {
+                e.to_500()
+            }
             UpdateDeckProfileError::Forbidden => Self::NotFound("deck not found".to_string()),
         }
     }
@@ -35,22 +38,22 @@ impl From<InvalidUpdateDeckProfile> for ApiError {
     fn from(value: InvalidUpdateDeckProfile) -> Self {
         match value {
             InvalidUpdateDeckProfile::DeckName(e) => {
-                Self::UnprocessableEntity(format!("invalid deck name: {}", e))
+                Self::UnprocessableEntity(format!("invalid deck name: {e}"))
             }
             InvalidUpdateDeckProfile::Format(e) => {
-                Self::UnprocessableEntity(format!("invalid format: {}", e))
+                Self::UnprocessableEntity(format!("invalid format: {e}"))
             }
             InvalidUpdateDeckProfile::DeckTag(e) => {
-                Self::UnprocessableEntity(format!("invalid deck tag: {}", e))
+                Self::UnprocessableEntity(format!("invalid deck tag: {e}"))
             }
             InvalidUpdateDeckProfile::TooManyTags => {
                 Self::UnprocessableEntity("a deck may have at most 5 tags".to_string())
             }
             InvalidUpdateDeckProfile::PowerLevel(e) => {
-                Self::UnprocessableEntity(format!("invalid power level: {}", e))
+                Self::UnprocessableEntity(format!("invalid power level: {e}"))
             }
             InvalidUpdateDeckProfile::DeckOtherTag(e) => {
-                Self::UnprocessableEntity(format!("invalid other-tag: {}", e))
+                Self::UnprocessableEntity(format!("invalid other-tag: {e}"))
             }
             InvalidUpdateDeckProfile::TooManyOtherTags => {
                 Self::UnprocessableEntity("a deck may have at most 5 other-tags".to_string())
@@ -66,6 +69,12 @@ impl From<InvalidUpdateDeckProfile> for ApiError {
 }
 
 /// Updates deck metadata with ownership verification.
+///
+/// # Errors
+///
+/// Returns 422 for a `null` name, an invalid field or no change, 409 when the
+/// name is taken, 404 when the deck is missing or isn't the caller's, and 500
+/// on a database failure.
 pub async fn update_deck_profile(
     user: AuthenticatedUser,
     State(state): State<AppState>,
@@ -74,7 +83,7 @@ pub async fn update_deck_profile(
 ) -> Result<(StatusCode, Json<DeckProfile>), ApiError> {
     // A deck always has a name: explicit null is a 422 (RFC 7396 policy),
     // absent leaves it unchanged.
-    let name = reject_null(body.name, "name")?;
+    let name = patch_deck_card::reject_null(body.name, "name")?;
     let format_raw: Option<Option<String>> = body.format.into_option();
     let format_option: Option<Option<&str>> = format_raw.as_ref().map(|opt| opt.as_deref());
     let power_level_raw: Option<Option<String>> = body.power_level.into_option();
@@ -105,7 +114,12 @@ pub async fn update_deck_profile(
     let metrics = std::sync::Arc::clone(&state.metrics_service);
     let deck_service = std::sync::Arc::clone(&state.deck_service);
     let uid = user.id;
-    tokio::spawn(check_deck_completion(deck_service, metrics, uid, deck_id));
+    tokio::spawn(check_completion::check_deck_completion(
+        deck_service,
+        metrics,
+        uid,
+        deck_id,
+    ));
 
     Ok((StatusCode::OK, Json(deck_profile)))
 }

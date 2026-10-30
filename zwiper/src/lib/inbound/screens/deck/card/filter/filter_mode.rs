@@ -2,7 +2,7 @@
 
 /// The mode for numeric filters (exact value or range).
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
-#[allow(missing_docs)]
+#[expect(missing_docs, reason = "the variants name the modes")]
 pub enum FilterMode {
     #[default]
     Exact,
@@ -11,6 +11,7 @@ pub enum FilterMode {
 
 impl FilterMode {
     /// Toggles between Exact and Range modes.
+    #[must_use]
     pub fn toggle(self) -> Self {
         match self {
             Self::Exact => Self::Range,

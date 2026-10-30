@@ -17,7 +17,7 @@
 
 use anyhow::Context;
 use sqlx::PgPool;
-use zwipe_core::domain::card::card_role::role_tags::{exclusion_pairs, override_pairs, root_pairs};
+use zwipe_core::domain::card::card_role::role_tags;
 use zwipe_core::domain::card::oracle_tag::NOISE_ORACLE_TAG_SLUGS;
 
 /// The six parallel arrays [`role_membership_ctes`] reads, in bind order, built
@@ -42,9 +42,9 @@ pub struct RoleMembershipBinds {
 impl RoleMembershipBinds {
     /// Flattens the role tables for `unnest`.
     pub fn new() -> Self {
-        let (roles, root_slugs) = root_pairs();
-        let (override_roles, override_slugs) = override_pairs();
-        let (exclusion_roles, exclusion_slugs) = exclusion_pairs();
+        let (roles, root_slugs) = role_tags::root_pairs();
+        let (override_roles, override_slugs) = role_tags::override_pairs();
+        let (exclusion_roles, exclusion_slugs) = role_tags::exclusion_pairs();
         Self {
             roles,
             root_slugs,
@@ -115,6 +115,10 @@ pub fn role_membership_ctes(first: usize) -> String {
 
 /// Rebuilds `card_profiles.oracle_tags_by_role` and `.other_oracle_tags` from the
 /// tag hierarchy + `CATEGORY_ROOTS`. Returns rows affected.
+///
+/// # Errors
+///
+/// Returns an error if the update statement fails.
 pub async fn refresh_oracle_tag_groups(pool: &PgPool) -> anyhow::Result<u64> {
     let binds = RoleMembershipBinds::new();
     let noise: Vec<String> = NOISE_ORACLE_TAG_SLUGS

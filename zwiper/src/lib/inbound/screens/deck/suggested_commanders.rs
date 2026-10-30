@@ -28,18 +28,17 @@ use std::collections::BTreeMap;
 use components::{
     ActionBar, AlertDialog, Bar, BarChart, BarOrientation, BottomSheet, Button, ButtonVariant,
     CardRoleChips, Chip, ColorMap, ColorMapCounts, DialogAction, HintBullet, HintBullets,
-    HintDialog, HintKey, HintLine, OtagDef, RoleTags, TOAST_LONG, TOAST_QUICK, seed_from_id,
+    HintDialog, HintKey, HintLine, OtagDef, RoleTags, TOAST_LONG, TOAST_QUICK,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::card::Card;
-use zwipe_core::domain::card::card_role::role_short_label;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
-use zwipe_core::domain::card::scryfall_data::colors::{Color, identity_name};
+use zwipe_core::domain::card::scryfall_data::colors::{self, Color};
 use zwipe_core::domain::card::search_card::card_type::CardType;
+use zwipe_core::domain::card::{Card, card_role};
 use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
 use zwipe_core::domain::deck::deck_profile::DeckProfile;
 use zwipe_core::domain::user::models::hints::HINT_SUGGESTED_COMMANDERS;
@@ -218,7 +217,7 @@ pub(crate) fn ShowIdentityChips(
 /// The name shown beside an identity's pips: none for a single color, the
 /// identity's name otherwise.
 pub(crate) fn identity_label(identity: &[Color]) -> Option<&'static str> {
-    (identity.len() != 1).then(|| identity_name(identity))
+    (identity.len() != 1).then(|| colors::identity_name(identity))
 }
 
 /// The list's empty state under a Show chip whose commanders are all gone,
@@ -226,7 +225,7 @@ pub(crate) fn identity_label(identity: &[Color]) -> Option<&'static str> {
 /// than name (colorless, mono-color, five-color) go lowercase mid-sentence.
 pub(crate) fn empty_identity_line(identity: &[Color]) -> String {
     let identity = identity_of(identity);
-    let name = identity_name(&identity);
+    let name = colors::identity_name(&identity);
     let name = match identity.len() {
         0 | 1 | 5 => name.to_lowercase(),
         _ => name.to_string(),
@@ -400,7 +399,7 @@ pub(crate) fn role_bars(roles: &[HttpProfileRole], tags: &[HttpProfileTag]) -> V
         |r| decks_usize(r.decks),
         |r, pct| Bar {
             key: r.role.clone(),
-            label: role_short_label(&r.role),
+            label: card_role::role_short_label(&r.role),
             count: decks_usize(r.decks),
             pct,
             revealable: tags
@@ -627,13 +626,13 @@ pub(crate) enum StapleColor {
 impl StapleColor {
     /// Every chip in the row's order: WUBRG, then colorless.
     fn all() -> [Self; 6] {
-        let [w, u, b, r, g] = Color::all();
+        let [white, blue, black, red, green] = Color::all();
         [
-            Self::Of(w),
-            Self::Of(u),
-            Self::Of(b),
-            Self::Of(r),
-            Self::Of(g),
+            Self::Of(white),
+            Self::Of(blue),
+            Self::Of(black),
+            Self::Of(red),
+            Self::Of(green),
             Self::Colorless,
         ]
     }
@@ -872,7 +871,7 @@ pub(crate) fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
     let map_seed = session
         .peek()
         .as_ref()
-        .map_or(0, |s| seed_from_id(s.user.id.as_u128()));
+        .map_or(0, |s| components::seed_from_id(s.user.id.as_u128()));
     let mut selected_role: Signal<Option<String>> = use_signal(|| None);
     let color_map = profile
         .color_map
@@ -1525,7 +1524,7 @@ pub fn SuggestedCommanders() -> Element {
                     swipe_open.set(false);
                     create_with(card);
                 },
-                on_close: move |_| swipe_open.set(false),
+                on_close: move |()| swipe_open.set(false),
             }
 
             // Pick a printing: swap that row's card in place and keep the row
@@ -1587,7 +1586,7 @@ mod tests {
     #[test]
     fn identity_of_runs_wubrg_once_each() {
         assert_eq!(identity_of(&[Red, White, Red]), vec![White, Red]);
-        assert!(identity_of(&[]).is_empty());
+        assert_eq!(identity_of(&[]), Vec::<Color>::new());
     }
 
     #[test]
@@ -1613,7 +1612,10 @@ mod tests {
                 vec![],
             ]
         );
-        assert!(identities_present(std::iter::empty()).is_empty());
+        assert_eq!(
+            identities_present(std::iter::empty()),
+            Vec::<Vec<Color>>::new()
+        );
         let chosen: &[Color] = &[Green];
         assert_eq!(
             identities_present(held.iter().map(colors_of).chain([chosen])),
@@ -1714,7 +1716,7 @@ mod tests {
 
     #[test]
     fn color_lines_skip_unknown_codes() {
-        assert!(color_lines(&[color("C", 2)], 2).is_empty());
+        assert_eq!(color_lines(&[color("C", 2)], 2), Vec::<String>::new());
     }
 
     fn tag(slug: &str, role: Option<&str>) -> HttpSharedTag {
@@ -1726,7 +1728,7 @@ mod tests {
 
     fn top(colors: &[&str], decks: u32) -> HttpColorIdentityCount {
         HttpColorIdentityCount {
-            colors: colors.iter().map(|c| c.to_string()).collect(),
+            colors: colors.iter().map(ToString::to_string).collect(),
             decks,
         }
     }
@@ -1930,7 +1932,10 @@ mod tests {
             vec![StapleColor::Of(Green)],
             "no colorless chip without a colorless staple"
         );
-        assert!(staple_types_present::<Staple>(&[], type_line_of).is_empty());
+        assert_eq!(
+            staple_types_present::<Staple>(&[], type_line_of),
+            Vec::<CardType>::new()
+        );
     }
 
     fn value(pips: &[Color], count: &str) -> SummaryValue {
@@ -2111,7 +2116,7 @@ mod tests {
             ],
             "the order sent, impact rounded against the top score"
         );
-        assert!(tag_rows(&[]).is_empty());
+        assert_eq!(tag_rows(&[]), Vec::<TagRow>::new());
     }
 
     #[test]
@@ -2152,7 +2157,7 @@ mod tests {
             role_tags(&tags, "sacrifice"),
             vec!["sacrifice-outlet", "aristocrats"]
         );
-        assert!(role_tags(&tags, "draw").is_empty());
+        assert_eq!(role_tags(&tags, "draw"), Vec::<String>::new());
     }
 
     #[test]

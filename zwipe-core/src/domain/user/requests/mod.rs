@@ -1,3 +1,5 @@
+//! Validated inputs for user operations.
+
 pub mod get_user;
 
 pub use get_user::GetUser;

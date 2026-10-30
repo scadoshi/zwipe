@@ -1,3 +1,5 @@
+//! User entity and its value objects.
+
 pub mod email;
 pub mod hints;
 pub mod preferences;
@@ -61,7 +63,7 @@ pub struct User {
     pub email_verified_at: Option<DateTime<Utc>>,
 
     /// One-time UI hints already shown to this user, keyed by hint id
-    /// (see [`hints`]). Defaults to empty for responses from older servers.
+    /// (see [`hints`]). Empty when a response omits the field.
     #[serde(default)]
     pub hints_shown: HashMap<String, bool>,
 
@@ -71,7 +73,7 @@ pub struct User {
     pub pending_email: Option<Email>,
 
     /// When the link for `pending_email` stops working. Absent from the JSON
-    /// when there is no pending change, and from servers older than the field.
+    /// when there is no pending change; `None` when a response omits it.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub pending_email_expires_at: Option<DateTime<Utc>>,
 }
@@ -90,6 +92,7 @@ impl User {
     /// ```rust,ignore
     /// let user = User::new(id, username, email);
     /// ```
+    #[must_use]
     pub fn new(id: Uuid, username: Username, email: Email) -> Self {
         Self {
             id,
@@ -103,6 +106,7 @@ impl User {
     }
 
     /// Whether a one-time UI hint has already been shown to this user.
+    #[must_use]
     pub fn has_seen_hint(&self, key: &str) -> bool {
         self.hints_shown.get(key).copied().unwrap_or(false)
     }

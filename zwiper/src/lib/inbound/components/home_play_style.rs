@@ -1,7 +1,7 @@
 //! Home's Color map panel: the user's color territory map, with a Playstyle
 //! button that opens the full screen.
 
-use components::{ColorMap, ColorMapCounts, ColorMapGhost, seed_from_id};
+use components::{ColorMap, ColorMapCounts, ColorMapGhost};
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::auth::models::session::Session;
@@ -12,7 +12,7 @@ use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::info_button::InfoButton;
 use crate::inbound::components::telemetry::vocabulary::Screen;
 use crate::inbound::router::Router;
-use crate::inbound::screens::deck::suggested_commanders::color_map_has_data;
+use crate::inbound::screens::deck::suggested_commanders;
 
 /// The last summary fetched, kept above the router (as
 /// `Signal<Option<CachedPlayStyle>>`) so a return to Home shows it at once
@@ -75,7 +75,7 @@ pub fn HomePlayStyle() -> Element {
     let seed = session
         .peek()
         .as_ref()
-        .map_or(0, |s| seed_from_id(s.user.id.as_u128()));
+        .map_or(0, |s| components::seed_from_id(s.user.id.as_u128()));
 
     rsx! {
         div { class: "container-sm text-center flex-col home-flavor content-enter-delayed",
@@ -85,7 +85,7 @@ pub fn HomePlayStyle() -> Element {
                         .color_map
                         .as_ref()
                         .map(ColorMapCounts::from)
-                        .filter(color_map_has_data)
+                        .filter(suggested_commanders::color_map_has_data)
                         .filter(|_| summary.deck_count > 0);
                     rsx! {
                         PanelHeader {}

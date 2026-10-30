@@ -11,6 +11,12 @@ use thiserror::Error;
 
 use crate::domain::moderation::ContainsBadWord;
 
+/// Fewest bytes a trimmed username may have.
+const MIN_LENGTH: usize = 3;
+
+/// Most bytes a trimmed username may have.
+const MAX_LENGTH: usize = 20;
+
 /// Validation errors when creating a username.
 ///
 /// Usernames must meet multiple requirements to ensure they are:
@@ -24,14 +30,14 @@ pub enum InvalidUsername {
     ///
     /// Minimum length ensures usernames are meaningful and reduces
     /// namespace collisions.
-    #[error("must be at least 3 characters long")]
+    #[error("must be at least {MIN_LENGTH} characters long")]
     TooShort,
 
     /// Username exceeds 20 characters.
     ///
     /// Maximum length ensures usernames fit in UI components and
     /// database indexes.
-    #[error("must not exceed 20 characters")]
+    #[error("must not exceed {MAX_LENGTH} characters")]
     TooLong,
 
     /// Username contains whitespace (spaces, tabs, newlines).
@@ -122,15 +128,15 @@ impl Username {
             return Err(InvalidUsername::BadWord);
         }
 
-        if trimmed.chars().any(|c| c.is_whitespace()) {
+        if trimmed.chars().any(char::is_whitespace) {
             return Err(InvalidUsername::Whitespace);
         }
 
-        if trimmed.len() < 3 {
+        if trimmed.len() < MIN_LENGTH {
             return Err(InvalidUsername::TooShort);
         }
 
-        if trimmed.len() > 20 {
+        if trimmed.len() > MAX_LENGTH {
             return Err(InvalidUsername::TooLong);
         }
 

@@ -5,6 +5,7 @@
 
 use std::cmp::Reverse;
 use std::collections::{HashMap, HashSet};
+use std::hash::BuildHasher;
 
 use thiserror::Error;
 use uuid::Uuid;
@@ -63,6 +64,11 @@ impl CommanderDismissal {
     }
 
     /// Creates a dismissal request parsing the oracle id from a path segment.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`InvalidCommanderDismissal::OracleId`] when the trimmed segment
+    /// isn't a UUID.
     pub fn from_path(user_id: Uuid, oracle_id: &str) -> Result<Self, InvalidCommanderDismissal> {
         let oracle_id =
             Uuid::try_parse(oracle_id.trim()).map_err(InvalidCommanderDismissal::OracleId)?;
@@ -178,7 +184,10 @@ pub struct ScoredCommander {
 /// Pairs each shared tag slug with the card role `tag_roles` maps it to, in
 /// order. A slug missing from the map falls under no role.
 #[must_use]
-pub fn shared_tags(slugs: Vec<String>, tag_roles: &HashMap<String, String>) -> Vec<SharedTag> {
+pub fn shared_tags<S: BuildHasher>(
+    slugs: Vec<String>,
+    tag_roles: &HashMap<String, String, S>,
+) -> Vec<SharedTag> {
     slugs
         .into_iter()
         .map(|slug| SharedTag {
@@ -527,10 +536,10 @@ pub struct PlayStyleSummary {
 /// The top identity breaks ties by more colors, then WUBRG order; it is
 /// `None` when more than one deck exists and no identity repeats.
 #[must_use]
-pub fn summarize_profile(
+pub fn summarize_profile<S: BuildHasher>(
     decks: &[ProfiledDeck],
     profiles: &[Option<DeckTagProfile>],
-    tag_roles: &HashMap<String, String>,
+    tag_roles: &HashMap<String, String, S>,
 ) -> Option<BuilderProfile> {
     if decks.is_empty() {
         return None;
@@ -627,7 +636,7 @@ mod tests {
     fn scored(n: u128, identity: &[&str]) -> ScoredCommander {
         ScoredCommander {
             oracle_id: Uuid::from_u128(n),
-            color_identity: identity.iter().map(|c| c.to_string()).collect(),
+            color_identity: identity.iter().map(ToString::to_string).collect(),
             tag_slugs: vec![],
         }
     }
@@ -638,7 +647,10 @@ mod tests {
 
     #[test]
     fn empty_stays_empty() {
-        assert!(cap_color_identities(vec![], 4).is_empty());
+        assert_eq!(
+            cap_color_identities(vec![], 4),
+            Vec::<ScoredCommander>::new()
+        );
     }
 
     #[test]
@@ -697,14 +709,14 @@ mod tests {
     fn deck(n: u128, colors: &[&str]) -> ProfiledDeck {
         ProfiledDeck {
             commander_oracle_id: Some(Uuid::from_u128(n)),
-            colors: colors.iter().map(|c| c.to_string()).collect(),
+            colors: colors.iter().map(ToString::to_string).collect(),
             mainboard_oracle_ids: vec![],
             card_colors: CardColorCounts::default(),
         }
     }
 
     fn strings(colors: &[&str]) -> Vec<String> {
-        colors.iter().map(|c| c.to_string()).collect()
+        colors.iter().map(ToString::to_string).collect()
     }
 
     #[test]
@@ -1166,7 +1178,7 @@ mod tests {
 
     #[test]
     fn no_rows_is_no_staples() {
-        assert!(rank_staples(&[]).is_empty());
+        assert_eq!(rank_staples(&[]), Vec::<StapleCount>::new());
     }
 
     #[test]

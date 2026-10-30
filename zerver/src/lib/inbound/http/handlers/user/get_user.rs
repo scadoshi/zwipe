@@ -1,3 +1,5 @@
+//! Returns the authenticated user's profile.
+
 use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
@@ -12,8 +14,7 @@ impl From<GetUserError> for ApiError {
     fn from(value: GetUserError) -> Self {
         match value {
             GetUserError::NotFound => Self::NotFound("user not found".to_string()),
-            GetUserError::Database(e) => e.to_500(),
-            GetUserError::UserFromDb(e) => e.to_500(),
+            GetUserError::Database(e) | GetUserError::UserFromDb(e) => e.to_500(),
         }
     }
 }
@@ -25,6 +26,10 @@ impl From<AuthenticatedUser> for GetUser {
 }
 
 /// Returns the authenticated user's own profile (identity from JWT, no path params).
+///
+/// # Errors
+///
+/// Returns 404 when the user is gone, and 500 on a database failure.
 pub async fn get_user(
     user: AuthenticatedUser,
     State(state): State<AppState>,

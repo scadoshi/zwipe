@@ -38,11 +38,11 @@ pub fn CardRole() -> Element {
         match mode() {
             MatchMode::Any => fb
                 .card_roles_contains_any()
-                .map(|v| v.to_vec())
+                .map(<[_]>::to_vec)
                 .unwrap_or_default(),
             MatchMode::All => fb
                 .card_roles_contains_all()
-                .map(|v| v.to_vec())
+                .map(<[_]>::to_vec)
                 .unwrap_or_default(),
         }
     };
@@ -50,7 +50,7 @@ pub fn CardRole() -> Element {
     let read_excluded = move || -> Vec<String> {
         filter_builder()
             .card_roles_excludes()
-            .map(|v| v.to_vec())
+            .map(<[_]>::to_vec)
             .unwrap_or_default()
     };
 
@@ -84,7 +84,7 @@ pub fn CardRole() -> Element {
 
     rsx! {
         div { class: "flex-col gap-half",
-            // ── role includes ─────────────────────────────────────
+            // == role includes ==
             div { class: "label-row mt-2",
                 label { class: "label-xs", "Card roles include" }
                 if !selected.is_empty() {
@@ -136,7 +136,7 @@ pub fn CardRole() -> Element {
                 }
             }
 
-            // ── role excludes ─────────────────────────────────────
+            // == role excludes ==
             div { class: "label-row mt-2",
                 label { class: "label-xs", "Card roles exclude" }
                 if !excluded.is_empty() {

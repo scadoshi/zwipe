@@ -1,3 +1,5 @@
+//! Password change handler.
+
 use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
@@ -26,7 +28,7 @@ impl From<InvalidChangePassword> for ApiError {
     fn from(value: InvalidChangePassword) -> Self {
         match value {
             InvalidChangePassword::Password(e) => {
-                Self::UnprocessableEntity(format!("invalid password {}", e))
+                Self::UnprocessableEntity(format!("invalid password {e}"))
             }
             InvalidChangePassword::SameAsCurrent => Self::UnprocessableEntity(
                 "new password must be different from your current password".to_string(),
@@ -37,6 +39,12 @@ impl From<InvalidChangePassword> for ApiError {
 }
 
 /// Changes the user's password after verifying the current one.
+///
+/// # Errors
+///
+/// Returns 422 for a weak password, one that matches the current one, or a
+/// missing user, 401 for a wrong current password, and 500 on a database
+/// failure.
 pub async fn change_password(
     user: AuthenticatedUser,
     State(state): State<AppState>,

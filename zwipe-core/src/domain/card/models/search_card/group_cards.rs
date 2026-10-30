@@ -17,9 +17,8 @@
 
 use std::collections::BTreeMap;
 
-use crate::domain::card::Card;
-use crate::domain::card::card_role::role_label;
 use crate::domain::card::scryfall_data::colors::Color;
+use crate::domain::card::{Card, card_role};
 
 /// Grouping strategies for partitioning cards.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -79,12 +78,7 @@ impl CardGroup {
         }
         self.pips
             .as_ref()
-            .map(|pips| {
-                pips.iter()
-                    .map(|c| c.to_short_name())
-                    .collect::<Vec<_>>()
-                    .join("")
-            })
+            .map(|pips| pips.iter().map(Color::to_short_name).collect::<String>())
             .unwrap_or_default()
     }
 }
@@ -154,29 +148,28 @@ impl GroupCards for Vec<Card> {
 /// deck list groups decks by color.
 ///
 /// Colored groups carry [`CardGroup::pips`] and an empty label; the view
-/// renders pips where a color word used to be. Colorless keeps its word and
+/// renders pips in place of a color word. Colorless keeps its word and
 /// sorts last.
 fn group_by_color(cards: Vec<Card>) -> Vec<CardGroup> {
     let mut groups: Vec<CardGroup> = Vec::new();
     for card in cards {
         let pips = identity_pips(&card);
-        match groups
+        if let Some(group) = groups
             .iter_mut()
             .find(|g| g.pips.as_deref() == Some(pips.as_slice()))
         {
-            Some(group) => group.cards.push(card),
-            None => {
-                let label = if pips.is_empty() {
-                    "Colorless".to_string()
-                } else {
-                    String::new()
-                };
-                groups.push(CardGroup {
-                    label,
-                    pips: Some(pips),
-                    cards: vec![card],
-                });
-            }
+            group.cards.push(card);
+        } else {
+            let label = if pips.is_empty() {
+                "Colorless".to_string()
+            } else {
+                String::new()
+            };
+            groups.push(CardGroup {
+                label,
+                pips: Some(pips),
+                cards: vec![card],
+            });
         }
     }
     // Fewest colors first, each in WUBRG order, colorless last, the same
@@ -205,7 +198,7 @@ fn identity_pips(card: &Card) -> Vec<Color> {
 /// Groups cards by card role. Cards with multiple roles appear in each matching
 /// group (cloned); cards with no roles go into "uncategorized". Buckets are keyed
 /// by the card's role **slugs** (`card_profile.card_roles`), so a server-added
-/// role groups without a client release; labels come from [`role_label`].
+/// role groups without a client release; labels come from [`role_label`](card_role::role_label).
 fn group_by_card_role(cards: Vec<Card>) -> Vec<CardGroup> {
     // slug -> its cards, ordered by slug (BTreeMap) for a stable display order.
     let mut buckets: BTreeMap<String, Vec<Card>> = BTreeMap::new();
@@ -224,7 +217,7 @@ fn group_by_card_role(cards: Vec<Card>) -> Vec<CardGroup> {
     let mut groups: Vec<CardGroup> = buckets
         .into_iter()
         .map(|(slug, cards)| CardGroup {
-            label: role_label(&slug),
+            label: card_role::role_label(&slug),
             pips: None,
             cards,
         })
@@ -249,16 +242,17 @@ fn classify(card: &Card, option: GroupByOption) -> usize {
     }
 }
 
+/// Bucket index of "Other" in the card type labels, after the seven checked types.
+const OTHER_CARD_TYPE: usize = 7;
+
+/// Bucket index of "6+", the last mana value label.
+const CMC_SIX_PLUS: usize = 6;
+
 /// Card type classification; first match wins.
 ///
 /// Priority: Land → Creature → Planeswalker → Artifact → Enchantment →
 /// Instant → Sorcery → Other.
 fn classify_card_type(card: &Card) -> usize {
-    let type_line = match &card.scryfall_data.type_line {
-        Some(tl) => tl.as_str(),
-        None => return 7, // "other"
-    };
-
     const CHECKS: &[&str] = &[
         "Land",
         "Creature",
@@ -269,22 +263,28 @@ fn classify_card_type(card: &Card) -> usize {
         "Sorcery",
     ];
 
+    let type_line = match &card.scryfall_data.type_line {
+        Some(tl) => tl.as_str(),
+        None => return OTHER_CARD_TYPE,
+    };
+
     CHECKS
         .iter()
         .position(|keyword| type_line.contains(keyword))
-        .unwrap_or(7) // "other"
+        .unwrap_or(OTHER_CARD_TYPE)
 }
 
 /// CMC classification: floor to integer, cap at 6.
 fn classify_cmc(card: &Card) -> usize {
     let cmc = card.scryfall_data.cmc.unwrap_or(0.0);
     let floored = cmc.floor() as usize;
-    floored.min(6) // indices 0–5 for "0"–"5", index 6 for "6+"
+    floored.min(CMC_SIX_PLUS)
 }
 
 #[cfg(test)]
-#[allow(clippy::indexing_slicing)]
 mod tests {
+    use std::collections::BTreeMap;
+
     use chrono::NaiveDate;
     use uuid::Uuid;
 
@@ -297,6 +297,10 @@ mod tests {
     use crate::domain::card::scryfall_data::prices::Prices;
     use crate::domain::card::scryfall_data::rarity::Rarity;
 
+    #[expect(
+        clippy::too_many_lines,
+        reason = "a fixture that fills every Scryfall field"
+    )]
     fn make_card(name: &str) -> Card {
         Card {
             card_profile: CardProfile {
@@ -304,7 +308,7 @@ mod tests {
                 is_token: false,
                 card_roles: vec![],
                 oracle_tags: vec![],
-                oracle_tags_by_role: Default::default(),
+                oracle_tags_by_role: BTreeMap::default(),
                 other_oracle_tags: vec![],
                 created_at: NaiveDate::from_ymd_opt(2021, 1, 1)
                     .unwrap()
@@ -417,7 +421,7 @@ mod tests {
         }
     }
 
-    // ── GroupByOption::CardType ────────────────────────────────────────────────
+    // == GroupByOption::CardType ==
 
     #[test]
     fn test_group_by_type_creature() {
@@ -474,7 +478,7 @@ mod tests {
         assert!(result.iter().all(|g| g.label != "Creatures"));
     }
 
-    // ── GroupByOption::Cmc ─────────────────────────────────────────────────────
+    // == GroupByOption::Cmc ==
 
     #[test]
     fn test_group_by_cmc_zero() {
@@ -515,7 +519,7 @@ mod tests {
         assert_eq!(result[0].label, "6+");
     }
 
-    // ── GroupByOption::Color ───────────────────────────────────────────────────
+    // == GroupByOption::Color ==
 
     #[test]
     fn test_group_by_color_mono_white() {

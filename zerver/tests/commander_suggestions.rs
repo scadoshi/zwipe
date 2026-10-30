@@ -6,7 +6,11 @@
 //!
 //! Requires `DATABASE_URL`: `set -a; source zerver/.env; set +a`.
 
-#![allow(clippy::unwrap_used, clippy::indexing_slicing)]
+#![expect(
+    clippy::unwrap_used,
+    clippy::indexing_slicing,
+    reason = "a test: helpers outside #[test] fns unwrap and index, and a panic is the failure report"
+)]
 
 mod common;
 
@@ -195,7 +199,7 @@ async fn goblin_user(app: &TestApp) -> (String, Uuid, Uuid) {
         .type_line("Legendary Creature — Goblin")
         .commander_legal();
 
-    let cmd_sid = commander.id();
+    let commander_id = commander.id();
     let cmd_oid = commander.oracle_id().unwrap();
     let a = (goblin_a.id(), goblin_a.oracle_id().unwrap());
     let b = (goblin_b.id(), goblin_b.oracle_id().unwrap());
@@ -239,7 +243,7 @@ async fn goblin_user(app: &TestApp) -> (String, Uuid, Uuid) {
     seed_profile(&app.pool, cmd_oid, json!({ "gives-haste": 1.0 })).await;
     seed_profile(&app.pool, maybe_oid, json!({ "gives-haste": 1.0 })).await;
 
-    build_commander_deck(app, &token, "Gobbos", cmd_sid, &[a, b]).await;
+    build_commander_deck(app, &token, "Gobbos", commander_id, &[a, b]).await;
     let (status, body) = app
         .post(
             &add_commander_maybeboard_card_route(maybe_oid),
@@ -273,7 +277,7 @@ async fn cold_start_is_empty_with_zero_decks(pool: sqlx::PgPool) {
     build_deck(&app, &token, "Headless", "standard", &[]).await;
     let body = suggestions(&app, &token, 10).await;
     assert_eq!(body["deck_count"], 0);
-    assert!(names(&body).is_empty());
+    assert_eq!(names(&body), Vec::<String>::new());
     assert_eq!(body["profile"], Value::Null);
 }
 
@@ -467,7 +471,10 @@ async fn dismissals_hide_undo_clear_and_expire(pool: sqlx::PgPool) {
             .await;
         assert_eq!(status, StatusCode::NO_CONTENT);
     }
-    assert!(names(&suggestions(&app, &token, 10).await).is_empty());
+    assert_eq!(
+        names(&suggestions(&app, &token, 10).await),
+        Vec::<String>::new()
+    );
     let (status, body) = app.delete(COMMANDER_DISMISSALS_ROUTE, Some(&token)).await;
     assert_eq!(status, StatusCode::OK, "clear: {body}");
     assert_eq!(body, json!({ "cleared": 2 }));

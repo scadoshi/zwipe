@@ -14,7 +14,7 @@
 //! [`ClientErrorReport`]: zwipe_core::http::contracts::metrics::ClientErrorReport
 
 /// Host screens (`screens/` module paths, flattened).
-#[allow(missing_docs)]
+#[expect(missing_docs, reason = "each const is the screen it names")]
 pub mod screen {
     pub const HOME: &str = "home";
     pub const AUTH_LOGIN: &str = "auth_login";
@@ -73,7 +73,7 @@ pub enum Screen {
 }
 
 /// `screens/auth/` members.
-#[allow(missing_docs)]
+#[expect(missing_docs, reason = "the variants are the screen names")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AuthScreen {
     Login,
@@ -82,7 +82,7 @@ pub enum AuthScreen {
 }
 
 /// `screens/deck/` members, `card/` subscreens included.
-#[allow(missing_docs)]
+#[expect(missing_docs, reason = "the variants are the screen names")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DeckScreen {
     List,
@@ -97,7 +97,7 @@ pub enum DeckScreen {
 }
 
 /// Oracle-tag dictionary screens.
-#[allow(missing_docs)]
+#[expect(missing_docs, reason = "the variants are the screen names")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OracleTagScreen {
     Dictionary,
@@ -105,7 +105,7 @@ pub enum OracleTagScreen {
 }
 
 /// `screens/account/` members, plus `Preferences` for `screens/config/`.
-#[allow(missing_docs)]
+#[expect(missing_docs, reason = "the variants are the screen names")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ProfileScreen {
     Main,
@@ -216,7 +216,7 @@ mod tests {
 }
 
 /// Components (module names): the optional drill-down under a host screen.
-#[allow(missing_docs)]
+#[expect(missing_docs, reason = "each const is the component it names")]
 pub mod component {
     /// The screen itself surfaced the error (no component breadcrumb).
     pub const NONE: &str = "";

@@ -1,3 +1,5 @@
+//! Single-card skip/unskip suppression handlers.
+
 use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
@@ -21,10 +23,10 @@ impl From<InvalidSkipDeckCard> for ApiError {
     fn from(value: InvalidSkipDeckCard) -> Self {
         match value {
             InvalidSkipDeckCard::DeckId(e) => {
-                Self::UnprocessableEntity(format!("invalid deck id: {}", e))
+                Self::UnprocessableEntity(format!("invalid deck id: {e}"))
             }
             InvalidSkipDeckCard::OracleId(e) => {
-                Self::UnprocessableEntity(format!("invalid oracle id: {}", e))
+                Self::UnprocessableEntity(format!("invalid oracle id: {e}"))
             }
         }
     }
@@ -32,6 +34,11 @@ impl From<InvalidSkipDeckCard> for ApiError {
 
 /// Suppresses a single card for a deck (durable skip) after ownership
 /// verification.
+///
+/// # Errors
+///
+/// Returns 422 for a malformed id, 404 when the deck isn't the caller's, and
+/// 500 on a database failure.
 pub async fn skip_deck_card(
     State(state): State<AppState>,
     Path(deck_id): Path<String>,
@@ -50,6 +57,11 @@ pub async fn skip_deck_card(
 }
 
 /// Removes a single skip suppression (undo) after ownership verification.
+///
+/// # Errors
+///
+/// Returns 422 for a malformed id, 404 when the deck isn't the caller's, and
+/// 500 on a database failure.
 pub async fn unskip_deck_card(
     State(state): State<AppState>,
     Path((deck_id, oracle_id)): Path<(String, String)>,

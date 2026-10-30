@@ -4,13 +4,11 @@ use thiserror::Error;
 use uuid::Uuid;
 
 use crate::domain::card::search_card::card_filter::price_currency::PriceCurrency;
-use crate::domain::deck::deck_oracle_tags::dedupe_oracle_tags;
-use crate::domain::deck::deck_other_tag::parse_other_tags;
-use crate::domain::deck::deck_tag::parse_tags;
 use crate::domain::deck::format::{Format, InvalidFormat};
 use crate::domain::deck::{
     DeckName, DeckOtherTag, DeckTag, InvalidDeckOtherTag, InvalidDeckTag, InvalidDeckname,
     InvalidPowerLevel, MAX_DECK_ORACLE_TAGS, MAX_DECK_OTHER_TAGS, MAX_DECK_TAGS, PowerLevel,
+    deck_oracle_tags, deck_other_tag, deck_tag,
 };
 
 /// Errors that can occur while constructing a [`CreateDeckProfile`] request.
@@ -59,7 +57,7 @@ pub struct CreateDeckProfile {
     pub format: Option<Format>,
     /// Deck archetype/strategy tags (validated, deduped, at most [`MAX_DECK_TAGS`]).
     pub tags: Vec<DeckTag>,
-    /// Power level (WotC Commander Bracket). `None` = unset.
+    /// Power level (official Commander Bracket). `None` = unset.
     pub power_level: Option<PowerLevel>,
     /// Secondary, non-gameplay labels (validated, deduped, at most [`MAX_DECK_OTHER_TAGS`]).
     pub other_tags: Vec<DeckOtherTag>,
@@ -105,6 +103,7 @@ impl CreateDeckProfile {
 }
 
 /// Builder for [`CreateDeckProfile`].
+#[derive(Debug)]
 pub struct CreateDeckProfileBuilder {
     name: String,
     user_id: Uuid,
@@ -125,82 +124,99 @@ pub struct CreateDeckProfileBuilder {
 
 impl CreateDeckProfileBuilder {
     /// Sets the commander card ID.
+    #[must_use]
     pub fn commander_id(mut self, id: Option<Uuid>) -> Self {
         self.commander_id = id;
         self
     }
 
     /// Sets the partner commander card ID.
+    #[must_use]
     pub fn partner_commander_id(mut self, id: Option<Uuid>) -> Self {
         self.partner_commander_id = id;
         self
     }
 
     /// Sets the background enchantment card ID.
+    #[must_use]
     pub fn background_id(mut self, id: Option<Uuid>) -> Self {
         self.background_id = id;
         self
     }
 
     /// Sets the signature spell card ID.
+    #[must_use]
     pub fn signature_spell_id(mut self, id: Option<Uuid>) -> Self {
         self.signature_spell_id = id;
         self
     }
 
     /// Sets the deck format from a string.
+    #[must_use]
     pub fn format(mut self, format: Option<&str>) -> Self {
-        self.format = format.map(|s| s.to_string());
+        self.format = format.map(str::to_string);
         self
     }
 
     /// Sets the deck tags from raw strings (validated, deduped, and capped on build).
+    #[must_use]
     pub fn tags(mut self, tags: Vec<String>) -> Self {
         self.tags = tags;
         self
     }
 
     /// Sets the power level from a string.
+    #[must_use]
     pub fn power_level(mut self, power_level: Option<&str>) -> Self {
-        self.power_level = power_level.map(|s| s.to_string());
+        self.power_level = power_level.map(str::to_string);
         self
     }
 
     /// Sets the other-tags from raw strings (validated, deduped, and capped on build).
+    #[must_use]
     pub fn other_tags(mut self, other_tags: Vec<String>) -> Self {
         self.other_tags = other_tags;
         self
     }
 
     /// Sets the oracle-tag slugs (deduped and capped on build).
+    #[must_use]
     pub fn oracle_tags(mut self, oracle_tags: Vec<String>) -> Self {
         self.oracle_tags = oracle_tags;
         self
     }
 
     /// Sets the land target.
+    #[must_use]
     pub fn land_target(mut self, land_target: Option<i32>) -> Self {
         self.land_target = land_target;
         self
     }
 
     /// Sets the price target (budget).
+    #[must_use]
     pub fn price_target(mut self, price_target: Option<f64>) -> Self {
         self.price_target = price_target;
         self
     }
 
     /// Sets the price target currency.
+    #[must_use]
     pub fn price_target_currency(mut self, price_target_currency: Option<PriceCurrency>) -> Self {
         self.price_target_currency = price_target_currency;
         self
     }
 
     /// Validates and builds the request.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`InvalidCreateDeckProfile`] when the name, format, a tag, the power level or an
+    /// other-tag is invalid, or when the tags, other-tags or oracle tags exceed their caps.
     pub fn build(self) -> Result<CreateDeckProfile, InvalidCreateDeckProfile> {
         let name = DeckName::new(self.name)?;
         let format = self.format.as_deref().map(Format::try_from).transpose()?;
-        let tags = parse_tags(&self.tags)?;
+        let tags = deck_tag::parse_tags(&self.tags)?;
         if tags.len() > MAX_DECK_TAGS {
             return Err(InvalidCreateDeckProfile::TooManyTags);
         }
@@ -209,11 +225,11 @@ impl CreateDeckProfileBuilder {
             .as_deref()
             .map(PowerLevel::try_from)
             .transpose()?;
-        let other_tags = parse_other_tags(&self.other_tags)?;
+        let other_tags = deck_other_tag::parse_other_tags(&self.other_tags)?;
         if other_tags.len() > MAX_DECK_OTHER_TAGS {
             return Err(InvalidCreateDeckProfile::TooManyOtherTags);
         }
-        let oracle_tags = dedupe_oracle_tags(&self.oracle_tags);
+        let oracle_tags = deck_oracle_tags::dedupe_oracle_tags(&self.oracle_tags);
         if oracle_tags.len() > MAX_DECK_ORACLE_TAGS {
             return Err(InvalidCreateDeckProfile::TooManyOracleTags);
         }
@@ -242,7 +258,7 @@ mod tests {
     use super::*;
 
     fn builder(tags: Vec<&str>) -> CreateDeckProfileBuilder {
-        CreateDeckProfile::builder("My Deck", Uuid::new_v4(), true)
+        CreateDeckProfile::builder("My Deck", Uuid::new_v4(), /* email_verified */ true)
             .tags(tags.into_iter().map(str::to_string).collect())
     }
 

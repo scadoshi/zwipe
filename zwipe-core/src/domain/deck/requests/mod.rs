@@ -1,3 +1,5 @@
+//! Validated inputs for deck operations.
+
 pub mod clear_deck_suppressions;
 pub mod clone_deck;
 pub mod commander_maybeboard;

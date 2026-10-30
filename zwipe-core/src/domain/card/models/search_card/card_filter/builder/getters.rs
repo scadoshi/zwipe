@@ -24,24 +24,24 @@ impl CardQueryBuilder {
         self.oracle_text_contains.as_deref()
     }
 
-    /// Returns the oracle_text_contains_any filter value.
+    /// Returns the `oracle_text_contains_any` filter value.
     pub fn oracle_text_contains_any(&self) -> Option<&[String]> {
         self.oracle_text_contains_any.as_deref()
     }
 
-    /// Returns the oracle_text_contains_all filter value.
+    /// Returns the `oracle_text_contains_all` filter value.
     pub fn oracle_text_contains_all(&self) -> Option<&[String]> {
         self.oracle_text_contains_all.as_deref()
     }
 
     // == Keywords Filter Getters ==
 
-    /// Returns the keywords_contains_any filter value.
+    /// Returns the `keywords_contains_any` filter value.
     pub fn keywords_contains_any(&self) -> Option<&[String]> {
         self.keywords_contains_any.as_deref()
     }
 
-    /// Returns the keywords_contains_all filter value.
+    /// Returns the `keywords_contains_all` filter value.
     pub fn keywords_contains_all(&self) -> Option<&[String]> {
         self.keywords_contains_all.as_deref()
     }
@@ -51,7 +51,7 @@ impl CardQueryBuilder {
         self.flavor_text_contains.as_deref()
     }
 
-    /// Returns the has_flavor_text filter value.
+    /// Returns the `has_flavor_text` filter value.
     pub fn has_flavor_text(&self) -> Option<bool> {
         self.has_flavor_text
     }
@@ -63,22 +63,22 @@ impl CardQueryBuilder {
         self.type_line_contains.as_deref()
     }
 
-    /// Returns the type_line_contains_any filter value.
+    /// Returns the `type_line_contains_any` filter value.
     pub fn type_line_contains_any(&self) -> Option<&[String]> {
         self.type_line_contains_any.as_deref()
     }
 
-    /// Returns the card_type_contains_any filter value.
+    /// Returns the `card_type_contains_any` filter value.
     pub fn card_type_contains_any(&self) -> Option<&[CardType]> {
         self.card_type_contains_any.as_deref()
     }
 
-    /// Returns the type_line_contains_all filter value.
+    /// Returns the `type_line_contains_all` filter value.
     pub fn type_line_contains_all(&self) -> Option<&[String]> {
         self.type_line_contains_all.as_deref()
     }
 
-    /// Returns the card_type_contains_all filter value.
+    /// Returns the `card_type_contains_all` filter value.
     pub fn card_type_contains_all(&self) -> Option<&[CardType]> {
         self.card_type_contains_all.as_deref()
     }
@@ -127,24 +127,24 @@ impl CardQueryBuilder {
         self.price_currency
     }
 
-    /// Returns the color_identity_equals filter value.
+    /// Returns the `color_identity_equals` filter value.
     pub fn color_identity_equals(&self) -> Option<&Colors> {
         self.color_identity_equals.as_ref()
     }
 
-    /// Returns the color_identity_within filter value.
+    /// Returns the `color_identity_within` filter value.
     pub fn color_identity_within(&self) -> Option<&Colors> {
         self.color_identity_within.as_ref()
     }
 
     // == Produced Mana Filter Getters ==
 
-    /// Returns the produced_mana_contains_any filter value.
+    /// Returns the `produced_mana_contains_any` filter value.
     pub fn produced_mana_contains_any(&self) -> Option<&[String]> {
         self.produced_mana_contains_any.as_deref()
     }
 
-    /// Returns the produced_mana_contains_all filter value.
+    /// Returns the `produced_mana_contains_all` filter value.
     pub fn produced_mana_contains_all(&self) -> Option<&[String]> {
         self.produced_mana_contains_all.as_deref()
     }
@@ -173,12 +173,12 @@ impl CardQueryBuilder {
 
     // == Card Flag Getters ==
 
-    /// Returns the is_token filter value.
+    /// Returns the `is_token` filter value.
     pub fn is_token(&self) -> Option<bool> {
         self.is_token
     }
 
-    /// Returns the is_playable filter value.
+    /// Returns the `is_playable` filter value.
     pub fn is_playable(&self) -> Option<bool> {
         self.is_playable
     }
@@ -198,7 +198,7 @@ impl CardQueryBuilder {
         self.promo
     }
 
-    /// Returns the content_warning filter value.
+    /// Returns the `content_warning` filter value.
     pub fn content_warning(&self) -> Option<bool> {
         self.content_warning
     }
@@ -210,7 +210,7 @@ impl CardQueryBuilder {
 
     // == Legalities Filter Getters ==
 
-    /// Returns the legalities_contains_any filter value.
+    /// Returns the `legalities_contains_any` filter value.
     pub fn legalities_contains_any(&self) -> Option<&[String]> {
         self.legalities_contains_any.as_deref()
     }

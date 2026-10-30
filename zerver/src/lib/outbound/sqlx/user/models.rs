@@ -1,3 +1,5 @@
+//! Database-to-domain user model conversions.
+
 use chrono::{DateTime, Utc};
 use sqlx_macros::FromRow;
 use uuid::Uuid;
@@ -9,7 +11,7 @@ use crate::outbound::sqlx::user::error::IntoUserError;
 
 /// raw database user record
 /// (unvalidated data from `PostgreSQL`)
-#[allow(missing_docs)]
+#[expect(missing_docs, reason = "each field mirrors the column it is read from")]
 #[derive(Debug, Clone, FromRow)]
 pub struct DatabaseUser {
     pub id: Uuid,

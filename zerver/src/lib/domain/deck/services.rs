@@ -15,8 +15,7 @@ use zwipe_core::domain::deck::requests::delete_deck_card::DeleteDeckCard;
 use zwipe_core::domain::deck::requests::get_deck_profile::GetDeckProfile;
 use zwipe_core::domain::deck::requests::get_deck_profiles::GetDeckProfiles;
 use zwipe_core::domain::deck::requests::import_deck_cards::{
-    ImportDeckCards, ImportDeckCardsResult, ImportedCard, UnresolvedCard, dfc_front_face,
-    entry_front_face,
+    self, ImportDeckCards, ImportDeckCardsResult, ImportedCard, UnresolvedCard,
 };
 use zwipe_core::domain::deck::requests::skip_deck_card::SkipDeckCard;
 use zwipe_core::domain::deck::requests::update_deck_card::UpdateDeckCard;
@@ -75,11 +74,7 @@ const PROFILE_SYNERGY_CARDS: usize = 15;
 /// allowing modifications. `GetDeckProfileError::Forbidden` is returned if
 /// the user ID doesn't match the deck's owner.
 #[derive(Debug, Clone)]
-pub struct Service<DR, CR>
-where
-    DR: DeckRepository,
-    CR: CardRepository,
-{
+pub struct Service<DR, CR> {
     deck_repo: DR,
     card_repo: CR,
 }
@@ -249,7 +244,9 @@ where
         .flatten()
         .collect();
 
-        let cz_cards: HashMap<Uuid, Card> = if !cz_ids.is_empty() {
+        let cz_cards: HashMap<Uuid, Card> = if cz_ids.is_empty() {
+            HashMap::new()
+        } else {
             self.card_repo
                 .get_cards(&cz_ids)
                 .await
@@ -257,8 +254,6 @@ where
                 .into_iter()
                 .map(|c| (c.scryfall_data.id, c))
                 .collect()
-        } else {
-            HashMap::new()
         };
 
         let commander_card = deck_profile
@@ -293,6 +288,10 @@ where
         Ok(deck)
     }
 
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one search's steps in order: exclusions, the synergy map, then the query"
+    )]
     async fn search_deck_cards(
         &self,
         request: &GetDeckProfile,
@@ -599,6 +598,10 @@ where
         self.deck_repo.clear_commander_maybeboard(user_id).await
     }
 
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one pipeline in order: profile, summarize, score, cap and hydrate"
+    )]
     async fn commander_suggestions(
         &self,
         user_id: Uuid,
@@ -619,14 +622,14 @@ where
         // rather than an average of all of them. Decks past the most recent
         // MAX_PROFILED_DECKS carry only their colors. All the profiles come
         // from one query on one connection.
-        let profiled: Vec<Vec<Uuid>> = decks
+        let profile_oracle_ids: Vec<Vec<Uuid>> = decks
             .iter()
             .take(MAX_PROFILED_DECKS)
             .map(ProfiledDeck::profile_oracle_ids)
             .collect();
         let mut profiles: Vec<Option<DeckTagProfile>> = self
             .card_repo
-            .deck_tag_profiles(&profiled)
+            .deck_tag_profiles(&profile_oracle_ids)
             .await
             .map_err(|e| CommanderSuggestionsError::Database(e.into()))?;
         profiles.resize(decks.len(), None);
@@ -795,6 +798,10 @@ where
         self.deck_repo.clear_commander_dismissals(user_id).await
     }
 
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one import in order: resolve names, classify lines, then write"
+    )]
     async fn import_deck_cards(
         &self,
         request: &ImportDeckCards,
@@ -825,7 +832,7 @@ where
         let mut card_map: HashMap<String, Card> = HashMap::new();
         for card in cards {
             let full = card.scryfall_data.name.to_lowercase();
-            if let Some(front) = dfc_front_face(&full) {
+            if let Some(front) = import_deck_cards::dfc_front_face(&full) {
                 card_map
                     .entry(front.to_string())
                     .or_insert_with(|| card.clone());
@@ -867,7 +874,7 @@ where
             // Try the entry as written, then its front face (before a slash), so
             // "A // B", "A / B", and "A" all resolve to the same card.
             let matched = card_map.get(&key).or_else(|| {
-                let front = entry_front_face(&key);
+                let front = import_deck_cards::entry_front_face(&key);
                 if front.is_empty() || front == key {
                     None
                 } else {
@@ -876,15 +883,12 @@ where
             });
             if let Some(card) = matched {
                 let scryfall_id = card.scryfall_data.id;
-                let oracle_id = match card.scryfall_data.oracle_id {
-                    Some(id) => id,
-                    None => {
-                        unresolved.push(UnresolvedCard {
-                            name: line.card_name.clone(),
-                            reason: "missing oracle id".to_string(),
-                        });
-                        continue;
-                    }
+                let Some(oracle_id) = card.scryfall_data.oracle_id else {
+                    unresolved.push(UnresolvedCard {
+                        name: line.card_name.clone(),
+                        reason: "missing oracle id".to_string(),
+                    });
+                    continue;
                 };
                 // Skip additional cards (commander, partner, background, signature spell)
                 if additional_oracle_ids.contains(&oracle_id) {
@@ -954,6 +958,10 @@ where
         })
     }
 
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one import in order: resolve ids, fall back to names, classify, then write"
+    )]
     async fn import_archidekt_deck(
         &self,
         user_id: Uuid,

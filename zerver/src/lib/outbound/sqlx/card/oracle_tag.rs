@@ -6,7 +6,7 @@ use zwipe_core::domain::card::oracle_tag::{CURATED_ORACLE_TAGS, OracleTag};
 /// Raw database oracle tag catalog record (from the `oracle_tags` table, with
 /// `parent_ids` already resolved to parent slugs by the query).
 #[derive(Debug, Clone, FromRow)]
-#[allow(missing_docs)]
+#[expect(missing_docs, reason = "each field mirrors the column it is read from")]
 pub struct DatabaseOracleTag {
     pub slug: String,
     pub label: String,
@@ -18,8 +18,7 @@ impl From<DatabaseOracleTag> for OracleTag {
     fn from(value: DatabaseOracleTag) -> Self {
         // Curation is a server decision, stamped here from the compiled
         // list, so a retune ships on a deploy. A slug that is no longer
-        // served cannot be marked curated, which is what the client used to
-        // filter for by hand.
+        // served cannot be marked curated.
         let curated = CURATED_ORACLE_TAGS.contains(&value.slug.as_str());
         Self {
             slug: value.slug,

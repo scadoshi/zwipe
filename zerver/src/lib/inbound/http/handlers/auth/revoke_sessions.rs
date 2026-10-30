@@ -1,3 +1,5 @@
+//! Session revocation handler.
+
 use axum::extract::State;
 use axum::http::StatusCode;
 
@@ -15,6 +17,10 @@ impl From<RevokeSessionsError> for ApiError {
 }
 
 /// Revokes all sessions for the authenticated user (logs out all devices).
+///
+/// # Errors
+///
+/// Returns 500 on a database failure.
 pub async fn revoke_sessions(
     user: AuthenticatedUser,
     State(state): State<AppState>,

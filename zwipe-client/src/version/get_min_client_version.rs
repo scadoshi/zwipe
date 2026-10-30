@@ -11,6 +11,11 @@ impl ZwipeClient {
     /// Public and unauthenticated: a gated client must be able to learn it's
     /// gated without a valid session. Polled by the upkeep loop, so this logs at
     /// debug rather than info.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`ClientError`] when the request fails to complete, the server answers with an
+    /// error status, or the reply doesn't decode.
     pub async fn get_min_client_version(&self) -> Result<HttpMinClientVersion, ClientError> {
         self.call(GetMinClientVersion, None).await
     }

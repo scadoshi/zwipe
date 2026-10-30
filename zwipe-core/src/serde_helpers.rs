@@ -17,6 +17,10 @@ use serde::{Deserialize, Deserializer};
 /// Apply with `#[serde(default, deserialize_with = "crate::serde_helpers::lossy_vec")]`.
 /// Deserialize-only: serialization is unchanged, so the wire is identical and
 /// existing clients are unaffected.
+///
+/// # Errors
+///
+/// Returns the deserializer's error when the value is not an array.
 pub fn lossy_vec<'de, D, T>(deserializer: D) -> Result<Vec<T>, D::Error>
 where
     D: Deserializer<'de>,
@@ -33,8 +37,6 @@ where
 mod tests {
     use serde::Deserialize;
 
-    use super::lossy_vec;
-
     #[derive(Debug, PartialEq, Deserialize)]
     #[serde(rename_all = "snake_case")]
     enum Role {
@@ -44,7 +46,7 @@ mod tests {
 
     #[derive(Debug, PartialEq, Deserialize)]
     struct Wrap {
-        #[serde(default, deserialize_with = "lossy_vec")]
+        #[serde(default, deserialize_with = "super::lossy_vec")]
         roles: Vec<Role>,
     }
 
@@ -58,17 +60,12 @@ mod tests {
 
     #[test]
     fn empty_and_missing_are_fine() {
-        assert!(
+        assert_eq!(
             serde_json::from_str::<Wrap>(r#"{"roles":[]}"#)
                 .unwrap()
-                .roles
-                .is_empty()
+                .roles,
+            vec![]
         );
-        assert!(
-            serde_json::from_str::<Wrap>(r#"{}"#)
-                .unwrap()
-                .roles
-                .is_empty()
-        );
+        assert_eq!(serde_json::from_str::<Wrap>("{}").unwrap().roles, vec![]);
     }
 }

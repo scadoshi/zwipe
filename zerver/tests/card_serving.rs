@@ -5,7 +5,11 @@
 //!
 //! Requires `DATABASE_URL`: `set -a; source zerver/.env; set +a`.
 
-#![allow(clippy::unwrap_used, clippy::indexing_slicing)]
+#![expect(
+    clippy::unwrap_used,
+    clippy::indexing_slicing,
+    reason = "a test: helpers outside #[test] fns unwrap and index, and a panic is the failure report"
+)]
 
 use zwipe_core::http::paths::{
     DECK_ROUTE, PREFERENCES_ROUTE, SEARCH_CARDS_ROUTE, get_card_route, get_deck_route,
@@ -24,7 +28,8 @@ use serde_json::json;
 /// decode an empty result rather than fail if `cards` were renamed.
 fn deck_search_names(body: &serde_json::Value) -> Vec<String> {
     assert!(
-        body.get("synergy_applied").is_some_and(|v| v.is_boolean()),
+        body.get("synergy_applied")
+            .is_some_and(serde_json::Value::is_boolean),
         "deck search must carry synergy_applied: {body}"
     );
     names(body.get("cards").unwrap())
@@ -226,9 +231,9 @@ async fn search_requires_auth(pool: sqlx::PgPool) {
     assert_eq!(status, StatusCode::UNAUTHORIZED);
 }
 
-/// Phase 4 end-to-end: a deck's *persisted* selected oracle tags lift matching
+/// End to end: a deck's *persisted* selected oracle tags lift matching
 /// cards through the real serve endpoint (`POST /api/deck/{id}/card/search`).
-/// Proves the whole path — `search_deck_cards` loading `deck_profile.oracle_tags`
+/// Proves the whole path: `search_deck_cards` loading `deck_profile.oracle_tags`
 /// and threading them into the banded synergy serve. A spoofed commander synergy
 /// payload activates the signal-ordering path (its one scored entry is the
 /// commander itself, which the serve excludes, so every servable card is

@@ -1,8 +1,10 @@
+//! Card pricing data from various sources.
+
 use serde::{Deserialize, Serialize};
 
 /// Current market prices for a card in various currencies and finishes.
 ///
-/// Prices are sourced from TCGplayer (USD), Cardmarket (EUR), and MTGO (TIX).
+/// Prices are sourced from `TCGplayer` (USD), Cardmarket (EUR), and MTGO (TIX).
 /// All prices are stored as strings to preserve exact decimal precision.
 /// `None` means the card is not available in that finish or market.
 ///
@@ -12,7 +14,7 @@ use serde::{Deserialize, Serialize};
 /// - **Etched**: Matte etched foil (special premium finish)
 ///
 /// # Currencies
-/// - **USD**: US Dollars (from TCGplayer)
+/// - **USD**: US Dollars (from `TCGplayer`)
 /// - **EUR**: Euros (from Cardmarket)
 /// - **TIX**: MTGO Event Tickets (Magic Online currency)
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

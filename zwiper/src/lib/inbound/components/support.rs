@@ -27,13 +27,17 @@ const GLYPH: &str = "!";
 /// Percent-encodes a string for use in a `mailto:` query (RFC 3986 unreserved
 /// set passes through; everything else (spaces, newlines, `·`) is encoded).
 fn urlencode(input: &str) -> String {
+    use std::fmt::Write;
+
     let mut out = String::with_capacity(input.len());
     for byte in input.bytes() {
         match byte {
             b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
                 out.push(byte as char);
             }
-            _ => out.push_str(&format!("%{byte:02X}")),
+            _ => {
+                let _ = write!(out, "%{byte:02X}");
+            }
         }
     }
     out

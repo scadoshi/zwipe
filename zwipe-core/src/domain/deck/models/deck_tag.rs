@@ -8,7 +8,7 @@
 //!
 //! The list is large on purpose; the picker is a searchable typeahead, so more
 //! options cost nothing on screen. Variants are only ever added, never removed
-//! or renamed, so previously-stored tags keep parsing.
+//! or renamed, so stored tags keep parsing.
 
 use std::fmt;
 
@@ -259,6 +259,7 @@ pub enum DeckTag {
 
 impl DeckTag {
     /// All deck tag variants, alphabetical.
+    #[expect(clippy::too_many_lines, reason = "a list of every variant")]
     pub fn all() -> &'static [DeckTag] {
         &[
             Self::Adventures,
@@ -382,6 +383,7 @@ impl DeckTag {
     }
 
     /// Human-readable display name.
+    #[expect(clippy::too_many_lines, reason = "a lookup table, one arm per tag")]
     pub fn display_name(&self) -> &'static str {
         match self {
             Self::Adventures => "Adventures",
@@ -506,6 +508,7 @@ impl DeckTag {
 
     /// One-line, plain-language definition of the strategy, for the tag picker's
     /// hint dialog.
+    #[expect(clippy::too_many_lines, reason = "a lookup table, one arm per tag")]
     pub fn description(&self) -> &'static str {
         match self {
             Self::Adventures => {
@@ -657,6 +660,7 @@ impl DeckTag {
     /// pre-selects these on the deck; the user then adds/removes/searches. Curated
     /// to be tuned over time as usage data and player feedback arrive. Archetypes
     /// too vague or niche to seed usefully return `&[]` (the user picks manually).
+    #[expect(clippy::too_many_lines, reason = "a lookup table, one arm per tag")]
     pub fn oracle_tag_slugs(&self) -> &'static [&'static str] {
         match self {
             Self::Aggro => &[
@@ -933,7 +937,7 @@ impl DeckTag {
     }
 }
 
-/// Display as snake_case (matches serde serialization).
+/// Display as `snake_case` (matches serde serialization).
 impl fmt::Display for DeckTag {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let s = serde_json::to_string(self).unwrap_or_default();
@@ -961,7 +965,7 @@ impl TryFrom<&str> for DeckTag {
 /// reaches clients on deploy. See `context/plans/server_driven_catalogs.md` (Part C).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DeckTagView {
-    /// snake_case slug (matches the served tag values).
+    /// `snake_case` slug (matches the served tag values).
     pub slug: String,
     /// Human-readable label.
     pub display_name: String,
@@ -981,7 +985,7 @@ impl DeckTag {
             seed_otags: self
                 .oracle_tag_slugs()
                 .iter()
-                .map(|s| s.to_string())
+                .map(ToString::to_string)
                 .collect(),
         }
     }
@@ -992,9 +996,10 @@ impl DeckTag {
 /// work off server slugs (`DeckProfile.tags`); a server-added tag shows a readable
 /// label without a client release, while known tags keep their curated labels.
 pub fn deck_tag_label(slug: &str) -> String {
-    DeckTag::try_from(slug)
-        .map(|t| t.display_name().to_string())
-        .unwrap_or_else(|_| prettify_deck_tag_slug(slug))
+    DeckTag::try_from(slug).map_or_else(
+        |_| prettify_deck_tag_slug(slug),
+        |t| t.display_name().to_string(),
+    )
 }
 
 /// Title-cases a `snake_case`/`kebab-case` slug (`extra_turns` → "Extra Turns").
@@ -1015,6 +1020,10 @@ fn prettify_deck_tag_slug(slug: &str) -> String {
 /// Parses raw tag strings into validated tags, dropping duplicates while
 /// preserving order. Returns an error on the first unrecognized string. Callers
 /// enforce [`MAX_DECK_TAGS`] separately so they can surface their own error.
+///
+/// # Errors
+///
+/// Returns [`InvalidDeckTag`] for the first string that is not a tag slug.
 pub fn parse_tags(raw: &[String]) -> Result<Vec<DeckTag>, InvalidDeckTag> {
     let mut out: Vec<DeckTag> = Vec::with_capacity(raw.len());
     for s in raw {
@@ -1062,21 +1071,21 @@ mod tests {
     #[test]
     fn display_name_non_empty() {
         for tag in DeckTag::all() {
-            assert!(!tag.display_name().is_empty());
+            assert_ne!(tag.display_name(), "");
         }
     }
 
     #[test]
     fn description_non_empty() {
         for tag in DeckTag::all() {
-            assert!(!tag.description().is_empty());
+            assert_ne!(tag.description(), "");
         }
     }
 
     #[test]
     fn all_variants_have_unique_display_names() {
         let names: std::collections::HashSet<_> =
-            DeckTag::all().iter().map(|t| t.display_name()).collect();
+            DeckTag::all().iter().map(DeckTag::display_name).collect();
         assert_eq!(names.len(), DeckTag::all().len());
     }
 }

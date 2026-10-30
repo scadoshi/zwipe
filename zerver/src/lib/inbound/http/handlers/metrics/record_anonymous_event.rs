@@ -1,3 +1,5 @@
+//! Accepts a pre-auth funnel event from an unauthenticated client (no auth).
+
 use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
@@ -9,6 +11,10 @@ use crate::inbound::http::{ApiError, AppState};
 ///
 /// The kind is a closed enum in the contract, so an unknown kind is rejected
 /// at deserialization; the IP rate limit on the route bounds row volume.
+///
+/// # Errors
+///
+/// Returns 500 on a database failure.
 pub async fn record_anonymous_event(
     State(state): State<AppState>,
     Json(event): Json<HttpAnonymousEvent>,

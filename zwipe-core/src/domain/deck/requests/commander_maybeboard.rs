@@ -28,6 +28,10 @@ impl CommanderMaybeboardCard {
     }
 
     /// Creates a new entry request parsing the oracle id from a path segment.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`InvalidCommanderMaybeboardCard::OracleId`] when `oracle_id` is not a UUID.
     pub fn from_path(
         user_id: Uuid,
         oracle_id: &str,

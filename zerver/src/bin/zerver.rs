@@ -1,3 +1,5 @@
+//! zerver: the Zwipe HTTP API, logging to stdout and a daily rolling file.
+
 use std::sync::Arc;
 
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
@@ -11,12 +13,18 @@ use zwipe::outbound::resend::Resend;
 use zwipe::outbound::sqlx::postgres::Postgres;
 use zwipe_core::domain::logo;
 
+/// Daily log files kept; the appender deletes older ones.
+const MAX_LOG_FILES: usize = 30;
+
 #[tokio::main]
-#[allow(clippy::print_stderr)]
+#[expect(
+    clippy::print_stderr,
+    reason = "the error goes to stderr before exit, when tracing may not be set up"
+)]
 async fn main() {
     logo::Zerver::print();
     match run().await {
-        Ok(_) => (),
+        Ok(()) => (),
         Err(e) => {
             // Nonzero exit so systemd's Restart=on-failure fires.
             eprintln!("main failed: {e:?}");
@@ -29,11 +37,10 @@ async fn run() -> anyhow::Result<()> {
     let config: Config = Config::from_env()?;
 
     // EnvFilter::try_from_default_env() reads RUST_LOG directly from the process env;
-    // when unset/invalid we fall back to the directive string loaded via Config (which
-    // came from .env). ONE filter, attached globally to the registry; a per-layer
-    // EnvFilter copy on each fmt layer silently DROPS events (incl. errors) once the
-    // directive set has per-target entries (found live 2026-07-30; both sinks want
-    // identical filtering anyway).
+    // when unset/invalid we fall back to the directive string loaded via Config (read
+    // from .env). ONE filter, attached globally to the registry; a per-layer EnvFilter
+    // copy on each fmt layer silently DROPS events (incl. errors) once the directive
+    // set has per-target entries, and both sinks want identical filtering anyway.
     let env_filter =
         EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(&config.rust_log));
 
@@ -41,12 +48,11 @@ async fn run() -> anyhow::Result<()> {
         .map_err(|e| anyhow::anyhow!("failed to create log directory: {e}"))?;
 
     // Rolling daily log file: $LOG_DIR/zerver.YYYY-MM-DD.log (default: /var/log/zwipe)
-    // max_log_files(30) automatically deletes files older than 30 days
     let file_appender = RollingFileAppender::builder()
         .rotation(Rotation::DAILY)
         .filename_prefix("zerver")
         .filename_suffix("log")
-        .max_log_files(30)
+        .max_log_files(MAX_LOG_FILES)
         .build(&config.log_dir)
         .map_err(|e| anyhow::anyhow!("failed to build log file appender: {e}"))?;
 

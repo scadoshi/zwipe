@@ -1,3 +1,5 @@
+//! Card search handler.
+
 use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
@@ -15,6 +17,10 @@ impl From<SearchCardsError> for ApiError {
 }
 
 /// Searches cards using a `CardQuery` deserialized from the JSON body.
+///
+/// # Errors
+///
+/// Returns 500 when the search fails.
 pub async fn search_cards(
     user: AuthenticatedUser,
     State(state): State<AppState>,

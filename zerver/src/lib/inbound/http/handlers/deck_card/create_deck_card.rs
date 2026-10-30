@@ -1,3 +1,5 @@
+//! Add card to deck handler.
+
 use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
@@ -7,7 +9,7 @@ use zwipe_core::domain::user::requests::get_user::GetUser;
 use zwipe_core::http::contracts::deck_card::HttpCreateDeckCard;
 
 use crate::domain::deck::models::deck_card::create_deck_card::CreateDeckCardError;
-use crate::inbound::http::handlers::metrics::check_completion::check_deck_completion;
+use crate::inbound::http::handlers::metrics::check_completion;
 use crate::inbound::http::middleware::AuthenticatedUser;
 use crate::inbound::http::{ApiError, AppState, To500};
 
@@ -28,8 +30,7 @@ impl From<CreateDeckCardError> for ApiError {
                 "card limit reached across all boards, verify your email to unlock more"
                     .to_string(),
             ),
-            CreateDeckCardError::Database(e) => e.to_500(),
-            CreateDeckCardError::DeckCardFromDb(e) => e.to_500(),
+            CreateDeckCardError::Database(e) | CreateDeckCardError::DeckCardFromDb(e) => e.to_500(),
             CreateDeckCardError::GetDeckProfileError(e) => ApiError::from(e),
             // Someone else's deck and no deck at all read the same, as on
             // the deck routes.
@@ -42,22 +43,28 @@ impl From<InvalidCreateDeckCard> for ApiError {
     fn from(value: InvalidCreateDeckCard) -> Self {
         match value {
             InvalidCreateDeckCard::ScryfallDataId(e) => {
-                Self::UnprocessableEntity(format!("invalid card id: {}", e))
+                Self::UnprocessableEntity(format!("invalid card id: {e}"))
             }
             InvalidCreateDeckCard::DeckId(e) => {
-                Self::UnprocessableEntity(format!("invalid deck id: {}", e))
+                Self::UnprocessableEntity(format!("invalid deck id: {e}"))
             }
             InvalidCreateDeckCard::OracleId(e) => {
-                Self::UnprocessableEntity(format!("invalid oracle id: {}", e))
+                Self::UnprocessableEntity(format!("invalid oracle id: {e}"))
             }
             InvalidCreateDeckCard::Quantity(e) => {
-                Self::UnprocessableEntity(format!("invalid quantity: {}", e))
+                Self::UnprocessableEntity(format!("invalid quantity: {e}"))
             }
         }
     }
 }
 
 /// Adds a card to a deck with the specified quantity.
+///
+/// # Errors
+///
+/// Returns 422 for an invalid id, quantity or board, a commander, or a full
+/// deck, 409 when the card is already in it, 404 when the deck isn't the
+/// caller's, and 500 on a database failure.
 pub async fn create_deck_card(
     user: AuthenticatedUser,
     State(state): State<AppState>,
@@ -92,7 +99,12 @@ pub async fn create_deck_card(
     let deck_service = std::sync::Arc::clone(&state.deck_service);
     let uid = user.id;
     let did = request.deck_id;
-    tokio::spawn(check_deck_completion(deck_service, metrics, uid, did));
+    tokio::spawn(check_completion::check_deck_completion(
+        deck_service,
+        metrics,
+        uid,
+        did,
+    ));
 
     Ok((StatusCode::CREATED, Json(deck_card)))
 }

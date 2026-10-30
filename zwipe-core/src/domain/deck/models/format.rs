@@ -14,7 +14,7 @@ pub struct InvalidFormat;
 /// Magic: The Gathering deck format.
 ///
 /// Variants match the field names in [`Legalities`](crate::domain::card::models::scryfall_data::legalities::Legalities) for direct lookup.
-#[allow(missing_docs)]
+#[expect(missing_docs, reason = "the variants are the format names")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Format {
     Standard,
@@ -111,7 +111,7 @@ impl Format {
             Self::Gladiator => "Every set on Arena",
             Self::Pioneer => "Return to Ravnica (2012) and newer",
             Self::Modern => "8th Edition (2003) forward, plus Modern Horizons",
-            Self::Legacy => "Nearly every card; eternal",
+            Self::Legacy | Self::Duel => "Nearly every card; eternal",
             Self::Pauper => "Only cards printed at common",
             Self::Vintage => "Nearly every card; some restricted",
             Self::Penny => "Cheapest cards on MTGO; rotates by price",
@@ -121,7 +121,6 @@ impl Format {
             Self::Brawl => "Every card on Arena, including digital-only",
             Self::Alchemy => "Standard pool plus digital-only cards",
             Self::PauperCommander => "Commons only; uncommon commander",
-            Self::Duel => "Nearly every card; eternal",
             Self::OldSchool => "1993-1994 sets (Alpha onward)",
             Self::Premodern => "4th Edition through Scourge (1995-2003)",
             Self::Predh => "Sets before the first Commander product",
@@ -186,7 +185,7 @@ impl Format {
     pub fn max_cards(&self) -> Option<u32> {
         match self {
             // Exactly-100 commander singleton formats. `Brawl` is Arena's
-            // 100-card Brawl (formerly Historic Brawl, renamed Dec 2023).
+            // 100-card Brawl.
             Self::Commander
             | Self::PauperCommander
             | Self::Duel

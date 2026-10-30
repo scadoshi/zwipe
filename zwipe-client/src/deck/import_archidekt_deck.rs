@@ -15,6 +15,11 @@ impl ZwipeClient {
     /// The server fetches and parses the deck, resolves printings by Scryfall id,
     /// and imports the cards exactly like the plain-text importer: same boards,
     /// same add/replace modes, same result shape.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`ClientError`] when the request fails to complete, the server answers with an
+    /// error status, or the reply doesn't decode.
     pub async fn import_archidekt_deck(
         &self,
         deck_id: Uuid,
@@ -28,7 +33,7 @@ impl ZwipeClient {
                 deck_id,
                 HttpImportArchidektDeck {
                     url: url.to_string(),
-                    board: board.map(|b| b.to_string()),
+                    board: board.map(ToString::to_string),
                     mode,
                 },
             ),

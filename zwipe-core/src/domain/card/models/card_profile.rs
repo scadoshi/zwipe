@@ -1,6 +1,6 @@
 //! User-specific card metadata and computed properties.
 //!
-//! CardProfile stores application-computed metadata for each card:
+//! `CardProfile` stores application-computed metadata for each card:
 //! - Token status (whether this is a token vs. real card)
 //! - Timestamps (when card was added/updated in database)
 
@@ -13,7 +13,6 @@ use uuid::Uuid;
 /// Application metadata for a card.
 ///
 /// Stores computed properties and timestamps for each card in the database.
-/// Currently minimal, but designed for future expansion with user-specific data.
 #[derive(Debug, Clone, Serialize, PartialEq, Deserialize)]
 pub struct CardProfile {
     /// Scryfall UUID, the primary key shared with the `scryfall_data` table.

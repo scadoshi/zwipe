@@ -31,7 +31,7 @@ use crate::domain::user::models::preferences::{GetPreferencesError, UpdatePrefer
 pub trait UserRepository: Clone + Send + Sync + 'static {
     /// Retrieves a user profile by ID.
     ///
-    /// Returns user data without password hash (use AuthRepository for that).
+    /// Returns user data without password hash (use `AuthRepository` for that).
     fn get_user(&self, user_id: Uuid) -> impl Future<Output = Result<User, GetUserError>> + Send;
 
     /// Fetches display preferences for a user. Returns defaults if no row exists.
@@ -95,10 +95,10 @@ pub trait ErasedUserService: Send + Sync + 'static {
     fn get_user<'a>(&'a self, request: &'a GetUser) -> BoxFuture<'a, Result<User, GetUserError>>;
 
     /// See [`UserService::get_preferences`].
-    fn get_preferences<'a>(
-        &'a self,
+    fn get_preferences(
+        &self,
         user_id: Uuid,
-    ) -> BoxFuture<'a, Result<UserPreferences, GetPreferencesError>>;
+    ) -> BoxFuture<'_, Result<UserPreferences, GetPreferencesError>>;
 
     /// See [`UserService::update_preferences`].
     fn update_preferences<'a>(
@@ -121,10 +121,10 @@ where
         Box::pin(UserService::get_user(self, request))
     }
 
-    fn get_preferences<'a>(
-        &'a self,
+    fn get_preferences(
+        &self,
         user_id: Uuid,
-    ) -> BoxFuture<'a, Result<UserPreferences, GetPreferencesError>> {
+    ) -> BoxFuture<'_, Result<UserPreferences, GetPreferencesError>> {
         Box::pin(UserService::get_preferences(self, user_id))
     }
 

@@ -29,7 +29,7 @@ pub struct DeckProfile {
     /// be selected + stored without a client release; labels via `deck_tag_label`.
     #[serde(default)]
     pub tags: Vec<String>,
-    /// Power level (WotC Commander Bracket). `None` = unset. `#[serde(default)]`
+    /// Power level (official Commander Bracket). `None` = unset. `#[serde(default)]`
     /// so an older client reading a payload without it parses to `None`.
     #[serde(default)]
     pub power_level: Option<PowerLevel>,
@@ -101,12 +101,11 @@ pub struct DeckProfile {
 mod tests {
     use super::*;
 
-    /// A payload from a server that predates the command-zone art fields still
-    /// parses; the client half of this change can ship before the server half
-    /// without breaking, and a client that has cached older payloads keeps
-    /// working. The reverse direction (an older client reading a payload that
-    /// *has* the fields) needs no test: the struct doesn't set
-    /// `deny_unknown_fields`, so serde skips what it doesn't know.
+    /// A payload without the command-zone art fields still parses, so a client
+    /// reads older servers and its own cached payloads. The reverse direction
+    /// (an older client reading a payload that *has* the fields) needs no test:
+    /// the struct doesn't set `deny_unknown_fields`, so serde skips what it
+    /// doesn't know.
     #[test]
     fn parses_payload_without_command_zone_art() {
         let json = serde_json::json!({

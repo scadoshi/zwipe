@@ -79,7 +79,7 @@ pub struct Config {
     /// Secret key for signing and verifying JWT tokens.
     pub jwt_secret: JwtSecret,
 
-    /// PostgreSQL connection URL (e.g., "postgres://user:pass@host/db").
+    /// PostgreSQL connection URL (e.g., `"postgres://user:pass@host/db"`).
     pub database_url: String,
 
     /// Address to bind the HTTP server to (e.g., "0.0.0.0:8080").
@@ -123,6 +123,28 @@ pub struct Config {
     pub support_email_address: String,
 }
 
+/// Redacted: the database URL carries its password, and the JWT secret and
+/// Resend key are secrets.
+impl std::fmt::Debug for Config {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Config")
+            .field("jwt_secret", &self.jwt_secret)
+            .field("database_url", &"REDACTED")
+            .field("bind_address", &self.bind_address)
+            .field("rust_log", &self.rust_log)
+            .field("rust_backtrace", &self.rust_backtrace)
+            .field("allowed_origins", &self.allowed_origins)
+            .field("resend_api_key", &"REDACTED")
+            .field("resend_from_email", &self.resend_from_email)
+            .field("log_dir", &self.log_dir)
+            .field("min_client_version", &self.min_client_version)
+            .field("access_token_lifetime", &self.access_token_lifetime)
+            .field("web_base_url", &self.web_base_url)
+            .field("support_email_address", &self.support_email_address)
+            .finish()
+    }
+}
+
 impl Config {
     /// Loads configuration from environment variables.
     ///
@@ -141,7 +163,7 @@ impl Config {
         let rust_backtrace = env_var_by_key(RUST_BACKTRACE_KEY)?;
         let allowed_origins: Vec<HeaderValue> = env_var_by_key(ALLOWED_ORIGINS_KEY)?
             .split(',')
-            .map(|x| x.parse())
+            .map(str::parse)
             .collect::<Result<Vec<HeaderValue>, _>>()?;
         let resend_api_key = env_var_by_key(RESEND_API_KEY_KEY)?;
         let resend_from_email = env_var_by_key(RESEND_EMAIL_FROM_KEY)?;
@@ -150,19 +172,14 @@ impl Config {
             .unwrap_or_else(|_| MIN_CLIENT_VERSION_DEFAULT.to_string());
         if zwipe_core::version::parse_version(&min_client_version).is_none() {
             anyhow::bail!(
-                "invalid {}: {:?} (expected x.y.z)",
-                MIN_CLIENT_VERSION_KEY,
-                min_client_version
+                "invalid {MIN_CLIENT_VERSION_KEY}: {min_client_version:?} (expected x.y.z)"
             );
         }
         let access_token_minutes = match std::env::var(ACCESS_TOKEN_MINUTES_KEY) {
             Ok(raw) => match raw.trim().parse::<i64>() {
                 Ok(minutes) if (1..=ACCESS_TOKEN_MINUTES_MAX).contains(&minutes) => minutes,
                 _ => anyhow::bail!(
-                    "invalid {}: {:?} (expected a whole number of minutes from 1 to {})",
-                    ACCESS_TOKEN_MINUTES_KEY,
-                    raw,
-                    ACCESS_TOKEN_MINUTES_MAX
+                    "invalid {ACCESS_TOKEN_MINUTES_KEY}: {raw:?} (expected a whole number of minutes from 1 to {ACCESS_TOKEN_MINUTES_MAX})"
                 ),
             },
             Err(_) => ACCESS_TOKEN_MINUTES_DEFAULT,
@@ -198,7 +215,7 @@ impl Config {
 /// even be offered) JWT/Resend/email secrets. Keep this to exactly what the
 /// sync pipeline needs; the systemd unit feeds it `/etc/zwipe/zervice.env`.
 pub struct ZerviceConfig {
-    /// PostgreSQL connection URL (e.g., "postgres://user:pass@host/db").
+    /// PostgreSQL connection URL (e.g., `"postgres://user:pass@host/db"`).
     pub database_url: String,
 
     /// Tracing filter directive(s), fed to `tracing_subscriber::EnvFilter`.
@@ -212,6 +229,22 @@ pub struct ZerviceConfig {
     /// silence-based on the receiving side; the `OnFailure=` email covers
     /// "ran and failed", this covers "never ran at all".
     pub healthcheck_ping_url: Option<String>,
+}
+
+/// Redacted: the database URL carries its password, and the ping URL's path
+/// is the check's only credential.
+impl std::fmt::Debug for ZerviceConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ZerviceConfig")
+            .field("database_url", &"REDACTED")
+            .field("rust_log", &self.rust_log)
+            .field("log_dir", &self.log_dir)
+            .field(
+                "healthcheck_ping_url",
+                &self.healthcheck_ping_url.as_ref().map(|_| "REDACTED"),
+            )
+            .finish()
+    }
 }
 
 impl ZerviceConfig {
@@ -241,5 +274,5 @@ impl ZerviceConfig {
 
 /// Retrieves an environment variable by key with a descriptive error on failure.
 fn env_var_by_key(key: &str) -> anyhow::Result<String> {
-    std::env::var(key).context(format!("failed to get variable from env: {}", key))
+    std::env::var(key).context(format!("failed to get variable from env: {key}"))
 }

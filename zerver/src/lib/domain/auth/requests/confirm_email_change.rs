@@ -9,6 +9,15 @@ pub struct ConfirmEmailChange {
     pub token: String,
 }
 
+/// Redacted: `token` is a credential.
+impl std::fmt::Debug for ConfirmEmailChange {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ConfirmEmailChange")
+            .field("token", &"REDACTED")
+            .finish()
+    }
+}
+
 /// The switch that a confirmation made.
 #[derive(Debug)]
 pub struct ConfirmedEmailChange {

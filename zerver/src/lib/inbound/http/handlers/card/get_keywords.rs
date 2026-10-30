@@ -1,3 +1,5 @@
+//! Distinct keyword ability names handler.
+
 use axum::Json;
 use axum::extract::State;
 use reqwest::StatusCode;
@@ -14,6 +16,10 @@ impl From<GetKeywordsError> for ApiError {
 }
 
 /// Returns distinct keyword ability names.
+///
+/// # Errors
+///
+/// Returns 500 on a database failure.
 pub async fn get_keywords(
     State(state): State<AppState>,
 ) -> Result<(StatusCode, Json<Vec<String>>), ApiError> {

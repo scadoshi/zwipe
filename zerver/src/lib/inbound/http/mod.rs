@@ -1,12 +1,8 @@
 //! HTTP layer: Axum server, error mapping, middleware, and route definitions.
 
-/// Serving-layer caches (`TtlSlot`, one typed slot per cached value).
 pub mod cache;
-/// HTTP request handlers organized by domain.
 pub mod handlers;
-/// JWT authentication and last-active tracking middleware.
 pub mod middleware;
-/// Route definitions mapping paths to handlers.
 pub mod routes;
 
 use std::sync::Arc;
@@ -35,7 +31,6 @@ use crate::domain::deck::ports::{DeckService, ErasedDeckService};
 use crate::domain::health::ports::{ErasedHealthService, HealthService};
 use crate::domain::metrics::ports::ErasedMetricsService;
 use crate::domain::user::ports::{ErasedUserService, UserService};
-use crate::inbound::http::routes::{private_routes, public_routes};
 
 // == error ==
 
@@ -49,7 +44,10 @@ use crate::inbound::http::routes::{private_routes, public_routes};
 /// `(status, body)` in their own error layer (zwiper's `ClientError`); transport
 /// failures never enter this type.
 #[derive(Debug, Error, Clone)]
-#[allow(missing_docs)]
+#[expect(
+    missing_docs,
+    reason = "each variant is named for the HTTP status it answers with"
+)]
 pub enum ApiError {
     #[error("{0}")]
     InternalServerError(String),
@@ -64,8 +62,8 @@ pub enum ApiError {
     #[error("{0}")]
     TooManyRequests(String),
     /// The request clashes with the current state: a name, address or card
-    /// that is already taken. A client from before 409 existed folds it into
-    /// a generic error, so this ships behind the client version floor.
+    /// that is already taken. An app older than the client version floor
+    /// folds it into a generic error.
     #[error("{0}")]
     Conflict(String),
 }
@@ -78,7 +76,7 @@ impl From<anyhow::Error> for ApiError {
 
 impl From<uuid::Error> for ApiError {
     fn from(value: uuid::Error) -> Self {
-        Self::UnprocessableEntity(format!("failed to parse uuid: {}", value))
+        Self::UnprocessableEntity(format!("failed to parse uuid: {value}"))
     }
 }
 
@@ -151,6 +149,12 @@ async fn security_headers(request: Request, next: Next) -> Response {
 
 // == server ==
 
+/// Largest request body accepted on any route, in bytes (2 MiB).
+const REQUEST_BODY_LIMIT: usize = 2 * 1024 * 1024;
+
+/// How long a request may run before it is answered with 408.
+const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
+
 /// Bind address and CORS origins for the HTTP server.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HttpServerConfig<'a> {
@@ -171,7 +175,10 @@ pub struct HttpServerConfig<'a> {
 /// twins in each domain's ports) so handlers stay free of generic parameters;
 /// mock implementations still satisfy the fields via the blanket impls.
 #[derive(Clone)]
-#[allow(missing_docs)]
+#[expect(
+    missing_docs,
+    reason = "each service field is named for the service it holds"
+)]
 pub struct AppState {
     pub auth_service: Arc<dyn ErasedAuthService>,
     pub user_service: Arc<dyn ErasedUserService>,
@@ -191,7 +198,21 @@ pub struct AppState {
     pub web_base_url: Arc<str>,
 }
 
+/// The services are trait objects with no `Debug`, so only the plain fields
+/// print.
+impl std::fmt::Debug for AppState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("AppState")
+            .field("last_active_cache", &self.last_active_cache)
+            .field("featured_flavor", &self.featured_flavor)
+            .field("min_client_version", &self.min_client_version)
+            .field("web_base_url", &self.web_base_url)
+            .finish_non_exhaustive()
+    }
+}
+
 /// Axum HTTP server with pre-configured routes and middleware.
+#[derive(Debug)]
 pub struct HttpServer {
     router: axum::Router,
     listener: net::TcpListener,
@@ -233,16 +254,16 @@ pub fn build_router(
         .merge(
             // last-active layer wraps private routes only: it peeks the Bearer
             // token, so it must sit where every request carries one
-            private_routes(jwt_secret).layer(axum::middleware::from_fn_with_state(
+            routes::private_routes(jwt_secret).layer(axum::middleware::from_fn_with_state(
                 state.clone(),
                 middleware::track_last_active,
             )),
         )
-        .merge(public_routes())
-        .layer(RequestBodyLimitLayer::new(2 * 1024 * 1024))
+        .merge(routes::public_routes())
+        .layer(RequestBodyLimitLayer::new(REQUEST_BODY_LIMIT))
         .layer(TimeoutLayer::with_status_code(
             StatusCode::REQUEST_TIMEOUT,
-            Duration::from_secs(30),
+            REQUEST_TIMEOUT,
         ))
         .layer(axum::middleware::from_fn(security_headers))
         .layer(
@@ -267,6 +288,10 @@ pub fn build_router(
 
 impl HttpServer {
     /// Builds routes, applies tracing and CORS middleware, and binds the TCP listener.
+    ///
+    /// # Errors
+    ///
+    /// Fails when the listener can't bind to the configured address.
     pub async fn new(
         auth_service: impl AuthService,
         user_service: impl UserService,
@@ -276,8 +301,6 @@ impl HttpServer {
         metrics_service: Arc<dyn ErasedMetricsService>,
         config: HttpServerConfig<'_>,
     ) -> anyhow::Result<Self> {
-        // RequestId is set by SetRequestIdLayer (below) before TraceLayer fires,
-        // so it's available as a request extension when we build the span.
         let jwt_secret = auth_service.jwt_secret().clone();
         let state = AppState {
             auth_service: Arc::new(auth_service),
@@ -302,6 +325,11 @@ impl HttpServer {
     }
 
     /// Starts serving HTTP requests.
+    ///
+    /// # Errors
+    ///
+    /// Fails when the listener has no local address or the server stops with an
+    /// error.
     pub async fn run(self) -> anyhow::Result<()> {
         tracing::info!("listening on {}", self.listener.local_addr()?);
         axum::serve(
@@ -326,8 +354,8 @@ async fn shutdown_signal() {
 
     #[cfg(unix)]
     let terminate = async {
-        use tokio::signal::unix::{SignalKind, signal};
-        if let Ok(mut stream) = signal(SignalKind::terminate()) {
+        use tokio::signal::unix::{self, SignalKind};
+        if let Ok(mut stream) = unix::signal(SignalKind::terminate()) {
             stream.recv().await;
         }
     };
@@ -335,14 +363,13 @@ async fn shutdown_signal() {
     let terminate = std::future::pending::<()>();
 
     tokio::select! {
-        _ = ctrl_c => tracing::info!("shutdown signal received (SIGINT)"),
-        _ = terminate => tracing::info!("shutdown signal received (SIGTERM)"),
+        () = ctrl_c => tracing::info!("shutdown signal received (SIGINT)"),
+        () = terminate => tracing::info!("shutdown signal received (SIGTERM)"),
     }
 }
 
 #[cfg(test)]
 mod tests {
-    #![allow(clippy::unwrap_used, clippy::panic)]
     use http_body_util::BodyExt;
 
     use super::*;

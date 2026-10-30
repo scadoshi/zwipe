@@ -60,7 +60,7 @@ impl DeckWarning {
         }
     }
 
-    /// Returns the scryfall_data_id of the offending card, if any.
+    /// Returns the `scryfall_data_id` of the offending card, if any.
     pub fn scryfall_data_id(&self) -> Option<Uuid> {
         self.scryfall_data_id
     }

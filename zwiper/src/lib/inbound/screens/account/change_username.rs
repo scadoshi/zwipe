@@ -23,7 +23,7 @@ pub fn ChangeUsernameSheet(mut open: Signal<bool>) -> Element {
         if let Err(e) = Username::new(new_username()) {
             username_error.set(Some(e.to_string()));
         } else {
-            username_error.set(None)
+            username_error.set(None);
         }
     };
 
@@ -88,7 +88,7 @@ pub fn ChangeUsernameSheet(mut open: Signal<bool>) -> Element {
                         session.set(Some(current));
                     }
                     toast.success(
-                        format!("Username changed to {}", new_name),
+                        format!("Username changed to {new_name}"),
                         ToastOptions::default().duration(TOAST_QUICK),
                     );
                     clear_inputs();

@@ -20,6 +20,11 @@ impl From<GetDeckTokensError> for ApiError {
 }
 
 /// Returns all token cards produced by the cards in a deck.
+///
+/// # Errors
+///
+/// Returns 404 when the deck is missing or isn't the caller's, and 500 on a
+/// database failure.
 pub async fn get_deck_tokens(
     user: AuthenticatedUser,
     State(state): State<AppState>,

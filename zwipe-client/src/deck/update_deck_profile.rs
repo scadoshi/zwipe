@@ -10,6 +10,11 @@ use crate::{ClientError, ZwipeClient};
 
 impl ZwipeClient {
     /// Updates deck profile metadata.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`ClientError`] when the request fails to complete, the server answers with an
+    /// error status, or the reply doesn't decode.
     pub async fn update_deck_profile(
         &self,
         deck_id: Uuid,

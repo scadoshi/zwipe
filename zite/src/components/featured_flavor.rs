@@ -8,28 +8,27 @@
 //! element always renders under `dx serve` with no backend.
 //!
 //! The card's name and price sit as tags in the panel's action row, beside
-//! Image, TCGplayer and Card Kingdom buttons. Image requests the full-art
+//! Image, `TCGplayer` and Card Kingdom buttons. Image requests the full-art
 //! overlay via the `overlay` signal; the HOME PAGE renders the overlay itself
 //! at its top level, outside the `content-enter` content tree, mirroring the
-//! shared-deck page. Keeping the overlay nested here was the
-//! trapped-in-the-page-column bug: an animated ancestor's transform makes it
-//! the containing block for `position: fixed`.
+//! shared-deck page: nested here, an animated ancestor's transform would
+//! become the containing block for `position: fixed` and trap the overlay in
+//! the page column.
 
 use components::Panel;
 use dioxus::prelude::*;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
-use zwipe_core::domain::deck::deck_metrics::card_price;
+use zwipe_core::domain::deck::deck_metrics;
 
-use crate::components::sleep_ms;
+use crate::components::{OVERLAY_EXIT_MS, sleep_ms};
 
-/// A real card response (Research Assistant, M15) frozen 2026-08-07, decoded as
-/// the DEBUG-ONLY fallback while the live fetch is pending or failing, so
-/// `dx serve` with no backend still renders the element. Release builds hide
-/// the section until live data lands (StatsStrip parity): a stale-but-real
-/// card is indistinguishable from a live one, which is exactly how the
-/// CF-cached copy went unnoticed for a day (owner call 2026-08-06).
+/// A real card response (Research Assistant, M15), decoded as the DEBUG-ONLY
+/// fallback while the live fetch is pending or failing, so `dx serve` with no
+/// backend still renders the element. Release builds hide the section until
+/// live data lands (`StatsStrip` parity): a stale but real card looks exactly
+/// like a live one.
 #[cfg(debug_assertions)]
 const SPOOF_CARD_JSON: &str = include_str!("featured_flavor_spoof.json");
 
@@ -43,13 +42,13 @@ fn spoof_card() -> Option<Card> {
 /// Dismisses the flavor overlay with the shared 200ms exit animation.
 /// Split out so the home page's backdrop click handler and any future
 /// dismiss affordance run the identical sequence.
-pub fn dismiss_flavor_overlay(
+pub(crate) fn dismiss_flavor_overlay(
     mut overlay: Signal<Option<ScryfallData>>,
     mut dismissing: Signal<bool>,
 ) {
     dismissing.set(true);
     spawn(async move {
-        sleep_ms(200).await;
+        sleep_ms(OVERLAY_EXIT_MS).await;
         overlay.set(None);
         dismissing.set(false);
     });
@@ -66,7 +65,7 @@ fn encode_name(name: &str) -> String {
         .replace('\'', "%27")
 }
 
-/// The card's TCGplayer product page when its id is known, else a one-copy
+/// The card's `TCGplayer` product page when its id is known, else a one-copy
 /// mass entry by name.
 fn tcgplayer_url(name: &str, tcgplayer_id: Option<i32>) -> String {
     match tcgplayer_id {
@@ -105,8 +104,8 @@ pub fn FeaturedFlavor(overlay: Signal<Option<ScryfallData>>) -> Element {
     let sd = card.scryfall_data;
     let name = sd.name.clone();
     let has_image = sd.primary_image_url(ImageSize::Normal).is_some();
-    let usd_price =
-        card_price(&sd, PriceCurrency::Usd).map(|p| PriceCurrency::Usd.format_amount(p));
+    let usd_price = deck_metrics::card_price(&sd, PriceCurrency::Usd)
+        .map(|p| PriceCurrency::Usd.format_amount(p));
     let tcgplayer = tcgplayer_url(&name, sd.tcgplayer_id);
     let cardkingdom = cardkingdom_url(&name);
 

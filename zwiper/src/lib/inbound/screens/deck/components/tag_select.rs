@@ -54,7 +54,7 @@ pub(crate) fn TagSelect(
     // OS back gesture closes this picker before the router sees it, and maps to
     // Back rather than Save: it reverts to the snapshot then closes, the same
     // as the Back button below, saying so when there was something to revert.
-    let back = use_callback(move |_: ()| {
+    let back = use_callback(move |(): ()| {
         let mut selected_tags = selected_tags;
         if !same_set(&selected_tags.peek(), &snapshot.peek()) {
             toast.info(

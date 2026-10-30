@@ -1,3 +1,5 @@
+//! Username change handler.
+
 use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
@@ -17,8 +19,7 @@ impl From<ChangeUsernameError> for ApiError {
         match value {
             ChangeUsernameError::UserNotFound => Self::NotFound("user not found".to_string()),
             ChangeUsernameError::Duplicate => Self::Conflict("username already in use".to_string()),
-            ChangeUsernameError::Database(e) => e.to_500(),
-            ChangeUsernameError::UserFromDb(e) => e.to_500(),
+            ChangeUsernameError::Database(e) | ChangeUsernameError::UserFromDb(e) => e.to_500(),
             ChangeUsernameError::AuthenticateUserError(e) => ApiError::from(e),
         }
     }
@@ -27,15 +28,20 @@ impl From<ChangeUsernameError> for ApiError {
 impl From<InvalidChangeUsername> for ApiError {
     fn from(value: InvalidChangeUsername) -> Self {
         match value {
-            InvalidChangeUsername::Id(e) => Self::UnprocessableEntity(format!("invalid id: {}", e)),
+            InvalidChangeUsername::Id(e) => Self::UnprocessableEntity(format!("invalid id: {e}")),
             InvalidChangeUsername::Username(e) => {
-                Self::UnprocessableEntity(format!("invalid username: {}", e))
+                Self::UnprocessableEntity(format!("invalid username: {e}"))
             }
         }
     }
 }
 
 /// Changes the user's username after verifying the password.
+///
+/// # Errors
+///
+/// Returns 422 for an invalid username, 401 for a wrong password, 409 when the
+/// name is taken, 404 when the user is gone, and 500 on a database failure.
 pub async fn change_username(
     user: AuthenticatedUser,
     State(state): State<AppState>,

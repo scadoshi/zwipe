@@ -1,3 +1,5 @@
+//! Health check handlers.
+
 use axum::Json;
 use axum::extract::State;
 use chrono::Utc;
@@ -10,7 +12,7 @@ use crate::inbound::http::AppState;
 
 /// Root endpoint response with package name, version, and status.
 #[derive(Debug, Serialize)]
-#[allow(missing_docs)]
+#[expect(missing_docs, reason = "each field is named for the value it carries")]
 pub struct RootResponse {
     pub message: String,
     pub version: String,
@@ -63,8 +65,7 @@ pub async fn is_server_running() -> Json<Value> {
 /// Pings the database and reports connectivity status.
 pub async fn are_server_and_database_running(State(state): State<AppState>) -> Json<Value> {
     let result = match state.health_service.check_database().await {
-        Ok(_) => "healthy",
-        // add more errors here if we check other things in the future
+        Ok(()) => "healthy",
         Err(_) => "cannot connect to database",
     };
 

@@ -1,8 +1,6 @@
 //! User profile repository implementation.
 
-/// SQLx error-to-domain error mappings and intermediate conversion errors.
 pub mod error;
-/// Database-to-domain user model conversions.
 pub mod models;
 
 use sqlx::{query, query_as};
@@ -24,7 +22,10 @@ use crate::outbound::sqlx::user::models::DatabaseUser;
 /// Raw database preferences record.
 #[derive(Debug, Clone, sqlx::FromRow)]
 struct DatabaseUserPreferences {
-    #[allow(dead_code)]
+    #[expect(
+        dead_code,
+        reason = "the query selects it, but UserPreferences does not carry it"
+    )]
     user_id: Uuid,
     theme: String,
     dark_mode: bool,

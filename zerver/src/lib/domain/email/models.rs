@@ -10,6 +10,17 @@ pub struct SendEmail {
     pub html_body: String,
 }
 
+/// Redacted: `html_body` carries one-time verify and reset links.
+impl std::fmt::Debug for SendEmail {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SendEmail")
+            .field("to", &self.to)
+            .field("subject", &self.subject)
+            .field("html_body", &"REDACTED")
+            .finish()
+    }
+}
+
 /// Errors that can occur when sending an email.
 #[derive(Debug, thiserror::Error)]
 pub enum SendEmailError {

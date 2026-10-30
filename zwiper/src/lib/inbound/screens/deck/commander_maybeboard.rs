@@ -23,7 +23,7 @@ use components::{
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use tokio::time::sleep;
+use tokio::time;
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
@@ -230,7 +230,7 @@ pub fn CommanderMaybeboard() -> Element {
         }
         is_searching.set(true);
         spawn(async move {
-            sleep(Duration::from_millis(DEBOUNCE_MS)).await;
+            time::sleep(Duration::from_millis(DEBOUNCE_MS)).await;
             if query() != q {
                 return;
             }
@@ -298,8 +298,8 @@ pub fn CommanderMaybeboard() -> Element {
 
     // Deck profiles back the same proactive create gate as the deck list's
     // Create button: unverified accounts are limited to 1 deck.
-    // Quiet: backs the create gate only; a failure just leaves the gate open
-    // the way the old Result-flattening did, and telemetry records it now.
+    // Quiet: backs the create gate only; a failure leaves the gate open and
+    // telemetry records it.
     let deck_profiles_resource: Resource<Option<Vec<DeckProfile>>> =
         use_resource(move || async move {
             authed
@@ -638,7 +638,7 @@ pub fn CommanderMaybeboard() -> Element {
                 open: filters_overlay_open,
                 show_format_filter: false,
                 show_active_indicators: true,
-                on_clear: move |_| {
+                on_clear: move |()| {
                     filter_builder.write().clear();
                 },
             }
@@ -655,7 +655,7 @@ pub fn CommanderMaybeboard() -> Element {
                     swipe_open.set(false);
                     create_with(card);
                 },
-                on_close: move |_| swipe_open.set(false),
+                on_close: move |()| swipe_open.set(false),
             }
 
             // Pick a printing → swap that row's card in place and keep the

@@ -10,7 +10,7 @@ use super::preferences::UserPreferences;
 /// Display theme configuration used by the UI. Serializable so clients can cache
 /// the last-used theme locally (see zwiper `theme_store`, zite `theme_store`) and
 /// theme pre-auth screens before a session loads.
-#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ThemeConfig {
     /// Theme identifier (e.g. "gruvbox", "dracula").
     pub name: String,
@@ -20,6 +20,7 @@ pub struct ThemeConfig {
 
 impl ThemeConfig {
     /// Returns the CSS class to apply to the screen root: `theme-{name}-{dark|light}`.
+    #[must_use]
     pub fn css_class(&self) -> String {
         let mode = if self.is_dark { "dark" } else { "light" };
         format!("theme-{}-{}", self.name, mode)

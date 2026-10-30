@@ -7,8 +7,6 @@
 //!
 //! Requires `DATABASE_URL`: `set -a; source zerver/.env; set +a`.
 
-#![allow(clippy::unwrap_used)]
-
 mod common;
 
 use axum::http::{Method as HttpMethod, StatusCode};

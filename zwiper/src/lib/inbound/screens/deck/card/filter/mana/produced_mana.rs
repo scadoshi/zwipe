@@ -19,11 +19,11 @@ fn read_produced_mana(fb: &CardQueryBuilder, mode: MatchMode) -> Vec<String> {
     match mode {
         MatchMode::Any => fb
             .produced_mana_contains_any()
-            .map(|v| v.to_vec())
+            .map(<[_]>::to_vec)
             .unwrap_or_default(),
         MatchMode::All => fb
             .produced_mana_contains_all()
-            .map(|v| v.to_vec())
+            .map(<[_]>::to_vec)
             .unwrap_or_default(),
     }
 }
@@ -45,7 +45,7 @@ fn write_produced_mana(fb: &mut CardQueryBuilder, mode: MatchMode, values: Vec<S
 
 fn read_excluded(fb: &CardQueryBuilder) -> Vec<String> {
     fb.produced_mana_excludes()
-        .map(|v| v.to_vec())
+        .map(<[_]>::to_vec)
         .unwrap_or_default()
 }
 
@@ -74,7 +74,7 @@ pub(crate) fn ProducedManaFilter() -> Element {
     let excluded = read_excluded(&filter_builder());
 
     rsx! {
-        // ── produces (include) ────────────────────────────────────
+        // == produces (include) ==
         div { class: "label-row mt-2",
             label { class: "label-xs", "Produces" }
             button {
@@ -119,7 +119,7 @@ pub(crate) fn ProducedManaFilter() -> Element {
             }
         }
 
-        // ── does not produce (exclude) ────────────────────────────
+        // == does not produce (exclude) ==
         div { class: "label-row mt-2",
             label { class: "label-xs", "Doesn't produce" }
             if !excluded.is_empty() {

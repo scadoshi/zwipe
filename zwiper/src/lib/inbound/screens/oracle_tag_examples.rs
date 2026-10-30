@@ -43,6 +43,12 @@ use crate::inbound::screens::deck::card::components::printing_sheet::PrintingShe
 const PAGE_LIMIT: u32 = 25;
 /// Prefetch the next page once the cursor is within this many cards of the end.
 const LOAD_MORE_THRESHOLD: usize = 5;
+/// Pixels a swipe travels to commit.
+const SWIPE_DISTANCE_PX: f64 = 90.0;
+/// Pixels per millisecond a flick needs to commit.
+const SWIPE_SPEED_PX_PER_MS: f64 = 2.5;
+/// Pixels a downward pull on the end card travels to go back.
+const BACK_PULL_PX: f64 = 60.0;
 
 /// Deck-free swipe browse of the cards carrying a single oracle tag. An in-place
 /// overlay (host renders it when `open`, mounting fresh per tag); back-swipe or the
@@ -76,7 +82,11 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
     let mut printing_open = use_signal(|| false);
 
     // Only left (next) and down (back) commit; right/up return to center.
-    let swipe_config = SwipeConfig::new(vec![Direction::Left, Direction::Down], 90.0, 2.5);
+    let swipe_config = SwipeConfig::new(
+        vec![Direction::Left, Direction::Down],
+        SWIPE_DISTANCE_PX,
+        SWIPE_SPEED_PX_PER_MS,
+    );
 
     let current_card = move || stack.current();
 
@@ -232,7 +242,7 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
                                     end_swipe_start.set(None);
                                     if let Some(t) = e.touches_changed().into_iter().next() {
                                         let p = t.client_coordinates();
-                                        if p.y - sy >= 60.0 && (p.y - sy).abs() > (p.x - sx).abs() {
+                                        if p.y - sy >= BACK_PULL_PX && (p.y - sy).abs() > (p.x - sx).abs() {
                                             go_back();
                                         }
                                     }
@@ -247,7 +257,7 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
                                     };
                                     end_swipe_start.set(None);
                                     let p = e.client_coordinates();
-                                    if p.y - sy >= 60.0 && (p.y - sy).abs() > (p.x - sx).abs() {
+                                    if p.y - sy >= BACK_PULL_PX && (p.y - sy).abs() > (p.x - sx).abs() {
                                         go_back();
                                     }
                                 },
@@ -280,7 +290,7 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
                 CardDetailsSheet {
                     open: show_details,
                     card: card.clone(),
-                    on_printings: move |_| printing_open.set(true),
+                    on_printings: move |()| printing_open.set(true),
                 }
                 PrintingSheet {
                     host_screen: screen::ORACLE_TAG_EXAMPLES,

@@ -15,6 +15,10 @@ pub trait PersistCounts {
     /// Saves the counters, logging errors instead of returning them.
     fn infallible_save(&self);
     /// Loads the cached counters, returning `None` if not found.
+    ///
+    /// # Errors
+    ///
+    /// Fails when the store cannot be read or the copy does not parse.
     fn load() -> anyhow::Result<Option<HttpPublicMetrics>>;
     /// Loads the cached counters, logging errors and returning `None` on failure.
     fn infallible_load() -> Option<HttpPublicMetrics>;
@@ -48,24 +52,19 @@ mod platform {
     use super::HttpPublicMetrics;
     use crate::outbound::keyring_entry::{self, Entry};
 
-    fn service() -> String {
-        env!("CARGO_PKG_NAME").to_string() + "-service"
-    }
-
-    fn username() -> String {
-        env!("CARGO_PKG_NAME").to_string() + "-counts"
-    }
+    const SERVICE: &str = concat!(env!("CARGO_PKG_NAME"), "-service");
+    const USERNAME: &str = concat!(env!("CARGO_PKG_NAME"), "-counts");
 
     fn entry() -> Result<Entry, keyring::Error> {
-        keyring_entry::entry(&service(), &username())
+        keyring_entry::entry(SERVICE, USERNAME)
     }
 
-    pub fn save(counts: &HttpPublicMetrics) -> anyhow::Result<()> {
+    pub(crate) fn save(counts: &HttpPublicMetrics) -> anyhow::Result<()> {
         entry()?.set_secret(&serde_json::to_vec(counts)?)?;
         Ok(())
     }
 
-    pub fn load() -> anyhow::Result<Option<HttpPublicMetrics>> {
+    pub(crate) fn load() -> anyhow::Result<Option<HttpPublicMetrics>> {
         match entry()?.get_secret() {
             Err(keyring::Error::NoEntry) => Ok(None),
             Err(e) => Err(e.into()),
@@ -80,18 +79,18 @@ mod platform {
     use std::path::PathBuf;
 
     use super::HttpPublicMetrics;
-    use crate::outbound::android_fs::files_dir;
+    use crate::outbound::android_fs;
 
     fn counts_path() -> anyhow::Result<PathBuf> {
-        Ok(files_dir()?.join("counts.json"))
+        Ok(android_fs::files_dir()?.join("counts.json"))
     }
 
-    pub fn save(counts: &HttpPublicMetrics) -> anyhow::Result<()> {
+    pub(crate) fn save(counts: &HttpPublicMetrics) -> anyhow::Result<()> {
         std::fs::write(counts_path()?, serde_json::to_vec(counts)?)?;
         Ok(())
     }
 
-    pub fn load() -> anyhow::Result<Option<HttpPublicMetrics>> {
+    pub(crate) fn load() -> anyhow::Result<Option<HttpPublicMetrics>> {
         match std::fs::read(counts_path()?) {
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
             Err(e) => Err(e.into()),

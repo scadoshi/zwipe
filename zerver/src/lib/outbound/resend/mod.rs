@@ -1,4 +1,4 @@
-//! Resend email adapter: implements [`EmailSender`](crate::domain::email::ports::EmailSender)
+//! Resend email adapter: implements [`EmailSender`]
 //! via the [Resend](https://resend.com) HTTP API.
 
 use crate::domain::email::models::{SendEmail, SendEmailError};

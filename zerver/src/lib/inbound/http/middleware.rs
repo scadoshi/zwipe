@@ -32,6 +32,7 @@ use crate::inbound::http::AppState;
 ///
 /// Rejects with `400 Bad Request` if the header is missing or malformed,
 /// `401 Unauthorized` if the signature is invalid.
+#[derive(Debug)]
 pub struct AuthenticatedUser {
     /// User ID from JWT claims.
     pub id: Uuid,
@@ -135,14 +136,20 @@ impl KeyExtractor for CfConnectingIpKeyExtractor {
 ///
 /// Rejects with `400 Bad Request` only when neither the Cloudflare header nor
 /// a socket peer is present, which no served request can hit.
+#[derive(Debug)]
 pub struct ClientIp(pub IpAddr);
 
 impl<S: Send + Sync> FromRequestParts<S> for ClientIp {
     type Rejection = StatusCode;
-    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
-        client_ip(&parts.headers, &parts.extensions)
-            .map(Self)
-            .ok_or(StatusCode::BAD_REQUEST)
+    fn from_request_parts(
+        parts: &mut Parts,
+        _state: &S,
+    ) -> impl Future<Output = Result<Self, Self::Rejection>> + Send {
+        std::future::ready(
+            client_ip(&parts.headers, &parts.extensions)
+                .map(Self)
+                .ok_or(StatusCode::BAD_REQUEST),
+        )
     }
 }
 
@@ -220,7 +227,6 @@ impl FromRequestParts<AppState> for AuthenticatedUser {
 }
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used)]
 mod tests {
     use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 

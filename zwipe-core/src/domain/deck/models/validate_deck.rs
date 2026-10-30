@@ -5,16 +5,12 @@
 
 use crate::domain::card::Card;
 use crate::domain::card::scryfall_data::legalities::LegalityKind;
-use crate::domain::card::search_card::commander_eligibility::{
-    are_valid_partners, has_choose_a_background, is_background_card,
-    is_signature_spell_in_color_identity, is_valid_commander, is_valid_signature_spell_type,
-    partner_kind,
-};
+use crate::domain::card::search_card::commander_eligibility;
 use crate::domain::deck::deck::DeckEntry;
-use crate::domain::deck::deck_metrics::deck_price;
-use crate::domain::deck::{DeckProfile, DeckWarning, Format, WarningAction};
+use crate::domain::deck::{DeckProfile, DeckWarning, Format, WarningAction, deck_metrics};
 
-/// Cards in the command zone (stored on the profile, not in deck_cards).
+/// Cards in the command zone (stored on the profile, not in `deck_cards`).
+#[derive(Debug)]
 pub struct DeckCommandZone<'a> {
     /// Primary commander (or oathbreaker planeswalker).
     pub commander: Option<&'a Card>,
@@ -51,7 +47,7 @@ impl DeckCommandZone<'_> {
 pub fn validate_deck(
     deck_profile: &DeckProfile,
     entries: &[DeckEntry],
-    command_zone: &DeckCommandZone,
+    command_zone: &DeckCommandZone<'_>,
 ) -> Vec<DeckWarning> {
     // Only validate active deck cards, not maybeboard or sideboard
     let active_entries: Vec<DeckEntry> = entries
@@ -65,7 +61,7 @@ pub fn validate_deck(
     // Budget warning is format-independent; a price target applies to any deck.
     check_price_target(deck_profile, &active_entries, command_zone, &mut warnings);
 
-    let Some(format) = &deck_profile.format else {
+    let Some(format) = deck_profile.format else {
         return warnings;
     };
 
@@ -88,7 +84,7 @@ fn plural(n: u32) -> &'static str {
     if n == 1 { "card" } else { "cards" }
 }
 
-fn check_card_count(format: &Format, profile: &DeckProfile, warnings: &mut Vec<DeckWarning>) {
+fn check_card_count(format: Format, profile: &DeckProfile, warnings: &mut Vec<DeckWarning>) {
     let mut count = profile.card_count as u32;
 
     // The commander is stored separately from deck entries, so include it in the total.
@@ -134,7 +130,7 @@ fn check_card_count(format: &Format, profile: &DeckProfile, warnings: &mut Vec<D
 /// user's explicit override if set, otherwise the format heuristic. Mirrors the
 /// other format-derived checks, which warn off the format's rules regardless.
 fn check_land_target(
-    format: &Format,
+    format: Format,
     profile: &DeckProfile,
     active_entries: &[DeckEntry],
     warnings: &mut Vec<DeckWarning>,
@@ -160,7 +156,7 @@ fn check_land_target(
 fn check_price_target(
     profile: &DeckProfile,
     active_entries: &[DeckEntry],
-    command_zone: &DeckCommandZone,
+    command_zone: &DeckCommandZone<'_>,
     warnings: &mut Vec<DeckWarning>,
 ) {
     let Some(target) = profile.price_target.filter(|t| *t > 0.0) else {
@@ -168,7 +164,7 @@ fn check_price_target(
     };
     let currency = profile.price_target_currency.unwrap_or_default();
     let command_zone_cards = command_zone.cards();
-    let total = deck_price(active_entries, &command_zone_cards, currency);
+    let total = deck_metrics::deck_price(active_entries, &command_zone_cards, currency);
     if total > target {
         warnings.push(DeckWarning::new(format!(
             "deck totals {}, over your {} budget",
@@ -179,7 +175,7 @@ fn check_price_target(
 }
 
 fn check_commander_required(
-    format: &Format,
+    format: Format,
     profile: &DeckProfile,
     warnings: &mut Vec<DeckWarning>,
 ) {
@@ -191,9 +187,9 @@ fn check_commander_required(
     }
 }
 
-fn check_legality(format: &Format, entries: &[DeckEntry], warnings: &mut Vec<DeckWarning>) {
+fn check_legality(format: Format, entries: &[DeckEntry], warnings: &mut Vec<DeckWarning>) {
     for entry in entries {
-        let legality = entry.card.scryfall_data.legalities.get(format);
+        let legality = entry.card.scryfall_data.legalities.get(&format);
 
         match legality {
             Some(LegalityKind::NotLegal) => {
@@ -221,7 +217,7 @@ fn check_legality(format: &Format, entries: &[DeckEntry], warnings: &mut Vec<Dec
     }
 }
 
-fn check_copy_limits(format: &Format, entries: &[DeckEntry], warnings: &mut Vec<DeckWarning>) {
+fn check_copy_limits(format: Format, entries: &[DeckEntry], warnings: &mut Vec<DeckWarning>) {
     let base_max = format.copy_max();
 
     for entry in entries {
@@ -232,8 +228,8 @@ fn check_copy_limits(format: &Format, entries: &[DeckEntry], warnings: &mut Vec<
         let qty = *entry.deck_card.quantity as u32;
 
         // Vintage restricted cards are limited to 1 copy
-        let max = if *format == Format::Vintage {
-            match entry.card.scryfall_data.legalities.get(format) {
+        let max = if format == Format::Vintage {
+            match entry.card.scryfall_data.legalities.get(&format) {
                 Some(LegalityKind::Restricted) => 1,
                 _ => base_max,
             }
@@ -257,9 +253,9 @@ fn check_copy_limits(format: &Format, entries: &[DeckEntry], warnings: &mut Vec<
 }
 
 fn check_color_identity(
-    format: &Format,
+    format: Format,
     entries: &[DeckEntry],
-    command_zone: &DeckCommandZone,
+    command_zone: &DeckCommandZone<'_>,
     warnings: &mut Vec<DeckWarning>,
 ) {
     if !format.checks_color_identity() {
@@ -343,9 +339,9 @@ fn check_color_identity(
 }
 
 fn check_commander_eligibility(
-    format: &Format,
+    format: Format,
     profile: &DeckProfile,
-    command_zone: &DeckCommandZone,
+    command_zone: &DeckCommandZone<'_>,
     warnings: &mut Vec<DeckWarning>,
 ) {
     if !format.has_commander() {
@@ -354,14 +350,14 @@ fn check_commander_eligibility(
 
     if profile.commander_id.is_none() {
         return; // Already warned by check_commander_required
-    };
+    }
 
     // Use command zone directly (always populated by get_deck)
     let Some(card) = command_zone.commander else {
         return; // Can't validate without the card data
     };
 
-    if !is_valid_commander(card, format) {
+    if !commander_eligibility::is_valid_commander(card, &format) {
         warnings.push(DeckWarning::with_action(
             format!(
                 "{} is not a valid commander for {}",
@@ -375,9 +371,9 @@ fn check_commander_eligibility(
 }
 
 fn check_partner_validity(
-    format: &Format,
+    format: Format,
     profile: &DeckProfile,
-    command_zone: &DeckCommandZone,
+    command_zone: &DeckCommandZone<'_>,
     warnings: &mut Vec<DeckWarning>,
 ) {
     let Some(partner_id) = profile.partner_commander_id else {
@@ -396,7 +392,7 @@ fn check_partner_validity(
         (command_zone.commander, command_zone.partner_commander)
     {
         // Both must have a partner ability
-        if partner_kind(commander).is_none() {
+        if commander_eligibility::partner_kind(commander).is_none() {
             warnings.push(DeckWarning::with_card(
                 format!(
                     "{} does not have a partner ability",
@@ -407,7 +403,7 @@ fn check_partner_validity(
             return;
         }
 
-        if !are_valid_partners(commander, partner) {
+        if !commander_eligibility::are_valid_partners(commander, partner) {
             warnings.push(DeckWarning::with_card(
                 format!(
                     "{} and {} cannot be partners",
@@ -421,9 +417,9 @@ fn check_partner_validity(
 }
 
 fn check_background_validity(
-    format: &Format,
+    format: Format,
     profile: &DeckProfile,
-    command_zone: &DeckCommandZone,
+    command_zone: &DeckCommandZone<'_>,
     warnings: &mut Vec<DeckWarning>,
 ) {
     let Some(bg_id) = profile.background_id else {
@@ -440,7 +436,7 @@ fn check_background_validity(
 
     // Commander must have "Choose a Background"
     if let Some(commander) = command_zone.commander
-        && !has_choose_a_background(commander)
+        && !commander_eligibility::has_choose_a_background(commander)
     {
         warnings.push(DeckWarning::with_card(
             format!(
@@ -453,7 +449,7 @@ fn check_background_validity(
 
     // Background card must actually be a Background
     if let Some(bg) = command_zone.background
-        && !is_background_card(bg)
+        && !commander_eligibility::is_background_card(bg)
     {
         warnings.push(DeckWarning::with_card(
             format!(
@@ -472,7 +468,7 @@ fn check_background_validity(
     }
 }
 
-fn check_sideboard_limits(format: &Format, entries: &[DeckEntry], warnings: &mut Vec<DeckWarning>) {
+fn check_sideboard_limits(format: Format, entries: &[DeckEntry], warnings: &mut Vec<DeckWarning>) {
     let sideboard_count: u32 = entries
         .iter()
         .filter(|e| e.deck_card.board.is_sideboard())
@@ -504,9 +500,9 @@ fn check_sideboard_limits(format: &Format, entries: &[DeckEntry], warnings: &mut
 }
 
 fn check_signature_spell_validity(
-    format: &Format,
+    format: Format,
     profile: &DeckProfile,
-    command_zone: &DeckCommandZone,
+    command_zone: &DeckCommandZone<'_>,
     warnings: &mut Vec<DeckWarning>,
 ) {
     if profile.signature_spell_id.is_none() {
@@ -529,7 +525,7 @@ fn check_signature_spell_validity(
 
     if let Some(spell) = command_zone.signature_spell {
         // Must be instant or sorcery
-        if !is_valid_signature_spell_type(spell) {
+        if !commander_eligibility::is_valid_signature_spell_type(spell) {
             warnings.push(DeckWarning::with_card(
                 format!(
                     "{} must be an instant or sorcery to be a signature spell",
@@ -541,7 +537,7 @@ fn check_signature_spell_validity(
 
         // Must be within oathbreaker's color identity
         if let Some(oathbreaker) = command_zone.commander
-            && !is_signature_spell_in_color_identity(spell, oathbreaker)
+            && !commander_eligibility::is_signature_spell_in_color_identity(spell, oathbreaker)
         {
             warnings.push(DeckWarning::with_card(
                 format!(
@@ -572,7 +568,7 @@ mod tests {
     fn no_warnings_without_format() {
         let profile = test_profile(None);
         let warnings = validate_deck(&profile, &[], &empty_command_zone());
-        assert!(warnings.is_empty());
+        assert_eq!(warnings, Vec::<DeckWarning>::new());
     }
 
     fn test_profile(format: Option<Format>) -> DeckProfile {
@@ -793,9 +789,9 @@ mod tests {
             );
         }
 
-        /// Commander stored with printing A, command_zone has same card
-        /// with a different printing (different scryfall_data.id, same oracle_id).
-        /// Eligibility check should still find the commander via oracle_id.
+        /// Commander stored with printing A, `command_zone` has same card
+        /// with a different printing (different `scryfall_data.id`, same `oracle_id`).
+        /// Eligibility check should still find the commander via `oracle_id`.
         #[test]
         fn different_printing_still_validates_commander() {
             let mut card = make_card("Atraxa, Praetors' Voice");
@@ -880,7 +876,7 @@ mod tests {
         }
 
         /// Commander is in entries with a different printing than the profile stores.
-        /// Color identity check should still skip the commander entry (matched by oracle_id).
+        /// Color identity check should still skip the commander entry (matched by `oracle_id`).
         #[test]
         fn commander_in_entries_different_printing_not_warned() {
             let mut commander = make_card("Atraxa, Praetors' Voice");

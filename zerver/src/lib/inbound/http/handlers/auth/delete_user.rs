@@ -1,3 +1,5 @@
+//! Account deletion handler.
+
 use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
@@ -31,6 +33,11 @@ impl From<InvalidDeleteUser> for ApiError {
 }
 
 /// Deletes the user's account and all associated data after password verification.
+///
+/// # Errors
+///
+/// Returns 422 for an invalid request, 401 for a wrong password, 404 when the
+/// user is gone, and 500 on a database failure.
 pub async fn delete_user(
     user: AuthenticatedUser,
     State(state): State<AppState>,
@@ -43,5 +50,5 @@ pub async fn delete_user(
         .delete_user(&request)
         .await
         .map_err(ApiError::from)
-        .map(|_| StatusCode::NO_CONTENT)
+        .map(|()| StatusCode::NO_CONTENT)
 }

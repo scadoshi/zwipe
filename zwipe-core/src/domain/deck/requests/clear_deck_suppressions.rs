@@ -22,6 +22,10 @@ pub struct ClearDeckSuppressions {
 
 impl ClearDeckSuppressions {
     /// Creates a new clear-suppressions request with validation.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`InvalidClearDeckSuppressions::DeckId`] when `deck_id` is not a UUID.
     pub fn new(user_id: Uuid, deck_id: &str) -> Result<Self, InvalidClearDeckSuppressions> {
         let deck_id =
             Uuid::try_parse(deck_id.trim()).map_err(InvalidClearDeckSuppressions::DeckId)?;

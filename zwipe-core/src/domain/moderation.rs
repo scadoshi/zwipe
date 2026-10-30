@@ -46,12 +46,11 @@
 //!
 //! # Performance
 //!
-//! Uses lazy-initialized HashSets for O(1) lookup performance.
+//! Uses lazy-initialized `HashSet`s for O(1) lookup performance.
 //! Checking a username takes microseconds even with large ban lists.
 
 use std::collections::HashSet;
-
-use once_cell::sync::Lazy;
+use std::sync::LazyLock;
 
 const SUBSTRING_BANNED: &[&str] = &[
     // slurs
@@ -105,19 +104,19 @@ const EXACT_MATCH_BANNED: &[&str] = &[
     "shithead", "dickhead", "dumbass", "jackass",
 ];
 
-/// Lazy-initialized HashSet of terms banned via substring matching.
+/// Lazy-initialized `HashSet` of terms banned via substring matching.
 ///
 /// These severe terms (slurs, abuse, explicit content) are matched anywhere
 /// in the input string after lowercasing.
-pub static SUBSTRING_BANNED_SET: Lazy<HashSet<&'static str>> =
-    Lazy::new(|| SUBSTRING_BANNED.iter().cloned().collect());
+pub static SUBSTRING_BANNED_SET: LazyLock<HashSet<&'static str>> =
+    LazyLock::new(|| SUBSTRING_BANNED.iter().copied().collect());
 
-/// Lazy-initialized HashSet of terms banned via exact matching.
+/// Lazy-initialized `HashSet` of terms banned via exact matching.
 ///
 /// These common vulgarities are only matched as complete words to avoid
 /// false positives (e.g., "ass" is banned, but "grass" is not).
-pub static EXACT_MATCH_BANNED_SET: Lazy<HashSet<&'static str>> =
-    Lazy::new(|| EXACT_MATCH_BANNED.iter().cloned().collect());
+pub static EXACT_MATCH_BANNED_SET: LazyLock<HashSet<&'static str>> =
+    LazyLock::new(|| EXACT_MATCH_BANNED.iter().copied().collect());
 
 /// Trait for checking if a string contains inappropriate content.
 ///

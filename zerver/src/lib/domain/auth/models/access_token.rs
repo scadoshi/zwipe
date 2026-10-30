@@ -8,13 +8,16 @@
 use std::str::FromStr;
 
 use chrono::{Duration, Utc};
-use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
+use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use zwipe_core::domain::auth::models::access_token::{
     AccessToken, InvalidJwt as CoreInvalidJwt, Jwt, UserClaims,
 };
 use zwipe_core::domain::user::User;
+
+/// Shortest JWT secret accepted, in bytes.
+const MIN_JWT_SECRET_LEN: usize = 32;
 
 // == errors ==
 
@@ -93,7 +96,7 @@ impl JwtSecret {
         if raw.is_empty() {
             return Err(JwtSecretError::MissingSecret);
         }
-        if raw.len() < 32 {
+        if raw.len() < MIN_JWT_SECRET_LEN {
             return Err(JwtSecretError::TooShort);
         }
         Ok(Self(raw.to_string()))
@@ -105,12 +108,17 @@ impl JwtSecret {
 /// Extension trait for validating JWT signatures on the server.
 pub trait JwtValidate {
     /// Validates the JWT signature and extracts user claims.
+    ///
+    /// # Errors
+    ///
+    /// Returns the `jsonwebtoken` error when the token doesn't decode, its
+    /// signature doesn't match `secret`, or it has expired.
     fn validate(&self, secret: &JwtSecret) -> Result<UserClaims, jsonwebtoken::errors::Error>;
 }
 
 impl JwtValidate for Jwt {
     fn validate(&self, secret: &JwtSecret) -> Result<UserClaims, jsonwebtoken::errors::Error> {
-        let token_data = decode::<UserClaims>(
+        let token_data = jsonwebtoken::decode::<UserClaims>(
             &self.to_string(),
             &DecodingKey::from_secret(secret.as_ref()),
             &Validation::default(),
@@ -122,6 +130,11 @@ impl JwtValidate for Jwt {
 /// Extension trait for server-side access token operations.
 pub trait AccessTokenExt {
     /// Generates a new access token for a user that expires `lifetime` from now.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`InvalidJwt`] when the claims fail to encode or the encoded
+    /// token doesn't parse back as a JWT.
     fn generate(
         user: &User,
         secret: &JwtSecret,
@@ -147,7 +160,7 @@ impl AccessTokenExt for AccessToken {
         };
 
         let value = Jwt::from_str(
-            &encode(
+            &jsonwebtoken::encode(
                 &Header::default(),
                 &user_claims,
                 &EncodingKey::from_secret(secret.as_ref()),
@@ -355,7 +368,7 @@ mod tests {
     fn test_encode_reproduces_token_minted_by_jsonwebtoken_10() {
         let secret = JwtSecret::new(COMPAT_SECRET).unwrap();
 
-        let token = encode(
+        let token = jsonwebtoken::encode(
             &Header::default(),
             &compat_claims(),
             &EncodingKey::from_secret(secret.as_ref()),

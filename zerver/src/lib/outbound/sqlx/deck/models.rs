@@ -1,3 +1,5 @@
+//! Database-to-domain deck model conversions.
+
 use sqlx_macros::FromRow;
 use uuid::Uuid;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
@@ -11,7 +13,7 @@ use crate::outbound::sqlx::deck::error::{IntoDeckCardError, IntoDeckProfileError
 
 /// raw database deck record
 /// (unvalidated data from `PostgreSQL`)
-#[allow(missing_docs)]
+#[expect(missing_docs, reason = "each field mirrors the column it is read from")]
 #[derive(Debug, Clone, FromRow)]
 pub struct DatabaseDeckProfile {
     pub id: Uuid,
@@ -113,7 +115,7 @@ impl TryFrom<DatabaseDeckProfile> for DeckProfile {
 
 /// raw database deck card record
 /// (unvalidated data from `PostgreSQL`)
-#[allow(missing_docs)]
+#[expect(missing_docs, reason = "each field mirrors the column it is read from")]
 #[derive(Debug, Clone, FromRow)]
 pub struct DatabaseDeckCard {
     pub deck_id: String,
@@ -198,6 +200,6 @@ mod tests {
             ..base_profile()
         };
         let profile = DeckProfile::try_from(db).unwrap();
-        assert!(profile.color_identity.is_empty());
+        assert_eq!(profile.color_identity, Vec::<String>::new());
     }
 }

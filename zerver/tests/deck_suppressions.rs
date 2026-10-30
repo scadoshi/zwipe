@@ -5,7 +5,12 @@
 //!
 //! Requires `DATABASE_URL`: `set -a; source zerver/.env; set +a`.
 
-#![allow(clippy::unwrap_used, clippy::indexing_slicing)]
+#![expect(
+    clippy::unwrap_used,
+    clippy::indexing_slicing,
+    clippy::arithmetic_side_effects,
+    reason = "a test: helpers outside #[test] fns unwrap and index, and the paging math multiplies small numbers; a panic is the failure report"
+)]
 
 use zwipe_core::http::paths::{
     DECK_ROUTE, search_deck_cards_route, skip_deck_card_route, unskip_deck_card_route,
@@ -28,7 +33,8 @@ async fn deck_search_names(app: &TestApp, deck_id: &str, token: &str) -> Vec<Str
         .await;
     assert_eq!(status, StatusCode::OK, "deck search: {body}");
     assert!(
-        body.get("synergy_applied").is_some_and(|v| v.is_boolean()),
+        body.get("synergy_applied")
+            .is_some_and(serde_json::Value::is_boolean),
         "deck search must carry synergy_applied: {body}"
     );
     body.get("cards")

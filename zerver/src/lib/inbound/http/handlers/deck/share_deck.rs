@@ -1,3 +1,5 @@
+//! Deck share/unshare handlers (owner-side token management).
+
 use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
@@ -21,6 +23,11 @@ impl From<ShareDeckError> for ApiError {
 
 /// Generates (or regenerates) the deck's share token after ownership
 /// verification. Re-sharing rotates the token, so any old link dies.
+///
+/// # Errors
+///
+/// Returns 404 when the deck is missing or isn't the caller's, and 500 on a
+/// database failure.
 pub async fn share_deck(
     State(state): State<AppState>,
     Path(deck_id): Path<Uuid>,
@@ -39,6 +46,11 @@ pub async fn share_deck(
 
 /// Revokes the deck's share token after ownership verification. The public
 /// link 404s from here on (modulo a short CF cache window).
+///
+/// # Errors
+///
+/// Returns 404 when the deck is missing or isn't the caller's, and 500 on a
+/// database failure.
 pub async fn unshare_deck(
     State(state): State<AppState>,
     Path(deck_id): Path<Uuid>,

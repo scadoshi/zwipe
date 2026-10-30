@@ -1,16 +1,10 @@
 //! Card data and Scryfall sync repository implementation.
 
-/// Database-to-domain card profile conversion.
 pub mod card_profile;
-/// SQLx error-to-domain error mappings.
 pub mod error;
-/// SQL generation helpers for bulk upserts and field binding.
 pub mod helpers;
-/// Database-to-domain Scryfall data conversion.
 pub mod models;
-/// Database-to-domain oracle tag catalog conversion.
 pub mod oracle_tag;
-/// Sync metrics JSONB codecs and database model.
 pub mod zervice_metrics;
 
 use std::collections::HashMap;
@@ -29,7 +23,7 @@ use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortK
 use zwipe_core::domain::card::search_card::card_filter::criteria::PLAYABLE_LAYOUTS;
 use zwipe_core::domain::card::search_card::card_filter::sort_direction::SortDirection;
 use zwipe_core::domain::deck::Format;
-use zwipe_core::domain::deck::requests::import_deck_cards::entry_front_face;
+use zwipe_core::domain::deck::requests::import_deck_cards;
 use zwipe_core::domain::deck::tag_profile::{PROFILE_EXCLUDED_TAG_PREFIX, PROFILE_TAG_LIMIT};
 
 use crate::domain::card::models::helpers::SleeveCardProfile;
@@ -56,9 +50,7 @@ use crate::domain::deck::models::deck::commander_suggestions::{
 };
 use crate::outbound::sqlx::card::card_profile::DatabaseCardProfile;
 use crate::outbound::sqlx::card::helpers::commander_scoring::SCORE_COMMANDER_SUGGESTIONS_SQL;
-use crate::outbound::sqlx::card::helpers::oracle_tag_groups::{
-    RoleMembershipBinds, role_membership_ctes,
-};
+use crate::outbound::sqlx::card::helpers::oracle_tag_groups::{self, RoleMembershipBinds};
 use crate::outbound::sqlx::card::helpers::upsert_card::{
     BatchDeltaUpsertWithTx, BatchUpsertWithTx, BulkUpsertWithTx, SingleUpsertWithTx,
 };
@@ -76,13 +68,12 @@ use crate::outbound::sqlx::postgres::Postgres as MyPostgres;
 /// filtering with much larger limits, but that path never reaches this query.
 const MAX_SEARCH_LIMIT: u32 = 250;
 
-// Default-synergy-ordering dials (context/plans/suggestion_signal.md,
-// Phase 3a+3b band revision). `W_SIGNAL = 0.0` and `BAND_SIZE = 1` together
-// reproduce the pre-signal score ordering exactly; that's the revert lever.
+// Default-synergy-ordering dials (context/plans/suggestion_signal.md).
+// `W_SIGNAL = 0.0` and `BAND_SIZE = 1` together give plain score ordering.
 
 /// Weight of the pooled add-rate term (centered on the global rate, so a
 /// card with no data contributes exactly zero). Units are synergy-score
-/// points (scores span roughly -0.6..1.0, measured 2026-07-06); enough to
+/// points (scores span roughly -0.6..1.0); enough to
 /// migrate a proven card across a band boundary over time.
 const W_SIGNAL: f64 = 0.15;
 
@@ -98,7 +89,7 @@ const BAND_SIZE: i64 = 25;
 /// outweighs the global prior.
 const SHRINK_K: f64 = 10.0;
 
-/// Weight of the oracle-tag correlation term (Phase 4): a fixed lift for cards
+/// Weight of the oracle-tag correlation term: a fixed lift for cards
 /// whose `card_profiles.oracle_tags` overlap the deck's selected otags. Units
 /// are synergy-score points (scores span roughly -0.6..1.0), sized to float a
 /// strategy-relevant card up a band or so without swamping commander synergy.
@@ -128,12 +119,12 @@ const UNSCORED_ANCHOR: f64 = -10.5;
 // Wildcard slot dials (context/archive/wildcard_slot/).
 
 /// Wildcard slots per page: positions reserved for cards drawn from beyond
-/// the reachable horizon (rank > DEEP_POOL_FLOOR), least-shown first, so the
+/// the reachable horizon (rank > `DEEP_POOL_FLOOR`), least-shown first, so the
 /// deep pool accrues impressions at all. 0 reverts to pure band serving.
 const WILDCARD_SLOTS: i64 = 1;
 
 /// The reachable horizon: mirrors the client add-stack hard cap (zwiper
-/// `MAX_CARDS_IN_STACK`, action_history.rs, which zerver can't import). Cards
+/// `MAX_CARDS_IN_STACK`, `action_history.rs`, which zerver can't import). Cards
 /// ranked past this are structurally unreachable by band pagination within a
 /// session, so no signal can ever accrue for them without the wildcard probe.
 const DEEP_POOL_FLOOR: i64 = 500;
@@ -188,20 +179,20 @@ const DISMISSAL_TTL_DAYS: i32 = 7;
 /// name, then id for a stable tiebreak. Shared by the wildcard CTE's
 /// `row_number()` and the non-wildcard banded ORDER BY. Absent popularity rows
 /// sort last, so an empty table degrades to pure `edhrec_rank`; the revert
-/// lever. (context/archive/commander_select_ordering.md §2.)
+/// lever. (`context/archive/commander_select_ordering.md` §2.)
 const POPULARITY_RANK: &str = "pop.pop_decks DESC NULLS LAST, latest_cards.edhrec_rank ASC NULLS LAST, latest_cards.name ASC, latest_cards.id";
 
 /// The popularity join, aliased so it exposes only `pop_decks`, never a bare
 /// `name`/`oracle_id`/`decks`, which would collide with `latest_cards` and the
 /// shared WHERE filters (name search, exclude-oracle_ids) and make those
-/// columns ambiguous. Keyed on the real card's oracle_id.
+/// columns ambiguous. Keyed on the real card's `oracle_id`.
 const POPULARITY_JOIN: &str = "LEFT JOIN (SELECT oracle_id AS pop_oracle_id, decks AS pop_decks FROM commander_popularity) pop ON pop.pop_oracle_id = latest_cards.oracle_id";
 
 /// First-party select-signal join for the commander-select wildcard's
 /// least-shown deep slice, aliased for the same ambiguity reason as
 /// [`POPULARITY_JOIN`]. An absent row COALESCEs to 0 impressions, so an empty
 /// table leaves the deep slice on the daily shuffle alone; the dormant-until-
-/// data-accrues behavior (context/archive/commander_select_signal.md §3).
+/// data-accrues behavior (`context/archive/commander_select_signal.md` §3).
 const SELECT_SIGNAL_JOIN: &str = "LEFT JOIN (SELECT commander_oracle_id AS sel_oid, shown AS sel_shown FROM commander_select_signal) sel ON sel.sel_oid = latest_cards.oracle_id";
 
 impl CardRepository for MyPostgres {
@@ -392,7 +383,7 @@ impl CardRepository for MyPostgres {
     }
 
     /// Searches the `latest_cards` materialized view (pre-deduplicated to one row per
-    /// oracle_id). Joins `card_profiles` for is_token / card_roles filters.
+    /// `oracle_id`). Joins `card_profiles` for `is_token` / `card_roles` filters.
     /// Filter clauses are composed with `AND` via `QueryBuilder::separated`.
     async fn search_scryfall_data(
         &self,
@@ -402,22 +393,32 @@ impl CardRepository for MyPostgres {
             .await
     }
 
-    /// `search_scryfall_data` plus the deck-aware extras: oracle_id exclusion,
+    /// `search_scryfall_data` plus the deck-aware extras: `oracle_id` exclusion,
     /// suppression filtering for `deck_id` (skipped/removed cards), synergy-score
     /// default ordering, and (when `synergy_only`) a membership constraint to
     /// the commander's synergy pool. The plain search is this with no extras.
     ///
     /// `commander_seed` switches the engine into commander-select mode
-    /// (context/archive/commander_select_ordering.md): decks-helmed popularity
+    /// (`context/archive/commander_select_ordering.md`): decks-helmed popularity
     /// ordering, banded + wildcarded by that caller-supplied seed (typically
     /// `{user_id}:{date}`, no deck required), and token/emblem printings
     /// excluded from the candidate pool. Exposed as `search_commanders`; every
     /// other caller passes a default context and is unaffected.
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one QueryBuilder composed in order: the filters, the deck extras, then the ordering"
+    )]
     async fn search_scryfall_data_deck_aware(
         &self,
         request: &CardQuery,
         context: DeckServeContext<'_>,
     ) -> Result<Vec<ScryfallData>, SearchScryfallDataError> {
+        // Strip punctuation from DB columns for punctuation-insensitive text search.
+        // The query values are already stripped by CardQueryBuilder setters.
+        const STRIP_NAME: &str = "regexp_replace(name, '[^a-zA-Z0-9 ]', '', 'g') ILIKE ";
+        const STRIP_TYPE: &str = "regexp_replace(type_line, '[^a-zA-Z0-9 ]', '', 'g') ILIKE ";
+        const STRIP_ORACLE: &str = "regexp_replace(oracle_text, '[^a-zA-Z0-9 ]', '', 'g') ILIKE ";
+
         // Deck-serving inputs arrive bundled; unpack them into the locals the
         // QueryBuilder threads them into (never stored beyond this call).
         let DeckServeContext {
@@ -491,7 +492,7 @@ impl CardRepository for MyPostgres {
                 " + {W_SIGNAL} * ((COALESCE(sig.net, 0) + {SHRINK_K} * g.rate) \
                    / (COALESCE(sig.shown, 0) + {SHRINK_K}) - g.rate)"
             ));
-            // Oracle-tag term (Phase 4): a flat lift for cards whose otags overlap
+            // Oracle-tag term: a flat lift for cards whose otags overlap
             // the deck's selected otags. Dormant when the deck selected none, so
             // decks without otags keep byte-identical ordering. Mirrors the
             // filter's `?|` jsonb-array overlap probe.
@@ -613,7 +614,7 @@ impl CardRepository for MyPostgres {
              WHERE ",
             )
         };
-        let mut sep: Separated<Postgres, &'static str> = qb.separated(" AND ");
+        let mut sep: Separated<'_, Postgres, &'static str> = qb.separated(" AND ");
         // Seed an always-true clause so the baked `WHERE` is valid even when no
         // filter conditions are pushed (e.g. an empty filter). It also lets every
         // real condition below rely on the `AND` separator: the first real push
@@ -630,26 +631,21 @@ impl CardRepository for MyPostgres {
             sep.push("latest_cards.layout NOT IN ('token', 'double_faced_token', 'emblem')");
         }
 
-        // Strip punctuation from DB columns for punctuation-insensitive text search.
-        // The query values are already stripped by CardQueryBuilder setters.
-        const STRIP_NAME: &str = "regexp_replace(name, '[^a-zA-Z0-9 ]', '', 'g') ILIKE ";
-        const STRIP_TYPE: &str = "regexp_replace(type_line, '[^a-zA-Z0-9 ]', '', 'g') ILIKE ";
-
         if let Some(query_string) = &criteria.name_contains() {
             sep.push(STRIP_NAME);
-            sep.push_bind_unseparated(format!("%{}%", query_string));
+            sep.push_bind_unseparated(format!("%{query_string}%"));
         }
 
         if let Some(query_string) = &criteria.name_not_contains() {
             sep.push("NOT (");
             sep.push_unseparated(STRIP_NAME);
-            sep.push_bind_unseparated(format!("%{}%", query_string));
+            sep.push_bind_unseparated(format!("%{query_string}%"));
             sep.push_unseparated(")");
         }
 
         if let Some(query_string) = &criteria.type_line_contains() {
             sep.push(STRIP_TYPE);
-            sep.push_bind_unseparated(format!("%{}%", query_string));
+            sep.push_bind_unseparated(format!("%{query_string}%"));
         }
 
         if let Some(query_string_array) = &criteria.type_line_contains_any() {
@@ -659,7 +655,7 @@ impl CardRepository for MyPostgres {
                     sep.push_unseparated(" OR ");
                 }
                 sep.push_unseparated(STRIP_TYPE);
-                sep.push_bind_unseparated(format!("%{}%", query_string));
+                sep.push_bind_unseparated(format!("%{query_string}%"));
             }
             sep.push_unseparated(") ");
         }
@@ -671,29 +667,29 @@ impl CardRepository for MyPostgres {
                     sep.push_unseparated(" OR ");
                 }
                 sep.push_unseparated(STRIP_TYPE);
-                sep.push_bind_unseparated(format!("%{}%", query_string));
+                sep.push_bind_unseparated(format!("%{query_string}%"));
             }
             sep.push_unseparated(") ");
         }
 
         if let Some(query_string_array) = &criteria.type_line_contains_all() {
-            for query_string in query_string_array.iter() {
+            for query_string in *query_string_array {
                 sep.push(STRIP_TYPE);
-                sep.push_bind_unseparated(format!("%{}%", query_string));
+                sep.push_bind_unseparated(format!("%{query_string}%"));
             }
         }
 
         if let Some(card_types) = &criteria.card_type_contains_all() {
-            for card_type in card_types.iter() {
+            for card_type in *card_types {
                 sep.push(STRIP_TYPE);
-                sep.push_bind_unseparated(format!("%{}%", card_type));
+                sep.push_bind_unseparated(format!("%{card_type}%"));
             }
         }
 
         if let Some(query_string) = &criteria.type_line_not_contains() {
             sep.push("(type_line IS NULL OR NOT (");
             sep.push_unseparated(STRIP_TYPE);
-            sep.push_bind_unseparated(format!("%{}%", query_string));
+            sep.push_bind_unseparated(format!("%{query_string}%"));
             sep.push_unseparated("))");
         }
 
@@ -704,7 +700,7 @@ impl CardRepository for MyPostgres {
                     sep.push_unseparated(" OR ");
                 }
                 sep.push_unseparated(STRIP_TYPE);
-                sep.push_bind_unseparated(format!("%{}%", query_string));
+                sep.push_bind_unseparated(format!("%{query_string}%"));
             }
             sep.push_unseparated(")) ");
         }
@@ -716,7 +712,7 @@ impl CardRepository for MyPostgres {
                     sep.push_unseparated(" OR ");
                 }
                 sep.push_unseparated(STRIP_TYPE);
-                sep.push_bind_unseparated(format!("%{}%", query_string));
+                sep.push_bind_unseparated(format!("%{query_string}%"));
             }
             sep.push_unseparated(")) ");
         }
@@ -835,11 +831,9 @@ impl CardRepository for MyPostgres {
             sep.push_bind_unseparated(colors.to_short_names());
         }
 
-        const STRIP_ORACLE: &str = "regexp_replace(oracle_text, '[^a-zA-Z0-9 ]', '', 'g') ILIKE ";
-
         if let Some(query_string) = &criteria.oracle_text_contains() {
             sep.push(STRIP_ORACLE);
-            sep.push_bind_unseparated(format!("%{}%", query_string));
+            sep.push_bind_unseparated(format!("%{query_string}%"));
         }
 
         if let Some(query_string_array) = &criteria.oracle_text_contains_any() {
@@ -849,22 +843,22 @@ impl CardRepository for MyPostgres {
                     sep.push_unseparated(" OR ");
                 }
                 sep.push_unseparated(STRIP_ORACLE);
-                sep.push_bind_unseparated(format!("%{}%", query_string));
+                sep.push_bind_unseparated(format!("%{query_string}%"));
             }
             sep.push_unseparated(") ");
         }
 
         if let Some(query_string_array) = &criteria.oracle_text_contains_all() {
-            for query_string in query_string_array.iter() {
+            for query_string in *query_string_array {
                 sep.push(STRIP_ORACLE);
-                sep.push_bind_unseparated(format!("%{}%", query_string));
+                sep.push_bind_unseparated(format!("%{query_string}%"));
             }
         }
 
         if let Some(query_string) = &criteria.oracle_text_not_contains() {
             sep.push("(oracle_text IS NULL OR NOT (");
             sep.push_unseparated(STRIP_ORACLE);
-            sep.push_bind_unseparated(format!("%{}%", query_string));
+            sep.push_bind_unseparated(format!("%{query_string}%"));
             sep.push_unseparated("))");
         }
 
@@ -875,7 +869,7 @@ impl CardRepository for MyPostgres {
                     sep.push_unseparated(" OR ");
                 }
                 sep.push_unseparated(STRIP_ORACLE);
-                sep.push_bind_unseparated(format!("%{}%", query_string));
+                sep.push_bind_unseparated(format!("%{query_string}%"));
             }
             sep.push_unseparated(")) ");
         }
@@ -950,12 +944,12 @@ impl CardRepository for MyPostgres {
 
         if let Some(query_string) = &criteria.flavor_text_contains() {
             sep.push("regexp_replace(flavor_text, '[^a-zA-Z0-9 ]', '', 'g') ILIKE ");
-            sep.push_bind_unseparated(format!("%{}%", query_string));
+            sep.push_bind_unseparated(format!("%{query_string}%"));
         }
 
         if let Some(query_string) = &criteria.flavor_text_not_contains() {
             sep.push("(flavor_text IS NULL OR NOT (regexp_replace(flavor_text, '[^a-zA-Z0-9 ]', '', 'g') ILIKE ");
-            sep.push_bind_unseparated(format!("%{}%", query_string));
+            sep.push_bind_unseparated(format!("%{query_string}%"));
             sep.push_unseparated("))");
         }
 
@@ -1059,8 +1053,8 @@ impl CardRepository for MyPostgres {
             // That conjunct is logically redundant, since the front face is a
             // substring of the whole line, but `type_line ILIKE` can use the
             // trigram index while `split_part(type_line, ...)` cannot. Keeping
-            // both lets the index narrow first: measured at 12ms against 21ms
-            // for the old filter and 57ms with the raw test dropped.
+            // both lets the index narrow first: measured at 12ms, against 57ms
+            // with the raw test dropped.
             match format {
                 // Legendary creature, legendary vehicle with P/T, or "can be your commander"
                 Format::Commander | Format::Duel | Format::Predh => {
@@ -1335,7 +1329,7 @@ impl CardRepository for MyPostgres {
             ));
         } else if let Some(scores) = synergy_scores {
             // Default synergy ordering: band shuffle over (base + signal)
-            // (context/plans/suggestion_signal.md, Phase 3a+3b band revision).
+            // (context/plans/suggestion_signal.md).
             //   score: the commander's synergy score (unscored cards anchor
             //          below the scored floor, see UNSCORED_ANCHOR) + the
             //          pooled net-rate, shrunk toward and centered on the
@@ -1344,10 +1338,7 @@ impl CardRepository for MyPostgres {
             //          Bands stay in strict order; position *within* a band
             //          is purely the (card, deck, day) hash; a different
             //          opening hand per deck per day, while a band-2 card
-            //          can never lead band 1. Score-jitter was tried first
-            //          and replaced: it permutes positions but never rotates
-            //          the visible cast, which reads as "same order"
-            //          (2026-07-06 live Krenko tests at 0.01/0.04/0.08).
+            //          can never lead band 1.
             qb.push(" ORDER BY ");
             if let Some(d) = returned_deck {
                 push_returned(&mut qb, d);
@@ -1361,8 +1352,7 @@ impl CardRepository for MyPostgres {
                     " DESC, name ASC, latest_cards.id) - 1) / {BAND_SIZE}, "
                 ));
                 // COALESCE the oracle_id: it is nullable, and NULL || seed
-                // would NULL the shuffle key (caught by the dev harness,
-                // 2026-07-06).
+                // would NULL the shuffle key.
                 qb.push("hashtext(COALESCE(latest_cards.oracle_id::text, '') || ");
                 qb.push_bind(seed);
                 qb.push("), name ASC");
@@ -1481,7 +1471,7 @@ impl CardRepository for MyPostgres {
         Ok(cards)
     }
 
-    /// Returns all printings of a card by oracle_id, ordered by release date (newest first).
+    /// Returns all printings of a card by `oracle_id`, ordered by release date (newest first).
     async fn get_printings(&self, oracle_id: uuid::Uuid) -> Result<Vec<Card>, GetCardError> {
         let db_rows: Vec<DatabaseScryfallData> =
             query_as("SELECT sd.* FROM scryfall_data sd JOIN card_profiles cp ON sd.id = cp.scryfall_data_id WHERE sd.oracle_id = $1 ORDER BY sd.released_at ASC")
@@ -1741,7 +1731,7 @@ impl CardRepository for MyPostgres {
         .fetch_all(&self.pool)
         .await?
         .into_iter()
-        .map(|dcp| dcp.into())
+        .map(Into::into)
         .collect();
         Ok(card_profiles)
     }
@@ -1759,7 +1749,7 @@ impl CardRepository for MyPostgres {
         .fetch_all(&self.pool)
         .await?
         .into_iter()
-        .map(|dcp| dcp.into())
+        .map(Into::into)
         .collect();
         Ok(card_profiles)
     }
@@ -1790,7 +1780,7 @@ impl CardRepository for MyPostgres {
         let mut lowered: std::collections::HashSet<String> = std::collections::HashSet::new();
         for name in names {
             let lower = name.to_lowercase();
-            let front = entry_front_face(&lower);
+            let front = import_deck_cards::entry_front_face(&lower);
             if !front.is_empty() {
                 lowered.insert(front.to_string());
             }
@@ -1846,7 +1836,7 @@ impl CardRepository for MyPostgres {
         Ok(cards)
     }
 
-    /// First-class commander search (context/archive/commander_select_ordering.md):
+    /// First-class commander search (`context/archive/commander_select_ordering.md`):
     /// decks-helmed popularity ordering, banded + wildcarded per user per day
     /// (no deck required), token/emblem printings excluded. An explicit sort in
     /// `request` still wins; the pool is always token-free. The shuffle seed is
@@ -1953,6 +1943,9 @@ impl CardRepository for MyPostgres {
         &self,
         decks: &[Vec<uuid::Uuid>],
     ) -> Result<Vec<Option<DeckTagProfile>>, SearchCardsError> {
+        /// Deck index, tag weights, and each kept tag's card count.
+        type ProfileRow = (i32, serde_json::Value, Json<HashMap<String, u32>>);
+
         // Lift weighting, the steps in zwipe_core::domain::deck::tag_profile
         // run for every deck in one statement. The decks bind as two parallel
         // arrays, one (deck index, oracle id) pair per card, since a
@@ -2025,10 +2018,8 @@ impl CardRepository for MyPostgres {
              SELECT deck, jsonb_object_agg(oracle_tag, w),
                     jsonb_object_agg(oracle_tag, cards::int4)
              FROM normalized GROUP BY deck",
-            role_membership_ctes(1)
+            oracle_tag_groups::role_membership_ctes(1)
         );
-        /// Deck index, tag weights, and each kept tag's card count.
-        type ProfileRow = (i32, serde_json::Value, Json<HashMap<String, u32>>);
         let rows: Vec<ProfileRow> = binds
             .bind(sqlx::query(sqlx::AssertSqlSafe(sql)))
             .bind(&deck_indices)
@@ -2100,7 +2091,7 @@ impl CardRepository for MyPostgres {
              SELECT slug, min(role) FROM membership
              WHERE slug = ANY($7::text[])
              GROUP BY slug",
-            role_membership_ctes(1)
+            oracle_tag_groups::role_membership_ctes(1)
         );
         let rows: Vec<(String, String)> = binds
             .bind(sqlx::query(sqlx::AssertSqlSafe(sql)))
@@ -2138,7 +2129,7 @@ impl CardRepository for MyPostgres {
         let mut tx = self.pool.begin().await?;
 
         for (id, categories) in updates {
-            let cat_strings: Vec<String> = categories.iter().map(|c| c.to_string()).collect();
+            let cat_strings: Vec<String> = categories.iter().map(ToString::to_string).collect();
             let json = serde_json::to_value(&cat_strings)?;
             sqlx::query!(
                 "UPDATE card_profiles SET card_roles = $1, updated_at = NOW() WHERE scryfall_data_id = $2",
@@ -2158,10 +2149,7 @@ impl CardRepository for MyPostgres {
     }
 
     async fn refresh_oracle_tag_groups(&self) -> anyhow::Result<u64> {
-        crate::outbound::sqlx::card::helpers::oracle_tag_groups::refresh_oracle_tag_groups(
-            &self.pool,
-        )
-        .await
+        oracle_tag_groups::refresh_oracle_tag_groups(&self.pool).await
     }
 
     async fn get_card_ids_with_oracle_text(&self) -> Result<Vec<uuid::Uuid>, anyhow::Error> {

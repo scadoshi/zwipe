@@ -1,4 +1,4 @@
-//! Route definitions and path constants shared between frontend and backend.
+//! Route definitions mapping paths to handlers.
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -86,15 +86,18 @@ use crate::inbound::http::handlers::user::mark_hint_shown::mark_hint_shown;
 use crate::inbound::http::handlers::user::update_preferences::update_preferences;
 use crate::inbound::http::middleware::{CfConnectingIpKeyExtractor, UserIdKeyExtractor};
 
+/// Largest crash report body accepted, in bytes. A report is about 2 KB of
+/// truncated panic text, and the route takes it unauthenticated.
+const CRASH_REPORT_BODY_LIMIT: usize = 4096;
+
 /// Rate-limit error handler for the routes keyed by user id
 /// (`UserIdKeyExtractor`).
 ///
 /// On those routes the governor layer runs *before* the `AuthenticatedUser`
 /// extractor, and it calls the key extractor to bucket the request. When the
 /// request has no valid Bearer token the extractor returns
-/// `GovernorError::UnableToExtractKey`, and tower_governor's default maps that
-/// to a **500**, so an unauthenticated call to a private route answered 500
-/// instead of 401, polluting error logs and misleading health probes.
+/// `GovernorError::UnableToExtractKey`, which `tower_governor`'s default maps
+/// to a **500**.
 ///
 /// This remaps that one case to **401 Unauthorized** (the honest status for
 /// "you didn't authenticate"). `TooManyRequests` gets the stable 429 body
@@ -113,7 +116,7 @@ fn unauthorized_on_missing_key(error: GovernorError) -> Response<Body> {
         GovernorError::TooManyRequests { wait_time, headers } => {
             too_many_requests_response(wait_time, headers)
         }
-        other => other.into_response().map(Body::from),
+        other @ GovernorError::Other { .. } => other.into_response().map(Body::from),
     }
 }
 
@@ -131,12 +134,12 @@ fn stable_rate_limit(error: GovernorError) -> Response<Body> {
 
 /// 429 with a STABLE body and the exact wait in the `Retry-After` header.
 ///
-/// tower_governor's default body interpolates the live countdown ("Too Many
+/// `tower_governor`'s default body interpolates the live countdown ("Too Many
 /// Requests! Wait for 1784s"); the client shows that text in a toast AND uses
-/// it in the error-report dedupe key, so every second of a lockout minted a
-/// fresh `client_errors` row (field-confirmed 2026-08-05). Bucketed copy keeps
-/// the message stable across an incident; machines that want precision read
-/// the header.
+/// it in the error-report dedupe key, so the countdown would mint a fresh
+/// `client_errors` row for every second of a lockout. Bucketed copy keeps the
+/// message stable across a lockout; machines that want precision read the
+/// header.
 fn too_many_requests_response(wait_time: u64, headers: Option<HeaderMap>) -> Response<Body> {
     let mut response = Response::new(Body::from(rate_limit_copy(wait_time)));
     *response.status_mut() = StatusCode::TOO_MANY_REQUESTS;
@@ -165,13 +168,12 @@ fn rate_limit_copy(wait_secs: u64) -> String {
 /// `Cache-Control: public, max-age=3600` for successful responses on the
 /// public read endpoints (card catalogs, marketing stats, changelog), so the
 /// CF edge (whose cache rules respect origin TTL) holds one copy per hour
-/// instead of falling back to its daily default, which held the flavor card
-/// ~20h on 2026-08-06. One simple number everywhere; only featured-flavor
-/// needs more (its content flips ON the hour, so its handler counts down to
-/// the boundary, and `if_not_present` lets that header win).
+/// instead of falling back to its daily default. One simple number
+/// everywhere; only featured-flavor needs more (its content flips ON the hour,
+/// so its handler counts down to the boundary, and `if_not_present` lets that
+/// header win).
 ///
-/// Success-only on purpose: without the guard a 429 or error body would leave
-/// browser-cacheable for an hour.
+/// Success-only, so a 429 or error body is never browser-cacheable.
 fn hourly_public_cache(response: &Response<Body>) -> Option<HeaderValue> {
     response
         .status()
@@ -182,10 +184,8 @@ fn hourly_public_cache(response: &Response<Body>) -> Option<HeaderValue> {
 type CacheHeaderFn = fn(&Response<Body>) -> Option<HeaderValue>;
 
 fn hourly_cache_layer() -> SetResponseHeaderLayer<CacheHeaderFn> {
-    SetResponseHeaderLayer::if_not_present(
-        header::CACHE_CONTROL,
-        hourly_public_cache as CacheHeaderFn,
-    )
+    let make_header: CacheHeaderFn = hourly_public_cache;
+    SetResponseHeaderLayer::if_not_present(header::CACHE_CONTROL, make_header)
 }
 
 /// `Cache-Control: private, no-store` on every authenticated response, so no
@@ -199,7 +199,19 @@ fn private_no_store_layer() -> SetResponseHeaderLayer<HeaderValue> {
 }
 
 /// Routes that don't require authentication.
-#[allow(clippy::expect_used)]
+///
+/// # Panics
+///
+/// Never in practice: a governor config only fails to build on a zero period
+/// or burst, and every one here is a non-zero constant.
+#[expect(
+    clippy::expect_used,
+    reason = "every governor config has a non-zero period and burst, so finish never returns None"
+)]
+#[expect(
+    clippy::too_many_lines,
+    reason = "one router tree: each public limiter, then the routes it guards"
+)]
 pub fn public_routes() -> Router<AppState> {
     // 5 req / 30s: tight limit, brute-force target
     let login_config = Arc::new(
@@ -213,7 +225,7 @@ pub fn public_routes() -> Router<AppState> {
     // 5 req / 1hr: rarely needed legitimately
     let register_config = Arc::new(
         GovernorConfigBuilder::default()
-            .period(Duration::from_secs(720))
+            .period(Duration::from_mins(12))
             .burst_size(5)
             .key_extractor(CfConnectingIpKeyExtractor)
             .finish()
@@ -231,7 +243,7 @@ pub fn public_routes() -> Router<AppState> {
     // 5 req / 1hr per IP: password reset is rare
     let forgot_password_config = Arc::new(
         GovernorConfigBuilder::default()
-            .period(Duration::from_secs(720))
+            .period(Duration::from_mins(12))
             .burst_size(5)
             .key_extractor(CfConnectingIpKeyExtractor)
             .finish()
@@ -465,9 +477,7 @@ pub fn public_routes() -> Router<AppState> {
                                     GovernorLayer::new(crash_report_config)
                                         .error_handler(stable_rate_limit),
                                 )
-                                // A crash report is ~2KB of truncated panic
-                                // text; 4KB bounds this unauthed body hard.
-                                .layer(DefaultBodyLimit::max(4096)),
+                                .layer(DefaultBodyLimit::max(CRASH_REPORT_BODY_LIMIT)),
                         ),
                 )
                 .nest(
@@ -483,7 +493,19 @@ pub fn public_routes() -> Router<AppState> {
 }
 
 /// Routes that require `AuthenticatedUser` (JWT Bearer token).
-#[allow(clippy::expect_used)]
+///
+/// # Panics
+///
+/// Never in practice: a governor config only fails to build on a zero period
+/// or burst, and every one here is a non-zero constant.
+#[expect(
+    clippy::expect_used,
+    reason = "every governor config has a non-zero period and burst, so finish never returns None"
+)]
+#[expect(
+    clippy::too_many_lines,
+    reason = "one router tree: each per-user limiter, then the routes it guards"
+)]
 pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
     // 500 req / 5min (~1.67/s avg): generous for swiping, keyed by user ID
     let private_config = Arc::new(
@@ -497,7 +519,7 @@ pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
     // burst 2, then 1 req/30min: account mutations are done once; 2 attempts covers typos
     let sensitive_config = Arc::new(
         GovernorConfigBuilder::default()
-            .period(Duration::from_secs(1800))
+            .period(Duration::from_mins(30))
             .burst_size(2)
             .key_extractor(UserIdKeyExtractor::new(jwt_secret.clone()))
             .finish()

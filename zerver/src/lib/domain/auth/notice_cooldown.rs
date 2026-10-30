@@ -1,9 +1,9 @@
 //! One "you already have an account" email per address per hour.
 //!
-//! Registering with a taken email mails that address's owner. Without a cap,
-//! anyone could fill a stranger's inbox five emails an hour from every
-//! address they register from. Kept in memory like the login lockout: a
-//! restart forgets it, which costs the owner one extra email at most.
+//! Registering with a taken email mails that address's owner, so the cap
+//! keeps a stranger's inbox from filling. Kept in memory like the login
+//! lockout: a restart forgets it, which costs the owner one extra email at
+//! most.
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
@@ -12,7 +12,7 @@ use dashmap::DashMap;
 use dashmap::mapref::entry::Entry;
 
 /// How long after one notice the next one to the same address is skipped.
-pub const NOTICE_COOLDOWN: Duration = Duration::from_secs(60 * 60);
+pub const NOTICE_COOLDOWN: Duration = Duration::from_hours(1);
 
 /// Entries are swept this often, counted in notices allowed.
 const SWEEP_EVERY: usize = 1024;

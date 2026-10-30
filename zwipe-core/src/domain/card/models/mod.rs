@@ -1,18 +1,11 @@
 //! Card domain types shared between frontend and backend.
 
-/// User-specific card metadata (favorites, notes; future expansion).
 pub mod card_profile;
-/// Mechanical category classification (ramp, draw, removal, etc.).
 pub mod card_role;
-/// Reminder text for keyword abilities (Flying, Trample, …).
 pub mod keyword;
-/// Oracle tag catalog entry (community-maintained functional tags).
 pub mod oracle_tag;
-/// Scryfall API data models.
 pub mod scryfall_data;
-/// Card search and filtering.
 pub mod search_card;
-/// Commander synergy cache payload, shared with the synergy worker.
 pub mod synergy;
 
 use card_profile::CardProfile;
@@ -22,8 +15,8 @@ use serde::{Deserialize, Serialize};
 /// Complete MTG card data combining internal metadata and Scryfall card information.
 ///
 /// Aggregates:
-/// - **card_profile**: Internal card metadata (sync timestamps, database ID)
-/// - **scryfall_data**: Complete Scryfall card object (~100 fields)
+/// - **`card_profile`**: Internal card metadata (sync timestamps, database ID)
+/// - **`scryfall_data`**: Complete Scryfall card object (~100 fields)
 #[derive(Debug, Clone, Serialize, PartialEq, Deserialize)]
 pub struct Card {
     /// Internal card metadata and sync information.

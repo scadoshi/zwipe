@@ -5,7 +5,10 @@
 //!
 //! Requires `DATABASE_URL`: `set -a; source zerver/.env; set +a`.
 
-#![allow(clippy::unwrap_used, clippy::indexing_slicing)]
+#![expect(
+    clippy::unwrap_used,
+    reason = "a test: helpers outside #[test] fns unwrap, and a panic is the failure report"
+)]
 
 use zwipe_core::http::paths::{
     GET_ARTISTS_ROUTE, GET_CARD_TYPES_ROUTE, GET_KEYWORDS_ROUTE, GET_LANGUAGES_ROUTE,
@@ -118,7 +121,7 @@ async fn printings_returns_all_printings_of_an_oracle(pool: sqlx::PgPool) {
     );
 }
 
-/// A fresh `TestApp` over a cloned pool — the metadata test issues several
+/// A fresh `TestApp` over a cloned pool. The metadata test issues several
 /// independent public GETs and each helper call wants an app to drive.
 fn app_of(pool: sqlx::PgPool) -> TestApp {
     TestApp::new(pool)

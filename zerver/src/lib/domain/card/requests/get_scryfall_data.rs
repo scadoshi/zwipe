@@ -31,7 +31,7 @@ pub enum SearchScryfallDataError {
 pub struct GetScryfallData(Uuid);
 
 impl GetScryfallData {
-    /// Creates a new GetScryfallData request by parsing a UUID string.
+    /// Creates a new `GetScryfallData` request by parsing a UUID string.
     ///
     /// # Errors
     /// Returns `uuid::Error` if the string is not a valid UUID.
@@ -67,6 +67,7 @@ impl From<&CardProfile> for GetScryfallData {
 ///
 /// Used for bulk fetching Scryfall data by IDs.
 /// Derefs to `&[Uuid]` for direct slice operations.
+#[derive(Debug)]
 pub struct ScryfallDataIds(Vec<Uuid>);
 
 impl std::ops::Deref for ScryfallDataIds {

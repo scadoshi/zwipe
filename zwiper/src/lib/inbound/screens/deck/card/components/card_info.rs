@@ -1,4 +1,4 @@
-use components::{BottomSheet, Button, ButtonVariant, CardDetails, card_face_count};
+use components::{BottomSheet, Button, ButtonVariant, CardDetails};
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::Card;
@@ -42,8 +42,7 @@ pub(crate) fn CardInfoDisplay(card: Card) -> Element {
         .scryfall_data
         .artist
         .filter(|a| !a.is_empty())
-        .map(|a| format!("Artist: {a}"))
-        .unwrap_or_else(|| "\u{00a0}".to_string());
+        .map_or_else(|| "\u{00a0}".to_string(), |a| format!("Artist: {a}"));
 
     rsx! {
         div { class: "card-info",
@@ -122,7 +121,7 @@ pub(crate) fn CardDetailsSheet(
     let name = card.scryfall_data.name.clone();
     // Face state lives here so Flip can sit in the footer; the body reads it
     // through the controlled `face` prop.
-    let face_count = card_face_count(&card);
+    let face_count = components::card_face_count(&card);
     let mut face = use_signal(|| 0usize);
     let describe_tag = use_describe_tag();
 

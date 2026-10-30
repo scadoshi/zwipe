@@ -1,6 +1,6 @@
 //! User preferences screen for theme and dark mode selection.
 
-use components::{TOAST_QUICK, ThemeConfig, ThemeSheet, theme_from_preferences};
+use components::{TOAST_QUICK, ThemeConfig, ThemeSheet};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_core::http::contracts::user::HttpUpdatePreferences;
@@ -33,7 +33,7 @@ pub fn PreferencesSheet(open: Signal<bool>) -> Element {
                 })
                 .await
             {
-                let theme = theme_from_preferences(&prefs);
+                let theme = components::theme_from_preferences(&prefs);
                 app_icon::follow(&theme);
                 theme_config.set(theme);
                 toast.success(

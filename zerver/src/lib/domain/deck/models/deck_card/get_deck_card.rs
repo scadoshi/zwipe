@@ -4,7 +4,7 @@
 
 use thiserror::Error;
 
-#[allow(missing_docs)]
+#[expect(missing_docs, reason = "each variant's message names the failure")]
 #[derive(Debug, Error)]
 pub enum GetDeckCardError {
     #[error("deck card not found")]

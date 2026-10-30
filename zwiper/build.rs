@@ -1,4 +1,9 @@
-#![allow(clippy::expect_used, clippy::panic)]
+//! Bakes `BACKEND_URL`, `RUST_LOG` and `RUST_BACKTRACE` into the build, failing it on a bad backend URL.
+
+#![expect(
+    clippy::panic,
+    reason = "a build script fails the build by panicking on a missing variable"
+)]
 
 const BACKEND_URL_KEY: &str = "BACKEND_URL";
 const RUST_LOG_KEY: &str = "RUST_LOG";
@@ -9,11 +14,11 @@ fn main() {
     dotenvy::dotenv().ok();
 
     let backend_url = std::env::var(BACKEND_URL_KEY)
-        .unwrap_or_else(|_| panic!("{} must be set in .env file", BACKEND_URL_KEY));
+        .unwrap_or_else(|_| panic!("{BACKEND_URL_KEY} must be set in .env file"));
     let rust_log = std::env::var(RUST_LOG_KEY)
-        .unwrap_or_else(|_| panic!("{} must be set in .env file", RUST_LOG_KEY));
+        .unwrap_or_else(|_| panic!("{RUST_LOG_KEY} must be set in .env file"));
     let rust_backtrace = std::env::var(RUST_BACKTRACE_KEY)
-        .unwrap_or_else(|_| panic!("{} must be set in .env file", RUST_BACKTRACE_KEY));
+        .unwrap_or_else(|_| panic!("{RUST_BACKTRACE_KEY} must be set in .env file"));
 
     // Fail the build, not the first launch. `Config::from_env` parses this with
     // `Url::from_str` and unwraps; the value is baked in, so a malformed one
@@ -37,24 +42,21 @@ fn main() {
         "{BACKEND_URL_KEY} must be https:// in a release build, got {backend_url:?}"
     );
 
-    println!("cargo:rustc-env={}={}", BACKEND_URL_KEY, backend_url);
-    println!("cargo:info=setting {} to {}", BACKEND_URL_KEY, backend_url);
+    println!("cargo:rustc-env={BACKEND_URL_KEY}={backend_url}");
+    println!("cargo:info=setting {BACKEND_URL_KEY} to {backend_url}");
 
-    println!("cargo:rustc-env={}={}", RUST_LOG_KEY, rust_log);
-    println!("cargo:info=setting {} to {}", RUST_LOG_KEY, rust_log);
+    println!("cargo:rustc-env={RUST_LOG_KEY}={rust_log}");
+    println!("cargo:info=setting {RUST_LOG_KEY} to {rust_log}");
 
-    println!("cargo:rustc-env={}={}", RUST_BACKTRACE_KEY, rust_backtrace);
-    println!(
-        "cargo:info=setting {} to {}",
-        RUST_BACKTRACE_KEY, rust_backtrace
-    );
+    println!("cargo:rustc-env={RUST_BACKTRACE_KEY}={rust_backtrace}");
+    println!("cargo:info=setting {RUST_BACKTRACE_KEY} to {rust_backtrace}");
 
     println!("cargo:rerun-if-changed=.env");
 
     // Also re-run when these are passed as env vars (e.g. `BACKEND_URL=... dx serve`),
-    // not just when the .env file changes — otherwise Cargo caches the stale baked-in
+    // not just when the .env file changes. Otherwise Cargo caches the stale baked-in
     // value and a full `cargo clean` is needed to pick up a new backend.
-    println!("cargo:rerun-if-env-changed={}", BACKEND_URL_KEY);
-    println!("cargo:rerun-if-env-changed={}", RUST_LOG_KEY);
-    println!("cargo:rerun-if-env-changed={}", RUST_BACKTRACE_KEY);
+    println!("cargo:rerun-if-env-changed={BACKEND_URL_KEY}");
+    println!("cargo:rerun-if-env-changed={RUST_LOG_KEY}");
+    println!("cargo:rerun-if-env-changed={RUST_BACKTRACE_KEY}");
 }

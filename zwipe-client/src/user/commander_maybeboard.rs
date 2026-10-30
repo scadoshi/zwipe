@@ -12,6 +12,11 @@ use crate::{ClientError, ZwipeClient};
 
 impl ZwipeClient {
     /// Reads the user's commander maybeboard.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`ClientError`] when the request fails to complete, the server answers with an
+    /// error status, or the reply doesn't decode.
     pub async fn get_commander_maybeboard(
         &self,
         session: &Session,
@@ -20,6 +25,11 @@ impl ZwipeClient {
     }
 
     /// Adds a commander to the maybeboard.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`ClientError`] when the request fails to complete, the server answers with an
+    /// error status, or the reply doesn't decode.
     pub async fn add_commander_maybeboard_card(
         &self,
         oracle_id: Uuid,
@@ -30,6 +40,11 @@ impl ZwipeClient {
     }
 
     /// Removes a commander from the maybeboard.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`ClientError`] when the request fails to complete, the server answers with an
+    /// error status, or the reply doesn't decode.
     pub async fn remove_commander_maybeboard_card(
         &self,
         oracle_id: Uuid,
@@ -40,6 +55,11 @@ impl ZwipeClient {
     }
 
     /// Empties the maybeboard.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`ClientError`] when the request fails to complete, the server answers with an
+    /// error status, or the reply doesn't decode.
     pub async fn clear_commander_maybeboard(&self, session: &Session) -> Result<(), ClientError> {
         self.call(ClearCommanderMaybeboard, Some(session)).await
     }

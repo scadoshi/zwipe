@@ -109,8 +109,7 @@ pub fn Rarity() -> Element {
                     div {
                         class: if selected.contains(&rarity) {
                             match mode() {
-                                IncludeExclude::Include => "chip selected",
-                                IncludeExclude::Exclude => "chip selected",
+                                IncludeExclude::Include | IncludeExclude::Exclude => "chip selected",
                             }
                         } else {
                             "chip"

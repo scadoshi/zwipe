@@ -248,8 +248,8 @@ impl UsageBuffer {
                 // richer generalized-context per-otag signal, and (for
                 // non-Commander decks) is the sole context key.
                 deck_id: Some(deck_id),
-                // `shown` is derived from add-stack actions for now; a removal is
-                // not an impression, so it doesn't count toward `shown`.
+                // `shown` is derived from add-stack actions; a removal is not an
+                // impression, so it doesn't count toward `shown`.
                 shown: t.added + t.skipped + t.maybed,
                 added: t.added,
                 skipped: t.skipped,
@@ -319,7 +319,7 @@ impl UsageBuffer {
             swipes_down: down,
             searches,
             // Durable skips post directly per swipe (skip_deck_card); the
-            // batch field remains for wire compat with the server.
+            // batch field stays empty, kept for the wire format.
             deck_skips: Vec::new(),
             signals,
             select_signals,
@@ -339,9 +339,10 @@ fn api_error_kind(api: &ClientError) -> &'static str {
         ClientError::UnprocessableEntity(_) => "api_unprocessable",
         ClientError::TooManyRequests(_) => "api_too_many_requests",
         ClientError::Conflict(_) => "api_conflict",
-        ClientError::InternalServerError(_) => "api_internal",
-        // Handled before this is reached.
-        ClientError::Network(_) | ClientError::Decode(_) => "api_internal",
+        // Network and Decode are handled before this is reached.
+        ClientError::InternalServerError(_) | ClientError::Network(_) | ClientError::Decode(_) => {
+            "api_internal"
+        }
     }
 }
 
@@ -355,10 +356,10 @@ fn sanitized_decode_message(detail: &str) -> String {
     let mut in_quotes = false;
     for c in detail.chars() {
         if c == '"' {
-            if !in_quotes {
-                out.push_str("\"…");
-            } else {
+            if in_quotes {
                 out.push('"');
+            } else {
+                out.push_str("\"…");
             }
             in_quotes = !in_quotes;
         } else if !in_quotes {
@@ -372,7 +373,6 @@ fn sanitized_decode_message(detail: &str) -> String {
 }
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use uuid::Uuid;
     use zwipe_client::ClientError;
@@ -493,7 +493,7 @@ mod tests {
         assert_eq!(repeated.count, 3);
         assert_eq!(repeated.kind, "api_unprocessable");
         assert_eq!(repeated.message, "deck limit reached");
-        assert!(!repeated.client_version.is_empty());
+        assert_ne!(repeated.client_version, "");
 
         // Drained: a second snapshot has nothing.
         assert!(buffer.snapshot_and_zero().is_none());

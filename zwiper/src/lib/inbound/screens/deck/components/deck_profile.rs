@@ -1,6 +1,9 @@
+//! The deck profile section on the view deck screen.
+
 use dioxus::prelude::*;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::deck::deck_profile::DeckProfile;
+use zwipe_core::domain::deck::format::Format;
 
 #[component]
 pub(crate) fn DeckProfileSection(
@@ -12,7 +15,7 @@ pub(crate) fn DeckProfileSection(
     let is_oathbreaker = deck_profile
         .format
         .as_ref()
-        .is_some_and(|f| f.has_signature_spell());
+        .is_some_and(Format::has_signature_spell);
     let commander_label = if is_oathbreaker {
         "Oathbreaker"
     } else {

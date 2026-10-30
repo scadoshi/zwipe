@@ -8,7 +8,7 @@
 use std::collections::HashMap;
 
 use dioxus::prelude::*;
-use zwipe_core::domain::card::keyword::keyword_reminder;
+use zwipe_core::domain::card::keyword;
 
 /// Context: the served keyword-reminder catalog (name → reminder).
 ///
@@ -19,7 +19,7 @@ use zwipe_core::domain::card::keyword::keyword_reminder;
 ///
 /// zite provides nothing and reads the compiled table, which is correct for
 /// a static page built from the same binary.
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct KeywordReminders(pub Signal<Option<HashMap<String, String>>>);
 
 /// Tappable keyword chips with a shared inline reminder area.
@@ -47,7 +47,7 @@ pub fn KeywordChips(keywords: Vec<String>) -> Element {
                     .as_ref()
                     .and_then(|map| map.get(&k.trim().to_ascii_lowercase()).cloned())
                     .unwrap_or_default(),
-                None => keyword_reminder(k).to_string(),
+                None => keyword::keyword_reminder(k).to_string(),
             };
             (k.clone(), reminder)
         })

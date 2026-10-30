@@ -19,6 +19,7 @@ pub enum SortDirection {
 
 impl SortDirection {
     /// The other direction.
+    #[must_use]
     pub fn flipped(self) -> Self {
         match self {
             Self::Ascending => Self::Descending,

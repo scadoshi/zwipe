@@ -14,13 +14,16 @@ use components::{
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
-use zwipe_core::domain::card::oracle_tag::{OracleTag, search_oracle_tags};
+use zwipe_core::domain::card::oracle_tag::{self, OracleTag};
 use zwipe_core::domain::deck::MAX_DECK_ORACLE_TAGS;
 
 use crate::inbound::components::catalog_cache::CatalogCache;
 use crate::inbound::components::concept_explainers::OracleTagsExplainer;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::screens::oracle_tag_dictionary::OracleTagDictionary;
+
+/// Ranked catalog matches a non-empty search shows.
+const SEARCH_RESULT_LIMIT: usize = 40;
 
 /// Whether two slug lists pick the same tags, ignoring tap order.
 fn same_set(a: &[String], b: &[String]) -> bool {
@@ -82,9 +85,8 @@ pub(crate) fn OracleTagSelect(
     });
 
     // Back, and the OS back gesture, revert to the snapshot and say so when
-    // there was something to revert. The gesture used to just close, which
-    // kept the edits: the one exit that behaved like Save without saying so.
-    let back = use_callback(move |_: ()| {
+    // there was something to revert.
+    let back = use_callback(move |(): ()| {
         let mut selected = selected;
         if !same_set(&selected.peek(), &snapshot.peek()) {
             toast.info(
@@ -112,7 +114,7 @@ pub(crate) fn OracleTagSelect(
     };
 
     let cell_read = cell.read();
-    let tags: &[OracleTag] = cell_read.loaded().map(Vec::as_slice).unwrap_or(&[]);
+    let tags: &[OracleTag] = cell_read.loaded().map_or(&[], Vec::as_slice);
     let sel = selected();
 
     // Empty search → the server-marked curated grid plus any selected slug
@@ -123,8 +125,8 @@ pub(crate) fn OracleTagSelect(
         Vec::new()
     } else if q.trim().is_empty() {
         // The server marks which tags the default grid shows, so retuning it
-        // is a deploy. A tag the backend stopped serving cannot be curated,
-        // which is why this no longer intersects against the served set.
+        // is a deploy. A tag the backend stopped serving cannot be curated, so
+        // the grid does not intersect against the served set.
         let mut curated: Vec<OracleTag> = tags
             .iter()
             .filter(|t| t.curated || sel.contains(&t.slug))
@@ -133,8 +135,8 @@ pub(crate) fn OracleTagSelect(
         curated.sort_by(|a, b| a.slug.cmp(&b.slug));
         curated
     } else {
-        let mut matches = search_oracle_tags(tags, &q);
-        matches.truncate(40);
+        let mut matches = oracle_tag::search_oracle_tags(tags, &q);
+        matches.truncate(SEARCH_RESULT_LIMIT);
         matches
     };
 

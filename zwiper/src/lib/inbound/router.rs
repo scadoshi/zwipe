@@ -31,13 +31,14 @@ use crate::inbound::screens::legal::privacy_policy::PrivacyPolicy;
 /// Application routes mapping URLs to screen components.
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
-#[allow(missing_docs)]
+#[expect(missing_docs, reason = "each route field is the URL parameter its path names")]
 pub enum Router {
     // Wrap every route so the OS back-intent bridge (edge swipe / hardware
     // back) mounts once inside the router context and persists across routes.
     #[layout(BackHandlerLayout)]
 
-    // ── public (pre-auth) ── the only screens reachable without a session.
+    // == public ==
+    // The only screens reachable without a session.
     /// Email + password login form.
     #[route("/login")]
     Login {},
@@ -48,8 +49,9 @@ pub enum Router {
     #[route("/forgot-password")]
     ForgotPassword {},
 
-    // ── authed ── everything below requires a valid session (AuthGate
-    // redirects to /login otherwise), so screens do not self-gate.
+    // == authed ==
+    // Everything below requires a valid session (AuthGate redirects to
+    // /login otherwise), so screens do not self-gate.
     #[layout(AuthGate)]
     /// Landing screen: greeting, navigation to decks, account and config.
     #[route("/")]

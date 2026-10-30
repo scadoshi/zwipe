@@ -2,7 +2,7 @@
 //!
 //! Everyone sees the same card at the same moment: the pick is deterministic
 //! per hour (see the repository's `featured_flavor_id`), and the `TtlSlot` on
-//! AppState serves it from memory with a deadline pinned to the top of the
+//! `AppState` serves it from memory with a deadline pinned to the top of the
 //! next UTC hour: one DB pass per hour flip, single-flight under load, and a
 //! restart mid-hour re-derives the identical card. Plan:
 //! `context/plans/featured_flavor.md`.
@@ -23,8 +23,11 @@ use crate::inbound::http::{ApiError, AppState};
 ///
 /// `Cache-Control` declares freshness to the top of the UTC hour so edge
 /// caches (Cloudflare fronts prod) expire exactly when the pick flips.
-/// Without it, a CF cache rule edge-cached the response for ~20 hours and the
-/// whole world saw one card all day (2026-08-06).
+///
+/// # Errors
+///
+/// Returns 404 or 500 from the card lookup, only when no earlier pick is cached
+/// to fall back on.
 pub async fn get_featured_flavor(
     State(state): State<AppState>,
 ) -> Result<(StatusCode, [(header::HeaderName, String); 1], Json<Card>), ApiError> {

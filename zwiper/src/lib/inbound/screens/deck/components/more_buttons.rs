@@ -1,3 +1,5 @@
+//! The view deck screen's Buy and More bottom sheets.
+
 use components::{AlertDialog, BottomSheet, Button, DialogAction, TOAST_QUICK};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -7,7 +9,7 @@ use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::site::WEB_BASE;
 
 use crate::inbound::components::auth::authed::use_authed;
-use crate::inbound::components::telemetry::flush_loop::flush_once;
+use crate::inbound::components::telemetry::flush_loop;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen, component};
 use crate::inbound::router::Router;
@@ -96,7 +98,7 @@ pub(crate) fn MoreButtons(
         spawn(async move {
             // Flush pending skips first so this window's not-yet-sent skips
             // are wiped too, not re-suppressed by the next flush.
-            flush_once(&usage_buffer(), &client, &session).await;
+            flush_loop::flush_once(&usage_buffer(), &client, &session).await;
             if authed
                 .run_at(
                     component::MORE_BUTTONS,

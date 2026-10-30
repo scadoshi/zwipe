@@ -1,8 +1,8 @@
 //! Universes Beyond mapping: which printings are out of universe.
 //!
 //! A printing is out of universe when it carries the triangle security stamp
-//! OR its set code belongs to a franchise in [`FRANCHISES`](crate::domain::card::models::scryfall_data::universe::FRANCHISES). The stamp alone
-//! is not enough: WotC retired it starting with Marvel's Spider-Man (2025-09),
+//! OR its set code belongs to a franchise in [`FRANCHISES`]. The stamp alone
+//! is not enough: `WotC` retired it starting with Marvel's Spider-Man (2025-09),
 //! so the newest UB tentpoles print with oval or no stamp, and even stamped UB
 //! sets hold stampless satellites (art series, minigames, front cards). The
 //! list alone is not enough either: mixed sets (Secret Lair Drop, Ravnica:
@@ -41,7 +41,7 @@ pub struct UbFranchise {
     /// Display name for the exceptions checkboxes.
     pub name: &'static str,
     /// Every set in the franchise as (set code, set name), satellites
-    /// included. Codes drive the oou_sets overlay and pick predicates; names
+    /// included. Codes drive the `oou_sets` overlay and pick predicates; names
     /// match `latest_cards.printing_set_names`.
     pub sets: &'static [(&'static str, &'static str)],
 }
@@ -196,10 +196,10 @@ pub const FRANCHISES: &[UbFranchise] = &[
 
 /// Exception-only entries: mixed sets whose UB cards are caught by the
 /// per-card triangle stamp, never by set code. These codes MUST stay out of
-/// `all_set_codes` (and so out of oou_sets and the OOU test), or every
+/// `all_set_codes` (and so out of `oou_sets` and the OOU test), or every
 /// in-universe printing in the set would be misclassified. They exist so the
 /// exceptions whitelist can rescue a mixed set's UB cards wholesale: the
-/// crossover Secret Lairs (SpongeBob, PlayStation, Furby, and every future
+/// crossover Secret Lairs (`SpongeBob`, `PlayStation`, Furby, and every future
 /// drop) become one selection instead of a hand-maintained franchise each.
 /// Rescue-only semantics make this safe: the exception term only ever brings
 /// back cards the exclusion hid, so the set's in-universe cards are untouched.
@@ -215,7 +215,7 @@ pub const MIXED_SET_FRANCHISES: &[UbFranchise] = &[UbFranchise {
     ],
 }];
 
-/// Every wholly-UB set code across all franchises (the oou_sets overlay and
+/// Every wholly-UB set code across all franchises (the `oou_sets` overlay and
 /// SQL pick predicates). Deliberately excludes [`MIXED_SET_FRANCHISES`].
 pub fn all_set_codes() -> impl Iterator<Item = &'static str> {
     FRANCHISES
@@ -255,7 +255,7 @@ impl UbFranchise {
 /// Every franchise the exceptions picker offers, as wire views, sorted by
 /// display name so the server decides the order once.
 pub fn selectable_franchise_views() -> Vec<UbFranchiseView> {
-    let mut views: Vec<UbFranchiseView> = selectable_franchises().map(|f| f.view()).collect();
+    let mut views: Vec<UbFranchiseView> = selectable_franchises().map(UbFranchise::view).collect();
     views.sort_by(|a, b| a.name.cmp(&b.name));
     views
 }
@@ -337,6 +337,6 @@ mod tests {
     fn exception_set_names_expands_known_slugs_and_ignores_unknown() {
         let names = exception_set_names(&["doctor-who".to_string(), "not-a-franchise".to_string()]);
         assert_eq!(names, vec!["Doctor Who", "Doctor Who Tokens"]);
-        assert!(exception_set_names(&[]).is_empty());
+        assert_eq!(exception_set_names(&[]), Vec::<String>::new());
     }
 }
