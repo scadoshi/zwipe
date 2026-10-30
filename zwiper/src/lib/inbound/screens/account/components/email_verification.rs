@@ -18,6 +18,9 @@ use crate::inbound::components::telemetry::vocabulary::{ProfileScreen, Screen, c
 /// visible countdown and the 429 window agree.
 const RESEND_COOLDOWN_SECS: u32 = 60;
 
+const SECS_PER_MINUTE: i64 = 60;
+const MINUTES_PER_HOUR: i64 = 60;
+
 /// Email display line: address, verified/unverified badge, and the Change
 /// button. Verification actions live in [`VerificationActions`], rendered as
 /// its own Account row only while the email is unverified.
@@ -65,14 +68,14 @@ fn link_expiry_text(expires_at: DateTime<Utc>, now: DateTime<Utc>) -> String {
     if left <= chrono::Duration::zero() {
         return "Link expired; tap Change to send a new one".to_string();
     }
-    let minutes = (left.num_seconds() + 59) / 60;
-    if minutes < 60 {
+    let minutes = (left.num_seconds() + SECS_PER_MINUTE - 1) / SECS_PER_MINUTE;
+    if minutes < MINUTES_PER_HOUR {
         return match minutes {
             1 => "Link expires in 1 minute".to_string(),
             n => format!("Link expires in {n} minutes"),
         };
     }
-    match (minutes + 30) / 60 {
+    match (minutes + MINUTES_PER_HOUR / 2) / MINUTES_PER_HOUR {
         1 => "Link expires in 1 hour".to_string(),
         n => format!("Link expires in {n} hours"),
     }

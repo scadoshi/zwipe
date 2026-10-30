@@ -47,6 +47,12 @@ const LABEL_SPAN: usize = 3;
 /// `MAX_PEAKS` of them, the biggest. The portfolio's heatmap reads the same.
 const PEAK_RATIO: u32 = 4;
 const MAX_PEAKS: usize = 12;
+/// Rows in a heatmap column, one per weekday.
+const DAYS_PER_WEEK: usize = 7;
+/// Shades above empty, one per quarter of the busy days.
+const SHADES: usize = 4;
+/// A tag rate with no other players to go on: even odds.
+const EVEN_ODDS: f64 = 0.5;
 
 /// One day on the heatmap.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -81,7 +87,7 @@ fn level(count: u32, busy: &[u32]) -> u8 {
         return 0;
     }
     let quartile = |q: usize| {
-        busy.get(busy.len().saturating_sub(1).saturating_mul(q) / 4)
+        busy.get(busy.len().saturating_sub(1).saturating_mul(q) / SHADES)
             .copied()
             .unwrap_or(0)
     };
@@ -114,7 +120,7 @@ fn heat_layout(through: NaiveDate, days: &[HttpActivityDay]) -> HeatLayout {
     let mut date = start;
     while date <= through {
         let offset = usize::try_from((date - first_sunday).num_days()).unwrap_or(0);
-        let (column, row) = (offset / 7, offset % 7);
+        let (column, row) = (offset / DAYS_PER_WEEK, offset % DAYS_PER_WEEK);
         let day = by_day.get(&date);
         let (swipes, searches) = day.map_or((0, 0), |d| (d.swipes, d.searches));
         if row == 0 && last_month != Some(date.month()) {
@@ -321,7 +327,7 @@ fn baseline(kind: RateKind, tags: &[HttpTagRates]) -> f64 {
         (count.saturating_add(c), of.saturating_add(o))
     });
     if of == 0 {
-        0.5
+        EVEN_ODDS
     } else {
         float(count) / float(of)
     }
