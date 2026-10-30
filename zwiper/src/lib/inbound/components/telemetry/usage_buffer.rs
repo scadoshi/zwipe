@@ -355,10 +355,10 @@ fn sanitized_decode_message(detail: &str) -> String {
     let mut in_quotes = false;
     for c in detail.chars() {
         if c == '"' {
-            if !in_quotes {
-                out.push_str("\"…");
-            } else {
+            if in_quotes {
                 out.push('"');
+            } else {
+                out.push_str("\"…");
             }
             in_quotes = !in_quotes;
         } else if !in_quotes {

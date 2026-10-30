@@ -108,14 +108,7 @@ pub fn SwipeStack(
                     // per-card bookkeeping. The ONLY case we override with
                     // `transition: transform 0s` is during an active drag,
                     // where the card must follow the finger 1:1.
-                    let style = if !is_top {
-                        // Peeking layer behind the top card.
-                        let ty = peek_i * PEEK_OFFSET_PX;
-                        let scale = 1.0 - peek_i * PEEK_SCALE_STEP;
-                        format!(
-                            "transform: translateY({ty}px) scale({scale}); z-index: {z};"
-                        )
-                    } else {
+                    let style = if is_top {
                         // Top card, following the gesture (or sitting at rest).
                         let s = state();
                         let delta = s
@@ -157,6 +150,13 @@ pub fn SwipeStack(
                             "transform: translate({tx}px, {ty}px) rotate({rot}deg); \
                              {transition_override} \
                              z-index: {z};"
+                        )
+                    } else {
+                        // Peeking layer behind the top card.
+                        let ty = peek_i * PEEK_OFFSET_PX;
+                        let scale = 1.0 - peek_i * PEEK_SCALE_STEP;
+                        format!(
+                            "transform: translateY({ty}px) scale({scale}); z-index: {z};"
                         )
                     };
 
