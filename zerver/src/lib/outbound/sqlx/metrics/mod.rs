@@ -67,11 +67,11 @@ impl MetricsRepository for Postgres {
         // the weekly INTEGER columns. Lifetime and daily counters are BIGINT.
         let batch = batch.clamped();
 
-        let r = batch.swipes_right as i64;
-        let l = batch.swipes_left as i64;
-        let u = batch.swipes_up as i64;
-        let d = batch.swipes_down as i64;
-        let s = batch.searches as i64;
+        let r = i64::from(batch.swipes_right);
+        let l = i64::from(batch.swipes_left);
+        let u = i64::from(batch.swipes_up);
+        let d = i64::from(batch.swipes_down);
+        let s = i64::from(batch.searches);
 
         let mut tx = self.pool.begin().await.map_err(db)?;
 
@@ -197,8 +197,11 @@ impl MetricsRepository for Postgres {
         // A day's worth of impressions per user. Past the cap the flush is
         // still accepted, but none of its signals reach the pooled tables, so
         // one account cannot steer what every other user of a commander sees.
-        let shown_total: i64 = signals.iter().map(|s| s.shown as i64).sum::<i64>()
-            + select_signals.iter().map(|s| s.shown as i64).sum::<i64>();
+        let shown_total: i64 = signals.iter().map(|s| i64::from(s.shown)).sum::<i64>()
+            + select_signals
+                .iter()
+                .map(|s| i64::from(s.shown))
+                .sum::<i64>();
         if shown_total > 0 {
             let today_total = sqlx::query_scalar!(
                 r#"INSERT INTO usage_signal_budget (user_id, day, shown)
@@ -365,11 +368,11 @@ impl MetricsRepository for Postgres {
                     let t = otag_tallies
                         .entry((context_key.clone(), otag.clone()))
                         .or_default();
-                    t.shown += sig.shown as i64;
-                    t.added += sig.added as i64;
-                    t.skipped += sig.skipped as i64;
-                    t.maybed += sig.maybed as i64;
-                    t.removed += sig.removed as i64;
+                    t.shown += i64::from(sig.shown);
+                    t.added += i64::from(sig.added);
+                    t.skipped += i64::from(sig.skipped);
+                    t.maybed += i64::from(sig.maybed);
+                    t.removed += i64::from(sig.removed);
                 }
             }
 
@@ -424,10 +427,10 @@ impl MetricsRepository for Postgres {
 
         // Weekly scalar counters (ISO week, Monday UTC). Clamped inputs keep
         // the per-flush sums (≤1,000 signals × ≤200 each) well inside i32.
-        let added_sum: i64 = signals.iter().map(|s| s.added as i64).sum();
-        let skipped_sum: i64 = signals.iter().map(|s| s.skipped as i64).sum();
-        let maybed_sum: i64 = signals.iter().map(|s| s.maybed as i64).sum();
-        let removed_sum: i64 = signals.iter().map(|s| s.removed as i64).sum();
+        let added_sum: i64 = signals.iter().map(|s| i64::from(s.added)).sum();
+        let skipped_sum: i64 = signals.iter().map(|s| i64::from(s.skipped)).sum();
+        let maybed_sum: i64 = signals.iter().map(|s| i64::from(s.maybed)).sum();
+        let removed_sum: i64 = signals.iter().map(|s| i64::from(s.removed)).sum();
         query!(
             r#"INSERT INTO user_week_signal
                    (user_id, week_start, swipes_right, swipes_left, swipes_up, swipes_down, searches, added, skipped, maybed, removed)
@@ -501,7 +504,7 @@ impl MetricsRepository for Postgres {
                 let Some((colors, categories)) = card_facets.get(&sig.card_oracle_id) else {
                     continue;
                 };
-                let added = sig.added as i64;
+                let added = i64::from(sig.added);
                 for category in categories {
                     *tallies.entry(("category", category.clone())).or_default() += added;
                 }
