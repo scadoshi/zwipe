@@ -12,6 +12,9 @@ pub enum CreateDeckCardError {
     /// Card already exists in this deck (use update to change quantity).
     #[error("card and deck combination already exists")]
     Duplicate,
+    /// The printing doesn't exist or has no oracle id, so it can't be a deck card.
+    #[error("card not found")]
+    UnknownCard,
     /// Cannot add the deck's commander as a regular card.
     #[error("card is this deck's commander")]
     IsCommander,
