@@ -127,11 +127,10 @@ mod platform {
     use std::path::PathBuf;
 
     use super::Session;
-    use crate::outbound::android_fs::files_dir;
-    use crate::outbound::android_keystore;
+    use crate::outbound::{android_fs, android_keystore};
 
     fn session_path() -> anyhow::Result<PathBuf> {
-        Ok(files_dir()?.join("session.json"))
+        Ok(android_fs::files_dir()?.join("session.json"))
     }
 
     pub(crate) fn save(session: &Session) -> anyhow::Result<()> {

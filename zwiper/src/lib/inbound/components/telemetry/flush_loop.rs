@@ -3,7 +3,7 @@
 use std::time::Duration;
 
 use dioxus::prelude::{ReadableExt, Signal, document, spawn};
-use tokio::time::interval;
+use tokio::time;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 
@@ -22,7 +22,7 @@ pub fn spawn_usage_flusher(
     session: Signal<Option<Session>>,
 ) {
     spawn(async move {
-        let mut tick = interval(Duration::from_secs(FLUSH_INTERVAL_SECS));
+        let mut tick = time::interval(Duration::from_secs(FLUSH_INTERVAL_SECS));
         loop {
             tick.tick().await;
             flush_once(&buffer, &client, &session).await;

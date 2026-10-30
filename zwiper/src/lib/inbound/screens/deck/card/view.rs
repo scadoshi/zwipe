@@ -37,7 +37,7 @@ use super::components::quick_add::QuickAdd;
 use super::components::undo_log::{CommandZoneSlot, UndoAction, UndoLog, UndoStore};
 use crate::inbound::components::auth::authed::use_authed;
 use crate::inbound::components::catalog_cache::CatalogCache;
-use crate::inbound::components::hint_dialog::{HintColored, open_and_record_hint};
+use crate::inbound::components::hint_dialog::{self, HintColored};
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen, screen};
@@ -332,7 +332,12 @@ pub fn View(deck_id: Uuid) -> Element {
     use_effect(move || {
         if !deck_entries.read().is_empty() && !*deck_cards_hint_fired.peek() {
             deck_cards_hint_fired.set(true);
-            open_and_record_hint(HINT_DECK_CARDS, session, client, deck_cards_hint_open);
+            hint_dialog::open_and_record_hint(
+                HINT_DECK_CARDS,
+                session,
+                client,
+                deck_cards_hint_open,
+            );
         }
     });
 

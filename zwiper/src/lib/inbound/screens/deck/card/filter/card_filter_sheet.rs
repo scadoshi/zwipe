@@ -14,7 +14,7 @@ use crate::inbound::components::accordion::{
     Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 };
 use crate::inbound::components::catalog_cache::CatalogCache;
-use crate::inbound::components::hint_dialog::{HintColored, open_and_record_hint};
+use crate::inbound::components::hint_dialog::{self, HintColored};
 use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::info_button::InfoButton;
 use crate::inbound::screens::deck::card::filter::artist::Artist;
@@ -125,7 +125,7 @@ pub(crate) fn CardFilterSheet(
     use_effect(move || {
         if open() && !*hint_fired.peek() {
             hint_fired.set(true);
-            open_and_record_hint(HINT_FILTER, session, client, hint_open);
+            hint_dialog::open_and_record_hint(HINT_FILTER, session, client, hint_open);
         }
     });
 

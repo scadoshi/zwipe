@@ -104,10 +104,10 @@ mod platform {
 mod platform {
     use std::path::PathBuf;
 
-    use crate::outbound::android_fs::files_dir;
+    use crate::outbound::android_fs;
 
     fn scope_path() -> anyhow::Result<PathBuf> {
-        Ok(files_dir()?.join("count_scope"))
+        Ok(android_fs::files_dir()?.join("count_scope"))
     }
 
     pub(crate) fn save(bytes: &[u8]) -> anyhow::Result<()> {

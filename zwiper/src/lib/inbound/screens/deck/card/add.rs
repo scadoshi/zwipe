@@ -32,7 +32,7 @@ use crate::inbound::components::interactions::swipe::SwipeStack;
 use crate::inbound::components::interactions::swipe::config::SwipeConfig;
 use crate::inbound::components::interactions::swipe::direction::Direction;
 use crate::inbound::components::screen_header::ScreenHeader;
-use crate::inbound::components::telemetry::flush_loop::flush_once;
+use crate::inbound::components::telemetry::flush_loop;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen, component, screen};
 use crate::inbound::screens::deck::card::components::action_history::{
@@ -888,7 +888,7 @@ pub fn Add(deck_id: Uuid) -> Element {
         spawn(async move {
             // Flush buffered usage (signals feed synergy ordering) before the
             // refetch. Skips post directly at swipe time.
-            flush_once(&usage_buffer(), &client, &session).await;
+            flush_loop::flush_once(&usage_buffer(), &client, &session).await;
             match authed
                 .try_run("search_cards", |c, s| async move {
                     c.search_deck_cards(deck_id, &filter, &s).await
@@ -1493,7 +1493,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 // Flush buffered usage (signals feed synergy
                                 // ordering) before the refetch. Skips post
                                 // directly at swipe time.
-                                flush_once(&usage_buffer(), &client, &session).await;
+                                flush_loop::flush_once(&usage_buffer(), &client, &session).await;
                                 match authed
                                     .try_run("search_cards", |c, s| async move {
                                         c.search_deck_cards(deck_id, &filter, &s).await

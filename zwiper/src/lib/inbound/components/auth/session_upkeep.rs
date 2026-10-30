@@ -7,9 +7,9 @@
 use std::time::Duration;
 
 use chrono::{DateTime, Utc};
-use components::{KeywordReminders, ThemeConfig, theme_from_preferences, use_overlay_back_stack};
+use components::{KeywordReminders, ThemeConfig, use_overlay_back_stack};
 use dioxus::prelude::*;
-use tokio::time::interval;
+use tokio::time;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
@@ -17,7 +17,7 @@ use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilde
 use zwipe_core::domain::user::preferences::PipStyle;
 use zwipe_core::http::contracts::changelog::HttpChangelog;
 use zwipe_core::http::contracts::metrics::AnonymousEventKind;
-use zwipe_core::version::version_at_least;
+use zwipe_core::version;
 
 use crate::config::Config;
 use crate::inbound::components::auth::ensure_session::EnsureFresh;
@@ -25,11 +25,8 @@ use crate::inbound::components::catalog_cache::use_catalog_cache;
 use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::home_hero::{CachedCounts, CachedMyCounts};
 use crate::inbound::components::home_play_style::CachedPlayStyle;
-use crate::inbound::components::telemetry::anonymous::record_anonymous_event;
-use crate::inbound::components::telemetry::flush_loop::{
-    spawn_usage_flusher, spawn_visibility_flusher,
-};
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
+use crate::inbound::components::telemetry::{anonymous, flush_loop};
 use crate::inbound::screens::auth::login::LoginPrefill;
 use crate::inbound::screens::deck::card::components::action_history::AddAction;
 use crate::inbound::screens::deck::card::components::add_stack_cache::use_add_stack_cache;
@@ -265,7 +262,7 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
         session
             .peek()
             .as_ref()
-            .map(|s| theme_from_preferences(&s.preferences))
+            .map(|s| components::theme_from_preferences(&s.preferences))
             .or_else(ThemeConfig::infallible_load)
             .unwrap_or_default()
     });
@@ -299,13 +296,13 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
     let usage_buffer = use_signal(UsageBuffer::new);
     use_context_provider(|| usage_buffer);
     use_hook(|| {
-        spawn_usage_flusher(usage_buffer.peek().clone(), client, session);
-        spawn_visibility_flusher(usage_buffer.peek().clone(), client, session);
+        flush_loop::spawn_usage_flusher(usage_buffer.peek().clone(), client, session);
+        flush_loop::spawn_visibility_flusher(usage_buffer.peek().clone(), client, session);
 
         // Pre-auth funnel: a logged-out launch is the top of the register
         // funnel. Logged-in launches are already covered by last_active_at.
         if session.peek().is_none() {
-            record_anonymous_event(client, AnonymousEventKind::AppOpened);
+            anonymous::record_anonymous_event(client, AnonymousEventKind::AppOpened);
         }
 
         // A previous run crashed: post its report (unauthed endpoint) and
@@ -335,7 +332,7 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
     // the gate flipping re-renders the root, which re-runs this function.
     use_future(move || async move {
         // first tick fires immediately; this is the cold-start refresh
-        let mut interval = interval(Duration::from_secs(60));
+        let mut interval = time::interval(Duration::from_secs(60));
         loop {
             interval.tick().await;
             // single-flight: free of races with any in-flight user action
@@ -345,7 +342,7 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
             // can flip the gate; a network hiccup never locks anyone out.
             let http = client.peek().clone();
             if let Ok(min) = http.get_min_client_version().await {
-                let required = !version_at_least(APP_VERSION, &min.min_version);
+                let required = !version::version_at_least(APP_VERSION, &min.min_version);
                 if required != *upgrade_required.peek() {
                     tracing::info!(
                         app = APP_VERSION,

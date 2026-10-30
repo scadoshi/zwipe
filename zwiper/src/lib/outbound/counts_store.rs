@@ -79,10 +79,10 @@ mod platform {
     use std::path::PathBuf;
 
     use super::HttpPublicMetrics;
-    use crate::outbound::android_fs::files_dir;
+    use crate::outbound::android_fs;
 
     fn counts_path() -> anyhow::Result<PathBuf> {
-        Ok(files_dir()?.join("counts.json"))
+        Ok(android_fs::files_dir()?.join("counts.json"))
     }
 
     pub(crate) fn save(counts: &HttpPublicMetrics) -> anyhow::Result<()> {

@@ -36,7 +36,7 @@ use zwipe_core::domain::deck::format::Format;
 use zwipe_core::domain::user::models::hints::HINT_SWIPE_SELECT;
 use zwipe_core::http::contracts::suggestions::HttpCommanderSuggestion;
 
-use crate::inbound::components::hint_dialog::{HintColored, open_and_record_hint};
+use crate::inbound::components::hint_dialog::{self, HintColored};
 use crate::inbound::components::interactions::swipe::config::SwipeConfig;
 use crate::inbound::components::interactions::swipe::direction::Direction;
 use crate::inbound::components::interactions::swipe::{STACK_DEPTH, SwipeStack};
@@ -253,7 +253,7 @@ pub(crate) fn SwipeSelect(
     use_effect(move || {
         if open() && !*hint_fired.peek() {
             hint_fired.set(true);
-            open_and_record_hint(HINT_SWIPE_SELECT, session, client, hint_open);
+            hint_dialog::open_and_record_hint(HINT_SWIPE_SELECT, session, client, hint_open);
         }
     });
 

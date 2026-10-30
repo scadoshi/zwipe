@@ -7,7 +7,7 @@
 
 use components::{AlertDialog, DialogAction, HintBullet, HintBullets, HintKey, HintLine, ModeIcon};
 use dioxus::prelude::*;
-use zwipe_core::domain::auth::password::requirements;
+use zwipe_core::domain::auth::password;
 
 use crate::inbound::components::concept_explainers::{DeckTagsExplainer, OracleTagsExplainer};
 
@@ -190,7 +190,7 @@ impl HintTopic {
             },
             Self::Password => rsx! {
                 HintBullets {
-                    for line in requirements() {
+                    for line in password::requirements() {
                         HintBullet { "{line}" }
                     }
                 }

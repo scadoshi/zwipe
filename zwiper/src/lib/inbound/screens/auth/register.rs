@@ -13,9 +13,9 @@ use zwipe_core::http::contracts::metrics::AnonymousEventKind;
 use crate::domain::error::UserFacing;
 use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::home_hero::HomeHero;
-use crate::inbound::components::info_button::open_topic;
+use crate::inbound::components::info_button;
 use crate::inbound::components::screen_header::ScreenHeader;
-use crate::inbound::components::telemetry::anonymous::record_anonymous_event;
+use crate::inbound::components::telemetry::anonymous;
 use crate::inbound::screens::auth::login::LoginPrefill;
 
 /// Registration form screen for creating new user accounts.
@@ -28,7 +28,7 @@ pub fn Register() -> Element {
 
     // Funnel: register screen reached (once per mount; distinct-session
     // counting on the server dedupes revisits).
-    use_hook(|| record_anonymous_event(auth_client, AnonymousEventKind::RegisterViewed));
+    use_hook(|| anonymous::record_anonymous_event(auth_client, AnonymousEventKind::RegisterViewed));
 
     let username = use_signal(String::new);
     let email = use_signal(String::new);
@@ -94,7 +94,7 @@ pub fn Register() -> Element {
 
         // Funnel: a validated submit is going to the server (success or not,
         // registration success itself lands in user_events).
-        record_anonymous_event(auth_client, AnonymousEventKind::RegisterSubmitted);
+        anonymous::record_anonymous_event(auth_client, AnonymousEventKind::RegisterSubmitted);
 
         let email = email().trim().to_string();
         let username = username();
@@ -188,7 +188,7 @@ pub fn Register() -> Element {
                         placeholder: "Password",
                         input_type: "password",
                         error: password_error(),
-                        on_info: open_topic(HintTopic::Password),
+                        on_info: info_button::open_topic(HintTopic::Password),
                     }
                     TextInput {
                         value: confirm_password,

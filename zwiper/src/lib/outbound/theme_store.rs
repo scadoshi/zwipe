@@ -84,10 +84,10 @@ mod platform {
     use std::path::PathBuf;
 
     use super::ThemeConfig;
-    use crate::outbound::android_fs::files_dir;
+    use crate::outbound::android_fs;
 
     fn theme_path() -> anyhow::Result<PathBuf> {
-        Ok(files_dir()?.join("theme.json"))
+        Ok(android_fs::files_dir()?.join("theme.json"))
     }
 
     pub(crate) fn save(theme: &ThemeConfig) -> anyhow::Result<()> {

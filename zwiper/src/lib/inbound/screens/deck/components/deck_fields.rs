@@ -21,7 +21,7 @@ use zwipe_core::domain::deck::{
 
 use crate::inbound::components::hint_dialog::HintColored;
 use crate::inbound::components::hint_host::HintTopic;
-use crate::inbound::components::info_button::{InfoButton, open_topic};
+use crate::inbound::components::info_button::{self, InfoButton};
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 
 /// Upper bound for the land-target stepper: no deck runs more lands than this.
@@ -472,7 +472,7 @@ pub(crate) fn DeckFields(
         // Deck name
         TextInput {
             label: "Deck name",
-            on_info: open_topic(HintTopic::DeckName),
+            on_info: info_button::open_topic(HintTopic::DeckName),
             value: deck_name,
             id: "deck_name",
             placeholder: "Not set",

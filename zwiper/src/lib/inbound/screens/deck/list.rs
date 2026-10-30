@@ -24,7 +24,7 @@ use zwipe_core::domain::deck::deck_tag_label;
 use zwipe_core::domain::user::models::hints::HINT_DECK_LIST;
 
 use crate::inbound::components::auth::authed::use_authed;
-use crate::inbound::components::hint_dialog::open_and_record_hint;
+use crate::inbound::components::hint_dialog;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen};
 use crate::inbound::router::Router;
@@ -468,7 +468,12 @@ pub fn DeckList() -> Element {
             .is_some_and(|p| !p.is_empty());
         if has_decks && !*decks_hint_fired.peek() {
             decks_hint_fired.set(true);
-            open_and_record_hint(HINT_DECK_LIST, session, auth_client, decks_hint_open);
+            hint_dialog::open_and_record_hint(
+                HINT_DECK_LIST,
+                session,
+                auth_client,
+                decks_hint_open,
+            );
         }
     });
 
