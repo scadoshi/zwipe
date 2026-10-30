@@ -33,6 +33,11 @@ impl From<InvalidDeleteDeck> for ApiError {
 }
 
 /// Deletes a deck after ownership verification.
+///
+/// # Errors
+///
+/// Returns 422 for a malformed deck id, 404 when the deck is missing or isn't
+/// the caller's, and 500 on a database failure.
 pub async fn delete_deck(
     State(state): State<AppState>,
     Path(deck_id): Path<String>,

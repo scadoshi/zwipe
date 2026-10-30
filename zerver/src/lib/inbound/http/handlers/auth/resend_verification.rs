@@ -10,6 +10,11 @@ use crate::inbound::http::{ApiError, AppState};
 /// Re-sends the email verification link to the authenticated user.
 ///
 /// Returns `422` if the email is already verified.
+///
+/// # Errors
+///
+/// Returns 422 when the email is already verified, 404 when the user is gone,
+/// and 500 when the lookup or the send fails.
 pub async fn resend_verification(
     user: AuthenticatedUser,
     State(state): State<AppState>,

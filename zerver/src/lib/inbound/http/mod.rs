@@ -283,6 +283,10 @@ pub fn build_router(
 
 impl HttpServer {
     /// Builds routes, applies tracing and CORS middleware, and binds the TCP listener.
+    ///
+    /// # Errors
+    ///
+    /// Fails when the listener can't bind to the configured address.
     pub async fn new(
         auth_service: impl AuthService,
         user_service: impl UserService,
@@ -318,6 +322,11 @@ impl HttpServer {
     }
 
     /// Starts serving HTTP requests.
+    ///
+    /// # Errors
+    ///
+    /// Fails when the listener has no local address or the server stops with an
+    /// error.
     pub async fn run(self) -> anyhow::Result<()> {
         tracing::info!("listening on {}", self.listener.local_addr()?);
         axum::serve(

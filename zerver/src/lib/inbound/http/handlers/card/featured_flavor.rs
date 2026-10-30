@@ -25,6 +25,11 @@ use crate::inbound::http::{ApiError, AppState};
 /// caches (Cloudflare fronts prod) expire exactly when the pick flips.
 /// Without it, a CF cache rule edge-cached the response for ~20 hours and the
 /// whole world saw one card all day (2026-08-06).
+///
+/// # Errors
+///
+/// Returns 404 or 500 from the card lookup, only when no earlier pick is cached
+/// to fall back on.
 pub async fn get_featured_flavor(
     State(state): State<AppState>,
 ) -> Result<(StatusCode, [(header::HeaderName, String); 1], Json<Card>), ApiError> {

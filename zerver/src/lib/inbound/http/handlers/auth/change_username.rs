@@ -37,6 +37,11 @@ impl From<InvalidChangeUsername> for ApiError {
 }
 
 /// Changes the user's username after verifying the password.
+///
+/// # Errors
+///
+/// Returns 422 for an invalid username, 401 for a wrong password, 409 when the
+/// name is taken, 404 when the user is gone, and 500 on a database failure.
 pub async fn change_username(
     user: AuthenticatedUser,
     State(state): State<AppState>,

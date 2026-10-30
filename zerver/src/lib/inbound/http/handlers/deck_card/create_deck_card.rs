@@ -59,6 +59,12 @@ impl From<InvalidCreateDeckCard> for ApiError {
 }
 
 /// Adds a card to a deck with the specified quantity.
+///
+/// # Errors
+///
+/// Returns 422 for an invalid id, quantity or board, a commander, or a full
+/// deck, 409 when the card is already in it, 404 when the deck isn't the
+/// caller's, and 500 on a database failure.
 pub async fn create_deck_card(
     user: AuthenticatedUser,
     State(state): State<AppState>,

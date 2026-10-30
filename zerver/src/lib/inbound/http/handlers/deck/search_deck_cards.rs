@@ -29,6 +29,11 @@ impl From<SearchDeckCardsError> for ApiError {
 /// slots) are excluded, and results default to synergy ordering when no
 /// explicit `order_by` is set. `offset` is ignored: every page is the top of
 /// what is left, since swiped cards leave the pool before the next request.
+///
+/// # Errors
+///
+/// Returns 404 when the deck is missing or isn't the caller's, and 500 when the
+/// search fails.
 pub async fn search_deck_cards(
     user: AuthenticatedUser,
     State(state): State<AppState>,

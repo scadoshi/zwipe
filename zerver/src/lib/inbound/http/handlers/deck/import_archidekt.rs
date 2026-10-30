@@ -42,6 +42,12 @@ impl From<ArchidektError> for ApiError {
 
 /// Imports an Archidekt deck's cards into an existing deck owned by the
 /// authenticated user.
+///
+/// # Errors
+///
+/// Returns 422 for a URL with no deck id, a bad board or an oversized deck, 404
+/// when the Archidekt deck is missing or private or the target deck isn't the
+/// caller's, 500 when Archidekt fails, and 500 on a database failure.
 pub async fn import_archidekt_deck(
     user: AuthenticatedUser,
     Path(deck_id): Path<Uuid>,

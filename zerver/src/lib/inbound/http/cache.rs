@@ -48,6 +48,11 @@ impl<V: Clone> TtlSlot<V> {
     /// Stale grace: if the refresh fails but an expired value exists, the
     /// stale value is served and the error logged; for content like the
     /// featured flavor, an hour-stale card beats a 5xx.
+    ///
+    /// # Errors
+    ///
+    /// Returns `refresh`'s error only when the slot is empty; with a stale
+    /// value on hand, the error is logged and the stale value served.
     pub async fn get_or_refresh<F, Fut, E>(&self, refresh: F) -> Result<V, E>
     where
         F: FnOnce() -> Fut,

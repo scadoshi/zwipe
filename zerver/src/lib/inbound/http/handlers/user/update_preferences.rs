@@ -26,6 +26,10 @@ impl From<UpdatePreferencesError> for ApiError {
 }
 
 /// Updates the authenticated user's display preferences.
+///
+/// # Errors
+///
+/// Returns 422 for an invalid preference, and 500 on a database failure.
 pub async fn update_preferences(
     user: AuthenticatedUser,
     State(state): State<AppState>,

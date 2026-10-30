@@ -245,6 +245,10 @@ pub struct SuggestionsQuery {
 }
 
 /// Returns the authenticated user's ranked commander suggestions.
+///
+/// # Errors
+///
+/// Returns 500 on a database failure.
 pub async fn get_commander_suggestions(
     user: AuthenticatedUser,
     State(state): State<AppState>,
@@ -264,6 +268,10 @@ pub async fn get_commander_suggestions(
 
 /// Returns the authenticated user's deck count and color map, for Home's
 /// play style panel.
+///
+/// # Errors
+///
+/// Returns 500 on a database failure.
 pub async fn get_play_style_summary(
     user: AuthenticatedUser,
     State(state): State<AppState>,
@@ -277,6 +285,10 @@ pub async fn get_play_style_summary(
 }
 
 /// Returns the authenticated user's activity for the Activity screen.
+///
+/// # Errors
+///
+/// Returns 500 on a database failure.
 pub async fn get_activity(
     user: AuthenticatedUser,
     State(state): State<AppState>,
@@ -290,6 +302,10 @@ pub async fn get_activity(
 }
 
 /// Hides a commander from the authenticated user's suggestions for a week.
+///
+/// # Errors
+///
+/// Returns 500 on a database failure.
 pub async fn dismiss_commander(
     State(state): State<AppState>,
     user: AuthenticatedUser,
@@ -305,6 +321,10 @@ pub async fn dismiss_commander(
 }
 
 /// Lifts one of the authenticated user's dismissals (idempotent).
+///
+/// # Errors
+///
+/// Returns 422 for a malformed oracle id, and 500 on a database failure.
 pub async fn undismiss_commander(
     State(state): State<AppState>,
     Path(oracle_id): Path<String>,
@@ -320,6 +340,10 @@ pub async fn undismiss_commander(
 }
 
 /// Lifts every dismissal of the authenticated user, answering the count.
+///
+/// # Errors
+///
+/// Returns 500 on a database failure.
 pub async fn clear_commander_dismissals(
     State(state): State<AppState>,
     user: AuthenticatedUser,

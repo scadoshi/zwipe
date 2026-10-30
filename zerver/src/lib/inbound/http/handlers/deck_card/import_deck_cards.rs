@@ -33,6 +33,11 @@ impl From<ImportDeckCardsError> for ApiError {
 }
 
 /// Imports cards from plain-text decklist into a deck.
+///
+/// # Errors
+///
+/// Returns 422 for a malformed deck id or board or a full deck, 404 when the
+/// deck isn't the caller's, and 500 on a database failure.
 pub async fn import_deck_cards(
     user: AuthenticatedUser,
     State(state): State<AppState>,

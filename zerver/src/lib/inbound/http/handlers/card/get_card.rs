@@ -40,6 +40,11 @@ impl From<GetCardError> for ApiError {
 }
 
 /// Returns a single card by Scryfall data ID.
+///
+/// # Errors
+///
+/// Returns 422 for a malformed id, 404 when the card is missing, and 500 on a
+/// database failure.
 pub async fn get_card(
     State(state): State<AppState>,
     Path(scryfall_data_id): Path<String>,

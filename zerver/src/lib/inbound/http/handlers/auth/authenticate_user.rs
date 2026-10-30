@@ -53,6 +53,11 @@ impl TryFrom<HttpAuthenticateUser> for AuthenticateUser {
 }
 
 /// Authenticates a user by email or username and returns a session.
+///
+/// # Errors
+///
+/// Returns 422 when the identifier or password is missing, 401 for an unknown
+/// account, a wrong password or a locked pair, and 500 on a database failure.
 pub async fn authenticate_user(
     State(state): State<AppState>,
     ClientIp(client_ip): ClientIp,

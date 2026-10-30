@@ -20,6 +20,10 @@ impl From<VerifyEmailError> for ApiError {
 }
 
 /// Verifies a user's email address using a one-time token.
+///
+/// # Errors
+///
+/// Returns 422 for an unknown or expired token, and 500 on a database failure.
 pub async fn verify_email(
     State(state): State<AppState>,
     Json(body): Json<HttpVerifyEmail>,

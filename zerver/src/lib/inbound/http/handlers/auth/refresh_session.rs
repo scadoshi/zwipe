@@ -65,6 +65,11 @@ impl TryFrom<HttpRefreshSession> for RefreshSession {
 }
 
 /// Rotates a refresh token, consuming the old one and issuing a new session.
+///
+/// # Errors
+///
+/// Returns 422 for a malformed user id, 401 for an unknown, expired or revoked
+/// token, 403 when the token isn't the user's, and 500 on a database failure.
 pub async fn refresh_session(
     State(state): State<AppState>,
     Json(body): Json<HttpRefreshSession>,

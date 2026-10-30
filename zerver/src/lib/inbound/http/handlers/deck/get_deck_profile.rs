@@ -27,6 +27,11 @@ impl From<GetDeckProfileError> for ApiError {
 }
 
 /// Returns deck metadata with ownership verification.
+///
+/// # Errors
+///
+/// Returns 404 when the deck is missing or isn't the caller's, and 500 on a
+/// database failure.
 pub async fn get_deck_profile(
     user: AuthenticatedUser,
     State(state): State<AppState>,

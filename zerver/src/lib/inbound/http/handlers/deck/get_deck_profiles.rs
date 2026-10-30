@@ -22,6 +22,10 @@ impl From<InvalidGetDeckProfiles> for ApiError {
 }
 
 /// Returns all deck profiles for the authenticated user.
+///
+/// # Errors
+///
+/// Returns 500 on a database failure.
 pub async fn get_deck_profiles(
     user: AuthenticatedUser,
     State(state): State<AppState>,

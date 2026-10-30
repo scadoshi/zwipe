@@ -38,6 +38,11 @@ impl From<InvalidChangeEmail> for ApiError {
 ///
 /// The response is the same whether or not another account has the address;
 /// the switch happens when the link sent to it is clicked.
+///
+/// # Errors
+///
+/// Returns 422 for an invalid address, 401 for a wrong password, 404 when the
+/// user is gone, and 500 on a database failure.
 pub async fn change_email(
     user: AuthenticatedUser,
     State(state): State<AppState>,

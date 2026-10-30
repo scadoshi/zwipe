@@ -16,6 +16,10 @@ impl From<GetSetsError> for ApiError {
 }
 
 /// Returns distinct set names.
+///
+/// # Errors
+///
+/// Returns 500 on a database failure.
 pub async fn get_sets(
     State(state): State<AppState>,
 ) -> Result<(StatusCode, Json<Vec<String>>), ApiError> {

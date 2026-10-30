@@ -96,6 +96,11 @@ impl TryFrom<HttpRegisterUser> for RegisterUser {
 ///
 /// Answers `202` and the same body whether the email is new or already has an
 /// account; the caller logs in afterwards.
+///
+/// # Errors
+///
+/// Returns 422 for an invalid username, email or password, 409 when the
+/// username is taken, and 500 on a database failure.
 pub async fn register_user(
     State(state): State<AppState>,
     Json(body): Json<HttpRegisterUser>,

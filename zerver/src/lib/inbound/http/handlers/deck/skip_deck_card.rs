@@ -34,6 +34,11 @@ impl From<InvalidSkipDeckCard> for ApiError {
 
 /// Suppresses a single card for a deck (durable skip) after ownership
 /// verification.
+///
+/// # Errors
+///
+/// Returns 422 for a malformed id, 404 when the deck isn't the caller's, and
+/// 500 on a database failure.
 pub async fn skip_deck_card(
     State(state): State<AppState>,
     Path(deck_id): Path<String>,
@@ -52,6 +57,11 @@ pub async fn skip_deck_card(
 }
 
 /// Removes a single skip suppression (undo) after ownership verification.
+///
+/// # Errors
+///
+/// Returns 422 for a malformed id, 404 when the deck isn't the caller's, and
+/// 500 on a database failure.
 pub async fn unskip_deck_card(
     State(state): State<AppState>,
     Path((deck_id, oracle_id)): Path<(String, String)>,

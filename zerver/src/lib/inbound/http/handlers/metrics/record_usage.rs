@@ -20,6 +20,10 @@ impl From<MetricsError> for ApiError {
 }
 
 /// Increments lifetime and daily counters for the caller by the batch values.
+///
+/// # Errors
+///
+/// Returns 404 when the user has no metrics row, and 500 on a database failure.
 pub async fn record_usage(
     user: AuthenticatedUser,
     State(state): State<AppState>,

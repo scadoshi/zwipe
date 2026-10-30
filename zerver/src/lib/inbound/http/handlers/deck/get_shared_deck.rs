@@ -28,6 +28,11 @@ impl From<GetSharedDeckError> for ApiError {
 ///
 /// The response strips owner identity: a malformed token is answered exactly
 /// like a revoked one, so the endpoint never confirms what exists.
+///
+/// # Errors
+///
+/// Returns 404 for a malformed, revoked or unknown token, and 500 on a database
+/// failure.
 pub async fn get_shared_deck(
     State(state): State<AppState>,
     Path(token): Path<String>,

@@ -62,6 +62,11 @@ impl From<InvalidCloneDeck> for ApiError {
 /// The source deck id is taken from the URL path; the new deck name comes
 /// from the JSON body. The response contains only the new deck's id;
 /// the client navigates to the deck view which loads the full aggregate.
+///
+/// # Errors
+///
+/// Returns 422 for an invalid name or the deck limit, 404 when the source isn't
+/// the caller's, 409 when the name is taken, and 500 on a database failure.
 pub async fn clone_deck(
     user: AuthenticatedUser,
     State(state): State<AppState>,

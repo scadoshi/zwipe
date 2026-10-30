@@ -66,6 +66,11 @@ impl From<InvalidCreateDeckProfile> for ApiError {
 }
 
 /// Creates a new deck for the authenticated user.
+///
+/// # Errors
+///
+/// Returns 422 for an invalid field or the deck limit, 409 when the name is
+/// taken, 404 when the user is gone, and 500 on a database failure.
 pub async fn create_deck_profile(
     user: AuthenticatedUser,
     State(state): State<AppState>,

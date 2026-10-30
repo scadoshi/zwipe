@@ -8,6 +8,11 @@ use zwipe_core::domain::card::Card;
 use crate::inbound::http::{ApiError, AppState};
 
 /// Returns all printings of a card by oracle ID, ordered by release date.
+///
+/// # Errors
+///
+/// Returns 422 for a malformed oracle id, 404 when a card is missing, and 500
+/// on a database failure.
 pub async fn get_printings(
     State(state): State<AppState>,
     Path(oracle_id): Path<String>,

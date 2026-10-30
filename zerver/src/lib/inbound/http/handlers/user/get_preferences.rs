@@ -18,6 +18,10 @@ impl From<GetPreferencesError> for ApiError {
 }
 
 /// Returns the authenticated user's display preferences.
+///
+/// # Errors
+///
+/// Returns 500 on a database failure.
 pub async fn get_preferences(
     user: AuthenticatedUser,
     State(state): State<AppState>,

@@ -95,6 +95,11 @@ impl BulkEndpoint {
     /// Reversible cards arrive with no top-level `oracle_id`, so it is lifted
     /// from their faces here, before the delta comparison and the upsert both
     /// see the card.
+    ///
+    /// # Errors
+    ///
+    /// Fails when Scryfall can't be reached, a response doesn't parse, or any
+    /// line of the file isn't a card.
     pub async fn fetch_cards(&self) -> anyhow::Result<Vec<ScryfallData>> {
         let mut cards: Vec<ScryfallData> = self.fetch_jsonl_gz(&self.to_snake_case()).await?;
         for card in &mut cards {
@@ -104,6 +109,11 @@ impl BulkEndpoint {
     }
 
     /// Downloads and parses the Oracle Tags bulk file (`Vec<OracleTag>`).
+    ///
+    /// # Errors
+    ///
+    /// Fails when Scryfall can't be reached, a response doesn't parse, or any
+    /// line of the file isn't a tag.
     pub async fn fetch_oracle_tags(&self) -> anyhow::Result<Vec<OracleTag>> {
         self.fetch_jsonl_gz("oracle-tags").await
     }

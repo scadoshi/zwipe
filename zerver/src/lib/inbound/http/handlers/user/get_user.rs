@@ -26,6 +26,10 @@ impl From<AuthenticatedUser> for GetUser {
 }
 
 /// Returns the authenticated user's own profile (identity from JWT, no path params).
+///
+/// # Errors
+///
+/// Returns 404 when the user is gone, and 500 on a database failure.
 pub async fn get_user(
     user: AuthenticatedUser,
     State(state): State<AppState>,

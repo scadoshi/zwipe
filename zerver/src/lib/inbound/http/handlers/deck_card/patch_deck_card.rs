@@ -69,6 +69,10 @@ impl From<InvalidUpdateDeckCard> for ApiError {
 /// Flattens a non-clearable field: absent passes through as no-op, a value
 /// passes through as set, and explicit `null` is a 422 (the field always
 /// has a value, so "clear" is meaningless).
+///
+/// # Errors
+///
+/// Returns 422 naming `name` when the field is an explicit `null`.
 pub fn reject_null<T>(field: Opdate<T>, name: &str) -> Result<Option<T>, ApiError> {
     match field {
         Opdate::Unchanged => Ok(None),
@@ -80,6 +84,12 @@ pub fn reject_null<T>(field: Opdate<T>, name: &str) -> Result<Option<T>, ApiErro
 }
 
 /// Sets a card's quantity (absolute), board, printing, and/or MVP star.
+///
+/// # Errors
+///
+/// Returns 422 for a `null` field, an invalid id, quantity or board, a card not
+/// in the deck, or a broken MVP rule, 404 when the deck isn't the caller's, and
+/// 500 on a database failure.
 pub async fn patch_deck_card(
     user: AuthenticatedUser,
     State(state): State<AppState>,

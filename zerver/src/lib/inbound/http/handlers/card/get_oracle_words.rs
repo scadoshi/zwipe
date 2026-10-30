@@ -16,6 +16,10 @@ impl From<GetOracleWordsError> for ApiError {
 }
 
 /// Returns distinct normalized words extracted from oracle text.
+///
+/// # Errors
+///
+/// Returns 500 on a database failure.
 pub async fn get_oracle_words(
     State(state): State<AppState>,
 ) -> Result<(StatusCode, Json<Vec<String>>), ApiError> {

@@ -16,6 +16,10 @@ use zwipe_core::domain::card::keyword::keyword_reminder;
 use crate::inbound::http::{ApiError, AppState};
 
 /// Returns every distinct keyword name mapped to its reminder text.
+///
+/// # Errors
+///
+/// Returns 500 on a database failure.
 pub async fn get_keyword_reminders(
     State(state): State<AppState>,
 ) -> Result<(StatusCode, Json<HashMap<String, String>>), ApiError> {

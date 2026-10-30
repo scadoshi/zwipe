@@ -69,6 +69,12 @@ impl From<InvalidUpdateDeckProfile> for ApiError {
 }
 
 /// Updates deck metadata with ownership verification.
+///
+/// # Errors
+///
+/// Returns 422 for a `null` name, an invalid field or no change, 409 when the
+/// name is taken, 404 when the deck is missing or isn't the caller's, and 500
+/// on a database failure.
 pub async fn update_deck_profile(
     user: AuthenticatedUser,
     State(state): State<AppState>,

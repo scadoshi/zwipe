@@ -22,6 +22,11 @@ impl From<RequestPasswordResetError> for ApiError {
 ///
 /// Always returns `200 OK` regardless of whether the email is registered,
 /// to prevent email enumeration attacks.
+///
+/// # Errors
+///
+/// Returns 500 on a database failure, never anything that depends on the
+/// address.
 pub async fn request_password_reset(
     State(state): State<AppState>,
     Json(body): Json<HttpRequestPasswordReset>,

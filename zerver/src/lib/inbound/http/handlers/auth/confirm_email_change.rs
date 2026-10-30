@@ -29,6 +29,11 @@ impl From<ConfirmEmailChangeError> for ApiError {
 
 /// Switches a user to their pending email using the token from the link sent
 /// to it.
+///
+/// # Errors
+///
+/// Returns 422 for an unknown or expired token, 409 when another account took
+/// the address first, and 500 on a database failure.
 pub async fn confirm_email_change(
     State(state): State<AppState>,
     Json(body): Json<HttpConfirmEmailChange>,

@@ -14,6 +14,10 @@ use crate::inbound::http::{ApiError, AppState};
 /// per day, with token/emblem printings excluded. The shuffle seed is derived
 /// from the authenticated user, so it needs no deck (works in create and edit).
 /// (`context/archive/commander_select_ordering.md`)
+///
+/// # Errors
+///
+/// Returns 500 when the search fails.
 pub async fn search_commanders(
     user: AuthenticatedUser,
     State(state): State<AppState>,

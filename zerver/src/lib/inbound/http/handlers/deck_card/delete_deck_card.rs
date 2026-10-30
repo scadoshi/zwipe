@@ -36,6 +36,11 @@ impl From<InvalidDeleteDeckCard> for ApiError {
 }
 
 /// Removes a card from a deck.
+///
+/// # Errors
+///
+/// Returns 422 for an invalid id or a card not in the deck, 404 when the deck
+/// isn't the caller's, and 500 on a database failure.
 pub async fn delete_deck_card(
     user: AuthenticatedUser,
     State(state): State<AppState>,
