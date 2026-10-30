@@ -100,7 +100,9 @@ mod tests {
     use super::*;
 
     fn far() -> Instant {
-        Instant::now() + Duration::from_secs(3600)
+        Instant::now()
+            .checked_add(Duration::from_secs(3600))
+            .unwrap()
     }
 
     #[tokio::test]
