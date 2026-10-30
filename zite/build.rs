@@ -6,7 +6,7 @@
     reason = "a build script fails the build by panicking"
 )]
 
-/// Public base URL — must match the release `WEB_BASE` in zwipe-core's
+/// Public base URL. Must match the release `WEB_BASE` in zwipe-core's
 /// `domain::site` (build scripts can't import the lib, so this is the one
 /// mirrored literal).
 const WEB_BASE: &str = "https://zwipe.net";
@@ -14,7 +14,7 @@ const WEB_BASE: &str = "https://zwipe.net";
 /// Every prerendered, indexable route with its sitemap hints. Kept here as the
 /// single source of truth so `public/sitemap.xml` can't drift from the routes
 /// the way a hand-edited file does. Dynamic routes (`/verify/:token`, `/confirm-email/:token`,
-/// `/reset/:token`) are excluded — they're `Disallow`ed in robots.txt.
+/// `/reset/:token`) are excluded: robots.txt `Disallow`s them.
 /// `(path, changefreq, priority)`.
 const ROUTES: &[(&str, &str, &str)] = &[
     ("/", "weekly", "1.0"),
