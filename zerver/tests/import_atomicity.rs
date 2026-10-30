@@ -194,7 +194,7 @@ async fn add_mode_overlap_replaces_quantities(pool: sqlx::PgPool) {
 
 #[sqlx::test]
 async fn foreign_deck_import_is_rejected_and_writes_nothing(pool: sqlx::PgPool) {
-    // Over HTTP a foreign deck 404s at the importer's get_deck_profile
+    // Over HTTP a foreign deck 404s at the importer's fetch_deck_profile
     // pre-check (existence-hiding). The repo-level FOR UPDATE ownership check
     // (Forbidden) sits behind it as defense-in-depth for any future caller
     // that skips the pre-check.

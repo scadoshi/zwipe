@@ -209,10 +209,9 @@ pub fn Remove(deck_id: Uuid) -> Element {
     use_effect(move || {
         spawn(async move {
             if let Some(deck) = authed
-                .run(
-                    "load_deck",
-                    |c, s| async move { c.get_deck(deck_id, &s).await },
-                )
+                .run("load_deck", |c, s| async move {
+                    c.fetch_deck(deck_id, &s).await
+                })
                 .await
             {
                 let all_cards: Vec<Card> = deck.entries.iter().map(|e| e.card.clone()).collect();

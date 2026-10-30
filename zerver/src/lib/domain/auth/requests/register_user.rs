@@ -367,6 +367,18 @@ mod tests {
     }
 
     #[test]
+    fn test_raw_register_user_new_rejects_banned_word() {
+        let result = RawRegisterUser::new("fuck", "alice@example.com", "SecurePass123!");
+        assert!(matches!(result, Err(InvalidRawRegisterUser::Username(_))));
+    }
+
+    #[test]
+    fn test_register_user_new_rejects_banned_word() {
+        let result = RegisterUser::new("fuck", "alice@example.com", "SecurePass123!");
+        assert!(matches!(result, Err(InvalidRegisterUser::Username(_))));
+    }
+
+    #[test]
     fn test_register_user_new_rejects_invalid_email() {
         let result = RegisterUser::new("alice", "not-an-email", "SecurePass123!");
         assert!(matches!(result, Err(InvalidRegisterUser::Email(_))));

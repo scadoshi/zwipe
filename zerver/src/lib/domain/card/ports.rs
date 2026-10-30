@@ -144,13 +144,13 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     // == get ==
 
     /// Retrieves Scryfall data by Scryfall card ID.
-    fn get_scryfall_data(
+    fn fetch_scryfall_data(
         &self,
         request: &GetScryfallData,
     ) -> impl Future<Output = Result<ScryfallData, GetScryfallDataError>> + Send;
 
     /// Retrieves multiple Scryfall data records by IDs.
-    fn get_multiple_scryfall_data(
+    fn fetch_multiple_scryfall_data(
         &self,
         request: &ScryfallDataIds,
     ) -> impl Future<Output = Result<Vec<ScryfallData>, GetScryfallDataError>> + Send;
@@ -186,19 +186,19 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     ) -> impl Future<Output = anyhow::Result<Option<uuid::Uuid>>> + Send;
 
     /// Retrieves complete card by Scryfall ID.
-    fn get_card(
+    fn fetch_card(
         &self,
         request: &GetScryfallData,
     ) -> impl Future<Output = Result<Card, GetCardError>> + Send;
 
     /// Retrieves multiple complete cards by Scryfall IDs.
-    fn get_cards(
+    fn fetch_cards(
         &self,
         request: &ScryfallDataIds,
     ) -> impl Future<Output = Result<Vec<Card>, GetCardError>> + Send;
 
     /// Returns all printings of a card by `oracle_id`, ordered by release date.
-    fn get_printings(
+    fn fetch_printings(
         &self,
         oracle_id: uuid::Uuid,
     ) -> impl Future<Output = Result<Vec<Card>, GetCardError>> + Send;
@@ -206,7 +206,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     /// Retrieves complete cards by oracle ids, at most one card per oracle,
     /// the preferred printing per `latest_cards`. Unknown ids are silently
     /// absent; row order is unspecified.
-    fn get_latest_cards_by_oracle_ids(
+    fn fetch_latest_cards_by_oracle_ids(
         &self,
         oracle_ids: &[uuid::Uuid],
     ) -> impl Future<Output = Result<Vec<Card>, GetCardError>> + Send;
@@ -218,43 +218,46 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     ) -> impl Future<Output = Result<Vec<Card>, SearchCardsError>> + Send;
 
     /// Retrieves all distinct artist names from card database.
-    fn get_artists(&self) -> impl Future<Output = Result<Vec<String>, GetArtistsError>> + Send;
+    fn fetch_artists(&self) -> impl Future<Output = Result<Vec<String>, GetArtistsError>> + Send;
 
     /// Retrieves all distinct card types from card database.
-    fn get_card_types(&self)
-    -> impl Future<Output = Result<Vec<String>, GetCardTypesError>> + Send;
+    fn fetch_card_types(
+        &self,
+    ) -> impl Future<Output = Result<Vec<String>, GetCardTypesError>> + Send;
 
     /// Retrieves all distinct keyword abilities from card database.
-    fn get_keywords(&self) -> impl Future<Output = Result<Vec<String>, GetKeywordsError>> + Send;
+    fn fetch_keywords(&self) -> impl Future<Output = Result<Vec<String>, GetKeywordsError>> + Send;
 
     /// Retrieves the full oracle tag catalog (slug, label, description, parent slugs).
-    fn get_oracle_tags(
+    fn fetch_oracle_tags(
         &self,
     ) -> impl Future<Output = Result<Vec<OracleTag>, GetOracleTagsError>> + Send;
 
     /// Retrieves all distinct normalized words from oracle text.
-    fn get_oracle_words(
+    fn fetch_oracle_words(
         &self,
     ) -> impl Future<Output = Result<Vec<String>, GetOracleWordsError>> + Send;
 
     /// Retrieves all distinct set codes from card database.
-    fn get_sets(&self) -> impl Future<Output = Result<Vec<String>, GetSetsError>> + Send;
+    fn fetch_sets(&self) -> impl Future<Output = Result<Vec<String>, GetSetsError>> + Send;
 
     /// The user's Universes Beyond serving preference: the exclude flag plus
     /// the exception franchises already expanded to set names for the
     /// `printing_set_names` overlap. No preferences row = default off.
-    fn get_universes_beyond_preferences(
+    fn fetch_universes_beyond_preferences(
         &self,
         user_id: uuid::Uuid,
     ) -> impl Future<Output = anyhow::Result<(bool, Vec<String>)>> + Send;
 
     /// Retrieves all distinct language codes from card database.
-    fn get_languages(&self) -> impl Future<Output = Result<Vec<String>, GetLanguagesError>> + Send;
+    fn fetch_languages(
+        &self,
+    ) -> impl Future<Output = Result<Vec<String>, GetLanguagesError>> + Send;
 
     /// Retrieves card profile by card profile UUID (internal ID).
     ///
     /// Returns internal metadata (sync timestamps, DB ID) without Scryfall data.
-    fn get_card_profile_with_id(
+    fn fetch_card_profile_with_id(
         &self,
         request: &GetCardProfile,
     ) -> impl Future<Output = Result<CardProfile, GetCardProfileError>> + Send;
@@ -262,7 +265,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     /// Retrieves card profile by Scryfall card UUID.
     ///
     /// Looks up internal metadata using Scryfall card ID as foreign key.
-    fn get_card_profile_with_scryfall_data_id(
+    fn fetch_card_profile_with_scryfall_data_id(
         &self,
         request: &GetScryfallData,
     ) -> impl Future<Output = Result<CardProfile, GetCardProfileError>> + Send;
@@ -270,7 +273,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     /// Retrieves multiple card profiles by card profile UUIDs.
     ///
     /// Bulk fetch operation for internal metadata.
-    fn get_card_profiles_with_ids(
+    fn fetch_card_profiles_with_ids(
         &self,
         request: &CardProfileIds,
     ) -> impl Future<Output = Result<Vec<CardProfile>, GetCardProfileError>> + Send;
@@ -278,7 +281,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     /// Retrieves multiple card profiles by Scryfall card UUIDs.
     ///
     /// Bulk fetch internal metadata using Scryfall IDs as foreign keys.
-    fn get_card_profiles_with_scryfall_data_ids(
+    fn fetch_card_profiles_with_scryfall_data_ids(
         &self,
         request: &ScryfallDataIds,
     ) -> impl Future<Output = Result<Vec<CardProfile>, GetCardProfileError>> + Send;
@@ -287,7 +290,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     ///
     /// Returns `None` if no sync has been performed yet.
     /// Used to track sync freshness and schedule next sync.
-    fn get_last_sync_date(
+    fn fetch_last_sync_date(
         &self,
     ) -> impl Future<Output = anyhow::Result<Option<DateTime<Utc>>>> + Send;
 
@@ -385,7 +388,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     // == category derivation ==
 
     /// Fetches a batch of cards by their IDs.
-    fn get_cards_batch(
+    fn fetch_cards_batch(
         &self,
         ids: &[uuid::Uuid],
     ) -> impl Future<Output = Result<Vec<Card>, anyhow::Error>> + Send;
@@ -409,7 +412,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     fn refresh_oracle_tag_groups(&self) -> impl Future<Output = anyhow::Result<u64>> + Send;
 
     /// IDs of every card with oracle text (candidates for the `oracle_tag_gaps` merge).
-    fn get_card_ids_with_oracle_text(
+    fn fetch_card_ids_with_oracle_text(
         &self,
     ) -> impl Future<Output = Result<Vec<uuid::Uuid>, anyhow::Error>> + Send;
 }
@@ -480,26 +483,26 @@ pub trait CardService: Clone + Send + Sync + 'static {
     // == get ==
 
     /// The featured-flavor card for an hour bucket; the repository's
-    /// deterministic pick assembled like `get_card`.
+    /// deterministic pick assembled like `fetch_card`.
     fn featured_flavor(
         &self,
         hour_key: &str,
     ) -> impl Future<Output = Result<Card, GetCardError>> + Send;
 
     /// Retrieves complete card by Scryfall ID.
-    fn get_card(
+    fn fetch_card(
         &self,
         request: &GetScryfallData,
     ) -> impl Future<Output = Result<Card, GetCardError>> + Send;
 
     /// Retrieves multiple complete cards by Scryfall IDs.
-    fn get_cards(
+    fn fetch_cards(
         &self,
         request: &ScryfallDataIds,
     ) -> impl Future<Output = Result<Vec<Card>, GetCardError>> + Send;
 
     /// Returns all printings of a card by `oracle_id`, ordered by release date.
-    fn get_printings(
+    fn fetch_printings(
         &self,
         oracle_id: uuid::Uuid,
     ) -> impl Future<Output = Result<Vec<Card>, GetCardError>> + Send;
@@ -523,35 +526,38 @@ pub trait CardService: Clone + Send + Sync + 'static {
     ) -> impl Future<Output = Result<Vec<Card>, SearchCardsError>> + Send;
 
     /// Retrieves all distinct artist names from card database.
-    fn get_artists(&self) -> impl Future<Output = Result<Vec<String>, GetArtistsError>> + Send;
+    fn fetch_artists(&self) -> impl Future<Output = Result<Vec<String>, GetArtistsError>> + Send;
 
     /// Retrieves all distinct card types from card database.
-    fn get_card_types(&self)
-    -> impl Future<Output = Result<Vec<String>, GetCardTypesError>> + Send;
+    fn fetch_card_types(
+        &self,
+    ) -> impl Future<Output = Result<Vec<String>, GetCardTypesError>> + Send;
 
     /// Retrieves all distinct keyword abilities from card database.
-    fn get_keywords(&self) -> impl Future<Output = Result<Vec<String>, GetKeywordsError>> + Send;
+    fn fetch_keywords(&self) -> impl Future<Output = Result<Vec<String>, GetKeywordsError>> + Send;
 
     /// Retrieves the full oracle tag catalog (slug, label, description, parent slugs).
-    fn get_oracle_tags(
+    fn fetch_oracle_tags(
         &self,
     ) -> impl Future<Output = Result<Vec<OracleTag>, GetOracleTagsError>> + Send;
 
     /// Retrieves all distinct normalized words from oracle text.
-    fn get_oracle_words(
+    fn fetch_oracle_words(
         &self,
     ) -> impl Future<Output = Result<Vec<String>, GetOracleWordsError>> + Send;
 
     /// Retrieves all distinct set codes from card database.
-    fn get_sets(&self) -> impl Future<Output = Result<Vec<String>, GetSetsError>> + Send;
+    fn fetch_sets(&self) -> impl Future<Output = Result<Vec<String>, GetSetsError>> + Send;
 
     /// Retrieves all distinct language codes from card database.
-    fn get_languages(&self) -> impl Future<Output = Result<Vec<String>, GetLanguagesError>> + Send;
+    fn fetch_languages(
+        &self,
+    ) -> impl Future<Output = Result<Vec<String>, GetLanguagesError>> + Send;
 
     /// Retrieves card profile by card profile UUID (internal ID).
     ///
     /// Returns internal metadata (sync timestamps, DB ID) without Scryfall data.
-    fn get_card_profile_with_id(
+    fn fetch_card_profile_with_id(
         &self,
         request: &GetCardProfile,
     ) -> impl Future<Output = Result<CardProfile, GetCardProfileError>> + Send;
@@ -559,7 +565,7 @@ pub trait CardService: Clone + Send + Sync + 'static {
     /// Retrieves card profile by Scryfall card UUID.
     ///
     /// Looks up internal metadata using Scryfall card ID as foreign key.
-    fn get_card_profile_with_scryfall_data_id(
+    fn fetch_card_profile_with_scryfall_data_id(
         &self,
         request: &GetScryfallData,
     ) -> impl Future<Output = Result<CardProfile, GetCardProfileError>> + Send;
@@ -567,7 +573,7 @@ pub trait CardService: Clone + Send + Sync + 'static {
     /// Retrieves multiple card profiles by card profile UUIDs.
     ///
     /// Bulk fetch operation for internal metadata.
-    fn get_card_profiles_with_ids(
+    fn fetch_card_profiles_with_ids(
         &self,
         request: &CardProfileIds,
     ) -> impl Future<Output = Result<Vec<CardProfile>, GetCardProfileError>> + Send;
@@ -575,7 +581,7 @@ pub trait CardService: Clone + Send + Sync + 'static {
     /// Retrieves multiple card profiles by Scryfall card UUIDs.
     ///
     /// Bulk fetch internal metadata using Scryfall IDs as foreign keys.
-    fn get_card_profiles_with_scryfall_data_ids(
+    fn fetch_card_profiles_with_scryfall_data_ids(
         &self,
         request: &ScryfallDataIds,
     ) -> impl Future<Output = Result<Vec<CardProfile>, GetCardProfileError>> + Send;
@@ -584,7 +590,7 @@ pub trait CardService: Clone + Send + Sync + 'static {
     ///
     /// Returns `None` if no sync has been performed yet.
     /// Used to track sync freshness and schedule next sync.
-    fn get_last_sync_date(
+    fn fetch_last_sync_date(
         &self,
     ) -> impl Future<Output = anyhow::Result<Option<DateTime<Utc>>>> + Send;
 
@@ -626,20 +632,20 @@ pub trait ErasedCardService: Send + Sync + 'static {
         hour_key: &'a str,
     ) -> BoxFuture<'a, Result<Card, GetCardError>>;
 
-    /// See [`CardService::get_card`].
-    fn get_card<'a>(
+    /// See [`CardService::fetch_card`].
+    fn fetch_card<'a>(
         &'a self,
         request: &'a GetScryfallData,
     ) -> BoxFuture<'a, Result<Card, GetCardError>>;
 
-    /// See [`CardService::get_cards`].
-    fn get_cards<'a>(
+    /// See [`CardService::fetch_cards`].
+    fn fetch_cards<'a>(
         &'a self,
         request: &'a ScryfallDataIds,
     ) -> BoxFuture<'a, Result<Vec<Card>, GetCardError>>;
 
-    /// See [`CardService::get_printings`].
-    fn get_printings(
+    /// See [`CardService::fetch_printings`].
+    fn fetch_printings(
         &self,
         oracle_id: uuid::Uuid,
     ) -> BoxFuture<'_, Result<Vec<Card>, GetCardError>>;
@@ -658,53 +664,53 @@ pub trait ErasedCardService: Send + Sync + 'static {
         user_id: uuid::Uuid,
     ) -> BoxFuture<'a, Result<Vec<Card>, SearchCardsError>>;
 
-    /// See [`CardService::get_artists`].
-    fn get_artists(&self) -> BoxFuture<'_, Result<Vec<String>, GetArtistsError>>;
+    /// See [`CardService::fetch_artists`].
+    fn fetch_artists(&self) -> BoxFuture<'_, Result<Vec<String>, GetArtistsError>>;
 
-    /// See [`CardService::get_card_types`].
-    fn get_card_types(&self) -> BoxFuture<'_, Result<Vec<String>, GetCardTypesError>>;
+    /// See [`CardService::fetch_card_types`].
+    fn fetch_card_types(&self) -> BoxFuture<'_, Result<Vec<String>, GetCardTypesError>>;
 
-    /// See [`CardService::get_keywords`].
-    fn get_keywords(&self) -> BoxFuture<'_, Result<Vec<String>, GetKeywordsError>>;
+    /// See [`CardService::fetch_keywords`].
+    fn fetch_keywords(&self) -> BoxFuture<'_, Result<Vec<String>, GetKeywordsError>>;
 
-    /// See [`CardService::get_oracle_tags`].
-    fn get_oracle_tags(&self) -> BoxFuture<'_, Result<Vec<OracleTag>, GetOracleTagsError>>;
+    /// See [`CardService::fetch_oracle_tags`].
+    fn fetch_oracle_tags(&self) -> BoxFuture<'_, Result<Vec<OracleTag>, GetOracleTagsError>>;
 
-    /// See [`CardService::get_oracle_words`].
-    fn get_oracle_words(&self) -> BoxFuture<'_, Result<Vec<String>, GetOracleWordsError>>;
+    /// See [`CardService::fetch_oracle_words`].
+    fn fetch_oracle_words(&self) -> BoxFuture<'_, Result<Vec<String>, GetOracleWordsError>>;
 
-    /// See [`CardService::get_sets`].
-    fn get_sets(&self) -> BoxFuture<'_, Result<Vec<String>, GetSetsError>>;
+    /// See [`CardService::fetch_sets`].
+    fn fetch_sets(&self) -> BoxFuture<'_, Result<Vec<String>, GetSetsError>>;
 
-    /// See [`CardService::get_languages`].
-    fn get_languages(&self) -> BoxFuture<'_, Result<Vec<String>, GetLanguagesError>>;
+    /// See [`CardService::fetch_languages`].
+    fn fetch_languages(&self) -> BoxFuture<'_, Result<Vec<String>, GetLanguagesError>>;
 
-    /// See [`CardService::get_card_profile_with_id`].
-    fn get_card_profile_with_id<'a>(
+    /// See [`CardService::fetch_card_profile_with_id`].
+    fn fetch_card_profile_with_id<'a>(
         &'a self,
         request: &'a GetCardProfile,
     ) -> BoxFuture<'a, Result<CardProfile, GetCardProfileError>>;
 
-    /// See [`CardService::get_card_profile_with_scryfall_data_id`].
-    fn get_card_profile_with_scryfall_data_id<'a>(
+    /// See [`CardService::fetch_card_profile_with_scryfall_data_id`].
+    fn fetch_card_profile_with_scryfall_data_id<'a>(
         &'a self,
         request: &'a GetScryfallData,
     ) -> BoxFuture<'a, Result<CardProfile, GetCardProfileError>>;
 
-    /// See [`CardService::get_card_profiles_with_ids`].
-    fn get_card_profiles_with_ids<'a>(
+    /// See [`CardService::fetch_card_profiles_with_ids`].
+    fn fetch_card_profiles_with_ids<'a>(
         &'a self,
         request: &'a CardProfileIds,
     ) -> BoxFuture<'a, Result<Vec<CardProfile>, GetCardProfileError>>;
 
-    /// See [`CardService::get_card_profiles_with_scryfall_data_ids`].
-    fn get_card_profiles_with_scryfall_data_ids<'a>(
+    /// See [`CardService::fetch_card_profiles_with_scryfall_data_ids`].
+    fn fetch_card_profiles_with_scryfall_data_ids<'a>(
         &'a self,
         request: &'a ScryfallDataIds,
     ) -> BoxFuture<'a, Result<Vec<CardProfile>, GetCardProfileError>>;
 
-    /// See [`CardService::get_last_sync_date`].
-    fn get_last_sync_date(&self) -> BoxFuture<'_, anyhow::Result<Option<DateTime<Utc>>>>;
+    /// See [`CardService::fetch_last_sync_date`].
+    fn fetch_last_sync_date(&self) -> BoxFuture<'_, anyhow::Result<Option<DateTime<Utc>>>>;
 
     /// See [`CardService::find_cards_by_exact_names`].
     fn find_cards_by_exact_names<'a>(
@@ -747,25 +753,25 @@ where
         Box::pin(CardService::featured_flavor(self, hour_key))
     }
 
-    fn get_card<'a>(
+    fn fetch_card<'a>(
         &'a self,
         request: &'a GetScryfallData,
     ) -> BoxFuture<'a, Result<Card, GetCardError>> {
-        Box::pin(CardService::get_card(self, request))
+        Box::pin(CardService::fetch_card(self, request))
     }
 
-    fn get_cards<'a>(
+    fn fetch_cards<'a>(
         &'a self,
         request: &'a ScryfallDataIds,
     ) -> BoxFuture<'a, Result<Vec<Card>, GetCardError>> {
-        Box::pin(CardService::get_cards(self, request))
+        Box::pin(CardService::fetch_cards(self, request))
     }
 
-    fn get_printings(
+    fn fetch_printings(
         &self,
         oracle_id: uuid::Uuid,
     ) -> BoxFuture<'_, Result<Vec<Card>, GetCardError>> {
-        Box::pin(CardService::get_printings(self, oracle_id))
+        Box::pin(CardService::fetch_printings(self, oracle_id))
     }
 
     fn search_cards<'a>(
@@ -784,68 +790,68 @@ where
         Box::pin(CardService::search_commanders(self, request, user_id))
     }
 
-    fn get_artists(&self) -> BoxFuture<'_, Result<Vec<String>, GetArtistsError>> {
-        Box::pin(CardService::get_artists(self))
+    fn fetch_artists(&self) -> BoxFuture<'_, Result<Vec<String>, GetArtistsError>> {
+        Box::pin(CardService::fetch_artists(self))
     }
 
-    fn get_card_types(&self) -> BoxFuture<'_, Result<Vec<String>, GetCardTypesError>> {
-        Box::pin(CardService::get_card_types(self))
+    fn fetch_card_types(&self) -> BoxFuture<'_, Result<Vec<String>, GetCardTypesError>> {
+        Box::pin(CardService::fetch_card_types(self))
     }
 
-    fn get_keywords(&self) -> BoxFuture<'_, Result<Vec<String>, GetKeywordsError>> {
-        Box::pin(CardService::get_keywords(self))
+    fn fetch_keywords(&self) -> BoxFuture<'_, Result<Vec<String>, GetKeywordsError>> {
+        Box::pin(CardService::fetch_keywords(self))
     }
 
-    fn get_oracle_tags(&self) -> BoxFuture<'_, Result<Vec<OracleTag>, GetOracleTagsError>> {
-        Box::pin(CardService::get_oracle_tags(self))
+    fn fetch_oracle_tags(&self) -> BoxFuture<'_, Result<Vec<OracleTag>, GetOracleTagsError>> {
+        Box::pin(CardService::fetch_oracle_tags(self))
     }
 
-    fn get_oracle_words(&self) -> BoxFuture<'_, Result<Vec<String>, GetOracleWordsError>> {
-        Box::pin(CardService::get_oracle_words(self))
+    fn fetch_oracle_words(&self) -> BoxFuture<'_, Result<Vec<String>, GetOracleWordsError>> {
+        Box::pin(CardService::fetch_oracle_words(self))
     }
 
-    fn get_sets(&self) -> BoxFuture<'_, Result<Vec<String>, GetSetsError>> {
-        Box::pin(CardService::get_sets(self))
+    fn fetch_sets(&self) -> BoxFuture<'_, Result<Vec<String>, GetSetsError>> {
+        Box::pin(CardService::fetch_sets(self))
     }
 
-    fn get_languages(&self) -> BoxFuture<'_, Result<Vec<String>, GetLanguagesError>> {
-        Box::pin(CardService::get_languages(self))
+    fn fetch_languages(&self) -> BoxFuture<'_, Result<Vec<String>, GetLanguagesError>> {
+        Box::pin(CardService::fetch_languages(self))
     }
 
-    fn get_card_profile_with_id<'a>(
+    fn fetch_card_profile_with_id<'a>(
         &'a self,
         request: &'a GetCardProfile,
     ) -> BoxFuture<'a, Result<CardProfile, GetCardProfileError>> {
-        Box::pin(CardService::get_card_profile_with_id(self, request))
+        Box::pin(CardService::fetch_card_profile_with_id(self, request))
     }
 
-    fn get_card_profile_with_scryfall_data_id<'a>(
+    fn fetch_card_profile_with_scryfall_data_id<'a>(
         &'a self,
         request: &'a GetScryfallData,
     ) -> BoxFuture<'a, Result<CardProfile, GetCardProfileError>> {
-        Box::pin(CardService::get_card_profile_with_scryfall_data_id(
+        Box::pin(CardService::fetch_card_profile_with_scryfall_data_id(
             self, request,
         ))
     }
 
-    fn get_card_profiles_with_ids<'a>(
+    fn fetch_card_profiles_with_ids<'a>(
         &'a self,
         request: &'a CardProfileIds,
     ) -> BoxFuture<'a, Result<Vec<CardProfile>, GetCardProfileError>> {
-        Box::pin(CardService::get_card_profiles_with_ids(self, request))
+        Box::pin(CardService::fetch_card_profiles_with_ids(self, request))
     }
 
-    fn get_card_profiles_with_scryfall_data_ids<'a>(
+    fn fetch_card_profiles_with_scryfall_data_ids<'a>(
         &'a self,
         request: &'a ScryfallDataIds,
     ) -> BoxFuture<'a, Result<Vec<CardProfile>, GetCardProfileError>> {
-        Box::pin(CardService::get_card_profiles_with_scryfall_data_ids(
+        Box::pin(CardService::fetch_card_profiles_with_scryfall_data_ids(
             self, request,
         ))
     }
 
-    fn get_last_sync_date(&self) -> BoxFuture<'_, anyhow::Result<Option<DateTime<Utc>>>> {
-        Box::pin(CardService::get_last_sync_date(self))
+    fn fetch_last_sync_date(&self) -> BoxFuture<'_, anyhow::Result<Option<DateTime<Utc>>>> {
+        Box::pin(CardService::fetch_last_sync_date(self))
     }
 
     fn find_cards_by_exact_names<'a>(

@@ -17,7 +17,7 @@ impl ZwipeClient {
     ///
     /// Returns a [`ClientError`] when the request fails to complete, the server answers with an
     /// error status, or the reply doesn't decode.
-    pub async fn get_shared_deck(&self, token: Uuid) -> Result<HttpSharedDeck, ClientError> {
+    pub async fn fetch_shared_deck(&self, token: Uuid) -> Result<HttpSharedDeck, ClientError> {
         self.call(GetSharedDeck(token), None).await
     }
 }

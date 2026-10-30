@@ -91,16 +91,25 @@ pub fn open(blob: &[u8]) -> anyhow::Result<Vec<u8>> {
     })
 }
 
-/// Runs `f` on the app's JavaVM. A Java exception raised inside `f` is
-/// cleared and returned as an error carrying its `toString()`, so the VM is
-/// left clean for the next JNI call.
+/// Local references a seal or open may hold at once; first use, which also
+/// generates the key, creates about 15. A hint to the VM, not a cap.
+const LOCAL_FRAME_CAPACITY: i32 = 32;
+
+/// Runs `f` on the app's `JavaVM` inside its own local reference frame, so
+/// every local reference `f` creates is freed when it returns. The calling
+/// thread is usually already attached and doesn't return to Java between
+/// calls, so the frame is the only thing that frees them. A Java exception
+/// raised inside `f` is cleared and returned as an error carrying its
+/// `toString()`, so the VM is left clean for the next JNI call.
 fn with_env<T>(f: impl FnOnce(&mut jni::JNIEnv<'_>) -> anyhow::Result<T>) -> anyhow::Result<T> {
     let ctx = ndk_context::android_context();
     // SAFETY: ndk-context guarantees a valid JavaVM pointer for the running
     // app.
     let vm = unsafe { JavaVM::from_raw(ctx.vm().cast()) }?;
     let mut env: AttachGuard<'_> = vm.attach_current_thread()?;
-    match f(&mut env) {
+    // PopLocalFrame is safe with an exception pending, so the frame is gone
+    // before the exception is read below.
+    match env.with_local_frame(LOCAL_FRAME_CAPACITY, f) {
         Ok(value) => Ok(value),
         Err(e) => {
             if env.exception_check().unwrap_or(false) {
