@@ -637,19 +637,19 @@ impl CardRepository for MyPostgres {
 
         if let Some(query_string) = &criteria.name_contains() {
             sep.push(STRIP_NAME);
-            sep.push_bind_unseparated(format!("%{}%", query_string));
+            sep.push_bind_unseparated(format!("%{query_string}%"));
         }
 
         if let Some(query_string) = &criteria.name_not_contains() {
             sep.push("NOT (");
             sep.push_unseparated(STRIP_NAME);
-            sep.push_bind_unseparated(format!("%{}%", query_string));
+            sep.push_bind_unseparated(format!("%{query_string}%"));
             sep.push_unseparated(")");
         }
 
         if let Some(query_string) = &criteria.type_line_contains() {
             sep.push(STRIP_TYPE);
-            sep.push_bind_unseparated(format!("%{}%", query_string));
+            sep.push_bind_unseparated(format!("%{query_string}%"));
         }
 
         if let Some(query_string_array) = &criteria.type_line_contains_any() {
@@ -659,7 +659,7 @@ impl CardRepository for MyPostgres {
                     sep.push_unseparated(" OR ");
                 }
                 sep.push_unseparated(STRIP_TYPE);
-                sep.push_bind_unseparated(format!("%{}%", query_string));
+                sep.push_bind_unseparated(format!("%{query_string}%"));
             }
             sep.push_unseparated(") ");
         }
@@ -671,7 +671,7 @@ impl CardRepository for MyPostgres {
                     sep.push_unseparated(" OR ");
                 }
                 sep.push_unseparated(STRIP_TYPE);
-                sep.push_bind_unseparated(format!("%{}%", query_string));
+                sep.push_bind_unseparated(format!("%{query_string}%"));
             }
             sep.push_unseparated(") ");
         }
@@ -679,21 +679,21 @@ impl CardRepository for MyPostgres {
         if let Some(query_string_array) = &criteria.type_line_contains_all() {
             for query_string in query_string_array.iter() {
                 sep.push(STRIP_TYPE);
-                sep.push_bind_unseparated(format!("%{}%", query_string));
+                sep.push_bind_unseparated(format!("%{query_string}%"));
             }
         }
 
         if let Some(card_types) = &criteria.card_type_contains_all() {
             for card_type in card_types.iter() {
                 sep.push(STRIP_TYPE);
-                sep.push_bind_unseparated(format!("%{}%", card_type));
+                sep.push_bind_unseparated(format!("%{card_type}%"));
             }
         }
 
         if let Some(query_string) = &criteria.type_line_not_contains() {
             sep.push("(type_line IS NULL OR NOT (");
             sep.push_unseparated(STRIP_TYPE);
-            sep.push_bind_unseparated(format!("%{}%", query_string));
+            sep.push_bind_unseparated(format!("%{query_string}%"));
             sep.push_unseparated("))");
         }
 
@@ -704,7 +704,7 @@ impl CardRepository for MyPostgres {
                     sep.push_unseparated(" OR ");
                 }
                 sep.push_unseparated(STRIP_TYPE);
-                sep.push_bind_unseparated(format!("%{}%", query_string));
+                sep.push_bind_unseparated(format!("%{query_string}%"));
             }
             sep.push_unseparated(")) ");
         }
@@ -716,7 +716,7 @@ impl CardRepository for MyPostgres {
                     sep.push_unseparated(" OR ");
                 }
                 sep.push_unseparated(STRIP_TYPE);
-                sep.push_bind_unseparated(format!("%{}%", query_string));
+                sep.push_bind_unseparated(format!("%{query_string}%"));
             }
             sep.push_unseparated(")) ");
         }
@@ -839,7 +839,7 @@ impl CardRepository for MyPostgres {
 
         if let Some(query_string) = &criteria.oracle_text_contains() {
             sep.push(STRIP_ORACLE);
-            sep.push_bind_unseparated(format!("%{}%", query_string));
+            sep.push_bind_unseparated(format!("%{query_string}%"));
         }
 
         if let Some(query_string_array) = &criteria.oracle_text_contains_any() {
@@ -849,7 +849,7 @@ impl CardRepository for MyPostgres {
                     sep.push_unseparated(" OR ");
                 }
                 sep.push_unseparated(STRIP_ORACLE);
-                sep.push_bind_unseparated(format!("%{}%", query_string));
+                sep.push_bind_unseparated(format!("%{query_string}%"));
             }
             sep.push_unseparated(") ");
         }
@@ -857,14 +857,14 @@ impl CardRepository for MyPostgres {
         if let Some(query_string_array) = &criteria.oracle_text_contains_all() {
             for query_string in query_string_array.iter() {
                 sep.push(STRIP_ORACLE);
-                sep.push_bind_unseparated(format!("%{}%", query_string));
+                sep.push_bind_unseparated(format!("%{query_string}%"));
             }
         }
 
         if let Some(query_string) = &criteria.oracle_text_not_contains() {
             sep.push("(oracle_text IS NULL OR NOT (");
             sep.push_unseparated(STRIP_ORACLE);
-            sep.push_bind_unseparated(format!("%{}%", query_string));
+            sep.push_bind_unseparated(format!("%{query_string}%"));
             sep.push_unseparated("))");
         }
 
@@ -875,7 +875,7 @@ impl CardRepository for MyPostgres {
                     sep.push_unseparated(" OR ");
                 }
                 sep.push_unseparated(STRIP_ORACLE);
-                sep.push_bind_unseparated(format!("%{}%", query_string));
+                sep.push_bind_unseparated(format!("%{query_string}%"));
             }
             sep.push_unseparated(")) ");
         }
@@ -950,12 +950,12 @@ impl CardRepository for MyPostgres {
 
         if let Some(query_string) = &criteria.flavor_text_contains() {
             sep.push("regexp_replace(flavor_text, '[^a-zA-Z0-9 ]', '', 'g') ILIKE ");
-            sep.push_bind_unseparated(format!("%{}%", query_string));
+            sep.push_bind_unseparated(format!("%{query_string}%"));
         }
 
         if let Some(query_string) = &criteria.flavor_text_not_contains() {
             sep.push("(flavor_text IS NULL OR NOT (regexp_replace(flavor_text, '[^a-zA-Z0-9 ]', '', 'g') ILIKE ");
-            sep.push_bind_unseparated(format!("%{}%", query_string));
+            sep.push_bind_unseparated(format!("%{query_string}%"));
             sep.push_unseparated("))");
         }
 
