@@ -72,6 +72,13 @@ enum Route {
     NotFound { segments: Vec<String> },
 }
 
+#[cfg_attr(
+    not(all(feature = "server", not(debug_assertions))),
+    expect(
+        clippy::unnecessary_wraps,
+        reason = "only the release server build can fail, when it looks for its prerender folder"
+    )
+)]
 fn main() -> std::io::Result<()> {
     // Native only: under `dx serve` this is the server binary and the logo
     // lands in the terminal, like zwiper's does. The wasm client's stdout
