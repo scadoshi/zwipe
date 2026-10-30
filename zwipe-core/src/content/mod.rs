@@ -5,5 +5,4 @@
 //! core because it is the only crate every edge shares, and they depend on
 //! nothing external.
 
-/// Release history, served at `/api/changelog` and rendered by the app + site.
 pub mod changelog;

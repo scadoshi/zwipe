@@ -1,3 +1,5 @@
+//! Entities, value objects and requests, grouped by business area.
+
 pub mod auth;
 pub mod card;
 pub mod deck;
