@@ -1,26 +1,18 @@
-//! ZWIPER - Shared library for the ZWIPE MTG deck building application.
+//! ZWIPER: the ZWIPE app's screens, components, routing and the platform
+//! stores behind them.
 //!
-//! This crate provides common utilities and domain logic shared between the
-//! client (Leptos frontend) and server (Axum backend), including:
-//! - Domain models and validation
-//! - Error message formatting
-//! - Language code translations
-//! - Configuration types
-//!
-//! # Modules
-//!
-//! - [`domain`]: Shared domain logic (errors, language codes)
-//! - [`config`]: Configuration types
-//! - [`inbound`]: Request handling utilities
-//! - [`outbound`]: External service integrations
+//! - [`domain`]: user-facing error messages and language names
+//! - [`config`]: values baked in at build time
+//! - [`inbound`]: the Dioxus UI, its screens, components and router
+//! - [`outbound`]: the session, on-device stores and platform calls
 
 #![warn(missing_docs)]
 
-/// Configuration types and utilities.
+/// Values baked in at build time.
 pub mod config;
-/// Shared domain logic (errors, language codes).
+/// User-facing error messages and language names.
 pub mod domain;
-/// Request handling utilities.
+/// The Dioxus UI: screens, components and the router.
 pub mod inbound;
-/// External service integrations.
+/// The session, on-device stores and platform calls.
 pub mod outbound;
