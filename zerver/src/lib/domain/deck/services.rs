@@ -623,14 +623,14 @@ where
         // rather than an average of all of them. Decks past the most recent
         // MAX_PROFILED_DECKS carry only their colors. All the profiles come
         // from one query on one connection.
-        let profiled: Vec<Vec<Uuid>> = decks
+        let profile_oracle_ids: Vec<Vec<Uuid>> = decks
             .iter()
             .take(MAX_PROFILED_DECKS)
             .map(ProfiledDeck::profile_oracle_ids)
             .collect();
         let mut profiles: Vec<Option<DeckTagProfile>> = self
             .card_repo
-            .deck_tag_profiles(&profiled)
+            .deck_tag_profiles(&profile_oracle_ids)
             .await
             .map_err(|e| CommanderSuggestionsError::Database(e.into()))?;
         profiles.resize(decks.len(), None);
