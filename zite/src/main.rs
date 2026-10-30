@@ -186,14 +186,14 @@ fn App() -> Element {
     // stale node. use_future: install exactly once, not per re-render.
     use_future(|| async {
         let _ = eval(
-            r#"(() => {
+            r"(() => {
                 const set = () => {
                     const nav = document.querySelector('.nav-wrapper');
                     if (nav) document.documentElement.style.setProperty('--nav-height', nav.offsetHeight + 'px');
                 };
                 new ResizeObserver(set).observe(document.body);
                 set();
-            })();"#,
+            })();",
         )
         .await;
     });
