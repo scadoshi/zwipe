@@ -638,7 +638,7 @@ pub fn CommanderMaybeboard() -> Element {
                 open: filters_overlay_open,
                 show_format_filter: false,
                 show_active_indicators: true,
-                on_clear: move |_| {
+                on_clear: move |()| {
                     filter_builder.write().clear();
                 },
             }
@@ -655,7 +655,7 @@ pub fn CommanderMaybeboard() -> Element {
                     swipe_open.set(false);
                     create_with(card);
                 },
-                on_close: move |_| swipe_open.set(false),
+                on_close: move |()| swipe_open.set(false),
             }
 
             // Pick a printing → swap that row's card in place and keep the

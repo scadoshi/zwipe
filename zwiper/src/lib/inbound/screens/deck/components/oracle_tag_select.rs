@@ -84,7 +84,7 @@ pub(crate) fn OracleTagSelect(
     // Back, and the OS back gesture, revert to the snapshot and say so when
     // there was something to revert. The gesture used to just close, which
     // kept the edits: the one exit that behaved like Save without saying so.
-    let back = use_callback(move |_: ()| {
+    let back = use_callback(move |(): ()| {
         let mut selected = selected;
         if !same_set(&selected.peek(), &snapshot.peek()) {
             toast.info(

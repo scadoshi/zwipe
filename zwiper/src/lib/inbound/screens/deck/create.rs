@@ -256,7 +256,7 @@ pub fn CreateDeck() -> Element {
                     commander.set(Some(card));
                     show_commander_swipe.set(false);
                 },
-                on_close: move |_| show_commander_swipe.set(false),
+                on_close: move |()| show_commander_swipe.set(false),
             }
             SwipeSelect {
             host_screen: screen::DECK_CREATE,
@@ -267,7 +267,7 @@ pub fn CreateDeck() -> Element {
                     partner_commander.set(Some(card));
                     show_partner_swipe.set(false);
                 },
-                on_close: move |_| show_partner_swipe.set(false),
+                on_close: move |()| show_partner_swipe.set(false),
             }
             SwipeSelect {
             host_screen: screen::DECK_CREATE,
@@ -278,7 +278,7 @@ pub fn CreateDeck() -> Element {
                     background.set(Some(card));
                     show_background_swipe.set(false);
                 },
-                on_close: move |_| show_background_swipe.set(false),
+                on_close: move |()| show_background_swipe.set(false),
             }
             SwipeSelect {
             host_screen: screen::DECK_CREATE,
@@ -289,14 +289,14 @@ pub fn CreateDeck() -> Element {
                     signature_spell.set(Some(card));
                     show_signature_spell_swipe.set(false);
                 },
-                on_close: move |_| show_signature_spell_swipe.set(false),
+                on_close: move |()| show_signature_spell_swipe.set(false),
             }
 
             TagSelect {
                 open: show_tags_select,
                 selected_tags,
                 catalog: deck_tags_catalog().unwrap_or_default(),
-                on_close: move |_| {
+                on_close: move |()| {
                     show_tags_select.set(false);
                     // Reconcile seeded oracle tags with the final deck-tag set:
                     // drop the previous seed contribution, add the new one, keep
@@ -333,7 +333,7 @@ pub fn CreateDeck() -> Element {
             OracleTagSelect {
                 open: show_oracle_tags_select,
                 selected: oracle_tags,
-                on_close: move |_| show_oracle_tags_select.set(false),
+                on_close: move |()| show_oracle_tags_select.set(false),
             }
 
             FormatSelect {
@@ -348,15 +348,15 @@ pub fn CreateDeck() -> Element {
                         signature_spell_display.set(String::new());
                     }
                 },
-                on_clear: move |_| {
+                on_clear: move |()| {
                     selected_format.set(None);
                     commander.set(None);
                     commander_display.set(String::new());
                     signature_spell.set(None);
                     signature_spell_display.set(String::new());
                 },
-                on_close: move |_| show_format_select.set(false),
-                on_cancel: move |_| {
+                on_close: move |()| show_format_select.set(false),
+                on_cancel: move |()| {
                     let (f, c, cd, ss, ssd) = fmt_snapshot();
                     selected_format.set(f);
                     commander.set(c);

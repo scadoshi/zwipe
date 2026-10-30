@@ -757,7 +757,7 @@ pub(crate) fn SwipeSelect(
                     CardDetailsSheet {
                         open: show_details,
                         card,
-                        on_printings: move |_| printing_open.set(true),
+                        on_printings: move |()| printing_open.set(true),
                         footer: current_reasons.map(|reasons| rsx! {
                             SuggestionReasons {
                                 reasons,
@@ -790,7 +790,7 @@ pub(crate) fn SwipeSelect(
                     open: filters_overlay_open,
                     show_format_filter: false,
                     show_active_indicators: true,
-                    on_clear: move |_| clear_filter(),
+                    on_clear: move |()| clear_filter(),
                 }
 
                 // A chip applies as it is tapped and the stack re-deals behind

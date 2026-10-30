@@ -80,7 +80,7 @@ pub(crate) fn FormatSelect(
     // parent's on_cancel restores the format + command-zone snapshot and closes.
     // Without this the back swipe fell through to the router and left the whole
     // edit screen (owner report 2026-08-17).
-    let back = use_callback(move |_: ()| {
+    let back = use_callback(move |(): ()| {
         if *selected_format.peek() != *snapshot.peek() {
             toast.info(
                 "Format unchanged".to_string(),

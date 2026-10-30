@@ -430,7 +430,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                     DeckWarnings {
                                         warnings: warnings,
                                         deck_id: deck_id,
-                                        on_remove: move |_| {
+                                        on_remove: move |()| {
                                             deck_resource.restart();
                                         },
                                         on_fix_quantity: move |(card_id, target_qty): (Uuid, i32)| {
@@ -454,7 +454,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                                 }
                                             });
                                         },
-                                        on_clear_commander: move |_| {
+                                        on_clear_commander: move |()| {
                                             let request = HttpUpdateDeckProfile::builder()
                                                 .commander_id(Opdate::Set(None))
                                                 .build();

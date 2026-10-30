@@ -43,7 +43,7 @@ fn FeaturedCard(
                     size: ImageSize::Normal,
                     class: "deck-featured-image".to_string(),
                     draggable: false,
-                    on_load: move |_| on_load.call(()),
+                    on_load: move |()| on_load.call(()),
                 }
             }
             div { class: "deck-featured-name", "{name}" }
@@ -100,7 +100,7 @@ pub fn FeaturedCards(
                         card,
                         role,
                         on_tap,
-                        on_load: move |_| images_loaded += 1,
+                        on_load: move |()| images_loaded += 1,
                     }
                 }
             }

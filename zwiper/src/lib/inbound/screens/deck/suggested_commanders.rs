@@ -1525,7 +1525,7 @@ pub fn SuggestedCommanders() -> Element {
                     swipe_open.set(false);
                     create_with(card);
                 },
-                on_close: move |_| swipe_open.set(false),
+                on_close: move |()| swipe_open.set(false),
             }
 
             // Pick a printing: swap that row's card in place and keep the row
