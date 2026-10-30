@@ -180,7 +180,7 @@ fn haystack(g: &Guide) -> String {
     for t in g.tags.iter().copied() {
         push(t);
     }
-    for b in g.blocks.iter() {
+    for b in g.blocks {
         match b {
             Block::Lead(t) | Block::H2(t) | Block::P(t) | Block::Note(t) => push(t),
             Block::Steps(items) | Block::Bullets(items) => {
@@ -189,7 +189,7 @@ fn haystack(g: &Guide) -> String {
                 }
             }
             Block::Swipe(rows) => {
-                for (dir, meaning) in rows.iter() {
+                for (dir, meaning) in *rows {
                     push(dir);
                     push(meaning);
                 }
