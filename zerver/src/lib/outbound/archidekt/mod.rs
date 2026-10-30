@@ -203,6 +203,9 @@ impl RawDeck {
 
         self.cards
             .iter()
+            // A quantity of zero or less is noise, not a card: skipping it
+            // keeps the deck_cards quantity check from failing the import.
+            .filter(|c| c.quantity > 0)
             .filter(|c| {
                 !c.categories
                     .iter()
@@ -326,5 +329,25 @@ mod tests {
         let raw: RawDeck =
             serde_json::from_str(r#"{"categories": null, "cards": null}"#).expect("must parse");
         assert!(raw.into_cards().is_empty());
+    }
+
+    /// A card with a quantity of zero or less is skipped, not passed on to
+    /// fail the whole import.
+    #[test]
+    fn non_positive_quantities_are_skipped() {
+        let json = r#"{
+            "cards": [
+                {"quantity": 0, "card": {"uid": "b12e5430-0e80-47dd-80ac-85728b656a24",
+                                         "oracleCard": {"name": "Volcanic Island"}}},
+                {"quantity": -2, "card": {"uid": "0c7a4bd2-9b4e-4a33-8c3f-4a3b9a2d7f10",
+                                          "oracleCard": {"name": "Sol Ring"}}},
+                {"quantity": 1, "card": {"uid": "bf76c6a4-d6e8-4d50-b65f-020252f7b659",
+                                         "oracleCard": {"name": "Mystic Remora"}}}
+            ]
+        }"#;
+
+        let raw: RawDeck = serde_json::from_str(json).expect("must parse");
+        let names: Vec<String> = raw.into_cards().into_iter().map(|c| c.name).collect();
+        assert_eq!(names, vec!["Mystic Remora"]);
     }
 }
