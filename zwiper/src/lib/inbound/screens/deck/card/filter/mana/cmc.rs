@@ -143,7 +143,7 @@ pub(crate) fn CmcFilter() -> Element {
                     autocorrect: "off",
                     spellcheck: "false",
                     oninput: move |event| {
-                        cmc_equals_string.set(event.value())
+                        cmc_equals_string.set(event.value());
                     },
                     onblur: move |_| {
                         try_parse_cmc_equals();
@@ -162,7 +162,7 @@ pub(crate) fn CmcFilter() -> Element {
                         autocorrect: "off",
                         spellcheck: "false",
                         oninput: move |event| {
-                            cmc_range_min_string.set(event.value())
+                            cmc_range_min_string.set(event.value());
                         },
                         onblur: move |_| {
                             try_parse_cmc_range();
@@ -179,7 +179,7 @@ pub(crate) fn CmcFilter() -> Element {
                         autocorrect: "off",
                         spellcheck: "false",
                         oninput: move |event| {
-                            cmc_range_max_string.set(event.value())
+                            cmc_range_max_string.set(event.value());
                         },
                         onblur: move |_| {
                             try_parse_cmc_range();

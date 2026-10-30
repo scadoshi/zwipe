@@ -110,7 +110,7 @@ pub(crate) fn PriceFilter() -> Element {
                     autocorrect: "off",
                     spellcheck: "false",
                     oninput: move |event| {
-                        price_min_string.set(event.value())
+                        price_min_string.set(event.value());
                     },
                     onblur: move |_| {
                         try_parse_price_min();
@@ -127,7 +127,7 @@ pub(crate) fn PriceFilter() -> Element {
                     autocorrect: "off",
                     spellcheck: "false",
                     oninput: move |event| {
-                        price_max_string.set(event.value())
+                        price_max_string.set(event.value());
                     },
                     onblur: move |_| {
                         try_parse_price_max();
