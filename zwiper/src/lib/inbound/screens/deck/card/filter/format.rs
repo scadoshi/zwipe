@@ -81,7 +81,7 @@ pub fn FormatFilter() -> Element {
                         onclick: move |_| {
                             let mut current = filter_builder()
                                 .legalities_contains_any()
-                                .map(|v| v.to_vec())
+                                .map(<[_]>::to_vec)
                                 .unwrap_or_default();
 
                             let key = fmt.to_legality_key().to_string();

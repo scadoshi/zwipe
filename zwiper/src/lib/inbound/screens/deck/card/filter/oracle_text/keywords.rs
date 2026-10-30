@@ -12,11 +12,11 @@ fn read_keywords(fb: &CardQueryBuilder, mode: MatchMode) -> Vec<String> {
     match mode {
         MatchMode::Any => fb
             .keywords_contains_any()
-            .map(|v| v.to_vec())
+            .map(<[_]>::to_vec)
             .unwrap_or_default(),
         MatchMode::All => fb
             .keywords_contains_all()
-            .map(|v| v.to_vec())
+            .map(<[_]>::to_vec)
             .unwrap_or_default(),
     }
 }
@@ -38,7 +38,7 @@ fn write_keywords(fb: &mut CardQueryBuilder, mode: MatchMode, values: Vec<String
 
 fn read_excluded(fb: &CardQueryBuilder) -> Vec<String> {
     fb.keywords_excludes()
-        .map(|v| v.to_vec())
+        .map(<[_]>::to_vec)
         .unwrap_or_default()
 }
 

@@ -38,11 +38,11 @@ pub fn CardRole() -> Element {
         match mode() {
             MatchMode::Any => fb
                 .card_roles_contains_any()
-                .map(|v| v.to_vec())
+                .map(<[_]>::to_vec)
                 .unwrap_or_default(),
             MatchMode::All => fb
                 .card_roles_contains_all()
-                .map(|v| v.to_vec())
+                .map(<[_]>::to_vec)
                 .unwrap_or_default(),
         }
     };
@@ -50,7 +50,7 @@ pub fn CardRole() -> Element {
     let read_excluded = move || -> Vec<String> {
         filter_builder()
             .card_roles_excludes()
-            .map(|v| v.to_vec())
+            .map(<[_]>::to_vec)
             .unwrap_or_default()
     };
 

@@ -34,11 +34,11 @@ fn read_artists(fb: &CardQueryBuilder, mode: IncludeExclude) -> Vec<String> {
     match mode {
         IncludeExclude::Include => fb
             .artist_equals_any()
-            .map(|v| v.to_vec())
+            .map(<[_]>::to_vec)
             .unwrap_or_default(),
         IncludeExclude::Exclude => fb
             .artist_excludes_any()
-            .map(|v| v.to_vec())
+            .map(<[_]>::to_vec)
             .unwrap_or_default(),
     }
 }

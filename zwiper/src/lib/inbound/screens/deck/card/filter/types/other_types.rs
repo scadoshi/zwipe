@@ -12,11 +12,11 @@ fn read_other_types(fb: &CardQueryBuilder, mode: MatchMode) -> Vec<String> {
     match mode {
         MatchMode::Any => fb
             .type_line_contains_any()
-            .map(|v| v.to_vec())
+            .map(<[_]>::to_vec)
             .unwrap_or_default(),
         MatchMode::All => fb
             .type_line_contains_all()
-            .map(|v| v.to_vec())
+            .map(<[_]>::to_vec)
             .unwrap_or_default(),
     }
 }
@@ -38,7 +38,7 @@ fn write_other_types(fb: &mut CardQueryBuilder, mode: MatchMode, values: Vec<Str
 
 fn read_excluded(fb: &CardQueryBuilder) -> Vec<String> {
     fb.type_line_excludes_any()
-        .map(|v| v.to_vec())
+        .map(<[_]>::to_vec)
         .unwrap_or_default()
 }
 

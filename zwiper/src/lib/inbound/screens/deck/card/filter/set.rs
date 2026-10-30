@@ -32,11 +32,8 @@ impl IncludeExclude {
 
 fn read_sets(fb: &CardQueryBuilder, mode: IncludeExclude) -> Vec<String> {
     match mode {
-        IncludeExclude::Include => fb.set_equals_any().map(|v| v.to_vec()).unwrap_or_default(),
-        IncludeExclude::Exclude => fb
-            .set_excludes_any()
-            .map(|v| v.to_vec())
-            .unwrap_or_default(),
+        IncludeExclude::Include => fb.set_equals_any().map(<[_]>::to_vec).unwrap_or_default(),
+        IncludeExclude::Exclude => fb.set_excludes_any().map(<[_]>::to_vec).unwrap_or_default(),
     }
 }
 

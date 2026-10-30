@@ -761,7 +761,7 @@ pub(crate) fn CardFilterSheet(
                             applied_snapshot
                                 .read()
                                 .as_ref()
-                                .is_some_and(|previous| previous.has_search_intent()),
+                                .is_some_and(CardQueryBuilder::has_search_intent),
                         );
                         // Nothing edited since the sheet opened: closing must
                         // not refetch, or a look at the filters throws away the

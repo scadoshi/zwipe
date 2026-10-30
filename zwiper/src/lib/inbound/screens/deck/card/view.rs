@@ -394,7 +394,7 @@ pub fn View(deck_id: Uuid) -> Element {
                             profile
                                 .format
                                 .as_ref()
-                                .is_some_and(|f| f.has_signature_spell()),
+                                .is_some_and(Format::has_signature_spell),
                         );
                         // Explicit target only: no toasts unless the user set one.
                         land_target.set(profile.land_target);

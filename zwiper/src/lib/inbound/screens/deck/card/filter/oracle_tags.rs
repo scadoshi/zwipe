@@ -19,11 +19,11 @@ pub(super) fn read_selected(fb: &CardQueryBuilder, mode: MatchMode) -> Vec<Strin
     match mode {
         MatchMode::Any => fb
             .oracle_tags_contains_any()
-            .map(|v| v.to_vec())
+            .map(<[_]>::to_vec)
             .unwrap_or_default(),
         MatchMode::All => fb
             .oracle_tags_contains_all()
-            .map(|v| v.to_vec())
+            .map(<[_]>::to_vec)
             .unwrap_or_default(),
     }
 }
@@ -45,7 +45,7 @@ pub(super) fn write_selected(fb: &mut CardQueryBuilder, mode: MatchMode, values:
 
 pub(super) fn read_excluded(fb: &CardQueryBuilder) -> Vec<String> {
     fb.oracle_tags_excludes()
-        .map(|v| v.to_vec())
+        .map(<[_]>::to_vec)
         .unwrap_or_default()
 }
 

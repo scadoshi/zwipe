@@ -10,11 +10,11 @@ fn read_card_types(fb: &CardQueryBuilder, mode: MatchMode) -> Vec<CardType> {
     match mode {
         MatchMode::Any => fb
             .card_type_contains_any()
-            .map(|v| v.to_vec())
+            .map(<[_]>::to_vec)
             .unwrap_or_default(),
         MatchMode::All => fb
             .card_type_contains_all()
-            .map(|v| v.to_vec())
+            .map(<[_]>::to_vec)
             .unwrap_or_default(),
     }
 }
@@ -36,7 +36,7 @@ fn write_card_types(fb: &mut CardQueryBuilder, mode: MatchMode, values: Vec<Card
 
 fn read_excluded(fb: &CardQueryBuilder) -> Vec<CardType> {
     fb.card_type_excludes_any()
-        .map(|v| v.to_vec())
+        .map(<[_]>::to_vec)
         .unwrap_or_default()
 }
 

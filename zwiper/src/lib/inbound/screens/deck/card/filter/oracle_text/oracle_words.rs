@@ -12,11 +12,11 @@ fn read_oracle_words(fb: &CardQueryBuilder, mode: MatchMode) -> Vec<String> {
     match mode {
         MatchMode::Any => fb
             .oracle_text_contains_any()
-            .map(|v| v.to_vec())
+            .map(<[_]>::to_vec)
             .unwrap_or_default(),
         MatchMode::All => fb
             .oracle_text_contains_all()
-            .map(|v| v.to_vec())
+            .map(<[_]>::to_vec)
             .unwrap_or_default(),
     }
 }
@@ -38,7 +38,7 @@ fn write_oracle_words(fb: &mut CardQueryBuilder, mode: MatchMode, values: Vec<St
 
 fn read_excluded(fb: &CardQueryBuilder) -> Vec<String> {
     fb.oracle_text_excludes_any()
-        .map(|v| v.to_vec())
+        .map(<[_]>::to_vec)
         .unwrap_or_default()
 }
 

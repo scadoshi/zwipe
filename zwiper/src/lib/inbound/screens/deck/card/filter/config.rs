@@ -15,7 +15,7 @@ pub fn Config() -> Element {
             TriToggle {
                 label: "Is playable",
                 filter_builder,
-                getter: |fb| fb.is_playable(),
+                getter: CardQueryBuilder::is_playable,
                 setter_true: |fb| { fb.set_is_playable(true); },
                 setter_false: |fb| { fb.set_is_playable(false); },
                 unsetter: |fb| { fb.unset_is_playable(); },
@@ -27,7 +27,7 @@ pub fn Config() -> Element {
             TriToggle {
                 label: "Is digital",
                 filter_builder,
-                getter: |fb| fb.digital(),
+                getter: CardQueryBuilder::digital,
                 setter_true: |fb| { fb.set_digital(true); },
                 setter_false: |fb| { fb.set_digital(false); },
                 unsetter: |fb| { fb.unset_digital(); },
@@ -39,7 +39,7 @@ pub fn Config() -> Element {
             TriToggle {
                 label: "Is oversized",
                 filter_builder,
-                getter: |fb| fb.oversized(),
+                getter: CardQueryBuilder::oversized,
                 setter_true: |fb| { fb.set_oversized(true); },
                 setter_false: |fb| { fb.set_oversized(false); },
                 unsetter: |fb| { fb.unset_oversized(); },
@@ -51,7 +51,7 @@ pub fn Config() -> Element {
             TriToggle {
                 label: "Is promo",
                 filter_builder,
-                getter: |fb| fb.promo(),
+                getter: CardQueryBuilder::promo,
                 setter_true: |fb| { fb.set_promo(true); },
                 setter_false: |fb| { fb.set_promo(false); },
                 unsetter: |fb| { fb.unset_promo(); },
@@ -63,7 +63,7 @@ pub fn Config() -> Element {
             TriToggle {
                 label: "Has content warning",
                 filter_builder,
-                getter: |fb| fb.content_warning(),
+                getter: CardQueryBuilder::content_warning,
                 setter_true: |fb| { fb.set_content_warning(true); },
                 setter_false: |fb| { fb.set_content_warning(false); },
                 unsetter: |fb| { fb.unset_content_warning(); },
