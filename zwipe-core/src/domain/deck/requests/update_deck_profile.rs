@@ -141,6 +141,10 @@ impl UpdateDeckProfile {
 
 /// Builder for [`UpdateDeckProfile`].
 #[derive(Debug)]
+#[expect(
+    clippy::option_option,
+    reason = "`None` leaves a field untouched and `Some(None)` clears it, as on UpdateDeckProfile"
+)]
 pub struct UpdateDeckProfileBuilder {
     deck_id: Uuid,
     user_id: Uuid,
