@@ -2,7 +2,6 @@
 
 use thiserror::Error;
 use zwipe_core::domain::InvalidEmail;
-use zwipe_core::domain::user::username::InvalidUsername;
 
 use crate::domain::user::models::get_user::GetUserError;
 
@@ -10,8 +9,6 @@ use crate::domain::user::models::get_user::GetUserError;
 #[derive(Debug, Error)]
 #[expect(missing_docs, reason = "each variant's message names the failure")]
 pub enum IntoUserError {
-    #[error(transparent)]
-    Username(#[from] InvalidUsername),
     #[error(transparent)]
     Email(#[from] InvalidEmail),
 }

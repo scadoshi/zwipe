@@ -64,8 +64,9 @@ pub enum InvalidUsername {
 
 /// A validated username that meets all platform requirements.
 ///
-/// This value object wraps a string and guarantees that any instance contains
-/// a valid username. The string is trimmed and validated on construction.
+/// [`Username::new`] trims and validates new input. Stored usernames come back
+/// through [`Username::from_stored`] or serde without a second check, so a
+/// name accepted under older rules still loads.
 ///
 /// # Validation Rules
 ///
@@ -77,7 +78,13 @@ pub enum InvalidUsername {
 /// # Immutability
 ///
 /// Once created, a `Username` cannot be modified (no `pub` fields, no setters).
-/// This ensures validation rules cannot be bypassed.
+///
+/// # Deserializing
+///
+/// Deserializing trusts the value, like [`Username::from_stored`], because
+/// serde only ever sees usernames the server already accepted: JWT claims, API
+/// responses and the app's saved session. Request bodies carry a plain `String` that
+/// goes through [`Username::new`].
 ///
 /// # Example
 ///
@@ -152,6 +159,18 @@ impl Username {
 
         Ok(Self(trimmed.to_string()))
     }
+
+    /// Wraps a username that already passed [`Username::new`] once, such as
+    /// one read from the database, a JWT or a server response.
+    ///
+    /// Nothing is checked or trimmed. The rules can tighten after a name was
+    /// accepted (a word joins the ban list, say), and an existing account must
+    /// keep loading when they do. New input from a user goes through
+    /// [`Username::new`].
+    #[must_use]
+    pub fn from_stored(stored: String) -> Self {
+        Self(stored)
+    }
 }
 
 impl Deref for Username {
@@ -178,8 +197,7 @@ impl<'de> Deserialize<'de> for Username {
     where
         D: serde::Deserializer<'de>,
     {
-        let raw = String::deserialize(deserializer)?;
-        Username::new(raw).map_err(serde::de::Error::custom)
+        String::deserialize(deserializer).map(Username::from_stored)
     }
 }
 
@@ -281,6 +299,17 @@ mod tests {
     fn test_username_display_formats_correctly() {
         let username = Username::new("  abc  ").unwrap();
         assert_eq!(username.to_string(), "abc");
+    }
+
+    #[test]
+    fn test_username_deserialize_keeps_banned_word() {
+        let username: Username = serde_json::from_str("\"fuck\"").unwrap();
+        assert_eq!(&*username, "fuck");
+    }
+
+    #[test]
+    fn test_username_from_stored_keeps_value_as_is() {
+        assert_eq!(&*Username::from_stored(" fuck ".to_string()), " fuck ");
     }
 
     #[test]
