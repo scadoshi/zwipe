@@ -70,6 +70,10 @@ pub fn classify_oracle_tag_gaps(card: &Card) -> Vec<CardRole> {
         cats.push(CardRole::GraveyardHate);
     }
 
+    #[expect(
+        clippy::as_conversions,
+        reason = "a fieldless enum's discriminant, which is its declaration order"
+    )]
     cats.sort_by_key(|c| *c as u8);
     cats.dedup();
     cats
