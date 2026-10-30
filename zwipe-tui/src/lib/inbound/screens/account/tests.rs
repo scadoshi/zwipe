@@ -92,7 +92,7 @@ fn a_password_change_asks_before_it_signs_out_other_devices() {
     }
     assert!(matches!(
         account_view(&harness).dialog,
-        Some(Dialog::ConfirmPassword(_))
+        Some(Dialog::ConfirmPassword { .. })
     ));
     assert_eq!(harness.pending(), []);
     harness.press(KeyCode::Char('y'));
@@ -102,6 +102,32 @@ fn a_password_change_asks_before_it_signs_out_other_devices() {
             AccountChange::Password { .. }
         ))]
     ));
+}
+
+#[test]
+fn the_password_alert_cancels_back_to_the_form_from_its_second_button() {
+    let mut harness = on_account(true);
+    for _ in 0..2 {
+        harness.press(KeyCode::Char('j'));
+    }
+    harness.press(KeyCode::Enter);
+    for value in ["Old!pass1", "New!pass22", "New!pass22"] {
+        harness.type_text(value);
+        harness.press(KeyCode::Enter);
+    }
+    harness.clear();
+    harness.press(KeyCode::Right);
+    assert!(matches!(
+        &account_view(&harness).dialog,
+        Some(Dialog::ConfirmPassword { alert, .. }) if alert.focused == 1
+    ));
+    harness.press(KeyCode::Enter);
+    assert!(matches!(
+        &account_view(&harness).dialog,
+        Some(Dialog::Form(form)) if form.value(1) == "New!pass22"
+    ));
+    assert_eq!(harness.pending(), []);
+    assert!(screen_text(&harness.app).contains("Change password"));
 }
 
 #[test]
@@ -127,7 +153,7 @@ fn delete_waits_five_seconds_and_log_out_asks_first() {
     harness.press(KeyCode::Enter);
     assert!(matches!(
         account_view(&harness).dialog,
-        Some(Dialog::LogOut)
+        Some(Dialog::LogOut(_))
     ));
     harness.press(KeyCode::Char('y'));
     assert_eq!(harness.pending(), [screens::Request::SignOut]);
@@ -175,7 +201,7 @@ fn the_account_screen_shows_details_and_verification_rows() {
 fn a_form_masks_passwords_and_the_delete_button_counts_down() {
     let mut view = AccountView::new(user(true));
     let mut form = Form::new(FormKind::Delete);
-    form.values = vec!["hunter2".to_owned()];
+    form.fill(&["hunter2"]);
     view.dialog = Some(Dialog::Form(form));
     let harness = Harness::on(Screen::Account(Box::new(view)));
     let screen = screen_text(&harness.app);
@@ -219,14 +245,14 @@ fn verifying_keeps_the_selection_in_range() {
 #[test]
 fn forms_check_their_fields_before_sending() {
     let mut form = Form::new(FormKind::Username);
-    form.values = vec!["ab".to_owned(), "pw".to_owned()];
+    form.fill(&["ab", "pw"]);
     assert_eq!(
         form.problem().as_deref(),
         Some("must be at least 3 characters long")
     );
-    form.values = vec!["scotty2".to_owned(), String::new()];
+    form.fill(&["scotty2", ""]);
     assert_eq!(form.problem().as_deref(), Some("Password is required"));
-    form.values = vec!["scotty2".to_owned(), "pw".to_owned()];
+    form.fill(&["scotty2", "pw"]);
     assert_eq!(form.problem(), None);
 }
 

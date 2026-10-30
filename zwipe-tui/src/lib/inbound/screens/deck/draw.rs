@@ -13,8 +13,9 @@ use zwipe_core::domain::deck::draw_odds;
 use super::{DeckView, Section};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
-use crate::inbound::widgets::action_bar;
 use crate::inbound::widgets::charts::{Column, columns, row};
+use crate::inbound::widgets::chips::{ChipRow, Pick};
+use crate::inbound::widgets::{action_bar, mana};
 
 /// A vertical chart is at most this tall, frame included, so a small deck's bars stay short.
 const CHART_HEIGHT: u16 = 14;
@@ -27,6 +28,9 @@ const PROFILE_WIDTH: u16 = 38;
 
 /// Cards drawn before the first turn's draw: the opening hand.
 const OPENING_HAND: u32 = 7;
+
+/// The budget's currencies, in the app's order.
+const CURRENCIES: [PriceCurrency; 3] = [PriceCurrency::Usd, PriceCurrency::Eur, PriceCurrency::Tix];
 
 /// The color chart's labels, by WUBRG place, for coloring each column.
 const COLOR_LABELS: [&str; 5] = ["white", "blue", "black", "red", "green"];
@@ -206,20 +210,11 @@ fn stat(palette: &Palette, label: &str, value: String) -> Line<'static> {
 
 fn draw_budget(f: &mut Frame<'_>, palette: &Palette, view: &DeckView, area: Rect) {
     let currency = view.currency;
-    let chips: Vec<Span<'static>> = [PriceCurrency::Usd, PriceCurrency::Eur, PriceCurrency::Tix]
-        .into_iter()
-        .flat_map(|c| {
-            let style = if c == currency {
-                palette.accent.bold().reversed()
-            } else {
-                palette.muted
-            };
-            [
-                Span::styled(format!(" {} ", c.label()), style),
-                Span::raw(" "),
-            ]
-        })
-        .collect();
+    let labels = CURRENCIES.map(|c| c.label());
+    let picked = CURRENCIES.iter().position(|c| *c == currency).unwrap_or(0);
+    let chips = ChipRow::new(&labels, Pick::One)
+        .with_picked(picked)
+        .line(palette, false);
 
     let metrics = view.metrics.as_ref();
     let (total, average) = metrics.map_or((None, None), |m| match currency {
@@ -233,7 +228,7 @@ fn draw_budget(f: &mut Frame<'_>, palette: &Palette, view: &DeckView, area: Rect
         total_text = format!("{total_text} / {}", target_currency.format_amount(target));
     }
     let lines = vec![
-        Line::from(chips),
+        chips,
         Line::default(),
         stat(palette, "Total price", total_text),
         stat(
@@ -393,7 +388,7 @@ fn draw_mana(f: &mut Frame<'_>, palette: &Palette, view: &DeckView, area: Rect) 
             palette.muted,
         ))];
         lines.extend(fulfillment.into_iter().map(|r| {
-            let style = mana_style(palette, r.label);
+            let style = mana::letter_style(palette, r.label);
             let mark = if r.is_surplus { "✔ " } else { "  " };
             row(
                 Span::styled(r.label, style.bold()),
@@ -466,19 +461,10 @@ fn draw_warnings(f: &mut Frame<'_>, palette: &Palette, view: &DeckView, area: Re
     f.render_widget(Paragraph::new(lines).wrap(Wrap { trim: true }), area);
 }
 
-/// The mana style for a WUBRG letter, muted for anything else.
-fn mana_style(palette: &Palette, letter: &str) -> Style {
-    ["W", "U", "B", "R", "G"]
-        .iter()
-        .position(|l| *l == letter)
-        .and_then(|i| palette.mana.get(i).copied())
-        .unwrap_or(palette.muted)
-}
-
 /// The mana style for a color chart label such as `green`; multicolor in the accent, colorless muted.
 fn color_style(palette: &Palette, label: &str) -> Style {
     match COLOR_LABELS.iter().position(|l| *l == label) {
-        Some(i) => palette.mana.get(i).copied().unwrap_or(palette.muted),
+        Some(i) => mana::style(palette, i),
         None if label == "multi" => palette.warning,
         None => palette.muted,
     }

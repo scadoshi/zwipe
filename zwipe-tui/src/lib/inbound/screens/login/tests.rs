@@ -58,6 +58,17 @@ fn a_failed_sign_in_shows_why_and_allows_another_try() {
 }
 
 #[test]
+fn the_arrows_move_the_cursor_inside_a_field() {
+    let mut harness = Harness::new();
+    harness.type_text("scoty");
+    harness.press(KeyCode::Left);
+    harness.type_text("t");
+    harness.press(KeyCode::Home);
+    harness.press(KeyCode::Delete);
+    assert_eq!(form(&harness).identifier.value(), "cotty");
+}
+
+#[test]
 fn q_types_on_the_login_screen_and_ctrl_c_quits() {
     let mut harness = Harness::new();
     assert_eq!(harness.press(KeyCode::Char('q')), Flow::Continue);
@@ -68,8 +79,8 @@ fn q_types_on_the_login_screen_and_ctrl_c_quits() {
 #[test]
 fn the_login_screen_masks_the_password() {
     let harness = Harness::on(Screen::Login(LoginForm {
-        identifier: "scotty".to_owned(),
-        password: "hunter2".to_owned(),
+        identifier: TextInput::default().with_value("scotty"),
+        password: TextInput::masked().with_value("hunter2"),
         focus: LoginField::Password,
         error: Some("invalid credentials".to_owned()),
         busy: false,

@@ -16,11 +16,9 @@ pub(crate) fn handle(form: &mut LoginForm, code: KeyCode, cx: &mut Context<'_>) 
             form.focus = LoginField::Password;
         }
         KeyCode::Enter => submit(form, cx),
-        KeyCode::Backspace => {
-            form.focused_mut().pop();
+        other => {
+            form.focused_mut().handle_key(other);
         }
-        KeyCode::Char(c) => form.focused_mut().push(c),
-        _ => {}
     }
 }
 
@@ -28,7 +26,7 @@ fn submit(form: &mut LoginForm, cx: &mut Context<'_>) {
     if form.busy {
         return;
     }
-    let identifier = form.identifier.trim();
+    let identifier = form.identifier.value().trim();
     if identifier.is_empty() || form.password.is_empty() {
         form.error = Some("Enter your username or email and your password.".to_owned());
         return;
@@ -38,7 +36,7 @@ fn submit(form: &mut LoginForm, cx: &mut Context<'_>) {
     cx.request(
         Request::SignIn {
             identifier: identifier.to_owned(),
-            password: Password(form.password.clone()),
+            password: Password(form.password.value().to_owned()),
         }
         .into(),
     );

@@ -15,9 +15,9 @@ use crate::domain::decode;
 use crate::domain::home::{self, Figures};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
-use crate::inbound::widgets::action_bar;
 use crate::inbound::widgets::charts::row;
 use crate::inbound::widgets::measure::{height_of, width_of};
+use crate::inbound::widgets::{action_bar, mana};
 
 /// The two panels sit side by side from this width, in cells.
 const SIDE_BY_SIDE: u16 = 90;
@@ -175,10 +175,7 @@ fn draw_color_map(f: &mut Frame<'_>, palette: &Palette, view: &HomeView, area: R
             let mut lines: Vec<Line<'static>> = rows
                 .iter()
                 .map(|r| {
-                    let style = r
-                        .color
-                        .and_then(|i| palette.mana.get(i).copied())
-                        .unwrap_or(palette.muted);
+                    let style = r.color.map_or(palette.muted, |i| mana::style(palette, i));
                     let pct = r.cards.saturating_mul(100).checked_div(max).unwrap_or(0);
                     row(
                         Span::styled(r.label, style.bold()),

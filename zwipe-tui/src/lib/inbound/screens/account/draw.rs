@@ -11,14 +11,12 @@ use super::{AccountRow, AccountView, Dialog, Form, FormKind, pending_note};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::screens::VERSION;
-use crate::inbound::widgets::measure::{cursor_after, height_of};
+use crate::inbound::widgets::measure::height_of;
+use crate::inbound::widgets::text_input::MASK;
 use crate::inbound::widgets::{action_bar, panel};
 
 /// The labels take this many cells before their values.
 const LABEL_WIDTH: usize = 14;
-
-/// Stands in for each typed character in a hidden field, and for the password row's value.
-const MASK: char = '•';
 
 /// A dialog is at most this wide inside its panel, in cells.
 const DIALOG_WIDTH: u16 = 56;
@@ -61,20 +59,9 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &AccountView) {
 
     match &view.dialog {
         Some(Dialog::Form(form)) => draw_form(f, palette, form),
-        Some(Dialog::ConfirmPassword(_)) => draw_confirm(
-            f,
-            palette,
-            "Change password",
-            "Changing your password will log you out on all other devices.",
-            "Confirm",
-        ),
-        Some(Dialog::LogOut) => draw_confirm(
-            f,
-            palette,
-            "Log out",
-            "Are you sure you want to log out?",
-            "Log out",
-        ),
+        Some(Dialog::ConfirmPassword { alert, .. } | Dialog::LogOut(alert)) => {
+            alert.draw(f, palette);
+        }
         None => {}
     }
 }
@@ -199,25 +186,15 @@ fn draw_form(f: &mut Frame<'_>, palette: &Palette, form: &Form) {
         f.render_widget(intro, intro_area);
     }
     let boxes = Layout::vertical(fields.iter().map(|_| Constraint::Length(3))).split(fields_area);
-    for (i, ((label, masked), area)) in fields.iter().zip(boxes.iter()).enumerate() {
-        let value = form.value(i);
-        let shown = if *masked {
-            MASK.to_string().repeat(value.chars().count())
-        } else {
-            value.to_owned()
-        };
+    for (i, ((label, _), (input, area))) in fields
+        .iter()
+        .zip(form.inputs.iter().zip(boxes.iter()))
+        .enumerate()
+    {
         let focused = i == form.focus;
-        let border = if focused { palette.add } else { palette.border };
-        f.render_widget(
-            Paragraph::new(shown.clone()).block(
-                Block::bordered()
-                    .title(format!(" {label} "))
-                    .border_style(border),
-            ),
-            *area,
-        );
+        input.draw(f, palette, *area, label, focused);
         if focused && !form.busy {
-            f.set_cursor_position(cursor_after(&shown, *area));
+            f.set_cursor_position(input.cursor_position(*area));
         }
     }
     if let Some(error) = error {
@@ -248,29 +225,4 @@ fn form_keys(palette: &Palette, form: &Form) -> Line<'static> {
             ("Esc", "back"),
         ],
     )
-}
-
-fn draw_confirm(f: &mut Frame<'_>, palette: &Palette, title: &str, body: &str, action: &str) {
-    let body = Paragraph::new(body.to_owned()).wrap(Wrap { trim: true });
-    let body_height = height_of(body.line_count(DIALOG_WIDTH));
-    let inner = panel::draw(
-        f,
-        palette,
-        f.area(),
-        DIALOG_WIDTH,
-        body_height.saturating_add(4),
-    );
-    let [title_area, body_area, _, keys_area] = Layout::vertical([
-        Constraint::Length(1),
-        Constraint::Length(body_height.saturating_add(1)),
-        Constraint::Length(1),
-        Constraint::Length(1),
-    ])
-    .areas(inner);
-    f.render_widget(Line::from(title.to_owned()).bold(), title_area);
-    f.render_widget(body, body_area);
-    f.render_widget(
-        action_bar::line(palette, &[("y", action), ("n", "cancel")]),
-        keys_area,
-    );
 }

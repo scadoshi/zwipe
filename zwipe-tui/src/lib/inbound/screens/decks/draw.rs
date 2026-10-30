@@ -12,7 +12,7 @@ use super::DeckList;
 use crate::domain;
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
-use crate::inbound::widgets::action_bar;
+use crate::inbound::widgets::{action_bar, mana};
 
 pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, list: &DeckList) {
     let palette = &shared.palette;
@@ -91,13 +91,11 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, list: &DeckList) {
 fn deck_row(palette: &Palette, deck: &DeckProfile) -> Line<'static> {
     let gap = || Span::raw("  ");
     let mut spans = vec![Span::raw(deck.name.to_string()).bold(), gap()];
-    for pip in domain::deck::pips(deck) {
-        let style = palette.mana.get(pip).copied().unwrap_or(palette.muted);
-        spans.push(Span::styled(
-            ["W", "U", "B", "R", "G"].get(pip).copied().unwrap_or("?"),
-            style.bold(),
-        ));
-    }
+    spans.extend(
+        domain::deck::pips(deck)
+            .into_iter()
+            .map(|pip| mana::pip(palette, pip)),
+    );
     let count = domain::deck::card_count(deck);
     let count_style = if domain::deck::count_fits(deck, count) {
         palette.muted

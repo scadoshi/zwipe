@@ -11,23 +11,37 @@ use super::{Password, Screen, config, home};
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;
+use crate::inbound::widgets::text_input::TextInput;
 use crate::outbound::account::Account;
 
 /// The sign-in form.
-#[derive(Debug, Default, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub(crate) struct LoginForm {
     /// Username or email.
-    pub(crate) identifier: String,
-    pub(crate) password: String,
+    pub(crate) identifier: TextInput,
+    pub(crate) password: TextInput,
     pub(crate) focus: LoginField,
+    /// Why the last sign-in failed, under both fields.
     pub(crate) error: Option<String>,
     /// Set while the sign-in request is out.
     pub(crate) busy: bool,
 }
 
+impl Default for LoginForm {
+    fn default() -> Self {
+        Self {
+            identifier: TextInput::default(),
+            password: TextInput::masked(),
+            focus: LoginField::default(),
+            error: None,
+            busy: false,
+        }
+    }
+}
+
 impl LoginForm {
     /// The field the cursor is in.
-    pub(crate) fn focused_mut(&mut self) -> &mut String {
+    pub(crate) fn focused_mut(&mut self) -> &mut TextInput {
         match self.focus {
             LoginField::Identifier => &mut self.identifier,
             LoginField::Password => &mut self.password,

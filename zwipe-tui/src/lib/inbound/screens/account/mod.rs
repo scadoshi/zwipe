@@ -22,6 +22,8 @@ use crate::domain::account::{
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;
+use crate::inbound::widgets::alert::AlertDialog;
+use crate::inbound::widgets::text_input::TextInput;
 use crate::outbound::account::Account;
 
 /// The account screen.
@@ -119,9 +121,29 @@ impl AccountView {
 #[derive(Debug)]
 pub(crate) enum Dialog {
     Form(Form),
-    /// Asks before changing the password, since that signs out every other device.
-    ConfirmPassword(Form),
-    LogOut,
+    /// Asks before changing the password, since that signs out every other device. The form waits under it.
+    ConfirmPassword {
+        form: Form,
+        alert: AlertDialog,
+    },
+    LogOut(AlertDialog),
+}
+
+/// The alert before a password change: confirm, or go back to the form.
+pub(crate) fn confirm_password_alert() -> AlertDialog {
+    AlertDialog::new(
+        "Change password",
+        "Changing your password will log you out on all other devices.",
+    )
+    .with_button("Confirm", Some('y'))
+    .with_button("Cancel", Some('n'))
+}
+
+/// The alert before logging out.
+pub(crate) fn log_out_alert() -> AlertDialog {
+    AlertDialog::new("Log out", "Are you sure you want to log out?")
+        .with_button("Log out", Some('y'))
+        .with_button("Cancel", Some('n'))
 }
 
 /// Which form is open.
@@ -162,7 +184,8 @@ impl FormKind {
 #[derive(Debug)]
 pub(crate) struct Form {
     pub(crate) kind: FormKind,
-    pub(crate) values: Vec<String>,
+    /// One box per field of [`FormKind::fields`], masked where the field hides what is typed.
+    pub(crate) inputs: Vec<TextInput>,
     pub(crate) focus: usize,
     pub(crate) error: Option<String>,
     /// Set while the request is out.
@@ -174,7 +197,17 @@ impl Form {
     pub(crate) fn new(kind: FormKind) -> Self {
         Self {
             kind,
-            values: vec![String::new(); kind.fields().len()],
+            inputs: kind
+                .fields()
+                .iter()
+                .map(|&(_, masked)| {
+                    if masked {
+                        TextInput::masked()
+                    } else {
+                        TextInput::default()
+                    }
+                })
+                .collect(),
             focus: 0,
             error: None,
             busy: false,
@@ -183,26 +216,34 @@ impl Form {
     }
 
     pub(crate) fn value(&self, field: usize) -> &str {
-        self.values.get(field).map_or("", String::as_str)
+        self.inputs.get(field).map_or("", TextInput::value)
     }
 
-    pub(crate) fn focused_mut(&mut self) -> Option<&mut String> {
-        self.values.get_mut(self.focus)
+    /// Fills the fields in order, for tests.
+    #[cfg(test)]
+    pub(crate) fn fill(&mut self, values: &[&str]) {
+        for (input, value) in self.inputs.iter_mut().zip(values) {
+            input.set_value(value);
+        }
+    }
+
+    pub(crate) fn focused_mut(&mut self) -> Option<&mut TextInput> {
+        self.inputs.get_mut(self.focus)
     }
 
     pub(crate) fn next_field(&mut self) {
-        self.focus = self.focus.saturating_add(1) % self.values.len().max(1);
+        self.focus = self.focus.saturating_add(1) % self.inputs.len().max(1);
     }
 
     pub(crate) fn previous_field(&mut self) {
         self.focus = self
             .focus
             .checked_sub(1)
-            .unwrap_or_else(|| self.values.len().saturating_sub(1));
+            .unwrap_or_else(|| self.inputs.len().saturating_sub(1));
     }
 
     pub(crate) fn on_last_field(&self) -> bool {
-        self.focus.saturating_add(1) >= self.values.len()
+        self.focus.saturating_add(1) >= self.inputs.len()
     }
 
     /// Seconds before the delete form can submit, `None` once it can.
@@ -475,7 +516,7 @@ impl AccountView {
     /// Puts the open form back with the server's reason, ready to try again.
     fn change_failed(&mut self, error: String) {
         let form = match self.dialog.take() {
-            Some(Dialog::Form(form) | Dialog::ConfirmPassword(form)) => Some(form),
+            Some(Dialog::Form(form) | Dialog::ConfirmPassword { form, .. }) => Some(form),
             other => {
                 self.dialog = other;
                 None

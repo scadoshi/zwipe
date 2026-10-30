@@ -165,7 +165,13 @@ impl TextInput {
         BOX_HEIGHT.saturating_add(u16::from(self.error.is_some()))
     }
 
-    /// Draws the box titled `title` at the top of `area`, the error under it, and the cursor when focused.
+    /// Characters scrolled off the left of a box `width` cells wide, so the cursor stays in view.
+    fn skip(&self, width: u16) -> usize {
+        let inner = usize::from(width.saturating_sub(BORDERS));
+        self.cursor.saturating_sub(inner.saturating_sub(1))
+    }
+
+    /// Draws the box titled `title` at the top of `area`, its border in the focus color while `focused`, and the error under it.
     pub(crate) fn draw(
         &self,
         f: &mut Frame<'_>,
@@ -179,12 +185,10 @@ impl TextInput {
             ..area
         };
         let border = if focused { palette.add } else { palette.border };
-        let inner_width = usize::from(box_area.width.saturating_sub(BORDERS));
-        // A value wider than the box scrolls so the cursor stays in view.
-        let skip = self.cursor.saturating_sub(inner_width.saturating_sub(1));
         let text = if self.value.is_empty() {
             Line::from(self.placeholder.clone()).style(palette.muted)
         } else {
+            let skip = self.skip(box_area.width);
             Line::from(self.shown().chars().skip(skip).collect::<String>()).style(Style::new())
         };
         f.render_widget(
@@ -205,16 +209,19 @@ impl TextInput {
             };
             f.render_widget(Line::from(error.clone()).style(palette.error), error_area);
         }
-        if focused {
-            let column = u16::try_from(self.cursor.saturating_sub(skip)).unwrap_or(u16::MAX);
-            f.set_cursor_position(Position {
-                x: box_area
-                    .x
-                    .saturating_add(1)
-                    .saturating_add(column)
-                    .min(box_area.right().saturating_sub(BORDERS)),
-                y: box_area.y.saturating_add(1),
-            });
+    }
+
+    /// Where the terminal cursor goes for a box drawn at the top of `area`. The caller sets it on the focused box, unless it is busy.
+    pub(crate) fn cursor_position(&self, area: Rect) -> Position {
+        let column =
+            u16::try_from(self.cursor.saturating_sub(self.skip(area.width))).unwrap_or(u16::MAX);
+        Position {
+            x: area
+                .x
+                .saturating_add(1)
+                .saturating_add(column)
+                .min(area.right().saturating_sub(BORDERS)),
+            y: area.y.saturating_add(1),
         }
     }
 }
@@ -280,6 +287,21 @@ mod tests {
         assert!(input.error().is_some(), "moving keeps the error");
         input.handle_key(KeyCode::Char('!'));
         assert!(input.error().is_none());
+    }
+
+    #[test]
+    fn the_cursor_follows_the_typing_and_a_long_value_scrolls() {
+        let area = Rect::new(0, 0, 8, 3);
+        let mut input = typed("abc");
+        assert_eq!(input.cursor_position(area), Position { x: 4, y: 1 });
+        input.home();
+        assert_eq!(input.cursor_position(area).x, 1);
+        input.set_value("a value too long for the box");
+        assert_eq!(
+            input.cursor_position(area).x,
+            6,
+            "the last cell inside the border"
+        );
     }
 
     #[test]

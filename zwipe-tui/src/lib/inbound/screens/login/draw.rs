@@ -4,19 +4,16 @@ use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout};
 use ratatui::style::Stylize;
 use ratatui::text::{Line, Text};
-use ratatui::widgets::{Block, Paragraph, Wrap};
+use ratatui::widgets::{Paragraph, Wrap};
 use zwipe_core::domain::logo;
 
 use super::{LoginField, LoginForm};
 use crate::inbound::app::Shared;
-use crate::inbound::widgets::measure::{cursor_after, height_of, width_of};
+use crate::inbound::widgets::measure::{height_of, width_of};
 use crate::inbound::widgets::{action_bar, panel};
 
 /// The form is this wide inside its panel, in cells.
 const FORM_WIDTH: u16 = 48;
-
-/// Replaces each typed password character on screen.
-const MASK: char = '•';
 
 pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &LoginForm) {
     let palette = &shared.palette;
@@ -61,26 +58,23 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &LoginForm) {
     ])
     .areas(inner);
 
-    let field = |title: &'static str, focused: bool| {
-        let border = if focused { palette.add } else { palette.border };
-        Block::bordered().title(title).border_style(border)
-    };
-    let masked: String = form.password.chars().map(|_| MASK).collect();
-    f.render_widget(
-        Paragraph::new(form.identifier.as_str()).block(field(
-            " Username or email ",
-            form.focus == LoginField::Identifier,
-        )),
+    form.identifier.draw(
+        f,
+        palette,
         identifier_area,
+        "Username or email",
+        form.focus == LoginField::Identifier,
     );
-    f.render_widget(
-        Paragraph::new(masked.as_str())
-            .block(field(" Password ", form.focus == LoginField::Password)),
+    form.password.draw(
+        f,
+        palette,
         password_area,
+        "Password",
+        form.focus == LoginField::Password,
     );
     let cursor = match form.focus {
-        LoginField::Identifier => cursor_after(&form.identifier, identifier_area),
-        LoginField::Password => cursor_after(&masked, password_area),
+        LoginField::Identifier => form.identifier.cursor_position(identifier_area),
+        LoginField::Password => form.password.cursor_position(password_area),
     };
     f.set_cursor_position(cursor);
 

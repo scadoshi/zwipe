@@ -2,15 +2,22 @@
 
 use crossterm::event::KeyCode;
 
-use super::{AccountChange, AccountRow, AccountView, Dialog, Form, FormKind, Request};
+use super::{
+    AccountChange, AccountRow, AccountView, Dialog, Form, FormKind, Request,
+    confirm_password_alert, log_out_alert,
+};
 use crate::inbound::app::Context;
 use crate::inbound::screens::{self, Password};
+use crate::inbound::widgets::alert::AlertChoice;
 
 pub(crate) fn handle(view: &mut AccountView, code: KeyCode, cx: &mut Context<'_>) {
     match view.dialog.take() {
         Some(Dialog::Form(form)) => view.dialog = handle_form(form, code, cx),
-        Some(Dialog::ConfirmPassword(mut form)) => match code {
-            KeyCode::Enter | KeyCode::Char('y') => {
+        Some(Dialog::ConfirmPassword {
+            mut form,
+            mut alert,
+        }) => match alert.handle_key(code) {
+            Some(AlertChoice::Pressed(0)) => {
                 form.busy = true;
                 cx.request(
                     Request::Change(AccountChange::Password {
@@ -19,15 +26,17 @@ pub(crate) fn handle(view: &mut AccountView, code: KeyCode, cx: &mut Context<'_>
                     })
                     .into(),
                 );
-                view.dialog = Some(Dialog::ConfirmPassword(form));
+                view.dialog = Some(Dialog::ConfirmPassword { form, alert });
             }
-            KeyCode::Esc | KeyCode::Char('n') => view.dialog = Some(Dialog::Form(form)),
-            _ => view.dialog = Some(Dialog::ConfirmPassword(form)),
+            Some(AlertChoice::Pressed(_) | AlertChoice::Dismissed) => {
+                view.dialog = Some(Dialog::Form(form));
+            }
+            None => view.dialog = Some(Dialog::ConfirmPassword { form, alert }),
         },
-        Some(Dialog::LogOut) => match code {
-            KeyCode::Enter | KeyCode::Char('y') => screens::sign_out(cx, "Logging out..."),
-            KeyCode::Esc | KeyCode::Char('n') => {}
-            _ => view.dialog = Some(Dialog::LogOut),
+        Some(Dialog::LogOut(mut alert)) => match alert.handle_key(code) {
+            Some(AlertChoice::Pressed(0)) => screens::sign_out(cx, "Logging out..."),
+            Some(AlertChoice::Pressed(_) | AlertChoice::Dismissed) => {}
+            None => view.dialog = Some(Dialog::LogOut(alert)),
         },
         None => match code {
             KeyCode::Char('q') => cx.quit(),
@@ -50,7 +59,7 @@ fn activate(view: &mut AccountView, row: AccountRow, cx: &mut Context<'_>) {
         AccountRow::Email => view.dialog = Some(Dialog::Form(Form::new(FormKind::Email))),
         AccountRow::Password => view.dialog = Some(Dialog::Form(Form::new(FormKind::Password))),
         AccountRow::Delete => view.dialog = Some(Dialog::Form(Form::new(FormKind::Delete))),
-        AccountRow::LogOut => view.dialog = Some(Dialog::LogOut),
+        AccountRow::LogOut => view.dialog = Some(Dialog::LogOut(log_out_alert())),
         AccountRow::Resend => {
             if view.resend_wait().is_none() {
                 view.start_resend_cooldown();
@@ -74,19 +83,13 @@ fn handle_form(mut form: Form, code: KeyCode, cx: &mut Context<'_>) -> Option<Di
         KeyCode::Esc => return None,
         KeyCode::Tab | KeyCode::Down => form.next_field(),
         KeyCode::BackTab | KeyCode::Up => form.previous_field(),
-        KeyCode::Backspace => {
-            if let Some(field) = form.focused_mut() {
-                field.pop();
-            }
-        }
-        KeyCode::Char(c) => {
-            if let Some(field) = form.focused_mut() {
-                field.push(c);
-            }
-        }
         KeyCode::Enter if !form.on_last_field() => form.next_field(),
         KeyCode::Enter => return Some(submit(form, cx)),
-        _ => {}
+        other => {
+            if let Some(field) = form.focused_mut() {
+                field.handle_key(other);
+            }
+        }
     }
     Some(Dialog::Form(form))
 }
@@ -102,7 +105,12 @@ fn submit(mut form: Form, cx: &mut Context<'_>) -> Dialog {
     form.error = None;
     let password = |field: usize| Password(form.value(field).to_owned());
     let change = match form.kind {
-        FormKind::Password => return Dialog::ConfirmPassword(form),
+        FormKind::Password => {
+            return Dialog::ConfirmPassword {
+                form,
+                alert: confirm_password_alert(),
+            };
+        }
         FormKind::Username => AccountChange::Username {
             username: form.value(0).trim().to_owned(),
             password: password(1),

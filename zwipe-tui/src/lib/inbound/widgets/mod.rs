@@ -1,11 +1,14 @@
 //! Drawing pieces the screens share, each in the account theme's [`Palette`](crate::domain::theme::Palette).
 //!
-//! A widget no screen uses yet carries an `expect(dead_code)`; the first screen to use it deletes that line.
+//! A widget the screens use only part of, or none of yet, carries an `expect(dead_code)` outside tests; the screen that uses the rest deletes that line.
 
 /// The bottom row of key hints.
 pub(crate) mod action_bar;
 /// A titled alert with buttons, one focused.
-#[cfg_attr(not(test), expect(dead_code, reason = "no screen uses it yet"))]
+#[cfg_attr(
+    not(test),
+    expect(dead_code, reason = "the screens use part of its API so far")
+)]
 pub(crate) mod alert;
 /// Opening a link in the browser.
 #[expect(
@@ -16,7 +19,10 @@ pub(crate) mod browser;
 /// Bar charts from the deck metrics.
 pub(crate) mod charts;
 /// A row of chips to pick one or several.
-#[cfg_attr(not(test), expect(dead_code, reason = "no screen uses it yet"))]
+#[cfg_attr(
+    not(test),
+    expect(dead_code, reason = "the screens use part of its API so far")
+)]
 pub(crate) mod chips;
 /// Copying text with OSC 52.
 #[expect(
@@ -34,7 +40,6 @@ pub(crate) mod hint;
 #[cfg_attr(not(test), expect(dead_code, reason = "no screen uses it yet"))]
 pub(crate) mod info;
 /// Mana colors and pips.
-#[cfg_attr(not(test), expect(dead_code, reason = "no screen uses it yet"))]
 pub(crate) mod mana;
 /// Text widths and heights in cells.
 pub(crate) mod measure;
@@ -50,7 +55,10 @@ pub(crate) mod skeleton;
 #[cfg_attr(not(test), expect(dead_code, reason = "no screen uses it yet"))]
 pub(crate) mod stats;
 /// A one-line text box.
-#[cfg_attr(not(test), expect(dead_code, reason = "no screen uses it yet"))]
+#[cfg_attr(
+    not(test),
+    expect(dead_code, reason = "the screens use part of its API so far")
+)]
 pub(crate) mod text_input;
 /// Short messages in the bottom-right corner.
 #[cfg_attr(not(test), expect(dead_code, reason = "no screen raises a toast yet"))]
