@@ -8,6 +8,7 @@
 use std::sync::Arc;
 
 use anyhow::Result;
+use ratatui_image::picker::Picker;
 use zwipe_client::ZwipeClient;
 
 use crate::domain::theme::Palette;
@@ -28,6 +29,19 @@ pub(crate) mod outbound;
 #[cfg(test)]
 mod test_support;
 
+/// Turns card images off when set to `off`.
+const IMAGES_VAR: &str = "ZWIPE_TUI_IMAGES";
+
+/// How this terminal draws images, asked of the terminal itself, or `None` when `ZWIPE_TUI_IMAGES=off`. A terminal that does not answer gets half-block images.
+///
+/// The terminal must already be in the alternate screen, and nothing may read its events yet.
+fn card_images() -> Option<Picker> {
+    if std::env::var(IMAGES_VAR).is_ok_and(|v| v == "off") {
+        return None;
+    }
+    Some(Picker::from_query_stdio().unwrap_or_else(|_| Picker::halfblocks()))
+}
+
 /// Runs zwipe-tui until the user quits, restoring the terminal however it ends.
 ///
 /// # Errors
@@ -44,6 +58,7 @@ pub async fn run() -> Result<()> {
     ));
 
     let mut terminal = ratatui::try_init()?;
+    app.images = card_images();
     let result = EventLoop::new(account, Arc::new(theme_file))
         .run(&mut terminal, &mut app)
         .await;

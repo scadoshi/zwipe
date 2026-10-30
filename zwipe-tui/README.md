@@ -34,6 +34,7 @@ Needs Rust 1.88 or newer. Decks are made in the app; zwipe-tui builds them.
 | | `h` or left | Pass; the deck won't be served it again |
 | | `m` or up | Add to the maybeboard |
 | | `u` or down | Undo the last swipe |
+| | `i` | Switch between the card's image and its text, when the terminal is too narrow for both |
 | | `Esc` | Back to the deck |
 | Anywhere | `q` | Quit, except while typing |
 | | `Ctrl+C` | Quit |
@@ -41,6 +42,10 @@ Needs Rust 1.88 or newer. Decks are made in the app; zwipe-tui builds them.
 ## Theme
 
 zwipe-tui draws in the theme set on your account, dark or light, with each theme's own mana colors. It remembers that theme for the sign-in screen next time; before any sign-in it uses gruvbox dark, like the app. The themes are 24-bit color, which iTerm2, Ghostty, kitty, WezTerm and current Terminal.app show correctly; inside tmux, turn on its truecolor support.
+
+## Card images
+
+The swipe screen shows each card's Scryfall image beside its text. Ghostty, kitty and WezTerm draw them with the kitty graphics protocol and iTerm2 with its own, at full quality; other terminals get a blockier version made of half-height cells. Images come only from Scryfall's image CDN, a few cards ahead of the one on screen. Set `ZWIPE_TUI_IMAGES=off` to turn them off, which is worth doing inside tmux unless its passthrough is set up.
 
 ## Session
 

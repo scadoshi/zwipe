@@ -4,5 +4,7 @@
 pub(crate) mod account;
 /// The app's config folder and owner-only writes to it.
 pub(crate) mod files;
+/// Card images from Scryfall's image CDN.
+pub(crate) mod images;
 /// The last account's theme, for drawing before sign-in.
 pub(crate) mod theme_file;

@@ -1,5 +1,7 @@
 //! Tests for the main loop: every key and update, with no network.
 
+use std::collections::HashSet;
+
 use reqwest::Url;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::Card;
@@ -471,4 +473,91 @@ fn home_animates_only_while_the_logo_decodes() {
     assert!(app.animating(), "a fresh home decodes its logo");
     app.screen = Screen::Home(Box::default());
     assert!(!app.animating(), "a home that never started is settled");
+}
+
+#[test]
+fn images_load_around_the_current_card_and_drop_behind_it() {
+    use ratatui_image::picker::Picker;
+
+    let cards: Vec<Card> = (0..6).map(|i| card(&i.to_string())).collect();
+    let ids: Vec<Uuid> = cards.iter().map(|c| c.scryfall_data.id).collect();
+    let (mut event_loop, mut app, deck_id) = swiping(Vec::new());
+    app.images = Some(Picker::halfblocks());
+    event_loop.apply(
+        &mut app,
+        Update::Cards {
+            deck_id,
+            page: HttpDeckCardSearch {
+                cards,
+                synergy_applied: false,
+                related_from: None,
+            },
+        },
+    );
+    let requested = |event_loop: &EventLoop| -> Vec<Uuid> {
+        event_loop
+            .pending
+            .iter()
+            .filter_map(|r| match r {
+                Request::Image { card_id, url } => {
+                    assert!(images::allowed(url), "{url}");
+                    Some(*card_id)
+                }
+                _ => None,
+            })
+            .collect()
+    };
+    assert_eq!(
+        requested(&event_loop),
+        ids[..4],
+        "the card on screen and three ahead"
+    );
+
+    event_loop.pending.clear();
+    for _ in 0..3 {
+        event_loop.handle_key(&mut app, key(KeyCode::Char('h')));
+    }
+    assert_eq!(requested(&event_loop), ids[4..6]);
+    let held: HashSet<Uuid> = swipe_view(&app).images.keys().copied().collect();
+    assert_eq!(
+        held,
+        ids[2..6].iter().copied().collect(),
+        "one behind, the rest dropped"
+    );
+
+    let image = DynamicImage::new_rgb8(8, 11);
+    event_loop.apply(
+        &mut app,
+        Update::Image {
+            card_id: ids[3],
+            image: Some(Box::new(image)),
+        },
+    );
+    event_loop.apply(
+        &mut app,
+        Update::Image {
+            card_id: ids[4],
+            image: None,
+        },
+    );
+    let view = swipe_view(&app);
+    assert!(matches!(
+        view.images.get(&ids[3]),
+        Some(CardImage::Ready(_))
+    ));
+    assert!(matches!(view.images.get(&ids[4]), Some(CardImage::Failed)));
+}
+
+#[test]
+fn without_images_no_image_is_requested_and_i_still_toggles() {
+    let (mut event_loop, mut app, _) = swiping(vec![card("A")]);
+    event_loop.handle_key(&mut app, key(KeyCode::Char('h')));
+    assert!(
+        !event_loop
+            .pending
+            .iter()
+            .any(|r| matches!(r, Request::Image { .. }))
+    );
+    event_loop.handle_key(&mut app, key(KeyCode::Char('i')));
+    assert!(swipe_view(&app).show_image);
 }

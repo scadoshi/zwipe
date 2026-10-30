@@ -5,16 +5,23 @@ use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::style::Stylize;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Padding, Paragraph, Wrap};
+use ratatui_image::StatefulImage;
 use zwipe_core::domain::card::Card;
 
 use super::hints;
 use crate::domain;
 use crate::domain::card::{self, Face};
 use crate::domain::theme::Palette;
-use crate::inbound::app::{App, SwipeView};
+use crate::inbound::app::{App, CardImage, SwipeView};
 
 /// The card is at most this wide, in cells, so it reads like a card on a wide terminal.
 const CARD_WIDTH: u16 = 64;
+
+/// An image's width for each row of height, in tenths of a cell: a card is about 0.72 as wide as tall, and a cell about half as wide as tall.
+const IMAGE_WIDTH_PER_ROW_TENTHS: u16 = 14;
+
+/// Cells between the image and the text.
+const GAP: u16 = 2;
 
 /// The card's border and padding, across both sides.
 const CARD_FRAME: u16 = 4;
@@ -50,7 +57,7 @@ pub(super) fn draw(f: &mut Frame<'_>, palette: &Palette, app: &App, view: &Swipe
 
     let current = view.stack.as_ref().and_then(|s| s.current());
     match (current, placeholder(view)) {
-        (Some(card), _) => draw_card(f, palette, card, body),
+        (Some(card), _) => draw_current(f, palette, app, view, card, body),
         (None, Some(message)) => {
             f.render_widget(
                 Paragraph::new(message.style(palette.muted))
@@ -91,6 +98,7 @@ pub(super) fn draw(f: &mut Frame<'_>, palette: &Palette, app: &App, view: &Swipe
                 ("l", "add"),
                 ("m", "maybe"),
                 ("u", "undo"),
+                ("i", "image/text"),
                 ("Esc", "deck"),
             ],
         )
@@ -111,6 +119,61 @@ fn placeholder(view: &SwipeView) -> Option<Line<'static>> {
         Some(_) => return None,
     };
     Some(Line::from(message))
+}
+
+/// Draws the card on screen: its image beside its text when the terminal is wide enough, else the one `i` picks.
+fn draw_current(
+    f: &mut Frame<'_>,
+    palette: &Palette,
+    app: &App,
+    view: &SwipeView,
+    card: &Card,
+    area: Rect,
+) {
+    if app.images.is_none() {
+        draw_card(f, palette, card, area);
+        return;
+    }
+    let image = view.images.get(&card.scryfall_data.id);
+    let image_width = area.height.saturating_mul(IMAGE_WIDTH_PER_ROW_TENTHS) / 10;
+    if area.width >= image_width.saturating_add(CARD_WIDTH).saturating_add(GAP) {
+        let [image_area, _, text_area] = Layout::horizontal([
+            Constraint::Length(image_width),
+            Constraint::Length(GAP),
+            Constraint::Fill(1),
+        ])
+        .areas(area);
+        draw_image(f, palette, image, image_area);
+        draw_card(f, palette, card, text_area);
+    } else if view.show_image {
+        draw_image(
+            f,
+            palette,
+            image,
+            area.centered_horizontally(Constraint::Length(image_width)),
+        );
+    } else {
+        draw_card(f, palette, card, area);
+    }
+}
+
+/// Draws a card's image fitted into `area`, or what stands in for it while it loads or when there is none.
+fn draw_image(f: &mut Frame<'_>, palette: &Palette, image: Option<&CardImage>, area: Rect) {
+    let message = match image {
+        Some(CardImage::Ready(protocol)) => {
+            // A protocol already borrowed by a draw in progress is skipped for this frame.
+            if let Ok(mut protocol) = protocol.try_borrow_mut() {
+                f.render_stateful_widget(StatefulImage::default(), area, &mut *protocol);
+            }
+            return;
+        }
+        Some(CardImage::Loading) => "Loading image...",
+        Some(CardImage::Failed) | None => "No image",
+    };
+    f.render_widget(
+        Paragraph::new(Line::from(message).style(palette.muted)).centered(),
+        area.centered_vertically(Constraint::Length(1)),
+    );
 }
 
 /// Draws the card centered in `area`, as tall as its text.

@@ -323,3 +323,55 @@ fn new_screens_fit_a_tiny_terminal() {
     render(&app, 12, 5);
     render(&app, 40, 12);
 }
+
+#[test]
+fn a_loaded_image_draws_beside_the_card_text_on_a_wide_terminal() {
+    use std::cell::RefCell;
+
+    use image::DynamicImage;
+    use ratatui_image::picker::Picker;
+
+    use crate::inbound::app::CardImage;
+
+    let elves = card("Llanowar Elves");
+    let id = elves.scryfall_data.id;
+    let mut app = swipe_app(elves);
+    let picker = Picker::halfblocks();
+    let red = image::RgbImage::from_pixel(40, 56, image::Rgb([255, 0, 0]));
+    let protocol = picker.new_resize_protocol(DynamicImage::ImageRgb8(red));
+    app.images = Some(picker);
+    if let Screen::Swipe(view) = &mut app.screen {
+        view.images
+            .insert(id, CardImage::Ready(Box::new(RefCell::new(protocol))));
+    }
+    let terminal = render(&app, 160, 40);
+    let buffer = terminal.backend().buffer();
+    let screen: String = buffer
+        .content()
+        .iter()
+        .map(ratatui::buffer::Cell::symbol)
+        .collect();
+    assert!(screen.contains("Llanowar Elves"), "text beside the image");
+    let red = Color::Rgb(255, 0, 0);
+    assert!(
+        buffer.content().iter().any(|c| c.fg == red || c.bg == red),
+        "the image's pixels are drawn"
+    );
+
+    let narrow = text(&app);
+    assert!(
+        narrow.contains("Llanowar Elves"),
+        "a narrow terminal shows the text first"
+    );
+
+    if let Screen::Swipe(view) = &mut app.screen {
+        view.show_image = true;
+        view.images.insert(id, CardImage::Loading);
+    }
+    let narrow_image = text(&app);
+    assert!(narrow_image.contains("Loading image..."));
+    assert!(
+        !narrow_image.contains("Llanowar Elves"),
+        "i swaps the text for the image"
+    );
+}

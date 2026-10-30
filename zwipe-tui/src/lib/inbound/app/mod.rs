@@ -1,7 +1,13 @@
 //! What the screens draw from: which screen is up and its state.
 
+use std::cell::RefCell;
+use std::collections::HashMap;
+use std::fmt;
 use std::time::{Duration, Instant};
 
+use ratatui_image::picker::Picker;
+use ratatui_image::protocol::StatefulProtocol;
+use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::CardQuery;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
@@ -23,6 +29,8 @@ pub(crate) struct App {
     pub(crate) username: Option<String>,
     /// A one-line message under the deck list and the swipe screen.
     pub(crate) status: String,
+    /// How this terminal draws images, or `None` when card images are off.
+    pub(crate) images: Option<Picker>,
 }
 
 impl App {
@@ -37,6 +45,7 @@ impl App {
             palette,
             username: None,
             status: String::new(),
+            images: None,
         }
     }
 }
@@ -333,6 +342,28 @@ pub(crate) struct SwipeView {
     /// Copies added to the main board here, less the ones undone.
     pub(crate) added: i64,
     pub(crate) error: Option<String>,
+    /// Images for the cards around the one on screen, by printing ID.
+    pub(crate) images: HashMap<Uuid, CardImage>,
+    /// On a narrow terminal, whether the card shows as its image instead of its text.
+    pub(crate) show_image: bool,
+}
+
+/// A card's image as it loads.
+pub(crate) enum CardImage {
+    Loading,
+    /// Encoded for this terminal on first draw, and again when its area changes.
+    Ready(Box<RefCell<StatefulProtocol>>),
+    Failed,
+}
+
+impl fmt::Debug for CardImage {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(match self {
+            Self::Loading => "Loading",
+            Self::Ready(_) => "Ready",
+            Self::Failed => "Failed",
+        })
+    }
 }
 
 impl SwipeView {
@@ -344,6 +375,8 @@ impl SwipeView {
             fetching: false,
             added: 0,
             error: None,
+            images: HashMap::new(),
+            show_image: false,
         }
     }
 }

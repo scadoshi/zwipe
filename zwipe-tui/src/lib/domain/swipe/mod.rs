@@ -148,6 +148,17 @@ impl Stack {
         self.cards.get(self.index)
     }
 
+    /// The cards from `back` before the one on screen through `ahead` after it, as far as the stack reaches.
+    pub(crate) fn around(&self, back: usize, ahead: usize) -> &[Card] {
+        let start = self.index.saturating_sub(back);
+        let end = self
+            .index
+            .saturating_add(ahead)
+            .saturating_add(1)
+            .min(self.cards.len());
+        self.cards.get(start..end).unwrap_or_default()
+    }
+
     pub(crate) fn remaining(&self) -> usize {
         self.cards.len().saturating_sub(self.index)
     }
@@ -421,6 +432,24 @@ mod tests {
             stack.swipe(Swipe::Pass);
         }
         assert!(stack.needs_more());
+    }
+
+    #[test]
+    fn around_reaches_back_and_ahead_within_the_stack() {
+        let mut stack = Stack::new(HashSet::new());
+        stack.push_page(page((0..6).map(|i| card(&i.to_string())).collect(), None));
+        let names = |cards: &[Card]| -> Vec<String> {
+            cards.iter().map(|c| c.scryfall_data.name.clone()).collect()
+        };
+        assert_eq!(names(stack.around(1, 2)), ["0", "1", "2"]);
+        for _ in 0..4 {
+            stack.swipe(Swipe::Pass);
+        }
+        assert_eq!(names(stack.around(1, 3)), ["3", "4", "5"]);
+        for _ in 0..2 {
+            stack.swipe(Swipe::Pass);
+        }
+        assert_eq!(names(stack.around(1, 3)), ["5"]);
     }
 
     #[test]

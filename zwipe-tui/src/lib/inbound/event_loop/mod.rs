@@ -2,18 +2,22 @@
 //!
 //! Handlers never touch the network. They queue a [`Request`]; [`EventLoop::dispatch`] spawns each as a task that answers with an [`Update`].
 
+use std::cell::RefCell;
+use std::collections::HashSet;
 use std::sync::Arc;
 use std::{fmt, mem};
 
 use anyhow::Result;
 use crossterm::event::{Event, EventStream, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use futures::StreamExt;
+use image::DynamicImage;
 use ratatui::DefaultTerminal;
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 use uuid::Uuid;
 use zwipe_client::ClientError;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::scryfall_data::ImageSize;
 use zwipe_core::domain::card::search_card::card_filter::CardQuery;
 use zwipe_core::domain::deck::{Deck, DeckProfile};
 use zwipe_core::http::contracts::deck::HttpDeckCardSearch;
@@ -22,7 +26,7 @@ use zwipe_core::http::contracts::suggestions::HttpPlayStyleSummary;
 use zwipe_core::version::version_at_least;
 
 use super::app::{
-    App, DeckList, DeckView, HomeView, LoginField, LoginForm, Screen, Step, SwipeView,
+    App, CardImage, DeckList, DeckView, HomeView, LoginField, LoginForm, Screen, Step, SwipeView,
 };
 use super::ui;
 use crate::domain::decode;
@@ -30,10 +34,17 @@ use crate::domain::home::{Figures, Scope};
 use crate::domain::swipe::{self, Effect, Stack, Swipe};
 use crate::domain::theme::Palette;
 use crate::outbound::account::Account;
+use crate::outbound::images;
 use crate::outbound::theme_file::{RememberedTheme, ThemeFile};
 
 /// This build's version, which the server's minimum client version is checked against.
 const VERSION: &str = env!("CARGO_PKG_VERSION");
+
+/// Images kept for cards already swiped, so an undo shows its image at once.
+const IMAGES_BEHIND: usize = 1;
+
+/// Images fetched ahead of the card on screen.
+const IMAGES_AHEAD: usize = 3;
 
 /// Shown when the commander's synergy picks run out and the server moves on to cards like the deck.
 const RELATED_NOTICE: &str = "That's every synergy pick. Showing cards like your deck.";
@@ -76,6 +87,11 @@ enum Request {
         deck_id: Uuid,
         effect: Effect,
     },
+    /// Downloads one card's image.
+    Image {
+        card_id: Uuid,
+        url: String,
+    },
     SignOut,
     /// Saves the account's theme for drawing before the next sign-in.
     RememberTheme(RememberedTheme),
@@ -103,6 +119,11 @@ enum Update {
     },
     CardsFailed(String),
     Status(String),
+    /// A card's image, or `None` when it could not be fetched.
+    Image {
+        card_id: Uuid,
+        image: Option<Box<DynamicImage>>,
+    },
     /// The server no longer accepts the session.
     SessionEnded,
     SignedOut,
@@ -296,9 +317,24 @@ impl EventLoop {
                     stack.push_page(page);
                     view.fetching = false;
                     self.refill(view);
+                    if app.images.is_some() {
+                        self.sync_images(view);
+                    }
                 }
             }
             Update::Status(status) => app.status = status,
+            Update::Image { card_id, image } => {
+                if let (Some(picker), Screen::Swipe(view)) = (&app.images, &mut app.screen)
+                    && let Some(slot @ CardImage::Loading) = view.images.get_mut(&card_id)
+                {
+                    *slot = match image {
+                        Some(image) => CardImage::Ready(Box::new(RefCell::new(
+                            picker.new_resize_protocol(*image),
+                        ))),
+                        None => CardImage::Failed,
+                    };
+                }
+            }
             Update::SessionEnded => {
                 Self::signed_out(app, Some("Your session ended. Sign in again.".to_owned()));
                 self.pending.push(Request::SignOut);
@@ -320,6 +356,34 @@ impl EventLoop {
         }
         app.status.clear();
         app.screen = Screen::Swipe(Box::new(view));
+    }
+
+    /// Asks for the images of the cards around the one on screen, and drops the images of cards further away.
+    fn sync_images(&mut self, view: &mut SwipeView) {
+        let Some(stack) = &view.stack else {
+            return;
+        };
+        let window = stack.around(IMAGES_BEHIND, IMAGES_AHEAD);
+        let wanted: HashSet<Uuid> = window.iter().map(|c| c.scryfall_data.id).collect();
+        view.images.retain(|id, _| wanted.contains(id));
+        for card in window {
+            let card_id = card.scryfall_data.id;
+            if view.images.contains_key(&card_id) {
+                continue;
+            }
+            match card.scryfall_data.primary_image_url(ImageSize::Normal) {
+                Some(url) => {
+                    view.images.insert(card_id, CardImage::Loading);
+                    self.pending.push(Request::Image {
+                        card_id,
+                        url: url.to_owned(),
+                    });
+                }
+                None => {
+                    view.images.insert(card_id, CardImage::Failed);
+                }
+            }
+        }
     }
 
     /// Fetches the next page when the stack is running low and no fetch is out.
@@ -483,6 +547,10 @@ impl EventLoop {
             self.open_deck(app, profile);
             return;
         }
+        if code == KeyCode::Char('i') {
+            view.show_image = !view.show_image;
+            return;
+        }
         let Some(stack) = &mut view.stack else {
             return;
         };
@@ -531,6 +599,9 @@ impl EventLoop {
             String::new()
         };
         self.refill(view);
+        if app.images.is_some() {
+            self.sync_images(view);
+        }
     }
 
     fn dispatch(&mut self) {
@@ -614,6 +685,10 @@ async fn perform(account: &Account, theme_file: &ThemeFile, request: Request) ->
                 Err(e) => failure(&e, Update::CardsFailed),
             },
         ),
+        Request::Image { card_id, url } => Some(Update::Image {
+            card_id,
+            image: images::fetch(&client.client, &url).await.ok().map(Box::new),
+        }),
         Request::Send { deck_id, effect } => send(account, deck_id, effect).await.err().map(|e| {
             failure(&e, |m| {
                 Update::Status(format!("That swipe did not save: {m}"))
