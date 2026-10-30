@@ -10,7 +10,8 @@ Zwipe is a mobile-first Magic: The Gathering deck builder with swipe-based navig
 - `zerver/`: Axum REST API with PostgreSQL, SQLx, JWT auth. Also builds `zervice`, the nightly Scryfall sync
 - `zwiper/`: Dioxus app, iOS and Android (web and desktop run for development)
 - `zite/`: Dioxus static site at zwipe.net
-- `zwipe-client/`: the typed API client. Both zwiper and zite call the API through it
+- `zwipe-client/`: the typed API client. zwiper, zite and zwipe-tui call the API through it
+- `zwipe-tui/`: the terminal client on ratatui: sign in, pick a deck, swipe cards into it. Installed with `cargo install --git`; see its README
 - `components/`: the Magic UI pieces over [orangui](https://github.com/scadoshi/orangui), the generic Dioxus kit it re-exports
 - Database: ~118k Magic cards synced nightly from Scryfall
 
@@ -70,6 +71,7 @@ The workspace-root `.sqlx/` is the ONLY offline-data directory. Never create a c
 ```
 zwiper ──→ zwipe-client ──→ zwipe-core ←── zerver
 zite   ──→ zwipe-client
+zwipe-tui ──→ zwipe-client
 zwiper ──→ components ←── zite
 components ──(git)──→ orangui
 portfolio, cairn ──(git)──→ orangui
