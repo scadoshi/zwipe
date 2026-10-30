@@ -418,6 +418,12 @@ impl CardRepository for MyPostgres {
         request: &CardQuery,
         context: DeckServeContext<'_>,
     ) -> Result<Vec<ScryfallData>, SearchScryfallDataError> {
+        // Strip punctuation from DB columns for punctuation-insensitive text search.
+        // The query values are already stripped by CardQueryBuilder setters.
+        const STRIP_NAME: &str = "regexp_replace(name, '[^a-zA-Z0-9 ]', '', 'g') ILIKE ";
+        const STRIP_TYPE: &str = "regexp_replace(type_line, '[^a-zA-Z0-9 ]', '', 'g') ILIKE ";
+        const STRIP_ORACLE: &str = "regexp_replace(oracle_text, '[^a-zA-Z0-9 ]', '', 'g') ILIKE ";
+
         // Deck-serving inputs arrive bundled; unpack them into the locals the
         // QueryBuilder threads them into (never stored beyond this call).
         let DeckServeContext {
@@ -630,11 +636,6 @@ impl CardRepository for MyPostgres {
             sep.push("latest_cards.layout NOT IN ('token', 'double_faced_token', 'emblem')");
         }
 
-        // Strip punctuation from DB columns for punctuation-insensitive text search.
-        // The query values are already stripped by CardQueryBuilder setters.
-        const STRIP_NAME: &str = "regexp_replace(name, '[^a-zA-Z0-9 ]', '', 'g') ILIKE ";
-        const STRIP_TYPE: &str = "regexp_replace(type_line, '[^a-zA-Z0-9 ]', '', 'g') ILIKE ";
-
         if let Some(query_string) = &criteria.name_contains() {
             sep.push(STRIP_NAME);
             sep.push_bind_unseparated(format!("%{query_string}%"));
@@ -834,8 +835,6 @@ impl CardRepository for MyPostgres {
             sep.push("color_identity <@ ");
             sep.push_bind_unseparated(colors.to_short_names());
         }
-
-        const STRIP_ORACLE: &str = "regexp_replace(oracle_text, '[^a-zA-Z0-9 ]', '', 'g') ILIKE ";
 
         if let Some(query_string) = &criteria.oracle_text_contains() {
             sep.push(STRIP_ORACLE);
@@ -1953,6 +1952,9 @@ impl CardRepository for MyPostgres {
         &self,
         decks: &[Vec<uuid::Uuid>],
     ) -> Result<Vec<Option<DeckTagProfile>>, SearchCardsError> {
+        /// Deck index, tag weights, and each kept tag's card count.
+        type ProfileRow = (i32, serde_json::Value, Json<HashMap<String, u32>>);
+
         // Lift weighting, the steps in zwipe_core::domain::deck::tag_profile
         // run for every deck in one statement. The decks bind as two parallel
         // arrays, one (deck index, oracle id) pair per card, since a
@@ -2027,8 +2029,6 @@ impl CardRepository for MyPostgres {
              FROM normalized GROUP BY deck",
             role_membership_ctes(1)
         );
-        /// Deck index, tag weights, and each kept tag's card count.
-        type ProfileRow = (i32, serde_json::Value, Json<HashMap<String, u32>>);
         let rows: Vec<ProfileRow> = binds
             .bind(sqlx::query(sqlx::AssertSqlSafe(sql)))
             .bind(&deck_indices)
