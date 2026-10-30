@@ -34,7 +34,7 @@ use zwipe::outbound::sqlx::postgres::Postgres;
 /// The scoring statement as it stood before the rewrite, membership CTEs
 /// inlined. Binds: the six membership arrays, then the decks, exclusions,
 /// user, dismissal days, tag limit, color weight and row limit.
-const REFERENCE_SQL: &str = r#"WITH RECURSIVE roots(role, root_slug) AS (
+const REFERENCE_SQL: &str = r"WITH RECURSIVE roots(role, root_slug) AS (
              SELECT r, s FROM unnest($1::text[], $2::text[]) AS t(r, s)
          ),
          excl(role, slug) AS (
@@ -137,7 +137,7 @@ const REFERENCE_SQL: &str = r#"WITH RECURSIVE roots(role, root_slug) AS (
              LEFT JOIN color_score cs ON cs.oracle_id = c.oracle_id
              LEFT JOIN shared_tags st ON st.oracle_id = c.oracle_id
              ORDER BY score DESC, c.name ASC, c.oracle_id
-             LIMIT $13"#;
+             LIMIT $13";
 
 const TAG_LIMIT: i64 = 5;
 const COLOR_WEIGHT: f64 = 0.15;
