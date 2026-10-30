@@ -254,6 +254,10 @@ impl HashedPassword {
     /// let password = Password::new("SecurePass123!")?;
     /// let hashed = HashedPassword::generate(password)?;
     /// ```
+    #[expect(
+        clippy::needless_pass_by_value,
+        reason = "takes the plaintext so the caller gives it up once it is hashed"
+    )]
     pub fn generate(password: Password) -> Result<Self, password_hash::Error> {
         let salt = SaltString::generate(&mut OsRng);
         let hash = Argon2::default()
