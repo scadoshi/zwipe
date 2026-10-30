@@ -33,7 +33,12 @@ pub async fn reset_password(
     State(state): State<AppState>,
     Json(body): Json<HttpResetPassword>,
 ) -> Result<StatusCode, ApiError> {
-    let request = ResetPassword::new(body.token, body.new_password.read())?;
+    // ResetPassword::new hashes with Argon2, so it runs on the blocking pool.
+    let request = tokio::task::spawn_blocking(move || {
+        ResetPassword::new(body.token, body.new_password.read())
+    })
+    .await
+    .map_err(To500::to_500)??;
     let user_id = state
         .auth_service
         .reset_password(&request)

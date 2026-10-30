@@ -214,8 +214,9 @@ where
             .into_parts();
 
         let verified = password_hash
-            .verify(request.password.read())
-            .map_err(|e| AuthenticateUserError::FailedToVerify(e.into()))?;
+            .verify_blocking(&request.password)
+            .await
+            .map_err(AuthenticateUserError::FailedToVerify)?;
 
         if !verified {
             return Err(AuthenticateUserError::InvalidPassword);
@@ -315,7 +316,9 @@ where
                 // measurably faster to reject (prevents username/email
                 // enumeration via response timing). Result is discarded; it
                 // never matches.
-                let _ = TIMING_EQUALIZER_HASH.verify(request.password.read());
+                let _ = TIMING_EQUALIZER_HASH
+                    .verify_blocking(&request.password)
+                    .await;
                 tracing::warn!(event = "login_failure", reason = "user_not_found", identifier = %request.identifier);
                 return Err(AuthenticateUserError::UserNotFound);
             }
@@ -340,8 +343,9 @@ where
         let (user, password_hash) = user_with_password_hash.into_parts();
 
         let verified = password_hash
-            .verify(request.password.read())
-            .map_err(|e| AuthenticateUserError::FailedToVerify(e.into()))?;
+            .verify_blocking(&request.password)
+            .await
+            .map_err(AuthenticateUserError::FailedToVerify)?;
 
         if !verified {
             if self.lockout.record_failure(user.id, client_ip) {
