@@ -8,7 +8,7 @@
 //! element always renders under `dx serve` with no backend.
 //!
 //! The card's name and price sit as tags in the panel's action row, beside
-//! Image, TCGplayer and Card Kingdom buttons. Image requests the full-art
+//! Image, `TCGplayer` and Card Kingdom buttons. Image requests the full-art
 //! overlay via the `overlay` signal; the HOME PAGE renders the overlay itself
 //! at its top level, outside the `content-enter` content tree, mirroring the
 //! shared-deck page. Keeping the overlay nested here was the
@@ -27,7 +27,7 @@ use crate::components::sleep_ms;
 /// A real card response (Research Assistant, M15) frozen 2026-08-07, decoded as
 /// the DEBUG-ONLY fallback while the live fetch is pending or failing, so
 /// `dx serve` with no backend still renders the element. Release builds hide
-/// the section until live data lands (StatsStrip parity): a stale-but-real
+/// the section until live data lands (`StatsStrip` parity): a stale-but-real
 /// card is indistinguishable from a live one, which is exactly how the
 /// CF-cached copy went unnoticed for a day (owner call 2026-08-06).
 #[cfg(debug_assertions)]
@@ -66,7 +66,7 @@ fn encode_name(name: &str) -> String {
         .replace('\'', "%27")
 }
 
-/// The card's TCGplayer product page when its id is known, else a one-copy
+/// The card's `TCGplayer` product page when its id is known, else a one-copy
 /// mass entry by name.
 fn tcgplayer_url(name: &str, tcgplayer_id: Option<i32>) -> String {
     match tcgplayer_id {
