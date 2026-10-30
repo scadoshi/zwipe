@@ -4,13 +4,11 @@ use thiserror::Error;
 use uuid::Uuid;
 
 use crate::domain::card::search_card::card_filter::price_currency::PriceCurrency;
-use crate::domain::deck::deck_oracle_tags::dedupe_oracle_tags;
-use crate::domain::deck::deck_other_tag::parse_other_tags;
-use crate::domain::deck::deck_tag::parse_tags;
 use crate::domain::deck::format::{Format, InvalidFormat};
 use crate::domain::deck::{
     DeckName, DeckOtherTag, DeckTag, InvalidDeckOtherTag, InvalidDeckTag, InvalidDeckname,
     InvalidPowerLevel, MAX_DECK_ORACLE_TAGS, MAX_DECK_OTHER_TAGS, MAX_DECK_TAGS, PowerLevel,
+    deck_oracle_tags, deck_other_tag, deck_tag,
 };
 
 /// Errors that can occur while constructing a [`CreateDeckProfile`] request.
@@ -218,7 +216,7 @@ impl CreateDeckProfileBuilder {
     pub fn build(self) -> Result<CreateDeckProfile, InvalidCreateDeckProfile> {
         let name = DeckName::new(self.name)?;
         let format = self.format.as_deref().map(Format::try_from).transpose()?;
-        let tags = parse_tags(&self.tags)?;
+        let tags = deck_tag::parse_tags(&self.tags)?;
         if tags.len() > MAX_DECK_TAGS {
             return Err(InvalidCreateDeckProfile::TooManyTags);
         }
@@ -227,11 +225,11 @@ impl CreateDeckProfileBuilder {
             .as_deref()
             .map(PowerLevel::try_from)
             .transpose()?;
-        let other_tags = parse_other_tags(&self.other_tags)?;
+        let other_tags = deck_other_tag::parse_other_tags(&self.other_tags)?;
         if other_tags.len() > MAX_DECK_OTHER_TAGS {
             return Err(InvalidCreateDeckProfile::TooManyOtherTags);
         }
-        let oracle_tags = dedupe_oracle_tags(&self.oracle_tags);
+        let oracle_tags = deck_oracle_tags::dedupe_oracle_tags(&self.oracle_tags);
         if oracle_tags.len() > MAX_DECK_ORACLE_TAGS {
             return Err(InvalidCreateDeckProfile::TooManyOracleTags);
         }

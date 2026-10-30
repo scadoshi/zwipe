@@ -4,13 +4,11 @@ use thiserror::Error;
 use uuid::Uuid;
 
 use crate::domain::card::search_card::card_filter::price_currency::PriceCurrency;
-use crate::domain::deck::deck_oracle_tags::dedupe_oracle_tags;
-use crate::domain::deck::deck_other_tag::parse_other_tags;
-use crate::domain::deck::deck_tag::parse_tags;
 use crate::domain::deck::format::{Format, InvalidFormat};
 use crate::domain::deck::{
     DeckName, DeckOtherTag, DeckTag, InvalidDeckOtherTag, InvalidDeckTag, InvalidDeckname,
     InvalidPowerLevel, MAX_DECK_ORACLE_TAGS, MAX_DECK_OTHER_TAGS, MAX_DECK_TAGS, PowerLevel,
+    deck_oracle_tags, deck_other_tag, deck_tag,
 };
 
 /// Errors that can occur while constructing an [`UpdateDeckProfile`] request.
@@ -297,7 +295,7 @@ impl UpdateDeckProfileBuilder {
         let tags = match self.tags {
             None => None,
             Some(raw) => {
-                let parsed = parse_tags(&raw.unwrap_or_default())?;
+                let parsed = deck_tag::parse_tags(&raw.unwrap_or_default())?;
                 if parsed.len() > MAX_DECK_TAGS {
                     return Err(InvalidUpdateDeckProfile::TooManyTags);
                 }
@@ -311,7 +309,7 @@ impl UpdateDeckProfileBuilder {
         let other_tags = match self.other_tags {
             None => None,
             Some(raw) => {
-                let parsed = parse_other_tags(&raw.unwrap_or_default())?;
+                let parsed = deck_other_tag::parse_other_tags(&raw.unwrap_or_default())?;
                 if parsed.len() > MAX_DECK_OTHER_TAGS {
                     return Err(InvalidUpdateDeckProfile::TooManyOtherTags);
                 }
@@ -321,7 +319,7 @@ impl UpdateDeckProfileBuilder {
         let oracle_tags = match self.oracle_tags {
             None => None,
             Some(raw) => {
-                let deduped = dedupe_oracle_tags(&raw.unwrap_or_default());
+                let deduped = deck_oracle_tags::dedupe_oracle_tags(&raw.unwrap_or_default());
                 if deduped.len() > MAX_DECK_ORACLE_TAGS {
                     return Err(InvalidUpdateDeckProfile::TooManyOracleTags);
                 }

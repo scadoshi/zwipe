@@ -5,14 +5,9 @@
 
 use crate::domain::card::Card;
 use crate::domain::card::scryfall_data::legalities::LegalityKind;
-use crate::domain::card::search_card::commander_eligibility::{
-    are_valid_partners, has_choose_a_background, is_background_card,
-    is_signature_spell_in_color_identity, is_valid_commander, is_valid_signature_spell_type,
-    partner_kind,
-};
+use crate::domain::card::search_card::commander_eligibility;
 use crate::domain::deck::deck::DeckEntry;
-use crate::domain::deck::deck_metrics::deck_price;
-use crate::domain::deck::{DeckProfile, DeckWarning, Format, WarningAction};
+use crate::domain::deck::{DeckProfile, DeckWarning, Format, WarningAction, deck_metrics};
 
 /// Cards in the command zone (stored on the profile, not in `deck_cards`).
 #[derive(Debug)]
@@ -169,7 +164,7 @@ fn check_price_target(
     };
     let currency = profile.price_target_currency.unwrap_or_default();
     let command_zone_cards = command_zone.cards();
-    let total = deck_price(active_entries, &command_zone_cards, currency);
+    let total = deck_metrics::deck_price(active_entries, &command_zone_cards, currency);
     if total > target {
         warnings.push(DeckWarning::new(format!(
             "deck totals {}, over your {} budget",
@@ -362,7 +357,7 @@ fn check_commander_eligibility(
         return; // Can't validate without the card data
     };
 
-    if !is_valid_commander(card, &format) {
+    if !commander_eligibility::is_valid_commander(card, &format) {
         warnings.push(DeckWarning::with_action(
             format!(
                 "{} is not a valid commander for {}",
@@ -397,7 +392,7 @@ fn check_partner_validity(
         (command_zone.commander, command_zone.partner_commander)
     {
         // Both must have a partner ability
-        if partner_kind(commander).is_none() {
+        if commander_eligibility::partner_kind(commander).is_none() {
             warnings.push(DeckWarning::with_card(
                 format!(
                     "{} does not have a partner ability",
@@ -408,7 +403,7 @@ fn check_partner_validity(
             return;
         }
 
-        if !are_valid_partners(commander, partner) {
+        if !commander_eligibility::are_valid_partners(commander, partner) {
             warnings.push(DeckWarning::with_card(
                 format!(
                     "{} and {} cannot be partners",
@@ -441,7 +436,7 @@ fn check_background_validity(
 
     // Commander must have "Choose a Background"
     if let Some(commander) = command_zone.commander
-        && !has_choose_a_background(commander)
+        && !commander_eligibility::has_choose_a_background(commander)
     {
         warnings.push(DeckWarning::with_card(
             format!(
@@ -454,7 +449,7 @@ fn check_background_validity(
 
     // Background card must actually be a Background
     if let Some(bg) = command_zone.background
-        && !is_background_card(bg)
+        && !commander_eligibility::is_background_card(bg)
     {
         warnings.push(DeckWarning::with_card(
             format!(
@@ -530,7 +525,7 @@ fn check_signature_spell_validity(
 
     if let Some(spell) = command_zone.signature_spell {
         // Must be instant or sorcery
-        if !is_valid_signature_spell_type(spell) {
+        if !commander_eligibility::is_valid_signature_spell_type(spell) {
             warnings.push(DeckWarning::with_card(
                 format!(
                     "{} must be an instant or sorcery to be a signature spell",
@@ -542,7 +537,7 @@ fn check_signature_spell_validity(
 
         // Must be within oathbreaker's color identity
         if let Some(oathbreaker) = command_zone.commander
-            && !is_signature_spell_in_color_identity(spell, oathbreaker)
+            && !commander_eligibility::is_signature_spell_in_color_identity(spell, oathbreaker)
         {
             warnings.push(DeckWarning::with_card(
                 format!(
