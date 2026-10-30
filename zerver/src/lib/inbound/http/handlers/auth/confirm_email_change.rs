@@ -20,8 +20,9 @@ impl From<ConfirmEmailChangeError> for ApiError {
             ConfirmEmailChangeError::AddressTaken => {
                 Self::Conflict("that address is already in use by another account".to_string())
             }
-            ConfirmEmailChangeError::UserFromDb(e) => e.to_500(),
-            ConfirmEmailChangeError::Database(e) => e.to_500(),
+            ConfirmEmailChangeError::UserFromDb(e) | ConfirmEmailChangeError::Database(e) => {
+                e.to_500()
+            }
         }
     }
 }

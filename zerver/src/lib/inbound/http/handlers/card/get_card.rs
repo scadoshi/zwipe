@@ -14,8 +14,9 @@ impl From<GetCardProfileError> for ApiError {
     fn from(value: GetCardProfileError) -> Self {
         match value {
             GetCardProfileError::NotFound => Self::NotFound("card profile not found".to_string()),
-            GetCardProfileError::CardProfileFromDb(e) => e.to_500(),
-            GetCardProfileError::Database(e) => e.to_500(),
+            GetCardProfileError::CardProfileFromDb(e) | GetCardProfileError::Database(e) => {
+                e.to_500()
+            }
         }
     }
 }

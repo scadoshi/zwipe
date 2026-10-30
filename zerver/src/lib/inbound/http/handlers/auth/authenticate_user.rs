@@ -25,10 +25,10 @@ impl From<AuthenticateUserError> for ApiError {
             | AuthenticateUserError::AccountLocked => {
                 Self::Unauthorized("invalid credentials".to_string())
             }
-            AuthenticateUserError::Database(e) => e.to_500(),
-            AuthenticateUserError::UserFromDb(e) => e.to_500(),
-            AuthenticateUserError::FailedToVerify(e) => e.to_500(),
-            AuthenticateUserError::FailedAccessToken(e) => e.to_500(),
+            AuthenticateUserError::Database(e)
+            | AuthenticateUserError::UserFromDb(e)
+            | AuthenticateUserError::FailedToVerify(e)
+            | AuthenticateUserError::FailedAccessToken(e) => e.to_500(),
             AuthenticateUserError::CreateSessionError(e) => ApiError::from(e),
         }
     }

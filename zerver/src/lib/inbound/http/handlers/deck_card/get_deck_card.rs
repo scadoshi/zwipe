@@ -7,8 +7,7 @@ impl From<GetDeckCardError> for ApiError {
     fn from(value: GetDeckCardError) -> Self {
         match value {
             GetDeckCardError::NotFound => Self::NotFound("deck card not found".to_string()),
-            GetDeckCardError::Database(e) => e.to_500(),
-            GetDeckCardError::DeckCardFromDb(e) => e.to_500(),
+            GetDeckCardError::Database(e) | GetDeckCardError::DeckCardFromDb(e) => e.to_500(),
             GetDeckCardError::Forbidden => Self::Forbidden(GetDeckCardError::Forbidden.to_string()),
         }
     }

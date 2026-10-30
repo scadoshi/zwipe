@@ -37,8 +37,7 @@ impl From<UpdateDeckCardError> for ApiError {
             UpdateDeckCardError::MvpNotMainboard => {
                 Self::UnprocessableEntity("Only cards in the deck can be MVPs".to_string())
             }
-            UpdateDeckCardError::Database(e) => e.to_500(),
-            UpdateDeckCardError::DeckCardFromDb(e) => e.to_500(),
+            UpdateDeckCardError::Database(e) | UpdateDeckCardError::DeckCardFromDb(e) => e.to_500(),
             UpdateDeckCardError::GetDeckProfileError(e) => ApiError::from(e),
             UpdateDeckCardError::Forbidden => Self::NotFound("deck not found".to_string()),
         }

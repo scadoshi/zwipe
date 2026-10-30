@@ -30,8 +30,7 @@ impl From<CreateDeckCardError> for ApiError {
                 "card limit reached across all boards, verify your email to unlock more"
                     .to_string(),
             ),
-            CreateDeckCardError::Database(e) => e.to_500(),
-            CreateDeckCardError::DeckCardFromDb(e) => e.to_500(),
+            CreateDeckCardError::Database(e) | CreateDeckCardError::DeckCardFromDb(e) => e.to_500(),
             CreateDeckCardError::GetDeckProfileError(e) => ApiError::from(e),
             // Someone else's deck and no deck at all read the same, as on
             // the deck routes.

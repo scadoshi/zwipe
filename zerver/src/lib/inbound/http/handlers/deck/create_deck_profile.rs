@@ -27,8 +27,9 @@ impl From<CreateDeckProfileError> for ApiError {
             CreateDeckProfileError::UnverifiedLimitReached => Self::UnprocessableEntity(
                 "deck limit reached, verify your email to unlock more".to_string(),
             ),
-            CreateDeckProfileError::Database(e) => e.to_500(),
-            CreateDeckProfileError::DeckFromDb(e) => e.to_500(),
+            CreateDeckProfileError::Database(e) | CreateDeckProfileError::DeckFromDb(e) => {
+                e.to_500()
+            }
         }
     }
 }

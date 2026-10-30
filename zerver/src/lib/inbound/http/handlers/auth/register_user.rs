@@ -63,8 +63,7 @@ impl From<RegisterUserError> for ApiError {
             RegisterUserError::UsernameTaken => {
                 Self::Conflict("username already taken".to_string())
             }
-            RegisterUserError::Database(e) => e.to_500(),
-            RegisterUserError::UserFromDb(e) => e.to_500(),
+            RegisterUserError::Database(e) | RegisterUserError::UserFromDb(e) => e.to_500(),
         }
     }
 }

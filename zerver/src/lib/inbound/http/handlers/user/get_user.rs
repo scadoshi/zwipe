@@ -14,8 +14,7 @@ impl From<GetUserError> for ApiError {
     fn from(value: GetUserError) -> Self {
         match value {
             GetUserError::NotFound => Self::NotFound("user not found".to_string()),
-            GetUserError::Database(e) => e.to_500(),
-            GetUserError::UserFromDb(e) => e.to_500(),
+            GetUserError::Database(e) | GetUserError::UserFromDb(e) => e.to_500(),
         }
     }
 }

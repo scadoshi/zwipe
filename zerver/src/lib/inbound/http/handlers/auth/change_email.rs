@@ -17,8 +17,7 @@ impl From<ChangeEmailError> for ApiError {
     fn from(value: ChangeEmailError) -> Self {
         match value {
             ChangeEmailError::UserNotFound => Self::NotFound("user not found".to_string()),
-            ChangeEmailError::Database(e) => e.to_500(),
-            ChangeEmailError::UserFromDb(e) => e.to_500(),
+            ChangeEmailError::Database(e) | ChangeEmailError::UserFromDb(e) => e.to_500(),
             ChangeEmailError::AuthenticateUserError(e) => ApiError::from(e),
         }
     }

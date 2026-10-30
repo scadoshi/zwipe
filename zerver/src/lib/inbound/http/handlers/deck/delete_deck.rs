@@ -11,9 +11,10 @@ use crate::inbound::http::{ApiError, AppState, To500};
 impl From<DeleteDeckError> for ApiError {
     fn from(value: DeleteDeckError) -> Self {
         match value {
-            DeleteDeckError::NotFound => Self::NotFound("deck not found".to_string()),
+            DeleteDeckError::NotFound | DeleteDeckError::Forbidden => {
+                Self::NotFound("deck not found".to_string())
+            }
             DeleteDeckError::Database(e) => e.to_500(),
-            DeleteDeckError::Forbidden => Self::NotFound("deck not found".to_string()),
         }
     }
 }

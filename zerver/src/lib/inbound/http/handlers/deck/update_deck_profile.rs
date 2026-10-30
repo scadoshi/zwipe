@@ -26,8 +26,9 @@ impl From<UpdateDeckProfileError> for ApiError {
                 Self::Conflict("deck with name and user combination already exists".to_string())
             }
             UpdateDeckProfileError::GetDeckProfileError(e) => ApiError::from(e),
-            UpdateDeckProfileError::DeckFromDb(e) => e.to_500(),
-            UpdateDeckProfileError::Database(e) => e.to_500(),
+            UpdateDeckProfileError::DeckFromDb(e) | UpdateDeckProfileError::Database(e) => {
+                e.to_500()
+            }
             UpdateDeckProfileError::Forbidden => Self::NotFound("deck not found".to_string()),
         }
     }

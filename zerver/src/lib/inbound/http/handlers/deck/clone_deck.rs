@@ -38,8 +38,9 @@ impl From<CloneDeckError> for ApiError {
                     Self::NotFound("source deck not found".to_string())
                 }
                 GetDeckProfileError::Forbidden => Self::NotFound("deck not found".to_string()),
-                GetDeckProfileError::Database(e) => e.to_500(),
-                GetDeckProfileError::DeckProfileFromDb(e) => e.to_500(),
+                GetDeckProfileError::Database(e) | GetDeckProfileError::DeckProfileFromDb(e) => {
+                    e.to_500()
+                }
             },
             CloneDeckError::Database(e) => e.to_500(),
         }

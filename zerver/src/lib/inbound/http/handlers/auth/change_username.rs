@@ -19,8 +19,7 @@ impl From<ChangeUsernameError> for ApiError {
         match value {
             ChangeUsernameError::UserNotFound => Self::NotFound("user not found".to_string()),
             ChangeUsernameError::Duplicate => Self::Conflict("username already in use".to_string()),
-            ChangeUsernameError::Database(e) => e.to_500(),
-            ChangeUsernameError::UserFromDb(e) => e.to_500(),
+            ChangeUsernameError::Database(e) | ChangeUsernameError::UserFromDb(e) => e.to_500(),
             ChangeUsernameError::AuthenticateUserError(e) => ApiError::from(e),
         }
     }

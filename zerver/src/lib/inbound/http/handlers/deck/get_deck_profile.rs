@@ -16,10 +16,12 @@ impl From<GetDeckProfileError> for ApiError {
         use crate::inbound::http::To500;
 
         match value {
-            GetDeckProfileError::Database(e) => e.to_500(),
-            GetDeckProfileError::DeckProfileFromDb(e) => e.to_500(),
-            GetDeckProfileError::Forbidden => Self::NotFound("deck not found".to_string()),
-            GetDeckProfileError::NotFound => Self::NotFound("deck not found".to_string()),
+            GetDeckProfileError::Database(e) | GetDeckProfileError::DeckProfileFromDb(e) => {
+                e.to_500()
+            }
+            GetDeckProfileError::Forbidden | GetDeckProfileError::NotFound => {
+                Self::NotFound("deck not found".to_string())
+            }
         }
     }
 }
