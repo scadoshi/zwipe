@@ -184,12 +184,20 @@ pub fn are_valid_partners(card_a: &Card, card_b: &Card) -> bool {
 
 /// Extracts the partner name from oracle text like "Partner with Brallin, Skyshark Rider".
 fn extract_named_partner(oracle_text: &str) -> Option<String> {
-    let lower = oracle_text.to_lowercase();
-    let pos = lower.find("partner with ")?;
-    let after = &oracle_text[pos + "partner with ".len()..];
+    const NEEDLE: &str = "partner with ";
+    // An ASCII match in the original text, so the offset is a char boundary
+    // there; a `to_lowercase` copy can shift every byte after a non-ASCII char.
+    let pos = oracle_text
+        .as_bytes()
+        .windows(NEEDLE.len())
+        .position(|window| window.eq_ignore_ascii_case(NEEDLE.as_bytes()))?;
+    let after = oracle_text.get(pos..)?.get(NEEDLE.len()..)?;
     // Partner name ends at newline, period, or parenthesis
-    let end = after.find(['\n', '(']).unwrap_or(after.len());
-    let name = after[..end].trim().trim_end_matches('.');
+    let name = after
+        .split(['\n', '('])
+        .next()?
+        .trim()
+        .trim_end_matches('.');
     if name.is_empty() {
         return None;
     }
@@ -804,5 +812,22 @@ mod tests {
         oathbreaker.scryfall_data.color_identity = vec![Color::Red].into_iter().collect();
 
         assert!(!is_signature_spell_in_color_identity(&spell, &oathbreaker));
+    }
+
+    #[test]
+    fn named_partner_survives_text_whose_lowercase_grows() {
+        // "\u{23a}" (2 bytes) lowercases to "\u{2c65}" (3 bytes).
+        let text = "\u{23a} Partner with Brallin, Skyshark Rider (When this creature enters.)";
+        assert_eq!(
+            extract_named_partner(text).as_deref(),
+            Some("Brallin, Skyshark Rider")
+        );
+        let text = "\u{23a}\u{23a}\u{23a} PARTNER WITH Shabraz, the Skyshark.\nFlying";
+        assert_eq!(
+            extract_named_partner(text).as_deref(),
+            Some("Shabraz, the Skyshark")
+        );
+        assert_eq!(extract_named_partner("Partner with "), None);
+        assert_eq!(extract_named_partner("Flying"), None);
     }
 }
