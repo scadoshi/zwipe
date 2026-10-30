@@ -31,5 +31,5 @@ pub async fn resend_verification(
         .send_verification_email(user.id, profile.email.as_ref())
         .await
         .map_err(ApiError::from)
-        .map(|_| StatusCode::OK)
+        .map(|()| StatusCode::OK)
 }

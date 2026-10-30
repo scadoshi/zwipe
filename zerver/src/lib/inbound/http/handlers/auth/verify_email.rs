@@ -30,5 +30,5 @@ pub async fn verify_email(
         .verify_email(&request)
         .await
         .map_err(ApiError::from)
-        .map(|_| StatusCode::OK)
+        .map(|()| StatusCode::OK)
 }

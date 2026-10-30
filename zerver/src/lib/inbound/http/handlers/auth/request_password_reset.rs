@@ -32,5 +32,5 @@ pub async fn request_password_reset(
         .request_password_reset(&request)
         .await
         .map_err(ApiError::from)
-        .map(|_| StatusCode::OK)
+        .map(|()| StatusCode::OK)
 }

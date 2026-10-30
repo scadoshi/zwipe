@@ -45,5 +45,5 @@ pub async fn delete_deck(
         .delete_deck(&request)
         .await
         .map_err(ApiError::from)
-        .map(|_| StatusCode::NO_CONTENT)
+        .map(|()| StatusCode::NO_CONTENT)
 }
