@@ -88,6 +88,10 @@ fn too_many_requests_response(wait_time: u64, headers: Option<HeaderMap>) -> Res
 
 /// Human copy for a 429, bucketed so it stays identical for minutes at a time
 /// (long lockouts round up to 5-minute steps).
+#[expect(
+    clippy::arithmetic_side_effects,
+    reason = "u64::MAX / 300 * 5 still fits in u64"
+)]
 fn rate_limit_copy(wait_secs: u64) -> String {
     match wait_secs {
         0..=60 => "too many requests, try again in a minute".to_string(),

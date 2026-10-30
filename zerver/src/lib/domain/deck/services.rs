@@ -468,7 +468,8 @@ where
                 .await?;
             if !related.is_empty() {
                 related_from = Some(cards.len());
-                cards.extend(related.into_iter().take(limit - cards.len()));
+                // The guard above keeps cards.len() below limit.
+                cards.extend(related.into_iter().take(limit.saturating_sub(cards.len())));
             }
         }
 
@@ -674,7 +675,9 @@ where
         for deck in &decks {
             let colors: HashSet<&String> = deck.colors.iter().collect();
             for color in colors {
-                *color_decks.entry(color.clone()).or_default() += 1;
+                let count = color_decks.entry(color.clone()).or_default();
+                // A display tally; it caps like the deck count.
+                *count = count.saturating_add(1);
             }
         }
 

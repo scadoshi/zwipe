@@ -234,7 +234,8 @@ impl ZerviceMetrics {
 
     /// Increments the upserted count by the specified amount.
     pub fn add_upserted_count(&mut self, count: i32) -> &mut Self {
-        self.upserted_count += count;
+        // A tally like the counts: it caps rather than fail the sync.
+        self.upserted_count = self.upserted_count.saturating_add(count);
         self
     }
 
@@ -246,7 +247,7 @@ impl ZerviceMetrics {
 
     /// Increments the skipped count by the specified amount.
     pub fn add_skipped_count(&mut self, count: i32) -> &mut Self {
-        self.skipped_count += count;
+        self.skipped_count = self.skipped_count.saturating_add(count);
         self
     }
 
@@ -285,8 +286,12 @@ impl ZerviceMetrics {
         self.ended_at = Some(Utc::now());
         if let Some(ended_at) = self.ended_at {
             // Capped like the counts: a sync never runs 68 years.
-            self.duration_in_seconds =
-                i32::try_from((ended_at - self.started_at).num_seconds()).unwrap_or(i32::MAX);
+            self.duration_in_seconds = i32::try_from(
+                ended_at
+                    .signed_duration_since(self.started_at)
+                    .num_seconds(),
+            )
+            .unwrap_or(i32::MAX);
         }
     }
 
@@ -344,7 +349,8 @@ impl ZerviceMetrics {
     /// Intended cards = `received_count - skipped_count`
     fn evaluate_status(&mut self) -> &mut Self {
         self.status = SyncStatus::Failure;
-        let intended_to_import = self.received_count - self.skipped_count;
+        // Skipped cards are a subset of the received ones, so this stays in range.
+        let intended_to_import = self.received_count.saturating_sub(self.skipped_count);
         if f64::from(self.upserted_count) >= f64::from(intended_to_import) * PARTIAL_SUCCESS_SHARE {
             self.status = SyncStatus::PartialSuccess;
         }

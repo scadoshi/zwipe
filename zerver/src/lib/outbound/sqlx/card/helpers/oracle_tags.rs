@@ -116,7 +116,7 @@ pub async fn sync_oracle_tags(pool: &PgPool, tags: &[OracleTag]) -> anyhow::Resu
     let authored = desc_slugs.len().saturating_sub(unknown_count);
     tracing::info!(
         "oracle tag descriptions: {covered}/{} have one ({authored} authored, {blank} blank)",
-        covered + blank
+        covered.saturating_add(blank)
     );
 
     // Correlations: replace only the scryfall-sourced rows, preserving other sources.

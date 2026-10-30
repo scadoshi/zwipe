@@ -285,7 +285,8 @@ impl BulkDeltaUpsertWithTx for &[ScryfallData] {
             .filter(|x| !existing.contains(x))
             .map(ToOwned::to_owned)
             .collect();
-        let skipped_count = self.len() - delta.len();
+        // The delta is drawn from self, so this never saturates.
+        let skipped_count = self.len().saturating_sub(delta.len());
         if delta.is_empty() {
             return Ok((Vec::new(), skipped_count));
         }

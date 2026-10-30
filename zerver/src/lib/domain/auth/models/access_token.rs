@@ -49,6 +49,10 @@ pub enum InvalidJwt {
     /// JWT encoding or decoding operation failed.
     #[error(transparent)]
     EncodingError(jsonwebtoken::errors::Error),
+
+    /// The token lifetime puts its expiry past the last date chrono represents.
+    #[error("token expiry is out of range")]
+    ExpiryOutOfRange,
 }
 
 impl From<CoreInvalidJwt> for InvalidJwt {
@@ -149,7 +153,9 @@ impl AccessTokenExt for AccessToken {
         lifetime: Duration,
     ) -> Result<AccessToken, InvalidJwt> {
         let issued_at = Utc::now();
-        let expires_at = issued_at + lifetime;
+        let expires_at = issued_at
+            .checked_add_signed(lifetime)
+            .ok_or(InvalidJwt::ExpiryOutOfRange)?;
 
         let user_claims = UserClaims {
             user_id: user.id,
@@ -511,5 +517,17 @@ mod tests {
         let now = chrono::Utc::now().timestamp();
         assert!(claims.exp > now);
         assert!(claims.iat <= now);
+    }
+
+    #[test]
+    fn a_lifetime_past_the_calendar_is_an_error() {
+        let user = User::new(
+            Uuid::new_v4(),
+            Username::new("authuser").unwrap(),
+            Email::from_str("auth@example.com").unwrap(),
+        );
+        let secret = JwtSecret::new("production-grade-secret-that-is-long-enough").unwrap();
+        let result = AccessToken::generate(&user, &secret, Duration::MAX);
+        assert!(matches!(result, Err(InvalidJwt::ExpiryOutOfRange)));
     }
 }

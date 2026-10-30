@@ -35,8 +35,7 @@ pub async fn record_usage(
         .await
         .map_err(ApiError::from)?;
 
-    let swiped = batch.swipes_right + batch.swipes_left + batch.swipes_up + batch.swipes_down > 0;
-    if swiped {
+    if has_swipes(&batch) {
         let user_id = user.id;
         let metrics = std::sync::Arc::clone(&state.metrics_service);
         tokio::spawn(async move {
@@ -58,4 +57,45 @@ pub async fn record_usage(
     }
 
     Ok(StatusCode::NO_CONTENT)
+}
+
+/// Whether the batch carries any swipe, in any direction.
+///
+/// The batch is not clamped yet, so the counts are not summed: four large
+/// ones would overflow.
+fn has_swipes(batch: &HttpUsageBatch) -> bool {
+    [
+        batch.swipes_right,
+        batch.swipes_left,
+        batch.swipes_up,
+        batch.swipes_down,
+    ]
+    .iter()
+    .any(|&count| count > 0)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn swipes_are_seen_whatever_the_direction() {
+        let none = HttpUsageBatch::default();
+        assert!(!has_swipes(&none));
+        let up = HttpUsageBatch {
+            swipes_up: 1,
+            ..HttpUsageBatch::default()
+        };
+        assert!(has_swipes(&up));
+    }
+
+    #[test]
+    fn huge_unclamped_counts_still_count_as_swipes() {
+        let batch = HttpUsageBatch {
+            swipes_right: u32::MAX,
+            swipes_left: 1,
+            ..HttpUsageBatch::default()
+        };
+        assert!(has_swipes(&batch));
+    }
 }

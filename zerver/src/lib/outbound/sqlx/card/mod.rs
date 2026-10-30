@@ -76,6 +76,35 @@ fn clamped_offset(offset: u32) -> i32 {
     i32::try_from(offset).unwrap_or(i32::MAX)
 }
 
+/// The LIMIT and OFFSETs of a wildcard page's two slices.
+#[derive(Debug, PartialEq, Eq)]
+struct WildcardWindow {
+    /// Rows the band slice takes.
+    band_limit: i64,
+    /// Rows the band slice skips.
+    band_offset: i64,
+    /// Rows the deep slice skips.
+    deep_offset: i64,
+}
+
+impl WildcardWindow {
+    /// The window for a request's limit and offset.
+    #[expect(
+        clippy::arithmetic_side_effects,
+        reason = "limit <= MAX_SEARCH_LIMIT and offset <= i32::MAX keep every product far inside i64"
+    )]
+    fn new(limit: u32, offset: u32) -> Self {
+        let limit = i64::from(limit.min(MAX_SEARCH_LIMIT));
+        let band_limit = (limit - WILDCARD_SLOTS).max(1);
+        let page_index = i64::from(clamped_offset(offset)) / limit.max(1);
+        Self {
+            band_limit,
+            band_offset: page_index * band_limit,
+            deep_offset: page_index * WILDCARD_SLOTS,
+        }
+    }
+}
+
 // Default-synergy-ordering dials (context/plans/suggestion_signal.md).
 // `W_SIGNAL = 0.0` and `BAND_SIZE = 1` together give plain score ordering.
 
@@ -1324,21 +1353,19 @@ impl CardRepository for MyPostgres {
             // The outer ORDER BY re-sorts deterministically (UNION ALL order
             // is not guaranteed): band cards in band order, probes last;
             // the Rust splice below lifts them to WILDCARD_POSITION.
-            let limit = i64::from(request.limit().min(MAX_SEARCH_LIMIT));
-            let band_limit = (limit - WILDCARD_SLOTS).max(1);
-            let page_index = i64::from(clamped_offset(request.offset())) / limit.max(1);
+            let window = WildcardWindow::new(request.limit(), request.offset());
             qb.push(format!(
                 ") SELECT * FROM ((SELECT *, 0 AS slice FROM pool \
                  ORDER BY pool_returned, (rn - 1) / {BAND_SIZE}, shuffle, name ASC LIMIT "
             ));
-            qb.push_bind(band_limit);
+            qb.push_bind(window.band_limit);
             qb.push(" OFFSET ");
-            qb.push_bind(page_index * band_limit);
+            qb.push_bind(window.band_offset);
             qb.push(format!(
                 ") UNION ALL (SELECT *, 1 AS slice FROM pool WHERE rn > {DEEP_POOL_FLOOR} \
                  ORDER BY pool_returned, pool_shown ASC, shuffle LIMIT {WILDCARD_SLOTS} OFFSET "
             ));
-            qb.push_bind(page_index * WILDCARD_SLOTS);
+            qb.push_bind(window.deep_offset);
             qb.push(format!(
                 ")) AS combined ORDER BY slice ASC, pool_returned, (rn - 1) / {BAND_SIZE}, shuffle, name ASC"
             ));
@@ -2193,5 +2220,27 @@ mod tests {
     #[test]
     fn clamped_offset_caps_instead_of_wrapping_negative() {
         assert_eq!(clamped_offset(u32::MAX), i32::MAX);
+    }
+
+    #[test]
+    fn wildcard_window_pages_both_slices() {
+        let window = WildcardWindow::new(25, 50);
+        assert_eq!(
+            window,
+            WildcardWindow {
+                band_limit: 24,
+                band_offset: 48,
+                deep_offset: 2,
+            }
+        );
+    }
+
+    #[test]
+    fn wildcard_window_survives_extreme_requests() {
+        let window = WildcardWindow::new(u32::MAX, u32::MAX);
+        assert_eq!(window.band_limit, 249);
+        assert_eq!(window.deep_offset, i64::from(i32::MAX) / 250);
+        let tiny = WildcardWindow::new(0, 10);
+        assert_eq!(tiny.band_limit, 1);
     }
 }

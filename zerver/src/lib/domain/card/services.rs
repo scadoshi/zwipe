@@ -40,7 +40,10 @@ const POSTGRESQL_PARAMETER_HARD_LIMIT: usize = 65_535;
 ///
 /// With 87 fields per card and the 65,535 param limit, this yields 376 cards per batch.
 fn batch_size() -> usize {
-    POSTGRESQL_PARAMETER_HARD_LIMIT / 2 / scryfall_data_fields::scryfall_data_field_count()
+    // At least one card per batch, even with no fields to bind.
+    (POSTGRESQL_PARAMETER_HARD_LIMIT / 2)
+        .checked_div(scryfall_data_fields::scryfall_data_field_count())
+        .map_or(1, |size| size.max(1))
 }
 
 /// Sort key for a role: its position in the enum's declaration.
@@ -137,7 +140,7 @@ impl<R: CardRepository> CardService for Service<R> {
                     Some((card.scryfall_data.id, union))
                 })
                 .collect();
-            merged += updates.len();
+            merged = merged.saturating_add(updates.len());
             if !updates.is_empty() {
                 self.repo.update_card_roles(&updates).await?;
             }
