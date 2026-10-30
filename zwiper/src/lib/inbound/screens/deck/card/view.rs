@@ -33,7 +33,9 @@ use super::components::filter_store::{FilterScope, FilterStore};
 use super::components::image_preview::ImagePreview;
 use super::components::printing_sheet::PrintingSheet;
 use super::components::quick_add::QuickAdd;
-use super::components::undo_log::{CommandZoneSlot, UndoAction, UndoLog, UndoStore};
+use super::components::undo_log::{
+    CommandZoneSlot, UndoAction, UndoLog, UndoStore, create_board_field,
+};
 use crate::inbound::components::auth::authed::use_authed;
 use crate::inbound::components::catalog_cache::CatalogCache;
 use crate::inbound::components::hint_dialog::{self, HintColored};
@@ -939,10 +941,7 @@ pub fn View(deck_id: Uuid) -> Element {
                 let request = HttpCreateDeckCard::new(
                     &entry.card.scryfall_data,
                     baseline,
-                    match board {
-                        Board::Deck => None,
-                        other => Some(other.display_name().to_string()),
-                    },
+                    create_board_field(board),
                 );
 
                 // Optimistic re-add at the pre-burst quantity.
