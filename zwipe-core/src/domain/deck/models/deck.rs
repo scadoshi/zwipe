@@ -68,6 +68,7 @@ impl Deck {
 
     /// Attaches the command-zone cards (commander, partner, background, signature
     /// spell) so clients can include them in price and card-count calcs.
+    #[must_use]
     pub fn with_command_zone_cards(mut self, cards: Vec<Card>) -> Self {
         self.command_zone_cards = cards;
         self

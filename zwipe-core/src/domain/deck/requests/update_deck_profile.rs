@@ -160,36 +160,42 @@ pub struct UpdateDeckProfileBuilder {
 
 impl UpdateDeckProfileBuilder {
     /// Sets the new deck name.
+    #[must_use]
     pub fn name(mut self, name: Option<&str>) -> Self {
         self.name = name.map(|s| s.to_string());
         self
     }
 
     /// Sets the commander update.
+    #[must_use]
     pub fn commander_id(mut self, id: Option<Option<Uuid>>) -> Self {
         self.commander_id = id;
         self
     }
 
     /// Sets the partner commander update.
+    #[must_use]
     pub fn partner_commander_id(mut self, id: Option<Option<Uuid>>) -> Self {
         self.partner_commander_id = id;
         self
     }
 
     /// Sets the background enchantment update.
+    #[must_use]
     pub fn background_id(mut self, id: Option<Option<Uuid>>) -> Self {
         self.background_id = id;
         self
     }
 
     /// Sets the signature spell update.
+    #[must_use]
     pub fn signature_spell_id(mut self, id: Option<Option<Uuid>>) -> Self {
         self.signature_spell_id = id;
         self
     }
 
     /// Sets the format update.
+    #[must_use]
     pub fn format(mut self, format: Option<Option<&str>>) -> Self {
         self.format = format.map(|opt| opt.map(|s| s.to_string()));
         self
@@ -198,6 +204,7 @@ impl UpdateDeckProfileBuilder {
     /// Sets the tags update. Outer `Some` means "update tags"; the inner value
     /// is the new full set (`None`/empty clears all tags). `None` leaves tags
     /// untouched.
+    #[must_use]
     pub fn tags(mut self, tags: Option<Option<Vec<String>>>) -> Self {
         self.tags = tags;
         self
@@ -205,6 +212,7 @@ impl UpdateDeckProfileBuilder {
 
     /// Sets the power level update. Outer `Some` means "update"; inner `None`
     /// clears it. `None` leaves it untouched.
+    #[must_use]
     pub fn power_level(mut self, power_level: Option<Option<&str>>) -> Self {
         self.power_level = power_level.map(|opt| opt.map(|s| s.to_string()));
         self
@@ -212,6 +220,7 @@ impl UpdateDeckProfileBuilder {
 
     /// Sets the other-tags update. Outer `Some` means "update"; the inner value
     /// is the new full set (`None`/empty clears all). `None` leaves them untouched.
+    #[must_use]
     pub fn other_tags(mut self, other_tags: Option<Option<Vec<String>>>) -> Self {
         self.other_tags = other_tags;
         self
@@ -219,6 +228,7 @@ impl UpdateDeckProfileBuilder {
 
     /// Sets the oracle-tags update. Outer `Some` means "update"; the inner value
     /// is the new full set (`None`/empty clears all). `None` leaves them untouched.
+    #[must_use]
     pub fn oracle_tags(mut self, oracle_tags: Option<Option<Vec<String>>>) -> Self {
         self.oracle_tags = oracle_tags;
         self
@@ -226,6 +236,7 @@ impl UpdateDeckProfileBuilder {
 
     /// Sets the land target update. Outer `Some` means "update"; inner `None`
     /// clears the override. `None` leaves it untouched.
+    #[must_use]
     pub fn land_target(mut self, land_target: Option<Option<i32>>) -> Self {
         self.land_target = land_target;
         self
@@ -233,12 +244,14 @@ impl UpdateDeckProfileBuilder {
 
     /// Sets the price target update. Outer `Some` means "update"; inner `None`
     /// clears the budget. `None` leaves it untouched.
+    #[must_use]
     pub fn price_target(mut self, price_target: Option<Option<f64>>) -> Self {
         self.price_target = price_target;
         self
     }
 
     /// Sets the price target currency update.
+    #[must_use]
     pub fn price_target_currency(
         mut self,
         price_target_currency: Option<Option<PriceCurrency>>,
