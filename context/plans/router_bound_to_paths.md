@@ -49,8 +49,8 @@ PUBLIC_METRICS_ROUTE      MIN_CLIENT_VERSION_ROUTE       GET_MY_METRICS_ROUTE
 MARK_HINT_SHOWN_ROUTE     SEARCH_COMMANDERS_ROUTE        GET_ORACLE_WORDS_ROUTE
 CARD_ROUTE                GET_COMMANDER_MAYBEBOARD_ROUTE GET_UB_FRANCHISES_ROUTE
 CLEAR_COMMANDER_MAYBEBOARD_ROUTE
-share_deck_route          get_shared_deck_route          import_archidekt_deck_route
-clear_deck_suppressions_route  get_deck_tokens_route     delete_deck_route
+share_deck_route          shared_deck_route          import_archidekt_deck_route
+clear_deck_suppressions_route  deck_tokens_route     delete_deck_route
 update_deck_route         delete_deck_card_route
 ```
 

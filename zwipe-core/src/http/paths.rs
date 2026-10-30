@@ -105,23 +105,23 @@ pub const CHANGELOG_ROUTE: &str = "/api/changelog";
 
 // == paths carrying an id ==
 
-pub fn get_card_route(scryfall_data_id: Uuid) -> String {
+pub fn card_route(scryfall_data_id: Uuid) -> String {
     format!("{CARD_ROUTE}/{scryfall_data_id}")
 }
 
-pub fn get_printings_route(oracle_id: Uuid) -> String {
+pub fn printings_route(oracle_id: Uuid) -> String {
     format!("{CARD_ROUTE}/{oracle_id}/printings")
 }
 
-pub fn get_deck_route(deck_id: Uuid) -> String {
+pub fn deck_route(deck_id: Uuid) -> String {
     format!("{DECK_ROUTE}/{deck_id}")
 }
 
-pub fn get_deck_tokens_route(deck_id: Uuid) -> String {
+pub fn deck_tokens_route(deck_id: Uuid) -> String {
     format!("{DECK_ROUTE}/{deck_id}/tokens")
 }
 
-pub fn get_deck_profile_route(deck_id: Uuid) -> String {
+pub fn deck_profile_route(deck_id: Uuid) -> String {
     format!("{DECK_ROUTE}/profile/{deck_id}")
 }
 
@@ -141,7 +141,7 @@ pub fn share_deck_route(deck_id: Uuid) -> String {
     format!("{DECK_ROUTE}/{deck_id}/share")
 }
 
-pub fn get_shared_deck_route(token: Uuid) -> String {
+pub fn shared_deck_route(token: Uuid) -> String {
     format!("/api/share/deck/{token}")
 }
 
@@ -271,16 +271,16 @@ mod tests {
         let b = Uuid::from_u128(1);
         let (sa, sb) = (a.to_string(), b.to_string());
 
-        assert_eq!(get_card_route(a), format!("/api/card/{sa}"));
-        assert_eq!(get_printings_route(a), format!("/api/card/{sa}/printings"));
-        assert_eq!(get_deck_route(a), format!("/api/deck/{sa}"));
-        assert_eq!(get_deck_tokens_route(a), format!("/api/deck/{sa}/tokens"));
-        assert_eq!(get_deck_profile_route(a), format!("/api/deck/profile/{sa}"));
+        assert_eq!(card_route(a), format!("/api/card/{sa}"));
+        assert_eq!(printings_route(a), format!("/api/card/{sa}/printings"));
+        assert_eq!(deck_route(a), format!("/api/deck/{sa}"));
+        assert_eq!(deck_tokens_route(a), format!("/api/deck/{sa}/tokens"));
+        assert_eq!(deck_profile_route(a), format!("/api/deck/profile/{sa}"));
         assert_eq!(update_deck_route(a), format!("/api/deck/{sa}"));
         assert_eq!(delete_deck_route(a), format!("/api/deck/{sa}"));
         assert_eq!(clone_deck_route(a), format!("/api/deck/{sa}/clone"));
         assert_eq!(share_deck_route(a), format!("/api/deck/{sa}/share"));
-        assert_eq!(get_shared_deck_route(a), format!("/api/share/deck/{sa}"));
+        assert_eq!(shared_deck_route(a), format!("/api/share/deck/{sa}"));
         assert_eq!(
             clear_deck_suppressions_route(a),
             format!("/api/deck/{sa}/suppressions")
