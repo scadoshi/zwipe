@@ -36,6 +36,12 @@ const ROLES_TITLE: &str = "Card roles";
 const TAGS_TITLE: &str = "Oracle tags";
 /// The hard passes group's header.
 const PASSES_TITLE: &str = "Most skipped";
+/// Card roles' line before any role has enough swipes to rate.
+const ROLES_EMPTY: &str = "Swipe more cards to see your card roles";
+/// Oracle tags' line before any tag has enough swipes to rate.
+const TAGS_EMPTY: &str = "Swipe more cards to see your Oracle tags";
+/// Most skipped's line before any card qualifies, saying what does.
+const PASSES_EMPTY: &str = "Cards you skip more than once and never keep show here";
 
 /// Room on the left of the grid for the weekday labels.
 const LEFT: f64 = 24.0;
@@ -490,7 +496,8 @@ pub(crate) fn HeatGhost() -> Element {
 /// the oracle tags swiped under each; and Oracle tags, the tags whose share
 /// stands out most from other players', each revealing its description. The
 /// last two share one [`RateChips`] pick of Added, Skipped, Maybeboard or
-/// Removed. Each section is left out when it has nothing to show. The
+/// Removed. Activity is left out when it has nothing to show; Card roles
+/// and Oracle tags stay, with a line saying what fills them. The
 /// heatmap mounts afresh each time its section opens, so its sweep plays in
 /// view.
 #[component]
@@ -572,13 +579,15 @@ pub(crate) fn ActivitySections(
                 }
             }
         }
-        if !activity.roles.is_empty() {
-            CollapsibleSection {
-                title: ROLES_TITLE,
-                open_section,
-                header_accessory: rsx! {
-                    InfoButton { topic: HintTopic::RoleRates }
-                },
+        CollapsibleSection {
+            title: ROLES_TITLE,
+            open_section,
+            header_accessory: rsx! {
+                InfoButton { topic: HintTopic::RoleRates }
+            },
+            if activity.roles.is_empty() {
+                div { class: "activity-total", "{ROLES_EMPTY}" }
+            } else {
                 div { class: "activity-rates",
                     RateChips { kind }
                     // Keyed on the rate, so a switch mounts a fresh chart:
@@ -603,13 +612,15 @@ pub(crate) fn ActivitySections(
                 }
             }
         }
-        if !activity.tags.is_empty() {
-            CollapsibleSection {
-                title: TAGS_TITLE,
-                open_section,
-                header_accessory: rsx! {
-                    InfoButton { topic: HintTopic::TagRates }
-                },
+        CollapsibleSection {
+            title: TAGS_TITLE,
+            open_section,
+            header_accessory: rsx! {
+                InfoButton { topic: HintTopic::TagRates }
+            },
+            if activity.tags.is_empty() {
+                div { class: "activity-total", "{TAGS_EMPTY}" }
+            } else {
                 div { class: "activity-rates",
                     RateChips { kind }
                     for rate in [kind().label()] {
@@ -695,7 +706,7 @@ fn HardPassRow(
 
 /// The cards the user keeps passing on, as [`HardPassRow`]s in a group
 /// headed like Staples', in the server's order: most skipped against other
-/// players first. Renders nothing without any.
+/// players first. Without any, the header over a line saying what fills it.
 #[component]
 pub(crate) fn HardPassesPanel(
     passes: Vec<HttpHardPass>,
@@ -705,21 +716,22 @@ pub(crate) fn HardPassesPanel(
     on_printing: EventHandler<Card>,
 ) -> Element {
     rsx! {
-        if !passes.is_empty() {
-            div { class: "maybeboard-list card-group row-enter",
-                div { class: "card-group-header card-group-header-with-hint",
-                    span { "{PASSES_TITLE}" }
-                    InfoButton { topic: HintTopic::HardPasses }
-                }
-                for pass in passes {
-                    HardPassRow {
-                        key: "{pass.card.scryfall_data.id}",
-                        pass,
-                        expanded_card,
-                        preview_card,
-                        preview_dismissing,
-                        on_printing,
-                    }
+        div { class: "maybeboard-list card-group row-enter",
+            div { class: "card-group-header card-group-header-with-hint",
+                span { "{PASSES_TITLE}" }
+                InfoButton { topic: HintTopic::HardPasses }
+            }
+            if passes.is_empty() {
+                div { class: "activity-total activity-total-group", "{PASSES_EMPTY}" }
+            }
+            for pass in passes {
+                HardPassRow {
+                    key: "{pass.card.scryfall_data.id}",
+                    pass,
+                    expanded_card,
+                    preview_card,
+                    preview_dismissing,
+                    on_printing,
                 }
             }
         }
