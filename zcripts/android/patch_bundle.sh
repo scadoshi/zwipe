@@ -11,6 +11,8 @@
 #   manifest.sh        missing -> the ndk-context double-init crash returns,
 #                                 and a system theme change closes the app
 #                                 (context/plans/archive/android_ndk_context_crash.md)
+#   launcher label     missing -> launcher shows "Zwiper" (dx names it after
+#                                 the binary, not Dioxus.toml)
 #   wry_activity.sh    missing -> UnsatisfiedLinkError in onCreate on every
 #                                 device: the stock activity calls tao 0.34's
 #                                 native names and the vendored tao is 0.37
@@ -26,7 +28,7 @@ set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$HERE/../.." && pwd)"
-APP_DIR="${1:-$REPO_ROOT/target/dx/zwipe/release/android/app}"
+APP_DIR="${1:-$REPO_ROOT/target/dx/zwiper/release/android/app}"
 MAIN="$APP_DIR/app/src/main"
 
 [ -d "$MAIN" ] || { echo "generated Android project not found: $APP_DIR" >&2; exit 1; }
@@ -42,6 +44,15 @@ echo "== manifest (launchMode + configChanges + allowBackup) =="
 
 echo "== WryActivity (tao 0.37 entry points) =="
 "$HERE/wry_activity.sh" "$MAIN/kotlin/dev/dioxus/main/WryActivity.kt"
+
+# dx sets app_name from the binary name (`zwiper` -> "Zwiper"), and Dioxus.toml
+# has no Android override, so put the launcher label back to "Zwipe".
+echo "== launcher label =="
+STRINGS="$MAIN/res/values/strings.xml"
+sed -i.bak 's#<string name="app_name">[^<]*</string>#<string name="app_name">Zwipe</string>#' "$STRINGS"
+rm -f "$STRINGS.bak"
+grep -q '<string name="app_name">Zwipe</string>' "$STRINGS" \
+  || { echo "launcher label patch did not apply: $STRINGS" >&2; exit 1; }
 
 echo
 echo "All post-bundle patches applied. Next: edit build.gradle.kts (targetSdk /"

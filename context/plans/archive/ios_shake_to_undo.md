@@ -26,7 +26,7 @@ Fail soft: if the marker or the app object is missing, return without doing anyt
 
 ## Where to call it
 
-In a `use_hook` in `App()` (`zwiper/src/bin/zwipe.rs`), not in `main()`. `sharedApplication` is nil until `launch_app()` has built the app object, so calling it beside `install_panic_hook()` would silently no-op. The root component's first render is on the main thread and after the app exists, which is what the call needs.
+In a `use_hook` in `App()` (`zwiper/src/bin/zwiper.rs`), not in `main()`. `sharedApplication` is nil until `launch_app()` has built the app object, so calling it beside `install_panic_hook()` would silently no-op. The root component's first render is on the main thread and after the app exists, which is what the call needs.
 
 ## Verification
 

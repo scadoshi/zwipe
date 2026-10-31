@@ -110,7 +110,7 @@ for name, color in pairs.items():
 | `zwipe-core/src/domain/user/models/preferences.rs` | `ALLOWED_THEMES` registry + `UserPreferences` default |
 | `src/theme_picker.rs` in orangui | `ThemePicker`; labels come from `display_theme_name(slug)` in `zwipe-core/src/domain/user/models/preferences.rs`, which capitalizes hyphen-split words; special-cases (`rose-pine` → "Rosé Pine", `vscode` → "VS Code", etc.) go there, not in the slug |
 
-**How the CSS reaches the apps:** neither build.rs copies it. `zwiper/build.rs` only bakes `.env` values into the binary, and `zite/build.rs` only writes `public/sitemap.xml`. The crate exports both stylesheets as `&'static str` constants (`include_str!`), and each app inlines them with `document::Style` at the top of its root component: `zwiper/src/bin/zwipe.rs:124` and `zite/src/main.rs:209`. Cascade order matters: `THEMES_CSS` first, then `COMPONENTS_CSS`, then the app's own stylesheet.
+**How the CSS reaches the apps:** neither build.rs copies it. `zwiper/build.rs` only bakes `.env` values into the binary, and `zite/build.rs` only writes `public/sitemap.xml`. The crate exports both stylesheets as `&'static str` constants (`include_str!`), and each app inlines them with `document::Style` at the top of its root component: `zwiper/src/bin/zwiper.rs:124` and `zite/src/main.rs:209`. Cascade order matters: `THEMES_CSS` first, then `COMPONENTS_CSS`, then the app's own stylesheet.
 
 Edit orangui's `assets/themes.css` only; this repo carries no copy of it.
 

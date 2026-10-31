@@ -10,7 +10,7 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 SIM="${1:-booted}"
-APP="$REPO_ROOT/target/dx/zwipe/debug/ios/Zwipe.app"
+APP="$REPO_ROOT/target/dx/zwiper/debug/ios/Zwiper.app"
 [ -d "$APP" ] || { echo "no simulator build at $APP; run dx serve --platform ios in zwiper first" >&2; exit 1; }
 
 BUNDLE_ID="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Info.plist")"

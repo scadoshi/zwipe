@@ -43,7 +43,7 @@ The whole product (zwiper + zite) uses [JetBrains Mono](https://www.jetbrains.co
 
 ### zwiper: self-hosted
 
-The woff2 files live in `zwiper/assets/fonts/` (400, 500, 700), are registered with `asset!()` so they ship inside the app bundle, and the `@font-face` rules are injected from `zwiper/src/bin/zwipe.rs`. No CDN: an app that has to work offline can't wait on jsdelivr, and the full font carries the U+2580-U+259F block elements the ASCII logo needs at the monospace advance width, which fontsource's subsets drop. `zwiper/assets/main.css:3` documents this at the top of the file.
+The woff2 files live in `zwiper/assets/fonts/` (400, 500, 700), are registered with `asset!()` so they ship inside the app bundle, and the `@font-face` rules are injected from `zwiper/src/bin/zwiper.rs`. No CDN: an app that has to work offline can't wait on jsdelivr, and the full font carries the U+2580-U+259F block elements the ASCII logo needs at the monospace advance width, which fontsource's subsets drop. `zwiper/assets/main.css:3` documents this at the top of the file.
 
 ### zite: self-hosted
 

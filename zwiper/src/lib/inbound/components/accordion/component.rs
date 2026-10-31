@@ -9,7 +9,7 @@ use dioxus_primitives::accordion::{
 #[component]
 pub fn Accordion(props: AccordionProps) -> Element {
     rsx! {
-        // accordion.css loads once at the app root, in zwiper/src/bin/zwipe.rs.
+        // accordion.css loads once at the app root, in zwiper/src/bin/zwiper.rs.
         accordion::Accordion {
             class: "accordion",
             width: "100%",

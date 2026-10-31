@@ -10,7 +10,7 @@
 #
 # The profile picks the output directory as well as the compiler flags, so
 # this installs from the directory it just built into. Building --release by
-# hand and then installing debug/ios/Zwipe.app ships the previous debug bundle,
+# hand and then installing debug/ios/Zwiper.app ships the previous debug bundle,
 # which looks exactly like a build that ignored your changes.
 set -euo pipefail
 
@@ -43,7 +43,7 @@ else
   dx build --platform ios --device true
 fi
 
-APP="$REPO_ROOT/target/dx/zwipe/$PROFILE/ios/Zwipe.app"
+APP="$REPO_ROOT/target/dx/zwiper/$PROFILE/ios/Zwiper.app"
 [ -d "$APP" ] || { echo "no app bundle at $APP" >&2; exit 1; }
 
 # dx leaves the bundle without icons, and adding them breaks the signature it

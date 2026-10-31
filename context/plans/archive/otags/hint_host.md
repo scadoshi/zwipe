@@ -57,7 +57,7 @@ Verify after: `cargo +nightly fmt` then `cargo clippy -p zwiper -p zwipe-compone
   let hint_topic: Signal<Option<HintTopic>> = use_signal(|| None);
   use_context_provider(|| hint_topic);
   ```
-- **`zwiper/src/bin/zwipe.rs` `App`** — render `HintHost {}` as a **sibling of `Router::<Router> {}`** inside `ToastProvider`:
+- **`zwiper/src/bin/zwiper.rs` `App`** — render `HintHost {}` as a **sibling of `Router::<Router> {}`** inside `ToastProvider`:
   ```rust
   ToastProvider { max_toasts: 3usize, class: "toast-container",
       Router::<Router> {}

@@ -14,7 +14,7 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-APP="${1:-$REPO_ROOT/target/dx/zwipe/release/ios/Zwipe.app}"
+APP="${1:-$REPO_ROOT/target/dx/zwiper/release/ios/Zwiper.app}"
 ICONS="$REPO_ROOT/zwiper/assets/favicon"
 [ -d "$APP" ] || { echo "no app bundle at $APP" >&2; exit 1; }
 

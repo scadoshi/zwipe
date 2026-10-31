@@ -22,7 +22,7 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-KT="${1:-$REPO_ROOT/target/dx/zwipe/release/android/app/app/src/main/kotlin/dev/dioxus/main/WryActivity.kt}"
+KT="${1:-$REPO_ROOT/target/dx/zwiper/release/android/app/app/src/main/kotlin/dev/dioxus/main/WryActivity.kt}"
 
 [ -f "$KT" ] || { echo "WryActivity.kt not found: $KT" >&2; exit 1; }
 
