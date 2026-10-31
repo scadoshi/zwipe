@@ -149,10 +149,11 @@ pub fn requirements() -> Vec<String> {
 /// assert!(matches!(validate("weak"), Err(InvalidPassword::TooShort)));
 /// ```
 pub fn validate(password: &str) -> Result<(), InvalidPassword> {
-    if password.len() < MIN_LENGTH {
+    let length = password.chars().count();
+    if length < MIN_LENGTH {
         return Err(InvalidPassword::TooShort);
     }
-    if password.len() > MAX_LENGTH {
+    if length > MAX_LENGTH {
         return Err(InvalidPassword::TooLong);
     }
     if !password.chars().any(char::is_uppercase) {
@@ -242,6 +243,17 @@ mod tests {
             validate(&format!("{repeats}zxy")),
             Err(InvalidPassword::TooManyRepeats(_))
         ));
+    }
+
+    #[test]
+    fn length_counts_characters_not_bytes() {
+        let short = "Aé1!bcd";
+        assert_eq!(short.chars().count(), MIN_LENGTH - 1);
+        assert!(short.len() >= MIN_LENGTH, "the accent makes it 8 bytes");
+        assert!(matches!(validate(short), Err(InvalidPassword::TooShort)));
+        let max: String = "Aé1!bcdE".chars().cycle().take(MAX_LENGTH).collect();
+        assert!(max.len() > MAX_LENGTH, "the accents push it past 128 bytes");
+        assert!(validate(&max).is_ok(), "128 characters is allowed");
     }
 
     #[test]
