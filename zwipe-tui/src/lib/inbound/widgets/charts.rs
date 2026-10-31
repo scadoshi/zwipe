@@ -29,7 +29,11 @@ pub(crate) fn columns(
 ) {
     let count = u16::try_from(columns.len()).unwrap_or(u16::MAX).max(1);
     let inner_width = area.width.saturating_sub(2);
-    let width = (inner_width / count).saturating_sub(1).clamp(1, 7);
+    let width = inner_width
+        .checked_div(count)
+        .unwrap_or(0)
+        .saturating_sub(1)
+        .clamp(1, 7);
     let bars: Vec<Bar<'_>> = columns
         .iter()
         .map(|c| {
@@ -66,9 +70,9 @@ pub(crate) fn row(
     tail: Vec<Span<'static>>,
 ) -> Line<'static> {
     let filled = width.saturating_mul(usize::try_from(pct.min(100)).unwrap_or_default()) / 100;
-    let label_text = format!("{:<label_width$} ", label.content);
+    let Span { content, style, .. } = label;
     let mut spans = vec![
-        Span::styled(label_text, label.style),
+        Span::styled(format!("{content:<label_width$} "), style),
         Span::styled(FILL.to_string().repeat(filled), bar),
         Span::raw(" ".repeat(width.saturating_sub(filled).saturating_add(1))),
     ];

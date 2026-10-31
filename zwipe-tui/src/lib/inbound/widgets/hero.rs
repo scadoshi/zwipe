@@ -286,7 +286,15 @@ mod tests {
         assert_eq!(Hero::height(30, 40), 13, "the Z");
         assert_eq!(Hero::height(30, 6), 5, "no logo");
         assert_eq!(Hero::height(30, 3), 0);
-        let before = text(&app, &hero, Instant::now() - Duration::from_secs(1), 60, 24);
+        let before = text(
+            &app,
+            &hero,
+            Instant::now()
+                .checked_sub(Duration::from_secs(1))
+                .expect("the clock is past a second"),
+            60,
+            24,
+        );
         assert!(before.contains(BLANK), "nothing before its start");
         text(&app, &hero, Instant::now(), 8, 3);
         let still = Hero::default();

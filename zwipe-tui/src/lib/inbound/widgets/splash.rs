@@ -91,7 +91,8 @@ impl Splash {
                 let moment = u64::from(x)
                     .wrapping_mul(2_654_435_761)
                     .wrapping_add(u64::from(y).wrapping_mul(40_503))
-                    % u64::try_from(FADE.as_millis()).unwrap_or(1);
+                    .checked_rem(u64::try_from(FADE.as_millis()).unwrap_or(1))
+                    .unwrap_or(0);
                 if u128::from(moment) >= fading.as_millis() {
                     held.push((x, y));
                 }
@@ -128,7 +129,7 @@ mod tests {
                 splash.draw(
                     f,
                     &Palette::for_account("gruvbox", true),
-                    splash.started + at,
+                    splash.started.checked_add(at).expect("the moment fits"),
                 );
             })
             .unwrap();

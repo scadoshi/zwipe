@@ -104,7 +104,7 @@ impl ArchidektClient {
 
         if response
             .content_length()
-            .is_some_and(|len| len > MAX_RESPONSE_BYTES as u64)
+            .is_some_and(|len| usize::try_from(len).map_or(true, |len| len > MAX_RESPONSE_BYTES))
         {
             return Err(ArchidektError::TooLarge);
         }

@@ -139,10 +139,22 @@ fn button(
 
 /// The screen's lines, top to bottom.
 fn lines(palette: &Palette, view: &AccountView, width: usize) -> Vec<Line<'static>> {
+    let mut lines = account_lines(palette, view, width);
+    lines.push(Line::default());
+    lines.extend(about_lines(palette, view, width));
+    lines
+}
+
+/// A muted, bold section title.
+fn section(palette: &Palette, title: &str) -> Line<'static> {
+    Line::from(title.to_owned()).style(palette.muted).bold()
+}
+
+/// The Account section: username, email, any pending email, verification and password.
+fn account_lines(palette: &Palette, view: &AccountView, width: usize) -> Vec<Line<'static>> {
     let user = &view.user;
-    let section = |title: &str| Line::from(title.to_owned()).style(palette.muted).bold();
     let mut lines = vec![
-        section("Account"),
+        section(palette, "Account"),
         row(
             palette,
             width,
@@ -200,17 +212,21 @@ fn lines(palette: &Palette, view: &AccountView, width: usize) -> Vec<Line<'stati
             ],
         ));
     }
-    lines.extend([
-        row(
-            palette,
-            width,
-            "Password",
-            false,
-            vec![Span::raw(MASK.to_string().repeat(7))],
-            vec![button(palette, view, Stop::ChangePassword, "Change", false)],
-        ),
-        Line::default(),
-        section("About"),
+    lines.push(row(
+        palette,
+        width,
+        "Password",
+        false,
+        vec![Span::raw(MASK.to_string().repeat(7))],
+        vec![button(palette, view, Stop::ChangePassword, "Change", false)],
+    ));
+    lines
+}
+
+/// The About section: website, privacy policy and version.
+fn about_lines(palette: &Palette, view: &AccountView, width: usize) -> Vec<Line<'static>> {
+    vec![
+        section(palette, "About"),
         row(
             palette,
             width,
@@ -241,8 +257,7 @@ fn lines(palette: &Palette, view: &AccountView, width: usize) -> Vec<Line<'stati
             vec![Span::raw(format!("v{VERSION}"))],
             vec![button(palette, view, Stop::Changelog, "Changelog", false)],
         ),
-    ]);
-    lines
+    ]
 }
 
 /// The More sheet: one danger button, Delete account.

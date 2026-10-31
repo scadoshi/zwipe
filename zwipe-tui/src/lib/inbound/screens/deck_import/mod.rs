@@ -90,7 +90,9 @@ impl Focus {
             here.checked_sub(1)
                 .unwrap_or(Self::ORDER.len().saturating_sub(1))
         } else {
-            here.saturating_add(1) % Self::ORDER.len()
+            here.saturating_add(1)
+                .checked_rem(Self::ORDER.len())
+                .unwrap_or(0)
         };
         Self::ORDER.get(next).copied().unwrap_or_default()
     }

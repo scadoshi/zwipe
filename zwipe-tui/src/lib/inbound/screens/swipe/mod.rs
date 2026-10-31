@@ -926,37 +926,19 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
                 client.search_deck_cards(deck_id, &query, &session).await
             }
             .await;
-            if let Err(e @ ClientError::Unauthorized(_)) = &result {
-                return Some(screens::failure(e, screens::Update::Status));
-            }
-            Update::Searched {
-                deck_id,
-                generation,
-                filter,
-                page,
-                result: result.map_err(|e| message(&e)),
-            }
+            return Some(searched_update(deck_id, generation, filter, page, result));
         }
         Request::Create {
             deck_id,
             card,
             board,
         } => {
-            let request = HttpCreateDeckCard::new(
-                &card.scryfall_data,
-                1,
-                crate::domain::stores::undo::create_board_field(board),
-            );
-            let result = async {
-                let session = account.fresh().await?;
-                client.create_deck_card(deck_id, &request, &session).await
-            }
-            .await;
+            let result = create(account, deck_id, &card, board).await;
             Update::Created {
                 deck_id,
                 card,
                 board,
-                result: result.map(Box::new).map_err(|e| message(&e)),
+                result,
             }
         }
         Request::DeleteUndone { deck_id, card_id } => {
@@ -995,13 +977,7 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
             board,
             taken,
         } => {
-            let result = match account.fresh().await {
-                Err(e) => Err(UndoFailure::Session(message(&e))),
-                Ok(session) => client
-                    .delete_deck_card(deck_id, card.scryfall_data.id, &session)
-                    .await
-                    .map_err(|e| UndoFailure::Call(e.to_string())),
-            };
+            let result = undo_add(account, deck_id, &card).await;
             Update::UndidAdd {
                 deck_id,
                 card,
@@ -1010,34 +986,13 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
                 result,
             }
         }
-        Request::Promote { deck_id, card } => {
-            let patch = HttpPatchDeckCard::new(None, Some("deck".to_owned()));
-            let result = async {
-                let session = account.fresh().await?;
-                client
-                    .update_deck_card(deck_id, card.scryfall_data.id, &patch, &session)
-                    .await
-            }
-            .await;
-            if let Err(e) = &result {
-                return Some(screens::Update::Toast(ToastKind::Error, message(e)));
-            }
-            Update::Promoted { deck_id, card }
-        }
+        Request::Promote { deck_id, card } => return promote(account, deck_id, card).await,
         Request::Demote {
             deck_id,
             card,
             taken,
         } => {
-            let patch = HttpPatchDeckCard::new(None, Some("maybeboard".to_owned()));
-            let result = match account.fresh().await {
-                Err(e) => Err(UndoFailure::Session(message(&e))),
-                Ok(session) => client
-                    .update_deck_card(deck_id, card.scryfall_data.id, &patch, &session)
-                    .await
-                    .map(Box::new)
-                    .map_err(|e| UndoFailure::Call(e.to_string())),
-            };
+            let result = demote(account, deck_id, &card).await;
             Update::Demoted {
                 deck_id,
                 card,
@@ -1045,30 +1000,129 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
                 result,
             }
         }
-        Request::ReloadMaybeboard { deck_id } => {
-            let result = async {
-                let session = account.fresh().await?;
-                client.fetch_deck(deck_id, &session).await
-            }
-            .await;
-            match result {
-                Ok(deck) => Update::MaybeboardReloaded {
-                    deck_id,
-                    entries: deck
-                        .entries
-                        .into_iter()
-                        .filter(|e| e.deck_card.board.is_maybeboard())
-                        .collect(),
-                },
-                Err(e) => return Some(screens::Update::Toast(ToastKind::Error, message(&e))),
-            }
-        }
+        Request::ReloadMaybeboard { deck_id } => return reload_maybeboard(account, deck_id).await,
         Request::Image { url } => Update::Image {
             image: images::fetch(&client.client, &url).await.ok().map(Box::new),
             url,
         },
     };
     Some(update.into())
+}
+
+/// A search answer as its update: a signed-out session ends it, anything else lands on the stack.
+fn searched_update(
+    deck_id: Uuid,
+    generation: u64,
+    filter: Box<CardQueryBuilder>,
+    page: Page,
+    result: Result<HttpDeckCardSearch, ClientError>,
+) -> screens::Update {
+    if let Err(e @ ClientError::Unauthorized(_)) = &result {
+        return screens::failure(e, screens::Update::Status);
+    }
+    Update::Searched {
+        deck_id,
+        generation,
+        filter,
+        page,
+        result: result.map_err(|e| message(&e)),
+    }
+    .into()
+}
+
+/// Adds one copy of `card` to `board`.
+async fn create(
+    account: &Account,
+    deck_id: Uuid,
+    card: &Card,
+    board: Board,
+) -> Result<Box<DeckCard>, String> {
+    let request = HttpCreateDeckCard::new(
+        &card.scryfall_data,
+        1,
+        crate::domain::stores::undo::create_board_field(board),
+    );
+    let result = async {
+        let session = account.fresh().await?;
+        account
+            .client
+            .create_deck_card(deck_id, &request, &session)
+            .await
+    }
+    .await;
+    result.map(Box::new).map_err(|e| message(&e))
+}
+
+/// Moves a maybeboard `card` to the deck, or toasts the failure.
+async fn promote(account: &Account, deck_id: Uuid, card: Box<Card>) -> Option<screens::Update> {
+    let patch = HttpPatchDeckCard::new(None, Some("deck".to_owned()));
+    let result = async {
+        let session = account.fresh().await?;
+        account
+            .client
+            .update_deck_card(deck_id, card.scryfall_data.id, &patch, &session)
+            .await
+    }
+    .await;
+    if let Err(e) = &result {
+        return Some(screens::Update::Toast(ToastKind::Error, message(e)));
+    }
+    Some(Update::Promoted { deck_id, card }.into())
+}
+
+/// Deletes `card` from the deck, undoing its add.
+async fn undo_add(account: &Account, deck_id: Uuid, card: &Card) -> Result<(), UndoFailure> {
+    let session = account
+        .fresh()
+        .await
+        .map_err(|e| UndoFailure::Session(message(&e)))?;
+    account
+        .client
+        .delete_deck_card(deck_id, card.scryfall_data.id, &session)
+        .await
+        .map_err(|e| UndoFailure::Call(e.to_string()))
+}
+
+/// Moves a promoted `card` back to the maybeboard.
+async fn demote(
+    account: &Account,
+    deck_id: Uuid,
+    card: &Card,
+) -> Result<Box<DeckCard>, UndoFailure> {
+    let patch = HttpPatchDeckCard::new(None, Some("maybeboard".to_owned()));
+    let session = account
+        .fresh()
+        .await
+        .map_err(|e| UndoFailure::Session(message(&e)))?;
+    account
+        .client
+        .update_deck_card(deck_id, card.scryfall_data.id, &patch, &session)
+        .await
+        .map(Box::new)
+        .map_err(|e| UndoFailure::Call(e.to_string()))
+}
+
+/// Fetches the deck again and keeps its maybeboard, or toasts the failure.
+async fn reload_maybeboard(account: &Account, deck_id: Uuid) -> Option<screens::Update> {
+    let result = async {
+        let session = account.fresh().await?;
+        account.client.fetch_deck(deck_id, &session).await
+    }
+    .await;
+    match result {
+        Ok(deck) => Some(
+            Update::MaybeboardReloaded {
+                deck_id,
+                entries: deck
+                    .entries
+                    .into_iter()
+                    .filter(|e| e.deck_card.board.is_maybeboard())
+                    .collect(),
+            }
+            .into(),
+        ),
+        Err(e) => Some(screens::Update::Toast(ToastKind::Error, message(&e))),
+    }
 }
 
 pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
@@ -1138,74 +1192,14 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
             if deck_id != view.deck.id {
                 return;
             }
-            match result {
-                Ok(()) => {
-                    if let Some(oracle_id) = card.scryfall_data.oracle_id {
-                        view.deck.in_deck.remove(&oracle_id);
-                    }
-                    if board == Board::Deck {
-                        view.rewind_counts(&card);
-                    } else {
-                        let id = card.scryfall_data.id;
-                        view.deck
-                            .maybeboard
-                            .retain(|e| e.card.scryfall_data.id != id);
-                    }
-                    cx.toast(ToastKind::Success, undone_message(board).to_owned());
-                }
-                Err(failure) => {
-                    if let UndoFailure::Session(m) = &failure {
-                        cx.toast(ToastKind::Error, m.clone());
-                        let action = if board == Board::Deck {
-                            AddAction::Add
-                        } else {
-                            AddAction::Maybe
-                        };
-                        view.stack.unwind_undo(action);
-                    }
-                    if let UndoFailure::Call(e) = &failure {
-                        cx.toast(ToastKind::Error, format!("Failed to undo: {e}"));
-                    }
-                    if let Some(taken) = taken {
-                        cx.shared.cards.undo.push(deck_id, *taken);
-                    }
-                }
-            }
+            undid_add(view, cx, deck_id, &card, board, taken, result);
         }
         Update::Demoted {
             deck_id,
             card,
             taken,
             result,
-        } => match result {
-            Ok(deck_card) => {
-                if let Some(oracle_id) = card.scryfall_data.oracle_id {
-                    view.deck.in_deck.remove(&oracle_id);
-                }
-                let mut deck_card = *deck_card;
-                deck_card.board = Board::Maybeboard;
-                deck_card.mvp_at = None;
-                view.deck.maybeboard.push(DeckEntry {
-                    card: *card,
-                    deck_card,
-                });
-                cx.toast(ToastKind::Success, "Undid move to deck".to_owned());
-            }
-            Err(failure) => {
-                match failure {
-                    UndoFailure::Session(m) => {
-                        cx.toast(ToastKind::Error, m);
-                        view.mb_stack.cancel_entering();
-                    }
-                    UndoFailure::Call(e) => {
-                        cx.toast(ToastKind::Error, format!("Failed to undo: {e}"));
-                    }
-                }
-                if let Some(taken) = taken {
-                    cx.shared.cards.undo.push(deck_id, *taken);
-                }
-            }
-        },
+        } => demoted(view, cx, deck_id, *card, taken, result),
         Update::MaybeboardReloaded { deck_id, entries } => {
             if deck_id != view.deck.id {
                 return;
@@ -1227,6 +1221,88 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
                     }
                     None => CardImage::Failed,
                 };
+            }
+        }
+    }
+}
+
+/// Settles an undone add on the open screen: the card leaves the deck, or the failure toasts and the log gets its entry back.
+fn undid_add(
+    view: &mut SwipeView,
+    cx: &mut Context<'_>,
+    deck_id: Uuid,
+    card: &Card,
+    board: Board,
+    taken: Option<Box<UndoAction>>,
+    result: Result<(), UndoFailure>,
+) {
+    match result {
+        Ok(()) => {
+            if let Some(oracle_id) = card.scryfall_data.oracle_id {
+                view.deck.in_deck.remove(&oracle_id);
+            }
+            if board == Board::Deck {
+                view.rewind_counts(card);
+            } else {
+                let id = card.scryfall_data.id;
+                view.deck
+                    .maybeboard
+                    .retain(|e| e.card.scryfall_data.id != id);
+            }
+            cx.toast(ToastKind::Success, undone_message(board).to_owned());
+        }
+        Err(failure) => {
+            if let UndoFailure::Session(m) = &failure {
+                cx.toast(ToastKind::Error, m.clone());
+                let action = if board == Board::Deck {
+                    AddAction::Add
+                } else {
+                    AddAction::Maybe
+                };
+                view.stack.unwind_undo(action);
+            }
+            if let UndoFailure::Call(e) = &failure {
+                cx.toast(ToastKind::Error, format!("Failed to undo: {e}"));
+            }
+            if let Some(taken) = taken {
+                cx.shared.cards.undo.push(deck_id, *taken);
+            }
+        }
+    }
+}
+
+/// Settles a demote on the open screen: the card rejoins the maybeboard, or the failure toasts and the log gets its entry back.
+fn demoted(
+    view: &mut SwipeView,
+    cx: &mut Context<'_>,
+    deck_id: Uuid,
+    card: Card,
+    taken: Option<Box<UndoAction>>,
+    result: Result<Box<DeckCard>, UndoFailure>,
+) {
+    match result {
+        Ok(deck_card) => {
+            if let Some(oracle_id) = card.scryfall_data.oracle_id {
+                view.deck.in_deck.remove(&oracle_id);
+            }
+            let mut deck_card = *deck_card;
+            deck_card.board = Board::Maybeboard;
+            deck_card.mvp_at = None;
+            view.deck.maybeboard.push(DeckEntry { card, deck_card });
+            cx.toast(ToastKind::Success, "Undid move to deck".to_owned());
+        }
+        Err(failure) => {
+            match failure {
+                UndoFailure::Session(m) => {
+                    cx.toast(ToastKind::Error, m);
+                    view.mb_stack.cancel_entering();
+                }
+                UndoFailure::Call(e) => {
+                    cx.toast(ToastKind::Error, format!("Failed to undo: {e}"));
+                }
+            }
+            if let Some(taken) = taken {
+                cx.shared.cards.undo.push(deck_id, *taken);
             }
         }
     }

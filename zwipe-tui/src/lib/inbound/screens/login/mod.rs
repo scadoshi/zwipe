@@ -84,7 +84,11 @@ impl LoginField {
 
     /// The next stop, wrapping round.
     pub(crate) fn next(self) -> Self {
-        let next = self.index().saturating_add(1) % Self::ORDER.len();
+        let next = self
+            .index()
+            .saturating_add(1)
+            .checked_rem(Self::ORDER.len())
+            .unwrap_or(0);
         Self::ORDER.get(next).copied().unwrap_or_default()
     }
 

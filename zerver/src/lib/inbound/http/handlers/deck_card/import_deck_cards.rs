@@ -4,7 +4,7 @@ use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use zwipe_core::domain::deck::requests::import_deck_cards::{
-    ImportDeckCards, ImportDeckCardsResult,
+    ImportDeckCards, ImportDeckCardsResult, TooManyImportLines,
 };
 use zwipe_core::domain::user::requests::get_user::GetUser;
 use zwipe_core::http::contracts::deck_card::HttpImportDeckCards;
@@ -13,6 +13,12 @@ use crate::domain::deck::models::deck_card::import_deck_cards::ImportDeckCardsEr
 use crate::inbound::http::handlers::metrics::check_completion;
 use crate::inbound::http::middleware::AuthenticatedUser;
 use crate::inbound::http::{ApiError, AppState, To500};
+
+impl From<TooManyImportLines> for ApiError {
+    fn from(value: TooManyImportLines) -> Self {
+        Self::UnprocessableEntity(value.to_string())
+    }
+}
 
 impl From<ImportDeckCardsError> for ApiError {
     fn from(value: ImportDeckCardsError) -> Self {
@@ -36,8 +42,11 @@ impl From<ImportDeckCardsError> for ApiError {
 ///
 /// # Errors
 ///
-/// Returns 422 for a malformed deck id or board or a full deck, 404 when the
-/// deck isn't the caller's, and 500 on a database failure.
+/// Returns 413 for a body over the import route's limit, 422 for a malformed
+/// deck id or board, more than [`MAX_IMPORT_LINES`] card lines or a full deck,
+/// 404 when the deck isn't the caller's, and 500 on a database failure.
+///
+/// [`MAX_IMPORT_LINES`]: zwipe_core::domain::deck::requests::import_deck_cards::MAX_IMPORT_LINES
 pub async fn import_deck_cards(
     user: AuthenticatedUser,
     State(state): State<AppState>,
@@ -63,7 +72,7 @@ pub async fn import_deck_cards(
         email_verified,
         board_override,
         body.mode,
-    );
+    )?;
 
     let result = state
         .deck_service

@@ -43,7 +43,7 @@ impl CountUp {
     /// Frames of 16 ms from `from` to `now`.
     fn frames(from: Instant, now: Instant) -> u64 {
         let elapsed = now.saturating_duration_since(from).as_millis();
-        u64::try_from(elapsed / TICK.as_millis()).unwrap_or(u64::MAX)
+        u64::try_from(elapsed.checked_div(TICK.as_millis()).unwrap_or(0)).unwrap_or(u64::MAX)
     }
 
     /// The number shown at `now`, `None` before the first frame.
@@ -116,14 +116,27 @@ mod tests {
     fn a_counter_is_blank_until_it_starts_then_rolls_until_its_value_lands() {
         let start = Instant::now();
         let mut counter = CountUp::new(start, None);
-        assert_eq!(counter.shown(start - Duration::from_millis(1)), BLANK);
+        assert_eq!(
+            counter.shown(
+                start
+                    .checked_sub(Duration::from_millis(1))
+                    .expect("the clock is past a millisecond")
+            ),
+            BLANK
+        );
         let rolling = counter.number(start + TICK * 3).unwrap();
         assert!((1_000..10_000).contains(&rolling));
         assert!(counter.animating(start + Duration::from_secs(9)));
 
         let arrived = start + Duration::from_millis(500);
         counter.set(28_018, arrived);
-        assert!(counter.animating(arrived + DURATION - TICK * 2));
+        assert!(
+            counter.animating(
+                (arrived + DURATION)
+                    .checked_sub(TICK * 2)
+                    .expect("a landing is longer than two ticks")
+            )
+        );
         assert_eq!(counter.shown(arrived + DURATION), "28.0k");
         assert!(!counter.animating(arrived + DURATION));
     }

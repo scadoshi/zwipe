@@ -53,11 +53,8 @@ pub(crate) fn face_count(card: &Card) -> usize {
 /// The face at `face`, wrapping around.
 fn face_at(card: &Card, face: usize) -> Option<Face> {
     let faces = card::faces(&card.scryfall_data);
-    let count = faces.len();
-    if count == 0 {
-        return None;
-    }
-    faces.into_iter().nth(face % count)
+    let at = face.checked_rem(faces.len())?;
+    faces.into_iter().nth(at)
 }
 
 /// A face's mana cost in mana colors.
@@ -74,7 +71,7 @@ fn cost_spans(palette: &Palette, face: &Face) -> Vec<Span<'static>> {
         .collect()
 }
 
-fn chip(palette: &Palette, text: String) -> Span<'static> {
+fn chip(palette: &Palette, text: &str) -> Span<'static> {
     Span::styled(format!(" {text} "), palette.muted.reversed())
 }
 
@@ -91,12 +88,12 @@ pub(crate) fn details_lines(palette: &Palette, card: &Card, face: usize) -> Vec<
     }
     let mut chips = Vec::new();
     if !face.type_line.is_empty() {
-        chips.push(chip(palette, face.type_line.clone()));
+        chips.push(chip(palette, &face.type_line));
         chips.push(Span::raw(" "));
     }
-    chips.push(chip(palette, data.rarity.to_long_name()));
+    chips.push(chip(palette, &data.rarity.to_long_name()));
     chips.push(Span::raw(" "));
-    chips.push(chip(palette, data.set_name.clone()));
+    chips.push(chip(palette, &data.set_name));
     lines.push(Line::from(chips));
     if !face.rules.is_empty() {
         lines.push(Line::default());
@@ -104,7 +101,7 @@ pub(crate) fn details_lines(palette: &Palette, card: &Card, face: usize) -> Vec<
     }
     if let Some(stats) = &face.stats {
         lines.push(Line::default());
-        lines.push(Line::from(vec![chip(palette, stats.clone())]));
+        lines.push(Line::from(vec![chip(palette, stats)]));
     }
     let keywords: Vec<String> = data.keywords.clone().unwrap_or_default();
     if !keywords.is_empty() {
@@ -112,7 +109,7 @@ pub(crate) fn details_lines(palette: &Palette, card: &Card, face: usize) -> Vec<
         lines.push(Line::from("Keywords").style(palette.muted.bold()));
         let mut spans = Vec::new();
         for keyword in keywords {
-            spans.push(chip(palette, keyword));
+            spans.push(chip(palette, &keyword));
             spans.push(Span::raw(" "));
         }
         lines.push(Line::from(spans));
@@ -127,12 +124,12 @@ pub(crate) fn details_lines(palette: &Palette, card: &Card, face: usize) -> Vec<
                 .get(role)
                 .map(|t| t.join(", "))
                 .unwrap_or_default();
-            lines.push(role_line(palette, role_label(role), &tags));
+            lines.push(role_line(palette, &role_label(role), &tags));
         }
         if !profile.other_oracle_tags.is_empty() {
             lines.push(role_line(
                 palette,
-                "Other tags".to_owned(),
+                "Other tags",
                 &profile.other_oracle_tags.join(", "),
             ));
         }
@@ -140,7 +137,7 @@ pub(crate) fn details_lines(palette: &Palette, card: &Card, face: usize) -> Vec<
     lines
 }
 
-fn role_line(palette: &Palette, label: String, tags: &str) -> Line<'static> {
+fn role_line(palette: &Palette, label: &str, tags: &str) -> Line<'static> {
     let mut spans = vec![Span::styled(
         format!(" {label} "),
         palette.accent.reversed(),
@@ -165,7 +162,7 @@ pub(crate) fn proxy_lines(palette: &Palette, card: &Card, face: usize) -> Vec<Li
     let mut lines = vec![Line::from(title)];
     if face_count(card) > 1 {
         let count = face_count(card);
-        let at = face % count;
+        let at = face.checked_rem(count).unwrap_or(0);
         lines.push(
             Line::from(format!("Face {} of {count}, t flips", at.saturating_add(1)))
                 .style(palette.muted),
@@ -182,7 +179,7 @@ pub(crate) fn proxy_lines(palette: &Palette, card: &Card, face: usize) -> Vec<Li
         .scryfall_data
         .card_faces
         .as_ref()
-        .and_then(|faces| faces.get(face % face_count(card)))
+        .and_then(|faces| faces.get(face.checked_rem(face_count(card))?))
         .and_then(|f| f.flavor_text.clone())
         .or_else(|| card.scryfall_data.flavor_text.clone());
     if let Some(flavor) = flavor {

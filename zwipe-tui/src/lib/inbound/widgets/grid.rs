@@ -26,7 +26,7 @@ const RAIN_STEP_MS: u64 = 18;
 const JITTER_MS: u64 = 160;
 
 /// One tile's fall, in milliseconds.
-const DROP_MS: f64 = 350.0;
+const DROP_MS: u32 = 350;
 
 /// How many tiles a tile falls.
 const DROP_TILES: f64 = 3.0;
@@ -53,7 +53,7 @@ pub(crate) fn rain_length(height: u16) -> Duration {
     Duration::from_millis(
         rows.saturating_mul(RAIN_STEP_MS)
             .saturating_add(JITTER_MS)
-            .saturating_add(DROP_MS as u64),
+            .saturating_add(u64::from(DROP_MS)),
     )
 }
 
@@ -124,7 +124,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, palette: &Palette, area: Rect, elapsed: Op
                 if t.as_millis() < u128::from(at) {
                     0.0
                 } else {
-                    (since / DROP_MS).min(1.0)
+                    (since / f64::from(DROP_MS)).min(1.0)
                 }
             });
             if progress <= 0.0 {
@@ -134,7 +134,8 @@ pub(crate) fn draw(f: &mut Frame<'_>, palette: &Palette, area: Rect, elapsed: Op
             #[expect(
                 clippy::as_conversions,
                 clippy::cast_possible_truncation,
-                reason = "the fall is at most three tiles of two rows"
+                clippy::cast_sign_loss,
+                reason = "the fall is at most three tiles of two rows and never below zero"
             )]
             let lift = ((1.0 - eased) * DROP_TILES * f64::from(PITCH_Y)).round() as u16;
             let Some(y) = row

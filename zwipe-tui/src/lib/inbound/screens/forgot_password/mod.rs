@@ -83,7 +83,7 @@ impl ForgotForm {
         let stops = self.stops();
         let at = stops.iter().position(|s| *s == self.focus).unwrap_or(0);
         let next = if forward {
-            at.saturating_add(1) % stops.len()
+            at.saturating_add(1).checked_rem(stops.len()).unwrap_or(0)
         } else {
             at.checked_sub(1)
                 .unwrap_or_else(|| stops.len().saturating_sub(1))

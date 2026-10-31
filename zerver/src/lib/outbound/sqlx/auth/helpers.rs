@@ -114,7 +114,7 @@ impl TxHelper for PgTransaction<'_> {
                     OR replaced_at < NOW() - make_interval(days => $3)
                 ))"#,
             user_id,
-            MAXIMUM_SESSION_COUNT as i64,
+            i64::from(MAXIMUM_SESSION_COUNT),
             REPLACED_TOKEN_RETENTION_DAYS
         )
         .execute(&mut **self)

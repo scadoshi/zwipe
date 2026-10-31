@@ -40,7 +40,11 @@ pub async fn get_featured_flavor(
             let card = service.featured_flavor(&hour_key).await?;
             Ok::<_, GetCardError>((
                 card,
-                Instant::now() + Duration::from_secs(secs_until_next_utc_hour(&now)),
+                // An unrepresentable deadline expires the slot at once, so the
+                // next request picks again.
+                Instant::now()
+                    .checked_add(Duration::from_secs(secs_until_next_utc_hour(&now)))
+                    .unwrap_or_else(Instant::now),
             ))
         })
         .await
@@ -56,6 +60,10 @@ pub async fn get_featured_flavor(
 /// Seconds until the top of the next UTC hour: the slot deadline and the
 /// response `max-age` both derive from it, so the in-memory flip and the edge
 /// cache expiry land on the same wall-clock boundary.
+#[expect(
+    clippy::arithmetic_side_effects,
+    reason = "minute < 60 and second < 61 keep every term between 0 and 3660"
+)]
 fn secs_until_next_utc_hour(now: &chrono::DateTime<chrono::Utc>) -> u64 {
     let secs_into_hour = u64::from(now.minute()) * 60 + u64::from(now.second());
     3600 - secs_into_hour.min(3599)

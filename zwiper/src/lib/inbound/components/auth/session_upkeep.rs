@@ -47,8 +47,9 @@ const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 /// version.
 const UPKEEP_INTERVAL: Duration = Duration::from_secs(60);
 
-const SECS_PER_MINUTE: i64 = 60;
-const SECS_PER_HOUR: i64 = 3600;
+/// The latest point into an hour [`next_hour`] counts, so the gap it adds is
+/// always at least a second.
+const LAST_SECOND_OF_HOUR: chrono::Duration = chrono::Duration::seconds(3599);
 
 /// The featured flavor card cached for the Home screen, with the time it
 /// goes stale.
@@ -69,13 +70,9 @@ impl FlavorCard {
     /// Wrap a freshly fetched card, expiring at the top of the next UTC hour
     /// (the server's rotation boundary).
     pub fn new(card: Card) -> Self {
-        use chrono::Timelike;
-        let now = Utc::now();
-        let secs_into_hour = i64::from(now.minute()) * SECS_PER_MINUTE + i64::from(now.second());
         Self {
             card,
-            expires_at: now
-                + chrono::Duration::seconds(SECS_PER_HOUR - secs_into_hour.min(SECS_PER_HOUR - 1)),
+            expires_at: next_hour(Utc::now()),
         }
     }
 
@@ -83,6 +80,24 @@ impl FlavorCard {
     pub fn is_expired(&self) -> bool {
         Utc::now() >= self.expires_at
     }
+}
+
+/// The top of the UTC hour after `now`, keeping `now`'s fraction of a second.
+/// Past the last representable instant, the end of time.
+fn next_hour(now: DateTime<Utc>) -> DateTime<Utc> {
+    use chrono::Timelike;
+    // Same fraction of a second as `now`, so the gap is whole seconds.
+    let hour_start = now
+        .with_minute(0)
+        .and_then(|t| t.with_second(0))
+        .unwrap_or(now);
+    let into_hour = now
+        .signed_duration_since(hour_start)
+        .min(LAST_SECOND_OF_HOUR);
+    chrono::Duration::hours(1)
+        .checked_sub(&into_hour)
+        .and_then(|gap| now.checked_add_signed(gap))
+        .unwrap_or(DateTime::<Utc>::MAX_UTC)
 }
 
 /// App-wide changelog cache, populated by a background fetch at startup.
@@ -128,6 +143,16 @@ impl UpgradeRequired {
 /// with as root context.
 pub fn spawn_upkeeper() -> UpgradeRequired {
     tracing::debug!("upkeeper spawned");
+    let (session, client) = use_session_and_client();
+    use_screen_state();
+    use_server_catalogs(session, client);
+    use_theme_and_pips(session);
+    use_usage_telemetry(session, client);
+    use_version_gate(session, client)
+}
+
+/// Provides the root-owned session and API client signals.
+fn use_session_and_client() -> (Signal<Option<Session>>, Signal<ZwipeClient>) {
     // Owned by the root scope rather than this component's: token refresh
     // writes the session from a `spawn_forever` task, which runs in the root
     // scope, and a signal must be owned by a parent of every scope using it.
@@ -143,6 +168,12 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
         use_hook(|| Signal::new_in_scope(ZwipeClient::new(config.backend_url), ScopeId::ROOT));
     use_context_provider(|| client);
 
+    (session, client)
+}
+
+/// Provides the screen state kept above the router: form handoffs, stacks,
+/// stores, the hint channel and Home's caches.
+fn use_screen_state() {
     // Registration hands its email to the login form through this.
     let login_prefill = use_signal(|| None);
     use_context_provider(|| LoginPrefill(login_prefill));
@@ -210,7 +241,10 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
     // return to Home shows it while the refetch is out (see CachedPlayStyle).
     let cached_play_style: Signal<Option<CachedPlayStyle>> = use_signal(|| None);
     use_context_provider(|| cached_play_style);
+}
 
+/// Starts the changelog and catalog fetches and provides their caches.
+fn use_server_catalogs(session: Signal<Option<Session>>, client: Signal<ZwipeClient>) {
     // Changelog: fetched once in the background at startup and cached above the
     // router for the session, so opening the Changelog screen is instant. The
     // screen shows a skeleton while this is Loading and falls back to the
@@ -263,7 +297,10 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
             keyword_reminders_map.set(Some(map.clone()));
         }
     });
+}
 
+/// Provides the theme and pip style, seeded from the stored session.
+fn use_theme_and_pips(session: Signal<Option<Session>>) {
     // Theme: a live session's preferences win (freshest for this account),
     // else the last-used theme cached locally (so pre-auth screens render in it
     // even logged out / after a device-to-device change), else the default.
@@ -295,7 +332,11 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
 
     // An icon a retired theme drew switches to its replacement, once a launch.
     use_hook(app_icon::replace_retired);
+}
 
+/// Provides the usage buffer and spawns its flushers, the pre-auth funnel
+/// event and the pending crash report send.
+fn use_usage_telemetry(session: Signal<Option<Session>>, client: Signal<ZwipeClient>) {
     // Usage telemetry buffer (swipe / search counters + suggestion signals).
     // Flushed by two tasks sharing this one buffer: a 30s timer, and a
     // visibility flush that fires the instant the app backgrounds (so a
@@ -332,7 +373,14 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
             });
         }
     });
+}
 
+/// Provides the min-version gate and spawns the upkeep loop that refreshes the
+/// session and rechecks the server minimum.
+fn use_version_gate(
+    session: Signal<Option<Session>>,
+    client: Signal<ZwipeClient>,
+) -> UpgradeRequired {
     // Min-version gate: flipped true when the server says this build is too
     // old. Provided as context (newtyped) so any screen can read it if needed.
     let mut upgrade_required = use_signal(|| false);
@@ -367,4 +415,32 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
     });
 
     UpgradeRequired(upgrade_required)
+}
+
+#[cfg(test)]
+mod tests {
+    use chrono::{TimeZone, Timelike};
+
+    use super::*;
+
+    #[test]
+    fn a_flavor_card_expires_at_the_top_of_the_next_hour() {
+        let at = |h, m, s| {
+            Utc.with_ymd_and_hms(2026, 10, 30, h, m, s)
+                .unwrap()
+                .with_nanosecond(789_000_000)
+                .unwrap()
+        };
+        assert_eq!(next_hour(at(12, 34, 56)), at(13, 0, 0));
+        assert_eq!(next_hour(at(12, 0, 0)), at(13, 0, 0));
+        assert_eq!(next_hour(at(12, 59, 59)), at(13, 0, 0));
+    }
+
+    #[test]
+    fn a_flavor_card_fetched_at_the_end_of_time_never_expires() {
+        assert_eq!(
+            next_hour(DateTime::<Utc>::MAX_UTC),
+            DateTime::<Utc>::MAX_UTC
+        );
+    }
 }

@@ -411,127 +411,211 @@ fn label_when_set(b: &CardQueryBuilder, text: &'static str, mode: ModeChip, clea
     }
 }
 
+/// A contains row and a doesn't-contain row, each under its label.
+fn text_pair(b: &CardQueryBuilder, contains: TextField, not: TextField) -> Vec<Row> {
+    vec![
+        label(b, contains.placeholder(), None, Clear::Text(contains)),
+        Row::Text(contains),
+        label(b, not.placeholder(), None, Clear::Text(not)),
+        Row::Text(not),
+    ]
+}
+
+/// An include picker and an exclude picker for `group`, each under its label.
+fn include_exclude(
+    b: &CardQueryBuilder,
+    group: MatchGroup,
+    include: &'static str,
+    exclude: &'static str,
+) -> [Row; 4] {
+    [
+        label(
+            b,
+            include,
+            Some(ModeChip::Match(group)),
+            Clear::Includes(group),
+        ),
+        Row::Picker(PickerField::Include(group)),
+        label(b, exclude, None, Clear::Excludes(group.exclude())),
+        Row::Picker(PickerField::Exclude(group)),
+    ]
+}
+
+/// The Oracle text section: the text pair, then Oracle word and keyword pickers.
+fn oracle_text_rows(b: &CardQueryBuilder) -> Vec<Row> {
+    let mut rows = text_pair(b, TextField::OracleContains, TextField::OracleNotContains);
+    rows.extend(include_exclude(
+        b,
+        MatchGroup::OracleWords,
+        "Oracle words include",
+        "Oracle words exclude",
+    ));
+    rows.extend(include_exclude(
+        b,
+        MatchGroup::Keywords,
+        "Keywords include",
+        "Keywords exclude",
+    ));
+    rows
+}
+
+/// The Types section: basic type chips, then type line pickers.
+fn types_rows(b: &CardQueryBuilder) -> Vec<Row> {
+    let mut rows = vec![
+        label_when_set(
+            b,
+            "Basic types include",
+            ModeChip::Match(MatchGroup::BasicTypes),
+            Clear::Includes(MatchGroup::BasicTypes),
+        ),
+        Row::Chips(ChipSet::BasicIncludes),
+        label(
+            b,
+            "Basic types exclude",
+            None,
+            Clear::Excludes(Exclude::BasicTypes),
+        ),
+        Row::Chips(ChipSet::BasicExcludes),
+    ];
+    rows.extend(include_exclude(
+        b,
+        MatchGroup::TypeLine,
+        "Type line include",
+        "Type line exclude",
+    ));
+    rows
+}
+
+/// The Mana section: mana value inputs, color identity, then produced colors.
+fn mana_rows(b: &CardQueryBuilder, modes: &Modes) -> Vec<Row> {
+    let mut rows = vec![label(
+        b,
+        "Mana value",
+        Some(ModeChip::Range(RangeGroup::ManaValue)),
+        Clear::Range(RangeGroup::ManaValue),
+    )];
+    match modes.range_of(b, RangeGroup::ManaValue) {
+        Exactness::Exact => rows.push(Row::Number(NumberField::ManaValue)),
+        Exactness::Range => {
+            rows.push(Row::Number(NumberField::ManaMin));
+            rows.push(Row::Number(NumberField::ManaMax));
+        }
+    }
+    rows.extend([
+        label(
+            b,
+            "Color identity",
+            Some(ModeChip::Range(RangeGroup::ColorIdentity)),
+            Clear::Range(RangeGroup::ColorIdentity),
+        ),
+        Row::Chips(ChipSet::Colors),
+        label(
+            b,
+            "Produces",
+            Some(ModeChip::Match(MatchGroup::Produced)),
+            Clear::Includes(MatchGroup::Produced),
+        ),
+        Row::Chips(ChipSet::ProducedIncludes),
+        label(
+            b,
+            "Doesn't produce",
+            None,
+            Clear::Excludes(MatchGroup::Produced.exclude()),
+        ),
+        Row::Chips(ChipSet::ProducedExcludes),
+    ]);
+    rows
+}
+
+/// The Combat section: a labeled stepper each for power and toughness.
+fn combat_rows(b: &CardQueryBuilder, modes: &Modes) -> Vec<Row> {
+    [(Stat::Power, "Power"), (Stat::Toughness, "Toughness")]
+        .into_iter()
+        .flat_map(|(stat, text)| {
+            let group = stat.group();
+            let stepper = match modes.range_of(b, group) {
+                Exactness::Exact => StepRow::Exact(stat),
+                Exactness::Range => StepRow::Range(stat),
+            };
+            [
+                label(b, text, Some(ModeChip::Range(group)), Clear::Range(group)),
+                Row::Stepper(stepper),
+            ]
+        })
+        .collect()
+}
+
+/// The Card roles section: include and exclude chips.
+fn card_roles_rows(b: &CardQueryBuilder) -> Vec<Row> {
+    vec![
+        label_when_set(
+            b,
+            "Card roles include",
+            ModeChip::Match(MatchGroup::Roles),
+            Clear::Includes(MatchGroup::Roles),
+        ),
+        Row::Chips(ChipSet::RolesInclude),
+        label(
+            b,
+            "Card roles exclude",
+            None,
+            Clear::Excludes(MatchGroup::Roles.exclude()),
+        ),
+        Row::Chips(ChipSet::RolesExclude),
+    ]
+}
+
+/// The Oracle tags section: include and exclude pickers.
+fn oracle_tags_rows(b: &CardQueryBuilder) -> Vec<Row> {
+    vec![
+        label_when_set(
+            b,
+            "Oracle tags include",
+            ModeChip::Match(MatchGroup::Tags),
+            Clear::Includes(MatchGroup::Tags),
+        ),
+        Row::Picker(PickerField::Include(MatchGroup::Tags)),
+        label(
+            b,
+            "Oracle tags exclude",
+            None,
+            Clear::Excludes(MatchGroup::Tags.exclude()),
+        ),
+        Row::Picker(PickerField::Exclude(MatchGroup::Tags)),
+    ]
+}
+
+/// The Config section: a labeled yes, no or any chip row per toggle.
+fn config_rows() -> Vec<Row> {
+    Toggle::ALL
+        .into_iter()
+        .flat_map(|toggle| {
+            [
+                Row::Label {
+                    text: toggle.label(),
+                    mode: None,
+                    clear: None,
+                    controls: false,
+                },
+                Row::Chips(ChipSet::Config(toggle)),
+            ]
+        })
+        .collect()
+}
+
 /// The rows of `section` as the builder and modes stand.
 pub(crate) fn rows(section: Section, b: &CardQueryBuilder, modes: &Modes) -> Vec<Row> {
     use Section::{
         Artist, CardRoles, Combat, Config, FlavorText, Format, Mana, Name, OracleTags, OracleText,
         Price, Rarity, Set, Sort, Types,
     };
-    let text_pair = |contains: TextField, not: TextField| {
-        vec![
-            label(b, contains.placeholder(), None, Clear::Text(contains)),
-            Row::Text(contains),
-            label(b, not.placeholder(), None, Clear::Text(not)),
-            Row::Text(not),
-        ]
-    };
-    let include_exclude = |group: MatchGroup, include: &'static str, exclude: &'static str| {
-        [
-            label(
-                b,
-                include,
-                Some(ModeChip::Match(group)),
-                Clear::Includes(group),
-            ),
-            Row::Picker(PickerField::Include(group)),
-            label(b, exclude, None, Clear::Excludes(group.exclude())),
-            Row::Picker(PickerField::Exclude(group)),
-        ]
-    };
     match section {
-        Name => text_pair(TextField::NameContains, TextField::NameNotContains),
-        OracleText => {
-            let mut rows = text_pair(TextField::OracleContains, TextField::OracleNotContains);
-            rows.extend(include_exclude(
-                MatchGroup::OracleWords,
-                "Oracle words include",
-                "Oracle words exclude",
-            ));
-            rows.extend(include_exclude(
-                MatchGroup::Keywords,
-                "Keywords include",
-                "Keywords exclude",
-            ));
-            rows
-        }
-        Types => {
-            let mut rows = vec![
-                label_when_set(
-                    b,
-                    "Basic types include",
-                    ModeChip::Match(MatchGroup::BasicTypes),
-                    Clear::Includes(MatchGroup::BasicTypes),
-                ),
-                Row::Chips(ChipSet::BasicIncludes),
-                label(
-                    b,
-                    "Basic types exclude",
-                    None,
-                    Clear::Excludes(Exclude::BasicTypes),
-                ),
-                Row::Chips(ChipSet::BasicExcludes),
-            ];
-            rows.extend(include_exclude(
-                MatchGroup::TypeLine,
-                "Type line include",
-                "Type line exclude",
-            ));
-            rows
-        }
-        Mana => {
-            let mut rows = vec![label(
-                b,
-                "Mana value",
-                Some(ModeChip::Range(RangeGroup::ManaValue)),
-                Clear::Range(RangeGroup::ManaValue),
-            )];
-            match modes.range_of(b, RangeGroup::ManaValue) {
-                Exactness::Exact => rows.push(Row::Number(NumberField::ManaValue)),
-                Exactness::Range => {
-                    rows.push(Row::Number(NumberField::ManaMin));
-                    rows.push(Row::Number(NumberField::ManaMax));
-                }
-            }
-            rows.extend([
-                label(
-                    b,
-                    "Color identity",
-                    Some(ModeChip::Range(RangeGroup::ColorIdentity)),
-                    Clear::Range(RangeGroup::ColorIdentity),
-                ),
-                Row::Chips(ChipSet::Colors),
-                label(
-                    b,
-                    "Produces",
-                    Some(ModeChip::Match(MatchGroup::Produced)),
-                    Clear::Includes(MatchGroup::Produced),
-                ),
-                Row::Chips(ChipSet::ProducedIncludes),
-                label(
-                    b,
-                    "Doesn't produce",
-                    None,
-                    Clear::Excludes(MatchGroup::Produced.exclude()),
-                ),
-                Row::Chips(ChipSet::ProducedExcludes),
-            ]);
-            rows
-        }
-        Combat => [(Stat::Power, "Power"), (Stat::Toughness, "Toughness")]
-            .into_iter()
-            .flat_map(|(stat, text)| {
-                let group = stat.group();
-                let stepper = match modes.range_of(b, group) {
-                    Exactness::Exact => StepRow::Exact(stat),
-                    Exactness::Range => StepRow::Range(stat),
-                };
-                [
-                    label(b, text, Some(ModeChip::Range(group)), Clear::Range(group)),
-                    Row::Stepper(stepper),
-                ]
-            })
-            .collect(),
-        FlavorText => text_pair(TextField::FlavorContains, TextField::FlavorNotContains),
+        Name => text_pair(b, TextField::NameContains, TextField::NameNotContains),
+        OracleText => oracle_text_rows(b),
+        Types => types_rows(b),
+        Mana => mana_rows(b, modes),
+        Combat => combat_rows(b, modes),
+        FlavorText => text_pair(b, TextField::FlavorContains, TextField::FlavorNotContains),
         Artist => vec![
             label_when_set(
                 b,
@@ -550,38 +634,8 @@ pub(crate) fn rows(section: Section, b: &CardQueryBuilder, modes: &Modes) -> Vec
             ),
             Row::Chips(ChipSet::Rarity),
         ],
-        CardRoles => vec![
-            label_when_set(
-                b,
-                "Card roles include",
-                ModeChip::Match(MatchGroup::Roles),
-                Clear::Includes(MatchGroup::Roles),
-            ),
-            Row::Chips(ChipSet::RolesInclude),
-            label(
-                b,
-                "Card roles exclude",
-                None,
-                Clear::Excludes(MatchGroup::Roles.exclude()),
-            ),
-            Row::Chips(ChipSet::RolesExclude),
-        ],
-        OracleTags => vec![
-            label_when_set(
-                b,
-                "Oracle tags include",
-                ModeChip::Match(MatchGroup::Tags),
-                Clear::Includes(MatchGroup::Tags),
-            ),
-            Row::Picker(PickerField::Include(MatchGroup::Tags)),
-            label(
-                b,
-                "Oracle tags exclude",
-                None,
-                Clear::Excludes(MatchGroup::Tags.exclude()),
-            ),
-            Row::Picker(PickerField::Exclude(MatchGroup::Tags)),
-        ],
+        CardRoles => card_roles_rows(b),
+        OracleTags => oracle_tags_rows(b),
         Set => vec![
             label_when_set(
                 b,
@@ -614,20 +668,7 @@ pub(crate) fn rows(section: Section, b: &CardQueryBuilder, modes: &Modes) -> Vec
             },
             Row::Chips(ChipSet::SortOrder),
         ],
-        Config => Toggle::ALL
-            .into_iter()
-            .flat_map(|toggle| {
-                [
-                    Row::Label {
-                        text: toggle.label(),
-                        mode: None,
-                        clear: None,
-                        controls: false,
-                    },
-                    Row::Chips(ChipSet::Config(toggle)),
-                ]
-            })
-            .collect(),
+        Config => config_rows(),
     }
 }
 

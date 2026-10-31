@@ -615,89 +615,13 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
             deck_id,
             card,
             quantity,
-        } => Some(
-            match async {
-                let body = HttpPatchDeckCard::new(Some(quantity), None);
-                client
-                    .update_deck_card(deck_id, card, &body, &account.fresh().await?)
-                    .await
-            }
-            .await
-            {
-                Ok(_) => Update::Fixed {
-                    deck_id,
-                    message: format!("Quantity set to {quantity}"),
-                }
-                .into(),
-                Err(e) => error(&e),
-            },
-        ),
+        } => Some(fix_quantity(account, deck_id, card, quantity).await),
         Request::ClearCommander {
             deck_id,
             oathbreaker,
-        } => Some(
-            match async {
-                let body = HttpUpdateDeckProfile::builder()
-                    .commander_id(Patch::Set(None))
-                    .build();
-                client
-                    .update_deck_profile(deck_id, &body, &account.fresh().await?)
-                    .await
-            }
-            .await
-            {
-                Ok(_) => Update::Fixed {
-                    deck_id,
-                    message: if oathbreaker {
-                        "Oathbreaker cleared"
-                    } else {
-                        "Commander cleared"
-                    }
-                    .to_owned(),
-                }
-                .into(),
-                Err(e) => error(&e),
-            },
-        ),
-        Request::RemoveCard { deck_id, card } => Some(
-            match async {
-                client
-                    .delete_deck_card(deck_id, card, &account.fresh().await?)
-                    .await
-            }
-            .await
-            {
-                Ok(()) => Update::Fixed {
-                    deck_id,
-                    message: "Card removed".to_owned(),
-                }
-                .into(),
-                Err(e) => error(&e),
-            },
-        ),
-        Request::Clone { deck_id, name } => Some(
-            match async {
-                let session = account.fresh().await?;
-                let cloned = client
-                    .clone_deck(
-                        deck_id,
-                        &HttpCloneDeck {
-                            new_name: name.clone(),
-                        },
-                        &session,
-                    )
-                    .await?;
-                client.fetch_deck_profile(cloned.deck_id, &session).await
-            }
-            .await
-            {
-                Ok(profile) => Update::Cloned {
-                    profile: Box::new(profile),
-                }
-                .into(),
-                Err(e) => failure(&e, |m| Update::CloneFailed(m).into()),
-            },
-        ),
+        } => Some(clear_commander(account, deck_id, oathbreaker).await),
+        Request::RemoveCard { deck_id, card } => Some(remove_card(account, deck_id, card).await),
+        Request::Clone { deck_id, name } => Some(clone_deck(account, deck_id, &name).await),
         Request::Share(deck_id) => Some(
             match async { client.share_deck(deck_id, &account.fresh().await?).await }.await {
                 Ok(share) => Update::Shared {
@@ -732,6 +656,103 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
                 Err(e) => error(&e),
             },
         ),
+    }
+}
+
+/// Sets a card's quantity, the copy-limit fix.
+async fn fix_quantity(
+    account: &Account,
+    deck_id: Uuid,
+    card: Uuid,
+    quantity: i32,
+) -> screens::Update {
+    match async {
+        let body = HttpPatchDeckCard::new(Some(quantity), None);
+        account
+            .client
+            .update_deck_card(deck_id, card, &body, &account.fresh().await?)
+            .await
+    }
+    .await
+    {
+        Ok(_) => Update::Fixed {
+            deck_id,
+            message: format!("Quantity set to {quantity}"),
+        }
+        .into(),
+        Err(e) => failure(&e, |m| Update::Error(m).into()),
+    }
+}
+
+/// Clears the commander, or the oathbreaker, the invalid-commander fix.
+async fn clear_commander(account: &Account, deck_id: Uuid, oathbreaker: bool) -> screens::Update {
+    match async {
+        let body = HttpUpdateDeckProfile::builder()
+            .commander_id(Patch::Set(None))
+            .build();
+        account
+            .client
+            .update_deck_profile(deck_id, &body, &account.fresh().await?)
+            .await
+    }
+    .await
+    {
+        Ok(_) => Update::Fixed {
+            deck_id,
+            message: if oathbreaker {
+                "Oathbreaker cleared"
+            } else {
+                "Commander cleared"
+            }
+            .to_owned(),
+        }
+        .into(),
+        Err(e) => failure(&e, |m| Update::Error(m).into()),
+    }
+}
+
+/// Takes a card out of the deck.
+async fn remove_card(account: &Account, deck_id: Uuid, card: Uuid) -> screens::Update {
+    match async {
+        account
+            .client
+            .delete_deck_card(deck_id, card, &account.fresh().await?)
+            .await
+    }
+    .await
+    {
+        Ok(()) => Update::Fixed {
+            deck_id,
+            message: "Card removed".to_owned(),
+        }
+        .into(),
+        Err(e) => failure(&e, |m| Update::Error(m).into()),
+    }
+}
+
+/// Clones the deck under a new name, then fetches the clone's profile.
+async fn clone_deck(account: &Account, deck_id: Uuid, name: &str) -> screens::Update {
+    let client = &account.client;
+    match async {
+        let session = account.fresh().await?;
+        let cloned = client
+            .clone_deck(
+                deck_id,
+                &HttpCloneDeck {
+                    new_name: name.to_owned(),
+                },
+                &session,
+            )
+            .await?;
+        client.fetch_deck_profile(cloned.deck_id, &session).await
+    }
+    .await
+    {
+        Ok(profile) => Update::Cloned {
+            profile: Box::new(profile),
+        }
+        .into(),
+        Err(e) => failure(&e, |m| Update::CloneFailed(m).into()),
     }
 }
 

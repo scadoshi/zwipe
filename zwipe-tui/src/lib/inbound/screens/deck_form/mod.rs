@@ -946,21 +946,7 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
             },
         ),
         Request::FindPartner { commander_id, mate } => {
-            let mut builder = CardQueryBuilder::with_name_contains(&mate);
-            builder.set_limit(PARTNER_SEARCH_LIMIT);
-            let query = builder.build().ok()?;
-            // A failed lookup leaves the partner empty, as in the app.
-            let cards = async { client.search_cards(&query, &account.fresh().await?).await }
-                .await
-                .ok()?;
-            Some(
-                Update::PartnerHits {
-                    commander_id,
-                    mate,
-                    cards,
-                }
-                .into(),
-            )
+            find_partner(account, commander_id, mate).await
         }
         Request::LoadDeck(deck_id) => Some(
             match async { client.fetch_deck(deck_id, &account.fresh().await?).await }.await {
@@ -976,30 +962,8 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
             .into(),
             Err(e) => error(&e),
         }),
-        Request::Create(deck) => Some(
-            match async {
-                client
-                    .create_deck_profile(&deck.body(), &account.fresh().await?)
-                    .await
-            }
-            .await
-            {
-                Ok(profile) => Update::Created(Box::new(profile)).into(),
-                Err(e) => failure(&e, |m| Update::SaveFailed(m).into()),
-            },
-        ),
-        Request::Update { deck_id, changes } => Some(
-            match async {
-                client
-                    .update_deck_profile(deck_id, &changes.body(), &account.fresh().await?)
-                    .await
-            }
-            .await
-            {
-                Ok(_) => Update::Updated.into(),
-                Err(e) => failure(&e, |m| Update::SaveFailed(m).into()),
-            },
-        ),
+        Request::Create(deck) => Some(create(account, &deck).await),
+        Request::Update { deck_id, changes } => Some(save(account, deck_id, &changes).await),
         Request::SwipePage { generation, query } => Some(
             match async {
                 client
@@ -1012,30 +976,91 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
                 Err(e) => error(&e),
             },
         ),
-        Request::MaybeboardAdd(oracle_id) => Some(
-            match async {
-                client
-                    .add_commander_maybeboard_card(oracle_id, &account.fresh().await?)
-                    .await
-            }
+        Request::MaybeboardAdd(oracle_id) => Some(maybeboard_add(account, oracle_id).await),
+        Request::MaybeboardRemove(oracle_id) => Some(maybeboard_remove(account, oracle_id).await),
+    }
+}
+
+/// Looks up the commander's named partner; a failed lookup leaves the partner empty, as in the app.
+async fn find_partner(
+    account: &Account,
+    commander_id: Uuid,
+    mate: String,
+) -> Option<screens::Update> {
+    let client = &account.client;
+    let mut builder = CardQueryBuilder::with_name_contains(&mate);
+    builder.set_limit(PARTNER_SEARCH_LIMIT);
+    let query = builder.build().ok()?;
+    let cards = async { client.search_cards(&query, &account.fresh().await?).await }
+        .await
+        .ok()?;
+    Some(
+        Update::PartnerHits {
+            commander_id,
+            mate,
+            cards,
+        }
+        .into(),
+    )
+}
+
+/// Creates the new deck's profile.
+async fn create(account: &Account, deck: &NewDeck) -> screens::Update {
+    match async {
+        account
+            .client
+            .create_deck_profile(&deck.body(), &account.fresh().await?)
             .await
-            {
-                Ok(()) => Update::MaybeboardAdded.into(),
-                Err(e) => error(&e),
-            },
-        ),
-        Request::MaybeboardRemove(oracle_id) => Some(
-            match async {
-                client
-                    .remove_commander_maybeboard_card(oracle_id, &account.fresh().await?)
-                    .await
-            }
+    }
+    .await
+    {
+        Ok(profile) => Update::Created(Box::new(profile)).into(),
+        Err(e) => failure(&e, |m| Update::SaveFailed(m).into()),
+    }
+}
+
+/// Saves the edited deck's changed fields.
+async fn save(account: &Account, deck_id: Uuid, changes: &Changes) -> screens::Update {
+    match async {
+        account
+            .client
+            .update_deck_profile(deck_id, &changes.body(), &account.fresh().await?)
             .await
-            {
-                Ok(()) => Update::MaybeboardRemoved.into(),
-                Err(e) => error(&e),
-            },
-        ),
+    }
+    .await
+    {
+        Ok(_) => Update::Updated.into(),
+        Err(e) => failure(&e, |m| Update::SaveFailed(m).into()),
+    }
+}
+
+/// Adds a commander to the user's commander maybeboard.
+async fn maybeboard_add(account: &Account, oracle_id: Uuid) -> screens::Update {
+    match async {
+        account
+            .client
+            .add_commander_maybeboard_card(oracle_id, &account.fresh().await?)
+            .await
+    }
+    .await
+    {
+        Ok(()) => Update::MaybeboardAdded.into(),
+        Err(e) => failure(&e, |m| Update::Error(m).into()),
+    }
+}
+
+/// Takes a commander off the user's commander maybeboard.
+async fn maybeboard_remove(account: &Account, oracle_id: Uuid) -> screens::Update {
+    match async {
+        account
+            .client
+            .remove_commander_maybeboard_card(oracle_id, &account.fresh().await?)
+            .await
+    }
+    .await
+    {
+        Ok(()) => Update::MaybeboardRemoved.into(),
+        Err(e) => failure(&e, |m| Update::Error(m).into()),
     }
 }
 
@@ -1050,22 +1075,7 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
     match update {
         Update::DeckTagCatalog(tags) => form.deck_tag_catalog = tags,
         Update::OracleCatalog(tags) => form.oracle_catalog = Some(tags),
-        Update::Debounced { slot, generation } => {
-            if form.card(slot).generation != generation {
-                return;
-            }
-            match form.search_query(slot) {
-                Some(query) => cx.request(
-                    Request::Search {
-                        slot,
-                        generation,
-                        query: Box::new(query),
-                    }
-                    .into(),
-                ),
-                None => form.card_mut(slot).dropdown = Dropdown::Hidden,
-            }
-        }
+        Update::Debounced { slot, generation } => debounced(form, slot, generation, cx),
         Update::Results {
             slot,
             generation,
@@ -1087,47 +1097,14 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
             commander_id,
             mate,
             cards,
-        } => {
-            let same_commander = form.card(Slot::Commander).card_id() == Some(commander_id);
-            if same_commander
-                && form.card(Slot::Partner).card.is_none()
-                && let Some(partner) = form::named_partner(&cards, &mate).cloned()
-            {
-                cx.toast(
-                    ToastKind::Info,
-                    format!("Partner found and selected: {}", partner.scryfall_data.name),
-                );
-                form.set_card(Slot::Partner, Some(partner));
-            }
-        }
-        Update::DeckLoaded(deck) => {
-            form.fill(&deck.deck_profile);
-            let profile = &deck.deck_profile;
-            for (slot, id) in [
-                (Slot::Commander, profile.commander_id),
-                (Slot::Partner, profile.partner_commander_id),
-                (Slot::Background, profile.background_id),
-                (Slot::SignatureSpell, profile.signature_spell_id),
-            ] {
-                if let Some(id) = id {
-                    cx.request(Request::FetchCard { slot, id }.into());
-                }
-            }
-        }
+        } => partner_hits(form, commander_id, &mate, &cards, cx),
+        Update::DeckLoaded(deck) => deck_loaded(form, &deck, cx),
         Update::LoadFailed(message) => {
             form.loading = false;
             form.load_error = Some(message.clone());
             cx.toast(ToastKind::Error, message);
         }
-        Update::CardLoaded { slot, card } => {
-            let id = card.scryfall_data.id;
-            form.card_mut(slot).choose(Some(*card));
-            if let Some(original) = &mut form.original
-                && let Some(card) = original.cards.get_mut(slot_index(slot))
-            {
-                *card = Some(id);
-            }
-        }
+        Update::CardLoaded { slot, card } => card_loaded(form, slot, *card),
         Update::Created(profile) => {
             form.saving = false;
             if on_top {
@@ -1158,5 +1135,71 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
             "Removed from your commander maybeboard".to_owned(),
         ),
         Update::Error(message) => cx.toast(ToastKind::Error, message),
+    }
+}
+
+/// Runs the slot's search once typing settles, unless a newer keystroke superseded it.
+fn debounced(form: &mut DeckForm, slot: Slot, generation: u64, cx: &mut Context<'_>) {
+    if form.card(slot).generation != generation {
+        return;
+    }
+    match form.search_query(slot) {
+        Some(query) => cx.request(
+            Request::Search {
+                slot,
+                generation,
+                query: Box::new(query),
+            }
+            .into(),
+        ),
+        None => form.card_mut(slot).dropdown = Dropdown::Hidden,
+    }
+}
+
+/// Picks the named partner when the same commander is still chosen and the partner is empty.
+fn partner_hits(
+    form: &mut DeckForm,
+    commander_id: Uuid,
+    mate: &str,
+    cards: &[Card],
+    cx: &mut Context<'_>,
+) {
+    let same_commander = form.card(Slot::Commander).card_id() == Some(commander_id);
+    if same_commander
+        && form.card(Slot::Partner).card.is_none()
+        && let Some(partner) = form::named_partner(cards, mate).cloned()
+    {
+        cx.toast(
+            ToastKind::Info,
+            format!("Partner found and selected: {}", partner.scryfall_data.name),
+        );
+        form.set_card(Slot::Partner, Some(partner));
+    }
+}
+
+/// Fills the form from the loaded deck and fetches each chosen card.
+fn deck_loaded(form: &mut DeckForm, deck: &Deck, cx: &mut Context<'_>) {
+    form.fill(&deck.deck_profile);
+    let profile = &deck.deck_profile;
+    for (slot, id) in [
+        (Slot::Commander, profile.commander_id),
+        (Slot::Partner, profile.partner_commander_id),
+        (Slot::Background, profile.background_id),
+        (Slot::SignatureSpell, profile.signature_spell_id),
+    ] {
+        if let Some(id) = id {
+            cx.request(Request::FetchCard { slot, id }.into());
+        }
+    }
+}
+
+/// Sets a fetched card into its slot and marks it as the slot's original.
+fn card_loaded(form: &mut DeckForm, slot: Slot, card: Card) {
+    let id = card.scryfall_data.id;
+    form.card_mut(slot).choose(Some(card));
+    if let Some(original) = &mut form.original
+        && let Some(card) = original.cards.get_mut(slot_index(slot))
+    {
+        *card = Some(id);
     }
 }

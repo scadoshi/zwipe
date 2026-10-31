@@ -62,7 +62,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &DeckCardsView) {
     }
 }
 
-fn chip(text: String, style: Style) -> Span<'static> {
+fn chip(text: &str, style: Style) -> Span<'static> {
     Span::styled(format!(" {text} "), style.reversed())
 }
 
@@ -73,19 +73,19 @@ fn header_lines(palette: &Palette, view: &DeckCardsView) -> Vec<Line<'static>> {
     };
     let mut chips = Vec::new();
     if let Some(format) = profile.format {
-        chips.push(chip(format.display_name().to_owned(), palette.accent));
+        chips.push(chip(format.display_name(), palette.accent));
         chips.push(Span::raw(" "));
     }
     if let Some(power) = profile.power_level {
-        chips.push(chip(power.display_name().to_owned(), palette.warning));
+        chips.push(chip(power.display_name(), palette.warning));
         chips.push(Span::raw(" "));
     }
     for tag in &profile.tags {
-        chips.push(chip(deck_tag_label(tag), palette.muted));
+        chips.push(chip(&deck_tag_label(tag), palette.muted));
         chips.push(Span::raw(" "));
     }
     for tag in &profile.other_tags {
-        chips.push(chip(tag.display_name().to_owned(), palette.warning));
+        chips.push(chip(tag.display_name(), palette.warning));
         chips.push(Span::raw(" "));
     }
     let mut featured = Vec::new();

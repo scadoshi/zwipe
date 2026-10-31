@@ -65,8 +65,12 @@ pub(crate) fn PendingEmail(email: String, expires_at: Option<DateTime<Utc>>) -> 
 
 /// What the Pending row says about its link: minutes in the last hour,
 /// whole hours before that, and where to get a new one once it's dead.
+#[expect(
+    clippy::arithmetic_side_effects,
+    reason = "two DateTime<Utc>s are under 2^44 seconds apart, so the minute sums stay far inside i64"
+)]
 fn link_expiry_text(expires_at: DateTime<Utc>, now: DateTime<Utc>) -> String {
-    let left = expires_at - now;
+    let left = expires_at.signed_duration_since(now);
     if left <= chrono::Duration::zero() {
         return "Link expired; tap Change to send a new one".to_string();
     }
@@ -217,6 +221,10 @@ pub(crate) fn VerificationActions() -> Element {
 }
 
 #[cfg(test)]
+#[expect(
+    clippy::arithmetic_side_effects,
+    reason = "test fixtures; overflow fails the test"
+)]
 mod tests {
     use chrono::{Duration, TimeZone};
 

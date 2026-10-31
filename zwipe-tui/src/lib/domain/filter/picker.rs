@@ -72,13 +72,12 @@ impl PickerField {
     /// Values the results leave out: for include and exclude pairs, both sides; else the picked ones.
     fn taken(self, b: &CardQueryBuilder) -> Vec<String> {
         match self {
-            Self::Include(MatchGroup::Tags) => self.picked(b),
+            Self::Include(MatchGroup::Tags) | Self::Side(_) => self.picked(b),
             Self::Include(group) | Self::Exclude(group) => {
                 let mut taken = group.values(b);
                 taken.extend(group.exclude().values(b));
                 taken
             }
-            Self::Side(_) => self.picked(b),
         }
     }
 

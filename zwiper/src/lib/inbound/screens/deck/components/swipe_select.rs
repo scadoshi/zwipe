@@ -323,7 +323,13 @@ pub(crate) fn SwipeSelect(
                             exhausted.set(true);
                             break;
                         }
-                        offset.set(off + PAGE);
+                        // No offset past u32: this page is the last.
+                        let Some(next) = off.checked_add(PAGE) else {
+                            exhausted.set(true);
+                            cards.write().append(&mut page);
+                            break;
+                        };
+                        offset.set(next);
                         if !page.is_empty() {
                             cards.write().append(&mut page);
                             break;
@@ -459,7 +465,9 @@ pub(crate) fn SwipeSelect(
     // Left = skip: advance, prefetch when running low.
     let mut advance = move || {
         let total = cards.peek().len();
-        let next = current_index() + 1;
+        let Some(next) = current_index().checked_add(1) else {
+            return;
+        };
         current_index.set(next);
         if !exhausted() && total.saturating_sub(next) <= LOAD_MORE_AT {
             load_more();
@@ -470,12 +478,12 @@ pub(crate) fn SwipeSelect(
     // that swipe was an up (maybeboard save), un-save it too; a suggested
     // mode dismissal is lifted the same way.
     let mut undo = move || {
-        if current_index() == 0 {
+        let Some(previous) = current_index().checked_sub(1) else {
             toast.info("Nothing to undo".to_string(), ToastOptions::default());
             return;
-        }
+        };
         let last = swipe_history.write().pop();
-        current_index.set(current_index() - 1);
+        current_index.set(previous);
         entering.set(Some(Direction::Left));
         match last {
             Some(SelectSwipe::Maybe(oracle_id)) => {
@@ -545,7 +553,7 @@ pub(crate) fn SwipeSelect(
 
     // Re-run the search with the current filter, back to the top of the stack.
     let mut refresh = move || {
-        filter_reset_counter.set(filter_reset_counter() + 1);
+        filter_reset_counter.set(filter_reset_counter().wrapping_add(1));
         toast.info(
             "Stack refreshed".to_string(),
             ToastOptions::default().duration(TOAST_QUICK),

@@ -49,6 +49,7 @@ fn content(title: &str, blocks: &[&str]) -> HintContent {
 }
 
 /// The dialog the one-time hint `key` opens, or `None` for a key with no fixed copy.
+#[expect(clippy::too_many_lines, reason = "a lookup table, one arm per key")]
 pub(crate) fn for_key(key: &str) -> Option<HintContent> {
     Some(match key {
         HINT_FIRST_LOGIN => content(

@@ -99,8 +99,8 @@ pub(crate) fn user(verified: bool) -> User {
 
 /// A session for `user` in `preferences`, its tokens good for decades.
 pub(crate) fn session(
-    user: User,
-    preferences: zwipe_core::domain::user::UserPreferences,
+    user: &User,
+    preferences: &zwipe_core::domain::user::UserPreferences,
 ) -> zwipe_core::domain::auth::models::session::Session {
     serde_json::from_value(serde_json::json!({
         "user": user,

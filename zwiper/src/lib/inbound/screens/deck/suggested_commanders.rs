@@ -1164,6 +1164,7 @@ pub fn SuggestedCommanders() -> Element {
     let mut profile: Signal<Option<HttpBuilderProfile>> = use_signal(|| None);
     let mut is_loading = use_signal(|| true);
     let mut load_failed = use_signal(|| false);
+    // A change tick: readers only see that it moved, so bumps wrap.
     let mut reload = use_signal(|| 0u32);
     let mut loads = use_generation();
     let mut load_out = use_hook(|| CopyValue::new(false));
@@ -1196,7 +1197,7 @@ pub fn SuggestedCommanders() -> Element {
     let mut refetch = move || {
         loads.next_ticket();
         let tick = *reload.peek();
-        reload.set(tick + 1);
+        reload.set(tick.wrapping_add(1));
     };
 
     // Refetch when the Swipe overlay closes: its swipes dismissed and saved

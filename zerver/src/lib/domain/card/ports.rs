@@ -20,9 +20,7 @@ use crate::domain::card::models::zervice_metrics::ZerviceMetrics;
 use crate::domain::card::requests::create_card::CreateCardError;
 use crate::domain::card::requests::get_artists::GetArtistsError;
 use crate::domain::card::requests::get_card::GetCardError;
-use crate::domain::card::requests::get_card_profile::{
-    CardProfileIds, GetCardProfile, GetCardProfileError,
-};
+use crate::domain::card::requests::get_card_profile::GetCardProfileError;
 use crate::domain::card::requests::get_card_types::GetCardTypesError;
 use crate::domain::card::requests::get_keywords::GetKeywordsError;
 use crate::domain::card::requests::get_languages::GetLanguagesError;
@@ -135,7 +133,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     fn sync_oracle_tags(
         &self,
         tags: &[ScryfallOracleTag],
-    ) -> impl Future<Output = anyhow::Result<(u32, u32)>> + Send;
+    ) -> impl Future<Output = anyhow::Result<(usize, usize)>> + Send;
 
     /// Rebuilds the `card_profiles.oracle_tags` JSONB projection from
     /// `card_oracle_tags` (aggregated per `oracle_id`, fanned to every printing).
@@ -254,34 +252,18 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         &self,
     ) -> impl Future<Output = Result<Vec<String>, GetLanguagesError>> + Send;
 
-    /// Retrieves card profile by card profile UUID (internal ID).
-    ///
-    /// Returns internal metadata (sync timestamps, DB ID) without Scryfall data.
-    fn fetch_card_profile_with_id(
-        &self,
-        request: &GetCardProfile,
-    ) -> impl Future<Output = Result<CardProfile, GetCardProfileError>> + Send;
-
     /// Retrieves card profile by Scryfall card UUID.
     ///
     /// Looks up internal metadata using Scryfall card ID as foreign key.
-    fn fetch_card_profile_with_scryfall_data_id(
+    fn fetch_card_profile(
         &self,
         request: &GetScryfallData,
     ) -> impl Future<Output = Result<CardProfile, GetCardProfileError>> + Send;
 
-    /// Retrieves multiple card profiles by card profile UUIDs.
-    ///
-    /// Bulk fetch operation for internal metadata.
-    fn fetch_card_profiles_with_ids(
-        &self,
-        request: &CardProfileIds,
-    ) -> impl Future<Output = Result<Vec<CardProfile>, GetCardProfileError>> + Send;
-
     /// Retrieves multiple card profiles by Scryfall card UUIDs.
     ///
     /// Bulk fetch internal metadata using Scryfall IDs as foreign keys.
-    fn fetch_card_profiles_with_scryfall_data_ids(
+    fn fetch_card_profiles(
         &self,
         request: &ScryfallDataIds,
     ) -> impl Future<Output = Result<Vec<CardProfile>, GetCardProfileError>> + Send;
@@ -457,7 +439,7 @@ pub trait CardService: Clone + Send + Sync + 'static {
     fn derive_card_categories(
         &self,
         batch_size: usize,
-    ) -> impl Future<Output = anyhow::Result<(u32, u32)>> + Send;
+    ) -> impl Future<Output = anyhow::Result<(u64, usize)>> + Send;
 
     /// Refreshes the `latest_cards` materialized view after data changes.
     fn refresh_latest_cards(&self) -> impl Future<Output = anyhow::Result<()>> + Send;
@@ -471,7 +453,7 @@ pub trait CardService: Clone + Send + Sync + 'static {
 
     /// Syncs the `oracle_tag` catalog + card correlation from Scryfall's Oracle
     /// Tags bulk file (nightly, zervice). Returns `(catalog_rows, correlation_rows)`.
-    fn sync_oracle_tags(&self) -> impl Future<Output = anyhow::Result<(u32, u32)>> + Send;
+    fn sync_oracle_tags(&self) -> impl Future<Output = anyhow::Result<(usize, usize)>> + Send;
 
     /// Rebuilds the `card_profiles.oracle_tags` projection (nightly, zervice).
     fn refresh_card_oracle_tags(&self) -> impl Future<Output = anyhow::Result<()>> + Send;
@@ -554,34 +536,18 @@ pub trait CardService: Clone + Send + Sync + 'static {
         &self,
     ) -> impl Future<Output = Result<Vec<String>, GetLanguagesError>> + Send;
 
-    /// Retrieves card profile by card profile UUID (internal ID).
-    ///
-    /// Returns internal metadata (sync timestamps, DB ID) without Scryfall data.
-    fn fetch_card_profile_with_id(
-        &self,
-        request: &GetCardProfile,
-    ) -> impl Future<Output = Result<CardProfile, GetCardProfileError>> + Send;
-
     /// Retrieves card profile by Scryfall card UUID.
     ///
     /// Looks up internal metadata using Scryfall card ID as foreign key.
-    fn fetch_card_profile_with_scryfall_data_id(
+    fn fetch_card_profile(
         &self,
         request: &GetScryfallData,
     ) -> impl Future<Output = Result<CardProfile, GetCardProfileError>> + Send;
 
-    /// Retrieves multiple card profiles by card profile UUIDs.
-    ///
-    /// Bulk fetch operation for internal metadata.
-    fn fetch_card_profiles_with_ids(
-        &self,
-        request: &CardProfileIds,
-    ) -> impl Future<Output = Result<Vec<CardProfile>, GetCardProfileError>> + Send;
-
     /// Retrieves multiple card profiles by Scryfall card UUIDs.
     ///
     /// Bulk fetch internal metadata using Scryfall IDs as foreign keys.
-    fn fetch_card_profiles_with_scryfall_data_ids(
+    fn fetch_card_profiles(
         &self,
         request: &ScryfallDataIds,
     ) -> impl Future<Output = Result<Vec<CardProfile>, GetCardProfileError>> + Send;
@@ -685,26 +651,14 @@ pub trait ErasedCardService: Send + Sync + 'static {
     /// See [`CardService::fetch_languages`].
     fn fetch_languages(&self) -> BoxFuture<'_, Result<Vec<String>, GetLanguagesError>>;
 
-    /// See [`CardService::fetch_card_profile_with_id`].
-    fn fetch_card_profile_with_id<'a>(
-        &'a self,
-        request: &'a GetCardProfile,
-    ) -> BoxFuture<'a, Result<CardProfile, GetCardProfileError>>;
-
-    /// See [`CardService::fetch_card_profile_with_scryfall_data_id`].
-    fn fetch_card_profile_with_scryfall_data_id<'a>(
+    /// See [`CardService::fetch_card_profile`].
+    fn fetch_card_profile<'a>(
         &'a self,
         request: &'a GetScryfallData,
     ) -> BoxFuture<'a, Result<CardProfile, GetCardProfileError>>;
 
-    /// See [`CardService::fetch_card_profiles_with_ids`].
-    fn fetch_card_profiles_with_ids<'a>(
-        &'a self,
-        request: &'a CardProfileIds,
-    ) -> BoxFuture<'a, Result<Vec<CardProfile>, GetCardProfileError>>;
-
-    /// See [`CardService::fetch_card_profiles_with_scryfall_data_ids`].
-    fn fetch_card_profiles_with_scryfall_data_ids<'a>(
+    /// See [`CardService::fetch_card_profiles`].
+    fn fetch_card_profiles<'a>(
         &'a self,
         request: &'a ScryfallDataIds,
     ) -> BoxFuture<'a, Result<Vec<CardProfile>, GetCardProfileError>>;
@@ -818,36 +772,18 @@ where
         Box::pin(CardService::fetch_languages(self))
     }
 
-    fn fetch_card_profile_with_id<'a>(
-        &'a self,
-        request: &'a GetCardProfile,
-    ) -> BoxFuture<'a, Result<CardProfile, GetCardProfileError>> {
-        Box::pin(CardService::fetch_card_profile_with_id(self, request))
-    }
-
-    fn fetch_card_profile_with_scryfall_data_id<'a>(
+    fn fetch_card_profile<'a>(
         &'a self,
         request: &'a GetScryfallData,
     ) -> BoxFuture<'a, Result<CardProfile, GetCardProfileError>> {
-        Box::pin(CardService::fetch_card_profile_with_scryfall_data_id(
-            self, request,
-        ))
+        Box::pin(CardService::fetch_card_profile(self, request))
     }
 
-    fn fetch_card_profiles_with_ids<'a>(
-        &'a self,
-        request: &'a CardProfileIds,
-    ) -> BoxFuture<'a, Result<Vec<CardProfile>, GetCardProfileError>> {
-        Box::pin(CardService::fetch_card_profiles_with_ids(self, request))
-    }
-
-    fn fetch_card_profiles_with_scryfall_data_ids<'a>(
+    fn fetch_card_profiles<'a>(
         &'a self,
         request: &'a ScryfallDataIds,
     ) -> BoxFuture<'a, Result<Vec<CardProfile>, GetCardProfileError>> {
-        Box::pin(CardService::fetch_card_profiles_with_scryfall_data_ids(
-            self, request,
-        ))
+        Box::pin(CardService::fetch_card_profiles(self, request))
     }
 
     fn fetch_last_sync_date(&self) -> BoxFuture<'_, anyhow::Result<Option<DateTime<Utc>>>> {

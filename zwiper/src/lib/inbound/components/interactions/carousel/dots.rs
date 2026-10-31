@@ -2,6 +2,8 @@
 
 use dioxus::prelude::*;
 
+use crate::inbound::components::interactions::gesture_math;
+
 /// Distance between dot centers in rem: a 0.5rem dot plus a 0.375rem gap.
 const DOT_PITCH_REM: f64 = 0.875;
 /// Center of the first dot from the strip's left edge in rem: half a dot.
@@ -14,7 +16,7 @@ const FIRST_DOT_CENTER_REM: f64 = 0.25;
 #[component]
 pub fn CarouselDots(current: usize, total: usize) -> Element {
     // Center of dot `i` from the strip's left edge.
-    let offset_rem = current as f64 * DOT_PITCH_REM + FIRST_DOT_CENTER_REM;
+    let offset_rem = gesture_math::layout_index(current) * DOT_PITCH_REM + FIRST_DOT_CENTER_REM;
 
     rsx! {
         div { class: "carousel-dots",

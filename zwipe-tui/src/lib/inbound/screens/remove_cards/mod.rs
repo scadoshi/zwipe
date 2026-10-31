@@ -6,6 +6,8 @@ pub(crate) mod keys;
 mod tests;
 
 use uuid::Uuid;
+use zwipe_client::{ClientError, ZwipeClient};
+use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::CardSortKey;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
@@ -516,21 +518,7 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
             quantity,
             taken,
         } => {
-            let result = match session {
-                Err(e) => Err(UndoFailure::Session(e.to_user_message())),
-                Ok(s) => {
-                    let request = HttpCreateDeckCard::new(
-                        &card.scryfall_data,
-                        quantity,
-                        create_board_field(board),
-                    );
-                    client
-                        .create_deck_card(deck_id, &request, &s)
-                        .await
-                        .map(Box::new)
-                        .map_err(|e| UndoFailure::Call(e.to_string()))
-                }
-            };
+            let result = undo_remove(client, session, deck_id, &card, board, quantity).await;
             Update::UndidRemove {
                 deck_id,
                 card,
@@ -544,17 +532,7 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
             from,
             taken,
         } => {
-            let result = match session {
-                Err(e) => Err(UndoFailure::Session(e.to_user_message())),
-                Ok(s) => {
-                    let patch = HttpPatchDeckCard::new(None, Some(from.display_name().to_owned()));
-                    client
-                        .update_deck_card(deck_id, card.scryfall_data.id, &patch, &s)
-                        .await
-                        .map(drop)
-                        .map_err(|e| UndoFailure::Call(e.to_string()))
-                }
-            };
+            let result = undo_move(client, session, deck_id, &card, from).await;
             Update::UndidMove {
                 deck_id,
                 card,
@@ -565,6 +543,41 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
         }
     };
     Some(update.into())
+}
+
+/// Adds `quantity` copies of `card` back to `board`, undoing a remove.
+async fn undo_remove(
+    client: &ZwipeClient,
+    session: Result<Session, ClientError>,
+    deck_id: Uuid,
+    card: &Card,
+    board: Board,
+    quantity: i32,
+) -> Result<Box<DeckCard>, UndoFailure> {
+    let s = session.map_err(|e| UndoFailure::Session(e.to_user_message()))?;
+    let request = HttpCreateDeckCard::new(&card.scryfall_data, quantity, create_board_field(board));
+    client
+        .create_deck_card(deck_id, &request, &s)
+        .await
+        .map(Box::new)
+        .map_err(|e| UndoFailure::Call(e.to_string()))
+}
+
+/// Moves `card` back to the board it came `from`, undoing a move.
+async fn undo_move(
+    client: &ZwipeClient,
+    session: Result<Session, ClientError>,
+    deck_id: Uuid,
+    card: &Card,
+    from: Board,
+) -> Result<(), UndoFailure> {
+    let s = session.map_err(|e| UndoFailure::Session(e.to_user_message()))?;
+    let patch = HttpPatchDeckCard::new(None, Some(from.display_name().to_owned()));
+    client
+        .update_deck_card(deck_id, card.scryfall_data.id, &patch, &s)
+        .await
+        .map(drop)
+        .map_err(|e| UndoFailure::Call(e.to_string()))
 }
 
 pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
@@ -644,17 +657,7 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
             if deck_id != view.deck_id {
                 return;
             }
-            match result {
-                Ok(deck_card) => {
-                    view.entries.push(DeckEntry {
-                        card: *card,
-                        deck_card: *deck_card,
-                    });
-                    cx.toast(ToastKind::Success, "Undid remove".to_owned());
-                }
-                Err(UndoFailure::Session(_)) => view.stack.cancel_entering(),
-                Err(UndoFailure::Call(_)) => {}
-            }
+            undid_remove(view, cx, *card, result);
         }
         Update::UndidMove {
             deck_id,
@@ -666,21 +669,52 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
             if deck_id != view.deck_id {
                 return;
             }
-            match result {
-                Ok(()) => {
-                    let id = card.scryfall_data.id;
-                    if let Some(entry) = view
-                        .entries
-                        .iter_mut()
-                        .find(|e| e.deck_card.scryfall_data_id == id)
-                    {
-                        entry.deck_card.board = from;
-                    }
-                    cx.toast(ToastKind::Success, "Undid move".to_owned());
-                }
-                Err(UndoFailure::Session(_)) => view.stack.cancel_entering(),
-                Err(UndoFailure::Call(_)) => {}
-            }
+            undid_move(view, cx, &card, from, &result);
         }
+    }
+}
+
+/// Settles an undone remove on the open screen: the card returns, or the stack steps back.
+fn undid_remove(
+    view: &mut RemoveView,
+    cx: &mut Context<'_>,
+    card: Card,
+    result: Result<Box<DeckCard>, UndoFailure>,
+) {
+    match result {
+        Ok(deck_card) => {
+            view.entries.push(DeckEntry {
+                card,
+                deck_card: *deck_card,
+            });
+            cx.toast(ToastKind::Success, "Undid remove".to_owned());
+        }
+        Err(UndoFailure::Session(_)) => view.stack.cancel_entering(),
+        Err(UndoFailure::Call(_)) => {}
+    }
+}
+
+/// Settles an undone move on the open screen: the card goes back to `from`, or the stack steps back.
+fn undid_move(
+    view: &mut RemoveView,
+    cx: &mut Context<'_>,
+    card: &Card,
+    from: Board,
+    result: &Result<(), UndoFailure>,
+) {
+    match result {
+        Ok(()) => {
+            let id = card.scryfall_data.id;
+            if let Some(entry) = view
+                .entries
+                .iter_mut()
+                .find(|e| e.deck_card.scryfall_data_id == id)
+            {
+                entry.deck_card.board = from;
+            }
+            cx.toast(ToastKind::Success, "Undid move".to_owned());
+        }
+        Err(UndoFailure::Session(_)) => view.stack.cancel_entering(),
+        Err(UndoFailure::Call(_)) => {}
     }
 }

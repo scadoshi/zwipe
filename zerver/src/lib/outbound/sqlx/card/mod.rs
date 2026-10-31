@@ -33,9 +33,7 @@ use crate::domain::card::ports::{CardRepository, DeckServeContext};
 use crate::domain::card::requests::create_card::CreateCardError;
 use crate::domain::card::requests::get_artists::GetArtistsError;
 use crate::domain::card::requests::get_card::GetCardError;
-use crate::domain::card::requests::get_card_profile::{
-    CardProfileIds, GetCardProfile, GetCardProfileError,
-};
+use crate::domain::card::requests::get_card_profile::GetCardProfileError;
 use crate::domain::card::requests::get_card_types::GetCardTypesError;
 use crate::domain::card::requests::get_keywords::GetKeywordsError;
 use crate::domain::card::requests::get_languages::GetLanguagesError;
@@ -67,6 +65,43 @@ use crate::outbound::sqlx::postgres::Postgres as MyPostgres;
 /// headroom. Note `CardQuery` is also used for *client-side* in-memory
 /// filtering with much larger limits, but that path never reaches this query.
 const MAX_SEARCH_LIMIT: u32 = 250;
+
+/// A request offset as the `INTEGER` Postgres binds, capped at `i32::MAX`.
+///
+/// A plain cast would wrap a larger value negative, and Postgres rejects a
+/// negative OFFSET; capped, it only pages past the end.
+fn clamped_offset(offset: u32) -> i32 {
+    i32::try_from(offset).unwrap_or(i32::MAX)
+}
+
+/// The LIMIT and OFFSETs of a wildcard page's two slices.
+#[derive(Debug, PartialEq, Eq)]
+struct WildcardWindow {
+    /// Rows the band slice takes.
+    band_limit: i64,
+    /// Rows the band slice skips.
+    band_offset: i64,
+    /// Rows the deep slice skips.
+    deep_offset: i64,
+}
+
+impl WildcardWindow {
+    /// The window for a request's limit and offset.
+    #[expect(
+        clippy::arithmetic_side_effects,
+        reason = "limit <= MAX_SEARCH_LIMIT and offset <= i32::MAX keep every product far inside i64"
+    )]
+    fn new(limit: u32, offset: u32) -> Self {
+        let limit = i64::from(limit.min(MAX_SEARCH_LIMIT));
+        let band_limit = (limit - WILDCARD_SLOTS).max(1);
+        let page_index = i64::from(clamped_offset(offset)) / limit.max(1);
+        Self {
+            band_limit,
+            band_offset: page_index * band_limit,
+            deep_offset: page_index * WILDCARD_SLOTS,
+        }
+    }
+}
 
 // Default-synergy-ordering dials (context/plans/suggestion_signal.md).
 // `W_SIGNAL = 0.0` and `BAND_SIZE = 1` together give plain score ordering.
@@ -328,7 +363,7 @@ impl CardRepository for MyPostgres {
     async fn sync_oracle_tags(
         &self,
         tags: &[crate::inbound::external::scryfall::oracle_tag::OracleTag],
-    ) -> anyhow::Result<(u32, u32)> {
+    ) -> anyhow::Result<(usize, usize)> {
         crate::outbound::sqlx::card::helpers::oracle_tags::sync_oracle_tags(&self.pool, tags).await
     }
 
@@ -1316,21 +1351,19 @@ impl CardRepository for MyPostgres {
             // The outer ORDER BY re-sorts deterministically (UNION ALL order
             // is not guaranteed): band cards in band order, probes last;
             // the Rust splice below lifts them to WILDCARD_POSITION.
-            let limit = i64::from(request.limit().min(MAX_SEARCH_LIMIT));
-            let band_limit = (limit - WILDCARD_SLOTS).max(1);
-            let page_index = i64::from(request.offset().min(i32::MAX as u32)) / limit.max(1);
+            let window = WildcardWindow::new(request.limit(), request.offset());
             qb.push(format!(
                 ") SELECT * FROM ((SELECT *, 0 AS slice FROM pool \
                  ORDER BY pool_returned, (rn - 1) / {BAND_SIZE}, shuffle, name ASC LIMIT "
             ));
-            qb.push_bind(band_limit);
+            qb.push_bind(window.band_limit);
             qb.push(" OFFSET ");
-            qb.push_bind(page_index * band_limit);
+            qb.push_bind(window.band_offset);
             qb.push(format!(
                 ") UNION ALL (SELECT *, 1 AS slice FROM pool WHERE rn > {DEEP_POOL_FLOOR} \
                  ORDER BY pool_returned, pool_shown ASC, shuffle LIMIT {WILDCARD_SLOTS} OFFSET "
             ));
-            qb.push_bind(page_index * WILDCARD_SLOTS);
+            qb.push_bind(window.deep_offset);
             qb.push(format!(
                 ")) AS combined ORDER BY slice ASC, pool_returned, (rn - 1) / {BAND_SIZE}, shuffle, name ASC"
             ));
@@ -1391,12 +1424,9 @@ impl CardRepository for MyPostgres {
         // The wildcard CTE carries per-slice LIMIT/OFFSET above.
         if !wildcard_serving {
             qb.push(" LIMIT ");
-            qb.push_bind(request.limit().min(MAX_SEARCH_LIMIT) as i32);
-
-            // Guard the u32->i32 cast: a value above i32::MAX wraps negative, and
-            // Postgres rejects a negative OFFSET (errors the whole query).
+            qb.push_bind(i64::from(request.limit().min(MAX_SEARCH_LIMIT)));
             qb.push(" OFFSET ");
-            qb.push_bind(request.offset().min(i32::MAX as u32) as i32);
+            qb.push_bind(clamped_offset(request.offset()));
         }
 
         let db_rows: Vec<DatabaseScryfallData> = qb.build_query_as().fetch_all(&self.pool).await?;
@@ -1412,10 +1442,12 @@ impl CardRepository for MyPostgres {
         // hide a probe inside the band width; it then simply serves at the
         // tail, which is fine.
         if wildcard_serving {
-            let band_limit = (request.limit().min(MAX_SEARCH_LIMIT) as usize)
-                .saturating_sub(WILDCARD_SLOTS as usize)
+            let band_limit = i64::from(request.limit().min(MAX_SEARCH_LIMIT))
+                .saturating_sub(WILDCARD_SLOTS)
                 .max(1);
-            if scryfall_data.len() > band_limit {
+            if let Ok(band_limit) = usize::try_from(band_limit)
+                && scryfall_data.len() > band_limit
+            {
                 let wildcards = scryfall_data.split_off(band_limit);
                 for wildcard in wildcards {
                     let position = WILDCARD_POSITION.min(scryfall_data.len());
@@ -1463,9 +1495,7 @@ impl CardRepository for MyPostgres {
 
     async fn fetch_card(&self, request: &GetScryfallData) -> Result<Card, GetCardError> {
         let scryfall_data = self.fetch_scryfall_data(request).await?;
-        let card_profile = self
-            .fetch_card_profile_with_scryfall_data_id(request)
-            .await?;
+        let card_profile = self.fetch_card_profile(request).await?;
         let card = Card::new(card_profile, scryfall_data);
         Ok(card)
     }
@@ -1473,9 +1503,7 @@ impl CardRepository for MyPostgres {
     async fn fetch_cards(&self, request: &ScryfallDataIds) -> Result<Vec<Card>, GetCardError> {
         let scryfall_data = self.fetch_multiple_scryfall_data(request).await?;
         let scryfall_data_ids: ScryfallDataIds = scryfall_data.as_slice().into();
-        let card_profiles = self
-            .fetch_card_profiles_with_scryfall_data_ids(&scryfall_data_ids)
-            .await?;
+        let card_profiles = self.fetch_card_profiles(&scryfall_data_ids).await?;
         let cards = card_profiles.sleeve(scryfall_data);
         Ok(cards)
     }
@@ -1497,9 +1525,7 @@ impl CardRepository for MyPostgres {
             return Ok(vec![]);
         }
         let scryfall_data_ids: ScryfallDataIds = scryfall_data.as_slice().into();
-        let card_profiles = self
-            .fetch_card_profiles_with_scryfall_data_ids(&scryfall_data_ids)
-            .await?;
+        let card_profiles = self.fetch_card_profiles(&scryfall_data_ids).await?;
         let cards = card_profiles.sleeve(scryfall_data);
         Ok(cards)
     }
@@ -1528,9 +1554,7 @@ impl CardRepository for MyPostgres {
             return Ok(vec![]);
         }
         let scryfall_data_ids: ScryfallDataIds = scryfall_data.as_slice().into();
-        let card_profiles = self
-            .fetch_card_profiles_with_scryfall_data_ids(&scryfall_data_ids)
-            .await?;
+        let card_profiles = self.fetch_card_profiles(&scryfall_data_ids).await?;
         let cards = card_profiles.sleeve(scryfall_data);
         Ok(cards)
     }
@@ -1542,9 +1566,7 @@ impl CardRepository for MyPostgres {
             return Ok(vec![]);
         }
         let scryfall_data_ids: ScryfallDataIds = scryfall_data.as_slice().into();
-        let card_profiles = self
-            .fetch_card_profiles_with_scryfall_data_ids(&scryfall_data_ids)
-            .await?;
+        let card_profiles = self.fetch_card_profiles(&scryfall_data_ids).await?;
         let cards = card_profiles.sleeve(scryfall_data);
         Ok(cards)
     }
@@ -1696,22 +1718,7 @@ impl CardRepository for MyPostgres {
         Ok(languages)
     }
 
-    async fn fetch_card_profile_with_id(
-        &self,
-        request: &GetCardProfile,
-    ) -> Result<CardProfile, GetCardProfileError> {
-        let card_profile: CardProfile = query_as!(
-            DatabaseCardProfile,
-            "SELECT scryfall_data_id, is_token, card_roles, oracle_tags, oracle_tags_by_role, other_oracle_tags, created_at, updated_at FROM card_profiles WHERE scryfall_data_id = $1",
-            **request
-        )
-        .fetch_one(&self.pool)
-        .await?
-        .into();
-        Ok(card_profile)
-    }
-
-    async fn fetch_card_profile_with_scryfall_data_id(
+    async fn fetch_card_profile(
         &self,
         request: &GetScryfallData,
     ) -> Result<CardProfile, GetCardProfileError> {
@@ -1727,25 +1734,7 @@ impl CardRepository for MyPostgres {
         Ok(card_profile)
     }
 
-    async fn fetch_card_profiles_with_ids(
-        &self,
-        request: &CardProfileIds,
-    ) -> Result<Vec<CardProfile>, GetCardProfileError> {
-        let card_profiles: Vec<CardProfile> = query_as!(
-            DatabaseCardProfile,
-            "SELECT scryfall_data_id, is_token, card_roles, oracle_tags, oracle_tags_by_role, other_oracle_tags, created_at, updated_at
-            FROM card_profiles WHERE scryfall_data_id = ANY($1)",
-            &**request
-        )
-        .fetch_all(&self.pool)
-        .await?
-        .into_iter()
-        .map(Into::into)
-        .collect();
-        Ok(card_profiles)
-    }
-
-    async fn fetch_card_profiles_with_scryfall_data_ids(
+    async fn fetch_card_profiles(
         &self,
         request: &ScryfallDataIds,
     ) -> Result<Vec<CardProfile>, GetCardProfileError> {
@@ -1817,9 +1806,7 @@ impl CardRepository for MyPostgres {
             return Ok(vec![]);
         }
         let scryfall_data_ids: ScryfallDataIds = scryfall_data.as_slice().into();
-        let card_profiles = self
-            .fetch_card_profiles_with_scryfall_data_ids(&scryfall_data_ids)
-            .await?;
+        let card_profiles = self.fetch_card_profiles(&scryfall_data_ids).await?;
         let cards = card_profiles.sleeve(scryfall_data);
         Ok(cards)
     }
@@ -1838,9 +1825,7 @@ impl CardRepository for MyPostgres {
             return Ok(vec![]);
         }
         let scryfall_data_ids: ScryfallDataIds = scryfall_data.as_slice().into();
-        let card_profiles = self
-            .fetch_card_profiles_with_scryfall_data_ids(&scryfall_data_ids)
-            .await?;
+        let card_profiles = self.fetch_card_profiles(&scryfall_data_ids).await?;
         let cards = card_profiles.sleeve(scryfall_data);
         Ok(cards)
     }
@@ -1877,9 +1862,7 @@ impl CardRepository for MyPostgres {
             return Ok(vec![]);
         }
         let scryfall_data_ids: ScryfallDataIds = scryfall_data.as_slice().into();
-        let card_profiles = self
-            .fetch_card_profiles_with_scryfall_data_ids(&scryfall_data_ids)
-            .await?;
+        let card_profiles = self.fetch_card_profiles(&scryfall_data_ids).await?;
         let cards = card_profiles.sleeve(scryfall_data);
         Ok(cards)
     }
@@ -2170,5 +2153,43 @@ impl CardRepository for MyPostgres {
         .fetch_all(&self.pool)
         .await?;
         Ok(ids)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn clamped_offset_keeps_offsets_that_fit() {
+        assert_eq!(clamped_offset(0), 0);
+        assert_eq!(clamped_offset(500), 500);
+    }
+
+    #[test]
+    fn clamped_offset_caps_instead_of_wrapping_negative() {
+        assert_eq!(clamped_offset(u32::MAX), i32::MAX);
+    }
+
+    #[test]
+    fn wildcard_window_pages_both_slices() {
+        let window = WildcardWindow::new(25, 50);
+        assert_eq!(
+            window,
+            WildcardWindow {
+                band_limit: 24,
+                band_offset: 48,
+                deep_offset: 2,
+            }
+        );
+    }
+
+    #[test]
+    fn wildcard_window_survives_extreme_requests() {
+        let window = WildcardWindow::new(u32::MAX, u32::MAX);
+        assert_eq!(window.band_limit, 249);
+        assert_eq!(window.deep_offset, i64::from(i32::MAX) / 250);
+        let tiny = WildcardWindow::new(0, 10);
+        assert_eq!(tiny.band_limit, 1);
     }
 }

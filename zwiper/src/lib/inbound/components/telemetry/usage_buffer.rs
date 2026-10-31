@@ -114,10 +114,11 @@ impl UsageBuffer {
             return;
         };
         let tally = map.entry((card, deck_id)).or_default();
+        // A full tally stays full, like the error count in `report_error`.
         match direction {
-            Direction::Right => tally.added += 1,
-            Direction::Left => tally.skipped += 1,
-            Direction::Up => tally.maybed += 1,
+            Direction::Right => tally.added = tally.added.saturating_add(1),
+            Direction::Left => tally.skipped = tally.skipped.saturating_add(1),
+            Direction::Up => tally.maybed = tally.maybed.saturating_add(1),
             Direction::Down => {}
         }
     }
@@ -136,9 +137,10 @@ impl UsageBuffer {
             return;
         };
         let tally = map.entry(card).or_default();
+        // A full tally stays full, as in `record_signal`.
         match direction {
-            Direction::Right => tally.selected += 1,
-            Direction::Left => tally.skipped += 1,
+            Direction::Right => tally.selected = tally.selected.saturating_add(1),
+            Direction::Left => tally.skipped = tally.skipped.saturating_add(1),
             Direction::Up | Direction::Down => {}
         }
     }
@@ -210,7 +212,9 @@ impl UsageBuffer {
             return;
         };
         if let Ok(mut map) = self.inner.signals.lock() {
-            map.entry((card, deck_id)).or_default().removed += 1;
+            let tally = map.entry((card, deck_id)).or_default();
+            // A full tally stays full, as in `record_signal`.
+            tally.removed = tally.removed.saturating_add(1);
         }
     }
 
@@ -249,19 +253,30 @@ impl UsageBuffer {
             .map(|mut map| std::mem::take(&mut *map))
             .unwrap_or_default()
             .into_iter()
-            .map(|((card, deck_id), t)| CardSignalDelta {
-                card_oracle_id: card,
-                // The deck the swipes belong to. Lets the server derive the
-                // richer generalized-context per-otag signal, and (for
-                // non-Commander decks) is the sole context key.
-                deck_id: Some(deck_id),
+            .filter_map(|((card, deck_id), t)| {
                 // `shown` is derived from add-stack actions; a removal is not an
-                // impression, so it doesn't count toward `shown`.
-                shown: t.added + t.skipped + t.maybed,
-                added: t.added,
-                skipped: t.skipped,
-                maybed: t.maybed,
-                removed: t.removed,
+                // impression, so it doesn't count toward `shown`. A tally whose
+                // impressions overflow u32 is dropped rather than sent wrong.
+                let Some(shown) = t
+                    .added
+                    .checked_add(t.skipped)
+                    .and_then(|n| n.checked_add(t.maybed))
+                else {
+                    tracing::warn!(%card, %deck_id, "signal tally overflows u32, dropped");
+                    return None;
+                };
+                Some(CardSignalDelta {
+                    card_oracle_id: card,
+                    // The deck the swipes belong to. Lets the server derive the
+                    // richer generalized-context per-otag signal, and (for
+                    // non-Commander decks) is the sole context key.
+                    deck_id: Some(deck_id),
+                    shown,
+                    added: t.added,
+                    skipped: t.skipped,
+                    maybed: t.maybed,
+                    removed: t.removed,
+                })
             })
             .collect();
 
@@ -272,11 +287,18 @@ impl UsageBuffer {
             .map(|mut map| std::mem::take(&mut *map))
             .unwrap_or_default()
             .into_iter()
-            .map(|(card, t)| CommanderSelectDelta {
-                commander_oracle_id: card,
-                shown: t.selected + t.skipped,
-                selected: t.selected,
-                skipped: t.skipped,
+            .filter_map(|(card, t)| {
+                // Dropped rather than sent wrong, as with the signals above.
+                let Some(shown) = t.selected.checked_add(t.skipped) else {
+                    tracing::warn!(%card, "select tally overflows u32, dropped");
+                    return None;
+                };
+                Some(CommanderSelectDelta {
+                    commander_oracle_id: card,
+                    shown,
+                    selected: t.selected,
+                    skipped: t.skipped,
+                })
             })
             .collect();
 
@@ -387,7 +409,7 @@ mod tests {
     use zwipe_client::ClientError;
     use zwipe_core::http::contracts::metrics::{HttpUsageBatch, PileEndKind, PileEndReport};
 
-    use super::UsageBuffer;
+    use super::{CardTally, SelectTally, UsageBuffer};
     use crate::inbound::components::interactions::swipe::direction::Direction;
 
     #[test]
@@ -407,6 +429,61 @@ mod tests {
         assert!(batch.deck_skips.is_empty());
 
         assert!(buffer.snapshot_and_zero().is_none());
+    }
+
+    #[test]
+    fn a_full_tally_stays_full() {
+        let buffer = UsageBuffer::new();
+        let (deck, card) = (Uuid::new_v4(), Uuid::new_v4());
+        let full = CardTally {
+            added: u32::MAX,
+            ..CardTally::default()
+        };
+        buffer
+            .inner
+            .signals
+            .lock()
+            .unwrap()
+            .insert((card, deck), full);
+        buffer.record_signal(deck, Some(card), Direction::Right);
+        let tally = buffer.inner.signals.lock().unwrap()[&(card, deck)];
+        assert_eq!(tally.added, u32::MAX);
+    }
+
+    #[test]
+    fn a_shown_count_past_u32_drops_its_delta() {
+        let buffer = UsageBuffer::new();
+        let (deck, card) = (Uuid::new_v4(), Uuid::new_v4());
+        let tally = CardTally {
+            added: u32::MAX,
+            skipped: 1,
+            ..CardTally::default()
+        };
+        buffer
+            .inner
+            .signals
+            .lock()
+            .unwrap()
+            .insert((card, deck), tally);
+        let select = SelectTally {
+            selected: u32::MAX,
+            skipped: 1,
+        };
+        buffer
+            .inner
+            .select_signals
+            .lock()
+            .unwrap()
+            .insert(card, select);
+        buffer.record_search();
+        let batch = buffer.snapshot_and_zero().unwrap();
+        assert!(batch.signals.is_empty(), "{:?}", batch.signals);
+        assert!(
+            batch.select_signals.is_empty(),
+            "{:?}",
+            batch.select_signals
+        );
+        assert_eq!(batch.searches, 1);
     }
 
     #[test]

@@ -213,7 +213,7 @@ impl Palette {
 
     /// Every style the palette holds, in a fixed order, so two palettes can be matched role for role.
     pub(crate) fn styles(&self) -> [Style; 24] {
-        let [w, u, b, r, g] = self.mana;
+        let [white, blue, black, red, green] = self.mana;
         let [p1, p2, p3, p4, p5, p6] = self.swatches;
         [
             self.base,
@@ -223,11 +223,11 @@ impl Palette {
             self.add,
             self.error,
             self.warning,
-            w,
-            u,
-            b,
-            r,
-            g,
+            white,
+            blue,
+            black,
+            red,
+            green,
             self.secondary,
             self.tertiary,
             self.skeleton,
@@ -247,7 +247,11 @@ impl Palette {
     pub(crate) fn is_dark(&self) -> bool {
         match self.base.bg {
             Some(Color::Rgb(r, g, b)) => {
-                u32::from(r) * 299 + u32::from(g) * 587 + u32::from(b) * 114 < 128_000
+                u32::from(r)
+                    .saturating_mul(299)
+                    .saturating_add(u32::from(g).saturating_mul(587))
+                    .saturating_add(u32::from(b).saturating_mul(114))
+                    < 128_000
             }
             _ => true,
         }

@@ -136,6 +136,7 @@ impl HintTopic {
     }
 
     /// The dialog's blocks, in hint markup.
+    #[expect(clippy::too_many_lines, reason = "a lookup table, one arm per topic")]
     pub(crate) fn blocks(self) -> Vec<String> {
         let owned = |blocks: &[&str]| blocks.iter().map(|&b| b.to_owned()).collect();
         match self {

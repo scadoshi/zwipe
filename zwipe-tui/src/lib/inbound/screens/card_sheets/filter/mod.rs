@@ -472,24 +472,9 @@ impl FilterSheet {
     pub(crate) fn tap_chip(&mut self, set: ChipSet, index: usize, catalog: &Catalog) {
         let modes = self.modes.clone();
         let b = &mut self.draft;
-        let label = |labels: Vec<String>| labels.get(index).cloned();
         match set {
-            ChipSet::BasicIncludes => {
-                let Some(name) = label(card_types().iter().map(ToString::to_string).collect())
-                else {
-                    return;
-                };
-                let mode = modes.match_of(b, MatchGroup::BasicTypes);
-                let values = toggled(MatchGroup::BasicTypes.values(b), &name);
-                MatchGroup::BasicTypes.write(b, mode, values);
-            }
-            ChipSet::BasicExcludes => {
-                let Some(name) = label(card_types().iter().map(ToString::to_string).collect())
-                else {
-                    return;
-                };
-                let values = toggled(Exclude::BasicTypes.values(b), &name);
-                Exclude::BasicTypes.write(b, values);
+            ChipSet::BasicIncludes | ChipSet::BasicExcludes => {
+                tap_basic_type(b, &modes, set, index);
             }
             ChipSet::Colors => {
                 if let Some(color) = Color::all().get(index) {
@@ -518,22 +503,7 @@ impl FilterSheet {
                 }
             }
             ChipSet::RolesInclude | ChipSet::RolesExclude => {
-                let Some(slug) = catalog
-                    .card_roles
-                    .ready()
-                    .and_then(|roles| roles.get(index))
-                    .map(|r| r.slug.clone())
-                else {
-                    return;
-                };
-                if set == ChipSet::RolesInclude {
-                    let mode = modes.match_of(b, MatchGroup::Roles);
-                    let values = toggled(MatchGroup::Roles.values(b), &slug);
-                    MatchGroup::Roles.write(b, mode, values);
-                } else {
-                    let values = toggled(StrList::RolesExclude.get(b), &slug);
-                    StrList::RolesExclude.set(b, values);
-                }
+                tap_role(b, &modes, catalog, set, index);
             }
             ChipSet::CommanderIn => {
                 if let Some(format) = Format::commander_formats().get(index) {
@@ -587,5 +557,47 @@ impl FilterSheet {
                 stat.step_range(&mut self.draft, end, delta);
             }
         }
+    }
+}
+
+/// Taps the basic type chip at `index` in the include or exclude row `set`.
+fn tap_basic_type(b: &mut CardQueryBuilder, modes: &Modes, set: ChipSet, index: usize) {
+    let labels: Vec<String> = card_types().iter().map(ToString::to_string).collect();
+    let Some(name) = labels.get(index).cloned() else {
+        return;
+    };
+    if set == ChipSet::BasicIncludes {
+        let mode = modes.match_of(b, MatchGroup::BasicTypes);
+        let values = toggled(MatchGroup::BasicTypes.values(b), &name);
+        MatchGroup::BasicTypes.write(b, mode, values);
+    } else {
+        let values = toggled(Exclude::BasicTypes.values(b), &name);
+        Exclude::BasicTypes.write(b, values);
+    }
+}
+
+/// Taps the card role chip at `index` in the include or exclude row `set`.
+fn tap_role(
+    b: &mut CardQueryBuilder,
+    modes: &Modes,
+    catalog: &Catalog,
+    set: ChipSet,
+    index: usize,
+) {
+    let Some(slug) = catalog
+        .card_roles
+        .ready()
+        .and_then(|roles| roles.get(index))
+        .map(|r| r.slug.clone())
+    else {
+        return;
+    };
+    if set == ChipSet::RolesInclude {
+        let mode = modes.match_of(b, MatchGroup::Roles);
+        let values = toggled(MatchGroup::Roles.values(b), &slug);
+        MatchGroup::Roles.write(b, mode, values);
+    } else {
+        let values = toggled(StrList::RolesExclude.get(b), &slug);
+        StrList::RolesExclude.set(b, values);
     }
 }

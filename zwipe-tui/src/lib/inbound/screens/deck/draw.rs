@@ -409,6 +409,17 @@ fn draw_distributions(
         .collect();
     columns(f, palette, "Types", &types, types_area);
 
+    draw_roles(f, palette, view, metrics, roles_area);
+}
+
+/// The Roles bars, with the open role's tags and the open tag's description and Examples.
+fn draw_roles(
+    f: &mut Frame<'_>,
+    palette: &Palette,
+    view: &DeckView,
+    metrics: &DeckMetrics,
+    roles_area: Rect,
+) {
     let Some(roles) = metrics.card_role_bars() else {
         return;
     };

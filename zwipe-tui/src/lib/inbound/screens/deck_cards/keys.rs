@@ -42,7 +42,9 @@ pub(crate) fn handle(view: &mut DeckCardsView, code: KeyCode, cx: &mut Context<'
                 .iter()
                 .position(|o| *o == view.group_by)
                 .unwrap_or_default();
-            if let Some(next) = options.get(at.saturating_add(1) % options.len().max(1)) {
+            if let Some(next) =
+                options.get(at.saturating_add(1).checked_rem(options.len()).unwrap_or(0))
+            {
                 view.group_by = *next;
             }
             view.rerun_collapsed();
@@ -114,7 +116,11 @@ fn row_key(view: &mut DeckCardsView, code: KeyCode, cx: &mut Context<'_>) {
     let board = view.entry(id).map(|e| e.deck_card.board);
     match (code, kind) {
         (KeyCode::Char('t'), _) if card_info::face_count(&card) > 1 => {
-            view.face = view.face.saturating_add(1) % card_info::face_count(&card);
+            view.face = view
+                .face
+                .saturating_add(1)
+                .checked_rem(card_info::face_count(&card))
+                .unwrap_or(0);
         }
         (KeyCode::Char('i'), _) => view.preview = Some((Box::new(card), view.face)),
         (KeyCode::Char('-'), Kind::Main | Kind::Board(_)) => view.change_quantity(cx, id, -1, true),
@@ -215,7 +221,10 @@ fn overlay_key(view: &mut DeckCardsView, code: KeyCode, cx: &mut Context<'_>) ->
     if let Some((card, face)) = &mut view.preview {
         match code {
             KeyCode::Char('t') if card_info::face_count(card) > 1 => {
-                *face = face.saturating_add(1) % card_info::face_count(card);
+                *face = face
+                    .saturating_add(1)
+                    .checked_rem(card_info::face_count(card))
+                    .unwrap_or(0);
             }
             _ => view.preview = None,
         }

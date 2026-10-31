@@ -92,6 +92,7 @@ panic = "deny"
 indexing_slicing = "deny"
 panic_in_result_fn = "deny"
 exit = "deny"
+unreachable = "deny"
 
 # Suppressions are #[expect] with a reason, so stale ones surface.
 allow_attributes = "warn"
@@ -101,8 +102,9 @@ allow_attributes_without_reason = "warn"
 undocumented_unsafe_blocks = "deny"
 multiple_unsafe_ops_per_block = "warn"
 
-# Casts and arithmetic that can silently lose information: as_conversions
-# and arithmetic_side_effects, in the phase 2 block below.
+# Casts and arithmetic that can silently lose information.
+as_conversions = "warn"
+arithmetic_side_effects = "warn"
 
 # API shape.
 fn_params_excessive_bools = "warn"
@@ -119,22 +121,6 @@ unused_async = "warn"
 # Logging goes through tracing; a CLI's own output takes an #[expect].
 print_stdout = "warn"
 print_stderr = "warn"
-
-# Phase 2 turns these on as their findings are fixed; each line names how
-# many remain. The lint set's level for each is in brackets.
-arithmetic_side_effects = "allow"   # 241 remain [warn]
-as_conversions = "allow"            # 83 remain [warn]
-cast_possible_truncation = "allow"  # 28 remain [pedantic warn]
-cast_precision_loss = "allow"       # 19 remain [pedantic warn]
-cast_possible_wrap = "allow"        # 16 remain [pedantic warn]
-cast_lossless = "allow"             # 14 remain [pedantic warn]
-cast_sign_loss = "allow"            # 8 remain [pedantic warn]
-unreachable = "allow"               # 5 remain [deny]
-needless_pass_by_value = "allow"    # 3 remain [pedantic warn]
-match_same_arms = "allow"           # 2 remain [pedantic warn]
-too_many_lines = "allow"            # 2 remain [pedantic warn]
-many_single_char_names = "allow"    # 2 remain [pedantic warn]
-unchecked_time_subtraction = "allow" # 1 remains [pedantic warn]
 
 [profile.android-dev]
 inherits = "dev"

@@ -160,11 +160,7 @@ impl<A> CardStack<A> {
 
     /// The card under the cursor on a cycling stack, wrapping around; `None` only when empty.
     pub(crate) fn current_wrapping(&self) -> Option<&Card> {
-        let len = self.cards.len();
-        if len == 0 {
-            return None;
-        }
-        self.cards.get(self.index % len)
+        self.cards.get(self.index.checked_rem(self.cards.len())?)
     }
 
     /// Swaps in new cards and moves the cursor to the first. History stays.
@@ -242,9 +238,8 @@ impl<A> CardStack<A> {
 
     /// Moves a cycling stack's cursor forward, wrapping to the first card.
     pub(crate) fn advance_wrapping(&mut self) {
-        let len = self.cards.len();
-        if len > 0 {
-            self.index = self.index.saturating_add(1) % len;
+        if let Some(next) = self.index.saturating_add(1).checked_rem(self.cards.len()) {
+            self.index = next;
         }
     }
 

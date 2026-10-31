@@ -24,6 +24,10 @@ use crate::inbound::http::middleware::{CfConnectingIpKeyExtractor, UserIdKeyExtr
 /// truncated panic text, and the route takes it unauthenticated.
 const CRASH_REPORT_BODY_LIMIT: usize = 4096;
 
+/// Largest decklist import body accepted, in bytes. A 500-card list pasted
+/// from any deck site is about 15 KB.
+const IMPORT_BODY_LIMIT: usize = 64 * 1024;
+
 /// Rate-limit error handler for the routes keyed by user id
 /// (`UserIdKeyExtractor`).
 ///
@@ -88,6 +92,10 @@ fn too_many_requests_response(wait_time: u64, headers: Option<HeaderMap>) -> Res
 
 /// Human copy for a 429, bucketed so it stays identical for minutes at a time
 /// (long lockouts round up to 5-minute steps).
+#[expect(
+    clippy::arithmetic_side_effects,
+    reason = "u64::MAX / 300 * 5 still fits in u64"
+)]
 fn rate_limit_copy(wait_secs: u64) -> String {
     match wait_secs {
         0..=60 => "too many requests, try again in a minute".to_string(),
@@ -617,9 +625,6 @@ pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
                         )
                         .route("/tags", get(deck::get_deck_tags))
                         .route("/playstyle", get(deck::get_play_style_summary))
-                        // The first spelling, for apps before 1.16.0, until
-                        // the client floor passes them.
-                        .route("/play-style", get(deck::get_play_style_summary))
                         .route(
                             "/{deck_id}/import/archidekt",
                             post(deck::import_archidekt_deck).layer(
@@ -652,7 +657,11 @@ pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
                             "/{deck_id}/card",
                             Router::new()
                                 .route("/", post(deck_card::create_deck_card))
-                                .route("/import", post(deck_card::import_deck_cards))
+                                .route(
+                                    "/import",
+                                    post(deck_card::import_deck_cards)
+                                        .layer(DefaultBodyLimit::max(IMPORT_BODY_LIMIT)),
+                                )
                                 .route("/search", post(deck::search_deck_cards))
                                 .route(
                                     "/{scryfall_data_id}",

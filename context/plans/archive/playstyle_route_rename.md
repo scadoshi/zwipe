@@ -1,5 +1,7 @@
 # Playstyle route rename
 
+**Done.** The commit that moved this plan into `archive/` removed `/api/deck/play-style`; only `/api/deck/playstyle` answers now.
+
 Started 2026-10-27. Playstyle is one word in the product, so its API path is too: `GET /api/deck/play-style` becomes `GET /api/deck/playstyle`. Apps already in the stores call the old path, so the server answers both until no supported app needs the old one, then the old one goes.
 
 ## Steps
@@ -11,4 +13,4 @@ Started 2026-10-27. Playstyle is one word in the product, so its API path is too
 
 ## When it's done
 
-Delete this plan's todo entry, move this file to `plans/archive/`, and note the sunset in the README's running log.
+The same commit deleted this plan's todo entry and moved this file to `plans/archive/`. Note the sunset, with its date, in the README's running log when it merges.

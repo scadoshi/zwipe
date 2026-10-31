@@ -182,16 +182,6 @@ fn form_lines(
     let mut lines: Vec<Line<'static>> = Vec::new();
     let mut focus_line = 0;
     let mut cursor = None;
-    let heading =
-        |text: &str, style: Style| Line::from(Span::styled(text.to_owned(), style.bold()));
-    let clear = |shown: bool| -> Vec<Span<'static>> {
-        if shown {
-            vec![Span::styled("×", palette.muted)]
-        } else {
-            Vec::new()
-        }
-    };
-    let cursor_at = |input: &TextInput| INDENT.len().saturating_add(input.cursor());
 
     lines.push(heading("Profile", palette.accent));
     for field in form.fields() {
@@ -199,222 +189,328 @@ fn form_lines(
         if focused {
             focus_line = lines.len();
         }
-        match field {
-            Field::Name => {
-                lines.push(label_line(palette, "Deck name", focused, Vec::new()));
-                if focused {
-                    cursor = Some((lines.len(), cursor_at(&form.name)));
-                }
-                lines.push(text_line(palette, &form.name));
-                if let Some(error) = form.name.error() {
-                    lines.push(Line::from(vec![
-                        Span::raw(INDENT),
-                        Span::styled(error.to_owned(), palette.error),
-                    ]));
-                }
-            }
+        let at = match field {
+            Field::Name => name_lines(&mut lines, palette, form, focused),
             Field::Format => {
-                lines.push(label_line(
-                    palette,
-                    "Format",
-                    focused,
-                    clear(form.format.is_some()),
-                ));
-                lines.push(Line::from(vec![
-                    Span::raw(INDENT),
-                    match form.format {
-                        Some(format) => Span::raw(format.display_name().to_owned()),
-                        None => Span::styled("Not set", palette.muted),
-                    },
-                ]));
+                format_lines(&mut lines, palette, form, focused);
+                None
             }
-            Field::Card(slot) => {
-                let card = form.card(slot);
-                let label = match slot {
-                    Slot::Commander if form.format.is_some_and(|f| f.has_signature_spell()) => {
-                        "Oathbreaker"
-                    }
-                    Slot::Commander => "Commander",
-                    Slot::Partner => "Partner",
-                    Slot::Background => "Background",
-                    Slot::SignatureSpell => "Signature spell",
-                };
-                let mut extras = vec![pill(
-                    "Filter",
-                    palette.accent,
-                    PillState {
-                        picked: card.filter_on,
-                        focused: false,
-                    },
-                )];
-                extras.extend(clear(card.card.is_some()));
-                extras.push(pill("Swipe", palette.add, PillState::default()));
-                lines.push(label_line(palette, label, focused, extras));
-                if focused {
-                    cursor = Some((lines.len(), cursor_at(&card.input)));
-                }
-                lines.push(text_line(palette, &card.input));
-                match &card.dropdown {
-                    Dropdown::Hidden => {}
-                    Dropdown::Searching => lines.push(Line::from(vec![
-                        Span::raw(INDENT),
-                        pill("Searching...", palette.muted, PillState::default()),
-                    ])),
-                    Dropdown::Results(cards) if cards.is_empty() => lines.push(Line::from(vec![
-                        Span::raw(INDENT),
-                        pill("No results", palette.muted, PillState::default()),
-                    ])),
-                    Dropdown::Results(cards) => {
-                        lines.extend(cards.iter().enumerate().map(|(i, c)| {
-                            Line::from(vec![
-                                Span::raw(INDENT),
-                                pill(
-                                    &c.scryfall_data.name,
-                                    palette.accent,
-                                    PillState {
-                                        picked: focused && i == card.highlighted,
-                                        focused: false,
-                                    },
-                                ),
-                            ])
-                        }));
-                    }
-                }
-            }
+            Field::Card(slot) => card_slot_lines(&mut lines, palette, form, slot, focused),
             Field::Power => {
-                lines.push(heading_gap());
-                lines.push(label_line(
-                    palette,
-                    "Power level",
-                    focused,
-                    clear(form.power.is_some()),
-                ));
-                let chips: Vec<Span<'static>> = PowerLevel::all()
-                    .iter()
-                    .enumerate()
-                    .map(|(i, p)| {
-                        pill(
-                            p.display_name(),
-                            palette.muted,
-                            PillState {
-                                picked: form.power == Some(*p),
-                                focused: focused && i == form.power_focus,
-                            },
-                        )
-                    })
-                    .collect();
-                lines.push(indented(chips));
-                lines.push(Line::default());
-                lines.push(heading("Budget", palette.warning));
+                power_lines(&mut lines, palette, form, focused);
+                None
             }
             Field::Land => {
-                lines.push(label_line(
-                    palette,
-                    "Land target",
-                    focused,
-                    clear(form.land_target.is_some()),
-                ));
-                let value = form
-                    .land_target
-                    .map_or_else(|| "Not set".to_owned(), |v| v.to_string());
-                lines.push(Line::from(vec![
-                    Span::raw(INDENT),
-                    Span::styled("-", palette.accent.bold()),
-                    Span::raw(format!("  {value}  ")),
-                    Span::styled("+", palette.accent.bold()),
-                ]));
+                land_lines(&mut lines, palette, form, focused);
+                None
             }
             Field::Currency => {
-                lines.push(label_line(
-                    palette,
-                    "Price target",
-                    focused,
-                    clear(!form.price.is_empty()),
-                ));
-                let chips: Vec<Span<'static>> = CURRENCIES
-                    .iter()
-                    .map(|c| {
-                        pill(
-                            c.label(),
-                            palette.muted,
-                            PillState {
-                                picked: form.currency == *c,
-                                focused: focused && form.currency == *c,
-                            },
-                        )
-                    })
-                    .collect();
-                lines.push(indented(chips));
+                currency_lines(&mut lines, palette, form, focused);
+                None
             }
-            Field::Price => {
-                if focused {
-                    cursor = Some((lines.len(), cursor_at(&form.price)));
-                }
-                let mut line = text_line(palette, &form.price);
-                if focused && let Some(first) = line.spans.first_mut() {
-                    *first = Span::raw("  > ");
-                }
-                lines.push(line);
-                lines.push(Line::default());
-                lines.push(heading("Tags", palette.add));
-            }
+            Field::Price => price_lines(&mut lines, palette, form, focused),
             Field::DeckTags => {
-                let count = Span::styled(
-                    format!("{}/{MAX_DECK_TAGS}", form.tags.len()),
-                    palette.muted,
-                );
-                let mut extras = vec![count];
-                extras.extend(clear(!form.tags.is_empty()));
-                lines.push(label_line(palette, "Deck tags", focused, extras));
-                let labels: Vec<String> = form.tags.iter().map(|t| deck_tag_label(t)).collect();
-                lines.extend(chip_box(
-                    palette,
-                    &labels,
-                    focused.then_some(form.tag_focus),
-                    width,
-                ));
+                deck_tag_lines(&mut lines, palette, form, focused, width);
+                None
             }
             Field::OracleTags => {
-                let count = Span::styled(
-                    format!("{}/{MAX_DECK_ORACLE_TAGS}", form.oracle_tags.len()),
-                    palette.muted,
-                );
-                let mut extras = vec![count];
-                extras.extend(clear(!form.oracle_tags.is_empty()));
-                lines.push(label_line(palette, "Oracle tags", focused, extras));
-                lines.extend(chip_box(
-                    palette,
-                    &form.oracle_tags,
-                    focused.then_some(form.oracle_focus),
-                    width,
-                ));
+                oracle_tag_lines(&mut lines, palette, form, focused, width);
+                None
             }
             Field::OtherTags => {
-                lines.push(label_line(
-                    palette,
-                    "Other tags",
-                    focused,
-                    clear(!form.other_tags.is_empty()),
-                ));
-                let chips: Vec<Span<'static>> = DeckOtherTag::all()
-                    .iter()
-                    .enumerate()
-                    .map(|(i, t)| {
-                        pill(
-                            t.display_name(),
-                            palette.muted,
-                            PillState {
-                                picked: form.other_tags.contains(t),
-                                focused: focused && i == form.other_focus,
-                            },
-                        )
-                    })
-                    .collect();
-                lines.push(indented(chips));
+                other_tag_lines(&mut lines, palette, form, focused);
+                None
             }
+        };
+        if let Some(at) = at {
+            cursor = Some(at);
         }
     }
     (lines, focus_line, cursor)
+}
+
+/// A bold section heading in the given style.
+fn heading(text: &str, style: Style) -> Line<'static> {
+    Line::from(Span::styled(text.to_owned(), style.bold()))
+}
+
+/// The clear mark when the field has a value to clear, or nothing.
+fn clear(palette: &Palette, shown: bool) -> Vec<Span<'static>> {
+    if shown {
+        vec![Span::styled("×", palette.muted)]
+    } else {
+        Vec::new()
+    }
+}
+
+/// The cursor's column inside an indented text input.
+fn cursor_at(input: &TextInput) -> usize {
+    INDENT.len().saturating_add(input.cursor())
+}
+
+/// The Deck name field and its error; returns the cursor when focused.
+fn name_lines(
+    lines: &mut Vec<Line<'static>>,
+    palette: &Palette,
+    form: &DeckForm,
+    focused: bool,
+) -> Option<(usize, usize)> {
+    lines.push(label_line(palette, "Deck name", focused, Vec::new()));
+    let cursor = focused.then(|| (lines.len(), cursor_at(&form.name)));
+    lines.push(text_line(palette, &form.name));
+    if let Some(error) = form.name.error() {
+        lines.push(Line::from(vec![
+            Span::raw(INDENT),
+            Span::styled(error.to_owned(), palette.error),
+        ]));
+    }
+    cursor
+}
+
+/// The Format field.
+fn format_lines(lines: &mut Vec<Line<'static>>, palette: &Palette, form: &DeckForm, focused: bool) {
+    lines.push(label_line(
+        palette,
+        "Format",
+        focused,
+        clear(palette, form.format.is_some()),
+    ));
+    lines.push(Line::from(vec![
+        Span::raw(INDENT),
+        match form.format {
+            Some(format) => Span::raw(format.display_name().to_owned()),
+            None => Span::styled("Not set", palette.muted),
+        },
+    ]));
+}
+
+/// A card slot's field and its search dropdown; returns the cursor when focused.
+fn card_slot_lines(
+    lines: &mut Vec<Line<'static>>,
+    palette: &Palette,
+    form: &DeckForm,
+    slot: Slot,
+    focused: bool,
+) -> Option<(usize, usize)> {
+    let card = form.card(slot);
+    let label = match slot {
+        Slot::Commander if form.format.is_some_and(|f| f.has_signature_spell()) => "Oathbreaker",
+        Slot::Commander => "Commander",
+        Slot::Partner => "Partner",
+        Slot::Background => "Background",
+        Slot::SignatureSpell => "Signature spell",
+    };
+    let mut extras = vec![pill(
+        "Filter",
+        palette.accent,
+        PillState {
+            picked: card.filter_on,
+            focused: false,
+        },
+    )];
+    extras.extend(clear(palette, card.card.is_some()));
+    extras.push(pill("Swipe", palette.add, PillState::default()));
+    lines.push(label_line(palette, label, focused, extras));
+    let cursor = focused.then(|| (lines.len(), cursor_at(&card.input)));
+    lines.push(text_line(palette, &card.input));
+    match &card.dropdown {
+        Dropdown::Hidden => {}
+        Dropdown::Searching => lines.push(Line::from(vec![
+            Span::raw(INDENT),
+            pill("Searching...", palette.muted, PillState::default()),
+        ])),
+        Dropdown::Results(cards) if cards.is_empty() => lines.push(Line::from(vec![
+            Span::raw(INDENT),
+            pill("No results", palette.muted, PillState::default()),
+        ])),
+        Dropdown::Results(cards) => {
+            lines.extend(cards.iter().enumerate().map(|(i, c)| {
+                Line::from(vec![
+                    Span::raw(INDENT),
+                    pill(
+                        &c.scryfall_data.name,
+                        palette.accent,
+                        PillState {
+                            picked: focused && i == card.highlighted,
+                            focused: false,
+                        },
+                    ),
+                ])
+            }));
+        }
+    }
+    cursor
+}
+
+/// The Power level chips, then the Budget heading.
+fn power_lines(lines: &mut Vec<Line<'static>>, palette: &Palette, form: &DeckForm, focused: bool) {
+    lines.push(heading_gap());
+    lines.push(label_line(
+        palette,
+        "Power level",
+        focused,
+        clear(palette, form.power.is_some()),
+    ));
+    let chips: Vec<Span<'static>> = PowerLevel::all()
+        .iter()
+        .enumerate()
+        .map(|(i, p)| {
+            pill(
+                p.display_name(),
+                palette.muted,
+                PillState {
+                    picked: form.power == Some(*p),
+                    focused: focused && i == form.power_focus,
+                },
+            )
+        })
+        .collect();
+    lines.push(indented(chips));
+    lines.push(Line::default());
+    lines.push(heading("Budget", palette.warning));
+}
+
+/// The Land target stepper.
+fn land_lines(lines: &mut Vec<Line<'static>>, palette: &Palette, form: &DeckForm, focused: bool) {
+    lines.push(label_line(
+        palette,
+        "Land target",
+        focused,
+        clear(palette, form.land_target.is_some()),
+    ));
+    let value = form
+        .land_target
+        .map_or_else(|| "Not set".to_owned(), |v| v.to_string());
+    lines.push(Line::from(vec![
+        Span::raw(INDENT),
+        Span::styled("-", palette.accent.bold()),
+        Span::raw(format!("  {value}  ")),
+        Span::styled("+", palette.accent.bold()),
+    ]));
+}
+
+/// The Price target label and its currency chips.
+fn currency_lines(
+    lines: &mut Vec<Line<'static>>,
+    palette: &Palette,
+    form: &DeckForm,
+    focused: bool,
+) {
+    lines.push(label_line(
+        palette,
+        "Price target",
+        focused,
+        clear(palette, !form.price.is_empty()),
+    ));
+    let chips: Vec<Span<'static>> = CURRENCIES
+        .iter()
+        .map(|c| {
+            pill(
+                c.label(),
+                palette.muted,
+                PillState {
+                    picked: form.currency == *c,
+                    focused: focused && form.currency == *c,
+                },
+            )
+        })
+        .collect();
+    lines.push(indented(chips));
+}
+
+/// The price input, then the Tags heading; returns the cursor when focused.
+fn price_lines(
+    lines: &mut Vec<Line<'static>>,
+    palette: &Palette,
+    form: &DeckForm,
+    focused: bool,
+) -> Option<(usize, usize)> {
+    let cursor = focused.then(|| (lines.len(), cursor_at(&form.price)));
+    let mut line = text_line(palette, &form.price);
+    if focused && let Some(first) = line.spans.first_mut() {
+        *first = Span::raw("  > ");
+    }
+    lines.push(line);
+    lines.push(Line::default());
+    lines.push(heading("Tags", palette.add));
+    cursor
+}
+
+/// The Deck tags label with its count, then the chosen tags.
+fn deck_tag_lines(
+    lines: &mut Vec<Line<'static>>,
+    palette: &Palette,
+    form: &DeckForm,
+    focused: bool,
+    width: usize,
+) {
+    let count = Span::styled(
+        format!("{}/{MAX_DECK_TAGS}", form.tags.len()),
+        palette.muted,
+    );
+    let mut extras = vec![count];
+    extras.extend(clear(palette, !form.tags.is_empty()));
+    lines.push(label_line(palette, "Deck tags", focused, extras));
+    let labels: Vec<String> = form.tags.iter().map(|t| deck_tag_label(t)).collect();
+    lines.extend(chip_box(
+        palette,
+        &labels,
+        focused.then_some(form.tag_focus),
+        width,
+    ));
+}
+
+/// The Oracle tags label with its count, then the chosen tags.
+fn oracle_tag_lines(
+    lines: &mut Vec<Line<'static>>,
+    palette: &Palette,
+    form: &DeckForm,
+    focused: bool,
+    width: usize,
+) {
+    let count = Span::styled(
+        format!("{}/{MAX_DECK_ORACLE_TAGS}", form.oracle_tags.len()),
+        palette.muted,
+    );
+    let mut extras = vec![count];
+    extras.extend(clear(palette, !form.oracle_tags.is_empty()));
+    lines.push(label_line(palette, "Oracle tags", focused, extras));
+    lines.extend(chip_box(
+        palette,
+        &form.oracle_tags,
+        focused.then_some(form.oracle_focus),
+        width,
+    ));
+}
+
+/// The Other tags chips.
+fn other_tag_lines(
+    lines: &mut Vec<Line<'static>>,
+    palette: &Palette,
+    form: &DeckForm,
+    focused: bool,
+) {
+    lines.push(label_line(
+        palette,
+        "Other tags",
+        focused,
+        clear(palette, !form.other_tags.is_empty()),
+    ));
+    let chips: Vec<Span<'static>> = DeckOtherTag::all()
+        .iter()
+        .enumerate()
+        .map(|(i, t)| {
+            pill(
+                t.display_name(),
+                palette.muted,
+                PillState {
+                    picked: form.other_tags.contains(t),
+                    focused: focused && i == form.other_focus,
+                },
+            )
+        })
+        .collect();
+    lines.push(indented(chips));
 }
 
 fn heading_gap() -> Line<'static> {
@@ -717,7 +813,12 @@ fn draw_oracle(
     );
     let Some(catalog) = catalog else {
         let ghosts = (0..SKELETON_CHIPS)
-            .map(|i| Span::styled("░".repeat(6_usize.saturating_add(i % 4 * 2)), palette.muted))
+            .map(|i| {
+                Span::styled(
+                    "░".repeat(6_usize.saturating_add((i % 4).saturating_mul(2))),
+                    palette.muted,
+                )
+            })
             .collect();
         return draw_grid(f, ghosts, usize::MAX, grid);
     };

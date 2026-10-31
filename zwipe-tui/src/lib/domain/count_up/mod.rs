@@ -86,7 +86,7 @@ pub(crate) fn compact(n: u64) -> String {
     STEPS.iter().find(|(unit, _)| n >= *unit).map_or_else(
         || with_separators(n),
         |&(unit, letter)| {
-            let tenths = n / (unit / 10);
+            let tenths = n.checked_div(unit / 10).unwrap_or(0);
             format!("{}.{}{letter}", tenths / 10, tenths % 10)
         },
     )

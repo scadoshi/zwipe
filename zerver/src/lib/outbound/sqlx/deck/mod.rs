@@ -125,6 +125,11 @@ impl DeckRepository for Postgres {
         let tags_json = deck_tags_to_json(&request.tags);
         let other_tags_json = deck_other_tags_to_json(&request.other_tags);
         let oracle_tags_json = deck_oracle_tags_to_json(&request.oracle_tags);
+        let format: Option<String> = request.format.map(|f| f.to_legality_key().to_string());
+        let power_level: Option<String> = request.power_level.map(|p| p.to_string());
+        let price_target_currency: Option<String> = request
+            .price_target_currency
+            .map(|c| c.json_key().to_string());
         let database_deck_profile = query_as!(
             DatabaseDeckProfile,
             r#"INSERT INTO decks (name, commander_id, partner_commander_id, background_id, signature_spell_id, format, tags, power_level, other_tags, oracle_tags, land_target, price_target, price_target_currency, user_id)
@@ -148,14 +153,14 @@ impl DeckRepository for Postgres {
             request.partner_commander_id,
             request.background_id,
             request.signature_spell_id,
-            request.format.map(|f| f.to_legality_key().to_string()) as Option<String>,
+            format,
             tags_json,
-            request.power_level.map(|p| p.to_string()) as Option<String>,
+            power_level,
             other_tags_json,
             oracle_tags_json,
             request.land_target,
             request.price_target,
-            request.price_target_currency.map(|c| c.json_key().to_string()) as Option<String>,
+            price_target_currency,
             request.user_id
         )
         .fetch_one(&mut *tx)
@@ -191,7 +196,7 @@ impl DeckRepository for Postgres {
         .fetch_one(&mut *tx)
         .await?
         .unwrap_or(0);
-        if card_count + i64::from(*request.quantity) > card_limit {
+        if exceeds_card_limit(card_count, i64::from(*request.quantity), card_limit) {
             return Err(if request.email_verified {
                 CreateDeckCardError::LimitReached
             } else {
@@ -1270,15 +1275,17 @@ impl DeckRepository for Postgres {
         // becomes exactly the imported list; in add mode the upsert replaces
         // quantities for re-imported oracle_ids, so subtract that overlap.
         let import_total: i64 = batch.iter().map(|(_, _, qty, _)| i64::from(*qty)).sum();
-        let post_import_total = if mode.is_replace() {
+        let post_import_total: Option<i64> = if mode.is_replace() {
             if batch.iter().any(|(_, _, _, board)| board == "deck") {
-                batch
-                    .iter()
-                    .filter(|(_, _, _, board)| board == "deck")
-                    .map(|(_, _, qty, _)| i64::from(*qty))
-                    .sum()
+                Some(
+                    batch
+                        .iter()
+                        .filter(|(_, _, _, board)| board == "deck")
+                        .map(|(_, _, qty, _)| i64::from(*qty))
+                        .sum(),
+                )
             } else {
-                card_count
+                Some(card_count)
             }
         } else {
             let import_oracle_ids: Vec<uuid::Uuid> =
@@ -1292,9 +1299,10 @@ impl DeckRepository for Postgres {
             .await
             .map_err(db)?
             .unwrap_or(0);
-            (card_count - overlap_qty) + import_total
+            add_mode_total(card_count, overlap_qty, import_total)
         };
-        if post_import_total > card_limit {
+        // A total past i64 is over any limit.
+        if post_import_total.is_none_or(|total| total > card_limit) {
             return Err(if email_verified {
                 ImportDeckCardsError::LimitReached
             } else {
@@ -1484,4 +1492,44 @@ fn outcomes_of(added: i64, skipped: i64, maybed: i64, removed: i64) -> SwipeOutc
 /// A count from the database as a `u32`: 0 below zero and `u32::MAX` past it.
 fn saturating_u32(n: i64) -> u32 {
     u32::try_from(n.max(0)).unwrap_or(u32::MAX)
+}
+
+/// Whether adding `adding` cards to a deck holding `card_count` passes `card_limit`.
+/// A total past `i64` is over any limit.
+fn exceeds_card_limit(card_count: i64, adding: i64, card_limit: i64) -> bool {
+    card_count
+        .checked_add(adding)
+        .is_none_or(|total| total > card_limit)
+}
+
+/// A deck's total after an add-mode import: the imported quantities replace
+/// the `overlap` already in the deck. `None` when the total overflows `i64`.
+fn add_mode_total(card_count: i64, overlap: i64, import_total: i64) -> Option<i64> {
+    card_count.checked_sub(overlap)?.checked_add(import_total)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn card_limit_counts_the_cards_being_added() {
+        assert!(!exceeds_card_limit(99, 1, 100));
+        assert!(exceeds_card_limit(99, 2, 100));
+    }
+
+    #[test]
+    fn an_overflowing_total_is_over_the_limit() {
+        assert!(exceeds_card_limit(i64::MAX, 1, 100));
+    }
+
+    #[test]
+    fn add_mode_total_replaces_the_overlap() {
+        assert_eq!(add_mode_total(60, 4, 10), Some(66));
+    }
+
+    #[test]
+    fn add_mode_total_overflow_is_none() {
+        assert_eq!(add_mode_total(i64::MAX, 0, 1), None);
+    }
 }

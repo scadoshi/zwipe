@@ -103,7 +103,7 @@ impl HintTopic {
     pub fn title(&self) -> &'static str {
         match self {
             Self::DeckTags => "Deck tags",
-            Self::OracleTags => "Oracle tags",
+            Self::OracleTags | Self::SuggestionTagChart | Self::TagRates => "Oracle tags",
             Self::DeckName => "Deck name",
             Self::Format => "Format",
             Self::Commander => "Commander",
@@ -130,21 +130,22 @@ impl HintTopic {
             Self::ManaFulfillment => "Mana cost fulfillment",
             Self::DrawOdds => "Draw odds",
             Self::ColorMap => "Color map",
-            Self::SuggestionRoleChart => "Card roles",
-            Self::SuggestionTagChart => "Oracle tags",
+            Self::SuggestionRoleChart | Self::RoleRates => "Card roles",
             Self::SuggestionTagDecks => "Decks",
             Self::SuggestionTagCards => "Cards",
             Self::SuggestionTagImpact => "Impact",
             Self::SuggestionList => "Suggested commanders",
             Self::SuggestionStaples => "Staples",
             Self::Activity => "Activity",
-            Self::RoleRates => "Card roles",
-            Self::TagRates => "Oracle tags",
             Self::HardPasses => "Most skipped",
         }
     }
 
     /// The dialog body. Only what the control itself does not show.
+    #[expect(
+        clippy::too_many_lines,
+        reason = "a lookup table with one short arm per topic"
+    )]
     fn body(self) -> Element {
         match self {
             Self::DeckTags => rsx! { DeckTagsExplainer {} },
@@ -300,14 +301,14 @@ impl HintTopic {
             },
             Self::RoleRates => rsx! {
                 HintBullets {
-                    HintBullet { "Your rate for each card role. Pick one under " HintKey { "Show" } ": " HintKey { "Added" } ", " HintKey { "Skipped" } " and " HintKey { "Maybeboard" } " are shares of the cards dealt to you, and " HintKey { "Removed" } " is the share of added cards you later took out" }
-                    HintBullet { "Tap a role to see the tags you swiped under it" }
-                    HintBullet { "From your decks with a commander, for roles dealt at least 10 times" }
+                    HintBullet { "Your share for each card role. Pick one under " HintKey { "Show" } ": " HintKey { "Added" } ", " HintKey { "Skipped" } " and " HintKey { "Maybeboard" } " are shares of the cards dealt to you, and " HintKey { "Removed" } " is the share of added cards you later took out" }
+                    HintBullet { "Tap a role to see the tags you swiped under it. A grey role has none yet" }
+                    HintBullet { "From your decks with a commander" }
                 }
             },
             Self::TagRates => rsx! {
                 HintBullets {
-                    HintBullet { "The tags where your rate stands out most from other players', with your own rate" }
+                    HintBullet { "The tags where your share stands out most from other players', with your own share" }
                     HintBullet { "A tag everyone passes on shows only after a lot of skips. Tap a tag to see what it means" }
                     HintBullet { "From your decks with a commander, for tags dealt at least 10 times" }
                 }

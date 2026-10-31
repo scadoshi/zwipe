@@ -539,14 +539,18 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
     .iter()
     .filter(|present| **present)
     .count()
-        + mvp_cards.len();
+    .saturating_add(mvp_cards.len());
     let featured_ready = featured_timed_out() || featured_loaded() >= featured_total;
     let featured_class = if featured_ready {
         "sd-featured ready"
     } else {
         "sd-featured"
     };
-    let on_featured_load = move |()| featured_loaded += 1;
+    // A count of image loads, compared against a handful of featured cards.
+    let on_featured_load = move |()| {
+        let loaded = featured_loaded();
+        featured_loaded.set(loaded.saturating_add(1));
+    };
     // A format with a signature spell is Oathbreaker: the "commander" is the
     // oathbreaker planeswalker.
     let is_oathbreaker = deck
@@ -558,19 +562,18 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
 
     // Card count mirrors the app's deck-list tile: mainboard sum plus each
     // present command-zone slot (commander only when the format uses one).
-    let mut display_count = card_count;
-    if deck.format.as_ref().is_some_and(Format::has_commander) && deck.commander.is_some() {
-        display_count += 1;
-    }
-    if deck.partner_commander.is_some() {
-        display_count += 1;
-    }
-    if deck.background.is_some() {
-        display_count += 1;
-    }
-    if deck.signature_spell.is_some() {
-        display_count += 1;
-    }
+    let zone_slots = [
+        deck.format.as_ref().is_some_and(Format::has_commander) && deck.commander.is_some(),
+        deck.partner_commander.is_some(),
+        deck.background.is_some(),
+        deck.signature_spell.is_some(),
+    ]
+    .into_iter()
+    .filter(|present| *present)
+    .count();
+    // A display count: it saturates rather than wraps on a corrupt quantity.
+    let display_count =
+        i64::try_from(zone_slots).map_or(card_count, |slots| card_count.saturating_add(slots));
     // Command-zone names as chips, in the app's order: commander, partner,
     // background, signature spell.
     let zone_names: Vec<String> = [
@@ -705,12 +708,13 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
     .flatten()
     .collect();
     let metrics = DeckMetrics::from_entries_and_command_zone(&deck.entries, &cz_cards);
-    let show_charts = metrics.land_count + metrics.nonland_count > 0;
+    let show_charts = metrics.land_count > 0 || metrics.nonland_count > 0;
 
     // The stat panels (Budget, Tags, Distributions, Mana, Draw odds: the
     // app's deck-view sections in its order), each as (title, height proxy,
     // body). They flow through the same balanced-columns partition as the
     // card sections so panels pack tightly instead of leaving grid-row gaps.
+    // Heights are layout estimates, so their sums saturate.
     let chart_panels: Vec<(&'static str, usize, Element)> = if show_charts {
         let mut panels: Vec<(&'static str, usize, Element)> = Vec::new();
         {
@@ -760,7 +764,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
             ));
         }
         if !deck.tags.is_empty() || !deck.oracle_tags.is_empty() || !deck.other_tags.is_empty() {
-            let height = 4 + deck.oracle_tags.len() / 3;
+            let height = (deck.oracle_tags.len() / 3).saturating_add(4);
             panels.push((
                 "Tags",
                 height,
@@ -814,7 +818,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
             };
             panels.push((
                 "Distributions",
-                7 + role_rows,
+                role_rows.saturating_add(7),
                 rsx! {
                     div { class: "sd-chart-body",
                         if let Some(value) = avg_pt {
@@ -837,7 +841,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
             let balance_rows = metrics.mana_balance_rows();
             panels.push((
                 "Mana",
-                15 + balance_rows.len(),
+                balance_rows.len().saturating_add(15),
                 rsx! {
                     div { class: "sd-chart-body",
                         div { class: "info-row",
@@ -869,7 +873,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
             let bucket_count = buckets.len();
             panels.push((
                 "Draw odds",
-                3 + bucket_count,
+                bucket_count.saturating_add(3),
                 rsx! {
                     div { class: "sd-chart-body",
                         DrawOdds { deck_size, buckets }
@@ -887,7 +891,10 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
     // (not shortest-column greedy) so section order survives both layouts:
     // desktop columns read left-to-right in order, and the phone single-column
     // stack keeps the same order instead of scrambling it.
-    let section_heights: Vec<usize> = sections.iter().map(|s| s.cards.len() + 2).collect();
+    let section_heights: Vec<usize> = sections
+        .iter()
+        .map(|s| s.cards.len().saturating_add(2))
+        .collect();
     let run_height =
         |from: usize, to: usize| -> usize { section_heights.iter().take(to).skip(from).sum() };
     let n = sections.len();

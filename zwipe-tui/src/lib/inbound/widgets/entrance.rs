@@ -11,6 +11,9 @@ use ratatui::style::{Modifier, Style};
 /// How long an entrance takes.
 pub(crate) const DURATION: Duration = Duration::from_millis(300);
 
+/// The first half of an entrance, drawn faint.
+const FAINT: Duration = Duration::from_millis(150);
+
 /// Whether an entrance `elapsed` in is still running.
 pub(crate) fn animating(elapsed: Duration) -> bool {
     elapsed < DURATION
@@ -18,7 +21,7 @@ pub(crate) fn animating(elapsed: Duration) -> bool {
 
 /// Draws `area` faint while the entrance is in its first half, `elapsed` in.
 pub(crate) fn draw(f: &mut Frame<'_>, area: Rect, elapsed: Duration) {
-    if elapsed < DURATION / 2 {
+    if elapsed < FAINT {
         f.buffer_mut()
             .set_style(area, Style::new().add_modifier(Modifier::DIM));
     }

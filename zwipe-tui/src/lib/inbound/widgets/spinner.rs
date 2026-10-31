@@ -11,7 +11,11 @@ const TURN: Duration = Duration::from_millis(500);
 /// The spinner's glyph at `now` for one that started at `since`.
 pub(crate) fn frame(since: Instant, now: Instant) -> &'static str {
     let quarter = TURN.as_millis() / 4;
-    let step = now.saturating_duration_since(since).as_millis() / quarter.max(1);
+    let step = now
+        .saturating_duration_since(since)
+        .as_millis()
+        .checked_div(quarter)
+        .unwrap_or(0);
     let index = usize::try_from(step % 4).unwrap_or(0);
     FRAMES.get(index).copied().unwrap_or("◐")
 }

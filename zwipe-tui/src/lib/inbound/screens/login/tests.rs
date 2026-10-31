@@ -90,7 +90,7 @@ fn signing_in_opens_home_in_the_accounts_theme_with_no_toast() {
         dark_mode: false,
         ..Default::default()
     };
-    let session = session(user(true), preferences);
+    let session = session(&user(true), &preferences);
     harness.apply(Update::SignedIn(Box::new(session)));
     assert!(matches!(harness.screen(), Screen::Home(_)));
     assert!(harness.app.shared.toasts.is_empty());

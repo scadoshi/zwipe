@@ -36,6 +36,16 @@ const ROLES_TITLE: &str = "Card roles";
 const TAGS_TITLE: &str = "Oracle tags";
 /// The hard passes group's header.
 const PASSES_TITLE: &str = "Most skipped";
+/// Card roles' line before any role has enough swipes to rate.
+const ROLES_EMPTY: &str = "Swipe more cards to see your card roles";
+/// Oracle tags' line before any tag has enough swipes to rate.
+const TAGS_EMPTY: &str = "Swipe more cards to see your Oracle tags";
+/// Most skipped's line before any card qualifies.
+const PASSES_EMPTY: &str = "Skipped cards show here";
+/// A chart's line on Removed before any card counted there was removed.
+const NONE_REMOVED: &str = "You haven't removed any cards yet";
+/// Oracle tags' line when no tag's share beats other players'.
+const NO_TAG_STANDS_OUT: &str = "No tags stand out from other players yet";
 
 /// Room on the left of the grid for the weekday labels.
 const LEFT: f64 = 24.0;
@@ -108,8 +118,20 @@ fn level(count: u32, busy: &[u32]) -> u8 {
 /// Sunday falls in it, unless the next label lands within [`LABEL_SPAN`]
 /// columns, which leaves a partial first month unlabeled.
 fn heat_layout(through: NaiveDate, days: &[HttpActivityDay]) -> HeatLayout {
-    let start = through - Duration::days(ACTIVITY_DAYS.saturating_sub(1));
-    let first_sunday = start - Duration::days(i64::from(start.weekday().num_days_from_sunday()));
+    // A year reaching back past the first date has no grid to lay out.
+    let Some((start, first_sunday)) = through
+        .checked_sub_signed(Duration::days(ACTIVITY_DAYS.saturating_sub(1)))
+        .and_then(|start| {
+            let to_sunday = Duration::days(i64::from(start.weekday().num_days_from_sunday()));
+            Some((start, start.checked_sub_signed(to_sunday)?))
+        })
+    else {
+        return HeatLayout {
+            cells: Vec::new(),
+            months: Vec::new(),
+            columns: 0,
+        };
+    };
     let by_day: HashMap<NaiveDate, &HttpActivityDay> = days.iter().map(|d| (d.day, d)).collect();
     let mut busy: Vec<u32> = days.iter().map(activity_of).filter(|&n| n > 0).collect();
     busy.sort_unstable();
@@ -119,7 +141,8 @@ fn heat_layout(through: NaiveDate, days: &[HttpActivityDay]) -> HeatLayout {
     let mut last_month = None;
     let mut date = start;
     while date <= through {
-        let offset = usize::try_from((date - first_sunday).num_days()).unwrap_or(0);
+        let offset =
+            usize::try_from(date.signed_duration_since(first_sunday).num_days()).unwrap_or(0);
         let (column, row) = (offset / DAYS_PER_WEEK, offset % DAYS_PER_WEEK);
         let day = by_day.get(&date);
         let (swipes, searches) = day.map_or((0, 0), |d| (d.swipes, d.searches));
@@ -142,7 +165,11 @@ fn heat_layout(through: NaiveDate, days: &[HttpActivityDay]) -> HeatLayout {
             swipes,
             searches,
         });
-        date = date.succ_opt().unwrap_or(through + Duration::days(1));
+        // The last date has no day after it, so the year ends there.
+        let Some(next) = date.succ_opt() else {
+            break;
+        };
+        date = next;
     }
     let counts: Vec<u32> = cells
         .iter()
@@ -223,7 +250,11 @@ fn outcome_bars(outcomes: &HttpSwipeOutcomes) -> Vec<Bar> {
     values
         .into_iter()
         .map(|(label, n)| {
-            let pct = u32::try_from(n.saturating_mul(100) / top).unwrap_or(100);
+            let pct = n
+                .saturating_mul(100)
+                .checked_div(top)
+                .and_then(|pct| u32::try_from(pct).ok())
+                .unwrap_or(100);
             Bar::new(label, usize::try_from(n).unwrap_or(usize::MAX), pct)
         })
         .collect()
@@ -281,7 +312,8 @@ impl RateKind {
     /// take a share of.
     fn percent(self, outcomes: &HttpSwipeOutcomes) -> Option<u32> {
         let (count, of) = self.parts(outcomes);
-        (of > 0).then(|| u32::try_from(count.saturating_mul(100) / of).unwrap_or(100))
+        let pct = count.saturating_mul(100).checked_div(of)?;
+        Some(u32::try_from(pct).unwrap_or(100))
     }
 }
 
@@ -317,6 +349,16 @@ fn role_rate_bars(kind: RateKind, roles: &[HttpRoleRates], tags: &[HttpTagRates]
             revealable: tags.iter().any(|t| t.role == role.role),
         })
         .collect()
+}
+
+/// Oracle tags' line when the picked share charts no tag: nothing removed
+/// under any tag on Removed, otherwise no tag the user beats others on.
+fn tag_empty_line(kind: RateKind, tags: &[HttpTagRates]) -> &'static str {
+    if kind == RateKind::Removed && tags.iter().all(|t| t.outcomes.removed == 0) {
+        NONE_REMOVED
+    } else {
+        NO_TAG_STANDS_OUT
+    }
 }
 
 /// Other players' share across every tag sent, the rate a tag few of them
@@ -490,7 +532,8 @@ pub(crate) fn HeatGhost() -> Element {
 /// the oracle tags swiped under each; and Oracle tags, the tags whose share
 /// stands out most from other players', each revealing its description. The
 /// last two share one [`RateChips`] pick of Added, Skipped, Maybeboard or
-/// Removed. Each section is left out when it has nothing to show. The
+/// Removed. Activity is left out when it has nothing to show; Card roles
+/// and Oracle tags stay, with a line saying what fills them. The
 /// heatmap mounts afresh each time its section opens, so its sweep plays in
 /// view.
 #[component]
@@ -512,6 +555,7 @@ pub(crate) fn ActivitySections(
     let swipe_tags = activity.tags.clone();
     let role_bars = role_rate_bars(kind(), &activity.roles, &activity.tags);
     let tag_bars = tag_rate_bars(kind(), &activity.tags);
+    let tag_empty = tag_empty_line(kind(), &activity.tags);
     let mut selected_role: Signal<Option<String>> = use_signal(|| None);
     let mut selected_tag: Signal<Option<String>> = use_signal(|| None);
     let describe_tag = try_use_context::<OtagDescribe>().map(|d| d.0);
@@ -572,22 +616,26 @@ pub(crate) fn ActivitySections(
                 }
             }
         }
-        if !activity.roles.is_empty() {
-            CollapsibleSection {
-                title: ROLES_TITLE,
-                open_section,
-                header_accessory: rsx! {
-                    InfoButton { topic: HintTopic::RoleRates }
-                },
+        CollapsibleSection {
+            title: ROLES_TITLE,
+            open_section,
+            header_accessory: rsx! {
+                InfoButton { topic: HintTopic::RoleRates }
+            },
+            if activity.roles.is_empty() {
+                div { class: "activity-total", "{ROLES_EMPTY}" }
+            } else {
                 div { class: "activity-rates",
                     RateChips { kind }
                     // Keyed on the rate, so a switch mounts a fresh chart:
                     // patched in place, rows that re-sort and flip between a
-                    // chip and a plain label kept stale bar widths.
+                    // tappable chip and a grey one kept stale bar widths.
                     for rate in [kind().label()] {
                         div { key: "{rate}",
+                            // Only Removed can chart no role: every role sent
+                            // has a dealt card, but Removed needs an added one.
                             if role_bars.is_empty() {
-                                div { class: "activity-total", "Nothing to show for this rate yet" }
+                                div { class: "activity-total", "{NONE_REMOVED}" }
                             } else {
                                 BarChart {
                                     bars: role_bars.clone(),
@@ -603,19 +651,21 @@ pub(crate) fn ActivitySections(
                 }
             }
         }
-        if !activity.tags.is_empty() {
-            CollapsibleSection {
-                title: TAGS_TITLE,
-                open_section,
-                header_accessory: rsx! {
-                    InfoButton { topic: HintTopic::TagRates }
-                },
+        CollapsibleSection {
+            title: TAGS_TITLE,
+            open_section,
+            header_accessory: rsx! {
+                InfoButton { topic: HintTopic::TagRates }
+            },
+            if activity.tags.is_empty() {
+                div { class: "activity-total", "{TAGS_EMPTY}" }
+            } else {
                 div { class: "activity-rates",
                     RateChips { kind }
                     for rate in [kind().label()] {
                         div { key: "{rate}",
                             if tag_bars.is_empty() {
-                                div { class: "activity-total", "Nothing to show for this rate yet" }
+                                div { class: "activity-total", "{tag_empty}" }
                             } else {
                                 BarChart {
                                     bars: tag_bars.clone(),
@@ -695,7 +745,7 @@ fn HardPassRow(
 
 /// The cards the user keeps passing on, as [`HardPassRow`]s in a group
 /// headed like Staples', in the server's order: most skipped against other
-/// players first. Renders nothing without any.
+/// players first. Without any, the header over a line saying what fills it.
 #[component]
 pub(crate) fn HardPassesPanel(
     passes: Vec<HttpHardPass>,
@@ -705,21 +755,22 @@ pub(crate) fn HardPassesPanel(
     on_printing: EventHandler<Card>,
 ) -> Element {
     rsx! {
-        if !passes.is_empty() {
-            div { class: "maybeboard-list card-group row-enter",
-                div { class: "card-group-header card-group-header-with-hint",
-                    span { "{PASSES_TITLE}" }
-                    InfoButton { topic: HintTopic::HardPasses }
-                }
-                for pass in passes {
-                    HardPassRow {
-                        key: "{pass.card.scryfall_data.id}",
-                        pass,
-                        expanded_card,
-                        preview_card,
-                        preview_dismissing,
-                        on_printing,
-                    }
+        div { class: "maybeboard-list card-group row-enter",
+            div { class: "card-group-header card-group-header-with-hint",
+                span { "{PASSES_TITLE}" }
+                InfoButton { topic: HintTopic::HardPasses }
+            }
+            if passes.is_empty() {
+                div { class: "activity-total activity-total-group", "{PASSES_EMPTY}" }
+            }
+            for pass in passes {
+                HardPassRow {
+                    key: "{pass.card.scryfall_data.id}",
+                    pass,
+                    expanded_card,
+                    preview_card,
+                    preview_dismissing,
+                    on_printing,
                 }
             }
         }
@@ -740,6 +791,19 @@ mod tests {
             swipes,
             searches,
         }
+    }
+
+    #[test]
+    fn a_year_ending_on_the_last_date_stops_there() {
+        let layout = heat_layout(NaiveDate::MAX, &[]);
+        assert_eq!(layout.cells.last().map(|c| c.date), Some(NaiveDate::MAX));
+    }
+
+    #[test]
+    fn a_year_reaching_before_the_first_date_is_empty() {
+        let layout = heat_layout(NaiveDate::MIN, &[]);
+        assert_eq!(layout.cells, Vec::new());
+        assert_eq!(layout.columns, 0);
     }
 
     #[test]
@@ -854,6 +918,37 @@ mod tests {
             outcomes: mine,
             everyone,
         }
+    }
+
+    #[test]
+    fn an_empty_tag_chart_says_nothing_was_removed_only_on_removed_with_none() {
+        let none_removed = [tag(
+            "ramp",
+            "ramp",
+            outcomes(2, 8, 0, 0),
+            outcomes(5, 5, 0, 0),
+        )];
+        let one_removed = [tag(
+            "ramp",
+            "ramp",
+            outcomes(2, 8, 0, 1),
+            outcomes(5, 5, 0, 5),
+        )];
+        assert_eq!(
+            tag_empty_line(RateKind::Removed, &none_removed),
+            NONE_REMOVED,
+            "Removed with nothing removed"
+        );
+        assert_eq!(
+            tag_empty_line(RateKind::Removed, &one_removed),
+            NO_TAG_STANDS_OUT,
+            "Removed with a removal that does not stand out"
+        );
+        assert_eq!(
+            tag_empty_line(RateKind::Added, &none_removed),
+            NO_TAG_STANDS_OUT,
+            "another share never mentions removing"
+        );
     }
 
     #[test]

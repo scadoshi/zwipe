@@ -27,7 +27,10 @@ pub(crate) fn loading(stats: &[Stat<'_>]) -> bool {
 
 /// The digits a loading figure shows `elapsed` after its screen opened, changing every animation tick.
 pub(crate) fn rolling(elapsed: Duration, seed: usize) -> String {
-    let tick = elapsed.as_millis() / decode::TICK.as_millis().max(1);
+    let tick = elapsed
+        .as_millis()
+        .checked_div(decode::TICK.as_millis())
+        .unwrap_or(0);
     let tick = usize::try_from(tick).unwrap_or(usize::MAX);
     (0..ROLLING_DIGITS)
         .map(|place| {

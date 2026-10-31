@@ -8,7 +8,16 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 /// Share of the intended cards a sync must upsert to count as a partial success.
-const PARTIAL_SUCCESS_SHARE: f32 = 0.7;
+const PARTIAL_SUCCESS_SHARE: f64 = 0.7;
+
+/// Converts a card count to the `INTEGER` a metrics column holds, capped at
+/// `i32::MAX`.
+///
+/// A sync sees about 120k cards, so the cap is never reached. If it were, the
+/// metrics row would report the ceiling instead of failing the sync.
+pub fn count_column(count: usize) -> i32 {
+    i32::try_from(count).unwrap_or(i32::MAX)
+}
 
 // == parts ==
 
@@ -225,7 +234,8 @@ impl ZerviceMetrics {
 
     /// Increments the upserted count by the specified amount.
     pub fn add_upserted_count(&mut self, count: i32) -> &mut Self {
-        self.upserted_count += count;
+        // A tally like the counts: it caps rather than fail the sync.
+        self.upserted_count = self.upserted_count.saturating_add(count);
         self
     }
 
@@ -237,7 +247,7 @@ impl ZerviceMetrics {
 
     /// Increments the skipped count by the specified amount.
     pub fn add_skipped_count(&mut self, count: i32) -> &mut Self {
-        self.skipped_count += count;
+        self.skipped_count = self.skipped_count.saturating_add(count);
         self
     }
 
@@ -250,7 +260,7 @@ impl ZerviceMetrics {
     /// Adds an error to the metrics and increments error count.
     pub fn add_error(&mut self, error: ErrorMetrics) -> &mut Self {
         self.errors.push(error);
-        self.error_count = self.errors.len() as i32;
+        self.error_count = count_column(self.errors.len());
         self
     }
 
@@ -271,11 +281,17 @@ impl ZerviceMetrics {
     /// - Sets `ended_at` timestamp
     /// - Calculates `duration_in_seconds`
     pub fn mark_as_completed(&mut self) {
-        self.error_count = self.errors.len() as i32;
+        self.error_count = count_column(self.errors.len());
         self.evaluate_status();
         self.ended_at = Some(Utc::now());
         if let Some(ended_at) = self.ended_at {
-            self.duration_in_seconds = (ended_at - self.started_at).num_seconds() as i32;
+            // Capped like the counts: a sync never runs 68 years.
+            self.duration_in_seconds = i32::try_from(
+                ended_at
+                    .signed_duration_since(self.started_at)
+                    .num_seconds(),
+            )
+            .unwrap_or(i32::MAX);
         }
     }
 
@@ -333,8 +349,9 @@ impl ZerviceMetrics {
     /// Intended cards = `received_count - skipped_count`
     fn evaluate_status(&mut self) -> &mut Self {
         self.status = SyncStatus::Failure;
-        let intended_to_import = self.received_count - self.skipped_count;
-        if self.upserted_count as f32 >= intended_to_import as f32 * PARTIAL_SUCCESS_SHARE {
+        // Skipped cards are a subset of the received ones, so this stays in range.
+        let intended_to_import = self.received_count.saturating_sub(self.skipped_count);
+        if f64::from(self.upserted_count) >= f64::from(intended_to_import) * PARTIAL_SUCCESS_SHARE {
             self.status = SyncStatus::PartialSuccess;
         }
         if self.upserted_count == intended_to_import && self.error_count == 0 {
@@ -356,5 +373,34 @@ impl std::fmt::Display for ZerviceMetrics {
             self.skipped_count,
             self.error_count,
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn count_column_caps_at_the_integer_column() {
+        assert_eq!(count_column(118_000), 118_000);
+        assert_eq!(count_column(usize::MAX), i32::MAX);
+    }
+
+    fn status_after(received: i32, upserted: i32, errors: usize) -> SyncStatus {
+        let mut metrics = ZerviceMetrics::new();
+        metrics.set_received_count(received);
+        metrics.set_upserted_count(upserted);
+        for _ in 0..errors {
+            metrics.add_error(ErrorMetrics::new(Uuid::nil(), "card", "failed"));
+        }
+        metrics.mark_as_completed();
+        metrics.status()
+    }
+
+    #[test]
+    fn status_follows_the_upserted_share() {
+        assert!(matches!(status_after(10, 10, 0), SyncStatus::Success));
+        assert!(matches!(status_after(10, 7, 3), SyncStatus::PartialSuccess));
+        assert!(matches!(status_after(10, 6, 4), SyncStatus::Failure));
     }
 }

@@ -5,6 +5,7 @@
 
 use dioxus::html::geometry::euclid::{Point2D, UnknownUnit};
 
+use crate::inbound::components::interactions::gesture_math;
 use crate::inbound::components::interactions::swipe::axis::Axis;
 use crate::inbound::components::interactions::swipe::config::SwipeConfig;
 use crate::inbound::components::interactions::swipe::direction::Direction as Dir;
@@ -122,7 +123,9 @@ impl SwipeState {
         else {
             return None;
         };
-        Some((curr.time - prev.time).num_milliseconds() as f64)
+        Some(gesture_math::gap_millis(
+            curr.time.signed_duration_since(prev.time),
+        ))
     }
 
     /// Calculates the current swipe speed in pixels per millisecond.
@@ -247,6 +250,10 @@ impl SwipeState {
 }
 
 #[cfg(test)]
+#[expect(
+    clippy::arithmetic_side_effects,
+    reason = "test fixtures; overflow fails the test"
+)]
 mod tests {
     use chrono::NaiveDate;
     use dioxus::html::geometry::euclid::Point2D;

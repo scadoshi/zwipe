@@ -317,7 +317,9 @@ mod tests {
 
     #[test]
     fn the_newest_sits_top_left_with_the_older_ones_tucked_behind() {
-        let now = Instant::now() - Duration::from_secs(1);
+        let now = Instant::now()
+            .checked_sub(Duration::from_secs(1))
+            .expect("the clock is past a second");
         let mut toasts = Toasts::default();
         for message in ["first", "second", "third"] {
             toasts.push_at(ToastKind::Info, message.to_owned(), now);
@@ -337,7 +339,9 @@ mod tests {
 
     #[test]
     fn expanding_shows_every_message_and_collapses_when_they_leave() {
-        let now = Instant::now() - Duration::from_secs(1);
+        let now = Instant::now()
+            .checked_sub(Duration::from_secs(1))
+            .expect("the clock is past a second");
         let mut toasts = Toasts::default();
         toasts.toggle_expanded();
         assert!(!toasts.is_expanded(), "nothing to expand");
@@ -353,7 +357,9 @@ mod tests {
 
     #[test]
     fn a_long_message_is_clamped_to_two_lines_until_expanded() {
-        let now = Instant::now() - Duration::from_secs(1);
+        let now = Instant::now()
+            .checked_sub(Duration::from_secs(1))
+            .expect("the clock is past a second");
         let mut toasts = Toasts::default();
         let long = "word ".repeat(40);
         toasts.push_at(ToastKind::Error, long, now);

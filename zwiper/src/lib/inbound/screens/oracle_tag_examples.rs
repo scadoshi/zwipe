@@ -137,7 +137,11 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
                     // Image-less cards render as a text identity frame
                     // (FlippableCardImage), so we keep them; no client
                     // filter means no barren pages either.
-                    current_offset.set(offset + PAGE_LIMIT);
+                    match offset.checked_add(PAGE_LIMIT) {
+                        Some(next) => current_offset.set(next),
+                        // No offset past u32: this page is the last.
+                        None => pagination_exhausted.set(true),
+                    }
                     stack.append(new_cards);
                 }
             }
@@ -160,7 +164,11 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
         if !stack.advance() {
             return;
         }
-        if stack.index() + 1 >= total.saturating_sub(LOAD_MORE_THRESHOLD) {
+        if stack
+            .index()
+            .checked_add(1)
+            .is_some_and(|seen| seen >= total.saturating_sub(LOAD_MORE_THRESHOLD))
+        {
             load_more();
         }
     };

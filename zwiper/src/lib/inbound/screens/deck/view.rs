@@ -205,7 +205,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
     // far holds only its command zone (no mainboard cards to distribute).
     let chart_metrics = metrics
         .as_ref()
-        .filter(|m| m.land_count + m.nonland_count > 0);
+        .filter(|m| m.land_count > 0 || m.nonland_count > 0);
 
     let command_zone_names: Vec<String> = deck_profile_resource()
         .and_then(Result::ok)
@@ -275,7 +275,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                 DeckProfileSection {
                                     deck_profile: deck_profile.clone(),
                                     commander: commander(),
-                                    card_count: metrics.as_ref().map_or_else(|| deck_profile.card_count.max(0) as usize, |m| m.total_cards),
+                                    card_count: metrics.as_ref().map_or_else(|| usize::try_from(deck_profile.card_count).unwrap_or(0), |m| m.total_cards),
                                 }
 
                                 if deck_budget_section::has_budget(&deck_profile, metrics.is_some()) {

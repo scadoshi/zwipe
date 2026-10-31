@@ -12,6 +12,7 @@ use std::time::Duration;
 
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
+use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::CardSortKey;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
@@ -248,27 +249,50 @@ impl DeckCardsView {
     /// The list's lines, top to bottom: tokens, maybeboard, sideboard, command zone, groups, lands.
     pub(crate) fn items(&self) -> Vec<Item> {
         let mut items = Vec::new();
-        let qty_count = |cards: &[Card]| -> i32 {
-            cards.iter().fold(0, |n, c| {
-                n.saturating_add(self.quantity(c.scryfall_data.id))
-            })
-        };
-        let section =
-            |items: &mut Vec<Item>, key: String, title: String, pips, cards: Vec<(Card, Kind)>| {
-                let collapsed = self.collapsed.contains(&key);
-                items.push(Item::Header {
-                    key,
-                    title,
-                    pips,
-                    collapsible: true,
-                });
-                if !collapsed {
-                    items.extend(cards.into_iter().map(|(card, kind)| Item::Card {
-                        card: Box::new(card),
-                        kind,
-                    }));
-                }
-            };
+        self.push_tokens(&mut items);
+        self.push_side_boards(&mut items);
+        if self.show_zone {
+            self.push_zone(&mut items);
+        }
+        if self.boards.main {
+            self.push_main(&mut items);
+        }
+        items
+    }
+
+    /// The copies across `cards`, counting each as its entry's quantity.
+    fn qty_count(&self, cards: &[Card]) -> i32 {
+        cards.iter().fold(0, |n, c| {
+            n.saturating_add(self.quantity(c.scryfall_data.id))
+        })
+    }
+
+    /// A collapsible section: its header, then its cards unless it is collapsed.
+    fn push_section(
+        &self,
+        items: &mut Vec<Item>,
+        key: String,
+        title: String,
+        pips: Option<Vec<zwipe_core::domain::card::scryfall_data::colors::Color>>,
+        cards: Vec<(Card, Kind)>,
+    ) {
+        let collapsed = self.collapsed.contains(&key);
+        items.push(Item::Header {
+            key,
+            title,
+            pips,
+            collapsible: true,
+        });
+        if !collapsed {
+            items.extend(cards.into_iter().map(|(card, kind)| Item::Card {
+                card: Box::new(card),
+                kind,
+            }));
+        }
+    }
+
+    /// The Tokens section, sorted like the list, when tokens are shown and there are some.
+    fn push_tokens(&self, items: &mut Vec<Item>) {
         if self.show_tokens
             && let Some(tokens) = self.tokens.as_ref().filter(|t| !t.is_empty())
         {
@@ -277,14 +301,18 @@ impl DeckCardsView {
             tokens = zwipe_core::domain::card::search_card::cards::Cards::from(tokens)
                 .sorted(sort, self.filter.direction())
                 .into();
-            section(
-                &mut items,
+            self.push_section(
+                items,
                 "Tokens".to_owned(),
                 format!("Tokens ({})", tokens.len()),
                 None,
                 tokens.into_iter().map(|c| (c, Kind::Token)).collect(),
             );
         }
+    }
+
+    /// The Maybeboard and Sideboard sections, each when shown and not empty.
+    fn push_side_boards(&self, items: &mut Vec<Item>) {
         for (board, on, list, title) in [
             (
                 Board::Maybeboard,
@@ -300,8 +328,8 @@ impl DeckCardsView {
             ),
         ] {
             if on && !list.is_empty() {
-                section(
-                    &mut items,
+                self.push_section(
+                    items,
                     title.to_owned(),
                     format!("{title} ({})", list.len()),
                     None,
@@ -311,72 +339,75 @@ impl DeckCardsView {
                 );
             }
         }
-        if self.show_zone {
-            let zone = &self.display.zone;
-            let leaders: Vec<&(CommandZoneSlot, Card)> = zone
-                .iter()
-                .filter(|(s, _)| matches!(s, CommandZoneSlot::Commander | CommandZoneSlot::Partner))
-                .collect();
-            if !leaders.is_empty() {
-                let has_partner = leaders.iter().any(|(s, _)| *s == CommandZoneSlot::Partner);
-                let title = if self.is_oathbreaker() {
-                    "Oathbreaker"
-                } else if has_partner {
-                    "Commanders"
-                } else {
-                    "Commander"
-                };
+    }
+
+    /// The command zone: the leaders under one header, then the background and signature spell.
+    fn push_zone(&self, items: &mut Vec<Item>) {
+        let zone = &self.display.zone;
+        let leaders: Vec<&(CommandZoneSlot, Card)> = zone
+            .iter()
+            .filter(|(s, _)| matches!(s, CommandZoneSlot::Commander | CommandZoneSlot::Partner))
+            .collect();
+        if !leaders.is_empty() {
+            let has_partner = leaders.iter().any(|(s, _)| *s == CommandZoneSlot::Partner);
+            let title = if self.is_oathbreaker() {
+                "Oathbreaker"
+            } else if has_partner {
+                "Commanders"
+            } else {
+                "Commander"
+            };
+            items.push(zone_header(title));
+            items.extend(
+                leaders
+                    .into_iter()
+                    .map(|(slot, card)| zone_item(*slot, card)),
+            );
+        }
+        for (slot, title) in [
+            (CommandZoneSlot::Background, "Background"),
+            (CommandZoneSlot::SignatureSpell, "Signature spell"),
+        ] {
+            if let Some((slot, card)) = zone.iter().find(|(s, _)| *s == slot) {
                 items.push(zone_header(title));
-                items.extend(
-                    leaders
-                        .into_iter()
-                        .map(|(slot, card)| zone_item(*slot, card)),
-                );
-            }
-            for (slot, title) in [
-                (CommandZoneSlot::Background, "Background"),
-                (CommandZoneSlot::SignatureSpell, "Signature spell"),
-            ] {
-                if let Some((slot, card)) = zone.iter().find(|(s, _)| *s == slot) {
-                    items.push(zone_header(title));
-                    items.push(zone_item(*slot, card));
-                }
+                items.push(zone_item(*slot, card));
             }
         }
-        if self.boards.main {
-            for group in &self.display.groups {
-                let title = if group.label.is_empty() {
-                    format!("({})", qty_count(&group.cards))
-                } else {
-                    format!("{} ({})", group.label, qty_count(&group.cards))
-                };
-                section(
-                    &mut items,
-                    group.key.clone(),
-                    title,
-                    group.pips.clone(),
-                    group
-                        .cards
-                        .iter()
-                        .map(|c| (c.clone(), Kind::Main))
-                        .collect(),
-                );
-            }
-            if !self.display.lands.is_empty() {
-                section(
-                    &mut items,
-                    "Lands".to_owned(),
-                    format!("Lands ({})", qty_count(&self.display.lands)),
-                    None,
-                    self.display
-                        .lands
-                        .iter()
-                        .map(|c| (c.clone(), Kind::Main))
-                        .collect(),
-                );
-            }
+    }
+
+    /// The main board: each group's section, then Lands.
+    fn push_main(&self, items: &mut Vec<Item>) {
+        for group in &self.display.groups {
+            let title = if group.label.is_empty() {
+                format!("({})", self.qty_count(&group.cards))
+            } else {
+                format!("{} ({})", group.label, self.qty_count(&group.cards))
+            };
+            self.push_section(
+                items,
+                group.key.clone(),
+                title,
+                group.pips.clone(),
+                group
+                    .cards
+                    .iter()
+                    .map(|c| (c.clone(), Kind::Main))
+                    .collect(),
+            );
         }
-        items
+        if !self.display.lands.is_empty() {
+            self.push_section(
+                items,
+                "Lands".to_owned(),
+                format!("Lands ({})", self.qty_count(&self.display.lands)),
+                None,
+                self.display
+                    .lands
+                    .iter()
+                    .map(|c| (c.clone(), Kind::Main))
+                    .collect(),
+            );
+        }
     }
 
     pub(crate) fn selected(&self) -> Option<Item> {
@@ -924,6 +955,27 @@ impl From<Request> for screens::Request {
     }
 }
 
+impl Update {
+    /// The deck the result belongs to.
+    fn deck_id(&self) -> Uuid {
+        match self {
+            Self::Loaded { deck_id, .. }
+            | Self::Tokens { deck_id, .. }
+            | Self::FlushDue { deck_id, .. }
+            | Self::QuantityWritten { deck_id, .. }
+            | Self::QuantityFailed { deck_id, .. }
+            | Self::MoveFailed { deck_id, .. }
+            | Self::PrintingSaved { deck_id, .. }
+            | Self::ZonePrintingSaved { deck_id, .. }
+            | Self::MvpSet { deck_id, .. }
+            | Self::UndoCreated { deck_id, .. }
+            | Self::QuickDue { deck_id, .. }
+            | Self::QuickResults { deck_id, .. }
+            | Self::QuickAdded { deck_id, .. } => *deck_id,
+        }
+    }
+}
+
 impl From<Update> for screens::Update {
     fn from(update: Update) -> Self {
         Self::DeckCards(update)
@@ -941,68 +993,37 @@ fn error_toast(message: String) -> screens::Update {
     screens::Update::Toast(ToastKind::Error, message)
 }
 
+/// A fresh session for a request that calls the server, none for a timer, or the failure's toast.
+async fn session_for(
+    account: &Account,
+    request: &Request,
+) -> Result<Option<Session>, screens::Update> {
+    match request {
+        Request::FlushTimer { .. } | Request::QuickDebounce { .. } => Ok(None),
+        _ => match account.fresh().await {
+            Ok(session) => Ok(Some(session)),
+            Err(e) => Err(screens::failure(&e, |m| {
+                screens::Update::Toast(ToastKind::Error, m)
+            })),
+        },
+    }
+}
+
 pub(crate) async fn perform(account: &Account, request: Request) -> Option<screens::Update> {
     let client = &account.client;
-    let session = match &request {
-        Request::FlushTimer { .. } | Request::QuickDebounce { .. } => None,
-        _ => match account.fresh().await {
-            Ok(session) => Some(session),
-            Err(e) => {
-                return Some(screens::failure(&e, |m| {
-                    screens::Update::Toast(ToastKind::Error, m)
-                }));
-            }
-        },
+    let session = match session_for(account, &request).await {
+        Ok(session) => session,
+        Err(update) => return Some(update),
     };
     let session = session.as_ref();
-    let update = match request {
-        Request::Load { deck_id } => {
-            let session = session?;
-            let deck = match client.fetch_deck(deck_id, session).await {
-                Ok(deck) => deck,
-                Err(e) => return Some(error_toast(e.to_user_message())),
-            };
-            let profile = client.fetch_deck_profile(deck_id, session).await.ok();
-            let ids = profile.as_ref().unwrap_or(&deck.deck_profile);
-            let mut zone = Zone::default();
-            for (slot, id) in [
-                (CommandZoneSlot::Commander, ids.commander_id),
-                (CommandZoneSlot::SignatureSpell, ids.signature_spell_id),
-                (CommandZoneSlot::Partner, ids.partner_commander_id),
-                (CommandZoneSlot::Background, ids.background_id),
-            ] {
-                if let Some(id) = id {
-                    *zone.slot_mut(slot) = client.fetch_card(id).await.ok();
-                }
-            }
-            Update::Loaded {
-                deck_id,
-                loaded: Box::new(Loaded {
-                    deck,
-                    profile,
-                    zone,
-                }),
-            }
-        }
-        Request::Tokens { deck_id } => Update::Tokens {
-            deck_id,
-            tokens: client
-                .fetch_deck_tokens(deck_id, session?)
-                .await
-                .unwrap_or_default(),
-        },
+    match request {
+        Request::Load { deck_id } => load(account, session, deck_id).await,
+        Request::Tokens { deck_id } => fetch_tokens(account, session, deck_id).await,
         Request::FlushTimer {
             deck_id,
             card_id,
             generation,
-        } => {
-            tokio::time::sleep(Duration::from_millis(deck_cards::QTY_FLUSH_MS)).await;
-            Update::FlushDue {
-                deck_id,
-                card_id,
-                generation,
-            }
-        }
+        } => Some(flush_timer(deck_id, card_id, generation).await),
         Request::WriteQuantity {
             deck_id,
             card_id,
@@ -1010,226 +1031,428 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
             burst,
             removed,
         } => {
-            let result = match burst.write() {
-                Write::Nothing => Ok(()),
-                Write::Delete => client.delete_deck_card(deck_id, card_id, session?).await,
-                Write::Set(quantity) => client
-                    .update_deck_card(
-                        deck_id,
-                        card_id,
-                        &HttpPatchDeckCard::new(Some(quantity), None),
-                        session?,
-                    )
-                    .await
-                    .map(drop),
-            };
-            match result {
-                Ok(()) => Update::QuantityWritten {
-                    deck_id,
-                    card_id,
-                    card_name,
-                    burst,
-                },
-                Err(e) => Update::QuantityFailed {
-                    deck_id,
-                    card_id,
-                    burst,
-                    removed,
-                    message: e.to_user_message(),
-                },
-            }
+            write_quantity(
+                account, session, deck_id, card_id, card_name, burst, removed,
+            )
+            .await
         }
         Request::Move {
             deck_id,
             card_id,
             from,
             target,
-        } => {
-            let patch = HttpPatchDeckCard::new(None, Some(target.display_name().to_owned()));
-            match client
-                .update_deck_card(deck_id, card_id, &patch, session?)
-                .await
-            {
-                Ok(_) => return None,
-                Err(e) => Update::MoveFailed {
-                    deck_id,
-                    card_id,
-                    from,
-                    message: e.to_user_message(),
-                },
-            }
-        }
+        } => move_card(account, session, deck_id, card_id, from, target).await,
         Request::Printing {
             deck_id,
             old_card,
             new_card,
-        } => {
-            let patch = HttpPatchDeckCard::with_printing(&new_card.scryfall_data.id.to_string());
-            match client
-                .update_deck_card(deck_id, old_card.scryfall_data.id, &patch, session?)
-                .await
-            {
-                Ok(_) => Update::PrintingSaved {
-                    deck_id,
-                    old_card,
-                    new_card,
-                },
-                Err(e) => return Some(error_toast(e.to_user_message())),
-            }
-        }
+        } => save_printing(account, session, deck_id, old_card, new_card).await,
         Request::ZonePrinting {
             deck_id,
             slot,
             new_card,
             old_card,
-        } => {
-            let id = Patch::Set(Some(new_card.scryfall_data.id));
-            let builder = HttpUpdateDeckProfile::builder();
-            let body = match slot {
-                CommandZoneSlot::Commander => builder.commander_id(id),
-                CommandZoneSlot::Partner => builder.partner_commander_id(id),
-                CommandZoneSlot::Background => builder.background_id(id),
-                CommandZoneSlot::SignatureSpell => builder.signature_spell_id(id),
-            }
-            .build();
-            match client.update_deck_profile(deck_id, &body, session?).await {
-                Ok(_) => match old_card {
-                    Some(old_card) => Update::ZonePrintingSaved {
-                        deck_id,
-                        slot,
-                        old_card,
-                        new_card,
-                    },
-                    None => return None,
-                },
-                Err(e) => return Some(error_toast(e.to_user_message())),
-            }
-        }
+        } => save_zone_printing(account, session, deck_id, slot, new_card, old_card).await,
         Request::Mvp {
             deck_id,
             card_id,
             star,
             old,
-        } => {
-            let result = client
-                .update_deck_card(
-                    deck_id,
-                    card_id,
-                    &HttpPatchDeckCard::with_mvp(star),
-                    session?,
-                )
-                .await;
-            match result {
-                Ok(deck_card) => Update::MvpSet {
-                    deck_id,
-                    card_id,
-                    mvp_at: deck_card.mvp_at,
-                    error: None,
-                },
-                Err(e) => Update::MvpSet {
-                    deck_id,
-                    card_id,
-                    mvp_at: old,
-                    error: Some(e.to_user_message()),
-                },
-            }
-        }
-        Request::UndoDelete { deck_id, card_id } => {
-            return client
-                .delete_deck_card(deck_id, card_id, session?)
-                .await
-                .err()
-                .map(|e| error_toast(e.to_user_message()));
-        }
+        } => set_mvp(account, session, deck_id, card_id, star, old).await,
+        Request::UndoDelete { deck_id, card_id } => client
+            .delete_deck_card(deck_id, card_id, session?)
+            .await
+            .err()
+            .map(|e| error_toast(e.to_user_message())),
         Request::UndoCreate {
             deck_id,
             entry,
             baseline,
-        } => {
-            let request = HttpCreateDeckCard::new(
-                &entry.card.scryfall_data,
-                baseline,
-                create_board_field(entry.deck_card.board),
-            );
-            let result = client.create_deck_card(deck_id, &request, session?).await;
-            Update::UndoCreated {
-                deck_id,
-                card_id: entry.deck_card.scryfall_data_id,
-                result: result.map(Box::new).map_err(|e| e.to_user_message()),
-            }
-        }
+        } => undo_create(account, session, deck_id, &entry, baseline).await,
         Request::UndoPrinting {
             deck_id,
             new_id,
             old_id,
-        } => {
-            let patch = HttpPatchDeckCard::with_printing(&old_id.to_string());
-            return client
-                .update_deck_card(deck_id, new_id, &patch, session?)
-                .await
-                .err()
-                .map(|e| error_toast(e.to_user_message()));
-        }
+        } => undo_printing(account, session, deck_id, new_id, old_id).await,
         Request::QuickDebounce {
             deck_id,
             generation,
         } => {
             tokio::time::sleep(QUICK_ADD_DEBOUNCE).await;
-            Update::QuickDue {
-                deck_id,
-                generation,
-            }
+            Some(
+                Update::QuickDue {
+                    deck_id,
+                    generation,
+                }
+                .into(),
+            )
         }
         Request::QuickSearch {
             deck_id,
             generation,
             query,
-        } => {
-            let mut filter = CardQueryBuilder::with_name_contains(query.trim());
-            filter
-                .set_synergy(false)
-                .set_include_skipped(true)
-                .set_sort(CardSortKey::Name)
-                .set_limit(QUICK_ADD_LIMIT);
-            let cards = match filter.build() {
-                Ok(query) => client
-                    .search_deck_cards(deck_id, &query, session?)
-                    .await
-                    .ok()
-                    .map(|s| s.cards),
-                Err(_) => None,
-            };
-            Update::QuickResults {
+        } => quick_search(account, session, deck_id, generation, &query).await,
+        Request::QuickAdd { deck_id, card } => quick_add(account, session, deck_id, card).await,
+    }
+}
+
+/// Fetches the deck's tokens; a failure shows none.
+async fn fetch_tokens(
+    account: &Account,
+    session: Option<&Session>,
+    deck_id: Uuid,
+) -> Option<screens::Update> {
+    Some(
+        Update::Tokens {
+            deck_id,
+            tokens: account
+                .client
+                .fetch_deck_tokens(deck_id, session?)
+                .await
+                .unwrap_or_default(),
+        }
+        .into(),
+    )
+}
+
+/// Waits out a quantity burst, then says it is due to write.
+async fn flush_timer(deck_id: Uuid, card_id: Uuid, generation: u64) -> screens::Update {
+    tokio::time::sleep(Duration::from_millis(deck_cards::QTY_FLUSH_MS)).await;
+    Update::FlushDue {
+        deck_id,
+        card_id,
+        generation,
+    }
+    .into()
+}
+
+/// Puts an entry's old printing back; only a failure reports back.
+async fn undo_printing(
+    account: &Account,
+    session: Option<&Session>,
+    deck_id: Uuid,
+    new_id: Uuid,
+    old_id: Uuid,
+) -> Option<screens::Update> {
+    let patch = HttpPatchDeckCard::with_printing(&old_id.to_string());
+    account
+        .client
+        .update_deck_card(deck_id, new_id, &patch, session?)
+        .await
+        .err()
+        .map(|e| error_toast(e.to_user_message()))
+}
+
+/// Fetches the deck, its profile and its command zone cards.
+async fn load(
+    account: &Account,
+    session: Option<&Session>,
+    deck_id: Uuid,
+) -> Option<screens::Update> {
+    let client = &account.client;
+    let session = session?;
+    let deck = match client.fetch_deck(deck_id, session).await {
+        Ok(deck) => deck,
+        Err(e) => return Some(error_toast(e.to_user_message())),
+    };
+    let profile = client.fetch_deck_profile(deck_id, session).await.ok();
+    let ids = profile.as_ref().unwrap_or(&deck.deck_profile);
+    let mut zone = Zone::default();
+    for (slot, id) in [
+        (CommandZoneSlot::Commander, ids.commander_id),
+        (CommandZoneSlot::SignatureSpell, ids.signature_spell_id),
+        (CommandZoneSlot::Partner, ids.partner_commander_id),
+        (CommandZoneSlot::Background, ids.background_id),
+    ] {
+        if let Some(id) = id {
+            *zone.slot_mut(slot) = client.fetch_card(id).await.ok();
+        }
+    }
+    Some(
+        Update::Loaded {
+            deck_id,
+            loaded: Box::new(Loaded {
+                deck,
+                profile,
+                zone,
+            }),
+        }
+        .into(),
+    )
+}
+
+/// Writes a settled quantity burst as a delete, a set, or nothing.
+async fn write_quantity(
+    account: &Account,
+    session: Option<&Session>,
+    deck_id: Uuid,
+    card_id: Uuid,
+    card_name: String,
+    burst: Burst,
+    removed: Option<Box<DeckEntry>>,
+) -> Option<screens::Update> {
+    let client = &account.client;
+    let result = match burst.write() {
+        Write::Nothing => Ok(()),
+        Write::Delete => client.delete_deck_card(deck_id, card_id, session?).await,
+        Write::Set(quantity) => client
+            .update_deck_card(
                 deck_id,
-                generation,
-                cards,
-            }
-        }
-        Request::QuickAdd { deck_id, card } => {
-            let request = HttpCreateDeckCard::new(&card.scryfall_data, 1, None);
-            match client.create_deck_card(deck_id, &request, session?).await {
-                Ok(deck_card) => Update::QuickAdded {
-                    deck_id,
-                    entry: Box::new(DeckEntry {
-                        card: *card,
-                        deck_card,
-                    }),
-                },
-                Err(e) => return Some(error_toast(e.to_user_message())),
-            }
-        }
+                card_id,
+                &HttpPatchDeckCard::new(Some(quantity), None),
+                session?,
+            )
+            .await
+            .map(drop),
+    };
+    let update = match result {
+        Ok(()) => Update::QuantityWritten {
+            deck_id,
+            card_id,
+            card_name,
+            burst,
+        },
+        Err(e) => Update::QuantityFailed {
+            deck_id,
+            card_id,
+            burst,
+            removed,
+            message: e.to_user_message(),
+        },
     };
     Some(update.into())
 }
 
+/// Moves a card to another board; only a failure reports back.
+async fn move_card(
+    account: &Account,
+    session: Option<&Session>,
+    deck_id: Uuid,
+    card_id: Uuid,
+    from: Board,
+    target: Board,
+) -> Option<screens::Update> {
+    let patch = HttpPatchDeckCard::new(None, Some(target.display_name().to_owned()));
+    match account
+        .client
+        .update_deck_card(deck_id, card_id, &patch, session?)
+        .await
+    {
+        Ok(_) => None,
+        Err(e) => Some(
+            Update::MoveFailed {
+                deck_id,
+                card_id,
+                from,
+                message: e.to_user_message(),
+            }
+            .into(),
+        ),
+    }
+}
+
+/// Swaps an entry's printing.
+async fn save_printing(
+    account: &Account,
+    session: Option<&Session>,
+    deck_id: Uuid,
+    old_card: Box<Card>,
+    new_card: Box<Card>,
+) -> Option<screens::Update> {
+    let patch = HttpPatchDeckCard::with_printing(&new_card.scryfall_data.id.to_string());
+    match account
+        .client
+        .update_deck_card(deck_id, old_card.scryfall_data.id, &patch, session?)
+        .await
+    {
+        Ok(_) => Some(
+            Update::PrintingSaved {
+                deck_id,
+                old_card,
+                new_card,
+            }
+            .into(),
+        ),
+        Err(e) => Some(error_toast(e.to_user_message())),
+    }
+}
+
+/// Swaps a command zone slot's printing; reports back only when there was an old card.
+async fn save_zone_printing(
+    account: &Account,
+    session: Option<&Session>,
+    deck_id: Uuid,
+    slot: CommandZoneSlot,
+    new_card: Box<Card>,
+    old_card: Option<Box<Card>>,
+) -> Option<screens::Update> {
+    let id = Patch::Set(Some(new_card.scryfall_data.id));
+    let builder = HttpUpdateDeckProfile::builder();
+    let body = match slot {
+        CommandZoneSlot::Commander => builder.commander_id(id),
+        CommandZoneSlot::Partner => builder.partner_commander_id(id),
+        CommandZoneSlot::Background => builder.background_id(id),
+        CommandZoneSlot::SignatureSpell => builder.signature_spell_id(id),
+    }
+    .build();
+    match account
+        .client
+        .update_deck_profile(deck_id, &body, session?)
+        .await
+    {
+        Ok(_) => old_card.map(|old_card| {
+            Update::ZonePrintingSaved {
+                deck_id,
+                slot,
+                old_card,
+                new_card,
+            }
+            .into()
+        }),
+        Err(e) => Some(error_toast(e.to_user_message())),
+    }
+}
+
+/// Stars or unstars a card, reporting the old star back on failure.
+async fn set_mvp(
+    account: &Account,
+    session: Option<&Session>,
+    deck_id: Uuid,
+    card_id: Uuid,
+    star: bool,
+    old: Option<DateTime<Utc>>,
+) -> Option<screens::Update> {
+    let result = account
+        .client
+        .update_deck_card(
+            deck_id,
+            card_id,
+            &HttpPatchDeckCard::with_mvp(star),
+            session?,
+        )
+        .await;
+    let update = match result {
+        Ok(deck_card) => Update::MvpSet {
+            deck_id,
+            card_id,
+            mvp_at: deck_card.mvp_at,
+            error: None,
+        },
+        Err(e) => Update::MvpSet {
+            deck_id,
+            card_id,
+            mvp_at: old,
+            error: Some(e.to_user_message()),
+        },
+    };
+    Some(update.into())
+}
+
+/// Puts a deleted entry back at its baseline quantity.
+async fn undo_create(
+    account: &Account,
+    session: Option<&Session>,
+    deck_id: Uuid,
+    entry: &DeckEntry,
+    baseline: i32,
+) -> Option<screens::Update> {
+    let request = HttpCreateDeckCard::new(
+        &entry.card.scryfall_data,
+        baseline,
+        create_board_field(entry.deck_card.board),
+    );
+    let result = account
+        .client
+        .create_deck_card(deck_id, &request, session?)
+        .await;
+    Some(
+        Update::UndoCreated {
+            deck_id,
+            card_id: entry.deck_card.scryfall_data_id,
+            result: result.map(Box::new).map_err(|e| e.to_user_message()),
+        }
+        .into(),
+    )
+}
+
+/// Searches cards by name for quick add; a failed search reports no cards.
+async fn quick_search(
+    account: &Account,
+    session: Option<&Session>,
+    deck_id: Uuid,
+    generation: u64,
+    query: &str,
+) -> Option<screens::Update> {
+    let mut filter = CardQueryBuilder::with_name_contains(query.trim());
+    filter
+        .set_synergy(false)
+        .set_include_skipped(true)
+        .set_sort(CardSortKey::Name)
+        .set_limit(QUICK_ADD_LIMIT);
+    let cards = match filter.build() {
+        Ok(query) => account
+            .client
+            .search_deck_cards(deck_id, &query, session?)
+            .await
+            .ok()
+            .map(|s| s.cards),
+        Err(_) => None,
+    };
+    Some(
+        Update::QuickResults {
+            deck_id,
+            generation,
+            cards,
+        }
+        .into(),
+    )
+}
+
+/// Adds one copy of a card to the main board.
+async fn quick_add(
+    account: &Account,
+    session: Option<&Session>,
+    deck_id: Uuid,
+    card: Box<Card>,
+) -> Option<screens::Update> {
+    let request = HttpCreateDeckCard::new(&card.scryfall_data, 1, None);
+    match account
+        .client
+        .create_deck_card(deck_id, &request, session?)
+        .await
+    {
+        Ok(deck_card) => Some(
+            Update::QuickAdded {
+                deck_id,
+                entry: Box::new(DeckEntry {
+                    card: *card,
+                    deck_card,
+                }),
+            }
+            .into(),
+        ),
+        Err(e) => Some(error_toast(e.to_user_message())),
+    }
+}
+
 pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
     // Writes that land after the view closed still keep the undo log true.
+    record_undo(&update, cx);
+    toast_failure(&update, cx);
+    let Some(view) = nav.find_mut(pick) else {
+        return;
+    };
+    apply_to_view(view, update, cx);
+}
+
+/// Pushes the undo action for a write that went through, and toasts a quick add.
+fn record_undo(update: &Update, cx: &mut Context<'_>) {
     if let Update::QuantityWritten {
         deck_id,
         card_id,
         card_name,
         burst,
-    } = &update
+    } = update
         && burst.record
     {
         cx.shared.cards.undo.push(
@@ -1247,7 +1470,7 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
         slot,
         old_card,
         new_card,
-    } = &update
+    } = update
     {
         cx.shared.cards.undo.push(
             *deck_id,
@@ -1262,7 +1485,7 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
         deck_id,
         old_card,
         new_card,
-    } = &update
+    } = update
     {
         cx.shared.cards.undo.push(
             *deck_id,
@@ -1272,7 +1495,7 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
             },
         );
     }
-    if let Update::QuickAdded { deck_id, entry } = &update {
+    if let Update::QuickAdded { deck_id, entry } = update {
         cx.shared.cards.undo.push(
             *deck_id,
             UndoAction::Added {
@@ -1285,7 +1508,11 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
             format!("Added {}", entry.card.scryfall_data.name),
         );
     }
-    match &update {
+}
+
+/// Toasts a failed write's message.
+fn toast_failure(update: &Update, cx: &mut Context<'_>) {
+    match update {
         Update::QuantityFailed { message, .. }
         | Update::MoveFailed { message, .. }
         | Update::MvpSet {
@@ -1298,28 +1525,22 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
         } => cx.toast(ToastKind::Error, message.clone()),
         _ => {}
     }
-    let Some(view) = nav.find_mut(pick) else {
+}
+
+/// Applies a result to the open view, ignoring one meant for another deck.
+fn apply_to_view(view: &mut DeckCardsView, update: Update, cx: &mut Context<'_>) {
+    if update.deck_id() != view.deck_id {
         return;
-    };
+    }
     match update {
-        Update::Loaded { deck_id, loaded } => {
-            if deck_id == view.deck_id {
-                loaded_deck(view, cx, *loaded);
-            }
-        }
-        Update::Tokens { deck_id, tokens } => {
-            if deck_id == view.deck_id {
-                view.tokens = Some(tokens);
-            }
-        }
+        Update::Loaded { loaded, .. } => loaded_deck(view, cx, *loaded),
+        Update::Tokens { tokens, .. } => view.tokens = Some(tokens),
         Update::FlushDue {
-            deck_id,
             card_id,
             generation,
+            ..
         } => {
-            if deck_id == view.deck_id
-                && let Some(burst) = view.bursts.due(card_id, generation)
-            {
+            if let Some(burst) = view.bursts.due(card_id, generation) {
                 view.flush(cx, card_id, burst);
             }
         }
@@ -1330,114 +1551,36 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
             burst,
             removed,
             ..
-        } => {
-            if deck_id != view.deck_id {
-                return;
-            }
-            match burst.write() {
-                Write::Delete => {
-                    cx.shared.cards.undo.take_newest(deck_id, |a| {
-                        matches!(a, UndoAction::Removed { entry, .. } if entry.deck_card.scryfall_data_id == card_id)
-                    });
-                    if view.entry(card_id).is_none()
-                        && let Some(mut entry) = removed.map(|e| *e)
-                    {
-                        if let Ok(quantity) = Quantity::new(burst.baseline) {
-                            entry.deck_card.quantity = quantity;
-                        }
-                        view.entries.push(entry);
-                    }
-                }
-                Write::Set(_) | Write::Nothing => {
-                    if let (Some(entry), Ok(quantity)) =
-                        (view.entry_mut(card_id), Quantity::new(burst.baseline))
-                    {
-                        entry.deck_card.quantity = quantity;
-                    }
-                }
-            }
-            view.rerun();
-        }
-        Update::MoveFailed {
-            deck_id,
-            card_id,
-            from,
-            ..
-        } => {
-            if deck_id == view.deck_id
-                && let Some(entry) = view.entry_mut(card_id)
-            {
+        } => quantity_failed(view, cx, deck_id, card_id, &burst, removed),
+        Update::MoveFailed { card_id, from, .. } => {
+            if let Some(entry) = view.entry_mut(card_id) {
                 entry.deck_card.board = from;
                 view.rerun();
             }
         }
         Update::PrintingSaved {
-            deck_id,
-            old_card,
-            new_card,
-        } => {
-            if deck_id != view.deck_id {
-                return;
-            }
-            let new_id = new_card.scryfall_data.id;
-            if let Some(entry) = view.entry_mut(old_card.scryfall_data.id) {
-                entry.deck_card.scryfall_data_id = new_id;
-                entry.card = *new_card;
-            }
-            if view.expanded == Some(old_card.scryfall_data.id) {
-                view.expanded = Some(new_id);
-            }
+            old_card, new_card, ..
+        } => printing_saved(view, &old_card, new_card),
+        Update::ZonePrintingSaved { slot, new_card, .. } => {
+            *view.zone.slot_mut(slot) = Some(*new_card);
             view.rerun();
         }
-        Update::ZonePrintingSaved {
-            deck_id,
-            slot,
-            new_card,
-            ..
-        } => {
-            if deck_id == view.deck_id {
-                *view.zone.slot_mut(slot) = Some(*new_card);
-                view.rerun();
-            }
-        }
         Update::MvpSet {
-            deck_id,
-            card_id,
-            mvp_at,
-            ..
+            card_id, mvp_at, ..
         } => {
-            if deck_id == view.deck_id
-                && let Some(entry) = view.entry_mut(card_id)
-            {
+            if let Some(entry) = view.entry_mut(card_id) {
                 entry.deck_card.mvp_at = mvp_at;
                 view.rerun();
             }
         }
         Update::UndoCreated {
-            deck_id,
-            card_id,
-            result,
-        } => {
-            if deck_id != view.deck_id {
-                return;
-            }
-            match result {
-                Ok(deck_card) => {
-                    if let Some(entry) = view.entry_mut(card_id) {
-                        entry.deck_card = *deck_card;
-                    }
-                }
-                Err(_) => view
-                    .entries
-                    .retain(|e| e.deck_card.scryfall_data_id != card_id),
-            }
-            view.rerun();
-        }
+            card_id, result, ..
+        } => undo_created(view, card_id, result),
         Update::QuickDue {
             deck_id,
             generation,
         } => {
-            if deck_id == view.deck_id && generation == view.quick.generation {
+            if generation == view.quick.generation {
                 cx.request(
                     Request::QuickSearch {
                         deck_id,
@@ -1449,22 +1592,80 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
             }
         }
         Update::QuickResults {
-            deck_id,
-            generation,
-            cards,
+            generation, cards, ..
         } => {
-            if deck_id == view.deck_id && generation == view.quick.generation {
+            if generation == view.quick.generation {
                 view.quick.results = cards.map_or(Dropdown::Closed, Dropdown::Results);
                 view.quick.highlight = 0;
             }
         }
-        Update::QuickAdded { deck_id, entry } => {
-            if deck_id == view.deck_id {
-                view.entries.push(*entry);
-                view.rerun();
+        Update::QuickAdded { entry, .. } => {
+            view.entries.push(*entry);
+            view.rerun();
+        }
+    }
+}
+
+/// Rolls a failed quantity write back: a failed delete restores the entry and drops its undo, a failed set restores the baseline.
+fn quantity_failed(
+    view: &mut DeckCardsView,
+    cx: &mut Context<'_>,
+    deck_id: Uuid,
+    card_id: Uuid,
+    burst: &Burst,
+    removed: Option<Box<DeckEntry>>,
+) {
+    match burst.write() {
+        Write::Delete => {
+            cx.shared.cards.undo.take_newest(deck_id, |a| {
+                matches!(a, UndoAction::Removed { entry, .. } if entry.deck_card.scryfall_data_id == card_id)
+            });
+            if view.entry(card_id).is_none()
+                && let Some(mut entry) = removed.map(|e| *e)
+            {
+                if let Ok(quantity) = Quantity::new(burst.baseline) {
+                    entry.deck_card.quantity = quantity;
+                }
+                view.entries.push(entry);
+            }
+        }
+        Write::Set(_) | Write::Nothing => {
+            if let (Some(entry), Ok(quantity)) =
+                (view.entry_mut(card_id), Quantity::new(burst.baseline))
+            {
+                entry.deck_card.quantity = quantity;
             }
         }
     }
+    view.rerun();
+}
+
+/// Swaps the saved printing into its entry and keeps it expanded if it was.
+fn printing_saved(view: &mut DeckCardsView, old_card: &Card, new_card: Box<Card>) {
+    let new_id = new_card.scryfall_data.id;
+    if let Some(entry) = view.entry_mut(old_card.scryfall_data.id) {
+        entry.deck_card.scryfall_data_id = new_id;
+        entry.card = *new_card;
+    }
+    if view.expanded == Some(old_card.scryfall_data.id) {
+        view.expanded = Some(new_id);
+    }
+    view.rerun();
+}
+
+/// Takes the recreated entry's row, or drops the entry when recreating failed.
+fn undo_created(view: &mut DeckCardsView, card_id: Uuid, result: Result<Box<DeckCard>, String>) {
+    match result {
+        Ok(deck_card) => {
+            if let Some(entry) = view.entry_mut(card_id) {
+                entry.deck_card = *deck_card;
+            }
+        }
+        Err(_) => view
+            .entries
+            .retain(|e| e.deck_card.scryfall_data_id != card_id),
+    }
+    view.rerun();
 }
 
 /// Takes a loaded deck: the command zone out of the entries, the profile's facts, the first-time hint, and the pass.

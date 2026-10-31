@@ -7,6 +7,7 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Clear as ClearWidget, Padding, Paragraph};
 
 use super::{FilterSheet, Target};
+use crate::domain::filter::picker::PickerField;
 use crate::domain::filter::sections::{ChipSet, Row, StepRow};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
@@ -138,12 +139,11 @@ fn row_lines(
     width: u16,
 ) -> Vec<Line<'static>> {
     let palette = &shared.palette;
-    let indent = || vec![pointer(palette, focused), Span::raw("  ")];
     match row {
         Row::Label {
             text, mode, clear, ..
         } => {
-            let mut spans = indent();
+            let mut spans = indent(palette, focused);
             spans.push(Span::styled(text, palette.muted.bold()));
             if let Some(chip_kind) = mode {
                 spans.push(Span::raw(" "));
@@ -164,7 +164,7 @@ fn row_lines(
             let value = sheet.texts.get(&field).map(|i| i.value().to_owned());
             vec![input_line(
                 palette,
-                indent(),
+                indent(palette, focused),
                 value.as_deref(),
                 field.placeholder(),
                 focused,
@@ -172,7 +172,7 @@ fn row_lines(
         }
         Row::Number(field) => {
             let value = sheet.numbers.get(&field).map(|i| i.value().to_owned());
-            let mut spans = indent();
+            let mut spans = indent(palette, focused);
             if matches!(
                 field,
                 crate::domain::filter::sections::NumberField::ManaMax
@@ -188,99 +188,132 @@ fn row_lines(
                 focused,
             )]
         }
-        Row::Chips(set) => {
-            let chips = sheet.chips(set, &shared.cards.catalog);
-            if chips.is_empty() {
-                return Vec::new();
-            }
-            let chip_focus = sheet.chip_focus.get(&set).copied().unwrap_or_default();
-            let mut spans = indent();
-            for (i, (label, on)) in chips.iter().enumerate() {
-                let color = match set {
-                    ChipSet::Colors => Some(mana::style(palette, i)),
-                    _ => None,
-                };
-                spans.push(chip(palette, label, *on, focused && i == chip_focus, color));
-                spans.push(Span::raw(" "));
-            }
-            wrap(Line::from(spans), width)
-        }
-        Row::Stepper(stepper) => {
-            let mut spans = indent();
-            let value = |v: Option<i32>| v.map_or_else(|| "-".to_owned(), |v| v.to_string());
-            match stepper {
-                StepRow::Exact(stat) => {
-                    spans.push(Span::styled("- ", palette.muted));
-                    spans.push(Span::styled(
-                        value(stat.exact(&sheet.draft)),
-                        palette.base.bold(),
-                    ));
-                    spans.push(Span::styled(" +", palette.muted));
-                }
-                StepRow::Range(stat) => {
-                    let (min, max) = stat.range(&sheet.draft).unwrap_or((0, 0));
-                    let end = |v: i32, on: bool| {
-                        let style = if focused && on {
-                            palette.accent.bold().underlined()
-                        } else {
-                            palette.base.bold()
-                        };
-                        vec![
-                            Span::styled("- ", palette.muted),
-                            Span::styled(v.to_string(), style),
-                            Span::styled(" +", palette.muted),
-                        ]
-                    };
-                    spans.extend(end(min, !sheet.step_max));
-                    spans.push(Span::styled("  to  ", palette.muted));
-                    spans.extend(end(max, sheet.step_max));
-                }
-            }
-            vec![Line::from(spans)]
-        }
-        Row::Picker(field) => {
-            let mut lines = Vec::new();
-            let pills = field.picked(&sheet.draft);
-            if !pills.is_empty() {
-                let mut spans = vec![Span::raw("    ")];
-                for value in &pills {
-                    spans.push(Span::styled(
-                        format!(" {value} ×"),
-                        palette.accent.reversed(),
-                    ));
-                    spans.push(Span::raw(" "));
-                }
-                lines.extend(wrap(Line::from(spans), width));
-            }
-            let picker = sheet.pickers.get(&field);
-            let query = picker
-                .map(|p| p.input.value().to_owned())
-                .unwrap_or_default();
-            lines.push(input_line(
-                palette,
-                indent(),
-                Some(&query),
-                field.placeholder(),
-                focused,
+        Row::Chips(set) => chip_row_lines(shared, sheet, set, focused, width),
+        Row::Stepper(stepper) => vec![stepper_line(palette, sheet, stepper, focused)],
+        Row::Picker(field) => picker_lines(shared, sheet, field, focused, width),
+    }
+}
+
+/// The pointer and indent every row starts with.
+fn indent(palette: &Palette, focused: bool) -> Vec<Span<'static>> {
+    vec![pointer(palette, focused), Span::raw("  ")]
+}
+
+/// A chip row, wrapped to `width`; nothing when the row has no chips yet.
+fn chip_row_lines(
+    shared: &Shared,
+    sheet: &FilterSheet,
+    set: ChipSet,
+    focused: bool,
+    width: u16,
+) -> Vec<Line<'static>> {
+    let palette = &shared.palette;
+    let chips = sheet.chips(set, &shared.cards.catalog);
+    if chips.is_empty() {
+        return Vec::new();
+    }
+    let chip_focus = sheet.chip_focus.get(&set).copied().unwrap_or_default();
+    let mut spans = indent(palette, focused);
+    for (i, (label, on)) in chips.iter().enumerate() {
+        let color = match set {
+            ChipSet::Colors => Some(mana::style(palette, i)),
+            _ => None,
+        };
+        spans.push(chip(palette, label, *on, focused && i == chip_focus, color));
+        spans.push(Span::raw(" "));
+    }
+    wrap(Line::from(spans), width)
+}
+
+/// A stepper row: one value, or a min and max with the focused end underlined.
+fn stepper_line(
+    palette: &Palette,
+    sheet: &FilterSheet,
+    stepper: StepRow,
+    focused: bool,
+) -> Line<'static> {
+    let mut spans = indent(palette, focused);
+    let value = |v: Option<i32>| v.map_or_else(|| "-".to_owned(), |v| v.to_string());
+    match stepper {
+        StepRow::Exact(stat) => {
+            spans.push(Span::styled("- ", palette.muted));
+            spans.push(Span::styled(
+                value(stat.exact(&sheet.draft)),
+                palette.base.bold(),
             ));
-            let results = field.results(
-                &sheet.draft,
-                &query,
-                &sheet.config.sources,
-                &shared.cards.catalog,
-            );
-            if !results.is_empty() {
-                let highlight = picker.map_or(0, |p| p.highlight);
-                let mut spans = vec![Span::raw("    ")];
-                for (i, value) in results.iter().enumerate() {
-                    spans.push(chip(palette, value, false, focused && i == highlight, None));
-                    spans.push(Span::raw(" "));
-                }
-                lines.extend(wrap(Line::from(spans), width));
-            }
-            lines
+            spans.push(Span::styled(" +", palette.muted));
+        }
+        StepRow::Range(stat) => {
+            let (min, max) = stat.range(&sheet.draft).unwrap_or((0, 0));
+            let end = |v: i32, on: bool| {
+                let style = if focused && on {
+                    palette.accent.bold().underlined()
+                } else {
+                    palette.base.bold()
+                };
+                vec![
+                    Span::styled("- ", palette.muted),
+                    Span::styled(v.to_string(), style),
+                    Span::styled(" +", palette.muted),
+                ]
+            };
+            spans.extend(end(min, !sheet.step_max));
+            spans.push(Span::styled("  to  ", palette.muted));
+            spans.extend(end(max, sheet.step_max));
         }
     }
+    Line::from(spans)
+}
+
+/// A picker row: the picked pills, the query box, then the matching results.
+fn picker_lines(
+    shared: &Shared,
+    sheet: &FilterSheet,
+    field: PickerField,
+    focused: bool,
+    width: u16,
+) -> Vec<Line<'static>> {
+    let palette = &shared.palette;
+    let mut lines = Vec::new();
+    let pills = field.picked(&sheet.draft);
+    if !pills.is_empty() {
+        let mut spans = vec![Span::raw("    ")];
+        for value in &pills {
+            spans.push(Span::styled(
+                format!(" {value} ×"),
+                palette.accent.reversed(),
+            ));
+            spans.push(Span::raw(" "));
+        }
+        lines.extend(wrap(Line::from(spans), width));
+    }
+    let picker = sheet.pickers.get(&field);
+    let query = picker
+        .map(|p| p.input.value().to_owned())
+        .unwrap_or_default();
+    lines.push(input_line(
+        palette,
+        indent(palette, focused),
+        Some(&query),
+        field.placeholder(),
+        focused,
+    ));
+    let results = field.results(
+        &sheet.draft,
+        &query,
+        &sheet.config.sources,
+        &shared.cards.catalog,
+    );
+    if !results.is_empty() {
+        let highlight = picker.map_or(0, |p| p.highlight);
+        let mut spans = vec![Span::raw("    ")];
+        for (i, value) in results.iter().enumerate() {
+            spans.push(chip(palette, value, false, focused && i == highlight, None));
+            spans.push(Span::raw(" "));
+        }
+        lines.extend(wrap(Line::from(spans), width));
+    }
+    lines
 }
 
 /// A text box as one line: the value, or the placeholder muted, with a cursor mark when focused.

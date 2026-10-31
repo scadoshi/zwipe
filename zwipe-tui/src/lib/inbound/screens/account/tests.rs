@@ -267,7 +267,9 @@ fn more_opens_delete_which_counts_down_before_it_sends() {
     harness.press(KeyCode::Enter);
     assert_eq!(harness.pending(), [], "still counting down");
     if let Some(Overlay::More(Some(delete))) = &mut view_mut(&mut harness).overlay {
-        delete.opened_at = Instant::now() - Duration::from_secs(6);
+        delete.opened_at = Instant::now()
+            .checked_sub(Duration::from_secs(6))
+            .expect("the clock is past six seconds");
     }
     harness.press(KeyCode::Enter);
     assert_eq!(

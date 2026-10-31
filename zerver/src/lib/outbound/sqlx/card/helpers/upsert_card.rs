@@ -16,7 +16,7 @@ use zwipe_core::domain::card::card_profile::CardProfile;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
 
 use crate::domain::card::models::helpers::SleeveScryfallData;
-use crate::domain::card::models::zervice_metrics::{ErrorMetrics, ZerviceMetrics};
+use crate::domain::card::models::zervice_metrics::{self, ErrorMetrics, ZerviceMetrics};
 use crate::domain::card::requests::create_card::CreateCardError;
 use crate::domain::card::requests::get_scryfall_data::ScryfallDataIds;
 use crate::outbound::sqlx::card::card_profile::DatabaseCardProfile;
@@ -233,7 +233,8 @@ impl BatchUpsertWithTx for &[ScryfallData] {
                 Ok(upserted) => {
                     let upserted_count = upserted.len();
                     cards.extend(upserted);
-                    zervice_metrics.add_upserted_count(upserted_count as i32);
+                    zervice_metrics
+                        .add_upserted_count(zervice_metrics::count_column(upserted_count));
                 }
                 Err(e) => {
                     tracing::warn!("batch failed with error: {:?}\nretrying card by card", e);
@@ -284,7 +285,8 @@ impl BulkDeltaUpsertWithTx for &[ScryfallData] {
             .filter(|x| !existing.contains(x))
             .map(ToOwned::to_owned)
             .collect();
-        let skipped_count = self.len() - delta.len();
+        // The delta is drawn from self, so this never saturates.
+        let skipped_count = self.len().saturating_sub(delta.len());
         if delta.is_empty() {
             return Ok((Vec::new(), skipped_count));
         }
@@ -324,8 +326,9 @@ impl BatchDeltaUpsertWithTx for &[ScryfallData] {
         for chunk in self.chunks(batch_size) {
             match chunk.bulk_delta_upsert_with_tx(tx).await {
                 Ok((upserted, skipped)) => {
-                    zervice_metrics.add_upserted_count(upserted.len() as i32);
-                    zervice_metrics.add_skipped_count(skipped as i32);
+                    zervice_metrics
+                        .add_upserted_count(zervice_metrics::count_column(upserted.len()));
+                    zervice_metrics.add_skipped_count(zervice_metrics::count_column(skipped));
                     cards.extend(upserted);
                 }
                 Err(e) => {

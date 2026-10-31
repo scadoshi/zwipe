@@ -213,7 +213,8 @@ pub fn cap_color_identities(scored: Vec<ScoredCommander>, cap: usize) -> Vec<Sco
         identity.dedup();
         let seen = kept_per_identity.entry(identity).or_default();
         if *seen < cap {
-            *seen += 1;
+            // Below `cap`, so this never saturates.
+            *seen = seen.saturating_add(1);
             kept.push(commander);
         } else {
             capped.push(commander);
@@ -488,9 +489,11 @@ fn sorted_identity(colors: &[String]) -> Vec<String> {
 pub fn identity_counts(decks: &[ProfiledDeck]) -> Vec<ColorIdentityCount> {
     let mut identity_decks: HashMap<Vec<String>, u32> = HashMap::new();
     for deck in decks {
-        *identity_decks
+        let count = identity_decks
             .entry(sorted_identity(&deck.colors))
-            .or_default() += 1;
+            .or_default();
+        // Deck tallies cap like `deck_count` does.
+        *count = count.saturating_add(1);
     }
     let mut counts: Vec<ColorIdentityCount> = identity_decks
         .into_iter()
@@ -549,7 +552,8 @@ pub fn summarize_profile<S: BuildHasher>(
     let mut color_decks: HashMap<String, u32> = HashMap::new();
     for deck in decks {
         for color in sorted_identity(&deck.colors) {
-            *color_decks.entry(color).or_default() += 1;
+            let count = color_decks.entry(color).or_default();
+            *count = count.saturating_add(1);
         }
     }
     let mut colors: Vec<ColorAffinity> = color_decks
@@ -582,14 +586,17 @@ pub fn summarize_profile<S: BuildHasher>(
                     score: 0.0,
                 });
             total.score += weight.as_f64().unwrap_or_default();
-            total.decks += 1;
-            total.cards += profile.cards.get(slug).copied().unwrap_or_default();
+            total.decks = total.decks.saturating_add(1);
+            total.cards = total
+                .cards
+                .saturating_add(profile.cards.get(slug).copied().unwrap_or_default());
             if let Some(role) = tag_roles.get(slug) {
                 deck_roles.insert(role);
             }
         }
         for role in deck_roles {
-            *role_decks.entry(role.clone()).or_default() += 1;
+            let count = role_decks.entry(role.clone()).or_default();
+            *count = count.saturating_add(1);
         }
     }
     let mut tags: Vec<ProfileTag> = tag_totals.into_values().collect();

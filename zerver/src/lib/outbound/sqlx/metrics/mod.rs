@@ -1,6 +1,7 @@
 //! Metrics repository implementation.
 
 use std::collections::{HashMap, HashSet};
+use std::num::TryFromIntError;
 
 use sqlx::query;
 use uuid::Uuid;
@@ -17,6 +18,32 @@ use crate::outbound::sqlx::postgres::Postgres;
 
 fn db(err: sqlx::Error) -> MetricsError {
     MetricsError::Database(err.into())
+}
+
+/// Adds `delta` to a running tally.
+///
+/// The clamped batch keeps tallies far inside `i64`; the error only fires if
+/// that clamp is loosened.
+fn add_tally(total: &mut i64, delta: i64) -> Result<(), MetricsError> {
+    *total = total
+        .checked_add(delta)
+        .ok_or_else(|| MetricsError::Database(anyhow::anyhow!("a usage tally overflows i64")))?;
+    Ok(())
+}
+
+/// Converts a tally to the `INTEGER` a counter column holds.
+///
+/// [`HttpUsageBatch::clamped`] keeps every tally far inside `i32`, so this
+/// only errors if that clamp is loosened past what the columns can take.
+fn int_column<T>(tally: T) -> Result<i32, MetricsError>
+where
+    i32: TryFrom<T, Error = TryFromIntError>,
+{
+    i32::try_from(tally).map_err(|err| {
+        MetricsError::Database(
+            anyhow::Error::new(err).context("a usage tally overflows its INTEGER column"),
+        )
+    })
 }
 
 /// Impressions one user may feed the pooled signals per UTC day. A heavy
@@ -71,11 +98,11 @@ impl MetricsRepository for Postgres {
         // the weekly INTEGER columns. Lifetime and daily counters are BIGINT.
         let batch = batch.clamped();
 
-        let r = i64::from(batch.swipes_right);
-        let l = i64::from(batch.swipes_left);
-        let u = i64::from(batch.swipes_up);
-        let d = i64::from(batch.swipes_down);
-        let s = i64::from(batch.searches);
+        let right = i64::from(batch.swipes_right);
+        let left = i64::from(batch.swipes_left);
+        let up = i64::from(batch.swipes_up);
+        let down = i64::from(batch.swipes_down);
+        let searches = i64::from(batch.searches);
 
         let mut tx = self.pool.begin().await.map_err(db)?;
 
@@ -89,11 +116,11 @@ impl MetricsRepository for Postgres {
                    updated_at   = NOW()
                WHERE user_id = $1"#,
             user_id,
-            r,
-            l,
-            u,
-            d,
-            s,
+            right,
+            left,
+            up,
+            down,
+            searches,
         )
         .execute(&mut *tx)
         .await
@@ -110,21 +137,21 @@ impl MetricsRepository for Postgres {
                    swipes_down  = user_daily_activity.swipes_down  + EXCLUDED.swipes_down,
                    searches     = user_daily_activity.searches     + EXCLUDED.searches"#,
             user_id,
-            r,
-            l,
-            u,
-            d,
-            s,
+            right,
+            left,
+            up,
+            down,
+            searches,
         )
         .execute(&mut *tx)
         .await
         .map_err(db)?;
 
-        let r32 = batch.swipes_right as i32;
-        let l32 = batch.swipes_left as i32;
-        let u32 = batch.swipes_up as i32;
-        let d32 = batch.swipes_down as i32;
-        let s32 = batch.searches as i32;
+        let r32 = int_column(batch.swipes_right)?;
+        let l32 = int_column(batch.swipes_left)?;
+        let u32 = int_column(batch.swipes_up)?;
+        let d32 = int_column(batch.swipes_down)?;
+        let s32 = int_column(batch.searches)?;
 
         // Resolve every deck's context from `deck_id`: the client sends only the
         // deck, the backend derives the rest. Ownership-scoped (`user_id`), so a
@@ -201,11 +228,11 @@ impl MetricsRepository for Postgres {
         // A day's worth of impressions per user. Past the cap the flush is
         // still accepted, but none of its signals reach the pooled tables, so
         // one account cannot steer what every other user of a commander sees.
-        let shown_total: i64 = signals.iter().map(|s| i64::from(s.shown)).sum::<i64>()
-            + select_signals
-                .iter()
-                .map(|s| i64::from(s.shown))
-                .sum::<i64>();
+        let mut shown_total: i64 = signals.iter().map(|s| i64::from(s.shown)).sum();
+        add_tally(
+            &mut shown_total,
+            select_signals.iter().map(|s| i64::from(s.shown)).sum(),
+        )?;
         if shown_total > 0 {
             let today_total = sqlx::query_scalar!(
                 r#"INSERT INTO usage_signal_budget (user_id, day, shown)
@@ -262,11 +289,11 @@ impl MetricsRepository for Postgres {
                        updated_at = NOW()"#,
                 commander,
                 sig.card_oracle_id,
-                sig.shown as i64,
-                sig.added as i64,
-                sig.skipped as i64,
-                sig.maybed as i64,
-                sig.removed as i64,
+                i64::from(sig.shown),
+                i64::from(sig.added),
+                i64::from(sig.skipped),
+                i64::from(sig.maybed),
+                i64::from(sig.removed),
             )
             .execute(&mut *tx)
             .await
@@ -298,11 +325,11 @@ impl MetricsRepository for Postgres {
                 user_id,
                 commander,
                 sig.card_oracle_id,
-                sig.shown as i64,
-                sig.added as i64,
-                sig.skipped as i64,
-                sig.maybed as i64,
-                sig.removed as i64,
+                i64::from(sig.shown),
+                i64::from(sig.added),
+                i64::from(sig.skipped),
+                i64::from(sig.maybed),
+                i64::from(sig.removed),
             )
             .execute(&mut *tx)
             .await
@@ -371,11 +398,11 @@ impl MetricsRepository for Postgres {
                     let t = otag_tallies
                         .entry((context_key.clone(), otag.clone()))
                         .or_default();
-                    t.shown += i64::from(sig.shown);
-                    t.added += i64::from(sig.added);
-                    t.skipped += i64::from(sig.skipped);
-                    t.maybed += i64::from(sig.maybed);
-                    t.removed += i64::from(sig.removed);
+                    add_tally(&mut t.shown, i64::from(sig.shown))?;
+                    add_tally(&mut t.added, i64::from(sig.added))?;
+                    add_tally(&mut t.skipped, i64::from(sig.skipped))?;
+                    add_tally(&mut t.maybed, i64::from(sig.maybed))?;
+                    add_tally(&mut t.removed, i64::from(sig.removed))?;
                 }
             }
 
@@ -419,9 +446,9 @@ impl MetricsRepository for Postgres {
                        skipped    = commander_select_signal.skipped  + EXCLUDED.skipped,
                        updated_at = NOW()"#,
                 sig.commander_oracle_id,
-                sig.shown as i64,
-                sig.selected as i64,
-                sig.skipped as i64,
+                i64::from(sig.shown),
+                i64::from(sig.selected),
+                i64::from(sig.skipped),
             )
             .execute(&mut *tx)
             .await
@@ -454,10 +481,10 @@ impl MetricsRepository for Postgres {
             u32,
             d32,
             s32,
-            added_sum as i32,
-            skipped_sum as i32,
-            maybed_sum as i32,
-            removed_sum as i32,
+            int_column(added_sum)?,
+            int_column(skipped_sum)?,
+            int_column(maybed_sum)?,
+            int_column(removed_sum)?,
         )
         .execute(&mut *tx)
         .await
@@ -509,13 +536,19 @@ impl MetricsRepository for Postgres {
                 };
                 let added = i64::from(sig.added);
                 for category in categories {
-                    *tallies.entry(("category", category.clone())).or_default() += added;
+                    add_tally(
+                        tallies.entry(("category", category.clone())).or_default(),
+                        added,
+                    )?;
                 }
                 if colors.is_empty() {
-                    *tallies.entry(("color", "C".to_string())).or_default() += added;
+                    add_tally(
+                        tallies.entry(("color", "C".to_string())).or_default(),
+                        added,
+                    )?;
                 } else {
                     for color in colors {
-                        *tallies.entry(("color", color.clone())).or_default() += added;
+                        add_tally(tallies.entry(("color", color.clone())).or_default(), added)?;
                     }
                 }
             }
@@ -529,7 +562,7 @@ impl MetricsRepository for Postgres {
                     user_id,
                     facet,
                     key,
-                    *added as i32,
+                    int_column(*added)?,
                 )
                 .execute(&mut *tx)
                 .await
@@ -635,7 +668,7 @@ impl MetricsRepository for Postgres {
                 report.action,
                 report.kind,
                 report.message,
-                report.count as i32,
+                int_column(report.count)?,
             )
             .execute(&mut *tx)
             .await
@@ -849,5 +882,35 @@ impl MetricsRepository for Postgres {
         .map_err(db)?;
 
         Ok(result.rows_affected() > 0)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn int_column_passes_tallies_that_fit() {
+        assert!(matches!(
+            int_column(HttpUsageBatch::MAX_PER_FLUSH),
+            Ok(10_000)
+        ));
+        assert!(matches!(int_column(-5_i64), Ok(-5)));
+    }
+
+    #[test]
+    fn add_tally_adds_and_rejects_overflow() {
+        let mut total = 5;
+        assert!(add_tally(&mut total, 7).is_ok());
+        assert_eq!(total, 12);
+        let mut full = i64::MAX;
+        assert!(add_tally(&mut full, 1).is_err());
+        assert_eq!(full, i64::MAX);
+    }
+
+    #[test]
+    fn int_column_rejects_tallies_past_i32() {
+        assert!(int_column(u32::MAX).is_err());
+        assert!(int_column(i64::MAX).is_err());
     }
 }

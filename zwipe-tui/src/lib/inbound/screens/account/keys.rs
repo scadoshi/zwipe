@@ -165,7 +165,7 @@ fn handle_delete(
         KeyCode::Esc => return None,
         KeyCode::Tab | KeyCode::Down => {
             delete.focus = order
-                .get(at.saturating_add(1) % order.len())
+                .get(at.saturating_add(1).checked_rem(order.len()).unwrap_or(0))
                 .copied()
                 .unwrap_or(DeleteFocus::Password);
         }

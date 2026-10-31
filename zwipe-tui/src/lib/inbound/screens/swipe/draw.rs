@@ -185,7 +185,12 @@ fn draw_card(f: &mut Frame<'_>, shared: &Shared, view: &SwipeView, card: &Card, 
     }
     let image = card
         .scryfall_data
-        .face_image_url(view.face % card_info::face_count(card), ImageSize::Normal)
+        .face_image_url(
+            view.face
+                .checked_rem(card_info::face_count(card))
+                .unwrap_or(0),
+            ImageSize::Normal,
+        )
         .and_then(|url| view.images.get(url));
     let image_width = card_area.height.saturating_mul(IMAGE_WIDTH_PER_ROW_TENTHS) / 10;
     if card_area.width >= image_width.saturating_add(CARD_WIDTH).saturating_add(GAP) {

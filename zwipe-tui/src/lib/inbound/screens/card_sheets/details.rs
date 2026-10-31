@@ -58,7 +58,11 @@ impl DetailsSheet {
     pub(crate) fn handle_key(&mut self, code: KeyCode, palette: &Palette) -> DetailsOutcome {
         match code {
             KeyCode::Char('t') if card_info::face_count(&self.card) > 1 => {
-                self.face = self.face.saturating_add(1) % card_info::face_count(&self.card);
+                self.face = self
+                    .face
+                    .saturating_add(1)
+                    .checked_rem(card_info::face_count(&self.card))
+                    .unwrap_or(0);
             }
             KeyCode::Char('p') if self.printings => return DetailsOutcome::Printings,
             _ => {

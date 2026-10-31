@@ -283,7 +283,11 @@ impl Form {
     }
 
     pub(crate) fn next_field(&mut self) {
-        self.focus = self.focus.saturating_add(1) % self.inputs.len().max(1);
+        self.focus = self
+            .focus
+            .saturating_add(1)
+            .checked_rem(self.inputs.len())
+            .unwrap_or(0);
     }
 
     pub(crate) fn previous_field(&mut self) {

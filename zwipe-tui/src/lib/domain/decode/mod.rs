@@ -69,7 +69,13 @@ fn frame_count(ms: u128) -> usize {
 
 /// The frame showing `elapsed` into a pass: one more after each tick.
 fn frame_at(elapsed: Duration) -> usize {
-    usize::try_from(elapsed.as_millis() / TICK.as_millis()).unwrap_or(usize::MAX)
+    usize::try_from(
+        elapsed
+            .as_millis()
+            .checked_div(TICK.as_millis())
+            .unwrap_or(0),
+    )
+    .unwrap_or(usize::MAX)
 }
 
 /// `art` with every glyph a space, keeping its shape.
@@ -182,9 +188,15 @@ mod tests {
         assert_eq!(frame_count(DECODE_MS), 22);
         assert_eq!(TICK * 22, DURATION);
         assert!(glyphs(&at(logo::ZWIPE, Duration::ZERO)).all(|c| c == ' '));
-        assert!(glyphs(&at(logo::ZWIPE, TICK - Duration::from_millis(1))).all(|c| c == ' '));
+        assert!(
+            glyphs(&at(
+                logo::ZWIPE,
+                TICK.saturating_sub(Duration::from_millis(1))
+            ))
+            .all(|c| c == ' ')
+        );
         assert_ne!(
-            at(logo::ZWIPE, DURATION - TICK),
+            at(logo::ZWIPE, DURATION.saturating_sub(TICK)),
             logo::ZWIPE,
             "frame 21 still moves"
         );
@@ -231,7 +243,7 @@ mod tests {
     fn noise_comes_before_the_art_resolves() {
         let early = at(logo::ZWIPE, TICK * 6);
         assert!(glyphs(&early).any(|c| NOISE.contains(&c)), "{early}");
-        let late = at(logo::ZWIPE, DURATION - TICK);
+        let late = at(logo::ZWIPE, DURATION.saturating_sub(TICK));
         let resolved = glyphs(&late)
             .filter(|c| !NOISE.contains(c) && *c != ' ')
             .count();

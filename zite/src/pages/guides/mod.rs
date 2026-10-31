@@ -230,7 +230,9 @@ const GUIDE_TAGS: &[&str] = &[
 fn tag_color_class(tag: &str) -> &'static str {
     const CLASSES: [&str; 6] = ["tag-p1", "tag-p2", "tag-p3", "tag-p4", "tag-p5", "tag-p6"];
     let idx = GUIDE_TAGS.iter().position(|t| *t == tag).unwrap_or(0);
-    CLASSES.get(idx % CLASSES.len()).unwrap_or(&"tag-p1")
+    idx.checked_rem(CLASSES.len())
+        .and_then(|i| CLASSES.get(i))
+        .unwrap_or(&"tag-p1")
 }
 
 #[component]

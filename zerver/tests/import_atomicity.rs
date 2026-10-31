@@ -334,3 +334,38 @@ async fn importing_a_starred_card_to_another_board_drops_the_star(pool: sqlx::Pg
     .unwrap();
     assert_eq!(stranded, 0, "a star must not survive leaving the mainboard");
 }
+
+#[sqlx::test]
+async fn an_import_past_the_line_limit_is_refused_and_writes_nothing(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, did) = deck_for(&app, "linelimit").await;
+    seed_cards(&pool, &[card("Island").type_line("Basic Land — Island")]).await;
+
+    let text = "1 Island\n".repeat(1_001);
+    let (status, r) = app
+        .post(
+            &import_deck_cards_route(did.parse().unwrap()),
+            json!({ "text": text }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "line limit: {r}");
+    assert_eq!(total_quantity(&pool, &did).await, 0);
+}
+
+#[sqlx::test]
+async fn an_import_body_past_the_size_limit_is_refused(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, did) = deck_for(&app, "bodylimit").await;
+
+    // Fewer than 1,000 lines, so only the body size can refuse it.
+    let text = format!("1 {}\n", "x".repeat(100)).repeat(700);
+    let (status, _) = app
+        .post(
+            &import_deck_cards_route(did.parse().unwrap()),
+            json!({ "text": text }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::PAYLOAD_TOO_LARGE);
+}
