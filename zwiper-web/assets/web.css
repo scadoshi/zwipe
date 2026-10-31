@@ -38,6 +38,77 @@ body {
     min-height: 0;
 }
 
+/* ---- Page grammar ----
+
+   zite's page on a wide window: the content is one centered column at
+   most 74rem wide inside a 1.5rem gutter. A screen with a hero puts it
+   centered at the top; the rest of its panels share two equal columns
+   under it, each a stack one panel gap apart, and the shorter column ends
+   early. Below the breakpoint the columns dissolve into the screen's own
+   single column. */
+:root {
+    --web-page-max: 74rem;
+}
+
+.web-hero,
+.web-columns,
+.web-column {
+    display: contents;
+}
+
+@media (min-width: 900px) {
+    .web-page {
+        width: 100%;
+        max-width: var(--web-page-max);
+        margin: 0 auto;
+        padding: 0 1.5rem 1.5rem;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--panel-gap);
+    }
+
+    .web-hero {
+        display: block;
+        width: 100%;
+        max-width: none;
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    /* A hero that is a list of rows stays the phone column's width. */
+    .web-hero.web-hero-narrow {
+        max-width: 40rem;
+        margin: 0 auto;
+    }
+
+    .web-columns {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: var(--panel-gap);
+        align-items: start;
+        width: 100%;
+    }
+
+    .web-column {
+        display: flex;
+        flex-direction: column;
+        gap: var(--panel-gap);
+        min-width: 0;
+    }
+
+    /* A panel fills its column; the phone's widths and outer margins go. */
+    .web-column > *,
+    .web-page > .web-hero > * {
+        width: 100%;
+        max-width: none;
+        margin: 0;
+        box-sizing: border-box;
+    }
+}
+
 /* ---- Public frame (login, register, reset) ---- */
 
 .web-public {
@@ -691,21 +762,36 @@ body {
 
 /* ---- Home ---- */
 
-/* Below the breakpoint the pair is the app's stack: the panels are the home
-   column's own children. */
-.web-home-pair {
+/* Below the breakpoint the page is the app's stack, centered in the column:
+   the panels are the home column's own children. */
+.web-home-page {
     display: contents;
 }
 
-.web-home-pair > :last-child {
-    margin-bottom: auto;
+@media (max-width: 899px) {
+    .web-home-page .home-hero,
+    .web-home-page .home-flavor {
+        flex-shrink: 0;
+    }
+
+    .web-home-page .home-hero {
+        margin-top: auto;
+    }
+
+    .web-home-page .web-column:last-child > .home-flavor {
+        margin-bottom: auto;
+    }
 }
 
 @media (min-width: 900px) {
-    /* The hero spans the top: the mark on the left, the figures and their
-       tags on the right. */
-    .web-home .home-hero {
-        max-width: 56rem;
+    /* zite's page from the top; the hero centered over the two columns. */
+    .web-home .web-home-page {
+        display: flex;
+        margin: 0 auto;
+    }
+
+    .web-home-page .home-hero {
+        padding: 0;
     }
 
     .web-home .home-hero .hero-head {
@@ -714,6 +800,7 @@ body {
         column-gap: 2.5rem;
         row-gap: 1rem;
         align-items: center;
+        justify-content: center;
     }
 
     .web-home .home-hero .logo {
@@ -721,24 +808,8 @@ body {
         font-size: 0.85rem;
     }
 
-    /* Under it, the color map and the featured flavor side by side. */
-    .web-home-pair {
-        display: flex;
-        align-items: flex-start;
-        justify-content: center;
-        gap: var(--panel-gap);
-        width: 100%;
-        max-width: 56rem;
-        padding: 0 1rem;
-        box-sizing: border-box;
-        margin-bottom: auto;
-    }
-
-    .web-home-pair > .home-flavor {
-        flex: 1 1 0;
-        width: auto;
-        max-width: none;
-        margin-top: var(--panel-gap);
+    .web-home-page .home-flavor {
+        min-height: 0;
     }
 
     /* The sidebar holds Decks, Account and Config. */
@@ -784,32 +855,29 @@ body {
 
 /* ---- Activity ---- */
 
-.web-activity {
-    max-width: 40rem;
-    width: 100%;
-    padding: 0 1rem;
-    gap: var(--panel-gap);
-    box-sizing: border-box;
-}
-
-.web-activity-column {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: var(--panel-gap);
-}
-
-/* Below the breakpoint the sections are one accordion column. */
 .web-activity-year,
 .web-activity-rates {
     display: contents;
 }
 
-@media (min-width: 900px) {
+/* Below the breakpoint the sections are one accordion column, in the
+   app's order: Activity, Card roles, Oracle tags, then Most skipped, which
+   sits in the left column on a wide window. */
+@media (max-width: 899px) {
     .web-activity {
-        max-width: 72rem;
+        max-width: 40rem;
+        width: 100%;
+        padding: 0 1rem;
+        gap: var(--panel-gap);
+        box-sizing: border-box;
     }
 
+    .web-activity > .web-columns .maybeboard-list {
+        order: 1;
+    }
+}
+
+@media (min-width: 900px) {
     /* A year fits, so the heatmap scales to its column instead of scrolling;
        the grid's inline pixel width is the phone's scroll width. */
     .web-activity-heat .activity-scroll {
@@ -823,53 +891,9 @@ body {
         width: 100% !important;
         height: auto;
     }
-
-    /* The Activity section full width: the year's heatmap unscrolled with
-       Totals beside it. */
-    .web-activity-year {
-        display: block;
-        width: 100%;
-    }
-
-    .web-activity-year-body {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) minmax(14rem, 18rem);
-        column-gap: 1.5rem;
-        align-items: start;
-    }
-
-    .web-activity-year-body > .activity-rule {
-        display: none;
-    }
-
-    .web-activity-year-body > .activity-outcomes {
-        margin-top: 0;
-        padding-right: 0.75rem;
-    }
-
-    /* Card roles and Oracle tags side by side, both open. */
-    .web-activity-rates {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-        gap: var(--panel-gap);
-        align-items: start;
-        width: 100%;
-    }
 }
 
 /* ---- Playstyle ---- */
-
-/* The app's bounded column below the breakpoint: the profile, then the
-   Show row, the suggestions and Staples, a panel gap apart. */
-.web-playstyle {
-    width: 100%;
-    max-width: 40rem;
-    padding: 0 1rem;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    gap: var(--panel-gap);
-}
 
 .web-playstyle-profile,
 .web-playstyle-list {
@@ -880,16 +904,34 @@ body {
     gap: var(--panel-gap);
 }
 
-/* A wide window puts the profile sections, all open, in the left column and
-   the list in the right. */
-@media (min-width: 900px) {
+/* The app's bounded column below the breakpoint: the profile accordion with
+   Summary in it, then the Show row, the suggestions and Staples, a panel gap
+   apart. */
+@media (max-width: 899px) {
     .web-playstyle {
-        max-width: var(--web-content-max);
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
-        align-items: start;
-        gap: 1.5rem;
-        padding: 0 1.5rem;
+        width: 100%;
+        max-width: 40rem;
+        padding: 0 1rem;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        gap: var(--panel-gap);
+    }
+
+    .web-playstyle-summary-hero {
+        display: none;
+    }
+
+    .web-playstyle-summary-inline {
+        display: contents;
+    }
+}
+
+/* A wide window draws Summary as the hero, so the profile column leaves
+   it out. */
+@media (min-width: 900px) {
+    .web-playstyle-summary-inline {
+        display: none;
     }
 }
 
@@ -1190,57 +1232,25 @@ body {
 
 /* ---- Deck view ---- */
 
-/* Below the breakpoint the columns are one stack, as in the app, with no
-   cards column. */
-.web-deck-view {
-    width: calc(100% - 4rem);
-    max-width: 40rem;
-    display: flex;
-    flex-direction: column;
-    gap: var(--panel-gap);
-    padding: 1rem 0;
-}
-
-.web-deck-view-profile,
-.web-deck-view-stats {
-    display: flex;
-    flex-direction: column;
-    gap: var(--panel-gap);
-    min-width: 0;
-}
-
+/* Below the breakpoint the page is one stack, as in the app, with no cards
+   column. */
 .web-deck-view-cards {
     display: none;
 }
 
-@media (min-width: 900px) {
-    /* Profile, Budget and Tags over the stats on the left, the cards on
-       the right. */
+@media (max-width: 899px) {
     .web-deck-view {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        grid-template-areas:
-            "profile cards"
-            "stats cards";
-        align-items: start;
-        align-content: start;
-        width: 100%;
-        max-width: 90rem;
-        padding: 1rem 1.5rem 2rem;
-        box-sizing: border-box;
-        column-gap: 1.5rem;
+        width: calc(100% - 4rem);
+        max-width: 40rem;
+        display: flex;
+        flex-direction: column;
+        gap: var(--panel-gap);
+        padding: 1rem 0;
     }
+}
 
-    .web-deck-view-profile {
-        grid-area: profile;
-    }
-
-    .web-deck-view-stats {
-        grid-area: stats;
-    }
-
+@media (min-width: 900px) {
     .web-deck-view-cards {
-        grid-area: cards;
         display: flex;
         flex-direction: column;
         min-width: 0;
@@ -1250,13 +1260,6 @@ body {
         display: flex;
         flex-direction: column;
         gap: var(--panel-gap);
-    }
-}
-
-@media (min-width: 1280px) {
-    .web-deck-view {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        grid-template-areas: "profile stats cards";
     }
 }
 

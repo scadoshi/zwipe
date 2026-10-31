@@ -2,8 +2,9 @@
 //! from every deck they own, over their top suggested commanders and their
 //! staples.
 //!
-//! On a wide window the profile sections sit open in the left column and
-//! the Show row, the suggestions and Staples in the right; below the
+//! On a wide window the profile's Summary is the hero at the top of zite's
+//! page; under it the other profile sections sit open in the left column
+//! and the Show row, the suggestions and Staples in the right. Below the
 //! breakpoint it is the app's single column with the profile as one
 //! accordion, Color map open.
 
@@ -28,7 +29,9 @@ use zwipe_ui::generation::Generation;
 use zwipe_ui::playstyle::{HELD_SIZE, LIST_SIZE, empty_identity_line, of_identity, shown};
 
 pub use self::chips::{IdentityPips, ShowIdentityChips};
-use self::profile::{BuilderProfileSections, BuilderProfileSkeleton, ShowChipRowSkeleton};
+use self::profile::{
+    BuilderProfileSections, BuilderProfileSkeleton, ProfileSummary, ShowChipRowSkeleton,
+};
 pub use self::rows::SuggestionReasons;
 use self::rows::{StaplesPanel, SuggestionRow};
 use crate::inbound::caches::CreateDeckSeed;
@@ -40,6 +43,7 @@ use crate::inbound::chrome::hint_topic::{HintTopic, InfoButton};
 use crate::inbound::chrome::more_menu::{MoreButton, MoreMenu, use_more_menu};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::router::Route;
+use crate::inbound::screens::deck::skeletons::SkeletonInfoList;
 use crate::inbound::shell::ScreenFrame;
 
 /// The suggestions list's title.
@@ -78,6 +82,8 @@ pub fn Playstyle() -> Element {
     let mut entries: Signal<Vec<HttpCommanderSuggestion>> = use_signal(Vec::new);
     let mut deck_count = use_signal(|| 0u32);
     let mut profile: Signal<Option<HttpBuilderProfile>> = use_signal(|| None);
+    // The hero's Summary only shows on a wide window, where it is always open.
+    let summary_section: Signal<Option<String>> = use_signal(|| None);
     let mut is_loading = use_signal(|| true);
     let mut load_failed = use_signal(|| false);
     let mut reload = use_signal(|| 0u32);
@@ -268,21 +274,26 @@ pub fn Playstyle() -> Element {
             },
             div { class: "screen-content",
                 if is_loading() {
-                    div { class: "web-playstyle",
-                        div { class: "web-playstyle-profile",
-                            BuilderProfileSkeleton {}
+                    div { class: "web-playstyle web-page",
+                        div { class: "web-hero web-hero-narrow web-playstyle-summary-hero",
+                            SkeletonInfoList { rows: 3 }
                         }
-                        div { class: "web-playstyle-list",
-                            ShowChipRowSkeleton {}
-                            div { class: "maybeboard-list card-group row-enter",
-                                div { class: "card-group-header card-group-header-with-hint",
-                                    div { class: "skeleton-bar skeleton-card-bar-header-wide" }
-                                    div { class: "skeleton-bar skeleton-chip skeleton-info-button" }
-                                }
-                                for i in 0..6 {
-                                    div { key: "{i}", class: "skeleton-card-row",
-                                        div { class: "skeleton-bar skeleton-card-thumb" }
-                                        div { class: "skeleton-bar skeleton-card-bar-row" }
+                        div { class: "web-columns",
+                            div { class: "web-playstyle-profile",
+                                BuilderProfileSkeleton {}
+                            }
+                            div { class: "web-playstyle-list",
+                                ShowChipRowSkeleton {}
+                                div { class: "maybeboard-list card-group row-enter",
+                                    div { class: "card-group-header card-group-header-with-hint",
+                                        div { class: "skeleton-bar skeleton-card-bar-header-wide" }
+                                        div { class: "skeleton-bar skeleton-chip skeleton-info-button" }
+                                    }
+                                    for i in 0..6 {
+                                        div { key: "{i}", class: "skeleton-card-row",
+                                            div { class: "skeleton-bar skeleton-card-thumb" }
+                                            div { class: "skeleton-bar skeleton-card-bar-row" }
+                                        }
                                     }
                                 }
                             }
@@ -297,51 +308,58 @@ pub fn Playstyle() -> Element {
                         span { class: "chip-note", "Build a deck to see your playstyle" }
                     }
                 } else {
-                    div { class: "web-playstyle content-enter",
+                    div { class: "web-playstyle web-page content-enter",
                         if let Some(profile) = profile() {
-                            div { class: "web-playstyle-profile web-sections-open",
-                                BuilderProfileSections { profile }
+                            div { class: "web-hero web-hero-narrow web-playstyle-summary-hero web-sections-open",
+                                ProfileSummary { profile, open_section: summary_section }
                             }
                         }
-                        div { class: "web-playstyle-list",
-                            ShowIdentityChips { active_identity, identities: identities(),
-                                Chip {
-                                    selected: show_row_art(),
-                                    onclick: move |_| show_row_art.toggle(),
-                                    "Art"
+                        div { class: "web-columns",
+                            if let Some(profile) = profile() {
+                                div { class: "web-playstyle-profile web-sections-open",
+                                    BuilderProfileSections { profile }
                                 }
                             }
-                            if !has_entries {
-                                div { class: "message-empty",
-                                    span { class: "chip-note", "No suggestions right now" }
-                                }
-                            } else if rows.is_empty() {
-                                div { class: "message-empty",
-                                    span { class: "chip-note",
-                                        {empty_identity_line(&active_identity().unwrap_or_default())}
+                            div { class: "web-playstyle-list",
+                                ShowIdentityChips { active_identity, identities: identities(),
+                                    Chip {
+                                        selected: show_row_art(),
+                                        onclick: move |_| show_row_art.toggle(),
+                                        "Art"
                                     }
                                 }
-                            } else {
-                                div { class: "maybeboard-list card-group row-enter",
-                                    div { class: "card-group-header card-group-header-with-hint",
-                                        span { "{LIST_TITLE}" }
-                                        InfoButton { topic: HintTopic::SuggestionList }
+                                if !has_entries {
+                                    div { class: "message-empty",
+                                        span { class: "chip-note", "No suggestions right now" }
                                     }
-                                    for suggestion in rows {
-                                        SuggestionRow {
-                                            key: "{suggestion.card.scryfall_data.id}",
-                                            suggestion,
-                                            deck_count: deck_count(),
-                                            expanded_card,
-                                            on_start: create_with,
-                                            on_maybe,
-                                            on_dismiss,
+                                } else if rows.is_empty() {
+                                    div { class: "message-empty",
+                                        span { class: "chip-note",
+                                            {empty_identity_line(&active_identity().unwrap_or_default())}
+                                        }
+                                    }
+                                } else {
+                                    div { class: "maybeboard-list card-group row-enter",
+                                        div { class: "card-group-header card-group-header-with-hint",
+                                            span { "{LIST_TITLE}" }
+                                            InfoButton { topic: HintTopic::SuggestionList }
+                                        }
+                                        for suggestion in rows {
+                                            SuggestionRow {
+                                                key: "{suggestion.card.scryfall_data.id}",
+                                                suggestion,
+                                                deck_count: deck_count(),
+                                                expanded_card,
+                                                on_start: create_with,
+                                                on_maybe,
+                                                on_dismiss,
+                                            }
                                         }
                                     }
                                 }
-                            }
-                            if !staples.is_empty() {
-                                StaplesPanel { staples, deck_count: deck_count(), expanded_card }
+                                if !staples.is_empty() {
+                                    StaplesPanel { staples, deck_count: deck_count(), expanded_card }
+                                }
                             }
                         }
                     }

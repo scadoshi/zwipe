@@ -1,11 +1,11 @@
 //! The deck view: the Profile card, the Budget, Tags, stats and Warnings
 //! sections, and the More menu.
 //!
-//! At 1280px and up the window holds three columns: Profile with Budget and
-//! Tags, then the stats and Warnings, then the cards column for reading.
-//! Between 900px and 1279px the stats sit under the profile. A wide window
-//! opens every section at once. Below the breakpoint it is the app's
-//! accordion with `Budget` open and no cards column.
+//! On a wide window the Profile card is the hero at the top of zite's page;
+//! under it Budget, Tags and the stats share the left column, and Warnings
+//! over the cards column for reading share the right. Every section is open
+//! at once. Below the breakpoint it is the app's accordion with `Budget`
+//! open and no cards column.
 
 pub mod cards;
 pub mod more;
@@ -223,31 +223,35 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                             .as_ref()
                             .map_or_else(|| usize::try_from(p.card_count).unwrap_or(0), |m| m.total_cards);
                         rsx! {
-                            div { class: "content-enter web-deck-view web-sections-open",
-                                div { class: "web-deck-view-profile",
+                            div { class: "content-enter web-deck-view web-page web-sections-open",
+                                div { class: "web-hero web-hero-narrow",
                                     ProfileCard { profile: p.clone(), commander: commander(), cards }
-                                    if has_budget(&p, metrics.is_some()) {
-                                        BudgetSection { profile: p.clone(), metrics: metrics.clone(), currency, open_section }
-                                    }
-                                    if tag_count(&p) > 0 {
-                                        TagsSection { profile: p.clone(), open_section }
-                                    }
                                 }
-                                div { class: "web-deck-view-stats",
-                                    if metrics.is_none() && deck_loading && metrics_possible(&p) {
-                                        DeckStatsSkeleton {}
-                                    } else {
-                                        StatsSections { metrics: metrics.clone(), land_target: p.land_target, open_section }
+                                div { class: "web-columns",
+                                    div { class: "web-column",
+                                        if has_budget(&p, metrics.is_some()) {
+                                            BudgetSection { profile: p.clone(), metrics: metrics.clone(), currency, open_section }
+                                        }
+                                        if tag_count(&p) > 0 {
+                                            TagsSection { profile: p.clone(), open_section }
+                                        }
+                                        if metrics.is_none() && deck_loading && metrics_possible(&p) {
+                                            DeckStatsSkeleton {}
+                                        } else {
+                                            StatsSections { metrics: metrics.clone(), land_target: p.land_target, open_section }
+                                        }
                                     }
-                                    if !warnings.is_empty() {
-                                        WarningsSection { deck_id, warnings, fixes, open_section }
-                                    }
-                                }
-                                div { class: "web-deck-view-cards",
-                                    if let Some(loaded) = loaded_deck {
-                                        CardsColumn { key: "{deck_id}", deck: loaded }
-                                    } else if deck_loading {
-                                        DeckCardsSkeleton {}
+                                    div { class: "web-column",
+                                        if !warnings.is_empty() {
+                                            WarningsSection { deck_id, warnings, fixes, open_section }
+                                        }
+                                        div { class: "web-deck-view-cards",
+                                            if let Some(loaded) = loaded_deck {
+                                                CardsColumn { key: "{deck_id}", deck: loaded }
+                                            } else if deck_loading {
+                                                DeckCardsSkeleton {}
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -257,15 +261,19 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                         p { class: "text-muted", "Could not load deck" }
                     },
                     None => rsx! {
-                        div { class: "content-enter web-deck-view",
-                            div { class: "web-deck-view-profile",
+                        div { class: "content-enter web-deck-view web-page",
+                            div { class: "web-hero web-hero-narrow",
                                 DeckProfileSkeleton {}
                             }
-                            div { class: "web-deck-view-stats",
-                                DeckStatsSkeleton {}
-                            }
-                            div { class: "web-deck-view-cards",
-                                DeckCardsSkeleton {}
+                            div { class: "web-columns",
+                                div { class: "web-column",
+                                    DeckStatsSkeleton {}
+                                }
+                                div { class: "web-column",
+                                    div { class: "web-deck-view-cards",
+                                        DeckCardsSkeleton {}
+                                    }
+                                }
                             }
                         }
                     },

@@ -2,9 +2,9 @@
 //! heatmap, what their swipes came to, their rates by card role and oracle
 //! tag, and the cards they keep passing on. Reached from Home's counters.
 //!
-//! On a wide window the counts sit on top, then the Activity section with
-//! the heatmap and Totals side by side, then Card roles and Oracle tags side
-//! by side, every section open, and Most skipped under them. Below the
+//! On a wide window the counts are the hero at the top of zite's page, and
+//! under them the Activity section and Most skipped share the left column,
+//! Card roles and Oracle tags the right, every section open. Below the
 //! breakpoint it is the app's accordion with Activity open.
 
 pub mod sections;
@@ -16,7 +16,7 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::http::contracts::suggestions::HttpActivity;
 use zwipe_ui::activity::has_anything;
 
-use self::sections::{ACTIVITY_TITLE, ActivitySections, HardPassesPanel, HeatGhost};
+use self::sections::{ACTIVITY_TITLE, ActivityRates, ActivityYear, HardPassesPanel, HeatGhost};
 use crate::inbound::cards::card_row::{CardOverlaysHost, ShowRowArt, use_card_overlays};
 use crate::inbound::cards::otag::{OtagExamplesHost, use_otag_reveals};
 use crate::inbound::chrome::authed::use_authed;
@@ -24,15 +24,16 @@ use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_
 use crate::inbound::screens::home::hero::MyCountsPanel;
 use crate::inbound::shell::ScreenFrame;
 
-/// The screen while its fetch is out: the Activity section open on its
-/// loaded shape (the grid's height as empty space, three tags, a rule, the
-/// Totals title over four bars and labels), Card roles and Oracle tags as
-/// collapsed headers, then the Most skipped group as a header and ten rows.
+/// The screen while its fetch is out, in the loaded layout: the Activity
+/// section open on its loaded shape (the grid's height as empty space,
+/// three tags, a rule, the Totals title over four bars and labels) over the
+/// Most skipped group as a header and ten rows, then Card roles and Oracle
+/// tags as collapsed headers.
 #[component]
 fn ActivitySkeleton() -> Element {
     rsx! {
-        div { class: "web-activity-column",
-            div { class: "skeleton-stats web-activity-ghost",
+        div { class: "web-columns",
+            div { class: "web-column",
                 div { class: "skeleton-info-list",
                     div { class: "skeleton-card-header card-group-header-with-hint",
                         div { class: "skeleton-bar skeleton-section-label" }
@@ -65,23 +66,23 @@ fn ActivitySkeleton() -> Element {
                         }
                     }
                 }
-                div { class: "web-activity-rates",
-                    for i in 0..2 {
-                        div { key: "{i}", class: "skeleton-chart-box",
-                            div { class: "skeleton-bar skeleton-section-label" }
+                div { class: "maybeboard-list card-group row-enter",
+                    div { class: "card-group-header card-group-header-with-hint",
+                        div { class: "skeleton-bar skeleton-card-bar-header-wide" }
+                        div { class: "skeleton-bar skeleton-chip skeleton-info-button" }
+                    }
+                    for i in 0..10 {
+                        div { key: "{i}", class: "skeleton-card-row",
+                            div { class: "skeleton-bar skeleton-card-thumb" }
+                            div { class: "skeleton-bar skeleton-card-bar-row" }
                         }
                     }
                 }
             }
-            div { class: "maybeboard-list card-group row-enter",
-                div { class: "card-group-header card-group-header-with-hint",
-                    div { class: "skeleton-bar skeleton-card-bar-header-wide" }
-                    div { class: "skeleton-bar skeleton-chip skeleton-info-button" }
-                }
-                for i in 0..10 {
-                    div { key: "{i}", class: "skeleton-card-row",
-                        div { class: "skeleton-bar skeleton-card-thumb" }
-                        div { class: "skeleton-bar skeleton-card-bar-row" }
+            div { class: "web-column",
+                for i in 0..2 {
+                    div { key: "{i}", class: "skeleton-chart-box",
+                        div { class: "skeleton-bar skeleton-section-label" }
                     }
                 }
             }
@@ -123,8 +124,10 @@ pub fn Activity() -> Element {
     rsx! {
         ScreenFrame { title: "Activity", on_hint: move |()| hint_again.set(true),
             div { class: "screen-content",
-                div { class: "flex-col web-activity web-sections-open",
-                    MyCountsPanel { ready: !is_loading() }
+                div { class: "flex-col web-activity web-page web-sections-open",
+                    div { class: "web-hero",
+                        MyCountsPanel { ready: !is_loading() }
+                    }
                     if is_loading() {
                         ActivitySkeleton {}
                     } else if load_failed() {
@@ -132,9 +135,14 @@ pub fn Activity() -> Element {
                             span { class: "chip-note", "Could not load your activity" }
                         }
                     } else if let Some(found) = activity().filter(has_anything) {
-                        div { class: "web-activity-column",
-                            ActivitySections { activity: found.clone(), open_section }
-                            HardPassesPanel { passes: found.passes, expanded_card }
+                        div { class: "web-columns",
+                            div { class: "web-column",
+                                ActivityYear { activity: found.clone(), open_section }
+                                HardPassesPanel { passes: found.passes.clone(), expanded_card }
+                            }
+                            div { class: "web-column",
+                                ActivityRates { activity: found, open_section }
+                            }
                         }
                     } else {
                         div { class: "message-empty",

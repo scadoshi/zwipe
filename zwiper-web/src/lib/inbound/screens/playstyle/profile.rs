@@ -25,10 +25,11 @@ const TAGS_TITLE: &str = "Oracle tags";
 /// What the user builds: one accordion with the Color map open on entry,
 /// then Summary, Card roles (a role chart whose roles reveal their tags) and
 /// Oracle tags (the [`TagTable`]). The host wraps it in a
-/// `web-sections-open` box, so a wide window shows every section open.
+/// `web-sections-open` box, so a wide window shows every section open, and
+/// draws Summary as its hero there, so this one hides.
 #[component]
 pub fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
-    let summary = profile_summary(&profile);
+    let summary = profile.clone();
     let session: Signal<Option<Session>> = use_context();
     let seed = user_seed(session);
     let mut selected_role: Signal<Option<String>> = use_signal(|| None);
@@ -63,23 +64,8 @@ pub fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
                 ColorMapEmpty {}
             }
         }
-        CollapsibleSection { title: SUMMARY_TITLE, open_section,
-            div { class: "flex-col",
-                div { class: "settings-row",
-                    span { class: "settings-row-label", "Decks" }
-                    span { class: "info-row-value", "{summary.decks}" }
-                }
-                if let Some(value) = summary.color_set {
-                    SummaryIdentityRow { label: "Top colors", value }
-                }
-                if let Some(value) = summary.color {
-                    SummaryIdentityRow {
-                        label: "Top color",
-                        name: value.pips.first().map(Color::to_long_name),
-                        value,
-                    }
-                }
-            }
+        div { class: "web-playstyle-summary-inline",
+            ProfileSummary { profile: summary, open_section }
         }
         if !roles.is_empty() {
             CollapsibleSection {
@@ -101,6 +87,37 @@ pub fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
                 open_section,
                 header_accessory: rsx! { InfoButton { topic: HintTopic::SuggestionTagChart } },
                 TagTable { rows: tags }
+            }
+        }
+    }
+}
+
+/// The Summary section: the deck count, then the top color set and the top
+/// color with their deck counts. In the profile accordion below the
+/// breakpoint, and Playstyle's hero on a wide window.
+#[component]
+pub fn ProfileSummary(
+    profile: HttpBuilderProfile,
+    open_section: Signal<Option<String>>,
+) -> Element {
+    let summary = profile_summary(&profile);
+    rsx! {
+        CollapsibleSection { title: SUMMARY_TITLE, open_section,
+            div { class: "flex-col",
+                div { class: "settings-row",
+                    span { class: "settings-row-label", "Decks" }
+                    span { class: "info-row-value", "{summary.decks}" }
+                }
+                if let Some(value) = summary.color_set {
+                    SummaryIdentityRow { label: "Top colors", value }
+                }
+                if let Some(value) = summary.color {
+                    SummaryIdentityRow {
+                        label: "Top color",
+                        name: value.pips.first().map(Color::to_long_name),
+                        value,
+                    }
+                }
             }
         }
     }
@@ -202,7 +219,8 @@ fn TagTable(rows: Vec<TagRow>) -> Element {
 }
 
 /// The profile while it loads: the Color map section open on its ghost map,
-/// then three collapsed section ghosts.
+/// then three collapsed section ghosts, Summary's hidden on a wide window
+/// where the hero ghosts it.
 #[component]
 pub fn BuilderProfileSkeleton() -> Element {
     rsx! {
@@ -214,7 +232,12 @@ pub fn BuilderProfileSkeleton() -> Element {
                 }
                 ColorMapSkeleton {}
             }
-            for i in 0..3 {
+            div { class: "web-playstyle-summary-inline",
+                div { class: "skeleton-chart-box",
+                    div { class: "skeleton-bar skeleton-section-label" }
+                }
+            }
+            for i in 0..2 {
                 div { key: "{i}", class: "skeleton-chart-box",
                     div { class: "skeleton-bar skeleton-section-label" }
                 }

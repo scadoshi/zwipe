@@ -134,14 +134,11 @@ pub fn HeatGhost() -> Element {
     }
 }
 
-/// The screen's three sections: Activity (the heatmap over the Totals
-/// columns), Card roles and Oracle tags, the last two over one shared `Show`
-/// pick. Activity is left out with nothing to show; the other two stay,
-/// with a line saying what fills them. The heatmap mounts afresh each time
-/// its section opens, so its sweep plays in view. On a wide window every
-/// section is open.
+/// The Activity section: the year's heatmap over the Totals columns, left
+/// out with nothing to show. The heatmap mounts afresh each time the
+/// section opens, so its sweep plays in view. On a wide window it is open.
 #[component]
-pub fn ActivitySections(activity: HttpActivity, open_section: Signal<Option<String>>) -> Element {
+pub fn ActivityYear(activity: HttpActivity, open_section: Signal<Option<String>>) -> Element {
     let open = open_section().as_deref() == Some(ACTIVITY_TITLE);
     let mut opens = use_signal(|| 0u32);
     use_effect(use_reactive!(|open| {
@@ -150,10 +147,49 @@ pub fn ActivitySections(activity: HttpActivity, open_section: Signal<Option<Stri
             opens.set(next);
         }
     }));
-    let kind = use_signal(RateKind::default);
     let has_days = !activity.days.is_empty();
     let outcomes = activity.outcomes;
     let has_outcomes = activity::has_outcomes(&outcomes);
+    rsx! {
+        if has_days || has_outcomes {
+            div { class: "web-activity-year",
+                CollapsibleSection {
+                    title: ACTIVITY_TITLE,
+                    open_section,
+                    header_accessory: rsx! { InfoButton { topic: HintTopic::Activity } },
+                    div { class: "web-activity-year-body",
+                        if has_days {
+                            div { class: "web-activity-heat",
+                                for run in [opens()] {
+                                    ActivityHeatmap {
+                                        key: "{run}",
+                                        through: activity.through,
+                                        days: activity.days.clone(),
+                                    }
+                                }
+                            }
+                        }
+                        if has_outcomes {
+                            if has_days {
+                                hr { class: "card-row-rule card-row-rule-muted activity-rule" }
+                            }
+                            div { class: "activity-outcomes",
+                                BarChart { label: "Totals", bars: chart_bars(activity::outcome_bars(&outcomes)) }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Card roles and Oracle tags: a rate chart each over one shared `Show`
+/// pick. Both stay with nothing to show, with a line saying what fills
+/// them. On a wide window both are open.
+#[component]
+pub fn ActivityRates(activity: HttpActivity, open_section: Signal<Option<String>>) -> Element {
+    let kind = use_signal(RateKind::default);
     let swipe_tags = activity.tags.clone();
     let role_bars = chart_bars(activity::role_rate_bars(
         kind(),
@@ -186,36 +222,6 @@ pub fn ActivitySections(activity: HttpActivity, open_section: Signal<Option<Stri
         selected_tag.set(next);
     });
     rsx! {
-        if has_days || has_outcomes {
-            div { class: "web-activity-year",
-                CollapsibleSection {
-                    title: ACTIVITY_TITLE,
-                    open_section,
-                    header_accessory: rsx! { InfoButton { topic: HintTopic::Activity } },
-                    div { class: "web-activity-year-body",
-                        if has_days {
-                            div { class: "web-activity-heat",
-                                for run in [opens()] {
-                                    ActivityHeatmap {
-                                        key: "{run}",
-                                        through: activity.through,
-                                        days: activity.days.clone(),
-                                    }
-                                }
-                            }
-                        }
-                        if has_outcomes {
-                            if has_days {
-                                hr { class: "card-row-rule card-row-rule-muted activity-rule" }
-                            }
-                            div { class: "activity-outcomes",
-                                BarChart { label: "Totals", bars: chart_bars(activity::outcome_bars(&outcomes)) }
-                            }
-                        }
-                    }
-                }
-            }
-        }
         div { class: "web-activity-rates",
             CollapsibleSection {
                 title: ROLES_TITLE,

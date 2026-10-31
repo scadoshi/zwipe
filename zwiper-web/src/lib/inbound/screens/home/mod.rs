@@ -1,8 +1,9 @@
 //! Home: the counters, the color map and the featured flavor card.
 //!
-//! On a wide window the hero spans the top and the color map and flavor
-//! panels sit side by side under it; the app's action bar (`Decks`,
-//! `Account`, `Config`) goes, since the sidebar holds the same three. Below
+//! On a wide window the hero sits centered at the top of zite's page and
+//! the color map and flavor panels share the two columns under it; the
+//! app's action bar (`Decks`, `Account`, `Config`) goes, since the sidebar
+//! holds the same three. Below
 //! the breakpoint it is the app's stack. The flavor card's `Buy` is a link
 //! per retailer, as zite's is, in place of the app's dialog.
 
@@ -137,12 +138,16 @@ pub fn Home() -> Element {
     rsx! {
         ScreenFrame { title: "Home",
             div { class: "screen-content home-content web-home",
-                HomeHeroScoped {}
-                div { class: "web-home-pair",
-                    HomePlayStyle {}
-                    FlavorPanel {
-                        flavor: flavor(),
-                        on_image: move |sd: ScryfallData| preview.set(Some((sd, 0))),
+                div { class: "web-page web-home-page",
+                    div { class: "web-hero", HomeHeroScoped {} }
+                    div { class: "web-columns",
+                        div { class: "web-column", HomePlayStyle {} }
+                        div { class: "web-column",
+                            FlavorPanel {
+                                flavor: flavor(),
+                                on_image: move |sd: ScryfallData| preview.set(Some((sd, 0))),
+                            }
+                        }
                     }
                 }
             }

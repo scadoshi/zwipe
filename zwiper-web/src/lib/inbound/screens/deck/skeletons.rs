@@ -120,7 +120,7 @@ pub fn EditDeckSkeleton() -> Element {
 
 /// A bordered list ghost: its title bar, then `rows` label and value bars.
 #[component]
-fn SkeletonInfoList(rows: usize) -> Element {
+pub fn SkeletonInfoList(rows: usize) -> Element {
     rsx! {
         div { class: "skeleton-info-list",
             div { class: "skeleton-card-header",
