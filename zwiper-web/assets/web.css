@@ -187,6 +187,61 @@ body {
     }
 }
 
+/* ---- Privacy policy ---- */
+
+.web-privacy {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+
+.web-privacy-contents {
+    display: none;
+}
+
+@media (min-width: 900px) {
+    .web-privacy {
+        align-items: flex-start;
+        gap: 2rem;
+        padding-top: 1rem;
+    }
+
+    .web-privacy-contents {
+        position: sticky;
+        top: 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.15rem;
+        flex: 0 0 14rem;
+    }
+
+    .web-privacy-contents-link {
+        padding: 0.35rem 0.6rem;
+        border: 1px solid transparent;
+        border-radius: 0.375rem;
+        background: none;
+        color: var(--text-secondary, var(--text-primary));
+        font: inherit;
+        font-size: 0.85rem;
+        text-align: left;
+        cursor: pointer;
+    }
+
+    .web-privacy-contents-link:hover {
+        border-color: var(--border-secondary);
+        color: var(--accent-primary);
+    }
+
+    .web-privacy .privacy-content {
+        width: auto;
+        flex: 1 1 40rem;
+    }
+
+    .web-privacy .privacy-section {
+        scroll-margin-top: 1rem;
+    }
+}
+
 /* ---- Sheets on a wide window ---- */
 
 @media (min-width: 900px) {

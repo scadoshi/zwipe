@@ -5,6 +5,7 @@ pub mod account;
 pub mod counts;
 pub mod login;
 pub mod preferences;
+pub mod privacy;
 pub mod session;
 pub mod support;
 pub mod theme;

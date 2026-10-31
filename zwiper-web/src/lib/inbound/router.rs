@@ -10,9 +10,9 @@ use crate::inbound::screens::auth::register::Register;
 use crate::inbound::screens::config::Config;
 use crate::inbound::screens::placeholders::{
     Activity, AddDeckCard, Changelog, CommanderMaybeboard, CreateDeck, DeckList, EditDeck,
-    ExportDeck, Home, ImportDeck, NotFound, Playstyle, PrivacyPolicy, RemoveDeckCard, ViewDeck,
-    ViewDeckCard,
+    ExportDeck, Home, ImportDeck, NotFound, Playstyle, RemoveDeckCard, ViewDeck, ViewDeckCard,
 };
+use crate::inbound::screens::privacy_policy::PrivacyPolicy;
 use crate::inbound::session::auth_gate::AuthGate;
 use crate::inbound::shell::{PublicFrame, Shell};
 
