@@ -118,7 +118,7 @@ fn the_maybeboard_opens_asking_for_everything_once() {
     let hint = harness.app.shared.hint.as_ref().unwrap();
     assert_eq!(hint.content.title, "Commander maybeboard");
     assert_eq!(
-        hint.content.text(),
+        hint::text(&hint.content),
         "Commanders you save land here\n• Swipe up while picking a commander saves it here\n• Swipe deals commanders: right starts a deck, up saves one\n• Quick add searches by name\n• Create deck starts a deck with that commander\n• Remove takes it off the list"
     );
 }
@@ -129,7 +129,7 @@ fn shift_h_shows_the_hint_again() {
     harness.press(KeyCode::Char('H'));
     let hint = harness.app.shared.hint.as_ref().unwrap();
     assert_eq!(hint.content.title, TITLE);
-    assert_eq!(hint.content.text(), HINT);
+    assert_eq!(hint::text(&hint.content), HINT);
 }
 
 #[test]

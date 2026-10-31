@@ -1,24 +1,24 @@
 //! Hint dialogs: the app's `?` topics, opened on demand, and its one-time hints, shown the first time a user reaches something and never again once the server has marked them shown.
 //!
+//! The copy is zwipe-ui's, as typed spans: [`HintTopic`] for the topics, [`one_time`] for the one-time hints. This module draws it, each [`Role`] in its palette color.
+//!
 //! - [`topic`] opens a [`HintTopic`], such as `Email` beside the email row.
 //! - [`once`] opens the one-time hint stored under a key the first time only: it checks the user's `hints_shown`, opens the dialog, marks the hint locally so it cannot show twice, and asks the server to mark it with `mark_hint_shown`. The user the server answers with replaces the shared one and is saved with the session.
 //! - [`reopen`] opens a one-time hint again on demand, as a header `?` does, without recording it.
 //!
 //! One dialog is up at a time, and it takes every key until it closes: Esc, Enter or Space close it, and j/k scroll a long one.
 
-pub(crate) mod keys;
-pub(crate) mod markup;
-pub(crate) mod topics;
-
 use crossterm::event::KeyCode;
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout};
-use ratatui::style::Stylize;
-use ratatui::text::Line;
+use ratatui::style::{Style, Stylize};
+use ratatui::text::{self, Line};
 use ratatui::widgets::{Paragraph, Wrap};
 use zwipe_core::domain::user::User;
+use zwipe_core::domain::user::hints::OneTimeHint;
+pub(crate) use zwipe_ui::hint::HintTopic;
+use zwipe_ui::hint::{Block, GOT_IT, HintContent, KeyIcon, Role, Span, one_time};
 
-pub(crate) use self::topics::HintTopic;
 use super::{measure, panel};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Context;
@@ -27,31 +27,76 @@ use crate::inbound::screens::Request;
 /// The dialog is at most this wide inside its panel, in cells.
 const WIDTH: u16 = 56;
 
-/// The dismiss button every hint ends with.
-const GOT_IT: &str = "Got it";
+/// Starts each bullet.
+const BULLET: &str = "• ";
 
-/// What a hint dialog says: its title, and its blocks in hint markup.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct HintContent {
-    pub(crate) title: String,
-    pub(crate) blocks: Vec<String>,
+/// The palette color a key chip or an emphasized word in `role` takes.
+fn role_style(palette: &Palette, role: Role) -> Style {
+    let swatch = |i: usize| palette.swatches.get(i).copied().unwrap_or(palette.accent);
+    match role {
+        Role::Palette1 => swatch(0),
+        Role::Palette2 => swatch(1),
+        Role::Palette3 => swatch(2),
+        Role::Palette4 => swatch(3),
+        Role::Palette5 => swatch(4),
+        Role::Palette6 => swatch(5),
+        Role::Primary => palette.accent,
+        Role::Secondary => palette.secondary,
+        Role::Tertiary => palette.tertiary,
+        Role::Success => palette.add,
+        Role::Error => palette.error,
+        Role::Warning => palette.warning,
+    }
 }
 
-#[cfg(test)]
-impl HintContent {
-    /// The blocks as they read, one per line, styling dropped and runs of spaces closed up.
-    pub(crate) fn text(&self) -> String {
-        self.blocks
-            .iter()
-            .map(|block| {
-                markup::plain(block)
-                    .split_whitespace()
-                    .collect::<Vec<_>>()
-                    .join(" ")
-            })
-            .collect::<Vec<_>>()
-            .join("\n")
+/// The glyph a key chip's icon draws as.
+fn icon_glyph(icon: KeyIcon) -> &'static str {
+    match icon {
+        KeyIcon::Light => "☀",
+        KeyIcon::Dark => "☾",
     }
+}
+
+/// One block of hint copy as a line of spans: a bullet in the muted color, key chips reversed with a space each side, emphasized words bold in their color.
+pub(crate) fn line(palette: &Palette, block: &Block) -> Line<'static> {
+    let mut spans: Vec<text::Span<'static>> = Vec::new();
+    if matches!(block, Block::Bullet(_)) {
+        spans.push(text::Span::styled(BULLET, palette.muted));
+    }
+    for span in block.spans() {
+        spans.push(match span {
+            Span::Text(text) => text::Span::raw(text.clone()),
+            Span::Key { label, role, icon } => {
+                let label = match icon {
+                    Some(icon) => format!(" {} {label} ", icon_glyph(*icon)),
+                    None => format!(" {label} "),
+                };
+                text::Span::styled(label, role_style(palette, *role).reversed().bold())
+            }
+            Span::Emph { text, role } => {
+                text::Span::styled(text.clone(), role_style(palette, *role).bold())
+            }
+        });
+    }
+    Line::from(spans)
+}
+
+/// The dialog as it reads, one block per line, styling dropped and runs of spaces closed up.
+#[cfg(test)]
+pub(crate) fn text(content: &HintContent) -> String {
+    let palette = Palette::terminal();
+    content
+        .blocks
+        .iter()
+        .map(|block| {
+            line(&palette, block)
+                .to_string()
+                .split_whitespace()
+                .collect::<Vec<_>>()
+                .join(" ")
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 
 /// An open hint dialog and how far its body is scrolled.
@@ -82,7 +127,7 @@ impl HintDialog {
             .content
             .blocks
             .iter()
-            .map(|block| markup::line(palette, block))
+            .map(|block| line(palette, block))
             .collect();
         let body = Paragraph::new(lines).wrap(Wrap { trim: false });
         let width = WIDTH.min(f.area().width.saturating_sub(4));
@@ -130,9 +175,14 @@ pub(crate) fn topic(cx: &mut Context<'_>, topic: HintTopic) {
     open(cx, topic.content());
 }
 
+/// The app's copy for the one-time hint stored under `key`, or `None` for a key with no fixed copy.
+fn content_for(key: &str) -> Option<HintContent> {
+    OneTimeHint::from_key(key).and_then(one_time::content_for)
+}
+
 /// Opens the one-time hint `key` the first time only, with the app's copy for it. Returns whether it opened; a key with no copy of its own never does.
 pub(crate) fn once(cx: &mut Context<'_>, key: &str) -> bool {
-    keys::for_key(key).is_some_and(|content| once_with(cx, key, content))
+    content_for(key).is_some_and(|content| once_with(cx, key, content))
 }
 
 /// Opens `content` as the one-time hint `key`: when it is due and no other hint is up, opens it, marks it shown on the user at once, and asks the server to remember. Returns whether it opened.
@@ -150,21 +200,9 @@ pub(crate) fn once_with(cx: &mut Context<'_>, key: &str, content: HintContent) -
 
 /// Opens the one-time hint `key` again, as a header `?` does, without recording it.
 pub(crate) fn reopen(cx: &mut Context<'_>, key: &str) {
-    if let Some(content) = keys::for_key(key) {
+    if let Some(content) = content_for(key) {
         open(cx, content);
     }
-}
-
-/// Shows a one-time hint with a plain body, for copy that is not in the app's table. Each line of `body` is a block of its own.
-pub(crate) fn show(cx: &mut Context<'_>, key: &str, title: &str, body: &str) -> bool {
-    once_with(
-        cx,
-        key,
-        HintContent {
-            title: title.to_owned(),
-            blocks: body.lines().map(str::to_owned).collect(),
-        },
-    )
 }
 
 /// Whether `code` closes an open hint. Every other key is swallowed while it is up.
@@ -174,10 +212,10 @@ pub(crate) fn dismisses(code: KeyCode) -> bool {
 
 #[cfg(test)]
 mod tests {
+    use ratatui::style::Modifier;
     use zwipe_core::domain::user::hints::HINT_PROFILE;
 
     use super::*;
-    use crate::domain::theme::Palette;
     use crate::inbound::app::App;
     use crate::test_support::{render, screen_text, user};
 
@@ -211,7 +249,11 @@ mod tests {
         let mut app = App::new(Palette::terminal());
         let mut cx = Context::new(&mut app.shared);
         cx.shared.user = Some(user(true));
-        assert!(show(&mut cx, "swipe", "Swiping", "Right adds."));
+        let content = HintContent {
+            title: "Swiping".to_owned(),
+            blocks: vec![Block::Line(vec![Span::Text("Right adds.".to_owned())])],
+        };
+        assert!(once_with(&mut cx, "swipe", content));
         topic(&mut cx, HintTopic::Email);
         assert!(screen_text(&app).contains("Where password resets and verification go"));
     }
@@ -235,5 +277,35 @@ mod tests {
         app.shared.hint = Some(HintDialog::new(HintTopic::RoleRates.content()));
         render(&app, 20, 6);
         render(&app, 1, 1);
+    }
+
+    #[test]
+    fn bullets_chips_and_colored_words_take_their_roles_colors() {
+        let palette = Palette::for_account("gruvbox", true);
+        let block = Block::Bullet(vec![
+            Span::Key {
+                label: "Decks".to_owned(),
+                role: Role::Palette2,
+                icon: None,
+            },
+            Span::Text(" holds your ".to_owned()),
+            Span::Emph {
+                text: "decks".to_owned(),
+                role: Role::Warning,
+            },
+            Span::Text(" and ".to_owned()),
+            Span::Key {
+                label: "dark".to_owned(),
+                role: Role::Error,
+                icon: Some(KeyIcon::Dark),
+            },
+        ]);
+        let line = line(&palette, &block);
+        assert_eq!(line.to_string(), "•  Decks  holds your decks and  ☾ dark ");
+        let chip = &line.spans[1];
+        assert_eq!(chip.style.fg, palette.swatches[1].fg);
+        assert!(chip.style.add_modifier.contains(Modifier::REVERSED));
+        assert_eq!(line.spans[3].style.fg, palette.warning.fg);
+        assert_eq!(line.spans[5].style.fg, palette.error.fg);
     }
 }

@@ -55,7 +55,7 @@ fn seen_user() -> zwipe_core::domain::user::User {
     me.hints_shown
         .insert(HINT_SUGGESTED_COMMANDERS.to_owned(), true);
     me.hints_shown
-        .insert(hint::keys::SWIPE_SELECT.to_owned(), true);
+        .insert(OneTimeHint::SwipeSelect.key().to_owned(), true);
     me
 }
 
@@ -160,12 +160,12 @@ fn s_deals_the_held_list_under_the_show_rows_identity() {
     assert_eq!(
         harness.pending(),
         [screens::Request::MarkHintShown(
-            hint::keys::SWIPE_SELECT.to_owned()
+            OneTimeHint::SwipeSelect.key().to_owned()
         )]
     );
     let hint = harness.app.shared.hint.as_ref().unwrap();
     assert_eq!(hint.content.title, "Suggested commanders");
-    assert_eq!(hint.content.text(), SUGGESTED_HINT);
+    assert_eq!(hint::text(&hint.content), SUGGESTED_HINT);
     let text = screen_text(&harness.app);
     assert!(text.contains("Suggested commanders"));
 }
@@ -363,7 +363,10 @@ fn question_mark_shows_each_modes_hint() {
     harness.press(KeyCode::Char('?'));
     let hint = harness.app.shared.hint.as_ref().unwrap();
     assert_eq!(
-        (hint.content.title.as_str(), hint.content.text().as_str()),
+        (
+            hint.content.title.as_str(),
+            hint::text(&hint.content).as_str()
+        ),
         (SUGGESTED_TITLE, SUGGESTED_HINT)
     );
     harness.press(KeyCode::Enter);
@@ -371,7 +374,10 @@ fn question_mark_shows_each_modes_hint() {
     harness.press(KeyCode::Char('?'));
     let hint = harness.app.shared.hint.as_ref().unwrap();
     assert_eq!(
-        (hint.content.title.as_str(), hint.content.text().as_str()),
+        (
+            hint.content.title.as_str(),
+            hint::text(&hint.content).as_str()
+        ),
         (COMMANDER_TITLE, COMMANDER_HINT)
     );
 }

@@ -6,8 +6,10 @@ use crossterm::event::KeyCode;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::deck::Format;
+use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_ui::deck::form::{self, Slot};
 use zwipe_ui::filter::draft::SheetConfig;
+use zwipe_ui::hint::{Block, HintContent, SwipeSelectMode, one_time};
 use zwipe_ui::stack::Direction;
 use zwipe_ui::{filter, timing};
 
@@ -19,9 +21,6 @@ use crate::inbound::widgets::card_motion::CardMotion;
 use crate::inbound::widgets::hint;
 use crate::inbound::widgets::info::InfoPopup;
 use crate::inbound::widgets::toast::{self, ToastKind};
-
-/// The key the server stores the swipe picker's hint under.
-pub(crate) const HINT_KEY: &str = "swipe_select";
 
 /// A new page is fetched once this many cards or fewer are left.
 const PREFETCH_AT: usize = 5;
@@ -191,12 +190,9 @@ impl SwipePicker {
         self.fetch_more(cx);
     }
 
-    /// The hint's bullets, worded for this slot.
-    pub(crate) fn hint_body(&self) -> String {
-        let noun = self.noun();
-        format!(
-            "• Swipe right picks that {noun}\n• Swipe left skips it\n• Swipe up saves it to your commander maybeboard\n• Swipe down undoes the last swipe\nMost-played first. Filter narrows by color or anything else"
-        )
+    /// The app's Swipe select hint, worded for this slot.
+    pub(crate) fn hint(&self) -> HintContent {
+        one_time::swipe_select(SwipeSelectMode::Picking(self.noun()))
     }
 }
 
@@ -204,9 +200,9 @@ impl SwipePicker {
 pub(crate) fn open(form: &mut DeckForm, slot: Slot, cx: &mut Context<'_>) {
     let mut picker = SwipePicker::new(form, slot);
     picker.fetch_more(cx);
-    let body = picker.hint_body();
+    let content = picker.hint();
     form.overlay = Some(Overlay::Swipe(Box::new(picker)));
-    hint::show(cx, HINT_KEY, "Swipe select", &body);
+    hint::once_with(cx, OneTimeHint::SwipeSelect.key(), content);
 }
 
 /// The noun with its first letter capitalized, for "Commander selected".
@@ -240,14 +236,9 @@ pub(crate) fn handle(
     match code {
         KeyCode::Esc => return None,
         KeyCode::F(6) => {
-            return Some(Overlay::Info(InfoPopup::new(
-                "Swipe select",
-                &picker
-                    .hint_body()
-                    .lines()
-                    .map(|l| l.trim_start_matches("• "))
-                    .collect::<Vec<_>>(),
-            )));
+            let lines: Vec<String> = picker.hint().blocks.iter().map(Block::plain).collect();
+            let lines: Vec<&str> = lines.iter().map(String::as_str).collect();
+            return Some(Overlay::Info(InfoPopup::new("Swipe select", &lines)));
         }
         KeyCode::F(5) => {
             picker.refresh(cx);

@@ -19,8 +19,10 @@ use zwipe_core::domain::card::scryfall_data::colors;
 use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::deck::format::Format;
+use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_core::http::contracts::suggestions::HttpCommanderSuggestion;
 use zwipe_ui::filter::draft::SheetConfig;
+use zwipe_ui::hint::{HintContent, SwipeSelectMode, one_time};
 use zwipe_ui::stack::Direction;
 use zwipe_ui::{filter, playstyle};
 
@@ -31,7 +33,7 @@ use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;
 use crate::inbound::widgets::card_motion::CardMotion;
-use crate::inbound::widgets::hint::{self, HintContent};
+use crate::inbound::widgets::hint;
 use crate::inbound::widgets::toast::{self, ToastKind};
 use crate::outbound::account::Account;
 
@@ -216,11 +218,11 @@ impl CommanderSwipeView {
 
     /// The app's `swipe_select` hint for this mode: the suggested deal, or picking a commander.
     pub(crate) fn hint(&self) -> HintContent {
-        hint::keys::swipe_select(
-            matches!(self.mode, Mode::Suggested(_)),
-            "commander",
-            /* has_filter */ true,
-        )
+        let mode = match self.mode {
+            Mode::Suggested(_) => SwipeSelectMode::Suggested { has_filter: true },
+            Mode::Commander(_) => SwipeSelectMode::Picking("commander"),
+        };
+        one_time::swipe_select(mode)
     }
 
     /// The card on top.
@@ -546,7 +548,7 @@ pub(crate) fn open(cx: &mut Context<'_>, deal: Deal, limit: DeckLimit) {
     }
     let content = view.hint();
     cx.push(Screen::CommanderSwipe(Box::new(view)));
-    hint::once_with(cx, hint::keys::SWIPE_SELECT, content);
+    hint::once_with(cx, OneTimeHint::SwipeSelect.key(), content);
 }
 
 /// Shows the hint again, for `?`.

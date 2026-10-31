@@ -157,7 +157,7 @@ fn v_on_home_opens_activity_and_asks_for_everything_once() {
     let hint = harness.app.shared.hint.as_ref().unwrap();
     assert_eq!(hint.content.title, "Activity");
     assert_eq!(
-        hint.content.text(),
+        hint::text(&hint.content),
         "How you pick, read from your swipes\n• Activity maps your swipes and searches over the last year, and what the cards dealt to your decks came to\n• Card roles and Oracle tags show how often you add, skip, save or remove each one\n• Most skipped lists cards you skip that other players usually keep\nEach section's ? explains it"
     );
 }
@@ -423,7 +423,12 @@ fn question_mark_shows_the_open_sections_topic_and_h_the_hint() {
     harness.press(KeyCode::Esc);
     harness.press(KeyCode::Char('H'));
     assert_eq!(
-        harness.app.shared.hint.as_ref().map(|h| h.content.text()),
+        harness
+            .app
+            .shared
+            .hint
+            .as_ref()
+            .map(|h| hint::text(&h.content)),
         Some(HINT.to_owned())
     );
 }

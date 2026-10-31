@@ -67,7 +67,7 @@ fn opening_asks_for_the_first_page_and_shows_the_hint_once() {
     let hint = harness.app.shared.hint.as_ref().unwrap();
     assert_eq!(hint.content.title, "Example cards");
     assert_eq!(
-        hint.content.text(),
+        hint::text(&hint.content),
         "• Swipe left for the next card\n• Swipe down to go back one"
     );
 }

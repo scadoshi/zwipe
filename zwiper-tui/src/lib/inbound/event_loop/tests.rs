@@ -6,6 +6,7 @@ use crossterm::event::KeyCode;
 use zwipe_core::http::contracts::changelog::HttpChangelog;
 use zwipe_core::http::contracts::metrics::AnonymousEventKind;
 use zwipe_ui::changelog::ChangelogCache;
+use zwipe_ui::hint::{Block, HintContent, Span};
 
 use super::Flow;
 use super::harness::Harness;
@@ -124,7 +125,16 @@ fn an_open_hint_takes_every_key_until_it_closes() {
     let mut harness = Harness::on(Screen::Decks(Box::default()));
     harness.app.shared.user = Some(user(true));
     harness.open(|cx| {
-        hint::show(cx, "swipe", "Swiping", "Right adds the card.");
+        hint::once_with(
+            cx,
+            "swipe",
+            HintContent {
+                title: "Swiping".to_owned(),
+                blocks: vec![Block::Line(vec![Span::Text(
+                    "Right adds the card.".to_owned(),
+                )])],
+            },
+        );
     });
     assert_eq!(
         harness.pending(),

@@ -92,11 +92,7 @@ fn opening_fetches_the_catalog_once_and_shows_the_hint_the_first_time() {
     );
     let hint = harness.app.shared.hint.as_ref().unwrap();
     assert_eq!(hint.content.title, "Oracle tags");
-    assert!(
-        hint.content
-            .text()
-            .contains("• Use adds the tag where you came from")
-    );
+    assert!(hint::text(&hint.content).contains("• Use adds the tag where you came from"));
 
     harness.app.shared.hint = None;
     harness.press(KeyCode::Esc);

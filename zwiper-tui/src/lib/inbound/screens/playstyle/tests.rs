@@ -238,7 +238,7 @@ fn p_on_home_opens_playstyle_and_asks_for_everything_once() {
     let hint = harness.app.shared.hint.as_ref().unwrap();
     assert_eq!(hint.content.title, "Playstyle");
     assert_eq!(
-        hint.content.text(),
+        hint::text(&hint.content),
         "Your colors, card roles and top oracle tags, read from every deck you own in any format\n• Create deck begins a deck with that commander\n• Maybeboard saves it to your commander maybeboard\n• Remove hides it for a week and pulls the next one up\n• Swipe deals the same ranking: right starts a deck, up saves, left skips it\n• Show narrows the list to one color identity\nBelow them, your top 10 commanders ranked against all your decks, best fit first. Swipe keeps going down the same ranking"
     );
 }
@@ -662,7 +662,12 @@ fn question_mark_shows_each_topic_and_h_the_hint() {
     assert_eq!(view(&harness).overlay, None, "Summary has no ?");
     harness.press(KeyCode::Char('H'));
     assert_eq!(
-        harness.app.shared.hint.as_ref().map(|h| h.content.text()),
+        harness
+            .app
+            .shared
+            .hint
+            .as_ref()
+            .map(|h| hint::text(&h.content)),
         Some(HINT.to_owned())
     );
 }

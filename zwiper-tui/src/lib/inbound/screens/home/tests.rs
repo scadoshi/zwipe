@@ -226,7 +226,7 @@ fn the_welcome_hint_shows_on_the_first_home() {
     harness.open(open);
     let hint = harness.app.shared.hint.as_ref().unwrap();
     assert_eq!(hint.content.title, "Welcome to Zwipe");
-    assert!(hint.content.text().contains("Verify your email in Account"));
+    assert!(hint::text(&hint.content).contains("Verify your email in Account"));
     assert!(harness.pending().contains(&screens::Request::MarkHintShown(
         HINT_FIRST_LOGIN.to_owned()
     )));
