@@ -16,7 +16,6 @@ use zwipe_core::http::contracts::suggestions::{HttpActivity, HttpHardPass};
 
 use super::{Screen, failure, home};
 use crate::domain::activity::{self, Bar, HeatLayout, RateKind, counted};
-use crate::domain::count_up;
 use crate::domain::home::Figures;
 use crate::domain::theme::Palette;
 use crate::inbound::app::{Context, Shared};
@@ -24,11 +23,11 @@ use crate::inbound::nav::Nav;
 use crate::inbound::screens::{self, oracle_tags};
 use crate::inbound::widgets::card_rows::{CardRow, CardRows};
 use crate::inbound::widgets::collapsible::Accordion;
-use crate::inbound::widgets::entrance;
 use crate::inbound::widgets::hint::{self, HintDialog};
 use crate::inbound::widgets::info::InfoPopup;
 use crate::inbound::widgets::otag::RoleTags;
 use crate::inbound::widgets::toast::ToastKind;
+use crate::inbound::widgets::{entrance, figures};
 use crate::outbound::account::Account;
 
 /// The screen's title and its hint's.
@@ -467,19 +466,19 @@ impl ActivityView {
         let rolling = self
             .figures_arrived
             .get()
-            .is_none_or(|t| t.elapsed() < count_up::ROLL);
+            .is_none_or(|t| t.elapsed() < figures::ROLL);
         let sweeping = self.loaded().is_some_and(|l| {
             self.is_open(Section::Activity)
                 && self.sweep_elapsed() < Self::sweep_length(l.heat.columns)
         });
         let reading = self
             .picked_at
-            .is_some_and(|t| t.elapsed() < HEAT_PICK.saturating_add(entrance::ENTER));
+            .is_some_and(|t| t.elapsed() < HEAT_PICK.saturating_add(entrance::DURATION));
         rolling
             || matches!(self.load, Load::Loading)
             || sweeping
             || reading
-            || self.readout_age() < entrance::ENTER
+            || self.readout_age() < entrance::DURATION
     }
 
     /// The counters to show: none until the payload's fetch finishes, then the user's own if cached.

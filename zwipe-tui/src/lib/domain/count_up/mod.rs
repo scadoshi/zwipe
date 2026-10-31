@@ -1,97 +1,29 @@
-//! The rolling figure, ported from orangui's `CountUp`: random digits while a figure waits, then a roll that narrows onto its value over a second.
-//!
-//! Each frame is a pure function of the time since the figure appeared or arrived, so a screen only keeps two instants and redraws on its tick.
+//! Rolling counters, ported from orangui's `CountUp`: a figure still loading rolls random four-digit numbers, and once its value arrives it lands on it over a second, the digits wild early and still at the end. Figures print in full under ten thousand and as `28.0k`, `1.2m` or `2.5b` above.
 
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 
-/// How long a figure takes to land on its value once it arrives.
-pub(crate) const ROLL: Duration = Duration::from_millis(1000);
+/// The time between frames, from orangui's `COUNT_TICK_MS`.
+pub(crate) const TICK: Duration = Duration::from_millis(16);
 
-/// The roll's frame length, as in orangui.
-const TICK_MS: u128 = 16;
+/// Frames in a landing: orangui's `COUNT_MS` of 1000 in ticks, `ceil(1000 / 16)`.
+pub(crate) const FRAMES: u64 = 63;
 
-/// Frames in a full roll: `ceil(1000 / 16)`.
-const FRAMES: u128 = 63;
-
-/// Shown before the first frame: four figure spaces, so the width holds still.
+/// Four figure spaces: what a counter shows before its first frame.
 pub(crate) const BLANK: &str = "\u{2007}\u{2007}\u{2007}\u{2007}";
 
-/// Where one figure is in its roll.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum Frame {
-    /// Nothing honest to print yet.
-    Blank,
-    /// A number to print, rolling or landed.
-    Number(u64),
-}
+/// Hands each counter its own seed, so neighbors waiting side by side do not roll in step.
+static SEEDS: AtomicU64 = AtomicU64::new(1);
 
-/// The figure at `since_open` after it appeared and, once it has a value, `since_arrival` after that value arrived. `seed` keeps neighboring figures out of step.
-pub(crate) fn frame(
-    value: Option<u64>,
-    since_open: Duration,
-    since_arrival: Duration,
-    seed: u64,
-) -> Frame {
-    let Some(value) = value else {
-        let tick = since_open.as_millis() / TICK_MS;
-        if tick == 0 {
-            return Frame::Blank;
-        }
-        let tick = u64::try_from(tick).unwrap_or(u64::MAX);
-        return Frame::Number(waiting(noise(seed.wrapping_add(tick))));
-    };
-    let frame = (since_arrival.as_millis() / TICK_MS).min(FRAMES);
-    if frame >= FRAMES {
-        return Frame::Number(value);
-    }
-    let fraction = to_f64(frame) / to_f64(FRAMES);
-    Frame::Number(rolling(value, fraction, u64::try_from(frame).unwrap_or(0)))
-}
-
-#[expect(
-    clippy::as_conversions,
-    clippy::cast_precision_loss,
-    reason = "frame counts are at most 63, exact in f64"
-)]
-fn to_f64(n: u128) -> f64 {
-    n as f64
-}
-
-/// Digits for a figure that has not arrived: four of them, so the width holds still while it waits.
-fn waiting(seed: u64) -> u64 {
-    1_000_u64.saturating_add(seed % 9_000)
-}
-
-/// `value` with a random offset that shrinks to nothing as `fraction` reaches 1, held inside the digit count `value` prints at.
-#[expect(
-    clippy::as_conversions,
-    clippy::cast_precision_loss,
-    clippy::cast_possible_truncation,
-    clippy::cast_sign_loss,
-    reason = "counts sit far below 2^53 so u64 to f64 is exact, and the roll is clamped at zero and rounded before going back to u64"
-)]
-fn rolling(value: u64, fraction: f64, seed: u64) -> u64 {
-    let fraction = fraction.clamp(0.0, 1.0);
-    if fraction >= 1.0 || value == 0 {
-        return value;
-    }
-    let spread = (1.0 - fraction).powi(2);
-    let swing = (noise(seed) % 2001) as f64 / 1000.0 - 1.0;
-    let rolled = (value as f64) + (value as f64) * spread * swing;
-    (rolled.max(0.0).round() as u64).min(digit_ceiling(value))
-}
-
-/// The largest number of the same digit count: 72 gives 99, 3,960 gives 9,999.
-fn digit_ceiling(value: u64) -> u64 {
-    let mut ceiling = 9;
-    while ceiling < value {
-        ceiling = ceiling.saturating_mul(10).saturating_add(9);
-    }
-    ceiling
+/// A fresh seed for a new counter: the next count times 2654435761, as orangui's.
+pub(crate) fn next_seed() -> u64 {
+    SEEDS
+        .fetch_add(1, Ordering::Relaxed)
+        .wrapping_mul(2_654_435_761)
 }
 
 /// One xorshift round, enough randomness for digits that flicker.
-fn noise(seed: u64) -> u64 {
+pub(crate) fn noise(seed: u64) -> u64 {
     let mut state = seed.wrapping_mul(0x9e37_79b9_7f4a_7c15) | 1;
     state ^= state << 13;
     state ^= state >> 7;
@@ -99,32 +31,65 @@ fn noise(seed: u64) -> u64 {
     state
 }
 
+/// The number a waiting counter with `seed` shows at `tick`: always four digits.
+pub(crate) fn waiting(seed: u64, tick: u64) -> u64 {
+    1_000_u64.saturating_add(noise(seed.wrapping_add(tick)) % 9_000)
+}
+
+/// What a landing on `value` shows at `frame` of [`FRAMES`]: a random swing that narrows to nothing, never wider than `value`'s digits. The swing seeds on the frame alone, as orangui's does.
+#[expect(
+    clippy::as_conversions,
+    clippy::cast_precision_loss,
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    reason = "counts sit far below 2^53 so u64 to f64 is exact, and the roll is clamped at zero and rounded before going back to u64"
+)]
+pub(crate) fn landing(value: u64, frame: u64) -> u64 {
+    if frame >= FRAMES || value == 0 {
+        return value;
+    }
+    let fraction = frame as f64 / FRAMES as f64;
+    let spread = (1.0 - fraction).powi(2);
+    let swing = (noise(frame) % 2001) as f64 / 1000.0 - 1.0;
+    let rolled = (value as f64) + (value as f64) * spread * swing;
+    (rolled.max(0.0).round() as u64).min(digit_ceiling(value))
+}
+
+/// The largest number with as many digits as `value`: 72 gives 99, 3,960 gives 9,999.
+pub(crate) fn digit_ceiling(value: u64) -> u64 {
+    let mut ceiling = 9_u64;
+    while ceiling < value {
+        ceiling = ceiling.saturating_mul(10).saturating_add(9);
+    }
+    ceiling
+}
+
 /// `12345` as `12,345`.
 pub(crate) fn with_separators(n: u64) -> String {
     let digits = n.to_string();
     let mut out = String::with_capacity(digits.len().saturating_add(digits.len() / 3));
-    for (i, ch) in digits.chars().rev().enumerate() {
-        if i > 0 && i % 3 == 0 {
+    for (i, c) in digits.chars().enumerate() {
+        if i > 0 && digits.len().saturating_sub(i) % 3 == 0 {
             out.push(',');
         }
-        out.push(ch);
+        out.push(c);
     }
-    out.chars().rev().collect()
+    out
 }
 
-/// `n` to one decimal with a magnitude letter from ten thousand up (`28.0k`, `1.2m`, `3.4b`), truncated so a figure never reads past what it is. Under ten thousand, [`with_separators`].
-pub(crate) fn short(n: u64) -> String {
+/// `n` in full with separators under ten thousand, else truncated to one decimal with `k`, `m` or `b`.
+pub(crate) fn compact(n: u64) -> String {
     const STEPS: [(u64, char); 3] = [(1_000_000_000, 'b'), (1_000_000, 'm'), (1_000, 'k')];
     if n < 10_000 {
         return with_separators(n);
     }
-    for (unit, letter) in STEPS {
-        if n >= unit {
+    STEPS.iter().find(|(unit, _)| n >= *unit).map_or_else(
+        || with_separators(n),
+        |&(unit, letter)| {
             let tenths = n / (unit / 10);
-            return format!("{}.{}{letter}", tenths / 10, tenths % 10);
-        }
-    }
-    with_separators(n)
+            format!("{}.{}{letter}", tenths / 10, tenths % 10)
+        },
+    )
 }
 
 #[cfg(test)]
@@ -132,41 +97,46 @@ mod tests {
     use super::*;
 
     #[test]
-    fn compact_figures_truncate_from_ten_thousand() {
-        assert_eq!(short(0), "0");
-        assert_eq!(short(9_999), "9,999");
-        assert_eq!(short(10_000), "10.0k");
-        assert_eq!(short(28_049), "28.0k");
-        assert_eq!(short(1_299_999), "1.2m");
-        assert_eq!(short(3_456_000_000), "3.4b");
-        assert_eq!(with_separators(1_234_567), "1,234,567");
+    fn compact_keeps_small_numbers_whole_and_shortens_the_rest() {
+        assert_eq!(compact(2_065), "2,065");
+        assert_eq!(compact(9_999), "9,999");
+        assert_eq!(compact(10_000), "10.0k");
+        assert_eq!(compact(28_018), "28.0k");
+        assert_eq!(compact(244_855), "244.8k");
+        assert_eq!(compact(1_234_567), "1.2m");
+        assert_eq!(compact(2_500_000_000), "2.5b");
+        assert_eq!(compact(u64::MAX), "18446744073.7b");
     }
 
     #[test]
-    fn a_waiting_figure_is_blank_then_rolls_four_digits() {
-        assert_eq!(frame(None, Duration::ZERO, Duration::ZERO, 1), Frame::Blank);
-        for ms in [16, 160, 4_000] {
-            let Frame::Number(n) = frame(None, Duration::from_millis(ms), Duration::ZERO, 7) else {
-                panic!("rolls once a frame has passed");
-            };
-            assert!((1_000..=9_999).contains(&n));
+    fn a_landing_ends_on_its_value_and_keeps_its_width() {
+        assert_eq!(landing(3_657, FRAMES), 3_657);
+        assert_eq!(landing(0, 1), 0);
+        for frame in 1..FRAMES {
+            assert!(landing(3_657, frame) <= 9_999, "frame {frame}");
         }
-    }
-
-    #[test]
-    fn an_arrived_figure_stays_in_its_digits_and_lands_after_a_second() {
-        for ms in (0..1_000).step_by(16) {
-            let Frame::Number(n) = frame(Some(72), Duration::ZERO, Duration::from_millis(ms), 3)
-            else {
-                panic!("a value always prints");
-            };
-            assert!(n <= 99, "{n} at {ms}ms");
-        }
-        assert_eq!(frame(Some(72), Duration::ZERO, ROLL, 3), Frame::Number(72));
-        assert_eq!(
-            frame(Some(0), Duration::ZERO, Duration::ZERO, 3),
-            Frame::Number(0)
+        assert_ne!(
+            (1..10).map(|f| landing(3_657, f)).collect::<Vec<_>>(),
+            vec![3_657; 9],
+            "early frames swing"
         );
-        assert_eq!(digit_ceiling(3_960), 9_999);
+        assert_eq!(digit_ceiling(72), 99);
+        assert_eq!(digit_ceiling(0), 9);
+    }
+
+    #[test]
+    fn waiting_counters_roll_four_digits_out_of_step() {
+        let a = next_seed();
+        let b = next_seed();
+        assert_ne!(a, b);
+        for tick in 0..100 {
+            assert!((1_000..10_000).contains(&waiting(a, tick)));
+        }
+        assert_ne!(
+            (0..5).map(|t| waiting(a, t)).collect::<Vec<_>>(),
+            (0..5).map(|t| waiting(b, t)).collect::<Vec<_>>()
+        );
+        assert_eq!(with_separators(1_234_567), "1,234,567");
+        assert_eq!(BLANK.chars().count(), 4);
     }
 }

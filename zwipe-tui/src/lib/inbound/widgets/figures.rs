@@ -1,5 +1,6 @@
 //! The compact stats strip of home and Activity: three figures side by side, each a bold rolling number over its label, in orangui's compact form (`28.0k`).
 
+use std::sync::OnceLock;
 use std::time::Duration;
 
 use ratatui::Frame;
@@ -8,12 +9,18 @@ use ratatui::style::Stylize;
 use ratatui::text::{Line, Text};
 use ratatui::widgets::Paragraph;
 
-use crate::domain::count_up::{self, Frame as RollFrame};
+use crate::domain::count_up;
 use crate::domain::home::Figures;
 use crate::domain::theme::Palette;
 
-/// Each figure's roll seed, as orangui hands out one per figure.
-const SEEDS: [u64; 3] = [2_654_435_761, 5_308_871_522, 7_963_307_283];
+/// Each figure's roll seed, handed out once per launch as orangui hands one to each counter, so neighbors never roll in step.
+fn seeds() -> [u64; 3] {
+    static SEEDS: OnceLock<[u64; 3]> = OnceLock::new();
+    *SEEDS.get_or_init(|| [(); 3].map(|()| count_up::next_seed()))
+}
+
+/// How long a figure takes to land once it arrives: [`count_up::FRAMES`] ticks of [`count_up::TICK`].
+pub(crate) const ROLL: Duration = Duration::from_millis(1_008);
 
 /// The rows the strip takes: the numbers, then the labels.
 pub(crate) const HEIGHT: u16 = 2;
@@ -28,13 +35,22 @@ pub(crate) fn numbers(
     let mut out: [String; 3] = Default::default();
     for (i, slot) in out.iter_mut().enumerate() {
         let value = values.and_then(|v| v.get(i).copied());
-        let seed = SEEDS.get(i).copied().unwrap_or_default();
-        *slot = match count_up::frame(value, since_open, since_arrival, seed) {
-            RollFrame::Blank => count_up::BLANK.to_owned(),
-            RollFrame::Number(n) => count_up::short(n),
+        let seed = seeds().get(i).copied().unwrap_or_default();
+        *slot = match value {
+            None => match ticks(since_open) {
+                0 => count_up::BLANK.to_owned(),
+                tick => count_up::compact(count_up::waiting(seed, tick)),
+            },
+            Some(value) => count_up::compact(count_up::landing(value, ticks(since_arrival))),
         };
     }
     out
+}
+
+/// Whole ticks of [`count_up::TICK`] in `elapsed`.
+fn ticks(elapsed: Duration) -> u64 {
+    let tick = count_up::TICK.as_millis().max(1);
+    u64::try_from(elapsed.as_millis() / tick).unwrap_or(u64::MAX)
 }
 
 /// Draws the strip across `area`.
@@ -68,7 +84,7 @@ mod tests {
             searches: 12,
             cards_swiped: 1_234_567,
         };
-        let landed = numbers(Some(figures), Duration::ZERO, count_up::ROLL);
+        let landed = numbers(Some(figures), Duration::ZERO, ROLL);
         assert_eq!(landed, ["28.0k", "12", "1.2m"]);
     }
 

@@ -42,7 +42,7 @@ pub(crate) mod clipboard;
 pub(crate) mod collapsible;
 /// The color map's tiles and key.
 pub(crate) mod color_map;
-/// The app's entrance effects: content-enter, its delayed form, and hero-scope-in.
+/// A screen's entrance.
 pub(crate) mod entrance;
 /// The compact strip of three rolling figures.
 pub(crate) mod figures;
@@ -52,6 +52,8 @@ pub(crate) mod hint;
 pub(crate) mod info;
 /// A list of items of different heights, one focused, paged to keep it in view.
 pub(crate) mod item_list;
+/// The ZWIPE logo decoding in.
+pub(crate) mod logo;
 /// Mana colors and pips.
 pub(crate) mod mana;
 /// Text widths and heights in cells.
@@ -71,6 +73,8 @@ pub(crate) mod panel;
 pub(crate) mod sheet;
 /// Ghost rows for content still loading.
 pub(crate) mod skeleton;
+/// Delayed and rising entrances inside a screen, and the hero's scope-in.
+pub(crate) mod stagger;
 /// Figures in a row, rolling while they load.
 #[cfg_attr(not(test), expect(dead_code, reason = "no screen uses it yet"))]
 pub(crate) mod stats;

@@ -5,21 +5,20 @@ use std::time::Duration;
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Margin, Rect};
 use ratatui::style::{Style, Stylize};
-use ratatui::text::{Line, Span, Text};
+use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Paragraph, Wrap};
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::deck_metrics;
-use zwipe_core::domain::logo;
 
 use super::keys::has_flavor;
 use super::{HomeView, Overlay};
 use crate::domain::color_map::{ColorMapCounts, ColorMapModel, ghost_model};
+use crate::domain::home;
 use crate::domain::theme::Palette;
-use crate::domain::{decode, home};
 use crate::inbound::app::Shared;
-use crate::inbound::widgets::measure::{height_of, width_of};
-use crate::inbound::widgets::{action_bar, color_map, entrance, figures, skeleton};
+use crate::inbound::widgets::measure::height_of;
+use crate::inbound::widgets::{action_bar, color_map, entrance, figures, logo, skeleton, stagger};
 
 /// The two lower panels sit side by side from this width, in cells.
 const SIDE_BY_SIDE: u16 = 90;
@@ -65,17 +64,16 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &HomeView) {
         title,
     );
     let since = view.opened.elapsed();
-    if let Some(hero) =
-        entrance::area(hero, since, Duration::ZERO).map(|r| r.intersection(f.area()))
+    if let Some(hero) = stagger::area(hero, since, Duration::ZERO).map(|r| r.intersection(f.area()))
     {
         draw_hero(f, shared, view, logo_text, hero);
-        entrance::fade(f, hero, since, Duration::ZERO, entrance::ENTER);
+        stagger::fade(f, hero, since, Duration::ZERO, entrance::DURATION);
     }
     if let Some(panels) =
-        entrance::area(panels, since, entrance::DELAY).map(|r| r.intersection(f.area()))
+        stagger::area(panels, since, stagger::DELAY).map(|r| r.intersection(f.area()))
     {
         draw_panels(f, shared, view, panels);
-        entrance::fade(f, panels, since, entrance::DELAY, entrance::ENTER);
+        stagger::fade(f, panels, since, stagger::DELAY, entrance::DURATION);
     }
     f.render_widget(Line::styled(shared.status.clone(), palette.muted), status);
     f.render_widget(
@@ -99,13 +97,10 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &HomeView) {
 
 /// The full logo when it fits with room for the panels, the compact Z when only that fits, else none.
 fn pick_logo(area: Rect) -> Option<&'static str> {
-    let fits = |art: &str| {
-        let height = height_of(art.lines().count());
-        let width = art.lines().map(width_of).max().unwrap_or(0);
-        area.width >= width.saturating_add(2)
-            && area.height >= height.saturating_add(PANEL_ROOM).saturating_add(9)
-    };
-    [logo::ZWIPE, logo::Z].into_iter().find(|art| fits(art))
+    logo::fitting(
+        area.width.saturating_sub(2),
+        area.height.saturating_sub(PANEL_ROOM).saturating_sub(9),
+    )
 }
 
 fn draw_hero(
@@ -128,18 +123,12 @@ fn draw_hero(
     ])
     .areas(inner);
     if let Some(text) = logo_text {
-        let width = text.lines().map(width_of).max().unwrap_or(0);
-        let frame = decode::at(text, view.logo_elapsed());
-        let art = Text::from(
-            frame
-                .lines()
-                .map(|l| Line::from(l.to_owned()))
-                .collect::<Vec<_>>(),
-        )
-        .style(palette.logo);
-        f.render_widget(
-            Paragraph::new(art),
-            logo_area.centered_horizontally(Constraint::Length(width)),
+        logo::draw(
+            f,
+            logo_area,
+            text,
+            palette.logo,
+            view.logo_started.map(|_| view.logo_elapsed()),
         );
     }
     figures::draw(
@@ -152,7 +141,7 @@ fn draw_hero(
     );
     let settling = view
         .scope_at
-        .is_some_and(|t| entrance::entering(t.elapsed(), Duration::ZERO, entrance::SCOPE_IN));
+        .is_some_and(|t| stagger::entering(t.elapsed(), Duration::ZERO, stagger::SCOPE_IN));
     let scope_in = |style: Style| if settling { style.dim() } else { style };
     let mut spans = Vec::new();
     if super::live(shared) {

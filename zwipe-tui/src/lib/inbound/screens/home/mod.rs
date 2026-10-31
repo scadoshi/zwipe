@@ -20,15 +20,15 @@ use zwipe_core::http::contracts::suggestions::HttpPlayStyleSummary;
 use self::cache::{CachedCounts, CachedMyCounts, CachedPlayStyle, FlavorCard};
 use super::{Screen, failure};
 use crate::domain::color_map::seed_from_id;
+use crate::domain::decode;
 use crate::domain::home::{self, Figures, Scope};
-use crate::domain::{count_up, decode};
 use crate::inbound::app::{Context, Shared};
 use crate::inbound::nav::Nav;
 use crate::inbound::screens::{self, oracle_tags};
 use crate::inbound::widgets::alert::AlertDialog;
 use crate::inbound::widgets::info::InfoPopup;
 use crate::inbound::widgets::toast::ToastKind;
-use crate::inbound::widgets::{color_map, entrance, hint};
+use crate::inbound::widgets::{color_map, entrance, figures, hint, logo, stagger};
 use crate::outbound::account::Account;
 use crate::outbound::home_file::HomeFile;
 
@@ -130,16 +130,16 @@ impl HomeView {
     /// Whether something on home is moving: the logo, a rolling figure, the map's sweep or a loading ghost.
     pub(crate) fn animating(&self) -> bool {
         let loading_map = !self.play_style_seen && !self.play_style_failed;
-        self.logo_elapsed() < decode::DURATION
+        logo::animating(self.logo_elapsed())
             || self.figures_arrived.is_none()
-            || self.since_arrival() < count_up::ROLL
+            || self.since_arrival() < figures::ROLL
             || self
                 .map_started
                 .is_some_and(|_| self.map_elapsed() < color_map::entrance())
             || loading_map
-            || entrance::entering(self.opened.elapsed(), entrance::DELAY, entrance::ENTER)
+            || stagger::entering(self.opened.elapsed(), stagger::DELAY, entrance::DURATION)
             || self.scope_at.is_some_and(|t| {
-                entrance::entering(t.elapsed(), std::time::Duration::ZERO, entrance::SCOPE_IN)
+                stagger::entering(t.elapsed(), std::time::Duration::ZERO, stagger::SCOPE_IN)
             })
     }
 

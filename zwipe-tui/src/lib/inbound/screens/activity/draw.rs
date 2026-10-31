@@ -344,7 +344,7 @@ fn activity_body(
 
 /// The readout's three tags in one muted tone, faded in for a moment when they change.
 fn readout_line(palette: &Palette, view: &ActivityView) -> Line<'static> {
-    let style = if view.readout_age() < entrance::ENTER {
+    let style = if view.readout_age() < entrance::DURATION {
         palette.muted.add_modifier(Modifier::DIM)
     } else {
         palette.muted
