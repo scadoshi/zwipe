@@ -916,3 +916,49 @@ body {
     border-color: var(--accent-primary);
     color: var(--accent-primary);
 }
+
+/* ---- Oracle tag dictionary ---- */
+
+/* Below the breakpoint the browse wrapper adds no box, so the controls and
+   list sit in the screen's column as in the app. */
+.web-dict-browse {
+    display: contents;
+}
+
+@media (min-width: 900px) {
+    .web-dictionary > .screen-content {
+        align-items: stretch;
+        min-height: 0;
+    }
+
+    /* Search and the letter rail as a column on the left, the list beside. */
+    .web-dict-browse {
+        display: grid;
+        grid-template-columns: 15rem minmax(0, 1fr);
+        gap: 1rem;
+        flex: 1 1 auto;
+        min-height: 0;
+        width: 100%;
+        padding: 0 1.5rem;
+        box-sizing: border-box;
+    }
+
+    .web-dict-browse .dict-controls {
+        max-width: none;
+        padding: 0.75rem 0;
+        min-height: 0;
+        overflow-y: auto;
+    }
+
+    .web-dict-browse .dict-letter-rail {
+        flex-wrap: wrap;
+        overflow-x: visible;
+        -webkit-mask-image: none;
+        mask-image: none;
+    }
+
+    .web-dict-browse .dict-list {
+        max-width: 48rem;
+        min-height: 0;
+    }
+}

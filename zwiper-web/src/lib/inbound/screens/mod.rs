@@ -7,6 +7,7 @@ pub mod changelog;
 pub mod commander_maybeboard;
 pub mod config;
 pub mod home;
+pub mod oracle_tag_dictionary;
 pub mod oracle_tag_examples;
 pub mod placeholders;
 pub mod playstyle;
