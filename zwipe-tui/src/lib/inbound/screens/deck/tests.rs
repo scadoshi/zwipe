@@ -191,6 +191,39 @@ fn roles_expand_into_their_tags_and_a_tag_into_its_definition() {
 }
 
 #[test]
+fn a_role_with_no_tags_is_a_grey_chip_the_focus_skips() {
+    let mut ramp = card("Llanowar Elves");
+    ramp.scryfall_data.type_line = Some("Creature — Elf Druid".to_owned());
+    ramp.scryfall_data.cmc = Some(1.0);
+    ramp.card_profile.card_roles = vec!["ramp".to_owned(), "draw".to_owned()];
+    ramp.card_profile
+        .oracle_tags_by_role
+        .insert("ramp".to_owned(), vec!["mana-dork".to_owned()]);
+    let built = deck(deck_profile("Ramp"), vec![ramp]);
+    let mut harness = loaded(built);
+    view_mut(&mut harness).toggle(Section::Distributions);
+    let metrics = view(&harness).metrics.clone().unwrap();
+    let bars = metrics.card_role_bars().unwrap();
+    let untagged: Vec<&str> = bars
+        .iter()
+        .map(|(label, _, _)| *label)
+        .filter(|label| !metrics.card_role_tags.contains_key(*label))
+        .collect();
+    assert_eq!(untagged.len(), 1, "one role has no tags: {bars:?}");
+    let roles = view(&harness)
+        .targets()
+        .into_iter()
+        .filter(|t| matches!(t, Target::Role(_)))
+        .count();
+    assert_eq!(roles, 1, "the focus only rests on a role with tags");
+    let chip = format!(" {} ", untagged[0].to_uppercase());
+    assert!(
+        screen_text(&harness.app).contains(&chip),
+        "missing {chip:?}"
+    );
+}
+
+#[test]
 fn warnings_offer_their_fixes_and_run_them() {
     let mut built = elves();
     let sol_ring = built.entries[0].card.scryfall_data.id;

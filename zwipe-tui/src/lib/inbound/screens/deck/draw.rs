@@ -424,7 +424,12 @@ fn draw_roles(
         return;
     };
     let focused = view.focused();
-    let label_width = roles.iter().map(|(l, _, _)| l.len()).max().unwrap_or(0);
+    // Each label is a chip, padded by a space each side.
+    let label_width = roles
+        .iter()
+        .map(|(l, _, _)| l.len().saturating_add(2))
+        .max()
+        .unwrap_or(0);
     let bar_width = usize::from(roles_area.width).saturating_sub(label_width.saturating_add(10));
     let mut lines = vec![Line::from(Span::styled("Roles", palette.muted))];
     let mut focus_line = 0;
@@ -434,13 +439,14 @@ fn draw_roles(
         if is_focused {
             focus_line = lines.len();
         }
+        // A role with tags to open is an accent chip; one with none is a grey chip that takes no key.
         let label_style = match (tags.is_some(), is_focused) {
             (true, true) => palette.accent.bold().reversed(),
             (true, false) => palette.accent.underlined(),
             (false, _) => palette.muted,
         };
         let mut line = row(
-            Span::styled(label.to_uppercase(), label_style),
+            pill(&label.to_uppercase(), label_style, PillState::default()),
             label_width,
             pct,
             bar_width,

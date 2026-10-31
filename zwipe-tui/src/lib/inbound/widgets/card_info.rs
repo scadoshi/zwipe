@@ -137,11 +137,14 @@ pub(crate) fn details_lines(palette: &Palette, card: &Card, face: usize) -> Vec<
     lines
 }
 
+/// One role chip and its oracle tags. A role with no tags is a grey chip, as the app draws a chip with nothing to open.
 fn role_line(palette: &Palette, label: &str, tags: &str) -> Line<'static> {
-    let mut spans = vec![Span::styled(
-        format!(" {label} "),
-        palette.accent.reversed(),
-    )];
+    let chip = if tags.is_empty() {
+        palette.muted
+    } else {
+        palette.accent
+    };
+    let mut spans = vec![Span::styled(format!(" {label} "), chip.reversed())];
     if !tags.is_empty() {
         spans.push(Span::styled(format!("  {tags}"), palette.muted));
     }
@@ -251,6 +254,17 @@ mod tests {
         c.scryfall_data.prices.eur = None;
         c.scryfall_data.prices.tix = None;
         assert_eq!(prices(&c), "");
+    }
+
+    #[test]
+    fn a_role_with_no_tags_is_a_grey_chip() {
+        let palette = Palette::for_account("gruvbox", true);
+        let bare = role_line(&palette, "Ramp", "");
+        assert_eq!(bare.to_string(), " Ramp ");
+        assert_eq!(bare.spans[0].style, palette.muted.reversed());
+        let tagged = role_line(&palette, "Ramp", "mana rock");
+        assert_eq!(tagged.to_string(), " Ramp   mana rock");
+        assert_eq!(tagged.spans[0].style, palette.accent.reversed());
     }
 
     #[test]
