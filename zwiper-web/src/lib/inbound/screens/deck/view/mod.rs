@@ -286,7 +286,6 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                     },
                     "Edit"
                 }
-                // TODO(wave D): Cards opens the deck cards view Wave D builds.
                 Button {
                     variant: ButtonVariant::Action,
                     onclick: move |_| {

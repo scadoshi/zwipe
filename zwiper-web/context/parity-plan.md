@@ -53,13 +53,15 @@ The crate, the router with a route per screen at the app's paths (unbuilt screen
 - Deck view in columns: profile, stats, the cards column, warnings and their fixes, the More popover and its dialogs.
 - Left for Wave D: `Cards`, the below-minimum warning's `Add cards`, Swipe select's `Filter` in every mode, and clearing the deck's undo history after an import, each marked `TODO(wave D)`.
 
-## Wave D: cards, add, filters (spec 4), branch `feat/web-d`
+## Wave D: cards, add, filters (spec 4), branch `feat/web-d` (done)
 
 - The stores: per-deck filters, parked add stacks, the shared undo log, in-flight adds.
 - Add cards: the stack with details and the docked filter, From and Synergy, keys and buttons for every swipe, undo, every toast, land and budget crossings, the printing modal, end of results.
 - The card filter panel: all 15 sections, draft and Apply, reset rules, picker sources.
 - Deck cards view with the detail pane, quick add, Group by, Boards, Show, quantities, moves (buttons and drag), printings, MVP, Undo, Reset filter.
 - Remove cards.
+- The filter on the commander maybeboard and in Swipe select's search modes, the deck view's `Cards` and the warning's `Add cards`, and an import clearing the deck's undo log.
+- zwiper-web takes the stores, the stack and its actions, Add's deck context and search rules, the filter's draft, sections, fields and pickers, the deck cards pass and bursts, the undo entries and the land and budget signals from zwipe-ui. The filter's chip rows (`domain::filter_chips`) are marked `// Belongs in zwipe-ui`.
 
 ## Integration and live audit, branch `feat/web`
 
@@ -82,6 +84,8 @@ Wire the cross-links the waves leave open (Playstyle `Create deck` to Create, th
 - `Back to login` on Register and Forgot password goes to Login when there is no history to go back to, such as a page opened from a link.
 - The session lives in `localStorage`, where any script on the origin can read it. The app keeps it in the OS keychain.
 - The web layout choices in `web-layout.md`, once approved, count as kept deviations from the phone layout.
+- On the deck cards view the `Main`, `Maybe` and `Side` chips also take a dragged row, so a row can move to a board whose section is hidden.
+- The deck cards view reads the deck's profile from the deck it loads; the app fetches the profile and each command zone card again.
 
 ## Launch blockers
 

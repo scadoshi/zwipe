@@ -12,13 +12,15 @@ src/
     └── inbound/
         ├── app.rs          the root: stylesheets, theme, splash, upkeep, toasts, hints, dialogs, keys, router
         ├── caches.rs       what the root fetches once and shares: counters, my counters, the playstyle summary, the flavor card, changelog, franchises, the Create deck seed
+        ├── card_filter/    the card filter panel: a side panel, the app's sheet, or docked open beside Add and Remove
+        ├── card_stores.rs  zwipe-ui's card stores in root signals: filters per deck, parked add stacks, the undo log, adds in flight
         ├── cards/          card rows, image preview, printing sheet, card info, oracle tag reveals, the swipe stack and Swipe select, shared charts, buy links
         ├── catalog.rs      the catalog lists over zwipe-ui's store, fetched on demand
-        ├── chrome/         the authed-call facade, the ? hints, one-time hints, collapsible sections, page keys, sheet forms, the More menu
+        ├── chrome/         the authed-call facade, the ? hints, one-time hints, collapsible sections, page keys and Ctrl+Z, the window width, sheet forms, the More menu
         ├── router.rs       Route, one variant per screen at the app's path
         ├── session/        ensure_fresh, the upkeep loop, the auth gate, logout, the funnel events
         ├── shell/          the sidebar Shell, PublicFrame, ScreenFrame, Help, nav
-        └── screens/        one module per screen (the deck screens share `deck/`), plus placeholders.rs
+        └── screens/        one module per screen (the deck screens share `deck/`, the card screens are `deck/cards/`), plus not_found.rs
 ```
 
 ## The root
@@ -60,6 +62,12 @@ The root also mounts the kit's `ToastStack` (screens raise toasts with `dioxus_p
 - `domain::deck` holds what the form sends: `FormValues`, `create_request`, and `update_request`, which leaves unchanged fields off the wire and is `None` when nothing changed, the rule behind `Save changes`.
 - `screens::deck::view`: the deck view's panels, its read-only cards column over zwipe-ui's `deck_cards::pass`, and `DeckMore`, the menu and its dialogs.
 
+## Cards and filters
+
+- `card_stores`: `CardStores` holds zwipe-ui's `FilterStore`, `AddStackCache`, `UndoStore` and `InFlightAdds`, plus Add's live search stack and the filter that produced it, in signals the root owns. Work that outlives a screen (an add's answer, a skip, a promote) runs with `spawn_forever` and records into them, so the deck cards view's `Undo` sees swipes made on Add and Remove, and their gesture undo skips a call `Undo` already made.
+- `card_filter`: `CardFilterPanel` edits a zwipe-ui `FilterDraft` over the host's applied filter and hands the committed filter to `on_apply`; the host stores it and runs its search or pass again. Its rows are drawn from zwipe-ui's `sections::rows`, the chips from `domain::filter_chips`. `use_filter_docked(true)` docks it as a column at 1280px and up (Add, Remove), where `Back` drops the edits and the panel stays; elsewhere it is a right side panel on a wide window and the app's sheet below. The Oracle tags rows open the dictionary over it.
+- `screens::deck::cards`: `add` (Search and Maybeboard sources, Synergy, the parked stack, the gestures and their undo), `remove`, and `view`, the deck cards editor: zwipe-ui's `deck_cards::pass` and `Bursts` for the debounced quantities, rows selected into a pane on a wide window, drag onto a board's header or chip, and the undo log walked back through `deck_cards::is_stale` and `undo_message`.
+
 ## Styling
 
 The root loads, in order: the kit's `THEMES_CSS`, `COMPONENTS_CSS`, `MAGIC_CSS` and `APP_CSS`, zwiper's `main.css` and `accordion.css` (included from `zwiper/assets` as they are, never copied), `TOAST_CSS`, then `assets/web.css`. A screen uses the app's class names, so it looks like the app with no new CSS. `web.css` only holds what a browser window changes: the sidebar, the wide layouts, the 900px breakpoint, and undoing the phone-only rules (`body` capped to the screen height, `.screen` fixed to the viewport). The fonts are copies of zwiper's, because `asset!` only reads files inside the crate.
@@ -73,7 +81,7 @@ Say the screen is Activity.
 3. A one-time hint is `use_one_time_hint(OneTimeHint::Activity)` with a `OneTimeHintDialog` beside the frame and the frame's `on_hint` reopening it.
 4. Take the screen's rules, copy, timings and caps from zwipe-ui. What zwipe-ui lacks goes in `src/lib/domain/<name>.rs` as pure, tested functions marked `// Belongs in zwipe-ui`. The component calls them; it does not repeat them.
 5. Call the API through `use_authed()`, which refreshes the session and toasts a failure. Unauthenticated calls go straight to the `Signal<ZwipeClient>`.
-6. Delete the placeholder from `screens/placeholders.rs`, add `pub mod activity;` to `screens/mod.rs`, and point the import in `router.rs` at the new module. The route, its path and its sidebar entry already exist.
+6. Add `pub mod activity;` to `screens/mod.rs` and a route for it in `router.rs`, then its sidebar entry in `shell/nav.rs` if it has one.
 7. If the screen belongs to a sidebar entry other than the one `Section::of` gives it, change that match in `shell/nav.rs` and its test.
 
 Every string comes from the spec, verbatim. A screen that differs from the app in more than layout and input gets a line in the kept deviations of `parity-plan.md`.

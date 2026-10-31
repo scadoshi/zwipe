@@ -307,7 +307,6 @@ pub fn WarningsSection(
                                         style: "color: var(--color-warning); border-color: var(--border-warning); margin-bottom: 0;",
                                         onclick: move |_| match fix {
                                             Fix::BelowMinimum if j == 0 => {
-                                                // TODO(wave D): Add cards is the swipe screen Wave D builds.
                                                 navigator.push(Route::AddDeckCard { deck_id });
                                             }
                                             Fix::BelowMinimum => {

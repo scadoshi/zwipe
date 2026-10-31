@@ -2,6 +2,8 @@
 
 pub mod app;
 pub mod caches;
+pub mod card_filter;
+pub mod card_stores;
 pub mod cards;
 pub mod catalog;
 pub mod chrome;

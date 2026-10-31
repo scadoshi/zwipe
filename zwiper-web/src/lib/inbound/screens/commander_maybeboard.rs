@@ -19,12 +19,16 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
+use zwipe_core::domain::card::search_card::cards::Cards;
 use zwipe_core::domain::deck::format::Format;
+use zwipe_ui::filter;
+use zwipe_ui::filter::draft::SheetConfig;
 use zwipe_ui::generation::{Generation, Ticket};
 use zwipe_ui::timing::{MAYBEBOARD_QUICK_ADD_LIMIT, QUICK_ADD_DEBOUNCE, QUICK_ADD_MIN_CHARS};
 
 use crate::domain::commander_maybeboard;
 use crate::inbound::caches::CreateDeckSeed;
+use crate::inbound::card_filter::CardFilterPanel;
 use crate::inbound::cards::card_row::{CardOverlaysHost, CardRow, ShowRowArt, use_card_overlays};
 use crate::inbound::cards::otag::{OtagExamplesHost, use_otag_reveals};
 use crate::inbound::cards::swipe_select::{SwipeMode, SwipeSelect};
@@ -129,6 +133,8 @@ pub fn CommanderMaybeboard() -> Element {
 
     let mut query = use_signal(String::new);
     let mut selected_colors: Signal<HashSet<Color>> = use_signal(HashSet::new);
+    let mut filter = use_signal(CardQueryBuilder::new);
+    let mut filter_open = use_signal(|| false);
     let mut highlight: Signal<Option<usize>> = use_signal(|| None);
 
     let mut list = SavedList {
@@ -347,16 +353,26 @@ pub fn CommanderMaybeboard() -> Element {
         }
     };
 
-    // The Show pips narrow in memory, every picked color in the identity.
-    // TODO(wave D): the card filter sheet's Apply narrows further here with
-    // `Cards::from(filtered).matching(&builder.build_criteria())`, then its
-    // sort with `Cards::sorted(sort, direction)`; saved order stands without
+    // The Show pips narrow in memory, every picked color in the identity,
+    // then the applied filter, then its sort; saved order stands without
     // one. The quick add input never narrows the list.
+    let filtered = use_memo(move || -> Vec<Card> {
+        let colors = selected_colors();
+        let shown: Vec<Card> = entries()
+            .into_iter()
+            .filter(|c| commander_maybeboard::passes_pips(&c.scryfall_data.color_identity, &colors))
+            .collect();
+        let applied = filter();
+        let mut shown = Cards::from(shown);
+        if !applied.is_empty()
+            && let Ok(criteria) = applied.build_criteria()
+        {
+            shown = shown.matching(&criteria);
+        }
+        shown.sorted(applied.sort(), applied.direction()).into()
+    });
+    let filtered = filtered();
     let colors = selected_colors();
-    let filtered: Vec<Card> = entries()
-        .into_iter()
-        .filter(|c| commander_maybeboard::passes_pips(&c.scryfall_data.color_identity, &colors))
-        .collect();
     let has_entries = !entries().is_empty();
     let searching_catalog = query().trim().len() >= QUICK_ADD_MIN_CHARS;
     let results = shown_results();
@@ -515,10 +531,12 @@ pub fn CommanderMaybeboard() -> Element {
             }
             ActionBar {
                 Button { variant: ButtonVariant::Action, onclick: move |_| navigator.go_back(), "Back" }
-                // TODO(wave D): `Filter` opens the card filter sheet as a right
-                // side panel (no format filter, active indicators shown, Clear
-                // empties the builder) and shows a dot while it has a criterion
-                // or a sort; its Apply re-filters the list above.
+                Button { variant: ButtonVariant::Action, onclick: move |_| filter_open.set(true),
+                    "Filter"
+                    if filter::shows_dot(&filter.read()) {
+                        span { class: "filter-dot" }
+                    }
+                }
                 Button { variant: ButtonVariant::Action, onclick: move |_| swipe_open.set(true), "Swipe" }
                 MoreButton { menu: more }
             }
@@ -546,6 +564,13 @@ pub fn CommanderMaybeboard() -> Element {
         }
         CardOverlaysHost { overlays, on_printing_save }
         OtagExamplesHost { examples }
+        CardFilterPanel {
+            open: filter_open,
+            filter,
+            config: SheetConfig::default(),
+            quiet_reset: true,
+            on_apply: move |applied: CardQueryBuilder| filter.set(applied),
+        }
         SwipeSelect {
             open: swipe_open,
             mode: SwipeMode::Commander(Format::Commander),

@@ -309,6 +309,13 @@ pub fn SwipeButtons(control: SwipeControl, buttons: Vec<(Swipe, &'static str)>) 
 /// and no text field or dialog has focus, and presses them on `control`.
 /// Surfaces stack: one mounted over another takes the keys until it goes.
 pub fn use_swipe_keys(control: SwipeControl, keys: Vec<Swipe>) {
+    use_swipe_key_handler(keys, Callback::new(move |swipe| control.press(swipe)));
+}
+
+/// [`use_swipe_keys`] that hands each key to `on_key` instead, for a host
+/// that answers a key itself when no card is on top, such as undo at the
+/// end of the results.
+pub fn use_swipe_key_handler(keys: Vec<Swipe>, on_key: Callback<Swipe>) {
     let id = use_hook(Uuid::new_v4);
     use_hook(move || {
         let wanted: Vec<&'static str> = keys.iter().map(|s| s.key()).collect();
@@ -322,7 +329,7 @@ pub fn use_swipe_keys(control: SwipeControl, keys: Vec<Swipe>) {
                     .into_iter()
                     .find(|s| s.key() == key);
                 if let Some(swipe) = swipe {
-                    control.press(swipe);
+                    on_key.call(swipe);
                 }
             }
         });

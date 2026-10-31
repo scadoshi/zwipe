@@ -1259,3 +1259,237 @@ body {
         grid-template-areas: "profile stats cards";
     }
 }
+
+/* ---- Card filter ---- */
+
+/* Docked open as a column beside Add's and Remove's card at three columns:
+   the sheet's parts in a panel that stays, the content scrolling inside. */
+.web-filter-dock {
+    position: sticky;
+    top: 0;
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 9rem);
+    min-width: 0;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
+    overflow: hidden;
+    isolation: isolate;
+}
+
+.web-filter-dock > .grid-cells {
+    position: absolute;
+    z-index: 0;
+}
+
+.web-filter-dock > :not(.grid-cells) {
+    position: relative;
+    z-index: 1;
+}
+
+.web-filter-dock > .sheet-header,
+.web-filter-dock > .action-bar {
+    background-color: var(--bg-primary);
+}
+
+.web-filter-dock-content {
+    flex: 1 1 auto;
+    overflow-y: auto;
+}
+
+/* The chip's hover title rides on a wrapper that adds no box. */
+.web-filter-chip {
+    display: contents;
+}
+
+.web-filter-chips-center {
+    margin-bottom: 0.5rem;
+    justify-content: center;
+}
+
+.web-filter-accordion .accordion-trigger:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+}
+
+/* ---- Add and Remove cards ---- */
+
+/* Below the breakpoint it is the app's swipe screen: the chip row, the
+   card and its info. A wide window puts the card's details beside it, and
+   at three columns the filter docked after them. */
+.web-cards-swipe-main {
+    display: contents;
+}
+
+.web-cards-swipe-row {
+    max-width: 40rem;
+    width: 100%;
+    padding: 0 1rem;
+    box-sizing: border-box;
+}
+
+.web-swipe-details {
+    display: none;
+}
+
+.web-pile-end {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    touch-action: none;
+}
+
+@media (min-width: 900px) {
+    .web-cards-swipe.screen-content {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        align-items: start;
+        align-content: start;
+        gap: 1.5rem;
+        width: 100%;
+        max-width: 96rem;
+        margin: 0 auto;
+        padding: 1rem 1.5rem;
+        box-sizing: border-box;
+        overflow-y: auto;
+    }
+
+    .web-cards-swipe-main {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        min-width: 0;
+    }
+
+    .web-cards-swipe-row {
+        padding: 0;
+    }
+
+    .web-swipe-details {
+        display: block;
+        min-width: 0;
+        position: sticky;
+        top: 0;
+    }
+
+    /* The app sizes the card's ghost to the phone's width; in a column it
+       takes the stack's room instead. */
+    .web-cards-swipe .skeleton-card {
+        width: 100%;
+        max-width: 26rem;
+        min-height: min(55vh, 32rem);
+    }
+}
+
+@media (min-width: 1280px) {
+    .web-cards-swipe.screen-content {
+        grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr) minmax(20rem, 0.95fr);
+    }
+}
+
+/* ---- Deck cards ---- */
+
+/* Below the breakpoint it is the app's list: the controls over the groups,
+   rows opening inline, no pane. */
+.web-deck-cards-controls,
+.web-deck-cards-list {
+    max-width: 40rem;
+    width: 100%;
+    padding: 0 1rem;
+    box-sizing: border-box;
+}
+
+.web-deck-cards-pane {
+    display: none;
+}
+
+/* A row being dragged onto a board's header. */
+.card-group-header.web-drop-over {
+    color: var(--accent-primary);
+    outline: 1px dashed var(--accent-primary);
+    outline-offset: 2px;
+}
+
+@media (min-width: 900px) {
+    /* The controls over the groups on the left, the selected row's pane on
+       the right; a click selects into the pane instead of opening the row. */
+    .web-deck-cards-view.screen-content {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(20rem, 28rem);
+        grid-template-areas:
+            "controls pane"
+            "list pane";
+        align-items: start;
+        align-content: start;
+        column-gap: 1.5rem;
+        width: 100%;
+        max-width: 96rem;
+        margin: 0 auto;
+        padding: 1rem 1.5rem 2rem;
+        box-sizing: border-box;
+    }
+
+    .web-deck-cards-controls {
+        grid-area: controls;
+        max-width: none;
+        padding: 0;
+    }
+
+    .web-deck-cards-list {
+        grid-area: list;
+        max-width: none;
+        padding: 0;
+    }
+
+    .web-deck-cards-pane {
+        grid-area: pane;
+        display: block;
+        position: sticky;
+        top: 0;
+        max-height: calc(100vh - 9rem);
+        overflow-y: auto;
+        min-width: 0;
+    }
+
+    .web-deck-cards-list .card-row-collapse {
+        display: none;
+    }
+
+    .web-deck-row.selected .card-row-name {
+        color: var(--accent-primary);
+    }
+
+    .web-deck-pane-image {
+        display: block;
+        width: min(100%, 18rem);
+        margin: 0 auto 0.75rem;
+    }
+
+    .web-deck-pane-image img {
+        display: block;
+        width: 100%;
+        height: auto;
+        border-radius: 0.9rem;
+    }
+
+    .web-deck-cards-pane-empty {
+        text-align: center;
+        padding-top: 2rem;
+    }
+}
+
+@media (min-width: 1280px) {
+    .web-deck-cards-view.screen-content {
+        grid-template-columns: minmax(18rem, 0.8fr) minmax(0, 1.2fr) minmax(20rem, 26rem);
+        grid-template-areas: "controls list pane";
+    }
+
+    .web-deck-cards-controls {
+        position: sticky;
+        top: 0;
+    }
+}
