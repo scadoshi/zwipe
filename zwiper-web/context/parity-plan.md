@@ -63,9 +63,13 @@ The crate, the router with a route per screen at the app's paths (unbuilt screen
 - The filter on the commander maybeboard and in Swipe select's search modes, the deck view's `Cards` and the warning's `Add cards`, and an import clearing the deck's undo log.
 - zwiper-web takes the stores, the stack and its actions, Add's deck context and search rules, the filter's draft, sections, fields and pickers, the deck cards pass and bursts, the undo entries and the land and budget signals from zwipe-ui. The filter's chip rows (`domain::filter_chips`) are marked `// Belongs in zwipe-ui`.
 
-## Integration and live audit, branch `feat/web`
+## Integration and live audit, branch `feat/web-int` (done)
 
-Wire the cross-links the waves leave open (Playstyle `Create deck` to Create, the maybeboard to the filter, deck view to the card screens, import and export), then audit each spec against the running web app one screen at a time beside the phone app and fix what differs. Done means every screen in the specs is reachable with the app's copy and states, a live run with the test account goes through every screen on a wide and a narrow window and leaves the account as it was found, the gate is green, and the README is current.
+- The cross-links the waves left open are wired and checked live both ways: Playstyle and the commander maybeboard hand their commander to Create, the maybeboard opens the filter, the deck view reaches Cards, Add, Remove, Import and Export (from More and from the warnings), the dictionary and Examples open from every host the app has, and Help and the `?` hints open from every screen. Browser back and forward move between screens; closing an open overlay on back is still open (see `audit.md`).
+- The end-of-pile `Undo` in Swipe select and `Back one` in Examples call their undo directly instead of pressing the swipe control with no card on top.
+- The signals that root tasks (`spawn_forever`) write live in the root scope, so the catalog, caches, card stores and deck tags no longer raise Dioxus's hoisted-value warnings.
+- `audit.md` holds the screen-by-screen check against the four specs, with what is left.
+- Done means every screen in the specs is reachable with the app's copy and states, a live run with a throwaway account goes through every screen on a wide and a narrow window and deletes the account after, the gate is green, and the README is current.
 
 ## Kept deviations
 

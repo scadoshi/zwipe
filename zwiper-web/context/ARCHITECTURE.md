@@ -17,6 +17,7 @@ src/
         ├── cards/          card rows, image preview, printing sheet, card info, oracle tag reveals, the swipe stack and Swipe select, shared charts, buy links
         ├── catalog.rs      the catalog lists over zwipe-ui's store, fetched on demand
         ├── chrome/         the authed-call facade, the ? hints, one-time hints, collapsible sections, page keys and Ctrl+Z, the window width, sheet forms, the More menu
+        ├── root_signal.rs  signals owned by the root scope, for state root tasks write
         ├── router.rs       Route, one variant per screen at the app's path
         ├── session/        ensure_fresh, the upkeep loop, the auth gate, logout, the funnel events
         ├── shell/          the sidebar Shell, PublicFrame, ScreenFrame, Help, nav
@@ -29,6 +30,8 @@ src/
 
 - `Signal<Option<Session>>`, loaded from `localStorage` at start and owned by the root scope, since the refresh writes it from a task that outlives any screen.
 - `Signal<ZwipeClient>`, built in `main` from `BACKEND_URL`.
+
+State a root task writes (a `spawn_forever` that outlives the screen that started it) is made with `root_signal::use_root_signal`, so it belongs to the root scope those tasks run in; `use_signal_for_root_tasks` does the same for a screen's own signal and drops it with the screen.
 - `Signal<ThemeConfig>` (the session's preferences, else the stored theme, else the default) and `Signal<PipStyle>`. Every theme change is stored, so Login opens in the last one.
 - `UpgradeRequired`, the min-version gate. While it is true the root draws `UpdateRequired` in place of the router.
 
