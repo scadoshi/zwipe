@@ -649,3 +649,216 @@ fn a_short_panel_draws_the_whole_map_at_half_scale_with_its_key() {
         }
     }
 }
+
+/// A picker that draws with `protocol`.
+fn picker(protocol: ratatui_image::picker::ProtocolType) -> ratatui_image::picker::Picker {
+    let mut picker = ratatui_image::picker::Picker::halfblocks();
+    picker.set_protocol_type(protocol);
+    picker
+}
+
+/// The featured card's normal image.
+fn flavor_url(card: &Card) -> String {
+    card.scryfall_data
+        .primary_image_url(zwipe_core::domain::card::scryfall_data::ImageSize::Normal)
+        .unwrap()
+        .to_owned()
+}
+
+/// Home opened over a cached featured card, drawing images with `images`.
+fn home_with_flavor(images: Option<ratatui_image::picker::Picker>, card: Card) -> Harness {
+    let mut harness = Harness::new();
+    harness.app.shared.user = Some(user(true));
+    harness.app.shared.images = images;
+    harness.app.shared.caches.flavor = Some(FlavorCard {
+        card,
+        expires_at: Utc::now() + chrono::Duration::hours(1),
+    });
+    harness.open(open);
+    harness
+}
+
+#[test]
+fn the_featured_image_loads_only_where_the_terminal_draws_real_images() {
+    use ratatui_image::picker::ProtocolType;
+
+    let elves = flavored("Llanowar Elves");
+    let url = flavor_url(&elves);
+    let wants = |harness: &Harness| {
+        harness
+            .pending()
+            .contains(&ask(Request::FlavorImage { url: url.clone() }))
+    };
+    assert!(!wants(&home_with_flavor(None, elves.clone())), "images off");
+    let halfblocks = home_with_flavor(Some(picker(ProtocolType::Halfblocks)), elves.clone());
+    assert!(!wants(&halfblocks), "half blocks are too coarse");
+    assert!(halfblocks.app.shared.caches.flavor_image.is_none());
+
+    for protocol in [
+        ProtocolType::Kitty,
+        ProtocolType::Sixel,
+        ProtocolType::Iterm2,
+    ] {
+        assert!(
+            wants(&home_with_flavor(Some(picker(protocol)), elves.clone())),
+            "{protocol:?}"
+        );
+    }
+    let mut harness = home_with_flavor(Some(picker(ProtocolType::Kitty)), elves.clone());
+    harness.apply(Update::FlavorImage {
+        url: "https://cards.scryfall.io/normal/front/other.jpg".to_owned(),
+        image: Some(Box::new(image::DynamicImage::new_rgb8(8, 11))),
+    });
+    assert!(
+        matches!(
+            harness
+                .app
+                .shared
+                .caches
+                .flavor_image
+                .as_ref()
+                .unwrap()
+                .image,
+            CardImage::Loading
+        ),
+        "another card's image is dropped"
+    );
+    harness.apply(Update::FlavorImage {
+        url: url.clone(),
+        image: Some(Box::new(image::DynamicImage::new_rgb8(8, 11))),
+    });
+    assert!(matches!(
+        harness
+            .app
+            .shared
+            .caches
+            .flavor_image
+            .as_ref()
+            .unwrap()
+            .image,
+        CardImage::Ready(_)
+    ));
+    harness.clear();
+    harness.open(open);
+    assert!(!wants(&harness), "a held image is not fetched again");
+
+    let mut bare = flavored("Blank Card");
+    bare.scryfall_data.image_uris = None;
+    harness.apply(Update::Flavor(Box::new(FlavorCard {
+        card: bare,
+        expires_at: Utc::now(),
+    })));
+    assert!(
+        harness.app.shared.caches.flavor_image.is_none(),
+        "a card with no image drops the old one and asks for none"
+    );
+    harness.apply(Update::FlavorImage {
+        url: url.clone(),
+        image: None,
+    });
+    assert!(harness.app.shared.caches.flavor_image.is_none());
+}
+
+/// Whether an image protocol drew into the screen: kitty's placeholder cells or a sixel or iTerm2 escape.
+fn image_drawn(harness: &Harness, width: u16, height: u16) -> bool {
+    render(&harness.app, width, height)
+        .backend()
+        .buffer()
+        .content()
+        .iter()
+        .any(|c| c.symbol().contains('\u{10eeee}') || c.symbol().contains('\u{1b}'))
+}
+
+#[test]
+fn the_featured_card_shows_its_image_beside_or_above_the_quote_when_there_is_room() {
+    use std::cell::RefCell;
+
+    use ratatui_image::picker::ProtocolType;
+
+    let mut harness = settled_home();
+    let kitty = picker(ProtocolType::Kitty);
+    let card = harness
+        .app
+        .shared
+        .caches
+        .flavor
+        .as_ref()
+        .unwrap()
+        .card
+        .clone();
+    let red = image::RgbImage::from_pixel(40, 56, image::Rgb([255, 0, 0]));
+    harness.app.shared.caches.flavor_image = Some(FlavorImage {
+        url: flavor_url(&card),
+        image: CardImage::Ready(Box::new(RefCell::new(
+            kitty.new_resize_protocol(image::DynamicImage::ImageRgb8(red)),
+        ))),
+    });
+    harness.app.shared.images = Some(kitty);
+    let quote = "One bone broken for every twig snapped.";
+    let quote_at = |harness: &Harness, width: u16, height: u16| {
+        crate::test_support::rows(&harness.app, width, height)
+            .iter()
+            .enumerate()
+            .find_map(|(y, row)| {
+                row.find(quote)
+                    .map(|x| (row.get(..x).unwrap().chars().count(), y))
+            })
+    };
+    let panel_left = |harness: &Harness, width: u16, height: u16| {
+        let rows = crate::test_support::rows(&harness.app, width, height);
+        rows.iter()
+            .find_map(|row| row.find("Featured flavor").map(|_| row))
+            .and_then(|row| {
+                row.rfind('┌')
+                    .map(|x| row.get(..x).unwrap().chars().count())
+            })
+            .unwrap()
+    };
+
+    // Wide and tall enough: the image on the left, the quote beside it.
+    assert!(image_drawn(&harness, 200, 50));
+    let (x, _) = quote_at(&harness, 200, 50).expect("the quote stays");
+    assert!(
+        x > panel_left(&harness, 200, 50) + 30,
+        "the quote sits right of the image, at {x}"
+    );
+    assert!(
+        crate::test_support::rows(&harness.app, 200, 50)
+            .join("\n")
+            .contains("b Buy")
+    );
+
+    // Too small: today's text alone.
+    for (width, height) in [(120, 40), (80, 24), (60, 20)] {
+        assert!(
+            !image_drawn(&harness, width, height),
+            "no room at {width}x{height}"
+        );
+        let text = crate::test_support::rows(&harness.app, width, height).join("\n");
+        assert!(
+            text.contains("i Image"),
+            "the text at {width}x{height}:\n{text}"
+        );
+    }
+
+    // Tall and narrow: the image on top, the quote under it.
+    assert!(image_drawn(&harness, 60, 100));
+    let (_, y) = quote_at(&harness, 60, 100).expect("the quote stays");
+    let top = crate::test_support::rows(&harness.app, 60, 100)
+        .iter()
+        .position(|r| r.contains("Featured flavor"))
+        .unwrap();
+    assert!(y > top + 18, "the quote sits under the image, on row {y}");
+
+    // Half blocks keep the text alone, and a sixel image waits under a popup.
+    harness.app.shared.images = Some(picker(ProtocolType::Halfblocks));
+    assert!(
+        quote_at(&harness, 200, 50).is_some_and(|(x, _)| x < panel_left(&harness, 200, 50) + 30)
+    );
+    harness.app.shared.images = Some(picker(ProtocolType::Sixel));
+    harness.press(KeyCode::Char('?'));
+    assert!(
+        !image_drawn(&harness, 200, 50),
+        "the sixel waits under the popup"
+    );
+}

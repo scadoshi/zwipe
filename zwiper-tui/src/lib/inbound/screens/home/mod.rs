@@ -6,11 +6,15 @@ pub(crate) mod keys;
 #[cfg(test)]
 mod tests;
 
+use std::cell::RefCell;
 use std::time::{Duration, Instant};
 
 use chrono::Utc;
+use image::DynamicImage;
+use ratatui_image::picker::ProtocolType;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::scryfall_data::ImageSize;
 use zwipe_core::domain::user::User;
 use zwipe_core::domain::user::models::hints::HINT_FIRST_LOGIN;
 use zwipe_core::domain::user::preferences::UserPreferences;
@@ -18,11 +22,12 @@ use zwipe_core::http::contracts::suggestions::HttpPlayStyleSummary;
 use zwipe_ui::color_map::seed_from_id;
 use zwipe_ui::home::{self, Figures, Scope};
 
-use self::cache::{CachedMyCounts, CachedPlayStyle, FlavorCard};
+use self::cache::{CachedMyCounts, CachedPlayStyle, FlavorCard, FlavorImage};
 use super::Screen;
 use crate::domain::decode;
 use crate::inbound::app::{Context, Shared};
 use crate::inbound::nav::Nav;
+use crate::inbound::screens::swipe::CardImage;
 use crate::inbound::screens::{self, oracle_tags};
 use crate::inbound::widgets::alert::AlertDialog;
 use crate::inbound::widgets::info::InfoPopup;
@@ -30,6 +35,7 @@ use crate::inbound::widgets::toast::ToastKind;
 use crate::inbound::widgets::{color_map, entrance, figures, hint, logo, stagger};
 use crate::outbound::account::Account;
 use crate::outbound::home_file::HomeFile;
+use crate::outbound::images;
 
 /// A popup over home.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -193,7 +199,7 @@ pub(crate) fn seed(shared: &Shared) -> u64 {
 }
 
 /// The home screen's work.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum Request {
     /// Reads the scope the last launch saved.
     Restore,
@@ -208,11 +214,15 @@ pub(crate) enum Request {
     PlayStyle,
     /// This hour's featured flavor card.
     Flavor,
+    /// The featured card's image from Scryfall's image CDN.
+    FlavorImage {
+        url: String,
+    },
 }
 
 impl Request {
     /// The action an error from this request is reported under, fixed so a renamed variant keeps its reports.
-    pub(crate) fn action(self) -> &'static str {
+    pub(crate) fn action(&self) -> &'static str {
         match self {
             Self::Restore => "restore",
             Self::SaveScope(..) => "save_scope",
@@ -221,6 +231,7 @@ impl Request {
             Self::MyMetrics => "my_metrics",
             Self::PlayStyle => "play_style",
             Self::Flavor => "flavor",
+            Self::FlavorImage { .. } => "flavor_image",
         }
     }
 }
@@ -242,6 +253,10 @@ pub(crate) enum Update {
     },
     PlayStyleFailed,
     Flavor(Box<FlavorCard>),
+    FlavorImage {
+        url: String,
+        image: Option<Box<DynamicImage>>,
+    },
 }
 
 impl From<Request> for screens::Request {
@@ -288,6 +303,7 @@ fn mount(cx: &mut Context<'_>) {
     if flavor_expired {
         cx.request(Request::Flavor.into());
     }
+    sync_flavor_image(cx);
     oracle_tags::ensure_catalog(cx);
     hint::once(cx, HINT_FIRST_LOGIN);
 }
@@ -358,8 +374,53 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
                 expires_at: home::next_hour(Utc::now()),
             }))
         }
+        Request::FlavorImage { url } => Update::FlavorImage {
+            image: images::fetch(&client.client, &url).await.ok().map(Box::new),
+            url,
+        },
     };
     Some(update.into())
+}
+
+/// Whether this terminal draws real images (kitty, iTerm2 or sixel), which the featured card's image needs; half blocks are too coarse to tell a card by.
+pub(crate) fn draws_images(shared: &Shared) -> bool {
+    shared
+        .images
+        .as_ref()
+        .is_some_and(|picker| picker.protocol_type() != ProtocolType::Halfblocks)
+}
+
+/// Keeps the featured card's image in step with the card: asks for a new card's image, and drops the old one, or every image when the terminal draws none. A card with no image has none to ask for.
+fn sync_flavor_image(cx: &mut Context<'_>) {
+    let wanted = cx
+        .shared
+        .caches
+        .flavor
+        .as_ref()
+        .filter(|_| draws_images(cx.shared))
+        .and_then(|flavor| {
+            flavor
+                .card
+                .scryfall_data
+                .primary_image_url(ImageSize::Normal)
+        })
+        .map(str::to_owned);
+    let held = cx
+        .shared
+        .caches
+        .flavor_image
+        .as_ref()
+        .map(|i| i.url.as_str());
+    if held == wanted.as_deref() {
+        return;
+    }
+    cx.shared.caches.flavor_image = wanted.clone().map(|url| FlavorImage {
+        url,
+        image: CardImage::Loading,
+    });
+    if let Some(url) = wanted {
+        cx.request(Request::FlavorImage { url }.into());
+    }
 }
 
 /// Says hello once per launch.
@@ -429,7 +490,24 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
                 view.play_style_failed = true;
             }
         }
-        Update::Flavor(flavor) => cx.shared.caches.flavor = Some(*flavor),
+        Update::Flavor(flavor) => {
+            cx.shared.caches.flavor = Some(*flavor);
+            sync_flavor_image(cx);
+        }
+        Update::FlavorImage { url, image } => {
+            if let Some(picker) = &cx.shared.images
+                && let Some(slot) = cx.shared.caches.flavor_image.as_mut()
+                && slot.url == url
+                && matches!(slot.image, CardImage::Loading)
+            {
+                slot.image = match image {
+                    Some(image) => {
+                        CardImage::Ready(Box::new(RefCell::new(picker.new_resize_protocol(*image))))
+                    }
+                    None => CardImage::Failed,
+                };
+            }
+        }
     }
     if let Some(view) = nav.find_mut(pick) {
         view.note_figures(cx.shared);

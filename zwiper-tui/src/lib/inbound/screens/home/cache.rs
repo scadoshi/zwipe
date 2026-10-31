@@ -10,8 +10,17 @@ use zwipe_core::http::contracts::suggestions::HttpPlayStyleSummary;
 use zwipe_ui::home::{Figures, Scope};
 use zwipe_ui::timing::COUNTS_FRESH;
 
+use crate::inbound::screens::swipe::CardImage;
+
 /// How long the oracle tag catalog stays fresh before a refetch.
 pub(crate) const CATALOG_FRESH: Duration = Duration::from_hours(24);
+
+/// The featured card's image as it loads, kept under its URL so a new card drops the old image, as Add keeps its images.
+#[derive(Debug)]
+pub(crate) struct FlavorImage {
+    pub(crate) url: String,
+    pub(crate) image: CardImage,
+}
 
 /// One user's own counters.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -86,6 +95,8 @@ pub(crate) struct Caches {
     pub(crate) my_counts: Option<CachedMyCounts>,
     pub(crate) play_style: Option<CachedPlayStyle>,
     pub(crate) flavor: Option<FlavorCard>,
+    /// The featured card's image, while the terminal draws real images.
+    pub(crate) flavor_image: Option<FlavorImage>,
     /// Whether this launch has said hello.
     pub(crate) greeted: bool,
     pub(crate) scope: Scope,
