@@ -13,9 +13,9 @@ use zwipe_core::http::contracts::suggestions::{
     HttpCommanderSuggestion, HttpCommanderSuggestions, HttpProfileRole, HttpProfileTag,
     HttpSharedTag, HttpStaple, HttpSuggestionReasons,
 };
+use zwipe_ui::playstyle;
 
 use super::*;
-use crate::domain::playstyle;
 use crate::inbound::event_loop::harness::Harness;
 use crate::inbound::screens::printings::Mode;
 use crate::inbound::widgets::toast::Toast;

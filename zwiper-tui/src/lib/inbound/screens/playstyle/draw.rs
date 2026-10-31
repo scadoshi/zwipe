@@ -15,14 +15,14 @@ use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::http::contracts::suggestions::{
     HttpCommanderSuggestion, HttpStaple, HttpSuggestionReasons,
 };
+use zwipe_ui::activity::Bar;
+use zwipe_ui::color_map::{ColorMapCounts, ColorMapModel};
+use zwipe_ui::playstyle;
 
 use super::{
     COLD_START, Focus, LIST_TITLE, LOAD_FAILED, NO_STAPLES, NO_SUGGESTIONS, Overlay, PlaystyleView,
     SHARES_TAGS, STAPLES_TITLE, Section, WHY,
 };
-use crate::domain::activity::Bar;
-use crate::domain::color_map::{ColorMapCounts, ColorMapModel};
-use crate::domain::playstyle;
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::screens::activity::draw as activity_draw;
@@ -737,7 +737,7 @@ fn skeleton(palette: &Palette, view: &PlaystyleView, width: u16) -> Vec<Line<'st
     let map_width = u16::try_from(inner).unwrap_or(u16::MAX);
     for line in color_map::ghost_lines(
         palette,
-        &crate::domain::color_map::ghost_model(),
+        &zwipe_ui::color_map::ghost_model(),
         view.opened.elapsed(),
         map_width,
         MAP_ROWS,

@@ -3,9 +3,9 @@
 //! Inside the heatmap the arrows and hjkl move the day cursor and show that day's counts; stepping up past the top row or down past the bottom one leaves the heatmap. On the Show chips h/l and the left and right arrows pick the rate, which switches both charts. On a revealed role, Tab and `BackTab` open its tags' definitions and `x` opens the open tag's examples; on a revealed tag `x` opens its examples. The Most skipped rows take the card rows' own keys.
 
 use crossterm::event::KeyCode;
+use zwipe_ui::activity::RateKind;
 
 use super::{ActivityView, Focus, Load, Section, pass_row, passes_topic, reopen_hint};
-use crate::domain::activity::RateKind;
 use crate::inbound::app::Context;
 use crate::inbound::screens::otag_examples;
 use crate::inbound::toward::Toward;

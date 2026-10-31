@@ -35,9 +35,9 @@ fn me(harness: &Harness) -> Uuid {
 
 fn figures(n: u64) -> Figures {
     Figures {
-        decks_created: n,
-        searches: n,
-        cards_swiped: n,
+        decks_created: Some(n),
+        searches: Some(n),
+        cards_swiped: Some(n),
     }
 }
 
@@ -117,9 +117,9 @@ fn a_restored_copy_shows_but_is_not_live() {
         decks_created: 1,
     }));
     let restored = Figures {
-        decks_created: 1,
-        searches: 2,
-        cards_swiped: 3,
+        decks_created: Some(1),
+        searches: Some(2),
+        cards_swiped: Some(3),
     };
     assert_eq!(figures_for(&harness.app.shared), Some(restored));
     assert!(!live(&harness.app.shared));

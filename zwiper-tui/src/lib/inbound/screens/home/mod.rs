@@ -15,12 +15,12 @@ use zwipe_core::domain::user::User;
 use zwipe_core::domain::user::models::hints::HINT_FIRST_LOGIN;
 use zwipe_core::domain::user::preferences::UserPreferences;
 use zwipe_core::http::contracts::suggestions::HttpPlayStyleSummary;
+use zwipe_ui::color_map::seed_from_id;
+use zwipe_ui::home::{self, Figures, Scope};
 
 use self::cache::{CachedMyCounts, CachedPlayStyle, FlavorCard};
 use super::Screen;
-use crate::domain::color_map::seed_from_id;
 use crate::domain::decode;
-use crate::domain::home::{self, Figures, Scope};
 use crate::inbound::app::{Context, Shared};
 use crate::inbound::nav::Nav;
 use crate::inbound::screens::{self, oracle_tags};

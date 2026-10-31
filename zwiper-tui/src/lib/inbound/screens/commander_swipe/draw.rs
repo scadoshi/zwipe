@@ -8,9 +8,9 @@ use ratatui::style::Style;
 use ratatui::text::Line;
 use ratatui::widgets::{Paragraph, Widget, Wrap};
 use zwipe_core::domain::card::Card;
+use zwipe_ui::playstyle;
 
 use super::CommanderSwipeView;
-use crate::domain::playstyle;
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::screens::card_sheets::filter::draw as filter_sheet;

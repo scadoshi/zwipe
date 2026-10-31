@@ -16,6 +16,7 @@ use std::time::Instant;
 use uuid::Uuid;
 use zwipe_client::ClientError;
 use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::scryfall_data::colors;
 use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::card::search_card::card_type::CardType;
 use zwipe_core::domain::user::User;
@@ -23,12 +24,10 @@ use zwipe_core::domain::user::models::hints::HINT_SUGGESTED_COMMANDERS;
 use zwipe_core::http::contracts::suggestions::{
     HttpBuilderProfile, HttpCommanderSuggestion, HttpCommanderSuggestions, HttpStaple,
 };
+use zwipe_ui::activity::Bar;
+use zwipe_ui::playstyle::{self, HELD_SIZE, LIST_SIZE, StapleColor, TagRow, of_identity};
 
 use super::{Screen, deck_form, home, oracle_tags};
-use crate::domain::activity::Bar;
-use crate::domain::playstyle::{
-    self, HELD_SIZE, LIST_SIZE, StapleColor, TagRow, identities_present, of_identity,
-};
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;
@@ -419,7 +418,7 @@ impl PlaystyleView {
 
     /// The identities among the held list plus the chosen one, so a chip stays after its last commander goes.
     pub(crate) fn identities(&self) -> Vec<Vec<Color>> {
-        identities_present(
+        colors::identities_present(
             self.entries
                 .iter()
                 .map(suggestion_colors)

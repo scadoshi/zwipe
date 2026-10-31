@@ -13,10 +13,10 @@ use std::time::{Duration, Instant};
 use ratatui::text::{Line, Span};
 use zwipe_core::domain::user::models::hints::HINT_ACTIVITY;
 use zwipe_core::http::contracts::suggestions::{HttpActivity, HttpHardPass};
+use zwipe_ui::activity::{self, Bar, HeatLayout, RateKind};
+use zwipe_ui::home::Figures;
 
 use super::{Screen, home};
-use crate::domain::activity::{self, Bar, HeatLayout, RateKind};
-use crate::domain::home::Figures;
 use crate::domain::theme::Palette;
 use crate::inbound::app::{Context, Shared};
 use crate::inbound::nav::Nav;

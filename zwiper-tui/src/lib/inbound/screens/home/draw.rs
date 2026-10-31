@@ -10,10 +10,10 @@ use ratatui::widgets::{Block, Paragraph, Wrap};
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::deck_metrics;
+use zwipe_ui::color_map::{ColorMapCounts, ColorMapModel};
+use zwipe_ui::playstyle;
 
 use super::{HomeView, Overlay, keys};
-use crate::domain::color_map::{ColorMapCounts, ColorMapModel};
-use crate::domain::home;
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::widgets::{
@@ -183,8 +183,8 @@ fn draw_color_map(f: &mut Frame<'_>, shared: &Shared, view: &HomeView, area: Rec
     let counts = summary
         .filter(|s| s.deck_count > 0)
         .and_then(|s| s.color_map.as_ref())
-        .filter(|m| home::has_data(m))
-        .map(ColorMapCounts::from);
+        .map(ColorMapCounts::from)
+        .filter(playstyle::color_map_has_data);
     let playstyle = Line::from(button(palette, "p", "Playstyle"));
     let lines: Vec<Line<'static>> = match (summary, counts) {
         (_, Some(counts)) => {
@@ -208,7 +208,7 @@ fn draw_color_map(f: &mut Frame<'_>, shared: &Shared, view: &HomeView, area: Rec
             let elapsed = view.opened.elapsed();
             let mut lines = color_map::ghost_lines(
                 palette,
-                &crate::domain::color_map::ghost_model(),
+                &zwipe_ui::color_map::ghost_model(),
                 elapsed,
                 width,
                 rows,

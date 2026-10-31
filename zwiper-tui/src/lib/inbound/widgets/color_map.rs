@@ -5,11 +5,11 @@ use std::time::Duration;
 use ratatui::style::{Color as TermColor, Style, Stylize};
 use ratatui::text::{Line, Span};
 use zwipe_core::domain::card::scryfall_data::colors::Color;
-
-use super::mana;
-use crate::domain::color_map::{
+use zwipe_ui::color_map::{
     ColorMapCounts, ColorMapModel, FULL_SHADE, SWEEP_RINGS, SWEEP_STEP_MS, shade_percent,
 };
+
+use super::mana;
 use crate::domain::count_up;
 use crate::domain::theme::Palette;
 
@@ -220,8 +220,9 @@ pub(crate) fn key(
 
 #[cfg(test)]
 mod tests {
+    use zwipe_ui::color_map::ghost_model;
+
     use super::*;
-    use crate::domain::color_map::ghost_model;
 
     fn counts() -> ColorMapCounts {
         ColorMapCounts {

@@ -4,9 +4,9 @@ use std::fs;
 use std::path::PathBuf;
 
 use anyhow::Result;
+use zwipe_ui::home::Scope;
 
 use super::files;
-use crate::domain::home::Scope;
 
 /// The file holding the scope as `all` or `mine`, the bytes the app stores.
 const SCOPE_FILE: &str = "count_scope";

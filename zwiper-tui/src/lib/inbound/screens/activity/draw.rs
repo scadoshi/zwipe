@@ -9,9 +9,9 @@ use ratatui::layout::{Constraint, Layout, Margin, Rect};
 use ratatui::style::{Color as TermColor, Modifier, Style, Stylize};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Paragraph, Wrap};
+use zwipe_ui::activity::{self, Bar, DAYS_PER_WEEK, HeatLayout, RateKind, WEEKDAY_LABELS};
 
 use super::{ActivityView, Focus, Load, Loaded, PASSES_TITLE, Section, pass_row};
-use crate::domain::activity::{self, Bar, DAYS_PER_WEEK, HeatLayout, RateKind, WEEKDAY_LABELS};
 use crate::domain::count_up;
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;

@@ -9,9 +9,9 @@ use zwipe_core::domain::user::models::hints::HINT_OTAG_EXAMPLES;
 use zwipe_core::http::contracts::suggestions::{
     HttpActivityDay, HttpHardPass, HttpRoleRates, HttpSwipeOutcomes, HttpTagRates,
 };
+use zwipe_ui::activity::{role_rate_bars, tag_rate_bars, year_tags};
 
 use super::*;
-use crate::domain::activity::{role_rate_bars, tag_rate_bars, year_tags};
 use crate::inbound::event_loop::harness::Harness;
 use crate::inbound::screens::home::cache::CachedMyCounts;
 use crate::inbound::screens::printings::Mode;
@@ -183,9 +183,9 @@ fn the_counters_roll_until_the_payload_lands() {
     harness.apply(home::Update::MyMetrics {
         user_id: me,
         figures: Figures {
-            decks_created: 3,
-            searches: 4,
-            cards_swiped: 5,
+            decks_created: Some(3),
+            searches: Some(4),
+            cards_swiped: Some(5),
         },
     });
     assert_eq!(view(&harness).figures(&harness.app.shared), None);

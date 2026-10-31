@@ -8,9 +8,9 @@ use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::style::Stylize;
 use ratatui::text::{Line, Text};
 use ratatui::widgets::Paragraph;
+use zwipe_ui::home::Figures;
 
 use crate::domain::count_up;
-use crate::domain::home::Figures;
 use crate::domain::theme::Palette;
 
 /// Each figure's roll seed, handed out once per launch as orangui hands one to each counter, so neighbors never roll in step.
@@ -34,7 +34,7 @@ pub(crate) fn numbers(
     let values = figures.map(Figures::values);
     let mut out: [String; 3] = Default::default();
     for (i, slot) in out.iter_mut().enumerate() {
-        let value = values.and_then(|v| v.get(i).copied());
+        let value = values.and_then(|v| v.get(i).copied().flatten());
         let seed = seeds().get(i).copied().unwrap_or_default();
         *slot = match value {
             None => match ticks(since_open) {
@@ -83,9 +83,9 @@ mod tests {
     #[test]
     fn figures_land_in_compact_form() {
         let figures = Figures {
-            decks_created: 28_049,
-            searches: 12,
-            cards_swiped: 1_234_567,
+            decks_created: Some(28_049),
+            searches: Some(12),
+            cards_swiped: Some(1_234_567),
         };
         let landed = numbers(Some(figures), Duration::ZERO, ROLL);
         assert_eq!(landed, ["28.0k", "12", "1.2m"]);

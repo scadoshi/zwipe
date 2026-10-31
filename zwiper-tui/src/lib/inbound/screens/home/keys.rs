@@ -3,9 +3,9 @@
 use crossterm::event::KeyCode;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::deck_metrics;
+use zwipe_ui::buy;
 
 use super::{HomeView, Overlay};
-use crate::domain::home;
 use crate::inbound::app::Context;
 use crate::inbound::screens::{self, account, config, decks, image_preview};
 use crate::inbound::widgets::alert::{AlertChoice, AlertDialog};
@@ -113,8 +113,8 @@ fn buy(cx: &mut Context<'_>, index: usize) {
     };
     let data = &card.scryfall_data;
     let url = match index {
-        1 => home::tcgplayer_card_url(&data.name, data.tcgplayer_id),
-        2 => home::cardkingdom_card_url(&data.name),
+        1 => buy::tcgplayer_card_url(&data.name, data.tcgplayer_id),
+        2 => buy::cardkingdom_card_url(&data.name),
         _ => return,
     };
     browser::open(cx, &url);

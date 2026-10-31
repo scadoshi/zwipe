@@ -7,8 +7,8 @@ use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::oracle_tag::OracleTag;
 use zwipe_core::http::contracts::suggestions::HttpPlayStyleSummary;
+use zwipe_ui::home::{Figures, Scope};
 
-use crate::domain::home::{Figures, Scope};
 use crate::inbound::widgets::hero::COUNTS_FRESH;
 
 /// How long the oracle tag catalog stays fresh before a refetch.

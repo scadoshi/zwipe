@@ -15,16 +15,18 @@ use std::time::{Duration, Instant};
 use crossterm::event::KeyCode;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::scryfall_data::colors;
 use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::deck::format::Format;
 use zwipe_core::http::contracts::suggestions::HttpCommanderSuggestion;
+use zwipe_ui::playstyle;
 
 use super::card_sheets::filter::{FilterSheet, SheetConfig, SheetOutcome};
 use super::playstyle::{DeckLimit, create_deck_with, suggestion_colors};
 use super::{Screen, card_sheets};
+use crate::domain::filter;
 use crate::domain::stack::Direction;
-use crate::domain::{filter, playstyle};
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;
@@ -243,7 +245,7 @@ impl CommanderSwipeView {
     /// The identities the Filter offers: those among the held list plus the picked one.
     pub(crate) fn identities(&self) -> Vec<Vec<Color>> {
         self.suggested().map_or_else(Vec::new, |pile| {
-            playstyle::identities_present(
+            colors::identities_present(
                 pile.held
                     .iter()
                     .map(suggestion_colors)
