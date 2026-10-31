@@ -13,13 +13,6 @@ pub(crate) mod card_info;
 /// A swiped card flying off, and an undone one coming back.
 pub(crate) mod card_motion;
 /// Expandable card rows with their classification, printings and image keys.
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "Activity, Playstyle and the Commander maybeboard list their cards with it"
-    )
-)]
 pub(crate) mod card_rows;
 /// A card as lines of text.
 pub(crate) mod card_text;
@@ -76,13 +69,6 @@ pub(crate) mod measure;
 /// A sheet of buttons, one focused.
 pub(crate) mod menu;
 /// An oracle tag's definition, and a row of tag chips with one open.
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "card rows and the Activity and Playstyle charts reveal tags with it"
-    )
-)]
 pub(crate) mod otag;
 /// A framed panel centered over the screen.
 pub(crate) mod panel;

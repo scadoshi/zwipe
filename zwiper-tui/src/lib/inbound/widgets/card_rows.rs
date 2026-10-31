@@ -306,6 +306,13 @@ impl CardRows {
     }
 
     /// Draws the rows into `area`, paged so the focused row is in view, with a marker beside it. No rows draw nothing; the host draws its own empty state.
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "Activity, Playstyle and the Commander maybeboard lay the rows out in their own bodies with `lines`"
+        )
+    )]
     pub(crate) fn draw(
         &self,
         f: &mut Frame<'_>,

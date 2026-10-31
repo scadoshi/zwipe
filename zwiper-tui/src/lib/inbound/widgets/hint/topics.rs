@@ -12,7 +12,7 @@ use super::HintContent;
     not(test),
     expect(
         dead_code,
-        reason = "the deck screens word their field and chart explainers in their own popups, and the Playstyle topics wait for that screen"
+        reason = "the deck screens word their field and chart explainers in their own popups"
     )
 )]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
