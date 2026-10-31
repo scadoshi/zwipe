@@ -2,6 +2,7 @@
 //! image preview, the printing sheet, the card's info and details, the
 //! oracle tag reveals and the swipe surface.
 
+pub mod buy_links;
 pub mod card_info;
 pub mod card_row;
 pub mod charts;

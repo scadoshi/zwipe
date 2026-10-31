@@ -73,6 +73,7 @@ Wire the cross-links the waves leave open (Playstyle `Create deck` to Create, th
 - Commander maybeboard's `Back` follows browser history; the app pushes the deck list.
 - The printing sheet steps through printings with `←` and `→` buttons and keys in place of the app's swipe carousel.
 - Home greets once per page load, a browser's launch.
+- `Buy` is a link per retailer that opens in a new tab, as zite's are, for a card and for a deck, where the app opens a dialog to pick one.
 - The `!` header button moves into the sidebar as `Help` on authed screens; the public screens keep it in the header.
 - Platform-only pieces are skipped: the app icon picker, haptics, crash capture, usage telemetry (a failed call is logged, not reported), the OS back gesture.
 - Escape closes an open dialog before anything else, even where the app's back stack would close the sheet under it first (the Exceptions sheet's hint).

@@ -747,6 +747,34 @@ body {
     }
 }
 
+/* ---- Buy links ---- */
+
+/* A retailer link drawn as the action buttons beside it, with zite's
+   trailing arrow that nudges along its diagonal on hover. */
+.web-buy-link {
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+}
+
+.web-buy-ext {
+    display: inline-block;
+    margin-left: 1ch;
+    transition: transform 0.25s ease;
+}
+
+@media (hover: hover) {
+    .web-buy-link:hover .web-buy-ext {
+        transform: translate(0.12em, -0.12em);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .web-buy-link:hover .web-buy-ext {
+        transform: none;
+    }
+}
+
 /* ---- Activity ---- */
 
 .web-activity {
