@@ -3,7 +3,10 @@ use ratatui::Terminal;
 use ratatui::backend::TestBackend;
 use zwipe_core::domain::card::search_card::card_filter::CardSortKey;
 use zwipe_core::domain::card::search_card::card_type::CardType;
+use zwipe_ui::filter::AddContext;
+use zwipe_ui::filter::draft::ResetRule;
 use zwipe_ui::filter::fields::{MatchGroup, Toggle};
+use zwipe_ui::filter::picker::Sources;
 use zwipe_ui::filter::sections::Row;
 use zwipe_ui::stores::catalog::Kind;
 
@@ -12,6 +15,7 @@ use crate::domain::theme::Palette;
 use crate::inbound::app::App;
 use crate::inbound::screens;
 use crate::inbound::widgets::hint::HintTopic;
+use crate::inbound::widgets::toast::ToastKind;
 use crate::test_support::{card, user};
 
 fn app() -> App {
@@ -112,13 +116,13 @@ fn typing_a_name_then_applying_commits_the_draft() {
     press(&mut app, &mut sheet, &[KeyCode::Down]);
     assert!(sheet.typing());
     type_text(&mut app, &mut sheet, "bolt");
-    assert_eq!(sheet.draft.name_contains(), Some("bolt"));
+    assert_eq!(sheet.filter.draft.name_contains(), Some("bolt"));
     assert_eq!(
         press(&mut app, &mut sheet, &[KeyCode::Char('a')]),
         SheetOutcome::Open,
         "a types while in the box"
     );
-    assert_eq!(sheet.draft.name_contains(), Some("bolta"));
+    assert_eq!(sheet.filter.draft.name_contains(), Some("bolta"));
     press(&mut app, &mut sheet, &[KeyCode::Backspace, KeyCode::Esc]);
     assert!(!sheet.typing(), "Esc leaves the box for the header");
     let outcome = press(&mut app, &mut sheet, &[KeyCode::Char('a')]);
@@ -149,7 +153,7 @@ fn back_drops_edits_and_says_so_only_when_there_were_some() {
         &mut sheet,
         &[KeyCode::Down, KeyCode::Down, KeyCode::Enter],
     );
-    assert_eq!(sheet.draft.sort(), Some(CardSortKey::Name));
+    assert_eq!(sheet.filter.draft.sort(), Some(CardSortKey::Name));
     assert_eq!(
         press(&mut app, &mut sheet, &[KeyCode::Esc]),
         SheetOutcome::Closed
@@ -161,7 +165,7 @@ fn back_drops_edits_and_says_so_only_when_there_were_some() {
 }
 
 #[test]
-fn apply_refuses_an_empty_search_closes_on_no_change_and_names_contradictions() {
+fn apply_does_nothing_until_the_draft_changes_and_names_contradictions() {
     let mut app = app();
     let validate = SheetConfig {
         validate: true,
@@ -174,7 +178,8 @@ fn apply_refuses_an_empty_search_closes_on_no_change_and_names_contradictions() 
     );
     assert_eq!(
         last_toast(&app),
-        Some((ToastKind::Warning, "Filter is already empty".to_owned()))
+        None,
+        "Apply is disabled on an untouched empty search, as in the app"
     );
 
     let mut filter = CardQueryBuilder::default();
@@ -182,11 +187,18 @@ fn apply_refuses_an_empty_search_closes_on_no_change_and_names_contradictions() 
     let mut sheet = FilterSheet::new(&filter, plain());
     assert_eq!(
         press(&mut app, &mut sheet, &[KeyCode::Char('a')]),
-        SheetOutcome::Closed
+        SheetOutcome::Open,
+        "an unchanged draft leaves the sheet open"
     );
 
-    sheet.draft.set_card_type_contains_any(vec![CardType::Land]);
-    sheet.draft.set_card_type_excludes_any(vec![CardType::Land]);
+    sheet
+        .filter
+        .draft
+        .set_card_type_contains_any(vec![CardType::Land]);
+    sheet
+        .filter
+        .draft
+        .set_card_type_excludes_any(vec![CardType::Land]);
     assert_eq!(
         press(&mut app, &mut sheet, &[KeyCode::Char('a')]),
         SheetOutcome::Open
@@ -200,7 +212,7 @@ fn apply_refuses_an_empty_search_closes_on_no_change_and_names_contradictions() 
     );
 
     let mut sheet = FilterSheet::new(&filter, validate_config());
-    sheet.draft.clear();
+    sheet.filter.draft.clear();
     let outcome = press(&mut app, &mut sheet, &[KeyCode::Char('a')]);
     assert!(
         matches!(outcome, SheetOutcome::Applied(_)),
@@ -226,7 +238,7 @@ fn reset_follows_the_hosts_rule() {
     filter.set_name_contains("elf");
     let mut sheet = FilterSheet::new(&filter, plain());
     press(&mut app, &mut sheet, &[KeyCode::Char('r')]);
-    assert!(sheet.draft.is_empty());
+    assert!(sheet.filter.draft.is_empty());
     assert_eq!(
         last_toast(&app),
         Some((ToastKind::Info, "Filter reset".to_owned()))
@@ -260,10 +272,10 @@ fn chips_toggle_and_the_section_x_clears() {
         &[KeyCode::Char('l'), KeyCode::Char(' ')],
     );
     assert_eq!(
-        sheet.draft.card_type_contains_any(),
+        sheet.filter.draft.card_type_contains_any(),
         Some(&[CardType::Creature][..])
     );
-    assert!(Section::Types.is_active(&sheet.draft));
+    assert!(Section::Types.is_active(&sheet.filter.draft));
     press(
         &mut app,
         &mut sheet,
@@ -271,7 +283,7 @@ fn chips_toggle_and_the_section_x_clears() {
     );
     assert_eq!(sheet.open, None, "Enter on the open header closes it");
     press(&mut app, &mut sheet, &[KeyCode::Char('x')]);
-    assert!(!Section::Types.is_active(&sheet.draft));
+    assert!(!Section::Types.is_active(&sheet.filter.draft));
 }
 
 #[test]
@@ -293,21 +305,25 @@ fn numbers_parse_when_the_box_is_left() {
     press(&mut app, &mut sheet, &[KeyCode::Backspace]);
     type_text(&mut app, &mut sheet, "3");
     press(&mut app, &mut sheet, &[KeyCode::Up]);
-    assert_eq!(sheet.draft.cmc_equals(), Some(3.0));
+    assert_eq!(sheet.filter.draft.cmc_equals(), Some(3.0));
 
     press(&mut app, &mut sheet, &[KeyCode::Char(' ')]);
     assert_eq!(
-        sheet.draft.cmc_equals(),
+        sheet.filter.draft.cmc_equals(),
         None,
         "Range drops the exact value"
     );
     press(&mut app, &mut sheet, &[KeyCode::Down]);
     type_text(&mut app, &mut sheet, "1");
     press(&mut app, &mut sheet, &[KeyCode::Down]);
-    assert_eq!(sheet.draft.cmc_range(), None, "one end alone does nothing");
+    assert_eq!(
+        sheet.filter.draft.cmc_range(),
+        None,
+        "one end alone does nothing"
+    );
     type_text(&mut app, &mut sheet, "4");
     press(&mut app, &mut sheet, &[KeyCode::Enter]);
-    assert_eq!(sheet.draft.cmc_range(), Some((1.0, 4.0)));
+    assert_eq!(sheet.filter.draft.cmc_range(), Some((1.0, 4.0)));
 }
 
 #[test]
@@ -326,12 +342,12 @@ fn pickers_search_their_source_pick_with_enter_and_drop_with_backspace() {
     type_text(&mut app, &mut sheet, "fl");
     press(&mut app, &mut sheet, &[KeyCode::Tab, KeyCode::Enter]);
     assert_eq!(
-        sheet.draft.keywords_contains_any(),
+        sheet.filter.draft.keywords_contains_any(),
         Some(&["flying".to_owned()][..])
     );
     press(&mut app, &mut sheet, &[KeyCode::Enter]);
     assert_eq!(
-        sheet.draft.keywords_contains_any(),
+        sheet.filter.draft.keywords_contains_any(),
         Some(&["flying".to_owned(), "flash".to_owned()][..]),
         "the picked one leaves the results"
     );
@@ -342,7 +358,7 @@ fn pickers_search_their_source_pick_with_enter_and_drop_with_backspace() {
     );
     press(&mut app, &mut sheet, &[KeyCode::Backspace]);
     assert_eq!(
-        sheet.draft.keywords_contains_any(),
+        sheet.filter.draft.keywords_contains_any(),
         Some(&["flying".to_owned()][..])
     );
 }
@@ -363,11 +379,11 @@ fn steppers_and_tri_toggles_write_the_draft() {
             zwipe_ui::filter::fields::Stat::Power
         ))))
     );
-    assert_eq!(sheet.draft.power_equals(), Some(1));
+    assert_eq!(sheet.filter.draft.power_equals(), Some(1));
     open_section(&mut app, &mut sheet, Section::Config);
     press(&mut app, &mut sheet, &[KeyCode::Down, KeyCode::Char(' ')]);
     assert_eq!(
-        Toggle::Playable.get(&sheet.draft),
+        Toggle::Playable.get(&sheet.filter.draft),
         None,
         "tapping Yes again unsets"
     );
@@ -445,7 +461,7 @@ fn the_dictionary_chips_open_the_dictionary_and_its_use_lands_in_the_list() {
     let mut cx = Context::new(&mut app.shared);
     assert!(returned_from_dictionary(Some(&mut sheet), &mut cx));
     assert_eq!(
-        sheet.draft.oracle_tags_contains_any(),
+        sheet.filter.draft.oracle_tags_contains_any(),
         Some(&["ramp".to_owned()][..])
     );
     assert_eq!(
@@ -471,7 +487,7 @@ fn the_dictionary_chips_open_the_dictionary_and_its_use_lands_in_the_list() {
     let mut cx = Context::new(&mut app.shared);
     sheet.take_dictionary_tag(&mut cx);
     assert_eq!(
-        sheet.draft.oracle_tags_excludes(),
+        sheet.filter.draft.oracle_tags_excludes(),
         Some(&["removal".to_owned()][..])
     );
 

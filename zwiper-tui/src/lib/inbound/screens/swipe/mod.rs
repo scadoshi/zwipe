@@ -27,6 +27,7 @@ use zwipe_core::http::contracts::deck::HttpDeckCardSearch;
 use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpPatchDeckCard};
 use zwipe_ui::add::{self, AddDeck};
 use zwipe_ui::deck_signals::{self, Crossing, Level};
+use zwipe_ui::filter::draft::{ResetRule, SheetConfig};
 use zwipe_ui::filter::picker::Sources;
 use zwipe_ui::stack::{
     AddAction, CARDS_WARNING_THRESHOLD, CardStack, Direction, MAX_CARDS_IN_STACK, MaybeboardAction,
@@ -40,7 +41,7 @@ use zwipe_ui::timing;
 
 use super::Screen;
 use super::card_sheets::details::DetailsSheet;
-use super::card_sheets::filter::{FilterSheet, ResetRule, SheetConfig};
+use super::card_sheets::filter::FilterSheet;
 use super::card_sheets::printing::PrintingSheet;
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;

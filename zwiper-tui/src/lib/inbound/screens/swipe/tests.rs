@@ -465,6 +465,7 @@ fn the_filter_sheet_opens_applies_and_refetches() {
         .sheet
         .as_mut()
         .unwrap()
+        .filter
         .draft
         .set_name_contains("elf");
     harness.clear();

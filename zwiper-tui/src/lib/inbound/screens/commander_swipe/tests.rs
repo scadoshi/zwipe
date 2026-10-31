@@ -545,7 +545,7 @@ fn commander_modes_filter_is_the_card_filter_and_apply_deals_again() {
     assert!(!sheet.sections().contains(&FilterSection::Format));
     assert!(screen_text(&harness.app).contains(" Filter "));
     if let Some(sheet) = &mut view_mut(&mut harness).sheet {
-        sheet.draft.set_name_contains("elf");
+        sheet.filter.draft.set_name_contains("elf");
     }
     harness.clear();
     harness.press(KeyCode::Char('a'));

@@ -85,6 +85,11 @@ impl<'app> Context<'app> {
         self.shared.toasts.push_for(kind, message, duration);
     }
 
+    /// Shows a toast zwipe-ui asked for, for its own band.
+    pub(crate) fn show(&mut self, toast: zwipe_ui::toast::Toast) {
+        self.shared.toasts.show(toast);
+    }
+
     /// Draws in `preferences` from now on and remembers their theme for the next launch.
     pub(crate) fn use_preferences(&mut self, preferences: &UserPreferences) {
         self.shared.palette = Palette::for_preferences(preferences);

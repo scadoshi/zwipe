@@ -81,7 +81,7 @@ pub(crate) fn lines(
         if section == Section::OracleTags {
             spans.push(Span::styled(" ?", palette.muted));
         }
-        if section.is_active(&sheet.draft) {
+        if section.is_active(&sheet.filter.draft) {
             spans.push(Span::styled("  ×", palette.warning));
         }
         lines.push(Line::from(spans));
@@ -162,7 +162,7 @@ fn row_lines(
                 spans.push(Span::raw(" "));
                 spans.push(chip(
                     palette,
-                    sheet.modes.label(&sheet.draft, chip_kind),
+                    sheet.filter.modes.label(&sheet.filter.draft, chip_kind),
                     false,
                     focused,
                     Some(palette.accent),
@@ -251,13 +251,13 @@ fn stepper_line(
         StepRow::Exact(stat) => {
             spans.push(Span::styled("- ", palette.muted));
             spans.push(Span::styled(
-                value(stat.exact(&sheet.draft)),
+                value(stat.exact(&sheet.filter.draft)),
                 palette.base.bold(),
             ));
             spans.push(Span::styled(" +", palette.muted));
         }
         StepRow::Range(stat) => {
-            let (min, max) = stat.range(&sheet.draft).unwrap_or((0, 0));
+            let (min, max) = stat.range(&sheet.filter.draft).unwrap_or((0, 0));
             let end = |v: i32, on: bool| {
                 let style = if focused && on {
                     palette.accent.bold().underlined()
@@ -288,7 +288,7 @@ fn picker_lines(
 ) -> Vec<Line<'static>> {
     let palette = &shared.palette;
     let mut lines = Vec::new();
-    let pills = field.picked(&sheet.draft);
+    let pills = field.picked(&sheet.filter.draft);
     if !pills.is_empty() {
         let mut spans = vec![Span::raw("    ")];
         for value in &pills {
@@ -312,9 +312,9 @@ fn picker_lines(
         focused,
     ));
     let results = field.results(
-        &sheet.draft,
+        &sheet.filter.draft,
         &query,
-        &sheet.config.sources,
+        &sheet.filter.config.sources,
         &shared.cards.catalog,
     );
     if !results.is_empty() {

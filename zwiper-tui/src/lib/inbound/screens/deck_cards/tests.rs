@@ -442,7 +442,7 @@ fn the_filter_sheets_dictionary_returns_to_the_sheet_without_a_reload() {
         .as_ref()
         .expect("the sheet is still open");
     assert_eq!(
-        sheet.draft.oracle_tags_contains_any(),
+        sheet.filter.draft.oracle_tags_contains_any(),
         Some(&["ramp".to_owned()][..])
     );
     assert!(

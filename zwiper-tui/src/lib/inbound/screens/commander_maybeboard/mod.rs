@@ -27,8 +27,9 @@ use zwipe_core::domain::card::search_card::cards::Cards;
 use zwipe_core::domain::deck::format::Format;
 use zwipe_core::domain::user::models::hints::HINT_COMMANDER_MAYBEBOARD;
 use zwipe_ui::filter;
+use zwipe_ui::filter::draft::SheetConfig;
 
-use super::card_sheets::filter::{FilterSheet, SheetConfig, SheetOutcome};
+use super::card_sheets::filter::{FilterSheet, SheetOutcome};
 use super::playstyle::DeckLimit;
 use super::{Screen, card_sheets, oracle_tags};
 use crate::inbound::app::Context;

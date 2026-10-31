@@ -75,15 +75,15 @@ fn act(sheet: &mut FilterSheet, code: KeyCode, cx: &mut Context<'_>) {
         Target::Header(section) => {
             if toggle {
                 sheet.toggle_section(section);
-            } else if code == KeyCode::Char('x') && section.is_active(&sheet.draft) {
-                section.clear(&mut sheet.draft);
+            } else if code == KeyCode::Char('x') && section.is_active(&sheet.filter.draft) {
+                section.clear(&mut sheet.filter.draft);
                 sheet.sync_inputs();
                 sheet.clamp_focus();
             }
         }
         Target::Row(Row::Label { mode, clear, .. }) => {
             if toggle && let Some(chip) = mode {
-                sheet.modes.flip(&mut sheet.draft, chip);
+                sheet.filter.modes.flip(&mut sheet.filter.draft, chip);
                 sheet.sync_inputs();
             } else if code == KeyCode::Char('x')
                 && let Some(clear) = clear
@@ -119,7 +119,7 @@ fn act(sheet: &mut FilterSheet, code: KeyCode, cx: &mut Context<'_>) {
 
 /// Clears what a label's x covers, and the text boxes under it.
 fn clear_label(sheet: &mut FilterSheet, clear: Clear) {
-    clear.apply(&mut sheet.draft);
+    clear.apply(&mut sheet.filter.draft);
     sheet.sync_inputs();
     for picker in sheet.pickers.values_mut() {
         *picker = PickerInput::default();
@@ -152,7 +152,7 @@ fn type_key(sheet: &mut FilterSheet, code: KeyCode, cx: &mut Context<'_>) {
                 && input.handle_key(code)
             {
                 let value = input.value().to_owned();
-                field.set(&mut sheet.draft, &value);
+                field.set(&mut sheet.filter.draft, &value);
             }
         }
         Row::Number(field) => match code {
@@ -175,9 +175,9 @@ fn type_key(sheet: &mut FilterSheet, code: KeyCode, cx: &mut Context<'_>) {
                     .map(|p| p.input.value().to_owned())
                     .unwrap_or_default();
                 field.results(
-                    &sheet.draft,
+                    &sheet.filter.draft,
                     &query,
-                    &sheet.config.sources,
+                    &sheet.filter.config.sources,
                     &cx.shared.cards.catalog,
                 )
             };
@@ -194,14 +194,14 @@ fn type_key(sheet: &mut FilterSheet, code: KeyCode, cx: &mut Context<'_>) {
                 KeyCode::Enter => {
                     let at = picker.highlight.min(results.len().saturating_sub(1));
                     if let Some(value) = results.get(at) {
-                        let modes = sheet.modes.clone();
-                        field.pick(&mut sheet.draft, &modes, value);
+                        let modes = sheet.filter.modes.clone();
+                        field.pick(&mut sheet.filter.draft, &modes, value);
                     }
                 }
                 KeyCode::Backspace if picker.input.is_empty() => {
-                    let modes = sheet.modes.clone();
-                    if let Some(last) = field.picked(&sheet.draft).last() {
-                        field.unpick(&mut sheet.draft, &modes, last);
+                    let modes = sheet.filter.modes.clone();
+                    if let Some(last) = field.picked(&sheet.filter.draft).last() {
+                        field.unpick(&mut sheet.filter.draft, &modes, last);
                     }
                 }
                 _ => {

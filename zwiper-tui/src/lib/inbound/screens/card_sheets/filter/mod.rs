@@ -1,6 +1,6 @@
 //! The card filter sheet the Add, deck cards and Remove screens open: fifteen accordion sections edit a draft of the host's filter, Apply hands it back, and closing any other way drops it.
 //!
-//! The host keeps its applied filter. Opening the sheet copies it as the draft and a snapshot; Apply returns the draft for the host to commit, and Back restores nothing because the host's filter never changed.
+//! The host keeps its applied filter. The draft, its snapshot and every rule for Apply, Back and Reset are zwipe-ui's `FilterDraft`, which returns its toasts for the sheet to show; this module keeps the focus, the text boxes and the chips. Apply does nothing while the draft matches the snapshot, as in the app.
 
 pub(crate) mod draw;
 pub(crate) mod keys;
@@ -16,14 +16,13 @@ use zwipe_core::domain::card::search_card::card_filter::CardSortKey;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::Format;
-use zwipe_core::domain::user::hints::HINT_FILTER;
+use zwipe_ui::filter::draft::{ApplyOutcome, FilterDraft, SheetConfig};
 use zwipe_ui::filter::fields::{
-    End, Exclude, InvalidNumber, MatchGroup, RangeGroup, SideGroup, StrList, TextField, card_types,
-    identity_colors, parse_number, toggle_identity, toggled,
+    End, Exclude, MatchGroup, RangeGroup, SideGroup, StrList, TextField, card_types,
+    identity_colors, toggle_identity, toggled,
 };
-use zwipe_ui::filter::picker::{PickerField, Sources};
+use zwipe_ui::filter::picker::PickerField;
 use zwipe_ui::filter::sections::{self, ChipSet, Modes, NumberField, Row, Section, StepRow};
-use zwipe_ui::filter::{self, AddContext, Adopted, ApplyAction, FilterState};
 use zwipe_ui::stores::catalog::Catalog;
 
 use super::Request;
@@ -32,34 +31,9 @@ use crate::inbound::screens::oracle_tags;
 use crate::inbound::toward::Toward;
 use crate::inbound::widgets::hint;
 use crate::inbound::widgets::text_input::TextInput;
-use crate::inbound::widgets::toast::{self, ToastKind};
 
 /// The produced-mana chips: the five colors and colorless.
 const PRODUCED: [&str; 6] = ["W", "U", "B", "R", "G", "C"];
-
-/// What Reset does on this host.
-#[derive(Debug, Clone, PartialEq, Default)]
-pub(crate) enum ResetRule {
-    /// Back to the blank filter.
-    #[default]
-    Plain,
-    /// Add's search: back to the deck-context default, keeping synergy.
-    AddSearch(AddContext),
-    /// Add's maybeboard: back to blank, keeping synergy.
-    AddMaybeboard,
-}
-
-/// How a host opens the sheet.
-#[derive(Debug, Clone, PartialEq, Default)]
-pub(crate) struct SheetConfig {
-    /// Whether the Format section shows. Every host shows it.
-    pub(crate) show_format: bool,
-    /// Whether Apply refuses an empty draft over an empty filter, as Add's search does.
-    pub(crate) validate: bool,
-    pub(crate) reset: ResetRule,
-    /// Where the word pickers draw from.
-    pub(crate) sources: Sources,
-}
 
 /// Hands the dictionary's tag to `sheet` when a host comes back into view. Returns whether the dictionary was open over that sheet.
 pub(crate) fn returned_from_dictionary(
@@ -97,10 +71,8 @@ pub(crate) struct PickerInput {
 /// The open filter sheet.
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct FilterSheet {
-    pub(crate) draft: CardQueryBuilder,
-    snapshot: CardQueryBuilder,
-    pub(crate) config: SheetConfig,
-    pub(crate) modes: Modes,
+    /// The draft, its snapshot, the host's config and the mode chips, whose rules zwipe-ui keeps.
+    pub(crate) filter: FilterDraft,
     /// The one open section.
     pub(crate) open: Option<Section>,
     /// Index into [`FilterSheet::targets`].
@@ -123,32 +95,28 @@ impl FilterSheet {
         filter: &CardQueryBuilder,
         config: SheetConfig,
     ) -> Self {
-        hint::once(cx, HINT_FILTER);
-        let catalog = &mut cx.shared.cards.catalog;
-        if catalog.any_public_failed() {
-            cx.toast(
-                ToastKind::Warning,
-                "Filter lists didn't load, trying again".to_owned(),
-            );
+        let (filter, opened) =
+            FilterDraft::open(filter, config, &mut cx.shared.cards.catalog, Utc::now());
+        hint::once(cx, opened.hint.key());
+        if let Some(toast) = opened.toast {
+            cx.show(toast);
         }
-        let wanted = cx
-            .shared
-            .cards
-            .catalog
-            .claim(config.sources.needs(), Utc::now());
-        for kind in wanted {
+        for kind in opened.fetch {
             cx.request(Request::Catalog(kind).into());
         }
-        Self::new(filter, config)
+        Self::over(filter)
     }
 
     /// The sheet over `filter`, with every section closed.
+    #[cfg(test)]
     pub(crate) fn new(filter: &CardQueryBuilder, config: SheetConfig) -> Self {
+        Self::over(FilterDraft::new(filter, config))
+    }
+
+    /// The sheet over a draft, with every section closed.
+    fn over(filter: FilterDraft) -> Self {
         let mut sheet = Self {
-            draft: filter.clone(),
-            snapshot: filter.clone(),
-            config,
-            modes: Modes::default(),
+            filter,
             open: None,
             focus: 0,
             texts: HashMap::new(),
@@ -164,18 +132,18 @@ impl FilterSheet {
 
     /// Whether the draft still matches what was applied, which grays out Apply.
     pub(crate) fn unchanged(&self) -> bool {
-        self.draft == self.snapshot
+        self.filter.unchanged()
     }
 
     /// The sections this host shows.
     pub(crate) fn sections(&self) -> Vec<Section> {
-        Section::shown(self.config.show_format)
+        Section::shown(self.filter.config.show_format)
     }
 
     /// The open section's rows.
     pub(crate) fn rows(&self) -> Vec<Row> {
         self.open
-            .map(|section| sections::rows(section, &self.draft, &self.modes))
+            .map(|section| sections::rows(section, &self.filter.draft, &self.filter.modes))
             .unwrap_or_default()
     }
 
@@ -220,7 +188,7 @@ impl FilterSheet {
         ] {
             let input = TextInput::default()
                 .with_placeholder(field.placeholder())
-                .with_value(field.get(&self.draft));
+                .with_value(field.get(&self.filter.draft));
             self.texts.insert(field, input);
         }
         for field in [
@@ -232,7 +200,7 @@ impl FilterSheet {
         ] {
             let input = TextInput::default()
                 .with_placeholder(field.placeholder())
-                .with_value(&field.text(&self.draft));
+                .with_value(&field.text(&self.filter.draft));
             self.numbers.insert(field, input);
         }
     }
@@ -270,59 +238,20 @@ impl FilterSheet {
                 .map(|i| i.value().to_owned())
                 .unwrap_or_default()
         };
-        match field {
-            NumberField::ManaValue => match parse_number(&text(self, field)) {
-                Ok(None) => {
-                    self.draft.unset_cmc_equals();
-                }
-                Ok(Some(n)) => {
-                    self.draft.set_cmc_equals(n);
-                    if let Some(input) = self.numbers.get_mut(&field) {
-                        input.set_value(&n.to_string());
-                    }
-                }
-                Err(InvalidNumber) => cx.toast_for(
-                    ToastKind::Error,
-                    "Invalid mana value".to_owned(),
-                    toast::QUICK,
-                ),
-            },
-            NumberField::ManaMin | NumberField::ManaMax => {
-                let (min, max) = (
-                    text(self, NumberField::ManaMin),
-                    text(self, NumberField::ManaMax),
-                );
-                match (parse_number(&min), parse_number(&max)) {
-                    (Ok(None), Ok(None)) => {
-                        self.draft.unset_cmc_range();
-                    }
-                    (Ok(Some(min)), Ok(Some(max))) => {
-                        self.draft.set_cmc_range((min, max));
-                    }
-                    (Ok(_), Ok(_)) => {}
-                    _ => cx.toast_for(
-                        ToastKind::Error,
-                        "Invalid mana value range".to_owned(),
-                        toast::QUICK,
-                    ),
-                }
-            }
-            NumberField::PriceMin | NumberField::PriceMax => {
-                match parse_number(&text(self, field)) {
-                    Ok(value) => {
-                        let min = field == NumberField::PriceMin;
-                        match (min, value) {
-                            (true, None) => self.draft.unset_price_min(),
-                            (true, Some(n)) => self.draft.set_price_min(n),
-                            (false, None) => self.draft.unset_price_max(),
-                            (false, Some(n)) => self.draft.set_price_max(n),
-                        };
-                    }
-                    Err(InvalidNumber) => {
-                        cx.toast_for(ToastKind::Error, "Invalid price".to_owned(), toast::QUICK);
-                    }
-                }
-            }
+        let other = match field {
+            NumberField::ManaMin => text(self, NumberField::ManaMax),
+            NumberField::ManaMax => text(self, NumberField::ManaMin),
+            NumberField::ManaValue | NumberField::PriceMin | NumberField::PriceMax => String::new(),
+        };
+        if let Err(toast) = self.filter.set_number(field, &text(self, field), &other) {
+            cx.show(toast);
+            return;
+        }
+        if field == NumberField::ManaValue
+            && let Some(n) = self.filter.draft.cmc_equals()
+            && let Some(input) = self.numbers.get_mut(&field)
+        {
+            input.set_value(&n.to_string());
         }
     }
 
@@ -340,78 +269,39 @@ impl FilterSheet {
         let Some(slug) = cx.shared.caches.handoff.oracle_tag.take() else {
             return true;
         };
-        let exclude = matches!(field, PickerField::Exclude(_));
-        let (kind, message) = match filter::adopt_oracle_tag(&mut self.draft, &slug, exclude) {
-            Adopted::Already => (ToastKind::Info, "Already in filter"),
-            Adopted::Added => (ToastKind::Success, "Added to filter"),
-        };
-        cx.toast_for(kind, message.to_owned(), toast::QUICK);
+        let toast = self.filter.adopt_oracle_tag(field, &slug);
+        cx.show(toast);
         self.sync_inputs();
         true
     }
 
     /// Back: closes the sheet, saying so when edits are dropped.
     pub(crate) fn back(&self, cx: &mut Context<'_>) -> SheetOutcome {
-        if !self.unchanged() {
-            cx.toast_for(ToastKind::Info, "Filter unchanged".to_owned(), toast::QUICK);
+        if let Some(toast) = self.filter.back() {
+            cx.show(toast);
         }
         SheetOutcome::Closed
     }
 
-    /// Apply: refuses a contradiction or an empty search, closes on no change, else commits.
+    /// Apply: does nothing while the draft is unchanged, refuses a contradiction or an empty search, else commits.
     pub(crate) fn apply(&self, cx: &mut Context<'_>) -> SheetOutcome {
-        if let Some(message) = filter::contradiction(&self.draft) {
-            cx.toast(ToastKind::Warning, message);
-            return SheetOutcome::Open;
-        }
-        let action = filter::apply_action(
-            self.config.validate,
-            FilterState::of(&self.snapshot),
-            FilterState::of(&self.draft),
-            self.unchanged(),
-        );
-        match action {
-            ApplyAction::RefuseEmpty => {
-                cx.toast_for(
-                    ToastKind::Warning,
-                    "Filter is already empty".to_owned(),
-                    toast::QUICK,
-                );
+        match self.filter.apply() {
+            ApplyOutcome::Disabled => SheetOutcome::Open,
+            ApplyOutcome::Refused(toast) => {
+                cx.show(toast);
                 SheetOutcome::Open
             }
-            ApplyAction::NoChange => SheetOutcome::Closed,
-            ApplyAction::Commit { cleared } => {
-                let message = if cleared {
-                    "Filter cleared"
-                } else {
-                    "Filter applied"
-                };
-                cx.toast_for(ToastKind::Success, message.to_owned(), toast::QUICK);
-                SheetOutcome::Applied(Box::new(self.draft.clone()))
+            ApplyOutcome::Applied { filter, toast } => {
+                cx.show(toast);
+                SheetOutcome::Applied(filter)
             }
         }
     }
 
     /// Reset: stages the host's default in the draft. Apply commits it; Back drops it.
     pub(crate) fn reset(&mut self, cx: &mut Context<'_>) {
-        let result = match &self.config.reset {
-            ResetRule::Plain => {
-                self.draft.clear();
-                Ok(())
-            }
-            ResetRule::AddSearch(context) => context.reset_search(&mut self.draft),
-            ResetRule::AddMaybeboard => filter::reset_maybeboard(&mut self.draft),
-        };
-        match result {
-            Ok(()) => cx.toast_for(ToastKind::Info, "Filter reset".to_owned(), toast::QUICK),
-            Err(filter::AlreadyDefault) => {
-                cx.toast_for(
-                    ToastKind::Warning,
-                    "Filter already at default".to_owned(),
-                    toast::QUICK,
-                );
-            }
-        }
+        let toast = self.filter.reset();
+        cx.show(toast);
         self.sync_inputs();
         self.clamp_focus();
     }
@@ -423,7 +313,7 @@ impl FilterSheet {
 
     /// The chips of a row as labels and whether each is on.
     pub(crate) fn chips(&self, set: ChipSet, catalog: &Catalog) -> Vec<(String, bool)> {
-        let b = &self.draft;
+        let b = &self.filter.draft;
         let named = |values: Vec<String>, picked: &[String]| -> Vec<(String, bool)> {
             values
                 .into_iter()
@@ -525,8 +415,8 @@ impl FilterSheet {
 
     /// Taps the chip at `index` in a row.
     pub(crate) fn tap_chip(&mut self, set: ChipSet, index: usize, catalog: &Catalog) {
-        let modes = self.modes.clone();
-        let b = &mut self.draft;
+        let modes = self.filter.modes.clone();
+        let b = &mut self.filter.draft;
         match set {
             ChipSet::BasicIncludes | ChipSet::BasicExcludes => {
                 tap_basic_type(b, &modes, set, index);
@@ -606,10 +496,10 @@ impl FilterSheet {
     /// Steps a stepper row by `delta` on the focused end.
     pub(crate) fn step(&mut self, row: StepRow, delta: i32) {
         match row {
-            StepRow::Exact(stat) => stat.step_exact(&mut self.draft, delta),
+            StepRow::Exact(stat) => stat.step_exact(&mut self.filter.draft, delta),
             StepRow::Range(stat) => {
                 let end = if self.step_max { End::Max } else { End::Min };
-                stat.step_range(&mut self.draft, end, delta);
+                stat.step_range(&mut self.filter.draft, end, delta);
             }
         }
     }

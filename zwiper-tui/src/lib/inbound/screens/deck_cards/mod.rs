@@ -28,12 +28,13 @@ use zwipe_core::http::helpers::Patch;
 use zwipe_ui::deck::form::Slot;
 use zwipe_ui::deck_cards::{self, Boards, Burst, Bursts, Display, Write, Zone};
 use zwipe_ui::deck_signals::{self, Crossing};
+use zwipe_ui::filter::draft::SheetConfig;
 use zwipe_ui::filter::picker::Sources;
 use zwipe_ui::stores::filters::FilterScope;
 use zwipe_ui::stores::undo::{self, UndoAction};
 use zwipe_ui::timing;
 
-use super::card_sheets::filter::{FilterSheet, SheetConfig};
+use super::card_sheets::filter::FilterSheet;
 use super::card_sheets::printing::PrintingSheet;
 use super::{Screen, remove_cards, swipe};
 use crate::inbound::app::Context;

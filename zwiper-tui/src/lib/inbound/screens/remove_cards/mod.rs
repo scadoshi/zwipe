@@ -19,6 +19,7 @@ use zwipe_core::domain::deck::{Board, Deck, DeckCard, DeckEntry, DeckProfile, de
 use zwipe_core::domain::user::hints::HINT_REMOVE_DECK_CARDS;
 use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpPatchDeckCard};
 use zwipe_ui::deck_signals::{self, Crossing};
+use zwipe_ui::filter::draft::SheetConfig;
 use zwipe_ui::filter::picker::Sources;
 use zwipe_ui::stack::{CardStack, Direction, RemoveAction, StackAction};
 use zwipe_ui::stores::filters::FilterScope;
@@ -26,7 +27,7 @@ use zwipe_ui::stores::undo::{self, UndoAction};
 
 use super::Screen;
 use super::card_sheets::details::DetailsSheet;
-use super::card_sheets::filter::{FilterSheet, SheetConfig};
+use super::card_sheets::filter::FilterSheet;
 use super::swipe::{self, UndoFailure};
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;

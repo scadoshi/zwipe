@@ -64,6 +64,11 @@ impl Toasts {
         self.push_for(kind, message, LIFETIME);
     }
 
+    /// Shows a toast zwipe-ui asked for, from now for its own band.
+    pub(crate) fn show(&mut self, toast: zwipe_ui::toast::Toast) {
+        self.push_for(toast.kind, toast.text, toast.duration);
+    }
+
     /// Shows `message` from now for `duration`, one of [`QUICK`], [`NORMAL`] or [`LONG`].
     pub(crate) fn push_for(&mut self, kind: ToastKind, message: String, duration: Duration) {
         self.push_for_at(kind, message, duration, Instant::now());
