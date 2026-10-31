@@ -1,6 +1,6 @@
 //! Drawing pieces the screens share, each in the account theme's [`Palette`](crate::domain::theme::Palette).
 //!
-//! A widget the screens use only part of, or none of yet, carries an `expect(dead_code)` outside tests; the screen that uses the rest deletes that line.
+//! A widget no screen uses yet carries an `expect(dead_code)` outside tests on its `mod` line here, and an unused item in a widget that is otherwise in use carries one of its own; the screen that starts using it deletes that line.
 
 /// The bottom row of key hints.
 pub(crate) mod action_bar;
@@ -15,13 +15,22 @@ pub(crate) mod charts;
 /// A row of chips to pick one or several.
 #[cfg_attr(
     not(test),
-    expect(dead_code, reason = "the screens use part of its API so far")
+    expect(
+        dead_code,
+        reason = "no screen draws a chip row through it yet; the screens build their chips with `pill`"
+    )
 )]
 pub(crate) mod chips;
 /// Copying text with OSC 52.
 pub(crate) mod clipboard;
 /// Sections that open and close, and the accordion over them.
-#[cfg_attr(not(test), expect(dead_code, reason = "no screen uses it yet"))]
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "no screen uses it: the deck view shows its sections as panels"
+    )
+)]
 pub(crate) mod collapsible;
 /// Rolling counters.
 pub(crate) mod count_up;
@@ -36,7 +45,6 @@ pub(crate) mod help;
 /// The logo and everybody's counters on the sign-in screens.
 pub(crate) mod hero;
 /// `?` topics and one-time hint dialogs.
-#[cfg_attr(not(test), expect(dead_code, reason = "no screen uses it yet"))]
 pub(crate) mod hint;
 /// The "?" popup of bullet points.
 pub(crate) mod info;
@@ -61,14 +69,16 @@ pub(crate) mod spinner;
 /// The opening over the first screen.
 pub(crate) mod splash;
 /// Figures in a row, rolling while they load.
-#[cfg_attr(not(test), expect(dead_code, reason = "no screen uses it yet"))]
+#[cfg_attr(
+    not(test),
+    expect(dead_code, reason = "no screen shows a stats strip yet")
+)]
 pub(crate) mod stats;
 /// A text box of many lines.
 pub(crate) mod text_area;
 /// A one-line text box.
 pub(crate) mod text_input;
 /// Short messages in the top-left corner.
-#[cfg_attr(not(test), expect(dead_code, reason = "no screen raises a toast yet"))]
 pub(crate) mod toast;
 /// The sweep from one theme to the next.
 pub(crate) mod wipe;

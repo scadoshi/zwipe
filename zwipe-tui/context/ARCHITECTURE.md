@@ -69,4 +69,4 @@ All live in `widgets/` and draw in the account theme's `Palette`.
 - `clipboard`: `clipboard::copy(text)` writes an OSC 52 sequence.
 - `mana`, `charts`, `panel`, `measure`: mana colors and pips, bar charts, a centered framed panel, and text sizes.
 
-A widget no screen uses yet carries `expect(dead_code)` on its `mod` line in `widgets/mod.rs`. The screen that starts using it deletes that line; the build says so if it is forgotten.
+A widget no screen uses yet carries `expect(dead_code)` on its `mod` line in `widgets/mod.rs`, and an item no screen uses yet in a widget that is otherwise in use carries one of its own. The screen that starts using it deletes that line; the build says so if it is forgotten. A helper only tests call is `#[cfg(test)]`.

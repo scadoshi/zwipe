@@ -8,6 +8,13 @@ use zwipe_core::domain::deck::MAX_DECK_TAGS;
 use super::HintContent;
 
 /// A `?` beside a row or a field label.
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "the deck screens word their field and chart explainers in their own popups, and the Playstyle topics wait for that screen"
+    )
+)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum HintTopic {
     Password,

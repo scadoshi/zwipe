@@ -87,6 +87,7 @@ impl Toasts {
     }
 
     /// Shows `message` from `now` for [`NORMAL`].
+    #[cfg(test)]
     pub(crate) fn push_at(&mut self, kind: ToastKind, message: String, now: Instant) {
         self.push_for_at(kind, message, LIFETIME, now);
     }
@@ -123,6 +124,7 @@ impl Toasts {
         self.expanded = !self.expanded && !self.items.is_empty();
     }
 
+    #[cfg(test)]
     pub(crate) fn is_expanded(&self) -> bool {
         self.expanded
     }
@@ -131,11 +133,13 @@ impl Toasts {
         self.items.is_empty()
     }
 
+    #[cfg(test)]
     pub(crate) fn len(&self) -> usize {
         self.items.len()
     }
 
     /// The toasts that are up, oldest first.
+    #[cfg(test)]
     pub(crate) fn items(&self) -> &[Toast] {
         &self.items
     }
