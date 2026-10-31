@@ -170,6 +170,71 @@ body {
     }
 }
 
+/* ---- Sheets on a wide window ---- */
+
+@media (min-width: 900px) {
+    /* A short form or list: a centered modal that fades and settles in. */
+    .web-sheet-modal > .bottom-sheet {
+        top: 50%;
+        left: 50%;
+        right: auto;
+        bottom: auto;
+        width: min(32rem, calc(100vw - 4rem));
+        max-height: 85vh;
+        border-radius: 1rem;
+        border: 1px solid var(--border-secondary);
+        opacity: 0;
+        transform: translate(-50%, calc(-50% + 0.75rem)) scale(0.98);
+        transition: opacity 0.2s ease, transform 0.2s ease, visibility 0s linear 0.2s;
+    }
+
+    .web-sheet-modal > .bottom-sheet.show {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+        transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    .web-sheet-modal > .bottom-sheet .action-bar {
+        padding-bottom: 1rem;
+    }
+
+    /* A panel that edits the page beside it, sliding in from the right. */
+    .web-sheet-side > .bottom-sheet {
+        top: 0;
+        bottom: 0;
+        left: auto;
+        right: 0;
+        width: 26rem;
+        max-height: none;
+        border-radius: 0;
+        border-left: 1px solid var(--border-secondary);
+        transform: translateX(100%);
+    }
+
+    .web-sheet-side > .bottom-sheet.show {
+        transform: translateX(0);
+    }
+
+    .web-sheet-side > .bottom-sheet .action-bar {
+        padding-bottom: 1rem;
+    }
+
+    /* The page stays undimmed so the panel's changes show on it; a click
+       on it still dismisses the panel. */
+    .web-sheet-side > .sheet-backdrop.show {
+        background: transparent;
+    }
+}
+
+@media (min-width: 900px) and (prefers-reduced-motion: reduce) {
+    .web-sheet-modal > .bottom-sheet,
+    .web-sheet-modal > .bottom-sheet.show,
+    .web-sheet-side > .bottom-sheet,
+    .web-sheet-side > .bottom-sheet.show {
+        transition: none;
+    }
+}
+
 /* Narrow: the sidebar folds into a top bar with a menu. */
 @media (max-width: 899px) {
     .web-shell {

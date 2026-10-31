@@ -5,8 +5,10 @@ use components::{
     DialogHostView, ThemeConfig, ToastStack, use_dialog_host, use_overlay_back_stack,
 };
 use dioxus::prelude::*;
+use zwipe_core::domain::logo;
 use zwipe_core::domain::user::models::preferences::PipStyle;
 
+use crate::inbound::chrome::hint_topic::{HintHost, HintTopic};
 use crate::inbound::router::Route;
 use crate::inbound::screens::update_required::UpdateRequired;
 use crate::inbound::session::upkeep;
@@ -31,15 +33,17 @@ pub fn App() -> Element {
     let mut overlay_back_stack = use_overlay_back_stack();
     use_context_provider(|| overlay_back_stack);
     use_future(move || async move {
-        let mut escapes = document::eval(ESCAPE_JS);
+        let mut escapes = document::eval(KEYS_JS);
         while escapes.recv::<bool>().await.is_ok() {
             overlay_back_stack.close_top();
         }
     });
     let dialogs = use_dialog_host();
     use_context_provider(|| dialogs);
-    // No splash on the web, so the entrances run at once.
-    use_context_provider(|| components::SplashGate(Signal::new(true)));
+    // The `?` buttons post here and the HintHost draws the topic.
+    use_context_provider(|| Signal::new(None::<HintTopic>));
+    // Closed until the splash starts to fade; the entrances wait on it.
+    use_context_provider(|| components::SplashGate(Signal::new(false)));
 
     rsx! {
         document::Link { rel: "icon", href: FAVICON }
@@ -68,6 +72,7 @@ pub fn App() -> Element {
                 ToastStack {
                     default_duration: components::TOAST_NORMAL,
                     Router::<Route> {}
+                    HintHost {}
                     DialogHostView {}
                 }
             }
@@ -75,9 +80,45 @@ pub fn App() -> Element {
     }
 }
 
-/// Sends `true` to the root each time Escape goes down anywhere on the
-/// page.
-const ESCAPE_JS: &str = "document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { dioxus.send(true); } });";
+/// The page-wide keys. Escape sends `true` to the root, which closes the top
+/// overlay. Enter with a dialog open runs its non-danger primary action, if
+/// it has one, and never reaches the page under the dialog; a focused button
+/// or link answers Enter itself. In the Themes panel, the up and down arrows
+/// preview the row above or below the selected one, and Enter is `Save`.
+const KEYS_JS: &str = r#"
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { dioxus.send(true); return; }
+    const dialog = document.querySelector('.alert-dialog[data-state="open"]');
+    const focus = document.activeElement;
+    const onControl = focus && (focus.tagName === 'BUTTON' || focus.tagName === 'A');
+    if (dialog) {
+        if (e.key !== 'Enter' || e.isComposing) return;
+        if (onControl && dialog.contains(focus)) return;
+        e.preventDefault();
+        e.stopPropagation();
+        const primary = dialog.querySelector('.alert-dialog-actions .alert-dialog-action:not([disabled])');
+        if (primary) primary.click();
+        return;
+    }
+    const themes = document.querySelector('.web-theme-sheet .bottom-sheet.show');
+    if (!themes) return;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        const rows = Array.from(themes.querySelectorAll('.pref-row'));
+        const at = rows.findIndex((row) => row.classList.contains('selected'));
+        const next = rows[e.key === 'ArrowDown' ? Math.min(at + 1, rows.length - 1) : Math.max(at - 1, 0)];
+        e.preventDefault();
+        if (next && next !== rows[at]) {
+            next.click();
+            next.scrollIntoView({ block: 'nearest' });
+        }
+    } else if (e.key === 'Enter' && !onControl) {
+        const buttons = themes.querySelectorAll('.action-bar button');
+        const save = buttons[buttons.length - 1];
+        e.preventDefault();
+        if (save && !save.disabled) save.click();
+    }
+}, true);
+"#;
 
 /// The themed element every screen sits in. A theme change wipes over it.
 #[component]
@@ -89,6 +130,11 @@ fn ThemeShell(children: Element) -> Element {
     rsx! {
         div { class: "app-shell {class} {pips}",
             components::GridCells { still: true }
+            // The opening: the field rains in under the mark, then fades to
+            // the first screen while it mounts underneath.
+            components::Splash {
+                div { class: "logo", components::Decode { text: logo::ZWIPE } }
+            }
             {children}
         }
     }
