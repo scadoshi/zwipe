@@ -9,6 +9,7 @@ use super::{
 use crate::domain::deck::list::GroupBy;
 use crate::inbound::app::Context;
 use crate::inbound::screens::{self, deck};
+use crate::inbound::widgets::help;
 use crate::inbound::widgets::menu::MenuKey;
 
 pub(crate) fn handle(list: &mut DeckList, code: KeyCode, cx: &mut Context<'_>) {
@@ -28,6 +29,7 @@ pub(crate) fn handle(list: &mut DeckList, code: KeyCode, cx: &mut Context<'_>) {
         return;
     }
     match code {
+        KeyCode::Char('!') => help::open(cx),
         KeyCode::Char('q') => cx.quit(),
         KeyCode::Esc => cx.back(),
         KeyCode::Char('r') => list.reload(cx),

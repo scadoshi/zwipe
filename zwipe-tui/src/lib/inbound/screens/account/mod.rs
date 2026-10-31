@@ -1,4 +1,4 @@
-//! The account screen: the user's details, verification, and the forms that change them.
+//! The Account screen: the user's details and verification, the About rows, the sheets that change the username, email and password, the More sheet with Delete account, and the Log out confirm.
 
 pub(crate) mod draw;
 pub(crate) mod keys;
@@ -10,54 +10,77 @@ use std::time::{Duration, Instant};
 use zwipe_client::ClientError;
 use zwipe_core::domain::auth::models::secret::Secret;
 use zwipe_core::domain::user::User;
+use zwipe_core::domain::user::hints::HINT_PROFILE;
 use zwipe_core::http::contracts::auth::{
     HttpChangeEmail, HttpChangePassword, HttpChangeUsername, HttpDeleteUser,
 };
 
 use super::{Password, Screen, failure, login};
 use crate::domain::account::{
-    self, DELETE_DELAY_SECS, RESEND_COOLDOWN_SECS, email_error, new_password_error,
+    self, DELETE_DELAY_SECS, RESEND_COOLDOWN_SECS, change_password_error, email_error,
     password_required, username_error,
 };
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;
 use crate::inbound::widgets::alert::AlertDialog;
+use crate::inbound::widgets::hint::{self, HintTopic};
 use crate::inbound::widgets::text_input::TextInput;
+use crate::inbound::widgets::toast::{self, ToastKind};
 use crate::outbound::account::Account;
 
-/// The account screen.
+/// A button on one of the screen's rows, in the order the focus walks them.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Stop {
+    ChangeUsername,
+    ChangeEmail,
+    /// Sends the verification email again. Only while the email is unverified.
+    Resend,
+    /// Asks the server whether the email is verified yet. Only while it is unverified.
+    Check,
+    ChangePassword,
+    Website,
+    Privacy,
+    Changelog,
+}
+
+impl Stop {
+    /// The `?` topic of the row this button sits on, if the row has one.
+    pub(crate) fn topic(self) -> Option<HintTopic> {
+        match self {
+            Self::ChangeEmail => Some(HintTopic::Email),
+            Self::Resend | Self::Check => Some(HintTopic::Verification),
+            Self::Website => Some(HintTopic::Website),
+            Self::Changelog => Some(HintTopic::Version),
+            _ => None,
+        }
+    }
+}
+
+/// The Account screen's state.
 #[derive(Debug)]
 pub(crate) struct AccountView {
     pub(crate) user: User,
-    /// The selected row of [`AccountView::rows`].
-    pub(crate) row: usize,
-    pub(crate) dialog: Option<Dialog>,
+    /// The focused button, an index into [`AccountView::stops`].
+    pub(crate) focus: usize,
+    pub(crate) overlay: Option<Overlay>,
     /// When the verification email can be sent again.
     pub(crate) resend_ready_at: Option<Instant>,
-}
-
-/// A row that does something when picked, in the app's order.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum AccountRow {
-    Username,
-    Email,
-    /// Sends the verification email again. Only while the email is unverified.
-    Resend,
-    /// Asks the server whether the email has been verified. Only while it is unverified.
-    Check,
-    Password,
-    LogOut,
-    Delete,
+    /// Set while a verification email is on its way.
+    pub(crate) sending: bool,
+    /// Set while the verification check is out.
+    pub(crate) checking: bool,
 }
 
 impl AccountView {
     pub(crate) fn new(user: User) -> Self {
         Self {
             user,
-            row: 0,
-            dialog: None,
+            focus: 0,
+            overlay: None,
             resend_ready_at: None,
+            sending: false,
+            checking: false,
         }
     }
 
@@ -65,35 +88,40 @@ impl AccountView {
         self.user.email_verified_at.is_some()
     }
 
-    /// The rows that apply to this user.
-    pub(crate) fn rows(&self) -> Vec<AccountRow> {
-        let mut rows = vec![AccountRow::Username, AccountRow::Email];
+    /// The buttons that apply to this user, in focus order.
+    pub(crate) fn stops(&self) -> Vec<Stop> {
+        let mut stops = vec![Stop::ChangeUsername, Stop::ChangeEmail];
         if !self.verified() {
-            rows.extend([AccountRow::Resend, AccountRow::Check]);
+            stops.extend([Stop::Resend, Stop::Check]);
         }
-        rows.extend([AccountRow::Password, AccountRow::LogOut, AccountRow::Delete]);
-        rows
+        stops.extend([
+            Stop::ChangePassword,
+            Stop::Website,
+            Stop::Privacy,
+            Stop::Changelog,
+        ]);
+        stops
     }
 
-    pub(crate) fn selected(&self) -> Option<AccountRow> {
-        self.rows().get(self.row).copied()
+    pub(crate) fn focused(&self) -> Option<Stop> {
+        self.stops().get(self.focus).copied()
     }
 
-    pub(crate) fn next_row(&mut self) {
-        self.row = self
-            .row
+    pub(crate) fn next(&mut self) {
+        self.focus = self
+            .focus
             .saturating_add(1)
-            .min(self.rows().len().saturating_sub(1));
+            .min(self.stops().len().saturating_sub(1));
     }
 
-    pub(crate) fn previous_row(&mut self) {
-        self.row = self.row.saturating_sub(1);
+    pub(crate) fn previous(&mut self) {
+        self.focus = self.focus.saturating_sub(1);
     }
 
-    /// Takes a fresh copy of the user, keeping the selection in range.
+    /// Takes a fresh copy of the user, keeping the focus in range.
     pub(crate) fn set_user(&mut self, user: User) {
         self.user = user;
-        self.row = self.row.min(self.rows().len().saturating_sub(1));
+        self.focus = self.focus.min(self.stops().len().saturating_sub(1));
     }
 
     /// Seconds until the verification email can be sent again, `None` when it can be now.
@@ -104,10 +132,27 @@ impl AccountView {
         (!left.is_zero()).then(|| left.as_secs().saturating_add(1))
     }
 
-    /// Whether a countdown is on screen: the wait to resend, or the delete form's.
+    /// The Resend button's label: `Sending...`, `Resend in {n}s`, or `Resend`.
+    pub(crate) fn resend_label(&self) -> String {
+        if self.sending {
+            return "Sending...".to_owned();
+        }
+        self.resend_wait()
+            .map_or_else(|| "Resend".to_owned(), |n| format!("Resend in {n}s"))
+    }
+
+    /// Whether Resend can be pressed: not while sending or cooling down.
+    pub(crate) fn can_resend(&self) -> bool {
+        !self.sending && self.resend_wait().is_none()
+    }
+
+    /// Whether a countdown is on screen: the wait to resend, or the delete button's.
     pub(crate) fn animating(&self) -> bool {
         self.resend_wait().is_some()
-            || matches!(&self.dialog, Some(Dialog::Form(form)) if form.delete_wait().is_some())
+            || matches!(
+                &self.overlay,
+                Some(Overlay::More(Some(delete))) if delete.wait().is_some()
+            )
     }
 
     /// Starts the wait between verification emails.
@@ -117,42 +162,46 @@ impl AccountView {
     }
 }
 
-/// What is open over the account screen.
+/// What is open over the Account screen.
 #[derive(Debug)]
-pub(crate) enum Dialog {
+pub(crate) enum Overlay {
+    /// A Change sheet.
     Form(Form),
-    /// Asks before changing the password, since that signs out every other device. The form waits under it.
+    /// The confirm before a password change, the sheet waiting under it.
     ConfirmPassword {
         form: Form,
         alert: AlertDialog,
     },
     LogOut(AlertDialog),
+    /// The More sheet, with the Delete account dialog over it when open.
+    More(Option<DeleteDialog>),
 }
 
-/// The alert before a password change: confirm, or go back to the form.
+/// The alert before a password change.
 pub(crate) fn confirm_password_alert() -> AlertDialog {
     AlertDialog::new(
         "Change password",
         "Changing your password will log you out on all other devices.",
     )
-    .with_button("Confirm", Some('y'))
     .with_button("Cancel", Some('n'))
+    .with_button("Confirm", Some('y'))
+    .with_focus(1)
 }
 
 /// The alert before logging out.
 pub(crate) fn log_out_alert() -> AlertDialog {
     AlertDialog::new("Log out", "Are you sure you want to log out?")
-        .with_button("Log out", Some('y'))
         .with_button("Cancel", Some('n'))
+        .with_danger_button("Log out", Some('y'))
+        .with_focus(1)
 }
 
-/// Which form is open.
+/// Which Change sheet is open.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum FormKind {
     Username,
     Email,
     Password,
-    Delete,
 }
 
 impl FormKind {
@@ -161,57 +210,63 @@ impl FormKind {
             Self::Username => "Change username",
             Self::Email => "Change email",
             Self::Password => "Change password",
-            Self::Delete => "Delete account",
         }
     }
 
-    /// Each field's label, and whether it hides what is typed.
-    pub(crate) fn fields(self) -> &'static [(&'static str, bool)] {
+    /// Each field's label, placeholder, and whether it hides what is typed.
+    pub(crate) fn fields(self) -> &'static [(&'static str, &'static str, bool)] {
         match self {
-            Self::Username => &[("New username", false), ("Password", true)],
-            Self::Email => &[("New email", false), ("Password", true)],
-            Self::Password => &[
-                ("Current password", true),
-                ("New password", true),
-                ("Confirm password", true),
+            Self::Username => &[
+                ("New username", "New username", false),
+                ("Password", "Password", true),
             ],
-            Self::Delete => &[("Password", true)],
+            Self::Email => &[
+                ("New email", "New email", false),
+                ("Password", "Password", true),
+            ],
+            Self::Password => &[
+                ("Current password", "Current password", true),
+                ("New password ?", "New password", true),
+                ("Confirm password", "Confirm new", true),
+            ],
         }
     }
 }
 
-/// An open form: what is typed in each field, which has the cursor, and why the last submit failed.
+/// An open Change sheet: its fields, which has the cursor, which have held something, and whether a save was tried.
 #[derive(Debug)]
 pub(crate) struct Form {
     pub(crate) kind: FormKind,
-    /// One box per field of [`FormKind::fields`], masked where the field hides what is typed.
     pub(crate) inputs: Vec<TextInput>,
     pub(crate) focus: usize,
-    pub(crate) error: Option<String>,
-    /// Set while the request is out.
+    pub(crate) touched: Vec<bool>,
+    pub(crate) attempted: bool,
+    /// Set while the change is out; the sheet takes no keys meanwhile.
     pub(crate) busy: bool,
-    pub(crate) opened_at: Instant,
 }
 
 impl Form {
+    /// A sheet with every field empty, as each open is.
     pub(crate) fn new(kind: FormKind) -> Self {
+        let inputs: Vec<TextInput> = kind
+            .fields()
+            .iter()
+            .map(|&(_, placeholder, masked)| {
+                let input = if masked {
+                    TextInput::masked()
+                } else {
+                    TextInput::default()
+                };
+                input.with_placeholder(placeholder)
+            })
+            .collect();
         Self {
             kind,
-            inputs: kind
-                .fields()
-                .iter()
-                .map(|&(_, masked)| {
-                    if masked {
-                        TextInput::masked()
-                    } else {
-                        TextInput::default()
-                    }
-                })
-                .collect(),
+            touched: vec![false; inputs.len()],
+            inputs,
             focus: 0,
-            error: None,
+            attempted: false,
             busy: false,
-            opened_at: Instant::now(),
         }
     }
 
@@ -225,10 +280,6 @@ impl Form {
         for (input, value) in self.inputs.iter_mut().zip(values) {
             input.set_value(value);
         }
-    }
-
-    pub(crate) fn focused_mut(&mut self) -> Option<&mut TextInput> {
-        self.inputs.get_mut(self.focus)
     }
 
     pub(crate) fn next_field(&mut self) {
@@ -246,27 +297,121 @@ impl Form {
         self.focus.saturating_add(1) >= self.inputs.len()
     }
 
-    /// Seconds before the delete form can submit, `None` once it can.
-    pub(crate) fn delete_wait(&self) -> Option<u64> {
-        if self.kind != FormKind::Delete {
-            return None;
+    fn checks(&self, field: usize) -> bool {
+        self.attempted || self.touched.get(field).copied().unwrap_or(false)
+    }
+
+    /// Each field's error, the app's way: live once the field has held something, or after a save.
+    fn errors(&self) -> Vec<Option<String>> {
+        match self.kind {
+            FormKind::Username => vec![
+                self.checks(0)
+                    .then(|| username_error(self.value(0)))
+                    .flatten(),
+                self.checks(1)
+                    .then(|| password_required(self.value(1)))
+                    .flatten(),
+            ],
+            FormKind::Email => vec![
+                self.checks(0).then(|| email_error(self.value(0))).flatten(),
+                self.checks(1)
+                    .then(|| password_required(self.value(1)))
+                    .flatten(),
+            ],
+            FormKind::Password => vec![
+                None,
+                (self.checks(1) || self.checks(2))
+                    .then(|| {
+                        change_password_error(
+                            self.value(0),
+                            self.value(1),
+                            self.value(2),
+                            self.attempted,
+                        )
+                    })
+                    .flatten(),
+                None,
+            ],
         }
+    }
+
+    /// Puts each field's error under it.
+    pub(crate) fn validate(&mut self) {
+        let errors = self.errors();
+        for (input, error) in self.inputs.iter_mut().zip(errors) {
+            input.set_error(error);
+        }
+    }
+
+    /// Marks a save tried and checks every field; whether all pass.
+    pub(crate) fn attempt(&mut self) -> bool {
+        self.attempted = true;
+        self.validate();
+        self.inputs.iter().all(|i| i.error().is_none())
+    }
+
+    /// The change this sheet asks for, the values sent as typed.
+    pub(crate) fn change(&self) -> AccountChange {
+        let password = |field: usize| Password(self.value(field).to_owned());
+        match self.kind {
+            FormKind::Username => AccountChange::Username {
+                username: self.value(0).to_owned(),
+                password: password(1),
+            },
+            FormKind::Email => AccountChange::Email {
+                email: self.value(0).to_owned(),
+                password: password(1),
+            },
+            FormKind::Password => AccountChange::Password {
+                current: password(0),
+                new: password(1),
+            },
+        }
+    }
+}
+
+/// Where the Delete account dialog's focus is.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum DeleteFocus {
+    Password,
+    ShowPassword,
+    Cancel,
+    Delete,
+}
+
+/// The Delete account dialog: its password, when it opened for the countdown, and whether the delete is out.
+#[derive(Debug)]
+pub(crate) struct DeleteDialog {
+    pub(crate) password: TextInput,
+    pub(crate) opened_at: Instant,
+    pub(crate) focus: DeleteFocus,
+    pub(crate) busy: bool,
+}
+
+impl DeleteDialog {
+    /// A dialog with an empty password, its countdown starting now.
+    pub(crate) fn new() -> Self {
+        Self {
+            password: TextInput::masked().with_placeholder("Password"),
+            opened_at: Instant::now(),
+            focus: DeleteFocus::Password,
+            busy: false,
+        }
+    }
+
+    /// Seconds left before Delete can be pressed, `None` once it can.
+    pub(crate) fn wait(&self) -> Option<u64> {
         let left = Duration::from_secs(DELETE_DELAY_SECS).saturating_sub(self.opened_at.elapsed());
         (!left.is_zero()).then(|| left.as_secs().saturating_add(1))
     }
 
-    /// Checks the fields the way the app does before sending, giving the first problem.
-    pub(crate) fn problem(&self) -> Option<String> {
-        match self.kind {
-            FormKind::Username => {
-                username_error(self.value(0).trim()).or_else(|| password_required(self.value(1)))
-            }
-            FormKind::Email => {
-                email_error(self.value(0).trim()).or_else(|| password_required(self.value(1)))
-            }
-            FormKind::Password => new_password_error(self.value(0), self.value(1), self.value(2)),
-            FormKind::Delete => None,
+    /// The Delete button's label: `Deleting...`, `Delete ({n})`, or `Delete`.
+    pub(crate) fn label(&self) -> String {
+        if self.busy {
+            return "Deleting...".to_owned();
         }
+        self.wait()
+            .map_or_else(|| "Delete".to_owned(), |n| format!("Delete ({n})"))
     }
 }
 
@@ -276,14 +421,12 @@ pub(crate) fn pending_note(user: &User) -> Option<String> {
         .map(|at| account::pending_note(at, chrono::Utc::now()))
 }
 
-/// The account screen's work.
+/// The Account screen's work.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum Request {
-    /// Fetches the signed-in user.
+    /// Fetches the user with the session as it is, on every open.
     LoadUser,
-    /// Sends the verification email again.
     Resend,
-    /// Fetches the user to see whether the email is verified yet.
     CheckVerification,
     Change(AccountChange),
 }
@@ -308,21 +451,27 @@ pub(crate) enum AccountChange {
     },
 }
 
-/// The account screen's results.
+/// The Account screen's results.
 #[derive(Debug)]
 pub(crate) enum Update {
-    /// A fresh copy of the user, with a message to show when it answers a check.
+    /// A fresh copy of the user, and the toast that answers a verification check.
     User {
         user: Box<User>,
-        message: Option<String>,
+        toast: Option<(ToastKind, &'static str)>,
     },
+    CheckFailed(String),
+    /// A change went through: the user when the server sent one back, and the success toast for its time.
     Changed {
         user: Option<Box<User>>,
         message: String,
+        duration: Duration,
     },
     ChangeFailed(String),
     Deleted,
-    /// Sending the verification email failed, so it can be tried again at once.
+    DeleteFailed(String),
+    Resent,
+    /// The server asked to wait before another verification email.
+    ResendLimited,
     ResendFailed(String),
 }
 
@@ -345,68 +494,63 @@ fn pick(screen: &mut Screen) -> Option<&mut AccountView> {
     }
 }
 
-/// Opens the account screen over the current one on the user as last known, and fetches a fresh copy.
+/// Opens Account over the current screen on the user as last known, fetches a fresh copy, and shows the `profile` hint the first time.
 pub(crate) fn open(cx: &mut Context<'_>) {
     let Some(user) = cx.shared.user.clone() else {
         return;
     };
-    cx.shared.status.clear();
     cx.push(Screen::Account(Box::new(AccountView::new(user))));
     cx.request(Request::LoadUser.into());
+    hint::once(cx, HINT_PROFILE);
 }
 
 pub(crate) async fn perform(account: &Account, request: Request) -> Option<screens::Update> {
     let client = &account.client;
     let update = match request {
         Request::LoadUser => {
-            match async { client.fetch_user(&account.fresh().await?).await }.await {
-                Ok(user) => {
-                    account.set_user(user.clone()).await;
-                    Update::User {
-                        user: Box::new(user),
-                        message: None,
-                    }
-                }
-                Err(e) => return Some(failure(&e, screens::Update::Status)),
+            // The app fetches with the session as it stands and says nothing when that fails.
+            let session = account.session().await?;
+            let user = client.fetch_user(&session).await.ok()?;
+            Update::User {
+                user: Box::new(user),
+                toast: None,
             }
         }
         Request::CheckVerification => {
             match async { client.fetch_user(&account.fresh().await?).await }.await {
                 Ok(user) => {
                     account.set_user(user.clone()).await;
-                    let message = if user.email_verified_at.is_some() {
-                        "Email verified"
+                    let toast = if user.email_verified_at.is_some() {
+                        (ToastKind::Success, "Email verified")
                     } else {
-                        "Not verified yet. Check your inbox"
+                        (ToastKind::Info, "Not verified yet. Check your inbox")
                     };
                     Update::User {
                         user: Box::new(user),
-                        message: Some(message.to_owned()),
+                        toast: Some(toast),
                     }
                 }
-                Err(e) => return Some(failure(&e, screens::Update::Status)),
+                Err(e) => return Some(failure(&e, |m| Update::CheckFailed(m).into())),
             }
         }
         Request::Resend => {
-            let resend_failed = |m| Update::ResendFailed(m).into();
+            let failed = |m| Update::ResendFailed(m).into();
             let session = match account.fresh().await {
                 Ok(session) => session,
-                Err(e) => return Some(failure(&e, resend_failed)),
+                Err(e) => return Some(failure(&e, failed)),
             };
-            return Some(match client.resend_verification(&session).await {
-                Ok(()) => screens::Update::Status("Verification email sent".to_owned()),
-                Err(ClientError::TooManyRequests(_)) => {
-                    screens::Update::Status("Please wait a moment".to_owned())
-                }
-                Err(e) => failure(&e, resend_failed),
-            });
+            match client.resend_verification(&session).await {
+                Ok(()) => Update::Resent,
+                Err(ClientError::TooManyRequests(_)) => Update::ResendLimited,
+                Err(e) => return Some(failure(&e, failed)),
+            }
         }
         Request::Change(change) => return Some(change_account(account, change).await),
     };
     Some(update.into())
 }
 
-/// Sends an account change. The password is the server's to judge, so its refusal is the form's error rather than a sign-out.
+/// Sends an account change. A wrong password is the server's to judge, so its refusal is a toast rather than a sign-out.
 async fn change_account(account: &Account, change: AccountChange) -> screens::Update {
     let client = &account.client;
     let session = match account.fresh().await {
@@ -419,43 +563,42 @@ async fn change_account(account: &Account, change: AccountChange) -> screens::Up
             .await
             .map(|user| {
                 let message = format!("Username changed to {}", user.username);
-                (Some(user), message)
+                (Some(user), message, toast::QUICK)
             }),
         AccountChange::Email { email, password } => client
             .change_email(HttpChangeEmail::new(&email, &password.0), &session)
             .await
             .map(|user| {
-                (
-                    Some(user),
-                    format!("Check {email} for a link to confirm the change"),
-                )
+                let message = format!("Check {email} for a link to confirm the change");
+                (Some(user), message, toast::NORMAL)
             }),
         AccountChange::Password { current, new } => client
             .change_password(HttpChangePassword::new(&current.0, &new.0), &session)
             .await
-            .map(|()| (None, "Password change successful".to_owned())),
+            .map(|()| (None, "Password change successful".to_owned(), toast::QUICK)),
         AccountChange::Delete { password } => {
             let request = HttpDeleteUser {
                 password: Secret::new(&password.0),
             };
             return match client.delete_user(request, &session).await {
                 Ok(()) => {
-                    account.forget().await;
+                    account.sign_out().await;
                     Update::Deleted
                 }
-                Err(e) => Update::ChangeFailed(e.to_user_message()),
+                Err(e) => Update::DeleteFailed(e.to_user_message()),
             }
             .into();
         }
     };
     match result {
-        Ok((user, message)) => {
+        Ok((user, message, duration)) => {
             if let Some(user) = &user {
                 account.set_user(user.clone()).await;
             }
             Update::Changed {
                 user: user.map(Box::new),
                 message,
+                duration,
             }
         }
         Err(e) => Update::ChangeFailed(e.to_user_message()),
@@ -464,68 +607,99 @@ async fn change_account(account: &Account, change: AccountChange) -> screens::Up
 }
 
 pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
-    let view = nav.find_mut(pick);
+    let mut view = nav.find_mut(pick);
     match update {
-        Update::User { user, message } => take_user(view, cx, *user, message),
-        Update::Changed { user, message } => {
-            let mut view = view;
+        Update::User { user, toast } => {
             if let Some(view) = view.as_deref_mut() {
-                view.dialog = None;
+                view.checking = false;
             }
-            match user {
-                Some(user) => take_user(view, cx, *user, Some(message)),
-                None => cx.shared.status = message,
+            take_user(view, cx, *user);
+            if let Some((kind, message)) = toast {
+                cx.toast(kind, message.to_owned());
             }
+        }
+        Update::CheckFailed(error) => {
+            if let Some(view) = view {
+                view.checking = false;
+            }
+            cx.toast(ToastKind::Error, error);
+        }
+        Update::Changed {
+            user,
+            message,
+            duration,
+        } => {
+            if let Some(view) = view.as_deref_mut()
+                && matches!(
+                    view.overlay,
+                    Some(Overlay::Form(_) | Overlay::ConfirmPassword { .. })
+                )
+            {
+                view.overlay = None;
+            }
+            if let Some(user) = user {
+                take_user(view, cx, *user);
+            }
+            cx.toast_for(ToastKind::Success, message, duration);
         }
         Update::ChangeFailed(error) => {
             if let Some(view) = view {
-                view.change_failed(error);
+                view.change_failed();
             }
+            cx.toast(ToastKind::Error, error);
         }
-        Update::Deleted => {
-            login::signed_out(cx, None);
-            "Account deleted".clone_into(&mut cx.shared.status);
+        Update::Deleted => login::signed_out(cx, None),
+        Update::DeleteFailed(error) => {
+            if let Some(view) = view
+                && let Some(Overlay::More(Some(delete))) = &mut view.overlay
+            {
+                delete.busy = false;
+            }
+            cx.toast(ToastKind::Error, error);
+        }
+        Update::Resent | Update::ResendLimited => {
+            if let Some(view) = view {
+                view.sending = false;
+                view.start_resend_cooldown();
+            }
+            if matches!(update, Update::Resent) {
+                cx.toast(ToastKind::Success, "Verification email sent".to_owned());
+            } else {
+                cx.toast(ToastKind::Info, "Please wait a moment".to_owned());
+            }
         }
         Update::ResendFailed(error) => {
             if let Some(view) = view {
+                view.sending = false;
                 view.resend_ready_at = None;
             }
-            cx.shared.status = error;
+            cx.toast_for(ToastKind::Error, error, toast::LONG);
         }
     }
 }
 
-/// Takes a fresh copy of the user everywhere it shows, and the message that came with it.
-fn take_user(
-    view: Option<&mut AccountView>,
-    cx: &mut Context<'_>,
-    user: User,
-    message: Option<String>,
-) {
+/// Takes a fresh copy of the user everywhere it shows.
+fn take_user(view: Option<&mut AccountView>, cx: &mut Context<'_>, user: User) {
     cx.shared.username = Some(user.username.to_string());
     if let Some(view) = view {
         view.set_user(user.clone());
     }
     cx.shared.user = Some(user);
-    if let Some(message) = message {
-        cx.shared.status = message;
-    }
 }
 
 impl AccountView {
-    /// Puts the open form back with the server's reason, ready to try again.
-    fn change_failed(&mut self, error: String) {
-        let form = match self.dialog.take() {
-            Some(Dialog::Form(form) | Dialog::ConfirmPassword { form, .. }) => Some(form),
+    /// Puts the open sheet back, ready to try again with what was typed.
+    fn change_failed(&mut self) {
+        let form = match self.overlay.take() {
+            Some(Overlay::Form(form) | Overlay::ConfirmPassword { form, .. }) => Some(form),
             other => {
-                self.dialog = other;
+                self.overlay = other;
                 None
             }
         };
         if let Some(mut form) = form {
             form.busy = false;
-            form.error = Some(error);
-            self.dialog = Some(Dialog::Form(form));
+            self.overlay = Some(Overlay::Form(form));
         }
     }
 }

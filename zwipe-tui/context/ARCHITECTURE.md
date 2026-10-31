@@ -51,15 +51,18 @@ Tests go through `Harness`: `Harness::on(Screen::Search(..))` or `harness.open(s
 
 All live in `widgets/` and draw in the account theme's `Palette`.
 
-- `toast`: success, error and info toasts stacked bottom-right, gone after three seconds. Raise one with `cx.toast(kind, message)` or the `Toast` update. The loop keeps ticking while one is up.
-- `alert`: `AlertDialog` with a title, body and buttons, one focused, and a danger tone.
-- `sheet`: a bottom sheet with a scrolling body and footer keys.
+- `toast`: success, error, info and warning toasts in the top-left corner, at most three, the newest on top and the older ones tucked behind it; Ctrl+T expands them. `cx.toast(kind, message)` shows one for `toast::NORMAL` (5 s), `cx.toast_for(kind, message, toast::QUICK | NORMAL | LONG)` for 3, 5 or 8 s, and the `Toast` and `ToastFor` updates do the same from a result.
+- `alert`: `AlertDialog` with a title, rules, a body and buttons, one focused; a button can be danger or disabled, and `draw_with` leaves room under the body for a field.
+- `sheet`: a bottom sheet with a scrolling body, a focused line kept in view, an optional `?` corner and footer keys. `sheet::frame` draws only the chrome, for a sheet with a form inside.
+- `header`: the screen header, `!` on the left, the title, and `?` on the right when the screen has a hint. `!` and F1 open `help`, the Help & feedback dialog (`help::open(cx)`).
+- `hint`: `?` topics and one-time hints. `hint::topic(cx, HintTopic::Email)` opens a topic; `hint::once(cx, key)` opens the app's one-time hint for a key from `zwipe_core::domain::user::hints` the first time only, marks it and sends `mark_hint_shown`; `hint::reopen(cx, key)` opens it again for a header `?`; `hint::keys::swipe_select(..)` with `hint::once_with` covers the one hint whose copy changes. While a hint is up it takes every key.
+- `hero`: the logo and everybody's three counters on the sign-in screens, over the shared `Counts` copy. `hero::mount(cx)` makes one and fetches the counts when they are stale.
+- Animations, each driven by elapsed time with a matching `animating` check for `Screen::animating`: `logo` (the decode, `logo::draw(f, area, art, palette.logo, Some(elapsed))`), `count_up` (`CountUp::new(start, value)`, `set`, `shown_after(elapsed)`), `grid` (the rain, `grid::draw(f, palette, area, Some(elapsed))` and `grid::raining`), `entrance` (`entrance::draw(f, area, elapsed)`; the app runs it on every new screen), `spinner`, `splash` and `wipe` (the app runs both). Logos draw in `palette.logo`.
 - `text_input`: a one-line box with cursor movement, masking, a placeholder and an error line. The caller places the terminal cursor with `cursor_position`.
 - `chips`: a chip row picking one or many.
 - `collapsible`: a section that opens and closes, and an accordion that keeps one open.
 - `info`: the "?" popup of bullet points.
-- `hint`: one-time hints. `hint::show(cx, key, title, body)` opens one if the user has not seen it, marks it locally, and sends `mark_hint_shown`. While a hint is up it takes every key.
-- `action_bar`: the bottom row of key hints.
+- `action_bar`: the bottom row of key hints, and `action_bar::buttons` for a row of buttons the focus moves across.
 - `skeleton`: ghost rows for content still loading.
 - `stats`: a strip of figures whose digits roll until they load. A screen showing one should animate while `stats::loading` is true.
 - `browser`: `browser::open(cx, url)` runs `open` on macOS and `xdg-open` elsewhere, and shows the link in a toast when that fails.

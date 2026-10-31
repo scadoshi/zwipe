@@ -4,12 +4,14 @@ use crossterm::event::KeyCode;
 
 use super::{ExportView, reopen_hint};
 use crate::inbound::app::Context;
+use crate::inbound::widgets::help;
 
 /// The last board chip's index.
 const LAST_CHIP: usize = 2;
 
 pub(crate) fn handle(view: &mut ExportView, code: KeyCode, cx: &mut Context<'_>) {
     match code {
+        KeyCode::Char('!') => help::open(cx),
         KeyCode::Char('q') => cx.quit(),
         KeyCode::Esc => cx.back(),
         KeyCode::Char('?') => reopen_hint(cx),

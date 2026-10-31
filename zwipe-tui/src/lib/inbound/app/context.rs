@@ -1,5 +1,7 @@
 //! What a screen's handler gets besides its own state: the shared state, and a way to ask the loop for work, navigation and quitting.
 
+use std::time::Duration;
+
 use zwipe_core::domain::user::preferences::UserPreferences;
 
 use super::Shared;
@@ -73,14 +75,20 @@ impl<'app> Context<'app> {
         self.effects.quit = true;
     }
 
-    /// Shows a toast that leaves on its own.
+    /// Shows a toast that leaves on its own after [`NORMAL`](crate::inbound::widgets::toast::NORMAL), the app's default.
     pub(crate) fn toast(&mut self, kind: ToastKind, message: String) {
         self.shared.toasts.push(kind, message);
+    }
+
+    /// Shows a toast for `duration`: one of the bands in [`toast`](crate::inbound::widgets::toast).
+    pub(crate) fn toast_for(&mut self, kind: ToastKind, message: String, duration: Duration) {
+        self.shared.toasts.push_for(kind, message, duration);
     }
 
     /// Draws in `preferences` from now on and remembers their theme for the next launch.
     pub(crate) fn use_preferences(&mut self, preferences: &UserPreferences) {
         self.shared.palette = Palette::for_preferences(preferences);
+        self.shared.preferences = Some(preferences.clone());
         self.request(Request::RememberTheme(RememberedTheme {
             theme: preferences.theme.clone(),
             dark_mode: preferences.dark_mode,

@@ -6,12 +6,17 @@ use std::path::PathBuf;
 use anyhow::Result;
 use chrono::Duration;
 use tokio::sync::Mutex;
+use uuid::Uuid;
 use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::user::{User, UserPreferences};
 use zwipe_core::http::contracts::auth::{HttpAuthenticateUser, HttpRefreshSession};
 
+use super::counts_file::CountsFile;
 use super::files;
+
+/// How long logging out waits on the server before forgetting the session anyway, from the app's `LOGOUT_TIMEOUT`.
+const LOGOUT_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(5);
 
 /// How long before it expires an access token counts as stale, as in the app: the server's 60-second leeway plus a clock up to a minute slow.
 const REFRESH_AHEAD: Duration = Duration::minutes(2);
@@ -20,9 +25,13 @@ const REFRESH_AHEAD: Duration = Duration::minutes(2);
 #[derive(Debug)]
 pub(crate) struct Account {
     pub(crate) client: ZwipeClient,
+    /// One random id for this launch, which anonymous funnel events carry instead of an account.
+    pub(crate) launch_id: Uuid,
     /// Also the refresh lock: holding it while refreshing makes concurrent requests wait for one refresh.
     session: Mutex<Option<Session>>,
     store: SessionFile,
+    /// Everybody's counts as last fetched, beside the session file.
+    pub(crate) counts: CountsFile,
 }
 
 impl Account {
@@ -31,7 +40,9 @@ impl Account {
         let session = store.load().filter(|s| !s.is_expired());
         Self {
             client,
+            launch_id: Uuid::new_v4(),
             session: Mutex::new(session),
+            counts: CountsFile::at(store.path.with_file_name("counts.json")),
             store,
         }
     }
@@ -118,18 +129,15 @@ impl Account {
         }
     }
 
-    /// Forgets the session here without telling the server, for an account the server has already deleted.
-    pub(crate) async fn forget(&self) {
-        self.session.lock().await.take();
-        self.store.clear().ok();
-    }
-
-    /// Ends the session on the server, best effort, and forgets it here.
+    /// Ends the session on the server, waiting at most [`LOGOUT_TIMEOUT`], then forgets it here whether the server answered or not.
     pub(crate) async fn sign_out(&self) {
-        let session = self.session.lock().await.take();
-        if let Some(session) = session {
-            self.client.logout(&session).await.ok();
-        }
+        let logout = async {
+            if let Ok(session) = self.fresh().await {
+                self.client.logout(&session).await.ok();
+            }
+        };
+        tokio::time::timeout(LOGOUT_TIMEOUT, logout).await.ok();
+        self.session.lock().await.take();
         self.store.clear().ok();
     }
 }

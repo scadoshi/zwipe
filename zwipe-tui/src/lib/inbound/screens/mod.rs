@@ -4,6 +4,7 @@
 
 pub(crate) mod account;
 pub(crate) mod card_sheets;
+pub(crate) mod changelog;
 pub(crate) mod config;
 pub(crate) mod deck;
 pub(crate) mod deck_cards;
@@ -11,33 +12,45 @@ pub(crate) mod deck_export;
 pub(crate) mod deck_form;
 pub(crate) mod deck_import;
 pub(crate) mod decks;
+pub(crate) mod forgot_password;
 pub(crate) mod home;
 pub(crate) mod login;
+pub(crate) mod privacy;
+pub(crate) mod register;
 pub(crate) mod remove_cards;
 pub(crate) mod swipe;
 pub(crate) mod update_required;
 
 use std::fmt;
+use std::time::{Duration, Instant};
 
 use crossterm::event::KeyCode;
 use ratatui::Frame;
 use zwipe_client::ClientError;
 use zwipe_core::domain::user::User;
-use zwipe_core::version::version_at_least;
+use zwipe_core::http::contracts::changelog::HttpChangelog;
+use zwipe_core::http::contracts::metrics::{AnonymousEventKind, HttpPublicMetrics};
 
 use self::account::AccountView;
+use self::changelog::ChangelogView;
 use self::config::ConfigView;
 use self::deck::DeckView;
 use self::deck_export::ExportView;
 use self::deck_form::DeckForm;
 use self::deck_import::ImportView;
 use self::decks::DeckList;
+use self::forgot_password::ForgotForm;
 use self::home::HomeView;
 use self::login::LoginForm;
+use self::privacy::PrivacyView;
+use self::register::RegisterForm;
 use self::swipe::SwipeView;
-use super::app::{Context, Shared};
+use super::app::{Context, Shared, session};
 use super::nav::Nav;
+use super::widgets;
+use super::widgets::hero::{self, Counts, Hero};
 use super::widgets::toast::ToastKind;
+use crate::domain::changelog::ChangelogCache;
 use crate::outbound::account::Account;
 use crate::outbound::theme_file::{RememberedTheme, ThemeFile};
 
@@ -47,9 +60,11 @@ pub(crate) const VERSION: &str = env!("CARGO_PKG_VERSION");
 /// One open screen and its state.
 #[derive(Debug)]
 pub(crate) enum Screen {
-    Login(LoginForm),
+    Login(Box<LoginForm>),
+    Register(Box<RegisterForm>),
+    ForgotPassword(Box<ForgotForm>),
     Home(Box<HomeView>),
-    Decks(DeckList),
+    Decks(Box<DeckList>),
     Deck(Box<DeckView>),
     DeckForm(Box<DeckForm>),
     DeckImport(Box<ImportView>),
@@ -59,7 +74,13 @@ pub(crate) enum Screen {
     RemoveCards(Box<remove_cards::RemoveView>),
     Account(Box<AccountView>),
     Config(Box<ConfigView>),
-    /// The server no longer accepts this version. Only quitting is possible.
+    Privacy(Box<PrivacyView>),
+    Changelog(Box<ChangelogView>),
+    /// The update notice as a screen of its own. The app shows it over the stack instead, while `Shared::update_required` holds; tests use it as a screen with no state.
+    #[cfg_attr(
+        not(test),
+        expect(dead_code, reason = "the notice draws over the stack instead")
+    )]
     UpdateRequired,
 }
 
@@ -68,6 +89,8 @@ impl Screen {
     pub(crate) fn handle_key(&mut self, code: KeyCode, cx: &mut Context<'_>) {
         match self {
             Self::Login(form) => login::keys::handle(form, code, cx),
+            Self::Register(form) => register::keys::handle(form, code, cx),
+            Self::ForgotPassword(form) => forgot_password::keys::handle(form, code, cx),
             Self::Home(view) => home::keys::handle(view, code, cx),
             Self::Decks(list) => decks::keys::handle(list, code, cx),
             Self::Deck(view) => deck::keys::handle(view, code, cx),
@@ -79,6 +102,8 @@ impl Screen {
             Self::RemoveCards(view) => remove_cards::keys::handle(view, code, cx),
             Self::Account(view) => account::keys::handle(view, code, cx),
             Self::Config(view) => config::keys::handle(view, code, cx),
+            Self::Privacy(view) => privacy::keys::handle(view, code, cx),
+            Self::Changelog(view) => changelog::keys::handle(view, code, cx),
             Self::UpdateRequired => update_required::keys::handle(code, cx),
         }
     }
@@ -86,6 +111,8 @@ impl Screen {
     pub(crate) fn draw(&self, f: &mut Frame<'_>, shared: &Shared) {
         match self {
             Self::Login(form) => login::draw::draw(f, shared, form),
+            Self::Register(form) => register::draw::draw(f, shared, form),
+            Self::ForgotPassword(form) => forgot_password::draw::draw(f, shared, form),
             Self::Home(view) => home::draw::draw(f, shared, view),
             Self::Decks(list) => decks::draw::draw(f, shared, list),
             Self::Deck(view) => deck::draw::draw(f, shared, view),
@@ -97,6 +124,8 @@ impl Screen {
             Self::RemoveCards(view) => remove_cards::draw::draw(f, shared, view),
             Self::Account(view) => account::draw::draw(f, shared, view),
             Self::Config(view) => config::draw::draw(f, shared, view),
+            Self::Privacy(view) => privacy::draw::draw(f, shared, view),
+            Self::Changelog(view) => changelog::draw::draw(f, shared, view),
             Self::UpdateRequired => update_required::draw::draw(f, shared),
         }
     }
@@ -106,7 +135,21 @@ impl Screen {
         match self {
             Self::Home(view) => view.animating(),
             Self::Account(view) => view.animating(),
+            Self::Login(form) => form.hero.animating(Instant::now()),
+            Self::Changelog(view) => widgets::entrance::animating(view.filtered_at.elapsed()),
+            Self::Register(form) => form.hero.animating(Instant::now()),
+            Self::ForgotPassword(form) => form.sending() || form.hero.animating(Instant::now()),
             _ => false,
+        }
+    }
+
+    /// The sign-in screens' hero, which takes everybody's counts as they arrive.
+    pub(crate) fn hero_mut(&mut self) -> Option<&mut Hero> {
+        match self {
+            Self::Login(form) => Some(&mut form.hero),
+            Self::Register(form) => Some(&mut form.hero),
+            Self::ForgotPassword(form) => Some(&mut form.hero),
+            _ => None,
         }
     }
 
@@ -114,6 +157,7 @@ impl Screen {
     pub(crate) fn on_return(&mut self, cx: &mut Context<'_>) {
         match self {
             Self::Home(view) => view.refresh(cx),
+            Self::Login(form) => form.hero = hero::mount(cx),
             Self::Decks(list) => list.reload(cx),
             Self::Deck(view) => view.reload(cx),
             Self::DeckCards(view) => view.reload(cx),
@@ -125,14 +169,22 @@ impl Screen {
 /// Background work a handler asks for: the app's own, or one screen's.
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum Request {
-    /// Compares this build with the server's minimum client version.
-    CheckVersion,
+    /// Refreshes the session if it needs it and compares this build with the server's minimum client version, every minute from launch.
+    Upkeep,
     SignOut,
+    /// Sends an anonymous funnel event, before anyone signs in.
+    Record(AnonymousEventKind),
+    /// Fetches the changelog, once at launch.
+    FetchChangelog,
+    /// Fetches everybody's counts for the hero, and saves them for the next launch.
+    FetchCounts,
     /// Saves the account's theme for drawing before the next sign-in.
     RememberTheme(RememberedTheme),
     /// Tells the server a one-time hint has been shown, by its key.
     MarkHintShown(String),
     Login(login::Request),
+    Register(register::Request),
+    ForgotPassword(forgot_password::Request),
     Home(home::Request),
     Decks(decks::Request),
     Deck(deck::Request),
@@ -151,17 +203,41 @@ pub(crate) enum Request {
 #[derive(Debug)]
 pub(crate) enum Update {
     /// The server's minimum client version is newer than this build.
+    #[cfg_attr(
+        not(test),
+        expect(dead_code, reason = "upkeep reports the version through Upkept")
+    )]
     TooOld,
+    /// An upkeep's result: whether the session ended, and whether this build is too old, `None` when the server could not say.
+    Upkept {
+        ended: bool,
+        too_old: Option<bool>,
+    },
+    /// The changelog, or `None` when it could not be fetched.
+    Changelog(Option<Box<HttpChangelog>>),
+    /// Everybody's counts, freshly fetched.
+    Counts(Box<HttpPublicMetrics>),
     /// The server no longer accepts the session.
     SessionEnded,
     SignedOut,
     /// A message for the status line.
     Status(String),
-    /// A toast for a result that has no screen to show it on.
+    /// A toast for a result that has no screen to show it on, up for the app's default time.
     Toast(ToastKind, String),
+    /// A toast up for one of the app's three bands of time.
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "for screens still to come; no request toasts its result yet"
+        )
+    )]
+    ToastFor(ToastKind, String, Duration),
     /// The user as the server keeps it after marking a hint shown.
     HintMarked(Box<User>),
     Login(login::Update),
+    Register(register::Update),
+    ForgotPassword(forgot_password::Update),
     Home(home::Update),
     Decks(decks::Update),
     Deck(deck::Update),
@@ -183,10 +259,20 @@ pub(crate) async fn perform(
     request: Request,
 ) -> Option<Update> {
     match request {
-        Request::CheckVersion => {
-            let minimum = account.client.fetch_min_client_version().await.ok()?;
-            (!version_at_least(VERSION, &minimum.min_version)).then_some(Update::TooOld)
+        Request::Upkeep => Some(session::upkeep(account).await),
+        Request::Record(kind) => {
+            session::record(account, kind).await;
+            None
         }
+        Request::FetchCounts => {
+            // A failed fetch keeps whatever copy is on screen, with no message.
+            let metrics = account.client.public_metrics().await.ok()?;
+            account.counts.save(&metrics).ok();
+            Some(Update::Counts(Box::new(metrics)))
+        }
+        Request::FetchChangelog => Some(Update::Changelog(
+            account.client.fetch_changelog().await.ok().map(Box::new),
+        )),
         Request::SignOut => {
             account.sign_out().await;
             Some(Update::SignedOut)
@@ -198,17 +284,20 @@ pub(crate) async fn perform(
         }
         Request::MarkHintShown(hint) => {
             // The hint is already marked on the local copy, so a failure only means it may show again next launch.
-            async {
+            let user = async {
                 account
                     .client
                     .mark_hint_shown(&hint, &account.fresh().await?)
                     .await
             }
             .await
-            .ok()
-            .map(|user| Update::HintMarked(Box::new(user)))
+            .ok()?;
+            account.set_user(user.clone()).await;
+            Some(Update::HintMarked(Box::new(user)))
         }
         Request::Login(request) => login::perform(account, request).await,
+        Request::Register(request) => register::perform(account, request).await,
+        Request::ForgotPassword(request) => forgot_password::perform(account, request).await,
         Request::Home(request) => home::perform(account, request).await,
         Request::Decks(request) => decks::perform(account, request).await,
         Request::Deck(request) => deck::perform(account, request).await,
@@ -227,19 +316,34 @@ pub(crate) async fn perform(
 /// Applies one result: the app's own here, a screen's by its module, which finds its screen in `nav` if it is open.
 pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
     match update {
-        Update::TooOld => cx.reset(Screen::UpdateRequired),
-        Update::SessionEnded => {
-            login::signed_out(cx, Some("Your session ended. Sign in again.".to_owned()));
-            cx.request(Request::SignOut);
+        Update::TooOld => cx.shared.update_required = true,
+        Update::Upkept { ended, too_old } => session::upkept(cx, ended, too_old),
+        Update::Changelog(changelog) => {
+            cx.shared.changelog =
+                changelog.map_or(ChangelogCache::Failed, |c| ChangelogCache::Loaded(*c));
+        }
+        Update::SessionEnded => session::session_ended(cx),
+        Update::Counts(metrics) => {
+            let now = Instant::now();
+            cx.shared.counts = Counts {
+                metrics: Some(*metrics),
+                fetched_at: Some(now),
+            };
+            for hero in nav.screens_mut().filter_map(Screen::hero_mut) {
+                hero.take(&cx.shared.counts, now);
+            }
         }
         Update::SignedOut => login::signed_out(cx, None),
         Update::Status(status) => cx.shared.status = status,
         Update::Toast(kind, message) => cx.toast(kind, message),
+        Update::ToastFor(kind, message, duration) => cx.toast_for(kind, message, duration),
         Update::HintMarked(user) => {
             cx.shared.username = Some(user.username.to_string());
             cx.shared.user = Some(*user);
         }
         Update::Login(update) => login::apply(nav, update, cx),
+        Update::Register(update) => register::apply(nav, update, cx),
+        Update::ForgotPassword(update) => forgot_password::apply(nav, update, cx),
         Update::Home(update) => home::apply(nav, update, cx),
         Update::Decks(update) => decks::apply(nav, update, cx),
         Update::Deck(update) => deck::apply(nav, update, cx),
@@ -293,6 +397,30 @@ mod tests {
             failure(&ClientError::NotFound("gone".to_owned()), Update::Status),
             Update::Status(m) if m == "gone"
         ));
+    }
+
+    #[test]
+    fn a_toast_update_raises_a_toast_for_its_time() {
+        use crate::inbound::event_loop::harness::Harness;
+        use crate::inbound::widgets::toast;
+
+        let mut harness = Harness::new();
+        harness.apply(Update::ToastFor(
+            ToastKind::Warning,
+            "Careful".to_owned(),
+            toast::LONG,
+        ));
+        harness.apply(Update::Toast(ToastKind::Info, "Hello".to_owned()));
+        let toasts = harness.app.shared.toasts.items();
+        assert_eq!(toasts.len(), 2);
+        assert_eq!(
+            toasts[0].expires_at.duration_since(toasts[0].shown_at),
+            toast::LONG
+        );
+        assert_eq!(
+            toasts[1].expires_at.duration_since(toasts[1].shown_at),
+            toast::NORMAL
+        );
     }
 
     #[test]

@@ -5,10 +5,10 @@
 use crossterm::event::KeyCode;
 use zwipe_core::domain::user::hints::HINT_FILTER;
 
-use super::{FilterSheet, HINT_LINES, HINT_TITLE, PickerInput, SheetOutcome, Target};
+use super::{FilterSheet, PickerInput, SheetOutcome, Target};
 use crate::domain::filter::sections::{Clear, Row};
 use crate::inbound::app::Context;
-use crate::inbound::screens::card_sheets;
+use crate::inbound::widgets::hint;
 
 pub(crate) fn handle(sheet: &mut FilterSheet, code: KeyCode, cx: &mut Context<'_>) -> SheetOutcome {
     match code {
@@ -32,7 +32,7 @@ pub(crate) fn handle(sheet: &mut FilterSheet, code: KeyCode, cx: &mut Context<'_
         KeyCode::Esc => return sheet.back(cx),
         KeyCode::Char('a') => return sheet.apply(cx),
         KeyCode::Char('r') => sheet.reset(cx),
-        KeyCode::Char('?') => card_sheets::show_hint(cx, HINT_FILTER, HINT_TITLE, &HINT_LINES),
+        KeyCode::Char('?') => hint::reopen(cx, HINT_FILTER),
         _ => act(sheet, code, cx),
     }
     SheetOutcome::Open

@@ -14,7 +14,7 @@ fn colored(name: &str, identity: &[&str]) -> DeckProfile {
 
 /// The deck list loaded with `decks` for a verified user, the hint closed and nothing queued.
 fn loaded(decks: Vec<DeckProfile>) -> Harness {
-    let mut harness = Harness::on(Screen::Decks(DeckList::loading()));
+    let mut harness = Harness::on(Screen::Decks(Box::new(DeckList::loading())));
     harness.app.shared.user = Some(user(true));
     harness.apply(Update::Loaded(decks));
     harness.app.shared.hint = None;
@@ -48,7 +48,7 @@ fn the_first_load_selects_the_first_deck_and_enter_opens_it() {
 
 #[test]
 fn a_loaded_list_shows_its_hint_once_per_visit() {
-    let mut harness = Harness::on(Screen::Decks(DeckList::loading()));
+    let mut harness = Harness::on(Screen::Decks(Box::new(DeckList::loading())));
     harness.app.shared.user = Some(user(true));
     harness.apply(Update::Loaded(Vec::new()));
     assert!(
@@ -241,5 +241,9 @@ fn the_deck_list_fits_a_tiny_terminal() {
     let harness = loaded(vec![deck_profile("A")]);
     render(&harness.app, 12, 5);
     render(&harness.app, 1, 1);
-    render(&Harness::on(Screen::Decks(DeckList::loading())).app, 12, 5);
+    render(
+        &Harness::on(Screen::Decks(Box::new(DeckList::loading()))).app,
+        12,
+        5,
+    );
 }

@@ -50,6 +50,15 @@ impl TextInput {
         self
     }
 
+    /// Masks or shows what is typed, as a password's Show and Hide do.
+    pub(crate) fn set_masked(&mut self, masked: bool) {
+        self.masked = masked;
+    }
+
+    pub(crate) fn is_masked(&self) -> bool {
+        self.masked
+    }
+
     pub(crate) fn value(&self) -> &str {
         &self.value
     }
@@ -191,14 +200,11 @@ impl TextInput {
             let skip = self.skip(box_area.width);
             Line::from(self.shown().chars().skip(skip).collect::<String>()).style(Style::new())
         };
-        f.render_widget(
-            Paragraph::new(text).block(
-                Block::bordered()
-                    .title(format!(" {title} "))
-                    .border_style(border),
-            ),
-            box_area,
-        );
+        let mut block = Block::bordered().border_style(border);
+        if !title.is_empty() {
+            block = block.title(format!(" {title} "));
+        }
+        f.render_widget(Paragraph::new(text).block(block), box_area);
         if let Some(error) = &self.error
             && area.height > BOX_HEIGHT
         {

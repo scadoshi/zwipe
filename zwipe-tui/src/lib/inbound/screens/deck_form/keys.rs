@@ -1,4 +1,4 @@
-//! The deck form's keys. Tab, Shift-Tab and the arrows move between fields; text fields take typing; F2 saves, F8 clears the focused field, F1 explains it, Esc goes back. On a command-zone field, F3 toggles Filter and F4 opens Swipe.
+//! The deck form's keys. Tab, Shift-Tab and the arrows move between fields; text fields take typing; F2 saves, F8 clears the focused field, F6 explains it, Esc goes back. On a command-zone field, F3 toggles Filter and F4 opens Swipe.
 
 use crossterm::event::KeyCode;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
@@ -30,7 +30,7 @@ pub(crate) fn handle(form: &mut DeckForm, code: KeyCode, cx: &mut Context<'_>) {
     match code {
         KeyCode::Esc => return cx.back(),
         KeyCode::F(2) => return form.save(cx),
-        KeyCode::F(1) => return form.overlay = Some(Overlay::Info(form.focus.info())),
+        KeyCode::F(6) => return form.overlay = Some(Overlay::Info(form.focus.info())),
         KeyCode::F(8) => return clear(form, cx),
         KeyCode::Tab => return form.step_focus(false),
         KeyCode::BackTab => return form.step_focus(true),

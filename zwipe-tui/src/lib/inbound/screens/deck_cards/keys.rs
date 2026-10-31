@@ -7,12 +7,12 @@ use zwipe_core::domain::card::search_card::group_cards::GroupByOption;
 use zwipe_core::domain::deck::Board;
 use zwipe_core::domain::user::hints::HINT_DECK_CARDS;
 
-use super::{DeckCardsView, HINT_LINES, HINT_TITLE, Item, Kind, PrintingTarget, Request};
+use super::{DeckCardsView, Item, Kind, PrintingTarget, Request};
 use crate::inbound::app::Context;
 use crate::inbound::screens::card_sheets;
 use crate::inbound::screens::card_sheets::filter::SheetOutcome;
 use crate::inbound::screens::card_sheets::printing::PrintingOutcome;
-use crate::inbound::widgets::card_info;
+use crate::inbound::widgets::{card_info, help, hint};
 
 pub(crate) fn handle(view: &mut DeckCardsView, code: KeyCode, cx: &mut Context<'_>) {
     if overlay_key(view, code, cx) {
@@ -24,6 +24,7 @@ pub(crate) fn handle(view: &mut DeckCardsView, code: KeyCode, cx: &mut Context<'
     }
     match code {
         KeyCode::Esc => view.leave(cx),
+        KeyCode::Char('!') => help::open(cx),
         KeyCode::Char('q') => {
             view.flush_all(cx);
             cx.quit();
@@ -57,7 +58,7 @@ pub(crate) fn handle(view: &mut DeckCardsView, code: KeyCode, cx: &mut Context<'
         KeyCode::Char('u') => view.undo(cx),
         KeyCode::Char('a') => view.open_add(cx),
         KeyCode::Char('r') => view.open_remove(cx),
-        KeyCode::Char('?') => card_sheets::show_hint(cx, HINT_DECK_CARDS, HINT_TITLE, &HINT_LINES),
+        KeyCode::Char('?') => hint::reopen(cx, HINT_DECK_CARDS),
         _ => row_key(view, code, cx),
     }
 }

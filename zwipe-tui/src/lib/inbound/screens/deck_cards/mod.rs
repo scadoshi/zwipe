@@ -27,7 +27,7 @@ use zwipe_core::http::helpers::Patch;
 use super::card_sheets::filter::{FilterSheet, SheetConfig};
 use super::card_sheets::printing::PrintingSheet;
 use super::swipe::signal;
-use super::{Screen, card_sheets, remove_cards, swipe};
+use super::{Screen, remove_cards, swipe};
 use crate::domain::deck_cards::{self, Boards, Burst, Bursts, Display, Write, Zone};
 use crate::domain::deck_signals::{self, Crossing};
 use crate::domain::filter::picker::Sources;
@@ -36,22 +36,10 @@ use crate::domain::stores::undo::{CommandZoneSlot, UndoAction, create_board_fiel
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;
+use crate::inbound::widgets::hint;
 use crate::inbound::widgets::text_input::TextInput;
 use crate::inbound::widgets::toast::ToastKind;
 use crate::outbound::account::Account;
-
-/// The hint's title.
-pub(crate) const HINT_TITLE: &str = "Browsing your deck";
-
-/// The hint's lines.
-pub(crate) const HINT_LINES: [&str; 6] = [
-    "Tap a row for details, quantity and printings",
-    "Tap a keyword chip for what it does, or a role chip for its oracle tags",
-    "Group by sorts by type, mana value, color or role",
-    "Boards picks main, maybe or side",
-    "Show toggles tokens, the command zone and row art",
-    "Star marks up to three MVPs. Suggestions lean toward cards that share their roles",
-];
 
 /// Quick add waits this long after the last keystroke before it searches.
 const QUICK_ADD_DEBOUNCE: Duration = Duration::from_millis(300);
@@ -1499,7 +1487,7 @@ fn loaded_deck(view: &mut DeckCardsView, cx: &mut Context<'_>, loaded: Loaded) {
     }
     if !view.hint_seen && !view.entries.is_empty() {
         view.hint_seen = true;
-        card_sheets::show_hint_once(cx, HINT_DECK_CARDS, HINT_TITLE, &HINT_LINES);
+        hint::once(cx, HINT_DECK_CARDS);
     }
     view.rerun();
 }

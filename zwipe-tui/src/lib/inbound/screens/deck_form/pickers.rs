@@ -151,7 +151,7 @@ fn move_focus(focus: &mut usize, count: usize, code: KeyCode) -> bool {
     true
 }
 
-/// The hint each picker shows on F1.
+/// The hint each picker shows on F6.
 fn hint(overlay: &str) -> InfoPopup {
     match overlay {
         "format" => InfoPopup::new(
@@ -207,7 +207,7 @@ pub(crate) fn handle_format(
                 return None;
             }
         }
-        KeyCode::F(1) => return Some(Overlay::Info(hint("format"))),
+        KeyCode::F(6) => return Some(Overlay::Info(hint("format"))),
         KeyCode::Enter => {
             if let Some(format) = picker.formats().get(picker.focus).copied() {
                 picker.detail = Some(format);
@@ -250,7 +250,7 @@ pub(crate) fn handle_tags(
                 return None;
             }
         }
-        KeyCode::F(1) => return Some(Overlay::Info(hint("deck tags"))),
+        KeyCode::F(6) => return Some(Overlay::Info(hint("deck tags"))),
         KeyCode::F(8) => {
             form.tags.clear();
             picker.detail = None;
@@ -310,7 +310,7 @@ pub(crate) fn handle_oracle(
                 return None;
             }
         }
-        KeyCode::F(1) => return Some(Overlay::Info(hint("oracle tags"))),
+        KeyCode::F(6) => return Some(Overlay::Info(hint("oracle tags"))),
         KeyCode::F(3) => open_dictionary_stub(cx),
         KeyCode::F(8) => {
             form.oracle_tags.clear();

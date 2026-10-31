@@ -16,10 +16,10 @@ use zwipe_core::domain::deck::{Board, Deck, DeckCard, DeckEntry, DeckProfile};
 use zwipe_core::domain::user::hints::HINT_REMOVE_DECK_CARDS;
 use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpPatchDeckCard};
 
+use super::Screen;
 use super::card_sheets::details::DetailsSheet;
 use super::card_sheets::filter::{FilterSheet, SheetConfig};
 use super::swipe::{UndoFailure, signal};
-use super::{Screen, card_sheets};
 use crate::domain::deck_signals::{self, Crossing};
 use crate::domain::filter::picker::Sources;
 use crate::domain::stack::{CardStack, RemoveAction, StackAction};
@@ -29,20 +29,9 @@ use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;
 use crate::inbound::screens::card_sheets::printing::PrintingSheet;
+use crate::inbound::widgets::hint;
 use crate::inbound::widgets::toast::ToastKind;
 use crate::outbound::account::Account;
-
-/// The hint's title.
-pub(crate) const HINT_TITLE: &str = "Swipe to trim";
-
-/// The hint's lines.
-pub(crate) const HINT_LINES: [&str; 5] = [
-    "Swipe right removes the card",
-    "Swipe left keeps it",
-    "Swipe up moves it between main and maybeboard",
-    "Swipe down undoes the last swipe",
-    "The board chips up top pick which board you are trimming",
-];
 
 /// Which board is being trimmed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -369,7 +358,7 @@ pub(crate) fn open(cx: &mut Context<'_>, deck_id: Uuid) {
         printing: None,
         face: 0,
     };
-    card_sheets::show_hint_once(cx, HINT_REMOVE_DECK_CARDS, HINT_TITLE, &HINT_LINES);
+    hint::once(cx, HINT_REMOVE_DECK_CARDS);
     cx.request(Request::Load { deck_id }.into());
     cx.push(Screen::RemoveCards(Box::new(view)));
 }

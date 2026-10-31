@@ -21,8 +21,8 @@ use crate::domain::deck::warning::{self, Fix};
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;
-use crate::inbound::widgets::alert::{AlertDialog, Tone};
-use crate::inbound::widgets::hint::{self, HintDialog};
+use crate::inbound::widgets::alert::AlertDialog;
+use crate::inbound::widgets::hint;
 use crate::inbound::widgets::info::InfoPopup;
 use crate::inbound::widgets::menu::{Menu, MenuItem};
 use crate::inbound::widgets::text_input::TextInput;
@@ -31,12 +31,6 @@ use crate::outbound::account::Account;
 
 /// The key the server stores the first-deck hint under.
 pub(crate) const HINT_KEY: &str = "first_deck";
-
-/// The first-deck hint's title.
-const HINT_TITLE: &str = "Welcome to your deck";
-
-/// The first-deck hint's bullets, as the app words them.
-const HINT_BODY: &str = "• Cards browses, adds and removes cards\n• Edit changes the name, format, command zone, tags and targets\n• More imports, exports, clones, shares or deletes the deck\n• Skipped and removed cards stay out of the add stack. More then Clear skips brings them back\n• Stats fill in as the deck grows. Tap a section to expand it\n• Warnings flag rule problems, each with a one-tap fix";
 
 /// One section of the deck screen, in the app's order.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -473,36 +467,28 @@ impl DeckView {
     }
 }
 
-/// The Clear skips dialog, focused on Cancel.
+/// The Clear skips dialog in the app's order, Cancel then the danger Clear, focused on Cancel.
 pub(crate) fn clear_skips_dialog() -> AlertDialog {
-    let mut dialog = AlertDialog::new(
+    AlertDialog::new(
         "Clear skips",
         "Skipped cards come back on their own after a week, and removed cards after a month. Clearing brings them all back now. This can't be undone.",
     )
-    .with_button("Clear", None)
     .with_button("Cancel", None)
-    .with_tone(Tone::Danger);
-    dialog.focused = 1;
-    dialog
+    .with_danger_button("Clear", None)
+    .with_focus(0)
 }
 
-/// The Delete dialog, focused on Cancel.
+/// The Delete dialog in the app's order, Cancel then the danger Delete, focused on Cancel.
 pub(crate) fn delete_dialog() -> AlertDialog {
-    let mut dialog = AlertDialog::new("Delete deck", "Are you sure you want to delete this deck?")
-        .with_button("Delete", None)
+    AlertDialog::new("Delete deck", "Are you sure you want to delete this deck?")
         .with_button("Cancel", None)
-        .with_tone(Tone::Danger);
-    dialog.focused = 1;
-    dialog
+        .with_danger_button("Delete", None)
+        .with_focus(0)
 }
 
 /// Shows the first-deck hint again, whether or not it has been seen.
 pub(crate) fn reopen_hint(cx: &mut Context<'_>) {
-    cx.shared.hint = Some(HintDialog {
-        key: HINT_KEY.to_owned(),
-        title: HINT_TITLE.to_owned(),
-        body: HINT_BODY.to_owned(),
-    });
+    hint::reopen(cx, HINT_KEY);
 }
 
 /// Stand-in for the oracle tag Examples overlay, which package B builds. Wire it to that overlay with `slug`.
@@ -597,7 +583,7 @@ pub(crate) fn open(cx: &mut Context<'_>, profile: DeckProfile) {
     cx.request(Request::Load(profile.id).into());
     cx.request(Request::LoadOracleTags.into());
     cx.push(Screen::Deck(Box::new(DeckView::opening(profile))));
-    hint::show(cx, HINT_KEY, HINT_TITLE, HINT_BODY);
+    hint::once(cx, HINT_KEY);
 }
 
 /// Swaps the screen on top for this deck, as after creating or cloning one, so going back reaches the list.
@@ -606,7 +592,7 @@ pub(crate) fn replace_with(cx: &mut Context<'_>, profile: DeckProfile) {
     cx.request(Request::Load(profile.id).into());
     cx.request(Request::LoadOracleTags.into());
     cx.replace(Screen::Deck(Box::new(DeckView::opening(profile))));
-    hint::show(cx, HINT_KEY, HINT_TITLE, HINT_BODY);
+    hint::once(cx, HINT_KEY);
 }
 
 pub(crate) async fn perform(account: &Account, request: Request) -> Option<screens::Update> {

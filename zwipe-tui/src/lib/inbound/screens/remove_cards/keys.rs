@@ -3,12 +3,13 @@
 use crossterm::event::KeyCode;
 use zwipe_core::domain::user::hints::HINT_REMOVE_DECK_CARDS;
 
-use super::{BoardFilter, HINT_LINES, HINT_TITLE, RemoveView};
+use super::{BoardFilter, RemoveView};
 use crate::inbound::app::Context;
 use crate::inbound::screens::card_sheets;
 use crate::inbound::screens::card_sheets::details::{DetailsOutcome, DetailsSheet};
 use crate::inbound::screens::card_sheets::filter::SheetOutcome;
 use crate::inbound::screens::card_sheets::printing::{PrintingOutcome, PrintingSheet};
+use crate::inbound::widgets::{help, hint};
 
 pub(crate) fn handle(view: &mut RemoveView, code: KeyCode, cx: &mut Context<'_>) {
     if overlay_key(view, code, cx) {
@@ -17,6 +18,7 @@ pub(crate) fn handle(view: &mut RemoveView, code: KeyCode, cx: &mut Context<'_>)
     view.stack.cancel_entering();
     match code {
         KeyCode::Esc => view.leave(cx),
+        KeyCode::Char('!') => help::open(cx),
         KeyCode::Char('q') => cx.quit(),
         KeyCode::Left | KeyCode::Char('h') => view.keep(cx),
         KeyCode::Right | KeyCode::Char('l') => view.remove(cx),
@@ -37,7 +39,7 @@ pub(crate) fn handle(view: &mut RemoveView, code: KeyCode, cx: &mut Context<'_>)
         }
         KeyCode::Char('t') => view.face = view.face.saturating_add(1),
         KeyCode::Char('?') => {
-            card_sheets::show_hint(cx, HINT_REMOVE_DECK_CARDS, HINT_TITLE, &HINT_LINES);
+            hint::reopen(cx, HINT_REMOVE_DECK_CARDS);
         }
         _ => {}
     }

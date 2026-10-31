@@ -17,19 +17,13 @@ use crate::domain::deck::list::{self, DeckGroup, GroupBy, Show};
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;
-use crate::inbound::widgets::hint::{self, HintDialog};
+use crate::inbound::widgets::hint;
 use crate::inbound::widgets::menu::{Menu, MenuItem};
 use crate::inbound::widgets::toast::ToastKind;
 use crate::outbound::account::Account;
 
 /// The key the server stores the deck list's hint under.
 pub(crate) const HINT_KEY: &str = "deck_list";
-
-/// The deck list's hint, as the app words it.
-const HINT_TITLE: &str = "Your decks";
-
-/// The hint's bullets.
-const HINT_BODY: &str = "• Tap a deck to open it\n• Group by folds the list into sections, Show narrows it by color or tag\n• Create starts a new deck";
 
 /// The part of the screen that takes the arrow keys.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
@@ -242,11 +236,7 @@ impl DeckList {
 
 /// Shows the hint again, whether or not it has been seen.
 pub(crate) fn reopen_hint(cx: &mut Context<'_>) {
-    cx.shared.hint = Some(HintDialog {
-        key: HINT_KEY.to_owned(),
-        title: HINT_TITLE.to_owned(),
-        body: HINT_BODY.to_owned(),
-    });
+    hint::reopen(cx, HINT_KEY);
 }
 
 /// The More sheet.
@@ -331,7 +321,7 @@ fn pick(screen: &mut Screen) -> Option<&mut DeckList> {
 /// Opens the deck list over the current screen, fetches the decks and refreshes the user.
 pub(crate) fn open(cx: &mut Context<'_>) {
     cx.shared.status.clear();
-    cx.push(Screen::Decks(DeckList::loading()));
+    cx.push(Screen::Decks(Box::new(DeckList::loading())));
     cx.request(Request::Load.into());
 }
 
@@ -373,7 +363,7 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
             list.set_decks(decks);
             if !list.decks.is_empty() && !list.hint_tried {
                 list.hint_tried = true;
-                hint::show(cx, HINT_KEY, HINT_TITLE, HINT_BODY);
+                hint::once(cx, HINT_KEY);
             }
         }
         Update::Failed(error) => {

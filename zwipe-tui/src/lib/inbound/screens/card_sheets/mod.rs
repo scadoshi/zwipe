@@ -16,7 +16,6 @@ use crate::domain::stores::catalog::Kind;
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;
-use crate::inbound::widgets::hint::{self, HintDialog};
 use crate::inbound::widgets::toast::ToastKind;
 use crate::outbound::account::Account;
 
@@ -118,18 +117,4 @@ fn open_printing_sheet(screen: &mut Screen) -> Option<&mut printing::PrintingShe
         Screen::RemoveCards(view) => view.printing.as_mut(),
         _ => None,
     }
-}
-
-/// Shows a one-time hint the first time the user reaches it.
-pub(crate) fn show_hint_once(cx: &mut Context<'_>, key: &str, title: &str, lines: &[&str]) {
-    hint::show(cx, key, title, &lines.join("\n"));
-}
-
-/// Shows a hint now, as the "?" key does, whether or not it was seen.
-pub(crate) fn show_hint(cx: &mut Context<'_>, key: &str, title: &str, lines: &[&str]) {
-    cx.shared.hint = Some(HintDialog {
-        key: key.to_owned(),
-        title: title.to_owned(),
-        body: lines.join("\n"),
-    });
 }

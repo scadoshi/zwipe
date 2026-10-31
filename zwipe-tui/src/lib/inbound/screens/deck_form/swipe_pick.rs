@@ -213,7 +213,7 @@ pub(crate) fn handle(
     }
     match code {
         KeyCode::Esc => return None,
-        KeyCode::F(1) => {
+        KeyCode::F(6) => {
             return Some(Overlay::Info(InfoPopup::new(
                 "Swipe select",
                 &picker

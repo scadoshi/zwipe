@@ -14,7 +14,7 @@ use crate::domain::deck::form::{self, ImportTone};
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;
-use crate::inbound::widgets::hint::{self, HintDialog};
+use crate::inbound::widgets::hint;
 use crate::inbound::widgets::text_area::TextArea;
 use crate::inbound::widgets::text_input::TextInput;
 use crate::inbound::widgets::toast::ToastKind;
@@ -22,10 +22,6 @@ use crate::outbound::account::Account;
 
 /// The key the server stores the import hint under.
 pub(crate) const HINT_KEY: &str = "import";
-
-const HINT_TITLE: &str = "Importing cards";
-
-const HINT_BODY: &str = "• Paste a decklist, or switch From to an Archidekt deck link\n• Add keeps your current cards. Replace swaps the board's contents\n• Board picks where the cards go\n• Importing clears the deck's undo history";
 
 /// Where the cards come from.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
@@ -199,11 +195,7 @@ impl ImportView {
 
 /// Shows the import hint again.
 pub(crate) fn reopen_hint(cx: &mut Context<'_>) {
-    cx.shared.hint = Some(HintDialog {
-        key: HINT_KEY.to_owned(),
-        title: HINT_TITLE.to_owned(),
-        body: HINT_BODY.to_owned(),
-    });
+    hint::reopen(cx, HINT_KEY);
 }
 
 /// Import's work.
@@ -252,7 +244,7 @@ fn pick(screen: &mut Screen) -> Option<&mut ImportView> {
 /// Opens Import for `deck_id` and shows its hint once.
 pub(crate) fn open(cx: &mut Context<'_>, deck_id: Uuid) {
     cx.push(Screen::DeckImport(Box::new(ImportView::opening(deck_id))));
-    hint::show(cx, HINT_KEY, HINT_TITLE, HINT_BODY);
+    hint::once(cx, HINT_KEY);
 }
 
 pub(crate) async fn perform(account: &Account, request: Request) -> Option<screens::Update> {

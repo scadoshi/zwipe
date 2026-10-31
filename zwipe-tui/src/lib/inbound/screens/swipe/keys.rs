@@ -3,12 +3,12 @@
 use crossterm::event::KeyCode;
 use zwipe_core::domain::user::hints::HINT_ADD_DECK_CARDS;
 
-use super::{HINT_LINES, HINT_TITLE, Source, SwipeView};
+use super::{Source, SwipeView};
 use crate::inbound::app::Context;
-use crate::inbound::screens::card_sheets;
 use crate::inbound::screens::card_sheets::details::DetailsOutcome;
 use crate::inbound::screens::card_sheets::filter::{self, SheetOutcome};
 use crate::inbound::screens::card_sheets::printing::{PrintingOutcome, PrintingSheet};
+use crate::inbound::widgets::{help, hint};
 
 pub(crate) fn handle(view: &mut SwipeView, code: KeyCode, cx: &mut Context<'_>) {
     if sheet_key(view, code, cx) {
@@ -18,6 +18,7 @@ pub(crate) fn handle(view: &mut SwipeView, code: KeyCode, cx: &mut Context<'_>) 
     view.mb_stack.cancel_entering();
     match code {
         KeyCode::Esc => view.leave(cx),
+        KeyCode::Char('!') => help::open(cx),
         KeyCode::Char('q') => {
             view.park(cx);
             cx.quit();
@@ -43,7 +44,7 @@ pub(crate) fn handle(view: &mut SwipeView, code: KeyCode, cx: &mut Context<'_>) 
         }
         KeyCode::Char('i') => view.show_image = !view.show_image,
         KeyCode::Char('?') => {
-            card_sheets::show_hint(cx, HINT_ADD_DECK_CARDS, HINT_TITLE, &HINT_LINES);
+            hint::reopen(cx, HINT_ADD_DECK_CARDS);
         }
         _ => {}
     }

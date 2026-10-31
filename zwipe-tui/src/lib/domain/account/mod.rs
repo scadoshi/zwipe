@@ -7,8 +7,25 @@ use zwipe_core::domain::user::{Email, Username};
 /// Seconds the server makes a user wait between verification emails.
 pub(crate) const RESEND_COOLDOWN_SECS: u64 = 60;
 
-/// Seconds the delete button stays disabled after the dialog opens.
+/// Seconds the delete button stays disabled after the dialog opens, the app's `DELETE_COUNTDOWN_SECS`.
 pub(crate) const DELETE_DELAY_SECS: u64 = 5;
+
+/// What is wrong with a new password on Change password, in the app's order: the policy, then a mismatch once a submit was tried or the confirmation is as long, then sameness with the current one.
+pub(crate) fn change_password_error(
+    current: &str,
+    new: &str,
+    confirm: &str,
+    attempted: bool,
+) -> Option<String> {
+    if let Err(e) = password::validate(new) {
+        return Some(e.to_string());
+    }
+    let long_enough = confirm.chars().count() >= new.chars().count();
+    if new != confirm && (attempted || long_enough) {
+        return Some("Passwords do not match".to_owned());
+    }
+    (new == current).then(|| "New password must be different from your current password".to_owned())
+}
 
 /// Why `raw` is not a username, in the app's words, or `None` when it is one.
 pub(crate) fn username_error(raw: &str) -> Option<String> {
@@ -56,28 +73,17 @@ pub(crate) fn password_required(password: &str) -> Option<String> {
         .then(|| "Password is required".to_owned())
 }
 
-/// What is wrong with a new password, checked in the app's order: the password rules, then the confirmation, then sameness with the current one.
-pub(crate) fn new_password_error(current: &str, new: &str, confirm: &str) -> Option<String> {
-    if let Err(e) = password::validate(new) {
-        return Some(e.to_string());
-    }
-    if new != confirm {
-        return Some("Passwords do not match".to_owned());
-    }
-    (new == current).then(|| "New password must be different from your current password".to_owned())
-}
-
-/// The note under a pending email change: how long its link lasts, or that it has expired.
+/// The note under a pending email change, the app's `link_expiry_text`: how long its link lasts, or that it has expired. Minutes round up; from an hour on, minutes round to the nearest hour.
 pub(crate) fn pending_note(expires_at: DateTime<Utc>, now: DateTime<Utc>) -> String {
     let seconds = expires_at.signed_duration_since(now).num_seconds();
     if seconds <= 0 {
         return "Link expired; tap Change to send a new one".to_owned();
     }
-    if seconds < 3600 {
-        let minutes = seconds.saturating_add(59) / 60;
+    let minutes = seconds.saturating_add(59) / 60;
+    if minutes < 60 {
         return plural("Link expires in", minutes, "minute");
     }
-    let hours = seconds.saturating_add(1800) / 3600;
+    let hours = minutes.saturating_add(30) / 60;
     plural("Link expires in", hours, "hour")
 }
 
@@ -122,25 +128,29 @@ mod tests {
     }
 
     #[test]
-    fn new_passwords_are_checked_in_the_apps_order() {
-        assert!(new_password_error("Old!pass1", "short", "short").is_some());
-        assert_eq!(
-            new_password_error("Old!pass1", "New!pass22", "New!pass23").as_deref(),
-            Some("Passwords do not match")
-        );
-        assert_eq!(
-            new_password_error("Same!pass1", "Same!pass1", "Same!pass1").as_deref(),
-            Some("New password must be different from your current password")
-        );
-        assert_eq!(
-            new_password_error("Old!pass1", "New!pass22", "New!pass22"),
-            None
-        );
+    fn change_password_waits_on_the_mismatch_until_the_confirmation_is_long_enough() {
         assert_eq!(
             password_required("").as_deref(),
             Some("Password is required")
         );
         assert_eq!(password_required("x"), None);
+        let check = |confirm, attempted| {
+            change_password_error("Old!pass1", "New!pass22", confirm, attempted)
+        };
+        assert_eq!(check("New", false), None, "still typing");
+        assert_eq!(
+            check("New", true).as_deref(),
+            Some("Passwords do not match")
+        );
+        assert_eq!(
+            check("New!pass23", false).as_deref(),
+            Some("Passwords do not match")
+        );
+        assert_eq!(check("New!pass22", false), None);
+        assert_eq!(
+            change_password_error("Same!pass1", "Same!pass1", "Same!pass1", true).as_deref(),
+            Some("New password must be different from your current password")
+        );
     }
 
     #[test]
@@ -151,6 +161,12 @@ mod tests {
         assert_eq!(note(Duration::minutes(45)), "Link expires in 45 minutes");
         assert_eq!(note(Duration::hours(1)), "Link expires in 1 hour");
         assert_eq!(note(Duration::hours(23)), "Link expires in 23 hours");
+        assert_eq!(note(Duration::seconds(3599)), "Link expires in 1 hour");
+        assert_eq!(
+            note(Duration::minutes(89) + Duration::seconds(30)),
+            "Link expires in 2 hours"
+        );
+        assert_eq!(note(Duration::minutes(59)), "Link expires in 59 minutes");
         assert_eq!(
             note(Duration::seconds(-5)),
             "Link expired; tap Change to send a new one"

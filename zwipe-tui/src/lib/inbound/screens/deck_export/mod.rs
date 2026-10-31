@@ -13,17 +13,12 @@ use crate::domain::deck::export::{self, Boards};
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;
-use crate::inbound::widgets::hint::{self, HintDialog};
+use crate::inbound::widgets::hint;
 use crate::inbound::widgets::toast::ToastKind;
 use crate::outbound::account::Account;
 
 /// The key the server stores the export hint under.
 pub(crate) const HINT_KEY: &str = "export";
-
-const HINT_TITLE: &str = "Exporting your deck";
-
-const HINT_BODY: &str =
-    "• Export picks which boards to include\n• Copy puts the decklist on your clipboard";
 
 /// The Export screen: the deck once loaded, the boards it includes, the focused board chip, and how far the list is scrolled.
 #[derive(Debug)]
@@ -73,11 +68,7 @@ impl ExportView {
 
 /// Shows the export hint again.
 pub(crate) fn reopen_hint(cx: &mut Context<'_>) {
-    cx.shared.hint = Some(HintDialog {
-        key: HINT_KEY.to_owned(),
-        title: HINT_TITLE.to_owned(),
-        body: HINT_BODY.to_owned(),
-    });
+    hint::reopen(cx, HINT_KEY);
 }
 
 /// The Export screen's work.
@@ -116,7 +107,7 @@ fn pick(screen: &mut Screen) -> Option<&mut ExportView> {
 pub(crate) fn open(cx: &mut Context<'_>, deck_id: Uuid) {
     cx.push(Screen::DeckExport(Box::new(ExportView::opening(deck_id))));
     cx.request(Request::Load(deck_id).into());
-    hint::show(cx, HINT_KEY, HINT_TITLE, HINT_BODY);
+    hint::once(cx, HINT_KEY);
 }
 
 pub(crate) async fn perform(account: &Account, request: Request) -> Option<screens::Update> {

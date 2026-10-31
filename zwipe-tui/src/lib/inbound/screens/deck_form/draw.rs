@@ -125,7 +125,7 @@ fn form_keys(palette: &Palette, form: &DeckForm) -> Line<'static> {
         Field::Currency => keys.push(("h/l", "currency")),
         Field::Name | Field::Price => {}
     }
-    keys.extend([("F8", "×"), ("F1", "?"), ("Esc", "Back")]);
+    keys.extend([("F8", "×"), ("F6", "?"), ("Esc", "Back")]);
     let save = match form.mode {
         _ if form.saving => Some("Saving..."),
         Mode::Create => Some("Save"),
@@ -488,7 +488,7 @@ fn picker_frame(
     f.render_widget(
         Line::from(vec![
             Span::styled(title.to_owned(), palette.accent).bold(),
-            Span::styled("  F1 hint", palette.muted),
+            Span::styled("  F6 hint", palette.muted),
         ]),
         header,
     );
@@ -749,7 +749,7 @@ fn draw_swipe(f: &mut Frame<'_>, shared: &Shared, picker: &SwipePicker, areas: [
     f.render_widget(
         Line::from(vec![
             Span::styled("Swipe select", palette.accent).bold(),
-            Span::styled("  F1 hint", palette.muted),
+            Span::styled("  F6 hint", palette.muted),
         ]),
         header,
     );

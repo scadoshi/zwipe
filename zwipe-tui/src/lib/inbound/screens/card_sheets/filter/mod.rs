@@ -27,22 +27,12 @@ use crate::domain::filter::sections::{self, ChipSet, Modes, NumberField, Row, Se
 use crate::domain::filter::{self, AddContext, ApplyAction, FilterState};
 use crate::domain::stores::catalog::Catalog;
 use crate::inbound::app::Context;
+use crate::inbound::widgets::hint;
 use crate::inbound::widgets::text_input::TextInput;
 use crate::inbound::widgets::toast::ToastKind;
 
 /// The produced-mana chips: the five colors and colorless.
 const PRODUCED: [&str; 6] = ["W", "U", "B", "R", "G", "C"];
-
-/// The filter hint's title.
-const HINT_TITLE: &str = "Filters";
-
-/// The filter hint's lines.
-const HINT_LINES: [&str; 4] = [
-    "Picks which cards show: the ones served to swipe, or which of the deck's cards list",
-    "Open a section to set name, mana, type, color, Oracle tags and more. Stack as many as you want",
-    "Apply uses it. Reset then Apply goes back to the default view",
-    "Each screen keeps its own filter",
-];
 
 /// What Reset does on this host.
 #[derive(Debug, Clone, PartialEq, Default)]
@@ -120,7 +110,7 @@ impl FilterSheet {
         filter: &CardQueryBuilder,
         config: SheetConfig,
     ) -> Self {
-        super::show_hint_once(cx, HINT_FILTER, HINT_TITLE, &HINT_LINES);
+        hint::once(cx, HINT_FILTER);
         let catalog = &mut cx.shared.cards.catalog;
         if catalog.any_failed() {
             cx.toast(

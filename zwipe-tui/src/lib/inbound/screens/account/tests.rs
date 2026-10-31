@@ -1,56 +1,113 @@
+use std::time::{Duration, Instant};
+
 use crossterm::event::KeyCode;
+use zwipe_core::domain::user::hints::HINT_PROFILE;
 
 use super::*;
 use crate::inbound::event_loop::harness::Harness;
 use crate::inbound::screens::home;
-use crate::test_support::{screen_text, user};
+use crate::test_support::{render, screen_text, user};
 
 fn ask(request: Request) -> screens::Request {
     request.into()
 }
 
-/// Home with the user known, then the account screen over it, with nothing left queued.
+/// Home with the user known (the profile hint already seen), then Account over it, with nothing left queued.
 fn on_account(verified: bool) -> Harness {
     let mut harness = Harness::new();
-    harness.app.shared.user = Some(user(verified));
+    let mut known = user(verified);
+    known.hints_shown.insert(HINT_PROFILE.to_owned(), true);
+    harness.app.shared.user = Some(known);
     harness.open(home::open);
     harness.clear();
     harness.press(KeyCode::Char('a'));
+    harness.clear();
     harness
 }
 
-fn account_view(harness: &Harness) -> &AccountView {
+fn view(harness: &Harness) -> &AccountView {
     match harness.screen() {
         Screen::Account(view) => view,
         other => panic!("not on the account screen: {other:?}"),
     }
 }
 
-#[test]
-fn a_opens_the_account_and_refreshes_the_user() {
-    let harness = on_account(true);
-    assert_eq!(account_view(&harness).user.username.to_string(), "scotty");
-    assert_eq!(harness.pending(), [ask(Request::LoadUser)]);
+fn view_mut(harness: &mut Harness) -> &mut AccountView {
+    match harness.screen_mut() {
+        Screen::Account(view) => view,
+        other => panic!("not on the account screen: {other:?}"),
+    }
+}
+
+fn toasts(harness: &Harness) -> Vec<(ToastKind, String)> {
+    harness
+        .app
+        .shared
+        .toasts
+        .items()
+        .iter()
+        .map(|t| (t.kind, t.message.clone()))
+        .collect()
 }
 
 #[test]
-fn a_bad_username_is_refused_in_the_form_and_a_good_one_is_sent() {
+fn opening_fetches_the_user_and_shows_the_profile_hint_the_first_time() {
+    let mut harness = Harness::new();
+    harness.app.shared.user = Some(user(true));
+    harness.open(open);
+    assert_eq!(
+        harness.pending(),
+        [
+            ask(Request::LoadUser),
+            screens::Request::MarkHintShown(HINT_PROFILE.to_owned())
+        ]
+    );
+    assert!(screen_text(&harness.app).contains("Your account"));
+}
+
+#[test]
+fn the_screen_shows_its_rows_and_the_red_unverified_badge() {
+    let harness = on_account(false);
+    let screen = screen_text(&harness.app);
+    for text in [
+        "Account",
+        "Username",
+        "scotty",
+        "Email ?",
+        "Unverified",
+        "Verification ?",
+        "Resend",
+        "•••••••",
+        "About",
+        "zwipe.net ↗",
+        "Privacy policy",
+        "View",
+        "Changelog",
+        "Log out",
+        "More",
+    ] {
+        assert!(screen.contains(text), "{text}");
+    }
+    assert!(!screen_text(&on_account(true).app).contains("Verification"));
+}
+
+#[test]
+fn a_bad_username_shows_live_and_a_good_one_is_sent_as_typed() {
     let mut harness = on_account(true);
-    harness.clear();
     harness.press(KeyCode::Enter);
     harness.type_text("ab");
-    harness.press(KeyCode::Enter);
-    harness.type_text("hunter2");
-    harness.press(KeyCode::Enter);
-    assert!(matches!(
-        &account_view(&harness).dialog,
-        Some(Dialog::Form(form)) if form.error.as_deref() == Some("must be at least 3 characters long")
-    ));
-    assert_eq!(harness.pending(), []);
-
-    harness.press(KeyCode::Tab);
+    let Some(Overlay::Form(form)) = &view(&harness).overlay else {
+        panic!("no sheet");
+    };
+    assert_eq!(
+        form.inputs[0].error(),
+        Some("must be at least 3 characters long")
+    );
     harness.type_text("cdef");
-    harness.press(KeyCode::Tab);
+    harness.press(KeyCode::Enter);
+    harness.press(KeyCode::Enter);
+    assert_eq!(harness.pending(), [], "the password is required");
+    harness.type_text("hunter2");
     harness.press(KeyCode::Enter);
     assert_eq!(
         harness.pending(),
@@ -59,226 +116,201 @@ fn a_bad_username_is_refused_in_the_form_and_a_good_one_is_sent() {
             password: Password("hunter2".to_owned()),
         }))]
     );
-    assert!(!format!("{:?}", harness.pending()).contains("hunter2"));
+}
 
-    harness.apply(Update::ChangeFailed("invalid password".to_owned()));
-    assert!(matches!(
-        &account_view(&harness).dialog,
-        Some(Dialog::Form(form)) if !form.busy && form.error.as_deref() == Some("invalid password")
-    ));
-
+#[test]
+fn a_change_closes_the_sheet_and_toasts_for_its_band() {
+    let mut harness = on_account(true);
+    harness.press(KeyCode::Enter);
     let mut renamed = user(true);
     renamed.username = zwipe_core::domain::user::Username::new("abcdef").unwrap();
     harness.apply(Update::Changed {
         user: Some(Box::new(renamed)),
         message: "Username changed to abcdef".to_owned(),
+        duration: toast::QUICK,
     });
-    assert!(account_view(&harness).dialog.is_none());
-    assert_eq!(harness.app.shared.username.as_deref(), Some("abcdef"));
-    assert_eq!(harness.app.shared.status, "Username changed to abcdef");
+    assert!(view(&harness).overlay.is_none());
+    assert_eq!(view(&harness).user.username.to_string(), "abcdef");
+    let up = &harness.app.shared.toasts.items()[0];
+    assert_eq!(up.expires_at.duration_since(up.shown_at), toast::QUICK);
 }
 
 #[test]
-fn a_password_change_asks_before_it_signs_out_other_devices() {
+fn a_failed_change_toasts_and_keeps_the_sheet() {
     let mut harness = on_account(true);
-    harness.clear();
+    harness.press(KeyCode::Enter);
+    if let Some(Overlay::Form(form)) = &mut view_mut(&mut harness).overlay {
+        form.busy = true;
+    }
+    harness.apply(Update::ChangeFailed("wrong password".to_owned()));
+    assert!(matches!(&view(&harness).overlay, Some(Overlay::Form(form)) if !form.busy));
+    assert_eq!(
+        toasts(&harness),
+        [(ToastKind::Error, "wrong password".to_owned())]
+    );
+}
+
+#[test]
+fn a_password_change_asks_first_and_checks_against_the_current_one() {
+    let mut harness = on_account(true);
     for _ in 0..2 {
         harness.press(KeyCode::Char('j'));
     }
+    assert_eq!(view(&harness).focused(), Some(Stop::ChangePassword));
     harness.press(KeyCode::Enter);
-    for value in ["Old!pass1", "New!pass22", "New!pass22"] {
-        harness.type_text(value);
-        harness.press(KeyCode::Enter);
+    if let Some(Overlay::Form(form)) = &mut view_mut(&mut harness).overlay {
+        form.fill(&["Same!pass1", "Same!pass1", "Same!pass1"]);
+        form.focus = 2;
     }
+    harness.press(KeyCode::Enter);
+    let Some(Overlay::Form(form)) = &view(&harness).overlay else {
+        panic!("no sheet");
+    };
+    assert_eq!(
+        form.inputs[1].error(),
+        Some("New password must be different from your current password")
+    );
+    if let Some(Overlay::Form(form)) = &mut view_mut(&mut harness).overlay {
+        form.fill(&["Old!pass1", "New!pass22", "New!pass22"]);
+    }
+    harness.press(KeyCode::Enter);
     assert!(matches!(
-        account_view(&harness).dialog,
-        Some(Dialog::ConfirmPassword { .. })
+        view(&harness).overlay,
+        Some(Overlay::ConfirmPassword { .. })
     ));
-    assert_eq!(harness.pending(), []);
+    assert!(screen_text(&harness.app).contains("Changing your password will log you out"));
     harness.press(KeyCode::Char('y'));
-    assert!(matches!(
+    assert_eq!(
         harness.pending(),
-        [screens::Request::Account(Request::Change(
-            AccountChange::Password { .. }
-        ))]
-    ));
+        [ask(Request::Change(AccountChange::Password {
+            current: Password("Old!pass1".to_owned()),
+            new: Password("New!pass22".to_owned()),
+        }))]
+    );
 }
 
 #[test]
-fn the_password_alert_cancels_back_to_the_form_from_its_second_button() {
-    let mut harness = on_account(true);
-    for _ in 0..2 {
-        harness.press(KeyCode::Char('j'));
-    }
+fn resend_waits_a_minute_after_it_lands_unless_it_failed() {
+    let mut harness = on_account(false);
+    harness.press(KeyCode::Char('j'));
+    harness.press(KeyCode::Char('j'));
+    assert_eq!(view(&harness).focused(), Some(Stop::Resend));
     harness.press(KeyCode::Enter);
-    for value in ["Old!pass1", "New!pass22", "New!pass22"] {
-        harness.type_text(value);
-        harness.press(KeyCode::Enter);
-    }
-    harness.clear();
-    harness.press(KeyCode::Right);
-    assert!(matches!(
-        &account_view(&harness).dialog,
-        Some(Dialog::ConfirmPassword { alert, .. }) if alert.focused == 1
-    ));
+    assert_eq!(view(&harness).resend_label(), "Sending...");
     harness.press(KeyCode::Enter);
-    assert!(matches!(
-        &account_view(&harness).dialog,
-        Some(Dialog::Form(form)) if form.value(1) == "New!pass22"
-    ));
-    assert_eq!(harness.pending(), []);
-    assert!(screen_text(&harness.app).contains("Change password"));
+    assert_eq!(
+        harness.pending(),
+        [ask(Request::Resend)],
+        "once while sending"
+    );
+    harness.apply(Update::Resent);
+    assert!(view(&harness).resend_label().starts_with("Resend in "));
+    assert!(view(&harness).animating());
+    assert_eq!(
+        toasts(&harness),
+        [(ToastKind::Success, "Verification email sent".to_owned())]
+    );
+
+    view_mut(&mut harness).resend_ready_at = None;
+    harness.press(KeyCode::Enter);
+    harness.apply(Update::ResendFailed("offline".to_owned()));
+    assert_eq!(view(&harness).resend_label(), "Resend");
+    let failed = &harness.app.shared.toasts.items()[1];
+    assert_eq!(
+        failed.expires_at.duration_since(failed.shown_at),
+        toast::LONG
+    );
 }
 
 #[test]
-fn delete_waits_five_seconds_and_log_out_asks_first() {
-    let mut harness = on_account(true);
-    harness.clear();
-    for _ in 0..10 {
+fn checking_verification_toasts_either_way() {
+    let mut harness = on_account(false);
+    for _ in 0..3 {
         harness.press(KeyCode::Char('j'));
     }
     harness.press(KeyCode::Enter);
+    assert!(view(&harness).checking);
+    harness.apply(Update::User {
+        user: Box::new(user(true)),
+        toast: Some((ToastKind::Success, "Email verified")),
+    });
+    assert!(view(&harness).verified() && !view(&harness).checking);
+    assert_eq!(
+        toasts(&harness),
+        [(ToastKind::Success, "Email verified".to_owned())]
+    );
+}
+
+#[test]
+fn log_out_asks_then_signs_out_with_no_toast() {
+    let mut harness = on_account(true);
+    harness.press(KeyCode::Char('L'));
+    assert!(screen_text(&harness.app).contains("Are you sure you want to log out?"));
+    harness.press(KeyCode::Char('n'));
+    assert!(view(&harness).overlay.is_none());
+    harness.press(KeyCode::Char('L'));
+    harness.press(KeyCode::Enter);
+    assert_eq!(harness.pending(), [screens::Request::SignOut]);
+    assert_eq!(toasts(&harness), []);
+}
+
+#[test]
+fn more_opens_delete_which_counts_down_before_it_sends() {
+    let mut harness = on_account(true);
+    harness.press(KeyCode::Char('m'));
+    assert!(screen_text(&harness.app).contains("Delete account"));
+    harness.press(KeyCode::Enter);
+    let screen = screen_text(&harness.app);
+    assert!(screen.contains("This will permanently delete your account"));
+    assert!(screen.contains("Delete (5)"));
     harness.type_text("pw");
     harness.press(KeyCode::Enter);
-    assert!(matches!(&account_view(&harness).dialog, Some(Dialog::Form(form)) if !form.busy));
+    assert_eq!(harness.pending(), [], "still counting down");
+    if let Some(Overlay::More(Some(delete))) = &mut view_mut(&mut harness).overlay {
+        delete.opened_at = Instant::now() - Duration::from_secs(6);
+    }
+    harness.press(KeyCode::Enter);
     assert_eq!(
         harness.pending(),
-        [],
-        "the delete button is still counting down"
+        [ask(Request::Change(AccountChange::Delete {
+            password: Password("pw".to_owned()),
+        }))]
     );
-    assert!(harness.app.animating(), "the countdown redraws");
-
-    harness.press(KeyCode::Esc);
-    harness.press(KeyCode::Char('k'));
-    harness.press(KeyCode::Enter);
-    assert!(matches!(
-        account_view(&harness).dialog,
-        Some(Dialog::LogOut(_))
-    ));
-    harness.press(KeyCode::Char('y'));
-    assert_eq!(harness.pending(), [screens::Request::SignOut]);
+    assert!(screen_text(&harness.app).contains("Deleting..."));
+    harness.apply(Update::DeleteFailed("wrong password".to_owned()));
+    assert!(matches!(&view(&harness).overlay, Some(Overlay::More(Some(d))) if !d.busy));
+    harness.apply(Update::Deleted);
+    assert!(matches!(harness.screen(), Screen::Login(_)));
 }
 
 #[test]
-fn resend_waits_a_minute_between_emails_unless_it_failed() {
-    let mut harness = on_account(false);
-    harness.clear();
-    for _ in 0..2 {
+fn i_opens_the_rows_topic_and_the_about_rows_open_their_screens() {
+    let mut harness = on_account(true);
+    harness.press(KeyCode::Char('j'));
+    harness.press(KeyCode::Char('i'));
+    assert!(screen_text(&harness.app).contains("Where password resets and verification go"));
+    harness.press(KeyCode::Enter);
+    for _ in 0..3 {
         harness.press(KeyCode::Char('j'));
     }
+    assert_eq!(view(&harness).focused(), Some(Stop::Privacy));
     harness.press(KeyCode::Enter);
+    assert!(matches!(harness.screen(), Screen::Privacy(_)));
+    harness.press(KeyCode::Esc);
+    harness.press(KeyCode::Char('j'));
     harness.press(KeyCode::Enter);
-    assert_eq!(harness.pending(), [ask(Request::Resend)]);
-    assert!(account_view(&harness).resend_wait().is_some());
-
-    harness.apply(Update::ResendFailed("offline".to_owned()));
-    assert!(account_view(&harness).resend_wait().is_none());
-    assert_eq!(harness.app.shared.status, "offline");
+    assert!(matches!(harness.screen(), Screen::Changelog(_)));
 }
 
 #[test]
-fn the_account_screen_shows_details_and_verification_rows() {
-    let harness = Harness::on(Screen::Account(Box::new(AccountView::new(user(false)))));
-    let screen = screen_text(&harness.app);
-    for expected in [
-        "> Username",
-        "scotty",
-        "scotty@zwipe.net",
-        "Unverified",
-        "Verification",
-        "Resend",
-        "Check",
-        "•••••••",
-        "Version",
-        "Log out",
-        "Delete account",
-    ] {
-        assert!(screen.contains(expected), "missing {expected}");
-    }
-}
-
-#[test]
-fn a_form_masks_passwords_and_the_delete_button_counts_down() {
-    let mut view = AccountView::new(user(true));
-    let mut form = Form::new(FormKind::Delete);
-    form.fill(&["hunter2"]);
-    view.dialog = Some(Dialog::Form(form));
-    let harness = Harness::on(Screen::Account(Box::new(view)));
-    let screen = screen_text(&harness.app);
-    assert!(screen.contains("Delete account"));
-    assert!(screen.contains("permanently delete"));
-    assert!(screen.contains("•••••••"));
-    assert!(!screen.contains("hunter2"));
-    assert!(screen.contains("Delete (5)"));
-}
-
-#[test]
-fn verification_rows_show_only_while_unverified() {
-    assert_eq!(
-        AccountView::new(user(true)).rows(),
-        [
-            AccountRow::Username,
-            AccountRow::Email,
-            AccountRow::Password,
-            AccountRow::LogOut,
-            AccountRow::Delete
-        ]
-    );
-    assert!(
-        AccountView::new(user(false))
-            .rows()
-            .contains(&AccountRow::Resend)
-    );
-}
-
-#[test]
-fn verifying_keeps_the_selection_in_range() {
-    let mut view = AccountView::new(user(false));
-    for _ in 0..10 {
-        view.next_row();
-    }
-    assert_eq!(view.selected(), Some(AccountRow::Delete));
-    view.set_user(user(true));
-    assert_eq!(view.selected(), Some(AccountRow::Delete));
-}
-
-#[test]
-fn forms_check_their_fields_before_sending() {
-    let mut form = Form::new(FormKind::Username);
-    form.fill(&["ab", "pw"]);
-    assert_eq!(
-        form.problem().as_deref(),
-        Some("must be at least 3 characters long")
-    );
-    form.fill(&["scotty2", ""]);
-    assert_eq!(form.problem().as_deref(), Some("Password is required"));
-    form.fill(&["scotty2", "pw"]);
-    assert_eq!(form.problem(), None);
-}
-
-#[test]
-fn the_delete_form_waits_before_it_can_submit() {
-    let mut form = Form::new(FormKind::Delete);
-    assert_eq!(form.delete_wait(), Some(DELETE_DELAY_SECS));
-    form.opened_at = Instant::now() - Duration::from_secs(DELETE_DELAY_SECS);
-    assert_eq!(form.delete_wait(), None);
-    assert_eq!(Form::new(FormKind::Email).delete_wait(), None);
-}
-
-#[test]
-fn fields_cycle_and_the_last_one_is_known() {
-    let mut form = Form::new(FormKind::Password);
-    assert!(!form.on_last_field());
-    form.previous_field();
-    assert!(form.on_last_field());
-    form.next_field();
-    assert_eq!(form.focus, 0);
-}
-
-#[test]
-fn the_resend_cooldown_counts_down_from_a_minute() {
-    let mut view = AccountView::new(user(false));
-    assert_eq!(view.resend_wait(), None);
-    view.start_resend_cooldown();
-    assert_eq!(view.resend_wait(), Some(RESEND_COOLDOWN_SECS));
+fn the_screen_and_its_sheets_fit_a_tiny_terminal() {
+    let mut harness = on_account(false);
+    render(&harness.app, 12, 5);
+    harness.press(KeyCode::Enter);
+    render(&harness.app, 12, 5);
+    harness.press(KeyCode::Esc);
+    harness.press(KeyCode::Char('m'));
+    harness.press(KeyCode::Enter);
+    render(&harness.app, 12, 5);
+    render(&harness.app, 1, 1);
 }

@@ -5,6 +5,7 @@ use zwipe_core::domain::deck::ImportMode;
 
 use super::{Focus, ImportView, Source, Target, reopen_hint};
 use crate::inbound::app::Context;
+use crate::inbound::widgets::help;
 
 pub(crate) fn handle(view: &mut ImportView, code: KeyCode, cx: &mut Context<'_>) {
     match code {
@@ -23,6 +24,7 @@ pub(crate) fn handle(view: &mut ImportView, code: KeyCode, cx: &mut Context<'_>)
                 }
             },
             Focus::From | Focus::Mode | Focus::Board => match other {
+                KeyCode::Char('!') => help::open(cx),
                 KeyCode::Char('q') => cx.quit(),
                 KeyCode::Char('?') => reopen_hint(cx),
                 KeyCode::Down | KeyCode::Char('j') => view.step_focus(false),

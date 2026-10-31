@@ -1,194 +1,289 @@
-//! The account screen: the user's details, verification, the about rows, and the forms and dialogs over them.
+//! Account: the header, the Account and About lists with their buttons, the action bar, and the sheets and dialogs over them.
 
 use ratatui::Frame;
-use ratatui::layout::{Constraint, Layout};
-use ratatui::style::Stylize;
+use ratatui::layout::{Constraint, Layout, Rect};
+use ratatui::style::{Style, Stylize};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Paragraph, Wrap};
-use zwipe_core::domain::site::WEB_BASE;
+use ratatui::widgets::Paragraph;
 
-use super::{AccountRow, AccountView, Dialog, Form, FormKind, pending_note};
+use super::{AccountView, DeleteDialog, DeleteFocus, Form, FormKind, Overlay, Stop, pending_note};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::screens::VERSION;
-use crate::inbound::widgets::measure::height_of;
-use crate::inbound::widgets::text_input::MASK;
-use crate::inbound::widgets::{action_bar, panel};
+use crate::inbound::screens::login::draw::show_button;
+use crate::inbound::widgets::action_bar::{self, Button};
+use crate::inbound::widgets::alert::AlertDialog;
+use crate::inbound::widgets::header::{self, Corner};
+use crate::inbound::widgets::sheet::{self, Sheet};
+use crate::inbound::widgets::text_input::{BOX_HEIGHT, MASK, TextInput};
 
-/// The labels take this many cells before their values.
-const LABEL_WIDTH: usize = 14;
+/// The lists are at most this wide, in cells.
+const WIDTH: u16 = 72;
 
-/// A dialog is at most this wide inside its panel, in cells.
-const DIALOG_WIDTH: u16 = 56;
+/// The labels take this many cells.
+const LABEL_WIDTH: usize = 16;
 
 pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &AccountView) {
     let palette = &shared.palette;
-    let [header, body, status, keys] = Layout::vertical([
+    let [head, _, body, buttons, keys] = Layout::vertical([
+        Constraint::Length(1),
         Constraint::Length(1),
         Constraint::Fill(1),
         Constraint::Length(1),
         Constraint::Length(1),
     ])
-    .margin(1)
     .areas(f.area());
-
+    header::draw(f, palette, head, "Account", Corner::Hint);
+    let body = body.centered_horizontally(Constraint::Length(WIDTH.min(body.width)));
     f.render_widget(
-        Line::from(Span::styled("Account", palette.accent).bold()),
-        header,
-    );
-    f.render_widget(
-        Paragraph::new(lines(palette, view)).block(Block::bordered().border_style(palette.border)),
+        Paragraph::new(lines(palette, view, usize::from(body.width))),
         body,
     );
     f.render_widget(
-        Line::from(shared.status.clone()).style(palette.muted),
-        status,
+        action_bar::buttons(
+            palette,
+            &[
+                Button::new("Back"),
+                Button::new("Log out").danger(),
+                Button::new("More"),
+            ],
+            None,
+        )
+        .centered(),
+        buttons,
     );
     f.render_widget(
         action_bar::line(
             palette,
             &[
                 ("j/k", "move"),
-                ("Enter", "open"),
-                ("Esc", "home"),
-                ("q", "quit"),
+                ("Enter", "select"),
+                ("i", "about row"),
+                ("?", "hint"),
+                ("!", "help"),
+                ("L", "log out"),
+                ("m", "more"),
+                ("Esc", "back"),
             ],
-        ),
+        )
+        .centered(),
         keys,
     );
-
-    match &view.dialog {
-        Some(Dialog::Form(form)) => draw_form(f, palette, form),
-        Some(Dialog::ConfirmPassword { alert, .. } | Dialog::LogOut(alert)) => {
+    match &view.overlay {
+        Some(Overlay::Form(form)) => draw_form(f, palette, form),
+        Some(Overlay::ConfirmPassword { form, alert }) => {
+            draw_form(f, palette, form);
             alert.draw(f, palette);
+        }
+        Some(Overlay::LogOut(alert)) => alert.draw(f, palette),
+        Some(Overlay::More(delete)) => {
+            more_sheet().draw(f, palette, f.area());
+            if let Some(delete) = delete {
+                draw_delete(f, palette, delete);
+            }
         }
         None => {}
     }
 }
 
-/// The screen's lines, top to bottom, with the selected row marked.
-fn lines(palette: &Palette, view: &AccountView) -> Vec<Line<'static>> {
-    let selected = view.selected();
-    let row = |row: AccountRow, label: &str, value: Vec<Span<'static>>, action: &str| {
-        let marked = selected == Some(row);
-        let mut spans = vec![
-            Span::raw(if marked { "> " } else { "  " }),
-            Span::styled(format!("{label:<LABEL_WIDTH$}"), palette.muted),
-        ];
-        spans.extend(value);
-        if !action.is_empty() {
-            spans.push(Span::styled(format!("  {action}"), palette.accent));
-        }
-        let line = Line::from(spans);
-        if marked { line.bold() } else { line }
-    };
-    let plain = |label: &str, value: String| {
-        Line::from(vec![
-            Span::raw("  "),
-            Span::styled(format!("{label:<LABEL_WIDTH$}"), palette.muted),
-            Span::raw(value),
-        ])
-    };
-    let user = &view.user;
+/// A row: its label (with a `?` when it has a topic), its value, and its buttons on the right.
+fn row(
+    palette: &Palette,
+    width: usize,
+    label: &str,
+    topic: bool,
+    value: Vec<Span<'static>>,
+    buttons: Vec<Span<'static>>,
+) -> Line<'static> {
+    let mut spans = vec![Span::raw(format!("{label:<LABEL_WIDTH$}"))];
+    if topic {
+        spans.pop();
+        spans.push(Span::raw(label.to_owned()));
+        spans.push(Span::styled(
+            " ?",
+            palette.swatches.get(5).copied().unwrap_or(palette.muted),
+        ));
+        let pad = LABEL_WIDTH.saturating_sub(label.chars().count().saturating_add(2));
+        spans.push(Span::raw(" ".repeat(pad)));
+    }
+    spans.extend(value);
+    let used: usize = spans.iter().map(Span::width).sum();
+    let tail: usize = buttons.iter().map(Span::width).sum();
+    spans.push(Span::raw(
+        " ".repeat(width.saturating_sub(used).saturating_sub(tail)),
+    ));
+    spans.extend(buttons);
+    Line::from(spans)
+}
 
+/// A button on a row, reversed while focused and muted while disabled.
+fn button(
+    palette: &Palette,
+    view: &AccountView,
+    stop: Stop,
+    label: &str,
+    disabled: bool,
+) -> Span<'static> {
+    let style: Style = if disabled {
+        palette.muted
+    } else {
+        palette.accent
+    };
+    let style = if view.focused() == Some(stop) && view.overlay.is_none() {
+        style.bold().reversed()
+    } else {
+        style
+    };
+    Span::styled(format!(" {label} "), style)
+}
+
+/// The screen's lines, top to bottom.
+fn lines(palette: &Palette, view: &AccountView, width: usize) -> Vec<Line<'static>> {
+    let user = &view.user;
+    let section = |title: &str| Line::from(title.to_owned()).style(palette.muted).bold();
     let mut lines = vec![
-        Line::from(Span::styled("Account", palette.accent)),
+        section("Account"),
         row(
-            AccountRow::Username,
+            palette,
+            width,
             "Username",
+            false,
             vec![Span::raw(user.username.to_string())],
-            "Change",
+            vec![button(palette, view, Stop::ChangeUsername, "Change", false)],
         ),
         row(
-            AccountRow::Email,
+            palette,
+            width,
             "Email",
+            true,
             vec![
-                Span::raw(user.email.to_string()),
-                Span::raw("  "),
+                Span::raw(format!("{} ", user.email)),
                 if view.verified() {
                     Span::styled("Verified", palette.add)
                 } else {
-                    Span::styled("Unverified", palette.warning)
+                    Span::styled("Unverified", palette.error)
                 },
             ],
-            "Change",
+            vec![button(palette, view, Stop::ChangeEmail, "Change", false)],
         ),
     ];
     if let Some(pending) = &user.pending_email {
-        lines.push(plain("Pending", pending.to_string()));
+        lines.push(row(
+            palette,
+            width,
+            "Pending",
+            false,
+            Vec::new(),
+            vec![Span::raw(pending.to_string())],
+        ));
         if let Some(note) = pending_note(user) {
-            lines.push(plain("", note).style(palette.muted));
+            lines.push(Line::from(note).style(palette.muted).right_aligned());
         }
     }
     if !view.verified() {
-        let resend = view
-            .resend_wait()
-            .map_or_else(|| "Resend".to_owned(), |s| format!("Resend in {s}s"));
-        lines.push(row(AccountRow::Resend, "Verification", Vec::new(), &resend));
-        lines.push(row(AccountRow::Check, "", Vec::new(), "Check"));
+        lines.push(row(
+            palette,
+            width,
+            "Verification",
+            true,
+            Vec::new(),
+            vec![
+                button(
+                    palette,
+                    view,
+                    Stop::Resend,
+                    &view.resend_label(),
+                    !view.can_resend(),
+                ),
+                Span::raw(" "),
+                button(palette, view, Stop::Check, "↻", view.checking),
+            ],
+        ));
     }
     lines.extend([
         row(
-            AccountRow::Password,
+            palette,
+            width,
             "Password",
+            false,
             vec![Span::raw(MASK.to_string().repeat(7))],
-            "Change",
+            vec![button(palette, view, Stop::ChangePassword, "Change", false)],
         ),
         Line::default(),
-        Line::from(Span::styled("About", palette.accent)),
-        plain("Website", WEB_BASE.to_owned()),
-        plain("Version", format!("v{VERSION}")),
-        Line::default(),
-        row(AccountRow::LogOut, "Log out", Vec::new(), ""),
-        row(AccountRow::Delete, "Delete account", Vec::new(), "").style(palette.error),
+        section("About"),
+        row(
+            palette,
+            width,
+            "Website",
+            true,
+            Vec::new(),
+            vec![button(
+                palette,
+                view,
+                Stop::Website,
+                "zwipe.net \u{2197}",
+                false,
+            )],
+        ),
+        row(
+            palette,
+            width,
+            "Privacy policy",
+            false,
+            Vec::new(),
+            vec![button(palette, view, Stop::Privacy, "View", false)],
+        ),
+        row(
+            palette,
+            width,
+            "Version",
+            true,
+            vec![Span::raw(format!("v{VERSION}"))],
+            vec![button(palette, view, Stop::Changelog, "Changelog", false)],
+        ),
     ]);
     lines
 }
 
+/// The More sheet: one danger button, Delete account.
+fn more_sheet() -> Sheet {
+    Sheet::new(
+        "More",
+        vec![Line::from(" Delete account ").centered().bold().reversed()],
+    )
+    .with_footer("Enter", "Delete account")
+    .with_footer("Esc", "Close")
+}
+
+/// A Change sheet: its fields with their error lines, and its footer keys.
 fn draw_form(f: &mut Frame<'_>, palette: &Palette, form: &Form) {
-    let fields = form.kind.fields();
-    let intro = match form.kind {
-        FormKind::Delete => Some(
-            "This will permanently delete your account, all decks, and all card data. This cannot be undone.",
-        ),
-        _ => None,
+    let heights: Vec<u16> = form.inputs.iter().map(TextInput::height).collect();
+    let body = heights.iter().fold(0_u16, |sum, h| sum.saturating_add(*h));
+    let save = if form.busy {
+        "Saving..."
+    } else {
+        "Save changes"
     };
-    let intro = intro.map(|text| Paragraph::new(text).wrap(Wrap { trim: true }));
-    let intro_height = intro.as_ref().map_or(0, |p| {
-        height_of(p.line_count(DIALOG_WIDTH)).saturating_add(1)
-    });
-    let error = form.error.as_ref().map(|e| {
-        Paragraph::new(Line::from(e.clone()).style(palette.error)).wrap(Wrap { trim: true })
-    });
-    let error_height = error
-        .as_ref()
-        .map_or(0, |p| height_of(p.line_count(DIALOG_WIDTH)));
-    let fields_height = u16::try_from(fields.len()).unwrap_or(0).saturating_mul(3);
-    let height = intro_height
-        .saturating_add(fields_height)
-        .saturating_add(error_height)
-        .saturating_add(2);
-
-    let inner = panel::draw(f, palette, f.area(), DIALOG_WIDTH, height.saturating_add(1));
-    let [title_area, rest] =
-        Layout::vertical([Constraint::Length(1), Constraint::Fill(1)]).areas(inner);
-    f.render_widget(Line::from(form.kind.title()).bold(), title_area);
-    let [intro_area, fields_area, error_area, _, keys_area] = Layout::vertical([
-        Constraint::Length(intro_height),
-        Constraint::Length(fields_height),
-        Constraint::Length(error_height),
-        Constraint::Length(1),
-        Constraint::Length(1),
-    ])
-    .areas(rest);
-
-    if let Some(intro) = intro {
-        f.render_widget(intro, intro_area);
+    let mut footer = vec![("Tab", "next"), ("Enter", save), ("Esc", "Back")];
+    if form.kind == FormKind::Password && form.focus == 1 {
+        footer.insert(1, ("F2", "password rules"));
     }
-    let boxes = Layout::vertical(fields.iter().map(|_| Constraint::Length(3))).split(fields_area);
-    for (i, ((label, _), (input, area))) in fields
+    let inner = sheet::frame(
+        f,
+        palette,
+        f.area(),
+        form.kind.title(),
+        body,
+        false,
+        &footer,
+    );
+    let inner = inner.centered_horizontally(Constraint::Length(48.min(inner.width)));
+    let areas = Layout::vertical(heights.iter().map(|h| Constraint::Length(*h))).split(inner);
+    for (i, ((input, (label, _, _)), area)) in form
+        .inputs
         .iter()
-        .zip(form.inputs.iter().zip(boxes.iter()))
+        .zip(form.kind.fields())
+        .zip(areas.iter())
         .enumerate()
     {
         let focused = i == form.focus;
@@ -197,32 +292,40 @@ fn draw_form(f: &mut Frame<'_>, palette: &Palette, form: &Form) {
             f.set_cursor_position(input.cursor_position(*area));
         }
     }
-    if let Some(error) = error {
-        f.render_widget(error, error_area);
-    }
-    f.render_widget(form_keys(palette, form), keys_area);
 }
 
-fn form_keys(palette: &Palette, form: &Form) -> Line<'static> {
-    if form.busy {
-        let busy = if form.kind == FormKind::Delete {
-            "Deleting..."
-        } else {
-            "Saving..."
-        };
-        return Line::from(busy).style(palette.muted).bold();
-    }
-    let submit = match (form.kind, form.delete_wait()) {
-        (FormKind::Delete, Some(wait)) => format!("Delete ({wait})"),
-        (FormKind::Delete, None) => "Delete".to_owned(),
-        _ => "Save changes".to_owned(),
-    };
-    action_bar::line(
-        palette,
-        &[
-            ("Tab", "next field"),
-            ("Enter", submit.as_str()),
-            ("Esc", "back"),
-        ],
+/// The Delete account dialog over the More sheet: the warning, a password box, and Cancel and Delete.
+fn draw_delete(f: &mut Frame<'_>, palette: &Palette, delete: &DeleteDialog) {
+    let disabled = delete.busy || delete.wait().is_some();
+    let mut alert = AlertDialog::new(
+        "Delete account",
+        "This will permanently delete your account, all decks, and all card data. This cannot be undone.",
     )
+    .with_button("Cancel", None)
+    .with_danger_button(&delete.label(), None);
+    alert.set_button(0, "Cancel", delete.busy);
+    alert.set_button(1, &delete.label(), disabled);
+    alert.focused = match delete.focus {
+        DeleteFocus::Delete => 1,
+        _ => 0,
+    };
+    let buttons_focused = matches!(delete.focus, DeleteFocus::Cancel | DeleteFocus::Delete);
+    if !buttons_focused {
+        alert.focused = usize::MAX;
+    }
+    alert.draw_with(f, palette, BOX_HEIGHT, |f: &mut Frame<'_>, area: Rect| {
+        delete
+            .password
+            .draw(f, palette, area, "", delete.focus == DeleteFocus::Password);
+        show_button(
+            f,
+            palette,
+            area,
+            &delete.password,
+            delete.focus == DeleteFocus::ShowPassword,
+        );
+        if delete.focus == DeleteFocus::Password && !delete.busy {
+            f.set_cursor_position(delete.password.cursor_position(area));
+        }
+    });
 }

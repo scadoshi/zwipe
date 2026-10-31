@@ -2,6 +2,8 @@
 
 /// The API client, the session, and the session file.
 pub(crate) mod account;
+/// Everybody's counts as last fetched.
+pub(crate) mod counts_file;
 /// The app's config folder and owner-only writes to it.
 pub(crate) mod files;
 /// Card images from Scryfall's image CDN.

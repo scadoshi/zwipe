@@ -158,7 +158,10 @@ fn a_remembered_filter_says_it_is_active_and_the_hint_shows_once() {
         }),
     });
     assert_eq!(last_toast(&harness), "Filter is active");
-    assert_eq!(harness.app.shared.hint.as_ref().unwrap().title, HINT_TITLE);
+    assert_eq!(
+        harness.app.shared.hint.as_ref().unwrap().content.title,
+        "Browsing your deck"
+    );
     assert!(screen_text(&harness.app).contains("No cards") || harness.app.shared.hint.is_some());
     harness.press(KeyCode::Enter);
     harness.press(KeyCode::Char('x'));

@@ -7,9 +7,7 @@ use crate::test_support::{card, deck, deck_profile, render, screen_text, user};
 
 /// Create over the deck list, with its hint closed and nothing queued.
 fn create() -> Harness {
-    let mut harness = Harness::on(Screen::Decks(
-        crate::inbound::screens::decks::DeckList::default(),
-    ));
+    let mut harness = Harness::on(Screen::Decks(Box::default()));
     harness.app.shared.user = Some(user(true));
     harness.open(open_create);
     harness.app.shared.hint = None;
@@ -328,6 +326,8 @@ fn deck_tags_cap_at_five_and_seed_oracle_tags_on_save() {
         harness.app.shared.toasts.items()[0].message,
         "You may only choose up to 5 tags"
     );
+    // The toast sits over the picker's top row, where the count is.
+    harness.app.shared.toasts = crate::inbound::widgets::toast::Toasts::default();
     let screen = screen_text(&harness.app);
     assert!(screen.contains("5/5"));
     harness.press(KeyCode::F(2));
@@ -490,9 +490,7 @@ fn the_swipe_pickers_filter_opens_the_filter_sheet_and_narrows_the_pile() {
 
 /// Edit for a deck named Pile with a Modern format and one other tag, loaded.
 fn edit() -> (Harness, Uuid) {
-    let mut harness = Harness::on(Screen::Decks(
-        crate::inbound::screens::decks::DeckList::default(),
-    ));
+    let mut harness = Harness::on(Screen::Decks(Box::default()));
     let mut profile = deck_profile("Pile");
     profile.format = Some(Format::Modern);
     profile.other_tags = vec![DeckOtherTag::Budget];
@@ -582,7 +580,7 @@ fn a_failed_edit_load_says_so() {
 fn f1_explains_the_focused_field() {
     let mut harness = create();
     focus(&mut harness, Field::Land);
-    harness.press(KeyCode::F(1));
+    harness.press(KeyCode::F(6));
     assert!(screen_text(&harness.app).contains("Not set uses the format's usual count"));
     harness.press(KeyCode::Esc);
     assert!(form(&harness).overlay.is_none());

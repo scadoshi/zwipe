@@ -97,6 +97,20 @@ pub(crate) fn user(verified: bool) -> User {
     user
 }
 
+/// A session for `user` in `preferences`, its tokens good for decades.
+pub(crate) fn session(
+    user: User,
+    preferences: zwipe_core::domain::user::UserPreferences,
+) -> zwipe_core::domain::auth::models::session::Session {
+    serde_json::from_value(serde_json::json!({
+        "user": user,
+        "access_token": {"value": "aGVhZA.cGF5bG9hZA.c2ln", "expires_at": "2099-01-01T00:00:00Z"},
+        "refresh_token": {"value": "r", "expires_at": "2099-01-01T00:00:00Z"},
+        "preferences": preferences,
+    }))
+    .unwrap()
+}
+
 /// `app` drawn into a test terminal of the given size.
 pub(crate) fn render(app: &App, width: u16, height: u16) -> Terminal<TestBackend> {
     let mut terminal = Terminal::new(TestBackend::new(width, height)).unwrap();

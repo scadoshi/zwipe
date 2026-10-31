@@ -6,6 +6,10 @@ pub(crate) mod account;
 pub(crate) mod add;
 /// A card as text: faces, mana symbols, rules and stats.
 pub(crate) mod card;
+/// The changelog cache and how its releases are filed.
+pub(crate) mod changelog;
+/// Rolling counters, ported from orangui.
+pub(crate) mod count_up;
 /// A deck's row in the deck list.
 pub(crate) mod deck;
 /// The deck cards view's pass, featured strip, quantity bursts and undo rules.
@@ -18,6 +22,8 @@ pub(crate) mod decode;
 pub(crate) mod filter;
 /// The home screen's counters and color map.
 pub(crate) mod home;
+/// The privacy policy's HTML as text.
+pub(crate) mod legal;
 /// The swipe stacks the Add and Remove screens share, and their undo actions.
 pub(crate) mod stack;
 /// The stores the card screens share for the whole run.

@@ -1,244 +1,242 @@
 use crossterm::event::KeyCode;
+use zwipe_core::domain::user::hints::{HINT_CONFIG, HINT_UNIVERSES_BEYOND_EXCEPTIONS};
 use zwipe_core::domain::user::preferences::PipStyle;
 
 use super::*;
 use crate::inbound::event_loop::harness::Harness;
 use crate::inbound::screens::home;
-use crate::test_support::screen_text;
+use crate::test_support::{render, screen_text, user};
 
 fn ask(request: Request) -> screens::Request {
     request.into()
 }
 
-/// Home, then the config screen over it with the default preferences loaded, with nothing left queued.
+fn franchise(slug: &str, name: &str) -> UbFranchiseView {
+    serde_json::from_value(serde_json::json!({"slug": slug, "name": name})).unwrap()
+}
+
+/// Home, then Config over it with the default preferences loaded and two franchises, the hints already seen, nothing left queued.
 fn on_config() -> Harness {
     let mut harness = Harness::new();
+    let mut known = user(true);
+    for key in [HINT_CONFIG, HINT_UNIVERSES_BEYOND_EXCEPTIONS] {
+        known.hints_shown.insert(key.to_owned(), true);
+    }
+    harness.app.shared.user = Some(known);
     harness.open(home::open);
     harness.press(KeyCode::Char('c'));
-    assert_eq!(
-        harness.pending().last(),
-        Some(&ask(Request::LoadPreferences))
-    );
     harness.apply(Update::Preferences(Box::default()));
+    harness.apply(Update::Franchises(vec![
+        franchise("doctor_who", "Doctor Who"),
+        franchise("warhammer_40k", "Warhammer 40,000"),
+    ]));
     harness.clear();
     harness
 }
 
-fn config_view(harness: &Harness) -> &ConfigView {
+fn view(harness: &Harness) -> &ConfigView {
     match harness.screen() {
         Screen::Config(view) => view,
-        other => panic!("not on the config screen: {other:?}"),
+        other => panic!("not on config: {other:?}"),
     }
 }
 
-#[test]
-fn loaded_preferences_set_the_theme_and_fill_the_screen() {
-    let harness = on_config();
-    assert!(config_view(&harness).shown.is_some());
-    assert_eq!(
-        harness.app.shared.palette,
-        Palette::for_account("gruvbox", true)
-    );
-}
-
-#[test]
-fn a_toggle_shows_at_once_and_a_failure_puts_it_back() {
-    let mut harness = on_config();
-    for _ in 0..2 {
+fn focus(harness: &mut Harness, stop: Stop) {
+    while view(harness).focused() != stop {
         harness.press(KeyCode::Char('j'));
     }
-    let before = harness.app.shared.palette;
-    harness.press(KeyCode::Enter);
-    assert_eq!(
-        config_view(&harness).shown.as_ref().map(|p| p.pip_style),
-        Some(PipStyle::Natural)
-    );
-    assert_ne!(
-        harness.app.shared.palette, before,
-        "natural pips change the mana colors at once"
-    );
-    assert!(matches!(
-        harness.pending(),
-        [screens::Request::Config(Request::SavePreferences {
-            seq: 1,
-            ..
-        })]
-    ));
+}
 
+fn last_toast(harness: &Harness) -> Option<String> {
+    harness
+        .app
+        .shared
+        .toasts
+        .items()
+        .last()
+        .map(|t| t.message.clone())
+}
+
+#[test]
+fn opening_fetches_preferences_and_franchises_and_shows_the_config_hint() {
+    let mut harness = Harness::new();
+    harness.app.shared.user = Some(user(true));
+    harness.open(open);
+    assert_eq!(
+        harness.pending(),
+        [
+            ask(Request::LoadPreferences),
+            ask(Request::LoadFranchises),
+            screens::Request::MarkHintShown(HINT_CONFIG.to_owned()),
+        ]
+    );
+    assert!(
+        !view(&harness).enabled(Stop::UniversesBeyond),
+        "waits on the load"
+    );
+    assert!(
+        view(&harness).enabled(Stop::Pips),
+        "theme and pips show at once"
+    );
+    harness.apply(Update::PreferencesUnavailable);
+    assert!(
+        !view(&harness).loaded,
+        "a failed load leaves them off for good"
+    );
+}
+
+#[test]
+fn the_screen_shows_the_apps_rows() {
+    let harness = on_config();
+    let screen = screen_text(&harness.app);
+    for text in [
+        "Config",
+        "Appearance",
+        "Theme ?",
+        "Gruvbox",
+        "☾ Dark",
+        "Change",
+        "Pips ?",
+        "Universes Beyond ?",
+        "Show",
+        "Exceptions ?",
+    ] {
+        assert!(screen.contains(text), "{text}");
+    }
+}
+
+#[test]
+fn a_toggle_shows_at_once_and_toasts_the_servers_answer() {
+    let mut harness = on_config();
+    focus(&mut harness, Stop::Pips);
+    harness.press(KeyCode::Enter);
+    assert_eq!(view(&harness).shown.pip_style, PipStyle::Natural);
+    let Some(screens::Request::Config(Request::Save { seq, change, .. })) =
+        harness.pending().first().cloned()
+    else {
+        panic!("no save");
+    };
+    let saved = UserPreferences {
+        pip_style: PipStyle::Natural,
+        ..UserPreferences::default()
+    };
+    harness.apply(Update::Saved {
+        seq,
+        change,
+        preferences: Box::new(saved),
+    });
+    assert_eq!(
+        last_toast(&harness).as_deref(),
+        Some("Pips in natural colors")
+    );
+}
+
+#[test]
+fn a_failed_toggle_puts_back_the_value_from_before_that_tap_and_stale_answers_are_ignored() {
+    let mut harness = on_config();
+    focus(&mut harness, Stop::UniversesBeyond);
+    harness.press(KeyCode::Enter);
+    harness.press(KeyCode::Enter);
+    let saves: Vec<(u64, PreferenceChange)> = harness
+        .pending()
+        .iter()
+        .filter_map(|r| match r {
+            screens::Request::Config(Request::Save { seq, undo, .. }) => Some((*seq, undo.clone())),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(saves.len(), 2);
+    assert!(!view(&harness).shown.exclude_universes_beyond, "two taps");
     harness.apply(Update::SaveFailed {
-        seq: 1,
+        seq: saves[0].0,
+        undo: saves[0].1.clone(),
         message: "offline".to_owned(),
     });
-    assert_eq!(harness.app.shared.palette, before);
-    assert_eq!(harness.app.shared.status, "offline");
+    assert!(
+        !view(&harness).shown.exclude_universes_beyond,
+        "the older failure is ignored"
+    );
+    harness.apply(Update::SaveFailed {
+        seq: saves[1].0,
+        undo: saves[1].1.clone(),
+        message: "offline".to_owned(),
+    });
+    assert!(
+        view(&harness).shown.exclude_universes_beyond,
+        "back to before the second tap"
+    );
+    assert_eq!(last_toast(&harness).as_deref(), Some("offline"));
 }
 
 #[test]
-fn the_theme_list_previews_and_esc_puts_the_theme_back() {
+fn the_themes_sheet_previews_saves_and_restores() {
     let mut harness = on_config();
-    let before = harness.app.shared.palette;
+    let before = Palette::for_preferences(&UserPreferences::default());
+    focus(&mut harness, Stop::Theme);
     harness.press(KeyCode::Enter);
-    assert!(config_view(&harness).picker.is_some());
+    assert!(screen_text(&harness.app).contains("Warm & earthy"));
     harness.press(KeyCode::Char('j'));
-    assert_ne!(
-        harness.app.shared.palette, before,
-        "the next theme previews"
-    );
+    assert_ne!(harness.app.shared.palette, before, "a move previews");
     harness.press(KeyCode::Esc);
     assert_eq!(harness.app.shared.palette, before);
-    assert_eq!(harness.pending(), []);
-    assert_eq!(harness.app.shared.status, "Theme unchanged");
+    assert_eq!(last_toast(&harness).as_deref(), Some("Theme unchanged"));
 
     harness.press(KeyCode::Enter);
     harness.press(KeyCode::Char('j'));
     harness.press(KeyCode::Enter);
-    assert!(config_view(&harness).picker.is_none());
+    assert!(view(&harness).sheet.is_none());
     assert!(matches!(
-        harness.pending(),
-        [screens::Request::Config(Request::SavePreferences {
+        harness.pending().last(),
+        Some(screens::Request::Config(Request::Save {
             change: PreferenceChange::Theme { .. },
             ..
-        })]
+        }))
     ));
 }
 
 #[test]
-fn exceptions_stay_shut_while_universes_beyond_is_shown() {
+fn exceptions_open_only_while_hidden_and_save_a_changed_set() {
     let mut harness = on_config();
-    for _ in 0..4 {
-        harness.press(KeyCode::Char('j'));
+    focus(&mut harness, Stop::Exceptions);
+    harness.press(KeyCode::Enter);
+    assert!(view(&harness).sheet.is_none(), "Universes Beyond is shown");
+    if let Screen::Config(view) = harness.screen_mut() {
+        view.shown.exclude_universes_beyond = true;
     }
     harness.press(KeyCode::Enter);
-    assert!(config_view(&harness).exceptions.is_none());
-    assert_eq!(harness.pending(), []);
-
-    harness.press(KeyCode::Char('k'));
-    harness.press(KeyCode::Enter);
-    harness.press(KeyCode::Char('j'));
-    harness.clear();
-    harness.press(KeyCode::Enter);
-    assert!(config_view(&harness).exceptions.is_some());
-    assert_eq!(harness.pending(), [ask(Request::LoadFranchises)]);
-}
-
-#[test]
-fn the_config_screen_lines_up_every_row_and_marks_the_selection() {
-    let harness = Harness::on(Screen::Config(Box::new(ConfigView {
-        saved: Some(UserPreferences::default()),
-        shown: Some(UserPreferences::default()),
-        ..ConfigView::default()
-    })));
     let screen = screen_text(&harness.app);
-    for expected in [
-        "> Theme",
-        "Gruvbox",
-        "  Mode",
-        "Dark",
-        "  Pips",
-        "  Universes Beyond",
-        "Show",
-        "  Exceptions",
-    ] {
-        assert!(screen.contains(expected), "missing {expected:?}");
-    }
-}
-
-#[test]
-fn the_theme_list_shows_sections_and_names() {
-    let harness = Harness::on(Screen::Config(Box::new(ConfigView {
-        saved: Some(UserPreferences::default()),
-        shown: Some(UserPreferences::default()),
-        picker: Some(ThemePicker::opening("gruvbox")),
-        ..ConfigView::default()
-    })));
-    let screen = screen_text(&harness.app);
-    assert!(screen.contains("Themes"));
-    assert!(screen.contains("Warm & earthy"));
-    assert!(screen.contains("> Gruvbox"));
-}
-
-fn loaded() -> ConfigView {
-    ConfigView {
-        saved: Some(UserPreferences::default()),
-        shown: Some(UserPreferences::default()),
-        ..ConfigView::default()
-    }
-}
-
-#[test]
-fn a_change_shows_at_once_and_a_failure_puts_it_back() {
-    let mut view = loaded();
-    let seq = view
-        .begin(&PreferenceChange::Pips(PipStyle::Natural))
-        .unwrap();
-    assert_eq!(view.shown.as_ref().unwrap().pip_style, PipStyle::Natural);
-    assert!(view.revert(seq));
-    assert_eq!(view.shown.as_ref().unwrap().pip_style, PipStyle::Theme);
-}
-
-#[test]
-fn only_the_latest_change_is_answered() {
-    let mut view = loaded();
-    let first = view
-        .begin(&PreferenceChange::HideUniversesBeyond(true))
-        .unwrap();
-    let second = view
-        .begin(&PreferenceChange::HideUniversesBeyond(false))
-        .unwrap();
+    assert!(screen.contains("Doctor Who") && screen.contains(" ? "));
+    harness.press(KeyCode::Char(' '));
+    assert!(screen_text(&harness.app).contains("1 selected"));
+    harness.press(KeyCode::Esc);
+    assert_eq!(
+        last_toast(&harness).as_deref(),
+        Some("Exceptions unchanged")
+    );
+    harness.press(KeyCode::Enter);
+    harness.press(KeyCode::Char('l'));
+    harness.press(KeyCode::Char(' '));
+    harness.press(KeyCode::Enter);
+    assert!(matches!(
+        harness.pending().last(),
+        Some(screens::Request::Config(Request::Save { change: PreferenceChange::Exceptions(list), .. })) if list == &["warhammer_40k".to_owned()]
+    ));
     assert!(
-        !view.revert(first),
-        "a late failure of an older change is ignored"
+        view(&harness).shown.universes_beyond_exceptions.is_empty(),
+        "not optimistic"
     );
-    assert!(!view.shown.as_ref().unwrap().exclude_universes_beyond);
-    let answer = UserPreferences::default();
-    assert!(view.confirm(second, answer));
 }
 
 #[test]
-fn nothing_changes_before_the_preferences_load() {
-    assert_eq!(
-        ConfigView::default().begin(&PreferenceChange::Pips(PipStyle::Natural)),
-        None
-    );
-    assert!(!ConfigView::default().exceptions_open());
-}
-
-#[test]
-fn the_picker_opens_on_the_current_theme_and_skips_headers() {
-    let mut picker = ThemePicker::opening("gruvbox");
-    assert_eq!(picker.theme(), Some("gruvbox"));
-    let renamed = ThemePicker::opening("ristretto");
-    assert_eq!(renamed.theme(), Some("monokai-pro-ristretto"));
-    for _ in 0..200 {
-        picker.down();
+fn i_opens_the_rows_topic_and_the_screen_fits_a_tiny_terminal() {
+    let mut harness = on_config();
+    harness.press(KeyCode::Char('i'));
+    assert!(screen_text(&harness.app).contains("The last four are color blind modes"));
+    harness.press(KeyCode::Enter);
+    for (width, height) in [(12, 5), (1, 1)] {
+        render(&harness.app, width, height);
     }
-    assert!(picker.theme().is_some());
-    for _ in 0..200 {
-        picker.up();
-    }
-    assert_eq!(
-        picker.theme(),
-        Some("darcula"),
-        "the first theme, past the first header"
-    );
-}
-
-#[test]
-fn exceptions_toggle_in_pick_order_and_compare_as_a_set() {
-    let franchise = |slug: &str| UbFranchiseView {
-        slug: slug.to_owned(),
-        name: slug.to_uppercase(),
-    };
-    let mut editor = ExceptionsEditor::opening(&["b".to_owned()]);
-    editor.franchises = Some(vec![franchise("a"), franchise("b")]);
-    editor.toggle();
-    assert_eq!(editor.draft, ["b", "a"]);
-    assert!(editor.changed());
-    editor.down();
-    editor.toggle();
-    editor.toggle();
-    assert_eq!(editor.draft, ["a", "b"]);
-    editor.up();
-    editor.toggle();
-    assert!(!editor.changed(), "back to just b");
+    focus(&mut harness, Stop::Theme);
+    harness.press(KeyCode::Enter);
+    render(&harness.app, 12, 5);
 }

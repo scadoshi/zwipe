@@ -25,10 +25,10 @@ use zwipe_core::domain::user::hints::HINT_ADD_DECK_CARDS;
 use zwipe_core::http::contracts::deck::HttpDeckCardSearch;
 use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpPatchDeckCard};
 
+use super::Screen;
 use super::card_sheets::details::DetailsSheet;
 use super::card_sheets::filter::{FilterSheet, ResetRule, SheetConfig};
 use super::card_sheets::printing::PrintingSheet;
-use super::{Screen, card_sheets};
 use crate::domain::add::{self, AddDeck, LOAD_MORE_THRESHOLD};
 use crate::domain::deck_signals::{self, Crossing, Level};
 use crate::domain::filter::picker::Sources;
@@ -43,25 +43,13 @@ use crate::domain::stores::undo::UndoAction;
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;
+use crate::inbound::widgets::hint;
 use crate::inbound::widgets::toast::ToastKind;
 use crate::outbound::account::Account;
 use crate::outbound::images;
 
 /// Images fetched ahead of the card on screen.
 const IMAGES_AHEAD: usize = 3;
-
-/// The swipe hint's title.
-pub(crate) const HINT_TITLE: &str = "Swipe to build";
-
-/// The swipe hint's lines.
-pub(crate) const HINT_LINES: [&str; 6] = [
-    "Swipe right adds the card",
-    "Swipe left skips it for a week",
-    "Swipe up sends it to the maybeboard",
-    "Swipe down undoes the last swipe",
-    "Synergy on starts with cards that work with your commander, then cards like your deck. Off shows every legal card",
-    "Sort only reorders. It never hides cards",
-];
 
 /// Where the cards come from.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -913,7 +901,7 @@ pub(crate) fn open(cx: &mut Context<'_>, deck: &Deck) {
         }
         _ => view.search(cx),
     }
-    card_sheets::show_hint_once(cx, HINT_ADD_DECK_CARDS, HINT_TITLE, &HINT_LINES);
+    hint::once(cx, HINT_ADD_DECK_CARDS);
     cx.shared.status.clear();
     cx.push(Screen::Swipe(Box::new(view)));
 }

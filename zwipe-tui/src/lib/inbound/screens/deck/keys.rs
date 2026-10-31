@@ -11,7 +11,7 @@ use crate::inbound::app::Context;
 use crate::inbound::screens::{deck_cards, deck_export, deck_form, deck_import, swipe};
 use crate::inbound::widgets::alert::AlertChoice;
 use crate::inbound::widgets::menu::MenuKey;
-use crate::inbound::widgets::{browser, info};
+use crate::inbound::widgets::{browser, help, info};
 
 pub(crate) fn handle(view: &mut DeckView, code: KeyCode, cx: &mut Context<'_>) {
     if let Some(dialog) = view.dialog.take() {
@@ -27,6 +27,7 @@ pub(crate) fn handle(view: &mut DeckView, code: KeyCode, cx: &mut Context<'_>) {
         return;
     }
     match code {
+        KeyCode::Char('!') => help::open(cx),
         KeyCode::Char('q') => cx.quit(),
         KeyCode::Esc => cx.back(),
         KeyCode::Char('e') => deck_form::open_edit(cx, view.profile.id),
@@ -196,7 +197,7 @@ fn handle_dialog(
         }
         Dialog::ClearSkips(mut alert) => match alert.handle_key(code) {
             None => Some(Dialog::ClearSkips(alert)),
-            Some(AlertChoice::Pressed(0)) => {
+            Some(AlertChoice::Pressed(1)) => {
                 view.more = None;
                 cx.request(Request::ClearSkips(deck_id).into());
                 None
@@ -205,7 +206,7 @@ fn handle_dialog(
         },
         Dialog::Delete(mut alert) => match alert.handle_key(code) {
             None => Some(Dialog::Delete(alert)),
-            Some(AlertChoice::Pressed(0)) => {
+            Some(AlertChoice::Pressed(1)) => {
                 view.more = None;
                 cx.request(Request::Delete(deck_id).into());
                 None

@@ -3,7 +3,7 @@ use zwipe_core::domain::deck::{DeckWarning, Format, WarningAction};
 
 use super::*;
 use crate::inbound::event_loop::harness::Harness;
-use crate::inbound::screens::{deck_export, deck_form, deck_import};
+use crate::inbound::screens::deck_form;
 use crate::test_support::{card, deck, deck_profile, render, screen_text, user};
 
 fn view(harness: &Harness) -> &DeckView {
@@ -45,9 +45,7 @@ fn elves() -> Deck {
 
 /// The deck screen over the list with `deck` loaded and nothing queued.
 fn loaded(deck: Deck) -> Harness {
-    let mut harness = Harness::on(Screen::Decks(
-        crate::inbound::screens::decks::DeckList::default(),
-    ));
+    let mut harness = Harness::on(Screen::Decks(Box::default()));
     harness.app.shared.user = Some(user(true));
     let profile = deck.deck_profile.clone();
     harness.open(|cx| open(cx, profile));
@@ -331,8 +329,13 @@ fn edit_and_more_open_their_screens() {
     harness.press(KeyCode::Enter);
     assert!(matches!(harness.screen(), Screen::DeckExport(view) if view.deck_id == deck_id));
     assert_eq!(
-        harness.app.shared.hint.as_ref().map(|h| h.key.as_str()),
-        Some(deck_export::HINT_KEY)
+        harness
+            .app
+            .shared
+            .hint
+            .as_ref()
+            .map(|h| h.content.title.as_str()),
+        Some("Exporting your deck")
     );
     harness.app.shared.hint = None;
     harness.press(KeyCode::Esc);
@@ -340,8 +343,13 @@ fn edit_and_more_open_their_screens() {
     harness.press(KeyCode::Enter);
     assert!(matches!(harness.screen(), Screen::DeckImport(view) if view.deck_id == deck_id));
     assert_eq!(
-        harness.app.shared.hint.as_ref().map(|h| h.key.as_str()),
-        Some(deck_import::HINT_KEY)
+        harness
+            .app
+            .shared
+            .hint
+            .as_ref()
+            .map(|h| h.content.title.as_str()),
+        Some("Importing cards")
     );
 }
 
@@ -462,7 +470,7 @@ fn clear_skips_and_delete_confirm_first_and_cancel_keeps_the_sheet() {
     );
     assert_eq!(harness.pending(), []);
     harness.press(KeyCode::Enter);
-    harness.press(KeyCode::Left);
+    harness.press(KeyCode::Right);
     harness.press(KeyCode::Enter);
     assert_eq!(
         harness.pending(),
@@ -481,7 +489,7 @@ fn clear_skips_and_delete_confirm_first_and_cancel_keeps_the_sheet() {
     }
     harness.press(KeyCode::Enter);
     assert!(screen_text(&harness.app).contains("Are you sure you want to delete this deck?"));
-    harness.press(KeyCode::Left);
+    harness.press(KeyCode::Right);
     harness.press(KeyCode::Enter);
     assert_eq!(
         harness.pending(),

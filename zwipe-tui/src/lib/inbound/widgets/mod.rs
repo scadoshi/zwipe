@@ -23,11 +23,25 @@ pub(crate) mod clipboard;
 /// Sections that open and close, and the accordion over them.
 #[cfg_attr(not(test), expect(dead_code, reason = "no screen uses it yet"))]
 pub(crate) mod collapsible;
-/// One-time hint dialogs.
+/// Rolling counters.
+pub(crate) mod count_up;
+/// A screen's entrance.
+pub(crate) mod entrance;
+/// The backdrop of faint tiles, still or raining in.
+pub(crate) mod grid;
+/// The screen header: `!`, the title, and `?`.
+pub(crate) mod header;
+/// The `!` Help & feedback dialog.
+pub(crate) mod help;
+/// The logo and everybody's counters on the sign-in screens.
+pub(crate) mod hero;
+/// `?` topics and one-time hint dialogs.
 #[cfg_attr(not(test), expect(dead_code, reason = "no screen uses it yet"))]
 pub(crate) mod hint;
 /// The "?" popup of bullet points.
 pub(crate) mod info;
+/// The ZWIPE logo decoding in.
+pub(crate) mod logo;
 /// Mana colors and pips.
 pub(crate) mod mana;
 /// Text widths and heights in cells.
@@ -42,17 +56,19 @@ pub(crate) mod pill;
 pub(crate) mod sheet;
 /// Ghost rows for content still loading.
 pub(crate) mod skeleton;
+/// The turning glyph of a request in flight.
+pub(crate) mod spinner;
+/// The opening over the first screen.
+pub(crate) mod splash;
 /// Figures in a row, rolling while they load.
 #[cfg_attr(not(test), expect(dead_code, reason = "no screen uses it yet"))]
 pub(crate) mod stats;
 /// A text box of many lines.
 pub(crate) mod text_area;
 /// A one-line text box.
-#[cfg_attr(
-    not(test),
-    expect(dead_code, reason = "the screens use part of its API so far")
-)]
 pub(crate) mod text_input;
-/// Short messages in the bottom-right corner.
+/// Short messages in the top-left corner.
 #[cfg_attr(not(test), expect(dead_code, reason = "no screen raises a toast yet"))]
 pub(crate) mod toast;
+/// The sweep from one theme to the next.
+pub(crate) mod wipe;

@@ -75,7 +75,7 @@ fn opening_shows_the_hint_once_and_fetches_the_lists_this_host_needs() {
             .requests
             .contains(&screens::Request::MarkHintShown("filter".to_owned()))
     );
-    assert_eq!(app.shared.hint.as_ref().unwrap().title, "Filters");
+    assert_eq!(app.shared.hint.as_ref().unwrap().content.title, "Filters");
 
     app.shared.hint = None;
     app.shared.cards.catalog.keywords.settle(None);

@@ -30,7 +30,7 @@ use crate::domain::deck::form::{self, Slot};
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;
-use crate::inbound::widgets::hint::{self, HintDialog};
+use crate::inbound::widgets::hint;
 use crate::inbound::widgets::info::InfoPopup;
 use crate::inbound::widgets::text_input::TextInput;
 use crate::inbound::widgets::toast::ToastKind;
@@ -41,11 +41,6 @@ pub(crate) const SEARCH_DEBOUNCE: Duration = Duration::from_millis(800);
 
 /// The named-partner search returns at most this many cards.
 const PARTNER_SEARCH_LIMIT: u32 = 5;
-
-/// The hint both forms show, as the app words it.
-const HINT_TITLE: &str = "Building a deck";
-
-const HINT_BODY: &str = "• Profile is what the deck is, Budget what it may cost, Tags what it does\n• Tags shape which cards we suggest\n• Tap a field's ? for what it does";
 
 /// Whether the form makes a new deck or changes one.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -779,11 +774,7 @@ impl Changes {
 
 /// Shows the form's hint again.
 pub(crate) fn reopen_hint(cx: &mut Context<'_>, mode: Mode) {
-    cx.shared.hint = Some(HintDialog {
-        key: mode.hint_key().to_owned(),
-        title: HINT_TITLE.to_owned(),
-        body: HINT_BODY.to_owned(),
-    });
+    hint::reopen(cx, mode.hint_key());
 }
 
 /// The form's work.
@@ -917,7 +908,7 @@ fn open_with(cx: &mut Context<'_>, form: DeckForm) {
     cx.push(Screen::DeckForm(Box::new(form)));
     cx.request(Request::DeckTagCatalog.into());
     cx.request(Request::OracleCatalog.into());
-    hint::show(cx, mode.hint_key(), HINT_TITLE, HINT_BODY);
+    hint::once(cx, mode.hint_key());
 }
 
 pub(crate) async fn perform(account: &Account, request: Request) -> Option<screens::Update> {
