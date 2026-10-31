@@ -12,6 +12,15 @@ pub(crate) mod action_bar;
 pub(crate) mod alert;
 /// Opening a link in the browser.
 pub(crate) mod browser;
+/// Expandable card rows with their classification, printings and image keys.
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "Activity, Playstyle and the Commander maybeboard list their cards with it"
+    )
+)]
+pub(crate) mod card_rows;
 /// A card as lines of text.
 pub(crate) mod card_text;
 /// Bar charts from the deck metrics.
@@ -45,6 +54,15 @@ pub(crate) mod item_list;
 pub(crate) mod mana;
 /// Text widths and heights in cells.
 pub(crate) mod measure;
+/// An oracle tag's definition, and a row of tag chips with one open.
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "card rows and the Activity and Playstyle charts reveal tags with it"
+    )
+)]
+pub(crate) mod otag;
 /// A framed panel centered over the screen.
 pub(crate) mod panel;
 /// The bottom sheet with a scrolling body.

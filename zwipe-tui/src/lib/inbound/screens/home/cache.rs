@@ -68,6 +68,15 @@ impl Catalog {
             _ => None,
         }
     }
+
+    /// The tag's description, `None` while loading or when it has none.
+    pub(crate) fn description(&self, slug: &str) -> Option<&str> {
+        self.tags()?
+            .iter()
+            .find(|t| t.slug == slug)?
+            .description
+            .as_deref()
+    }
 }
 
 /// Values a screen leaves for the screen under it to take when it comes back into view.
