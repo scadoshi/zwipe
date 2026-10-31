@@ -14,7 +14,8 @@ use crate::domain::playstyle;
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::screens::card_sheets::filter::draw as filter_sheet;
-use crate::inbound::screens::playstyle::draw::{Reasons, reasons_lines, show_line, wrap_at_gaps};
+use crate::inbound::screens::playstyle::draw as playstyle_draw;
+use crate::inbound::screens::playstyle::draw::Reasons;
 use crate::inbound::widgets::card_motion::{self, CardMotion, Phase};
 use crate::inbound::widgets::sheet::Sheet;
 use crate::inbound::widgets::{action_bar, card_text, header, skeleton};
@@ -70,7 +71,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &CommanderSwipeView
     }
     f.render_widget(action_bar::wrap(bar, keys.width), keys);
     if let (Some(filter), Some(pile)) = (view.filter, view.suggested()) {
-        let chips = show_line(
+        let chips = playstyle_draw::show_line(
             palette,
             &view.identities(),
             pile.identity.as_deref(),
@@ -78,7 +79,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &CommanderSwipeView
             true,
         );
         let room = usize::from(f.area().width).saturating_sub(SHEET_FRAME);
-        Sheet::new("Filter", wrap_at_gaps(chips, room))
+        Sheet::new("Filter", playstyle_draw::wrap_at_gaps(chips, room))
             .with_footer("h/l", "Chip")
             .with_footer("Enter", "Pick")
             .with_footer("Esc", "Back")
@@ -117,7 +118,7 @@ fn card_lines(palette: &Palette, view: &CommanderSwipeView, card: &Card) -> Vec<
         .is_some_and(|top| top.scryfall_data.id == data.id);
     if on_top && let (Some(suggestion), Some(pile)) = (view.current_suggestion(), view.suggested())
     {
-        let reasons = reasons_lines(
+        let reasons = playstyle_draw::reasons_lines(
             palette,
             &suggestion.reasons,
             pile.deck_count,

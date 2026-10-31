@@ -7,8 +7,7 @@ use ratatui::style::Stylize;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Paragraph, Wrap};
 
-use super::measure::height_of;
-use super::{action_bar, panel};
+use super::{action_bar, measure, panel};
 use crate::domain::theme::Palette;
 
 /// The popup is at most this wide inside its panel, in cells.
@@ -55,7 +54,7 @@ impl InfoPopup {
     /// Draws the popup centered over the screen.
     pub(crate) fn draw(&self, f: &mut Frame<'_>, palette: &Palette) {
         let body = Paragraph::new(self.lines(palette)).wrap(Wrap { trim: true });
-        let body_height = height_of(body.line_count(WIDTH));
+        let body_height = measure::height_of(body.line_count(WIDTH));
         let inner = panel::draw(f, palette, f.area(), WIDTH, body_height.saturating_add(4));
         let [title_area, body_area, _, keys_area] = Layout::vertical([
             Constraint::Length(1),

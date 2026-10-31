@@ -19,8 +19,7 @@ use ratatui::widgets::{Paragraph, Wrap};
 use zwipe_core::domain::user::User;
 
 pub(crate) use self::topics::HintTopic;
-use super::measure::height_of;
-use super::panel;
+use super::{measure, panel};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Context;
 use crate::inbound::screens::Request;
@@ -87,7 +86,7 @@ impl HintDialog {
             .collect();
         let body = Paragraph::new(lines).wrap(Wrap { trim: false });
         let width = WIDTH.min(f.area().width.saturating_sub(4));
-        let body_height = height_of(body.line_count(width));
+        let body_height = measure::height_of(body.line_count(width));
         let room = f.area().height.saturating_sub(6);
         let shown = body_height.min(room);
         let scroll = self.scroll.min(body_height.saturating_sub(shown));

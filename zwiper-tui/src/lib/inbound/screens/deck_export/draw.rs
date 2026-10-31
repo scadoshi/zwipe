@@ -7,7 +7,7 @@ use ratatui::widgets::{Block, Paragraph, Wrap};
 
 use super::ExportView;
 use crate::inbound::app::Shared;
-use crate::inbound::widgets::pill::{self, PillState, pill};
+use crate::inbound::widgets::pill::{self, PillState};
 use crate::inbound::widgets::{action_bar, header, skeleton};
 
 /// Ghost rows while the deck loads.
@@ -57,7 +57,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &ExportView) {
             .iter()
             .enumerate()
             .map(|(i, (label, on))| {
-                pill(
+                pill::pill(
                     label,
                     palette.muted,
                     PillState {

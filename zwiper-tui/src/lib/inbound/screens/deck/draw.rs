@@ -7,18 +7,17 @@ use ratatui::text::{Line, Span, Text};
 use ratatui::widgets::{Block, BorderType, Paragraph, Wrap};
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
-use zwipe_core::domain::deck::deck_tag::deck_tag_label;
-use zwipe_core::domain::deck::{Format, draw_odds};
+use zwipe_core::domain::deck::{Format, deck_tag, draw_odds};
 
 use super::layout::{self, Pane, Panel};
 use super::{CloneDialog, DeckView, Dialog, Item, Section};
 use crate::domain::deck::warning;
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
-use crate::inbound::widgets::charts::{Column, columns, row};
-use crate::inbound::widgets::measure::{BORDERS, height_of, width_of};
-use crate::inbound::widgets::pill::{self, PillState, pill};
-use crate::inbound::widgets::{action_bar, header, mana, panel, skeleton};
+use crate::inbound::widgets::charts::Column;
+use crate::inbound::widgets::measure::BORDERS;
+use crate::inbound::widgets::pill::{self, PillState};
+use crate::inbound::widgets::{action_bar, charts, header, mana, measure, panel, skeleton};
 
 /// A vertical chart is at most this tall, frame included, so a small deck's bars stay short.
 const CHART_HEIGHT: u16 = 14;
@@ -96,7 +95,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &DeckView) {
         body,
         &panes,
         view.zoomed.then(|| view.focused()),
-        height_of(profile_rows).saturating_add(BORDERS),
+        measure::height_of(profile_rows).saturating_add(BORDERS),
     );
     for panel in &plan.panels {
         draw_panel(f, palette, view, panel);
@@ -244,7 +243,7 @@ fn tabs(
     let labels: Vec<String> = panes.iter().map(|p| tab_label(view, *p)).collect();
     let widths: Vec<usize> = labels
         .iter()
-        .map(|l| usize::from(width_of(l)).saturating_add(2))
+        .map(|l| usize::from(measure::width_of(l)).saturating_add(2))
         .collect();
     let at = panes.iter().position(|p| *p == shown).unwrap_or(0);
     let (start, end) = tab_window(&widths, at, room);
@@ -260,7 +259,7 @@ fn tabs(
         } else {
             palette.accent.bold()
         };
-        spans.push(pill(
+        spans.push(pill::pill(
             label,
             style,
             PillState {
@@ -437,7 +436,7 @@ fn draw_budget(f: &mut Frame<'_>, palette: &Palette, view: &DeckView, area: Rect
             CURRENCIES
                 .iter()
                 .map(|c| {
-                    pill(
+                    pill::pill(
                         c.label(),
                         palette.muted,
                         PillState {
@@ -476,7 +475,7 @@ fn draw_tags(f: &mut Frame<'_>, palette: &Palette, view: &DeckView, area: Rect) 
             lines.push(Line::from(Span::styled(label.to_owned(), palette.muted)));
             lines.push(pill::row(
                 tags.iter()
-                    .map(|t| pill(t, style, PillState::default()))
+                    .map(|t| pill::pill(t, style, PillState::default()))
                     .collect(),
             ));
             lines.push(Line::default());
@@ -484,7 +483,11 @@ fn draw_tags(f: &mut Frame<'_>, palette: &Palette, view: &DeckView, area: Rect) 
     };
     group(
         "Deck tags",
-        profile.tags.iter().map(|t| deck_tag_label(t)).collect(),
+        profile
+            .tags
+            .iter()
+            .map(|t| deck_tag::deck_tag_label(t))
+            .collect(),
         palette.accent,
     );
     group("Oracle tags", profile.oracle_tags.clone(), palette.muted);
@@ -531,11 +534,11 @@ fn draw_distributions(
     let roles_min = if has_roles { ROLES_MIN_HEIGHT } else { 0 };
     let types_height = area
         .height
-        .saturating_sub(height_of(pt_lines.len()))
+        .saturating_sub(measure::height_of(pt_lines.len()))
         .saturating_sub(roles_min)
         .min(CHART_HEIGHT);
     let [pt, types_area, roles_area] = Layout::vertical([
-        Constraint::Length(height_of(pt_lines.len())),
+        Constraint::Length(measure::height_of(pt_lines.len())),
         Constraint::Length(types_height),
         Constraint::Fill(1),
     ])
@@ -550,7 +553,7 @@ fn draw_distributions(
             style: palette.accent,
         })
         .collect();
-    columns(f, palette, "Types", &types, types_area);
+    charts::columns(f, palette, "Types", &types, types_area);
 
     draw_roles(f, palette, view, metrics, roles_area);
 }
@@ -588,8 +591,8 @@ fn draw_roles(
             (true, false) => palette.accent.underlined(),
             (false, _) => palette.muted,
         };
-        let mut line = row(
-            pill(&label.to_uppercase(), label_style, PillState::default()),
+        let mut line = charts::row(
+            pill::pill(&label.to_uppercase(), label_style, PillState::default()),
             label_width,
             pct,
             bar_width,
@@ -609,7 +612,7 @@ fn draw_roles(
             }
             lines.push(Line::from(vec![
                 Span::raw(if tag_focused { ">     " } else { "      " }),
-                pill(
+                pill::pill(
                     tag,
                     palette.muted,
                     PillState {
@@ -637,7 +640,7 @@ fn draw_roles(
                     } else {
                         "        "
                     }),
-                    pill(
+                    pill::pill(
                         "Examples",
                         palette.accent,
                         PillState {
@@ -689,7 +692,7 @@ fn draw_mana(f: &mut Frame<'_>, palette: &Palette, view: &DeckView, area: Rect) 
     let fulfillment_height = if fulfillment.is_empty() {
         0
     } else {
-        height_of(fulfillment.len()).saturating_add(1)
+        measure::height_of(fulfillment.len()).saturating_add(1)
     };
     let side_by_side = area.width >= MANA_SIDE_BY_SIDE;
     let charts_max = if side_by_side {
@@ -697,7 +700,7 @@ fn draw_mana(f: &mut Frame<'_>, palette: &Palette, view: &DeckView, area: Rect) 
     } else {
         CHART_HEIGHT.saturating_mul(2)
     };
-    let summary_height = height_of(summary.len());
+    let summary_height = measure::height_of(summary.len());
     let charts_height = area
         .height
         .saturating_sub(summary_height)
@@ -726,7 +729,7 @@ fn draw_mana(f: &mut Frame<'_>, palette: &Palette, view: &DeckView, area: Rect) 
             style: palette.accent,
         })
         .collect();
-    columns(f, palette, "Mana curve", &curve, curve_area);
+    charts::columns(f, palette, "Mana curve", &curve, curve_area);
     let colors: Vec<Column> = m
         .color_bars()
         .into_iter()
@@ -736,7 +739,7 @@ fn draw_mana(f: &mut Frame<'_>, palette: &Palette, view: &DeckView, area: Rect) 
             style: color_style(palette, label),
         })
         .collect();
-    columns(f, palette, "Colors", &colors, colors_area);
+    charts::columns(f, palette, "Colors", &colors, colors_area);
 
     if !fulfillment.is_empty() {
         let bar_width = usize::from(fulfillment_area.width).saturating_sub(16);
@@ -747,7 +750,7 @@ fn draw_mana(f: &mut Frame<'_>, palette: &Palette, view: &DeckView, area: Rect) 
         lines.extend(fulfillment.into_iter().map(|r| {
             let style = mana::letter_style(palette, r.label);
             let mark = if r.is_surplus { "✔ " } else { "  " };
-            row(
+            charts::row(
                 Span::styled(r.label, style.bold()),
                 1,
                 r.fill_pct,
@@ -791,7 +794,7 @@ fn draw_draw_odds(
     lines.extend(buckets.into_iter().map(|(label, successes)| {
         let odds = draw_odds::p_at_least_one(deck_size, successes, draws);
         let pct = percent(odds);
-        row(
+        charts::row(
             Span::raw(label.to_uppercase()),
             label_width,
             pct,
@@ -805,7 +808,7 @@ fn draw_draw_odds(
 
 /// `paragraph` scrolled down `scroll` rows, no further than where its last row meets the bottom of `area`.
 fn scrolled(paragraph: Paragraph<'static>, scroll: u16, area: Rect) -> Paragraph<'static> {
-    let rows = height_of(paragraph.line_count(area.width));
+    let rows = measure::height_of(paragraph.line_count(area.width));
     paragraph.scroll((scroll.min(rows.saturating_sub(area.height)), 0))
 }
 
@@ -836,7 +839,7 @@ fn draw_warnings(f: &mut Frame<'_>, palette: &Palette, view: &DeckView, area: Re
             if is_focused {
                 focus_line = lines.len();
             }
-            buttons.push(pill(
+            buttons.push(pill::pill(
                 label,
                 palette.warning,
                 PillState {
@@ -878,7 +881,7 @@ fn color_style(palette: &Palette, label: &str) -> Style {
 fn draw_clone(f: &mut Frame<'_>, palette: &Palette, clone: &CloneDialog) {
     let body = Paragraph::new("Make an exact copy of your deck under a new name.")
         .wrap(Wrap { trim: true });
-    let body_height = height_of(body.line_count(DIALOG_WIDTH));
+    let body_height = measure::height_of(body.line_count(DIALOG_WIDTH));
     let inner = panel::draw(
         f,
         palette,
@@ -911,7 +914,7 @@ fn draw_clone(f: &mut Frame<'_>, palette: &Palette, clone: &CloneDialog) {
     };
     f.render_widget(
         Line::from(vec![
-            pill(
+            pill::pill(
                 "Cancel",
                 palette.accent,
                 PillState {
@@ -920,7 +923,7 @@ fn draw_clone(f: &mut Frame<'_>, palette: &Palette, clone: &CloneDialog) {
                 },
             ),
             Span::raw("  "),
-            pill(
+            pill::pill(
                 save,
                 save_style,
                 PillState {

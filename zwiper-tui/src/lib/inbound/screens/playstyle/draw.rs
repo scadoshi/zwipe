@@ -21,16 +21,12 @@ use super::{
     SHARES_TAGS, STAPLES_TITLE, Section, WHY,
 };
 use crate::domain::activity::Bar;
-use crate::domain::color_map::{ColorMapCounts, ColorMapModel, ghost_model};
-use crate::domain::playstyle::{
-    self, color_lines, color_map_has_data, group_shared_tags, identity_label, staple_decks,
-    staple_percent,
-};
+use crate::domain::color_map::{ColorMapCounts, ColorMapModel};
+use crate::domain::playstyle;
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
-use crate::inbound::screens::activity::draw::{
-    Body, GHOST, GUTTER, INDENT, draw_lines, draw_note, indented,
-};
+use crate::inbound::screens::activity::draw as activity_draw;
+use crate::inbound::screens::activity::draw::{Body, GHOST, GUTTER, INDENT};
 use crate::inbound::screens::home;
 use crate::inbound::screens::home::draw as home_draw;
 use crate::inbound::widgets::card_rows::{CardRow, OTHER_TAGS};
@@ -79,14 +75,14 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &PlaystyleView) {
     .areas(area);
     header::draw(f, palette, title, super::TITLE, header::Corner::Hint);
     if view.is_loading {
-        draw_lines(f, skeleton(palette, view, body.width), (0, 0), body);
+        activity_draw::draw_lines(f, skeleton(palette, view, body.width), (0, 0), body);
     } else if view.load_failed {
-        draw_note(f, palette, LOAD_FAILED, body);
+        activity_draw::draw_note(f, palette, LOAD_FAILED, body);
     } else if view.cold_start() {
-        draw_note(f, palette, COLD_START, body);
+        activity_draw::draw_note(f, palette, COLD_START, body);
     } else {
         let body_lines = loaded_lines(shared, view, body.width);
-        draw_lines(f, body_lines.lines, body_lines.focus, body);
+        activity_draw::draw_lines(f, body_lines.lines, body_lines.focus, body);
     }
     f.render_widget(action_bar::wrap(bar, keys.width), keys);
     match &view.overlay {
@@ -211,7 +207,7 @@ pub(crate) fn chip_line(
 /// An identity as the app's `IdentityPips`: the name unless it is a single color, then the pips in their mana colors.
 pub(crate) fn identity_spans(palette: &Palette, identity: &[Color]) -> Vec<Span<'static>> {
     let mut spans = Vec::new();
-    if let Some(name) = identity_label(identity) {
+    if let Some(name) = playstyle::identity_label(identity) {
         spans.push(Span::raw(name));
         if !identity.is_empty() {
             spans.push(Span::raw(" "));
@@ -333,19 +329,22 @@ fn color_map_body(body: &mut Body, shared: &Shared, view: &PlaystyleView, width:
         .as_ref()
         .and_then(|p| p.color_map.as_ref())
         .map(ColorMapCounts::from)
-        .filter(color_map_has_data);
+        .filter(playstyle::color_map_has_data);
     let Some(counts) = counts else {
-        body.line(indented(Line::styled(COLD_START, palette.muted)));
+        body.line(activity_draw::indented(Line::styled(
+            COLD_START,
+            palette.muted,
+        )));
         return;
     };
     let model = ColorMapModel::new(&counts, home::seed(shared));
     let elapsed = view.map_opened.map_or(Duration::MAX, |t| t.elapsed());
     let map_width = u16::try_from(width).unwrap_or(u16::MAX);
     for line in color_map::lines(palette, &model, elapsed, map_width, MAP_ROWS) {
-        body.line(indented(centered(line, width)));
+        body.line(activity_draw::indented(centered(line, width)));
     }
     body.line(color_map::rule(palette, width));
-    body.line(indented(centered(
+    body.line(activity_draw::indented(centered(
         color_map::key(palette, &counts, None),
         width,
     )));
@@ -369,7 +368,7 @@ fn summary_body(body: &mut Body, palette: &Palette, view: &PlaystyleView, width:
         return;
     };
     let summary = playstyle::profile_summary(profile);
-    body.line(indented(summary_row(
+    body.line(activity_draw::indented(summary_row(
         "Decks",
         vec![Span::raw(summary.decks)],
         width,
@@ -377,7 +376,11 @@ fn summary_body(body: &mut Body, palette: &Palette, view: &PlaystyleView, width:
     if let Some(value) = summary.color_set {
         let mut spans = identity_spans(palette, &value.pips);
         spans.push(Span::raw(format!(" {}", value.count)));
-        body.line(indented(summary_row("Top colors", spans, width)));
+        body.line(activity_draw::indented(summary_row(
+            "Top colors",
+            spans,
+            width,
+        )));
     }
     if let Some(value) = summary.color {
         let mut spans = Vec::new();
@@ -386,7 +389,11 @@ fn summary_body(body: &mut Body, palette: &Palette, view: &PlaystyleView, width:
         }
         spans.extend(identity_spans(palette, &value.pips));
         spans.push(Span::raw(format!(" {}", value.count)));
-        body.line(indented(summary_row("Top color", spans, width)));
+        body.line(activity_draw::indented(summary_row(
+            "Top color",
+            spans,
+            width,
+        )));
     }
 }
 
@@ -407,7 +414,7 @@ fn roles_body(body: &mut Body, shared: &Shared, view: &PlaystyleView, width: usi
         .max(1);
     for (i, bar) in bars.iter().enumerate() {
         let selected = view.open_role.as_deref() == Some(bar.key.as_str());
-        let mut lines = vec![indented(role_row(
+        let mut lines = vec![activity_draw::indented(role_row(
             palette,
             bar,
             selected,
@@ -419,7 +426,7 @@ fn roles_body(body: &mut Body, shared: &Shared, view: &PlaystyleView, width: usi
                 view.role_tags
                     .lines(palette, &shared.caches.oracle_tags)
                     .into_iter()
-                    .map(|l| indented(indented(l))),
+                    .map(|l| activity_draw::indented(activity_draw::indented(l))),
             );
         }
         body.item(lines, view.focus == Focus::Role(i));
@@ -490,7 +497,10 @@ fn tags_body(body: &mut Body, shared: &Shared, view: &PlaystyleView, width: usiz
         header.push(Span::styled(text, style));
         header.push(Span::raw(" ".repeat(pad)));
     }
-    body.item(vec![indented(Line::from(header))], head_focused);
+    body.item(
+        vec![activity_draw::indented(Line::from(header))],
+        head_focused,
+    );
     for (i, row) in rows.iter().enumerate() {
         let open = view.open_tag.as_deref() == Some(row.slug.as_str());
         let tag_chip = otag::chip(palette, &row.slug, open);
@@ -499,12 +509,12 @@ fn tags_body(body: &mut Body, shared: &Shared, view: &PlaystyleView, width: usiz
         spans.extend(stat_cell(Some(row.decks), palette.add));
         spans.extend(stat_cell(Some(row.cards), palette.warning));
         spans.extend(stat_cell(row.impact, palette.accent));
-        let mut lines = vec![indented(Line::from(spans))];
+        let mut lines = vec![activity_draw::indented(Line::from(spans))];
         if open {
             lines.extend(
                 otag::def_lines(palette, &shared.caches.oracle_tags, &row.slug)
                     .into_iter()
-                    .map(|l| indented(indented(l))),
+                    .map(|l| activity_draw::indented(activity_draw::indented(l))),
             );
         }
         body.item(lines, view.focus == Focus::Tag(i));
@@ -641,12 +651,12 @@ pub(crate) fn staple_row<'card>(
     CardRow::new(&staple.card)
         .with_qty(staple.decks)
         .with_qty_tags(
-            staple_percent(staple.decks, deck_count)
+            playstyle::staple_percent(staple.decks, deck_count)
                 .into_iter()
                 .collect(),
         )
         .with_footer(vec![Line::from(home_draw::chip(
-            &staple_decks(staple.decks, deck_count),
+            &playstyle::staple_decks(staple.decks, deck_count),
             palette.muted,
         ))])
 }
@@ -658,7 +668,7 @@ pub(crate) fn reasons_lines(
     deck_count: u32,
     fold: Reasons,
 ) -> Vec<Line<'static>> {
-    let colors = color_lines(&reasons.colors, deck_count);
+    let colors = playstyle::color_lines(&reasons.colors, deck_count);
     if reasons.tags.is_empty() && colors.is_empty() {
         return Vec::new();
     }
@@ -678,7 +688,7 @@ pub(crate) fn reasons_lines(
     }
     if !reasons.tags.is_empty() {
         lines.push(Line::from(format!("• {SHARES_TAGS}")));
-        let grouped = group_shared_tags(&reasons.tags);
+        let grouped = playstyle::group_shared_tags(&reasons.tags);
         let mut groups: Vec<(String, &[String])> = grouped
             .roles
             .iter()
@@ -727,12 +737,12 @@ fn skeleton(palette: &Palette, view: &PlaystyleView, width: u16) -> Vec<Line<'st
     let map_width = u16::try_from(inner).unwrap_or(u16::MAX);
     for line in color_map::ghost_lines(
         palette,
-        &ghost_model(),
+        &crate::domain::color_map::ghost_model(),
         view.opened.elapsed(),
         map_width,
         MAP_ROWS,
     ) {
-        body.line(indented(centered(line, inner)));
+        body.line(activity_draw::indented(centered(line, inner)));
     }
     body.line(Line::default());
     let mut key = Vec::new();
@@ -741,7 +751,7 @@ fn skeleton(palette: &Palette, view: &PlaystyleView, width: u16) -> Vec<Line<'st
         key.push(Span::raw(" "));
     }
     key.push(ghost(9));
-    body.line(indented(centered(Line::from(key), inner)));
+    body.line(activity_draw::indented(centered(Line::from(key), inner)));
     body.line(header(7, /* open */ false));
     body.line(header(10, /* open */ false));
     body.line(header(11, /* open */ false));

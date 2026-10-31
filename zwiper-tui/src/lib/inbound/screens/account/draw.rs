@@ -9,8 +9,7 @@ use ratatui::widgets::Paragraph;
 use super::{AccountView, DeleteDialog, DeleteFocus, Form, FormKind, Overlay, Stop, pending_note};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
-use crate::inbound::screens::VERSION;
-use crate::inbound::screens::login::draw::show_button;
+use crate::inbound::screens::{VERSION, login};
 use crate::inbound::widgets::action_bar::{self, Button};
 use crate::inbound::widgets::alert::AlertDialog;
 use crate::inbound::widgets::header::{self, Corner};
@@ -361,7 +360,7 @@ fn draw_delete(f: &mut Frame<'_>, palette: &Palette, delete: &DeleteDialog) {
         delete
             .password
             .draw(f, palette, area, "", delete.focus == DeleteFocus::Password);
-        show_button(
+        login::draw::show_button(
             f,
             palette,
             area,

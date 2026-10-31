@@ -7,8 +7,8 @@ use ratatui::style::Stylize;
 use ratatui::text::Line;
 use ratatui::widgets::{Block, Clear, Padding, Paragraph};
 
-use super::measure::{BORDERS, height_of};
-use super::{action_bar, card_info};
+use super::measure::BORDERS;
+use super::{action_bar, card_info, measure};
 use crate::domain::theme::Palette;
 
 /// A sheet takes at most this share of the screen's height, in percent.
@@ -144,7 +144,7 @@ impl Sheet {
             palette,
             area,
             &self.title,
-            height_of(self.wrapped(width).0.len()),
+            measure::height_of(self.wrapped(width).0.len()),
             self.hint,
             &footer,
         );

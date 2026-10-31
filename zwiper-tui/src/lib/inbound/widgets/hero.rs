@@ -12,8 +12,8 @@ use ratatui::widgets::Block;
 use zwipe_core::http::contracts::metrics::HttpPublicMetrics;
 
 use super::count_up::CountUp;
-use super::logo as mark;
-use super::measure::{BORDERS, height_of};
+use super::measure::BORDERS;
+use super::{logo as mark, measure};
 use crate::domain::count_up::{self, BLANK};
 use crate::domain::theme::Palette;
 use crate::inbound::app::{Context, Shared};
@@ -127,7 +127,7 @@ impl Hero {
     /// How tall the hero draws in an area `width` wide with at most `room` rows: the panel with the biggest logo that fits, the panel alone, or nothing.
     pub(crate) fn height(width: u16, room: u16) -> u16 {
         match Self::logo(width, room) {
-            Some(art) => height_of(art.lines().count()).saturating_add(CHROME_ROWS),
+            Some(art) => measure::height_of(art.lines().count()).saturating_add(CHROME_ROWS),
             None if room >= CHROME_ROWS.saturating_sub(1) => CHROME_ROWS.saturating_sub(1),
             None => 0,
         }
@@ -143,7 +143,7 @@ impl Hero {
         let inner = block.inner(area);
         f.render_widget(block, area);
         let art = Self::logo(area.width, area.height);
-        let logo_height = art.map_or(0, |a| height_of(a.lines().count()));
+        let logo_height = art.map_or(0, |a| measure::height_of(a.lines().count()));
         let [logo_area, _, figures, labels, chips] = Layout::vertical([
             Constraint::Length(logo_height),
             Constraint::Length(u16::from(logo_height > 0)),

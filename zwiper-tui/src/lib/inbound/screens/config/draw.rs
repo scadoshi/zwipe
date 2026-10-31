@@ -5,16 +5,16 @@ use ratatui::layout::{Constraint, Layout};
 use ratatui::style::{Style, Stylize};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::Paragraph;
-use zwipe_core::domain::card::scryfall_data::universe::franchise_by_slug;
-use zwipe_core::domain::user::preferences::{PipStyle, display_theme_name};
+use zwipe_core::domain::card::scryfall_data::universe;
+use zwipe_core::domain::user::preferences;
+use zwipe_core::domain::user::preferences::PipStyle;
 
 use super::{ConfigView, ExceptionsSheet, Sheet, Stop, ThemeSheet, same_set};
 use crate::domain::theme::{self, Palette, PickerRow};
 use crate::inbound::app::Shared;
 use crate::inbound::widgets::action_bar::{self, Button};
 use crate::inbound::widgets::header::{self, Corner};
-use crate::inbound::widgets::measure::width_of;
-use crate::inbound::widgets::sheet;
+use crate::inbound::widgets::{measure, sheet};
 
 /// The lists are at most this wide, in cells.
 const WIDTH: u16 = 72;
@@ -139,7 +139,7 @@ fn lines(palette: &Palette, view: &ConfigView, width: usize) -> Vec<Line<'static
             palette,
             width,
             "Theme",
-            &display_theme_name(&shown.theme),
+            &preferences::display_theme_name(&shown.theme),
             vec![
                 button(palette, view, Stop::Mode, mode),
                 Span::raw(" "),
@@ -172,7 +172,7 @@ fn lines(palette: &Palette, view: &ConfigView, width: usize) -> Vec<Line<'static
     let mut names: Vec<&str> = shown
         .universes_beyond_exceptions
         .iter()
-        .filter_map(|slug| franchise_by_slug(slug).map(|f| f.name))
+        .filter_map(|slug| universe::franchise_by_slug(slug).map(|f| f.name))
         .collect();
     names.sort_unstable();
     if !names.is_empty() {
@@ -217,10 +217,10 @@ fn themes_sheet(palette: &Palette, view: &ConfigView, themes: &ThemeSheet) -> sh
         .map(|(i, row)| match row {
             PickerRow::Header(label) => Line::from(label).style(palette.tertiary).bold(),
             PickerRow::Theme(slug) => {
-                let name = display_theme_name(slug);
+                let name = preferences::display_theme_name(slug);
                 let mut spans = vec![Span::raw(format!(
                     "  {name}{}",
-                    " ".repeat(28_usize.saturating_sub(usize::from(width_of(&name))))
+                    " ".repeat(28_usize.saturating_sub(usize::from(measure::width_of(&name))))
                 ))];
                 spans.extend(
                     theme::Palette::swatches_of(slug, dark)

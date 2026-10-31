@@ -5,15 +5,14 @@ use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::style::Stylize;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Paragraph, Wrap};
-use zwipe_core::domain::deck::DeckProfile;
-use zwipe_core::domain::deck::deck_tag::deck_tag_label;
+use zwipe_core::domain::deck::{DeckProfile, deck_tag};
 
 use super::{DeckList, Focus, Row, ShowChip};
 use crate::domain;
 use crate::domain::deck::list::{DeckGroup, GroupBy};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
-use crate::inbound::widgets::pill::{self, PillState, pill};
+use crate::inbound::widgets::pill::{self, PillState};
 use crate::inbound::widgets::{action_bar, header, mana, measure, skeleton};
 
 /// Ghost rows while the decks load.
@@ -84,7 +83,7 @@ fn chip_rows(palette: &Palette, list: &DeckList, width: usize) -> Vec<Line<'stat
     };
     let mut group_by = vec![pill::label(palette, "Group by")];
     group_by.extend(GroupBy::ALL.iter().enumerate().map(|(i, by)| {
-        pill(
+        pill::pill(
             by.label(),
             palette.muted,
             state(*by == list.group_by, Focus::GroupBy, i, list.group_focus),
@@ -97,7 +96,7 @@ fn chip_rows(palette: &Palette, list: &DeckList, width: usize) -> Vec<Line<'stat
             .into_iter()
             .enumerate()
             .map(|(i, chip)| match chip {
-                ShowChip::All => pill(
+                ShowChip::All => pill::pill(
                     "All",
                     palette.muted,
                     state(list.show.is_all(), Focus::Show, i, list.show_focus),
@@ -107,7 +106,7 @@ fn chip_rows(palette: &Palette, list: &DeckList, width: usize) -> Vec<Line<'stat
                         .iter()
                         .position(|c| *c == color)
                         .unwrap_or(0);
-                    pill(
+                    pill::pill(
                         &color.to_short_name(),
                         mana::style(palette, place),
                         state(
@@ -120,13 +119,13 @@ fn chip_rows(palette: &Palette, list: &DeckList, width: usize) -> Vec<Line<'stat
                 }
                 ShowChip::Tags => {
                     let arrow = if list.tags_open { "▾" } else { "▸" };
-                    pill(
+                    pill::pill(
                         &format!("Tags {arrow}"),
                         palette.muted,
                         state(/* picked */ false, Focus::Show, i, list.show_focus),
                     )
                 }
-                ShowChip::Picked { label, .. } => pill(
+                ShowChip::Picked { label, .. } => pill::pill(
                     &label,
                     palette.muted,
                     state(/* picked */ true, Focus::Show, i, list.show_focus),
@@ -141,7 +140,7 @@ fn chip_rows(palette: &Palette, list: &DeckList, width: usize) -> Vec<Line<'stat
             .into_iter()
             .enumerate()
             .map(|(i, (key, label))| {
-                pill(
+                pill::pill(
                     &label,
                     palette.muted,
                     state(
@@ -283,7 +282,7 @@ fn deck_lines(
         palette.warning
     };
     first.push(Span::raw("  "));
-    first.push(pill(
+    first.push(pill::pill(
         &domain::deck::cards_label(count),
         count_style,
         PillState::default(),
@@ -291,14 +290,14 @@ fn deck_lines(
 
     let mut second: Vec<Span<'static>> = Vec::new();
     if let Some(format) = deck.format {
-        second.push(pill(
+        second.push(pill::pill(
             format.display_name(),
             palette.accent,
             PillState::default(),
         ));
     }
     if let Some(power) = deck.power_level {
-        second.push(pill(
+        second.push(pill::pill(
             power.display_name(),
             palette.warning,
             PillState::default(),
@@ -313,17 +312,19 @@ fn deck_lines(
     .into_iter()
     .flatten()
     {
-        second.push(pill(name, palette.accent, PillState::default()));
+        second.push(pill::pill(name, palette.accent, PillState::default()));
     }
-    second.extend(
-        deck.tags
-            .iter()
-            .map(|t| pill(&deck_tag_label(t), palette.muted, PillState::default())),
-    );
+    second.extend(deck.tags.iter().map(|t| {
+        pill::pill(
+            &deck_tag::deck_tag_label(t),
+            palette.muted,
+            PillState::default(),
+        )
+    }));
     second.extend(
         deck.other_tags
             .iter()
-            .map(|t| pill(t.display_name(), palette.warning, PillState::default())),
+            .map(|t| pill::pill(t.display_name(), palette.warning, PillState::default())),
     );
     (Line::from(first), second)
 }

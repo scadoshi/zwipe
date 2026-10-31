@@ -9,7 +9,7 @@ use zwipe_core::domain::deck::ImportMode;
 use super::{Focus, ImportView, Source, Target};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
-use crate::inbound::widgets::pill::{self, PillState, pill};
+use crate::inbound::widgets::pill::{self, PillState};
 use crate::inbound::widgets::text_input::BOX_HEIGHT;
 use crate::inbound::widgets::{action_bar, header};
 
@@ -69,7 +69,7 @@ fn chip_lines(palette: &Palette, view: &ImportView) -> Vec<Line<'static>> {
     let row = |label: &str, focus: Focus, options: Vec<(&str, bool)>| {
         let mut spans = vec![pill::label(palette, label)];
         spans.extend(options.into_iter().map(|(text, picked)| {
-            pill(
+            pill::pill(
                 text,
                 palette.muted,
                 PillState {

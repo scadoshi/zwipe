@@ -10,8 +10,7 @@ use ratatui::text::{Line, Text};
 use ratatui::widgets::{Block, Clear, Paragraph};
 use zwipe_core::domain::logo;
 
-use super::grid;
-use super::measure::{height_of, width_of};
+use super::{grid, measure};
 use crate::domain::decode;
 use crate::domain::theme::Palette;
 
@@ -75,10 +74,10 @@ impl Splash {
             if let Some(mark) = Self::mark(elapsed) {
                 let lines: Vec<Line<'static>> =
                     mark.lines().map(|l| Line::from(l.to_owned())).collect();
-                let width = mark.lines().map(width_of).max().unwrap_or(0);
+                let width = mark.lines().map(measure::width_of).max().unwrap_or(0);
                 let spot = area.centered(
                     Constraint::Length(width),
-                    Constraint::Length(height_of(lines.len())),
+                    Constraint::Length(measure::height_of(lines.len())),
                 );
                 f.render_widget(Paragraph::new(Text::from(lines).style(palette.logo)), spot);
             }

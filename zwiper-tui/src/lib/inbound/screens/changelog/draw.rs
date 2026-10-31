@@ -14,8 +14,7 @@ use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::widgets::action_bar::{self, Button};
 use crate::inbound::widgets::header::{self, Corner};
-use crate::inbound::widgets::measure::height_of;
-use crate::inbound::widgets::{entrance, skeleton};
+use crate::inbound::widgets::{entrance, measure, skeleton};
 
 /// The cards are at most this wide, in cells.
 const WIDTH: u16 = 72;
@@ -58,7 +57,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &ChangelogView) {
                 .enumerate()
                 .map(|(r, chips)| chip_line(palette, chips, (r == view.row).then_some(view.chip)))
                 .collect();
-            let chips_height = height_of(
+            let chips_height = measure::height_of(
                 Paragraph::new(chip_lines.clone())
                     .wrap(Wrap { trim: false })
                     .line_count(body.width),
@@ -75,7 +74,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &ChangelogView) {
             );
             let cards = card_lines(palette, &changelog::visible(&listed, &view.filter));
             let cards = Paragraph::new(cards).wrap(Wrap { trim: false });
-            let total = height_of(cards.line_count(cards_area.width));
+            let total = measure::height_of(cards.line_count(cards_area.width));
             let scroll = view.scroll.min(total.saturating_sub(cards_area.height));
             f.render_widget(cards.scroll((scroll, 0)), cards_area);
             entrance::draw(

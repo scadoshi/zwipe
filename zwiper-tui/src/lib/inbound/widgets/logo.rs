@@ -11,7 +11,7 @@ use ratatui::text::{Line, Text};
 use ratatui::widgets::Paragraph;
 use zwipe_core::domain::logo;
 
-use super::measure::{height_of, width_of};
+use super::measure;
 use crate::domain::decode;
 
 /// The art that fits `width` by `height`: the full mark, the compact Z, or none.
@@ -24,8 +24,8 @@ pub(crate) fn fitting(width: u16, height: u16) -> Option<&'static str> {
 /// `art`'s width and height in cells.
 pub(crate) fn size(art: &str) -> (u16, u16) {
     (
-        art.lines().map(width_of).max().unwrap_or(0),
-        height_of(art.lines().count()),
+        art.lines().map(measure::width_of).max().unwrap_or(0),
+        measure::height_of(art.lines().count()),
     )
 }
 

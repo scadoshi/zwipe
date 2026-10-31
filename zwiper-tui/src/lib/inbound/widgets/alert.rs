@@ -7,8 +7,7 @@ use ratatui::style::{Style, Stylize};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Paragraph, Wrap};
 
-use super::measure::height_of;
-use super::panel;
+use super::{measure, panel};
 use crate::domain::theme::Palette;
 
 /// A dialog is at most this wide inside its panel, in cells.
@@ -168,7 +167,7 @@ impl AlertDialog {
     ) {
         let body = Paragraph::new(self.body.clone()).wrap(Wrap { trim: true });
         let width = WIDTH.min(f.area().width.saturating_sub(4));
-        let body_height = height_of(body.line_count(width));
+        let body_height = measure::height_of(body.line_count(width));
         let row = self.buttons_line(palette);
         // A row too wide for the dialog stacks its buttons, one per line.
         let buttons: Vec<Line<'static>> = if row.width() > usize::from(width) {
@@ -180,7 +179,7 @@ impl AlertDialog {
         } else {
             vec![row.centered()]
         };
-        let buttons_height = height_of(buttons.len());
+        let buttons_height = measure::height_of(buttons.len());
         let inner = panel::draw(
             f,
             palette,

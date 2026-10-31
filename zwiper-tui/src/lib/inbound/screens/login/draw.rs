@@ -12,7 +12,7 @@ use crate::inbound::app::Shared;
 use crate::inbound::widgets::action_bar::{self, Button};
 use crate::inbound::widgets::header::{self, Corner};
 use crate::inbound::widgets::hero::Hero;
-use crate::inbound::widgets::measure::width_of;
+use crate::inbound::widgets::measure;
 use crate::inbound::widgets::text_input::{BOX_HEIGHT, TextInput};
 
 /// The form is at most this wide, in cells.
@@ -118,7 +118,7 @@ pub(crate) fn show_button(
     } else {
         " Hide "
     };
-    let width = width_of(label);
+    let width = measure::width_of(label);
     if area.width < width.saturating_add(4) || area.height < 2 {
         return;
     }

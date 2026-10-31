@@ -11,9 +11,7 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Paragraph, Wrap};
 
 use super::{ActivityView, Focus, Load, Loaded, PASSES_TITLE, Section, pass_row};
-use crate::domain::activity::{
-    self, Bar, DAYS_PER_WEEK, HeatLayout, RateKind, WEEKDAY_LABELS, outcome_bars,
-};
+use crate::domain::activity::{self, Bar, DAYS_PER_WEEK, HeatLayout, RateKind, WEEKDAY_LABELS};
 use crate::domain::count_up;
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
@@ -353,7 +351,7 @@ fn activity_body(
         if has_days {
             body.line(indented(Line::styled("─".repeat(width), palette.muted)));
         }
-        for line in totals_lines(palette, &outcome_bars(outcomes), width) {
+        for line in totals_lines(palette, &activity::outcome_bars(outcomes), width) {
             body.line(indented(line));
         }
     }

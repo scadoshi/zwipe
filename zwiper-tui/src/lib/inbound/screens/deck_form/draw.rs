@@ -9,8 +9,9 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Paragraph, Widget, Wrap};
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
-use zwipe_core::domain::deck::deck_tag::deck_tag_label;
-use zwipe_core::domain::deck::{DeckOtherTag, MAX_DECK_ORACLE_TAGS, MAX_DECK_TAGS, PowerLevel};
+use zwipe_core::domain::deck::{
+    DeckOtherTag, MAX_DECK_ORACLE_TAGS, MAX_DECK_TAGS, PowerLevel, deck_tag,
+};
 
 use super::pickers::{self, FormatPicker, OraclePicker, TagPicker};
 use super::swipe_pick::SwipePicker;
@@ -20,10 +21,9 @@ use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::screens::card_sheets;
 use crate::inbound::widgets::card_motion::{self, CardMotion, Phase};
-use crate::inbound::widgets::measure::height_of;
-use crate::inbound::widgets::pill::{self, PillState, pill};
+use crate::inbound::widgets::pill::{self, PillState};
 use crate::inbound::widgets::text_input::TextInput;
-use crate::inbound::widgets::{action_bar, header, skeleton};
+use crate::inbound::widgets::{action_bar, header, measure, skeleton};
 
 /// Values sit this far in from the left, under their labels.
 const INDENT: &str = "    ";
@@ -334,7 +334,7 @@ fn card_slot_lines(
         Slot::Background => "Background",
         Slot::SignatureSpell => "Signature spell",
     };
-    let mut extras = vec![pill(
+    let mut extras = vec![pill::pill(
         "Filter",
         palette.accent,
         PillState {
@@ -343,7 +343,7 @@ fn card_slot_lines(
         },
     )];
     extras.extend(clear(palette, card.card.is_some()));
-    extras.push(pill("Swipe", palette.add, PillState::default()));
+    extras.push(pill::pill("Swipe", palette.add, PillState::default()));
     lines.push(label_line(palette, label, focused, extras));
     let cursor = focused.then(|| (lines.len(), cursor_at(&card.input)));
     lines.push(text_line(palette, &card.input));
@@ -351,17 +351,17 @@ fn card_slot_lines(
         Dropdown::Hidden => {}
         Dropdown::Searching => lines.push(Line::from(vec![
             Span::raw(INDENT),
-            pill("Searching...", palette.muted, PillState::default()),
+            pill::pill("Searching...", palette.muted, PillState::default()),
         ])),
         Dropdown::Results(cards) if cards.is_empty() => lines.push(Line::from(vec![
             Span::raw(INDENT),
-            pill("No results", palette.muted, PillState::default()),
+            pill::pill("No results", palette.muted, PillState::default()),
         ])),
         Dropdown::Results(cards) => {
             lines.extend(cards.iter().enumerate().map(|(i, c)| {
                 Line::from(vec![
                     Span::raw(INDENT),
-                    pill(
+                    pill::pill(
                         &c.scryfall_data.name,
                         palette.accent,
                         PillState {
@@ -395,7 +395,7 @@ fn power_lines(
         .iter()
         .enumerate()
         .map(|(i, p)| {
-            pill(
+            pill::pill(
                 p.display_name(),
                 palette.muted,
                 PillState {
@@ -446,7 +446,7 @@ fn currency_lines(
     let chips: Vec<Span<'static>> = CURRENCIES
         .iter()
         .map(|c| {
-            pill(
+            pill::pill(
                 c.label(),
                 palette.muted,
                 PillState {
@@ -492,7 +492,11 @@ fn deck_tag_lines(
     let mut extras = vec![count];
     extras.extend(clear(palette, !form.tags.is_empty()));
     lines.push(label_line(palette, "Deck tags", focused, extras));
-    let labels: Vec<String> = form.tags.iter().map(|t| deck_tag_label(t)).collect();
+    let labels: Vec<String> = form
+        .tags
+        .iter()
+        .map(|t| deck_tag::deck_tag_label(t))
+        .collect();
     lines.extend(chip_box(
         palette,
         &labels,
@@ -542,7 +546,7 @@ fn other_tag_lines(
         .iter()
         .enumerate()
         .map(|(i, t)| {
-            pill(
+            pill::pill(
                 t.display_name(),
                 palette.muted,
                 PillState {
@@ -578,7 +582,7 @@ fn chip_box(
             .iter()
             .enumerate()
             .map(|(i, label)| {
-                pill(
+                pill::pill(
                     &format!("{label} ×"),
                     palette.accent,
                     PillState {
@@ -618,7 +622,7 @@ fn picker_frame(
         .wrap(Wrap { trim: true })
         .block(Block::bordered().border_style(palette.border));
     // The definition wraps to the width, but never takes more than half the room under the search box.
-    let bar_height = height_of(bar.line_count(body.width))
+    let bar_height = measure::height_of(bar.line_count(body.width))
         .min(body.height.saturating_sub(4) / 2)
         .max(3);
     let [controls, search_area, bar_area, grid] = Layout::vertical([
@@ -721,7 +725,7 @@ fn draw_format(
         .iter()
         .enumerate()
         .map(|(i, format)| {
-            pill(
+            pill::pill(
                 format.display_name(),
                 palette.muted,
                 PillState {
@@ -777,7 +781,7 @@ fn draw_tags(
         .iter()
         .enumerate()
         .map(|(i, tag)| {
-            pill(
+            pill::pill(
                 &tag.display_name,
                 palette.muted,
                 PillState {
@@ -824,7 +828,7 @@ fn draw_oracle(
         PickerParts {
             title: "Oracle tags",
             extras: vec![
-                pill("F3 Dictionary", palette.accent, PillState::default()),
+                pill::pill("F3 Dictionary", palette.accent, PillState::default()),
                 Span::styled(
                     format!("{}/{MAX_DECK_ORACLE_TAGS}", form.oracle_tags.len()),
                     palette.muted,
@@ -853,7 +857,7 @@ fn draw_oracle(
         .iter()
         .enumerate()
         .map(|(i, slug)| {
-            pill(
+            pill::pill(
                 slug,
                 palette.muted,
                 PillState {

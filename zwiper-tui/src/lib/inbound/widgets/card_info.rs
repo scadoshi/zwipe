@@ -6,8 +6,7 @@ use ratatui::layout::{Constraint, Rect};
 use ratatui::style::{Style, Stylize};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Padding, Paragraph, Wrap};
-use zwipe_core::domain::card::Card;
-use zwipe_core::domain::card::card_role::role_label;
+use zwipe_core::domain::card::{Card, card_role};
 
 use crate::domain::card::{self, Face};
 use crate::domain::theme::Palette;
@@ -126,7 +125,7 @@ pub(crate) fn details_lines(palette: &Palette, card: &Card, face: usize) -> Vec<
                 .get(role)
                 .map(|t| t.join(", "))
                 .unwrap_or_default();
-            lines.push(role_line(palette, &role_label(role), &tags));
+            lines.push(role_line(palette, &card_role::role_label(role), &tags));
         }
         if !profile.other_oracle_tags.is_empty() {
             lines.push(role_line(

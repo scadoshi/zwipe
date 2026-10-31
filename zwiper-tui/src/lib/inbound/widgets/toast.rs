@@ -12,7 +12,8 @@ use ratatui::style::{Modifier, Style};
 use ratatui::text::Line;
 use ratatui::widgets::{Block, Clear, Padding, Paragraph, Wrap};
 
-use super::measure::{BORDERS, height_of, width_of};
+use super::measure;
+use super::measure::BORDERS;
 use crate::domain::theme::Palette;
 
 /// Routine confirmations: saved, copied, added.
@@ -198,7 +199,7 @@ fn place(
     lines: Option<usize>,
     area: Rect,
 ) -> Option<Rect> {
-    let width = width_of(&toast.message)
+    let width = measure::width_of(&toast.message)
         .saturating_add(BORDERS)
         .saturating_add(BORDERS)
         .min(MAX_WIDTH)
@@ -206,7 +207,7 @@ fn place(
     let inner = width.saturating_sub(BORDERS).saturating_sub(BORDERS);
     let wrapped = body(toast, Style::new()).line_count(inner);
     let shown = lines.map_or(wrapped, |cap| wrapped.min(cap));
-    let height = height_of(shown).saturating_add(BORDERS);
+    let height = measure::height_of(shown).saturating_add(BORDERS);
     let rect = Rect {
         x: left,
         y: top,

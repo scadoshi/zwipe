@@ -8,9 +8,7 @@ use ratatui::widgets::Paragraph;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::card::search_card::group_cards::GroupByOption;
-use zwipe_core::domain::deck::Board;
-use zwipe_core::domain::deck::deck_metrics::card_price;
-use zwipe_core::domain::deck::deck_tag::deck_tag_label;
+use zwipe_core::domain::deck::{Board, deck_metrics, deck_tag};
 
 use super::{DeckCardsView, Dropdown, Item, Kind};
 use crate::domain::theme::Palette;
@@ -83,7 +81,7 @@ fn header_lines(palette: &Palette, view: &DeckCardsView) -> Vec<Line<'static>> {
         chips.push(Span::raw(" "));
     }
     for tag in &profile.tags {
-        chips.push(chip(&deck_tag_label(tag), palette.muted));
+        chips.push(chip(&deck_tag::deck_tag_label(tag), palette.muted));
         chips.push(Span::raw(" "));
     }
     for tag in &profile.other_tags {
@@ -375,7 +373,7 @@ fn row_line(
         spans.push(Span::styled(format!("  {stats}"), palette.muted));
     }
     let currency = view.currency();
-    if let Some(price) = card_price(data, currency) {
+    if let Some(price) = deck_metrics::card_price(data, currency) {
         spans.push(Span::styled(
             format!("  {}", currency.format_amount(price)),
             palette.muted,

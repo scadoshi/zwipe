@@ -5,7 +5,8 @@ use ratatui::layout::{Constraint, Layout};
 
 use super::{RegisterField, RegisterForm};
 use crate::inbound::app::Shared;
-use crate::inbound::screens::login::draw::{Placement, field, frame, show_button};
+use crate::inbound::screens::login;
+use crate::inbound::screens::login::draw::Placement;
 use crate::inbound::widgets::action_bar::{self, Button};
 
 pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &RegisterForm) {
@@ -23,7 +24,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &RegisterForm) {
         keys.push(("F2", "password rules"));
     }
     keys.extend([("F1", "help"), ("Esc", "back")]);
-    let areas = frame(
+    let areas = login::draw::frame(
         f,
         shared,
         &form.hero,
@@ -34,7 +35,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &RegisterForm) {
     );
     let [username, email, password, confirm] =
         Layout::vertical(heights.map(Constraint::Length)).areas(areas.body);
-    field(
+    login::draw::field(
         f,
         palette,
         username,
@@ -42,7 +43,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &RegisterForm) {
         "Username",
         focus == RegisterField::Username,
     );
-    field(
+    login::draw::field(
         f,
         palette,
         email,
@@ -50,7 +51,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &RegisterForm) {
         "Email",
         focus == RegisterField::Email,
     );
-    field(
+    login::draw::field(
         f,
         palette,
         password,
@@ -58,14 +59,14 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &RegisterForm) {
         "Password ?",
         focus == RegisterField::Password,
     );
-    show_button(
+    login::draw::show_button(
         f,
         palette,
         password,
         &form.password,
         focus == RegisterField::ShowPassword,
     );
-    field(
+    login::draw::field(
         f,
         palette,
         confirm,
@@ -73,7 +74,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &RegisterForm) {
         "Confirm password",
         focus == RegisterField::Confirm,
     );
-    show_button(
+    login::draw::show_button(
         f,
         palette,
         confirm,

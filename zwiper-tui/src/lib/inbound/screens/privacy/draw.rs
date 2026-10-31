@@ -14,7 +14,7 @@ use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::widgets::action_bar::{self, Button};
 use crate::inbound::widgets::header::{self, Corner};
-use crate::inbound::widgets::measure::height_of;
+use crate::inbound::widgets::measure;
 
 /// The text is at most this wide, in cells.
 const WIDTH: u16 = 76;
@@ -122,7 +122,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &PrivacyView) {
     header::draw(f, palette, head, "Privacy policy", Corner::Empty);
     let body = body.centered_horizontally(Constraint::Length(WIDTH.min(body.width)));
     let text = Paragraph::new(lines(palette, usize::from(body.width))).wrap(Wrap { trim: false });
-    let total = height_of(text.line_count(body.width));
+    let total = measure::height_of(text.line_count(body.width));
     let scroll = view.scroll.min(total.saturating_sub(body.height));
     f.render_widget(text.scroll((scroll, 0)), body);
     f.render_widget(

@@ -10,7 +10,8 @@ use ratatui::widgets::{Block, Paragraph, Wrap};
 
 use super::{ForgotField, ForgotForm, SENT_BODY, SENT_TITLE};
 use crate::inbound::app::Shared;
-use crate::inbound::screens::login::draw::{Placement, field, frame};
+use crate::inbound::screens::login;
+use crate::inbound::screens::login::draw::Placement;
 use crate::inbound::widgets::action_bar::{self, Button};
 use crate::inbound::widgets::spinner;
 
@@ -21,7 +22,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &ForgotForm) {
     } else {
         form.email.height().saturating_add(1)
     };
-    let areas = frame(
+    let areas = login::draw::frame(
         f,
         shared,
         &form.hero,
@@ -55,7 +56,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &ForgotForm) {
             Constraint::Length(1),
         ])
         .areas(areas.body);
-        field(
+        login::draw::field(
             f,
             palette,
             email,

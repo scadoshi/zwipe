@@ -11,15 +11,13 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::deck_metrics;
 
-use super::keys::has_flavor;
-use super::{HomeView, Overlay};
-use crate::domain::color_map::{ColorMapCounts, ColorMapModel, ghost_model};
+use super::{HomeView, Overlay, keys};
+use crate::domain::color_map::{ColorMapCounts, ColorMapModel};
 use crate::domain::home;
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
-use crate::inbound::widgets::measure::height_of;
 use crate::inbound::widgets::{
-    action_bar, color_map, entrance, figures, header, logo, skeleton, stagger,
+    action_bar, color_map, entrance, figures, header, logo, measure, skeleton, stagger,
 };
 
 /// The two lower panels sit side by side from this width, in cells.
@@ -45,7 +43,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &HomeView) {
     let palette = &shared.palette;
     let area = f.area().inner(Margin::new(1, 0));
     let logo_text = pick_logo(area);
-    let logo_height = logo_text.map_or(0, |l| height_of(l.lines().count()));
+    let logo_height = logo_text.map_or(0, |l| measure::height_of(l.lines().count()));
     let hero_height = logo_height
         .saturating_add(u16::from(logo_height > 0))
         .saturating_add(figures::HEIGHT)
@@ -113,7 +111,7 @@ fn draw_hero(
     let block = Block::bordered().border_style(palette.border);
     let inner = block.inner(area);
     f.render_widget(block, area);
-    let logo_height = logo_text.map_or(0, |l| height_of(l.lines().count()));
+    let logo_height = logo_text.map_or(0, |l| measure::height_of(l.lines().count()));
     let [logo_area, _, strip, chips] = Layout::vertical([
         Constraint::Length(logo_height),
         Constraint::Length(u16::from(logo_height > 0)),
@@ -208,7 +206,13 @@ fn draw_color_map(f: &mut Frame<'_>, shared: &Shared, view: &HomeView, area: Rec
         ],
         (None, None) => {
             let elapsed = view.opened.elapsed();
-            let mut lines = color_map::ghost_lines(palette, &ghost_model(), elapsed, width, rows);
+            let mut lines = color_map::ghost_lines(
+                palette,
+                &crate::domain::color_map::ghost_model(),
+                elapsed,
+                width,
+                rows,
+            );
             lines.push(Line::default());
             lines.push(Line::styled(
                 "░░░ ░░░ ░░░ ░░░ ░░░ ░░░░░░░░ ░░░░░░░░",
@@ -227,7 +231,7 @@ fn draw_flavor(f: &mut Frame<'_>, shared: &Shared, area: Rect) {
     let palette = &shared.palette;
     let card = shared.caches.flavor.as_ref().map(|c| &c.card);
     match card {
-        Some(card) if has_flavor(card) => draw_flavor_card(f, palette, card, area),
+        Some(card) if keys::has_flavor(card) => draw_flavor_card(f, palette, card, area),
         Some(_) => {}
         None => {
             let block = Block::bordered().border_style(palette.border);
@@ -275,9 +279,9 @@ fn draw_flavor_card(f: &mut Frame<'_>, palette: &Palette, card: &Card, area: Rec
         .centered()
         .wrap(Wrap { trim: false });
     // The name and its Image and Buy keys stay in the panel; a quote too long for the rest is cut.
-    let buy_height = height_of(buy.line_count(inner.width)).min(inner.height);
+    let buy_height = measure::height_of(buy.line_count(inner.width)).min(inner.height);
     let room = inner.height.saturating_sub(buy_height);
-    let quote_height = height_of(quote.line_count(inner.width)).min(room);
+    let quote_height = measure::height_of(quote.line_count(inner.width)).min(room);
     let gap = u16::from(room > quote_height);
     let [quote_area, _, buy_area] = Layout::vertical([
         Constraint::Length(quote_height),

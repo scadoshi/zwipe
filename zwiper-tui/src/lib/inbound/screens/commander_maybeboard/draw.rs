@@ -16,9 +16,11 @@ use super::{
 };
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
-use crate::inbound::screens::activity::draw::{Body, GHOST, GUTTER, draw_lines};
+use crate::inbound::screens::activity::draw as activity_draw;
+use crate::inbound::screens::activity::draw::{Body, GHOST, GUTTER};
 use crate::inbound::screens::card_sheets::filter::draw as filter_sheet;
-use crate::inbound::screens::playstyle::draw::{ChipContent, chip_line, wrap_at_gaps};
+use crate::inbound::screens::playstyle::draw as playstyle_draw;
+use crate::inbound::screens::playstyle::draw::ChipContent;
 use crate::inbound::widgets::card_rows::CardRow;
 use crate::inbound::widgets::text_input::BOX_HEIGHT;
 use crate::inbound::widgets::{action_bar, header, mana, skeleton};
@@ -52,11 +54,11 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &MaybeboardView) {
                 .border_style(palette.muted),
             input,
         );
-        draw_lines(f, skeleton_lines(palette, body.width), (0, 0), body);
+        activity_draw::draw_lines(f, skeleton_lines(palette, body.width), (0, 0), body);
     } else {
         draw_input(f, palette, view, input);
         let lines = loaded_lines(shared, view, body.width);
-        draw_lines(f, lines.lines, lines.focus, body);
+        activity_draw::draw_lines(f, lines.lines, lines.focus, body);
     }
     f.render_widget(action_bar::wrap(bar, keys.width), keys);
     match &view.overlay {
@@ -185,7 +187,7 @@ pub(crate) fn show_line(palette: &Palette, view: &MaybeboardView) -> Line<'stati
                 picked: view.colors.contains(color),
             }),
     );
-    chip_line(
+    playstyle_draw::chip_line(
         palette,
         "Show",
         chips,
@@ -201,13 +203,13 @@ fn loaded_lines(shared: &Shared, view: &MaybeboardView, width: u16) -> Body {
     let mut body = Body::default();
     if view.searching_catalog() {
         body.item(
-            wrap_at_gaps(results_line(palette, view), wrap),
+            playstyle_draw::wrap_at_gaps(results_line(palette, view), wrap),
             view.focus == Focus::Results,
         );
         body.line(Line::default());
     }
     body.item(
-        wrap_at_gaps(show_line(palette, view), wrap),
+        playstyle_draw::wrap_at_gaps(show_line(palette, view), wrap),
         view.focus == Focus::Show,
     );
     body.line(Line::default());
@@ -248,7 +250,7 @@ fn skeleton_lines(palette: &Palette, width: u16) -> Vec<Line<'static>> {
         chips.push(Span::raw(" "));
     }
     let mut body = Body::default();
-    for line in wrap_at_gaps(Line::from(chips), inner) {
+    for line in playstyle_draw::wrap_at_gaps(Line::from(chips), inner) {
         body.line(line);
     }
     body.line(Line::default());

@@ -8,7 +8,7 @@ use ratatui::style::Stylize;
 use ratatui::text::Line;
 use ratatui::widgets::{Paragraph, Wrap};
 
-use super::measure::height_of;
+use super::measure;
 use crate::domain::theme::Palette;
 
 /// Drawn beside the focused item's first line.
@@ -34,12 +34,12 @@ pub(crate) fn page_start(heights: &[u16], focused: usize, room: u16) -> usize {
 /// How many rows `lines` take wrapped to `width` cells, at least one.
 pub(crate) fn wrapped_height(lines: &[Line<'static>], width: u16) -> u16 {
     if width == 0 {
-        return height_of(lines.len()).max(1);
+        return measure::height_of(lines.len()).max(1);
     }
     let count = Paragraph::new(lines.to_vec())
         .wrap(Wrap { trim: false })
         .line_count(width);
-    height_of(count).max(1)
+    measure::height_of(count).max(1)
 }
 
 /// Draws `items` into `area`, each wrapped and stacked, the page holding `focused` in view and a marker beside it.
