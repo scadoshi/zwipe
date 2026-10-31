@@ -8,6 +8,7 @@ use super::{ActivityView, Focus, Load, Section, pass_row, passes_topic, reopen_h
 use crate::domain::activity::RateKind;
 use crate::inbound::app::Context;
 use crate::inbound::screens::otag_examples;
+use crate::inbound::toward::Toward;
 use crate::inbound::widgets::card_rows::CardRow;
 use crate::inbound::widgets::{help, info};
 
@@ -49,10 +50,10 @@ fn topic(view: &ActivityView) -> Option<info::InfoPopup> {
 fn step(view: &mut ActivityView, code: KeyCode) -> bool {
     match code {
         KeyCode::Down | KeyCode::Char('j') => {
-            view.step(true);
+            view.step(Toward::Next);
         }
         KeyCode::Up | KeyCode::Char('k') => {
-            view.step(false);
+            view.step(Toward::Previous);
         }
         _ => return false,
     }
@@ -78,12 +79,12 @@ fn on_heat(view: &mut ActivityView, code: KeyCode) {
         }
         KeyCode::Up | KeyCode::Char('k') => {
             if !view.move_cursor(0, -1) {
-                view.step(false);
+                view.step(Toward::Previous);
             }
         }
         KeyCode::Down | KeyCode::Char('j') => {
             if !view.move_cursor(0, 1) {
-                view.step(true);
+                view.step(Toward::Next);
             }
         }
         KeyCode::Enter | KeyCode::Char(' ') => {
@@ -148,7 +149,7 @@ fn on_bar(
 
 fn on_passes(view: &mut ActivityView, code: KeyCode, cx: &mut Context<'_>) {
     if view.rows.focused() == 0 && matches!(code, KeyCode::Up | KeyCode::Char('k')) {
-        view.step(false);
+        view.step(Toward::Previous);
         return;
     }
     let Load::Loaded(loaded) = &view.load else {

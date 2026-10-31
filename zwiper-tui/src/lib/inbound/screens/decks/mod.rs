@@ -17,6 +17,7 @@ use crate::domain::deck::list::{self, DeckGroup, GroupBy, Show};
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;
+use crate::inbound::toward::Toward;
 use crate::inbound::widgets::hint;
 use crate::inbound::widgets::menu::{Menu, MenuItem};
 use crate::inbound::widgets::toast::{self, ToastKind};
@@ -170,15 +171,11 @@ impl DeckList {
         areas
     }
 
-    /// Moves the focus to the next area down, or up with `back`.
-    pub(crate) fn step_area(&mut self, back: bool) {
+    /// Moves the focus to the next area down, or the previous up, stopping at the ends.
+    pub(crate) fn step_area(&mut self, toward: Toward) {
         let areas = self.areas();
         let here = areas.iter().position(|a| *a == self.focus).unwrap_or(0);
-        let next = if back {
-            here.checked_sub(1).unwrap_or(here)
-        } else {
-            here.saturating_add(1).min(areas.len().saturating_sub(1))
-        };
+        let next = toward.clamped(here, areas.len());
         if let Some(area) = areas.get(next) {
             self.focus = *area;
         }

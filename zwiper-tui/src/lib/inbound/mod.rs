@@ -8,5 +8,7 @@ pub(crate) mod event_loop;
 pub(crate) mod nav;
 /// Each screen in its own folder, and the enums that register them.
 pub(crate) mod screens;
+/// Which way a focus moves along its order.
+pub(crate) mod toward;
 /// Drawing pieces shared by the screens.
 pub(crate) mod widgets;

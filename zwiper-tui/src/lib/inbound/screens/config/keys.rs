@@ -9,6 +9,7 @@ use super::{
     show, topic,
 };
 use crate::inbound::app::Context;
+use crate::inbound::toward::Toward;
 use crate::inbound::widgets::toast::{self, ToastKind};
 use crate::inbound::widgets::{help, hint};
 
@@ -101,8 +102,8 @@ fn handle_themes(
 ) -> Option<ThemeSheet> {
     let mut preview = view.shown.clone();
     match code {
-        KeyCode::Down | KeyCode::Char('j') => sheet.step(true),
-        KeyCode::Up | KeyCode::Char('k') => sheet.step(false),
+        KeyCode::Down | KeyCode::Char('j') => sheet.step(Toward::Next),
+        KeyCode::Up | KeyCode::Char('k') => sheet.step(Toward::Previous),
         KeyCode::Enter => {
             let Some(theme) = sheet.theme().filter(|_| sheet.picked()) else {
                 return Some(sheet);

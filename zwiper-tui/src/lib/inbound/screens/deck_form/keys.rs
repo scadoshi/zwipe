@@ -8,6 +8,7 @@ use super::pickers::{self, FormatPicker, OraclePicker, TagPicker};
 use super::{DeckForm, Dropdown, Field, Overlay, reopen_hint, swipe_pick};
 use crate::domain::deck::form::{self, Slot, Step};
 use crate::inbound::app::Context;
+use crate::inbound::toward::Toward;
 use crate::inbound::widgets::info;
 
 /// The currencies in the app's chip order.
@@ -32,8 +33,8 @@ pub(crate) fn handle(form: &mut DeckForm, code: KeyCode, cx: &mut Context<'_>) {
         KeyCode::F(2) => return form.save(cx),
         KeyCode::F(6) => return form.overlay = Some(Overlay::Info(form.focus.info())),
         KeyCode::F(8) => return clear(form, cx),
-        KeyCode::Tab => return form.step_focus(false),
-        KeyCode::BackTab => return form.step_focus(true),
+        KeyCode::Tab => return form.step_focus(Toward::Next),
+        KeyCode::BackTab => return form.step_focus(Toward::Previous),
         _ => {}
     }
     if form.loading || form.load_error.is_some() {
@@ -45,8 +46,8 @@ pub(crate) fn handle(form: &mut DeckForm, code: KeyCode, cx: &mut Context<'_>) {
     match form.focus {
         Field::Name => match code {
             KeyCode::Enter => form.save(cx),
-            KeyCode::Up => form.step_focus(true),
-            KeyCode::Down => form.step_focus(false),
+            KeyCode::Up => form.step_focus(Toward::Previous),
+            KeyCode::Down => form.step_focus(Toward::Next),
             other => {
                 if form.name.handle_key(other) {
                     form.check_name();
@@ -56,8 +57,8 @@ pub(crate) fn handle(form: &mut DeckForm, code: KeyCode, cx: &mut Context<'_>) {
         Field::Card(slot) => handle_card(form, slot, code, cx),
         Field::Price => match code {
             KeyCode::Enter => form.save(cx),
-            KeyCode::Up => form.step_focus(true),
-            KeyCode::Down => form.step_focus(false),
+            KeyCode::Up => form.step_focus(Toward::Previous),
+            KeyCode::Down => form.step_focus(Toward::Next),
             KeyCode::Char(c) if !form::price_char(c) => {}
             other => {
                 form.price.handle_key(other);
@@ -72,8 +73,8 @@ fn handle_plain(form: &mut DeckForm, field: Field, code: KeyCode, cx: &mut Conte
     match code {
         KeyCode::Char('q') => return cx.quit(),
         KeyCode::Char('?') => return reopen_hint(cx, form.mode),
-        KeyCode::Up | KeyCode::Char('k') => return form.step_focus(true),
-        KeyCode::Down | KeyCode::Char('j') => return form.step_focus(false),
+        KeyCode::Up | KeyCode::Char('k') => return form.step_focus(Toward::Previous),
+        KeyCode::Down | KeyCode::Char('j') => return form.step_focus(Toward::Next),
         _ => {}
     }
     let left = matches!(code, KeyCode::Left | KeyCode::Char('h'));
@@ -185,8 +186,8 @@ fn handle_card(form: &mut DeckForm, slot: Slot, code: KeyCode, cx: &mut Context<
             let field = form.card_mut(slot);
             field.highlighted = field.highlighted.saturating_sub(1);
         }
-        KeyCode::Up => form.step_focus(true),
-        KeyCode::Down => form.step_focus(false),
+        KeyCode::Up => form.step_focus(Toward::Previous),
+        KeyCode::Down => form.step_focus(Toward::Next),
         KeyCode::Enter => {
             let field = form.card(slot);
             match field.hits().get(field.highlighted).cloned() {

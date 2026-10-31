@@ -15,6 +15,7 @@ use crate::domain::deck::form::{self, ImportTone};
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;
+use crate::inbound::toward::Toward;
 use crate::inbound::widgets::hint;
 use crate::inbound::widgets::text_area::TextArea;
 use crate::inbound::widgets::text_input::TextInput;
@@ -84,17 +85,10 @@ pub(crate) enum Focus {
 impl Focus {
     const ORDER: [Self; 4] = [Self::From, Self::Mode, Self::Board, Self::Input];
 
-    /// The next control, or the previous with `back`, wrapping.
-    fn step(self, back: bool) -> Self {
+    /// The next or the previous control, wrapping.
+    fn step(self, toward: Toward) -> Self {
         let here = Self::ORDER.iter().position(|f| *f == self).unwrap_or(0);
-        let next = if back {
-            here.checked_sub(1)
-                .unwrap_or(Self::ORDER.len().saturating_sub(1))
-        } else {
-            here.saturating_add(1)
-                .checked_rem(Self::ORDER.len())
-                .unwrap_or(0)
-        };
+        let next = toward.wrapped(here, Self::ORDER.len());
         Self::ORDER.get(next).copied().unwrap_or_default()
     }
 }
@@ -152,8 +146,8 @@ impl ImportView {
         }
     }
 
-    pub(crate) fn step_focus(&mut self, back: bool) {
-        self.focus = self.focus.step(back);
+    pub(crate) fn step_focus(&mut self, toward: Toward) {
+        self.focus = self.focus.step(toward);
     }
 
     /// The explainer line's two parts around the board word.

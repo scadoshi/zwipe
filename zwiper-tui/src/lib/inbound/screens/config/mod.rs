@@ -17,6 +17,7 @@ use crate::domain::theme::{self, Palette, PickerRow};
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;
+use crate::inbound::toward::Toward;
 use crate::inbound::widgets::hint::{self, HintTopic};
 use crate::inbound::widgets::toast::{self, ToastKind};
 use crate::outbound::account::Account;
@@ -190,11 +191,11 @@ impl ThemeSheet {
         self.theme().is_some_and(|t| t != self.original)
     }
 
-    /// Moves to the next theme down or up, skipping section labels.
-    pub(crate) fn step(&mut self, down: bool) {
+    /// Moves to the next theme down, or up toward the previous, skipping section labels.
+    pub(crate) fn step(&mut self, toward: Toward) {
         let rows = theme::picker_rows();
         let is_theme = |i: &usize| matches!(rows.get(*i), Some(PickerRow::Theme(_)));
-        let found = if down {
+        let found = if toward == Toward::Next {
             (self.row.saturating_add(1)..rows.len()).find(is_theme)
         } else {
             (0..self.row).rev().find(is_theme)

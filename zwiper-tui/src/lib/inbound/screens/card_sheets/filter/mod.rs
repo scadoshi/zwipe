@@ -28,6 +28,7 @@ use crate::domain::filter::{self, AddContext, Adopted, ApplyAction, FilterState}
 use crate::domain::stores::catalog::Catalog;
 use crate::inbound::app::Context;
 use crate::inbound::screens::oracle_tags;
+use crate::inbound::toward::Toward;
 use crate::inbound::widgets::hint;
 use crate::inbound::widgets::text_input::TextInput;
 use crate::inbound::widgets::toast::{self, ToastKind};
@@ -232,14 +233,9 @@ impl FilterSheet {
     }
 
     /// Moves the focus by one, parsing a number box it leaves.
-    pub(crate) fn move_focus(&mut self, cx: &mut Context<'_>, down: bool) {
+    pub(crate) fn move_focus(&mut self, cx: &mut Context<'_>, toward: Toward) {
         self.blur(cx);
-        let last = self.targets().len().saturating_sub(1);
-        self.focus = if down {
-            self.focus.saturating_add(1).min(last)
-        } else {
-            self.focus.saturating_sub(1)
-        };
+        self.focus = toward.clamped(self.focus, self.targets().len());
         self.step_max = false;
     }
 

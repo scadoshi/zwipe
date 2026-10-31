@@ -14,6 +14,7 @@ use crate::domain::theme::Palette;
 use crate::inbound::app::Context;
 use crate::inbound::screens::commander_swipe::{self, Deal, SuggestedPile};
 use crate::inbound::screens::otag_examples;
+use crate::inbound::toward::Toward;
 use crate::inbound::widgets::alert::{AlertChoice, AlertDialog};
 use crate::inbound::widgets::card_rows::CardRow;
 use crate::inbound::widgets::sheet::{Sheet, SheetKey};
@@ -113,10 +114,10 @@ fn on_overlay(view: &mut PlaystyleView, code: KeyCode, cx: &mut Context<'_>) {
 fn step(view: &mut PlaystyleView, code: KeyCode) -> bool {
     match code {
         KeyCode::Down | KeyCode::Char('j') => {
-            view.step(true);
+            view.step(Toward::Next);
         }
         KeyCode::Up | KeyCode::Char('k') => {
-            view.step(false);
+            view.step(Toward::Previous);
         }
         _ => return false,
     }

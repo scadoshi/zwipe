@@ -7,15 +7,16 @@ use zwipe_core::domain::user::Email;
 
 use super::{ForgotField, ForgotForm, Request};
 use crate::inbound::app::Context;
+use crate::inbound::toward::Toward;
 use crate::inbound::widgets::help;
 
 pub(crate) fn handle(form: &mut ForgotForm, code: KeyCode, cx: &mut Context<'_>) {
     match code {
         KeyCode::Esc => cx.back(),
-        KeyCode::Tab | KeyCode::Down => form.step(true),
-        KeyCode::BackTab | KeyCode::Up => form.step(false),
-        KeyCode::Right if form.focus != ForgotField::Email => form.step(true),
-        KeyCode::Left if form.focus != ForgotField::Email => form.step(false),
+        KeyCode::Tab | KeyCode::Down => form.step(Toward::Next),
+        KeyCode::BackTab | KeyCode::Up => form.step(Toward::Previous),
+        KeyCode::Right if form.focus != ForgotField::Email => form.step(Toward::Next),
+        KeyCode::Left if form.focus != ForgotField::Email => form.step(Toward::Previous),
         KeyCode::Enter => match form.focus {
             ForgotField::BackToLogin => cx.back(),
             ForgotField::Email | ForgotField::SendResetLink => send(form, cx),

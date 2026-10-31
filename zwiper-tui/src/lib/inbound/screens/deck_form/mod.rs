@@ -30,6 +30,7 @@ use crate::domain::deck::form::{self, Slot};
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;
+use crate::inbound::toward::Toward;
 use crate::inbound::widgets::hint;
 use crate::inbound::widgets::info::InfoPopup;
 use crate::inbound::widgets::text_input::TextInput;
@@ -404,15 +405,11 @@ impl DeckForm {
         fields
     }
 
-    /// Moves the focus to the next field, or the previous with `back`, stopping at the ends.
-    pub(crate) fn step_focus(&mut self, back: bool) {
+    /// Moves the focus to the next or the previous field, stopping at the ends.
+    pub(crate) fn step_focus(&mut self, toward: Toward) {
         let fields = self.fields();
         let here = fields.iter().position(|f| *f == self.focus).unwrap_or(0);
-        let next = if back {
-            here.saturating_sub(1)
-        } else {
-            here.saturating_add(1).min(fields.len().saturating_sub(1))
-        };
+        let next = toward.clamped(here, fields.len());
         if let Some(field) = fields.get(next) {
             self.focus = *field;
         }

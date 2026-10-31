@@ -6,6 +6,7 @@ Every screen lives in its own folder under `src/lib/inbound/screens/`, and the r
 src/lib/inbound/
 ├── app/            App (the back stack plus Shared), Context, Effects, Navigation
 ├── nav/            Nav, the back stack
+├── toward.rs       Toward, which way a focus moves: next or previous
 ├── event_loop/     the loop: keys, results, settling navigation, spawning requests
 │   └── harness.rs  test-only Harness that drives screens with no network
 ├── screens/
