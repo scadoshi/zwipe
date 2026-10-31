@@ -1,6 +1,6 @@
 //! Toasts: short success, error, info and warning messages stacked in the top-left corner over the header, each gone when its time is up.
 //!
-//! The app's three duration bands are [`QUICK`] for routine confirmations, [`NORMAL`] for a result worth reading (the default) and [`LONG`] for failures and anything naming a next step. At most [`MAX_TOASTS`] are up; the newest sits on top with the older ones tucked behind it as one-row slivers, and Ctrl+T expands the stack so each shows in full.
+//! The three duration bands come from zwipe-ui, which takes them from orangui-core: [`QUICK`] for routine confirmations, [`NORMAL`] for a result worth reading (the default) and [`LONG`] for failures and anything naming a next step. At most [`MAX_TOASTS`] are up; the newest sits on top with the older ones tucked behind it as one-row slivers, and Ctrl+T expands the stack so each shows in full.
 //!
 //! The loop prunes expired toasts on every pass and keeps redrawing on its animation tick while any is up, so they leave on time without a key press.
 
@@ -11,19 +11,11 @@ use ratatui::layout::Rect;
 use ratatui::style::{Modifier, Style};
 use ratatui::text::Line;
 use ratatui::widgets::{Block, Clear, Padding, Paragraph, Wrap};
+pub(crate) use zwipe_ui::toast::{LONG, NORMAL, QUICK, ToastKind};
 
 use super::measure;
 use super::measure::BORDERS;
 use crate::domain::theme::Palette;
-
-/// Routine confirmations: saved, copied, added.
-pub(crate) const QUICK: Duration = Duration::from_secs(3);
-
-/// A result worth reading, and the default.
-pub(crate) const NORMAL: Duration = Duration::from_secs(5);
-
-/// Failures, and anything that names a next step.
-pub(crate) const LONG: Duration = Duration::from_secs(8);
 
 /// How long a toast raised without a duration stays up.
 pub(crate) const LIFETIME: Duration = NORMAL;
@@ -40,23 +32,13 @@ const COLLAPSED_LINES: usize = 2;
 /// How long a new toast takes to drop into place, from the app's `toast-drop-in`.
 const DROP_IN: Duration = Duration::from_millis(220);
 
-/// What a toast reports, which sets its border color.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum ToastKind {
-    Success,
-    Error,
-    Info,
-    Warning,
-}
-
-impl ToastKind {
-    fn border(self, palette: &Palette) -> Style {
-        match self {
-            Self::Success => palette.border_success,
-            Self::Error => palette.border_error,
-            Self::Warning => palette.border_warning,
-            Self::Info => palette.border,
-        }
+/// The border color that marks a toast of `kind`.
+fn border(kind: ToastKind, palette: &Palette) -> Style {
+    match kind {
+        ToastKind::Success => palette.border_success,
+        ToastKind::Error => palette.border_error,
+        ToastKind::Warning => palette.border_warning,
+        ToastKind::Info => palette.border,
     }
 }
 
@@ -251,7 +233,7 @@ fn render(
     f.render_widget(
         paragraph.block(
             Block::bordered()
-                .border_style(toast.kind.border(palette))
+                .border_style(border(toast.kind, palette))
                 .style(base)
                 .padding(Padding::horizontal(1)),
         ),
