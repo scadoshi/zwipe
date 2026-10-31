@@ -12,6 +12,7 @@ use zwipe_core::domain::user::{User, UserPreferences};
 
 pub(crate) use self::context::{Context, Effects, Navigation};
 use super::nav::Nav;
+use super::screens::home::cache::Caches;
 use super::screens::{Screen, update_required};
 use super::widgets::alert::AlertDialog;
 use super::widgets::entrance::{self, DURATION as ENTRANCE};
@@ -70,6 +71,8 @@ pub(crate) struct Shared {
     pub(crate) splash: Option<Splash>,
     /// When the first screen's entrances may start: as the splash fades, or at once without one. Logo decodes and rolling counters wait for it.
     pub(crate) gate: Instant,
+    /// What the app keeps above its screens: the user's own counters, the color map, the featured card, the oracle tag catalog, and values one screen hands the screen under it.
+    pub(crate) caches: Caches,
 }
 
 impl Shared {
@@ -116,6 +119,7 @@ impl App {
                 counts: Counts::default(),
                 splash: None,
                 gate: now,
+                caches: Caches::default(),
             },
         }
     }

@@ -6,6 +6,8 @@ pub(crate) mod account;
 pub(crate) mod counts_file;
 /// The app's config folder and owner-only writes to it.
 pub(crate) mod files;
+/// Home's counters and scope between launches.
+pub(crate) mod home_file;
 /// Card images from Scryfall's image CDN.
 pub(crate) mod images;
 /// The last account's theme, for drawing before sign-in.

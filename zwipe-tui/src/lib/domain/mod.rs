@@ -2,13 +2,17 @@
 
 /// The account forms' validation and copy.
 pub(crate) mod account;
+/// The Activity screen's heatmap, totals and rate charts.
+pub(crate) mod activity;
 /// The Add screen's view of its deck and its search rules.
 pub(crate) mod add;
 /// A card as text: faces, mana symbols, rules and stats.
 pub(crate) mod card;
 /// The changelog cache and how its releases are filed.
 pub(crate) mod changelog;
-/// Rolling counters, ported from orangui.
+/// The color map's tiles, ported from the app.
+pub(crate) mod color_map;
+/// Orangui's rolling figures and compact numbers.
 pub(crate) mod count_up;
 /// A deck's row in the deck list.
 pub(crate) mod deck;
@@ -24,6 +28,8 @@ pub(crate) mod filter;
 pub(crate) mod home;
 /// The privacy policy's HTML as text.
 pub(crate) mod legal;
+/// The Playstyle screen's identities, reasons, profile sections and staples filters.
+pub(crate) mod playstyle;
 /// The swipe stacks the Add and Remove screens share, and their undo actions.
 pub(crate) mod stack;
 /// The stores the card screens share for the whole run.

@@ -38,6 +38,23 @@ pub(crate) struct HintContent {
     pub(crate) blocks: Vec<String>,
 }
 
+#[cfg(test)]
+impl HintContent {
+    /// The blocks as they read, one per line, styling dropped and runs of spaces closed up.
+    pub(crate) fn text(&self) -> String {
+        self.blocks
+            .iter()
+            .map(|block| {
+                markup::plain(block)
+                    .split_whitespace()
+                    .collect::<Vec<_>>()
+                    .join(" ")
+            })
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
+}
+
 /// An open hint dialog and how far its body is scrolled.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct HintDialog {

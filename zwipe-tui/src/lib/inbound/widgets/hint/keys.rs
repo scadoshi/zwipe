@@ -211,13 +211,6 @@ pub(crate) fn for_key(key: &str) -> Option<HintContent> {
 }
 
 /// The `swipe_select` hint, which changes with its overlay: `suggested` for the suggested-commanders swipe, else picking a `noun` (`oathbreaker`, `commander`, `partner`, `background` or `signature spell`); `has_filter` adds the suggested mode's filter line.
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "the deck form's swipe picker builds its own copy through `hint::show`"
-    )
-)]
 pub(crate) fn swipe_select(suggested: bool, noun: &str, has_filter: bool) -> HintContent {
     let mut blocks: Vec<String> = if suggested {
         vec![
@@ -255,13 +248,6 @@ pub(crate) fn swipe_select(suggested: bool, noun: &str, has_filter: bool) -> Hin
 }
 
 /// The key the `swipe_select` hint is stored under, for [`super::once_with`].
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "it goes with `swipe_select`, which no screen opens yet"
-    )
-)]
 pub(crate) const SWIPE_SELECT: &str = HINT_SWIPE_SELECT;
 
 #[cfg(test)]

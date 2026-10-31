@@ -3,8 +3,11 @@
 //! Each screen lives in its own folder: `mod.rs` for its state, its request and update enums, `perform` and `apply`; `keys.rs` for its keys; `draw.rs` for drawing it. This file only routes to them, one arm per screen. `context/ARCHITECTURE.md` lists every place a new screen registers.
 
 pub(crate) mod account;
+pub(crate) mod activity;
 pub(crate) mod card_sheets;
 pub(crate) mod changelog;
+pub(crate) mod commander_maybeboard;
+pub(crate) mod commander_swipe;
 pub(crate) mod config;
 pub(crate) mod deck;
 pub(crate) mod deck_cards;
@@ -14,7 +17,12 @@ pub(crate) mod deck_import;
 pub(crate) mod decks;
 pub(crate) mod forgot_password;
 pub(crate) mod home;
+pub(crate) mod image_preview;
 pub(crate) mod login;
+pub(crate) mod oracle_tags;
+pub(crate) mod otag_examples;
+pub(crate) mod playstyle;
+pub(crate) mod printings;
 pub(crate) mod privacy;
 pub(crate) mod register;
 pub(crate) mod remove_cards;
@@ -32,7 +40,10 @@ use zwipe_core::http::contracts::changelog::HttpChangelog;
 use zwipe_core::http::contracts::metrics::{AnonymousEventKind, HttpPublicMetrics};
 
 use self::account::AccountView;
+use self::activity::ActivityView;
 use self::changelog::ChangelogView;
+use self::commander_maybeboard::MaybeboardView;
+use self::commander_swipe::CommanderSwipeView;
 use self::config::ConfigView;
 use self::deck::DeckView;
 use self::deck_export::ExportView;
@@ -41,7 +52,12 @@ use self::deck_import::ImportView;
 use self::decks::DeckList;
 use self::forgot_password::ForgotForm;
 use self::home::HomeView;
+use self::image_preview::ImagePreview;
 use self::login::LoginForm;
+use self::oracle_tags::OracleTagsView;
+use self::otag_examples::ExamplesView;
+use self::playstyle::PlaystyleView;
+use self::printings::PrintingsView;
 use self::privacy::PrivacyView;
 use self::register::RegisterForm;
 use self::swipe::SwipeView;
@@ -73,9 +89,17 @@ pub(crate) enum Screen {
     DeckCards(Box<deck_cards::DeckCardsView>),
     RemoveCards(Box<remove_cards::RemoveView>),
     Account(Box<AccountView>),
+    Activity(Box<ActivityView>),
     Config(Box<ConfigView>),
     Privacy(Box<PrivacyView>),
     Changelog(Box<ChangelogView>),
+    ImagePreview(Box<ImagePreview>),
+    OracleTags(Box<OracleTagsView>),
+    OtagExamples(Box<ExamplesView>),
+    Printings(Box<PrintingsView>),
+    Playstyle(Box<PlaystyleView>),
+    CommanderSwipe(Box<CommanderSwipeView>),
+    CommanderMaybeboard(Box<MaybeboardView>),
     /// The update notice as a screen of its own. The app shows it over the stack instead, while `Shared::update_required` holds; tests use it as a screen with no state.
     #[cfg_attr(
         not(test),
@@ -101,9 +125,17 @@ impl Screen {
             Self::DeckCards(view) => deck_cards::keys::handle(view, code, cx),
             Self::RemoveCards(view) => remove_cards::keys::handle(view, code, cx),
             Self::Account(view) => account::keys::handle(view, code, cx),
+            Self::Activity(view) => activity::keys::handle(view, code, cx),
             Self::Config(view) => config::keys::handle(view, code, cx),
             Self::Privacy(view) => privacy::keys::handle(view, code, cx),
             Self::Changelog(view) => changelog::keys::handle(view, code, cx),
+            Self::ImagePreview(view) => image_preview::keys::handle(view, code, cx),
+            Self::OracleTags(view) => oracle_tags::keys::handle(view, code, cx),
+            Self::OtagExamples(view) => otag_examples::keys::handle(view, code, cx),
+            Self::Printings(view) => printings::keys::handle(view, code, cx),
+            Self::Playstyle(view) => playstyle::keys::handle(view, code, cx),
+            Self::CommanderSwipe(view) => commander_swipe::keys::handle(view, code, cx),
+            Self::CommanderMaybeboard(view) => commander_maybeboard::keys::handle(view, code, cx),
             Self::UpdateRequired => update_required::keys::handle(code, cx),
         }
     }
@@ -123,9 +155,17 @@ impl Screen {
             Self::DeckCards(view) => deck_cards::draw::draw(f, shared, view),
             Self::RemoveCards(view) => remove_cards::draw::draw(f, shared, view),
             Self::Account(view) => account::draw::draw(f, shared, view),
+            Self::Activity(view) => activity::draw::draw(f, shared, view),
             Self::Config(view) => config::draw::draw(f, shared, view),
             Self::Privacy(view) => privacy::draw::draw(f, shared, view),
             Self::Changelog(view) => changelog::draw::draw(f, shared, view),
+            Self::ImagePreview(view) => image_preview::draw::draw(f, shared, view),
+            Self::OracleTags(view) => oracle_tags::draw::draw(f, shared, view),
+            Self::OtagExamples(view) => otag_examples::draw::draw(f, shared, view),
+            Self::Printings(view) => printings::draw::draw(f, shared, view),
+            Self::Playstyle(view) => playstyle::draw::draw(f, shared, view),
+            Self::CommanderSwipe(view) => commander_swipe::draw::draw(f, shared, view),
+            Self::CommanderMaybeboard(view) => commander_maybeboard::draw::draw(f, shared, view),
             Self::UpdateRequired => update_required::draw::draw(f, shared),
         }
     }
@@ -139,6 +179,8 @@ impl Screen {
             Self::Changelog(view) => widgets::entrance::animating(view.filtered_at.elapsed()),
             Self::Register(form) => form.hero.animating(Instant::now()),
             Self::ForgotPassword(form) => form.sending() || form.hero.animating(Instant::now()),
+            Self::Activity(view) => view.animating(),
+            Self::Playstyle(view) => view.animating(),
             _ => false,
         }
     }
@@ -161,6 +203,9 @@ impl Screen {
             Self::Decks(list) => list.reload(cx),
             Self::Deck(view) => view.reload(cx),
             Self::DeckCards(view) => view.reload(cx),
+            Self::Activity(view) => view.on_return(cx),
+            Self::Playstyle(view) => view.on_return(cx),
+            Self::CommanderMaybeboard(view) => view.on_return(cx),
             _ => {}
         }
     }
@@ -195,8 +240,16 @@ pub(crate) enum Request {
     DeckCards(deck_cards::Request),
     RemoveCards(remove_cards::Request),
     Account(account::Request),
+    Activity(activity::Request),
     Config(config::Request),
     CardSheets(card_sheets::Request),
+    ImagePreview(image_preview::Request),
+    OracleTags(oracle_tags::Request),
+    OtagExamples(otag_examples::Request),
+    Printings(printings::Request),
+    Playstyle(playstyle::Request),
+    CommanderSwipe(commander_swipe::Request),
+    CommanderMaybeboard(commander_maybeboard::Request),
 }
 
 /// A result from a background request: the app's own, or one screen's.
@@ -248,8 +301,16 @@ pub(crate) enum Update {
     DeckCards(deck_cards::Update),
     RemoveCards(remove_cards::Update),
     Account(account::Update),
+    Activity(activity::Update),
     Config(config::Update),
     CardSheets(card_sheets::Update),
+    ImagePreview(image_preview::Update),
+    OracleTags(oracle_tags::Update),
+    OtagExamples(otag_examples::Update),
+    Printings(printings::Update),
+    Playstyle(playstyle::Update),
+    CommanderSwipe(commander_swipe::Update),
+    CommanderMaybeboard(commander_maybeboard::Update),
 }
 
 /// Runs one request off the main loop.
@@ -308,8 +369,18 @@ pub(crate) async fn perform(
         Request::DeckCards(request) => deck_cards::perform(account, request).await,
         Request::RemoveCards(request) => remove_cards::perform(account, request).await,
         Request::Account(request) => account::perform(account, request).await,
+        Request::Activity(request) => activity::perform(account, request).await,
         Request::Config(request) => config::perform(account, request).await,
         Request::CardSheets(request) => card_sheets::perform(account, request).await,
+        Request::ImagePreview(request) => image_preview::perform(account, request).await,
+        Request::OracleTags(request) => oracle_tags::perform(account, request).await,
+        Request::OtagExamples(request) => otag_examples::perform(account, request).await,
+        Request::Printings(request) => printings::perform(account, request).await,
+        Request::Playstyle(request) => playstyle::perform(account, request).await,
+        Request::CommanderSwipe(request) => commander_swipe::perform(account, request).await,
+        Request::CommanderMaybeboard(request) => {
+            commander_maybeboard::perform(account, request).await
+        }
     }
 }
 
@@ -332,6 +403,7 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
             for hero in nav.screens_mut().filter_map(Screen::hero_mut) {
                 hero.take(&cx.shared.counts, now);
             }
+            home::counts_arrived(nav, cx.shared);
         }
         Update::SignedOut => login::signed_out(cx, None),
         Update::Status(status) => cx.shared.status = status,
@@ -354,8 +426,16 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
         Update::DeckCards(update) => deck_cards::apply(nav, update, cx),
         Update::RemoveCards(update) => remove_cards::apply(nav, update, cx),
         Update::Account(update) => account::apply(nav, update, cx),
+        Update::Activity(update) => activity::apply(nav, update, cx),
         Update::Config(update) => config::apply(nav, update, cx),
         Update::CardSheets(update) => card_sheets::apply(nav, update, cx),
+        Update::ImagePreview(update) => image_preview::apply(nav, update, cx),
+        Update::OracleTags(update) => oracle_tags::apply(nav, update, cx),
+        Update::OtagExamples(update) => otag_examples::apply(nav, update, cx),
+        Update::Printings(update) => printings::apply(nav, update, cx),
+        Update::Playstyle(update) => playstyle::apply(nav, update, cx),
+        Update::CommanderSwipe(update) => commander_swipe::apply(nav, update, cx),
+        Update::CommanderMaybeboard(update) => commander_maybeboard::apply(nav, update, cx),
     }
 }
 

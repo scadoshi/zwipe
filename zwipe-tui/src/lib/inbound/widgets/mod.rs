@@ -10,6 +10,17 @@ pub(crate) mod alert;
 pub(crate) mod browser;
 /// A card's info block, details and text stand-in.
 pub(crate) mod card_info;
+/// Expandable card rows with their classification, printings and image keys.
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "Activity, Playstyle and the Commander maybeboard list their cards with it"
+    )
+)]
+pub(crate) mod card_rows;
+/// A card as lines of text.
+pub(crate) mod card_text;
 /// Bar charts from the deck metrics.
 pub(crate) mod charts;
 /// A row of chips to pick one or several.
@@ -32,10 +43,14 @@ pub(crate) mod clipboard;
     )
 )]
 pub(crate) mod collapsible;
+/// The color map's tiles and key.
+pub(crate) mod color_map;
 /// Rolling counters.
 pub(crate) mod count_up;
 /// A screen's entrance.
 pub(crate) mod entrance;
+/// The compact strip of three rolling figures.
+pub(crate) mod figures;
 /// The backdrop of faint tiles, still or raining in.
 pub(crate) mod grid;
 /// The screen header: `!`, the title, and `?`.
@@ -48,6 +63,8 @@ pub(crate) mod hero;
 pub(crate) mod hint;
 /// The "?" popup of bullet points.
 pub(crate) mod info;
+/// A list of items of different heights, one focused, paged to keep it in view.
+pub(crate) mod item_list;
 /// The ZWIPE logo decoding in.
 pub(crate) mod logo;
 /// Mana colors and pips.
@@ -56,6 +73,15 @@ pub(crate) mod mana;
 pub(crate) mod measure;
 /// A sheet of buttons, one focused.
 pub(crate) mod menu;
+/// An oracle tag's definition, and a row of tag chips with one open.
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "card rows and the Activity and Playstyle charts reveal tags with it"
+    )
+)]
+pub(crate) mod otag;
 /// A framed panel centered over the screen.
 pub(crate) mod panel;
 /// One chip drawn on its own.
@@ -68,6 +94,8 @@ pub(crate) mod skeleton;
 pub(crate) mod spinner;
 /// The opening over the first screen.
 pub(crate) mod splash;
+/// Delayed and rising entrances inside a screen, and the hero's scope-in.
+pub(crate) mod stagger;
 /// Figures in a row, rolling while they load.
 #[cfg_attr(
     not(test),
