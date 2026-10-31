@@ -151,6 +151,12 @@ body {
         order: 2;
     }
 
+    /* An action bar with nothing in it (Update required) would be an empty
+       strip under the header. */
+    .web-screen > .action-bar:empty {
+        display: none;
+    }
+
     .web-screen > .page-header {
         order: 0;
     }

@@ -39,7 +39,7 @@ Esc closes the top overlay (dialog, then modal, then side panel, then full overl
 ## Update required
 
 - Shown instead of everything else, with no sidebar, as in the app: the empty header bar, the pulsing `Update required` card, then a `Reload` button in place of the store link, since a web build updates by loading the page again.
-- The layout is one centered column at every width.
+- The layout is one centered column at every width. Below 900px the empty action bar sits at the bottom as in the app; on a wide window it is left out, since it would be an empty strip under the header.
 
 ## Home
 
