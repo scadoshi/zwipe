@@ -44,7 +44,7 @@ impl TextInput {
         self
     }
 
-    /// Text shown muted while the box is empty.
+    /// Text shown in the [placeholder](Palette::placeholder) style while the box is empty.
     pub(crate) fn with_placeholder(mut self, placeholder: &str) -> Self {
         placeholder.clone_into(&mut self.placeholder);
         self
@@ -180,7 +180,7 @@ impl TextInput {
         self.cursor.saturating_sub(inner.saturating_sub(1))
     }
 
-    /// Draws the box titled `title` at the top of `area`, its border in the focus color while `focused`, and the error under it.
+    /// Draws the box titled `title`, centered on its top border, at the top of `area`, its border in the focus color while `focused`, and the error under it.
     pub(crate) fn draw(
         &self,
         f: &mut Frame<'_>,
@@ -195,14 +195,14 @@ impl TextInput {
         };
         let border = if focused { palette.add } else { palette.border };
         let text = if self.value.is_empty() {
-            Line::from(self.placeholder.clone()).style(palette.muted)
+            Line::from(self.placeholder.clone()).style(palette.placeholder())
         } else {
             let skip = self.skip(box_area.width);
             Line::from(self.shown().chars().skip(skip).collect::<String>()).style(Style::new())
         };
         let mut block = crate::inbound::widgets::panel::bordered().border_style(border);
         if !title.is_empty() {
-            block = block.title(format!(" {title} "));
+            block = block.title(Line::from(format!(" {title} ")).centered());
         }
         f.render_widget(Paragraph::new(text).block(block), box_area);
         if let Some(error) = &self.error
@@ -335,5 +335,60 @@ mod tests {
         assert!(screen.contains("scotty@zwipe.net"));
         assert!(!screen.contains("you@example.com"));
         assert!(screen.contains("Taken"));
+    }
+
+    /// The box, unfocused and titled Username, drawn `width` cells wide.
+    fn drawn(input: &TextInput, palette: &Palette, width: u16) -> Terminal<TestBackend> {
+        let mut terminal = Terminal::new(TestBackend::new(width, BOX_HEIGHT)).unwrap();
+        terminal
+            .draw(|f| input.draw(f, palette, f.area(), "Username", false))
+            .unwrap();
+        terminal
+    }
+
+    #[test]
+    fn the_label_sits_centered_on_the_top_border() {
+        let palette = Palette::for_account("gruvbox", true);
+        for width in [48, 31, 20] {
+            let terminal = drawn(&TextInput::default(), &palette, width);
+            let top: String = (0..width)
+                .map(|x| terminal.backend().buffer().cell((x, 0)).unwrap().symbol())
+                .collect();
+            let start = top.find(" Username ").unwrap();
+            let left = top[..start].chars().count();
+            let right = top.chars().count() - left - " Username ".chars().count();
+            assert!(left.abs_diff(right) <= 1, "{top:?} at {width}");
+        }
+    }
+
+    #[test]
+    fn a_placeholder_is_dimmer_than_typed_text_on_dark_and_light_themes() {
+        for (theme, dark) in [("gruvbox", true), ("ayu", false), ("catppuccin", false)] {
+            let palette = Palette::for_account(theme, dark);
+            let empty = drawn(
+                &TextInput::default().with_placeholder("Username or email"),
+                &palette,
+                30,
+            );
+            let typed = drawn(
+                &TextInput::default().with_value("Username or email"),
+                &palette,
+                30,
+            );
+            let placeholder = empty.backend().buffer().cell((1, 1)).unwrap().style();
+            let text = typed.backend().buffer().cell((1, 1)).unwrap().style();
+            assert_eq!(empty.backend().buffer().cell((1, 1)).unwrap().symbol(), "U");
+            assert_ne!(placeholder.fg, text.fg, "{theme}");
+            assert_ne!(
+                placeholder.fg, palette.muted.fg,
+                "{theme}: dimmer than muted"
+            );
+            assert!(
+                placeholder
+                    .add_modifier
+                    .contains(ratatui::style::Modifier::ITALIC)
+            );
+            assert!(!text.add_modifier.contains(ratatui::style::Modifier::ITALIC));
+        }
     }
 }

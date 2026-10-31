@@ -30,7 +30,7 @@ impl Default for TextArea {
 }
 
 impl TextArea {
-    /// Lines shown muted while the box is empty.
+    /// Lines shown in the [placeholder](Palette::placeholder) style while the box is empty.
     pub(crate) fn with_placeholder(mut self, lines: &[&str]) -> Self {
         self.placeholder = lines.iter().map(|&l| l.to_owned()).collect();
         self
@@ -176,7 +176,7 @@ impl TextArea {
         let lines: Vec<Line<'static>> = if self.lines.len() == 1 && self.line_len(0) == 0 {
             self.placeholder
                 .iter()
-                .map(|l| Line::from(l.clone()).style(palette.muted))
+                .map(|l| Line::from(l.clone()).style(palette.placeholder()))
                 .collect()
         } else {
             self.lines
@@ -188,7 +188,7 @@ impl TextArea {
         f.render_widget(
             Paragraph::new(lines).block(
                 crate::inbound::widgets::panel::bordered()
-                    .title(format!(" {title} "))
+                    .title(Line::from(format!(" {title} ")).centered())
                     .border_style(border),
             ),
             area,
@@ -285,5 +285,9 @@ mod tests {
             .map(ratatui::buffer::Cell::symbol)
             .collect();
         assert!(text.contains("1 Sol Ring"));
+        let top: String = text.chars().take(20).collect();
+        assert_eq!(top, "╭───── Paste ──────╮", "the label sits centered");
+        let cell = terminal.backend().buffer().cell((1, 1)).unwrap();
+        assert!(cell.modifier.contains(ratatui::style::Modifier::ITALIC));
     }
 }
