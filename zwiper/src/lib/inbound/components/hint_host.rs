@@ -300,14 +300,14 @@ impl HintTopic {
             },
             Self::RoleRates => rsx! {
                 HintBullets {
-                    HintBullet { "Your rate for each card role. Pick one under " HintKey { "Show" } ": " HintKey { "Added" } ", " HintKey { "Skipped" } " and " HintKey { "Maybeboard" } " are shares of the cards dealt to you, and " HintKey { "Removed" } " is the share of added cards you later took out" }
-                    HintBullet { "Tap a role to see the tags you swiped under it" }
-                    HintBullet { "From your decks with a commander, for roles dealt at least 10 times" }
+                    HintBullet { "Your share for each card role. Pick one under " HintKey { "Show" } ": " HintKey { "Added" } ", " HintKey { "Skipped" } " and " HintKey { "Maybeboard" } " are shares of the cards dealt to you, and " HintKey { "Removed" } " is the share of added cards you later took out" }
+                    HintBullet { "Tap a role to see the tags you swiped under it. A grey role has none yet" }
+                    HintBullet { "From your decks with a commander" }
                 }
             },
             Self::TagRates => rsx! {
                 HintBullets {
-                    HintBullet { "The tags where your rate stands out most from other players', with your own rate" }
+                    HintBullet { "The tags where your share stands out most from other players', with your own share" }
                     HintBullet { "A tag everyone passes on shows only after a lot of skips. Tap a tag to see what it means" }
                     HintBullet { "From your decks with a commander, for tags dealt at least 10 times" }
                 }
