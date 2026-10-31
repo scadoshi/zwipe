@@ -344,7 +344,7 @@ async fn derive_card_categories_combines_otags_and_gaps(pool: sqlx::PgPool) {
 /// `fetch_oracle_tags` returns the catalog ordered by slug, with `parent_ids`
 /// resolved to parent slugs and null descriptions preserved.
 #[sqlx::test]
-async fn get_oracle_tags_returns_catalog_with_parent_slugs(pool: sqlx::PgPool) {
+async fn fetch_oracle_tags_returns_catalog_with_parent_slugs(pool: sqlx::PgPool) {
     let removal_id = Uuid::from_u128(0x300);
     let spot_id = Uuid::from_u128(0x301);
     sqlx::query(

@@ -6,29 +6,29 @@
 /// Fetch the featured flavor card (one shared pick per UTC hour).
 pub mod featured_flavor;
 /// Fetch all unique artist names.
-pub mod get_artists;
+pub mod fetch_artists;
 /// Fetch a single card by ID.
-pub mod get_card;
+pub mod fetch_card;
 /// Fetch the card-role catalog (slug, display name, short name).
-pub mod get_card_roles;
+pub mod fetch_card_roles;
 /// Fetch all card types (creature, instant, etc.).
-pub mod get_card_types;
-/// Fetch all keyword abilities.
+pub mod fetch_card_types;
 /// Fetch the served keyword-reminder catalog.
-pub mod get_keyword_reminders;
-pub mod get_keywords;
+pub mod fetch_keyword_reminders;
+/// Fetch all keyword abilities.
+pub mod fetch_keywords;
 /// Fetch all available languages.
-pub mod get_languages;
+pub mod fetch_languages;
 /// Fetch the oracle tag catalog.
-pub mod get_oracle_tags;
+pub mod fetch_oracle_tags;
 /// Fetch all normalized oracle text words.
-pub mod get_oracle_words;
+pub mod fetch_oracle_words;
 /// Fetch all printings of a card by oracle ID.
-pub mod get_printings;
+pub mod fetch_printings;
 /// Fetch all card sets.
-pub mod get_sets;
+pub mod fetch_sets;
 /// Fetch the Universes Beyond franchise catalog.
-pub mod get_ub_franchises;
+pub mod fetch_ub_franchises;
 /// Search cards with filters.
 pub mod search_cards;
 /// Search commander candidates (popularity-ordered, banded, wildcarded).
