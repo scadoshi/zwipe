@@ -2,7 +2,7 @@ use std::net::{IpAddr, Ipv6Addr};
 use std::sync::{Arc, LazyLock};
 
 use anyhow::anyhow;
-use chrono::{Duration, Utc};
+use chrono::{DateTime, Duration, Utc};
 use rand::Rng;
 use sha2::Digest;
 use uuid::Uuid;
@@ -50,6 +50,13 @@ const EMAIL_CHANGE_LINK_LIFETIME: Duration = Duration::hours(24);
 
 /// How long a password reset link stays valid.
 const PASSWORD_RESET_LINK_LIFETIME: Duration = Duration::minutes(15);
+
+/// When a link issued now with `lifetime` expires.
+fn expiry_from_now(lifetime: Duration) -> anyhow::Result<DateTime<Utc>> {
+    Utc::now()
+        .checked_add_signed(lifetime)
+        .ok_or_else(|| anyhow!("link expiry is past the last date chrono represents"))
+}
 
 /// A throwaway Argon2 hash used to equalize login timing for non-existent
 /// accounts. Generated lazily with the same default Argon2 params as real
@@ -489,7 +496,8 @@ where
         let mut user = self.verify_password(&request.into()).await?;
 
         let (raw, hash) = generate_hex_token();
-        let expires_at = Utc::now() + EMAIL_CHANGE_LINK_LIFETIME;
+        let expires_at =
+            expiry_from_now(EMAIL_CHANGE_LINK_LIFETIME).map_err(ChangeEmailError::Database)?;
         self.auth_repo
             .store_email_change_request(user.id, &request.email, hash, expires_at)
             .await?;
@@ -557,7 +565,7 @@ where
             .await?;
 
         let (raw, hash) = generate_hex_token();
-        let expires_at = Utc::now() + VERIFY_EMAIL_LINK_LIFETIME;
+        let expires_at = expiry_from_now(VERIFY_EMAIL_LINK_LIFETIME)?;
 
         self.auth_repo
             .store_email_verification_token(user_id, hash, expires_at)
@@ -626,7 +634,7 @@ where
         self.auth_repo.delete_password_reset_tokens(user_id).await?;
 
         let (raw, hash) = generate_hex_token();
-        let expires_at = Utc::now() + PASSWORD_RESET_LINK_LIFETIME;
+        let expires_at = expiry_from_now(PASSWORD_RESET_LINK_LIFETIME)?;
 
         self.auth_repo
             .store_password_reset_token(user_id, hash, expires_at)

@@ -33,6 +33,7 @@ impl From<InvalidJwt> for ApiError {
             InvalidJwt::Format => Self::UnprocessableEntity("invalid token format".to_string()),
             InvalidJwt::MissingToken => Self::UnprocessableEntity("missing token".to_string()),
             InvalidJwt::EncodingError(e) => e.to_500(),
+            e @ InvalidJwt::ExpiryOutOfRange => e.to_500(),
         }
     }
 }

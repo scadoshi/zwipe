@@ -123,13 +123,14 @@ fn parse_jsonl_gz<T: DeserializeOwned>(bytes: &[u8]) -> anyhow::Result<Vec<T>> {
     let reader = BufReader::new(GzDecoder::new(bytes));
     let mut items = Vec::new();
     for (i, line) in reader.lines().enumerate() {
-        let line = line.with_context(|| format!("failed to read jsonl line {}", i + 1))?;
+        let line =
+            line.with_context(|| format!("failed to read jsonl line {}", i.saturating_add(1)))?;
         if line.trim().is_empty() {
             continue;
         }
         items.push(
             serde_json::from_str(&line)
-                .with_context(|| format!("failed to parse jsonl line {}", i + 1))?,
+                .with_context(|| format!("failed to parse jsonl line {}", i.saturating_add(1)))?,
         );
     }
     Ok(items)

@@ -20,6 +20,17 @@ fn db(err: sqlx::Error) -> MetricsError {
     MetricsError::Database(err.into())
 }
 
+/// Adds `delta` to a running tally.
+///
+/// The clamped batch keeps tallies far inside `i64`; the error only fires if
+/// that clamp is loosened.
+fn add_tally(total: &mut i64, delta: i64) -> Result<(), MetricsError> {
+    *total = total
+        .checked_add(delta)
+        .ok_or_else(|| MetricsError::Database(anyhow::anyhow!("a usage tally overflows i64")))?;
+    Ok(())
+}
+
 /// Converts a tally to the `INTEGER` a counter column holds.
 ///
 /// [`HttpUsageBatch::clamped`] keeps every tally far inside `i32`, so this
@@ -217,11 +228,11 @@ impl MetricsRepository for Postgres {
         // A day's worth of impressions per user. Past the cap the flush is
         // still accepted, but none of its signals reach the pooled tables, so
         // one account cannot steer what every other user of a commander sees.
-        let shown_total: i64 = signals.iter().map(|s| i64::from(s.shown)).sum::<i64>()
-            + select_signals
-                .iter()
-                .map(|s| i64::from(s.shown))
-                .sum::<i64>();
+        let mut shown_total: i64 = signals.iter().map(|s| i64::from(s.shown)).sum();
+        add_tally(
+            &mut shown_total,
+            select_signals.iter().map(|s| i64::from(s.shown)).sum(),
+        )?;
         if shown_total > 0 {
             let today_total = sqlx::query_scalar!(
                 r#"INSERT INTO usage_signal_budget (user_id, day, shown)
@@ -387,11 +398,11 @@ impl MetricsRepository for Postgres {
                     let t = otag_tallies
                         .entry((context_key.clone(), otag.clone()))
                         .or_default();
-                    t.shown += i64::from(sig.shown);
-                    t.added += i64::from(sig.added);
-                    t.skipped += i64::from(sig.skipped);
-                    t.maybed += i64::from(sig.maybed);
-                    t.removed += i64::from(sig.removed);
+                    add_tally(&mut t.shown, i64::from(sig.shown))?;
+                    add_tally(&mut t.added, i64::from(sig.added))?;
+                    add_tally(&mut t.skipped, i64::from(sig.skipped))?;
+                    add_tally(&mut t.maybed, i64::from(sig.maybed))?;
+                    add_tally(&mut t.removed, i64::from(sig.removed))?;
                 }
             }
 
@@ -525,13 +536,19 @@ impl MetricsRepository for Postgres {
                 };
                 let added = i64::from(sig.added);
                 for category in categories {
-                    *tallies.entry(("category", category.clone())).or_default() += added;
+                    add_tally(
+                        tallies.entry(("category", category.clone())).or_default(),
+                        added,
+                    )?;
                 }
                 if colors.is_empty() {
-                    *tallies.entry(("color", "C".to_string())).or_default() += added;
+                    add_tally(
+                        tallies.entry(("color", "C".to_string())).or_default(),
+                        added,
+                    )?;
                 } else {
                     for color in colors {
-                        *tallies.entry(("color", color.clone())).or_default() += added;
+                        add_tally(tallies.entry(("color", color.clone())).or_default(), added)?;
                     }
                 }
             }
@@ -879,6 +896,16 @@ mod tests {
             Ok(10_000)
         ));
         assert!(matches!(int_column(-5_i64), Ok(-5)));
+    }
+
+    #[test]
+    fn add_tally_adds_and_rejects_overflow() {
+        let mut total = 5;
+        assert!(add_tally(&mut total, 7).is_ok());
+        assert_eq!(total, 12);
+        let mut full = i64::MAX;
+        assert!(add_tally(&mut full, 1).is_err());
+        assert_eq!(full, i64::MAX);
     }
 
     #[test]

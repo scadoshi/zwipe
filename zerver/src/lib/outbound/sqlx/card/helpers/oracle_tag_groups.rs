@@ -81,7 +81,9 @@ impl Default for RoleMembershipBinds {
 /// card role it falls under, one row per pair. A tag under several roots appears
 /// once per role. Goes right after `WITH RECURSIVE`; the six text arrays of a
 /// [`RoleMembershipBinds`] are `$first` through `$first + 5`.
-pub fn role_membership_ctes(first: usize) -> String {
+pub fn role_membership_ctes(first: u16) -> String {
+    // A u16 bind index widened to usize: first + 5 cannot overflow.
+    let first = usize::from(first);
     let (roots_r, roots_s, ov_r, ov_s, ex_r, ex_s) =
         (first, first + 1, first + 2, first + 3, first + 4, first + 5);
     format!(
