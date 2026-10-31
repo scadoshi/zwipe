@@ -84,15 +84,22 @@ pub fn App() -> Element {
     }
 }
 
-/// The page-wide keys. Escape sends `true` to the root, which closes the top
-/// overlay. Enter with a dialog open runs its non-danger primary action, if
+/// The page-wide keys. Escape closes an open dialog the way a click on its
+/// overlay does, so a dialog always goes before the sheet under it however
+/// they registered; with no dialog it sends `true` to the root, which closes
+/// the top overlay. Enter with a dialog open runs its non-danger primary action, if
 /// it has one, and never reaches the page under the dialog; a focused button
-/// or link answers Enter itself. In the Themes panel, the up and down arrows
-/// preview the row above or below the selected one, and Enter is `Save`.
+/// or link in the dialog answers Enter itself. With the Themes panel open,
+/// the up and down arrows preview the row above or below the selected one,
+/// and Enter is `Save` unless a button in the panel has focus.
 const KEYS_JS: &str = r#"
 document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') { dioxus.send(true); return; }
     const dialog = document.querySelector('.alert-dialog[data-state="open"]');
+    if (e.key === 'Escape') {
+        const overlay = document.querySelector('.alert-dialog-overlay[data-state="open"]');
+        if (overlay) { overlay.click(); } else { dioxus.send(true); }
+        return;
+    }
     const focus = document.activeElement;
     const onControl = focus && (focus.tagName === 'BUTTON' || focus.tagName === 'A');
     if (dialog) {
@@ -115,7 +122,7 @@ document.addEventListener('keydown', (e) => {
             next.click();
             next.scrollIntoView({ block: 'nearest' });
         }
-    } else if (e.key === 'Enter' && !onControl) {
+    } else if (e.key === 'Enter' && !(onControl && themes.contains(focus))) {
         const buttons = themes.querySelectorAll('.action-bar button');
         const save = buttons[buttons.length - 1];
         e.preventDefault();
