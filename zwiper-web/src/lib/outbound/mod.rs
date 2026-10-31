@@ -1,5 +1,5 @@
 //! The browser: its storage for the session, the theme and the counters,
-//! and its timer.
+//! its timer, new tabs and the clipboard.
 
 pub mod browser;
 pub mod counts_store;
