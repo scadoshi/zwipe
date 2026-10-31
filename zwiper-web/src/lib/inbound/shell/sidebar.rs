@@ -7,15 +7,21 @@ use crate::inbound::router::Route;
 use crate::inbound::shell::HelpDialog;
 use crate::inbound::shell::nav::Section;
 
+/// Whether the folded sidebar is open below the narrow breakpoint. The
+/// [`Shell`] provides it; the screen header's `Menu` button toggles it.
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct ShellMenu(pub(crate) Signal<bool>);
+
 /// The sidebar beside the matched screen. Below the narrow breakpoint the
-/// sidebar folds into a top bar whose `Menu` button opens it over the
-/// screen.
+/// sidebar folds away and the screen header's `Menu` button opens it over
+/// the screen.
 #[component]
 pub fn Shell() -> Element {
     let route: Route = use_route();
     let current = Section::of(&route);
     let mut help = use_signal(|| false);
     let mut menu_open = use_signal(|| false);
+    use_context_provider(|| ShellMenu(menu_open));
 
     // A new route closes the folded menu.
     use_effect(use_reactive!(|route| {
@@ -25,15 +31,6 @@ pub fn Shell() -> Element {
 
     rsx! {
         div { class: "web-shell",
-            div { class: "web-topbar",
-                button {
-                    class: "btn-action",
-                    "aria-expanded": "{menu_open}",
-                    onclick: move |_| menu_open.toggle(),
-                    "Menu"
-                }
-                span { class: "web-topbar-mark", "Zwipe" }
-            }
             nav {
                 class: if menu_open() { "web-sidebar open" } else { "web-sidebar" },
                 "aria-label": "Main",
