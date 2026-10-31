@@ -70,6 +70,7 @@ use super::widgets::toast::ToastKind;
 use crate::domain::changelog::ChangelogCache;
 use crate::outbound::account::Account;
 use crate::outbound::theme_file::{RememberedTheme, ThemeFile};
+use crate::outbound::usage_buffer::UsageBuffer;
 
 /// This build's version, which the server's minimum client version is checked against.
 pub(crate) const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -243,6 +244,8 @@ pub(crate) enum Request {
     Record(AnonymousEventKind),
     /// Fetches the changelog, once at launch.
     FetchChangelog,
+    /// Sends the crash report a previous run left, once at launch.
+    SendCrashReport,
     /// Fetches everybody's counts for the hero, and saves them for the next launch.
     FetchCounts,
     /// Saves the account's theme for drawing before the next sign-in.
@@ -335,14 +338,104 @@ pub(crate) enum Update {
     CommanderMaybeboard(commander_maybeboard::Update),
 }
 
-/// Runs one request off the main loop.
+tokio::task_local! {
+    /// The request a task is running, so [`shown`] can report an error under its screen and action.
+    static ORIGIN: Origin;
+}
+
+/// Where an error came from, for its report: the screen, the request's action, and the buffer it waits in.
+#[derive(Debug)]
+struct Origin {
+    screen: &'static str,
+    action: String,
+    usage: UsageBuffer,
+}
+
+impl Request {
+    /// The screen and action an error from this request is reported under: the screen's module name and the request's variant name in snake case, or `app` for the app's own requests.
+    fn origin(&self) -> (&'static str, String) {
+        match self {
+            Self::Upkeep => ("app", "upkeep".to_owned()),
+            Self::SignOut => ("app", "sign_out".to_owned()),
+            Self::Record(_) => ("app", "record".to_owned()),
+            Self::FetchChangelog => ("app", "fetch_changelog".to_owned()),
+            Self::FetchCounts => ("app", "fetch_counts".to_owned()),
+            Self::RememberTheme(_) => ("app", "remember_theme".to_owned()),
+            Self::MarkHintShown(_) => ("app", "mark_hint_shown".to_owned()),
+            Self::SendCrashReport => ("app", "send_crash_report".to_owned()),
+            Self::Login(r) => ("login", variant_name(r)),
+            Self::Register(r) => ("register", variant_name(r)),
+            Self::ForgotPassword(r) => ("forgot_password", variant_name(r)),
+            Self::Home(r) => ("home", variant_name(r)),
+            Self::Decks(r) => ("decks", variant_name(r)),
+            Self::Deck(r) => ("deck", variant_name(r)),
+            Self::DeckForm(r) => ("deck_form", variant_name(r)),
+            Self::DeckImport(r) => ("deck_import", variant_name(r)),
+            Self::DeckExport(r) => ("deck_export", variant_name(r)),
+            Self::Swipe(r) => ("swipe", variant_name(r)),
+            Self::DeckCards(r) => ("deck_cards", variant_name(r)),
+            Self::RemoveCards(r) => ("remove_cards", variant_name(r)),
+            Self::Account(r) => ("account", variant_name(r)),
+            Self::Activity(r) => ("activity", variant_name(r)),
+            Self::Config(r) => ("config", variant_name(r)),
+            Self::CardSheets(r) => ("card_sheets", variant_name(r)),
+            Self::ImagePreview(r) => ("image_preview", variant_name(r)),
+            Self::OracleTags(r) => ("oracle_tags", variant_name(r)),
+            Self::OtagExamples(r) => ("otag_examples", variant_name(r)),
+            Self::Printings(r) => ("printings", variant_name(r)),
+            Self::Playstyle(r) => ("playstyle", variant_name(r)),
+            Self::CommanderSwipe(r) => ("commander_swipe", variant_name(r)),
+            Self::CommanderMaybeboard(r) => ("commander_maybeboard", variant_name(r)),
+        }
+    }
+}
+
+/// An enum value's variant name in snake case, read from the front of its derived `Debug` output, so no field ever reaches a report.
+fn variant_name(value: &impl fmt::Debug) -> String {
+    let debug = format!("{value:?}");
+    let mut name = String::new();
+    for c in debug.chars().take_while(char::is_ascii_alphanumeric) {
+        if c.is_ascii_uppercase() {
+            if !name.is_empty() {
+                name.push('_');
+            }
+            name.push(c.to_ascii_lowercase());
+        } else {
+            name.push(c);
+        }
+    }
+    name
+}
+
+/// Runs one request off the main loop, with any error it shows reported under its screen and action.
 pub(crate) async fn perform(
+    account: &Account,
+    theme_file: &ThemeFile,
+    request: Request,
+) -> Option<Update> {
+    let (screen, action) = request.origin();
+    let origin = Origin {
+        screen,
+        action,
+        usage: account.usage.clone(),
+    };
+    ORIGIN
+        .scope(origin, run_request(account, theme_file, request))
+        .await
+}
+
+/// Routes one request to the app's own work or to its screen's `perform`.
+async fn run_request(
     account: &Account,
     theme_file: &ThemeFile,
     request: Request,
 ) -> Option<Update> {
     match request {
         Request::Upkeep => Some(session::upkeep(account).await),
+        Request::SendCrashReport => {
+            account.crashes.send_pending(&account.client).await;
+            None
+        }
         Request::Record(kind) => {
             session::record(account, kind).await;
             None
@@ -461,12 +554,25 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
     }
 }
 
-/// An update for a failed request: the session ending when the server rejects it, else `report` with a message fit to show.
+/// An update for a failed request: the session ending when the server rejects it, else `report` with a message fit to show, which is also reported through [`shown`].
 pub(crate) fn failure(error: &ClientError, report: impl FnOnce(String) -> Update) -> Update {
     match error {
         ClientError::Unauthorized(_) => Update::SessionEnded,
-        other => report(other.to_user_message()),
+        other => report(shown(other)),
     }
+}
+
+/// The message to show for `error`, which is also kept for the next usage batch under the running request's screen and action, as the app's `report_error` does.
+pub(crate) fn shown(error: &ClientError) -> String {
+    // Outside a request's task, as in tests that call a screen's `perform` directly, there is nothing to report under.
+    ORIGIN
+        .try_with(|origin| {
+            origin
+                .usage
+                .report_error(origin.screen, "", &origin.action, error);
+        })
+        .ok();
+    error.to_user_message()
 }
 
 /// Starts signing out: says so on the status line and asks the server to end the session.
@@ -488,6 +594,40 @@ impl fmt::Debug for Password {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_request_names_its_screen_and_action_without_its_fields() {
+        let request = Request::Deck(deck::Request::Load(uuid::Uuid::nil()));
+        assert_eq!(request.origin(), ("deck", "load".to_owned()));
+        assert_eq!(variant_name(&Request::FetchCounts), "fetch_counts");
+    }
+
+    #[tokio::test]
+    async fn a_shown_failure_is_reported_under_its_request() {
+        let usage = UsageBuffer::default();
+        let origin = Origin {
+            screen: "decks",
+            action: "load".to_owned(),
+            usage: usage.clone(),
+        };
+        ORIGIN
+            .scope(origin, async {
+                failure(&ClientError::NotFound("gone".to_owned()), Update::Status);
+                failure(&ClientError::Unauthorized("x".to_owned()), Update::Status);
+            })
+            .await;
+        let batch = usage.snapshot_and_zero().expect("one report");
+        let reports: Vec<(&str, &str, &str)> = batch
+            .client_errors
+            .iter()
+            .map(|r| (r.screen.as_str(), r.action.as_str(), r.kind.as_str()))
+            .collect();
+        assert_eq!(
+            reports,
+            [("decks", "load", "api_not_found")],
+            "an ended session is not reported"
+        );
+    }
 
     #[test]
     fn a_failed_request_ends_the_session_only_on_unauthorized() {

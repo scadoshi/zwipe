@@ -970,7 +970,7 @@ pub(crate) fn open(cx: &mut Context<'_>, deck: &Deck) {
 
 /// A client error as its toast words it.
 fn message(error: &ClientError) -> String {
-    error.to_user_message()
+    crate::inbound::screens::shown(error)
 }
 
 pub(crate) async fn perform(account: &Account, request: Request) -> Option<screens::Update> {

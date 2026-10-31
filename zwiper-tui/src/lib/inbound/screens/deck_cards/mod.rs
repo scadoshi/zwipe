@@ -1065,7 +1065,7 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
             .delete_deck_card(deck_id, card_id, session?)
             .await
             .err()
-            .map(|e| error_toast(e.to_user_message())),
+            .map(|e| error_toast(crate::inbound::screens::shown(&e))),
         Request::UndoCreate {
             deck_id,
             entry,
@@ -1142,7 +1142,7 @@ async fn undo_printing(
         .update_deck_card(deck_id, new_id, &patch, session?)
         .await
         .err()
-        .map(|e| error_toast(e.to_user_message()))
+        .map(|e| error_toast(crate::inbound::screens::shown(&e)))
 }
 
 /// Fetches the deck, its profile and its command zone cards.
@@ -1155,7 +1155,7 @@ async fn load(
     let session = session?;
     let deck = match client.fetch_deck(deck_id, session).await {
         Ok(deck) => deck,
-        Err(e) => return Some(error_toast(e.to_user_message())),
+        Err(e) => return Some(error_toast(crate::inbound::screens::shown(&e))),
     };
     let profile = client.fetch_deck_profile(deck_id, session).await.ok();
     let ids = profile.as_ref().unwrap_or(&deck.deck_profile);
@@ -1219,7 +1219,7 @@ async fn write_quantity(
             card_id,
             burst,
             removed,
-            message: e.to_user_message(),
+            message: crate::inbound::screens::shown(&e),
         },
     };
     Some(update.into())
@@ -1246,7 +1246,7 @@ async fn move_card(
                 deck_id,
                 card_id,
                 from,
-                message: e.to_user_message(),
+                message: crate::inbound::screens::shown(&e),
             }
             .into(),
         ),
@@ -1275,7 +1275,7 @@ async fn save_printing(
             }
             .into(),
         ),
-        Err(e) => Some(error_toast(e.to_user_message())),
+        Err(e) => Some(error_toast(crate::inbound::screens::shown(&e))),
     }
 }
 
@@ -1311,7 +1311,7 @@ async fn save_zone_printing(
             }
             .into()
         }),
-        Err(e) => Some(error_toast(e.to_user_message())),
+        Err(e) => Some(error_toast(crate::inbound::screens::shown(&e))),
     }
 }
 
@@ -1344,7 +1344,7 @@ async fn set_mvp(
             deck_id,
             card_id,
             mvp_at: old,
-            error: Some(e.to_user_message()),
+            error: Some(crate::inbound::screens::shown(&e)),
         },
     };
     Some(update.into())
@@ -1371,7 +1371,9 @@ async fn undo_create(
         Update::UndoCreated {
             deck_id,
             card_id: entry.deck_card.scryfall_data_id,
-            result: result.map(Box::new).map_err(|e| e.to_user_message()),
+            result: result
+                .map(Box::new)
+                .map_err(|e| crate::inbound::screens::shown(&e)),
         }
         .into(),
     )
@@ -1433,7 +1435,7 @@ async fn quick_add(
             }
             .into(),
         ),
-        Err(e) => Some(error_toast(e.to_user_message())),
+        Err(e) => Some(error_toast(crate::inbound::screens::shown(&e))),
     }
 }
 

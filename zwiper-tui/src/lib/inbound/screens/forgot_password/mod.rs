@@ -156,7 +156,7 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
     Some(
         match result {
             Ok(()) => Update::Sent,
-            Err(e) => Update::Failed(e.to_user_message()),
+            Err(e) => Update::Failed(crate::inbound::screens::shown(&e)),
         }
         .into(),
     )

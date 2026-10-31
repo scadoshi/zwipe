@@ -104,9 +104,10 @@ impl EventLoop {
         }
     }
 
-    /// Fetches the changelog, and opens home with a saved session or sign-in without one, telling the server anonymously that the app opened.
+    /// Fetches the changelog, sends a crash report a previous run left, and opens home with a saved session or sign-in without one, telling the server anonymously that the app opened.
     fn start(&mut self, app: &mut App, session: Option<&Session>) {
         self.pending.push(Request::FetchChangelog);
+        self.pending.push(Request::SendCrashReport);
         let mut cx = Context::new(&mut app.shared);
         if let Some(session) = session {
             login::signed_in(&mut cx, session);

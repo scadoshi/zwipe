@@ -589,7 +589,7 @@ async fn change_account(account: &Account, change: AccountChange) -> screens::Up
                     account.sign_out().await;
                     Update::Deleted
                 }
-                Err(e) => Update::DeleteFailed(e.to_user_message()),
+                Err(e) => Update::DeleteFailed(crate::inbound::screens::shown(&e)),
             }
             .into();
         }
@@ -605,7 +605,7 @@ async fn change_account(account: &Account, change: AccountChange) -> screens::Up
                 duration,
             }
         }
-        Err(e) => Update::ChangeFailed(e.to_user_message()),
+        Err(e) => Update::ChangeFailed(crate::inbound::screens::shown(&e)),
     }
     .into()
 }

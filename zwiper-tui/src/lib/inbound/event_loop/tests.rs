@@ -16,7 +16,7 @@ use crate::inbound::widgets::toast::{self, ToastKind};
 use crate::test_support::{card, render, screen_text, user};
 
 #[test]
-fn without_a_session_it_asks_to_sign_in_and_fetches_the_changelog() {
+fn without_a_session_it_asks_to_sign_in_and_fetches_the_changelog_and_sends_a_crash() {
     let mut harness = Harness::new();
     harness.start();
     assert!(matches!(harness.screen(), Screen::Login(_)));
@@ -24,6 +24,7 @@ fn without_a_session_it_asks_to_sign_in_and_fetches_the_changelog() {
         harness.pending(),
         [
             Request::FetchChangelog,
+            Request::SendCrashReport,
             Request::Record(AnonymousEventKind::AppOpened),
             Request::FetchCounts,
         ]

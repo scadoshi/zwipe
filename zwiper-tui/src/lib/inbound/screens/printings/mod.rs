@@ -156,7 +156,7 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
         },
         Err(e) => Update::Failed {
             oracle_id,
-            message: e.to_user_message(),
+            message: crate::inbound::screens::shown(&e),
         },
     };
     Some(update.into())

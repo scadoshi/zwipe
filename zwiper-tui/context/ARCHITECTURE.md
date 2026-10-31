@@ -41,6 +41,13 @@ Each queued `Request` runs on a tokio task through `screens::perform`, which han
 
 The app's own work sits in the same enums as plain variants: `CheckVersion`, `SignOut`, `RememberTheme`, `MarkHintShown`, and the `TooOld`, `SessionEnded`, `SignedOut`, `Status`, `Toast` and `HintMarked` updates.
 
+## Crashes and error reports
+
+The terminal client reports as `ClientPlatform::Terminal` (`"terminal"`) on sign-in, crash reports and usage batches, which needs a zerver that knows the value.
+
+- `outbound/crash_store.rs`: `run` installs a panic hook before the terminal starts, so ratatui's own hook wraps it and restores the terminal first. The first panic of a process writes `crash.json` to the config folder. The next launch's `Request::SendCrashReport` posts it with `record_crash`, unauthenticated, and deletes it only when the server took it.
+- `outbound/usage_buffer.rs`: the app's `report_error`, keyed and capped the same way. `screens::perform` runs every request inside a task-local naming its screen (the screen's module) and action (the request's variant in snake case), and `screens::shown(&error)`, which `screens::failure` calls, keeps the error under that name and returns the message to show. A screen shows a `ClientError` through one of the two, never `to_user_message` directly. The 60-second upkeep sends what waits as one usage batch, with swipes and searches at zero; signing out drops it.
+
 ## Adding a screen
 
 Say the screen is `search`.

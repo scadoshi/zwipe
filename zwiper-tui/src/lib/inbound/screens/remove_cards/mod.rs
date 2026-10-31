@@ -509,7 +509,7 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
                     deck_id,
                     deck: Box::new(deck),
                 },
-                Err(e) => return Some(toast(e.to_user_message())),
+                Err(e) => return Some(toast(crate::inbound::screens::shown(&e))),
             }
         }
         Request::Remove { deck_id, entry } => {
@@ -523,7 +523,7 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
             };
             match result {
                 Ok(()) => Update::Removed { deck_id, entry },
-                Err(e) => return Some(toast(e.to_user_message())),
+                Err(e) => return Some(toast(crate::inbound::screens::shown(&e))),
             }
         }
         Request::Move {
@@ -546,7 +546,7 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
                     card,
                     from,
                 },
-                Err(e) => return Some(toast(e.to_user_message())),
+                Err(e) => return Some(toast(crate::inbound::screens::shown(&e))),
             }
         }
         Request::UndoRemove {
@@ -592,7 +592,7 @@ async fn undo_remove(
     board: Board,
     quantity: i32,
 ) -> Result<Box<DeckCard>, UndoFailure> {
-    let s = session.map_err(|e| UndoFailure::Session(e.to_user_message()))?;
+    let s = session.map_err(|e| UndoFailure::Session(crate::inbound::screens::shown(&e)))?;
     let request = HttpCreateDeckCard::new(&card.scryfall_data, quantity, create_board_field(board));
     client
         .create_deck_card(deck_id, &request, &s)
@@ -609,7 +609,7 @@ async fn undo_move(
     card: &Card,
     from: Board,
 ) -> Result<(), UndoFailure> {
-    let s = session.map_err(|e| UndoFailure::Session(e.to_user_message()))?;
+    let s = session.map_err(|e| UndoFailure::Session(crate::inbound::screens::shown(&e)))?;
     let patch = HttpPatchDeckCard::new(None, Some(from.display_name().to_owned()));
     client
         .update_deck_card(deck_id, card.scryfall_data.id, &patch, &s)

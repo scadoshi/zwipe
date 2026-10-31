@@ -8,12 +8,15 @@ use chrono::Duration;
 use tokio::sync::Mutex;
 use uuid::Uuid;
 use zwipe_client::{ClientError, ZwipeClient};
+use zwipe_core::domain::auth::models::platform::ClientPlatform;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::user::{User, UserPreferences};
 use zwipe_core::http::contracts::auth::{HttpAuthenticateUser, HttpRefreshSession};
 
 use super::counts_file::CountsFile;
+use super::crash_store::{self, CrashStore};
 use super::files;
+use super::usage_buffer::UsageBuffer;
 
 /// How long logging out waits on the server before forgetting the session anyway, from the app's `LOGOUT_TIMEOUT`.
 const LOGOUT_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(5);
@@ -32,6 +35,10 @@ pub(crate) struct Account {
     store: SessionFile,
     /// Everybody's counts as last fetched, beside the session file.
     pub(crate) counts: CountsFile,
+    /// The crash report a previous run left, beside the session file.
+    pub(crate) crashes: CrashStore,
+    /// Handled errors waiting for the next usage batch.
+    pub(crate) usage: UsageBuffer,
 }
 
 impl Account {
@@ -43,6 +50,8 @@ impl Account {
             launch_id: Uuid::new_v4(),
             session: Mutex::new(session),
             counts: CountsFile::at(store.path.with_file_name("counts.json")),
+            crashes: CrashStore::at(store.path.with_file_name(crash_store::CRASH_FILE_NAME)),
+            usage: UsageBuffer::default(),
             store,
         }
     }
@@ -62,10 +71,9 @@ impl Account {
         identifier: &str,
         password: &str,
     ) -> Result<Session, ClientError> {
-        let session = self
-            .client
-            .authenticate_user(HttpAuthenticateUser::new(identifier, password))
-            .await?;
+        let mut request = HttpAuthenticateUser::new(identifier, password);
+        request.platform = Some(ClientPlatform::Terminal);
+        let session = self.client.authenticate_user(request).await?;
         self.store.save(&session).ok();
         *self.session.lock().await = Some(session.clone());
         Ok(session)
@@ -139,6 +147,18 @@ impl Account {
         tokio::time::timeout(LOGOUT_TIMEOUT, logout).await.ok();
         self.session.lock().await.take();
         self.store.clear().ok();
+        // One account's errors never flush under the next account's session.
+        self.usage.clear();
+    }
+
+    /// Sends the waiting errors as one usage batch, as the app's flush does. With no session, or when the send fails, the batch is dropped: it is not worth retrying.
+    pub(crate) async fn flush_usage(&self) {
+        let Some(batch) = self.usage.snapshot_and_zero() else {
+            return;
+        };
+        if let Ok(session) = self.fresh().await {
+            self.client.record_usage(&batch, &session).await.ok();
+        }
     }
 }
 
@@ -197,5 +217,41 @@ mod tests {
         fs::write(&file.path, "not json").unwrap();
         assert!(file.load().is_none());
         fs::remove_dir_all(file.path.parent().unwrap()).unwrap();
+    }
+
+    #[tokio::test]
+    async fn sign_in_sends_the_terminal_platform() {
+        let (url, request) =
+            crate::test_support::server::serve_once("401 Unauthorized", "\"wrong password\"").await;
+        let account = Account::new(ZwipeClient::new(url), temp_file("sign-in"));
+        let result = account.sign_in("alice", "pw").await;
+        let request = request.await.unwrap();
+        assert!(
+            matches!(result, Err(ClientError::Unauthorized(_))),
+            "{result:?}"
+        );
+        assert!(request.contains(r#""platform":"terminal""#), "{request}");
+        let version = format!(r#""client_version":"{}""#, env!("CARGO_PKG_VERSION"));
+        assert!(request.contains(&version), "{request}");
+    }
+
+    #[tokio::test]
+    async fn a_flush_sends_the_waiting_errors_once() {
+        let (url, request) = crate::test_support::server::serve_once("204 No Content", "").await;
+        let account = Account::new(ZwipeClient::new(url), temp_file("flush"));
+        *account.session.lock().await = Some(crate::test_support::session(
+            &crate::test_support::user(true),
+            &zwipe_core::domain::user::UserPreferences::default(),
+        ));
+        account.usage.report_error(
+            "decks",
+            "",
+            "load",
+            &ClientError::InternalServerError("boom".to_owned()),
+        );
+        account.flush_usage().await;
+        let request = request.await.unwrap();
+        assert!(request.contains(r#""platform":"terminal""#), "{request}");
+        assert!(account.usage.snapshot_and_zero().is_none(), "drained");
     }
 }

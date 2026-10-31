@@ -1,6 +1,6 @@
 //! Keeping the session and the version gate up to date, as the app's root does on every screen, Login included.
 //!
-//! Every [`UPKEEP_INTERVAL`], starting at launch, [`upkeep`] refreshes the session when its access token is close to expiring and asks the server for its minimum client version. A refresh the server rejects ends the session, which returns the app to Login without a word; the version gate opens and closes both ways, and a failed version check changes nothing.
+//! Every [`UPKEEP_INTERVAL`], starting at launch, [`upkeep`] refreshes the session when its access token is close to expiring, flushes the usage batch of handled errors, and asks the server for its minimum client version. A refresh the server rejects ends the session, which returns the app to Login without a word; the version gate opens and closes both ways, and a failed version check changes nothing.
 
 use std::time::Duration;
 
@@ -15,10 +15,11 @@ use crate::outbound::account::Account;
 /// How often the session and the version gate are checked, from the app's `UPKEEP_INTERVAL`.
 pub(crate) const UPKEEP_INTERVAL: Duration = Duration::from_secs(60);
 
-/// Refreshes the session if it needs it, then checks the version. Returns whether a session there before has ended, and whether this build is too old, `None` when the server could not say.
+/// Refreshes the session if it needs it, sends the waiting error reports, then checks the version. Returns whether a session there before has ended, and whether this build is too old, `None` when the server could not say.
 pub(crate) async fn upkeep(account: &Account) -> Update {
     let had_session = account.session().await.is_some();
     let refreshed = account.fresh().await;
+    account.flush_usage().await;
     let ended = had_session
         && matches!(refreshed, Err(ClientError::Unauthorized(_)))
         && account.session().await.is_none();

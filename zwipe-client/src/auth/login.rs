@@ -8,7 +8,7 @@ use zwipe_core::http::endpoints::auth::Login;
 use crate::{ClientError, ZwipeClient};
 
 impl ZwipeClient {
-    /// Authenticates users via the login endpoint.
+    /// Authenticates users via the login endpoint. A request with no platform is stamped with [`ClientPlatform::CURRENT`]; one that names its platform, as the terminal client does, keeps it.
     ///
     /// # Errors
     ///
@@ -19,7 +19,7 @@ impl ZwipeClient {
         request: HttpAuthenticateUser,
     ) -> Result<Session, ClientError> {
         let mut request = request;
-        request.platform = Some(ClientPlatform::CURRENT);
+        request.platform = request.platform.or(Some(ClientPlatform::CURRENT));
         request.client_version = Some(env!("CARGO_PKG_VERSION").to_string());
 
         self.call(Login(request), None).await

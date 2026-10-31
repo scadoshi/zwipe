@@ -164,7 +164,7 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
         } => Some(
             match account.sign_in(&identifier, &password.0).await {
                 Ok(session) => Update::SignedIn(Box::new(session)),
-                Err(e) => Update::Failed(e.to_user_message()),
+                Err(e) => Update::Failed(crate::inbound::screens::shown(&e)),
             }
             .into(),
         ),

@@ -10,6 +10,9 @@ use zwipe_core::domain::user::User;
 
 use crate::inbound::app::App;
 
+/// A one-request HTTP server on localhost.
+pub(crate) mod server;
+
 const CARD_JSON: &str = include_str!("card.json");
 
 /// A real card renamed to `name`, with fresh printing and oracle IDs, no faces, and no cost, rules, stats or flavor text.

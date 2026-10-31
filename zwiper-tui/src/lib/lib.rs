@@ -16,6 +16,7 @@ use crate::inbound::app::App;
 use crate::inbound::event_loop::EventLoop;
 use crate::inbound::widgets::hero::Counts;
 use crate::outbound::account::{Account, SessionFile};
+use crate::outbound::crash_store::CrashStore;
 use crate::outbound::theme_file::ThemeFile;
 
 /// Where the API is.
@@ -50,6 +51,8 @@ fn card_images() -> Option<Picker> {
 /// Fails when `ZWIPE_BACKEND_URL` is invalid, the system has no config directory, or the terminal cannot be set up, drawn to or read from.
 pub async fn run() -> Result<()> {
     outbound::files::migrate_app_dir();
+    // Before the terminal starts, so ratatui's hook wraps this one and restores the terminal first.
+    outbound::crash_store::install_panic_hook(CrashStore::in_config_dir()?);
     let client = ZwipeClient::new(config::backend_url()?);
     let account = Arc::new(Account::new(client, SessionFile::in_config_dir()?));
     let theme_file = ThemeFile::in_config_dir()?;

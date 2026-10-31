@@ -70,7 +70,7 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
             printings: client
                 .fetch_printings(oracle_id)
                 .await
-                .map_err(|e| e.to_user_message()),
+                .map_err(|e| crate::inbound::screens::shown(&e)),
         },
     };
     Some(update.into())
