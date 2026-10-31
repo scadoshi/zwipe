@@ -76,6 +76,9 @@ Wire the cross-links the waves leave open (Playstyle `Create deck` to Create, th
 - The session lives in `localStorage`, where any script on the origin can read it. The app keeps it in the OS keychain.
 - The web layout choices in `web-layout.md`, once approved, count as kept deviations from the phone layout.
 
-## Launch blocker
+## Launch blockers
 
-Before zwiper-web is public, the refresh token moves out of `localStorage` into an httpOnly cookie. That needs zerver to set and read the cookie, so it is out of scope for the wave branches; building on `localStorage` is fine until then.
+Both need zerver changes, so they are out of scope for the wave branches.
+
+- The refresh token moves out of `localStorage` into an httpOnly cookie, which zerver sets and reads. Building on `localStorage` is fine until then.
+- Tag funnel events with the platform (zerver change), then turn the web's on. The web's anonymous events (app opened, Register viewed, Register submitted) are wired but held off by `SEND_FUNNEL_EVENTS` in `session/funnel.rs`, so web visits stay out of the app's funnel numbers.
