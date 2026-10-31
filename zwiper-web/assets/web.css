@@ -1259,3 +1259,56 @@ body {
         grid-template-areas: "profile stats cards";
     }
 }
+
+/* ---- Card filter ---- */
+
+/* Docked open as a column beside Add's and Remove's card at three columns:
+   the sheet's parts in a panel that stays, the content scrolling inside. */
+.web-filter-dock {
+    position: sticky;
+    top: 0;
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 9rem);
+    min-width: 0;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
+    overflow: hidden;
+    isolation: isolate;
+}
+
+.web-filter-dock > .grid-cells {
+    position: absolute;
+    z-index: 0;
+}
+
+.web-filter-dock > :not(.grid-cells) {
+    position: relative;
+    z-index: 1;
+}
+
+.web-filter-dock > .sheet-header,
+.web-filter-dock > .action-bar {
+    background-color: var(--bg-primary);
+}
+
+.web-filter-dock-content {
+    flex: 1 1 auto;
+    overflow-y: auto;
+}
+
+/* The chip's hover title rides on a wrapper that adds no box. */
+.web-filter-chip {
+    display: contents;
+}
+
+.web-filter-chips-center {
+    margin-bottom: 0.5rem;
+    justify-content: center;
+}
+
+.web-filter-accordion .accordion-trigger:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+}

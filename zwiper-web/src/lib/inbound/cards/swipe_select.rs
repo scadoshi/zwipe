@@ -47,6 +47,8 @@ use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilde
 use zwipe_core::domain::deck::format::Format;
 use zwipe_core::http::contracts::suggestions::HttpCommanderSuggestion;
 use zwipe_ui::deck::form::{self, Slot};
+use zwipe_ui::filter;
+use zwipe_ui::filter::draft::SheetConfig;
 use zwipe_ui::generation::Generation;
 use zwipe_ui::hint::SwipeSelectMode;
 use zwipe_ui::playstyle::empty_identity_line;
@@ -54,6 +56,7 @@ use zwipe_ui::stack::{CardStack, Direction, StackAction};
 use zwipe_ui::timing::{LOAD_MORE_AT, MAYBEBOARD_TOAST, PAGE_SIZE};
 
 use crate::domain::swipe_select::{card_key, redeal};
+use crate::inbound::card_filter::CardFilterPanel;
 use crate::inbound::cards::card_info::{
     CardDetailsSheet, CardInfoDisplay, CardSkeleton, RulesButton,
 };
@@ -148,15 +151,21 @@ impl StackAction for SelectSwipe {
     }
 }
 
-/// The page at `offset` for `mode`: zwipe-ui's slot query with no tokens, a
-/// page at a time, and no sort, so the server serves its most-played order.
+/// The page at `offset` for `mode`: zwipe-ui's slot query over the user's
+/// `filter`, with no tokens and a page at a time. With no sort chosen the
+/// server serves its most-played order.
 /// A signature spell needs the commander whose colors bound it.
-fn page_query(mode: SwipeMode, commander: Option<&Card>, offset: u32) -> Option<CardQuery> {
+fn page_query(
+    mode: SwipeMode,
+    filter: &CardQueryBuilder,
+    commander: Option<&Card>,
+    offset: u32,
+) -> Option<CardQuery> {
     let (slot, format) = mode.slot()?;
     if slot == Slot::SignatureSpell && commander.is_none() {
         return None;
     }
-    form::swipe_query(&CardQueryBuilder::new(), slot, format, commander, offset).ok()
+    form::swipe_query(filter, slot, format, commander, offset).ok()
 }
 
 /// Whether a card is one of the host's exclusions.
@@ -216,6 +225,9 @@ pub fn SwipeSelect(
         mut loading_more,
         mut loads,
     } = pile;
+    // The card filter's applied filter for the search modes, kept while
+    // closed like the pile; Apply deals again.
+    let user_filter = use_signal(CardQueryBuilder::new);
     // The Refresh count the pile was last dealt at; `None` before the first.
     let mut dealt_at: Signal<Option<u32>> = use_signal(|| None);
     let mut refreshes = use_signal(|| 0u32);
@@ -247,7 +259,8 @@ pub fn SwipeSelect(
         spawn(async move {
             for _ in 0..EXCLUDED_PAGE_RETRIES {
                 let at = *offset.peek();
-                let Some(filter) = page_query(mode, commander.as_ref(), at) else {
+                let Some(filter) = page_query(mode, &user_filter.peek(), commander.as_ref(), at)
+                else {
                     break;
                 };
                 let reply = authed
@@ -322,7 +335,8 @@ pub fn SwipeSelect(
             suggestions.set(held.suggestions);
             return;
         }
-        let Some(filter) = page_query(mode, commander_for_deal.as_ref(), 0) else {
+        let Some(filter) = page_query(mode, &user_filter.peek(), commander_for_deal.as_ref(), 0)
+        else {
             return;
         };
         loading.set(true);
@@ -413,6 +427,7 @@ pub fn SwipeSelect(
                         let next = refreshes.peek().wrapping_add(1);
                         refreshes.set(next);
                     },
+                    user_filter,
                     suggested_identity,
                     pile_empty,
                     suggested_filter,
@@ -439,6 +454,7 @@ fn SwipeSelectBody(
     suggested_identity: Option<Vec<Color>>,
     pile_empty: bool,
     suggested_filter: Option<Element>,
+    user_filter: Signal<CardQueryBuilder>,
 ) -> Element {
     let toast = use_toast();
     let authed = use_authed();
@@ -679,14 +695,21 @@ fn SwipeSelectBody(
         }
         ActionBar {
             Button { variant: ButtonVariant::Action, onclick: move |_| on_close.call(()), "Back" }
-            // TODO(wave D): commander mode's Filter opens the full card filter
-            // panel inside the overlay, as the app's CardFilterSheet does.
             if has_filter {
                 Button {
                     variant: ButtonVariant::Action,
                     onclick: move |_| filter_open.set(true),
                     "Filter"
                     if suggested_identity.is_some() {
+                        span { class: "filter-dot" }
+                    }
+                }
+            } else if !suggested {
+                Button {
+                    variant: ButtonVariant::Action,
+                    onclick: move |_| filter_open.set(true),
+                    "Filter"
+                    if filter::shows_dot(&user_filter.read()) {
                         span { class: "filter-dot" }
                     }
                 }
@@ -722,6 +745,19 @@ fn SwipeSelectBody(
                     stack.write().replace_current(picked);
                     let mut details = show_details;
                     details.set(false);
+                },
+            }
+        }
+        if !suggested {
+            CardFilterPanel {
+                open: filter_open,
+                filter: user_filter,
+                config: SheetConfig::default(),
+                quiet_reset: true,
+                on_apply: move |applied: CardQueryBuilder| {
+                    let mut user_filter = user_filter;
+                    user_filter.set(applied);
+                    on_refresh.call(());
                 },
             }
         }
