@@ -9034,4 +9034,5 @@ dependencies = [
  "web-sys",
  "zwipe-client",
  "zwipe-core",
+ "zwipe-ui",
 ]

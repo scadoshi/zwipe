@@ -22,6 +22,8 @@ web = ["dioxus/web"]
 [dependencies]
 zwipe-core = { path = "../zwipe-core" }
 zwipe-client = { path = "../zwipe-client" }
+# The screen logic the three clients share: copy, math, timings and caps.
+zwipe-ui = { path = "../zwipe-ui" }
 components = { path = "../components", features = ["toast"] }
 dioxus = { version = "0.7.10", features = ["router"] }
 # The toast handle (`use_toast`) the screens raise toasts through; the same
