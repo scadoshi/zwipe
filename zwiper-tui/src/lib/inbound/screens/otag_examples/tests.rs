@@ -312,3 +312,74 @@ fn the_examples_keep_every_key_on_a_narrow_terminal() {
     harness.apply(page(0, 2));
     crate::test_support::assert_key_bar_fits(&harness.app, "? Hint");
 }
+
+#[test]
+fn a_leaving_card_keeps_its_words_whole_and_the_next_card_shows_under_it() {
+    use std::time::{Duration, Instant};
+
+    use zwipe_ui::stack::Direction;
+
+    use crate::inbound::widgets::card_motion::{CardMotion, Phase};
+
+    let mut harness = on_examples();
+    let rules = [
+        "Protean Hydra enters with X +1/+1 counters on it. If damage would be dealt to Protean Hydra, prevent that damage and remove that many +1/+1 counters from it.",
+        "When this enters, put a +1/+1 counter on each creature you control and draw a card.",
+    ];
+    let cards = ["Protean Hydra", "Next Card"]
+        .into_iter()
+        .zip(rules)
+        .map(|(name, text)| {
+            let mut c = card(name);
+            c.scryfall_data.type_line = Some("Creature — Hydra".to_owned());
+            c.scryfall_data.oracle_text = Some(text.to_owned());
+            c
+        })
+        .collect();
+    harness.apply(Update::Page {
+        slug: SLUG.to_owned(),
+        offset: 0,
+        cards,
+    });
+    harness.press(KeyCode::Left);
+    let Some(Phase::Exit(leaving)) = view(&harness).motion.as_ref().map(|m| m.phase().clone())
+    else {
+        panic!("the card flies off");
+    };
+    let at = |harness: &mut Harness, millis: u64| {
+        let started = Instant::now()
+            .checked_sub(Duration::from_millis(millis))
+            .unwrap();
+        view_mut(harness).motion =
+            Some(CardMotion::exit(Direction::Left, leaving.clone(), started));
+    };
+    for (width, height) in [(200, 50), (120, 40), (80, 24), (60, 20)] {
+        at(&mut harness, 30);
+        let rows = crate::test_support::rows(&harness.app, width, height);
+        let text = rows.join("\n");
+        let name = rows
+            .iter()
+            .find_map(|r| {
+                r.split('│')
+                    .map(str::trim)
+                    .find(|cell| cell.starts_with("Pro"))
+            })
+            .unwrap_or_else(|| panic!("the leaving name at {width}x{height}:\n{text}"));
+        assert!(
+            "Protean Hydra".starts_with(name),
+            "the name is clipped, never thinned, at {width}x{height}: {name:?}\n{text}"
+        );
+        at(&mut harness, 120);
+        let text = crate::test_support::rows(&harness.app, width, height).join("\n");
+        for part in ["Next Card", "When this enters"] {
+            assert!(
+                text.contains(part),
+                "{part} under the fading card at {width}x{height}:\n{text}"
+            );
+        }
+        assert!(
+            !text.contains("Protean"),
+            "past halfway the leaving card is an outline:\n{text}"
+        );
+    }
+}

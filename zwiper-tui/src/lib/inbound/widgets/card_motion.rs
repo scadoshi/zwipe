@@ -1,8 +1,8 @@
 //! A swiped card flying off and an undone card coming back, after the app's `card-stack-exit-*` and `card-stack-enter-*` keyframes.
 //!
-//! A terminal cannot rotate, so the tilt reads as a flip: while the card slides it narrows toward an edge-on sliver, its width for Left and Right and its height for Up, and it turns dim for the second half since a terminal has no opacity. An exit takes the app's 0.18 s and an entrance its 0.2 s, both on CSS `ease-out`. Down is undo and has no exit.
+//! A terminal cannot rotate, so the tilt reads as a flip: while the card slides it narrows toward an edge-on sliver, its width for Left and Right and its height for Up. A terminal has no opacity either, so for the second half the card fades to a dim outline and the card underneath shows whole. An exit takes the app's 0.18 s and an entrance its 0.2 s, both on CSS `ease-out`. Down is undo and has no exit.
 //!
-//! The geometry is pure: [`place`] turns a phase, a direction, the time since the start and the card's resting [`Rect`] into a [`Placement`]. Drawing renders the card at rest into a snapshot buffer and copies it into the frame through the placement, sampling columns or rows to narrow it and clipping at the bounds, so the card underneath draws first at rest and the moving card lands over it.
+//! The geometry is pure: [`place`] turns a phase, a direction, the time since the start and the card's resting [`Rect`] into a [`Placement`]. Drawing renders the card at rest into a snapshot buffer and copies it into the frame through the placement, narrowing it by dropping blank and border-only columns or rows first and then clipping its text, never thinning it, and clipping at the bounds, so the card underneath draws first at rest and the moving card lands over it.
 //!
 //! A screen keeps an `Option<CardMotion<T>>`. A swipe stores [`CardMotion::exit`] with what it needs to draw the card that left (the stack has already moved past it), an undo stores [`CardMotion::enter`] and draws the stack's own top card, and the screen reports itself animating while [`CardMotion::running`] holds. A new swipe replaces the motion outright.
 
@@ -222,26 +222,25 @@ pub(crate) fn draw(
     blit(buf, &snapshot, placement);
 }
 
-/// Copies `snapshot`, drawn at `placement.rest`, into `buf` at the placement's frame: each visible cell takes the snapshot cell at the same share of the way across and down, so a narrowed card keeps its edges, and it is dimmed past halfway.
+/// Copies `snapshot`, drawn at `placement.rest`, into `buf` at the placement's frame. A narrowed card gives up its blank and border-only columns (rows, for Up) first, then clips its text from the trailing end, so its words never lose letters and both edges stay. Past halfway it draws dim and only its border, and only over blank cells, as the app's card fades, so the card underneath shows whole.
 pub(crate) fn blit(buf: &mut Buffer, snapshot: &Buffer, placement: &Placement) {
     let rest = placement.rest;
     let visible = placement.visible;
+    let columns = squeeze(snapshot, rest, placement.width, Axis::Columns);
+    let rows = squeeze(snapshot, rest, placement.height, Axis::Rows);
+    let last = (rest.width.saturating_sub(1), rest.height.saturating_sub(1));
     for row in visible.top()..visible.bottom() {
-        let Some(source_y) = sample(
-            i32::from(row).saturating_sub(placement.y),
-            placement.height,
-            rest.height,
-        ) else {
+        let Some(&source_y) = offset(row, placement.y).and_then(|at| rows.get(at)) else {
             continue;
         };
         for column in visible.left()..visible.right() {
-            let Some(source_x) = sample(
-                i32::from(column).saturating_sub(placement.x),
-                placement.width,
-                rest.width,
-            ) else {
+            let Some(&source_x) = offset(column, placement.x).and_then(|at| columns.get(at)) else {
                 continue;
             };
+            let edge = source_x == 0 || source_y == 0 || source_x == last.0 || source_y == last.1;
+            if placement.dim && !edge {
+                continue;
+            }
             let from = Position::new(
                 rest.x.saturating_add(source_x),
                 rest.y.saturating_add(source_y),
@@ -250,6 +249,10 @@ pub(crate) fn blit(buf: &mut Buffer, snapshot: &Buffer, placement: &Placement) {
                 continue;
             };
             if let Some(target) = buf.cell_mut(Position::new(column, row)) {
+                // A fading outline gives way to anything the card underneath drew.
+                if placement.dim && target.symbol() != " " {
+                    continue;
+                }
                 *target = cell;
                 if placement.dim {
                     target.modifier.insert(Modifier::DIM);
@@ -259,24 +262,70 @@ pub(crate) fn blit(buf: &mut Buffer, snapshot: &Buffer, placement: &Placement) {
     }
 }
 
-/// The source offset for offset `at` of a span `drawn` long that shows a span `full` long. The ends map to the ends, so a narrowed card keeps both edges, and a one-cell sliver shows its leading edge.
-fn sample(at: i32, drawn: u16, full: u16) -> Option<u16> {
-    let at = u32::try_from(at).ok()?;
-    if drawn == 0 || at >= u32::from(drawn) {
-        return None;
+/// How far `at` lies past `start`, as an index, or `None` before it.
+fn offset(at: u16, start: i32) -> Option<usize> {
+    usize::try_from(i32::from(at).saturating_sub(start)).ok()
+}
+
+/// Which way a card narrows.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Axis {
+    Columns,
+    Rows,
+}
+
+/// Whether `symbol` is blank or a border line running along `axis`, which a narrowing card can lose without losing a letter.
+fn spare(symbol: &str, axis: Axis) -> bool {
+    match axis {
+        Axis::Columns => matches!(symbol, " " | "" | "─" | "━" | "═"),
+        Axis::Rows => matches!(symbol, " " | "" | "│" | "┃" | "║"),
     }
-    // The first offset maps to the first and the last to the last, rounding between.
-    let last_drawn = u32::from(drawn).saturating_sub(1);
-    let last_full = u32::from(full.checked_sub(1)?);
-    let source = if last_drawn == 0 {
-        0
-    } else {
-        at.checked_mul(last_full)?
-            .checked_mul(2)?
-            .checked_add(last_drawn)?
-            .checked_div(last_drawn.checked_mul(2)?)?
+}
+
+/// The source offsets, in order, of a span `drawn` long that shows the `rest` card's columns or rows. Both ends stay. Between them it gives up the blank and border-only lines first, from the trailing end, then clips the rest from the trailing end, so text is cut, never thinned. A one-cell sliver shows the leading edge.
+fn squeeze(snapshot: &Buffer, rest: Rect, drawn: u16, axis: Axis) -> Vec<u16> {
+    let (full, across) = match axis {
+        Axis::Columns => (rest.width, rest.height),
+        Axis::Rows => (rest.height, rest.width),
     };
-    u16::try_from(source).ok().filter(|s| *s < full)
+    if drawn >= full {
+        return (0..full).collect();
+    }
+    if drawn <= 1 {
+        return if full == 0 { Vec::new() } else { vec![0] };
+    }
+    let last = full.saturating_sub(1);
+    let blank = |line: u16| {
+        (0..across).all(|other| {
+            let (x, y) = match axis {
+                Axis::Columns => (line, other),
+                Axis::Rows => (other, line),
+            };
+            snapshot
+                .cell(Position::new(
+                    rest.x.saturating_add(x),
+                    rest.y.saturating_add(y),
+                ))
+                .is_none_or(|cell| spare(cell.symbol(), axis))
+        })
+    };
+    let mut kept: Vec<u16> = (1..last).collect();
+    let mut drop = full.saturating_sub(drawn);
+    // Blank lines go first, the trailing ones before the leading.
+    let mut at = kept.len();
+    while drop > 0 && at > 0 {
+        at = at.saturating_sub(1);
+        if kept.get(at).is_some_and(|&line| blank(line)) {
+            kept.remove(at);
+            drop = drop.saturating_sub(1);
+        }
+    }
+    kept.truncate(kept.len().saturating_sub(usize::from(drop)));
+    let mut lines = Vec::with_capacity(usize::from(drawn));
+    lines.push(0);
+    lines.extend(kept);
+    lines.push(last);
+    lines
 }
 
 /// A span `len` long narrowed `off` of the way toward 1 cell.
@@ -343,7 +392,7 @@ fn ease_out(t: f64) -> f64 {
 
 #[cfg(test)]
 mod tests {
-    use ratatui::widgets::{Block, Widget};
+    use ratatui::widgets::{Block, Paragraph, Widget};
 
     use super::*;
 
@@ -505,9 +554,15 @@ mod tests {
                 }
             }
         }
-        assert_eq!(sample(0, 0, 10), None);
-        assert_eq!(sample(-1, 5, 10), None);
-        assert_eq!(sample(0, 1, 0), None);
+        let empty = Buffer::empty(Rect::ZERO);
+        assert_eq!(
+            squeeze(&empty, Rect::ZERO, 0, Axis::Columns),
+            Vec::<u16>::new()
+        );
+        assert_eq!(
+            squeeze(&empty, Rect::ZERO, 3, Axis::Rows),
+            Vec::<u16>::new()
+        );
     }
 
     #[test]
@@ -527,16 +582,97 @@ mod tests {
         assert_eq!(enter.direction(), Direction::Up);
     }
 
+    /// A bordered card at `rest` with `text` on its first inner row.
+    fn card(rest: Rect, text: &str) -> Buffer {
+        let mut buf = Buffer::empty(rest);
+        Paragraph::new(text.to_owned())
+            .block(Block::bordered())
+            .render(rest, &mut buf);
+        buf
+    }
+
     #[test]
     fn narrowing_keeps_both_edges_at_every_width() {
         for full in [1, 2, 7, 64] {
+            let rest = Rect::new(0, 0, full, 4);
+            let snapshot = card(rest, "Protean Hydra");
             for drawn in 1..=full {
-                assert_eq!(sample(0, drawn, full), Some(0), "{drawn} of {full}");
-                let last = sample(i32::from(drawn) - 1, drawn, full).unwrap();
+                let lines = squeeze(&snapshot, rest, drawn, Axis::Columns);
+                assert_eq!(lines.len(), usize::from(drawn), "{drawn} of {full}");
+                assert_eq!(lines.first(), Some(&0), "{drawn} of {full}");
                 let want = if drawn == 1 { 0 } else { full - 1 };
-                assert_eq!(last, want, "{drawn} of {full}");
+                assert_eq!(lines.last(), Some(&want), "{drawn} of {full}");
+                assert!(lines.is_sorted(), "{drawn} of {full}: {lines:?}");
             }
         }
+    }
+
+    #[test]
+    fn a_narrowed_card_loses_blank_columns_then_clips_its_text_whole() {
+        let rest = Rect::new(0, 0, 30, 4);
+        let snapshot = card(rest, "Protean Hydra\nHydra Protean");
+        let row = |drawn: u16| -> String {
+            squeeze(&snapshot, rest, drawn, Axis::Columns)
+                .into_iter()
+                .map(|x| snapshot.cell((x, 1)).unwrap().symbol().to_owned())
+                .collect()
+        };
+        assert_eq!(row(15), "│Protean Hydra│", "only blank columns went");
+        assert_eq!(
+            row(10),
+            "│Protean │",
+            "then the text is clipped, not thinned"
+        );
+        let rows = Rect::new(0, 0, 10, 8);
+        let tall = card(rows, "Hydra");
+        assert_eq!(
+            squeeze(&tall, rows, 4, Axis::Rows),
+            [0, 1, 2, 7],
+            "an Up card loses its blank rows first"
+        );
+    }
+
+    #[test]
+    fn past_halfway_the_leaving_card_is_a_dim_outline_over_the_card_under_it() {
+        let rest = Rect::new(0, 0, 12, 3);
+        let bounds = Rect::new(0, 0, 40, 3);
+        let snapshot = card(rest, "Leaving");
+        let placement = Placement {
+            rest,
+            x: 2,
+            y: 0,
+            width: 8,
+            height: 3,
+            visible: Rect::new(2, 0, 8, 3),
+            dim: true,
+        };
+        let mut buf = card(bounds, "Under the leaving card");
+        blit(&mut buf, &snapshot, &placement);
+        let row: String = (0..40)
+            .map(|x| buf.cell((x, 1)).unwrap().symbol().to_owned())
+            .collect();
+        assert!(
+            row.starts_with("│Under the leaving card"),
+            "the card under it shows whole: {row:?}"
+        );
+        assert!(!buf.cell((2, 1)).unwrap().modifier.contains(Modifier::DIM));
+        let top: String = (0..40)
+            .map(|x| buf.cell((x, 0)).unwrap().symbol().to_owned())
+            .collect();
+        assert!(top.starts_with("┌───"), "{top:?}");
+        let mut blank = Buffer::empty(bounds);
+        blit(&mut blank, &snapshot, &placement);
+        assert_eq!(
+            blank.cell((2, 1)).unwrap().symbol(),
+            "│",
+            "an outline over blank cells"
+        );
+        assert!(blank.cell((2, 1)).unwrap().modifier.contains(Modifier::DIM));
+        assert_eq!(
+            blank.cell((3, 1)).unwrap().symbol(),
+            " ",
+            "and nothing inside"
+        );
     }
 
     #[test]
