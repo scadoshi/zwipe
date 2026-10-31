@@ -1,6 +1,7 @@
 //! Metrics repository implementation.
 
 use std::collections::{HashMap, HashSet};
+use std::num::TryFromIntError;
 
 use sqlx::query;
 use uuid::Uuid;
@@ -17,6 +18,21 @@ use crate::outbound::sqlx::postgres::Postgres;
 
 fn db(err: sqlx::Error) -> MetricsError {
     MetricsError::Database(err.into())
+}
+
+/// Converts a tally to the `INTEGER` a counter column holds.
+///
+/// [`HttpUsageBatch::clamped`] keeps every tally far inside `i32`, so this
+/// only errors if that clamp is loosened past what the columns can take.
+fn int_column<T>(tally: T) -> Result<i32, MetricsError>
+where
+    i32: TryFrom<T, Error = TryFromIntError>,
+{
+    i32::try_from(tally).map_err(|err| {
+        MetricsError::Database(
+            anyhow::Error::new(err).context("a usage tally overflows its INTEGER column"),
+        )
+    })
 }
 
 /// Impressions one user may feed the pooled signals per UTC day. A heavy
@@ -120,11 +136,11 @@ impl MetricsRepository for Postgres {
         .await
         .map_err(db)?;
 
-        let r32 = batch.swipes_right as i32;
-        let l32 = batch.swipes_left as i32;
-        let u32 = batch.swipes_up as i32;
-        let d32 = batch.swipes_down as i32;
-        let s32 = batch.searches as i32;
+        let r32 = int_column(batch.swipes_right)?;
+        let l32 = int_column(batch.swipes_left)?;
+        let u32 = int_column(batch.swipes_up)?;
+        let d32 = int_column(batch.swipes_down)?;
+        let s32 = int_column(batch.searches)?;
 
         // Resolve every deck's context from `deck_id`: the client sends only the
         // deck, the backend derives the rest. Ownership-scoped (`user_id`), so a
@@ -262,11 +278,11 @@ impl MetricsRepository for Postgres {
                        updated_at = NOW()"#,
                 commander,
                 sig.card_oracle_id,
-                sig.shown as i64,
-                sig.added as i64,
-                sig.skipped as i64,
-                sig.maybed as i64,
-                sig.removed as i64,
+                i64::from(sig.shown),
+                i64::from(sig.added),
+                i64::from(sig.skipped),
+                i64::from(sig.maybed),
+                i64::from(sig.removed),
             )
             .execute(&mut *tx)
             .await
@@ -298,11 +314,11 @@ impl MetricsRepository for Postgres {
                 user_id,
                 commander,
                 sig.card_oracle_id,
-                sig.shown as i64,
-                sig.added as i64,
-                sig.skipped as i64,
-                sig.maybed as i64,
-                sig.removed as i64,
+                i64::from(sig.shown),
+                i64::from(sig.added),
+                i64::from(sig.skipped),
+                i64::from(sig.maybed),
+                i64::from(sig.removed),
             )
             .execute(&mut *tx)
             .await
@@ -419,9 +435,9 @@ impl MetricsRepository for Postgres {
                        skipped    = commander_select_signal.skipped  + EXCLUDED.skipped,
                        updated_at = NOW()"#,
                 sig.commander_oracle_id,
-                sig.shown as i64,
-                sig.selected as i64,
-                sig.skipped as i64,
+                i64::from(sig.shown),
+                i64::from(sig.selected),
+                i64::from(sig.skipped),
             )
             .execute(&mut *tx)
             .await
@@ -454,10 +470,10 @@ impl MetricsRepository for Postgres {
             u32,
             d32,
             s32,
-            added_sum as i32,
-            skipped_sum as i32,
-            maybed_sum as i32,
-            removed_sum as i32,
+            int_column(added_sum)?,
+            int_column(skipped_sum)?,
+            int_column(maybed_sum)?,
+            int_column(removed_sum)?,
         )
         .execute(&mut *tx)
         .await
@@ -529,7 +545,7 @@ impl MetricsRepository for Postgres {
                     user_id,
                     facet,
                     key,
-                    *added as i32,
+                    int_column(*added)?,
                 )
                 .execute(&mut *tx)
                 .await
@@ -635,7 +651,7 @@ impl MetricsRepository for Postgres {
                 report.action,
                 report.kind,
                 report.message,
-                report.count as i32,
+                int_column(report.count)?,
             )
             .execute(&mut *tx)
             .await
@@ -849,5 +865,25 @@ impl MetricsRepository for Postgres {
         .map_err(db)?;
 
         Ok(result.rows_affected() > 0)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn int_column_passes_tallies_that_fit() {
+        assert!(matches!(
+            int_column(HttpUsageBatch::MAX_PER_FLUSH),
+            Ok(10_000)
+        ));
+        assert!(matches!(int_column(-5_i64), Ok(-5)));
+    }
+
+    #[test]
+    fn int_column_rejects_tallies_past_i32() {
+        assert!(int_column(u32::MAX).is_err());
+        assert!(int_column(i64::MAX).is_err());
     }
 }
