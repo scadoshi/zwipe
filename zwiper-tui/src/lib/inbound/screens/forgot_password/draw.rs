@@ -11,9 +11,9 @@ use ratatui::widgets::{Paragraph, Wrap};
 use super::{ForgotField, ForgotForm, SENT_BODY, SENT_TITLE};
 use crate::inbound::app::Shared;
 use crate::inbound::screens::login;
-use crate::inbound::screens::login::draw::Placement;
-use crate::inbound::widgets::action_bar::{self, Button};
-use crate::inbound::widgets::spinner;
+use crate::inbound::screens::login::draw::{AuthScreen, Placement};
+use crate::inbound::widgets::button::Button;
+use crate::inbound::widgets::{action_bar, spinner};
 
 pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &ForgotForm) {
     let palette = &shared.palette;
@@ -22,23 +22,37 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &ForgotForm) {
     } else {
         form.email.height().saturating_add(1)
     };
+    let mut row = vec![Button::new("Back to login")];
+    if !form.sent {
+        row.push(Button::new("Send reset link").primary());
+    }
+    let focused = match form.focus {
+        ForgotField::BackToLogin => Some(0),
+        ForgotField::SendResetLink => Some(1),
+        ForgotField::Email => None,
+    };
+    let keys = action_bar::line(
+        palette,
+        &[
+            ("Tab", "move"),
+            ("Enter", "select"),
+            ("F1", "help"),
+            ("Esc", "back"),
+        ],
+    )
+    .centered();
     let areas = login::draw::frame(
         f,
         shared,
         &form.hero,
-        "Reset password",
-        body_height,
-        Placement::Centered,
-        action_bar::line(
-            palette,
-            &[
-                ("Tab", "move"),
-                ("Enter", "select"),
-                ("F1", "help"),
-                ("Esc", "back"),
-            ],
-        )
-        .centered(),
+        AuthScreen {
+            title: "Reset password",
+            body_height,
+            placement: Placement::Centered,
+            keys,
+            buttons: &row,
+            focused,
+        },
     );
     if form.sent {
         let block = crate::inbound::widgets::panel::bordered()
@@ -73,17 +87,4 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &ForgotForm) {
             );
         }
     }
-    let mut row = vec![Button::new("Back to login")];
-    if !form.sent {
-        row.push(Button::new("Send reset link"));
-    }
-    let focused = match form.focus {
-        ForgotField::BackToLogin => Some(0),
-        ForgotField::SendResetLink => Some(1),
-        ForgotField::Email => None,
-    };
-    f.render_widget(
-        action_bar::buttons(palette, &row, focused).centered(),
-        areas.buttons,
-    );
 }

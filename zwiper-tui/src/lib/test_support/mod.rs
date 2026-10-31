@@ -180,6 +180,42 @@ pub(crate) fn screen_text(app: &App) -> String {
         .replace('\u{a0}', " ")
 }
 
+/// The sizes the button, placeholder and label tests draw at: a roomy terminal and the two of [`NARROW`].
+pub(crate) const BUTTON_SIZES: [(u16, u16); 3] = [(120, 40), (80, 24), (60, 20)];
+
+/// Every place `text` starts in `buffer`, as its column and row, top to bottom.
+pub(crate) fn find_all(buffer: &ratatui::buffer::Buffer, text: &str) -> Vec<(u16, u16)> {
+    let area = buffer.area;
+    let mut found = Vec::new();
+    for y in 0..area.height {
+        let row: Vec<&str> = (0..area.width).map(|x| buffer[(x, y)].symbol()).collect();
+        let want: Vec<String> = text.chars().map(String::from).collect();
+        for (x, window) in row.windows(want.len().max(1)).enumerate() {
+            if window.iter().zip(&want).all(|(a, b)| a == b) {
+                found.push((u16::try_from(x).unwrap(), y));
+            }
+        }
+    }
+    found
+}
+
+/// The dashes on each side of the label starting at `(x, y)` on a box's top border, as far as the corners.
+pub(crate) fn label_margins(
+    buffer: &ratatui::buffer::Buffer,
+    (x, y): (u16, u16),
+    label: &str,
+) -> (u16, u16) {
+    let width = u16::try_from(label.chars().count()).unwrap();
+    let left = (0..x)
+        .rev()
+        .take_while(|&c| buffer[(c, y)].symbol() == "─")
+        .count();
+    let right = (x.saturating_add(width)..buffer.area.width)
+        .take_while(|&c| buffer[(c, y)].symbol() == "─")
+        .count();
+    (u16::try_from(left).unwrap(), u16::try_from(right).unwrap())
+}
+
 /// The small terminal sizes every screen must fit: the common 80 by 24 and the narrowest supported, 60 by 20.
 pub(crate) const NARROW: [(u16, u16); 2] = [(80, 24), (60, 20)];
 

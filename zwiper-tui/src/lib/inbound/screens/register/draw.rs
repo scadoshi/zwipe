@@ -6,8 +6,9 @@ use ratatui::layout::{Constraint, Layout};
 use super::{RegisterField, RegisterForm};
 use crate::inbound::app::Shared;
 use crate::inbound::screens::login;
-use crate::inbound::screens::login::draw::Placement;
-use crate::inbound::widgets::action_bar::{self, Button};
+use crate::inbound::screens::login::draw::{AuthScreen, Placement};
+use crate::inbound::widgets::action_bar;
+use crate::inbound::widgets::button::Button;
 
 pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &RegisterForm) {
     let palette = &shared.palette;
@@ -24,14 +25,27 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &RegisterForm) {
         keys.push(("F2", "password rules"));
     }
     keys.extend([("F1", "help"), ("Esc", "back")]);
+    let create = if form.busy {
+        "Creating..."
+    } else {
+        "Create profile"
+    };
+    let row = [
+        Button::new("Back to login").disabled(form.busy),
+        Button::new(create).primary().disabled(form.busy),
+    ];
     let areas = login::draw::frame(
         f,
         shared,
         &form.hero,
-        "Create profile",
-        body_height,
-        Placement::Top,
-        action_bar::line(palette, &keys).centered(),
+        AuthScreen {
+            title: "Create profile",
+            body_height,
+            placement: Placement::Top,
+            keys: action_bar::line(palette, &keys).centered(),
+            buttons: &row,
+            focused: focus.button(),
+        },
     );
     let [username, email, password, confirm] =
         Layout::vertical(heights.map(Constraint::Length)).areas(areas.body);
@@ -80,18 +94,5 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &RegisterForm) {
         confirm,
         &form.confirm,
         focus == RegisterField::ShowConfirm,
-    );
-    let create = if form.busy {
-        "Creating..."
-    } else {
-        "Create profile"
-    };
-    let row = [
-        Button::new("Back to login").disabled(form.busy),
-        Button::new(create).disabled(form.busy),
-    ];
-    f.render_widget(
-        action_bar::buttons(palette, &row, focus.button()).centered(),
-        areas.buttons,
     );
 }

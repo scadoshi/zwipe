@@ -12,9 +12,9 @@ use super::PrivacyView;
 use crate::domain::legal::{self, Block, Run};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
-use crate::inbound::widgets::action_bar::{self, Button};
+use crate::inbound::widgets::button::{self, Button};
 use crate::inbound::widgets::header::{self, Corner};
-use crate::inbound::widgets::{card_info, measure};
+use crate::inbound::widgets::{action_bar, card_info, measure};
 
 /// The text is at most this wide, in cells.
 const WIDTH: u16 = 76;
@@ -125,10 +125,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &PrivacyView) {
     let total = measure::height_of(text.line_count(body.width));
     let scroll = view.scroll.min(total.saturating_sub(body.height));
     f.render_widget(text.scroll((scroll, 0)), body);
-    f.render_widget(
-        action_bar::buttons(palette, &[Button::new("Back")], None).centered(),
-        buttons,
-    );
+    button::draw_row(f, palette, buttons, &[Button::new("Back")], None);
     f.render_widget(
         action_bar::line(
             palette,

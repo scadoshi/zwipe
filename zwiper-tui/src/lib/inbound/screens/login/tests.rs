@@ -1,4 +1,5 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use ratatui::style::Modifier;
 
 use super::*;
 use crate::inbound::event_loop::Flow;
@@ -226,6 +227,82 @@ fn the_hero_boxes_each_counter_in_a_tile_under_the_logo() {
                 text.contains('▉'),
                 "the logo stays at {width}x{height}:\n{text}"
             );
+        }
+    }
+}
+
+#[test]
+fn the_focused_button_fills_and_log_in_is_primary_at_every_size() {
+    let mut harness = Harness::new();
+    let palette = crate::domain::theme::Palette::for_account("gruvbox", true);
+    harness.app.shared.palette = palette;
+    if let Screen::Login(form) = harness.screen_mut() {
+        form.focus = LoginField::CreateProfile;
+    }
+    for (width, height) in crate::test_support::BUTTON_SIZES {
+        let terminal = render(&harness.app, width, height);
+        let buffer = terminal.backend().buffer();
+        let rows = crate::test_support::rows(&harness.app, width, height).join("\n");
+        let [(x, y)] = crate::test_support::find_all(buffer, "Create profile")[..] else {
+            panic!("one Create profile at {width}x{height}:\n{rows}");
+        };
+        let create = &buffer[(x, y)];
+        assert!(
+            create
+                .modifier
+                .contains(Modifier::REVERSED | Modifier::BOLD),
+            "focused at {width}x{height}"
+        );
+        assert_eq!(create.fg, palette.accent.fg.unwrap());
+        let [(x, y)] = crate::test_support::find_all(buffer, "Log in")[..] else {
+            panic!("one Log in at {width}x{height}:\n{rows}");
+        };
+        let log_in = &buffer[(x, y)];
+        assert!(!log_in.modifier.contains(Modifier::REVERSED));
+        assert!(
+            log_in.modifier.contains(Modifier::BOLD),
+            "primary at {width}x{height}"
+        );
+        assert_eq!(log_in.fg, palette.accent.fg.unwrap());
+        let boxed = buffer[(x - 2, y)].symbol() == "│";
+        assert_eq!(
+            boxed,
+            height != 24,
+            "boxes unless they cost the logo at {width}x{height}:\n{rows}"
+        );
+    }
+}
+
+#[test]
+fn placeholders_draw_dimmer_and_labels_sit_centered_at_every_size() {
+    let mut harness = Harness::new();
+    for (theme, dark) in [("gruvbox", true), ("ayu", false)] {
+        let palette = crate::domain::theme::Palette::for_account(theme, dark);
+        harness.app.shared.palette = palette;
+        for (width, height) in crate::test_support::BUTTON_SIZES {
+            let terminal = render(&harness.app, width, height);
+            let buffer = terminal.backend().buffer();
+            let found = crate::test_support::find_all(buffer, "Username or email");
+            let [label, placeholder] = found[..] else {
+                panic!("label and placeholder at {width}x{height}: {found:?}");
+            };
+            let (left, right) = crate::test_support::label_margins(
+                buffer,
+                (label.0 - 1, label.1),
+                " Username or email ",
+            );
+            assert!(
+                left.abs_diff(right) <= 1,
+                "centered at {width}x{height}: {left} {right}"
+            );
+            let cell = &buffer[placeholder];
+            assert_eq!(
+                cell.fg,
+                palette.placeholder().fg.unwrap(),
+                "{theme} at {width}x{height}"
+            );
+            assert_ne!(cell.fg, palette.base.fg.unwrap());
+            assert!(cell.modifier.contains(Modifier::ITALIC));
         }
     }
 }

@@ -324,7 +324,7 @@ fn account_keeps_every_key_on_a_narrow_terminal() {
 }
 
 #[test]
-fn a_focused_row_button_ends_flush_with_the_right_aligned_labels() {
+fn a_focused_row_button_lines_up_with_the_row_buttons_under_it() {
     let mut harness = on_account(true);
     while view(&harness).focused() != Some(Stop::Privacy) {
         harness.press(KeyCode::Char('j'));
@@ -348,7 +348,82 @@ fn a_focused_row_button_ends_flush_with_the_right_aligned_labels() {
         let pill = last_lit(row_of("Privacy policy"), &|c| {
             c.modifier.contains(Modifier::REVERSED)
         });
-        let changelog = last_lit(row_of("Changelog"), &|c| c.symbol() != " ");
+        let changelog_row = row_of("Changelog");
+        let page = buffer[(0, changelog_row)].bg;
+        let changelog = last_lit(changelog_row, &|c| c.bg != page);
         assert_eq!(pill, changelog, "at {width}x{height}");
     }
+}
+
+#[test]
+fn the_change_sheet_and_log_out_dialog_draw_real_buttons_at_every_size() {
+    let mut harness = on_account(true);
+    let palette = crate::domain::theme::Palette::for_account("gruvbox", true);
+    harness.app.shared.palette = palette;
+    for (width, height) in crate::test_support::BUTTON_SIZES {
+        let terminal = render(&harness.app, width, height);
+        let buffer = terminal.backend().buffer();
+        let [(x, y)] = crate::test_support::find_all(buffer, "Log out")[..] else {
+            panic!("one Log out button at {width}x{height}");
+        };
+        assert_eq!(buffer[(x, y)].fg, palette.error.fg.unwrap(), "danger");
+    }
+    view_mut(&mut harness).overlay = Some(Overlay::Form(Form::new(FormKind::Username)));
+    for (width, height) in crate::test_support::BUTTON_SIZES {
+        let rows = crate::test_support::rows(&harness.app, width, height).join("\n");
+        let terminal = render(&harness.app, width, height);
+        let buffer = terminal.backend().buffer();
+        let [(x, y)] = crate::test_support::find_all(buffer, "Save changes")[..] else {
+            panic!("Save changes at {width}x{height}:\n{rows}");
+        };
+        let save = &buffer[(x, y)];
+        assert_eq!(save.fg, palette.accent.fg.unwrap(), "primary");
+        assert!(save.modifier.contains(Modifier::BOLD));
+        assert_ne!(crate::test_support::find_all(buffer, " Back "), []);
+        let label = crate::test_support::find_all(buffer, " New username ")[0];
+        let (left, right) = crate::test_support::label_margins(buffer, label, " New username ");
+        assert!(left.abs_diff(right) <= 1, "centered at {width}x{height}");
+    }
+    harness.press(KeyCode::Esc);
+    harness.press(KeyCode::Char('L'));
+    for (width, height) in crate::test_support::BUTTON_SIZES {
+        let rows = crate::test_support::rows(&harness.app, width, height).join("\n");
+        let terminal = render(&harness.app, width, height);
+        let buffer = terminal.backend().buffer();
+        let focused = view(&harness).overlay.as_ref().map(|o| match o {
+            Overlay::LogOut(alert) => alert.focused,
+            _ => usize::MAX,
+        });
+        let (pressed, other) = if focused == Some(1) {
+            ("Log out (y)", "Cancel (n)")
+        } else {
+            ("Cancel (n)", "Log out (y)")
+        };
+        let [(x, y)] = crate::test_support::find_all(buffer, pressed)[..] else {
+            panic!("{pressed} at {width}x{height}:\n{rows}");
+        };
+        assert!(
+            buffer[(x, y)]
+                .modifier
+                .contains(Modifier::REVERSED | Modifier::BOLD)
+        );
+        assert_eq!(
+            buffer[(x - 2, y)].symbol(),
+            "│",
+            "boxed at {width}x{height}:\n{rows}"
+        );
+        let [(x, y)] = crate::test_support::find_all(buffer, other)[..] else {
+            panic!("{other} at {width}x{height}:\n{rows}");
+        };
+        assert!(!buffer[(x, y)].modifier.contains(Modifier::REVERSED));
+        let log_out = crate::test_support::find_all(buffer, "Log out (y)")[0];
+        let log_out = &buffer[log_out];
+        assert!(
+            log_out.fg == palette.error.fg.unwrap()
+                || log_out.modifier.contains(Modifier::REVERSED),
+            "danger"
+        );
+    }
+    harness.press(KeyCode::Char('n'));
+    assert!(view(&harness).overlay.is_none());
 }

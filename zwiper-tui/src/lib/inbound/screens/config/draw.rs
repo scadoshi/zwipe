@@ -12,9 +12,9 @@ use zwipe_core::domain::user::preferences::PipStyle;
 use super::{ConfigView, ExceptionsSheet, Sheet, Stop, ThemeSheet};
 use crate::domain::theme::{self, Palette, PickerRow};
 use crate::inbound::app::Shared;
-use crate::inbound::widgets::action_bar::{self, Button};
+use crate::inbound::widgets::button::{self, Button};
 use crate::inbound::widgets::header::{self, Corner};
-use crate::inbound::widgets::{measure, sheet};
+use crate::inbound::widgets::{action_bar, measure, sheet};
 
 /// The lists are at most this wide, in cells.
 const WIDTH: u16 = 72;
@@ -39,25 +39,28 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &ConfigView) {
         ],
     )
     .centered();
-    let bar_height = action_bar::height(&bar, f.area().width);
+    let area = f.area();
+    let bar_height = action_bar::height(&bar, area.width);
+    let width = WIDTH.min(area.width);
+    let lines = lines(palette, view, usize::from(width));
+    let row = [Button::new("Back")];
+    let room = area
+        .height
+        .saturating_sub(bar_height)
+        .saturating_sub(2)
+        .saturating_sub(measure::height_of(lines.len()));
     let [head, _, body, buttons, keys] = Layout::vertical([
         Constraint::Length(1),
         Constraint::Length(1),
         Constraint::Fill(1),
-        Constraint::Length(1),
+        Constraint::Length(button::height(&row, area.width, room)),
         Constraint::Length(bar_height),
     ])
-    .areas(f.area());
+    .areas(area);
     header::draw(f, palette, head, "Config", Corner::Hint);
-    let body = body.centered_horizontally(Constraint::Length(WIDTH.min(body.width)));
-    f.render_widget(
-        Paragraph::new(lines(palette, view, usize::from(body.width))),
-        body,
-    );
-    f.render_widget(
-        action_bar::buttons(palette, &[Button::new("Back")], None).centered(),
-        buttons,
-    );
+    let body = body.centered_horizontally(Constraint::Length(width));
+    f.render_widget(Paragraph::new(lines), body);
+    button::draw_row(f, palette, buttons, &row, None);
     f.render_widget(action_bar::wrap(bar, keys.width), keys);
     match &view.sheet {
         Some(Sheet::Themes(themes)) => {
@@ -71,19 +74,13 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &ConfigView) {
     }
 }
 
-/// A button on a row, reversed while focused and muted while disabled. Its one cell of padding sits on the left, so a focused pill ends flush with the column of right-aligned labels.
+/// A button on a row as a pill, filled while focused and muted while disabled.
 fn button(palette: &Palette, view: &ConfigView, stop: Stop, label: &str) -> Span<'static> {
-    let style: Style = if view.enabled(stop) {
-        palette.accent
-    } else {
-        palette.muted
-    };
-    let style = if view.focused() == stop && view.sheet.is_none() {
-        style.bold().reversed()
-    } else {
-        style
-    };
-    Span::styled(format!(" {label}"), style)
+    button::pill(
+        palette,
+        &Button::new(label).disabled(!view.enabled(stop)),
+        view.focused() == stop && view.sheet.is_none(),
+    )
 }
 
 /// A row: its label and `?`, its value, its buttons on the right.

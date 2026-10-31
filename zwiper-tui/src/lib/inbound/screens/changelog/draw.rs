@@ -12,9 +12,9 @@ use zwipe_ui::changelog::{self, ChangelogCache, Tag};
 use super::{ChangelogView, Chip, FAILED};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
-use crate::inbound::widgets::action_bar::{self, Button};
+use crate::inbound::widgets::button::{self, Button};
 use crate::inbound::widgets::header::{self, Corner};
-use crate::inbound::widgets::{entrance, measure, skeleton};
+use crate::inbound::widgets::{action_bar, entrance, measure, skeleton};
 
 /// The cards are at most this wide, in cells.
 const WIDTH: u16 = 72;
@@ -84,10 +84,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &ChangelogView) {
             );
         }
     }
-    f.render_widget(
-        action_bar::buttons(palette, &[Button::new("Back")], None).centered(),
-        buttons,
-    );
+    button::draw_row(f, palette, buttons, &[Button::new("Back")], None);
     f.render_widget(action_bar::wrap(bar, keys.width), keys);
 }
 

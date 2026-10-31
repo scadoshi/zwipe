@@ -3,11 +3,11 @@
 use crossterm::event::KeyCode;
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Rect};
-use ratatui::style::{Style, Stylize};
-use ratatui::text::{Line, Span};
+use ratatui::style::Stylize;
+use ratatui::text::Line;
 use ratatui::widgets::{Paragraph, Wrap};
 
-use super::{measure, panel};
+use super::{button, measure, panel};
 use crate::domain::theme::Palette;
 
 /// A dialog is at most this wide inside its panel, in cells.
@@ -123,33 +123,15 @@ impl AlertDialog {
         }
     }
 
-    /// The buttons as a row: the focused one reversed, a danger button in the error color, each with its letter.
-    pub(crate) fn buttons_line(&self, palette: &Palette) -> Line<'static> {
-        let spans: Vec<Span<'static>> = self
-            .buttons
+    /// Each button's label as it shows, with its letter.
+    fn labels(&self) -> Vec<String> {
+        self.buttons
             .iter()
-            .enumerate()
-            .flat_map(|(i, button)| {
-                let base: Style = if button.disabled {
-                    palette.muted
-                } else if button.danger {
-                    palette.error
-                } else {
-                    palette.accent
-                };
-                let style = if i == self.focused {
-                    base.bold().reversed()
-                } else {
-                    base
-                };
-                let key = button.key.map_or_else(String::new, |k| format!(" ({k})"));
-                [
-                    Span::styled(format!(" {}{key} ", button.label), style),
-                    Span::raw("  "),
-                ]
+            .map(|button| match button.key {
+                Some(k) => format!("{} ({k})", button.label),
+                None => button.label.clone(),
             })
-            .collect();
-        Line::from(spans)
+            .collect()
     }
 
     /// Draws the dialog centered over the screen: title, rule, body, rule, and the buttons.
@@ -168,18 +150,33 @@ impl AlertDialog {
         let body = Paragraph::new(self.body.clone()).wrap(Wrap { trim: true });
         let width = WIDTH.min(f.area().width.saturating_sub(4));
         let body_height = measure::height_of(body.line_count(width));
-        let row = self.buttons_line(palette);
-        // A row too wide for the dialog stacks its buttons, one per line.
-        let buttons: Vec<Line<'static>> = if row.width() > usize::from(width) {
-            row.spans
-                .chunks(2)
-                .filter_map(|pair| pair.first().cloned())
-                .map(|span| Line::from(span).centered())
-                .collect()
+        let labels = self.labels();
+        let row: Vec<button::Button<'_>> = self
+            .buttons
+            .iter()
+            .zip(&labels)
+            .map(|(b, label)| {
+                let shown = button::Button::new(label).disabled(b.disabled);
+                if b.danger { shown.danger() } else { shown }
+            })
+            .collect();
+        let focused = Some(self.focused);
+        // Boxes when the row fits and the dialog still fits the screen with them; else pills, stacked one per line when even they are too wide.
+        let room = f
+            .area()
+            .height
+            .saturating_sub(body_height)
+            .saturating_sub(extra)
+            .saturating_sub(5);
+        let boxed = button::height(&row, width, room) == button::HEIGHT;
+        let stacked = !boxed && button::pills(palette, &row, focused).width() > usize::from(width);
+        let buttons_height = if boxed {
+            button::HEIGHT
+        } else if stacked {
+            measure::height_of(row.len())
         } else {
-            vec![row.centered()]
+            1
         };
-        let buttons_height = measure::height_of(buttons.len());
         let inner = panel::draw(
             f,
             palette,
@@ -211,7 +208,16 @@ impl AlertDialog {
         f.render_widget(body, body_area);
         fill(f, extra_area);
         panel::rule(f, palette, bottom_rule);
-        f.render_widget(Paragraph::new(buttons), buttons_area);
+        if stacked {
+            let lines: Vec<Line<'static>> = row
+                .iter()
+                .enumerate()
+                .map(|(i, b)| Line::from(button::pill(palette, b, focused == Some(i))).centered())
+                .collect();
+            f.render_widget(Paragraph::new(lines), buttons_area);
+        } else {
+            button::draw_row(f, palette, buttons_area, &row, focused);
+        }
     }
 }
 

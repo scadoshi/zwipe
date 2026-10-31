@@ -2,7 +2,7 @@
 
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Rect};
-use ratatui::style::{Style, Stylize};
+use ratatui::style::Stylize;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::Paragraph;
 
@@ -10,17 +10,21 @@ use super::{AccountView, DeleteDialog, DeleteFocus, Form, FormKind, Overlay, Sto
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::screens::{VERSION, login};
-use crate::inbound::widgets::action_bar::{self, Button};
 use crate::inbound::widgets::alert::AlertDialog;
+use crate::inbound::widgets::button::{self, Button};
 use crate::inbound::widgets::header::{self, Corner};
 use crate::inbound::widgets::sheet::{self, Sheet};
 use crate::inbound::widgets::text_input::{BOX_HEIGHT, MASK, TextInput};
+use crate::inbound::widgets::{action_bar, measure};
 
 /// The lists are at most this wide, in cells.
 const WIDTH: u16 = 72;
 
 /// The labels take this many cells.
 const LABEL_WIDTH: usize = 16;
+
+/// A Change sheet's fields are at most this wide, in cells.
+const FORM_WIDTH: u16 = 48;
 
 pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &AccountView) {
     let palette = &shared.palette;
@@ -38,34 +42,32 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &AccountView) {
         ],
     )
     .centered();
-    let bar_height = action_bar::height(&bar, f.area().width);
+    let area = f.area();
+    let bar_height = action_bar::height(&bar, area.width);
+    let width = WIDTH.min(area.width);
+    let lines = lines(palette, view, usize::from(width));
+    let row = [
+        Button::new("Back"),
+        Button::new("Log out").danger(),
+        Button::new("More"),
+    ];
+    let room = area
+        .height
+        .saturating_sub(bar_height)
+        .saturating_sub(2)
+        .saturating_sub(measure::height_of(lines.len()));
     let [head, _, body, buttons, keys] = Layout::vertical([
         Constraint::Length(1),
         Constraint::Length(1),
         Constraint::Fill(1),
-        Constraint::Length(1),
+        Constraint::Length(button::height(&row, area.width, room)),
         Constraint::Length(bar_height),
     ])
-    .areas(f.area());
+    .areas(area);
     header::draw(f, palette, head, "Account", Corner::Hint);
-    let body = body.centered_horizontally(Constraint::Length(WIDTH.min(body.width)));
-    f.render_widget(
-        Paragraph::new(lines(palette, view, usize::from(body.width))),
-        body,
-    );
-    f.render_widget(
-        action_bar::buttons(
-            palette,
-            &[
-                Button::new("Back"),
-                Button::new("Log out").danger(),
-                Button::new("More"),
-            ],
-            None,
-        )
-        .centered(),
-        buttons,
-    );
+    let body = body.centered_horizontally(Constraint::Length(width));
+    f.render_widget(Paragraph::new(lines), body);
+    button::draw_row(f, palette, buttons, &row, None);
     f.render_widget(action_bar::wrap(bar, keys.width), keys);
     match &view.overlay {
         Some(Overlay::Form(form)) => draw_form(f, palette, form),
@@ -75,7 +77,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &AccountView) {
         }
         Some(Overlay::LogOut(alert)) => alert.draw(f, palette),
         Some(Overlay::More(delete)) => {
-            more_sheet().draw(f, palette, f.area());
+            more_sheet(palette).draw(f, palette, f.area());
             if let Some(delete) = delete {
                 draw_delete(f, palette, delete);
             }
@@ -114,7 +116,7 @@ fn row(
     Line::from(spans)
 }
 
-/// A button on a row, reversed while focused and muted while disabled. Its one cell of padding sits on the left, so a focused pill ends flush with the column of right-aligned labels.
+/// A button on a row as a pill, filled while focused and muted while disabled.
 fn button(
     palette: &Palette,
     view: &AccountView,
@@ -122,17 +124,8 @@ fn button(
     label: &str,
     disabled: bool,
 ) -> Span<'static> {
-    let style: Style = if disabled {
-        palette.muted
-    } else {
-        palette.accent
-    };
-    let style = if view.focused() == Some(stop) && view.overlay.is_none() {
-        style.bold().reversed()
-    } else {
-        style
-    };
-    Span::styled(format!(" {label}"), style)
+    let focused = view.focused() == Some(stop) && view.overlay.is_none();
+    button::pill(palette, &Button::new(label).disabled(disabled), focused)
 }
 
 /// The screen's lines, top to bottom.
@@ -289,39 +282,60 @@ fn about_lines(palette: &Palette, view: &AccountView, width: usize) -> Vec<Line<
 }
 
 /// The More sheet: one danger button, Delete account.
-fn more_sheet() -> Sheet {
+fn more_sheet(palette: &Palette) -> Sheet {
     Sheet::new(
         "More",
-        vec![Line::from(" Delete account ").centered().bold().reversed()],
+        vec![
+            Line::from(button::pill(
+                palette,
+                &Button::new("Delete account").danger(),
+                /* focused */ true,
+            ))
+            .centered(),
+        ],
     )
     .with_footer("Enter", "Delete account")
     .with_footer("Esc", "Close")
 }
 
-/// A Change sheet: its fields with their error lines, and its footer keys.
+/// A Change sheet: its fields with their error lines, then Save changes and Back, and its footer keys. The buttons are boxes when the sheet has room for them under the fields, else pills.
 fn draw_form(f: &mut Frame<'_>, palette: &Palette, form: &Form) {
     let heights: Vec<u16> = form.inputs.iter().map(TextInput::height).collect();
-    let body = heights.iter().fold(0_u16, |sum, h| sum.saturating_add(*h));
+    let fields = heights.iter().fold(0_u16, |sum, h| sum.saturating_add(*h));
     let save = if form.busy {
         "Saving..."
     } else {
         "Save changes"
     };
-    let mut footer = vec![("Tab", "next"), ("Enter", save), ("Esc", "Back")];
+    let row = [
+        Button::new(save).primary().disabled(form.busy),
+        Button::new("Back").disabled(form.busy),
+    ];
+    let mut footer = vec![("Tab", "next"), ("Enter", "save"), ("Esc", "back")];
     if form.kind == FormKind::Password && form.focus == 1 {
         footer.insert(1, ("F2", "password rules"));
     }
+    let room = sheet::max_body(f.area())
+        .saturating_sub(fields)
+        .saturating_sub(1);
+    let buttons_height = button::height(&row, FORM_WIDTH.min(f.area().width), room);
     let inner = sheet::frame(
         f,
         palette,
         f.area(),
         form.kind.title(),
-        body,
+        fields.saturating_add(1).saturating_add(buttons_height),
         false,
         &footer,
     );
-    let inner = inner.centered_horizontally(Constraint::Length(48.min(inner.width)));
-    let areas = Layout::vertical(heights.iter().map(|h| Constraint::Length(*h))).split(inner);
+    let inner = inner.centered_horizontally(Constraint::Length(FORM_WIDTH.min(inner.width)));
+    let [fields_area, _, buttons] = Layout::vertical([
+        Constraint::Length(fields),
+        Constraint::Length(1),
+        Constraint::Length(buttons_height),
+    ])
+    .areas(inner);
+    let areas = Layout::vertical(heights.iter().map(|h| Constraint::Length(*h))).split(fields_area);
     for (i, ((input, (label, _, _)), area)) in form
         .inputs
         .iter()
@@ -335,6 +349,7 @@ fn draw_form(f: &mut Frame<'_>, palette: &Palette, form: &Form) {
             f.set_cursor_position(input.cursor_position(*area));
         }
     }
+    button::draw_row(f, palette, buttons, &row, None);
 }
 
 /// The Delete account dialog over the More sheet: the warning, a password box, and Cancel and Delete.
