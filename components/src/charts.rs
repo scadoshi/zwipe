@@ -485,7 +485,8 @@ pub fn DrawOdds(
 ) -> Element {
     const MAX_TURN: u32 = 20;
     let mut turn = use_signal(|| 0u32);
-    let draws = 7 + turn();
+    // The stepper holds `turn` at MAX_TURN or below, so this never saturates.
+    let draws = turn().saturating_add(7);
     let heading = if turn() == 0 {
         "Odds of ≥1 in opening hand".to_string()
     } else {
