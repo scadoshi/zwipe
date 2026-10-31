@@ -257,12 +257,12 @@ impl HintTopic {
                 "• [Totals] is what the cards dealt to your decks came to: [Added] and [Maybeboard] you kept, [Skipped] you passed on, and [Removed] you later took out",
             ]),
             Self::RoleRates => owned(&[
-                "• Your rate for each card role. Pick one under [Show]: [Added], [Skipped] and [Maybeboard] are shares of the cards dealt to you, and [Removed] is the share of added cards you later took out",
-                "• Tap a role to see the tags you swiped under it",
-                "• From your decks with a commander, for roles dealt at least 10 times",
+                "• Your share for each card role. Pick one under [Show]: [Added], [Skipped] and [Maybeboard] are shares of the cards dealt to you, and [Removed] is the share of added cards you later took out",
+                "• Tap a role to see the tags you swiped under it. A grey role has none yet",
+                "• From your decks with a commander",
             ]),
             Self::TagRates => owned(&[
-                "• The tags where your rate stands out most from other players', with your own rate",
+                "• The tags where your share stands out most from other players', with your own share",
                 "• A tag everyone passes on shows only after a lot of skips. Tap a tag to see what it means",
                 "• From your decks with a commander, for tags dealt at least 10 times",
             ]),
@@ -286,7 +286,9 @@ impl HintTopic {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::inbound::screens::activity::{Section, passes_topic};
     use crate::inbound::widgets::hint::markup::plain;
+    use crate::inbound::widgets::info::InfoPopup;
 
     #[test]
     fn every_topic_has_a_title_and_copy() {
@@ -308,6 +310,23 @@ mod tests {
             Some("• No character more than 3 times in a row")
         );
         assert_eq!(blocks.len(), 8);
+    }
+
+    #[test]
+    fn the_rate_topics_read_as_activity_shows_them() {
+        let words = |text: &str| text.split_whitespace().collect::<String>();
+        let topic = |topic: HintTopic| {
+            topic
+                .blocks()
+                .iter()
+                .map(|b| words(plain(b).trim_start_matches("• ")))
+                .collect::<Vec<_>>()
+        };
+        let shown = |popup: InfoPopup| popup.bullets.iter().map(|b| words(b)).collect::<Vec<_>>();
+        assert_eq!(topic(HintTopic::Activity), shown(Section::Activity.topic()));
+        assert_eq!(topic(HintTopic::RoleRates), shown(Section::Roles.topic()));
+        assert_eq!(topic(HintTopic::TagRates), shown(Section::Tags.topic()));
+        assert_eq!(topic(HintTopic::HardPasses), shown(passes_topic()));
     }
 
     #[test]
