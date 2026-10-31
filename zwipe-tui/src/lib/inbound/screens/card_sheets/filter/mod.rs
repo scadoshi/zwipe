@@ -24,9 +24,10 @@ use crate::domain::filter::fields::{
 };
 use crate::domain::filter::picker::{PickerField, Sources};
 use crate::domain::filter::sections::{self, ChipSet, Modes, NumberField, Row, Section, StepRow};
-use crate::domain::filter::{self, AddContext, ApplyAction, FilterState};
+use crate::domain::filter::{self, AddContext, Adopted, ApplyAction, FilterState};
 use crate::domain::stores::catalog::Catalog;
 use crate::inbound::app::Context;
+use crate::inbound::screens::oracle_tags;
 use crate::inbound::widgets::hint;
 use crate::inbound::widgets::text_input::TextInput;
 use crate::inbound::widgets::toast::{self, ToastKind};
@@ -56,6 +57,14 @@ pub(crate) struct SheetConfig {
     pub(crate) reset: ResetRule,
     /// Where the word pickers draw from.
     pub(crate) sources: Sources,
+}
+
+/// Hands the dictionary's tag to `sheet` when a host comes back into view. Returns whether the dictionary was open over that sheet.
+pub(crate) fn returned_from_dictionary(
+    sheet: Option<&mut FilterSheet>,
+    cx: &mut Context<'_>,
+) -> bool {
+    sheet.is_some_and(|sheet| sheet.take_dictionary_tag(cx))
 }
 
 /// What a key did to the sheet.
@@ -101,6 +110,8 @@ pub(crate) struct FilterSheet {
     pub(crate) chip_focus: HashMap<ChipSet, usize>,
     /// Which end of a range stepper the focus is on: false for min, true for max.
     pub(crate) step_max: bool,
+    /// The tag list the oracle tag dictionary was opened for, while it is open over the host.
+    pub(crate) dictionary: Option<PickerField>,
 }
 
 impl FilterSheet {
@@ -139,6 +150,7 @@ impl FilterSheet {
             pickers: HashMap::new(),
             chip_focus: HashMap::new(),
             step_max: false,
+            dictionary: None,
         };
         sheet.sync_inputs();
         sheet
@@ -311,6 +323,30 @@ impl FilterSheet {
                 }
             }
         }
+    }
+
+    /// Opens the oracle tag dictionary over the host for the tag list `field` names.
+    pub(crate) fn open_dictionary(&mut self, field: PickerField, cx: &mut Context<'_>) {
+        self.dictionary = Some(field);
+        oracle_tags::open(cx);
+    }
+
+    /// Takes the tag the dictionary's Use left into the draft, as the app's `adopt_otag` does, when the dictionary was opened from this sheet. Returns whether it was, so the host skips its own refresh: the dictionary closing is not a return from another screen.
+    pub(crate) fn take_dictionary_tag(&mut self, cx: &mut Context<'_>) -> bool {
+        let Some(field) = self.dictionary.take() else {
+            return false;
+        };
+        let Some(slug) = cx.shared.caches.handoff.oracle_tag.take() else {
+            return true;
+        };
+        let exclude = matches!(field, PickerField::Exclude(_));
+        let (kind, message) = match filter::adopt_oracle_tag(&mut self.draft, &slug, exclude) {
+            Adopted::Already => (ToastKind::Info, "Already in filter"),
+            Adopted::Added => (ToastKind::Success, "Added to filter"),
+        };
+        cx.toast_for(kind, message.to_owned(), toast::QUICK);
+        self.sync_inputs();
+        true
     }
 
     /// Back: closes the sheet, saying so when edits are dropped.

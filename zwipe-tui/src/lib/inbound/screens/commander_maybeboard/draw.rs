@@ -17,6 +17,7 @@ use super::{
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::screens::activity::draw::{Body, GHOST, GUTTER, draw_lines};
+use crate::inbound::screens::card_sheets::filter::draw as filter_sheet;
 use crate::inbound::screens::playstyle::draw::{ChipContent, chip_line, wrap_at_gaps};
 use crate::inbound::widgets::card_rows::CardRow;
 use crate::inbound::widgets::text_input::BOX_HEIGHT;
@@ -66,6 +67,9 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &MaybeboardView) {
             dialog.draw(f, palette);
         }
         None => {}
+    }
+    if let Some(sheet) = &view.sheet {
+        filter_sheet::draw(f, shared, sheet, f.area());
     }
 }
 
@@ -118,7 +122,14 @@ fn key_hints(view: &MaybeboardView) -> Vec<(&'static str, &'static str)> {
         }
         keys.push(("/", QUICK_ADD));
     }
-    keys.push(("f", "Filter"));
+    keys.push((
+        "f",
+        if view.filter_dot() {
+            "Filter •"
+        } else {
+            "Filter"
+        },
+    ));
     keys.push(("s", "Swipe"));
     keys.push(("M", "More"));
     keys.push(("H", "Hint"));

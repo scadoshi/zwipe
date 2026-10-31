@@ -10,6 +10,7 @@ use super::CommanderSwipeView;
 use crate::domain::playstyle;
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
+use crate::inbound::screens::card_sheets::filter::draw as filter_sheet;
 use crate::inbound::screens::playstyle::draw::{Reasons, reasons_lines, show_line, wrap_at_gaps};
 use crate::inbound::widgets::sheet::Sheet;
 use crate::inbound::widgets::{action_bar, card_text, skeleton};
@@ -55,6 +56,9 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &CommanderSwipeView
             .with_footer("Esc", "Back")
             .draw(f, palette, f.area());
     }
+    if let Some(sheet) = &view.sheet {
+        filter_sheet::draw(f, shared, sheet, f.area());
+    }
 }
 
 /// The card on top and its reasons; a line when the Suggested filter matches nothing; ghost rows while a page loads or past the last card.
@@ -90,23 +94,21 @@ fn body_lines(palette: &Palette, view: &CommanderSwipeView, width: usize) -> Vec
     lines
 }
 
-/// The swipe keys, the Filter with a dot while an identity is picked, Refresh, the hint and Back.
+/// The swipe keys, the Filter with a dot while it narrows the stack, Refresh, the hint and Back.
 fn key_hints(view: &CommanderSwipeView) -> Vec<(&'static str, &'static str)> {
     let mut keys = Vec::new();
     if view.current().is_some() {
         keys.extend([("→/l", "Pick"), ("↑/k", "Save"), ("←/h", "Skip")]);
     }
     keys.push(("↓/j", "Undo"));
-    if let Some(pile) = view.suggested() {
-        keys.push((
-            "f",
-            if pile.identity.is_some() {
-                "Filter •"
-            } else {
-                "Filter"
-            },
-        ));
-    }
+    keys.push((
+        "f",
+        if view.filter_dot() {
+            "Filter •"
+        } else {
+            "Filter"
+        },
+    ));
     keys.push(("r", "Refresh"));
     keys.push(("?", "Hint"));
     keys.push(("Esc", "Back"));

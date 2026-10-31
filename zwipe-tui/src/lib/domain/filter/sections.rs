@@ -565,19 +565,37 @@ fn card_roles_rows(b: &CardQueryBuilder) -> Vec<Row> {
     ]
 }
 
-/// The Oracle tags section: include and exclude pickers.
+/// The Oracle tags include label.
+const TAGS_INCLUDE: &str = "Oracle tags include";
+
+/// The Oracle tags exclude label.
+const TAGS_EXCLUDE: &str = "Oracle tags exclude";
+
+/// The tag list a row's Dictionary chip adopts into: the Oracle tags include or exclude label, or the picker under it.
+pub(crate) fn dictionary_for(row: Row) -> Option<PickerField> {
+    let include = PickerField::Include(MatchGroup::Tags);
+    let exclude = PickerField::Exclude(MatchGroup::Tags);
+    match row {
+        Row::Label { text, .. } if text == TAGS_INCLUDE => Some(include),
+        Row::Label { text, .. } if text == TAGS_EXCLUDE => Some(exclude),
+        Row::Picker(field) if field == include || field == exclude => Some(field),
+        _ => None,
+    }
+}
+
+/// The Oracle tags section: include and exclude pickers, each label with its Dictionary chip.
 fn oracle_tags_rows(b: &CardQueryBuilder) -> Vec<Row> {
     vec![
         label_when_set(
             b,
-            "Oracle tags include",
+            TAGS_INCLUDE,
             ModeChip::Match(MatchGroup::Tags),
             Clear::Includes(MatchGroup::Tags),
         ),
         Row::Picker(PickerField::Include(MatchGroup::Tags)),
         label(
             b,
-            "Oracle tags exclude",
+            TAGS_EXCLUDE,
             None,
             Clear::Excludes(MatchGroup::Tags.exclude()),
         ),

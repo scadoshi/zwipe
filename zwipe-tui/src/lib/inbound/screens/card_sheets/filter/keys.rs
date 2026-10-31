@@ -1,14 +1,16 @@
 //! The filter sheet's keys.
 //!
 //! Up and Down move between section headers and the open section's rows, everywhere. In a text box letters type; Esc leaves the box. Elsewhere Enter or Space opens a section, flips a mode chip or taps a chip, h and l move along a chip row, - and + step a stepper, x clears, a applies, r resets, ? shows the hint, and Esc closes.
+//!
+//! In the Oracle tags section, `i` shows the oracle tags explainer, and `d` on a label (F3 in its search box) opens the oracle tag dictionary for that list.
 
 use crossterm::event::KeyCode;
 use zwipe_core::domain::user::hints::HINT_FILTER;
 
 use super::{FilterSheet, PickerInput, SheetOutcome, Target};
-use crate::domain::filter::sections::{Clear, Row};
+use crate::domain::filter::sections::{self, Clear, Row, Section};
 use crate::inbound::app::Context;
-use crate::inbound::widgets::hint;
+use crate::inbound::widgets::hint::{self, HintTopic};
 
 pub(crate) fn handle(sheet: &mut FilterSheet, code: KeyCode, cx: &mut Context<'_>) -> SheetOutcome {
     match code {
@@ -23,6 +25,13 @@ pub(crate) fn handle(sheet: &mut FilterSheet, code: KeyCode, cx: &mut Context<'_
         _ => {}
     }
     if sheet.typing() {
+        if code == KeyCode::F(3)
+            && let Some(Target::Row(row)) = sheet.focused()
+            && let Some(field) = sections::dictionary_for(row)
+        {
+            sheet.open_dictionary(field, cx);
+            return SheetOutcome::Open;
+        }
         type_key(sheet, code, cx);
         return SheetOutcome::Open;
     }
@@ -33,9 +42,26 @@ pub(crate) fn handle(sheet: &mut FilterSheet, code: KeyCode, cx: &mut Context<'_
         KeyCode::Char('a') => return sheet.apply(cx),
         KeyCode::Char('r') => sheet.reset(cx),
         KeyCode::Char('?') => hint::reopen(cx, HINT_FILTER),
+        KeyCode::Char('i') if in_oracle_tags(sheet) => hint::topic(cx, HintTopic::OracleTags),
+        KeyCode::Char('d') => {
+            if let Some(Target::Row(row)) = sheet.focused()
+                && let Some(field) = sections::dictionary_for(row)
+            {
+                sheet.open_dictionary(field, cx);
+            }
+        }
         _ => act(sheet, code, cx),
     }
     SheetOutcome::Open
+}
+
+/// Whether the focus is on the Oracle tags header or one of its rows, where `i` explains oracle tags.
+fn in_oracle_tags(sheet: &FilterSheet) -> bool {
+    match sheet.focused() {
+        Some(Target::Header(section)) => section == Section::OracleTags,
+        Some(Target::Row(_)) => sheet.open == Some(Section::OracleTags),
+        None => false,
+    }
 }
 
 /// A key on the focused header, label, chip row or stepper.

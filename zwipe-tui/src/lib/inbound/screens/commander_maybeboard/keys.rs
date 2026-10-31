@@ -8,8 +8,8 @@ use ratatui::text::{Line, Span};
 use zwipe_core::domain::card::scryfall_data::colors::Color;
 
 use super::{
-    CLEAR, CLEAR_BODY, Focus, MORE_TITLE, MaybeboardView, Overlay, Request, draw, open_filter,
-    reopen_hint,
+    CLEAR, CLEAR_BODY, Focus, MORE_TITLE, MaybeboardView, Overlay, Request, draw, on_sheet,
+    open_filter, reopen_hint,
 };
 use crate::domain::theme::Palette;
 use crate::inbound::app::Context;
@@ -20,6 +20,10 @@ use crate::inbound::widgets::card_rows::CardRow;
 use crate::inbound::widgets::sheet::{Sheet, SheetKey};
 
 pub(crate) fn handle(view: &mut MaybeboardView, code: KeyCode, cx: &mut Context<'_>) {
+    if view.sheet.is_some() {
+        on_sheet(view, code, cx);
+        return;
+    }
     if view.overlay.is_some() {
         on_overlay(view, code, cx);
         return;
@@ -31,7 +35,7 @@ pub(crate) fn handle(view: &mut MaybeboardView, code: KeyCode, cx: &mut Context<
     match code {
         KeyCode::Esc => return cx.back(),
         KeyCode::Char('H') => return reopen_hint(cx),
-        KeyCode::Char('f') => return open_filter(cx),
+        KeyCode::Char('f') => return open_filter(view, cx),
         KeyCode::Char('s') => return swipe(view, cx),
         KeyCode::Char('M') => {
             view.overlay = Some(Overlay::More(more_sheet(&cx.shared.palette)));

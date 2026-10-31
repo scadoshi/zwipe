@@ -25,7 +25,7 @@ use zwipe_core::http::helpers::Patch;
 
 use self::pickers::{FormatPicker, OraclePicker, TagPicker};
 use self::swipe_pick::SwipePicker;
-use super::{Screen, failure};
+use super::{Screen, card_sheets, failure};
 use crate::domain::deck::form::{self, Slot};
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
@@ -293,8 +293,13 @@ pub(crate) fn slot_index(slot: Slot) -> usize {
 }
 
 impl DeckForm {
-    /// Comes back into view: takes the tag the oracle tag dictionary's Use left, when the oracle tag picker opened it.
+    /// Comes back into view: takes the tag the oracle tag dictionary's Use left, into the swipe picker's filter sheet or the oracle tag picker, whichever opened it.
     pub(crate) fn on_return(&mut self, cx: &mut Context<'_>) {
+        if let Some(Overlay::Swipe(picker)) = &mut self.overlay
+            && card_sheets::filter::returned_from_dictionary(picker.sheet.as_mut(), cx)
+        {
+            return;
+        }
         let Some(slug) = cx.shared.caches.handoff.oracle_tag.take() else {
             return;
         };

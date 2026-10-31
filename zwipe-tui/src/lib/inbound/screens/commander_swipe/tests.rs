@@ -385,7 +385,8 @@ fn commander_mode_pages_most_played_first_without_the_excluded() {
         harness.pending(),
         [Request::Search {
             ticket: 0,
-            offset: 0
+            offset: 0,
+            filter: Box::default(),
         }
         .into()]
     );
@@ -411,7 +412,8 @@ fn commander_mode_pages_most_played_first_without_the_excluded() {
         harness.pending(),
         [Request::Search {
             ticket: 0,
-            offset: PAGE
+            offset: PAGE,
+            filter: Box::default(),
         }
         .into()],
         "two left is under the prefetch mark; a commander skip sends nothing"
@@ -444,7 +446,8 @@ fn an_excluded_page_pulls_ahead_and_a_stale_page_is_dropped() {
         harness.pending(),
         [Request::Search {
             ticket: 0,
-            offset: PAGE
+            offset: PAGE,
+            filter: Box::default(),
         }
         .into()]
     );
@@ -460,7 +463,11 @@ fn an_excluded_page_pulls_ahead_and_a_stale_page_is_dropped() {
         panic!("not commander mode");
     };
     assert!(!search.loading);
-    assert!(commander_query(PAGE).build().is_ok());
+    assert!(
+        commander_query(&CardQueryBuilder::default(), PAGE)
+            .build()
+            .is_ok()
+    );
 }
 
 impl CommanderSwipeView {
@@ -514,4 +521,52 @@ fn tiny_terminals_do_not_panic() {
     for (w, h) in [(8, 3), (1, 1)] {
         render(&harness.app, w, h);
     }
+}
+
+#[test]
+fn commander_modes_filter_is_the_card_filter_and_apply_deals_again() {
+    use crate::domain::filter::sections::Section as FilterSection;
+
+    let mut harness = commander(HashSet::new());
+    harness.apply(Update::Page {
+        ticket: 0,
+        offset: 0,
+        cards: named(&["Krenko", "Zada"]),
+    });
+    harness.press(KeyCode::Left);
+    harness.press(KeyCode::Char('f'));
+    harness.app.shared.hint = None;
+    let sheet = view(&harness)
+        .sheet
+        .as_ref()
+        .expect("f opens the card filter");
+    assert!(!sheet.sections().contains(&FilterSection::Format));
+    assert!(screen_text(&harness.app).contains(" Filter "));
+    if let Some(sheet) = &mut view_mut(&mut harness).sheet {
+        sheet.draft.set_name_contains("elf");
+    }
+    harness.clear();
+    harness.press(KeyCode::Char('a'));
+    assert!(view(&harness).sheet.is_none(), "Apply closes the sheet");
+    let mut narrowed = CardQueryBuilder::default();
+    narrowed.set_name_contains("elf");
+    assert_eq!(
+        harness.pending(),
+        [Request::Search {
+            ticket: 1,
+            offset: 0,
+            filter: Box::new(narrowed.clone()),
+        }
+        .into()],
+        "Apply deals from the top with the filter"
+    );
+    assert_eq!(view(&harness).index, 0);
+    assert_eq!(view(&harness).cards, []);
+    assert_eq!(view(&harness).history, []);
+    assert!(screen_text(&harness.app).contains("Filter •"));
+
+    let query = commander_query(&narrowed, PAGE);
+    assert_eq!(query.name_contains(), Some("elf"));
+    assert_eq!(query.is_commander_in_format(), Some(&Format::Commander));
+    assert_eq!(query.offset(), PAGE);
 }

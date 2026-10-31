@@ -41,6 +41,7 @@ use zwipe_core::http::contracts::metrics::{AnonymousEventKind, HttpPublicMetrics
 
 use self::account::AccountView;
 use self::activity::ActivityView;
+use self::card_sheets::filter::returned_from_dictionary;
 use self::changelog::ChangelogView;
 use self::commander_maybeboard::MaybeboardView;
 use self::commander_swipe::CommanderSwipeView;
@@ -202,11 +203,24 @@ impl Screen {
             Self::Login(form) => form.hero = hero::mount(cx),
             Self::Decks(list) => list.reload(cx),
             Self::Deck(view) => view.reload(cx),
-            Self::DeckCards(view) => view.reload(cx),
+            Self::DeckCards(view) => {
+                if !returned_from_dictionary(view.sheet.as_mut(), cx) {
+                    view.reload(cx);
+                }
+            }
             Self::DeckForm(form) => form.on_return(cx),
+            Self::Swipe(view) => {
+                returned_from_dictionary(view.sheet.as_mut(), cx);
+            }
+            Self::RemoveCards(view) => {
+                returned_from_dictionary(view.sheet.as_mut(), cx);
+            }
             Self::Activity(view) => view.on_return(cx),
             Self::Playstyle(view) => view.on_return(cx),
             Self::CommanderMaybeboard(view) => view.on_return(cx),
+            Self::CommanderSwipe(view) => {
+                returned_from_dictionary(view.sheet.as_mut(), cx);
+            }
             _ => {}
         }
     }

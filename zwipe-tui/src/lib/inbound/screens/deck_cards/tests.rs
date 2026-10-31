@@ -415,6 +415,37 @@ fn the_filter_and_printing_sheets_open_and_esc_leaves() {
 }
 
 #[test]
+fn the_filter_sheets_dictionary_returns_to_the_sheet_without_a_reload() {
+    use crate::domain::filter::fields::MatchGroup;
+    use crate::domain::filter::picker::PickerField;
+
+    let (mut harness, _, _) = loaded();
+    harness.press(KeyCode::Char('f'));
+    harness.app.shared.hint = None;
+    if let Some(sheet) = &mut view_mut(&mut harness).sheet {
+        sheet.dictionary = Some(PickerField::Include(MatchGroup::Tags));
+    }
+    harness.open(screens::oracle_tags::open);
+    assert!(matches!(harness.screen(), Screen::OracleTags(_)));
+    harness.app.shared.hint = None;
+    harness.clear();
+    harness.app.shared.caches.handoff.oracle_tag = Some("ramp".to_owned());
+    harness.press(KeyCode::Esc);
+    let sheet = view(&harness)
+        .sheet
+        .as_ref()
+        .expect("the sheet is still open");
+    assert_eq!(
+        sheet.draft.oracle_tags_contains_any(),
+        Some(&["ramp".to_owned()][..])
+    );
+    assert!(
+        harness.pending().is_empty(),
+        "no reload on the dictionary's return"
+    );
+}
+
+#[test]
 fn the_view_fits_a_tiny_terminal() {
     let (mut harness, _, _) = loaded();
     render(&harness.app, 12, 5);

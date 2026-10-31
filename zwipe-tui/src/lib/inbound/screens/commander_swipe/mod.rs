@@ -2,7 +2,7 @@
 //!
 //! Right picks the card on top: it closes the overlay and starts a deck with it through [`create_deck_with`]. Up saves it to the commander maybeboard, left skips it (in Suggested, hiding it for a week, quietly), and down undoes the last swipe, lifting a save or a dismissal. Closing leaves a [`Closed`] in the handoff, which tells the host to refetch and, from Suggested, which identity the Filter left picked.
 //!
-//! The app's eye button opens a details sheet over the card; the terminal shows the card's text and, in Suggested, its reasons right under it. The Commander mode's filter sheet belongs to the card filter screens, so `f` filters only the Suggested pile here.
+//! The app's eye button opens a details sheet over the card; the terminal shows the card's text and, in Suggested, its reasons right under it. Filter in Suggested picks one color identity from the Show chips; in Commander it opens the card filter sheet, whose Apply deals the stack again from the top.
 
 pub(crate) mod draw;
 pub(crate) mod keys;
@@ -11,6 +11,7 @@ mod tests;
 
 use std::collections::HashSet;
 
+use crossterm::event::KeyCode;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::colors::Color;
@@ -18,9 +19,10 @@ use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilde
 use zwipe_core::domain::deck::format::Format;
 use zwipe_core::http::contracts::suggestions::HttpCommanderSuggestion;
 
+use super::card_sheets::filter::{FilterSheet, SheetConfig, SheetOutcome};
 use super::playstyle::{DeckLimit, create_deck_with, suggestion_colors};
-use super::{Screen, failure};
-use crate::domain::playstyle;
+use super::{Screen, card_sheets, failure};
+use crate::domain::{filter, playstyle};
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;
@@ -91,7 +93,7 @@ pub(crate) enum Swiped {
 }
 
 /// The Commander mode's paging.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub(crate) struct Search {
     pub(crate) exclude: HashSet<Uuid>,
     /// The newest search's ticket; only its pages land.
@@ -104,6 +106,8 @@ pub(crate) struct Search {
     pub(crate) loading: bool,
     /// Pages pulled in a row because exclusions emptied them.
     pub(crate) pulls: u8,
+    /// The card filter as last applied; each page's query starts from it.
+    pub(crate) filter: Box<CardQueryBuilder>,
 }
 
 /// Which pile the swipe deals.
@@ -155,6 +159,8 @@ pub(crate) struct CommanderSwipeView {
     /// The create gate, as the host saw it when it opened the swipe.
     pub(crate) limit: DeckLimit,
     pub(crate) filter: Option<Filter>,
+    /// Commander mode's card filter sheet, while it is open over the stack.
+    pub(crate) sheet: Option<FilterSheet>,
 }
 
 impl CommanderSwipeView {
@@ -168,6 +174,7 @@ impl CommanderSwipeView {
                 exhausted: false,
                 loading: false,
                 pulls: 0,
+                filter: Box::default(),
             }),
         };
         let mut view = Self {
@@ -177,6 +184,7 @@ impl CommanderSwipeView {
             history: Vec::new(),
             limit,
             filter: None,
+            sheet: None,
         };
         if let Mode::Suggested(pile) = &view.mode {
             view.cards = dealt(pile);
@@ -350,6 +358,61 @@ impl CommanderSwipeView {
 
     /// Deals afresh from the top: the host's pile again, or a new search.
     pub(crate) fn refresh(&mut self, cx: &mut Context<'_>) {
+        self.restart(cx);
+        cx.shared
+            .toasts
+            .push_for(ToastKind::Info, REFRESHED.to_owned(), toast::QUICK);
+    }
+
+    /// Whether Filter carries its dot: an identity picked in Suggested, a criterion or sort in Commander.
+    pub(crate) fn filter_dot(&self) -> bool {
+        match &self.mode {
+            Mode::Suggested(pile) => pile.identity.is_some(),
+            Mode::Commander(search) => filter::shows_dot(&search.filter),
+        }
+    }
+
+    /// Opens the Filter: the identity chips in Suggested, the card filter sheet without its format section in Commander.
+    pub(crate) fn open_filter(&mut self, cx: &mut Context<'_>) {
+        match &self.mode {
+            Mode::Suggested(pile) => {
+                let cursor = pile
+                    .identity
+                    .as_ref()
+                    .and_then(|picked| self.identities().iter().position(|i| i == picked))
+                    .map_or(0, |i| i.saturating_add(1));
+                self.filter = Some(Filter { cursor });
+            }
+            Mode::Commander(search) => {
+                let config = SheetConfig {
+                    show_format: false,
+                    ..SheetConfig::default()
+                };
+                self.sheet = Some(FilterSheet::open(cx, &search.filter, config));
+            }
+        }
+    }
+
+    /// Keys while the card filter sheet is open. Apply keeps the filter and deals the stack again from the top.
+    pub(crate) fn on_sheet(&mut self, code: KeyCode, cx: &mut Context<'_>) {
+        let Some(sheet) = &mut self.sheet else {
+            return;
+        };
+        match card_sheets::filter::keys::handle(sheet, code, cx) {
+            SheetOutcome::Open => {}
+            SheetOutcome::Closed => self.sheet = None,
+            SheetOutcome::Applied(applied) => {
+                self.sheet = None;
+                if let Mode::Commander(search) = &mut self.mode {
+                    search.filter = applied;
+                }
+                self.restart(cx);
+            }
+        }
+    }
+
+    /// Deals from the top again without a word.
+    fn restart(&mut self, cx: &mut Context<'_>) {
         self.index = 0;
         self.history.clear();
         match &mut self.mode {
@@ -360,12 +423,10 @@ impl CommanderSwipeView {
                 search.exhausted = false;
                 search.pulls = 0;
                 search.ticket = search.ticket.wrapping_add(1);
+                search.loading = false;
                 load_more(search, cx);
             }
         }
-        cx.shared
-            .toasts
-            .push_for(ToastKind::Info, REFRESHED.to_owned(), toast::QUICK);
     }
 
     /// Closes the swipe, leaving its host the identity picked and the word to refetch.
@@ -426,14 +487,15 @@ fn load_more(search: &mut Search, cx: &mut Context<'_>) {
         Request::Search {
             ticket: search.ticket,
             offset: search.offset,
+            filter: search.filter.clone(),
         }
         .into(),
     );
 }
 
-/// The query for one page of commanders: the Commander format, no tokens, no sort so the server serves its most-played order.
-pub(crate) fn commander_query(offset: u32) -> CardQueryBuilder {
-    let mut builder = CardQueryBuilder::new();
+/// The query for one page of commanders: the user's card filter, then the Commander format, no tokens, and the page. With no sort in the filter the server serves its most-played order.
+pub(crate) fn commander_query(filter: &CardQueryBuilder, offset: u32) -> CardQueryBuilder {
+    let mut builder = filter.clone();
     builder
         .set_is_commander_in_format(Format::Commander)
         .set_is_token(false)
@@ -459,10 +521,14 @@ pub(crate) fn reopen_hint(view: &CommanderSwipeView, cx: &mut Context<'_>) {
 }
 
 /// The swipe's work.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub(crate) enum Request {
-    /// One page of commanders under a ticket.
-    Search { ticket: u64, offset: u32 },
+    /// One page of commanders under a ticket, narrowed by the card filter.
+    Search {
+        ticket: u64,
+        offset: u32,
+        filter: Box<CardQueryBuilder>,
+    },
     /// Saves to the commander maybeboard.
     Save(Uuid),
     /// Takes a save back off, for undo.
@@ -513,8 +579,12 @@ fn pick(screen: &mut Screen) -> Option<&mut CommanderSwipeView> {
 pub(crate) async fn perform(account: &Account, request: Request) -> Option<screens::Update> {
     let client = &account.client;
     match request {
-        Request::Search { ticket, offset } => {
-            let Ok(query) = commander_query(offset).build() else {
+        Request::Search {
+            ticket,
+            offset,
+            filter,
+        } => {
+            let Ok(query) = commander_query(&filter, offset).build() else {
                 return Some(Update::SearchFailed { ticket }.into());
             };
             match async {

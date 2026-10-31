@@ -533,7 +533,8 @@ fn swipe_deals_commanders_without_the_saved_ones_and_refetches_on_close() {
         harness.pending(),
         [commander_swipe::Request::Search {
             ticket: 0,
-            offset: 0
+            offset: 0,
+            filter: Box::default(),
         }
         .into()]
     );
@@ -565,14 +566,70 @@ fn a_picked_printing_swaps_in_place() {
 }
 
 #[test]
-fn filter_says_where_the_card_filter_will_open() {
+fn filter_opens_the_card_filter_and_the_list_narrows_only_on_apply() {
+    use crate::domain::filter::sections::Section as FilterSection;
+
     let mut harness = loaded();
     harness.press(KeyCode::Char('f'));
-    let toast = last_toast(&harness);
-    assert_eq!(
-        (toast.kind, toast.message.as_str()),
-        (ToastKind::Info, FILTER_LATER)
+    harness.app.shared.hint = None;
+    let sheet = view(&harness)
+        .sheet
+        .as_ref()
+        .expect("f opens the filter sheet");
+    assert!(
+        !sheet.sections().contains(&FilterSection::Format),
+        "no format filter here"
     );
+    assert!(screen_text(&harness.app).contains(" Filter "));
+
+    if let Some(sheet) = &mut view_mut(&mut harness).sheet {
+        sheet.draft.set_name_contains("ra");
+        sheet.draft.set_sort(CardSortKey::Name);
+    }
+    assert_eq!(
+        shown(&harness),
+        ["Atraxa", "Krenko", "Talrand", "Brago"],
+        "a draft does not reshuffle the list"
+    );
+    harness.press(KeyCode::Char('a'));
+    assert!(view(&harness).sheet.is_none(), "Apply closes the sheet");
+    assert_eq!(shown(&harness), ["Atraxa", "Brago", "Talrand"]);
+    assert!(screen_text(&harness.app).contains("Filter •"));
+
+    harness.press(KeyCode::Char('f'));
+    if let Some(sheet) = &mut view_mut(&mut harness).sheet {
+        sheet.draft = CardQueryBuilder::default();
+    }
+    harness.press(KeyCode::Char('a'));
+    assert_eq!(shown(&harness), ["Atraxa", "Krenko", "Talrand", "Brago"]);
+    assert!(!screen_text(&harness.app).contains("Filter •"));
+}
+
+#[test]
+fn the_filters_dictionary_lands_in_the_sheet_and_refetches_nothing() {
+    use crate::domain::filter::fields::MatchGroup;
+    use crate::domain::filter::picker::PickerField;
+
+    let mut harness = loaded();
+    harness.press(KeyCode::Char('f'));
+    harness.app.shared.hint = None;
+    if let Some(sheet) = &mut view_mut(&mut harness).sheet {
+        sheet.dictionary = Some(PickerField::Exclude(MatchGroup::Tags));
+    }
+    harness.open(oracle_tags::open);
+    harness.app.shared.hint = None;
+    harness.clear();
+    harness.app.shared.caches.handoff.oracle_tag = Some("ramp".to_owned());
+    harness.press(KeyCode::Esc);
+    let sheet = view(&harness)
+        .sheet
+        .as_ref()
+        .expect("the sheet is still open");
+    assert_eq!(
+        sheet.draft.oracle_tags_excludes(),
+        Some(&["ramp".to_owned()][..])
+    );
+    assert_eq!(harness.pending(), []);
 }
 
 #[test]

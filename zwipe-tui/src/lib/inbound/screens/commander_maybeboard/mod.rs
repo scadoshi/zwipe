@@ -16,17 +16,21 @@ mod tests;
 use std::collections::HashSet;
 use std::time::Duration;
 
+use crossterm::event::KeyCode;
 use uuid::Uuid;
 use zwipe_client::ClientError;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
+use zwipe_core::domain::card::search_card::cards::Cards;
 use zwipe_core::domain::deck::format::Format;
 use zwipe_core::domain::user::models::hints::HINT_COMMANDER_MAYBEBOARD;
 
+use super::card_sheets::filter::{FilterSheet, SheetConfig, SheetOutcome};
 use super::playstyle::DeckLimit;
-use super::{Screen, failure, oracle_tags};
+use super::{Screen, card_sheets, failure, oracle_tags};
+use crate::domain::filter;
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;
@@ -80,9 +84,6 @@ pub(crate) const REMOVED: &str = "Removed";
 
 /// The toast after Clear maybeboard.
 pub(crate) const CLEARED: &str = "Maybeboard cleared";
-
-/// The stand-in toast for Filter.
-pub(crate) const FILTER_LATER: &str = "The card filter opens here once it lands";
 
 /// The fewest bytes of a trimmed query that search, as the app's `MIN_QUERY_LEN` (it counts bytes too).
 pub(crate) const MIN_QUERY_LEN: usize = 2;
@@ -167,6 +168,10 @@ pub(crate) struct MaybeboardView {
     pub(crate) rows: CardRows,
     pub(crate) focus: Focus,
     pub(crate) overlay: Option<Overlay>,
+    /// The card filter as last applied; the list narrows by it after the Show pips.
+    pub(crate) filter: CardQueryBuilder,
+    /// The card filter sheet, while it is open over the list.
+    pub(crate) sheet: Option<FilterSheet>,
 }
 
 impl MaybeboardView {
@@ -185,6 +190,8 @@ impl MaybeboardView {
             rows: CardRows::default(),
             focus: Focus::Input,
             overlay: None,
+            filter: CardQueryBuilder::default(),
+            sheet: None,
         }
     }
 
@@ -196,16 +203,48 @@ impl MaybeboardView {
             .collect()
     }
 
-    /// The saved list narrowed by the Show pips, in saved order.
+    /// The saved list narrowed by the Show pips, then by the applied card filter, then sorted when it set a sort; saved order otherwise.
     pub(crate) fn filtered(&self) -> Vec<&Card> {
-        self.entries
+        let shown: Vec<&Card> = self
+            .entries
             .iter()
             .filter(|c| {
                 self.colors
                     .iter()
                     .all(|color| c.scryfall_data.color_identity.contains(color))
             })
+            .collect();
+        let criteria = if self.filter.is_empty() {
+            None
+        } else {
+            self.filter.build_criteria().ok()
+        };
+        let sort = self.filter.sort();
+        if criteria.is_none() && sort.is_none() {
+            return shown;
+        }
+        let mut cards = Cards::from(shown.iter().map(|&c| c.clone()).collect::<Vec<Card>>());
+        if let Some(criteria) = &criteria {
+            cards = cards.matching(criteria);
+        }
+        if let Some(sort) = sort {
+            cards = cards.sorted(sort, self.filter.direction());
+        }
+        let order: Vec<Card> = cards.into();
+        order
+            .iter()
+            .filter_map(|card| {
+                shown
+                    .iter()
+                    .copied()
+                    .find(|c| c.scryfall_data.id == card.scryfall_data.id)
+            })
             .collect()
+    }
+
+    /// Whether Filter carries its dot: the card filter has a criterion or a sort.
+    pub(crate) fn filter_dot(&self) -> bool {
+        filter::shows_dot(&self.filter)
     }
 
     /// Whether the query is long enough to search, which is also when the result chips show.
@@ -355,6 +394,9 @@ impl MaybeboardView {
 
     /// Refetches when the commander swipe closed, since its up swipes saved entries, and swaps in a printing picked from a row.
     pub(crate) fn on_return(&mut self, cx: &mut Context<'_>) {
+        if card_sheets::filter::returned_from_dictionary(self.sheet.as_mut(), cx) {
+            return;
+        }
         if cx.shared.caches.handoff.commander_swipe.take().is_some() {
             self.refetch(cx);
         }
@@ -367,13 +409,32 @@ fn itself(card: &mut Card) -> &mut Card {
     card
 }
 
-/// Filter's stand-in: the card filter sheet belongs to the card filter screens, so for now this says where it will open.
-///
-/// The integrator replaces this body with opening that filter sheet over this screen's own `CardQueryBuilder` (no format filter, its active indicators shown, Clear emptying the builder). The list then re-filters only on Apply: after the Show pips, `Cards::from(filtered).matching(&builder.build_criteria()?)` when the builder is not empty, then `Cards::sorted(sort, direction)` when it set a sort, else the saved order stands. Filter then carries a dot while the builder has any criterion or a sort.
-pub(crate) fn open_filter(cx: &mut Context<'_>) {
-    cx.shared
-        .toasts
-        .push_for(ToastKind::Info, FILTER_LATER.to_owned(), toast::NORMAL);
+/// Opens the card filter sheet over the list's own filter, as the app's Filter does: no format section, Reset back to blank. The list changes only when Apply commits.
+pub(crate) fn open_filter(view: &mut MaybeboardView, cx: &mut Context<'_>) {
+    let config = SheetConfig {
+        show_format: false,
+        ..SheetConfig::default()
+    };
+    view.sheet = Some(FilterSheet::open(cx, &view.filter, config));
+}
+
+/// Keys while the filter sheet is open: Apply narrows the list and puts the focus back at its top.
+pub(crate) fn on_sheet(view: &mut MaybeboardView, code: KeyCode, cx: &mut Context<'_>) {
+    let Some(sheet) = &mut view.sheet else {
+        return;
+    };
+    match card_sheets::filter::keys::handle(sheet, code, cx) {
+        SheetOutcome::Open => {}
+        SheetOutcome::Closed => view.sheet = None,
+        SheetOutcome::Applied(filter) => {
+            view.sheet = None;
+            view.filter = *filter;
+            view.rows.set_focused(0);
+            if view.focus == Focus::List && view.filtered().is_empty() {
+                view.focus = Focus::Show;
+            }
+        }
+    }
 }
 
 /// The Quick add search for `query`: commanders in the Commander format by name, no tokens, sorted by name, eight at most.

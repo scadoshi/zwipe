@@ -8,7 +8,7 @@ use ratatui::widgets::{Block, Clear as ClearWidget, Padding, Paragraph};
 
 use super::{FilterSheet, Target};
 use crate::domain::filter::picker::PickerField;
-use crate::domain::filter::sections::{ChipSet, Row, StepRow};
+use crate::domain::filter::sections::{self, ChipSet, Row, Section, StepRow};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::widgets::{action_bar, mana};
@@ -78,6 +78,9 @@ pub(crate) fn lines(
             Span::styled(if open { "▾ " } else { "▸ " }, palette.muted),
             Span::styled(section.title(), header_style(palette, is_focus)),
         ];
+        if section == Section::OracleTags {
+            spans.push(Span::styled(" ?", palette.muted));
+        }
         if section.is_active(&sheet.draft) {
             spans.push(Span::styled("  ×", palette.warning));
         }
@@ -145,6 +148,16 @@ fn row_lines(
         } => {
             let mut spans = indent(palette, focused);
             spans.push(Span::styled(text, palette.muted.bold()));
+            if sections::dictionary_for(row).is_some() {
+                spans.push(Span::raw(" "));
+                spans.push(chip(
+                    palette,
+                    "d Dictionary",
+                    false,
+                    false,
+                    Some(palette.accent),
+                ));
+            }
             if let Some(chip_kind) = mode {
                 spans.push(Span::raw(" "));
                 spans.push(chip(

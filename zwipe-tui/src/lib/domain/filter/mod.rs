@@ -184,13 +184,6 @@ pub(crate) enum Adopted {
 }
 
 /// Puts a tag picked in the oracle tag dictionary into the filter: the excludes, or the includes in whichever of All or Any is in use.
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "the oracle tag dictionary, in the Home package, calls it"
-    )
-)]
 pub(crate) fn adopt_oracle_tag(b: &mut CardQueryBuilder, slug: &str, exclude: bool) -> Adopted {
     let list = if exclude {
         fields::StrList::TagsExclude

@@ -5,11 +5,13 @@ use zwipe_core::domain::card::search_card::card_filter::CardSortKey;
 use zwipe_core::domain::card::search_card::card_type::CardType;
 
 use super::*;
-use crate::domain::filter::fields::Toggle;
+use crate::domain::filter::fields::{MatchGroup, Toggle};
+use crate::domain::filter::sections::Row;
 use crate::domain::stores::catalog::Kind;
 use crate::domain::theme::Palette;
 use crate::inbound::app::App;
 use crate::inbound::screens;
+use crate::inbound::widgets::hint::HintTopic;
 use crate::test_support::{card, user};
 
 fn app() -> App {
@@ -410,4 +412,89 @@ fn the_sheet_draws_its_sections_and_the_open_rows() {
         "the active section shows its clear mark"
     );
     draw(&app, &sheet, 10, 4);
+}
+
+/// Focuses the Oracle tags row `row` of the open section.
+fn focus_row(sheet: &mut FilterSheet, row: impl Fn(Row) -> bool) {
+    sheet.focus = sheet
+        .targets()
+        .iter()
+        .position(|t| matches!(t, Target::Row(r) if row(*r)))
+        .unwrap();
+}
+
+#[test]
+fn the_dictionary_chips_open_the_dictionary_and_its_use_lands_in_the_list() {
+    use crate::domain::filter::sections;
+
+    let mut app = app();
+    let mut sheet = FilterSheet::new(&CardQueryBuilder::default(), plain());
+    open_section(&mut app, &mut sheet, Section::OracleTags);
+    assert!(draw(&app, &sheet, 80, 40).contains("Dictionary"));
+
+    let include = PickerField::Include(MatchGroup::Tags);
+    focus_row(&mut sheet, |r| {
+        matches!(r, Row::Label { .. }) && sections::dictionary_for(r) == Some(include)
+    });
+    press(&mut app, &mut sheet, &[KeyCode::Char('d')]);
+    assert_eq!(sheet.dictionary, Some(include));
+    app.shared.caches.handoff.oracle_tag = Some("ramp".to_owned());
+    let mut cx = Context::new(&mut app.shared);
+    assert!(returned_from_dictionary(Some(&mut sheet), &mut cx));
+    assert_eq!(
+        sheet.draft.oracle_tags_contains_any(),
+        Some(&["ramp".to_owned()][..])
+    );
+    assert_eq!(
+        last_toast(&app),
+        Some((ToastKind::Success, "Added to filter".to_owned()))
+    );
+    assert!(sheet.dictionary.is_none() && app.shared.caches.handoff.oracle_tag.is_none());
+
+    sheet.dictionary = Some(include);
+    app.shared.caches.handoff.oracle_tag = Some("ramp".to_owned());
+    let mut cx = Context::new(&mut app.shared);
+    sheet.take_dictionary_tag(&mut cx);
+    assert_eq!(
+        last_toast(&app),
+        Some((ToastKind::Info, "Already in filter".to_owned()))
+    );
+
+    let exclude = PickerField::Exclude(MatchGroup::Tags);
+    focus_row(&mut sheet, |r| r == Row::Picker(exclude));
+    press(&mut app, &mut sheet, &[KeyCode::F(3)]);
+    assert_eq!(sheet.dictionary, Some(exclude), "F3 in the search box");
+    app.shared.caches.handoff.oracle_tag = Some("removal".to_owned());
+    let mut cx = Context::new(&mut app.shared);
+    sheet.take_dictionary_tag(&mut cx);
+    assert_eq!(
+        sheet.draft.oracle_tags_excludes(),
+        Some(&["removal".to_owned()][..])
+    );
+
+    let mut cx = Context::new(&mut app.shared);
+    assert!(
+        !returned_from_dictionary(Some(&mut sheet), &mut cx),
+        "a return from anything else leaves the sheet alone"
+    );
+}
+
+#[test]
+fn i_in_the_oracle_tags_section_explains_oracle_tags() {
+    let mut app = app();
+    let mut sheet = FilterSheet::new(&CardQueryBuilder::default(), plain());
+    open_section(&mut app, &mut sheet, Section::OracleTags);
+    assert!(draw(&app, &sheet, 80, 40).contains("Oracle tags ?"));
+    press(&mut app, &mut sheet, &[KeyCode::Char('i')]);
+    assert_eq!(
+        app.shared.hint.as_ref().map(|h| h.content.clone()),
+        Some(HintTopic::OracleTags.content())
+    );
+    app.shared.hint = None;
+    open_section(&mut app, &mut sheet, Section::Name);
+    press(&mut app, &mut sheet, &[KeyCode::Char('i')]);
+    assert!(
+        app.shared.hint.is_none(),
+        "other sections have no explainer"
+    );
 }
