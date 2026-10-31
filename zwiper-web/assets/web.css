@@ -5,6 +5,9 @@
 :root {
     --web-sidebar-width: 13rem;
     --web-content-max: 72rem;
+    /* The app header's height: 1rem of padding above and below a title line
+       1.6rem tall, plus its border. The folded sidebar opens just under it. */
+    --web-header-height: calc(3.6rem + 1px);
 }
 
 html {
@@ -123,7 +126,8 @@ body {
     min-width: 0;
 }
 
-.web-topbar {
+/* The header's Menu button only shows where the sidebar folds away. */
+.web-header-menu {
     display: none;
 }
 
@@ -406,27 +410,15 @@ body {
     }
 }
 
-/* Narrow: the sidebar folds into a top bar with a menu. */
+/* Narrow: the sidebar folds away and the screen header's Menu button opens
+   it under the header. */
 @media (max-width: 899px) {
     .web-shell {
         flex-direction: column;
     }
 
-    /* The top bar is 3rem tall, so the action bar stays on screen. */
-    .web-shell .screen.web-screen {
-        height: calc(100vh - 3rem);
-    }
-
-    .web-topbar {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        padding: 0.5rem 1rem;
-        border-bottom: 1px solid var(--border-secondary);
-        background-color: var(--bg-primary);
-        position: sticky;
-        top: 0;
-        z-index: 3;
+    .web-header-menu {
+        display: inline-flex;
     }
 
     .web-sidebar {
@@ -436,7 +428,7 @@ body {
     .web-sidebar.open {
         display: flex;
         position: fixed;
-        top: 3rem;
+        top: var(--web-header-height);
         left: 0;
         right: 0;
         height: auto;

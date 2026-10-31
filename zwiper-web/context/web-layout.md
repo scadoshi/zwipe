@@ -1,13 +1,13 @@
 # zwiper-web layout
 
-The breakpoint is 900px: at 900px and up the window is wide, below it the web app is the phone layout in one column. Screens with three panels add the third at 1280px and up; between 900px and 1279px they show two. A left sidebar holds Home, Decks, Activity, Playstyle, Account, Config and Help, and folds into a top bar with a menu button below 900px. Bottom sheets become side panels when they edit something on the page and centered modals when they are short forms or lists; dialogs stay modal.
+The breakpoint is 900px: at 900px and up the window is wide, below it the web app is the phone layout in one column. Screens with three panels add the third at 1280px and up; between 900px and 1279px they show two. A left sidebar holds Home, Decks, Activity, Playstyle, Account, Config and Help, and below 900px folds into a menu opened from the screen header. Bottom sheets become side panels when they edit something on the page and centered modals when they are short forms or lists; dialogs stay modal.
 
 Esc closes the top overlay (dialog, then modal, then side panel, then full overlay), browser back does the same for overlays the app puts on its back stack, Enter submits the focused form, and `/` focuses the screen's search or quick add field where there is one. Single-key shortcuts only fire while no text field has focus.
 
 ## Shared chrome
 
 - The sidebar shows the six screens plus `Help`, which opens the same `Help & feedback` dialog as the app's `!` button. The current screen is highlighted; screens reached from a deck (Deck view, Edit, Import, Export, the card screens) highlight `Decks`. Logged-out screens have no sidebar.
-- The header is the app's `ScreenHeader` at the top of the main area: title, then the `?` hint button on the right when the screen has one. The `!` moves into the sidebar as `Help`. Below 900px the top bar is menu button, title, `?`, and `Help` sits in the menu.
+- The header is the app's `ScreenHeader` at the top of the main area: title, then the `?` hint button on the right when the screen has one. The `!` moves into the sidebar as `Help`. Below 900px there is no separate top bar: the header carries the menu button on the left, then the title and `?`, and `Help` sits in the menu.
 - On a wide window the action bar becomes a toolbar under the header, buttons in the app's order, so actions sit next to the content instead of at the bottom of a tall window. Below 900px it is pinned at the bottom as in the app. `Back` stays in the toolbar on every screen that has it.
 - Toasts keep the app's kinds, text, durations, stack of three and click to expand. On a wide window they sit top right so they do not cover the sidebar; below 900px top left as in the app.
 - Inline `?` info buttons and the screen `?` open the same `Got it` dialogs as the app, centered. One-time hints fire on the same triggers.
