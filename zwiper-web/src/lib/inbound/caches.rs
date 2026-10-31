@@ -3,6 +3,7 @@
 
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
+use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::universe::UbFranchiseView;
 use zwipe_core::http::contracts::changelog::HttpChangelog;
 
@@ -66,6 +67,13 @@ impl UbFranchises {
     }
 }
 
+/// The commander a `Create deck` button or a right swipe hands to Create
+/// deck: Create takes it once, sets the format to Commander and fills the
+/// commander with it. Playstyle and the commander maybeboard set it before
+/// pushing the route.
+#[derive(Debug, Clone, Copy)]
+pub struct CreateDeckSeed(pub Signal<Option<Card>>);
+
 /// Provides the root caches to everything under the root and starts their
 /// fetches. Call once, in the root component, after the session upkeep
 /// (which provides the client).
@@ -73,6 +81,7 @@ impl UbFranchises {
 /// - `Signal<Option<CachedCounts>>`: everybody's counters for the heroes,
 ///   starting from the copy an earlier visit stored.
 /// - [`ChangelogCache`] and [`UbFranchises`].
+/// - [`CreateDeckSeed`], empty.
 pub fn use_root_caches() {
     let counts: Signal<Option<CachedCounts>> =
         use_signal(|| CountsStore::browser().load().map(CachedCounts::restored));
@@ -95,6 +104,8 @@ pub fn use_root_caches() {
             }
         });
     });
+
+    use_context_provider(|| CreateDeckSeed(Signal::new(None)));
 
     let franchises = UbFranchises(use_signal(|| Load::Loading));
     use_context_provider(|| franchises);
