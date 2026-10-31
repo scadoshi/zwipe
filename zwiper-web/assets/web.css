@@ -1098,3 +1098,85 @@ body {
         transition: opacity 0.2s ease;
     }
 }
+
+/* ---- Import, Export ---- */
+
+@media (min-width: 900px) {
+    /* Import: the controls over the input on the left, the results on the
+       right beside them. The phone's scroll wrapper adds no box here; the
+       screen's column scrolls. */
+    .web-import.screen-content,
+    .web-export.screen-content {
+        display: grid;
+        align-items: start;
+        align-content: start;
+        column-gap: 2.5rem;
+        width: 100%;
+        max-width: 72rem;
+        margin: 0 auto;
+        padding: 1rem 1.5rem 2rem;
+        box-sizing: border-box;
+    }
+
+    .web-import.screen-content {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .web-import > .import-controls,
+    .web-export > .import-controls {
+        grid-column: 1;
+        grid-row: 1;
+        max-width: none;
+        padding: 0 0 0.75rem;
+    }
+
+    .web-import > .import-scroll,
+    .web-export > .import-scroll,
+    .web-import-body.container-sm,
+    .web-export-body.container-sm {
+        display: contents;
+    }
+
+    .web-import-input {
+        grid-column: 1;
+        grid-row: 2;
+    }
+
+    .web-import-results {
+        grid-column: 2;
+        grid-row: 1 / span 2;
+    }
+
+    .web-import-results > .label:first-child {
+        margin-top: 0;
+    }
+
+    /* Export: the board chips in a narrow column, the decklist at full
+       height beside them. */
+    .web-export.screen-content {
+        grid-template-columns: 16rem minmax(0, 1fr);
+        flex: 1 1 auto;
+    }
+
+    .web-export > .import-controls {
+        grid-row: 1 / span 2;
+    }
+
+    .web-export > .import-controls .chip-row {
+        flex-wrap: wrap;
+    }
+
+    .web-export-body > * {
+        grid-column: 2;
+    }
+
+    .web-export-body > .label {
+        grid-row: 1;
+        margin-top: 0;
+    }
+
+    .web-export-body > textarea {
+        grid-row: 2;
+        min-height: calc(100vh - 14rem) !important;
+    }
+}

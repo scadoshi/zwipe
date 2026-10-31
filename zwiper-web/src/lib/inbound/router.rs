@@ -13,10 +13,12 @@ use crate::inbound::screens::commander_maybeboard::CommanderMaybeboard;
 use crate::inbound::screens::config::Config;
 use crate::inbound::screens::deck::create::CreateDeck;
 use crate::inbound::screens::deck::edit::EditDeck;
+use crate::inbound::screens::deck::export::ExportDeck;
+use crate::inbound::screens::deck::import::ImportDeck;
 use crate::inbound::screens::deck::list::DeckList;
 use crate::inbound::screens::home::Home;
 use crate::inbound::screens::placeholders::{
-    AddDeckCard, ExportDeck, ImportDeck, NotFound, RemoveDeckCard, ViewDeck, ViewDeckCard,
+    AddDeckCard, NotFound, RemoveDeckCard, ViewDeck, ViewDeckCard,
 };
 use crate::inbound::screens::playstyle::Playstyle;
 use crate::inbound::screens::privacy_policy::PrivacyPolicy;

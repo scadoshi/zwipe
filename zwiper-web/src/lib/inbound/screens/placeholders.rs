@@ -32,18 +32,6 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
     rsx! { Placeholder { title: "Deck", deck_id } }
 }
 
-/// Import for one deck, not built yet.
-#[component]
-pub fn ImportDeck(deck_id: Uuid) -> Element {
-    rsx! { Placeholder { title: "Import", deck_id } }
-}
-
-/// Export for one deck, not built yet.
-#[component]
-pub fn ExportDeck(deck_id: Uuid) -> Element {
-    rsx! { Placeholder { title: "Export", deck_id } }
-}
-
 /// Add cards for one deck, not built yet.
 #[component]
 pub fn AddDeckCard(deck_id: Uuid) -> Element {
