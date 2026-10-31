@@ -35,13 +35,15 @@ The crate, the router with a route per screen at the app's paths (unbuilt screen
 - Privacy policy with its contents column, and Changelog with its filter column.
 - The authed-call facade (refresh, run, toast) every later wave calls through.
 
-## Wave B: home, activity, playstyle (spec 2), branch `feat/web-b`
+## Wave B: home, activity, playstyle (spec 2), branch `feat/web-b` (done)
 
 - Home: the scoped hero, the color map, the featured flavor card with its image beside the quote.
 - Activity: the heatmap and readout, Totals, the role and oracle tag rate charts, Most skipped.
 - Playstyle: the profile sections open together, the oracle tags table, the suggestions with Show, Staples, Clear skips, the suggested-mode swipe.
 - Commander maybeboard with quick add, the color filter, swipe, remove, clear.
 - The oracle tag dictionary and Examples modals.
+- zwiper-web takes its screen logic, hint copy, timings and caps from zwipe-ui; the copies it still keeps are marked `// Belongs in zwipe-ui`.
+- Left for later waves: the commander maybeboard's `Filter` and commander-mode Swipe select's filter (Wave D), and a host for the dictionary (the oracle tag picker in Wave C, the filter panel in Wave D).
 
 ## Wave C: decks (spec 3), branch `feat/web-c`
 
@@ -69,6 +71,8 @@ Wire the cross-links the waves leave open (Playstyle `Create deck` to Create, th
 - The one-time `filter` hint fires on the first use of a filter section, not when the screen opens with the filter docked.
 - A command zone input clears its chosen card when typing starts, not on a click.
 - Commander maybeboard's `Back` follows browser history; the app pushes the deck list.
+- The printing sheet steps through printings with `←` and `→` buttons and keys in place of the app's swipe carousel.
+- Home greets once per page load, a browser's launch.
 - The `!` header button moves into the sidebar as `Help` on authed screens; the public screens keep it in the header.
 - Platform-only pieces are skipped: the app icon picker, haptics, crash capture, usage telemetry (a failed call is logged, not reported), the OS back gesture.
 - Escape closes an open dialog before anything else, even where the app's back stack would close the sheet under it first (the Exceptions sheet's hint).
