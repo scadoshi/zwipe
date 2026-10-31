@@ -28,7 +28,7 @@ src/
 
 The upkeep loop runs `ensure_fresh` and then the min-version check, at once and every 60 s after. `ensure_fresh` is the only way to an authed call: it refreshes a token that expires within two minutes, one refresh at a time, stores the new session before setting the signal, and clears the session when the server rejects the refresh. `AuthGate` sends the user to Login the moment the session is gone, with no message, as the app does.
 
-The root also mounts the kit's `ToastStack` (screens raise toasts with `dioxus_primitives::toast::use_toast`), the dialog host (`AlertDialog` anywhere draws there), and `SplashGate` open, since the web has no splash.
+The root also mounts the kit's `ToastStack` (screens raise toasts with `dioxus_primitives::toast::use_toast`), the dialog host (`AlertDialog` anywhere draws there), the overlay back stack with a page-wide Escape listener that closes the top overlay, and `SplashGate` open, since the web has no splash.
 
 ## Styling
 
