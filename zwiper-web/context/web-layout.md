@@ -44,7 +44,7 @@ Esc closes the top overlay (dialog, then modal, then side panel, then full overl
 ## Home
 
 - On a wide window the hero panel spans the top (logo left, the three counters and the `Live`, `Everybody`/`Only me`, `Activity` chips right). Below it the `Color map` panel and the `Featured flavor` panel sit side by side.
-- The featured flavor panel shows the card image next to the quote, which the phone keeps behind `Image`; `Image` still opens the full preview and `Buy` still opens the `Buy card` dialog.
+- The featured flavor panel is the app's: the quote, then the card's name and price, `Image` (the full preview) and `Buy`.
 - The app's action bar (`Decks`, `Account`, `Config`) is dropped on a wide window because the sidebar holds the same three; below 900px it stays.
 - `Playstyle` under the color map and `Activity` in the hero stay as buttons.
 - Below 900px it is the phone stack: hero, color map, featured flavor.

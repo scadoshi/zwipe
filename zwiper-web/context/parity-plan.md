@@ -37,7 +37,7 @@ The crate, the router with a route per screen at the app's paths (unbuilt screen
 
 ## Wave B: home, activity, playstyle (spec 2), branch `feat/web-b` (done)
 
-- Home: the scoped hero, the color map, the featured flavor card with its image beside the quote.
+- Home: the scoped hero, the color map, the featured flavor card.
 - Activity: the heatmap and readout, Totals, the role and oracle tag rate charts, Most skipped.
 - Playstyle: the profile sections open together, the oracle tags table, the suggestions with Show, Staples, Clear skips, the suggested-mode swipe.
 - Commander maybeboard with quick add, the color filter, swipe, remove, clear.

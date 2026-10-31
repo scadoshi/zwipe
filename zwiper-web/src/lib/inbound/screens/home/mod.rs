@@ -1,10 +1,9 @@
 //! Home: the counters, the color map and the featured flavor card.
 //!
 //! On a wide window the hero spans the top and the color map and flavor
-//! panels sit side by side under it, the flavor card's image beside its
-//! quote; the app's action bar (`Decks`, `Account`, `Config`) goes, since
-//! the sidebar holds the same three. Below the breakpoint it is the app's
-//! stack.
+//! panels sit side by side under it; the app's action bar (`Decks`,
+//! `Account`, `Config`) goes, since the sidebar holds the same three. Below
+//! the breakpoint it is the app's stack.
 
 pub mod color_map;
 pub mod hero;
@@ -19,7 +18,7 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
+use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::deck_metrics;
 use zwipe_core::domain::user::models::preferences::PipStyle;
@@ -211,9 +210,8 @@ pub fn Home() -> Element {
 }
 
 /// The featured flavor card: its quote, then its name, its USD price when it
-/// has one, `Image`, and `Buy` when priced. A wide window shows the card's
-/// image beside the quote. A card without flavor text leaves the panel
-/// empty; before any card it ghosts.
+/// has one, `Image`, and `Buy` when priced. A card without flavor text
+/// leaves the panel empty; before any card it ghosts.
 #[component]
 fn FlavorPanel(
     flavor: Option<FlavorCard>,
@@ -230,18 +228,12 @@ fn FlavorPanel(
             };
             let price = deck_metrics::card_price(&sd, PriceCurrency::Usd)
                 .map(|p| PriceCurrency::Usd.format_amount(p));
-            let image = sd.primary_image_url(ImageSize::Normal).map(str::to_owned);
             let sd_for_image = sd.clone();
             rsx! {
                 div { class: "settings-list-header", style: "justify-content: center;",
                     span { class: "settings-list-title", "Featured flavor" }
                 }
-                div { class: "web-flavor-body",
-                    if let Some(url) = image {
-                        img { class: "web-flavor-image", src: "{url}", alt: "{sd.name}" }
-                    }
-                    div { class: "flavor-quote", style: "padding: 1rem;", "{flavor_text} " }
-                }
+                div { class: "flavor-quote", style: "padding: 1rem;", "{flavor_text} " }
                 div { class: "flavor-buy-row",
                     span { class: "flavor-name", "{sd.name}" }
                     if let Some(price) = price.as_ref() {

@@ -701,10 +701,6 @@ body {
     margin-bottom: auto;
 }
 
-.web-flavor-image {
-    display: none;
-}
-
 @media (min-width: 900px) {
     /* The hero spans the top: the mark on the left, the figures and their
        tags on the right. */
@@ -743,28 +739,6 @@ body {
         width: auto;
         max-width: none;
         margin-top: var(--panel-gap);
-    }
-
-    /* The flavor card's image beside its quote, which the phone keeps
-       behind Image. */
-    .web-flavor-body {
-        display: flex;
-        align-items: center;
-        gap: 0.25rem;
-        padding: 1rem 1rem 0;
-    }
-
-    .web-flavor-image {
-        display: block;
-        width: 9rem;
-        flex: none;
-        border-radius: 4.75% / 3.5%;
-        animation: flavor-enter 0.3s ease-out 0.1s backwards;
-    }
-
-    .web-flavor-body .flavor-quote {
-        flex: 1;
-        text-align: left;
     }
 
     /* The sidebar holds Decks, Account and Config. */
