@@ -25,7 +25,7 @@ use zwipe_core::http::helpers::Patch;
 
 use self::pickers::{FormatPicker, OraclePicker, TagPicker};
 use self::swipe_pick::SwipePicker;
-use super::{Screen, card_sheets, failure};
+use super::{Screen, card_sheets};
 use crate::domain::deck::form::{self, Slot};
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
@@ -918,7 +918,7 @@ fn open_with(cx: &mut Context<'_>, form: DeckForm) {
 
 pub(crate) async fn perform(account: &Account, request: Request) -> Option<screens::Update> {
     let client = &account.client;
-    let error = |e: &zwipe_client::ClientError| failure(e, |m| Update::Error(m).into());
+    let error = |e: &zwipe_client::ClientError| screens::failure(e, |m| Update::Error(m).into());
     match request {
         Request::DeckTagCatalog => {
             match async { client.fetch_deck_tags(&account.fresh().await?).await }.await {
@@ -956,7 +956,7 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
         Request::LoadDeck(deck_id) => Some(
             match async { client.fetch_deck(deck_id, &account.fresh().await?).await }.await {
                 Ok(deck) => Update::DeckLoaded(Box::new(deck)).into(),
-                Err(e) => failure(&e, |m| Update::LoadFailed(m).into()),
+                Err(e) => screens::failure(&e, |m| Update::LoadFailed(m).into()),
             },
         ),
         Request::FetchCard { slot, id } => Some(match client.fetch_card(id).await {
@@ -1020,7 +1020,7 @@ async fn create(account: &Account, deck: &NewDeck) -> screens::Update {
     .await
     {
         Ok(profile) => Update::Created(Box::new(profile)).into(),
-        Err(e) => failure(&e, |m| Update::SaveFailed(m).into()),
+        Err(e) => screens::failure(&e, |m| Update::SaveFailed(m).into()),
     }
 }
 
@@ -1035,7 +1035,7 @@ async fn save(account: &Account, deck_id: Uuid, changes: &Changes) -> screens::U
     .await
     {
         Ok(_) => Update::Updated.into(),
-        Err(e) => failure(&e, |m| Update::SaveFailed(m).into()),
+        Err(e) => screens::failure(&e, |m| Update::SaveFailed(m).into()),
     }
 }
 
@@ -1050,7 +1050,7 @@ async fn maybeboard_add(account: &Account, oracle_id: Uuid) -> screens::Update {
     .await
     {
         Ok(()) => Update::MaybeboardAdded.into(),
-        Err(e) => failure(&e, |m| Update::Error(m).into()),
+        Err(e) => screens::failure(&e, |m| Update::Error(m).into()),
     }
 }
 
@@ -1065,7 +1065,7 @@ async fn maybeboard_remove(account: &Account, oracle_id: Uuid) -> screens::Updat
     .await
     {
         Ok(()) => Update::MaybeboardRemoved.into(),
-        Err(e) => failure(&e, |m| Update::Error(m).into()),
+        Err(e) => screens::failure(&e, |m| Update::Error(m).into()),
     }
 }
 

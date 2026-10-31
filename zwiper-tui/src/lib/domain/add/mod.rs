@@ -7,11 +7,10 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::colors::{Color, Colors};
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
-use zwipe_core::domain::deck::deck_metrics::deck_price;
-use zwipe_core::domain::deck::{Deck, DeckEntry, Format};
+use zwipe_core::domain::deck::{Deck, DeckEntry, Format, deck_metrics};
 use zwipe_core::http::contracts::deck::HttpDeckCardSearch;
 
-use crate::domain::deck_signals::land_count;
+use crate::domain::deck_signals;
 use crate::domain::filter::{AddContext, ensure_lands_excluded};
 
 /// Cards fetched per page.
@@ -68,9 +67,13 @@ impl AddDeck {
                 .filter(|e| e.deck_card.board.is_maybeboard())
                 .cloned()
                 .collect(),
-            land_count: land_count(&deck.entries),
+            land_count: deck_signals::land_count(&deck.entries),
             land_target: profile.land_target,
-            total_price: deck_price(&deck.entries, &deck.command_zone_cards, currency),
+            total_price: deck_metrics::deck_price(
+                &deck.entries,
+                &deck.command_zone_cards,
+                currency,
+            ),
             budget: profile.price_target,
             currency,
         }

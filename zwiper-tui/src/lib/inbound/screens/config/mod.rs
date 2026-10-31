@@ -12,7 +12,7 @@ use zwipe_core::domain::user::hints::HINT_CONFIG;
 use zwipe_core::domain::user::preferences::{PipStyle, UserPreferences};
 use zwipe_core::http::contracts::user::HttpUpdatePreferences;
 
-use super::{Screen, failure};
+use super::Screen;
 use crate::domain::theme::{self, Palette, PickerRow};
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
@@ -384,7 +384,9 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
                     account.set_preferences(preferences.clone()).await;
                     Some(Update::Preferences(Box::new(preferences)).into())
                 }
-                Err(e) => Some(failure(&e, |_| Update::PreferencesUnavailable.into())),
+                Err(e) => Some(screens::failure(&e, |_| {
+                    Update::PreferencesUnavailable.into()
+                })),
             }
         }
         Request::Save { seq, change, undo } => {
@@ -405,7 +407,7 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
                     }
                     .into()
                 }
-                Err(e) => failure(&e, |message| {
+                Err(e) => screens::failure(&e, |message| {
                     Update::SaveFailed { seq, undo, message }.into()
                 }),
             })

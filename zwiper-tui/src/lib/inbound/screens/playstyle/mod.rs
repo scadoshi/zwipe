@@ -24,7 +24,7 @@ use zwipe_core::http::contracts::suggestions::{
     HttpBuilderProfile, HttpCommanderSuggestion, HttpCommanderSuggestions, HttpStaple,
 };
 
-use super::{Screen, deck_form, failure, home, oracle_tags};
+use super::{Screen, deck_form, home, oracle_tags};
 use crate::domain::activity::Bar;
 use crate::domain::playstyle::{
     self, HELD_SIZE, LIST_SIZE, StapleColor, TagRow, identities_present, of_identity,
@@ -790,7 +790,9 @@ async fn act<T>(
 ) -> Option<screens::Update> {
     match call.await {
         Ok(_) => Some(done.into()),
-        Err(e) => Some(failure(&e, |message| Update::ActionFailed(message).into())),
+        Err(e) => Some(screens::failure(&e, |message| {
+            Update::ActionFailed(message).into()
+        })),
     }
 }
 
@@ -812,7 +814,7 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
                     }
                     .into(),
                 ),
-                Err(e) => Some(failure(&e, |message| {
+                Err(e) => Some(screens::failure(&e, |message| {
                     Update::LoadFailed { ticket, message }.into()
                 })),
             }

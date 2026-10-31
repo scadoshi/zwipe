@@ -10,7 +10,7 @@ use zwipe_client::ClientError;
 use zwipe_core::domain::deck::ImportMode;
 use zwipe_core::domain::deck::requests::import_deck_cards::ImportDeckCardsResult;
 
-use super::{Screen, failure};
+use super::Screen;
 use crate::domain::deck::form::{self, ImportTone};
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
@@ -279,7 +279,7 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
 fn outcome(result: Result<ImportDeckCardsResult, ClientError>) -> screens::Update {
     match result {
         Ok(result) => Update::Imported(result).into(),
-        Err(e) => failure(&e, |m| Update::Failed(m).into()),
+        Err(e) => screens::failure(&e, |m| Update::Failed(m).into()),
     }
 }
 

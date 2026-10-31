@@ -18,8 +18,9 @@ use zwipe_core::domain::card::search_card::card_filter::CardSortKey;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::card::search_card::group_cards::GroupByOption;
-use zwipe_core::domain::deck::deck_metrics::deck_price;
-use zwipe_core::domain::deck::{Board, Deck, DeckCard, DeckEntry, DeckProfile, Quantity};
+use zwipe_core::domain::deck::{
+    Board, Deck, DeckCard, DeckEntry, DeckProfile, Quantity, deck_metrics,
+};
 use zwipe_core::domain::user::hints::HINT_DECK_CARDS;
 use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
 use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpPatchDeckCard};
@@ -27,13 +28,12 @@ use zwipe_core::http::helpers::Patch;
 
 use super::card_sheets::filter::{FilterSheet, SheetConfig};
 use super::card_sheets::printing::PrintingSheet;
-use super::swipe::signal;
 use super::{Screen, remove_cards, swipe};
 use crate::domain::deck_cards::{self, Boards, Burst, Bursts, Display, Write, Zone};
 use crate::domain::deck_signals::{self, Crossing};
 use crate::domain::filter::picker::Sources;
 use crate::domain::stores::filters::FilterScope;
-use crate::domain::stores::undo::{CommandZoneSlot, UndoAction, create_board_field};
+use crate::domain::stores::undo::{self, CommandZoneSlot, UndoAction};
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;
@@ -470,7 +470,7 @@ impl DeckCardsView {
     }
 
     fn signals(&self, cx: &mut Context<'_>, lands_before: i32, price_before: f64) {
-        signal(
+        swipe::signal(
             cx,
             deck_signals::land_crossing(
                 self.land_target(),
@@ -479,7 +479,7 @@ impl DeckCardsView {
                 Crossing::Both,
             ),
         );
-        signal(
+        swipe::signal(
             cx,
             deck_signals::budget_crossing(
                 self.budget(),
@@ -491,7 +491,7 @@ impl DeckCardsView {
     }
 
     fn price(&self) -> f64 {
-        deck_price(&self.entries, &self.command_zone_cards, self.currency())
+        deck_metrics::deck_price(&self.entries, &self.command_zone_cards, self.currency())
     }
 
     /// One quantity tap: applies at once, and gathers into the card's burst for one write 300 ms after the last tap. Below one, the row is removed. `record` logs the change for the deck's Undo.
@@ -1366,7 +1366,7 @@ async fn undo_create(
     let request = HttpCreateDeckCard::new(
         &entry.card.scryfall_data,
         baseline,
-        create_board_field(entry.deck_card.board),
+        undo::create_board_field(entry.deck_card.board),
     );
     let result = account
         .client

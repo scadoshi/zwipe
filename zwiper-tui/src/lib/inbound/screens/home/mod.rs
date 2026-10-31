@@ -17,7 +17,7 @@ use zwipe_core::domain::user::preferences::UserPreferences;
 use zwipe_core::http::contracts::suggestions::HttpPlayStyleSummary;
 
 use self::cache::{CachedMyCounts, CachedPlayStyle, FlavorCard};
-use super::{Screen, failure};
+use super::Screen;
 use crate::domain::color_map::seed_from_id;
 use crate::domain::decode;
 use crate::domain::home::{self, Figures, Scope};
@@ -305,7 +305,7 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
                 account.set_user(user.clone()).await;
                 Update::User(Box::new(user))
             }
-            Err(e) => return Some(failure(&e, |_| Update::UserFailed.into())),
+            Err(e) => return Some(screens::failure(&e, |_| Update::UserFailed.into())),
         },
         Request::Preferences => {
             let preferences = async { client.fetch_preferences(&account.fresh().await?).await }
@@ -333,7 +333,7 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
                     user_id,
                     summary: Box::new(summary),
                 },
-                Err(e) => return Some(failure(&e, |_| Update::PlayStyleFailed.into())),
+                Err(e) => return Some(screens::failure(&e, |_| Update::PlayStyleFailed.into())),
             }
         }
         Request::Flavor => {

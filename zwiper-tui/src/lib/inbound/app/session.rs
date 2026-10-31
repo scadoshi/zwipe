@@ -6,7 +6,7 @@ use std::time::Duration;
 
 use zwipe_client::ClientError;
 use zwipe_core::http::contracts::metrics::{AnonymousEventKind, HttpAnonymousEvent};
-use zwipe_core::version::version_at_least;
+use zwipe_core::version;
 
 use super::Context;
 use crate::inbound::screens::{Request, Update, VERSION, login};
@@ -27,7 +27,7 @@ pub(crate) async fn upkeep(account: &Account) -> Update {
         .fetch_min_client_version()
         .await
         .ok()
-        .map(|minimum| !version_at_least(VERSION, &minimum.min_version));
+        .map(|minimum| !version::version_at_least(VERSION, &minimum.min_version));
     Update::Upkept { ended, too_old }
 }
 

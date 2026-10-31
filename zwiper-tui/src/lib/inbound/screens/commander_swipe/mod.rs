@@ -22,7 +22,7 @@ use zwipe_core::http::contracts::suggestions::HttpCommanderSuggestion;
 
 use super::card_sheets::filter::{FilterSheet, SheetConfig, SheetOutcome};
 use super::playstyle::{DeckLimit, create_deck_with, suggestion_colors};
-use super::{Screen, card_sheets, failure};
+use super::{Screen, card_sheets};
 use crate::domain::stack::Direction;
 use crate::domain::{filter, playstyle};
 use crate::inbound::app::Context;
@@ -634,7 +634,9 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
                     }
                     .into(),
                 ),
-                Err(e) => Some(failure(&e, |_| Update::SearchFailed { ticket }.into())),
+                Err(e) => Some(screens::failure(&e, |_| {
+                    Update::SearchFailed { ticket }.into()
+                })),
             }
         }
         Request::Save(oracle_id) => {
@@ -646,7 +648,9 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
             .await
             {
                 Ok(()) => Some(Update::Saved.into()),
-                Err(e) => Some(failure(&e, |message| Update::Failed(message).into())),
+                Err(e) => Some(screens::failure(&e, |message| {
+                    Update::Failed(message).into()
+                })),
             }
         }
         Request::Unsave(oracle_id) => {
@@ -658,7 +662,9 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
             .await
             {
                 Ok(()) => Some(Update::Unsaved.into()),
-                Err(e) => Some(failure(&e, |message| Update::Failed(message).into())),
+                Err(e) => Some(screens::failure(&e, |message| {
+                    Update::Failed(message).into()
+                })),
             }
         }
         // Quiet like the app's: the pile already moved on, and a failure only means the commander comes back sooner.

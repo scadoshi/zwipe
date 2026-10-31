@@ -12,7 +12,7 @@ use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::deck::DeckProfile;
 use zwipe_core::domain::user::User;
 
-use super::{Screen, failure};
+use super::Screen;
 use crate::domain::deck::list::{self, DeckGroup, GroupBy, Show};
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
@@ -322,7 +322,7 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
             {
                 Ok((decks, Some(user))) => Update::LoadedWithUser(decks, Box::new(user)).into(),
                 Ok((decks, None)) => Update::Loaded(decks).into(),
-                Err(e) => failure(&e, |m| Update::Failed(m).into()),
+                Err(e) => screens::failure(&e, |m| Update::Failed(m).into()),
             },
         ),
     }

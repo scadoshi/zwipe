@@ -14,7 +14,7 @@ use ratatui::text::{Line, Span};
 use zwipe_core::domain::user::models::hints::HINT_ACTIVITY;
 use zwipe_core::http::contracts::suggestions::{HttpActivity, HttpHardPass};
 
-use super::{Screen, failure, home};
+use super::{Screen, home};
 use crate::domain::activity::{self, Bar, HeatLayout, RateKind};
 use crate::domain::home::Figures;
 use crate::domain::theme::Palette;
@@ -568,7 +568,9 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
     let client = &account.client;
     match async { client.activity(&account.fresh().await?).await }.await {
         Ok(found) => Some(Update::Loaded(Box::new(found)).into()),
-        Err(e) => Some(failure(&e, |message| Update::Failed(message).into())),
+        Err(e) => Some(screens::failure(&e, |message| {
+            Update::Failed(message).into()
+        })),
     }
 }
 
