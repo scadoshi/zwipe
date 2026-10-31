@@ -32,4 +32,4 @@ orangui-core is pinned to rev `932abb5` on orangui's `feat/orangui-core` branch.
 
 ## Not yet
 
-Screen models (a state, actions and effects per screen) come next, starting with zwiper-web's waves B to D. The clients still use their own copies of everything here until each one switches over.
+Screen models (a state, actions and effects per screen) come next, starting with zwiper-web's waves B to D. zwiper-tui has switched to everything here; zwiper-web and the app still use their own copies until each one switches over.
