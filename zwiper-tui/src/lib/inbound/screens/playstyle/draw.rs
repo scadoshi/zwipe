@@ -35,6 +35,11 @@ use crate::inbound::widgets::{action_bar, charts, color_map, header, mana, otag}
 /// The tallest the color map draws, in rows, as the app's `14rem`.
 const MAP_ROWS: u16 = 14;
 
+/// The rows the color map may take in a body `height` rows tall: up to [`MAP_ROWS`], but no more than half the body, so a short terminal draws the map at half scale and keeps the rows under it in view.
+fn map_rows(height: u16) -> u16 {
+    MAP_ROWS.min(height / 2)
+}
+
 /// A number column of the tags table, in cells.
 const COLUMN_WIDTH: usize = 10;
 
@@ -75,13 +80,18 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &PlaystyleView) {
     .areas(area);
     header::draw(f, palette, title, super::TITLE, header::Corner::Hint);
     if view.is_loading {
-        activity_draw::draw_lines(f, skeleton(palette, view, body.width), (0, 0), body);
+        activity_draw::draw_lines(
+            f,
+            skeleton(palette, view, body.width, map_rows(body.height)),
+            (0, 0),
+            body,
+        );
     } else if view.load_failed {
         activity_draw::draw_note(f, palette, LOAD_FAILED, body);
     } else if view.cold_start() {
         activity_draw::draw_note(f, palette, COLD_START, body);
     } else {
-        let body_lines = loaded_lines(shared, view, body.width);
+        let body_lines = loaded_lines(shared, view, body.width, map_rows(body.height));
         activity_draw::draw_lines(f, body_lines.lines, body_lines.focus, body);
     }
     f.render_widget(action_bar::wrap(bar, keys.width), keys);
@@ -262,7 +272,7 @@ pub(crate) fn wrap_at_gaps(line: Line<'static>, width: usize) -> Vec<Line<'stati
 }
 
 /// The loaded column and the range of the focused piece.
-fn loaded_lines(shared: &Shared, view: &PlaystyleView, width: u16) -> Body {
+fn loaded_lines(shared: &Shared, view: &PlaystyleView, width: u16, map_rows: u16) -> Body {
     let palette = &shared.palette;
     let inner = usize::from(width)
         .saturating_sub(GUTTER.len())
@@ -282,7 +292,7 @@ fn loaded_lines(shared: &Shared, view: &PlaystyleView, width: u16) -> Body {
             continue;
         }
         match section {
-            Section::ColorMap => color_map_body(&mut body, shared, view, inner),
+            Section::ColorMap => color_map_body(&mut body, shared, view, inner, map_rows),
             Section::Summary => summary_body(&mut body, palette, view, inner),
             Section::Roles => roles_body(&mut body, shared, view, inner),
             Section::Tags => tags_body(&mut body, shared, view, inner),
@@ -322,7 +332,13 @@ fn centered(line: Line<'static>, width: usize) -> Line<'static> {
 }
 
 /// The Color map section: the user's tiles at home's seed with the key under them, or the cold start line.
-fn color_map_body(body: &mut Body, shared: &Shared, view: &PlaystyleView, width: usize) {
+fn color_map_body(
+    body: &mut Body,
+    shared: &Shared,
+    view: &PlaystyleView,
+    width: usize,
+    map_rows: u16,
+) {
     let palette = &shared.palette;
     let counts = view
         .profile
@@ -340,7 +356,7 @@ fn color_map_body(body: &mut Body, shared: &Shared, view: &PlaystyleView, width:
     let model = ColorMapModel::new(&counts, home::seed(shared));
     let elapsed = view.map_opened.map_or(Duration::MAX, |t| t.elapsed());
     let map_width = u16::try_from(width).unwrap_or(u16::MAX);
-    for line in color_map::lines(palette, &model, elapsed, map_width, MAP_ROWS) {
+    for line in color_map::lines(palette, &model, elapsed, map_width, map_rows) {
         body.line(activity_draw::indented(centered(line, width)));
     }
     body.line(color_map::rule(palette, width));
@@ -718,7 +734,12 @@ pub(crate) fn reasons_lines(
 }
 
 /// The loading column in the loaded shape, every piece a ghost: the Color map section open on a blooming ghost map and its key, three collapsed section headers, the Show row and the list's header and six rows.
-fn skeleton(palette: &Palette, view: &PlaystyleView, width: u16) -> Vec<Line<'static>> {
+fn skeleton(
+    palette: &Palette,
+    view: &PlaystyleView,
+    width: u16,
+    map_rows: u16,
+) -> Vec<Line<'static>> {
     let inner = usize::from(width)
         .saturating_sub(GUTTER.len())
         .saturating_sub(INDENT.len());
@@ -740,7 +761,7 @@ fn skeleton(palette: &Palette, view: &PlaystyleView, width: u16) -> Vec<Line<'st
         &zwipe_ui::color_map::ghost_model(),
         view.opened.elapsed(),
         map_width,
-        MAP_ROWS,
+        map_rows,
     ) {
         body.line(activity_draw::indented(centered(line, inner)));
     }

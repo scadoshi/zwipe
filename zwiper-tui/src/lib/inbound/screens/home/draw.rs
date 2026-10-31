@@ -16,6 +16,7 @@ use zwipe_ui::playstyle;
 use super::{HomeView, Overlay, keys};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
+use crate::inbound::widgets::color_map::Scale;
 use crate::inbound::widgets::{
     action_bar, color_map, entrance, figures, header, logo, measure, skeleton, stagger,
 };
@@ -177,8 +178,6 @@ fn draw_color_map(f: &mut Frame<'_>, shared: &Shared, view: &HomeView, area: Rec
     let inner = block.inner(area);
     f.render_widget(block, area);
     let width = inner.width;
-    // The rule and a key that may wrap onto a second line.
-    let rows = inner.height.saturating_sub(3);
 
     let counts = summary
         .filter(|s| s.deck_count > 0)
@@ -189,9 +188,22 @@ fn draw_color_map(f: &mut Frame<'_>, shared: &Shared, view: &HomeView, area: Rec
     let lines: Vec<Line<'static>> = match (summary, counts) {
         (_, Some(counts)) => {
             let model = ColorMapModel::new(&counts, super::seed(shared));
+            let key = color_map::key(palette, &counts, Some(("p", "Playstyle")));
+            let key_height = measure::height_of(
+                Paragraph::new(key.clone())
+                    .wrap(Wrap { trim: true })
+                    .line_count(width),
+            );
+            // The rule gives way when the map, even at half scale, needs its row.
+            let room = inner.height.saturating_sub(key_height);
+            let beside_rule = room.saturating_sub(1);
+            let ruled = Scale::fitting(&model, width, beside_rule).rows(&model) <= beside_rule;
+            let rows = if ruled { beside_rule } else { room };
             let mut lines = color_map::lines(palette, &model, view.map_elapsed(), width, rows);
-            lines.push(color_map::rule(palette, usize::from(width)));
-            lines.push(color_map::key(palette, &counts, Some(("p", "Playstyle"))));
+            if ruled {
+                lines.push(color_map::rule(palette, usize::from(width)));
+            }
+            lines.push(key);
             lines
         }
         (Some(_), None) => vec![
@@ -211,7 +223,8 @@ fn draw_color_map(f: &mut Frame<'_>, shared: &Shared, view: &HomeView, area: Rec
                 &zwipe_ui::color_map::ghost_model(),
                 elapsed,
                 width,
-                rows,
+                // The blank row and the ghost key under it.
+                inner.height.saturating_sub(2),
             );
             lines.push(Line::default());
             lines.push(Line::styled(

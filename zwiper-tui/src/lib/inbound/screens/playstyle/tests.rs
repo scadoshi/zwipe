@@ -843,3 +843,43 @@ fn playstyle_keeps_every_key_on_a_narrow_terminal() {
         );
     }
 }
+
+#[test]
+fn a_short_terminal_shrinks_the_map_so_every_show_chip_is_in_view() {
+    use Color::Black;
+    let identities: [&[Color]; 13] = [
+        &[White],
+        &[Blue],
+        &[Black],
+        &[Red],
+        &[White, Blue],
+        &[White, Black],
+        &[White, Red],
+        &[Blue, Red],
+        &[Black, Red],
+        &[White, Blue, Black],
+        &[White, Blue, Red],
+        &[White, Black, Red],
+        &[Blue, Red, Green],
+    ];
+    let mut harness = on_playstyle(true);
+    let suggestions = identities
+        .iter()
+        .enumerate()
+        .map(|(i, colors)| suggestion(&format!("Commander {i:02}"), colors))
+        .collect();
+    harness.apply(Update::Loaded {
+        ticket: ticket(1),
+        found: found(suggestions),
+    });
+    view_mut(&mut harness).map_opened = Instant::now().checked_sub(Duration::from_secs(5));
+    let last = playstyle::identity_label(&[Blue, Red, Green]).unwrap();
+    for (width, height) in [(200, 50), (120, 40), (80, 24), (60, 20)] {
+        let text = crate::test_support::rows(&harness.app, width, height).join("\n");
+        assert!(text.contains("Show"), "at {width}x{height}:\n{text}");
+        assert!(
+            text.contains(last),
+            "the last Show chip at {width}x{height}:\n{text}"
+        );
+    }
+}

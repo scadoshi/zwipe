@@ -7,7 +7,7 @@ use ratatui::style::{Color as TermColor, Style, Stylize};
 use ratatui::text::{Line, Span};
 use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_ui::color_map::{
-    ColorMapCounts, ColorMapModel, FULL_SHADE, SWEEP_RINGS, SWEEP_STEP_MS, shade_percent,
+    ColorMapCounts, ColorMapModel, FULL_SHADE, SWEEP_RINGS, SWEEP_STEP_MS, Tile, shade_percent,
 };
 
 use super::mana;
@@ -99,7 +99,103 @@ fn window(total: i32, count: i32) -> (i32, i32) {
     (start, start.saturating_add(count))
 }
 
-/// The map's rows as lines, at most `width` cells wide and `height` rows tall, cropped around the middle. `elapsed` is the time since the map appeared, which drives the sweep.
+/// How many cells a tile takes on screen.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Scale {
+    /// Two cells wide and one row tall, so a tile reads square.
+    Full,
+    /// One cell wide and half a row tall, two tiles to a cell drawn with half blocks: the same shape at half the size, for a map too big for its room.
+    Half,
+}
+
+impl Scale {
+    /// The scale `model` draws at in `width` by `height` cells: full when the whole map fits, half otherwise.
+    pub(crate) fn fitting(model: &ColorMapModel, width: u16, height: u16) -> Self {
+        let fits =
+            model.columns.saturating_mul(2) <= i32::from(width) && model.rows <= i32::from(height);
+        if fits { Self::Full } else { Self::Half }
+    }
+
+    /// The rows `model` takes at this scale.
+    pub(crate) fn rows(self, model: &ColorMapModel) -> u16 {
+        let rows = match self {
+            Self::Full => model.rows,
+            Self::Half => model.rows.saturating_add(1) / 2,
+        };
+        u16::try_from(rows.max(0)).unwrap_or(u16::MAX)
+    }
+}
+
+/// The map drawn at `scale`, at most `width` cells wide and `height` rows tall, cropped around the middle. `paint` gives a tile's style, its color in the foreground, or `None` to leave it out; `full` is a full-scale tile's two cells.
+fn grid(
+    model: &ColorMapModel,
+    scale: Scale,
+    width: u16,
+    height: u16,
+    full: &'static str,
+    paint: impl Fn(&Tile) -> Option<Style>,
+) -> Vec<Line<'static>> {
+    let style_at = |row: i32, column: i32| {
+        model
+            .tiles
+            .iter()
+            .find(|t| t.row == row && t.column == column)
+            .and_then(&paint)
+    };
+    match scale {
+        Scale::Full => {
+            let (left, right) = window(model.columns, i32::from(width / 2));
+            let (top, bottom) = window(model.rows, i32::from(height));
+            (top..bottom)
+                .map(|row| {
+                    let spans: Vec<Span<'static>> = (left..right)
+                        .map(|column| {
+                            style_at(row, column)
+                                .map_or_else(|| Span::raw("  "), |style| Span::styled(full, style))
+                        })
+                        .collect();
+                    Line::from(spans)
+                })
+                .collect()
+        }
+        Scale::Half => {
+            let (left, right) = window(model.columns, i32::from(width));
+            let pairs = model.rows.saturating_add(1) / 2;
+            let (top, bottom) = window(pairs, i32::from(height));
+            (top..bottom)
+                .map(|pair| {
+                    let upper_row = pair.saturating_mul(2);
+                    let spans: Vec<Span<'static>> = (left..right)
+                        .map(|column| {
+                            let upper = style_at(upper_row, column);
+                            let lower = style_at(upper_row.saturating_add(1), column);
+                            half_cell(upper, lower)
+                        })
+                        .collect();
+                    Line::from(spans)
+                })
+                .collect()
+        }
+    }
+}
+
+/// One half-scale cell holding the tile above in its top half and the tile below in its bottom half.
+fn half_cell(upper: Option<Style>, lower: Option<Style>) -> Span<'static> {
+    match (upper, lower) {
+        (Some(upper), Some(lower)) => {
+            let style = match lower.fg {
+                Some(color) => upper.bg(color),
+                None => upper,
+            };
+            Span::styled("▀", style)
+        }
+        (Some(upper), None) => Span::styled("▀", upper),
+        (None, Some(lower)) => Span::styled("▄", lower),
+        (None, None) => Span::raw(" "),
+    }
+}
+
+/// The map's rows as lines, at most `width` cells wide and `height` rows tall: full scale when the map fits, half scale when it does not, cropped around the middle if even that is too big. `elapsed` is the time since the map appeared, which drives the sweep.
 pub(crate) fn lines(
     palette: &Palette,
     model: &ColorMapModel,
@@ -107,38 +203,22 @@ pub(crate) fn lines(
     width: u16,
     height: u16,
 ) -> Vec<Line<'static>> {
-    let (left, right) = window(model.columns, i32::from(width / 2));
-    let (top, bottom) = window(model.rows, i32::from(height));
-    (top..bottom)
-        .map(|row| {
-            let spans: Vec<Span<'static>> = (left..right)
-                .map(|column| {
-                    let tile = model
-                        .tiles
-                        .iter()
-                        .find(|t| t.row == row && t.column == column);
-                    let Some(tile) = tile else {
-                        return Span::raw("  ");
-                    };
-                    let progress = swept(tile.ring, elapsed);
-                    if progress == 0 {
-                        return Span::raw("  ");
-                    }
-                    let index = Color::all()
-                        .iter()
-                        .position(|c| *c == tile.color)
-                        .unwrap_or_default();
-                    let percent =
-                        u32::from(shade_percent(tile.shade)).saturating_mul(progress) / 100;
-                    Span::styled(TILE, tile_style(palette, index, percent.max(10)))
-                })
-                .collect();
-            Line::from(spans)
-        })
-        .collect()
+    let scale = Scale::fitting(model, width, height);
+    grid(model, scale, width, height, TILE, |tile| {
+        let progress = swept(tile.ring, elapsed);
+        if progress == 0 {
+            return None;
+        }
+        let index = Color::all()
+            .iter()
+            .position(|c| *c == tile.color)
+            .unwrap_or_default();
+        let percent = u32::from(shade_percent(tile.shade)).saturating_mul(progress) / 100;
+        Some(tile_style(palette, index, percent.max(10)))
+    })
 }
 
-/// The loading ghost: the ghost model in the muted color, its rings blooming out and folding back on a loop.
+/// The loading ghost: the ghost model in the muted color, its rings blooming out and folding back on a loop, at the scale [`lines`] would pick.
 pub(crate) fn ghost_lines(
     palette: &Palette,
     model: &ColorMapModel,
@@ -160,33 +240,16 @@ pub(crate) fn ghost_lines(
         .saturating_mul(reach)
         .checked_div(half)
         .unwrap_or(0);
-    let (left, right) = window(model.columns, i32::from(width / 2));
-    let (top, bottom) = window(model.rows, i32::from(height));
-    (top..bottom)
-        .map(|row| {
-            let spans: Vec<Span<'static>> = (left..right)
-                .map(|column| {
-                    model
-                        .tiles
-                        .iter()
-                        .find(|t| t.row == row && t.column == column)
-                        .filter(|t| u128::from(t.ring) <= rings)
-                        .map_or_else(
-                            || Span::raw("  "),
-                            |t| {
-                                let style = if t.shade >= FULL_SHADE.saturating_sub(1) {
-                                    palette.muted
-                                } else {
-                                    palette.muted.dim()
-                                };
-                                Span::styled(GHOST_TILE, style)
-                            },
-                        )
-                })
-                .collect();
-            Line::from(spans)
+    let scale = Scale::fitting(model, width, height);
+    grid(model, scale, width, height, GHOST_TILE, |tile| {
+        (u128::from(tile.ring) <= rings).then(|| {
+            if tile.shade >= FULL_SHADE.saturating_sub(1) {
+                palette.muted
+            } else {
+                palette.muted.dim()
+            }
         })
-        .collect()
+    })
 }
 
 /// The key under the map: each color's letter in its mana color and its count, then the colorless count, then `action` when given.
@@ -277,6 +340,46 @@ mod tests {
         assert!(lines.iter().all(|l| l.width() <= 10));
         assert_eq!(window(9, 4), (2, 6));
         assert_eq!(window(3, 4), (0, 3));
+    }
+
+    /// The tiles `lines` show: two cells of a full-scale tile make one, and a half-scale cell holds one or two.
+    fn tiles_in(lines: &[Line<'_>]) -> usize {
+        lines
+            .iter()
+            .flat_map(|line| line.spans.iter())
+            .map(|span| match span.content.as_ref() {
+                TILE => 1,
+                "▀" if span.style.bg.is_some() => 2,
+                "▀" | "▄" => 1,
+                _ => 0,
+            })
+            .sum()
+    }
+
+    #[test]
+    fn a_map_too_tall_for_its_room_draws_whole_at_half_scale() {
+        let palette = Palette::for_account("gruvbox", true);
+        let model = ColorMapModel::new(&counts(), 7);
+        let short = u16::try_from(model.rows - 1).unwrap();
+        assert_eq!(Scale::fitting(&model, 200, short), Scale::Half);
+        assert_eq!(
+            Scale::fitting(&model, 200, u16::try_from(model.rows).unwrap()),
+            Scale::Full
+        );
+        let half = lines(&palette, &model, entrance(), 200, short);
+        assert_eq!(
+            half.len(),
+            usize::from(Scale::Half.rows(&model)),
+            "two tile rows to a line"
+        );
+        assert!(
+            half.iter()
+                .all(|l| l.width() == usize::try_from(model.columns).unwrap()),
+            "one cell a tile"
+        );
+        assert_eq!(tiles_in(&half), model.tiles.len(), "every tile is there");
+        let full = lines(&palette, &model, entrance(), 200, 200);
+        assert_eq!(tiles_in(&full), model.tiles.len());
     }
 
     #[test]

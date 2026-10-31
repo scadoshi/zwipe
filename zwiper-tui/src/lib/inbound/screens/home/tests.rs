@@ -3,6 +3,7 @@ use std::time::{Duration, Instant};
 use crossterm::event::KeyCode;
 use zwipe_core::domain::user::models::hints::HINT_FIRST_LOGIN;
 use zwipe_core::http::contracts::metrics::HttpPublicMetrics;
+use zwipe_ui::color_map::{ColorMapCounts, ColorMapModel};
 
 use super::*;
 use crate::inbound::event_loop::harness::Harness;
@@ -539,5 +540,88 @@ fn home_keeps_every_key_on_a_narrow_terminal() {
             screen.contains("Join the Discord"),
             "help fits at {width}x{height}:\n{screen}"
         );
+    }
+}
+
+/// Home with everybody's counts, a five-color map as big as the live account's, and a featured card, all landed.
+fn settled_home() -> Harness {
+    let mut harness = on_home();
+    let user_id = me(&harness);
+    harness.apply(counts(261_100));
+    let big: HttpPlayStyleSummary = serde_json::from_value(serde_json::json!({
+        "deck_count": 10,
+        "color_map": {
+            "colors": [
+                {"color": "W", "cards": 108},
+                {"color": "U", "cards": 76},
+                {"color": "B", "cards": 43},
+                {"color": "R", "cards": 195},
+            ],
+            "colorless_cards": 140,
+            "pairs": [],
+        },
+    }))
+    .unwrap();
+    harness.apply(Update::PlayStyle {
+        user_id,
+        summary: Box::new(big),
+    });
+    harness.app.shared.caches.flavor = Some(FlavorCard {
+        card: flavored("Fast Forward"),
+        expires_at: Utc::now(),
+    });
+    if let Screen::Home(view) = harness.screen_mut() {
+        let long_ago = Instant::now().checked_sub(Duration::from_secs(5)).unwrap();
+        view.figures_arrived = Some(long_ago);
+        view.map_started = Some(long_ago);
+        view.logo_started = None;
+        view.opened = long_ago;
+    }
+    harness.app.shared.hint = None;
+    harness
+}
+
+#[test]
+fn a_short_panel_draws_the_whole_map_at_half_scale_with_its_key() {
+    let harness = settled_home();
+    let model = ColorMapModel::new(
+        &ColorMapCounts {
+            cards: [108, 76, 43, 195, 0],
+            colorless: 140,
+        },
+        super::seed(&harness.app.shared),
+    );
+    for (width, height) in [(200, 50), (120, 40), (80, 24), (60, 20)] {
+        let terminal = render(&harness.app, width, height);
+        let buffer = terminal.backend().buffer();
+        let (mut full, mut half) = (0, 0);
+        for cell in buffer.content() {
+            match cell.symbol() {
+                "█" => full += 1,
+                "▀" if cell.bg != ratatui::style::Color::Reset => half += 2,
+                "▀" | "▄" => half += 1,
+                _ => {}
+            }
+        }
+        let text = crate::test_support::rows(&harness.app, width, height).join("\n");
+        assert!(
+            text.contains("C Colorless 140"),
+            "the key at {width}x{height}:\n{text}"
+        );
+        if height >= 40 {
+            assert_eq!(
+                (full / 2, half),
+                (model.tiles.len(), 0),
+                "full at {width}x{height}:\n{text}"
+            );
+        } else if height >= 24 {
+            assert_eq!(
+                (full, half),
+                (0, model.tiles.len()),
+                "whole at {width}x{height}:\n{text}"
+            );
+        } else {
+            assert!(full == 0 && half > 0, "half at {width}x{height}:\n{text}");
+        }
     }
 }
