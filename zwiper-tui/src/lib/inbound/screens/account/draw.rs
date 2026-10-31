@@ -161,7 +161,13 @@ fn account_lines(palette: &Palette, view: &AccountView, width: usize) -> Vec<Lin
             "Username",
             false,
             vec![Span::raw(user.username.to_string())],
-            vec![button(palette, view, Stop::ChangeUsername, "Change", false)],
+            vec![button(
+                palette,
+                view,
+                Stop::ChangeUsername,
+                "Change",
+                /* disabled */ false,
+            )],
         ),
         row(
             palette,
@@ -176,7 +182,13 @@ fn account_lines(palette: &Palette, view: &AccountView, width: usize) -> Vec<Lin
                     Span::styled("Unverified", palette.error)
                 },
             ],
-            vec![button(palette, view, Stop::ChangeEmail, "Change", false)],
+            vec![button(
+                palette,
+                view,
+                Stop::ChangeEmail,
+                "Change",
+                /* disabled */ false,
+            )],
         ),
     ];
     if let Some(pending) = &user.pending_email {
@@ -218,7 +230,13 @@ fn account_lines(palette: &Palette, view: &AccountView, width: usize) -> Vec<Lin
         "Password",
         false,
         vec![Span::raw(MASK.to_string().repeat(7))],
-        vec![button(palette, view, Stop::ChangePassword, "Change", false)],
+        vec![button(
+            palette,
+            view,
+            Stop::ChangePassword,
+            "Change",
+            /* disabled */ false,
+        )],
     ));
     lines
 }
@@ -247,7 +265,13 @@ fn about_lines(palette: &Palette, view: &AccountView, width: usize) -> Vec<Line<
             "Privacy policy",
             false,
             Vec::new(),
-            vec![button(palette, view, Stop::Privacy, "View", false)],
+            vec![button(
+                palette,
+                view,
+                Stop::Privacy,
+                "View",
+                /* disabled */ false,
+            )],
         ),
         row(
             palette,
@@ -255,7 +279,13 @@ fn about_lines(palette: &Palette, view: &AccountView, width: usize) -> Vec<Line<
             "Version",
             true,
             vec![Span::raw(format!("v{VERSION}"))],
-            vec![button(palette, view, Stop::Changelog, "Changelog", false)],
+            vec![button(
+                palette,
+                view,
+                Stop::Changelog,
+                "Changelog",
+                /* disabled */ false,
+            )],
         ),
     ]
 }

@@ -84,7 +84,12 @@ fn sheet_key(view: &mut SwipeView, code: KeyCode, cx: &mut Context<'_>) -> bool 
             DetailsOutcome::Closed => view.details = None,
             DetailsOutcome::Printings => {
                 let card = details.card.clone();
-                view.printing = Some(PrintingSheet::open(cx, card, false, "Printing swapped"));
+                view.printing = Some(PrintingSheet::open(
+                    cx,
+                    card,
+                    /* read_only */ false,
+                    "Printing swapped",
+                ));
             }
         }
         return true;

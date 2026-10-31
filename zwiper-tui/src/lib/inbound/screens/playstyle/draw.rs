@@ -692,7 +692,7 @@ pub(crate) fn reasons_lines(
             let mut spans = vec![Span::raw("  "), Span::raw(label).bold(), Span::raw(":")];
             for tag in tags {
                 spans.push(Span::raw(" "));
-                spans.push(otag::chip(palette, tag, false));
+                spans.push(otag::chip(palette, tag, /* open */ false));
             }
             lines.push(Line::from(spans));
         }
@@ -721,7 +721,7 @@ fn skeleton(palette: &Palette, view: &PlaystyleView, width: u16) -> Vec<Line<'st
         Line::from(spans)
     };
     let mut body = Body::default();
-    body.line(header(9, true));
+    body.line(header(9, /* open */ true));
     let map_width = u16::try_from(inner).unwrap_or(u16::MAX);
     for line in color_map::ghost_lines(
         palette,
@@ -740,9 +740,9 @@ fn skeleton(palette: &Palette, view: &PlaystyleView, width: u16) -> Vec<Line<'st
     }
     key.push(ghost(9));
     body.line(indented(centered(Line::from(key), inner)));
-    body.line(header(7, false));
-    body.line(header(10, false));
-    body.line(header(11, false));
+    body.line(header(7, /* open */ false));
+    body.line(header(10, /* open */ false));
+    body.line(header(11, /* open */ false));
     body.line(Line::default());
     let mut chips = vec![
         Span::styled(GHOST.repeat(4), palette.accent),

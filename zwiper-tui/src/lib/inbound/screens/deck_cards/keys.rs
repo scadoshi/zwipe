@@ -152,9 +152,11 @@ fn row_key(view: &mut DeckCardsView, code: KeyCode, cx: &mut Context<'_>) {
                 .unwrap_or(0);
         }
         (KeyCode::Char('i'), _) => view.preview = Some((Box::new(card), view.face)),
-        (KeyCode::Char('-'), Kind::Main | Kind::Board(_)) => view.change_quantity(cx, id, -1, true),
+        (KeyCode::Char('-'), Kind::Main | Kind::Board(_)) => {
+            view.change_quantity(cx, id, -1, /* record */ true);
+        }
         (KeyCode::Char('+' | '='), Kind::Main | Kind::Board(_)) => {
-            view.change_quantity(cx, id, 1, true);
+            view.change_quantity(cx, id, 1, /* record */ true);
         }
         (KeyCode::Char('p'), Kind::Main | Kind::Board(_)) => {
             view.open_printing(cx, card, PrintingTarget::Deck);
@@ -170,7 +172,7 @@ fn row_key(view: &mut DeckCardsView, code: KeyCode, cx: &mut Context<'_>) {
                 _ => Board::Sideboard,
             };
             if board.is_some_and(|b| b != target) {
-                view.move_to_board(cx, id, target, true);
+                view.move_to_board(cx, id, target, /* record */ true);
             }
         }
         _ => {}

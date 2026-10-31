@@ -321,7 +321,13 @@ fn picker_lines(
         let highlight = picker.map_or(0, |p| p.highlight);
         let mut spans = vec![Span::raw("    ")];
         for (i, value) in results.iter().enumerate() {
-            spans.push(chip(palette, value, false, focused && i == highlight, None));
+            spans.push(chip(
+                palette,
+                value,
+                /* on */ false,
+                focused && i == highlight,
+                None,
+            ));
             spans.push(Span::raw(" "));
         }
         lines.extend(wrap(Line::from(spans), width));

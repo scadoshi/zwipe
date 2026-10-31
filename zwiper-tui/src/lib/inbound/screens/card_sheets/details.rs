@@ -53,7 +53,7 @@ impl DetailsSheet {
         let mut lines = card_info::details_lines(palette, &self.card, self.face);
         if let Some(slug) = self.tags.open_tag() {
             lines.push(Line::default());
-            lines.push(Line::from(otag::chip(palette, slug, true)));
+            lines.push(Line::from(otag::chip(palette, slug, /* open */ true)));
             lines.extend(otag::def_lines(palette, catalog, slug));
         }
         let mut sheet = Sheet::new(&self.card.scryfall_data.name, lines).with_footer("Esc", "back");

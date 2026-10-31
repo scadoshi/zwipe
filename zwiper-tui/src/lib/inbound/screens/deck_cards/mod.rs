@@ -461,7 +461,12 @@ impl DeckCardsView {
         target: PrintingTarget,
     ) {
         self.printing_target = target;
-        self.printing = Some(PrintingSheet::open(cx, card, false, "Printing saved"));
+        self.printing = Some(PrintingSheet::open(
+            cx,
+            card,
+            /* read_only */ false,
+            "Printing saved",
+        ));
     }
 
     fn signals(&self, cx: &mut Context<'_>, lands_before: i32, price_before: f64) {
@@ -489,7 +494,7 @@ impl DeckCardsView {
         deck_price(&self.entries, &self.command_zone_cards, self.currency())
     }
 
-    /// One quantity tap: applies at once, and gathers into the card's burst for one write 300 ms after the last tap. Below one, the row is removed.
+    /// One quantity tap: applies at once, and gathers into the card's burst for one write 300 ms after the last tap. Below one, the row is removed. `record` logs the change for the deck's Undo.
     pub(crate) fn change_quantity(
         &mut self,
         cx: &mut Context<'_>,
@@ -569,7 +574,7 @@ impl DeckCardsView {
         }
     }
 
-    /// Moves a card to another board at once, putting it back if the write fails.
+    /// Moves a card to another board at once, putting it back if the write fails. `record` logs the move for the deck's Undo.
     pub(crate) fn move_to_board(
         &mut self,
         cx: &mut Context<'_>,
@@ -667,10 +672,10 @@ impl DeckCardsView {
                 );
             }
             UndoAction::QuantityChanged { card_id, net, .. } => {
-                self.change_quantity(cx, card_id, net.saturating_neg(), false);
+                self.change_quantity(cx, card_id, net.saturating_neg(), /* record */ false);
             }
             UndoAction::MovedBoard { card_id, from, .. } => {
-                self.move_to_board(cx, card_id, from, false);
+                self.move_to_board(cx, card_id, from, /* record */ false);
             }
             UndoAction::PrintingChanged { old_card, new_id } => {
                 let old_id = old_card.scryfall_data.id;

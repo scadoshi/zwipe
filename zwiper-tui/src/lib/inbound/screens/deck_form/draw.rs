@@ -593,7 +593,7 @@ fn picker_frame(
         head.push(extra);
     }
     f.render_widget(Line::from(head), controls);
-    search.draw(f, palette, search_area, "Search", true);
+    search.draw(f, palette, search_area, "Search", /* focused */ true);
     f.set_cursor_position(search.cursor_position(search_area));
     let mut bar_lines = vec![Line::from(Span::styled(bar.0, palette.accent.bold()))];
     bar_lines.extend(bar.1.into_iter().map(Line::from));

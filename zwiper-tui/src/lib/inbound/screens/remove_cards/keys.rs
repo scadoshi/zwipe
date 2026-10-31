@@ -34,7 +34,7 @@ pub(crate) fn handle(view: &mut RemoveView, code: KeyCode, cx: &mut Context<'_>)
         KeyCode::Char('r') => view.refresh(cx),
         KeyCode::Char('e') => {
             if let Some(card) = view.current().cloned() {
-                view.details = Some(DetailsSheet::new(card, true));
+                view.details = Some(DetailsSheet::new(card, /* printings */ true));
             }
         }
         KeyCode::Char('t') => view.face = view.face.saturating_add(1),
@@ -71,7 +71,12 @@ fn overlay_key(view: &mut RemoveView, code: KeyCode, cx: &mut Context<'_>) -> bo
             DetailsOutcome::Closed => view.details = None,
             DetailsOutcome::Printings => {
                 let card = details.card.clone();
-                view.printing = Some(PrintingSheet::open(cx, card, true, "Printing saved"));
+                view.printing = Some(PrintingSheet::open(
+                    cx,
+                    card,
+                    /* read_only */ true,
+                    "Printing saved",
+                ));
             }
         }
         return true;

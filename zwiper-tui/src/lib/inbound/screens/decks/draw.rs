@@ -124,13 +124,13 @@ fn chip_rows(palette: &Palette, list: &DeckList, width: usize) -> Vec<Line<'stat
                     pill(
                         &format!("Tags {arrow}"),
                         palette.muted,
-                        state(false, Focus::Show, i, list.show_focus),
+                        state(/* picked */ false, Focus::Show, i, list.show_focus),
                     )
                 }
                 ShowChip::Picked { label, .. } => pill(
                     &label,
                     palette.muted,
-                    state(true, Focus::Show, i, list.show_focus),
+                    state(/* picked */ true, Focus::Show, i, list.show_focus),
                 ),
             }),
     );
