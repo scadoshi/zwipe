@@ -26,13 +26,13 @@ use crate::inbound::widgets::{action_bar, charts, color_map, entrance, figures, 
 const COUNTS_HEIGHT: u16 = figures::HEIGHT.saturating_add(3);
 
 /// Columns left of every body line for the focus marker.
-const GUTTER: &str = "  ";
+pub(crate) const GUTTER: &str = "  ";
 
 /// Marks the focused piece's first line.
 const MARKER: &str = "> ";
 
 /// Indents a section's body under its header.
-const INDENT: &str = "  ";
+pub(crate) const INDENT: &str = "  ";
 
 /// Room left of the heatmap for the weekday labels.
 const WEEKDAY_WIDTH: usize = 4;
@@ -62,7 +62,7 @@ const GHOST_HEIGHTS: [usize; 4] = [70, 100, 20, 35];
 const GHOST_PASSES: usize = 10;
 
 /// The ghost block.
-const GHOST: &str = "░";
+pub(crate) const GHOST: &str = "░";
 
 /// Eighths of a cell, emptiest first, for a column's partial top.
 const EIGHTHS: [&str; 8] = [" ", "▁", "▂", "▃", "▄", "▅", "▆", "▇"];
@@ -129,7 +129,7 @@ fn draw_counts(f: &mut Frame<'_>, shared: &Shared, view: &ActivityView, area: Re
     f.render_widget(Line::from(spans).centered(), chips);
 }
 
-fn draw_note(f: &mut Frame<'_>, palette: &Palette, note: &str, area: Rect) {
+pub(crate) fn draw_note(f: &mut Frame<'_>, palette: &Palette, note: &str, area: Rect) {
     f.render_widget(
         Paragraph::new(Line::styled(note.to_owned(), palette.muted))
             .centered()
@@ -139,7 +139,12 @@ fn draw_note(f: &mut Frame<'_>, palette: &Palette, note: &str, area: Rect) {
 }
 
 /// Draws `lines` wrapped into `area`, scrolled so the lines from `focus.0` to `focus.1` are in view.
-fn draw_lines(f: &mut Frame<'_>, lines: Vec<Line<'static>>, focus: (usize, usize), area: Rect) {
+pub(crate) fn draw_lines(
+    f: &mut Frame<'_>,
+    lines: Vec<Line<'static>>,
+    focus: (usize, usize),
+    area: Rect,
+) {
     if area.width == 0 || area.height == 0 {
         return;
     }
@@ -212,19 +217,19 @@ fn key_hints(view: &ActivityView) -> Vec<(&'static str, &'static str)> {
 
 /// The body's lines and the range of the focused piece.
 #[derive(Debug, Default)]
-struct Body {
-    lines: Vec<Line<'static>>,
-    focus: (usize, usize),
+pub(crate) struct Body {
+    pub(crate) lines: Vec<Line<'static>>,
+    pub(crate) focus: (usize, usize),
 }
 
 impl Body {
     /// Adds a line no focus lands on.
-    fn line(&mut self, line: Line<'static>) {
+    pub(crate) fn line(&mut self, line: Line<'static>) {
         self.push(GUTTER, line);
     }
 
     /// Adds a piece the focus can land on, marked when `focused`.
-    fn item(&mut self, lines: Vec<Line<'static>>, focused: bool) {
+    pub(crate) fn item(&mut self, lines: Vec<Line<'static>>, focused: bool) {
         let start = self.lines.len();
         for (i, line) in lines.into_iter().enumerate() {
             let gutter = if focused && i == 0 { MARKER } else { GUTTER };
@@ -243,7 +248,7 @@ impl Body {
 }
 
 /// `line` indented under a section header.
-fn indented(line: Line<'static>) -> Line<'static> {
+pub(crate) fn indented(line: Line<'static>) -> Line<'static> {
     let mut spans = vec![Span::raw(INDENT)];
     spans.extend(line.spans);
     Line::from(spans).style(line.style)

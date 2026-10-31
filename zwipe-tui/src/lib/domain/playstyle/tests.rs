@@ -135,9 +135,6 @@ fn a_single_color_is_its_pip_alone_and_others_are_named() {
     assert_eq!(identity_label(&[Blue]), None);
     assert_eq!(identity_label(&[White, Blue, Red]), Some("Jeskai"));
     assert_eq!(identity_label(&[]), Some("Colorless"));
-    assert_eq!(identity_text(&[Blue, White]), "Azorius WU");
-    assert_eq!(identity_text(&[Red]), "R");
-    assert_eq!(identity_text(&[]), "Colorless");
 }
 
 fn color(code: &str, decks: u32) -> HttpColorAffinity {
@@ -283,7 +280,6 @@ fn a_staples_type_line_falls_back_to_its_first_face() {
         staple_identity(&staple),
         &*staple.card.scryfall_data.color_identity
     );
-    assert_eq!(HELD_SIZE, 100, "the server's maximum");
 }
 
 #[test]

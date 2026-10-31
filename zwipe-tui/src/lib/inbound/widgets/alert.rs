@@ -23,11 +23,12 @@ pub(crate) enum Tone {
     Danger,
 }
 
-/// A button: its label, and a letter that presses it from anywhere in the dialog.
+/// A button: its label, a letter that presses it from anywhere in the dialog, and whether it is in the danger color.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct Button {
     pub(crate) label: String,
     pub(crate) key: Option<char>,
+    pub(crate) danger: bool,
 }
 
 /// What a key did to the dialog.
@@ -65,6 +66,17 @@ impl AlertDialog {
         self.buttons.push(Button {
             label: label.to_owned(),
             key,
+            danger: false,
+        });
+        self
+    }
+
+    /// Adds a button in the danger color, like the app's danger confirm in Clear skips.
+    pub(crate) fn with_danger_button(mut self, label: &str, key: Option<char>) -> Self {
+        self.buttons.push(Button {
+            label: label.to_owned(),
+            key,
+            danger: true,
         });
         self
     }
@@ -116,7 +128,7 @@ impl AlertDialog {
             .iter()
             .enumerate()
             .flat_map(|(i, button)| {
-                let base: Style = if i == 0 && self.tone == Tone::Danger {
+                let base: Style = if button.danger || (i == 0 && self.tone == Tone::Danger) {
                     palette.error
                 } else {
                     palette.accent

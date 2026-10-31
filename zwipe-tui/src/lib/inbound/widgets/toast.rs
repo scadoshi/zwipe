@@ -13,8 +13,17 @@ use ratatui::widgets::{Block, Clear, Padding, Paragraph, Wrap};
 use super::measure::{BORDERS, height_of, width_of};
 use crate::domain::theme::Palette;
 
-/// How long a toast stays up.
+/// How long a toast raised without a duration stays up.
 pub(crate) const LIFETIME: Duration = Duration::from_secs(3);
+
+/// The app's `TOAST_QUICK`: routine confirmations such as saved, added and skipped.
+pub(crate) const QUICK: Duration = Duration::from_secs(3);
+
+/// The app's `TOAST_NORMAL`: a result worth reading, such as a failed request's message.
+pub(crate) const NORMAL: Duration = Duration::from_secs(5);
+
+/// The app's `TOAST_LONG`: anything that names a next step.
+pub(crate) const LONG: Duration = Duration::from_secs(8);
 
 /// At most this many toasts show at once; older ones wait their turn below the fold.
 const MAX_SHOWN: usize = 3;
@@ -28,6 +37,7 @@ pub(crate) enum ToastKind {
     Success,
     Error,
     Info,
+    Warning,
 }
 
 impl ToastKind {
@@ -36,6 +46,7 @@ impl ToastKind {
             Self::Success => palette.add,
             Self::Error => palette.error,
             Self::Info => palette.accent,
+            Self::Warning => palette.warning,
         }
     }
 }
@@ -60,9 +71,25 @@ impl Toasts {
         self.push_at(kind, message, Instant::now());
     }
 
+    /// Shows `message` from now for `duration`, such as [`QUICK`], [`NORMAL`] or [`LONG`].
+    pub(crate) fn push_for(&mut self, kind: ToastKind, message: String, duration: Duration) {
+        self.push_for_at(kind, message, duration, Instant::now());
+    }
+
     /// Shows `message` from `now` for [`LIFETIME`].
     pub(crate) fn push_at(&mut self, kind: ToastKind, message: String, now: Instant) {
-        let expires_at = now.checked_add(LIFETIME).unwrap_or(now);
+        self.push_for_at(kind, message, LIFETIME, now);
+    }
+
+    /// Shows `message` from `now` for `duration`.
+    pub(crate) fn push_for_at(
+        &mut self,
+        kind: ToastKind,
+        message: String,
+        duration: Duration,
+        now: Instant,
+    ) {
+        let expires_at = now.checked_add(duration).unwrap_or(now);
         self.items.push(Toast {
             kind,
             message,
@@ -150,6 +177,25 @@ mod tests {
         toasts.prune(now + LIFETIME);
         assert_eq!(toasts.items()[0].message, "Offline", "the first has gone");
         toasts.prune(now + LIFETIME + Duration::from_secs(1));
+        assert!(toasts.is_empty());
+    }
+
+    #[test]
+    fn a_toast_given_a_duration_stays_that_long() {
+        let now = Instant::now();
+        let mut toasts = Toasts::default();
+        toasts.push_for_at(ToastKind::Warning, "Verify".to_owned(), LONG, now);
+        toasts.push_for_at(
+            ToastKind::Success,
+            "Added".to_owned(),
+            Duration::from_millis(1500),
+            now,
+        );
+        toasts.prune(now + Duration::from_millis(1500));
+        assert_eq!(toasts.len(), 1, "the short one has gone");
+        toasts.prune(now + LONG - Duration::from_millis(1));
+        assert_eq!(toasts.items()[0].kind, ToastKind::Warning);
+        toasts.prune(now + LONG);
         assert!(toasts.is_empty());
     }
 

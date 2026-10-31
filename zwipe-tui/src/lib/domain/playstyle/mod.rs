@@ -92,17 +92,6 @@ pub(crate) fn identity_label(identity: &[Color]) -> Option<&'static str> {
     (identity.len() != 1).then(|| colors::identity_name(identity))
 }
 
-/// An identity as the app's `IdentityPips` reads in plain text: the name, then the pips' letters. A single color is its letter alone; colorless is the name alone. "Azorius WU", "R", "Colorless".
-pub(crate) fn identity_text(identity: &[Color]) -> String {
-    let identity = identity_of(identity);
-    let pips: String = identity.iter().map(Color::to_short_name).collect();
-    match (identity_label(&identity), pips.is_empty()) {
-        (Some(name), true) => name.to_owned(),
-        (Some(name), false) => format!("{name} {pips}"),
-        (None, _) => pips,
-    }
-}
-
 /// The list's empty state under a Show chip whose commanders are all gone, "No Jeskai commanders in your top 100". The names that describe rather than name (colorless, mono-color, five-color) go lowercase mid-sentence.
 pub(crate) fn empty_identity_line(identity: &[Color]) -> String {
     let identity = identity_of(identity);

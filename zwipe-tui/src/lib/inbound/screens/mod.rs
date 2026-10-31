@@ -12,6 +12,7 @@ pub(crate) mod image_preview;
 pub(crate) mod login;
 pub(crate) mod oracle_tags;
 pub(crate) mod otag_examples;
+pub(crate) mod playstyle;
 pub(crate) mod printings;
 pub(crate) mod swipe;
 pub(crate) mod update_required;
@@ -34,6 +35,7 @@ use self::image_preview::ImagePreview;
 use self::login::LoginForm;
 use self::oracle_tags::OracleTagsView;
 use self::otag_examples::ExamplesView;
+use self::playstyle::PlaystyleView;
 use self::printings::PrintingsView;
 use self::swipe::SwipeView;
 use super::app::{Context, Shared};
@@ -60,6 +62,7 @@ pub(crate) enum Screen {
     OracleTags(Box<OracleTagsView>),
     OtagExamples(Box<ExamplesView>),
     Printings(Box<PrintingsView>),
+    Playstyle(Box<PlaystyleView>),
     /// The server no longer accepts this version. Only quitting is possible.
     UpdateRequired,
 }
@@ -80,6 +83,7 @@ impl Screen {
             Self::OracleTags(view) => oracle_tags::keys::handle(view, code, cx),
             Self::OtagExamples(view) => otag_examples::keys::handle(view, code, cx),
             Self::Printings(view) => printings::keys::handle(view, code, cx),
+            Self::Playstyle(view) => playstyle::keys::handle(view, code, cx),
             Self::UpdateRequired => update_required::keys::handle(code, cx),
         }
     }
@@ -98,6 +102,7 @@ impl Screen {
             Self::OracleTags(view) => oracle_tags::draw::draw(f, shared, view),
             Self::OtagExamples(view) => otag_examples::draw::draw(f, shared, view),
             Self::Printings(view) => printings::draw::draw(f, shared, view),
+            Self::Playstyle(view) => playstyle::draw::draw(f, shared, view),
             Self::UpdateRequired => update_required::draw::draw(f, shared),
         }
     }
@@ -108,6 +113,7 @@ impl Screen {
             Self::Home(view) => view.animating(),
             Self::Account(view) => view.animating(),
             Self::Activity(view) => view.animating(),
+            Self::Playstyle(view) => view.animating(),
             _ => false,
         }
     }
@@ -119,6 +125,7 @@ impl Screen {
             Self::Decks(list) => list.reload(cx),
             Self::Deck(view) => view.reload(cx),
             Self::Activity(view) => view.on_return(cx),
+            Self::Playstyle(view) => view.on_return(cx),
             _ => {}
         }
     }
@@ -146,6 +153,7 @@ pub(crate) enum Request {
     OracleTags(oracle_tags::Request),
     OtagExamples(otag_examples::Request),
     Printings(printings::Request),
+    Playstyle(playstyle::Request),
 }
 
 /// A result from a background request: the app's own, or one screen's.
@@ -181,6 +189,7 @@ pub(crate) enum Update {
     OracleTags(oracle_tags::Update),
     OtagExamples(otag_examples::Update),
     Printings(printings::Update),
+    Playstyle(playstyle::Update),
 }
 
 /// Runs one request off the main loop.
@@ -227,6 +236,7 @@ pub(crate) async fn perform(
         Request::OracleTags(request) => oracle_tags::perform(account, request).await,
         Request::OtagExamples(request) => otag_examples::perform(account, request).await,
         Request::Printings(request) => printings::perform(account, request).await,
+        Request::Playstyle(request) => playstyle::perform(account, request).await,
     }
 }
 
@@ -257,6 +267,7 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
         Update::OracleTags(update) => oracle_tags::apply(nav, update, cx),
         Update::OtagExamples(update) => otag_examples::apply(nav, update, cx),
         Update::Printings(update) => printings::apply(nav, update, cx),
+        Update::Playstyle(update) => playstyle::apply(nav, update, cx),
     }
 }
 
