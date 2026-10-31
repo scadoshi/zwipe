@@ -32,7 +32,7 @@ pub(crate) fn entrance() -> Duration {
 }
 
 /// `top` mixed over `bottom` at `percent`.
-fn mix(top: TermColor, bottom: Option<TermColor>, percent: u32) -> TermColor {
+pub(crate) fn mix(top: TermColor, bottom: Option<TermColor>, percent: u32) -> TermColor {
     let percent = percent.min(100);
     match (top, bottom) {
         (TermColor::Rgb(r, g, b), Some(TermColor::Rgb(br, bg, bb))) => {

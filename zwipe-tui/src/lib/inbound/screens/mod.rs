@@ -3,6 +3,7 @@
 //! Each screen lives in its own folder: `mod.rs` for its state, its request and update enums, `perform` and `apply`; `keys.rs` for its keys; `draw.rs` for drawing it. This file only routes to them, one arm per screen. `context/ARCHITECTURE.md` lists every place a new screen registers.
 
 pub(crate) mod account;
+pub(crate) mod activity;
 pub(crate) mod config;
 pub(crate) mod deck;
 pub(crate) mod decks;
@@ -24,6 +25,7 @@ use zwipe_core::domain::user::User;
 use zwipe_core::version::version_at_least;
 
 use self::account::AccountView;
+use self::activity::ActivityView;
 use self::config::ConfigView;
 use self::deck::DeckView;
 use self::decks::DeckList;
@@ -52,6 +54,7 @@ pub(crate) enum Screen {
     Deck(Box<DeckView>),
     Swipe(Box<SwipeView>),
     Account(Box<AccountView>),
+    Activity(Box<ActivityView>),
     Config(Box<ConfigView>),
     ImagePreview(Box<ImagePreview>),
     OracleTags(Box<OracleTagsView>),
@@ -71,6 +74,7 @@ impl Screen {
             Self::Deck(view) => deck::keys::handle(view, code, cx),
             Self::Swipe(view) => swipe::keys::handle(view, code, cx),
             Self::Account(view) => account::keys::handle(view, code, cx),
+            Self::Activity(view) => activity::keys::handle(view, code, cx),
             Self::Config(view) => config::keys::handle(view, code, cx),
             Self::ImagePreview(view) => image_preview::keys::handle(view, code, cx),
             Self::OracleTags(view) => oracle_tags::keys::handle(view, code, cx),
@@ -88,6 +92,7 @@ impl Screen {
             Self::Deck(view) => deck::draw::draw(f, shared, view),
             Self::Swipe(view) => swipe::draw::draw(f, shared, view),
             Self::Account(view) => account::draw::draw(f, shared, view),
+            Self::Activity(view) => activity::draw::draw(f, shared, view),
             Self::Config(view) => config::draw::draw(f, shared, view),
             Self::ImagePreview(view) => image_preview::draw::draw(f, shared, view),
             Self::OracleTags(view) => oracle_tags::draw::draw(f, shared, view),
@@ -102,6 +107,7 @@ impl Screen {
         match self {
             Self::Home(view) => view.animating(),
             Self::Account(view) => view.animating(),
+            Self::Activity(view) => view.animating(),
             _ => false,
         }
     }
@@ -112,6 +118,7 @@ impl Screen {
             Self::Home(view) => view.refresh(cx),
             Self::Decks(list) => list.reload(cx),
             Self::Deck(view) => view.reload(cx),
+            Self::Activity(view) => view.on_return(cx),
             _ => {}
         }
     }
@@ -133,6 +140,7 @@ pub(crate) enum Request {
     Deck(deck::Request),
     Swipe(swipe::Request),
     Account(account::Request),
+    Activity(activity::Request),
     Config(config::Request),
     ImagePreview(image_preview::Request),
     OracleTags(oracle_tags::Request),
@@ -167,6 +175,7 @@ pub(crate) enum Update {
     Deck(deck::Update),
     Swipe(swipe::Update),
     Account(account::Update),
+    Activity(activity::Update),
     Config(config::Update),
     ImagePreview(image_preview::Update),
     OracleTags(oracle_tags::Update),
@@ -212,6 +221,7 @@ pub(crate) async fn perform(
         Request::Deck(request) => deck::perform(account, request).await,
         Request::Swipe(request) => swipe::perform(account, request).await,
         Request::Account(request) => account::perform(account, request).await,
+        Request::Activity(request) => activity::perform(account, request).await,
         Request::Config(request) => config::perform(account, request).await,
         Request::ImagePreview(request) => image_preview::perform(account, request).await,
         Request::OracleTags(request) => oracle_tags::perform(account, request).await,
@@ -241,6 +251,7 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
         Update::Deck(update) => deck::apply(nav, update, cx),
         Update::Swipe(update) => swipe::apply(nav, update, cx),
         Update::Account(update) => account::apply(nav, update, cx),
+        Update::Activity(update) => activity::apply(nav, update, cx),
         Update::Config(update) => config::apply(nav, update, cx),
         Update::ImagePreview(update) => image_preview::apply(nav, update, cx),
         Update::OracleTags(update) => oracle_tags::apply(nav, update, cx),

@@ -144,6 +144,11 @@ impl CardRows {
         self.focused
     }
 
+    /// Focuses the row at `index`, for a host whose focus enters the rows from above.
+    pub(crate) fn set_focused(&mut self, index: usize) {
+        self.focused = index;
+    }
+
     /// The scryfall id of the expanded card.
     pub(crate) fn expanded(&self) -> Option<Uuid> {
         self.expanded

@@ -55,6 +55,7 @@ pub(crate) fn handle(view: &mut HomeView, code: KeyCode, cx: &mut Context<'_>) {
         KeyCode::Char('d') | KeyCode::Enter => decks::open(cx),
         KeyCode::Char('a') => account::open(cx),
         KeyCode::Char('c') => config::open(cx),
+        KeyCode::Char('v') => screens::activity::open(cx),
         KeyCode::Char('s') => view.toggle_scope(cx),
         KeyCode::Char('?') => view.overlay = Some(Overlay::Info(color_map_topic())),
         KeyCode::Char('i') => {

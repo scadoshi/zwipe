@@ -3,10 +3,6 @@
 /// The account forms' validation and copy.
 pub(crate) mod account;
 /// The Activity screen's heatmap, totals and rate charts.
-#[cfg_attr(
-    not(test),
-    expect(dead_code, reason = "the Activity screen draws from it")
-)]
 pub(crate) mod activity;
 /// A card as text: faces, mana symbols, rules and stats.
 pub(crate) mod card;
