@@ -567,10 +567,6 @@ impl RangeGroup {
             Self::Toughness => b.unset_toughness_equals().unset_toughness_range(),
         };
     }
-
-    pub(crate) fn is_set(self, b: &CardQueryBuilder) -> bool {
-        self.held(b).is_some()
-    }
 }
 
 /// The colors the color identity filter holds, from whichever field is set.
@@ -839,7 +835,7 @@ mod tests {
         b.set_cmc_range((1.0, 2.0));
         assert_eq!(RangeGroup::ManaValue.held(&b), Some(Exactness::Range));
         RangeGroup::ManaValue.unset(&mut b);
-        assert!(!RangeGroup::ManaValue.is_set(&b));
+        assert_eq!(RangeGroup::ManaValue.held(&b), None);
     }
 
     #[test]

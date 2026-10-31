@@ -61,15 +61,6 @@ pub(crate) enum Kind {
 }
 
 impl Kind {
-    /// The five lists a deck's own cards can stand in for.
-    pub(crate) const FROM_DECK: [Self; 5] = [
-        Self::Keywords,
-        Self::OracleWords,
-        Self::CardTypes,
-        Self::Artists,
-        Self::Sets,
-    ];
-
     /// Every list.
     pub(crate) const ALL: [Self; 7] = [
         Self::Keywords,

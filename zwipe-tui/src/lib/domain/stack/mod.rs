@@ -23,7 +23,6 @@ pub(crate) enum Direction {
     Left,
     Right,
     Up,
-    Down,
 }
 
 /// What every stack action shares: the side its card left by, so undo can bring it back from there.
@@ -138,6 +137,7 @@ impl<A> CardStack<A> {
         self.index
     }
 
+    #[cfg(test)]
     pub(crate) fn history(&self) -> &[A] {
         &self.history
     }

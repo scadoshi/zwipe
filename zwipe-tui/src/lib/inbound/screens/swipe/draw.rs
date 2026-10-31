@@ -159,7 +159,7 @@ fn entering_style(palette: &Palette, view: &SwipeView) -> Style {
         Some(Direction::Right) => palette.add,
         Some(Direction::Left) => palette.error,
         Some(Direction::Up) => palette.warning,
-        Some(Direction::Down) | None => palette.accent,
+        None => palette.accent,
     }
 }
 

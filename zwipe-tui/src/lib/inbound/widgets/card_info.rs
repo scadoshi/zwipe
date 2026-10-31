@@ -196,6 +196,43 @@ pub(crate) fn proxy_lines(palette: &Palette, card: &Card, face: usize) -> Vec<Li
     lines
 }
 
+/// Breaks lines wider than `width` between words, keeping each word's style; a continuation starts with `indent` spaces.
+pub(crate) fn wrap(lines: Vec<Line<'static>>, width: usize, indent: usize) -> Vec<Line<'static>> {
+    let width = width.max(indent.saturating_add(1));
+    let mut out = Vec::new();
+    for line in lines {
+        if line.width() <= width {
+            out.push(line);
+            continue;
+        }
+        let mut current: Vec<Span<'static>> = Vec::new();
+        let mut used = 0usize;
+        for span in line.spans {
+            let style = span.style;
+            for (i, word) in span.content.split(' ').enumerate() {
+                let piece = if i == 0 {
+                    word.to_owned()
+                } else {
+                    format!(" {word}")
+                };
+                let len = piece.chars().count();
+                if used > indent && used.saturating_add(len) > width {
+                    out.push(Line::from(std::mem::take(&mut current)));
+                    current.push(Span::raw(" ".repeat(indent)));
+                    let trimmed = piece.trim_start().to_owned();
+                    used = indent.saturating_add(trimmed.chars().count());
+                    current.push(Span::styled(trimmed, style));
+                    continue;
+                }
+                used = used.saturating_add(len);
+                current.push(Span::styled(piece, style));
+            }
+        }
+        out.push(Line::from(current));
+    }
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -217,6 +254,13 @@ mod tests {
         c.scryfall_data.prices.eur = None;
         c.scryfall_data.prices.tix = None;
         assert_eq!(prices(&c), "");
+    }
+
+    #[test]
+    fn long_lines_wrap_between_words_with_an_indent() {
+        let lines = wrap(vec![Line::from("    one two three four")], 13, 4);
+        assert_eq!(text(&lines), ["    one two", "    three", "    four"]);
+        assert_eq!(wrap(vec![Line::from("short")], 13, 4).len(), 1);
     }
 
     #[test]

@@ -114,6 +114,8 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
 fn open_printing_sheet(screen: &mut Screen) -> Option<&mut printing::PrintingSheet> {
     match screen {
         Screen::Swipe(view) => view.printing.as_mut(),
+        Screen::DeckCards(view) => view.printing.as_mut(),
+        Screen::RemoveCards(view) => view.printing.as_mut(),
         _ => None,
     }
 }

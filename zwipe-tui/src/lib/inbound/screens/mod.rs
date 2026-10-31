@@ -6,9 +6,11 @@ pub(crate) mod account;
 pub(crate) mod card_sheets;
 pub(crate) mod config;
 pub(crate) mod deck;
+pub(crate) mod deck_cards;
 pub(crate) mod decks;
 pub(crate) mod home;
 pub(crate) mod login;
+pub(crate) mod remove_cards;
 pub(crate) mod swipe;
 pub(crate) mod update_required;
 
@@ -44,6 +46,8 @@ pub(crate) enum Screen {
     Decks(DeckList),
     Deck(Box<DeckView>),
     Swipe(Box<SwipeView>),
+    DeckCards(Box<deck_cards::DeckCardsView>),
+    RemoveCards(Box<remove_cards::RemoveView>),
     Account(Box<AccountView>),
     Config(Box<ConfigView>),
     /// The server no longer accepts this version. Only quitting is possible.
@@ -59,6 +63,8 @@ impl Screen {
             Self::Decks(list) => decks::keys::handle(list, code, cx),
             Self::Deck(view) => deck::keys::handle(view, code, cx),
             Self::Swipe(view) => swipe::keys::handle(view, code, cx),
+            Self::DeckCards(view) => deck_cards::keys::handle(view, code, cx),
+            Self::RemoveCards(view) => remove_cards::keys::handle(view, code, cx),
             Self::Account(view) => account::keys::handle(view, code, cx),
             Self::Config(view) => config::keys::handle(view, code, cx),
             Self::UpdateRequired => update_required::keys::handle(code, cx),
@@ -72,6 +78,8 @@ impl Screen {
             Self::Decks(list) => decks::draw::draw(f, shared, list),
             Self::Deck(view) => deck::draw::draw(f, shared, view),
             Self::Swipe(view) => swipe::draw::draw(f, shared, view),
+            Self::DeckCards(view) => deck_cards::draw::draw(f, shared, view),
+            Self::RemoveCards(view) => remove_cards::draw::draw(f, shared, view),
             Self::Account(view) => account::draw::draw(f, shared, view),
             Self::Config(view) => config::draw::draw(f, shared, view),
             Self::UpdateRequired => update_required::draw::draw(f, shared),
@@ -93,6 +101,7 @@ impl Screen {
             Self::Home(view) => view.refresh(cx),
             Self::Decks(list) => list.reload(cx),
             Self::Deck(view) => view.reload(cx),
+            Self::DeckCards(view) => view.reload(cx),
             _ => {}
         }
     }
@@ -113,6 +122,8 @@ pub(crate) enum Request {
     Decks(decks::Request),
     Deck(deck::Request),
     Swipe(swipe::Request),
+    DeckCards(deck_cards::Request),
+    RemoveCards(remove_cards::Request),
     Account(account::Request),
     Config(config::Request),
     CardSheets(card_sheets::Request),
@@ -137,6 +148,8 @@ pub(crate) enum Update {
     Decks(decks::Update),
     Deck(deck::Update),
     Swipe(swipe::Update),
+    DeckCards(deck_cards::Update),
+    RemoveCards(remove_cards::Update),
     Account(account::Update),
     Config(config::Update),
     CardSheets(card_sheets::Update),
@@ -179,6 +192,8 @@ pub(crate) async fn perform(
         Request::Decks(request) => decks::perform(account, request).await,
         Request::Deck(request) => deck::perform(account, request).await,
         Request::Swipe(request) => swipe::perform(account, request).await,
+        Request::DeckCards(request) => deck_cards::perform(account, request).await,
+        Request::RemoveCards(request) => remove_cards::perform(account, request).await,
         Request::Account(request) => account::perform(account, request).await,
         Request::Config(request) => config::perform(account, request).await,
         Request::CardSheets(request) => card_sheets::perform(account, request).await,
@@ -205,6 +220,8 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
         Update::Decks(update) => decks::apply(nav, update, cx),
         Update::Deck(update) => deck::apply(nav, update, cx),
         Update::Swipe(update) => swipe::apply(nav, update, cx),
+        Update::DeckCards(update) => deck_cards::apply(nav, update, cx),
+        Update::RemoveCards(update) => remove_cards::apply(nav, update, cx),
         Update::Account(update) => account::apply(nav, update, cx),
         Update::Config(update) => config::apply(nav, update, cx),
         Update::CardSheets(update) => card_sheets::apply(nav, update, cx),
