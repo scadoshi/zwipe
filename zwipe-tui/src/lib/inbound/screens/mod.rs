@@ -4,6 +4,7 @@
 
 pub(crate) mod account;
 pub(crate) mod activity;
+pub(crate) mod commander_maybeboard;
 pub(crate) mod commander_swipe;
 pub(crate) mod config;
 pub(crate) mod deck;
@@ -28,6 +29,7 @@ use zwipe_core::version::version_at_least;
 
 use self::account::AccountView;
 use self::activity::ActivityView;
+use self::commander_maybeboard::MaybeboardView;
 use self::commander_swipe::CommanderSwipeView;
 use self::config::ConfigView;
 use self::deck::DeckView;
@@ -66,6 +68,7 @@ pub(crate) enum Screen {
     Printings(Box<PrintingsView>),
     Playstyle(Box<PlaystyleView>),
     CommanderSwipe(Box<CommanderSwipeView>),
+    CommanderMaybeboard(Box<MaybeboardView>),
     /// The server no longer accepts this version. Only quitting is possible.
     UpdateRequired,
 }
@@ -88,6 +91,7 @@ impl Screen {
             Self::Printings(view) => printings::keys::handle(view, code, cx),
             Self::Playstyle(view) => playstyle::keys::handle(view, code, cx),
             Self::CommanderSwipe(view) => commander_swipe::keys::handle(view, code, cx),
+            Self::CommanderMaybeboard(view) => commander_maybeboard::keys::handle(view, code, cx),
             Self::UpdateRequired => update_required::keys::handle(code, cx),
         }
     }
@@ -108,6 +112,7 @@ impl Screen {
             Self::Printings(view) => printings::draw::draw(f, shared, view),
             Self::Playstyle(view) => playstyle::draw::draw(f, shared, view),
             Self::CommanderSwipe(view) => commander_swipe::draw::draw(f, shared, view),
+            Self::CommanderMaybeboard(view) => commander_maybeboard::draw::draw(f, shared, view),
             Self::UpdateRequired => update_required::draw::draw(f, shared),
         }
     }
@@ -131,6 +136,7 @@ impl Screen {
             Self::Deck(view) => view.reload(cx),
             Self::Activity(view) => view.on_return(cx),
             Self::Playstyle(view) => view.on_return(cx),
+            Self::CommanderMaybeboard(view) => view.on_return(cx),
             _ => {}
         }
     }
@@ -160,6 +166,7 @@ pub(crate) enum Request {
     Printings(printings::Request),
     Playstyle(playstyle::Request),
     CommanderSwipe(commander_swipe::Request),
+    CommanderMaybeboard(commander_maybeboard::Request),
 }
 
 /// A result from a background request: the app's own, or one screen's.
@@ -197,6 +204,7 @@ pub(crate) enum Update {
     Printings(printings::Update),
     Playstyle(playstyle::Update),
     CommanderSwipe(commander_swipe::Update),
+    CommanderMaybeboard(commander_maybeboard::Update),
 }
 
 /// Runs one request off the main loop.
@@ -245,6 +253,9 @@ pub(crate) async fn perform(
         Request::Printings(request) => printings::perform(account, request).await,
         Request::Playstyle(request) => playstyle::perform(account, request).await,
         Request::CommanderSwipe(request) => commander_swipe::perform(account, request).await,
+        Request::CommanderMaybeboard(request) => {
+            commander_maybeboard::perform(account, request).await
+        }
     }
 }
 
@@ -277,6 +288,7 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
         Update::Printings(update) => printings::apply(nav, update, cx),
         Update::Playstyle(update) => playstyle::apply(nav, update, cx),
         Update::CommanderSwipe(update) => commander_swipe::apply(nav, update, cx),
+        Update::CommanderMaybeboard(update) => commander_maybeboard::apply(nav, update, cx),
     }
 }
 

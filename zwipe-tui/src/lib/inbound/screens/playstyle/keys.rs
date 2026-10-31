@@ -1,4 +1,4 @@
-//! Playstyle's keys. j/k and the up and down arrows move the focus through the section headers, the Card roles rows, the Oracle tags table, the Show chips, the suggestion rows, the Staples chips and the staple rows; Enter or Space opens and closes what is focused; `?` shows the focused piece's topic; `M` opens More; `H` shows the screen's hint again; Esc goes back.
+//! Playstyle's keys. j/k and the up and down arrows move the focus through the section headers, the Card roles rows, the Oracle tags table, the Show chips, the suggestion rows, the Staples chips and the staple rows; Enter or Space opens and closes what is focused; `?` shows the focused piece's topic; `M` opens More; `b` opens the Commander maybeboard, standing in for the Decks screen's More sheet until it lands; `H` shows the screen's hint again; Esc goes back.
 //!
 //! On a chip row h/l and the left and right arrows move the chip cursor and Enter or Space picks it; picking the selected chip again returns to All. On the table's header h/l pick the column whose "?" shows. On a revealed role Tab and `BackTab` open its tags' definitions and `x` opens the open tag's examples; on a revealed table tag `x` opens its examples. The suggestion and staple rows take the card rows' own keys; an expanded suggestion adds `c` Create deck, `m` Maybeboard, `r` Remove and `w` to fold its reasons.
 
@@ -13,7 +13,7 @@ use super::{
 use crate::domain::theme::Palette;
 use crate::inbound::app::Context;
 use crate::inbound::screens::commander_swipe::{self, Deal, SuggestedPile};
-use crate::inbound::screens::otag_examples;
+use crate::inbound::screens::{commander_maybeboard, otag_examples};
 use crate::inbound::widgets::alert::{AlertChoice, AlertDialog};
 use crate::inbound::widgets::card_rows::CardRow;
 use crate::inbound::widgets::info;
@@ -28,6 +28,8 @@ pub(crate) fn handle(view: &mut PlaystyleView, code: KeyCode, cx: &mut Context<'
         KeyCode::Esc => return cx.back(),
         KeyCode::Char('H') => return reopen_hint(cx),
         KeyCode::Char('s') if !view.cold_start() => return swipe(view, cx),
+        // Stands in for the Decks screen's More sheet, the app's way in, until that sheet lands.
+        KeyCode::Char('b') => return commander_maybeboard::open(cx),
         KeyCode::Char('M') => {
             view.overlay = Some(Overlay::More(more_sheet(&cx.shared.palette)));
             return;

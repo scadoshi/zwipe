@@ -150,6 +150,7 @@ fn key_hints(view: &PlaystyleView) -> Vec<(&'static str, &'static str)> {
     if !view.cold_start() {
         keys.push(("s", "Swipe"));
     }
+    keys.push(("b", "Maybeboard"));
     keys.push(("M", "More"));
     keys.push(("H", "Hint"));
     keys.push(("Esc", "Back"));
@@ -157,13 +158,13 @@ fn key_hints(view: &PlaystyleView) -> Vec<(&'static str, &'static str)> {
 }
 
 /// A chip on a chip row: its spans, and whether it is the picked one.
-struct ChipContent {
-    spans: Vec<Span<'static>>,
-    picked: bool,
+pub(crate) struct ChipContent {
+    pub(crate) spans: Vec<Span<'static>>,
+    pub(crate) picked: bool,
 }
 
 impl ChipContent {
-    fn text(label: &str, picked: bool) -> Self {
+    pub(crate) fn text(label: &str, picked: bool) -> Self {
         Self {
             spans: vec![Span::raw(label.to_owned())],
             picked,
@@ -172,7 +173,7 @@ impl ChipContent {
 }
 
 /// A chip row: the label chip, then each chip padded, the picked one in the accent reversed and the one under the cursor underlined while `focused`.
-fn chip_line(
+pub(crate) fn chip_line(
     palette: &Palette,
     label: &str,
     chips: Vec<ChipContent>,

@@ -76,13 +76,6 @@ pub(crate) enum Deal {
     /// Playstyle's held ranking.
     Suggested(SuggestedPile),
     /// Commanders for the Commander format, most played first, without these oracle ids.
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "the Commander maybeboard opens the swipe in this mode"
-        )
-    )]
     Commander { exclude: HashSet<Uuid> },
 }
 
