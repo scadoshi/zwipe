@@ -1,9 +1,9 @@
 //! Changelog's keys: h/l across a chip row, Tab between rows, Enter to press a chip, j/k to scroll the cards.
 
 use crossterm::event::KeyCode;
+use zwipe_ui::changelog::{self, ChangelogCache};
 
 use super::ChangelogView;
-use crate::domain::changelog::{self, ChangelogCache};
 use crate::inbound::app::Context;
 use crate::inbound::widgets::help;
 

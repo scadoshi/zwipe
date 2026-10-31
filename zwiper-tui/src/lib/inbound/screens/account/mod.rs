@@ -14,12 +14,12 @@ use zwipe_core::domain::user::hints::HINT_PROFILE;
 use zwipe_core::http::contracts::auth::{
     HttpChangeEmail, HttpChangePassword, HttpChangeUsername, HttpDeleteUser,
 };
+use zwipe_ui::account::{
+    self, change_password_error, email_error, password_required, username_error,
+};
+use zwipe_ui::timing;
 
 use super::{Password, Screen, login};
-use crate::domain::account::{
-    self, DELETE_DELAY_SECS, RESEND_COOLDOWN_SECS, change_password_error, email_error,
-    password_required, username_error,
-};
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;
@@ -157,8 +157,7 @@ impl AccountView {
 
     /// Starts the wait between verification emails.
     pub(crate) fn start_resend_cooldown(&mut self) {
-        self.resend_ready_at =
-            Instant::now().checked_add(Duration::from_secs(RESEND_COOLDOWN_SECS));
+        self.resend_ready_at = Instant::now().checked_add(timing::RESEND_COOLDOWN);
     }
 }
 
@@ -405,7 +404,7 @@ impl DeleteDialog {
 
     /// Seconds left before Delete can be pressed, `None` once it can.
     pub(crate) fn wait(&self) -> Option<u64> {
-        let left = Duration::from_secs(DELETE_DELAY_SECS).saturating_sub(self.opened_at.elapsed());
+        let left = timing::DELETE_COUNTDOWN.saturating_sub(self.opened_at.elapsed());
         (!left.is_zero()).then(|| left.as_secs().saturating_add(1))
     }
 

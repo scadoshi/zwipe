@@ -10,9 +10,9 @@ mod tests;
 use zwipe_core::domain::auth::models::password;
 use zwipe_core::http::contracts::auth::HttpRegisterUser;
 use zwipe_core::http::contracts::metrics::AnonymousEventKind;
+use zwipe_ui::account::{email_error, username_error};
 
 use super::{Password, Screen, login};
-use crate::domain::account::{email_error, username_error};
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;

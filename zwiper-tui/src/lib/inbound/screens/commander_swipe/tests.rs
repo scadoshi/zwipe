@@ -23,6 +23,8 @@ const COMMANDER_HINT: &str = "• Swipe right picks that commander\n• Swipe le
 fn suggestion(name: &str, colors: &[Color]) -> HttpCommanderSuggestion {
     let mut card = card(name);
     card.scryfall_data.color_identity = colors.to_vec().into();
+    // A card with no type line or rules text shows no face, as in the app.
+    card.scryfall_data.type_line = Some("Legendary Creature".to_owned());
     HttpCommanderSuggestion {
         card,
         reasons: HttpSuggestionReasons {

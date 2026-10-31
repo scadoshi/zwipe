@@ -38,6 +38,7 @@ use zwipe_client::ClientError;
 use zwipe_core::domain::user::User;
 use zwipe_core::http::contracts::changelog::HttpChangelog;
 use zwipe_core::http::contracts::metrics::{AnonymousEventKind, HttpPublicMetrics};
+use zwipe_ui::changelog::ChangelogCache;
 
 use self::account::AccountView;
 use self::activity::ActivityView;
@@ -67,7 +68,6 @@ use super::nav::Nav;
 use super::widgets;
 use super::widgets::hero::{self, Counts, Hero};
 use super::widgets::toast::ToastKind;
-use crate::domain::changelog::ChangelogCache;
 use crate::outbound::account::Account;
 use crate::outbound::theme_file::{RememberedTheme, ThemeFile};
 use crate::outbound::usage_buffer::UsageBuffer;

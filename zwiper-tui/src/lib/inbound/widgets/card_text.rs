@@ -3,8 +3,8 @@
 use ratatui::style::Stylize;
 use ratatui::text::{Line, Span};
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
+use zwipe_ui::card::{self, Face};
 
-use crate::domain::card::{self, Face};
 use crate::domain::theme::Palette;
 
 /// One face as lines: the name and cost, the type line, the rules, the stats.

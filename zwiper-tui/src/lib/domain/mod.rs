@@ -1,15 +1,9 @@
 //! What the screens draw, free of terminal and network code.
 
-/// The account forms' validation and copy.
-pub(crate) mod account;
 /// The Activity screen's heatmap, totals and rate charts.
 pub(crate) mod activity;
 /// The Add screen's view of its deck and its search rules.
 pub(crate) mod add;
-/// A card as text: faces, mana symbols, rules and stats.
-pub(crate) mod card;
-/// The changelog cache and how its releases are filed.
-pub(crate) mod changelog;
 pub(crate) mod color_map;
 /// Orangui's rolling figures and compact numbers.
 pub(crate) mod count_up;

@@ -27,7 +27,12 @@ fn page(offset: u32, count: usize) -> Update {
         slug: SLUG.to_owned(),
         offset,
         cards: (0..count)
-            .map(|i| card(&format!("Card {}", usize::try_from(offset).unwrap() + i)))
+            .map(|i| {
+                let mut card = card(&format!("Card {}", usize::try_from(offset).unwrap() + i));
+                // A card with no type line or rules text shows no face, as in the app.
+                card.scryfall_data.type_line = Some("Creature".to_owned());
+                card
+            })
             .collect(),
     }
 }

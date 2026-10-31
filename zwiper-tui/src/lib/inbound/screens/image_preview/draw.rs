@@ -5,9 +5,9 @@ use ratatui::layout::{Constraint, Layout, Margin};
 use ratatui::text::Line;
 use ratatui::widgets::{Block, Padding, Paragraph, Wrap};
 use ratatui_image::StatefulImage;
+use zwipe_ui::card;
 
 use super::{FaceImage, ImagePreview};
-use crate::domain::card;
 use crate::inbound::app::Shared;
 use crate::inbound::widgets::{action_bar, card_text};
 

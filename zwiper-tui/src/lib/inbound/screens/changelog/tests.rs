@@ -39,7 +39,7 @@ fn view(harness: &Harness) -> &ChangelogView {
     }
 }
 
-use crate::domain::changelog::{ChangelogCache, Filter};
+use zwipe_ui::changelog::{ChangelogCache, Filter};
 
 #[test]
 fn it_starts_on_latest_with_the_newest_release_tagged() {

@@ -19,6 +19,7 @@ path = "src/bin/zwiper-tui.rs"
 [dependencies]
 zwipe-core = { path = "../zwipe-core" }
 zwipe-client = { path = "../zwipe-client" }
+zwipe-ui = { path = "../zwipe-ui" }
 anyhow = { workspace = true }
 chrono = { workspace = true }
 crossterm = { version = "0.29", features = ["event-stream"] }

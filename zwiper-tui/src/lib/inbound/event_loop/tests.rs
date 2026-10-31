@@ -5,10 +5,10 @@ use std::time::Instant;
 use crossterm::event::KeyCode;
 use zwipe_core::http::contracts::changelog::HttpChangelog;
 use zwipe_core::http::contracts::metrics::AnonymousEventKind;
+use zwipe_ui::changelog::ChangelogCache;
 
 use super::Flow;
 use super::harness::Harness;
-use crate::domain::changelog::ChangelogCache;
 use crate::domain::theme::Palette;
 use crate::inbound::screens::{Request, Screen, Update, deck, decks};
 use crate::inbound::widgets::hint;

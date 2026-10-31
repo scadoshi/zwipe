@@ -7,9 +7,9 @@ use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::style::Stylize;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Paragraph, Wrap};
+use zwipe_ui::changelog::{self, ChangelogCache, Tag};
 
 use super::{ChangelogView, Chip, FAILED};
-use crate::domain::changelog::{self, ChangelogCache, Tag};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::widgets::action_bar::{self, Button};

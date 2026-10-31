@@ -9957,4 +9957,5 @@ dependencies = [
  "uuid",
  "zwipe-client",
  "zwipe-core",
+ "zwipe-ui",
 ]

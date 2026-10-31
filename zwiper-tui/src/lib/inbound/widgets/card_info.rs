@@ -7,8 +7,8 @@ use ratatui::style::{Style, Stylize};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Padding, Paragraph, Wrap};
 use zwipe_core::domain::card::{Card, card_role};
+use zwipe_ui::card::{self, Face};
 
-use crate::domain::card::{self, Face};
 use crate::domain::theme::Palette;
 
 /// The info block: name, prices, set, release date and artist. A missing price or artist line stays as a blank line so the block keeps its height.

@@ -7,8 +7,9 @@ mod tests;
 
 use std::time::Instant;
 
+use zwipe_ui::changelog::{self, Filter, Listed};
+
 use super::Screen;
-use crate::domain::changelog::{self, Filter, Listed};
 use crate::inbound::app::Context;
 
 /// The load-failure note.
