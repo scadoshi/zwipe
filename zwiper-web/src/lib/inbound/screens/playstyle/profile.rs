@@ -1,20 +1,17 @@
 //! Playstyle's profile: the Color map, Summary, Card roles and Oracle tags
 //! sections over the suggestions, and their loading ghosts.
 
-use components::{
-    BarChart, BarOrientation, ColorMap, ColorMapCounts, ColorMapGhost, OtagDef, RoleTags,
-};
+use components::{BarChart, BarOrientation, ColorMap, OtagDef, RoleTags};
 use dioxus::prelude::*;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::http::contracts::suggestions::HttpBuilderProfile;
-use zwipe_ui::activity::Bar;
-use zwipe_ui::color_map::{self, seed_from_id};
-use zwipe_ui::playstyle::{
-    SummaryValue, TagRow, color_map_has_data, profile_summary, role_bars, role_tags, tag_rows,
-};
+use zwipe_ui::playstyle::{SummaryValue, TagRow, profile_summary, role_bars, role_tags, tag_rows};
 
 use super::chips::IdentityPips;
+use crate::inbound::cards::charts::{
+    ColorMapEmpty, ColorMapSkeleton, chart_bars, map_counts, user_seed,
+};
 use crate::inbound::cards::otag::{OtagDescribe, OtagExamplesOpen};
 use crate::inbound::chrome::hint_topic::{HintTopic, InfoButton};
 use crate::inbound::chrome::section::CollapsibleSection;
@@ -24,35 +21,6 @@ pub(crate) const COLORS_TITLE: &str = "Color map";
 const SUMMARY_TITLE: &str = "Summary";
 const ROLES_TITLE: &str = "Card roles";
 const TAGS_TITLE: &str = "Oracle tags";
-
-/// zwipe-ui's chart bars as the kit's chart draws them.
-fn chart_bars(bars: Vec<Bar>) -> Vec<components::Bar> {
-    bars.into_iter()
-        .map(|bar| components::Bar {
-            key: bar.key,
-            label: bar.label,
-            count: usize::try_from(bar.count).unwrap_or(usize::MAX),
-            pct: bar.pct,
-            revealable: bar.revealable,
-        })
-        .collect()
-}
-
-/// The color map's seed for the signed-in user, so Home and Playstyle draw
-/// the same shape; 0 without a session.
-pub(crate) fn user_seed(session: Signal<Option<Session>>) -> u64 {
-    session
-        .peek()
-        .as_ref()
-        .map_or(0, |s| seed_from_id(s.user.id.as_u128()))
-}
-
-/// The kit's map counts for `profile`'s color map, when it has a colored or
-/// colorless card on it.
-fn map_counts(profile: &HttpBuilderProfile) -> Option<ColorMapCounts> {
-    let map = profile.color_map.as_ref()?;
-    color_map_has_data(&color_map::ColorMapCounts::from(map)).then(|| ColorMapCounts::from(map))
-}
 
 /// What the user builds: one accordion with the Color map open on entry,
 /// then Summary, Card roles (a role chart whose roles reveal their tags) and
@@ -64,7 +32,7 @@ pub fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
     let session: Signal<Option<Session>> = use_context();
     let seed = user_seed(session);
     let mut selected_role: Signal<Option<String>> = use_signal(|| None);
-    let counts = map_counts(&profile);
+    let counts = profile.color_map.as_ref().and_then(map_counts);
     let open_section: Signal<Option<String>> = use_signal(|| Some(COLORS_TITLE.to_string()));
     let roles = chart_bars(role_bars(&profile.roles, &profile.tags));
     let tags = tag_rows(&profile.tags);
@@ -135,15 +103,6 @@ pub fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
                 TagTable { rows: tags }
             }
         }
-    }
-}
-
-/// The line a color map shows in its place before any deck has colored
-/// cards.
-#[component]
-pub fn ColorMapEmpty() -> Element {
-    rsx! {
-        div { class: "message-empty", style: "padding: 1rem;", "Build a deck to see your playstyle" }
     }
 }
 
@@ -237,23 +196,6 @@ fn TagTable(rows: Vec<TagRow>) -> Element {
                         }
                     }
                 }
-            }
-        }
-    }
-}
-
-/// A color map while its counts load: the ghost tiles, then a bare chip per
-/// color and a wider one for colorless in the key.
-#[component]
-fn ColorMapSkeleton() -> Element {
-    rsx! {
-        div { class: "color-map",
-            ColorMapGhost {}
-            div { class: "color-map-key",
-                for i in 0..5 {
-                    div { key: "{i}", class: "skeleton-bar skeleton-chip skeleton-chip-md" }
-                }
-                div { class: "skeleton-bar skeleton-chip skeleton-chip-lg" }
             }
         }
     }

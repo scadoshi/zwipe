@@ -1,14 +1,13 @@
 //! Home's color map panel: the user's color map from every deck, with a
 //! `Playstyle` button that opens the full screen.
 
-use components::{ColorMap, ColorMapGhost};
+use components::ColorMap;
 use dioxus::prelude::*;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::http::contracts::suggestions::{HttpColorMap, HttpPlayStyleSummary};
-use zwipe_ui::color_map::seed_from_id;
-use zwipe_ui::playstyle::color_map_has_data;
 
 use crate::inbound::caches::CachedPlayStyle;
+use crate::inbound::cards::charts::{ColorMapEmpty, ColorMapSkeleton, map_counts, user_seed};
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::hint_topic::{HintTopic, InfoButton};
 use crate::inbound::router::Route;
@@ -49,9 +48,7 @@ fn use_play_style_summary() -> (Option<HttpPlayStyleSummary>, Signal<bool>) {
 /// The kit's counts for `map`, when it has anything to draw (zwipe-ui's
 /// rule) and the user has a deck.
 fn drawable(map: Option<&HttpColorMap>, deck_count: u32) -> Option<components::ColorMapCounts> {
-    let map = map?;
-    let has_data = color_map_has_data(&zwipe_ui::color_map::ColorMapCounts::from(map));
-    (has_data && deck_count > 0).then(|| components::ColorMapCounts::from(map))
+    map_counts(map?).filter(|_| deck_count > 0)
 }
 
 /// The panel: its title with a `?`, then the user's color map seeded by
@@ -62,11 +59,7 @@ fn drawable(map: Option<&HttpColorMap>, deck_count: u32) -> Option<components::C
 #[component]
 pub fn HomePlayStyle() -> Element {
     let (summary, failed) = use_play_style_summary();
-    let session: Signal<Option<Session>> = use_context();
-    let seed = session
-        .peek()
-        .as_ref()
-        .map_or(0, |s| seed_from_id(s.user.id.as_u128()));
+    let seed = user_seed(use_context());
     rsx! {
         div { class: "container-sm text-center flex-col home-flavor content-enter-delayed",
             match summary {
@@ -98,35 +91,6 @@ pub fn HomePlayStyle() -> Element {
                 },
             }
         }
-    }
-}
-
-/// A color map while its counts load: the kit's ghost map, then a bare chip
-/// for each of the key's five colors, a wider one for colorless, and with
-/// `key_action` one more for the button.
-#[component]
-pub fn ColorMapSkeleton(#[props(default)] key_action: bool) -> Element {
-    rsx! {
-        div { class: "color-map",
-            ColorMapGhost {}
-            div { class: "color-map-key",
-                for i in 0..5 {
-                    div { key: "{i}", class: "skeleton-bar skeleton-chip skeleton-chip-md" }
-                }
-                div { class: "skeleton-bar skeleton-chip skeleton-chip-lg" }
-                if key_action {
-                    div { class: "skeleton-bar skeleton-chip skeleton-chip-lg" }
-                }
-            }
-        }
-    }
-}
-
-/// The line in a color map's place before any deck has colored cards.
-#[component]
-pub fn ColorMapEmpty() -> Element {
-    rsx! {
-        div { class: "message-empty", style: "padding: 1rem;", "Build a deck to see your playstyle" }
     }
 }
 

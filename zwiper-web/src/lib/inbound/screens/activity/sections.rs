@@ -15,6 +15,7 @@ use zwipe_ui::activity::{
 };
 
 use crate::inbound::cards::card_row::CardRow;
+use crate::inbound::cards::charts::chart_bars;
 use crate::inbound::cards::otag::{OtagDescribe, OtagExamplesOpen};
 use crate::inbound::chrome::hint_topic::{HintTopic, InfoButton};
 use crate::inbound::chrome::section::CollapsibleSection;
@@ -32,19 +33,6 @@ const PASSES_TITLE: &str = "Most skipped";
 const LEFT: f64 = 24.0;
 /// Room above the grid for the month labels, in grid units.
 const TOP: f64 = 14.0;
-
-/// zwipe-ui's bars as the kit's chart draws them.
-fn chart_bars(bars: Vec<activity::Bar>) -> Vec<components::Bar> {
-    bars.into_iter()
-        .map(|bar| components::Bar {
-            key: bar.key,
-            label: bar.label,
-            count: usize::try_from(bar.count).unwrap_or(usize::MAX),
-            pct: bar.pct,
-            revealable: bar.revealable,
-        })
-        .collect()
-}
 
 /// The year as a heatmap: weekday labels down the left, month labels over
 /// the top, a cell per day in the kit's [`HeatGrid`], opening scrolled to
