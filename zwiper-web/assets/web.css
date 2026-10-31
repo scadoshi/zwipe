@@ -1,0 +1,223 @@
+/* zwiper-web: what a browser window changes over zwiper's stylesheets.
+ * Loads after them. Wide is 900px and up; below that the screens keep the
+ * phone layout in one column. */
+
+:root {
+    --web-sidebar-width: 13rem;
+    --web-content-max: 72rem;
+}
+
+html {
+    overflow: auto;
+    touch-action: auto;
+}
+
+body {
+    max-width: none;
+    overflow: auto;
+    user-select: text;
+}
+
+.app-shell {
+    min-height: 100vh;
+}
+
+/* A screen fills its frame instead of the whole viewport. */
+.screen.web-screen {
+    position: relative;
+    inset: auto;
+    min-height: 100vh;
+}
+
+/* ---- Public frame (login, register, reset) ---- */
+
+.web-public {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.web-split {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    width: 100%;
+}
+
+/* ---- Sidebar shell ---- */
+
+.web-shell {
+    display: flex;
+    min-height: 100vh;
+}
+
+.web-sidebar {
+    position: sticky;
+    top: 0;
+    align-self: flex-start;
+    flex: 0 0 var(--web-sidebar-width);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 1rem 0.75rem;
+    border-right: 1px solid var(--border-secondary);
+    background-color: var(--bg-primary);
+    z-index: 2;
+}
+
+.web-sidebar ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.web-sidebar-mark {
+    font-size: 0.45rem;
+    line-height: 1;
+    white-space: pre;
+    margin: 0 auto 1rem;
+    color: var(--logo-color, var(--accent-primary));
+}
+
+.web-nav-link {
+    display: block;
+    width: 100%;
+    padding: 0.45rem 0.75rem;
+    border: 1px solid transparent;
+    border-radius: 0.375rem;
+    background: none;
+    color: var(--text-secondary, var(--text-primary));
+    font: inherit;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.web-nav-link:hover {
+    border-color: var(--border-secondary);
+    color: var(--text-primary);
+}
+
+.web-nav-link.active {
+    border-color: var(--border-primary);
+    color: var(--accent-primary);
+}
+
+.web-nav-help {
+    margin-top: auto;
+}
+
+.web-main {
+    flex: 1;
+    min-width: 0;
+}
+
+.web-topbar {
+    display: none;
+}
+
+/* On a wide window the action bar sits under the header, next to the
+   content, in the app's order. */
+@media (min-width: 900px) {
+    .web-screen {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .web-screen > .action-bar {
+        order: 1;
+        justify-content: flex-start;
+        padding: 0.75rem 1rem;
+        border-top: none;
+        border-bottom: 1px solid var(--border-secondary);
+    }
+
+    .web-screen > .screen-content {
+        order: 2;
+    }
+
+    .web-screen > .page-header {
+        order: 0;
+    }
+
+    .web-split {
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
+        gap: 3rem;
+        max-width: var(--web-content-max);
+    }
+
+    .web-split > * {
+        flex: 1 1 0;
+        max-width: 28rem;
+    }
+
+    /* The mark sizes to its panel, not to the window. */
+    .web-split .home-hero .logo {
+        font-size: 0.6rem;
+    }
+
+    /* Toasts move top right so they never cover the sidebar. */
+    .toast-container {
+        left: auto;
+        right: 1rem;
+    }
+}
+
+/* Narrow: the sidebar folds into a top bar with a menu. */
+@media (max-width: 899px) {
+    .web-shell {
+        flex-direction: column;
+    }
+
+    /* The top bar is 3rem tall, so the action bar stays on screen. */
+    .web-shell .screen.web-screen {
+        min-height: calc(100vh - 3rem);
+        height: calc(100vh - 3rem);
+    }
+
+    .web-topbar {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.5rem 1rem;
+        border-bottom: 1px solid var(--border-secondary);
+        background-color: var(--bg-primary);
+        position: sticky;
+        top: 0;
+        z-index: 3;
+    }
+
+    .web-sidebar {
+        display: none;
+    }
+
+    .web-sidebar.open {
+        display: flex;
+        position: fixed;
+        top: 3rem;
+        left: 0;
+        right: 0;
+        height: auto;
+        border-right: none;
+        border-bottom: 1px solid var(--border-secondary);
+    }
+
+    .web-sidebar.open .web-sidebar-mark {
+        display: none;
+    }
+}
+
+/* ---- Placeholders ---- */
+
+.web-placeholder {
+    width: calc(100% - 2rem);
+    max-width: 40rem;
+    margin: 1.5rem auto;
+}

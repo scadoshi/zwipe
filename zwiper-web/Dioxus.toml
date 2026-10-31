@@ -1,0 +1,8 @@
+[application]
+name = "zwiper-web"
+default_platform = "web"
+
+[web.app]
+title = "Zwipe"
+
+[web.resource.dev]
