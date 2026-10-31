@@ -85,12 +85,15 @@ body {
     gap: 0.25rem;
 }
 
+/* The full ZWIPE mark, 49 columns of JetBrains Mono at 0.6em each, sized
+   to fit the sidebar's 11.5rem inside its padding even where a browser
+   rounds each column up to a whole pixel. The color is the app's .logo
+   color: plain text in dark mode, the accent in light mode. */
 .web-sidebar-mark {
-    font-size: 0.45rem;
-    line-height: 1;
-    white-space: pre;
+    font-size: 0.34rem;
+    line-height: 0.9;
+    padding: 0;
     margin: 0 auto 1rem;
-    color: var(--logo-color, var(--accent-primary));
 }
 
 .web-nav-link {
@@ -453,4 +456,535 @@ body {
     width: calc(100% - 2rem);
     max-width: 40rem;
     margin: 1.5rem auto;
+}
+
+/* ---- Collapsible sections ---- */
+
+/* The app's section card. Its padding sits on the head and body so the rule
+   under the head runs edge to edge. */
+.web-section {
+    width: 100%;
+    background: var(--bg-primary);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-secondary);
+    border-radius: 0.5rem;
+    padding: 0.75rem 0;
+    display: flex;
+    flex-direction: column;
+    cursor: pointer;
+    user-select: none;
+    box-sizing: border-box;
+}
+
+.web-section.warn {
+    border-color: var(--border-warning);
+}
+
+.web-section-head {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0 0.75rem;
+}
+
+.web-section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.web-section-arrow {
+    transform: rotate(0deg);
+}
+
+.web-section.open .web-section-arrow {
+    transform: rotate(90deg);
+}
+
+.web-section-badge {
+    font-size: 0.65rem;
+    opacity: 0.5;
+}
+
+.web-section-accessory {
+    transition: opacity 0.25s ease;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.web-section.open .web-section-accessory {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.web-section > .collapsible {
+    cursor: default;
+}
+
+.web-section-rule {
+    border: none;
+    border-top: 1px solid var(--border-secondary);
+    margin: 0.5rem 0 0.6rem;
+}
+
+.web-section-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+/* A wide window shows every section open, with no arrow to toggle. */
+@media (min-width: 900px) {
+    .web-sections-open .web-section {
+        cursor: default;
+    }
+
+    .web-sections-open .web-section-arrow {
+        display: none;
+    }
+
+    .web-sections-open .web-section-head {
+        pointer-events: none;
+    }
+
+    .web-sections-open .web-section-accessory {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .web-sections-open .web-section > .collapsible {
+        grid-template-rows: 1fr;
+        opacity: 1;
+    }
+
+    .web-sections-open .web-section > .collapsible > .collapsible-inner {
+        overflow: visible;
+    }
+}
+
+/* ---- Card rows: the image beside the cursor ---- */
+
+.web-card-row {
+    display: contents;
+}
+
+.web-hover-preview {
+    display: none;
+}
+
+@media (min-width: 900px) and (hover: hover) {
+    .web-hover-preview {
+        display: block;
+        position: fixed;
+        left: min(calc(var(--hover-x) + 1.5rem), calc(100vw - 16rem));
+        top: clamp(1rem, calc(var(--hover-y) - 10rem), calc(100vh - 22rem));
+        width: 15rem;
+        z-index: 60;
+        pointer-events: none;
+        border-radius: 4.75% / 3.5%;
+        overflow: hidden;
+        box-shadow: var(--shadow-lg, 0 0.5rem 1.5rem rgb(0 0 0 / 0.35));
+        animation: chip-in 0.2s ease-out;
+    }
+
+    .web-hover-preview img {
+        display: block;
+        width: 100%;
+    }
+}
+
+/* ---- Printing sheet ---- */
+
+.web-printing-stage {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.web-printing-stage .carousel-card-image {
+    max-width: min(18rem, 70vw);
+}
+
+.web-printing-step {
+    flex: none;
+}
+
+.web-printing-sheet .bottom-sheet:focus {
+    outline: none;
+}
+
+/* ---- Swipe surfaces ---- */
+
+/* The app's stack fills what its column leaves; a browser column may leave
+   nothing, so the stack keeps room for a card. */
+.web-swipe-stack {
+    flex: 1 0 auto;
+    min-height: min(55vh, 32rem);
+}
+
+.web-swipe-stack .swipe-stack-card.top {
+    touch-action: none;
+    cursor: grab;
+}
+
+.web-swipe-stack .swipe-stack-card.top:active {
+    cursor: grabbing;
+}
+
+.web-swipe-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    margin: 0.75rem 0;
+}
+
+.web-swipe-arrow {
+    font-weight: 700;
+}
+
+/* ---- Large overlays (Oracle tag examples, the dictionary) ---- */
+
+/* Below the breakpoint these are the app's full-screen overlays. On a wide
+   window they are a large modal over a dimmed page. */
+.web-examples-details {
+    display: none;
+}
+
+@media (min-width: 900px) {
+    /* The transform makes the modal the containing block of its own fixed
+       grid backdrop, so the backdrop stays inside it and the page around it
+       dims. */
+    .screen.web-large-modal {
+        inset: 4vh max(2rem, calc(50vw - 38rem));
+        width: auto;
+        height: auto;
+        transform: translateZ(0);
+        border: 1px solid var(--border-secondary);
+        border-radius: 1rem;
+        overflow: hidden;
+        box-shadow: 0 0 0 100vmax rgb(0 0 0 / 0.55), var(--shadow-sm);
+    }
+
+    .web-examples-body {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        align-items: start;
+        gap: 1.5rem;
+        max-width: none;
+        padding: 1rem 1.5rem;
+    }
+
+    .web-examples-details {
+        display: block;
+        align-self: stretch;
+    }
+
+    .web-examples .action-bar .btn-action-eye {
+        display: none;
+    }
+}
+
+/* ---- Home ---- */
+
+/* Below the breakpoint the pair is the app's stack: the panels are the home
+   column's own children. */
+.web-home-pair {
+    display: contents;
+}
+
+.web-home-pair > :last-child {
+    margin-bottom: auto;
+}
+
+.web-flavor-image {
+    display: none;
+}
+
+@media (min-width: 900px) {
+    /* The hero spans the top: the mark on the left, the figures and their
+       tags on the right. */
+    .web-home .home-hero {
+        max-width: 56rem;
+    }
+
+    .web-home .home-hero .hero-head {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        column-gap: 2.5rem;
+        row-gap: 1rem;
+        align-items: center;
+    }
+
+    .web-home .home-hero .logo {
+        grid-row: span 2;
+        font-size: 0.85rem;
+    }
+
+    /* Under it, the color map and the featured flavor side by side. */
+    .web-home-pair {
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        gap: var(--panel-gap);
+        width: 100%;
+        max-width: 56rem;
+        padding: 0 1rem;
+        box-sizing: border-box;
+        margin-bottom: auto;
+    }
+
+    .web-home-pair > .home-flavor {
+        flex: 1 1 0;
+        width: auto;
+        max-width: none;
+        margin-top: var(--panel-gap);
+    }
+
+    /* The flavor card's image beside its quote, which the phone keeps
+       behind Image. */
+    .web-flavor-body {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 1rem 1rem 0;
+    }
+
+    .web-flavor-image {
+        display: block;
+        width: 9rem;
+        flex: none;
+        border-radius: 4.75% / 3.5%;
+        animation: flavor-enter 0.3s ease-out 0.1s backwards;
+    }
+
+    .web-flavor-body .flavor-quote {
+        flex: 1;
+        text-align: left;
+    }
+
+    /* The sidebar holds Decks, Account and Config. */
+    .web-screen > .action-bar.web-home-actions {
+        display: none;
+    }
+}
+
+/* ---- Activity ---- */
+
+.web-activity {
+    max-width: 40rem;
+    width: 100%;
+    padding: 0 1rem;
+    gap: var(--panel-gap);
+    box-sizing: border-box;
+}
+
+.web-activity-column {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: var(--panel-gap);
+}
+
+/* Below the breakpoint the sections are one accordion column. */
+.web-activity-year,
+.web-activity-rates {
+    display: contents;
+}
+
+@media (min-width: 900px) {
+    .web-activity {
+        max-width: 72rem;
+    }
+
+    /* A year fits, so the heatmap scales to its column instead of scrolling;
+       the grid's inline pixel width is the phone's scroll width. */
+    .web-activity-heat .activity-scroll {
+        overflow-x: visible;
+        mask-image: none;
+        -webkit-mask-image: none;
+    }
+
+    .web-activity-heat .activity-plot,
+    .web-activity-heat .heat-grid {
+        width: 100% !important;
+        height: auto;
+    }
+
+    /* The Activity section full width: the year's heatmap unscrolled with
+       Totals beside it. */
+    .web-activity-year {
+        display: block;
+        width: 100%;
+    }
+
+    .web-activity-year-body {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(14rem, 18rem);
+        column-gap: 1.5rem;
+        align-items: start;
+    }
+
+    .web-activity-year-body > .activity-rule {
+        display: none;
+    }
+
+    .web-activity-year-body > .activity-outcomes {
+        margin-top: 0;
+        padding-right: 0.75rem;
+    }
+
+    /* Card roles and Oracle tags side by side, both open. */
+    .web-activity-rates {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: var(--panel-gap);
+        align-items: start;
+        width: 100%;
+    }
+}
+
+/* ---- Playstyle ---- */
+
+/* The app's bounded column below the breakpoint: the profile, then the
+   Show row, the suggestions and Staples, a panel gap apart. */
+.web-playstyle {
+    width: 100%;
+    max-width: 40rem;
+    padding: 0 1rem;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: var(--panel-gap);
+}
+
+.web-playstyle-profile,
+.web-playstyle-list {
+    width: 100%;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--panel-gap);
+}
+
+/* A wide window puts the profile sections, all open, in the left column and
+   the list in the right. */
+@media (min-width: 900px) {
+    .web-playstyle {
+        max-width: var(--web-content-max);
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+        align-items: start;
+        gap: 1.5rem;
+        padding: 0 1.5rem;
+    }
+}
+
+/* ---- Swipe select ---- */
+
+/* Hidden while closed and click-through, as in the app; it cross-fades on
+   .show. On a wide window the card and its info sit left and the card's
+   details beside them. */
+.web-swipe-select-details {
+    display: none;
+}
+
+@media (min-width: 900px) {
+    .web-swipe-select-body {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        align-items: start;
+        gap: 1.5rem;
+        max-width: var(--web-content-max);
+        margin: 0 auto;
+        width: 100%;
+        padding: 1rem 1.5rem;
+        box-sizing: border-box;
+    }
+
+    .web-swipe-select-details {
+        display: block;
+    }
+
+    .web-swipe-select .action-bar .btn-action-eye {
+        display: none;
+    }
+}
+
+/* ---- Commander maybeboard ---- */
+
+/* The app's column: Quick add, Show and the list. A wide window keeps it on
+   the left so the filter's side panel opens beside the list. */
+.web-maybeboard {
+    max-width: 40rem;
+    width: 100%;
+    padding: 0 1rem;
+    box-sizing: border-box;
+}
+
+@media (min-width: 900px) {
+    .web-screen > .screen-content:has(> .web-maybeboard) {
+        align-items: flex-start;
+    }
+
+    .web-maybeboard {
+        max-width: 44rem;
+        margin: 1rem 0 2rem 1.5rem;
+    }
+}
+
+/* The Quick add result the arrow keys point at. */
+.web-float-highlight {
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+}
+
+/* ---- Oracle tag dictionary ---- */
+
+/* Below the breakpoint the browse wrapper adds no box, so the controls and
+   list sit in the screen's column as in the app. */
+.web-dict-browse {
+    display: contents;
+}
+
+@media (min-width: 900px) {
+    .web-dictionary > .screen-content {
+        align-items: stretch;
+        min-height: 0;
+    }
+
+    /* Search and the letter rail as a column on the left, the list beside. */
+    .web-dict-browse {
+        display: grid;
+        grid-template-columns: 15rem minmax(0, 1fr);
+        gap: 1rem;
+        flex: 1 1 auto;
+        min-height: 0;
+        width: 100%;
+        padding: 0 1.5rem;
+        box-sizing: border-box;
+    }
+
+    .web-dict-browse .dict-controls {
+        max-width: none;
+        padding: 0.75rem 0;
+        min-height: 0;
+        overflow-y: auto;
+    }
+
+    .web-dict-browse .dict-letter-rail {
+        flex-wrap: wrap;
+        overflow-x: visible;
+        -webkit-mask-image: none;
+        mask-image: none;
+    }
+
+    .web-dict-browse .dict-list {
+        max-width: 48rem;
+        min-height: 0;
+    }
 }

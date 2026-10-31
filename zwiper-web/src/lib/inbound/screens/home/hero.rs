@@ -1,0 +1,133 @@
+//! Home's hero, whose scope chip switches between everybody's counters and
+//! the user's own, and Activity's header of the user's own counters.
+
+use chrono::Utc;
+use components::{Panel, StatsStrip};
+use dioxus::prelude::*;
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::http::contracts::metrics::HttpLifetimeCounters;
+use zwipe_ui::home::{Figures, Scope};
+
+use crate::inbound::caches::CachedMyCounts;
+use crate::inbound::chrome::authed::use_authed;
+use crate::inbound::router::Route;
+use crate::inbound::screens::auth::hero::{HeroPanel, strip_figures, use_public_counts};
+use crate::outbound::scope_store::ScopeStore;
+
+/// The signed-in user's counters from the root's copy, fetched quietly while
+/// `scope` is `Only me` and the copy is missing, another user's or a minute
+/// old. Another user's copy is never returned.
+pub fn use_my_counts(scope: Signal<Scope>) -> Option<HttpLifetimeCounters> {
+    let session: Signal<Option<Session>> = use_context();
+    let mut cache: Signal<Option<CachedMyCounts>> = use_context();
+    let authed = use_authed();
+    let user_id = session.peek().as_ref().map(|s| s.user.id);
+    use_effect(move || {
+        if scope() != Scope::OnlyMe {
+            return;
+        }
+        let Some(user_id) = user_id else {
+            return;
+        };
+        let fresh = cache
+            .peek()
+            .as_ref()
+            .is_some_and(|c| c.is_fresh_for(user_id, Utc::now()));
+        if fresh {
+            return;
+        }
+        spawn(async move {
+            if let Some(metrics) = authed
+                .run_quiet("my_metrics", |c, s| async move { c.my_metrics(&s).await })
+                .await
+            {
+                cache.set(Some(CachedMyCounts {
+                    user_id,
+                    metrics,
+                    fetched_at: Utc::now(),
+                }));
+            }
+        });
+    });
+    cache
+        .read()
+        .as_ref()
+        .filter(|c| Some(c.user_id) == user_id)
+        .map(|c| c.metrics.clone())
+}
+
+/// Home's hero: the mark over everybody's or the user's own three figures,
+/// tagged `Live` once the figures on screen come from this visit, then the
+/// scope button and `Activity`. A switch is stored, so Home opens on the
+/// last one, and it rolls the figures to the other counts while its label
+/// fades in.
+#[component]
+pub fn HomeHeroScoped() -> Element {
+    let mut scope: Signal<Scope> = use_context();
+    let navigator = use_navigator();
+    let (public, public_live) = use_public_counts();
+    let mine = use_my_counts(scope);
+    let (figures, live) = match scope() {
+        Scope::Everybody => (public.as_ref().map(Figures::from), public_live),
+        Scope::OnlyMe => (mine.as_ref().map(Figures::from), mine.is_some()),
+    };
+    let label = scope().label();
+    rsx! {
+        HeroPanel {
+            figures: strip_figures(figures),
+            roll_key: label,
+            source: rsx! {
+                if live {
+                    span { class: "stat-chip", "Live" }
+                }
+                button {
+                    class: "card-action-btn hero-scope",
+                    style: "width:calc({label.chars().count()}ch + 1.2rem + 2px);",
+                    onclick: move |_| {
+                        let next = scope.peek().toggled();
+                        ScopeStore::browser().save(next);
+                        scope.set(next);
+                    },
+                    for label in [label] {
+                        span { key: "{label}", class: "hero-scope-label", "{label}" }
+                    }
+                }
+                button {
+                    class: "card-action-btn",
+                    onclick: move |_| {
+                        navigator.push(Route::Activity {});
+                    },
+                    "Activity"
+                }
+            },
+        }
+    }
+}
+
+/// Activity's header: the user's own counters in Home's strip without the
+/// mark, tagged `Live` once shown and `Only me`. The figures keep rolling
+/// until `ready`, so they land with the rest of the screen; they are fetched
+/// meanwhile all the same.
+#[component]
+pub fn MyCountsPanel(ready: bool) -> Element {
+    let scope = use_signal(|| Scope::OnlyMe);
+    let mine = use_my_counts(scope);
+    let shown = mine.as_ref().filter(|_| ready);
+    let live = shown.is_some();
+    rsx! {
+        div { class: "home-hero activity-counts",
+            Panel {
+                StatsStrip {
+                    figures: strip_figures(shown.map(Figures::from)),
+                    compact: true,
+                    source: rsx! {
+                        if live {
+                            span { class: "stat-chip", "Live" }
+                        }
+                        span { class: "stat-chip", "{Scope::OnlyMe.label()}" }
+                    },
+                }
+            }
+        }
+    }
+}

@@ -1,24 +1,28 @@
-//! The mark over everybody's three counters, on the public screens.
+//! The mark over three counters: everybody's on the public screens, and the
+//! panel Home's scoped hero draws in.
 
 use chrono::Utc;
 use components::{Decode, Panel, StatsStrip};
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::logo;
+use zwipe_core::http::contracts::metrics::HttpPublicMetrics;
+use zwipe_ui::home::{Figures, Scope};
 
 use crate::domain::counts::{self, CachedCounts};
 use crate::outbound::counts_store::CountsStore;
 
-/// The app's `HomeHero`: the decoding mark, then decks created, searches run
-/// and cards swiped across everyone, tagged `Everybody` and, once fetched
-/// during this visit, `Live`.
-///
-/// The counters come from the root's shared copy. A mount refetches when that
-/// copy is missing, stored by an earlier visit, or a minute old, and keeps
-/// showing it until the fetch lands. A failed fetch is only logged. Every
-/// mount replays the decode and the roll.
-#[component]
-pub fn HomeHero() -> Element {
+/// The strip's three figures with their labels, `None` each while loading.
+pub fn strip_figures(figures: Option<Figures>) -> Vec<(Option<u64>, &'static str)> {
+    let values = figures.unwrap_or_default().values();
+    values.into_iter().zip(Figures::LABELS).collect()
+}
+
+/// Everybody's counters from the root's shared copy, with whether that copy
+/// was fetched during this visit. A mount refetches when the copy is
+/// missing, stored by an earlier visit, or a minute old, and keeps showing
+/// it until the fetch lands. A failed fetch is only logged.
+pub fn use_public_counts() -> (Option<HttpPublicMetrics>, bool) {
     let client: Signal<ZwipeClient> = use_context();
     let mut cache: Signal<Option<CachedCounts>> = use_context();
     use_hook(move || {
@@ -37,26 +41,78 @@ pub fn HomeHero() -> Element {
         });
     });
     let cached = cache.read();
-    let figures = counts::public_figures(cached.as_ref().map(|c| &c.metrics));
+    let metrics = cached.as_ref().map(|c| c.metrics.clone());
     let live = cached.as_ref().is_some_and(CachedCounts::is_live);
+    (metrics, live)
+}
 
+/// The app's `HomeHero`: the decoding mark, then decks created, searches run
+/// and cards swiped across everyone, tagged `Everybody` and, once fetched
+/// during this visit, `Live`. Every mount replays the decode and the roll.
+#[component]
+pub fn HomeHero() -> Element {
+    let (metrics, live) = use_public_counts();
+    rsx! {
+        HeroPanel {
+            figures: strip_figures(metrics.as_ref().map(Figures::from)),
+            roll_key: "all",
+            source: rsx! {
+                span { class: "stat-chip", "{Scope::Everybody.label()}" }
+                if live {
+                    span { class: "stat-chip", "Live" }
+                }
+            },
+        }
+    }
+}
+
+/// The panel both heroes draw: the mark over the strip, with `source`
+/// under it. A new `roll_key` mounts the strip afresh, so its figures roll
+/// to the new counts.
+#[component]
+pub fn HeroPanel(
+    figures: Vec<(Option<u64>, &'static str)>,
+    roll_key: &'static str,
+    source: Element,
+) -> Element {
     rsx! {
         div { class: "home-hero",
             Panel {
                 div { class: "hero-head",
                     div { class: "logo", Decode { text: logo::ZWIPE } }
-                    StatsStrip {
-                        figures,
-                        compact: true,
-                        source: rsx! {
-                            span { class: "stat-chip", "Everybody" }
-                            if live {
-                                span { class: "stat-chip", "Live" }
-                            }
-                        },
+                    for roll_key in [roll_key] {
+                        StatsStrip {
+                            key: "{roll_key}",
+                            figures: figures.clone(),
+                            compact: true,
+                            source: source.clone(),
+                        }
                     }
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn figures_wait_while_loading_and_keep_the_app_order() {
+        assert!(strip_figures(None).iter().all(|(n, _)| n.is_none()));
+        let metrics = HttpPublicMetrics {
+            cards_swiped: 3,
+            searches: 2,
+            decks_created: 1,
+        };
+        assert_eq!(
+            strip_figures(Some(Figures::from(&metrics))),
+            vec![
+                (Some(1), "Decks created"),
+                (Some(2), "Searches run"),
+                (Some(3), "Cards swiped"),
+            ]
+        );
     }
 }

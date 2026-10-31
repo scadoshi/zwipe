@@ -7,12 +7,14 @@ src/
 ├── main.rs                 builds the ZwipeClient from BACKEND_URL and launches App
 └── lib/
     ├── config.rs           BACKEND_URL and APP_VERSION, fixed at build time
-    ├── domain/             the app's rules as pure functions, each with tests
-    ├── outbound/           the browser: storage, the session, theme and counter stores, new tabs, the timer
+    ├── domain/             rules zwipe-ui does not hold yet, as pure functions with tests
+    ├── outbound/           the browser: storage, the session, theme, counter and count scope stores, new tabs, the timer
     └── inbound/
         ├── app.rs          the root: stylesheets, theme, splash, upkeep, toasts, hints, dialogs, keys, router
-        ├── caches.rs       what the root fetches once and shares: counters, changelog, franchises
-        ├── chrome/         the authed-call facade, the ? hints, one-time hints, sheet forms, the More menu
+        ├── caches.rs       what the root fetches once and shares: counters, my counters, the playstyle summary, the flavor card, changelog, franchises, the Create deck seed
+        ├── cards/          card rows, image preview, printing sheet, card info, oracle tag reveals, the swipe stack and Swipe select, shared charts
+        ├── catalog.rs      the catalog lists over zwipe-ui's store, fetched on demand
+        ├── chrome/         the authed-call facade, the ? hints, one-time hints, collapsible sections, page keys, sheet forms, the More menu
         ├── router.rs       Route, one variant per screen at the app's path
         ├── session/        ensure_fresh, the upkeep loop, the auth gate, logout, the funnel events
         ├── shell/          the sidebar Shell, PublicFrame, ScreenFrame, Help, nav
@@ -37,10 +39,19 @@ The root also mounts the kit's `ToastStack` (screens raise toasts with `dioxus_p
 ## Chrome
 
 - `chrome::authed`: `use_authed()` gives a `Copy` handle whose `run`, `try_run` and `run_quiet` refresh the session, make the call, and on failure log it and (except `run_quiet`) toast `to_user_message()` for 5 s. The app also reports each failure to telemetry; the web has none.
-- `chrome::hint_topic`: every `HintTopic` with its title and body, `InfoButton { topic }` for a row label and `open_topic(topic)` for a kit field's `on_info`.
-- `chrome::one_time_hint`: `use_one_time_hint(OneTimeHint::X)` opens a hint once per account and records it with `mark_hint_shown`; `open_and_record_hint` is the same for a gate that passes later. `OneTimeHintDialog` draws every hint with fixed copy; `FilterHint` and `SwipeSelectHint` take props.
+- `chrome::hint_topic`: the root `HintHost` for zwipe-ui's `HintTopic`, `InfoButton { topic }` for a row label and `open_topic(topic)` for a kit field's `on_info`. `chrome::hint_body` draws zwipe-ui's typed hint copy with the kit's hint pieces, so no copy lives here.
+- `chrome::one_time_hint`: `use_one_time_hint(OneTimeHint::X)` (core's enum) opens a hint once per account and records it with `mark_hint_shown`; `open_and_record_hint` is the same for a gate that passes later. `OneTimeHintDialog` draws every hint from zwipe-ui's copy; `SwipeSelectHint` takes the overlay's mode.
+- `chrome::section`: the app's `CollapsibleSection`. Inside a `web-sections-open` box a wide window shows every section open.
+- `chrome::page_keys`: `use_page_keys` for a screen's single-key shortcuts such as `/`, only for the newest screen and never while typing or with a dialog open.
 - `chrome::sheet`: `SheetFrame { form: SheetForm::Modal | SheetForm::SidePanel, BottomSheet { .. } }` keeps the kit's sheet and moves it on a wide window.
-- `chrome::more_menu`: `use_more_menu()`, `MoreButton` in the action bar and `MoreMenu` beside it: a popover under the button on a wide window, the app's `More` sheet below the breakpoint.
+- `chrome::more_menu`: `use_more_menu()`, `MoreButton` in the action bar and `MoreMenu` beside it: a popover under the button on a wide window, the app's sheet (titled `More` unless the screen passes the app's title) below the breakpoint.
+
+## Cards
+
+- `cards::card_row`: `CardRow` over the kit's row, with `use_card_overlays()` and `CardOverlaysHost` for the `Image` preview and the printing sheet, `ShowRowArt` for the `Art` chip, and the image beside the cursor on a wide window.
+- `cards::otag`: `use_otag_reveals()` provides the tag description lookup and the `Examples` opener; `OtagExamplesHost` draws the examples over the screen.
+- `cards::swipe_stack`: the stack with mouse and touch drag, `SwipeButtons`, and `use_swipe_keys` for the arrows; keys and buttons go through `SwipeControl` so they animate like a drag. `cards::swipe_select` is Swipe select in suggested and commander modes.
+- `cards::charts`: zwipe-ui bars as kit bars, the user's color map seed and counts, the map's ghost and empty line.
 
 ## Styling
 
@@ -53,7 +64,7 @@ Say the screen is Activity.
 1. Make `src/lib/inbound/screens/activity/mod.rs` with a `#[component] pub fn Activity() -> Element`. Copy `screens/account/` as a starting point. A screen with route parameters takes them as props (`deck_id: Uuid`).
 2. Wrap it in `ScreenFrame { title: "Activity", .. }` and put the content in `div.screen-content` the way the app does; an `ActionBar` inside the frame becomes the toolbar under the header on a wide window. A screen is one window tall and its `screen-content` is what scrolls, so a `position: sticky` column sticks to it. Sheets and dialogs go beside the frame, not inside the action bar, which is a containing block for fixed elements. Lay the panels out as `web-layout.md` says, with classes in `web.css` named `web-<screen>-*`.
 3. A one-time hint is `use_one_time_hint(OneTimeHint::Activity)` with a `OneTimeHintDialog` beside the frame and the frame's `on_hint` reopening it.
-4. Port the rules the screen needs into `src/lib/domain/<name>.rs` as pure functions, with the tests the app has for them and any the spec implies. The component calls them; it does not repeat them.
+4. Take the screen's rules, copy, timings and caps from zwipe-ui. What zwipe-ui lacks goes in `src/lib/domain/<name>.rs` as pure, tested functions marked `// Belongs in zwipe-ui`. The component calls them; it does not repeat them.
 5. Call the API through `use_authed()`, which refreshes the session and toasts a failure. Unauthenticated calls go straight to the `Signal<ZwipeClient>`.
 6. Delete the placeholder from `screens/placeholders.rs`, add `pub mod activity;` to `screens/mod.rs`, and point the import in `router.rs` at the new module. The route, its path and its sidebar entry already exist.
 7. If the screen belongs to a sidebar entry other than the one `Section::of` gives it, change that match in `shell/nav.rs` and its test.

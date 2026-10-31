@@ -26,34 +26,10 @@ fn Placeholder(title: String, #[props(default)] deck_id: Option<Uuid>) -> Elemen
     }
 }
 
-/// Home, not built yet.
-#[component]
-pub fn Home() -> Element {
-    rsx! { Placeholder { title: "Home" } }
-}
-
-/// Activity, not built yet.
-#[component]
-pub fn Activity() -> Element {
-    rsx! { Placeholder { title: "Activity" } }
-}
-
 /// Decks, not built yet.
 #[component]
 pub fn DeckList() -> Element {
     rsx! { Placeholder { title: "Decks" } }
-}
-
-/// Commander maybeboard, not built yet.
-#[component]
-pub fn CommanderMaybeboard() -> Element {
-    rsx! { Placeholder { title: "Commander maybeboard" } }
-}
-
-/// Playstyle, not built yet.
-#[component]
-pub fn Playstyle() -> Element {
-    rsx! { Placeholder { title: "Playstyle" } }
 }
 
 /// Create deck, not built yet.
