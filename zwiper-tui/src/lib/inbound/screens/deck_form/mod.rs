@@ -7,8 +7,6 @@ pub(crate) mod swipe_pick;
 #[cfg(test)]
 mod tests;
 
-use std::time::Duration;
-
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::oracle_tag::OracleTag;
@@ -23,6 +21,7 @@ use zwipe_core::domain::deck::{
 use zwipe_core::http::contracts::deck::{HttpCreateDeckProfile, HttpUpdateDeckProfile};
 use zwipe_core::http::helpers::Patch;
 use zwipe_ui::deck::form::{self, Slot};
+use zwipe_ui::timing;
 
 use self::pickers::{FormatPicker, OraclePicker, TagPicker};
 use self::swipe_pick::SwipePicker;
@@ -36,9 +35,6 @@ use crate::inbound::widgets::info::InfoPopup;
 use crate::inbound::widgets::text_input::TextInput;
 use crate::inbound::widgets::toast::{self, ToastKind};
 use crate::outbound::account::Account;
-
-/// How long typing must pause before a command-zone search goes out, as in the app.
-pub(crate) const SEARCH_DEBOUNCE: Duration = Duration::from_millis(800);
 
 /// The named-partner search returns at most this many cards.
 const PARTNER_SEARCH_LIMIT: u32 = 5;
@@ -951,7 +947,7 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
             Err(e) => Some(error(&e)),
         },
         Request::Debounce { slot, generation } => {
-            tokio::time::sleep(SEARCH_DEBOUNCE).await;
+            tokio::time::sleep(timing::COMMAND_ZONE_SEARCH_DEBOUNCE).await;
             Some(Update::Debounced { slot, generation }.into())
         }
         Request::Search {

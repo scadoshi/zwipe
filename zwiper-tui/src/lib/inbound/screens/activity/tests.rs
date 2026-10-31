@@ -308,7 +308,7 @@ fn the_day_cursor_shows_a_day_then_the_year_again() {
         view(&harness).readout(),
         ["3 swipes", "0 searches", "Oct 26"]
     );
-    view_mut(&mut harness).picked_at = Instant::now().checked_sub(HEAT_PICK);
+    view_mut(&mut harness).picked_at = Instant::now().checked_sub(timing::HEAT_PICK);
     assert_eq!(
         view(&harness).readout(),
         year_tags(&sample().days),

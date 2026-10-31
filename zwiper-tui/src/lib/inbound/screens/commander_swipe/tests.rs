@@ -420,7 +420,7 @@ fn commander_mode_pages_most_played_first_without_the_excluded() {
         harness.pending(),
         [Request::Search {
             ticket: 0,
-            offset: PAGE,
+            offset: timing::PAGE_SIZE,
             filter: Box::default(),
         }
         .into()],
@@ -429,7 +429,7 @@ fn commander_mode_pages_most_played_first_without_the_excluded() {
     harness.clear();
     harness.apply(Update::Page {
         ticket: 0,
-        offset: PAGE,
+        offset: timing::PAGE_SIZE,
         cards: Vec::new(),
     });
     let Mode::Commander(search) = &view(&harness).mode else {
@@ -454,7 +454,7 @@ fn an_excluded_page_pulls_ahead_and_a_stale_page_is_dropped() {
         harness.pending(),
         [Request::Search {
             ticket: 0,
-            offset: PAGE,
+            offset: timing::PAGE_SIZE,
             filter: Box::default(),
         }
         .into()]
@@ -462,7 +462,7 @@ fn an_excluded_page_pulls_ahead_and_a_stale_page_is_dropped() {
     view_mut(&mut harness).refresh_for_test();
     harness.apply(Update::Page {
         ticket: 0,
-        offset: PAGE,
+        offset: timing::PAGE_SIZE,
         cards: named(&["Stale"]),
     });
     assert_eq!(view(&harness).cards, [], "a page from the old search");
@@ -472,7 +472,7 @@ fn an_excluded_page_pulls_ahead_and_a_stale_page_is_dropped() {
     };
     assert!(!search.loading);
     assert!(
-        commander_query(&CardQueryBuilder::default(), PAGE)
+        commander_query(&CardQueryBuilder::default(), timing::PAGE_SIZE)
             .build()
             .is_ok()
     );
@@ -573,10 +573,10 @@ fn commander_modes_filter_is_the_card_filter_and_apply_deals_again() {
     assert_eq!(view(&harness).history, []);
     assert!(screen_text(&harness.app).contains("Filter •"));
 
-    let query = commander_query(&narrowed, PAGE);
+    let query = commander_query(&narrowed, timing::PAGE_SIZE);
     assert_eq!(query.name_contains(), Some("elf"));
     assert_eq!(query.is_commander_in_format(), Some(&Format::Commander));
-    assert_eq!(query.offset(), PAGE);
+    assert_eq!(query.offset(), timing::PAGE_SIZE);
 }
 
 #[test]

@@ -15,6 +15,7 @@ use zwipe_core::domain::user::models::hints::HINT_ACTIVITY;
 use zwipe_core::http::contracts::suggestions::{HttpActivity, HttpHardPass};
 use zwipe_ui::activity::{self, Bar, HeatLayout, RateKind};
 use zwipe_ui::home::Figures;
+use zwipe_ui::timing;
 
 use super::{Screen, home};
 use crate::domain::theme::Palette;
@@ -44,9 +45,6 @@ pub(crate) const PASSES_TITLE: &str = "Most skipped";
 
 /// The label over a pass's commanders.
 pub(crate) const SKIPPED_UNDER: &str = "Skipped under";
-
-/// How long a picked day's readout shows before the year's totals come back, as orangui's `HEAT_PICK_MS`.
-pub(crate) const HEAT_PICK: Duration = Duration::from_millis(4000);
 
 /// Each heatmap column waits this much longer than the one before it to sweep in.
 pub(crate) const SWEEP_STEP: Duration = Duration::from_millis(12);
@@ -165,7 +163,7 @@ pub(crate) struct ActivityView {
     pub(crate) heat_opened: Option<Instant>,
     /// The day under the cursor, an index into the heatmap's cells.
     pub(crate) cursor: usize,
-    /// When a day was last picked; its readout shows for [`HEAT_PICK`].
+    /// When a day was last picked; its readout shows for [`timing::HEAT_PICK`].
     pub(crate) picked_at: Option<Instant>,
     /// The role whose tags are revealed, and those tags.
     pub(crate) open_role: Option<String>,
@@ -417,14 +415,14 @@ impl ActivityView {
         true
     }
 
-    /// The readout's tags at this moment: the picked day's for [`HEAT_PICK`], else the year's.
+    /// The readout's tags at this moment: the picked day's for [`timing::HEAT_PICK`], else the year's.
     pub(crate) fn readout(&self) -> [String; 3] {
         let Some(loaded) = self.loaded() else {
             return Default::default();
         };
         let picked = self
             .picked_at
-            .filter(|at| at.elapsed() < HEAT_PICK)
+            .filter(|at| at.elapsed() < timing::HEAT_PICK)
             .and_then(|_| loaded.heat.cells.get(self.cursor));
         match picked {
             Some(cell) => activity::day_tags(cell),
@@ -435,8 +433,8 @@ impl ActivityView {
     /// How long the readout's current tags have shown, for their `chip-in`.
     pub(crate) fn readout_age(&self) -> Duration {
         match self.picked_at {
-            Some(at) if at.elapsed() < HEAT_PICK => at.elapsed(),
-            Some(at) => at.elapsed().saturating_sub(HEAT_PICK),
+            Some(at) if at.elapsed() < timing::HEAT_PICK => at.elapsed(),
+            Some(at) => at.elapsed().saturating_sub(timing::HEAT_PICK),
             None => self.heat_opened.map_or(Duration::MAX, |t| t.elapsed()),
         }
     }
@@ -465,7 +463,7 @@ impl ActivityView {
         });
         let reading = self
             .picked_at
-            .is_some_and(|t| t.elapsed() < HEAT_PICK.saturating_add(entrance::DURATION));
+            .is_some_and(|t| t.elapsed() < timing::HEAT_PICK.saturating_add(entrance::DURATION));
         rolling
             || matches!(self.load, Load::Loading)
             || sweeping

@@ -1,6 +1,6 @@
 //! Oracle tag examples: real cards that carry one tag, most played first, browsed one at a time.
 //!
-//! The app's deck-free swipe browse, read only: Left (swipe left) moves to the next card and Down (swipe down) steps back one. Cards come from `search_cards` in pages of [`PAGE_LIMIT`] by EDHREC rank, fetched again when few are left ahead, up to [`MAX_CARDS`]. An empty page marks the end.
+//! The app's deck-free swipe browse, read only: Left (swipe left) moves to the next card and Down (swipe down) steps back one. Cards come from `search_cards` in pages of [`timing::PAGE_SIZE`] by EDHREC rank, fetched again when few are left ahead, up to [`timing::EXAMPLES_MAX_CARDS`]. An empty page marks the end.
 //!
 //! `d` opens the card's details sheet, whose `p` opens its printings read only. Nothing here changes anything on the server.
 
@@ -20,6 +20,7 @@ use zwipe_core::domain::card::search_card::card_filter::{CardQuery, CardSortKey}
 use zwipe_core::domain::deck::deck_metrics;
 use zwipe_core::domain::user::models::hints::HINT_OTAG_EXAMPLES;
 use zwipe_ui::stack::Direction;
+use zwipe_ui::timing;
 
 use super::Screen;
 use crate::domain::theme::Palette;
@@ -31,15 +32,6 @@ use crate::inbound::widgets::sheet::Sheet;
 use crate::inbound::widgets::toast::ToastKind;
 use crate::inbound::widgets::{card_text, hint};
 use crate::outbound::account::Account;
-
-/// Cards per page, as the app's `PAGE_LIMIT`.
-pub(crate) const PAGE_LIMIT: u32 = 25;
-
-/// The next page loads once the cursor is this close to the end, as the app's `LOAD_MORE_THRESHOLD`.
-pub(crate) const LOAD_MORE_THRESHOLD: usize = 5;
-
-/// The browse stops paging at this many cards, as the app's `MAX_CARDS_IN_STACK`.
-pub(crate) const MAX_CARDS: usize = 500;
 
 /// The screen's title.
 pub(crate) const TITLE: &str = "Examples";
@@ -103,12 +95,12 @@ impl ExamplesView {
         self.cards.get(self.index)
     }
 
-    /// Asks for the next page unless one is on its way, the end was reached, or the browse holds [`MAX_CARDS`].
+    /// Asks for the next page unless one is on its way, the end was reached, or the browse holds [`timing::EXAMPLES_MAX_CARDS`].
     pub(crate) fn load_more(&mut self, cx: &mut Context<'_>) {
         if self.loading || self.exhausted {
             return;
         }
-        if self.cards.len() >= MAX_CARDS {
+        if self.cards.len() >= timing::EXAMPLES_MAX_CARDS {
             self.exhausted = true;
             return;
         }
@@ -130,7 +122,7 @@ impl ExamplesView {
         };
         self.motion = Some(CardMotion::exit(Direction::Left, card, Instant::now()));
         self.index = self.index.saturating_add(1);
-        if self.index.saturating_add(1) >= total.saturating_sub(LOAD_MORE_THRESHOLD) {
+        if self.index.saturating_add(1) >= total.saturating_sub(timing::LOAD_MORE_AT) {
             self.load_more(cx);
         }
     }
@@ -235,7 +227,7 @@ pub(crate) fn query_for(slug: &str, offset: u32) -> Result<CardQuery, InvalidCar
         .set_oracle_tags_contains_any(vec![slug.to_owned()])
         .set_is_token(false)
         .set_sort(CardSortKey::EdhrecRank)
-        .set_limit(PAGE_LIMIT)
+        .set_limit(timing::PAGE_SIZE)
         .set_offset(offset)
         .build()
 }
@@ -299,7 +291,7 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
             if cards.is_empty() {
                 view.exhausted = true;
             } else {
-                view.offset = offset.saturating_add(PAGE_LIMIT);
+                view.offset = offset.saturating_add(timing::PAGE_SIZE);
                 view.cards.extend(cards);
             }
         }

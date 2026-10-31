@@ -14,7 +14,6 @@ pub(crate) mod keys;
 mod tests;
 
 use std::collections::HashSet;
-use std::time::Duration;
 
 use crossterm::event::KeyCode;
 use uuid::Uuid;
@@ -26,8 +25,8 @@ use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortK
 use zwipe_core::domain::card::search_card::cards::Cards;
 use zwipe_core::domain::deck::format::Format;
 use zwipe_core::domain::user::models::hints::HINT_COMMANDER_MAYBEBOARD;
-use zwipe_ui::filter;
 use zwipe_ui::filter::draft::SheetConfig;
+use zwipe_ui::{filter, timing};
 
 use super::card_sheets::filter::{FilterSheet, SheetOutcome};
 use super::playstyle::DeckLimit;
@@ -86,15 +85,6 @@ pub(crate) const REMOVED: &str = "Removed";
 
 /// The toast after Clear maybeboard.
 pub(crate) const CLEARED: &str = "Maybeboard cleared";
-
-/// The fewest bytes of a trimmed query that search, as the app's `MIN_QUERY_LEN` (it counts bytes too).
-pub(crate) const MIN_QUERY_LEN: usize = 2;
-
-/// How long a query rests before it searches, as the app's `DEBOUNCE_MS`.
-pub(crate) const DEBOUNCE: Duration = Duration::from_millis(300);
-
-/// Result chips per search, as the app's `RESULT_LIMIT`.
-pub(crate) const RESULT_LIMIT: u32 = 8;
 
 /// What has the keys.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -251,7 +241,7 @@ impl MaybeboardView {
 
     /// Whether the query is long enough to search, which is also when the result chips show.
     pub(crate) fn searching_catalog(&self) -> bool {
-        self.quick.query.value().trim().len() >= MIN_QUERY_LEN
+        self.quick.query.value().trim().len() >= timing::QUICK_ADD_MIN_CHARS
     }
 
     /// The result chips: the last search's commanders that have an oracle id and are not saved yet.
@@ -442,7 +432,7 @@ pub(crate) fn search_query(query: &str) -> CardQueryBuilder {
         .set_is_commander_in_format(Format::Commander)
         .set_is_token(false)
         .set_sort(CardSortKey::Name)
-        .set_limit(RESULT_LIMIT);
+        .set_limit(timing::MAYBEBOARD_QUICK_ADD_LIMIT);
     builder
 }
 
@@ -586,7 +576,7 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
             }
         }
         Request::Debounce { ticket } => {
-            tokio::time::sleep(DEBOUNCE).await;
+            tokio::time::sleep(timing::QUICK_ADD_DEBOUNCE).await;
             Some(Update::Debounced { ticket }.into())
         }
         Request::Search { ticket, query } => {

@@ -29,6 +29,7 @@ use std::time::Instant;
 
 use zwipe_core::domain::card::oracle_tag::{self, OracleTag};
 use zwipe_core::domain::user::models::hints::HINT_ORACLE_TAG_DICTIONARY;
+use zwipe_ui::timing;
 
 use super::Screen;
 use super::home::cache::Catalog;
@@ -51,9 +52,6 @@ pub(crate) const FAILED: &str = "Couldn't load the dictionary. Pull back and try
 
 /// The toast raised once when the catalog fails while the dictionary is open.
 pub(crate) const FAILED_TOAST: &str = "Couldn't load the oracle-tag dictionary";
-
-/// A search shows at most this many tags, as the app's `SEARCH_RESULT_CAP`.
-pub(crate) const SEARCH_RESULT_CAP: usize = 100;
 
 /// The bucket for slugs that start with anything but a letter.
 pub(crate) const OTHER: char = '#';
@@ -91,7 +89,7 @@ impl OracleTagsView {
         self.search.value().trim().to_lowercase()
     }
 
-    /// The tags on screen: the search's ranked matches up to [`SEARCH_RESULT_CAP`], or the letter's tags by slug.
+    /// The tags on screen: the search's ranked matches up to [`timing::DICTIONARY_RESULT_CAP`], or the letter's tags by slug.
     pub(crate) fn rows(&self, tags: &[OracleTag]) -> Vec<OracleTag> {
         let query = self.query();
         if query.is_empty() {
@@ -104,7 +102,7 @@ impl OracleTagsView {
             rows
         } else {
             let mut rows = oracle_tag::search_oracle_tags(tags, &query);
-            rows.truncate(SEARCH_RESULT_CAP);
+            rows.truncate(timing::DICTIONARY_RESULT_CAP);
             rows
         }
     }

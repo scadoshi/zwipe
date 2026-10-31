@@ -5,6 +5,7 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::oracle_tag::{self, OracleTag};
 use zwipe_core::domain::deck::{DeckTagView, Format, MAX_DECK_ORACLE_TAGS, MAX_DECK_TAGS};
 use zwipe_ui::deck::form::{self, Slot};
+use zwipe_ui::timing;
 
 use super::{DeckForm, Overlay};
 use crate::inbound::app::Context;
@@ -12,9 +13,6 @@ use crate::inbound::screens::oracle_tags;
 use crate::inbound::widgets::info::InfoPopup;
 use crate::inbound::widgets::text_input::TextInput;
 use crate::inbound::widgets::toast::{self, ToastKind};
-
-/// An oracle tag search shows at most this many hits.
-const ORACLE_SEARCH_LIMIT: usize = 40;
 
 /// The chips a key moves past with Page Up and Page Down.
 const PAGE: usize = 10;
@@ -130,7 +128,7 @@ impl OraclePicker {
         } else {
             oracle_tag::search_oracle_tags(catalog, query)
                 .into_iter()
-                .take(ORACLE_SEARCH_LIMIT)
+                .take(timing::ORACLE_TAG_PICKER_LIMIT)
                 .map(|t| t.slug)
                 .collect()
         }

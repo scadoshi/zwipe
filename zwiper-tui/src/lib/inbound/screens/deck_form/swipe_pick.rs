@@ -22,9 +22,6 @@ use crate::inbound::widgets::hint;
 use crate::inbound::widgets::info::InfoPopup;
 use crate::inbound::widgets::toast::{self, ToastKind};
 
-/// A new page is fetched once this many cards or fewer are left.
-const PREFETCH_AT: usize = 5;
-
 /// What a swipe did, so down can undo it.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum Swiped {
@@ -132,7 +129,7 @@ impl SwipePicker {
     /// Asks for the next page when the slot can search and the pile is running low.
     pub(crate) fn fetch_more(&mut self, cx: &mut Context<'_>) {
         let left = self.cards.len().saturating_sub(self.index);
-        if self.loading || self.exhausted || !self.can_search() || left > PREFETCH_AT {
+        if self.loading || self.exhausted || !self.can_search() || left > timing::LOAD_MORE_AT {
             return;
         }
         let Ok(query) = form::swipe_query(

@@ -156,8 +156,10 @@ fn a_tag_with_no_cards_says_so() {
 fn paging_stops_at_the_cap() {
     let mut harness = on_examples();
     if let Screen::OtagExamples(view) = harness.screen_mut() {
-        view.cards = (0..MAX_CARDS).map(|i| card(&format!("Card {i}"))).collect();
-        view.index = MAX_CARDS - 2;
+        view.cards = (0..timing::EXAMPLES_MAX_CARDS)
+            .map(|i| card(&format!("Card {i}")))
+            .collect();
+        view.index = timing::EXAMPLES_MAX_CARDS - 2;
         view.offset = 500;
         view.loading = false;
     }

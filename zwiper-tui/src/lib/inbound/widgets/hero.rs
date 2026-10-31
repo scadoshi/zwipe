@@ -1,8 +1,8 @@
 //! The app's `HomeHero` on the sign-in screens: a panel with the ZWIPE logo decoding in, everybody's three counters rolling to their values, and an `Everybody` chip, with `Live` beside it once the numbers were fetched this launch.
 //!
-//! The counts live in one copy for the whole app ([`Counts`] on `Shared`): restored from disk at launch, fetched again whenever a hero mounts over a copy that is missing, restored or older than [`COUNTS_FRESH`], and saved to disk after each fetch. A failed fetch keeps whatever copy there is, with no message. Every mount replays the decode and the roll.
+//! The counts live in one copy for the whole app ([`Counts`] on `Shared`): restored from disk at launch, fetched again whenever a hero mounts over a copy that is missing, restored or older than [`timing::COUNTS_FRESH`], and saved to disk after each fetch. A failed fetch keeps whatever copy there is, with no message. Every mount replays the decode and the roll.
 
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Rect};
@@ -10,6 +10,7 @@ use ratatui::style::Stylize;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::Block;
 use zwipe_core::http::contracts::metrics::HttpPublicMetrics;
+use zwipe_ui::timing;
 
 use super::count_up::CountUp;
 use super::measure::BORDERS;
@@ -18,9 +19,6 @@ use crate::domain::count_up::{self, BLANK};
 use crate::domain::theme::Palette;
 use crate::inbound::app::{Context, Shared};
 use crate::inbound::screens::Request;
-
-/// How long a fetched copy of the counts stays fresh, from the app's `COUNTS_FRESH`.
-pub(crate) const COUNTS_FRESH: Duration = Duration::from_secs(60);
 
 /// The three counters' labels, in the app's order.
 const LABELS: [&str; 3] = ["Decks created", "Searches run", "Cards swiped"];
@@ -50,7 +48,7 @@ impl Counts {
         self.metrics.is_none()
             || self
                 .fetched_at
-                .is_none_or(|at| now.saturating_duration_since(at) >= COUNTS_FRESH)
+                .is_none_or(|at| now.saturating_duration_since(at) >= timing::COUNTS_FRESH)
     }
 
     /// Whether the counts were fetched during this launch.
@@ -205,6 +203,8 @@ pub(crate) fn mount(cx: &mut Context<'_>) -> Hero {
 
 #[cfg(test)]
 mod tests {
+    use std::time::Duration;
+
     use ratatui::Terminal;
     use ratatui::backend::TestBackend;
 
@@ -243,7 +243,7 @@ mod tests {
             fetched_at: Some(now),
         };
         assert!(!fetched.stale(now + Duration::from_secs(59)));
-        assert!(fetched.stale(now + COUNTS_FRESH));
+        assert!(fetched.stale(now + timing::COUNTS_FRESH));
         assert!(fetched.live() && !Counts::restored(None).live());
     }
 

@@ -8,7 +8,6 @@ pub(crate) mod keys;
 mod tests;
 
 use std::collections::{HashMap, HashSet};
-use std::time::Duration;
 
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
@@ -44,15 +43,6 @@ use crate::inbound::widgets::hint;
 use crate::inbound::widgets::text_input::TextInput;
 use crate::inbound::widgets::toast::{self, ToastKind};
 use crate::outbound::account::Account;
-
-/// Quick add waits this long after the last keystroke before it searches.
-const QUICK_ADD_DEBOUNCE: Duration = Duration::from_millis(300);
-
-/// Quick add searches once the query is this long.
-const QUICK_ADD_MIN_CHARS: usize = 2;
-
-/// Quick add's result count.
-const QUICK_ADD_LIMIT: u32 = 5;
 
 /// What a card row is, which sets its actions.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -717,7 +707,7 @@ impl DeckCardsView {
     pub(crate) fn quick_edit(&mut self, cx: &mut Context<'_>) {
         self.quick.generation = self.quick.generation.wrapping_add(1);
         self.quick.highlight = 0;
-        if self.quick.input.value().trim().chars().count() < QUICK_ADD_MIN_CHARS {
+        if self.quick.input.value().trim().chars().count() < timing::QUICK_ADD_MIN_CHARS {
             self.quick.results = Dropdown::Closed;
             return;
         }
@@ -1110,7 +1100,7 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
             deck_id,
             generation,
         } => {
-            tokio::time::sleep(QUICK_ADD_DEBOUNCE).await;
+            tokio::time::sleep(timing::QUICK_ADD_DEBOUNCE).await;
             Some(
                 Update::QuickDue {
                     deck_id,
@@ -1422,7 +1412,7 @@ async fn quick_search(
         .set_synergy(false)
         .set_include_skipped(true)
         .set_sort(CardSortKey::Name)
-        .set_limit(QUICK_ADD_LIMIT);
+        .set_limit(timing::QUICK_ADD_LIMIT);
     let cards = match filter.build() {
         Ok(query) => account
             .client

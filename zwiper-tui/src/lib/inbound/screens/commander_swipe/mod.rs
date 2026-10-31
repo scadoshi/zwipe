@@ -10,7 +10,7 @@ pub(crate) mod keys;
 mod tests;
 
 use std::collections::HashSet;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use crossterm::event::KeyCode;
 use uuid::Uuid;
@@ -24,7 +24,7 @@ use zwipe_core::http::contracts::suggestions::HttpCommanderSuggestion;
 use zwipe_ui::filter::draft::SheetConfig;
 use zwipe_ui::hint::{HintContent, SwipeSelectMode, one_time};
 use zwipe_ui::stack::Direction;
-use zwipe_ui::{filter, playstyle};
+use zwipe_ui::{filter, playstyle, timing};
 
 use super::card_sheets::filter::{FilterSheet, SheetOutcome};
 use super::playstyle::{DeckLimit, create_deck_with, suggestion_colors};
@@ -37,17 +37,8 @@ use crate::inbound::widgets::hint;
 use crate::inbound::widgets::toast::{self, ToastKind};
 use crate::outbound::account::Account;
 
-/// Cards fetched per page in Commander mode, the backend's default.
-pub(crate) const PAGE: u32 = 25;
-
-/// The next page loads when this many cards or fewer are left ahead of the top.
-pub(crate) const LOAD_MORE_AT: usize = 5;
-
 /// Pages pulled in a row when exclusions empty a served page, before giving up until the next swipe.
 pub(crate) const PULL_AHEAD: u8 = 4;
-
-/// How long the maybeboard save toast stays up, as the app's `MAYBEBOARD_TOAST_MS`.
-pub(crate) const SAVED_TOAST: Duration = Duration::from_millis(1500);
 
 /// The Suggested mode's title and its hint's.
 pub(crate) const SUGGESTED_TITLE: &str = "Suggested commanders";
@@ -302,7 +293,7 @@ impl CommanderSwipeView {
         let left = self.cards.len().saturating_sub(self.index);
         if let Mode::Commander(search) = &mut self.mode
             && !search.exhausted
-            && left <= LOAD_MORE_AT
+            && left <= timing::LOAD_MORE_AT
         {
             search.pulls = 0;
             load_more(search, cx);
@@ -485,7 +476,7 @@ impl CommanderSwipeView {
             search.exhausted = true;
             return;
         }
-        search.offset = offset.saturating_add(PAGE);
+        search.offset = offset.saturating_add(timing::PAGE_SIZE);
         let seen: HashSet<Uuid> = self.cards.iter().map(|c| c.scryfall_data.id).collect();
         let fresh: Vec<Card> = page
             .into_iter()
@@ -535,7 +526,7 @@ pub(crate) fn commander_query(filter: &CardQueryBuilder, offset: u32) -> CardQue
     builder
         .set_is_commander_in_format(Format::Commander)
         .set_is_token(false)
-        .set_limit(PAGE)
+        .set_limit(timing::PAGE_SIZE)
         .set_offset(offset);
     builder
 }
@@ -726,9 +717,11 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
             }
         }
         Update::Saved => {
-            cx.shared
-                .toasts
-                .push_for(ToastKind::Success, SAVED.to_owned(), SAVED_TOAST);
+            cx.shared.toasts.push_for(
+                ToastKind::Success,
+                SAVED.to_owned(),
+                timing::MAYBEBOARD_TOAST,
+            );
         }
         Update::Unsaved => {
             cx.shared

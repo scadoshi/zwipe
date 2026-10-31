@@ -19,6 +19,7 @@ use ratatui::DefaultTerminal;
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::http::contracts::metrics::AnonymousEventKind;
+use zwipe_ui::timing;
 
 use super::app::{App, Context, Effects, Navigation, session};
 use super::screens::{self, Request, Update, login};
@@ -83,7 +84,7 @@ impl EventLoop {
         self.start(app, session.as_ref());
         let mut events = EventStream::new();
         // The first tick fires at once: the launch's refresh and version check.
-        let mut upkeep = session::ticker(session::UPKEEP_INTERVAL);
+        let mut upkeep = session::ticker(timing::UPKEEP_INTERVAL);
         let mut flush = session::ticker(session::FLUSH_INTERVAL);
 
         loop {
