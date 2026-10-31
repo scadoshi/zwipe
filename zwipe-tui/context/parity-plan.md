@@ -23,6 +23,7 @@ Specs:
 - A deck with nothing to narrow its search follows the app: Add refuses with "Try a filter to start swiping" instead of serving the whole pool.
 - Platform-only pieces are skipped: the app icon picker, haptics, telemetry.
 - Images use the terminal's graphics protocol, with half-blocks as the fallback.
+- The deck view shows several sections at once on wide terminals and collapses to tabs on narrow ones, with every app action still available. Its sections are panels instead of the app's accordion: Tab moves between them, Enter zooms one to fill the screen, and Esc unzooms before it goes back.
 
 ## Phase 0: foundation (done before the waves)
 
@@ -56,7 +57,7 @@ Screen modules under `inbound/screens/<name>/`, a back stack, and the shared wid
 - Deck list: Group by, Show filters, the tags fold, collapsible groups, the app's rows, the Create gate, the More sheet.
 - Create and Edit: every field, the four command-zone search pickers, the format, tag and oracle tag pickers, targets, the knock-on clears, the change detection, every validation and server message.
 - Import and Export.
-- Deck view: the Profile card, the accordion sections with Roles expanding into tags, warning fixes, the first-deck hint, and the More sheet (Import, Export, Buy, Clone, Share and Stop share with clipboard copy, Clear skips, Delete).
+- Deck view: the Profile card, the sections with Roles expanding into tags, warning fixes, the first-deck hint, and the More sheet (Import, Export, Buy, Clone, Share and Stop share with clipboard copy, Clear skips, Delete).
 
 ### D. Cards (spec 4)
 

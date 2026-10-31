@@ -1,32 +1,42 @@
-//! One deck: the Profile card beside the sections as an accordion, one open at a time, with the More sheet and dialogs over them.
+//! One deck: the Profile card and the sections in as many panels as fit, laid out by [`layout`](super::layout), with the More sheet and dialogs over them.
 
 use ratatui::Frame;
-use ratatui::layout::{Constraint, Layout, Rect};
+use ratatui::layout::{Constraint, Layout, Margin, Rect};
 use ratatui::style::{Style, Stylize};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Borders, Paragraph, Wrap};
+use ratatui::widgets::{Block, BorderType, Paragraph, Wrap};
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
 use zwipe_core::domain::deck::deck_tag::deck_tag_label;
 use zwipe_core::domain::deck::{Format, draw_odds};
 
-use super::{CloneDialog, DeckView, Dialog, Section, Target};
+use super::layout::{self, Pane, Panel};
+use super::{CloneDialog, DeckView, Dialog, Item, Section};
 use crate::domain::deck::warning;
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::widgets::charts::{Column, columns, row};
-use crate::inbound::widgets::measure::height_of;
+use crate::inbound::widgets::measure::{BORDERS, height_of, width_of};
 use crate::inbound::widgets::pill::{self, PillState, pill};
 use crate::inbound::widgets::{action_bar, mana, panel, skeleton};
 
 /// A vertical chart is at most this tall, frame included, so a small deck's bars stay short.
 const CHART_HEIGHT: u16 = 14;
 
+/// The Roles chart keeps at least this many rows under the Types chart, which gives way first.
+const ROLES_MIN_HEIGHT: u16 = 5;
+
+/// The Mana charts sit side by side from this many cells; narrower, they stack.
+const MANA_SIDE_BY_SIDE: u16 = 48;
+
+/// A panel's frame and its one-cell margin each side, in cells.
+const PANEL_INSET: u16 = BORDERS.saturating_add(2);
+
 /// The profile's labels take this many cells before their values.
 const LABEL_WIDTH: usize = 16;
 
-/// The profile column is this wide, in cells.
-const PROFILE_WIDTH: u16 = 38;
+/// A stat's label takes this many cells before its value: the longest, "Average card price", and two spaces.
+const STAT_WIDTH: usize = 20;
 
 /// Cards drawn before the first turn's draw: the opening hand.
 const OPENING_HAND: u32 = 7;
@@ -37,22 +47,30 @@ const CURRENCIES: [PriceCurrency; 3] = [PriceCurrency::Usd, PriceCurrency::Eur, 
 /// The color chart's labels, by WUBRG place, for coloring each column.
 const COLOR_LABELS: [&str; 5] = ["white", "blue", "black", "red", "green"];
 
-/// Ghost rows standing where the stats will load.
-const SKELETON_ROWS: u16 = 6;
+/// The ghost standing in for the loading pane's tab title.
+const GHOST_TAB: &str = "░░░░░░";
 
 /// The Clone dialog is at most this wide inside its panel, in cells.
 const DIALOG_WIDTH: u16 = 56;
 
+/// A key and what it does, for the hints.
+type Hint = (&'static str, &'static str);
+
 pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &DeckView) {
     let palette = &shared.palette;
+    let area = f.area().inner(Margin::new(1, 1));
+    let (pane_keys, screen_keys) = key_hints(view);
+    let pane_line = action_bar::line(palette, &pane_keys);
+    let screen_line = action_bar::line(palette, &screen_keys);
+    // The hints take one row when they fit, else the pane's keys go on a row over the screen's.
+    let one_row = pane_line.width().saturating_add(screen_line.width()) <= usize::from(area.width);
     let [header, body, status, keys] = Layout::vertical([
         Constraint::Length(1),
         Constraint::Fill(1),
         Constraint::Length(1),
-        Constraint::Length(1),
+        Constraint::Length(if one_row { 1 } else { 2 }),
     ])
-    .margin(1)
-    .areas(f.area());
+    .areas(area);
 
     f.render_widget(
         Line::from(vec![
@@ -62,27 +80,45 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &DeckView) {
         header,
     );
 
-    let [profile_area, sections_area] =
-        Layout::horizontal([Constraint::Length(PROFILE_WIDTH), Constraint::Fill(1)]).areas(body);
-    draw_profile(f, palette, view, profile_area);
-    draw_accordion(f, palette, view, sections_area);
+    let panes = view.panes();
+    let profile_rows = profile_lines(
+        palette,
+        view,
+        layout::PROFILE_WIDTH.saturating_sub(PANEL_INSET),
+    )
+    .len();
+    let plan = layout::plan(
+        body,
+        &panes,
+        view.zoomed.then(|| view.focused()),
+        height_of(profile_rows).saturating_add(BORDERS),
+    );
+    for panel in &plan.panels {
+        draw_panel(f, palette, view, panel);
+    }
+    if let Some(note) = plan.note {
+        let text = if view.failed {
+            "Could not load deck"
+        } else {
+            "Stats fill in as the deck grows."
+        };
+        f.render_widget(
+            Line::from(text).style(palette.muted),
+            note.inner(Margin::new(1, 0)),
+        );
+    }
 
     f.render_widget(
         Line::from(shared.status.clone()).style(palette.muted),
         status,
     );
-    let mut keys_shown = vec![("j/k", "move"), ("Enter", "open")];
-    match view.open {
-        Some(Section::Budget) if view.has_cards() => keys_shown.push(("h/l", "currency")),
-        Some(Section::DrawOdds) => keys_shown.push(("-/+", "turn")),
-        _ => {}
+    if one_row {
+        let mut spans = pane_line.spans;
+        spans.extend(screen_line.spans);
+        f.render_widget(Line::from(spans), keys);
+    } else {
+        f.render_widget(Paragraph::new(vec![pane_line, screen_line]), keys);
     }
-    keys_shown.extend([("i", "info"), ("e", "Edit"), ("c", "Cards"), ("m", "More")]);
-    if view.deck.is_some() {
-        keys_shown.push(("s", "swipe"));
-    }
-    keys_shown.extend([("Esc", "Back"), ("q", "quit")]);
-    f.render_widget(action_bar::line(palette, &keys_shown), keys);
 
     if let Some(menu) = &view.more {
         menu.draw(f, palette, f.area());
@@ -100,9 +136,183 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &DeckView) {
     }
 }
 
-fn draw_profile(f: &mut Frame<'_>, palette: &Palette, view: &DeckView, area: Rect) {
+/// The key hints: the focused pane's own keys, then the screen's.
+fn key_hints(view: &DeckView) -> (Vec<Hint>, Vec<Hint>) {
+    let focused = view.focused();
+    let mut pane_keys = vec![("Tab", "panel")];
+    if !view.items().is_empty() {
+        let press = if focused == Pane::Section(Section::Warnings) {
+            "fix"
+        } else {
+            "open"
+        };
+        pane_keys.extend([("j/k", "move"), ("Space", press)]);
+    } else if view.scroll_limit() > 0 {
+        pane_keys.push(("j/k", "scroll"));
+    }
+    if !view.zoomed {
+        pane_keys.push(("Enter", "zoom"));
+    }
+    match focused {
+        Pane::Section(Section::Budget) if view.has_cards() => pane_keys.push(("h/l", "currency")),
+        Pane::Section(Section::DrawOdds) => pane_keys.push(("-/+", "turn")),
+        _ => {}
+    }
+    if matches!(focused, Pane::Section(_)) {
+        pane_keys.push(("i", "info"));
+    }
+    let mut screen_keys = vec![("e", "Edit"), ("c", "Cards"), ("m", "More")];
+    if view.deck.is_some() {
+        screen_keys.push(("s", "swipe"));
+    }
+    screen_keys.extend([
+        ("Esc", if view.zoomed { "unzoom" } else { "Back" }),
+        ("q", "quit"),
+    ]);
+    (pane_keys, screen_keys)
+}
+
+/// A framed panel showing one of its panes, with its tabs across the top when it holds more than one. The focused panel's frame is thick and in the accent color; Warnings keeps the warning color.
+fn draw_panel(f: &mut Frame<'_>, palette: &Palette, view: &DeckView, panel: &Panel) {
+    let Some(shown) = view.shown(&panel.panes) else {
+        return;
+    };
+    let has_focus = panel.panes.contains(&view.focused());
+    let border = if shown == Pane::Section(Section::Warnings) {
+        palette.warning
+    } else if has_focus {
+        palette.accent
+    } else {
+        palette.border
+    };
+    let room = usize::from(panel.area.width.saturating_sub(BORDERS));
+    let block = Block::bordered()
+        .border_type(if has_focus {
+            BorderType::Thick
+        } else {
+            BorderType::Plain
+        })
+        .border_style(border)
+        .title(tabs(palette, view, &panel.panes, shown, has_focus, room));
+    let inner = block.inner(panel.area).inner(Margin::new(1, 0));
+    f.render_widget(block, panel.area);
+    match shown {
+        Pane::Profile => draw_profile(f, palette, view, inner),
+        Pane::Loading => f.render_widget(
+            Paragraph::new(skeleton::rows(
+                palette,
+                usize::from(inner.height),
+                usize::from(inner.width),
+            )),
+            inner,
+        ),
+        Pane::Section(section) => draw_body(f, palette, view, section, inner),
+    }
+}
+
+/// A pane's title and badge, as its tab or its panel's title reads.
+fn tab_label(view: &DeckView, pane: Pane) -> String {
     let profile = &view.profile;
-    let value_width = usize::from(area.width.saturating_sub(2)).saturating_sub(LABEL_WIDTH);
+    match pane {
+        Pane::Profile => "Profile".to_owned(),
+        Pane::Loading => GHOST_TAB.to_owned(),
+        Pane::Section(Section::Tags) => format!(
+            "{} {}",
+            Section::Tags.title(),
+            profile
+                .tags
+                .len()
+                .saturating_add(profile.oracle_tags.len())
+                .saturating_add(profile.other_tags.len())
+        ),
+        Pane::Section(Section::Warnings) => match &view.deck {
+            Some(deck) => format!("{} {}", Section::Warnings.title(), deck.warnings.len()),
+            None => Section::Warnings.title().to_owned(),
+        },
+        Pane::Section(section) => section.title().to_owned(),
+    }
+}
+
+/// The tab strip for a panel's title, or its one title. The shown tab is bold, and a chip while its panel has the focus. When the tabs outgrow `room`, the strip keeps the shown tab and as many neighbors as fit, with ‹ and › where tabs are cut.
+fn tabs(
+    palette: &Palette,
+    view: &DeckView,
+    panes: &[Pane],
+    shown: Pane,
+    has_focus: bool,
+    room: usize,
+) -> Line<'static> {
+    let labels: Vec<String> = panes.iter().map(|p| tab_label(view, *p)).collect();
+    let widths: Vec<usize> = labels
+        .iter()
+        .map(|l| usize::from(width_of(l)).saturating_add(2))
+        .collect();
+    let at = panes.iter().position(|p| *p == shown).unwrap_or(0);
+    let (start, end) = tab_window(&widths, at, room);
+    let mut spans = Vec::new();
+    if start > 0 {
+        spans.push(Span::styled("‹", palette.muted));
+    }
+    for (i, (pane, label)) in panes.iter().zip(&labels).enumerate().take(end).skip(start) {
+        let style = if *pane == Pane::Loading || i != at {
+            palette.muted
+        } else if *pane == Pane::Section(Section::Warnings) {
+            palette.warning.bold()
+        } else {
+            palette.accent.bold()
+        };
+        spans.push(pill(
+            label,
+            style,
+            PillState {
+                picked: i == at && has_focus && panes.len() > 1,
+                focused: false,
+            },
+        ));
+    }
+    if end < panes.len() {
+        spans.push(Span::styled("›", palette.muted));
+    }
+    Line::from(spans)
+}
+
+/// The tabs `start..end` that fit in `room` around tab `at`, each as wide as `widths` says. All of them when they fit; else two cells go to the ‹ and › marks and the window grows from `at`, a tab right then a tab left.
+fn tab_window(widths: &[usize], at: usize, room: usize) -> (usize, usize) {
+    let total = widths.iter().fold(0_usize, |sum, w| sum.saturating_add(*w));
+    if total <= room {
+        return (0, widths.len());
+    }
+    let room = room.saturating_sub(2);
+    let mut start = at.min(widths.len());
+    let mut end = at.saturating_add(1).min(widths.len());
+    let mut used = widths.get(at).copied().unwrap_or(0);
+    loop {
+        let mut grew = false;
+        if let Some(w) = widths.get(end)
+            && used.saturating_add(*w) <= room
+        {
+            used = used.saturating_add(*w);
+            end = end.saturating_add(1);
+            grew = true;
+        }
+        if let Some(before) = start.checked_sub(1)
+            && let Some(w) = widths.get(before)
+            && used.saturating_add(*w) <= room
+        {
+            used = used.saturating_add(*w);
+            start = before;
+            grew = true;
+        }
+        if !grew {
+            return (start, end);
+        }
+    }
+}
+
+/// The profile's rows for text `width` cells wide; a value that does not fit beside its label goes under it.
+fn profile_lines(palette: &Palette, view: &DeckView, width: u16) -> Vec<Line<'static>> {
+    let profile = &view.profile;
+    let value_width = usize::from(width).saturating_sub(LABEL_WIDTH);
     let mut lines = Vec::new();
     let mut field = |label: &str, value: String| {
         if value.chars().count() <= value_width {
@@ -153,138 +363,18 @@ fn draw_profile(f: &mut Frame<'_>, palette: &Palette, view: &DeckView, area: Rec
     if let Some(power) = profile.power_level {
         field("Power level", power.display_name().to_owned());
     }
+    lines
+}
+
+fn draw_profile(f: &mut Frame<'_>, palette: &Palette, view: &DeckView, area: Rect) {
     f.render_widget(
-        Paragraph::new(lines).wrap(Wrap { trim: true }).block(
-            Block::bordered()
-                .title(" Profile ")
-                .border_style(palette.border),
+        scrolled(
+            Paragraph::new(profile_lines(palette, view, area.width)).wrap(Wrap { trim: true }),
+            view.scroll_of(Pane::Profile),
+            area,
         ),
         area,
     );
-}
-
-/// The section headers stacked, the open one's body under its header, and a skeleton where stats are still loading.
-fn draw_accordion(f: &mut Frame<'_>, palette: &Palette, view: &DeckView, area: Rect) {
-    let area = area.inner(ratatui::layout::Margin::new(1, 0));
-    if view.failed {
-        f.render_widget(Line::from("Could not load deck").style(palette.muted), area);
-        return;
-    }
-    let sections = view.sections();
-    let coming = view.stats_coming();
-    if sections.is_empty() && !coming {
-        f.render_widget(
-            Line::from("Stats fill in as the deck grows.").style(palette.muted),
-            area,
-        );
-        return;
-    }
-
-    let mut constraints = Vec::new();
-    for section in &sections {
-        constraints.push(Constraint::Length(1));
-        if view.open == Some(*section) {
-            constraints.push(Constraint::Fill(1));
-        }
-    }
-    if coming {
-        constraints.push(Constraint::Length(SKELETON_ROWS));
-    }
-    if view.open.is_none() {
-        constraints.push(Constraint::Fill(1));
-    }
-    let areas = Layout::vertical(constraints).split(area);
-    let mut slots = areas.iter().copied();
-    let focused = view.focused();
-    for section in &sections {
-        let Some(header_area) = slots.next() else {
-            return;
-        };
-        let header_focused = focused == Some(Target::Header(*section));
-        f.render_widget(
-            header_line(palette, view, *section, header_focused),
-            header_area,
-        );
-        if view.open == Some(*section) {
-            let Some(body) = slots.next() else {
-                return;
-            };
-            let block =
-                Block::new()
-                    .borders(Borders::TOP)
-                    .border_style(if *section == Section::Warnings {
-                        palette.warning
-                    } else {
-                        palette.border
-                    });
-            let inner = block.inner(body);
-            f.render_widget(block, body);
-            draw_body(f, palette, view, *section, inner);
-        }
-    }
-    if coming && let Some(ghost) = slots.next() {
-        f.render_widget(
-            Paragraph::new(skeleton::rows(
-                palette,
-                usize::from(SKELETON_ROWS),
-                usize::from(ghost.width),
-            )),
-            ghost,
-        );
-    }
-}
-
-/// A section's header: the arrow and title, its badge, and while open its accessory.
-fn header_line(
-    palette: &Palette,
-    view: &DeckView,
-    section: Section,
-    focused: bool,
-) -> Line<'static> {
-    let open = view.open == Some(section);
-    let title_style = if section == Section::Warnings {
-        palette.warning
-    } else {
-        palette.accent
-    };
-    let mut spans = vec![
-        Span::raw(if focused { "> " } else { "  " }),
-        Span::styled(if open { "▾ " } else { "▸ " }, palette.muted),
-        Span::styled(section.title().to_owned(), title_style.bold()),
-    ];
-    let profile = &view.profile;
-    let badge = match section {
-        Section::Tags => Some(
-            profile
-                .tags
-                .len()
-                .saturating_add(profile.oracle_tags.len())
-                .saturating_add(profile.other_tags.len()),
-        ),
-        Section::Warnings => view.deck.as_ref().map(|d| d.warnings.len()),
-        _ => None,
-    };
-    if let Some(badge) = badge {
-        spans.push(Span::styled(format!("  {badge}"), palette.muted));
-    }
-    if open && section == Section::Budget && view.has_cards() {
-        spans.push(Span::raw("   "));
-        spans.extend(CURRENCIES.iter().flat_map(|c| {
-            [
-                pill(
-                    c.label(),
-                    palette.muted,
-                    PillState {
-                        picked: *c == view.currency,
-                        focused: false,
-                    },
-                ),
-                Span::raw(" "),
-            ]
-        }));
-    }
-    let line = Line::from(spans);
-    if focused { line.bold() } else { line }
 }
 
 fn draw_body(f: &mut Frame<'_>, palette: &Palette, view: &DeckView, section: Section, area: Rect) {
@@ -299,20 +389,36 @@ fn draw_body(f: &mut Frame<'_>, palette: &Palette, view: &DeckView, section: Sec
         Section::Mana => draw_mana(f, palette, view, area),
         Section::DrawOdds => {
             if let Some(m) = view.charted() {
-                draw_draw_odds(f, palette, m, view.turn, area);
+                draw_draw_odds(
+                    f,
+                    palette,
+                    m,
+                    view.turn,
+                    view.scroll_of(Pane::Section(Section::DrawOdds)),
+                    area,
+                );
             }
         }
         Section::Warnings => draw_warnings(f, palette, view, area),
     }
 }
 
-fn stat(palette: &Palette, label: &str, value: String) -> Line<'static> {
-    Line::from(vec![
-        Span::styled(format!("{label:<22}"), palette.muted),
-        Span::raw(value).bold(),
-    ])
+/// A stat's label and value on one row, or the value under its label when the row is narrower than `width`.
+fn stat(palette: &Palette, label: &str, value: String, width: u16) -> Vec<Line<'static>> {
+    if STAT_WIDTH.saturating_add(value.chars().count()) <= usize::from(width) {
+        vec![Line::from(vec![
+            Span::styled(format!("{label:<STAT_WIDTH$}"), palette.muted),
+            Span::raw(value).bold(),
+        ])]
+    } else {
+        vec![
+            Line::from(Span::styled(label.to_owned(), palette.muted)),
+            Line::from(vec![Span::raw("  "), Span::raw(value).bold()]),
+        ]
+    }
 }
 
+/// The currency chips once there are cards to price, then the total and the average.
 fn draw_budget(f: &mut Frame<'_>, palette: &Palette, view: &DeckView, area: Rect) {
     let currency = view.currency;
     let metrics = view.metrics.as_ref();
@@ -326,15 +432,41 @@ fn draw_budget(f: &mut Frame<'_>, palette: &Palette, view: &DeckView, area: Rect
         let target_currency = view.profile.price_target_currency.unwrap_or_default();
         total_text = format!("{total_text} / {}", target_currency.format_amount(target));
     }
-    let mut lines = vec![stat(palette, "Total price", total_text)];
+    let mut lines = Vec::new();
+    if view.has_cards() {
+        lines.push(pill::row(
+            CURRENCIES
+                .iter()
+                .map(|c| {
+                    pill(
+                        c.label(),
+                        palette.muted,
+                        PillState {
+                            picked: *c == currency,
+                            focused: false,
+                        },
+                    )
+                })
+                .collect(),
+        ));
+    }
+    lines.extend(stat(palette, "Total price", total_text, area.width));
     if metrics.is_some() {
-        lines.push(stat(
+        lines.extend(stat(
             palette,
             "Average card price",
             average.map_or_else(|| "N/A".to_owned(), |a| currency.format_amount(a)),
+            area.width,
         ));
     }
-    f.render_widget(Paragraph::new(lines), area);
+    f.render_widget(
+        scrolled(
+            Paragraph::new(lines),
+            view.scroll_of(Pane::Section(Section::Budget)),
+            area,
+        ),
+        area,
+    );
 }
 
 fn draw_tags(f: &mut Frame<'_>, palette: &Palette, view: &DeckView, area: Rect) {
@@ -366,9 +498,17 @@ fn draw_tags(f: &mut Frame<'_>, palette: &Palette, view: &DeckView, area: Rect) 
             .collect(),
         palette.warning,
     );
-    f.render_widget(Paragraph::new(lines).wrap(Wrap { trim: true }), area);
+    f.render_widget(
+        scrolled(
+            Paragraph::new(lines).wrap(Wrap { trim: true }),
+            view.scroll_of(Pane::Section(Section::Tags)),
+            area,
+        ),
+        area,
+    );
 }
 
+/// Average P/T, the Types chart, and the Roles bars under it. The Types chart shrinks first when the area is short.
 fn draw_distributions(
     f: &mut Frame<'_>,
     palette: &Palette,
@@ -378,26 +518,30 @@ fn draw_distributions(
 ) {
     let one_decimal = |v: Option<f64>| v.map_or_else(|| "-".to_owned(), |v| format!("{v:.1}"));
     let has_pt = metrics.avg_power.is_some() || metrics.avg_toughness.is_some();
+    let pt_text = format!(
+        "{} / {}",
+        one_decimal(metrics.avg_power),
+        one_decimal(metrics.avg_toughness)
+    );
+    let pt_lines = if has_pt {
+        stat(palette, "Average P/T", pt_text, area.width)
+    } else {
+        Vec::new()
+    };
+    let has_roles = metrics.card_role_bars().is_some_and(|r| !r.is_empty());
+    let roles_min = if has_roles { ROLES_MIN_HEIGHT } else { 0 };
+    let types_height = area
+        .height
+        .saturating_sub(height_of(pt_lines.len()))
+        .saturating_sub(roles_min)
+        .min(CHART_HEIGHT);
     let [pt, types_area, roles_area] = Layout::vertical([
-        Constraint::Length(u16::from(has_pt)),
-        Constraint::Max(CHART_HEIGHT),
+        Constraint::Length(height_of(pt_lines.len())),
+        Constraint::Length(types_height),
         Constraint::Fill(1),
     ])
     .areas(area);
-    if has_pt {
-        f.render_widget(
-            stat(
-                palette,
-                "Average P/T",
-                format!(
-                    "{} / {}",
-                    one_decimal(metrics.avg_power),
-                    one_decimal(metrics.avg_toughness)
-                ),
-            ),
-            pt,
-        );
-    }
+    f.render_widget(Paragraph::new(pt_lines), pt);
     let types: Vec<Column> = metrics
         .type_bars()
         .into_iter()
@@ -412,7 +556,7 @@ fn draw_distributions(
     draw_roles(f, palette, view, metrics, roles_area);
 }
 
-/// The Roles bars, with the open role's tags and the open tag's description and Examples.
+/// The Roles bars, with the open role's tags and the open tag's description and Examples. The focused item stays in view.
 fn draw_roles(
     f: &mut Frame<'_>,
     palette: &Palette,
@@ -423,7 +567,7 @@ fn draw_roles(
     let Some(roles) = metrics.card_role_bars() else {
         return;
     };
-    let focused = view.focused();
+    let focused = view.focused_item();
     // Each label is a chip, padded by a space each side.
     let label_width = roles
         .iter()
@@ -435,7 +579,7 @@ fn draw_roles(
     let mut focus_line = 0;
     for (label, count, pct) in roles {
         let tags = metrics.card_role_tags.get(label);
-        let is_focused = focused == Some(Target::Role(label.to_owned()));
+        let is_focused = focused == Some(Item::Role(label.to_owned()));
         if is_focused {
             focus_line = lines.len();
         }
@@ -460,7 +604,7 @@ fn draw_roles(
             continue;
         }
         for tag in tags.into_iter().flatten() {
-            let tag_focused = focused == Some(Target::Tag(tag.clone()));
+            let tag_focused = focused == Some(Item::Tag(tag.clone()));
             if tag_focused {
                 focus_line = lines.len();
             }
@@ -484,7 +628,7 @@ fn draw_roles(
                     Span::raw("        "),
                     Span::styled(description, palette.base),
                 ]));
-                let examples_focused = focused == Some(Target::Examples(tag.clone()));
+                let examples_focused = focused == Some(Item::Examples(tag.clone()));
                 if examples_focused {
                     focus_line = lines.len();
                 }
@@ -506,13 +650,21 @@ fn draw_roles(
             }
         }
     }
-    let scroll = focus_line.saturating_sub(usize::from(roles_area.height).saturating_sub(1));
+    let height = usize::from(roles_area.height);
+    let end = lines.len().saturating_sub(height);
+    // On the last item the rows after it, roles with no tags, come into view too.
+    let scroll = if focused.is_some() && focused == view.items().last().cloned() {
+        end
+    } else {
+        focus_line.saturating_sub(height.saturating_sub(1)).min(end)
+    };
     f.render_widget(
         Paragraph::new(lines).scroll((u16::try_from(scroll).unwrap_or(u16::MAX), 0)),
         roles_area,
     );
 }
 
+/// Lands and the average mana value, the Mana curve and Colors charts side by side or stacked when narrow, then the mana cost fulfillment rows.
 fn draw_mana(f: &mut Frame<'_>, palette: &Palette, view: &DeckView, area: Rect) {
     let metrics = view.charted();
     let lands = metrics.map_or(0, |m| m.land_count);
@@ -520,12 +672,13 @@ fn draw_mana(f: &mut Frame<'_>, palette: &Palette, view: &DeckView, area: Rect) 
         .profile
         .land_target
         .map_or_else(|| lands.to_string(), |target| format!("{lands} / {target}"));
-    let mut summary = vec![stat(palette, "Lands", lands_text)];
+    let mut summary = stat(palette, "Lands", lands_text, area.width);
     if let Some(m) = metrics {
-        summary.push(stat(
+        summary.extend(stat(
             palette,
             "Average mana value",
             format!("{:.1}", m.avg_cmc),
+            area.width,
         ));
     }
     let Some(m) = metrics else {
@@ -534,20 +687,36 @@ fn draw_mana(f: &mut Frame<'_>, palette: &Palette, view: &DeckView, area: Rect) 
     };
 
     let fulfillment = m.mana_balance_rows();
+    let fulfillment_height = if fulfillment.is_empty() {
+        0
+    } else {
+        height_of(fulfillment.len()).saturating_add(1)
+    };
+    let side_by_side = area.width >= MANA_SIDE_BY_SIDE;
+    let charts_max = if side_by_side {
+        CHART_HEIGHT
+    } else {
+        CHART_HEIGHT.saturating_mul(2)
+    };
+    let summary_height = height_of(summary.len());
+    let charts_height = area
+        .height
+        .saturating_sub(summary_height)
+        .saturating_sub(fulfillment_height)
+        .min(charts_max);
     let [summary_area, charts_area, fulfillment_area] = Layout::vertical([
-        Constraint::Length(2),
-        Constraint::Max(CHART_HEIGHT),
-        Constraint::Length(
-            u16::try_from(fulfillment.len())
-                .unwrap_or(0)
-                .saturating_add(1),
-        ),
+        Constraint::Length(summary_height),
+        Constraint::Length(charts_height),
+        Constraint::Fill(1),
     ])
     .areas(area);
     f.render_widget(Paragraph::new(summary), summary_area);
 
-    let [curve_area, colors_area] =
-        Layout::horizontal([Constraint::Fill(1), Constraint::Fill(1)]).areas(charts_area);
+    let [curve_area, colors_area] = if side_by_side {
+        Layout::horizontal([Constraint::Fill(1), Constraint::Fill(1)]).areas(charts_area)
+    } else {
+        Layout::vertical([Constraint::Fill(1), Constraint::Fill(1)]).areas(charts_area)
+    };
     let curve: Vec<Column> = m
         .mana_curve_bars()
         .into_iter()
@@ -600,6 +769,7 @@ fn draw_draw_odds(
     palette: &Palette,
     metrics: &DeckMetrics,
     turn: u32,
+    scroll: u16,
     area: Rect,
 ) {
     let (deck_size, buckets) = metrics.draw_odds_buckets();
@@ -631,7 +801,13 @@ fn draw_draw_odds(
             vec![Span::raw(format!("{pct}%"))],
         )
     }));
-    f.render_widget(Paragraph::new(lines), area);
+    f.render_widget(scrolled(Paragraph::new(lines), scroll, area), area);
+}
+
+/// `paragraph` scrolled down `scroll` rows, no further than where its last row meets the bottom of `area`.
+fn scrolled(paragraph: Paragraph<'static>, scroll: u16, area: Rect) -> Paragraph<'static> {
+    let rows = height_of(paragraph.line_count(area.width));
+    paragraph.scroll((scroll.min(rows.saturating_sub(area.height)), 0))
 }
 
 /// A probability as a whole percentage, rounded.
@@ -642,9 +818,9 @@ fn percent(probability: f64) -> u32 {
         .unwrap_or(100)
 }
 
-/// Each warning's message, with its fix buttons under it.
+/// Each warning's message wrapped to the area, with its fix buttons under it. The focused button stays in view.
 fn draw_warnings(f: &mut Frame<'_>, palette: &Palette, view: &DeckView, area: Rect) {
-    let focused = view.focused();
+    let focused = view.focused_item();
     let mut lines: Vec<Line<'static>> = Vec::new();
     let mut focus_line = 0;
     for (i, w) in view.deck.iter().flat_map(|d| &d.warnings).enumerate() {
@@ -657,7 +833,7 @@ fn draw_warnings(f: &mut Frame<'_>, palette: &Palette, view: &DeckView, area: Re
         };
         let mut buttons = vec![Span::raw("    ")];
         for (button, label) in warning::labels(fix).iter().enumerate() {
-            let is_focused = focused == Some(Target::Fix { warning: i, button });
+            let is_focused = focused == Some(Item::Fix { warning: i, button });
             if is_focused {
                 focus_line = lines.len();
             }
@@ -673,9 +849,19 @@ fn draw_warnings(f: &mut Frame<'_>, palette: &Palette, view: &DeckView, area: Re
         }
         lines.push(Line::from(buttons));
     }
-    let scroll = focus_line.saturating_sub(usize::from(area.height).saturating_sub(1));
+    let wrap = Wrap { trim: false };
+    let focus_row = lines.iter().take(focus_line).fold(0_usize, |rows, line| {
+        rows.saturating_add(
+            Paragraph::new(line.clone())
+                .wrap(wrap)
+                .line_count(area.width),
+        )
+    });
+    let scroll = focus_row.saturating_sub(usize::from(area.height).saturating_sub(1));
     f.render_widget(
-        Paragraph::new(lines).scroll((u16::try_from(scroll).unwrap_or(u16::MAX), 0)),
+        Paragraph::new(lines)
+            .wrap(wrap)
+            .scroll((u16::try_from(scroll).unwrap_or(u16::MAX), 0)),
         area,
     );
 }
@@ -760,5 +946,16 @@ mod tests {
         assert_eq!(percent(1.0), 100);
         assert_eq!(percent(1.7), 100);
         assert_eq!(percent(-0.2), 0);
+    }
+
+    #[test]
+    fn the_tab_window_keeps_the_shown_tab_and_its_neighbors() {
+        let widths = [9, 8, 6, 15, 6, 11, 10];
+        assert_eq!(tab_window(&widths, 3, 80), (0, 7), "all fit");
+        assert_eq!(tab_window(&widths, 0, 30), (0, 3));
+        assert_eq!(tab_window(&widths, 6, 30), (4, 7));
+        assert_eq!(tab_window(&widths, 3, 30), (2, 5));
+        assert_eq!(tab_window(&widths, 3, 4), (3, 4), "the shown tab stays");
+        assert_eq!(tab_window(&[], 0, 10), (0, 0));
     }
 }

@@ -1,7 +1,8 @@
-//! One deck: its Profile card beside the app's sections as an accordion, the warning fixes, and the More sheet with its dialogs.
+//! One deck: its Profile card and the app's sections in as many panels as the terminal fits, the warning fixes, and the More sheet with its dialogs.
 
 pub(crate) mod draw;
 pub(crate) mod keys;
+pub(crate) mod layout;
 #[cfg(test)]
 mod tests;
 
@@ -15,6 +16,7 @@ use zwipe_core::http::contracts::deck::{HttpCloneDeck, HttpUpdateDeckProfile};
 use zwipe_core::http::contracts::deck_card::HttpPatchDeckCard;
 use zwipe_core::http::helpers::Patch;
 
+use self::layout::Pane;
 use super::{Screen, failure};
 use crate::domain::deck::buy;
 use crate::domain::deck::warning::{self, Fix};
@@ -110,10 +112,9 @@ impl Section {
     }
 }
 
-/// Something in the accordion the focus can rest on.
+/// Something inside a pane the focus can rest on and press.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) enum Target {
-    Header(Section),
+pub(crate) enum Item {
     /// A role in the Roles chart that has tags to show.
     Role(String),
     /// An oracle tag under the open role.
@@ -121,10 +122,7 @@ pub(crate) enum Target {
     /// The open tag's Examples button.
     Examples(String),
     /// One fix button of one warning.
-    Fix {
-        warning: usize,
-        button: usize,
-    },
+    Fix { warning: usize, button: usize },
 }
 
 /// A dialog over the deck screen.
@@ -175,10 +173,16 @@ pub(crate) struct DeckView {
     pub(crate) profile: DeckProfile,
     pub(crate) deck: Option<Deck>,
     pub(crate) metrics: Option<DeckMetrics>,
-    /// The open section; none is open once the open one is closed.
-    pub(crate) open: Option<Section>,
-    /// The focused target in the accordion.
-    pub(crate) focus: usize,
+    /// The pane the focus was put on. While it is not showing, the focus rests on [`DeckView::focused`]'s stand-in.
+    pub(crate) focus: Pane,
+    /// Panes newest first by when they were focused, so a tabbed panel shows the tab looked at last.
+    pub(crate) recent: Vec<Pane>,
+    /// The focused item in the focused pane, kept in range when read.
+    pub(crate) item: usize,
+    /// Whether the focused pane fills the body.
+    pub(crate) zoomed: bool,
+    /// How far the focused pane is scrolled when it has no items to move through, in rows.
+    pub(crate) scroll: u16,
     /// The role whose tags show under it.
     pub(crate) role_open: Option<String>,
     /// The tag whose definition shows under the role's tags.
@@ -204,8 +208,11 @@ impl DeckView {
             profile,
             deck: None,
             metrics: None,
-            open: Some(Section::Budget),
-            focus: 0,
+            focus: Pane::Profile,
+            recent: Vec::new(),
+            item: 0,
+            zoomed: false,
+            scroll: 0,
             role_open: None,
             tag_open: None,
             currency,
@@ -228,7 +235,6 @@ impl DeckView {
             });
         self.deck = Some(deck);
         self.failed = false;
-        self.clamp();
     }
 
     /// Fetches the deck again, keeping what is open; the stats show as loading until it arrives.
@@ -283,33 +289,122 @@ impl DeckView {
             .collect()
     }
 
-    /// Every target in order: each header, with the open section's own targets under it.
-    pub(crate) fn targets(&self) -> Vec<Target> {
-        let mut targets = Vec::new();
-        for section in self.sections() {
-            targets.push(Target::Header(section));
-            if self.open != Some(section) {
-                continue;
-            }
-            match section {
-                Section::Distributions => self.role_targets(&mut targets),
-                Section::Warnings => {
-                    for (i, w) in self.deck.iter().flat_map(|d| &d.warnings).enumerate() {
-                        if let Some(fix) = warning::fix(w) {
-                            targets.extend(
-                                (0..warning::labels(fix).len())
-                                    .map(|button| Target::Fix { warning: i, button }),
-                            );
-                        }
-                    }
-                }
-                _ => {}
-            }
+    /// The panes that show, Profile first and the sections in the app's order, with ghost rows standing in for the stats while they load.
+    pub(crate) fn panes(&self) -> Vec<Pane> {
+        let mut panes = vec![Pane::Profile];
+        if self.failed {
+            return panes;
         }
-        targets
+        let sections = self.sections();
+        let warnings = sections.contains(&Section::Warnings);
+        panes.extend(
+            sections
+                .into_iter()
+                .filter(|s| *s != Section::Warnings)
+                .map(Pane::Section),
+        );
+        if self.stats_coming() {
+            panes.push(Pane::Loading);
+        }
+        if warnings {
+            panes.push(Pane::Section(Section::Warnings));
+        }
+        panes
     }
 
-    fn role_targets(&self, targets: &mut Vec<Target>) {
+    /// The pane the focus rests on: the one it was put on while that shows, else the stats that took its place, else Profile.
+    pub(crate) fn focused(&self) -> Pane {
+        let panes = self.panes();
+        if panes.contains(&self.focus) {
+            return self.focus;
+        }
+        let stats = |p: &Pane| {
+            matches!(
+                p,
+                Pane::Loading
+                    | Pane::Section(Section::Distributions | Section::Mana | Section::DrawOdds)
+            )
+        };
+        if stats(&self.focus) {
+            // The skeleton stands in first, since the pane comes back when it goes.
+            let loading = panes.iter().find(|p| **p == Pane::Loading);
+            if let Some(stand_in) = loading.or_else(|| panes.iter().find(|p| stats(p))) {
+                return *stand_in;
+            }
+        }
+        Pane::Profile
+    }
+
+    /// Puts the focus on `pane`, at its first item.
+    pub(crate) fn focus_on(&mut self, pane: Pane) {
+        self.focus = pane;
+        self.item = 0;
+        self.scroll = 0;
+        self.recent.retain(|p| *p != pane);
+        self.recent.insert(0, pane);
+    }
+
+    /// Moves the focus to the next pane that shows, wrapping around to Profile.
+    pub(crate) fn next_pane(&mut self) {
+        let panes = self.panes();
+        let at = self.pane_index(&panes);
+        let next = at.saturating_add(1).checked_rem(panes.len()).unwrap_or(0);
+        if let Some(pane) = panes.get(next) {
+            self.focus_on(*pane);
+        }
+    }
+
+    /// Moves the focus to the previous pane that shows, wrapping around to the last.
+    pub(crate) fn previous_pane(&mut self) {
+        let panes = self.panes();
+        let at = self.pane_index(&panes);
+        let previous = at
+            .checked_sub(1)
+            .unwrap_or_else(|| panes.len().saturating_sub(1));
+        if let Some(pane) = panes.get(previous) {
+            self.focus_on(*pane);
+        }
+    }
+
+    fn pane_index(&self, panes: &[Pane]) -> usize {
+        let focused = self.focused();
+        panes.iter().position(|p| *p == focused).unwrap_or(0)
+    }
+
+    /// The pane a panel holding `panes` shows: the focused one, else the one focused last, else its first.
+    pub(crate) fn shown(&self, panes: &[Pane]) -> Option<Pane> {
+        let focused = self.focused();
+        if panes.contains(&focused) {
+            return Some(focused);
+        }
+        self.recent
+            .iter()
+            .find(|p| panes.contains(p))
+            .or_else(|| panes.first())
+            .copied()
+    }
+
+    /// The focused pane's items in order: the roles with their open tags, or the warnings' fix buttons.
+    pub(crate) fn items(&self) -> Vec<Item> {
+        let mut items = Vec::new();
+        match self.focused() {
+            Pane::Section(Section::Distributions) => self.role_items(&mut items),
+            Pane::Section(Section::Warnings) => {
+                for (i, w) in self.deck.iter().flat_map(|d| &d.warnings).enumerate() {
+                    if let Some(fix) = warning::fix(w) {
+                        items.extend(
+                            (0..warning::labels(fix).len())
+                                .map(|button| Item::Fix { warning: i, button }),
+                        );
+                    }
+                }
+            }
+            _ => {}
+        }
+        items
+    }
+
+    fn role_items(&self, items: &mut Vec<Item>) {
         let Some(metrics) = self.charted() else {
             return;
         };
@@ -317,57 +412,79 @@ impl DeckView {
             let Some(tags) = metrics.card_role_tags.get(role) else {
                 continue;
             };
-            targets.push(Target::Role(role.to_owned()));
+            items.push(Item::Role(role.to_owned()));
             if self.role_open.as_deref() != Some(role) {
                 continue;
             }
             for tag in tags {
-                targets.push(Target::Tag(tag.clone()));
+                items.push(Item::Tag(tag.clone()));
                 if self.tag_open.as_deref() == Some(tag) {
-                    targets.push(Target::Examples(tag.clone()));
+                    items.push(Item::Examples(tag.clone()));
                 }
             }
         }
     }
 
-    /// The focused target.
-    pub(crate) fn focused(&self) -> Option<Target> {
-        self.targets().get(self.focus).cloned()
+    /// The focused item, the last one when the list has shrunk under it.
+    pub(crate) fn focused_item(&self) -> Option<Item> {
+        let items = self.items();
+        let last = items.len().checked_sub(1)?;
+        items.get(self.item.min(last)).cloned()
     }
 
-    /// The section the focus is in: its header's, or the open one's for a target inside it.
-    pub(crate) fn focused_section(&self) -> Option<Section> {
-        match self.focused()? {
-            Target::Header(section) => Some(section),
-            _ => self.open,
-        }
-    }
-
-    /// Keeps the focus in range and on a section that still shows.
-    pub(crate) fn clamp(&mut self) {
-        let sections = self.sections();
-        if self.open.is_some_and(|s| !sections.contains(&s)) {
-            self.open = None;
-        }
-        self.focus = self.focus.min(self.targets().len().saturating_sub(1));
-    }
-
-    /// Opens `section` and closes the others, or closes it when it is open; the focus stays on its header.
-    pub(crate) fn toggle(&mut self, section: Section) {
-        self.open = if self.open == Some(section) {
-            None
+    /// Moves to the next item in the focused pane, stopping at the last, or scrolls a pane with no items down a row.
+    pub(crate) fn move_down(&mut self) {
+        let items = self.items().len();
+        if items == 0 {
+            self.scroll = self.scroll.saturating_add(1).min(self.scroll_limit());
         } else {
-            Some(section)
-        };
-        self.role_open = None;
-        self.tag_open = None;
-        if let Some(at) = self
-            .targets()
-            .iter()
-            .position(|t| *t == Target::Header(section))
-        {
-            self.focus = at;
+            self.item = self.item.saturating_add(1).min(items.saturating_sub(1));
         }
+    }
+
+    /// Moves to the previous item in the focused pane, stopping at the first, or scrolls a pane with no items up a row.
+    pub(crate) fn move_up(&mut self) {
+        let items = self.items().len();
+        if items == 0 {
+            self.scroll = self.scroll.min(self.scroll_limit()).saturating_sub(1);
+        } else {
+            self.item = self.item.min(items.saturating_sub(1)).saturating_sub(1);
+        }
+    }
+
+    /// How far `pane` is scrolled: the scroll while it has the focus, else none.
+    pub(crate) fn scroll_of(&self, pane: Pane) -> u16 {
+        if self.focused() == pane {
+            self.scroll
+        } else {
+            0
+        }
+    }
+
+    /// The most rows the focused pane can hold, so scrolling stops near its end; the draw stops it exactly at the end for the room it has.
+    pub(crate) fn scroll_limit(&self) -> u16 {
+        let profile = &self.profile;
+        let rows = match self.focused() {
+            // Each value can drop under its label.
+            Pane::Profile => 18,
+            // The chips, the total and the average, each of which can drop under its label.
+            Pane::Section(Section::Budget) => 5,
+            // A label, its chips one to a row at most, and a blank row, per group.
+            Pane::Section(Section::Tags) => [
+                profile.tags.len(),
+                profile.oracle_tags.len(),
+                profile.other_tags.len(),
+            ]
+            .iter()
+            .filter(|n| **n > 0)
+            .fold(0_usize, |rows, n| rows.saturating_add(n.saturating_add(2))),
+            // The heading, a blank row, and a row per group.
+            Pane::Section(Section::DrawOdds) => self
+                .charted()
+                .map_or(0, |m| m.draw_odds_buckets().1.len().saturating_add(2)),
+            _ => 0,
+        };
+        u16::try_from(rows).unwrap_or(u16::MAX)
     }
 
     pub(crate) fn next_currency(&mut self) {
