@@ -12,11 +12,11 @@ use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCur
 use zwipe_core::domain::deck::{
     DeckOtherTag, MAX_DECK_ORACLE_TAGS, MAX_DECK_TAGS, PowerLevel, deck_tag,
 };
+use zwipe_ui::deck::form::Slot;
 
 use super::pickers::{self, FormatPicker, OraclePicker, TagPicker};
 use super::swipe_pick::SwipePicker;
 use super::{DeckForm, Dropdown, Field, Mode, Overlay};
-use crate::domain::deck::form::Slot;
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::screens::card_sheets;

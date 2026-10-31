@@ -22,11 +22,11 @@ use zwipe_core::domain::deck::{
 };
 use zwipe_core::http::contracts::deck::{HttpCreateDeckProfile, HttpUpdateDeckProfile};
 use zwipe_core::http::helpers::Patch;
+use zwipe_ui::deck::form::{self, Slot};
 
 use self::pickers::{FormatPicker, OraclePicker, TagPicker};
 use self::swipe_pick::SwipePicker;
 use super::{Screen, card_sheets};
-use crate::domain::deck::form::{self, Slot};
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;

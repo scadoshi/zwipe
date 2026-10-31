@@ -4,9 +4,9 @@ use crossterm::event::KeyCode;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::oracle_tag::{self, OracleTag};
 use zwipe_core::domain::deck::{DeckTagView, Format, MAX_DECK_ORACLE_TAGS, MAX_DECK_TAGS};
+use zwipe_ui::deck::form::{self, Slot};
 
 use super::{DeckForm, Overlay};
-use crate::domain::deck::form::{self, Slot};
 use crate::inbound::app::Context;
 use crate::inbound::screens::oracle_tags;
 use crate::inbound::widgets::info::InfoPopup;

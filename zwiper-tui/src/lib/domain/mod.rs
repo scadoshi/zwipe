@@ -4,8 +4,6 @@
 pub(crate) mod add;
 /// Orangui's rolling figures and compact numbers.
 pub(crate) mod count_up;
-/// A deck's row in the deck list.
-pub(crate) mod deck;
 /// The deck cards view's pass, featured strip, quantity bursts and undo rules.
 pub(crate) mod deck_cards;
 /// Land and budget signals as a deck changes.

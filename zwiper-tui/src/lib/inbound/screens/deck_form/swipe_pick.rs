@@ -6,9 +6,10 @@ use crossterm::event::KeyCode;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::deck::Format;
+use zwipe_ui::deck::form::{self, Slot};
+use zwipe_ui::timing;
 
 use super::{DeckForm, Overlay, Request};
-use crate::domain::deck::form::{self, SWIPE_PAGE, Slot};
 use crate::domain::filter;
 use crate::domain::stack::Direction;
 use crate::inbound::app::Context;
@@ -160,7 +161,7 @@ impl SwipePicker {
             return;
         }
         self.loading = false;
-        self.offset = self.offset.saturating_add(SWIPE_PAGE);
+        self.offset = self.offset.saturating_add(timing::PAGE_SIZE);
         if cards.is_empty() {
             self.exhausted = true;
             return;

@@ -1,9 +1,9 @@
 //! The deck list's keys: Tab and the arrows move between the chip rows and the list, Enter presses, c creates, m opens More.
 
 use crossterm::event::KeyCode;
+use zwipe_ui::deck::list::GroupBy;
 
 use super::{DeckList, Focus, Row, create, more_menu, reopen_hint};
-use crate::domain::deck::list::GroupBy;
 use crate::inbound::app::Context;
 use crate::inbound::screens::{self, deck};
 use crate::inbound::toward::Toward;

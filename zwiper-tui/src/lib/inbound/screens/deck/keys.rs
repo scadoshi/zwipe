@@ -1,13 +1,13 @@
 //! The deck screen's keys. Tab and Shift+Tab move between the panes that show, j and k move through the focused pane's roles, tags and fixes or scroll a pane that has none, Space presses one, and Enter zooms the focused pane, then presses while zoomed. Esc unzooms before it goes back. h and l switch Budget's currency or step Draw odds' turn, as do - and +, and i explains the focused section. e is Edit, c Cards, m More and s swipe, and each sheet and dialog over the screen has its own keys.
 
 use crossterm::event::KeyCode;
+use zwipe_ui::deck::warning;
 
 use super::layout::Pane;
 use super::{
     CloneDialog, DeckView, Dialog, Item, Request, Section, clear_skips_dialog, copy, delete_dialog,
     reopen_hint, run_fix,
 };
-use crate::domain::deck::warning;
 use crate::inbound::app::Context;
 use crate::inbound::screens::{
     deck_cards, deck_export, deck_form, deck_import, otag_examples, swipe,

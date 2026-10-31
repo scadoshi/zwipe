@@ -3,10 +3,10 @@
 use crossterm::event::KeyCode;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::{DeckOtherTag, PowerLevel};
+use zwipe_ui::deck::form::{self, Slot, Step};
 
 use super::pickers::{self, FormatPicker, OraclePicker, TagPicker};
 use super::{DeckForm, Field, Overlay, reopen_hint, swipe_pick};
-use crate::domain::deck::form::{self, Slot, Step};
 use crate::inbound::app::Context;
 use crate::inbound::toward::Toward;
 use crate::inbound::widgets::info;

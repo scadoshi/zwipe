@@ -7,9 +7,9 @@ mod tests;
 
 use uuid::Uuid;
 use zwipe_core::domain::deck::Deck;
+use zwipe_ui::deck::export::{self, Boards};
 
 use super::Screen;
-use crate::domain::deck::export::{self, Boards};
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;

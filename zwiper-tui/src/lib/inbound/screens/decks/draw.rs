@@ -6,10 +6,10 @@ use ratatui::style::Stylize;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Paragraph, Wrap};
 use zwipe_core::domain::deck::{DeckProfile, deck_tag};
+use zwipe_ui::deck;
+use zwipe_ui::deck::list::{DeckGroup, GroupBy};
 
 use super::{DeckList, Focus, Row, ShowChip};
-use crate::domain;
-use crate::domain::deck::list::{DeckGroup, GroupBy};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::widgets::pill::{self, PillState};
@@ -270,20 +270,20 @@ fn deck_lines(
         palette.base.bold()
     };
     let mut first = vec![Span::styled(deck.name.to_string(), name_style)];
-    let pips = domain::deck::pips(deck);
+    let pips = deck::pips(deck);
     if !pips.is_empty() {
         first.push(Span::raw("  "));
         first.extend(pips.into_iter().map(|pip| mana::pip(palette, pip)));
     }
-    let count = domain::deck::card_count(deck);
-    let count_style = if domain::deck::count_fits(deck, count) {
+    let count = deck::card_count(deck);
+    let count_style = if deck::count_fits(deck, count) {
         palette.muted
     } else {
         palette.warning
     };
     first.push(Span::raw("  "));
     first.push(pill::pill(
-        &domain::deck::cards_label(count),
+        &deck::cards_label(count),
         count_style,
         PillState::default(),
     ));

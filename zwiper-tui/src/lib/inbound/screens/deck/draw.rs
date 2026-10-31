@@ -8,10 +8,10 @@ use ratatui::widgets::{Block, BorderType, Paragraph, Wrap};
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
 use zwipe_core::domain::deck::{Format, deck_tag, draw_odds};
+use zwipe_ui::deck::warning;
 
 use super::layout::{self, Pane, Panel};
 use super::{CloneDialog, DeckView, Dialog, Item, Section};
-use crate::domain::deck::warning;
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::widgets::charts::Column;

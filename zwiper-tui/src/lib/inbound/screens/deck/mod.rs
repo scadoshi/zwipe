@@ -15,11 +15,11 @@ use zwipe_core::domain::site::WEB_BASE;
 use zwipe_core::http::contracts::deck::{HttpCloneDeck, HttpUpdateDeckProfile};
 use zwipe_core::http::contracts::deck_card::HttpPatchDeckCard;
 use zwipe_core::http::helpers::Patch;
+use zwipe_ui::buy;
+use zwipe_ui::deck::warning::{self, Fix};
 
 use self::layout::Pane;
 use super::Screen;
-use crate::domain::deck::buy;
-use crate::domain::deck::warning::{self, Fix};
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;

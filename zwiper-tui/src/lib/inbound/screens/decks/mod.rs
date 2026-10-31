@@ -11,9 +11,9 @@ use zwipe_client::ClientError;
 use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::deck::DeckProfile;
 use zwipe_core::domain::user::User;
+use zwipe_ui::deck::list::{self, DeckGroup, GroupBy, Show};
 
 use super::Screen;
-use crate::domain::deck::list::{self, DeckGroup, GroupBy, Show};
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;

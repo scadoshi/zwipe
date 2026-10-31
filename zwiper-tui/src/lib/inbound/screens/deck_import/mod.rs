@@ -9,9 +9,9 @@ use uuid::Uuid;
 use zwipe_client::ClientError;
 use zwipe_core::domain::deck::ImportMode;
 use zwipe_core::domain::deck::requests::import_deck_cards::ImportDeckCardsResult;
+use zwipe_ui::deck::form::{self, ImportTone};
 
 use super::Screen;
-use crate::domain::deck::form::{self, ImportTone};
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;
