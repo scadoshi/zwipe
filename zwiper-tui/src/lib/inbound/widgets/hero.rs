@@ -1,4 +1,4 @@
-//! The app's `HomeHero` on the sign-in screens: a panel with the ZWIPE logo decoding in, everybody's three counters rolling to their values, and an `Everybody` chip, with `Live` beside it once the numbers were fetched this launch.
+//! The app's `HomeHero` on the sign-in screens: the ZWIPE logo decoding in, everybody's three counters rolling to their values in their own tiles, and an `Everybody` chip, with `Live` beside it once the numbers were fetched this launch.
 //!
 //! The counts live in one copy for the whole app ([`Counts`] on `Shared`): restored from disk at launch, fetched again whenever a hero mounts over a copy that is missing, restored or older than [`timing::COUNTS_FRESH`], and saved to disk after each fetch. A failed fetch keeps whatever copy there is, with no message. Every mount replays the decode and the roll.
 
@@ -8,24 +8,19 @@ use orangui_core::count_up::PLACEHOLDER;
 use orangui_core::number;
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Rect};
-use ratatui::style::Stylize;
 use ratatui::text::{Line, Span};
-use ratatui::widgets::Block;
 use zwipe_core::http::contracts::metrics::HttpPublicMetrics;
 use zwipe_ui::timing;
 
 use super::count_up::CountUp;
 use super::measure::BORDERS;
-use super::{logo as mark, measure};
+use super::{figures, logo as mark, measure};
 use crate::domain::theme::Palette;
 use crate::inbound::app::{Context, Shared};
 use crate::inbound::screens::Request;
 
-/// The three counters' labels, in the app's order.
-const LABELS: [&str; 3] = ["Decks created", "Searches run", "Cards swiped"];
-
-/// Rows the panel takes beside the logo: the borders, the gap under the logo, the counters and their labels, and the chips.
-const CHROME_ROWS: u16 = 6;
+/// Rows the hero takes beside the logo: the gap under the logo, the counters' tiles, and the chips.
+const CHROME_ROWS: u16 = figures::TILE_HEIGHT.saturating_add(2);
 
 /// The app's one copy of everybody's counts.
 #[derive(Debug, Clone, Default)]
@@ -115,7 +110,7 @@ impl Hero {
         })
     }
 
-    /// The logo that fits `area` with `room` rows for the panel: the full mark, the compact Z, or none.
+    /// The logo that fits `area` with `room` rows for the hero: the full mark, the compact Z, or none.
     fn logo(width: u16, room: u16) -> Option<&'static str> {
         mark::fitting(
             width.saturating_sub(BORDERS).saturating_sub(BORDERS),
@@ -123,7 +118,7 @@ impl Hero {
         )
     }
 
-    /// How tall the hero draws in an area `width` wide with at most `room` rows: the panel with the biggest logo that fits, the panel alone, or nothing.
+    /// How tall the hero draws in an area `width` wide with at most `room` rows: the tiles under the biggest logo that fits, the tiles alone, or nothing.
     pub(crate) fn height(width: u16, room: u16) -> u16 {
         match Self::logo(width, room) {
             Some(art) => measure::height_of(art.lines().count()).saturating_add(CHROME_ROWS),
@@ -138,44 +133,29 @@ impl Hero {
         if area.height < CHROME_ROWS.saturating_sub(1) || area.width < 8 {
             return;
         }
-        let block = Block::bordered().border_style(palette.border);
-        let inner = block.inner(area);
-        f.render_widget(block, area);
         let art = Self::logo(area.width, area.height);
         let logo_height = art.map_or(0, |a| measure::height_of(a.lines().count()));
-        let [logo_area, _, figures, labels, chips] = Layout::vertical([
+        let [logo_area, _, strip, chips] = Layout::vertical([
             Constraint::Length(logo_height),
             Constraint::Length(u16::from(logo_height > 0)),
-            Constraint::Length(1),
-            Constraint::Length(1),
+            Constraint::Length(figures::TILE_HEIGHT),
             Constraint::Length(1),
         ])
-        .areas(inner);
+        .areas(area);
         if let Some(art) = art {
             let elapsed = self.start.map(|start| now.saturating_duration_since(start));
             mark::draw(f, logo_area, art, palette.logo, elapsed);
         }
-        let columns = Layout::horizontal([Constraint::Fill(1); 3]).split(figures);
-        let label_columns = Layout::horizontal([Constraint::Fill(1); 3]).split(labels);
         let values = shared.counts.values();
-        for (((counter, value), label), (figure, under)) in self
-            .counters
-            .iter()
-            .zip(values)
-            .zip(LABELS)
-            .zip(columns.iter().zip(label_columns.iter()))
-        {
-            let shown = if self.start.is_some() {
+        let mut numbers: [String; 3] = Default::default();
+        for ((shown, counter), value) in numbers.iter_mut().zip(&self.counters).zip(values) {
+            *shown = if self.start.is_some() {
                 counter.shown(now)
             } else {
                 value.map_or_else(|| PLACEHOLDER.to_owned(), number::short)
             };
-            f.render_widget(
-                Line::from(shown).style(palette.accent).bold().centered(),
-                *figure,
-            );
-            f.render_widget(Line::from(label).style(palette.muted).centered(), *under);
         }
+        figures::tiles(f, palette, strip, numbers);
         f.render_widget(chips_line(palette, shared.counts.live()).centered(), chips);
     }
 }

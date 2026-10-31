@@ -189,3 +189,43 @@ fn the_login_screen_fits_a_tiny_terminal() {
 fn login_keeps_every_key_on_a_narrow_terminal() {
     crate::test_support::assert_key_bar_fits(&Harness::new().app, "Esc quit");
 }
+
+#[test]
+fn the_hero_boxes_each_counter_in_a_tile_under_the_logo() {
+    let mut harness = Harness::new();
+    harness.app.shared.counts = crate::inbound::widgets::hero::Counts {
+        metrics: Some(zwipe_core::http::contracts::metrics::HttpPublicMetrics {
+            cards_swiped: 261_100,
+            searches: 31_200,
+            decks_created: 2_220,
+        }),
+        fetched_at: Some(std::time::Instant::now()),
+    };
+    for (width, height) in [(200, 50), (120, 40), (80, 24), (60, 20)] {
+        let rows = crate::test_support::rows(&harness.app, width, height);
+        let text = rows.join("\n");
+        let tiles = rows
+            .iter()
+            .find(|r| r.contains('╭'))
+            .map(|r| r.matches('╭').count());
+        assert_eq!(tiles, Some(3), "tiles at {width}x{height}:\n{text}");
+        for (number, label) in [
+            ("2,220", "Decks created"),
+            ("31.2k", "Searches run"),
+            ("261.1k", "Cards swiped"),
+        ] {
+            let row = rows.iter().position(|r| r.contains(label)).unwrap();
+            assert!(
+                rows[row - 1].contains(number),
+                "{number} over {label} at {width}x{height}:\n{text}"
+            );
+        }
+        assert!(text.contains("Everybody") && text.contains("Live"));
+        if height >= 24 {
+            assert!(
+                text.contains('▉'),
+                "the logo stays at {width}x{height}:\n{text}"
+            );
+        }
+    }
+}

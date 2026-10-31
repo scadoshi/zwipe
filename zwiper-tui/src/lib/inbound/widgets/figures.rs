@@ -1,4 +1,4 @@
-//! The compact stats strip of home and Activity: three figures side by side, each a bold rolling number over its label, in orangui's compact form (`28.0k`).
+//! The stats strip of home, Login and Activity: three figures side by side, each a bold rolling number over its label, in orangui's compact form (`28.0k`). Home and Login box each figure in its own tile, as the app's `StatsStrip` does; Activity keeps the plain strip.
 
 use std::sync::OnceLock;
 use std::time::Duration;
@@ -9,7 +9,7 @@ use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::style::Stylize;
 use ratatui::text::{Line, Text};
-use ratatui::widgets::Paragraph;
+use ratatui::widgets::{Block, BorderType, Paragraph};
 use zwipe_ui::home::Figures;
 
 use super::count_up as count_up_widget;
@@ -71,6 +71,11 @@ pub(crate) fn draw(
     since_arrival: Duration,
 ) {
     let numbers = numbers(figures, since_open, since_arrival);
+    plain(f, palette, area, numbers);
+}
+
+/// The plain strip: each number over its label in a third of `area`.
+fn plain(f: &mut Frame<'_>, palette: &Palette, area: Rect, numbers: [String; 3]) {
     let columns = Layout::horizontal([Constraint::Ratio(1, 3); 3]).split(area);
     for ((number, label), column) in numbers.into_iter().zip(Figures::LABELS).zip(columns.iter()) {
         let text = Text::from(vec![
@@ -79,6 +84,63 @@ pub(crate) fn draw(
         ]);
         f.render_widget(Paragraph::new(text).centered(), *column);
     }
+}
+
+/// The rows the tiles take: the top border, the number, the label and the bottom border.
+pub(crate) const TILE_HEIGHT: u16 = 4;
+
+/// The narrowest a row of tiles draws, in cells: three tiles that each hold the longest label inside their borders, with a cell between them.
+pub(crate) const TILES_MIN_WIDTH: u16 = 47;
+
+/// Draws `numbers` over their labels across `area`, each figure in its own rounded tile as the app's `StatsStrip` draws a `.stat`: the number bold in `--palette-5`, the label muted under it. An area shorter than [`TILE_HEIGHT`] or narrower than [`TILES_MIN_WIDTH`] gets the plain strip in its middle rows instead.
+pub(crate) fn tiles(f: &mut Frame<'_>, palette: &Palette, area: Rect, numbers: [String; 3]) {
+    if area.height < TILE_HEIGHT || area.width < TILES_MIN_WIDTH {
+        let top = area.height.saturating_sub(HEIGHT) / 2;
+        let strip = Rect {
+            y: area.y.saturating_add(top),
+            height: area.height.min(HEIGHT),
+            ..area
+        };
+        plain(f, palette, strip, numbers);
+        return;
+    }
+    let number_style = palette.swatches.get(4).copied().unwrap_or(palette.accent);
+    let row = Rect {
+        height: TILE_HEIGHT,
+        ..area
+    };
+    let columns = Layout::horizontal([Constraint::Fill(1); 3])
+        .spacing(1)
+        .split(row);
+    for ((number, label), column) in numbers.into_iter().zip(Figures::LABELS).zip(columns.iter()) {
+        let block = Block::bordered()
+            .border_type(BorderType::Rounded)
+            .border_style(palette.border);
+        let inner = block.inner(*column);
+        f.render_widget(block, *column);
+        let text = Text::from(vec![
+            Line::styled(number, number_style).bold(),
+            Line::styled(label, palette.muted),
+        ]);
+        f.render_widget(Paragraph::new(text).centered(), inner);
+    }
+}
+
+/// Draws home's figures as rolling tiles across `area`, as [`tiles`] does.
+pub(crate) fn draw_tiles(
+    f: &mut Frame<'_>,
+    palette: &Palette,
+    area: Rect,
+    figures: Option<Figures>,
+    since_open: Duration,
+    since_arrival: Duration,
+) {
+    tiles(
+        f,
+        palette,
+        area,
+        numbers(figures, since_open, since_arrival),
+    );
 }
 
 #[cfg(test)]

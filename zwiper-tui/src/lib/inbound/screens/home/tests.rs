@@ -582,6 +582,30 @@ fn settled_home() -> Harness {
 }
 
 #[test]
+fn each_figure_sits_in_its_own_tile_until_the_terminal_is_short() {
+    let harness = settled_home();
+    for (width, height) in [(200, 50), (120, 40), (80, 24), (60, 20)] {
+        let rows = crate::test_support::rows(&harness.app, width, height);
+        let text = rows.join("\n");
+        for label in ["Decks created", "Searches run", "Cards swiped"] {
+            let row = rows.iter().position(|r| r.contains(label)).unwrap();
+            let above = &rows[row - 1];
+            assert!(
+                above.contains("261.1k"),
+                "the number over {label} at {width}x{height}:\n{text}"
+            );
+        }
+        let tiles = rows
+            .iter()
+            .find(|r| r.contains('╭'))
+            .map(|r| r.matches('╭').count());
+        let want = if height >= 22 { Some(3) } else { None };
+        assert_eq!(tiles, want, "tiles at {width}x{height}:\n{text}");
+        assert!(text.contains("Everybody") && text.contains("v Activity"));
+    }
+}
+
+#[test]
 fn a_short_panel_draws_the_whole_map_at_half_scale_with_its_key() {
     let harness = settled_home();
     let model = ColorMapModel::new(

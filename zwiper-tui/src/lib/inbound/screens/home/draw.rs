@@ -27,6 +27,9 @@ const SIDE_BY_SIDE: u16 = 90;
 /// Rows kept for the panels under the hero before the logo may take room.
 const PANEL_ROOM: u16 = 12;
 
+/// The figures sit in tiles from this terminal height; a shorter one keeps the plain strip so the panels keep their rows.
+const TILES_FROM_ROWS: u16 = 22;
+
 /// A chip: its label padded, in `style` reversed.
 pub(crate) fn chip(label: &str, style: Style) -> Span<'static> {
     Span::styled(format!(" {label} "), style.reversed())
@@ -45,11 +48,15 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &HomeView) {
     let area = f.area().inner(Margin::new(1, 0));
     let logo_text = pick_logo(area);
     let logo_height = logo_text.map_or(0, |l| measure::height_of(l.lines().count()));
+    let strip_height = if area.height >= TILES_FROM_ROWS {
+        figures::TILE_HEIGHT
+    } else {
+        figures::HEIGHT
+    };
     let hero_height = logo_height
         .saturating_add(u16::from(logo_height > 0))
-        .saturating_add(figures::HEIGHT)
-        .saturating_add(1)
-        .saturating_add(2);
+        .saturating_add(strip_height)
+        .saturating_add(1);
 
     let [title, hero, panels, status, keys] = Layout::vertical([
         Constraint::Length(1),
@@ -64,7 +71,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &HomeView) {
     let since = view.opened.elapsed();
     if let Some(hero) = stagger::area(hero, since, Duration::ZERO).map(|r| r.intersection(f.area()))
     {
-        draw_hero(f, shared, view, logo_text, hero);
+        draw_hero(f, shared, view, logo_text, strip_height, hero);
         stagger::fade(f, hero, since, Duration::ZERO, entrance::DURATION);
     }
     if let Some(panels) =
@@ -106,20 +113,18 @@ fn draw_hero(
     shared: &Shared,
     view: &HomeView,
     logo_text: Option<&str>,
+    strip_height: u16,
     area: Rect,
 ) {
     let palette = &shared.palette;
-    let block = Block::bordered().border_style(palette.border);
-    let inner = block.inner(area);
-    f.render_widget(block, area);
     let logo_height = logo_text.map_or(0, |l| measure::height_of(l.lines().count()));
     let [logo_area, _, strip, chips] = Layout::vertical([
         Constraint::Length(logo_height),
         Constraint::Length(u16::from(logo_height > 0)),
-        Constraint::Length(figures::HEIGHT),
+        Constraint::Length(strip_height),
         Constraint::Length(1),
     ])
-    .areas(inner);
+    .areas(area);
     if let Some(text) = logo_text {
         logo::draw(
             f,
@@ -129,7 +134,7 @@ fn draw_hero(
             view.logo_started.map(|_| view.logo_elapsed()),
         );
     }
-    figures::draw(
+    figures::draw_tiles(
         f,
         palette,
         strip,
