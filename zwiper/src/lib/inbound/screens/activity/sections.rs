@@ -901,15 +901,18 @@ mod tests {
         )];
         assert_eq!(
             tag_empty_line(RateKind::Removed, &none_removed),
-            NONE_REMOVED
+            NONE_REMOVED,
+            "Removed with nothing removed"
         );
         assert_eq!(
             tag_empty_line(RateKind::Removed, &one_removed),
-            NO_TAG_STANDS_OUT
+            NO_TAG_STANDS_OUT,
+            "Removed with a removal that does not stand out"
         );
         assert_eq!(
             tag_empty_line(RateKind::Added, &none_removed),
-            NO_TAG_STANDS_OUT
+            NO_TAG_STANDS_OUT,
+            "another share never mentions removing"
         );
     }
 
