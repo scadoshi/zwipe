@@ -101,7 +101,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &RemoveView) {
     f.render_widget(action_bar::line(palette, &pairs), keys);
 
     if let Some(details) = &view.details {
-        details.draw(f, palette, area);
+        details.draw(f, shared, area);
     }
     if let Some(printing) = &view.printing {
         printing.draw(f, palette, area);

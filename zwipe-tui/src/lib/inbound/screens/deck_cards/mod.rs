@@ -129,6 +129,8 @@ pub(crate) struct DeckCardsView {
     pub(crate) collapsed: HashSet<String>,
     /// The open row, by printing ID.
     pub(crate) expanded: Option<Uuid>,
+    /// The open row's oracle tag whose definition shows, by its place in [`card_info::oracle_tags`].
+    pub(crate) open_tag: Option<usize>,
     /// The face the open row shows.
     pub(crate) face: usize,
     pub(crate) display: Display,
@@ -169,6 +171,7 @@ impl DeckCardsView {
             show_art: true,
             collapsed: HashSet::new(),
             expanded: None,
+            open_tag: None,
             face: 0,
             display: Display::default(),
             cursor: 0,

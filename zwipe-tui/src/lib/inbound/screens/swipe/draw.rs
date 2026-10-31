@@ -57,7 +57,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &SwipeView) {
     f.render_widget(key_line(palette, view), keys);
 
     if let Some(details) = &view.details {
-        details.draw(f, palette, area);
+        details.draw(f, shared, area);
     }
     if let Some(printing) = &view.printing {
         printing.draw(f, palette, area);

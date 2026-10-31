@@ -489,3 +489,19 @@ fn home_and_login_share_one_copy_of_everybodys_counts() {
     );
     assert_eq!(figures_for(&harness.app.shared), Some(figures(8)));
 }
+
+#[test]
+fn the_color_maps_playstyle_and_the_heros_activity_open_their_screens() {
+    let mut harness = on_home();
+    harness.apply(Update::PlayStyle {
+        user_id: me(&harness),
+        summary: Box::new(summary(2)),
+    });
+    harness.press(KeyCode::Char('p'));
+    assert!(matches!(harness.screen(), Screen::Playstyle(_)));
+    harness.app.shared.hint = None;
+    harness.press(KeyCode::Esc);
+    assert!(matches!(harness.screen(), Screen::Home(_)));
+    harness.press(KeyCode::Char('v'));
+    assert!(matches!(harness.screen(), Screen::Activity(_)));
+}

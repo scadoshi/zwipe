@@ -79,7 +79,7 @@ fn sheet_key(view: &mut SwipeView, code: KeyCode, cx: &mut Context<'_>) -> bool 
         return true;
     }
     if let Some(details) = &mut view.details {
-        match details.handle_key(code, &cx.shared.palette) {
+        match details.handle_key(code, cx) {
             DetailsOutcome::Open => {}
             DetailsOutcome::Closed => view.details = None,
             DetailsOutcome::Printings => {

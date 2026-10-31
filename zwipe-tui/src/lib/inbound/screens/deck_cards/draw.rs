@@ -18,7 +18,7 @@ use crate::domain::{deck_cards, filter};
 use crate::inbound::app::Shared;
 use crate::inbound::screens::card_sheets;
 use crate::inbound::widgets::sheet::Sheet;
-use crate::inbound::widgets::{action_bar, card_info, mana, skeleton};
+use crate::inbound::widgets::{action_bar, card_info, mana, otag, skeleton};
 
 pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &DeckCardsView) {
     let palette = &shared.palette;
@@ -240,6 +240,20 @@ fn draw_list(f: &mut Frame<'_>, shared: &Shared, view: &DeckCardsView, area: Rec
                             })
                             .collect();
                     lines.extend(card_info::wrap(details, usize::from(area.width), 4));
+                    let tags = card_info::oracle_tags(card);
+                    if let Some(slug) = view.open_tag.and_then(|i| tags.get(i)) {
+                        let mut reveal = vec![Line::from(otag::chip(palette, slug, true))];
+                        reveal.extend(otag::def_lines(palette, &shared.caches.oracle_tags, slug));
+                        let indented: Vec<Line<'static>> = reveal
+                            .into_iter()
+                            .map(|l| {
+                                let mut spans = vec![Span::raw("    ")];
+                                spans.extend(l.spans);
+                                Line::from(spans).style(l.style)
+                            })
+                            .collect();
+                        lines.extend(card_info::wrap(indented, usize::from(area.width), 4));
+                    }
                     lines.push(actions_line(palette, view, card, *kind));
                     lines.push(Line::from("    ────").style(palette.border));
                 }
@@ -331,6 +345,9 @@ fn actions_line(palette: &Palette, view: &DeckCardsView, card: &Card, kind: Kind
         keys.push(("t", "flip".to_owned()));
     }
     keys.push(("i", "image".to_owned()));
+    if !card_info::oracle_tags(card).is_empty() {
+        keys.push(("Tab", "tags".to_owned()));
+    }
     let board = view
         .entry(id)
         .map(|e| e.deck_card.board)

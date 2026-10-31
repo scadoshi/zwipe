@@ -137,6 +137,23 @@ pub(crate) fn details_lines(palette: &Palette, card: &Card, face: usize) -> Vec<
     lines
 }
 
+/// The card's oracle tags in the order the details list them: each role's tags, then the other tags, each once.
+pub(crate) fn oracle_tags(card: &Card) -> Vec<String> {
+    let profile = &card.card_profile;
+    let mut tags: Vec<String> = Vec::new();
+    let by_role = profile
+        .card_roles
+        .iter()
+        .filter_map(|role| profile.oracle_tags_by_role.get(role))
+        .flatten();
+    for tag in by_role.chain(&profile.other_oracle_tags) {
+        if !tags.contains(tag) {
+            tags.push(tag.clone());
+        }
+    }
+    tags
+}
+
 /// One role chip and its oracle tags. A role with no tags is a grey chip, as the app draws a chip with nothing to open.
 fn role_line(palette: &Palette, label: &str, tags: &str) -> Line<'static> {
     let chip = if tags.is_empty() {

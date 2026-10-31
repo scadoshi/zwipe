@@ -446,6 +446,29 @@ fn the_filter_sheets_dictionary_returns_to_the_sheet_without_a_reload() {
 }
 
 #[test]
+fn an_open_rows_tags_reveal_with_tab_and_x_opens_their_examples() {
+    let (mut harness, _, _) = loaded();
+    if let Some(entry) = view_mut(&mut harness)
+        .entries
+        .iter_mut()
+        .find(|e| e.card.scryfall_data.name == "Elf")
+    {
+        let profile = &mut entry.card.card_profile;
+        profile.card_roles.clear();
+        profile.oracle_tags_by_role.clear();
+        profile.other_oracle_tags = vec!["mana-dork".to_owned()];
+    }
+    view_mut(&mut harness).rerun_collapsed();
+    open_row(&mut harness, "Elf");
+    assert!(screen_text(&harness.app).contains("Tab tags"));
+    harness.press(KeyCode::Tab);
+    assert_eq!(view(&harness).open_tag, Some(0));
+    assert!(screen_text(&harness.app).contains("No description yet"));
+    harness.press(KeyCode::Char('x'));
+    assert!(matches!(harness.screen(), Screen::OtagExamples(v) if v.slug == "mana-dork"));
+}
+
+#[test]
 fn the_view_fits_a_tiny_terminal() {
     let (mut harness, _, _) = loaded();
     render(&harness.app, 12, 5);

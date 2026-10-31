@@ -66,7 +66,7 @@ fn overlay_key(view: &mut RemoveView, code: KeyCode, cx: &mut Context<'_>) -> bo
         return true;
     }
     if let Some(details) = &mut view.details {
-        match details.handle_key(code, &cx.shared.palette) {
+        match details.handle_key(code, cx) {
             DetailsOutcome::Open => {}
             DetailsOutcome::Closed => view.details = None,
             DetailsOutcome::Printings => {

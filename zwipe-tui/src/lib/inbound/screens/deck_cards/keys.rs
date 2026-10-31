@@ -1,6 +1,6 @@
 //! The deck cards view's keys.
 //!
-//! j and k (or the arrows) move through the list; Enter opens a group or a row. On an open row: - and + change the quantity, p changes the printing, s stars, d, m and b move to the main board, maybeboard or sideboard, t flips and i previews. / types in quick add. g steps Group by, 1 2 3 toggle the boards, T C A toggle tokens, the command zone and art. f filters, x resets the filter, u undoes, a adds, r removes, ? shows the hint, Esc goes back.
+//! j and k (or the arrows) move through the list; Enter opens a group or a row. On an open row: - and + change the quantity, p changes the printing, s stars, d, m and b move to the main board, maybeboard or sideboard, t flips and i previews; Tab and `BackTab` walk its oracle tags, and while one is open `x` opens its example cards. / types in quick add. g steps Group by, 1 2 3 toggle the boards, T C A toggle tokens, the command zone and art. f filters, x resets the filter, u undoes, a adds, r removes, ? shows the hint, Esc goes back.
 
 use crossterm::event::KeyCode;
 use zwipe_core::domain::card::search_card::group_cards::GroupByOption;
@@ -9,10 +9,10 @@ use zwipe_core::domain::user::hints::HINT_DECK_CARDS;
 
 use super::{DeckCardsView, Item, Kind, PrintingTarget, Request};
 use crate::inbound::app::Context;
-use crate::inbound::screens::card_sheets;
 use crate::inbound::screens::card_sheets::filter::SheetOutcome;
 use crate::inbound::screens::card_sheets::printing::PrintingOutcome;
-use crate::inbound::widgets::{card_info, help, hint};
+use crate::inbound::screens::{card_sheets, oracle_tags, otag_examples};
+use crate::inbound::widgets::{card_info, help, hint, otag};
 
 pub(crate) fn handle(view: &mut DeckCardsView, code: KeyCode, cx: &mut Context<'_>) {
     if overlay_key(view, code, cx) {
@@ -20,6 +20,9 @@ pub(crate) fn handle(view: &mut DeckCardsView, code: KeyCode, cx: &mut Context<'
     }
     if view.quick.focused {
         quick_key(view, code, cx);
+        return;
+    }
+    if tag_key(view, code, cx) {
         return;
     }
     match code {
@@ -102,9 +105,36 @@ fn toggle(view: &mut DeckCardsView) {
                 Some(id)
             };
             view.face = 0;
+            view.open_tag = None;
         }
         _ => {}
     }
+}
+
+/// Tab and `BackTab` on an open row walk its oracle tags, and `x` opens the open tag's examples. Returns whether the key was used.
+fn tag_key(view: &mut DeckCardsView, code: KeyCode, cx: &mut Context<'_>) -> bool {
+    let Some((card, _)) = view.open_row() else {
+        return false;
+    };
+    let tags = card_info::oracle_tags(&card);
+    match code {
+        KeyCode::Tab if !tags.is_empty() => {
+            oracle_tags::ensure_catalog(cx);
+            view.open_tag = otag::next_open(view.open_tag, tags.len());
+        }
+        KeyCode::BackTab if !tags.is_empty() => {
+            oracle_tags::ensure_catalog(cx);
+            view.open_tag = otag::previous_open(view.open_tag, tags.len());
+        }
+        KeyCode::Char('x') => {
+            let Some(slug) = view.open_tag.and_then(|i| tags.get(i)) else {
+                return false;
+            };
+            otag_examples::open(cx, slug);
+        }
+        _ => return false,
+    }
+    true
 }
 
 /// A key on the open row's actions.
