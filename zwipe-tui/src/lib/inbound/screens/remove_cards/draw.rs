@@ -1,16 +1,19 @@
 //! Remove: the title, the board chips, the card with its info block, the keys, and any sheet over them.
 
+use std::time::Instant;
+
 use ratatui::Frame;
-use ratatui::layout::{Constraint, Layout};
-use ratatui::style::Stylize;
+use ratatui::layout::{Constraint, Layout, Rect};
+use ratatui::style::{Style, Stylize};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Padding, Paragraph, Wrap};
+use ratatui::widgets::{Paragraph, Widget};
 
 use super::{BoardFilter, RemoveView};
 use crate::domain::filter;
-use crate::domain::stack::Direction;
+use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::screens::card_sheets;
+use crate::inbound::widgets::card_motion::{self, Phase};
 use crate::inbound::widgets::{action_bar, card_info};
 
 /// The card is at most this wide, in cells.
@@ -45,30 +48,20 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &RemoveView) {
     f.render_widget(Line::from(chips), boards);
 
     let width = body.width.min(CARD_WIDTH);
+    let now = Instant::now();
+    let motion = view.motion.as_ref().filter(|m| m.running(now));
     match view.current() {
         Some(card) => {
-            let border = match view.stack.entering() {
-                Some(Direction::Right) => palette.add,
-                Some(Direction::Left) => palette.error,
-                Some(Direction::Up) => palette.warning,
-                None => palette.accent,
+            // While a card comes back after an undo, the card it covers rests under it.
+            let resting = match motion.map(card_motion::CardMotion::phase) {
+                Some(Phase::Enter) => view.stack.next_wrapping().map(|c| (c, 0, palette.accent)),
+                _ => Some((card, view.face, entering_style(palette, view))),
             };
-            let text = Paragraph::new(card_info::proxy_lines(palette, card, view.face))
-                .wrap(Wrap { trim: true })
-                .block(
-                    Block::bordered()
-                        .border_style(border)
-                        .padding(Padding::horizontal(1)),
-                );
-            let height =
-                u16::try_from(text.line_count(width.saturating_sub(4))).unwrap_or(u16::MAX);
-            f.render_widget(
-                text,
-                body.centered(
-                    Constraint::Length(width),
-                    Constraint::Length(height.min(body.height)),
-                ),
-            );
+            if let Some((card, face, border)) = resting {
+                let (text, rect) =
+                    card_info::proxy_card(palette, card, face, border, body, CARD_WIDTH);
+                f.render_widget(text, rect);
+            }
             f.render_widget(
                 Paragraph::new(card_info::info_lines(palette, card)),
                 info.centered_horizontally(Constraint::Length(width)),
@@ -79,26 +72,29 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &RemoveView) {
             body.centered(Constraint::Length(width), Constraint::Length(1)),
         ),
     }
+    if let Some(motion) = motion {
+        draw_motion(f, palette, view, motion, body, now);
+    }
 
     let filter_label = if filter::shows_dot(&view.filter) {
         "filter •"
     } else {
         "filter"
     };
-    let mut pairs = vec![
-        ("h", "keep"),
+    let mut pairs = action_bar::swipes(
+        palette,
         ("l", "remove"),
-        ("m", "move"),
+        ("h", "skip"),
+        Some(("m", "maybeboard")),
         ("u", "undo"),
-        ("1-4", "boards"),
-        ("f", filter_label),
-        ("r", "refresh"),
-    ];
+    );
+    let mut rest = vec![("1-4", "boards"), ("f", filter_label), ("r", "refresh")];
     if view.current().is_some() {
-        pairs.push(("e", "details"));
+        rest.push(("e", "details"));
     }
-    pairs.extend([("?", "hint"), ("Esc", "back")]);
-    f.render_widget(action_bar::line(palette, &pairs), keys);
+    rest.extend([("?", "hint"), ("Esc", "back")]);
+    pairs.extend(rest.into_iter().map(|(k, a)| (k, a, palette.muted)));
+    f.render_widget(action_bar::styled_line(&pairs), keys);
 
     if let Some(details) = &view.details {
         details.draw(f, palette, area);
@@ -108,5 +104,42 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &RemoveView) {
     }
     if let Some(sheet) = &view.sheet {
         card_sheets::filter::draw::draw(f, shared, sheet, area);
+    }
+}
+
+/// The border of the top card: the side it came back from after an undo, else the accent.
+fn entering_style(palette: &Palette, view: &RemoveView) -> Style {
+    view.stack
+        .entering()
+        .map_or(palette.accent, |d| card_motion::side_style(palette, d))
+}
+
+/// The card in motion over the body: the one that left, from its snapshot, or the top card coming back, clipped at the screen's edge.
+fn draw_motion(
+    f: &mut Frame<'_>,
+    palette: &Palette,
+    view: &RemoveView,
+    motion: &card_motion::CardMotion<card_motion::Snapshot>,
+    body: Rect,
+    now: Instant,
+) {
+    let (card, face, border) = match motion.phase() {
+        Phase::Exit(snapshot) => (
+            &snapshot.card,
+            snapshot.face,
+            card_motion::side_style(palette, motion.direction()),
+        ),
+        Phase::Enter => {
+            let Some(card) = view.current() else {
+                return;
+            };
+            (card, view.face, entering_style(palette, view))
+        }
+    };
+    let (text, rest) = card_info::proxy_card(palette, card, face, border, body, CARD_WIDTH);
+    if let Some(placement) = motion.placement(now, rest, f.area()) {
+        card_motion::draw(f.buffer_mut(), &placement, palette.base, |buf| {
+            text.render(rest, buf);
+        });
     }
 }

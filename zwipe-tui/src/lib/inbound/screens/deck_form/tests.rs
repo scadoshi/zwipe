@@ -3,7 +3,7 @@ use zwipe_core::domain::deck::DeckOtherTag;
 
 use super::*;
 use crate::inbound::event_loop::harness::Harness;
-use crate::test_support::{card, deck, deck_profile, render, screen_text, user};
+use crate::test_support::{card, deck, deck_profile, render, screen_text, user, word_colors};
 
 /// Create over the deck list, with its hint closed and nothing queued.
 fn create() -> Harness {
@@ -608,4 +608,29 @@ fn the_form_and_its_pickers_fit_a_tiny_terminal() {
     focus(&mut harness, Field::Card(Slot::Commander));
     harness.press(KeyCode::F(4));
     render(&harness.app, 12, 5);
+}
+
+#[test]
+fn the_swipe_pickers_keys_use_the_apps_verbs_in_its_hint_colors() {
+    let mut harness = commander_form();
+    harness.press(KeyCode::F(4));
+    harness.app.shared.hint = None;
+    let palette = harness.app.shared.palette;
+    let row = "→ add  ← skip  ↑ maybeboard  ↓ undo";
+    assert!(screen_text(&harness.app).contains(row));
+    assert_eq!(
+        word_colors(&harness.app, row, &["add", "skip", "maybeboard", "undo"]),
+        [
+            palette.add.fg,
+            palette.error.fg,
+            palette.warning.fg,
+            palette.tertiary.fg
+        ]
+    );
+    for word in ["pick", "save", "pass"] {
+        assert!(
+            !screen_text(&harness.app).contains(&format!(" {word} ")),
+            "{word}"
+        );
+    }
 }

@@ -1,4 +1,4 @@
-//! Remove's keys: h keeps, l removes, m moves between boards, u undoes (or the arrows), 1 to 4 pick the board, f filters, r refreshes, e opens details, t flips, ? shows the hint, Esc goes back.
+//! Remove's keys: h skips, l removes, m moves between boards, u undoes (or the arrows), 1 to 4 pick the board, f filters, r refreshes, e opens details, t flips, ? shows the hint, Esc goes back.
 
 use crossterm::event::KeyCode;
 use zwipe_core::domain::user::hints::HINT_REMOVE_DECK_CARDS;
@@ -20,7 +20,7 @@ pub(crate) fn handle(view: &mut RemoveView, code: KeyCode, cx: &mut Context<'_>)
         KeyCode::Esc => view.leave(cx),
         KeyCode::Char('!') => help::open(cx),
         KeyCode::Char('q') => cx.quit(),
-        KeyCode::Left | KeyCode::Char('h') => view.keep(cx),
+        KeyCode::Left | KeyCode::Char('h') => view.skip(cx),
         KeyCode::Right | KeyCode::Char('l') => view.remove(cx),
         KeyCode::Up | KeyCode::Char('m') => view.move_board(cx),
         KeyCode::Down | KeyCode::Char('u') | KeyCode::Backspace => view.undo(cx),

@@ -105,24 +105,25 @@ fn key_line(palette: &Palette, view: &SwipeView) -> Line<'static> {
     } else {
         "filter"
     };
-    let mut keys = vec![
-        ("h", "skip"),
+    let mut keys = action_bar::swipes(
+        palette,
         ("l", "add"),
-        ("m", "maybe"),
+        ("h", "skip"),
+        Some(("m", "maybeboard")),
         ("u", "undo"),
-        ("f", filter),
-        ("r", "refresh"),
-    ];
+    );
+    let mut rest = vec![("f", filter), ("r", "refresh")];
     if view.current().is_some() {
-        keys.push(("e", "details"));
+        rest.push(("e", "details"));
     }
-    keys.push(("Tab", "from"));
+    rest.push(("Tab", "from"));
     if view.synergy_shown() {
-        keys.push(("y", "synergy"));
+        rest.push(("y", "synergy"));
     }
-    keys.push(("?", "hint"));
-    keys.push(("Esc", "back"));
-    action_bar::line(palette, &keys)
+    rest.push(("?", "hint"));
+    rest.push(("Esc", "back"));
+    keys.extend(rest.into_iter().map(|(k, a)| (k, a, palette.muted)));
+    action_bar::styled_line(&keys)
 }
 
 /// No card on top: loading, the end of results, or nothing.

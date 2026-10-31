@@ -14,7 +14,7 @@ use crate::domain::theme::Palette;
 use crate::inbound::event_loop::harness::Harness;
 use crate::inbound::widgets::card_motion::{CardMotion, Phase, Snapshot};
 use crate::inbound::widgets::toast::ToastKind;
-use crate::test_support::{card, deck, deck_profile, render, screen_text};
+use crate::test_support::{card, deck, deck_profile, render, screen_text, word_colors};
 
 fn toasts(harness: &Harness) -> Vec<(ToastKind, String)> {
     harness
@@ -807,4 +807,27 @@ fn sixel_and_iterm2_images_wait_for_the_motion_to_settle() {
         screen_text(&harness.app).contains("Llanowar Elves"),
         "the text stays while the image waits"
     );
+}
+
+#[test]
+fn the_swipe_keys_use_the_apps_verbs_in_its_hint_colors() {
+    let harness = add_app(card("A"));
+    let palette = harness.app.shared.palette;
+    let row = "l add  h skip  m maybeboard  u undo";
+    assert!(screen_text(&harness.app).contains(row));
+    assert_eq!(
+        word_colors(&harness.app, row, &["add", "skip", "maybeboard", "undo"]),
+        [
+            palette.add.fg,
+            palette.error.fg,
+            palette.warning.fg,
+            palette.tertiary.fg
+        ]
+    );
+    for word in ["keep", "pass", "maybe "] {
+        assert!(
+            !screen_text(&harness.app).contains(&format!(" {word} ")),
+            "{word}"
+        );
+    }
 }

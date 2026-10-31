@@ -126,7 +126,7 @@ pub(crate) fn for_key(key: &str) -> Option<HintContent> {
             "Swipe to trim",
             &[
                 "• Swipe {right|success} removes the card",
-                "• Swipe {left|error} keeps it",
+                "• Swipe {left|error} skips it",
                 "• Swipe {up|warning} moves it between main and maybeboard",
                 "• Swipe {down|tertiary} undoes the last swipe",
                 "The board chips up top pick which board you are trimming",

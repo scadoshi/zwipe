@@ -72,8 +72,8 @@ impl StackAction for MaybeboardAction {
 /// A swipe on the Remove stack.
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum RemoveAction {
-    /// Left: kept, cycled past.
-    Keep,
+    /// Left: skipped, cycled past; the card stays in the deck.
+    Skip,
     /// Right: every copy removed from the deck.
     Remove {
         card: Box<Card>,
@@ -93,7 +93,7 @@ pub(crate) enum RemoveAction {
 impl StackAction for RemoveAction {
     fn exited(&self) -> Direction {
         match self {
-            Self::Keep => Direction::Left,
+            Self::Skip => Direction::Left,
             Self::Remove { .. } => Direction::Right,
             Self::MoveBoard { .. } => Direction::Up,
         }
@@ -422,6 +422,6 @@ mod tests {
     fn each_action_names_its_exit_side() {
         assert_eq!(AddAction::Maybe.exited(), Direction::Up);
         assert_eq!(MaybeboardAction::Skip.exited(), Direction::Left);
-        assert_eq!(RemoveAction::Keep.exited(), Direction::Left);
+        assert_eq!(RemoveAction::Skip.exited(), Direction::Left);
     }
 }

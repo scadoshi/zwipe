@@ -867,22 +867,19 @@ fn draw_swipe(f: &mut Frame<'_>, shared: &Shared, picker: &SwipePicker, areas: [
             inner,
         ),
     }
-    let mut shown = vec![("←", "skip"), ("→", "pick")];
-    if matches!(picker.slot, Slot::Commander | Slot::Partner) {
-        shown.push(("↑", "save"));
-    }
+    let up = matches!(picker.slot, Slot::Commander | Slot::Partner).then_some(("↑", "maybeboard"));
+    let mut shown = action_bar::swipes(palette, ("→", "add"), ("←", "skip"), up, ("↓", "undo"));
     let filter_label = if picker.filter_dot() {
         "Filter •"
     } else {
         "Filter"
     };
-    shown.extend([
-        ("↓", "undo"),
-        ("F3", filter_label),
-        ("F5", "Refresh"),
-        ("Esc", "Back"),
-    ]);
-    f.render_widget(action_bar::line(palette, &shown), keys);
+    shown.extend(
+        [("F3", filter_label), ("F5", "Refresh"), ("Esc", "Back")]
+            .into_iter()
+            .map(|(k, a)| (k, a, palette.muted)),
+    );
+    f.render_widget(action_bar::styled_line(&shown), keys);
     if let Some(sheet) = &picker.sheet {
         card_sheets::filter::draw::draw(f, shared, sheet, f.area());
     }

@@ -118,6 +118,33 @@ pub(crate) fn render(app: &App, width: u16, height: u16) -> Terminal<TestBackend
     terminal
 }
 
+/// The foreground color of each of `words` in the first row of `app`, drawn at 100 by 40, that holds `row`; panics when no row does.
+pub(crate) fn word_colors(
+    app: &App,
+    row: &str,
+    words: &[&str],
+) -> Vec<Option<ratatui::style::Color>> {
+    let terminal = render(app, 100, 40);
+    let buffer = terminal.backend().buffer();
+    let rows: Vec<Vec<&Cell>> = (0..40)
+        .map(|y| (0..100).map(|x| buffer.cell((x, y)).unwrap()).collect())
+        .collect();
+    let text = |cells: &[&Cell]| cells.iter().map(|c| c.symbol()).collect::<String>();
+    let line = rows
+        .iter()
+        .find(|cells| text(cells).contains(row))
+        .unwrap_or_else(|| panic!("no row holds {row:?}"));
+    words
+        .iter()
+        .map(|word| {
+            let at = (0..line.len())
+                .find(|&x| text(&line[x..]).starts_with(&format!(" {word} ")))
+                .unwrap_or_else(|| panic!("{word:?} is not on the row"));
+            Some(line[at.checked_add(1).unwrap()].fg)
+        })
+        .collect()
+}
+
 /// Every cell's symbol of `app` drawn at 100 by 40, row after row.
 pub(crate) fn screen_text(app: &App) -> String {
     render(app, 100, 40)

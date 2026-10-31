@@ -5,6 +5,8 @@ pub(crate) mod keys;
 #[cfg(test)]
 mod tests;
 
+use std::time::Instant;
+
 use uuid::Uuid;
 use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_core::domain::auth::models::session::Session;
@@ -24,13 +26,14 @@ use super::card_sheets::filter::{FilterSheet, SheetConfig};
 use super::swipe::{UndoFailure, signal};
 use crate::domain::deck_signals::{self, Crossing};
 use crate::domain::filter::picker::Sources;
-use crate::domain::stack::{CardStack, RemoveAction, StackAction};
+use crate::domain::stack::{CardStack, Direction, RemoveAction, StackAction};
 use crate::domain::stores::filters::FilterScope;
 use crate::domain::stores::undo::{UndoAction, create_board_field};
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;
 use crate::inbound::screens::card_sheets::printing::PrintingSheet;
+use crate::inbound::widgets::card_motion::{CardMotion, Snapshot};
 use crate::inbound::widgets::hint;
 use crate::inbound::widgets::toast::ToastKind;
 use crate::outbound::account::Account;
@@ -82,6 +85,8 @@ pub(crate) struct RemoveView {
     pub(crate) details: Option<DetailsSheet>,
     pub(crate) printing: Option<PrintingSheet>,
     pub(crate) face: usize,
+    /// The swiped card flying off, or the undone one coming back.
+    pub(crate) motion: Option<CardMotion<Snapshot>>,
 }
 
 impl RemoveView {
@@ -98,6 +103,7 @@ impl RemoveView {
 
     /// The board, the filter and the sort, into a fresh stack; history stays.
     pub(crate) fn rerun(&mut self) {
+        self.motion = None;
         let board = self.board;
         let cards: Vec<Card> = self
             .entries
@@ -120,19 +126,36 @@ impl RemoveView {
         self.stack.current_wrapping()
     }
 
+    /// Whether a card is in motion, so the loop redraws.
+    pub(crate) fn animating(&self) -> bool {
+        self.motion
+            .as_ref()
+            .is_some_and(|m| m.running(Instant::now()))
+    }
+
+    /// Sends `card` off by `direction` with the face it showed. Replaces any motion still running.
+    fn exit(&mut self, direction: Direction, card: Card) {
+        let snapshot = Snapshot {
+            card,
+            face: self.face,
+        };
+        self.motion = Some(CardMotion::exit(direction, snapshot, Instant::now()));
+    }
+
     fn entry(&self, card_id: Uuid) -> Option<&DeckEntry> {
         self.entries
             .iter()
             .find(|e| e.deck_card.scryfall_data_id == card_id)
     }
 
-    /// Left: keep it and cycle on.
-    pub(crate) fn keep(&mut self, cx: &mut Context<'_>) {
-        if self.current().is_none() {
+    /// Left: skip it and cycle on; the card stays in the deck.
+    pub(crate) fn skip(&mut self, cx: &mut Context<'_>) {
+        let Some(card) = self.current().cloned() else {
             return;
-        }
-        self.stack.record(RemoveAction::Keep);
-        cx.toast(ToastKind::Info, "Kept".to_owned());
+        };
+        self.stack.record(RemoveAction::Skip);
+        self.exit(Direction::Left, card);
+        cx.toast(ToastKind::Info, "Skipped".to_owned());
         self.stack.advance_wrapping();
         self.face = 0;
     }
@@ -147,6 +170,7 @@ impl RemoveView {
         let (board, quantity) = entry.as_ref().map_or((Board::Deck, 1), |e| {
             (e.deck_card.board, *e.deck_card.quantity)
         });
+        self.exit(Direction::Right, card.clone());
         self.stack.record(RemoveAction::Remove {
             card: Box::new(card),
             board,
@@ -181,6 +205,7 @@ impl RemoveView {
         } else {
             Board::Maybeboard
         };
+        self.exit(Direction::Up, card.clone());
         self.stack.record(RemoveAction::MoveBoard {
             card: Box::new(card.clone()),
             from,
@@ -236,8 +261,16 @@ impl RemoveView {
         );
     }
 
-    /// Down: undoes the last swipe, skipping the server when the deck cards Undo already did it.
+    /// Down: undoes the last swipe, bringing its card back from the side it left.
     pub(crate) fn undo(&mut self, cx: &mut Context<'_>) {
+        self.undo_action(cx);
+        if let Some(direction) = self.stack.entering() {
+            self.motion = Some(CardMotion::enter(direction, Instant::now()));
+        }
+    }
+
+    /// Undoes the last swipe, skipping the server when the deck cards Undo already did it.
+    fn undo_action(&mut self, cx: &mut Context<'_>) {
         let Some(action) = self.stack.pop_action() else {
             cx.toast(ToastKind::Info, "Nothing to undo".to_owned());
             return;
@@ -246,11 +279,11 @@ impl RemoveView {
         self.face = 0;
         let deck_id = self.deck_id;
         match action {
-            RemoveAction::Keep => {
+            RemoveAction::Skip => {
                 if !self.stack.retreat_wrapping() {
                     self.stack.cancel_entering();
                 }
-                cx.toast(ToastKind::Info, "Undid keep".to_owned());
+                cx.toast(ToastKind::Info, "Undid skip".to_owned());
             }
             RemoveAction::Remove {
                 card,
@@ -359,6 +392,7 @@ pub(crate) fn open(cx: &mut Context<'_>, deck_id: Uuid) {
         details: None,
         printing: None,
         face: 0,
+        motion: None,
     };
     hint::once(cx, HINT_REMOVE_DECK_CARDS);
     cx.request(Request::Load { deck_id }.into());
