@@ -202,7 +202,11 @@ impl TextInput {
         };
         let mut block = crate::inbound::widgets::panel::bordered().border_style(border);
         if !title.is_empty() {
-            block = block.title(Line::from(format!(" {title} ")).centered());
+            block = block.title(
+                Line::from(format!(" {title} "))
+                    .style(palette.tertiary)
+                    .centered(),
+            );
         }
         f.render_widget(Paragraph::new(text).block(block), box_area);
         if let Some(error) = &self.error
@@ -359,6 +363,20 @@ mod tests {
             let right = top.chars().count() - left - " Username ".chars().count();
             assert!(left.abs_diff(right) <= 1, "{top:?} at {width}");
         }
+    }
+
+    #[test]
+    fn the_label_takes_the_tertiary_accent_like_the_apps_form_labels() {
+        let palette = Palette::for_account("gruvbox", true);
+        let terminal = drawn(&TextInput::default(), &palette, 30);
+        let buffer = terminal.backend().buffer();
+        let x = (0..30)
+            .find(|&x| buffer.cell((x, 0)).unwrap().symbol() == "U")
+            .unwrap();
+        assert_eq!(
+            buffer.cell((x, 0)).unwrap().fg,
+            palette.tertiary.fg.unwrap()
+        );
     }
 
     #[test]
