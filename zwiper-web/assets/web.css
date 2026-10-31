@@ -1047,3 +1047,54 @@ body {
         height: 4.3rem;
     }
 }
+
+/* ---- Deck form (Create, Edit) ---- */
+
+/* Below the breakpoint the two columns stack into the app's one form. */
+.web-deck-form-heading {
+    margin-top: 1.5rem;
+}
+
+@media (min-width: 900px) {
+    /* Profile on the left, Budget above Tags on the right. */
+    .web-deck-form.container-sm {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: start;
+        column-gap: 3rem;
+        width: 100%;
+        max-width: 64rem;
+        padding: 1rem 1.5rem 2rem;
+        box-sizing: border-box;
+    }
+
+    .web-deck-form-column > .web-deck-form-heading:first-child {
+        margin-top: 0;
+    }
+
+    /* A picker is a panel over the right column, so the form and its
+       cascades stay in view beside it. */
+    .web-picker.swipe-select-screen {
+        left: auto;
+        width: min(30rem, 46vw);
+        border-left: 1px solid var(--border-secondary);
+        box-shadow: var(--shadow-lg);
+        transform: translateX(1.5rem);
+        transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    .web-picker.swipe-select-screen.show {
+        transform: none;
+    }
+
+    .web-picker > .grid-cells {
+        position: absolute;
+    }
+}
+
+@media (min-width: 900px) and (prefers-reduced-motion: reduce) {
+    .web-picker.swipe-select-screen {
+        transform: none;
+        transition: opacity 0.2s ease;
+    }
+}
