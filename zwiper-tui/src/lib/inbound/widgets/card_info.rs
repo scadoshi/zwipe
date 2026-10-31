@@ -2,7 +2,7 @@
 //!
 //! Faces are shown one at a time, as the app does; the caller keeps which face is up.
 
-use std::iter;
+use std::{iter, mem};
 
 use ratatui::layout::{Constraint, Rect};
 use ratatui::style::{Modifier, Style, Stylize};
@@ -11,6 +11,7 @@ use ratatui::widgets::{Block, Padding, Paragraph, Wrap};
 use zwipe_core::domain::card::{Card, card_role};
 use zwipe_ui::card::{self, Face};
 
+use super::measure;
 use crate::domain::theme::Palette;
 
 /// The info block: name, prices, set, release date and artist. A missing price or artist line stays as a blank line so the block keeps its height.
@@ -171,52 +172,126 @@ fn role_line(palette: &Palette, label: &str, tags: &str) -> Line<'static> {
     Line::from(spans)
 }
 
-/// The text card that stands in for an image: name and cost, type line, rules, flavor text, stats, and a Flip mark on a card with more faces.
-pub(crate) fn proxy_lines(palette: &Palette, card: &Card, face: usize) -> Vec<Line<'static>> {
-    let Some(shown) = face_at(card, face) else {
-        return Vec::new();
-    };
+/// The text card's parts, top to bottom.
+#[derive(Clone)]
+struct ProxyParts {
+    /// Name and cost, the face mark, and the type line.
+    head: Vec<Line<'static>>,
+    rules: Vec<Line<'static>>,
+    flavor: Option<Line<'static>>,
+    stats: Option<Line<'static>>,
+}
+
+impl ProxyParts {
+    /// The parts as lines, a blank line before each part after the head.
+    fn lines(self) -> Vec<Line<'static>> {
+        let Self {
+            head,
+            rules,
+            flavor,
+            stats,
+        } = self;
+        let mut lines = head;
+        if !rules.is_empty() {
+            lines.push(Line::default());
+            lines.extend(rules);
+        }
+        for line in [flavor, stats].into_iter().flatten() {
+            lines.push(Line::default());
+            lines.push(line);
+        }
+        lines
+    }
+}
+
+/// The text card's parts for `face`, or `None` for a face the card lacks.
+fn proxy_parts(palette: &Palette, card: &Card, face: usize) -> Option<ProxyParts> {
+    let shown = face_at(card, face)?;
     let mut title = vec![Span::raw(shown.name.clone()).bold()];
     let cost = cost_spans(palette, &shown);
     if !cost.is_empty() {
         title.push(Span::raw("  "));
         title.extend(cost);
     }
-    let mut lines = vec![Line::from(title)];
+    let mut head = vec![Line::from(title)];
     if face_count(card) > 1 {
         let count = face_count(card);
         let at = face.checked_rem(count).unwrap_or(0);
-        lines.push(
+        head.push(
             Line::from(format!("Face {} of {count}, t flips", at.saturating_add(1)))
                 .style(palette.muted),
         );
     }
     if !shown.type_line.is_empty() {
-        lines.push(Line::from(shown.type_line.clone()).italic());
+        head.push(Line::from(shown.type_line.clone()).italic());
     }
-    if !shown.rules.is_empty() {
-        lines.push(Line::default());
-        lines.extend(shown.rules.iter().map(|r| Line::from(r.clone())));
-    }
+    let rules = shown.rules.iter().map(|r| Line::from(r.clone())).collect();
     let flavor = card
         .scryfall_data
         .card_faces
         .as_ref()
         .and_then(|faces| faces.get(face.checked_rem(face_count(card))?))
         .and_then(|f| f.flavor_text.clone())
-        .or_else(|| card.scryfall_data.flavor_text.clone());
-    if let Some(flavor) = flavor {
-        lines.push(Line::default());
-        lines.push(Line::from(flavor).style(palette.muted).italic());
-    }
-    if let Some(stats) = &shown.stats {
-        lines.push(Line::default());
-        lines.push(Line::from(stats.clone()).bold().right_aligned());
-    }
-    lines
+        .or_else(|| card.scryfall_data.flavor_text.clone())
+        .map(|flavor| Line::from(flavor).style(palette.muted).italic());
+    let stats = shown
+        .stats
+        .as_ref()
+        .map(|stats| Line::from(stats.clone()).bold().right_aligned());
+    Some(ProxyParts {
+        head,
+        rules,
+        flavor,
+        stats,
+    })
 }
 
-/// The bordered text card of [`proxy_lines`], at most `max_width` wide, and the rect it takes centered in `area`.
+/// The text card that stands in for an image: name and cost, type line, rules, flavor text, stats, and a Flip mark on a card with more faces.
+pub(crate) fn proxy_lines(palette: &Palette, card: &Card, face: usize) -> Vec<Line<'static>> {
+    proxy_parts(palette, card, face).map_or_else(Vec::new, ProxyParts::lines)
+}
+
+/// The rows `lines` take wrapped to `width` cells, as the text card wraps them.
+fn wrapped_rows(lines: &[Line<'static>], width: usize) -> usize {
+    Paragraph::new(lines.to_vec())
+        .wrap(Wrap { trim: true })
+        .line_count(u16::try_from(width).unwrap_or(u16::MAX))
+}
+
+/// The text card's lines fitted to `rows` rows of `width` cells. A card too tall gives up its flavor text first, then the end of its rules, which close on an ellipsis; the name, the type line and the stats always stay.
+fn fitted_proxy_lines(
+    palette: &Palette,
+    card: &Card,
+    face: usize,
+    width: usize,
+    rows: usize,
+) -> Vec<Line<'static>> {
+    let Some(mut parts) = proxy_parts(palette, card, face) else {
+        return Vec::new();
+    };
+    let all = parts.clone().lines();
+    if wrapped_rows(&all, width) <= rows {
+        return all;
+    }
+    parts.flavor = None;
+    let stats_rows = if parts.stats.is_some() { 2 } else { 0 };
+    let room = rows
+        .saturating_sub(wrapped_rows(&parts.head, width))
+        .saturating_sub(stats_rows)
+        // The blank line between the head and the rules.
+        .saturating_sub(1);
+    let wrapped = wrap(mem::take(&mut parts.rules), width, 0);
+    let cut = wrapped.len() > room;
+    let mut rules: Vec<Line<'static>> = wrapped.into_iter().take(room).collect();
+    if cut && let Some(last) = rules.pop() {
+        let text = format!("{last}\u{2026}");
+        rules.push(Line::from(measure::ellipsize(&text, width)).style(last.style));
+    }
+    parts.rules = rules;
+    parts.lines()
+}
+
+/// The bordered text card of [`proxy_lines`], at most `max_width` wide, and the rect it takes centered in `area`. A card taller than `area` is fitted to it, keeping its stats line.
 pub(crate) fn proxy_card(
     palette: &Palette,
     card: &Card,
@@ -225,14 +300,16 @@ pub(crate) fn proxy_card(
     area: Rect,
     max_width: u16,
 ) -> (Paragraph<'static>, Rect) {
-    let text = Paragraph::new(proxy_lines(palette, card, face))
+    let width = area.width.min(max_width);
+    let inner = usize::from(width.saturating_sub(4));
+    let rows = usize::from(area.height.saturating_sub(2));
+    let text = Paragraph::new(fitted_proxy_lines(palette, card, face, inner, rows))
         .wrap(Wrap { trim: true })
         .block(
             Block::bordered()
                 .border_style(border)
                 .padding(Padding::horizontal(1)),
         );
-    let width = area.width.min(max_width);
     let height = u16::try_from(text.line_count(width.saturating_sub(4))).unwrap_or(u16::MAX);
     let rect = area.centered(
         Constraint::Length(width),
@@ -330,6 +407,36 @@ mod tests {
         let tagged = role_line(&palette, "Ramp", "mana rock");
         assert_eq!(tagged.to_string(), " Ramp   mana rock");
         assert_eq!(tagged.spans[0].style, palette.accent.reversed());
+    }
+
+    #[test]
+    fn a_short_card_gives_up_its_flavor_then_its_rules_but_keeps_its_stats() {
+        let mut c = card("Bear");
+        c.scryfall_data.type_line = Some("Creature — Bear".to_owned());
+        c.scryfall_data.oracle_text =
+            Some("one two three four five six seven eight nine ten".to_owned());
+        c.scryfall_data.flavor_text = Some("Growl.".to_owned());
+        c.scryfall_data.power = Some("2".to_owned());
+        c.scryfall_data.toughness = Some("2".to_owned());
+        let palette = Palette::terminal();
+        let all = text(&fitted_proxy_lines(&palette, &c, 0, 20, 50));
+        assert!(
+            all.contains(&"Growl.".to_owned()),
+            "room for everything: {all:?}"
+        );
+        let no_flavor = text(&fitted_proxy_lines(&palette, &c, 0, 20, 8));
+        assert!(!no_flavor.contains(&"Growl.".to_owned()), "{no_flavor:?}");
+        assert!(
+            no_flavor.iter().any(|l| l.ends_with("ten")),
+            "the rules stay whole: {no_flavor:?}"
+        );
+        let cut = text(&fitted_proxy_lines(&palette, &c, 0, 20, 6));
+        assert_eq!(cut.len(), 6, "{cut:?}");
+        assert!(
+            cut[3].ends_with('…'),
+            "the rules close on an ellipsis: {cut:?}"
+        );
+        assert_eq!(cut.last().map(String::as_str), Some("2/2"));
     }
 
     #[test]

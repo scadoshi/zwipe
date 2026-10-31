@@ -847,3 +847,44 @@ fn add_and_its_filter_sheet_keep_every_key_on_a_narrow_terminal() {
     harness.press(KeyCode::Char('e'));
     crate::test_support::assert_key_bar_fits(&harness.app, "Esc back");
 }
+
+#[test]
+fn a_card_too_tall_for_the_screen_keeps_its_stats_line() {
+    let mut delina = card("Delina, Wild Mage");
+    let data = &mut delina.scryfall_data;
+    data.mana_cost = Some("{3}{R}".to_owned());
+    data.type_line = Some("Legendary Creature — Elf Shaman".to_owned());
+    data.oracle_text = Some(
+        "Whenever Delina attacks, choose target creature you control, then roll a d20.\n\
+         1—14 | Create a tapped and attacking token that's a copy of that creature, except it's not legendary and it has \"At end of combat, exile this token.\"\n\
+         15—20 | Create one of those tokens. You may roll again."
+            .to_owned(),
+    );
+    data.flavor_text =
+        Some("Some say she rolls the dice; others say the dice roll her.".to_owned());
+    data.power = Some("3".to_owned());
+    data.toughness = Some("2".to_owned());
+    let (harness, _) = Harness::swiping(vec![delina]);
+    for (width, height) in [(200, 50), (120, 40), (80, 24), (60, 20)] {
+        let rows = crate::test_support::rows(&harness.app, width, height);
+        let text = rows.join("\n");
+        let top = rows.iter().position(|r| r.contains("┌")).unwrap();
+        let bottom = rows.iter().position(|r| r.contains("└")).unwrap();
+        let card = rows[top..=bottom].join("\n");
+        for part in [
+            "Delina, Wild Mage",
+            "Legendary Creature",
+            "Whenever Delina attacks",
+            "3/2",
+        ] {
+            assert!(
+                card.contains(part),
+                "{part} on the card at {width}x{height}:\n{text}"
+            );
+        }
+        assert!(
+            rows[bottom - 1].contains("3/2"),
+            "the stats line closes the card at {width}x{height}:\n{text}"
+        );
+    }
+}
