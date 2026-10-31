@@ -29,6 +29,11 @@ pub(crate) mod clipboard;
 /// Sections that open and close, and the accordion over them.
 #[cfg_attr(not(test), expect(dead_code, reason = "no screen uses it yet"))]
 pub(crate) mod collapsible;
+/// Rolling counters.
+#[cfg_attr(not(test), expect(dead_code, reason = "the hero uses it next"))]
+pub(crate) mod count_up;
+/// The backdrop of faint tiles, still or raining in.
+pub(crate) mod grid;
 /// The screen header: `!`, the title, and `?`.
 #[cfg_attr(not(test), expect(dead_code, reason = "no screen uses it yet"))]
 pub(crate) mod header;
@@ -52,6 +57,8 @@ pub(crate) mod sheet;
 /// Ghost rows for content still loading.
 #[cfg_attr(not(test), expect(dead_code, reason = "no screen uses it yet"))]
 pub(crate) mod skeleton;
+/// The opening over the first screen.
+pub(crate) mod splash;
 /// Figures in a row, rolling while they load.
 #[cfg_attr(not(test), expect(dead_code, reason = "no screen uses it yet"))]
 pub(crate) mod stats;
@@ -61,6 +68,8 @@ pub(crate) mod stats;
     expect(dead_code, reason = "the screens use part of its API so far")
 )]
 pub(crate) mod text_input;
-/// Short messages in the bottom-right corner.
+/// Short messages in the top-left corner.
 #[cfg_attr(not(test), expect(dead_code, reason = "no screen raises a toast yet"))]
 pub(crate) mod toast;
+/// The sweep from one theme to the next.
+pub(crate) mod wipe;

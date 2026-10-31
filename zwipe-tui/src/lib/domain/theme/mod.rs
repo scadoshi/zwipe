@@ -205,7 +205,38 @@ impl Palette {
         }
     }
 
-    #[cfg_attr(not(test), expect(dead_code, reason = "the theme wipe uses it next"))]
+    /// Every style the palette holds, in a fixed order, so two palettes can be matched role for role.
+    pub(crate) fn styles(&self) -> [Style; 24] {
+        let [w, u, b, r, g] = self.mana;
+        let [p1, p2, p3, p4, p5, p6] = self.swatches;
+        [
+            self.base,
+            self.muted,
+            self.border,
+            self.accent,
+            self.add,
+            self.error,
+            self.warning,
+            w,
+            u,
+            b,
+            r,
+            g,
+            self.secondary,
+            self.tertiary,
+            self.skeleton,
+            self.border_success,
+            self.border_error,
+            self.border_warning,
+            p1,
+            p2,
+            p3,
+            p4,
+            p5,
+            p6,
+        ]
+    }
+
     /// Whether the background is dark, for the direction of the theme wipe. The terminal's colors count as dark.
     pub(crate) fn is_dark(&self) -> bool {
         match self.base.bg {

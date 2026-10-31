@@ -10,7 +10,7 @@ mod tests;
 use std::collections::VecDeque;
 use std::mem;
 use std::sync::Arc;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use anyhow::Result;
 use crossterm::event::{Event, EventStream, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
@@ -25,9 +25,12 @@ use super::app::{App, Context, Effects, Navigation, session};
 use super::screens::login::{self, LoginForm};
 use super::screens::{self, Request, Screen, Update};
 use super::widgets::help;
-use crate::domain::decode;
+use super::widgets::splash::Splash;
 use crate::outbound::account::Account;
 use crate::outbound::theme_file::ThemeFile;
+
+/// How often the loop redraws while something moves: the rolling counters' 16 ms tick, which the slower animations land on too.
+const FRAME: Duration = Duration::from_millis(16);
 
 /// Whether the loop keeps going after a key.
 #[derive(Debug, PartialEq, Eq)]
@@ -65,6 +68,9 @@ impl EventLoop {
     /// Fails when the terminal cannot be drawn to or read from.
     pub(crate) async fn run(mut self, terminal: &mut DefaultTerminal, app: &mut App) -> Result<()> {
         let session = self.account.session().await;
+        let splash = Splash::new(Instant::now());
+        app.shared.gate = splash.gate();
+        app.shared.splash = Some(splash);
         self.start(app, session.as_ref());
         let mut events = EventStream::new();
         // The first tick fires at once: the launch's refresh and version check.
@@ -76,14 +82,14 @@ impl EventLoop {
             app.tick(Instant::now());
             terminal.draw(|f| app.draw(f))?;
 
-            let animating = app.animating();
+            let animating = app.animating() || app.entering(Instant::now());
             tokio::select! {
                 Some(update) = self.rx.recv() => {
                     if self.apply(app, update) == Flow::Quit {
                         return Ok(());
                     }
                 }
-                () = tokio::time::sleep(decode::TICK), if animating => {}
+                () = tokio::time::sleep(FRAME), if animating => {}
                 _ = upkeep.tick() => self.pending.push(Request::Upkeep),
                 event = events.next() => match event {
                     Some(Ok(Event::Key(key))) if key.kind == KeyEventKind::Press => {
@@ -134,6 +140,10 @@ impl EventLoop {
                 Flow::Continue
             };
         }
+        if app.shared.splash.is_some() {
+            app.shared.skip_splash(Instant::now());
+            return Flow::Continue;
+        }
         if control && key.code == KeyCode::Char('t') {
             app.shared.toasts.toggle_expanded();
             return Flow::Continue;
@@ -162,6 +172,9 @@ impl EventLoop {
     /// Queues the requests and applies the navigation a handler asked for. A screen uncovered by going back may refresh itself, which can queue more of both.
     fn settle(&mut self, app: &mut App, effects: Effects) -> Flow {
         self.pending.extend(effects.requests);
+        if !effects.navigation.is_empty() {
+            app.screen_changed(Instant::now());
+        }
         let mut quit = effects.quit;
         let mut steps = VecDeque::from(effects.navigation);
         while let Some(step) = steps.pop_front() {

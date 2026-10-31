@@ -6,6 +6,8 @@ pub(crate) mod account;
 pub(crate) mod card;
 /// The changelog cache and how its releases are filed.
 pub(crate) mod changelog;
+/// Rolling counters, ported from orangui.
+pub(crate) mod count_up;
 /// A deck's row in the deck list.
 pub(crate) mod deck;
 /// The logo entrance, ported from orangui.
