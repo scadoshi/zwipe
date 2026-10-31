@@ -8,17 +8,17 @@ src/
 └── lib/
     ├── config.rs           BACKEND_URL and APP_VERSION, fixed at build time
     ├── domain/             rules zwipe-ui does not hold yet, as pure functions with tests
-    ├── outbound/           the browser: storage, the session, theme, counter and count scope stores, new tabs, the timer
+    ├── outbound/           the browser: storage, the session, theme, counter and count scope stores, new tabs, the clipboard, the timer
     └── inbound/
         ├── app.rs          the root: stylesheets, theme, splash, upkeep, toasts, hints, dialogs, keys, router
         ├── caches.rs       what the root fetches once and shares: counters, my counters, the playstyle summary, the flavor card, changelog, franchises, the Create deck seed
-        ├── cards/          card rows, image preview, printing sheet, card info, oracle tag reveals, the swipe stack and Swipe select, shared charts
+        ├── cards/          card rows, image preview, printing sheet, card info, oracle tag reveals, the swipe stack and Swipe select, shared charts, buy links
         ├── catalog.rs      the catalog lists over zwipe-ui's store, fetched on demand
         ├── chrome/         the authed-call facade, the ? hints, one-time hints, collapsible sections, page keys, sheet forms, the More menu
         ├── router.rs       Route, one variant per screen at the app's path
         ├── session/        ensure_fresh, the upkeep loop, the auth gate, logout, the funnel events
         ├── shell/          the sidebar Shell, PublicFrame, ScreenFrame, Help, nav
-        └── screens/        one module per screen, plus placeholders.rs
+        └── screens/        one module per screen (the deck screens share `deck/`), plus placeholders.rs
 ```
 
 ## The root
@@ -52,6 +52,13 @@ The root also mounts the kit's `ToastStack` (screens raise toasts with `dioxus_p
 - `cards::otag`: `use_otag_reveals()` provides the tag description lookup and the `Examples` opener; `OtagExamplesHost` draws the examples over the screen.
 - `cards::swipe_stack`: the stack with mouse and touch drag, `SwipeButtons`, and `use_swipe_keys` for the arrows; keys and buttons go through `SwipeControl` so they animate like a drag. `cards::swipe_select` is Swipe select in suggested and commander modes.
 - `cards::charts`: zwipe-ui bars as kit bars, the user's color map seed and counts, the map's ghost and empty line.
+- `cards::buy_links`: `Buy` as one link per retailer that opens a new tab, as zite does it, for a card (`CardBuyLinks`) and as a `More` item for a deck (`MenuBuyLink`); the URLs are zwipe-ui's `buy`.
+
+## Decks
+
+- `screens::deck::form`: the deck form Create and Edit share. `use_deck_form()` gives a `Copy` `DeckForm` of signals, one `SlotState` per command-zone slot, and runs the form's rules (the name check, a format change turning each `Filter` back on, a commander change clearing its partner and background). `DeckFields` draws the two columns, `DeckFormOverlays` the three pickers and a Swipe select per slot.
+- `domain::deck` holds what the form sends: `FormValues`, `create_request`, and `update_request`, which leaves unchanged fields off the wire and is `None` when nothing changed, the rule behind `Save changes`.
+- `screens::deck::view`: the deck view's panels, its read-only cards column over zwipe-ui's `deck_cards::pass`, and `DeckMore`, the menu and its dialogs.
 
 ## Styling
 

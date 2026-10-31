@@ -141,7 +141,7 @@ Esc closes the top overlay (dialog, then modal, then side panel, then full overl
 
 - At 1280px and up there are three columns: `Profile` with `Budget` and `Tags` under it; the stats (`Distributions`, `Mana`, `Draw odds`, `Warnings`); and a cards column listing the mainboard by type with the command zone on top, as compact rows that expand on click. Between 900px and 1279px the stats move under the profile in the left column and the cards column stays on the right.
 - Every section is open at once, so the phone's single-open accordion and its default `Budget` go away on a wide window; `Warnings` keeps its warning border and fix buttons (`Add cards`, `Import`, `Fix to {n}`, `Clear`, `Remove`).
-- The toolbar keeps `Back`, `Edit`, `Cards`, `More`. `Cards` opens Deck cards for full editing; the cards column here is for reading. `More` is a popover with `Import cards`, `Export cards`, `Buy deck`, `Clone deck`, `Share deck`, `Clear skips`, `Delete deck`, and their dialogs are the app's.
+- The toolbar keeps `Back`, `Edit`, `Cards`, `More`. `Cards` opens Deck cards for full editing; the cards column here is for reading. `More` is a popover with `Import cards`, `Export cards`, the `TCGplayer ↗` and `Card Kingdom ↗` links in place of `Buy deck`, `Clone deck`, `Share deck`, `Clear skips`, `Delete deck`, and the other dialogs are the app's.
 - The `Draw odds` stepper `-` / `+` buttons also answer ← and → while the stepper has focus.
 - Below 900px it is the phone screen: profile card, accordion with `Budget` open, no cards column.
 

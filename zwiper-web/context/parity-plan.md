@@ -43,14 +43,15 @@ The crate, the router with a route per screen at the app's paths (unbuilt screen
 - Commander maybeboard with quick add, the color filter, swipe, remove, clear.
 - The oracle tag dictionary and Examples modals.
 - zwiper-web takes its screen logic, hint copy, timings and caps from zwipe-ui; the copies it still keeps are marked `// Belongs in zwipe-ui`.
-- Left for later waves: the commander maybeboard's `Filter` and commander-mode Swipe select's filter (Wave D), and a host for the dictionary (the oracle tag picker in Wave C, the filter panel in Wave D).
+- Left for later waves: the commander maybeboard's `Filter` and commander-mode Swipe select's filter (Wave D), and a host for the dictionary in the filter panel (Wave D); the oracle tag picker hosts it since Wave C.
 
-## Wave C: decks (spec 3), branch `feat/web-c`
+## Wave C: decks (spec 3), branch `feat/web-c` (done)
 
 - Deck list: Group by, Show filters, tags, collapsible groups, the Create gate, the More popover.
-- Create and Edit in two columns: every field, the command-zone searches, the format, tag and oracle tag pickers as side panels, Swipe select, the clears, change detection, every validation and server message.
+- Create and Edit in two columns: every field, the command-zone searches, the format, tag and oracle tag pickers as side panels, Swipe select for each slot, the clears, change detection, every validation and server message. Create takes the commander Playstyle and the maybeboard hand it.
 - Import and Export.
 - Deck view in columns: profile, stats, the cards column, warnings and their fixes, the More popover and its dialogs.
+- Left for Wave D: `Cards`, the below-minimum warning's `Add cards`, Swipe select's `Filter` in every mode, and clearing the deck's undo history after an import, each marked `TODO(wave D)`.
 
 ## Wave D: cards, add, filters (spec 4), branch `feat/web-d`
 
@@ -75,6 +76,7 @@ Wire the cross-links the waves leave open (Playstyle `Create deck` to Create, th
 - Home greets once per page load, a browser's launch.
 - `Buy` is a link per retailer that opens in a new tab, as zite's are, for a card and for a deck, where the app opens a dialog to pick one.
 - The `!` header button moves into the sidebar as `Help` on authed screens; the public screens keep it in the header.
+- `Clear skips` on the deck view clears at once; the app first sends the skips its telemetry holds, and the web records none.
 - Platform-only pieces are skipped: the app icon picker, haptics, crash capture, usage telemetry (a failed call is logged, not reported), the OS back gesture.
 - Escape closes an open dialog before anything else, even where the app's back stack would close the sheet under it first (the Exceptions sheet's hint).
 - `Back to login` on Register and Forgot password goes to Login when there is no history to go back to, such as a page opened from a link.
