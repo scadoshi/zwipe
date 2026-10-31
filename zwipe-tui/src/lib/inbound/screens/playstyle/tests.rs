@@ -307,7 +307,8 @@ fn render_text(harness: &Harness, width: u16, height: u16) -> String {
         .content()
         .iter()
         .map(ratatui::buffer::Cell::symbol)
-        .collect()
+        .collect::<String>()
+        .replace('\u{a0}', " ")
 }
 
 #[test]

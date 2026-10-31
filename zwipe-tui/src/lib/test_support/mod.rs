@@ -112,5 +112,6 @@ pub(crate) fn screen_text(app: &App) -> String {
         .content()
         .iter()
         .map(Cell::symbol)
-        .collect()
+        .collect::<String>()
+        .replace('\u{a0}', " ")
 }

@@ -346,7 +346,7 @@ fn color_map_body(body: &mut Body, shared: &Shared, view: &PlaystyleView, width:
     for line in color_map::lines(palette, &model, elapsed, map_width, MAP_ROWS) {
         body.line(indented(centered(line, width)));
     }
-    body.line(Line::default());
+    body.line(color_map::rule(palette, width));
     body.line(indented(centered(
         color_map::key(palette, &counts, None),
         width,

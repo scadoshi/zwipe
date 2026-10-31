@@ -13,6 +13,9 @@ use crate::domain::color_map::{
 use crate::domain::count_up;
 use crate::domain::theme::Palette;
 
+/// Joins the parts of one key chip so a wrapping key breaks only between chips, as the app's flex-wrapped chips do.
+const NBSP: &str = "\u{a0}";
+
 /// One tile's cells.
 const TILE: &str = "██";
 
@@ -31,13 +34,14 @@ pub(crate) fn entrance() -> Duration {
         .saturating_add(SWEEP)
 }
 
-/// `top` mixed over `bottom` at `percent`.
+/// `top` mixed over `bottom` at `percent`, rounded per channel as CSS `color-mix(in srgb, ..)` does.
 pub(crate) fn mix(top: TermColor, bottom: Option<TermColor>, percent: u32) -> TermColor {
     let percent = percent.min(100);
     match (top, bottom) {
         (TermColor::Rgb(r, g, b), Some(TermColor::Rgb(br, bg, bb))) => {
             let channel = |c: u8, under: u8| {
-                let mixed = (u32::from(c) * percent + u32::from(under) * (100 - percent)) / 100;
+                let mixed =
+                    (u32::from(c) * percent + u32::from(under) * (100 - percent) + 50) / 100;
                 u8::try_from(mixed).unwrap_or(c)
             };
             TermColor::Rgb(channel(r, br), channel(g, bg), channel(b, bb))
@@ -60,14 +64,21 @@ pub(crate) fn tile_style(palette: &Palette, index: usize, percent: u32) -> Style
     }
 }
 
-/// How far into its sweep a tile of `ring` is at `elapsed`, in percent; 100 once settled.
+/// How far into its `heat-sweep` a tile of `ring` is at `elapsed`, in percent, eased out as the app's 0.4 s `ease-out`; 100 once settled.
 fn swept(ring: u32, elapsed: Duration) -> u32 {
     let delay = Duration::from_millis(u64::from(ring.saturating_mul(SWEEP_STEP_MS)));
     let Some(into) = elapsed.checked_sub(delay) else {
         return 0;
     };
-    let percent = into.as_millis().saturating_mul(100) / SWEEP.as_millis().max(1);
-    u32::try_from(percent.min(100)).unwrap_or(100)
+    let linear = into.as_millis().saturating_mul(100) / SWEEP.as_millis().max(1);
+    let left = 100_u128.saturating_sub(linear.min(100));
+    let eased = 100_u128.saturating_sub(left.saturating_mul(left) / 100);
+    u32::try_from(eased).unwrap_or(100)
+}
+
+/// The full-bleed rule the app draws over the key, `width` cells wide.
+pub(crate) fn rule(palette: &Palette, width: usize) -> Line<'static> {
+    Line::styled("─".repeat(width), palette.border)
 }
 
 /// The window of `count` cells to show out of `total`, centered on the middle.
@@ -172,19 +183,21 @@ pub(crate) fn key(
     for (i, n) in counts.cards.iter().enumerate() {
         spans.push(mana::pip(palette, i));
         spans.push(Span::raw(format!(
-            " {}  ",
+            "{NBSP}{}  ",
             count_up::with_separators(u64::from(*n))
         )));
     }
+    spans.push(Span::styled("C", palette.muted.bold()));
+    spans.push(Span::raw(NBSP));
     spans.push(Span::styled("Colorless", palette.muted));
     spans.push(Span::raw(format!(
-        " {}",
+        "{NBSP}{}",
         count_up::with_separators(u64::from(counts.colorless))
     )));
     if let Some((letter, label)) = action {
         spans.push(Span::raw("  "));
         spans.push(Span::raw(letter.to_owned()).bold());
-        spans.push(Span::styled(format!(" {label}"), palette.accent));
+        spans.push(Span::styled(format!("{NBSP}{label}"), palette.accent));
     }
     Line::from(spans)
 }
@@ -262,8 +275,8 @@ mod tests {
     fn the_key_counts_every_color_and_the_action() {
         let key = key(&Palette::terminal(), &counts(), Some(("p", "Playstyle")));
         assert_eq!(
-            key.to_string(),
-            "W 30  U 12  B 0  R 8  G 50  Colorless 4  p Playstyle"
+            key.to_string().replace(NBSP, " "),
+            "W 30  U 12  B 0  R 8  G 50  C Colorless 4  p Playstyle"
         );
     }
 

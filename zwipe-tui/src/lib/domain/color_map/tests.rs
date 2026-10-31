@@ -428,3 +428,66 @@ fn counts_read_the_contract_by_name() {
         "missing colors read 0"
     );
 }
+
+/// The app's own `ColorMapModel` output for fixed inputs, printed from `components::color_map` on main: one line per case, each tile as its color letter, shade and ring, rows split by `|`, then the label.
+const GOLDEN: &str = include_str!("golden.txt");
+
+fn golden_grid(model: &ColorMapModel) -> String {
+    let mut rows = Vec::new();
+    for row in 0..model.rows {
+        let mut line = String::new();
+        for column in 0..model.columns {
+            match model
+                .tiles
+                .iter()
+                .find(|t| t.row == row && t.column == column)
+            {
+                Some(t) => {
+                    let letter = t.color.to_short_name();
+                    let (shade, ring) = (t.shade, t.ring);
+                    line.push_str(&letter);
+                    line.push_str(&shade.to_string());
+                    line.push_str(&ring.to_string());
+                }
+                None => line.push_str("..."),
+            }
+        }
+        rows.push(line);
+    }
+    format!(
+        "{}x{}|{}|{}",
+        model.columns,
+        model.rows,
+        rows.join("|"),
+        model.label
+    )
+}
+
+#[test]
+fn the_map_matches_the_apps_tiles_shades_and_rings() {
+    let cases: [(&str, [u32; 5], u32, u64); 5] = [
+        (
+            "mixed",
+            [30, 12, 0, 8, 50],
+            4,
+            seed_from_id(0x0123_4567_89ab_cdef_0011_2233_4455_6677),
+        ),
+        ("live", [108, 76, 43, 195, 0], 140, seed_from_id(1)),
+        ("single", [1, 0, 0, 0, 0], 0, 7),
+        ("huge", [2_000, 1_500, 1_200, 1_000, 900], 9, 42),
+        ("empty", [0, 0, 0, 0, 0], 5, 3),
+    ];
+    let mut ours: Vec<String> = cases
+        .iter()
+        .map(|&(name, cards, colorless, seed)| {
+            let model = ColorMapModel::new(&ColorMapCounts { cards, colorless }, seed);
+            format!("GOLDEN {name} {seed} {}", golden_grid(&model))
+        })
+        .collect();
+    ours.push(format!("GOLDEN ghost 0 {}", golden_grid(&ghost_model())));
+    let app: Vec<&str> = GOLDEN.lines().collect();
+    assert_eq!(app.len(), ours.len());
+    for (app, ours) in app.iter().zip(&ours) {
+        assert_eq!(*app, ours.as_str());
+    }
+}

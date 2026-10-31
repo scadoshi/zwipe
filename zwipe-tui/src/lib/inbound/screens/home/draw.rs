@@ -180,7 +180,8 @@ fn draw_color_map(f: &mut Frame<'_>, shared: &Shared, view: &HomeView, area: Rec
     let inner = block.inner(area);
     f.render_widget(block, area);
     let width = inner.width;
-    let rows = inner.height.saturating_sub(2);
+    // The rule and a key that may wrap onto a second line.
+    let rows = inner.height.saturating_sub(3);
 
     let counts = summary
         .filter(|s| s.deck_count > 0)
@@ -192,7 +193,7 @@ fn draw_color_map(f: &mut Frame<'_>, shared: &Shared, view: &HomeView, area: Rec
         (_, Some(counts)) => {
             let model = ColorMapModel::new(&counts, super::seed(shared));
             let mut lines = color_map::lines(palette, &model, view.map_elapsed(), width, rows);
-            lines.push(Line::default());
+            lines.push(color_map::rule(palette, usize::from(width)));
             lines.push(color_map::key(palette, &counts, Some(("p", "Playstyle"))));
             lines
         }
@@ -217,7 +218,10 @@ fn draw_color_map(f: &mut Frame<'_>, shared: &Shared, view: &HomeView, area: Rec
             lines
         }
     };
-    f.render_widget(Paragraph::new(lines).centered(), inner);
+    f.render_widget(
+        Paragraph::new(lines).centered().wrap(Wrap { trim: true }),
+        inner,
+    );
 }
 
 fn draw_flavor(f: &mut Frame<'_>, shared: &Shared, area: Rect) {
