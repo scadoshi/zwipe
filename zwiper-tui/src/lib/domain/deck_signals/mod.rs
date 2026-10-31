@@ -2,8 +2,7 @@
 
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
-use zwipe_core::domain::deck::DeckEntry;
-use zwipe_core::domain::deck::deck_metrics::{budget_tier, card_price};
+use zwipe_core::domain::deck::{DeckEntry, deck_metrics};
 
 /// How loud a signal is.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -57,7 +56,7 @@ pub(crate) fn budget_crossing(
     after: f64,
 ) -> Option<(Level, String)> {
     let budget = budget.filter(|b| *b > 0.0)?;
-    if budget_tier(budget, after) <= budget_tier(budget, before) {
+    if deck_metrics::budget_tier(budget, after) <= deck_metrics::budget_tier(budget, before) {
         return None;
     }
     let pct = after / budget * 100.0;
@@ -75,7 +74,7 @@ pub(crate) fn budget_crossing(
 
 /// One copy's price toward the budget: its price in the currency, or nothing.
 pub(crate) fn price_of(card: &Card, currency: PriceCurrency) -> f64 {
-    card_price(&card.scryfall_data, currency).unwrap_or(0.0)
+    deck_metrics::card_price(&card.scryfall_data, currency).unwrap_or(0.0)
 }
 
 #[cfg(test)]

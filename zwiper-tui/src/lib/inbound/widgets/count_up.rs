@@ -75,7 +75,7 @@ impl CountUp {
         not(test),
         expect(
             dead_code,
-            reason = "Home drives its animations by elapsed time at merge"
+            reason = "the hero keeps its counters by `Instant`, and Home and Activity roll their figures with `figures`"
         )
     )]
     pub(crate) fn shown_after(&self, elapsed: Duration) -> String {
@@ -87,7 +87,7 @@ impl CountUp {
         not(test),
         expect(
             dead_code,
-            reason = "Home drives its animations by elapsed time at merge"
+            reason = "the hero keeps its counters by `Instant`, and Home and Activity roll their figures with `figures`"
         )
     )]
     pub(crate) fn animating_after(&self, elapsed: Duration) -> bool {

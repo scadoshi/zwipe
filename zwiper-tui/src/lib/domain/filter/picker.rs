@@ -3,7 +3,7 @@
 //! On the deck cards view and Remove, keywords, oracle words, type-line words, artists and sets come from the deck's own cards, so a picker only offers what the deck has. On Add they come from the public catalogs. Oracle tags always come from the catalog.
 
 use zwipe_core::domain::card::Card;
-use zwipe_core::domain::card::oracle_tag::{OracleTag, search_oracle_tags};
+use zwipe_core::domain::card::oracle_tag::{self, OracleTag};
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::card::search_card::stop_words::{ORACLE_STOP_WORDS, TYPE_STOP_WORDS};
 
@@ -125,7 +125,7 @@ impl PickerField {
         let taken = self.taken(b);
         let Some(kind) = self.kind() else {
             let tags: &[OracleTag] = catalog.oracle_tags.ready().map_or(&[], Vec::as_slice);
-            return search_oracle_tags(tags, query)
+            return oracle_tag::search_oracle_tags(tags, query)
                 .into_iter()
                 .map(|t| t.slug)
                 .filter(|slug| !taken.contains(slug))

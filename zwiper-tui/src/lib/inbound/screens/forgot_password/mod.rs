@@ -14,6 +14,7 @@ use super::Screen;
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;
+use crate::inbound::toward::Toward;
 use crate::inbound::widgets::hero::{self, Hero};
 use crate::inbound::widgets::text_input::TextInput;
 use crate::inbound::widgets::toast::ToastKind;
@@ -78,16 +79,11 @@ impl ForgotForm {
         }
     }
 
-    /// Moves the focus `forward` or back through [`ForgotForm::stops`], wrapping round.
-    pub(crate) fn step(&mut self, forward: bool) {
+    /// Moves the focus `toward` the next or the previous of [`ForgotForm::stops`], wrapping round.
+    pub(crate) fn step(&mut self, toward: Toward) {
         let stops = self.stops();
         let at = stops.iter().position(|s| *s == self.focus).unwrap_or(0);
-        let next = if forward {
-            at.saturating_add(1).checked_rem(stops.len()).unwrap_or(0)
-        } else {
-            at.checked_sub(1)
-                .unwrap_or_else(|| stops.len().saturating_sub(1))
-        };
+        let next = toward.wrapped(at, stops.len());
         self.focus = stops.get(next).copied().unwrap_or_default();
     }
 

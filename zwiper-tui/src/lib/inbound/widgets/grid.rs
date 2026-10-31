@@ -34,13 +34,12 @@ const DROP_TILES: f64 = 3.0;
 /// The tile shades, as shares of the text color.
 const SHADES: [f64; 5] = [0.015, 0.03, 0.05, 0.075, 0.1];
 
-/// When the rain is over on a screen `rows` tiles tall: the last row's latest landing.
 /// Whether rain over an area `height` rows tall is still falling `elapsed` in.
 #[cfg_attr(
     not(test),
     expect(
         dead_code,
-        reason = "Home drives its animations by elapsed time at merge"
+        reason = "only the splash rains, and it times the rain with its own opening"
     )
 )]
 pub(crate) fn raining(elapsed: Duration, height: u16) -> bool {

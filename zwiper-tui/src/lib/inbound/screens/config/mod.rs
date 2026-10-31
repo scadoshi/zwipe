@@ -12,11 +12,12 @@ use zwipe_core::domain::user::hints::HINT_CONFIG;
 use zwipe_core::domain::user::preferences::{PipStyle, UserPreferences};
 use zwipe_core::http::contracts::user::HttpUpdatePreferences;
 
-use super::{Screen, failure};
+use super::Screen;
 use crate::domain::theme::{self, Palette, PickerRow};
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;
+use crate::inbound::toward::Toward;
 use crate::inbound::widgets::hint::{self, HintTopic};
 use crate::inbound::widgets::toast::{self, ToastKind};
 use crate::outbound::account::Account;
@@ -190,11 +191,11 @@ impl ThemeSheet {
         self.theme().is_some_and(|t| t != self.original)
     }
 
-    /// Moves to the next theme down or up, skipping section labels.
-    pub(crate) fn step(&mut self, down: bool) {
+    /// Moves to the next theme down, or up toward the previous, skipping section labels.
+    pub(crate) fn step(&mut self, toward: Toward) {
         let rows = theme::picker_rows();
         let is_theme = |i: &usize| matches!(rows.get(*i), Some(PickerRow::Theme(_)));
-        let found = if down {
+        let found = if toward == Toward::Next {
             (self.row.saturating_add(1)..rows.len()).find(is_theme)
         } else {
             (0..self.row).rev().find(is_theme)
@@ -394,7 +395,9 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
                     account.set_preferences(preferences.clone()).await;
                     Some(Update::Preferences(Box::new(preferences)).into())
                 }
-                Err(e) => Some(failure(&e, |_| Update::PreferencesUnavailable.into())),
+                Err(e) => Some(screens::failure(&e, |_| {
+                    Update::PreferencesUnavailable.into()
+                })),
             }
         }
         Request::Save { seq, change, undo } => {
@@ -415,7 +418,7 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
                     }
                     .into()
                 }
-                Err(e) => failure(&e, |message| {
+                Err(e) => screens::failure(&e, |message| {
                     Update::SaveFailed { seq, undo, message }.into()
                 }),
             })

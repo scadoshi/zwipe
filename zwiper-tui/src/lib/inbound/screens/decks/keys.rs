@@ -6,6 +6,7 @@ use super::{DeckList, Focus, Row, create, more_menu, reopen_hint};
 use crate::domain::deck::list::GroupBy;
 use crate::inbound::app::Context;
 use crate::inbound::screens::{self, deck};
+use crate::inbound::toward::Toward;
 use crate::inbound::widgets::help;
 use crate::inbound::widgets::menu::MenuKey;
 
@@ -34,8 +35,8 @@ pub(crate) fn handle(list: &mut DeckList, code: KeyCode, cx: &mut Context<'_>) {
         KeyCode::Char('c') => create(list, cx),
         KeyCode::Char('m') => list.more = Some(more_menu()),
         KeyCode::Char('?') => reopen_hint(cx),
-        KeyCode::Tab => list.step_area(false),
-        KeyCode::BackTab => list.step_area(true),
+        KeyCode::Tab => list.step_area(Toward::Next),
+        KeyCode::BackTab => list.step_area(Toward::Previous),
         other => match list.focus {
             Focus::List => handle_list(list, other, cx),
             Focus::GroupBy | Focus::Show | Focus::Tags => handle_chips(list, other),
@@ -53,7 +54,7 @@ fn handle_list(list: &mut DeckList, code: KeyCode, cx: &mut Context<'_>) {
         }
         KeyCode::Up | KeyCode::Char('k') => match list.selected.checked_sub(1) {
             Some(above) => list.selected = above,
-            None => list.step_area(true),
+            None => list.step_area(Toward::Previous),
         },
         KeyCode::Enter | KeyCode::Char(' ') => match list.rows().get(list.selected).cloned() {
             Some(Row::Header { group, .. }) => {
@@ -87,8 +88,8 @@ fn handle_chips(list: &mut DeckList, code: KeyCode) {
         KeyCode::Right | KeyCode::Char('l') => {
             *focus = focus.saturating_add(1).min(count.saturating_sub(1));
         }
-        KeyCode::Down | KeyCode::Char('j') => list.step_area(false),
-        KeyCode::Up | KeyCode::Char('k') => list.step_area(true),
+        KeyCode::Down | KeyCode::Char('j') => list.step_area(Toward::Next),
+        KeyCode::Up | KeyCode::Char('k') => list.step_area(Toward::Previous),
         KeyCode::Enter | KeyCode::Char(' ') => match list.focus {
             Focus::GroupBy => list.pick_group_by(list.group_focus),
             Focus::Show => list.press_show(),

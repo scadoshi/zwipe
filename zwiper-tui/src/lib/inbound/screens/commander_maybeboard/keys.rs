@@ -15,6 +15,7 @@ use crate::domain::theme::Palette;
 use crate::inbound::app::Context;
 use crate::inbound::screens::commander_swipe::{self, Deal};
 use crate::inbound::screens::playstyle;
+use crate::inbound::toward::Toward;
 use crate::inbound::widgets::alert::{AlertChoice, AlertDialog};
 use crate::inbound::widgets::card_rows::CardRow;
 use crate::inbound::widgets::help;
@@ -148,10 +149,10 @@ fn clear_query(view: &mut MaybeboardView, cx: &mut Context<'_>) {
 fn step(view: &mut MaybeboardView, code: KeyCode) -> bool {
     match code {
         KeyCode::Down | KeyCode::Char('j') => {
-            view.step(true);
+            view.step(Toward::Next);
         }
         KeyCode::Up | KeyCode::Char('k') => {
-            view.step(false);
+            view.step(Toward::Previous);
         }
         _ => return false,
     }

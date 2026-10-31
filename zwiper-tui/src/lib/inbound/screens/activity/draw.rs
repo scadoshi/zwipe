@@ -679,7 +679,7 @@ fn skeleton(palette: &Palette, width: u16) -> Vec<Line<'static>> {
         Line::from(spans)
     };
     let mut body = Body::default();
-    body.line(header(8, true));
+    body.line(header(8, /* open */ true));
     for _ in 0..=DAYS_PER_WEEK {
         body.line(Line::default());
     }
@@ -725,8 +725,8 @@ fn skeleton(palette: &Palette, width: u16) -> Vec<Line<'static>> {
         })
         .collect();
     body.line(indented(Line::from(labels)));
-    body.line(header(10, false));
-    body.line(header(11, false));
+    body.line(header(10, /* open */ false));
+    body.line(header(11, /* open */ false));
     body.line(Line::default());
     body.line(Line::from(vec![ghost(12), Span::raw("  "), ghost(1)]));
     for i in 0..GHOST_PASSES {

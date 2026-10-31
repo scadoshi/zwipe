@@ -177,7 +177,7 @@ fn control_lines(palette: &Palette, view: &DeckCardsView) -> Vec<Line<'static>> 
     };
     let boards = Line::from(vec![
         Span::styled("Boards ", palette.muted.bold()),
-        board_chip("Main", view.boards.main, true),
+        board_chip("Main", view.boards.main, /* enabled */ true),
         Span::raw(" "),
         board_chip("Maybe", view.boards.maybe, has(Board::Maybeboard)),
         Span::raw(" "),
@@ -251,7 +251,8 @@ fn draw_list(f: &mut Frame<'_>, shared: &Shared, view: &DeckCardsView, area: Rec
                     lines.extend(card_info::wrap(details, usize::from(area.width), 4));
                     let tags = card_info::oracle_tags(card);
                     if let Some(slug) = view.open_tag.and_then(|i| tags.get(i)) {
-                        let mut reveal = vec![Line::from(otag::chip(palette, slug, true))];
+                        let mut reveal =
+                            vec![Line::from(otag::chip(palette, slug, /* open */ true))];
                         reveal.extend(otag::def_lines(palette, &shared.caches.oracle_tags, slug));
                         let indented: Vec<Line<'static>> = reveal
                             .into_iter()

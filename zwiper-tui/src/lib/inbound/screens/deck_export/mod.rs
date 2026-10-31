@@ -8,7 +8,7 @@ mod tests;
 use uuid::Uuid;
 use zwipe_core::domain::deck::Deck;
 
-use super::{Screen, failure};
+use super::Screen;
 use crate::domain::deck::export::{self, Boards};
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
@@ -125,7 +125,7 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
         Request::Load(deck_id) => Some(
             match async { client.fetch_deck(deck_id, &account.fresh().await?).await }.await {
                 Ok(deck) => Update::Loaded(Box::new(deck)).into(),
-                Err(e) => failure(&e, |m| Update::Failed(m).into()),
+                Err(e) => screens::failure(&e, |m| Update::Failed(m).into()),
             },
         ),
     }

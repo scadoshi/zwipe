@@ -14,13 +14,14 @@ use ratatui::text::{Line, Span};
 use zwipe_core::domain::user::models::hints::HINT_ACTIVITY;
 use zwipe_core::http::contracts::suggestions::{HttpActivity, HttpHardPass};
 
-use super::{Screen, failure, home};
+use super::{Screen, home};
 use crate::domain::activity::{self, Bar, HeatLayout, RateKind};
 use crate::domain::home::Figures;
 use crate::domain::theme::Palette;
 use crate::inbound::app::{Context, Shared};
 use crate::inbound::nav::Nav;
 use crate::inbound::screens::{self, oracle_tags};
+use crate::inbound::toward::Toward;
 use crate::inbound::widgets::card_rows::{CardRow, CardRows};
 use crate::inbound::widgets::collapsible::Accordion;
 use crate::inbound::widgets::info::InfoPopup;
@@ -312,8 +313,8 @@ impl ActivityView {
         stops
     }
 
-    /// Moves the focus `forward` or back one stop. Returns whether it moved.
-    pub(crate) fn step(&mut self, forward: bool) -> bool {
+    /// Moves the focus one stop `toward` the next or the previous. Returns whether it moved.
+    pub(crate) fn step(&mut self, toward: Toward) -> bool {
         let stops = self.stops();
         let Some(at) = stops.iter().position(|&s| s == self.focus) else {
             if let Some(&first) = stops.first() {
@@ -321,15 +322,10 @@ impl ActivityView {
             }
             return true;
         };
-        let next = if forward {
-            at.checked_add(1)
-        } else {
-            at.checked_sub(1)
-        };
-        let Some(&focus) = next.and_then(|i| stops.get(i)) else {
+        let Some(&focus) = toward.neighbor(at).and_then(|i| stops.get(i)) else {
             return false;
         };
-        if focus == Focus::Passes && forward {
+        if focus == Focus::Passes && toward == Toward::Next {
             self.rows.set_focused(0);
         }
         self.focus = focus;
@@ -581,7 +577,9 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
     let client = &account.client;
     match async { client.activity(&account.fresh().await?).await }.await {
         Ok(found) => Some(Update::Loaded(Box::new(found)).into()),
-        Err(e) => Some(failure(&e, |message| Update::Failed(message).into())),
+        Err(e) => Some(screens::failure(&e, |message| {
+            Update::Failed(message).into()
+        })),
     }
 }
 

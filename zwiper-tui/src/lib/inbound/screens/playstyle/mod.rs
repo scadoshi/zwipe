@@ -24,7 +24,7 @@ use zwipe_core::http::contracts::suggestions::{
     HttpBuilderProfile, HttpCommanderSuggestion, HttpCommanderSuggestions, HttpStaple,
 };
 
-use super::{Screen, deck_form, failure, home, oracle_tags};
+use super::{Screen, deck_form, home, oracle_tags};
 use crate::domain::activity::Bar;
 use crate::domain::playstyle::{
     self, HELD_SIZE, LIST_SIZE, StapleColor, TagRow, identities_present, of_identity,
@@ -32,6 +32,7 @@ use crate::domain::playstyle::{
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;
+use crate::inbound::toward::Toward;
 use crate::inbound::widgets::alert::AlertDialog;
 use crate::inbound::widgets::card_rows::CardRows;
 use crate::inbound::widgets::collapsible::Accordion;
@@ -507,8 +508,8 @@ impl PlaystyleView {
         stops
     }
 
-    /// Moves the focus `forward` or back one stop, entering a group of rows at its near end. Returns whether it moved.
-    pub(crate) fn step(&mut self, forward: bool) -> bool {
+    /// Moves the focus one stop `toward` the next or the previous, entering a group of rows at its near end. Returns whether it moved.
+    pub(crate) fn step(&mut self, toward: Toward) -> bool {
         let stops = self.stops();
         let Some(at) = stops.iter().position(|&s| s == self.focus) else {
             if let Some(&first) = stops.first() {
@@ -516,22 +517,19 @@ impl PlaystyleView {
             }
             return true;
         };
-        let next = if forward {
-            at.checked_add(1)
-        } else {
-            at.checked_sub(1)
-        };
-        let Some(&focus) = next.and_then(|i| stops.get(i)) else {
+        let Some(&focus) = toward.neighbor(at).and_then(|i| stops.get(i)) else {
             return false;
         };
         match focus {
             Focus::List => {
                 let last = self.shown().len().saturating_sub(1);
-                self.rows.set_focused(if forward { 0 } else { last });
+                self.rows
+                    .set_focused(if toward == Toward::Next { 0 } else { last });
             }
             Focus::Staples => {
                 let last = self.matching_staples().len().saturating_sub(1);
-                self.staple_rows.set_focused(if forward { 0 } else { last });
+                self.staple_rows
+                    .set_focused(if toward == Toward::Next { 0 } else { last });
             }
             _ => {}
         }
@@ -805,7 +803,9 @@ async fn act<T>(
 ) -> Option<screens::Update> {
     match call.await {
         Ok(_) => Some(done.into()),
-        Err(e) => Some(failure(&e, |message| Update::ActionFailed(message).into())),
+        Err(e) => Some(screens::failure(&e, |message| {
+            Update::ActionFailed(message).into()
+        })),
     }
 }
 
@@ -827,7 +827,7 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
                     }
                     .into(),
                 ),
-                Err(e) => Some(failure(&e, |message| {
+                Err(e) => Some(screens::failure(&e, |message| {
                     Update::LoadFailed { ticket, message }.into()
                 })),
             }

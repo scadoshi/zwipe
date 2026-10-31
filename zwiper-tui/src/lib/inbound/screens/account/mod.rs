@@ -15,7 +15,7 @@ use zwipe_core::http::contracts::auth::{
     HttpChangeEmail, HttpChangePassword, HttpChangeUsername, HttpDeleteUser,
 };
 
-use super::{Password, Screen, failure, login};
+use super::{Password, Screen, login};
 use crate::domain::account::{
     self, DELETE_DELAY_SECS, RESEND_COOLDOWN_SECS, change_password_error, email_error,
     password_required, username_error,
@@ -546,19 +546,19 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
                         toast: Some(toast),
                     }
                 }
-                Err(e) => return Some(failure(&e, |m| Update::CheckFailed(m).into())),
+                Err(e) => return Some(screens::failure(&e, |m| Update::CheckFailed(m).into())),
             }
         }
         Request::Resend => {
             let failed = |m| Update::ResendFailed(m).into();
             let session = match account.fresh().await {
                 Ok(session) => session,
-                Err(e) => return Some(failure(&e, failed)),
+                Err(e) => return Some(screens::failure(&e, failed)),
             };
             match client.resend_verification(&session).await {
                 Ok(()) => Update::Resent,
                 Err(ClientError::TooManyRequests(_)) => Update::ResendLimited,
-                Err(e) => return Some(failure(&e, failed)),
+                Err(e) => return Some(screens::failure(&e, failed)),
             }
         }
         Request::Change(change) => return Some(change_account(account, change).await),
@@ -571,7 +571,7 @@ async fn change_account(account: &Account, change: AccountChange) -> screens::Up
     let client = &account.client;
     let session = match account.fresh().await {
         Ok(session) => session,
-        Err(e) => return failure(&e, |m| Update::ChangeFailed(m).into()),
+        Err(e) => return screens::failure(&e, |m| Update::ChangeFailed(m).into()),
     };
     let result = match change {
         AccountChange::Username { username, password } => client

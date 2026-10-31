@@ -20,7 +20,7 @@ use zwipe_core::domain::card::search_card::card_filter::{CardQuery, CardSortKey}
 use zwipe_core::domain::deck::deck_metrics;
 use zwipe_core::domain::user::models::hints::HINT_OTAG_EXAMPLES;
 
-use super::{Screen, failure};
+use super::Screen;
 use crate::domain::stack::Direction;
 use crate::domain::theme::Palette;
 use crate::inbound::app::Context;
@@ -276,7 +276,7 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
             }
             .into(),
         ),
-        Err(e) => Some(failure(&e, |message| {
+        Err(e) => Some(screens::failure(&e, |message| {
             Update::PageFailed { slug, message }.into()
         })),
     }

@@ -8,7 +8,7 @@ pub(crate) mod keys;
 mod tests;
 
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fmt;
 use std::time::Instant;
 
@@ -94,7 +94,7 @@ pub(crate) struct SwipeView {
     pub(crate) exhausted: bool,
     pub(crate) synergy_warming: bool,
     /// Printing IDs of cards served as like the deck rather than synergy picks.
-    pub(crate) related_ids: std::collections::HashSet<Uuid>,
+    pub(crate) related_ids: HashSet<Uuid>,
     pub(crate) related_announced: bool,
     pub(crate) sheet: Option<FilterSheet>,
     pub(crate) details: Option<DetailsSheet>,
@@ -957,7 +957,7 @@ pub(crate) fn open(cx: &mut Context<'_>, deck: &Deck) {
         loading_more: false,
         exhausted: false,
         synergy_warming: false,
-        related_ids: std::collections::HashSet::new(),
+        related_ids: HashSet::new(),
         related_announced: false,
         sheet: None,
         details: None,
@@ -1436,7 +1436,7 @@ fn searched(
         }
         Page::More => {
             view.related_ids.extend(related);
-            let held: std::collections::HashSet<Uuid> = view
+            let held: HashSet<Uuid> = view
                 .stack
                 .cards()
                 .iter()

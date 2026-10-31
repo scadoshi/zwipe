@@ -15,20 +15,19 @@ use zwipe_core::domain::card::search_card::card_filter::CardSortKey;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::card::search_card::cards::Cards;
-use zwipe_core::domain::deck::deck_metrics::deck_price;
-use zwipe_core::domain::deck::{Board, Deck, DeckCard, DeckEntry, DeckProfile};
+use zwipe_core::domain::deck::{Board, Deck, DeckCard, DeckEntry, DeckProfile, deck_metrics};
 use zwipe_core::domain::user::hints::HINT_REMOVE_DECK_CARDS;
 use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpPatchDeckCard};
 
 use super::Screen;
 use super::card_sheets::details::DetailsSheet;
 use super::card_sheets::filter::{FilterSheet, SheetConfig};
-use super::swipe::{UndoFailure, signal};
+use super::swipe::{self, UndoFailure};
 use crate::domain::deck_signals::{self, Crossing};
 use crate::domain::filter::picker::Sources;
 use crate::domain::stack::{CardStack, Direction, RemoveAction, StackAction};
 use crate::domain::stores::filters::FilterScope;
-use crate::domain::stores::undo::{UndoAction, create_board_field};
+use crate::domain::stores::undo::{self, UndoAction};
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;
@@ -98,7 +97,7 @@ impl RemoveView {
     }
 
     fn price(&self) -> f64 {
-        deck_price(&self.entries, &self.command_zone_cards, self.currency())
+        deck_metrics::deck_price(&self.entries, &self.command_zone_cards, self.currency())
     }
 
     /// The board, the filter and the sort, into a fresh stack; history stays.
@@ -245,7 +244,7 @@ impl RemoveView {
 
     fn signals(&self, cx: &mut Context<'_>, lands: i32, price: f64) {
         let profile = self.profile.as_ref();
-        signal(
+        swipe::signal(
             cx,
             deck_signals::land_crossing(
                 profile.and_then(|p| p.land_target),
@@ -254,7 +253,7 @@ impl RemoveView {
                 Crossing::Down,
             ),
         );
-        signal(
+        swipe::signal(
             cx,
             deck_signals::budget_crossing(
                 profile.and_then(|p| p.price_target),
@@ -606,7 +605,11 @@ async fn undo_remove(
     quantity: i32,
 ) -> Result<Box<DeckCard>, UndoFailure> {
     let s = session.map_err(|e| UndoFailure::Session(crate::inbound::screens::shown(&e)))?;
-    let request = HttpCreateDeckCard::new(&card.scryfall_data, quantity, create_board_field(board));
+    let request = HttpCreateDeckCard::new(
+        &card.scryfall_data,
+        quantity,
+        undo::create_board_field(board),
+    );
     client
         .create_deck_card(deck_id, &request, &s)
         .await

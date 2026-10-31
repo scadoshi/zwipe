@@ -74,6 +74,13 @@ impl RoleTags {
     }
 
     /// Swaps in other tags, keeping the open one open if it is among them.
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "Activity and Playstyle build a fresh row with `RoleTags::new` when the tags change"
+        )
+    )]
     pub(crate) fn set_tags(&mut self, tags: Vec<String>) {
         let open = self.open_tag().map(str::to_owned);
         self.open = open.and_then(|slug| tags.iter().position(|t| *t == slug));
@@ -90,6 +97,13 @@ impl RoleTags {
         self.open = previous_open(self.open, self.tags.len());
     }
 
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "Tab and BackTab close the row past either end; no screen closes it otherwise"
+        )
+    )]
     pub(crate) fn close(&mut self) {
         self.open = None;
     }

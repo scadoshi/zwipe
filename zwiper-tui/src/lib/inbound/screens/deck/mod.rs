@@ -17,7 +17,7 @@ use zwipe_core::http::contracts::deck_card::HttpPatchDeckCard;
 use zwipe_core::http::helpers::Patch;
 
 use self::layout::Pane;
-use super::{Screen, failure};
+use super::Screen;
 use crate::domain::deck::buy;
 use crate::domain::deck::warning::{self, Fix};
 use crate::inbound::app::Context;
@@ -724,12 +724,12 @@ pub(crate) fn replace_with(cx: &mut Context<'_>, profile: DeckProfile) {
 
 pub(crate) async fn perform(account: &Account, request: Request) -> Option<screens::Update> {
     let client = &account.client;
-    let error = |e: &zwipe_client::ClientError| failure(e, |m| Update::Error(m).into());
+    let error = |e: &zwipe_client::ClientError| screens::failure(e, |m| Update::Error(m).into());
     match request {
         Request::Load(deck_id) => Some(
             match async { client.fetch_deck(deck_id, &account.fresh().await?).await }.await {
                 Ok(deck) => Update::Loaded(Box::new(deck)).into(),
-                Err(e) => failure(&e, |m| Update::Failed(m).into()),
+                Err(e) => screens::failure(&e, |m| Update::Failed(m).into()),
             },
         ),
         // Definitions only add to the role tags, so a failure shows none.
@@ -807,7 +807,7 @@ async fn fix_quantity(
             message: format!("Quantity set to {quantity}"),
         }
         .into(),
-        Err(e) => failure(&e, |m| Update::Error(m).into()),
+        Err(e) => screens::failure(&e, |m| Update::Error(m).into()),
     }
 }
 
@@ -834,7 +834,7 @@ async fn clear_commander(account: &Account, deck_id: Uuid, oathbreaker: bool) ->
             .to_owned(),
         }
         .into(),
-        Err(e) => failure(&e, |m| Update::Error(m).into()),
+        Err(e) => screens::failure(&e, |m| Update::Error(m).into()),
     }
 }
 
@@ -853,7 +853,7 @@ async fn remove_card(account: &Account, deck_id: Uuid, card: Uuid) -> screens::U
             message: "Card removed".to_owned(),
         }
         .into(),
-        Err(e) => failure(&e, |m| Update::Error(m).into()),
+        Err(e) => screens::failure(&e, |m| Update::Error(m).into()),
     }
 }
 
@@ -879,7 +879,7 @@ async fn clone_deck(account: &Account, deck_id: Uuid, name: &str) -> screens::Up
             profile: Box::new(profile),
         }
         .into(),
-        Err(e) => failure(&e, |m| Update::CloneFailed(m).into()),
+        Err(e) => screens::failure(&e, |m| Update::CloneFailed(m).into()),
     }
 }
 

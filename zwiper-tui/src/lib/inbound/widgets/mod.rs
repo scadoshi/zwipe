@@ -11,13 +11,6 @@ pub(crate) mod browser;
 /// A card's info block, details and text stand-in.
 pub(crate) mod card_info;
 pub(crate) mod card_motion;
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "Activity, Playstyle and the Commander maybeboard list their cards with it"
-    )
-)]
 pub(crate) mod card_rows;
 /// A card as lines of text.
 pub(crate) mod card_text;
@@ -67,13 +60,6 @@ pub(crate) mod mana;
 pub(crate) mod measure;
 /// A sheet of buttons, one focused.
 pub(crate) mod menu;
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "card rows and the Activity and Playstyle charts reveal tags with it"
-    )
-)]
 pub(crate) mod otag;
 /// A framed panel centered over the screen.
 pub(crate) mod panel;

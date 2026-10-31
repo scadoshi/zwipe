@@ -10,16 +10,17 @@ use zwipe_core::domain::user::hints::HINT_FILTER;
 use super::{FilterSheet, PickerInput, SheetOutcome, Target};
 use crate::domain::filter::sections::{self, Clear, Row, Section};
 use crate::inbound::app::Context;
+use crate::inbound::toward::Toward;
 use crate::inbound::widgets::hint::{self, HintTopic};
 
 pub(crate) fn handle(sheet: &mut FilterSheet, code: KeyCode, cx: &mut Context<'_>) -> SheetOutcome {
     match code {
         KeyCode::Up => {
-            sheet.move_focus(cx, false);
+            sheet.move_focus(cx, Toward::Previous);
             return SheetOutcome::Open;
         }
         KeyCode::Down => {
-            sheet.move_focus(cx, true);
+            sheet.move_focus(cx, Toward::Next);
             return SheetOutcome::Open;
         }
         _ => {}
@@ -36,8 +37,8 @@ pub(crate) fn handle(sheet: &mut FilterSheet, code: KeyCode, cx: &mut Context<'_
         return SheetOutcome::Open;
     }
     match code {
-        KeyCode::Char('k') => sheet.move_focus(cx, false),
-        KeyCode::Char('j') => sheet.move_focus(cx, true),
+        KeyCode::Char('k') => sheet.move_focus(cx, Toward::Previous),
+        KeyCode::Char('j') => sheet.move_focus(cx, Toward::Next),
         KeyCode::Esc => return sheet.back(cx),
         KeyCode::Char('a') => return sheet.apply(cx),
         KeyCode::Char('r') => sheet.reset(cx),
@@ -134,7 +135,14 @@ fn type_key(sheet: &mut FilterSheet, code: KeyCode, cx: &mut Context<'_>) {
     match row {
         Row::Text(field) => {
             if matches!(code, KeyCode::Esc | KeyCode::Enter) {
-                sheet.move_focus(cx, code == KeyCode::Enter);
+                sheet.move_focus(
+                    cx,
+                    if code == KeyCode::Enter {
+                        Toward::Next
+                    } else {
+                        Toward::Previous
+                    },
+                );
                 if code == KeyCode::Esc {
                     focus_header(sheet);
                 }

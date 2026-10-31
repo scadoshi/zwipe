@@ -3,8 +3,7 @@
 use std::collections::BTreeSet;
 
 use zwipe_core::domain::card::scryfall_data::colors::Color;
-use zwipe_core::domain::deck::DeckProfile;
-use zwipe_core::domain::deck::deck_tag::deck_tag_label;
+use zwipe_core::domain::deck::{DeckProfile, deck_tag};
 
 /// How the deck list folds into sections.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
@@ -93,7 +92,7 @@ pub(crate) fn tag_labels(profile: &DeckProfile) -> Vec<(String, String)> {
     profile
         .tags
         .iter()
-        .map(|t| (t.clone(), deck_tag_label(t)))
+        .map(|t| (t.clone(), deck_tag::deck_tag_label(t)))
         .chain(
             profile
                 .other_tags

@@ -29,11 +29,12 @@ use zwipe_core::domain::user::models::hints::HINT_COMMANDER_MAYBEBOARD;
 
 use super::card_sheets::filter::{FilterSheet, SheetConfig, SheetOutcome};
 use super::playstyle::DeckLimit;
-use super::{Screen, card_sheets, failure, oracle_tags};
+use super::{Screen, card_sheets, oracle_tags};
 use crate::domain::filter;
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;
+use crate::inbound::toward::Toward;
 use crate::inbound::widgets::alert::AlertDialog;
 use crate::inbound::widgets::card_rows::CardRows;
 use crate::inbound::widgets::hint;
@@ -283,21 +284,17 @@ impl MaybeboardView {
         stops
     }
 
-    /// Moves the focus `forward` or back one stop, entering the rows at their near end. Returns whether it moved.
-    pub(crate) fn step(&mut self, forward: bool) -> bool {
+    /// Moves the focus one stop `toward` the next or the previous, entering the rows at their near end. Returns whether it moved.
+    pub(crate) fn step(&mut self, toward: Toward) -> bool {
         let stops = self.stops();
         let at = stops.iter().position(|&s| s == self.focus).unwrap_or(0);
-        let next = if forward {
-            at.checked_add(1)
-        } else {
-            at.checked_sub(1)
-        };
-        let Some(&focus) = next.and_then(|i| stops.get(i)) else {
+        let Some(&focus) = toward.neighbor(at).and_then(|i| stops.get(i)) else {
             return false;
         };
         if focus == Focus::List {
             let last = self.filtered().len().saturating_sub(1);
-            self.rows.set_focused(if forward { 0 } else { last });
+            self.rows
+                .set_focused(if toward == Toward::Next { 0 } else { last });
         }
         self.focus = focus;
         true
@@ -556,7 +553,9 @@ async fn act(
 ) -> Option<screens::Update> {
     match call.await {
         Ok(()) => Some(done.into()),
-        Err(e) => Some(failure(&e, |message| Update::ActionFailed(message).into())),
+        Err(e) => Some(screens::failure(&e, |message| {
+            Update::ActionFailed(message).into()
+        })),
     }
 }
 
@@ -572,7 +571,7 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
             .await
             {
                 Ok(cards) => Some(Update::Loaded { ticket, cards }.into()),
-                Err(e) => Some(failure(&e, |message| {
+                Err(e) => Some(screens::failure(&e, |message| {
                     Update::LoadFailed { ticket, message }.into()
                 })),
             }
@@ -602,7 +601,9 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
             {
                 Ok(cards) => Some(Update::Searched { ticket, cards }.into()),
                 // Quiet, as the app's `run_quiet`: a toast per keystroke would bury the screen.
-                Err(e) => Some(failure(&e, |_| Update::SearchFailed { ticket }.into())),
+                Err(e) => Some(screens::failure(&e, |_| {
+                    Update::SearchFailed { ticket }.into()
+                })),
             }
         }
         Request::Add(card) => {
