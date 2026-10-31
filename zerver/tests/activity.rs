@@ -1,7 +1,6 @@
 //! The Activity screen's data: daily swipes and searches, swipe
-//! outcomes, keep rate by card role and hard passes, read from the usage
-//! tables the app's flushes fill. Also the summary route's first spelling,
-//! served beside the new one until the client floor passes it.
+//! outcomes, rates by card role and oracle tag, and hard passes, read from
+//! the usage tables the app's flushes fill.
 
 #![expect(
     clippy::unwrap_used,
@@ -13,7 +12,7 @@ mod common;
 use axum::http::StatusCode;
 use common::{TestApp, card, seed_cards};
 use uuid::Uuid;
-use zwipe_core::http::paths::{ACTIVITY_ROUTE, LEGACY_PLAY_STYLE_ROUTE, PLAYSTYLE_ROUTE};
+use zwipe_core::http::paths::ACTIVITY_ROUTE;
 
 /// Writes one day of usage `days_ago` UTC days back.
 async fn seed_day(pool: &sqlx::PgPool, user: Uuid, days_ago: i32, right: i32, searches: i32) {
@@ -58,19 +57,6 @@ async fn activity_needs_a_session(pool: sqlx::PgPool) {
     let app = TestApp::new(pool);
     let (status, _) = app.get(ACTIVITY_ROUTE, None).await;
     assert_eq!(status, StatusCode::UNAUTHORIZED);
-}
-
-#[sqlx::test]
-async fn the_first_spelling_still_answers_with_the_summary(pool: sqlx::PgPool) {
-    let app = TestApp::new(pool);
-    let (token, uid) = app.register("spelling").await;
-    app.verify_email(&uid).await;
-
-    let (status, new) = app.get(PLAYSTYLE_ROUTE, Some(&token)).await;
-    assert_eq!(status, StatusCode::OK, "{new}");
-    let (status, old) = app.get(LEGACY_PLAY_STYLE_ROUTE, Some(&token)).await;
-    assert_eq!(status, StatusCode::OK, "{old}");
-    assert_eq!(new, old, "both spellings serve the same summary");
 }
 
 #[sqlx::test]

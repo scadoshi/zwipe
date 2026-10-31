@@ -621,9 +621,6 @@ pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
                         )
                         .route("/tags", get(deck::get_deck_tags))
                         .route("/playstyle", get(deck::get_play_style_summary))
-                        // The first spelling, for apps before 1.16.0, until
-                        // the client floor passes them.
-                        .route("/play-style", get(deck::get_play_style_summary))
                         .route(
                             "/{deck_id}/import/archidekt",
                             post(deck::import_archidekt_deck).layer(
