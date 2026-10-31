@@ -28,6 +28,25 @@ pub fn use_page_keys(on_key: Callback<String>) {
     });
 }
 
+/// Calls `on_undo` for Ctrl+Z (Cmd+Z on a Mac) while this registration is
+/// the newest and no text field, dialog or sheet has focus, so a text box
+/// keeps its own undo.
+pub fn use_undo_key(on_undo: Callback<()>) {
+    let id = use_hook(Uuid::new_v4);
+    use_hook(move || {
+        let script = UNDO_KEY_JS.replace("__ID__", &id.to_string());
+        spawn(async move {
+            let mut presses = document::eval(&script);
+            while presses.recv::<bool>().await.is_ok() {
+                on_undo.call(());
+            }
+        });
+    });
+    use_drop(move || {
+        document::eval(&UNDO_KEY_DROP_JS.replace("__ID__", &id.to_string()));
+    });
+}
+
 /// Focuses the element with `id` and selects its text, for a `/` key.
 pub fn focus_by_id(id: &str) {
     document::eval(&format!(
@@ -60,4 +79,31 @@ const onKey = window['__zwipePageKey__ID__'];
 if (onKey) document.removeEventListener('keydown', onKey);
 delete window['__zwipePageKey__ID__'];
 window.__zwipePageKeys = (window.__zwipePageKeys || []).filter((id) => id !== '__ID__');
+";
+
+/// Registers one screen's Ctrl+Z listener.
+const UNDO_KEY_JS: &str = r#"
+window.__zwipeUndoKeys = window.__zwipeUndoKeys || [];
+window.__zwipeUndoKeys.push('__ID__');
+const onKey = (e) => {
+    const stack = window.__zwipeUndoKeys;
+    if (!stack.length || stack[stack.length - 1] !== '__ID__') return;
+    if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey || e.key.toLowerCase() !== 'z') return;
+    const focus = document.activeElement;
+    if (focus && (focus.tagName === 'INPUT' || focus.tagName === 'TEXTAREA' || focus.isContentEditable)) return;
+    if (document.querySelector('.alert-dialog[data-state="open"]')) return;
+    if (document.querySelector('.bottom-sheet.show')) return;
+    e.preventDefault();
+    dioxus.send(true);
+};
+window['__zwipeUndoKey__ID__'] = onKey;
+document.addEventListener('keydown', onKey);
+"#;
+
+/// Removes one screen's Ctrl+Z listener.
+const UNDO_KEY_DROP_JS: &str = r"
+const onKey = window['__zwipeUndoKey__ID__'];
+if (onKey) document.removeEventListener('keydown', onKey);
+delete window['__zwipeUndoKey__ID__'];
+window.__zwipeUndoKeys = (window.__zwipeUndoKeys || []).filter((id) => id !== '__ID__');
 ";

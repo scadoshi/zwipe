@@ -1312,3 +1312,81 @@ body {
     outline: 2px solid var(--accent-primary);
     outline-offset: 2px;
 }
+
+/* ---- Add and Remove cards ---- */
+
+/* Below the breakpoint it is the app's swipe screen: the chip row, the
+   card and its info. A wide window puts the card's details beside it, and
+   at three columns the filter docked after them. */
+.web-cards-swipe-main {
+    display: contents;
+}
+
+.web-cards-swipe-row {
+    max-width: 40rem;
+    width: 100%;
+    padding: 0 1rem;
+    box-sizing: border-box;
+}
+
+.web-swipe-details {
+    display: none;
+}
+
+.web-pile-end {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    touch-action: none;
+}
+
+@media (min-width: 900px) {
+    .web-cards-swipe.screen-content {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        align-items: start;
+        align-content: start;
+        gap: 1.5rem;
+        width: 100%;
+        max-width: 96rem;
+        margin: 0 auto;
+        padding: 1rem 1.5rem;
+        box-sizing: border-box;
+        overflow-y: auto;
+    }
+
+    .web-cards-swipe-main {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        min-width: 0;
+    }
+
+    .web-cards-swipe-row {
+        padding: 0;
+    }
+
+    .web-swipe-details {
+        display: block;
+        min-width: 0;
+        position: sticky;
+        top: 0;
+    }
+
+    /* The app sizes the card's ghost to the phone's width; in a column it
+       takes the stack's room instead. */
+    .web-cards-swipe .skeleton-card {
+        width: 100%;
+        max-width: 26rem;
+        min-height: min(55vh, 32rem);
+    }
+}
+
+@media (min-width: 1280px) {
+    .web-cards-swipe.screen-content {
+        grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr) minmax(20rem, 0.95fr);
+    }
+}
