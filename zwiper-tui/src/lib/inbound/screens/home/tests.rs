@@ -518,8 +518,20 @@ fn home_keeps_every_key_on_a_narrow_terminal() {
         card: flavored("Elves"),
         expires_at: Utc::now(),
     });
+    if let Some(flavor) = &mut harness.app.shared.caches.flavor {
+        flavor.card.scryfall_data.flavor_text = Some(
+            "\"That drill shall not reach Ba Sing Se! This is what we trained for!\"".to_owned(),
+        );
+    }
     settle_entrance(&mut harness);
     crate::test_support::assert_key_bar_fits(&harness.app, "q quit");
+    for (width, height) in crate::test_support::NARROW {
+        let screen = crate::test_support::rows(&harness.app, width, height).join("\n");
+        assert!(
+            screen.contains("i Image  b Buy"),
+            "a long quote keeps the flavor keys in the panel at {width}x{height}:\n{screen}"
+        );
+    }
     harness.press(KeyCode::Char('!'));
     for (width, height) in crate::test_support::NARROW {
         let screen = crate::test_support::rows(&harness.app, width, height).join("\n");

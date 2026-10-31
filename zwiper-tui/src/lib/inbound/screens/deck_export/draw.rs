@@ -3,7 +3,7 @@
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout};
 use ratatui::text::Line;
-use ratatui::widgets::{Block, Paragraph};
+use ratatui::widgets::{Block, Paragraph, Wrap};
 
 use super::ExportView;
 use crate::inbound::app::Shared;
@@ -69,7 +69,10 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &ExportView) {
         );
         f.render_widget(pill::row(row), chips);
         f.render_widget(
-            Paragraph::new(text).block(block).scroll((view.scroll, 0)),
+            Paragraph::new(text)
+                .block(block)
+                .wrap(Wrap { trim: false })
+                .scroll((view.scroll, 0)),
             body,
         );
     } else {

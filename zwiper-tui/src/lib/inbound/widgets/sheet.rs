@@ -7,8 +7,8 @@ use ratatui::style::Stylize;
 use ratatui::text::Line;
 use ratatui::widgets::{Block, Clear, Padding, Paragraph};
 
-use super::action_bar;
 use super::measure::{BORDERS, height_of};
+use super::{action_bar, card_info};
 use crate::domain::theme::Palette;
 
 /// A sheet takes at most this share of the screen's height, in percent.
@@ -97,17 +97,37 @@ impl Sheet {
         SheetKey::Stay
     }
 
-    /// The body lines from the scroll position, never past the point where the last line reaches the bottom, and moved as little as it takes to show the focused line.
-    fn visible(&self, rows: usize) -> &[Line<'static>] {
-        let mut start = self.scroll.min(self.body.len().saturating_sub(rows));
+    /// The body wrapped to `width` cells, each continuation indented like its line, with where each body line starts among the wrapped ones.
+    fn wrapped(&self, width: usize) -> (Vec<Line<'static>>, Vec<usize>) {
+        let mut lines = Vec::new();
+        let mut starts = Vec::with_capacity(self.body.len());
+        for line in &self.body {
+            starts.push(lines.len());
+            let indent = line
+                .to_string()
+                .chars()
+                .take_while(|c| *c == ' ')
+                .count()
+                .min(width / 2);
+            lines.extend(card_info::wrap(vec![line.clone()], width, indent));
+        }
+        (lines, starts)
+    }
+
+    /// The wrapped body from the scroll position, never past the point where the last line reaches the bottom, and moved as little as it takes to show all of the focused line.
+    fn visible(&self, rows: usize, width: usize) -> Vec<Line<'static>> {
+        let (lines, starts) = self.wrapped(width);
+        let start_of = |line: usize| starts.get(line).copied().unwrap_or(lines.len());
+        let mut start = start_of(self.scroll).min(lines.len().saturating_sub(rows));
         if let Some(focus) = self.focus {
-            if focus < start {
-                start = focus;
-            } else if focus >= start.saturating_add(rows) {
-                start = focus.saturating_add(1).saturating_sub(rows);
+            let (top, end) = (start_of(focus), start_of(focus.saturating_add(1)));
+            if top < start {
+                start = top;
+            } else if end > start.saturating_add(rows) {
+                start = end.saturating_sub(rows).min(top);
             }
         }
-        self.body.get(start..).unwrap_or_default()
+        lines.into_iter().skip(start).collect()
     }
 
     /// Draws the sheet over the bottom of `area`, as tall as its body up to most of the screen.
@@ -117,17 +137,22 @@ impl Sheet {
             .iter()
             .map(|(k, a)| (k.as_str(), a.as_str()))
             .collect();
+        // The body's width inside the borders and the padding either side.
+        let width = usize::from(area.width.saturating_sub(BORDERS.saturating_add(2)));
         let inner = frame(
             f,
             palette,
             area,
             &self.title,
-            height_of(self.body.len()),
+            height_of(self.wrapped(width).0.len()),
             self.hint,
             &footer,
         );
         let rows = usize::from(inner.height);
-        f.render_widget(Paragraph::new(self.visible(rows).to_vec()), inner);
+        f.render_widget(
+            Paragraph::new(self.visible(rows, usize::from(inner.width))),
+            inner,
+        );
     }
 }
 
@@ -221,6 +246,31 @@ mod tests {
             !screen.chars().take(30 * 6).any(|c| c != ' '),
             "the top of the screen stays clear"
         );
+    }
+
+    #[test]
+    fn a_long_line_wraps_between_words_under_its_indent() {
+        let sheet = Sheet::new(
+            "Rules",
+            vec![
+                Line::from(" Whenever Delina attacks, choose target creature you control"),
+                Line::from("last"),
+            ],
+        );
+        let screen = text(&sheet, 30, 12);
+        assert!(
+            screen.contains("│  Whenever Delina attacks,  │"),
+            "{screen}"
+        );
+        assert!(
+            screen.contains("│  choose target creature    │"),
+            "{screen}"
+        );
+        assert!(
+            screen.contains("│  you control               │"),
+            "{screen}"
+        );
+        assert!(screen.contains("last"));
     }
 
     #[test]

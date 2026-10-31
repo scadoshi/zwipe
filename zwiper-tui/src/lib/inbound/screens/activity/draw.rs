@@ -158,6 +158,23 @@ pub(crate) fn draw_lines(
     };
     let start = rows_before(focus.0);
     let end = rows_before(focus.1.saturating_add(1));
+    // A focused piece taller than the view shows its top and keeps its last line, a card row's keys, in the bottom rows.
+    if end.saturating_sub(start) > area.height
+        && let Some(last) = lines.get(focus.1).cloned()
+    {
+        let last = vec![last];
+        let last_height = item_list::wrapped_height(&last, area.width).min(area.height);
+        let [top, bottom] =
+            Layout::vertical([Constraint::Fill(1), Constraint::Length(last_height)]).areas(area);
+        f.render_widget(
+            Paragraph::new(lines)
+                .wrap(Wrap { trim: false })
+                .scroll((start, 0)),
+            top,
+        );
+        f.render_widget(Paragraph::new(last).wrap(Wrap { trim: false }), bottom);
+        return;
+    }
     let offset = end.saturating_sub(area.height).min(start);
     f.render_widget(
         Paragraph::new(lines)

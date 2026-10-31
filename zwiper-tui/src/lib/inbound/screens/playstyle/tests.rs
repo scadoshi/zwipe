@@ -825,4 +825,11 @@ fn playstyle_keeps_every_key_on_a_narrow_terminal() {
     crate::test_support::assert_key_bar_fits(&harness.app, "Esc Back");
     expand_first(&mut harness);
     crate::test_support::assert_key_bar_fits(&harness.app, "Esc Back");
+    for (width, height) in crate::test_support::NARROW {
+        let screen = crate::test_support::rows(&harness.app, width, height).join("\n");
+        assert!(
+            screen.contains("i Image"),
+            "the open row keeps its keys in view at {width}x{height}:\n{screen}"
+        );
+    }
 }

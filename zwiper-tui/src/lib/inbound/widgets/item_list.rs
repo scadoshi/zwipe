@@ -3,7 +3,7 @@
 //! The list pages instead of scrolling a line at a time. Pages fill greedily from the top with whole items, and the page holding the focused item is the one drawn, so moving the focus never shifts the items around it until it crosses a page edge. Nothing is kept between draws, which lets a screen draw from `&self`.
 
 use ratatui::Frame;
-use ratatui::layout::Rect;
+use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::style::Stylize;
 use ratatui::text::Line;
 use ratatui::widgets::{Paragraph, Wrap};
@@ -69,10 +69,23 @@ pub(crate) fn draw(
                 Rect::new(area.x, y, GUTTER, 1),
             );
         }
-        f.render_widget(
-            Paragraph::new(item.clone()).wrap(Wrap { trim: false }),
-            Rect::new(area.x.saturating_add(GUTTER), y, width, rows),
-        );
+        let spot = Rect::new(area.x.saturating_add(GUTTER), y, width, rows);
+        // The focused item cut short keeps its last line, a card row's keys, in its bottom rows.
+        match item.last().filter(|_| i == focused && height > rows) {
+            Some(last) => {
+                let last = vec![last.clone()];
+                let last_height = wrapped_height(&last, width).min(rows);
+                let [top, bottom] =
+                    Layout::vertical([Constraint::Fill(1), Constraint::Length(last_height)])
+                        .areas(spot);
+                f.render_widget(Paragraph::new(item.clone()).wrap(Wrap { trim: false }), top);
+                f.render_widget(Paragraph::new(last).wrap(Wrap { trim: false }), bottom);
+            }
+            None => f.render_widget(
+                Paragraph::new(item.clone()).wrap(Wrap { trim: false }),
+                spot,
+            ),
+        }
         y = y.saturating_add(rows);
     }
 }
@@ -122,6 +135,17 @@ mod tests {
         assert!(screen.contains("item 5"));
         assert!(!screen.contains("item 3"));
         assert!(screen.contains("> item 4"));
+    }
+
+    #[test]
+    fn a_focused_item_taller_than_the_list_keeps_its_last_line() {
+        let mut tall: Vec<Line<'static>> = vec![Line::from("name")];
+        tall.extend((0..8).map(|i| Line::from(format!("rule {i}"))));
+        tall.push(Line::from("i Image"));
+        let screen = text(&[tall], 0, 20, 5);
+        assert!(screen.contains("> name"), "the top stays");
+        assert!(screen.contains("i Image"), "the keys stay");
+        assert!(!screen.contains("rule 7"), "the middle is cut");
     }
 
     #[test]

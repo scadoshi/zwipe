@@ -261,21 +261,30 @@ fn draw_flavor_card(f: &mut Frame<'_>, palette: &Palette, card: &Card, area: Rec
         buy_row.push(Span::raw("  "));
         buy_row.extend(button(palette, "b", "Buy"));
     }
-    let mut lines: Vec<Line<'static>> = quote
+    let lines: Vec<Line<'static>> = quote
         .lines()
         .map(|l| Line::from(l.to_owned()).italic())
         .collect();
-    lines.push(Line::default());
-    lines.push(Line::from(buy_row));
-    f.render_widget(
-        Paragraph::new(lines)
-            .centered()
-            .wrap(Wrap { trim: false })
-            .block(
-                Block::bordered()
-                    .title(Line::from(" Featured flavor ").bold().centered())
-                    .border_style(palette.border),
-            ),
-        area,
-    );
+    let block = Block::bordered()
+        .title(Line::from(" Featured flavor ").bold().centered())
+        .border_style(palette.border);
+    let inner = block.inner(area);
+    f.render_widget(block, area);
+    let quote = Paragraph::new(lines).centered().wrap(Wrap { trim: false });
+    let buy = Paragraph::new(Line::from(buy_row))
+        .centered()
+        .wrap(Wrap { trim: false });
+    // The name and its Image and Buy keys stay in the panel; a quote too long for the rest is cut.
+    let buy_height = height_of(buy.line_count(inner.width)).min(inner.height);
+    let room = inner.height.saturating_sub(buy_height);
+    let quote_height = height_of(quote.line_count(inner.width)).min(room);
+    let gap = u16::from(room > quote_height);
+    let [quote_area, _, buy_area] = Layout::vertical([
+        Constraint::Length(quote_height),
+        Constraint::Length(gap),
+        Constraint::Length(buy_height),
+    ])
+    .areas(inner);
+    f.render_widget(quote, quote_area);
+    f.render_widget(buy, buy_area);
 }
