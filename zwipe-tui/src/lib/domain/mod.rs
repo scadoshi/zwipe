@@ -4,6 +4,8 @@
 pub(crate) mod account;
 /// A card as text: faces, mana symbols, rules and stats.
 pub(crate) mod card;
+/// The changelog cache and how its releases are filed.
+pub(crate) mod changelog;
 /// A deck's row in the deck list.
 pub(crate) mod deck;
 /// The logo entrance, ported from orangui.

@@ -17,9 +17,11 @@ use crossterm::event::{Event, EventStream, KeyCode, KeyEvent, KeyEventKind, KeyM
 use futures::StreamExt;
 use ratatui::DefaultTerminal;
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
+use tokio::time::MissedTickBehavior;
 use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::http::contracts::metrics::AnonymousEventKind;
 
-use super::app::{App, Context, Effects, Navigation};
+use super::app::{App, Context, Effects, Navigation, session};
 use super::screens::login::{self, LoginForm};
 use super::screens::{self, Request, Screen, Update};
 use super::widgets::help;
@@ -65,6 +67,9 @@ impl EventLoop {
         let session = self.account.session().await;
         self.start(app, session.as_ref());
         let mut events = EventStream::new();
+        // The first tick fires at once: the launch's refresh and version check.
+        let mut upkeep = tokio::time::interval(session::UPKEEP_INTERVAL);
+        upkeep.set_missed_tick_behavior(MissedTickBehavior::Delay);
 
         loop {
             self.dispatch();
@@ -79,6 +84,7 @@ impl EventLoop {
                     }
                 }
                 () = tokio::time::sleep(decode::TICK), if animating => {}
+                _ = upkeep.tick() => self.pending.push(Request::Upkeep),
                 event = events.next() => match event {
                     Some(Ok(Event::Key(key))) if key.kind == KeyEventKind::Press => {
                         if self.handle_key(app, key) == Flow::Quit {
@@ -93,13 +99,15 @@ impl EventLoop {
         }
     }
 
-    /// Checks the version, and opens home with a saved session or sign-in without one.
+    /// Fetches the changelog, and opens home with a saved session or sign-in without one, telling the server anonymously that the app opened.
     fn start(&mut self, app: &mut App, session: Option<&Session>) {
-        self.pending.push(Request::CheckVersion);
+        self.pending.push(Request::FetchChangelog);
         let mut cx = Context::new(&mut app.shared);
-        match session {
-            Some(session) => login::signed_in(&mut cx, session),
-            None => cx.reset(Screen::Login(LoginForm::default())),
+        if let Some(session) = session {
+            login::signed_in(&mut cx, session);
+        } else {
+            cx.request(Request::Record(AnonymousEventKind::AppOpened));
+            cx.reset(Screen::Login(LoginForm::default()));
         }
         let effects = cx.into_effects();
         self.settle(app, effects);
@@ -113,11 +121,18 @@ impl EventLoop {
         self.settle(app, effects)
     }
 
-    /// Hands a key to the open dialog, else to the screen on top. Ctrl+C quits from anywhere, Ctrl+T expands or collapses the toasts, and F1 opens Help & feedback.
+    /// Hands a key to the open dialog, else to the screen on top. Ctrl+C quits from anywhere, the update notice takes every other key but quitting, Ctrl+T expands or collapses the toasts, and F1 opens Help & feedback.
     fn handle_key(&mut self, app: &mut App, key: KeyEvent) -> Flow {
         let control = key.modifiers.contains(KeyModifiers::CONTROL);
         if control && key.code == KeyCode::Char('c') {
             return Flow::Quit;
+        }
+        if app.shared.update_required {
+            return if matches!(key.code, KeyCode::Esc | KeyCode::Char('q')) {
+                Flow::Quit
+            } else {
+                Flow::Continue
+            };
         }
         if control && key.code == KeyCode::Char('t') {
             app.shared.toasts.toggle_expanded();

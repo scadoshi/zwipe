@@ -3,9 +3,12 @@
 use std::time::Instant;
 
 use crossterm::event::KeyCode;
+use zwipe_core::http::contracts::changelog::HttpChangelog;
+use zwipe_core::http::contracts::metrics::AnonymousEventKind;
 
 use super::Flow;
 use super::harness::Harness;
+use crate::domain::changelog::ChangelogCache;
 use crate::domain::theme::Palette;
 use crate::inbound::screens::decks::DeckList;
 use crate::inbound::screens::login::LoginForm;
@@ -15,11 +18,31 @@ use crate::inbound::widgets::toast::{self, ToastKind};
 use crate::test_support::{card, render, screen_text, user};
 
 #[test]
-fn without_a_session_it_asks_to_sign_in_and_checks_the_version() {
+fn without_a_session_it_asks_to_sign_in_and_fetches_the_changelog() {
     let mut harness = Harness::new();
     harness.start();
     assert!(matches!(harness.screen(), Screen::Login(_)));
-    assert_eq!(harness.pending(), [Request::CheckVersion]);
+    assert_eq!(
+        harness.pending(),
+        [
+            Request::FetchChangelog,
+            Request::Record(AnonymousEventKind::AppOpened)
+        ]
+    );
+}
+
+#[test]
+fn the_changelog_lands_in_the_cache_or_marks_it_failed() {
+    let mut harness = Harness::new();
+    assert_eq!(harness.app.shared.changelog, ChangelogCache::Loading);
+    harness.apply(Update::Changelog(None));
+    assert_eq!(harness.app.shared.changelog, ChangelogCache::Failed);
+    let changelog = HttpChangelog::current();
+    harness.apply(Update::Changelog(Some(Box::new(changelog.clone()))));
+    assert_eq!(
+        harness.app.shared.changelog,
+        ChangelogCache::Loaded(changelog)
+    );
 }
 
 #[test]
@@ -65,8 +88,12 @@ fn an_ended_session_returns_to_sign_in_and_clears_the_saved_one() {
     let (mut harness, _) = Harness::swiping(vec![card("A")]);
     harness.app.shared.palette = Palette::for_account("gruvbox", true);
     harness.app.shared.username = Some("scotty".to_owned());
+    harness.app.shared.user = Some(user(true));
     harness.apply(Update::SessionEnded);
-    assert!(matches!(harness.screen(), Screen::Login(form) if form.error.is_some()));
+    assert!(
+        matches!(harness.screen(), Screen::Login(form) if form.error.is_none()),
+        "silently, as the app's auth gate"
+    );
     assert_eq!(harness.app.nav.depth(), 1, "the stack starts over");
     assert_eq!(
         harness.app.shared.palette,
@@ -131,8 +158,13 @@ fn an_open_hint_takes_every_key_until_it_closes() {
 fn an_old_build_is_stopped_until_it_updates() {
     let mut harness = Harness::new();
     harness.apply(Update::TooOld);
-    assert!(matches!(harness.screen(), Screen::UpdateRequired));
+    assert!(harness.app.shared.update_required);
+    assert!(screen_text(&harness.app).contains("Update required"));
     assert_eq!(harness.press(KeyCode::Char('l')), Flow::Continue);
+    assert!(
+        matches!(harness.screen(), Screen::Login(form) if form.identifier.is_empty()),
+        "keys do not reach the screen under it"
+    );
     assert_eq!(harness.press(KeyCode::Char('q')), Flow::Quit);
 }
 

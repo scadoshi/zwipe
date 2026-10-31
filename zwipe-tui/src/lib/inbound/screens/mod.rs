@@ -18,7 +18,8 @@ use crossterm::event::KeyCode;
 use ratatui::Frame;
 use zwipe_client::ClientError;
 use zwipe_core::domain::user::User;
-use zwipe_core::version::version_at_least;
+use zwipe_core::http::contracts::changelog::HttpChangelog;
+use zwipe_core::http::contracts::metrics::AnonymousEventKind;
 
 use self::account::AccountView;
 use self::config::ConfigView;
@@ -27,9 +28,10 @@ use self::decks::DeckList;
 use self::home::HomeView;
 use self::login::LoginForm;
 use self::swipe::SwipeView;
-use super::app::{Context, Shared};
+use super::app::{Context, Shared, session};
 use super::nav::Nav;
 use super::widgets::toast::ToastKind;
+use crate::domain::changelog::ChangelogCache;
 use crate::outbound::account::Account;
 use crate::outbound::theme_file::{RememberedTheme, ThemeFile};
 
@@ -46,7 +48,11 @@ pub(crate) enum Screen {
     Swipe(Box<SwipeView>),
     Account(Box<AccountView>),
     Config(Box<ConfigView>),
-    /// The server no longer accepts this version. Only quitting is possible.
+    /// The update notice as a screen of its own. The app shows it over the stack instead, while `Shared::update_required` holds; tests use it as a screen with no state.
+    #[cfg_attr(
+        not(test),
+        expect(dead_code, reason = "the notice draws over the stack instead")
+    )]
     UpdateRequired,
 }
 
@@ -101,9 +107,13 @@ impl Screen {
 /// Background work a handler asks for: the app's own, or one screen's.
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum Request {
-    /// Compares this build with the server's minimum client version.
-    CheckVersion,
+    /// Refreshes the session if it needs it and compares this build with the server's minimum client version, every minute from launch.
+    Upkeep,
     SignOut,
+    /// Sends an anonymous funnel event, before anyone signs in.
+    Record(AnonymousEventKind),
+    /// Fetches the changelog, once at launch.
+    FetchChangelog,
     /// Saves the account's theme for drawing before the next sign-in.
     RememberTheme(RememberedTheme),
     /// Tells the server a one-time hint has been shown, by its key.
@@ -128,7 +138,18 @@ pub(crate) enum Request {
 #[derive(Debug)]
 pub(crate) enum Update {
     /// The server's minimum client version is newer than this build.
+    #[cfg_attr(
+        not(test),
+        expect(dead_code, reason = "upkeep reports the version through Upkept")
+    )]
     TooOld,
+    /// An upkeep's result: whether the session ended, and whether this build is too old, `None` when the server could not say.
+    Upkept {
+        ended: bool,
+        too_old: Option<bool>,
+    },
+    /// The changelog, or `None` when it could not be fetched.
+    Changelog(Option<Box<HttpChangelog>>),
     /// The server no longer accepts the session.
     SessionEnded,
     SignedOut,
@@ -170,10 +191,14 @@ pub(crate) async fn perform(
     request: Request,
 ) -> Option<Update> {
     match request {
-        Request::CheckVersion => {
-            let minimum = account.client.fetch_min_client_version().await.ok()?;
-            (!version_at_least(VERSION, &minimum.min_version)).then_some(Update::TooOld)
+        Request::Upkeep => Some(session::upkeep(account).await),
+        Request::Record(kind) => {
+            session::record(account, kind).await;
+            None
         }
+        Request::FetchChangelog => Some(Update::Changelog(
+            account.client.fetch_changelog().await.ok().map(Box::new),
+        )),
         Request::SignOut => {
             account.sign_out().await;
             Some(Update::SignedOut)
@@ -209,11 +234,13 @@ pub(crate) async fn perform(
 /// Applies one result: the app's own here, a screen's by its module, which finds its screen in `nav` if it is open.
 pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
     match update {
-        Update::TooOld => cx.reset(Screen::UpdateRequired),
-        Update::SessionEnded => {
-            login::signed_out(cx, Some("Your session ended. Sign in again.".to_owned()));
-            cx.request(Request::SignOut);
+        Update::TooOld => cx.shared.update_required = true,
+        Update::Upkept { ended, too_old } => session::upkept(cx, ended, too_old),
+        Update::Changelog(changelog) => {
+            cx.shared.changelog =
+                changelog.map_or(ChangelogCache::Failed, |c| ChangelogCache::Loaded(*c));
         }
+        Update::SessionEnded => session::session_ended(cx),
         Update::SignedOut => login::signed_out(cx, None),
         Update::Status(status) => cx.shared.status = status,
         Update::Toast(kind, message) => cx.toast(kind, message),

@@ -1,6 +1,7 @@
 //! Everything the UI draws from: the back stack of screens, and the state every screen shares.
 
 mod context;
+pub(crate) mod session;
 
 use std::time::Instant;
 
@@ -11,11 +12,12 @@ use zwipe_core::domain::user::User;
 
 pub(crate) use self::context::{Context, Effects, Navigation};
 use super::nav::Nav;
-use super::screens::Screen;
 use super::screens::login::LoginForm;
+use super::screens::{Screen, update_required};
 use super::widgets::alert::AlertDialog;
 use super::widgets::hint::HintDialog;
 use super::widgets::toast::Toasts;
+use crate::domain::changelog::ChangelogCache;
 use crate::domain::theme::Palette;
 
 /// Everything the UI draws from.
@@ -44,6 +46,10 @@ pub(crate) struct Shared {
     pub(crate) hint: Option<HintDialog>,
     /// The Help & feedback dialog, over everything but the toasts.
     pub(crate) help: Option<AlertDialog>,
+    /// The server no longer accepts this version: the update notice replaces every screen until it does again.
+    pub(crate) update_required: bool,
+    /// The changelog, fetched once at launch.
+    pub(crate) changelog: ChangelogCache,
 }
 
 impl App {
@@ -64,6 +70,8 @@ impl App {
                 toasts: Toasts::default(),
                 hint: None,
                 help: None,
+                update_required: false,
+                changelog: ChangelogCache::default(),
             },
         }
     }
@@ -78,10 +86,14 @@ impl App {
         self.shared.toasts.prune(now);
     }
 
-    /// Draws the screen on top over the theme's background, then the hint, the help dialog and the toasts over it.
+    /// Draws the screen on top over the theme's background, then the hint, the help dialog and the toasts over it; or, while this version is no longer accepted, only the update notice.
     pub(crate) fn draw(&self, f: &mut Frame<'_>) {
         let palette = &self.shared.palette;
         f.render_widget(Block::new().style(palette.base), f.area());
+        if self.shared.update_required {
+            update_required::draw::draw(f, &self.shared);
+            return;
+        }
         self.nav.top().draw(f, &self.shared);
         if let Some(hint) = &self.shared.hint {
             hint.draw(f, palette);
