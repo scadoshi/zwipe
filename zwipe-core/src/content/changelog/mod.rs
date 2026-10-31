@@ -38,7 +38,12 @@ pub struct Release {
 pub const UPCOMING: &[Release] = &[Release {
     version: "1.16.3",
     date: None,
-    entries: &["Card roles with no Oracle tags to open show as grey chips"],
+    entries: &[
+        "Card roles with no Oracle tags to open show as grey chips",
+        "Activity's Card roles, Oracle tags and Most skipped say what fills them while they're empty",
+        "Activity's role and tag charts say why they're empty for the pick under Show",
+        "Activity's hints say share instead of rate",
+    ],
 }];
 
 /// Shipped releases, newest first.
