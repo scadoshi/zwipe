@@ -86,10 +86,9 @@ pub(crate) fn create_board_field(board: Board) -> Option<String> {
 /// predicate over (variant, card) picks the same entry newest-first.
 fn push_capped(log: &mut Vec<UndoAction>, action: UndoAction) {
     log.push(action);
-    if log.len() > MAX_UNDO_ACTIONS {
-        let overflow = log.len() - MAX_UNDO_ACTIONS;
-        log.drain(..overflow);
-    }
+    // Zero when the log is within its cap, and the drain is then empty.
+    let overflow = log.len().saturating_sub(MAX_UNDO_ACTIONS);
+    log.drain(..overflow);
 }
 
 /// Newest-first predicate removal: the reconciliation primitive behind

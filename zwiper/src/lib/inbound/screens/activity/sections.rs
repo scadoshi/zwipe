@@ -118,8 +118,20 @@ fn level(count: u32, busy: &[u32]) -> u8 {
 /// Sunday falls in it, unless the next label lands within [`LABEL_SPAN`]
 /// columns, which leaves a partial first month unlabeled.
 fn heat_layout(through: NaiveDate, days: &[HttpActivityDay]) -> HeatLayout {
-    let start = through - Duration::days(ACTIVITY_DAYS.saturating_sub(1));
-    let first_sunday = start - Duration::days(i64::from(start.weekday().num_days_from_sunday()));
+    // A year reaching back past the first date has no grid to lay out.
+    let Some((start, first_sunday)) = through
+        .checked_sub_signed(Duration::days(ACTIVITY_DAYS.saturating_sub(1)))
+        .and_then(|start| {
+            let to_sunday = Duration::days(i64::from(start.weekday().num_days_from_sunday()));
+            Some((start, start.checked_sub_signed(to_sunday)?))
+        })
+    else {
+        return HeatLayout {
+            cells: Vec::new(),
+            months: Vec::new(),
+            columns: 0,
+        };
+    };
     let by_day: HashMap<NaiveDate, &HttpActivityDay> = days.iter().map(|d| (d.day, d)).collect();
     let mut busy: Vec<u32> = days.iter().map(activity_of).filter(|&n| n > 0).collect();
     busy.sort_unstable();
@@ -129,7 +141,8 @@ fn heat_layout(through: NaiveDate, days: &[HttpActivityDay]) -> HeatLayout {
     let mut last_month = None;
     let mut date = start;
     while date <= through {
-        let offset = usize::try_from((date - first_sunday).num_days()).unwrap_or(0);
+        let offset =
+            usize::try_from(date.signed_duration_since(first_sunday).num_days()).unwrap_or(0);
         let (column, row) = (offset / DAYS_PER_WEEK, offset % DAYS_PER_WEEK);
         let day = by_day.get(&date);
         let (swipes, searches) = day.map_or((0, 0), |d| (d.swipes, d.searches));
@@ -152,7 +165,11 @@ fn heat_layout(through: NaiveDate, days: &[HttpActivityDay]) -> HeatLayout {
             swipes,
             searches,
         });
-        date = date.succ_opt().unwrap_or(through + Duration::days(1));
+        // The last date has no day after it, so the year ends there.
+        let Some(next) = date.succ_opt() else {
+            break;
+        };
+        date = next;
     }
     let counts: Vec<u32> = cells
         .iter()
@@ -233,7 +250,11 @@ fn outcome_bars(outcomes: &HttpSwipeOutcomes) -> Vec<Bar> {
     values
         .into_iter()
         .map(|(label, n)| {
-            let pct = u32::try_from(n.saturating_mul(100) / top).unwrap_or(100);
+            let pct = n
+                .saturating_mul(100)
+                .checked_div(top)
+                .and_then(|pct| u32::try_from(pct).ok())
+                .unwrap_or(100);
             Bar::new(label, usize::try_from(n).unwrap_or(usize::MAX), pct)
         })
         .collect()
@@ -291,7 +312,8 @@ impl RateKind {
     /// take a share of.
     fn percent(self, outcomes: &HttpSwipeOutcomes) -> Option<u32> {
         let (count, of) = self.parts(outcomes);
-        (of > 0).then(|| u32::try_from(count.saturating_mul(100) / of).unwrap_or(100))
+        let pct = count.saturating_mul(100).checked_div(of)?;
+        Some(u32::try_from(pct).unwrap_or(100))
     }
 }
 
@@ -769,6 +791,19 @@ mod tests {
             swipes,
             searches,
         }
+    }
+
+    #[test]
+    fn a_year_ending_on_the_last_date_stops_there() {
+        let layout = heat_layout(NaiveDate::MAX, &[]);
+        assert_eq!(layout.cells.last().map(|c| c.date), Some(NaiveDate::MAX));
+    }
+
+    #[test]
+    fn a_year_reaching_before_the_first_date_is_empty() {
+        let layout = heat_layout(NaiveDate::MIN, &[]);
+        assert_eq!(layout.cells, Vec::new());
+        assert_eq!(layout.columns, 0);
     }
 
     #[test]

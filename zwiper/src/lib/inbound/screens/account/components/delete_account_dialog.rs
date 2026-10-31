@@ -111,6 +111,10 @@ pub(crate) fn DeleteAccountDialog(open: Signal<bool>) -> Element {
 }
 
 #[cfg(test)]
+#[expect(
+    clippy::arithmetic_side_effects,
+    reason = "test fixtures; overflow fails the test"
+)]
 mod tests {
     use std::cell::RefCell;
     use std::time::Instant;

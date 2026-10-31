@@ -93,7 +93,8 @@ pub fn Remove(deck_id: Uuid) -> Element {
     let show_details = use_signal(|| false);
     let mut printing_open = use_signal(|| false);
 
-    // Incrementing this re-runs the filter effect
+    // Incrementing this re-runs the filter effect. Readers only see that it
+    // moved, so bumps wrap.
     let mut filter_reset_counter: Signal<u32> = use_signal(|| 0);
     use_context_provider(|| filter_reset_counter);
 
@@ -228,7 +229,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                 deck_entries.set(deck.entries);
                 deck_loaded.set(true);
                 let current = *filter_reset_counter.peek();
-                filter_reset_counter.set(current + 1);
+                filter_reset_counter.set(current.wrapping_add(1));
             }
         });
     });
@@ -570,7 +571,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                                 onclick: move |_| {
                                     board_filter.set(variant);
                                     let current = *filter_reset_counter.peek();
-                                    filter_reset_counter.set(current + 1);
+                                    filter_reset_counter.set(current.wrapping_add(1));
                                 },
                                 "{label}"
                             }
@@ -673,7 +674,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                         stack.rewind();
                         if filter_builder.peek().sort() == Some(CardSortKey::Random) {
                             let current = *filter_reset_counter.peek();
-                            filter_reset_counter.set(current + 1);
+                            filter_reset_counter.set(current.wrapping_add(1));
                         }
                         toast.info(
                             "Stack refreshed".to_string(),

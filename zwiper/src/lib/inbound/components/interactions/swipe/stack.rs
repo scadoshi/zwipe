@@ -25,6 +25,7 @@ use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ImageSize;
 
+use crate::inbound::components::interactions::gesture_math;
 use crate::inbound::components::interactions::swipe::axis::Axis;
 use crate::inbound::components::interactions::swipe::config::SwipeConfig;
 use crate::inbound::components::interactions::swipe::direction::Direction;
@@ -98,8 +99,9 @@ pub fn SwipeStack(
                     let is_top = i == 0;
                     let card_id = card.scryfall_data.id;
                     let card_name = card.scryfall_data.name.clone();
-                    let peek_i = i as f64;
-                    let z = (n - i) as i32;
+                    let peek_i = gesture_math::layout_index(i);
+                    // i < n, so this never floors.
+                    let z = n.saturating_sub(i);
 
                     // Build the inline transform for this card. We let the
                     // `.swipe-stack-card` CSS class own the default transform
