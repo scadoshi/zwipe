@@ -14,7 +14,7 @@ pub mod commander_maybeboard;
 /// Delete user account endpoint.
 pub mod delete_user;
 /// Fetch user profile endpoint.
-pub mod get_user;
+pub mod fetch_user;
 /// Mark one-time UI hint shown endpoint.
 pub mod mark_hint_shown;
 /// User preferences endpoints.

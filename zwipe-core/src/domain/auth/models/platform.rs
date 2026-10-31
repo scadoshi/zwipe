@@ -3,7 +3,7 @@
 //! Which kind of client created (or last rotated) a session. Recorded per
 //! session (a single user can hold sessions from several platforms at once)
 //! for platform analytics and targeted comms. Serialized/stored as a lowercase
-//! string (`"ios"`, `"android"`, `"desktop"`, `"web"`).
+//! string (`"ios"`, `"android"`, `"desktop"`, `"web"`, `"terminal"`).
 
 use std::fmt;
 use std::str::FromStr;
@@ -22,6 +22,9 @@ pub enum ClientPlatform {
     Desktop,
     /// The browser client.
     Web,
+    /// The terminal client (`zwiper-tui`). No build target resolves to it, so
+    /// the terminal client sets it explicitly instead of using [`Self::CURRENT`].
+    Terminal,
 }
 
 impl ClientPlatform {
@@ -33,6 +36,7 @@ impl ClientPlatform {
             ClientPlatform::Android => "android",
             ClientPlatform::Desktop => "desktop",
             ClientPlatform::Web => "web",
+            ClientPlatform::Terminal => "terminal",
         }
     }
 
@@ -81,7 +85,43 @@ impl FromStr for ClientPlatform {
             "android" => Ok(ClientPlatform::Android),
             "desktop" => Ok(ClientPlatform::Desktop),
             "web" => Ok(ClientPlatform::Web),
+            "terminal" => Ok(ClientPlatform::Terminal),
             other => Err(ParseClientPlatformError(other.to_string())),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn terminal_round_trips_through_serde_and_from_str() {
+        let json = serde_json::to_string(&ClientPlatform::Terminal).unwrap();
+        assert_eq!(json, r#""terminal""#);
+        let back: ClientPlatform = serde_json::from_str(&json).unwrap();
+        assert_eq!(back, ClientPlatform::Terminal);
+        assert_eq!(ClientPlatform::Terminal.as_str(), "terminal");
+        assert_eq!(
+            "terminal".parse::<ClientPlatform>().unwrap(),
+            ClientPlatform::Terminal
+        );
+    }
+
+    #[test]
+    fn every_variant_round_trips_through_as_str() {
+        for platform in [
+            ClientPlatform::Ios,
+            ClientPlatform::Android,
+            ClientPlatform::Desktop,
+            ClientPlatform::Web,
+            ClientPlatform::Terminal,
+        ] {
+            assert_eq!(
+                platform.as_str().parse::<ClientPlatform>().unwrap(),
+                platform,
+                "{platform}"
+            );
         }
     }
 }
