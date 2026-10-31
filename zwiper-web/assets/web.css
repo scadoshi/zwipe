@@ -170,6 +170,23 @@ body {
     }
 }
 
+/* ---- Settings lists (Account, Config) ---- */
+
+/* Two lists side by side on a wide window. */
+@media (min-width: 900px) {
+    .settings-sections.web-settings-pair {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: start;
+        max-width: 64rem;
+        padding-top: 1rem;
+    }
+
+    .web-settings-pair > .settings-list {
+        max-width: none;
+    }
+}
+
 /* ---- Sheets on a wide window ---- */
 
 @media (min-width: 900px) {
@@ -232,6 +249,64 @@ body {
     .web-sheet-side > .bottom-sheet,
     .web-sheet-side > .bottom-sheet.show {
         transition: none;
+    }
+}
+
+/* ---- More menu: a popover on a wide window, the app's sheet below ---- */
+
+.web-more-anchor {
+    display: inline-flex;
+}
+
+.web-more-popover-layer {
+    display: none;
+}
+
+@media (min-width: 900px) {
+    .web-more-sheet {
+        display: none;
+    }
+
+    .web-more-popover-layer {
+        display: block;
+    }
+
+    .web-more-catcher {
+        position: fixed;
+        inset: 0;
+        z-index: 190;
+    }
+
+    .web-more-popover {
+        position: fixed;
+        z-index: 195;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        min-width: 14rem;
+        padding: 0.75rem;
+        background-color: var(--bg-primary);
+        border: 1px solid var(--border-secondary);
+        border-radius: 0.75rem;
+        box-shadow: var(--shadow-md);
+        animation: web-popover-in 0.15s ease-out;
+    }
+}
+
+@keyframes web-popover-in {
+    from {
+        opacity: 0;
+        transform: translateY(-0.25rem);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .web-more-popover {
+        animation: none;
     }
 }
 

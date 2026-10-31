@@ -3,5 +3,6 @@
 
 pub mod authed;
 pub mod hint_topic;
+pub mod more_menu;
 pub mod one_time_hint;
 pub mod sheet;

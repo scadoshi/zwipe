@@ -2,13 +2,10 @@
 //! sidebar link works from the start. A wave replaces its screens here with
 //! modules of their own.
 
-use components::{ActionBar, AlertDialog, Button, ButtonVariant, DialogAction, Panel};
+use components::Panel;
 use dioxus::prelude::*;
 use uuid::Uuid;
-use zwipe_client::ZwipeClient;
-use zwipe_core::domain::auth::models::session::Session;
 
-use crate::inbound::session::logout;
 use crate::inbound::shell::ScreenFrame;
 
 /// A screen's title over a panel saying it is still to come, naming the
@@ -123,47 +120,6 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
 #[component]
 pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
     rsx! { Placeholder { title: "Remove cards", deck_id } }
-}
-
-/// Account, not built yet, with the app's `Log out` and its confirm dialog
-/// so a session can end before Wave A lands.
-#[component]
-pub fn Account() -> Element {
-    let session: Signal<Option<Session>> = use_context();
-    let client: Signal<ZwipeClient> = use_context();
-    let mut confirm = use_signal(|| false);
-    let log_out = use_callback(move |()| logout::logout(session, client));
-
-    rsx! {
-        ScreenFrame { title: "Account",
-            div { class: "web-placeholder content-enter",
-                Panel { title: "Account",
-                    p { "This screen is not built for the web yet." }
-                }
-            }
-            ActionBar {
-                Button {
-                    variant: ButtonVariant::Action,
-                    danger: true,
-                    onclick: move |_| confirm.set(true),
-                    "Log out"
-                }
-            }
-        }
-        AlertDialog {
-            open: confirm,
-            title: "Log out",
-            actions: vec![
-                DialogAction::Dismiss("Cancel".into()),
-                DialogAction::Confirm {
-                    label: "Log out".into(),
-                    danger: true,
-                    on_confirm: log_out,
-                },
-            ],
-            "Are you sure you want to log out?"
-        }
-    }
 }
 
 /// A path no route matches.
