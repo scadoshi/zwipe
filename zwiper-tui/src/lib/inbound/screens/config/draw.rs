@@ -9,7 +9,7 @@ use zwipe_core::domain::card::scryfall_data::universe;
 use zwipe_core::domain::user::preferences;
 use zwipe_core::domain::user::preferences::PipStyle;
 
-use super::{ConfigView, ExceptionsSheet, Sheet, Stop, ThemeSheet, same_set};
+use super::{ConfigView, ExceptionsSheet, Sheet, Stop, ThemeSheet};
 use crate::domain::theme::{self, Palette, PickerRow};
 use crate::inbound::app::Shared;
 use crate::inbound::widgets::action_bar::{self, Button};
@@ -239,7 +239,7 @@ fn themes_sheet(palette: &Palette, view: &ConfigView, themes: &ThemeSheet) -> sh
     sheet::Sheet::new("Themes", lines)
         .with_focus(themes.row)
         .with_footer("j/k", "preview")
-        .with_footer("Enter", if themes.picked() { "Save" } else { "-" })
+        .with_footer("Enter", "Save")
         .with_footer("Esc", "Back")
 }
 
@@ -283,17 +283,12 @@ fn exceptions_sheet(
         .len()
         .saturating_add(focus_line(view, exceptions.chip, width));
     lines.extend(chip_lines);
-    let save = if same_set(&exceptions.draft, &view.shown.universes_beyond_exceptions) {
-        "-"
-    } else {
-        "Save"
-    };
     sheet::Sheet::new("Exceptions", lines)
         .with_hint()
         .with_focus(focus)
         .with_footer("Space", "pick")
         .with_footer("x", "clear")
-        .with_footer("Enter", save)
+        .with_footer("Enter", "Save")
         .with_footer("Esc", "Back")
 }
 

@@ -245,3 +245,26 @@ fn i_opens_the_rows_topic_and_the_screen_fits_a_tiny_terminal() {
 fn config_keeps_every_key_on_a_narrow_terminal() {
     crate::test_support::assert_key_bar_fits(&on_config().app, "Esc back");
 }
+
+#[test]
+fn the_themes_and_exceptions_sheets_read_save_as_the_app_does() {
+    let mut harness = on_config();
+    focus(&mut harness, Stop::Theme);
+    harness.press(KeyCode::Enter);
+    for (width, height) in [(200, 50), (120, 40), (80, 24), (60, 20)] {
+        let text = crate::test_support::rows(&harness.app, width, height).join("\n");
+        assert!(
+            text.contains("Enter Save"),
+            "Themes at {width}x{height}:\n{text}"
+        );
+        assert!(!text.contains("Enter -"), "Themes at {width}x{height}");
+    }
+    harness.press(KeyCode::Esc);
+    if let Screen::Config(view) = harness.screen_mut() {
+        view.shown.exclude_universes_beyond = true;
+    }
+    focus(&mut harness, Stop::Exceptions);
+    harness.press(KeyCode::Enter);
+    let text = crate::test_support::rows(&harness.app, 80, 24).join("\n");
+    assert!(text.contains("Enter Save"), "Exceptions:\n{text}");
+}
