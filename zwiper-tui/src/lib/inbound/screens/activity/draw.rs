@@ -19,7 +19,9 @@ use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::screens::home::draw as home_draw;
 use crate::inbound::widgets::card_rows::CardRow;
-use crate::inbound::widgets::{action_bar, charts, color_map, entrance, figures, item_list, otag};
+use crate::inbound::widgets::{
+    action_bar, charts, color_map, entrance, figures, header, item_list, otag,
+};
 
 /// Rows the counters panel takes: its frame, the figures and the chips.
 const COUNTS_HEIGHT: u16 = figures::HEIGHT.saturating_add(3);
@@ -76,10 +78,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &ActivityView) {
         Constraint::Length(1),
     ])
     .areas(area);
-    f.render_widget(
-        Line::styled(super::TITLE, palette.accent).bold().centered(),
-        title,
-    );
+    header::draw(f, palette, title, super::TITLE, header::Corner::Hint);
     draw_counts(f, shared, view, counts);
     match &view.load {
         Load::Loading => draw_lines(f, skeleton(palette, body.width), (0, 0), body),

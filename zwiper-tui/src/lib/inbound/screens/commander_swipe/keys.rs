@@ -6,6 +6,7 @@ use crossterm::event::KeyCode;
 
 use super::{CommanderSwipeView, reopen_hint};
 use crate::inbound::app::Context;
+use crate::inbound::widgets::help;
 
 pub(crate) fn handle(view: &mut CommanderSwipeView, code: KeyCode, cx: &mut Context<'_>) {
     if view.sheet.is_some() {
@@ -33,6 +34,7 @@ pub(crate) fn handle(view: &mut CommanderSwipeView, code: KeyCode, cx: &mut Cont
     }
     match code {
         KeyCode::Esc | KeyCode::Char('q') => view.close(cx),
+        KeyCode::Char('!') => help::open(cx),
         KeyCode::Right | KeyCode::Char('l') => view.select(cx),
         KeyCode::Up | KeyCode::Char('k') => view.save(cx),
         KeyCode::Left | KeyCode::Char('h') => view.skip(cx),

@@ -14,7 +14,7 @@ use crate::domain::deck::list::{DeckGroup, GroupBy};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::widgets::pill::{self, PillState, pill};
-use crate::inbound::widgets::{action_bar, mana, skeleton};
+use crate::inbound::widgets::{action_bar, header, mana, skeleton};
 
 /// Ghost rows while the decks load.
 const SKELETON_ROWS: usize = 8;
@@ -39,13 +39,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, list: &DeckList) {
     .margin(1)
     .areas(f.area());
 
-    f.render_widget(
-        Line::from(vec![
-            Span::styled("Decks", palette.accent).bold(),
-            Span::styled("  ? hint", palette.muted),
-        ]),
-        header,
-    );
+    header::draw(f, palette, header, "Decks", header::Corner::Hint);
     if list.chips_shown() {
         f.render_widget(
             Paragraph::new(chip_rows(palette, list, usize::from(chips_area.width))),

@@ -7,6 +7,7 @@ use crossterm::event::KeyCode;
 use super::{ExamplesView, reopen_hint};
 use crate::inbound::app::Context;
 use crate::inbound::screens::printings::{self, Mode};
+use crate::inbound::widgets::help;
 use crate::inbound::widgets::sheet::SheetKey;
 
 pub(crate) fn handle(view: &mut ExamplesView, code: KeyCode, cx: &mut Context<'_>) {
@@ -22,6 +23,7 @@ pub(crate) fn handle(view: &mut ExamplesView, code: KeyCode, cx: &mut Context<'_
     }
     match code {
         KeyCode::Esc => cx.back(),
+        KeyCode::Char('!') => help::open(cx),
         KeyCode::Left | KeyCode::Char('h') => view.next(cx),
         KeyCode::Down | KeyCode::Char('j') => view.back_one(cx),
         KeyCode::Char('d') => view.open_details(&cx.shared.palette),

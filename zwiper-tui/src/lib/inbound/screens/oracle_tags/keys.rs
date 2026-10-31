@@ -9,11 +9,13 @@ use crossterm::event::KeyCode;
 use super::{OracleTagsView, Step, reopen_hint};
 use crate::inbound::app::Context;
 use crate::inbound::screens::otag_examples;
+use crate::inbound::widgets::help;
 
 pub(crate) fn handle(view: &mut OracleTagsView, code: KeyCode, cx: &mut Context<'_>) {
     let Some(tags) = cx.shared.caches.oracle_tags.tags() else {
         match code {
             KeyCode::Esc => cx.back(),
+            KeyCode::Char('!') => help::open(cx),
             KeyCode::Char('?') => reopen_hint(cx),
             _ => {}
         }
@@ -44,6 +46,7 @@ pub(crate) fn handle(view: &mut OracleTagsView, code: KeyCode, cx: &mut Context<
     }
     match code {
         KeyCode::Esc => cx.back(),
+        KeyCode::Char('!') => help::open(cx),
         KeyCode::Char('/') => view.typing = true,
         KeyCode::Left | KeyCode::Char('h') => view.step_letter(tags, Step::Back),
         KeyCode::Right | KeyCode::Char('l') => view.step_letter(tags, Step::Forward),

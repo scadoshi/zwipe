@@ -9,7 +9,7 @@ use crate::domain::home;
 use crate::inbound::app::Context;
 use crate::inbound::screens::{self, account, config, decks, image_preview};
 use crate::inbound::widgets::alert::{AlertChoice, AlertDialog};
-use crate::inbound::widgets::{browser, info};
+use crate::inbound::widgets::{browser, help, info};
 
 /// The Buy dialog's title.
 pub(crate) const BUY_TITLE: &str = "Buy card";
@@ -51,6 +51,7 @@ pub(crate) fn handle(view: &mut HomeView, code: KeyCode, cx: &mut Context<'_>) {
     }
     match code {
         KeyCode::Esc => cx.back(),
+        KeyCode::Char('!') => help::open(cx),
         KeyCode::Char('q') => cx.quit(),
         KeyCode::Char('d') | KeyCode::Enter => decks::open(cx),
         KeyCode::Char('a') => account::open(cx),

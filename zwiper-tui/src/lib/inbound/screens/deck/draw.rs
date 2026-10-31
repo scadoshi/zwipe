@@ -18,7 +18,7 @@ use crate::inbound::app::Shared;
 use crate::inbound::widgets::charts::{Column, columns, row};
 use crate::inbound::widgets::measure::{BORDERS, height_of, width_of};
 use crate::inbound::widgets::pill::{self, PillState, pill};
-use crate::inbound::widgets::{action_bar, mana, panel, skeleton};
+use crate::inbound::widgets::{action_bar, header, mana, panel, skeleton};
 
 /// A vertical chart is at most this tall, frame included, so a small deck's bars stay short.
 const CHART_HEIGHT: u16 = 14;
@@ -72,13 +72,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &DeckView) {
     ])
     .areas(area);
 
-    f.render_widget(
-        Line::from(vec![
-            Span::styled("Deck", palette.accent).bold(),
-            Span::styled("  ? hint", palette.muted),
-        ]),
-        header,
-    );
+    header::draw(f, palette, header, "Deck", header::Corner::Hint);
 
     let panes = view.panes();
     let profile_rows = profile_lines(

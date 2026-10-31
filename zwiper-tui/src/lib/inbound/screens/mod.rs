@@ -533,4 +533,64 @@ mod tests {
         });
         assert!(!format!("{request:?}").contains("hunter2"));
     }
+
+    /// The screen's header row: the one holding `title` with the `!` corner first.
+    fn header_row(text: &str, title: &str) -> Option<String> {
+        let cells: Vec<char> = text.chars().collect();
+        cells
+            .chunks(100)
+            .map(|line| line.iter().collect::<String>())
+            .find(|line| line.trim_start().starts_with('!') && line.contains(title))
+    }
+
+    #[test]
+    fn every_screen_has_the_help_corner_and_a_hint_corner_when_it_has_a_hint() {
+        use uuid::Uuid;
+
+        use crate::inbound::event_loop::harness::Harness;
+        use crate::test_support::screen_text;
+
+        type Open = Box<dyn FnOnce(&mut Context<'_>)>;
+        let deck_id = Uuid::nil();
+        let screens: Vec<(&str, bool, Open)> = vec![
+            ("Activity", true, Box::new(activity::open)),
+            ("Playstyle", true, Box::new(playstyle::open)),
+            (
+                "Commander maybeboard",
+                true,
+                Box::new(commander_maybeboard::open),
+            ),
+            ("Oracle tags", true, Box::new(oracle_tags::open)),
+            (
+                "Examples",
+                true,
+                Box::new(|cx: &mut Context<'_>| otag_examples::open(cx, "ramp")),
+            ),
+            ("Decks", true, Box::new(decks::open)),
+            (
+                "Deck cards",
+                true,
+                Box::new(move |cx: &mut Context<'_>| deck_cards::open(cx, deck_id)),
+            ),
+            (
+                "Remove deck cards",
+                true,
+                Box::new(move |cx: &mut Context<'_>| remove_cards::open(cx, deck_id)),
+            ),
+        ];
+        for (title, hint, open) in screens {
+            let mut harness = Harness::on(Screen::Home(Box::default()));
+            harness.open(open);
+            harness.app.shared.hint = None;
+            let text = screen_text(&harness.app);
+            let row = header_row(&text, title).unwrap_or_else(|| panic!("{title} has no ! corner"));
+            assert_eq!(row.trim_end().ends_with('?'), hint, "{title}'s ? corner");
+            harness.press(KeyCode::Char('!'));
+            assert!(harness.app.shared.help.is_some(), "! opens help on {title}");
+        }
+        let harness = Harness::on(Screen::Home(Box::default()));
+        let text = screen_text(&harness.app);
+        let row = header_row(&text, "Home").expect("Home has a ! corner");
+        assert!(!row.trim_end().ends_with('?'), "Home has no ? corner");
+    }
 }

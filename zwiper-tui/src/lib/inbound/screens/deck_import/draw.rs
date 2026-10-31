@@ -2,7 +2,6 @@
 
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Rect};
-use ratatui::style::Stylize;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Paragraph, Wrap};
 use zwipe_core::domain::deck::ImportMode;
@@ -10,9 +9,9 @@ use zwipe_core::domain::deck::ImportMode;
 use super::{Focus, ImportView, Source, Target};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
-use crate::inbound::widgets::action_bar;
 use crate::inbound::widgets::pill::{self, PillState, pill};
 use crate::inbound::widgets::text_input::BOX_HEIGHT;
+use crate::inbound::widgets::{action_bar, header};
 
 /// The result list is at most this tall, border included.
 const RESULT_HEIGHT: u16 = 10;
@@ -40,13 +39,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &ImportView) {
     ])
     .margin(1)
     .areas(f.area());
-    f.render_widget(
-        Line::from(vec![
-            Span::styled("Import", palette.accent).bold(),
-            Span::styled("  ? hint", palette.muted),
-        ]),
-        header,
-    );
+    header::draw(f, palette, header, "Import", header::Corner::Hint);
     f.render_widget(Paragraph::new(chip_lines(palette, view)), chips);
     draw_explainer(f, palette, view, explainer);
     draw_input(f, palette, view, input);

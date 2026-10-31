@@ -34,7 +34,7 @@ use crate::inbound::screens::activity::draw::{
 use crate::inbound::screens::home;
 use crate::inbound::screens::home::draw as home_draw;
 use crate::inbound::widgets::card_rows::{CardRow, OTHER_TAGS};
-use crate::inbound::widgets::{action_bar, charts, color_map, mana, otag};
+use crate::inbound::widgets::{action_bar, charts, color_map, header, mana, otag};
 
 /// The tallest the color map draws, in rows, as the app's `14rem`.
 const MAP_ROWS: u16 = 14;
@@ -75,10 +75,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &PlaystyleView) {
         Constraint::Length(1),
     ])
     .areas(area);
-    f.render_widget(
-        Line::styled(super::TITLE, palette.accent).bold().centered(),
-        title,
-    );
+    header::draw(f, palette, title, super::TITLE, header::Corner::Hint);
     if view.is_loading {
         draw_lines(f, skeleton(palette, view, body.width), (0, 0), body);
     } else if view.load_failed {

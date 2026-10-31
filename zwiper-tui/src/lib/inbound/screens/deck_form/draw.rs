@@ -22,7 +22,7 @@ use crate::inbound::screens::card_sheets;
 use crate::inbound::widgets::card_motion::{self, CardMotion, Phase};
 use crate::inbound::widgets::pill::{self, PillState, pill};
 use crate::inbound::widgets::text_input::TextInput;
-use crate::inbound::widgets::{action_bar, skeleton};
+use crate::inbound::widgets::{action_bar, header, skeleton};
 
 /// Values sit this far in from the left, under their labels.
 const INDENT: &str = "    ";
@@ -60,13 +60,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &DeckForm) {
         Some(Overlay::Info(_)) | None => {}
     }
 
-    f.render_widget(
-        Line::from(vec![
-            Span::styled(form.mode.title(), palette.accent).bold(),
-            Span::styled("  ? hint", palette.muted),
-        ]),
-        header,
-    );
+    header::draw(f, palette, header, form.mode.title(), header::Corner::Hint);
     let block = Block::bordered().border_style(palette.border);
     if form.loading || form.load_error.is_some() {
         let inner = block.inner(body);
@@ -584,13 +578,7 @@ fn picker_frame(
         save_enabled,
     } = frame;
     let [header, body, _, keys] = areas;
-    f.render_widget(
-        Line::from(vec![
-            Span::styled(title.to_owned(), palette.accent).bold(),
-            Span::styled("  F6 hint", palette.muted),
-        ]),
-        header,
-    );
+    header::draw(f, palette, header, title, header::Corner::Hint);
     let bar_height = u16::try_from(bar.1.len()).unwrap_or(1).saturating_add(3);
     let [controls, search_area, bar_area, grid] = Layout::vertical([
         Constraint::Length(1),
@@ -622,7 +610,12 @@ fn picker_frame(
     };
     let mut bar = action_bar::line(
         palette,
-        &[("arrows", "move"), ("Enter", "pick"), ("Esc", "Back")],
+        &[
+            ("arrows", "move"),
+            ("Enter", "pick"),
+            ("F6", "hint"),
+            ("Esc", "Back"),
+        ],
     );
     bar.spans.push(Span::styled("F2 ", save_style));
     bar.spans.push(Span::styled("Save", palette.muted));
@@ -850,13 +843,7 @@ fn draw_oracle(
 fn draw_swipe(f: &mut Frame<'_>, shared: &Shared, picker: &SwipePicker, areas: [Rect; 4]) {
     let palette = &shared.palette;
     let [header, body, _, keys] = areas;
-    f.render_widget(
-        Line::from(vec![
-            Span::styled("Swipe select", palette.accent).bold(),
-            Span::styled("  F6 hint", palette.muted),
-        ]),
-        header,
-    );
+    header::draw(f, palette, header, "Swipe select", header::Corner::Hint);
     let block = Block::bordered().border_style(palette.border);
     let inner = block.inner(body);
     f.render_widget(block, body);
@@ -900,9 +887,14 @@ fn draw_swipe(f: &mut Frame<'_>, shared: &Shared, picker: &SwipePicker, areas: [
         "Filter"
     };
     shown.extend(
-        [("F3", filter_label), ("F5", "Refresh"), ("Esc", "Back")]
-            .into_iter()
-            .map(|(k, a)| (k, a, palette.muted)),
+        [
+            ("F3", filter_label),
+            ("F5", "Refresh"),
+            ("F6", "hint"),
+            ("Esc", "Back"),
+        ]
+        .into_iter()
+        .map(|(k, a)| (k, a, palette.muted)),
     );
     f.render_widget(action_bar::styled_line(&shown), keys);
     if let Some(sheet) = &picker.sheet {

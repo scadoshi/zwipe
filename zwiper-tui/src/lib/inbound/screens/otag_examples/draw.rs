@@ -4,7 +4,7 @@ use std::time::Instant;
 
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Margin, Rect};
-use ratatui::style::{Style, Stylize};
+use ratatui::style::Style;
 use ratatui::text::Line;
 use ratatui::widgets::{Block, Padding, Paragraph, Widget, Wrap};
 use zwipe_core::domain::card::Card;
@@ -13,7 +13,7 @@ use super::{EMPTY, END, ExamplesView, TITLE};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::widgets::card_motion::{self, CardMotion, Phase};
-use crate::inbound::widgets::{action_bar, card_text, skeleton};
+use crate::inbound::widgets::{action_bar, card_text, header, skeleton};
 
 /// The card's frame is at most this wide, as the image preview's text fallback.
 const CARD_WIDTH: u16 = 48;
@@ -30,7 +30,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &ExamplesView) {
         Constraint::Length(1),
     ])
     .areas(area);
-    f.render_widget(Line::styled(TITLE, palette.accent).bold().centered(), title);
+    header::draw(f, palette, title, TITLE, header::Corner::Hint);
     let card_area = body.centered_horizontally(Constraint::Max(CARD_WIDTH));
     let now = Instant::now();
     let motion = view.motion.as_ref().filter(|m| m.running(now));

@@ -4,7 +4,7 @@ use std::time::Instant;
 
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Margin};
-use ratatui::style::{Style, Stylize};
+use ratatui::style::Style;
 use ratatui::text::Line;
 use ratatui::widgets::{Paragraph, Widget, Wrap};
 use zwipe_core::domain::card::Card;
@@ -17,7 +17,7 @@ use crate::inbound::screens::card_sheets::filter::draw as filter_sheet;
 use crate::inbound::screens::playstyle::draw::{Reasons, reasons_lines, show_line, wrap_at_gaps};
 use crate::inbound::widgets::card_motion::{self, CardMotion, Phase};
 use crate::inbound::widgets::sheet::Sheet;
-use crate::inbound::widgets::{action_bar, card_text, skeleton};
+use crate::inbound::widgets::{action_bar, card_text, header, skeleton};
 
 /// Ghost rows standing in for a card's text.
 const GHOST_ROWS: usize = 8;
@@ -34,10 +34,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &CommanderSwipeView
         Constraint::Length(1),
     ])
     .areas(area);
-    f.render_widget(
-        Line::styled(view.title(), palette.accent).bold().centered(),
-        title,
-    );
+    header::draw(f, palette, title, view.title(), header::Corner::Hint);
     let body = body.inner(Margin::new(1, 1));
     let now = Instant::now();
     let motion = view.motion.as_ref().filter(|m| m.running(now));

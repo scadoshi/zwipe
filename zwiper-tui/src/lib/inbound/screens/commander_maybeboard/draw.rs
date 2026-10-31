@@ -21,7 +21,7 @@ use crate::inbound::screens::card_sheets::filter::draw as filter_sheet;
 use crate::inbound::screens::playstyle::draw::{ChipContent, chip_line, wrap_at_gaps};
 use crate::inbound::widgets::card_rows::CardRow;
 use crate::inbound::widgets::text_input::BOX_HEIGHT;
-use crate::inbound::widgets::{action_bar, mana, skeleton};
+use crate::inbound::widgets::{action_bar, header, mana, skeleton};
 
 /// Ghost rows in the list while loading, as the app's skeleton.
 const GHOST_ROWS: usize = 6;
@@ -42,10 +42,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &MaybeboardView) {
         Constraint::Length(1),
     ])
     .areas(area);
-    f.render_widget(
-        Line::styled(super::TITLE, palette.accent).bold().centered(),
-        title,
-    );
+    header::draw(f, palette, title, super::TITLE, header::Corner::Hint);
     if view.is_loading {
         f.render_widget(
             Block::bordered()

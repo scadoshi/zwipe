@@ -2,14 +2,13 @@
 
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout};
-use ratatui::style::Stylize;
-use ratatui::text::{Line, Span};
+use ratatui::text::Line;
 use ratatui::widgets::{Block, Paragraph};
 
 use super::ExportView;
 use crate::inbound::app::Shared;
 use crate::inbound::widgets::pill::{self, PillState, pill};
-use crate::inbound::widgets::{action_bar, skeleton};
+use crate::inbound::widgets::{action_bar, header, skeleton};
 
 /// Ghost rows while the deck loads.
 const SKELETON_ROWS: usize = 10;
@@ -25,13 +24,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &ExportView) {
     ])
     .margin(1)
     .areas(f.area());
-    f.render_widget(
-        Line::from(vec![
-            Span::styled("Export", palette.accent).bold(),
-            Span::styled("  ? hint", palette.muted),
-        ]),
-        header,
-    );
+    header::draw(f, palette, header, "Export", header::Corner::Hint);
 
     let block = Block::bordered()
         .title(" Decklist ")

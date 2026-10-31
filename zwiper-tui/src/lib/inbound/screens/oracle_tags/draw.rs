@@ -2,7 +2,6 @@
 
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Margin, Rect};
-use ratatui::style::Stylize;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::Paragraph;
 use zwipe_core::domain::card::oracle_tag::OracleTag;
@@ -12,7 +11,7 @@ use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::screens::home::cache::Catalog;
 use crate::inbound::widgets::text_input::BOX_HEIGHT;
-use crate::inbound::widgets::{action_bar, item_list, skeleton};
+use crate::inbound::widgets::{action_bar, header, item_list, skeleton};
 
 /// Ghost letters on the skeleton's rail, as the app draws.
 const GHOST_LETTERS: usize = 12;
@@ -32,7 +31,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &OracleTagsView) {
         Constraint::Length(1),
     ])
     .areas(area);
-    f.render_widget(Line::styled(TITLE, palette.accent).bold().centered(), title);
+    header::draw(f, palette, title, TITLE, header::Corner::Hint);
     let hints: &[(&str, &str)] = match &shared.caches.oracle_tags {
         Catalog::Loaded { tags, .. } => {
             draw_loaded(f, palette, view, tags, body);

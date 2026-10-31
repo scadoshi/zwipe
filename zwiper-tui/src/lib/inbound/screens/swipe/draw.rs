@@ -4,7 +4,7 @@ use std::time::Instant;
 
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Rect};
-use ratatui::style::{Style, Stylize};
+use ratatui::style::Style;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Paragraph, Widget};
 use ratatui_image::StatefulImage;
@@ -17,7 +17,7 @@ use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::screens::card_sheets::filter;
 use crate::inbound::widgets::card_motion::{self, Phase};
-use crate::inbound::widgets::{action_bar, card_info, skeleton};
+use crate::inbound::widgets::{action_bar, card_info, header, skeleton};
 
 /// The card is at most this wide, in cells.
 const CARD_WIDTH: u16 = 64;
@@ -43,13 +43,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &SwipeView) {
     .margin(1)
     .areas(area);
 
-    f.render_widget(
-        Line::from(vec![
-            Span::styled("Add deck cards", palette.accent).bold(),
-            Span::styled(format!("  {}", view.deck_name), palette.muted),
-        ]),
-        header,
-    );
+    header::draw(f, palette, header, "Add deck cards", header::Corner::Hint);
     f.render_widget(source_line(palette, view), sources);
 
     let now = Instant::now();

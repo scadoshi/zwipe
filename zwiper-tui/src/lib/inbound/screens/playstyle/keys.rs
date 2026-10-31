@@ -16,8 +16,8 @@ use crate::inbound::screens::commander_swipe::{self, Deal, SuggestedPile};
 use crate::inbound::screens::otag_examples;
 use crate::inbound::widgets::alert::{AlertChoice, AlertDialog};
 use crate::inbound::widgets::card_rows::CardRow;
-use crate::inbound::widgets::info;
 use crate::inbound::widgets::sheet::{Sheet, SheetKey};
+use crate::inbound::widgets::{help, info};
 
 pub(crate) fn handle(view: &mut PlaystyleView, code: KeyCode, cx: &mut Context<'_>) {
     if view.overlay.is_some() {
@@ -26,6 +26,7 @@ pub(crate) fn handle(view: &mut PlaystyleView, code: KeyCode, cx: &mut Context<'
     }
     match code {
         KeyCode::Esc => return cx.back(),
+        KeyCode::Char('!') => return help::open(cx),
         KeyCode::Char('H') => return reopen_hint(cx),
         KeyCode::Char('s') if !view.cold_start() => return swipe(view, cx),
         KeyCode::Char('M') => {

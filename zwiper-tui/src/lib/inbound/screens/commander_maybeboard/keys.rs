@@ -17,6 +17,7 @@ use crate::inbound::screens::commander_swipe::{self, Deal};
 use crate::inbound::screens::playstyle;
 use crate::inbound::widgets::alert::{AlertChoice, AlertDialog};
 use crate::inbound::widgets::card_rows::CardRow;
+use crate::inbound::widgets::help;
 use crate::inbound::widgets::sheet::{Sheet, SheetKey};
 
 pub(crate) fn handle(view: &mut MaybeboardView, code: KeyCode, cx: &mut Context<'_>) {
@@ -34,6 +35,7 @@ pub(crate) fn handle(view: &mut MaybeboardView, code: KeyCode, cx: &mut Context<
     }
     match code {
         KeyCode::Esc => return cx.back(),
+        KeyCode::Char('!') => return help::open(cx),
         KeyCode::Char('H') => return reopen_hint(cx),
         KeyCode::Char('f') => return open_filter(view, cx),
         KeyCode::Char('s') => return swipe(view, cx),

@@ -18,7 +18,7 @@ use crate::domain::{deck_cards, filter};
 use crate::inbound::app::Shared;
 use crate::inbound::screens::card_sheets;
 use crate::inbound::widgets::sheet::Sheet;
-use crate::inbound::widgets::{action_bar, card_info, mana, otag, skeleton};
+use crate::inbound::widgets::{action_bar, card_info, header, mana, otag, skeleton};
 
 pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &DeckCardsView) {
     let palette = &shared.palette;
@@ -33,7 +33,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &DeckCardsView) {
     .margin(1)
     .areas(area);
 
-    f.render_widget(Line::from("Deck cards").style(palette.accent).bold(), title);
+    header::draw(f, palette, title, "Deck cards", header::Corner::Hint);
     f.render_widget(Paragraph::new(header_lines(palette, view)), header);
     if view.loaded {
         f.render_widget(Paragraph::new(control_lines(palette, view)), controls);

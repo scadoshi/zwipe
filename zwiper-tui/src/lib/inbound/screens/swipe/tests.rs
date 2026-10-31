@@ -556,10 +556,9 @@ fn images_load_for_the_top_card_and_the_next_three() {
     );
 }
 
-/// Add for a deck called Simic Ramp with `card` up, in gruvbox dark.
+/// Add with `card` up, in gruvbox dark.
 fn add_app(card: Card) -> Harness {
     let (mut harness, _) = Harness::swiping(vec![card]);
-    view_mut(&mut harness).deck_name = "Simic Ramp".to_owned();
     harness.app.shared.palette = Palette::for_account("gruvbox", true);
     harness.app.shared.toasts = crate::inbound::widgets::toast::Toasts::default();
     harness
@@ -583,7 +582,6 @@ fn the_card_shows_its_text_info_and_colors_its_mana_by_theme() {
         .collect();
     for expected in [
         "Add deck cards",
-        "Simic Ramp",
         "From",
         "Search",
         "Maybeboard",

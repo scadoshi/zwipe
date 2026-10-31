@@ -78,7 +78,6 @@ impl Source {
 #[derive(Debug)]
 pub(crate) struct SwipeView {
     pub(crate) deck: AddDeck,
-    pub(crate) deck_name: String,
     pub(crate) filter: CardQueryBuilder,
     pub(crate) source: Source,
     /// The search stack: linear, swiped cards stay behind the cursor.
@@ -930,7 +929,6 @@ pub(crate) fn open(cx: &mut Context<'_>, deck: &Deck) {
     add_deck.seed(&mut filter, had_remembered);
     let mut view = SwipeView {
         deck: add_deck,
-        deck_name: deck.deck_profile.name.to_string(),
         filter,
         source: Source::Search,
         stack: CardStack::default(),

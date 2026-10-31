@@ -4,7 +4,7 @@ use std::time::Instant;
 
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Rect};
-use ratatui::style::{Style, Stylize};
+use ratatui::style::Style;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Paragraph, Widget};
 
@@ -14,7 +14,7 @@ use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::screens::card_sheets;
 use crate::inbound::widgets::card_motion::{self, Phase};
-use crate::inbound::widgets::{action_bar, card_info};
+use crate::inbound::widgets::{action_bar, card_info, header};
 
 /// The card is at most this wide, in cells.
 const CARD_WIDTH: u16 = 64;
@@ -31,10 +31,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &RemoveView) {
     ])
     .margin(1)
     .areas(area);
-    f.render_widget(
-        Line::from("Remove deck cards").style(palette.accent).bold(),
-        title,
-    );
+    header::draw(f, palette, title, "Remove deck cards", header::Corner::Hint);
     let mut chips = vec![Span::styled("Boards ", palette.muted.bold())];
     for board in BoardFilter::ALL {
         let style = if board == view.board {

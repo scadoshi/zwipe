@@ -18,7 +18,9 @@ use crate::domain::home;
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::widgets::measure::height_of;
-use crate::inbound::widgets::{action_bar, color_map, entrance, figures, logo, skeleton, stagger};
+use crate::inbound::widgets::{
+    action_bar, color_map, entrance, figures, header, logo, skeleton, stagger,
+};
 
 /// The two lower panels sit side by side from this width, in cells.
 const SIDE_BY_SIDE: u16 = 90;
@@ -59,10 +61,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &HomeView) {
     ])
     .areas(area);
 
-    f.render_widget(
-        Line::styled("Home", palette.accent).bold().centered(),
-        title,
-    );
+    header::draw(f, palette, title, "Home", header::Corner::Empty);
     let since = view.opened.elapsed();
     if let Some(hero) = stagger::area(hero, since, Duration::ZERO).map(|r| r.intersection(f.area()))
     {

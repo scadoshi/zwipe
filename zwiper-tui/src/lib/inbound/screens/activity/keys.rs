@@ -9,7 +9,7 @@ use crate::domain::activity::RateKind;
 use crate::inbound::app::Context;
 use crate::inbound::screens::otag_examples;
 use crate::inbound::widgets::card_rows::CardRow;
-use crate::inbound::widgets::info;
+use crate::inbound::widgets::{help, info};
 
 pub(crate) fn handle(view: &mut ActivityView, code: KeyCode, cx: &mut Context<'_>) {
     if view.overlay.is_some() {
@@ -20,6 +20,7 @@ pub(crate) fn handle(view: &mut ActivityView, code: KeyCode, cx: &mut Context<'_
     }
     match code {
         KeyCode::Esc => return cx.back(),
+        KeyCode::Char('!') => return help::open(cx),
         KeyCode::Char('H') => return reopen_hint(cx),
         KeyCode::Char('?') => {
             view.overlay = topic(view);
