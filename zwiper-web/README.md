@@ -17,4 +17,4 @@ BACKEND_URL=http://localhost:3000 dx serve
 
 3. Open http://localhost:8080 and log in with an account on that zerver.
 
-`BACKEND_URL` is read at build time; without it a debug build talks to `http://localhost:3000` and a release build to `https://api.zwipe.net`. The session and the last theme live in the browser's `localStorage` for this origin.
+`BACKEND_URL` is read at build time; without it a debug build talks to `http://localhost:3000` and a release build to `https://api.zwipe.net`. The session, the last theme and the last counters live in the browser's `localStorage` for this origin.

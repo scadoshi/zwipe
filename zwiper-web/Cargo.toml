@@ -28,6 +28,8 @@ dioxus = { version = "0.7.10", features = ["router"] }
 # commit orangui's ToastStack is built on.
 dioxus-primitives = { git = "https://github.com/DioxusLabs/components", rev = "02801f27e4b3e30606e5c77e435c9d955c708eb3", version = "0.0.1", default-features = false }
 chrono = { workspace = true }
+# The email parser's error kinds, which the forms name in plain words.
+email_address = { workspace = true }
 # For `Url`, which the client takes its base address as.
 reqwest = { version = "0.12.23", default-features = false }
 serde_json = { workspace = true }

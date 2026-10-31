@@ -178,12 +178,12 @@ Esc closes the top overlay (dialog, then modal, then side panel, then full overl
 - The toolbar keeps `Back`, `Filter`, `Refresh` and the eye button.
 - Below 900px it is the phone screen.
 
-## Open questions
+## Owner decisions (approved 2026-10-31)
 
-- Direction buttons under swipe cards need labels the app does not have. Proposed, from the hint copy: `Skip`, `Maybeboard`, `Undo`, `Add` on Add cards; `Keep`, `Move`, `Undo`, `Remove` on Remove; `Skip`, `Save`, `Undo`, `Pick` in Swipe select; `Next`, `Back one` in Examples.
-- Update required links to the App Store or Play Store; the foundation shows `Reload` instead. Is that the right word?
-- `Report a problem ↗` puts `iOS` or `Android` in the mail body; the foundation sends `Web`.
-- Docking the filter on Add and Remove means it is open on mount, which would fire the one-time `filter` hint together with `Swipe to build`. Proposed: fire it the first time the user opens a filter section.
-- Clicking a command zone input clears the chosen card in the app. With a mouse that is easy to do by accident; keep it, or clear only on typing?
-- Should the Deck view's cards column be the full editable Deck cards list (quick add, quantities, moves) so `Cards` is only needed for the filter, or stay read-only as drafted?
-- The app's `Back` on Commander maybeboard pushes the deck list rather than going back. Keep that on the web, where browser back also exists?
+- Buttons under swipe cards use the app's own action names for each mode: `Skip`, `Maybeboard`, `Undo`, `Add` on Add cards; `Keep`, `Move`, `Undo`, `Remove` on Remove; `Skip`, `Save`, `Undo`, `Pick` in Swipe select; `Next`, `Back one` in Examples.
+- Update required shows `Reload` in place of the store link.
+- `Report a problem ↗` names the platform `Web` in the mail body.
+- The one-time `filter` hint fires the first time the user opens a filter section, not when Add or Remove mounts with the filter docked.
+- A command zone input clears its chosen card only when typing starts, never on a click.
+- Deck view's cards column stays read-only; Deck cards is the editor.
+- Commander maybeboard's `Back` follows browser history instead of pushing the deck list.

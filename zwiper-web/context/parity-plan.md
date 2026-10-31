@@ -25,7 +25,7 @@ Packages are built one at a time, in the order below. Each lives on its own bran
 
 The crate, the router with a route per screen at the app's paths (unbuilt screens are placeholder panels naming the screen), the sidebar shell with its narrow fallback, theming through the kit, the session in `localStorage` with the 60 s upkeep loop (refresh and min-version check), the auth gate, the `Help & feedback` dialog, Logout behind the Account placeholder, and Login end to end with the app's copy. The docs in this folder.
 
-## Wave A: auth, chrome, account, config (spec 1), branch `feat/web-a`
+## Wave A: auth, chrome, account, config (spec 1), branch `feat/web-a` (done)
 
 - Login parity: the shared 60 s counter cache and its stored copy across visits, the prefill from Register.
 - Register and Forgot password, every field, rule and toast.
@@ -66,8 +66,16 @@ Wire the cross-links the waves leave open (Playstyle `Create deck` to Create, th
 
 - Update required shows `Reload` instead of a store link; a web build updates by loading the page again.
 - The problem report names its platform `Web`.
+- The one-time `filter` hint fires on the first use of a filter section, not when the screen opens with the filter docked.
+- A command zone input clears its chosen card when typing starts, not on a click.
+- Commander maybeboard's `Back` follows browser history; the app pushes the deck list.
 - The `!` header button moves into the sidebar as `Help` on authed screens; the public screens keep it in the header.
-- There is no splash; the first screen's entrances run at once.
-- Platform-only pieces are skipped: the app icon picker, haptics, crash capture, the OS back gesture.
+- Platform-only pieces are skipped: the app icon picker, haptics, crash capture, usage telemetry (a failed call is logged, not reported), the OS back gesture.
+- Escape closes an open dialog before anything else, even where the app's back stack would close the sheet under it first (the Exceptions sheet's hint).
+- `Back to login` on Register and Forgot password goes to Login when there is no history to go back to, such as a page opened from a link.
 - The session lives in `localStorage`, where any script on the origin can read it. The app keeps it in the OS keychain.
 - The web layout choices in `web-layout.md`, once approved, count as kept deviations from the phone layout.
+
+## Launch blocker
+
+Before zwiper-web is public, the refresh token moves out of `localStorage` into an httpOnly cookie. That needs zerver to set and read the cookie, so it is out of scope for the wave branches; building on `localStorage` is fine until then.

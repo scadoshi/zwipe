@@ -22,11 +22,17 @@ body {
     min-height: 100vh;
 }
 
-/* A screen fills its frame instead of the whole viewport. */
+/* A screen fills its frame instead of the whole viewport. It is one window
+   tall, as in the app, so its content column is what scrolls: the sidebar
+   and the toolbar stay put, and sticky columns stick to that column. */
 .screen.web-screen {
     position: relative;
     inset: auto;
-    min-height: 100vh;
+    height: 100vh;
+}
+
+.web-screen > .screen-content {
+    min-height: 0;
 }
 
 /* ---- Public frame (login, register, reset) ---- */
@@ -170,6 +176,236 @@ body {
     }
 }
 
+/* ---- Settings lists (Account, Config) ---- */
+
+/* Two lists side by side on a wide window. */
+@media (min-width: 900px) {
+    .settings-sections.web-settings-pair {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: start;
+        max-width: 64rem;
+        padding-top: 1rem;
+    }
+
+    .web-settings-pair > .settings-list {
+        max-width: none;
+    }
+}
+
+/* ---- Privacy policy ---- */
+
+.web-privacy {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+
+.web-privacy-contents {
+    display: none;
+}
+
+@media (min-width: 900px) {
+    .web-privacy {
+        align-items: flex-start;
+        gap: 2rem;
+        padding-top: 1rem;
+    }
+
+    .web-privacy-contents {
+        position: sticky;
+        top: 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.15rem;
+        flex: 0 0 14rem;
+    }
+
+    .web-privacy-contents-link {
+        padding: 0.35rem 0.6rem;
+        border: 1px solid transparent;
+        border-radius: 0.375rem;
+        background: none;
+        color: var(--text-secondary, var(--text-primary));
+        font: inherit;
+        font-size: 0.85rem;
+        text-align: left;
+        cursor: pointer;
+    }
+
+    .web-privacy-contents-link:hover {
+        border-color: var(--border-secondary);
+        color: var(--accent-primary);
+    }
+
+    .web-privacy .privacy-content {
+        width: auto;
+        flex: 1 1 40rem;
+    }
+
+    .web-privacy .privacy-section {
+        scroll-margin-top: 1rem;
+    }
+}
+
+/* ---- Changelog ---- */
+
+/* The chip rows become a sticky filter column beside the release cards.
+   Each level keeps its own row, one under the other. */
+@media (min-width: 900px) {
+    .changelog-screen.web-changelog {
+        display: grid;
+        grid-template-columns: 14rem minmax(0, 1fr);
+        align-items: start;
+        column-gap: 2rem;
+        max-width: 60rem;
+        padding-top: 1rem;
+    }
+
+    .web-changelog > .changelog-filters,
+    .web-changelog > .changelog-skeleton-chips {
+        position: sticky;
+        top: 1rem;
+        margin-bottom: 0;
+    }
+
+    .web-changelog > .changelog-filters .changelog-filter + .changelog-filter {
+        padding-top: 0.5rem;
+        border-top: 1px solid var(--border-secondary);
+    }
+
+    .web-changelog > .chip-note {
+        grid-column: 1 / -1;
+    }
+}
+
+/* ---- Sheets on a wide window ---- */
+
+@media (min-width: 900px) {
+    /* A short form or list: a centered modal that fades and settles in. */
+    .web-sheet-modal > .bottom-sheet {
+        top: 50%;
+        left: 50%;
+        right: auto;
+        bottom: auto;
+        width: min(32rem, calc(100vw - 4rem));
+        max-height: 85vh;
+        border-radius: 1rem;
+        border: 1px solid var(--border-secondary);
+        opacity: 0;
+        transform: translate(-50%, calc(-50% + 0.75rem)) scale(0.98);
+        transition: opacity 0.2s ease, transform 0.2s ease, visibility 0s linear 0.2s;
+    }
+
+    .web-sheet-modal > .bottom-sheet.show {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+        transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    .web-sheet-modal > .bottom-sheet .action-bar {
+        padding-bottom: 1rem;
+    }
+
+    /* A panel that edits the page beside it, sliding in from the right. */
+    .web-sheet-side > .bottom-sheet {
+        top: 0;
+        bottom: 0;
+        left: auto;
+        right: 0;
+        width: 26rem;
+        max-height: none;
+        border-radius: 0;
+        border-left: 1px solid var(--border-secondary);
+        transform: translateX(100%);
+    }
+
+    .web-sheet-side > .bottom-sheet.show {
+        transform: translateX(0);
+    }
+
+    .web-sheet-side > .bottom-sheet .action-bar {
+        padding-bottom: 1rem;
+    }
+
+    /* The page stays undimmed so the panel's changes show on it; a click
+       on it still dismisses the panel. */
+    .web-sheet-side > .sheet-backdrop.show {
+        background: transparent;
+    }
+}
+
+@media (min-width: 900px) and (prefers-reduced-motion: reduce) {
+    .web-sheet-modal > .bottom-sheet,
+    .web-sheet-modal > .bottom-sheet.show,
+    .web-sheet-side > .bottom-sheet,
+    .web-sheet-side > .bottom-sheet.show {
+        transition: none;
+    }
+}
+
+/* ---- More menu: a popover on a wide window, the app's sheet below ---- */
+
+.web-more-anchor {
+    display: inline-flex;
+}
+
+.web-more-popover-layer {
+    display: none;
+}
+
+@media (min-width: 900px) {
+    .web-more-sheet {
+        display: none;
+    }
+
+    .web-more-popover-layer {
+        display: block;
+    }
+
+    .web-more-catcher {
+        position: fixed;
+        inset: 0;
+        z-index: 190;
+    }
+
+    .web-more-popover {
+        position: fixed;
+        z-index: 195;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        min-width: 14rem;
+        padding: 0.75rem;
+        background-color: var(--bg-primary);
+        border: 1px solid var(--border-secondary);
+        border-radius: 0.75rem;
+        box-shadow: var(--shadow-md);
+        animation: web-popover-in 0.15s ease-out;
+    }
+
+    .web-more-popover > * {
+        margin: 0;
+    }
+}
+
+@keyframes web-popover-in {
+    from {
+        opacity: 0;
+        transform: translateY(-0.25rem);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .web-more-popover {
+        animation: none;
+    }
+}
+
 /* Narrow: the sidebar folds into a top bar with a menu. */
 @media (max-width: 899px) {
     .web-shell {
@@ -178,7 +414,6 @@ body {
 
     /* The top bar is 3rem tall, so the action bar stays on screen. */
     .web-shell .screen.web-screen {
-        min-height: calc(100vh - 3rem);
         height: calc(100vh - 3rem);
     }
 
