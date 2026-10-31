@@ -66,8 +66,15 @@ Wire the cross-links the waves leave open (Playstyle `Create deck` to Create, th
 
 - Update required shows `Reload` instead of a store link; a web build updates by loading the page again.
 - The problem report names its platform `Web`.
+- The one-time `filter` hint fires on the first use of a filter section, not when the screen opens with the filter docked.
+- A command zone input clears its chosen card when typing starts, not on a click.
+- Commander maybeboard's `Back` follows browser history; the app pushes the deck list.
 - The `!` header button moves into the sidebar as `Help` on authed screens; the public screens keep it in the header.
 - There is no splash; the first screen's entrances run at once.
 - Platform-only pieces are skipped: the app icon picker, haptics, crash capture, the OS back gesture.
 - The session lives in `localStorage`, where any script on the origin can read it. The app keeps it in the OS keychain.
 - The web layout choices in `web-layout.md`, once approved, count as kept deviations from the phone layout.
+
+## Launch blocker
+
+Before zwiper-web is public, the refresh token moves out of `localStorage` into an httpOnly cookie. That needs zerver to set and read the cookie, so it is out of scope for the wave branches; building on `localStorage` is fine until then.
