@@ -6,7 +6,7 @@ use std::time::Duration;
 
 use zwipe_client::ClientError;
 use zwipe_core::http::contracts::metrics::{AnonymousEventKind, HttpAnonymousEvent};
-use zwipe_core::version;
+use zwipe_ui::session;
 
 use super::Context;
 use crate::inbound::screens::{Request, Update, VERSION, login};
@@ -32,30 +32,29 @@ pub(crate) async fn flush_on_quit(account: &Account, timeout: Duration) {
         .ok();
 }
 
-/// Refreshes the session if it needs it, then checks the version. Returns whether a session there before has ended, and whether this build is too old, `None` when the server could not say.
+/// Refreshes the session if it needs it, then checks the version. Returns whether a session there before has ended, and the server's minimum client version, `None` when the server could not say.
 pub(crate) async fn upkeep(account: &Account) -> Update {
     let had_session = account.session().await.is_some();
     let refreshed = account.fresh().await;
     let ended = had_session
         && matches!(refreshed, Err(ClientError::Unauthorized(_)))
         && account.session().await.is_none();
-    let too_old = account
+    let minimum = account
         .client
         .fetch_min_client_version()
         .await
         .ok()
-        .map(|minimum| !version::version_at_least(VERSION, &minimum.min_version));
-    Update::Upkept { ended, too_old }
+        .map(|minimum| minimum.min_version);
+    Update::Upkept { ended, minimum }
 }
 
-/// Applies an upkeep: back to Login when the session ended, and the version gate set to what the server said.
-pub(crate) fn upkept(cx: &mut Context<'_>, ended: bool, too_old: Option<bool>) {
+/// Applies an upkeep: back to Login when the session ended, and the version gate set by zwipe-ui's rule from the minimum the server answered with, left as it was when it could not say.
+pub(crate) fn upkept(cx: &mut Context<'_>, ended: bool, minimum: Option<&str>) {
     if ended {
         session_ended(cx);
     }
-    if let Some(too_old) = too_old {
-        cx.shared.update_required = too_old;
-    }
+    cx.shared.update_required =
+        session::update_required(cx.shared.update_required, VERSION, minimum);
 }
 
 /// Returns to Login without a word, as the app's auth gate does whenever the session clears, and forgets the saved session. Does nothing when no one is signed in.
@@ -145,17 +144,17 @@ mod tests {
         let mut harness = Harness::new();
         harness.apply(Update::Upkept {
             ended: false,
-            too_old: Some(true),
+            minimum: Some("999.0.0".to_owned()),
         });
         assert!(harness.app.shared.update_required);
         harness.apply(Update::Upkept {
             ended: false,
-            too_old: None,
+            minimum: None,
         });
         assert!(harness.app.shared.update_required, "fails open: no change");
         harness.apply(Update::Upkept {
             ended: false,
-            too_old: Some(false),
+            minimum: Some("0.0.0".to_owned()),
         });
         assert!(!harness.app.shared.update_required);
     }
@@ -166,7 +165,7 @@ mod tests {
         harness.app.shared.user = Some(user(true));
         harness.apply(Update::Upkept {
             ended: true,
-            too_old: None,
+            minimum: None,
         });
         assert!(matches!(harness.screen(), Screen::Login(_)));
         assert!(harness.app.shared.toasts.is_empty(), "no toast");

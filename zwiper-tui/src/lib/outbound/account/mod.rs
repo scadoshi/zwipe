@@ -4,7 +4,7 @@ use std::fs;
 use std::path::PathBuf;
 
 use anyhow::Result;
-use chrono::Duration;
+use chrono::Utc;
 use tokio::sync::Mutex;
 use uuid::Uuid;
 use zwipe_client::{ClientError, ZwipeClient};
@@ -12,6 +12,7 @@ use zwipe_core::domain::auth::models::platform::ClientPlatform;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::user::{User, UserPreferences};
 use zwipe_core::http::contracts::auth::{HttpAuthenticateUser, HttpRefreshSession};
+use zwipe_ui::session::{self, Freshness};
 
 use super::counts_file::CountsFile;
 use super::crash_store::{self, CrashStore};
@@ -20,9 +21,6 @@ use super::usage_buffer::UsageBuffer;
 
 /// How long logging out waits on the server before forgetting the session anyway, from the app's `LOGOUT_TIMEOUT`.
 const LOGOUT_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(5);
-
-/// How long before it expires an access token counts as stale, as in the app: the server's 60-second leeway plus a clock up to a minute slow.
-const REFRESH_AHEAD: Duration = Duration::minutes(2);
 
 /// The API client and the current session, shared by every background request.
 #[derive(Debug)]
@@ -44,7 +42,9 @@ pub(crate) struct Account {
 impl Account {
     /// An account over `client`, signed in with the saved session when it has not expired.
     pub(crate) fn new(client: ZwipeClient, store: SessionFile) -> Self {
-        let session = store.load().filter(|s| !s.is_expired());
+        let session = store
+            .load()
+            .filter(|s| session::freshness(s, Utc::now()) != Freshness::Expired);
         Self {
             client,
             launch_id: Uuid::new_v4(),
@@ -79,7 +79,7 @@ impl Account {
         Ok(session)
     }
 
-    /// A session whose access token is good for at least [`REFRESH_AHEAD`], refreshing it once for all waiting callers.
+    /// A session whose access token is good for at least [`session::REFRESH_AHEAD`], refreshing it once for all waiting callers, by zwipe-ui's session rules: a dead refresh token ends the session before the access token is looked at.
     ///
     /// # Errors
     ///
@@ -89,13 +89,14 @@ impl Account {
         let Some(current) = guard.clone() else {
             return Err(ClientError::Unauthorized("not signed in".to_owned()));
         };
-        if !current.access_token.expires_within(REFRESH_AHEAD) {
-            return Ok(current);
-        }
-        if current.is_expired() {
-            *guard = None;
-            self.store.clear().ok();
-            return Err(ClientError::Unauthorized("session expired".to_owned()));
+        match session::freshness(&current, Utc::now()) {
+            Freshness::Fresh => return Ok(current),
+            Freshness::Expired => {
+                *guard = None;
+                self.store.clear().ok();
+                return Err(ClientError::Unauthorized("session expired".to_owned()));
+            }
+            Freshness::Stale => {}
         }
 
         let request =

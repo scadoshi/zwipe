@@ -274,10 +274,10 @@ pub(crate) enum Request {
 /// A result from a background request: the app's own, or one screen's.
 #[derive(Debug)]
 pub(crate) enum Update {
-    /// An upkeep's result: whether the session ended, and whether this build is too old, `None` when the server could not say.
+    /// An upkeep's result: whether the session ended, and the server's minimum client version, `None` when it could not say.
     Upkept {
         ended: bool,
-        too_old: Option<bool>,
+        minimum: Option<String>,
     },
     /// The changelog, or `None` when it could not be fetched.
     Changelog(Option<Box<HttpChangelog>>),
@@ -469,7 +469,7 @@ async fn run_request(
 /// Applies one result: the app's own here, a screen's by its module, which finds its screen in `nav` if it is open.
 pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
     match update {
-        Update::Upkept { ended, too_old } => session::upkept(cx, ended, too_old),
+        Update::Upkept { ended, minimum } => session::upkept(cx, ended, minimum.as_deref()),
         Update::Changelog(changelog) => {
             cx.shared.changelog =
                 changelog.map_or(ChangelogCache::Failed, |c| ChangelogCache::Loaded(*c));

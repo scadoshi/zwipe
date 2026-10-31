@@ -169,7 +169,7 @@ fn an_old_build_is_stopped_until_it_updates() {
     let mut harness = Harness::new();
     harness.apply(Update::Upkept {
         ended: false,
-        too_old: Some(true),
+        minimum: Some("999.0.0".to_owned()),
     });
     assert!(harness.app.shared.update_required);
     assert!(screen_text(&harness.app).contains("Update required"));

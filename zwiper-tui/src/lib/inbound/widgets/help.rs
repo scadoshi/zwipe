@@ -3,7 +3,8 @@
 //! [`open`] raises it from any screen; `!` opens it where no text field has the cursor, and F1 opens it from anywhere. The loop hands it every key while it is up.
 
 use crossterm::event::KeyCode;
-use zwipe_core::domain::site::{DISCORD_URL, SUPPORT_EMAIL};
+use zwipe_core::domain::site::DISCORD_URL;
+use zwipe_ui::support;
 
 use super::alert::{AlertChoice, AlertDialog};
 use super::browser;
@@ -38,35 +39,13 @@ pub(crate) fn handle_key(cx: &mut Context<'_>, code: KeyCode) {
         return;
     };
     match dialog.handle_key(code) {
-        Some(AlertChoice::Pressed(1)) => browser::open(cx, &report_mailto()),
+        Some(AlertChoice::Pressed(1)) => {
+            browser::open(cx, &support::report_mailto(VERSION, PLATFORM));
+        }
         Some(AlertChoice::Pressed(2)) => browser::open(cx, DISCORD_URL),
         Some(AlertChoice::Pressed(_) | AlertChoice::Dismissed) => {}
         None => cx.shared.help = Some(dialog),
     }
-}
-
-/// The problem report's `mailto:` link, its body naming this version and the platform.
-pub(crate) fn report_mailto() -> String {
-    let subject = encode("Zwipe problem report");
-    let body = encode(&format!(
-        "Describe the problem:\n\n\n---\nZwipe {VERSION} \u{00b7} {PLATFORM}"
-    ));
-    format!("mailto:{SUPPORT_EMAIL}?subject={subject}&body={body}")
-}
-
-/// Percent-encodes `input` for a `mailto:` query: RFC 3986's unreserved characters pass through, every other byte becomes `%XX`.
-fn encode(input: &str) -> String {
-    use std::fmt::Write;
-
-    let mut out = String::with_capacity(input.len());
-    for byte in input.bytes() {
-        if byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_' | b'.' | b'~') {
-            out.push(char::from(byte));
-        } else {
-            let _ = write!(out, "%{byte:02X}");
-        }
-    }
-    out
 }
 
 #[cfg(test)]
@@ -78,8 +57,7 @@ mod tests {
 
     #[test]
     fn the_report_link_encodes_everything_but_the_unreserved_characters() {
-        assert_eq!(encode("a b·~"), "a%20b%C2%B7~");
-        let link = report_mailto();
+        let link = support::report_mailto(VERSION, PLATFORM);
         assert!(link.starts_with(
             "mailto:support@zwipe.net?subject=Zwipe%20problem%20report&body=Describe%20the%20problem%3A%0A%0A%0A---%0AZwipe%20"
         ));
