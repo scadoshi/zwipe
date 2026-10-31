@@ -1,0 +1,232 @@
+//! Oracle tag examples: real cards that carry one tag, most played first,
+//! browsed one at a time. Not a route; it opens over the screen that asked.
+//!
+//! The app swipes left for the next card and down to go back one. Here the
+//! card still drags, and ← and ↓ (or `Next` and `Back one`) do the same. On
+//! a wide window it is a large modal with the card's details beside it;
+//! below the breakpoint it is the app's full-screen overlay.
+
+use components::{
+    ActionBar, Button, ButtonVariant, CardDetails, PageHeader, TOAST_QUICK, use_overlay_back,
+};
+use dioxus::prelude::*;
+use dioxus_primitives::toast::{ToastOptions, use_toast};
+use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
+use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
+use zwipe_ui::stack::{CardStack, Direction, MAX_CARDS_IN_STACK, StackAction};
+use zwipe_ui::timing::{LOAD_MORE_AT, PAGE_SIZE};
+
+use crate::inbound::cards::card_info::{
+    CardDetailsSheet, CardInfoDisplay, CardSkeleton, RulesButton,
+};
+use crate::inbound::cards::otag::use_describe_tag;
+use crate::inbound::cards::printing_sheet::PrintingSheet;
+use crate::inbound::cards::swipe_stack::{
+    Swipe, SwipeButtons, SwipeStack, use_swipe_control, use_swipe_keys,
+};
+use crate::inbound::chrome::authed::use_authed;
+use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
+
+/// A step forward through the examples. It leaves to the left, so a step
+/// back brings the card in from there.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct Next;
+
+impl StackAction for Next {
+    fn exited(&self) -> Direction {
+        Direction::Left
+    }
+}
+
+/// The examples for `slug`, over the screen while `open`. Mount it fresh
+/// per tag.
+#[component]
+pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
+    use_overlay_back(open);
+    let toast = use_toast();
+    let authed = use_authed();
+    let describe_tag = use_describe_tag();
+    let hint_open = use_one_time_hint(OneTimeHint::OtagExamples);
+    let mut hint_again = hint_open;
+    let tag = use_signal(|| slug.clone());
+
+    let mut stack: Signal<CardStack<Next>> = use_signal(CardStack::default);
+    let mut offset = use_signal(|| 0_u32);
+    let mut loading_more = use_signal(|| false);
+    let mut loading = use_signal(|| true);
+    let mut exhausted = use_signal(|| false);
+    let show_details = use_signal(|| false);
+    let mut printing_open = use_signal(|| false);
+    let control = use_swipe_control();
+    use_swipe_keys(control, vec![Swipe::Left, Swipe::Down]);
+
+    let mut load_more = move || {
+        if *loading_more.peek() || *exhausted.peek() {
+            return;
+        }
+        if stack.peek().len() >= MAX_CARDS_IN_STACK {
+            exhausted.set(true);
+            loading.set(false);
+            return;
+        }
+        loading_more.set(true);
+        let at = *offset.peek();
+        let mut builder = CardQueryBuilder::new();
+        builder
+            .set_oracle_tags_contains_any(vec![tag.peek().clone()])
+            .set_is_token(false)
+            .set_sort(CardSortKey::EdhrecRank)
+            .set_limit(PAGE_SIZE)
+            .set_offset(at);
+        let Ok(filter) = builder.build() else {
+            loading_more.set(false);
+            loading.set(false);
+            return;
+        };
+        spawn(async move {
+            if let Some(cards) = authed
+                .run("load_examples", |c, s| async move {
+                    c.search_cards(&filter, &s).await
+                })
+                .await
+            {
+                if cards.is_empty() {
+                    exhausted.set(true);
+                } else {
+                    match at.checked_add(PAGE_SIZE) {
+                        Some(next) => offset.set(next),
+                        None => exhausted.set(true),
+                    }
+                    stack.write().append(cards);
+                }
+            }
+            loading_more.set(false);
+            loading.set(false);
+        });
+    };
+
+    use_hook(load_more);
+
+    let mut go_back = move || {
+        let mut s = stack.write();
+        let Some(action) = s.pop_action() else {
+            drop(s);
+            toast.info(
+                "Already at the first card".to_string(),
+                ToastOptions::default().duration(TOAST_QUICK),
+            );
+            return;
+        };
+        if !s.step_back(&action) {
+            s.record(action);
+        }
+    };
+
+    let on_swipe = move |(swipe, _card): (Swipe, Card)| match swipe {
+        Swipe::Left => {
+            let near_end = {
+                let mut s = stack.write();
+                s.record(Next);
+                let total = s.len();
+                s.advance()
+                    && s.index()
+                        .checked_add(1)
+                        .is_some_and(|seen| seen >= total.saturating_sub(LOAD_MORE_AT))
+            };
+            if near_end {
+                load_more();
+            }
+        }
+        Swipe::Down => go_back(),
+        Swipe::Right | Swipe::Up => {}
+    };
+
+    let (current, window, entering, past_end, empty) = {
+        let s = stack.read();
+        (
+            s.current().cloned(),
+            s.window().to_vec(),
+            s.entering(),
+            !s.is_empty() && s.index() >= s.len(),
+            s.is_empty(),
+        )
+    };
+
+    rsx! {
+        div { class: "screen examples-overlay web-examples web-large-modal",
+            components::GridCells { still: true }
+            PageHeader {
+                title: "Examples",
+                leading: rsx! { span { class: "page-header-corner" } },
+                on_hint: move |()| hint_again.set(true),
+            }
+            div { class: "screen-content card-swipe content-enter web-examples-body",
+                div { class: "form-container web-examples-card",
+                    if let Some(card) = current.clone() {
+                        SwipeStack {
+                            cards: window,
+                            allowed: vec![Swipe::Left, Swipe::Down],
+                            control,
+                            entering,
+                            on_entered: move |()| stack.write().cancel_entering(),
+                            on_swipe,
+                        }
+                        SwipeButtons {
+                            control,
+                            buttons: vec![(Swipe::Left, "Next"), (Swipe::Down, "Back one")],
+                        }
+                        CardInfoDisplay { card }
+                    } else if past_end {
+                        if loading_more() {
+                            CardSkeleton { is_loading: true }
+                        } else {
+                            div { class: "flex-col flex-center", style: "flex: 1; min-height: 0; width: 100%;",
+                                div { class: "dict-empty", "No more cards. Swipe down to go back." }
+                                SwipeButtons { control, buttons: vec![(Swipe::Down, "Back one")] }
+                            }
+                        }
+                    } else if loading() || (empty && loading_more()) {
+                        CardSkeleton { is_loading: true }
+                    } else {
+                        div { class: "dict-empty", "No example cards for this tag yet." }
+                    }
+                }
+                if let Some(card) = current.clone() {
+                    div { class: "web-examples-details",
+                        div { class: "sheet-panel",
+                            CardDetails {
+                                key: "{card.scryfall_data.id}",
+                                card,
+                                show_name: true,
+                                show_cost: true,
+                                show_classification: true,
+                                describe_tag: Some(describe_tag),
+                            }
+                        }
+                    }
+                }
+            }
+            ActionBar {
+                Button { variant: ButtonVariant::Action, onclick: move |_| open.set(false), "Back" }
+                if current.is_some() {
+                    RulesButton { open: show_details }
+                }
+            }
+            OneTimeHintDialog { hint: OneTimeHint::OtagExamples, open: hint_open }
+            if let Some(card) = current {
+                CardDetailsSheet {
+                    open: show_details,
+                    card: card.clone(),
+                    on_printings: move |()| printing_open.set(true),
+                }
+                PrintingSheet {
+                    card,
+                    open: printing_open,
+                    on_save: move |_: Card| {},
+                    read_only: true,
+                }
+            }
+        }
+    }
+}

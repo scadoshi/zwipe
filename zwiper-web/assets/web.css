@@ -456,3 +456,222 @@ body {
     max-width: 40rem;
     margin: 1.5rem auto;
 }
+
+/* ---- Collapsible sections ---- */
+
+/* The app's section card. Its padding sits on the head and body so the rule
+   under the head runs edge to edge. */
+.web-section {
+    width: 100%;
+    background: var(--bg-primary);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-secondary);
+    border-radius: 0.5rem;
+    padding: 0.75rem 0;
+    display: flex;
+    flex-direction: column;
+    cursor: pointer;
+    user-select: none;
+    box-sizing: border-box;
+}
+
+.web-section.warn {
+    border-color: var(--border-warning);
+}
+
+.web-section-head {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0 0.75rem;
+}
+
+.web-section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.web-section-arrow {
+    transform: rotate(0deg);
+}
+
+.web-section.open .web-section-arrow {
+    transform: rotate(90deg);
+}
+
+.web-section-badge {
+    font-size: 0.65rem;
+    opacity: 0.5;
+}
+
+.web-section-accessory {
+    transition: opacity 0.25s ease;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.web-section.open .web-section-accessory {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.web-section > .collapsible {
+    cursor: default;
+}
+
+.web-section-rule {
+    border: none;
+    border-top: 1px solid var(--border-secondary);
+    margin: 0.5rem 0 0.6rem;
+}
+
+.web-section-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+/* A wide window shows every section open, with no arrow to toggle. */
+@media (min-width: 900px) {
+    .web-sections-open .web-section {
+        cursor: default;
+    }
+
+    .web-sections-open .web-section-arrow {
+        display: none;
+    }
+
+    .web-sections-open .web-section-head {
+        pointer-events: none;
+    }
+
+    .web-sections-open .web-section-accessory {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .web-sections-open .web-section > .collapsible {
+        grid-template-rows: 1fr;
+        opacity: 1;
+    }
+
+    .web-sections-open .web-section > .collapsible > .collapsible-inner {
+        overflow: visible;
+    }
+}
+
+/* ---- Card rows: the image beside the cursor ---- */
+
+.web-card-row {
+    display: contents;
+}
+
+.web-hover-preview {
+    display: none;
+}
+
+@media (min-width: 900px) and (hover: hover) {
+    .web-hover-preview {
+        display: block;
+        position: fixed;
+        left: min(calc(var(--hover-x) + 1.5rem), calc(100vw - 16rem));
+        top: clamp(1rem, calc(var(--hover-y) - 10rem), calc(100vh - 22rem));
+        width: 15rem;
+        z-index: 60;
+        pointer-events: none;
+        border-radius: 4.75% / 3.5%;
+        overflow: hidden;
+        box-shadow: var(--shadow-lg, 0 0.5rem 1.5rem rgb(0 0 0 / 0.35));
+        animation: chip-in 0.2s ease-out;
+    }
+
+    .web-hover-preview img {
+        display: block;
+        width: 100%;
+    }
+}
+
+/* ---- Printing sheet ---- */
+
+.web-printing-stage {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.web-printing-stage .carousel-card-image {
+    max-width: min(18rem, 70vw);
+}
+
+.web-printing-step {
+    flex: none;
+}
+
+.web-printing-sheet .bottom-sheet:focus {
+    outline: none;
+}
+
+/* ---- Swipe surfaces ---- */
+
+.web-swipe-stack .swipe-stack-card.top {
+    touch-action: none;
+    cursor: grab;
+}
+
+.web-swipe-stack .swipe-stack-card.top:active {
+    cursor: grabbing;
+}
+
+.web-swipe-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    margin: 0.75rem 0;
+}
+
+.web-swipe-arrow {
+    font-weight: 700;
+}
+
+/* ---- Large overlays (Oracle tag examples, the dictionary) ---- */
+
+/* Below the breakpoint these are the app's full-screen overlays. On a wide
+   window they are a large modal over a dimmed page. */
+.web-examples-details {
+    display: none;
+}
+
+@media (min-width: 900px) {
+    .screen.web-large-modal {
+        inset: 4vh max(2rem, calc(50vw - 38rem));
+        height: auto;
+        border: 1px solid var(--border-secondary);
+        border-radius: 1rem;
+        overflow: hidden;
+        box-shadow: 0 0 0 100vmax rgb(0 0 0 / 0.55), var(--shadow-sm);
+    }
+
+    .web-examples-body {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        align-items: start;
+        gap: 1.5rem;
+        max-width: none;
+        padding: 1rem 1.5rem;
+    }
+
+    .web-examples-details {
+        display: block;
+        align-self: stretch;
+    }
+
+    .web-examples .action-bar .btn-action-eye {
+        display: none;
+    }
+}
