@@ -3,5 +3,6 @@
 
 pub mod auth_gate;
 pub mod ensure_fresh;
+pub mod funnel;
 pub mod logout;
 pub mod upkeep;

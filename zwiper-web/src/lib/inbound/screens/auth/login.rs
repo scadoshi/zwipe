@@ -15,6 +15,12 @@ use crate::inbound::screens::auth::hero::HomeHero;
 use crate::inbound::shell::ScreenFrame;
 use crate::outbound::session_store::SessionStore;
 
+/// An identifier for the login form to take once, set by Register on
+/// success. Provided at the root, so it works while Login sits under
+/// Register in the history.
+#[derive(Debug, Clone, Copy)]
+pub struct LoginPrefill(pub Signal<Option<String>>);
+
 /// The login screen. Enter in either field runs `Log in`.
 #[component]
 pub fn Login() -> Element {
@@ -25,9 +31,20 @@ pub fn Login() -> Element {
     let mut theme: Signal<ThemeConfig> = use_context();
     let toast = use_toast();
 
-    let identifier = use_signal(String::new);
+    let mut identifier = use_signal(String::new);
     let mut password = use_signal(String::new);
     let mut is_loading = use_signal(|| false);
+
+    // Takes the prefill whenever one is set: the identifier fills in, the
+    // password clears, and the prefill is used up.
+    let LoginPrefill(mut prefill) = use_context();
+    use_effect(move || {
+        if let Some(value) = prefill() {
+            identifier.set(value);
+            password.set(String::new());
+            prefill.set(None);
+        }
+    });
 
     let mut attempt_submit = move || {
         match login::submit_gate(*is_loading.peek(), &identifier.peek(), &password.peek()) {

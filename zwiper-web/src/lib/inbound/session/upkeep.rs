@@ -7,10 +7,12 @@ use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::user::models::preferences::PipStyle;
+use zwipe_core::http::contracts::metrics::AnonymousEventKind;
 
 use crate::config::APP_VERSION;
 use crate::domain::{theme, version_gate};
 use crate::inbound::session::ensure_fresh::ensure_fresh;
+use crate::inbound::session::funnel;
 use crate::outbound::session_store::SessionStore;
 use crate::outbound::theme_store::ThemeStore;
 use crate::outbound::timer;
@@ -63,6 +65,13 @@ pub fn use_session_upkeep() -> UpgradeRequired {
             .unwrap_or_default()
     });
     use_context_provider(|| pip_style);
+
+    // A logged-out visit opens the funnel; a logged-in one is already a user.
+    use_hook(|| {
+        if session.peek().is_none() {
+            funnel::record(client, AnonymousEventKind::AppOpened);
+        }
+    });
 
     let mut upgrade_required = use_signal(|| false);
     use_context_provider(|| UpgradeRequired(upgrade_required));

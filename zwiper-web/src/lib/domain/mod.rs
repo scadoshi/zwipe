@@ -6,4 +6,5 @@ pub mod login;
 pub mod session;
 pub mod support;
 pub mod theme;
+pub mod validation;
 pub mod version_gate;

@@ -29,18 +29,6 @@ fn Placeholder(title: String, #[props(default)] deck_id: Option<Uuid>) -> Elemen
     }
 }
 
-/// Create profile, not built yet.
-#[component]
-pub fn Register() -> Element {
-    rsx! { Placeholder { title: "Create profile" } }
-}
-
-/// Reset password, not built yet.
-#[component]
-pub fn ForgotPassword() -> Element {
-    rsx! { Placeholder { title: "Reset password" } }
-}
-
 /// Home, not built yet.
 #[component]
 pub fn Home() -> Element {

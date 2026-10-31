@@ -11,6 +11,7 @@ use zwipe_core::domain::user::models::preferences::PipStyle;
 use crate::inbound::caches;
 use crate::inbound::chrome::hint_topic::{HintHost, HintTopic};
 use crate::inbound::router::Route;
+use crate::inbound::screens::auth::login::LoginPrefill;
 use crate::inbound::screens::update_required::UpdateRequired;
 use crate::inbound::session::upkeep;
 
@@ -42,6 +43,7 @@ pub fn App() -> Element {
     });
     let dialogs = use_dialog_host();
     use_context_provider(|| dialogs);
+    use_context_provider(|| LoginPrefill(Signal::new(None)));
     // The `?` buttons post here and the HintHost draws the topic.
     use_context_provider(|| Signal::new(None::<HintTopic>));
     // Closed until the splash starts to fade; the entrances wait on it.
