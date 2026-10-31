@@ -222,7 +222,7 @@ pub(crate) fn draw(
     blit(buf, &snapshot, placement);
 }
 
-/// Copies `snapshot`, drawn at `placement.rest`, into `buf` at the placement's frame. A narrowed card gives up its blank and border-only columns (rows, for Up) first, then clips its text from the trailing end, so its words never lose letters and both edges stay. Past halfway it draws dim and only its border, and only over blank cells, as the app's card fades, so the card underneath shows whole.
+/// Copies `snapshot`, drawn at `placement.rest`, into `buf` at the placement's frame. A narrowed card gives up its blank and border-only columns (rows, for Up) first, then clips its text from the trailing end, so its words never lose letters and both edges stay. Past halfway it draws dim and only its border, never over the text of the card underneath, as the app's card fades, so that card shows whole.
 pub(crate) fn blit(buf: &mut Buffer, snapshot: &Buffer, placement: &Placement) {
     let rest = placement.rest;
     let visible = placement.visible;
@@ -249,8 +249,8 @@ pub(crate) fn blit(buf: &mut Buffer, snapshot: &Buffer, placement: &Placement) {
                 continue;
             };
             if let Some(target) = buf.cell_mut(Position::new(column, row)) {
-                // A fading outline gives way to anything the card underneath drew.
-                if placement.dim && target.symbol() != " " {
+                // A fading outline gives way to what the card underneath says, and crosses its lines.
+                if placement.dim && !open(target.symbol()) {
                     continue;
                 }
                 *target = cell;
@@ -260,6 +260,13 @@ pub(crate) fn blit(buf: &mut Buffer, snapshot: &Buffer, placement: &Placement) {
             }
         }
     }
+}
+
+/// Whether a fading outline may draw over `symbol`: a blank cell or a box-drawing line, never text.
+fn open(symbol: &str) -> bool {
+    symbol
+        .chars()
+        .all(|c| c == ' ' || ('\u{2500}'..='\u{257f}').contains(&c))
 }
 
 /// How far `at` lies past `start`, as an index, or `None` before it.
@@ -659,7 +666,10 @@ mod tests {
         let top: String = (0..40)
             .map(|x| buf.cell((x, 0)).unwrap().symbol().to_owned())
             .collect();
-        assert!(top.starts_with("┌───"), "{top:?}");
+        assert!(
+            top.starts_with("┌─┌──────┐─"),
+            "the outline crosses the lines under it: {top:?}"
+        );
         let mut blank = Buffer::empty(bounds);
         blit(&mut blank, &snapshot, &placement);
         assert_eq!(

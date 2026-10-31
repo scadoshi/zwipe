@@ -672,7 +672,9 @@ fn home_with_flavor(images: Option<ratatui_image::picker::Picker>, card: Card) -
     harness.app.shared.images = images;
     harness.app.shared.caches.flavor = Some(FlavorCard {
         card,
-        expires_at: Utc::now() + chrono::Duration::hours(1),
+        expires_at: Utc::now()
+            .checked_add_signed(chrono::Duration::hours(1))
+            .unwrap(),
     });
     harness.open(open);
     harness
@@ -704,7 +706,7 @@ fn the_featured_image_loads_only_where_the_terminal_draws_real_images() {
             "{protocol:?}"
         );
     }
-    let mut harness = home_with_flavor(Some(picker(ProtocolType::Kitty)), elves.clone());
+    let mut harness = home_with_flavor(Some(picker(ProtocolType::Kitty)), elves);
     harness.apply(Update::FlavorImage {
         url: "https://cards.scryfall.io/normal/front/other.jpg".to_owned(),
         image: Some(Box::new(image::DynamicImage::new_rgb8(8, 11))),
