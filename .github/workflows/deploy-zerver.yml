@@ -121,6 +121,22 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
+      # The target dir never sheds old dependency builds on its own, and it
+      # shares a disk with Postgres. Past the cap it goes and this run builds
+      # cold (about 3 minutes). It runs before the build, never after, so it
+      # cannot delete binaries the deploy job is about to install.
+      - name: Cap the target dir
+        run: |
+          cap_gb=15
+          used_gb=$(du -s --block-size=1G "$CARGO_TARGET_DIR" 2>/dev/null | cut -f1)
+          used_gb=${used_gb:-0}
+          echo "target dir: ${used_gb} GB (cap ${cap_gb} GB)"
+          df -h /home/runner | tail -1
+          if [ "$used_gb" -gt "$cap_gb" ]; then
+            echo "over the cap; clearing it"
+            rm -rf "$CARGO_TARGET_DIR"
+          fi
+
       - name: Install Rust
         uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
         with:
