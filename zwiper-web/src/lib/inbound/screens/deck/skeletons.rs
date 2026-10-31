@@ -117,3 +117,77 @@ pub fn EditDeckSkeleton() -> Element {
         }
     }
 }
+
+/// A bordered list ghost: its title bar, then `rows` label and value bars.
+#[component]
+fn SkeletonInfoList(rows: usize) -> Element {
+    rsx! {
+        div { class: "skeleton-info-list",
+            div { class: "skeleton-card-header",
+                div { class: "skeleton-bar skeleton-section-label" }
+            }
+            for i in 0..rows {
+                div { key: "{i}", class: "skeleton-info-row",
+                    div { class: "skeleton-bar skeleton-info-row-label" }
+                    div { class: "skeleton-bar skeleton-info-row-value" }
+                }
+            }
+        }
+    }
+}
+
+/// The deck view's Profile card while the deck loads.
+#[component]
+pub fn DeckProfileSkeleton() -> Element {
+    rsx! {
+        div { class: "skeleton-profile",
+            SkeletonInfoList { rows: 3 }
+        }
+    }
+}
+
+/// The deck view's stats while the deck loads: one open list, then three
+/// sections closed to their headers.
+#[component]
+pub fn DeckStatsSkeleton() -> Element {
+    rsx! {
+        div { class: "skeleton-stats",
+            SkeletonInfoList { rows: 5 }
+            for i in 0..3 {
+                div { key: "{i}", class: "skeleton-chart-box",
+                    div { class: "skeleton-bar skeleton-section-label" }
+                }
+            }
+        }
+    }
+}
+
+/// The deck view's cards column while the deck loads: two groups of ghost
+/// rows.
+#[component]
+pub fn DeckCardsSkeleton() -> Element {
+    rsx! {
+        div { class: "skeleton-card-list web-deck-cards",
+            div { class: "skeleton-card-group",
+                div { class: "skeleton-card-group-header",
+                    div { class: "skeleton-bar skeleton-card-bar-header" }
+                }
+                div { class: "skeleton-card-row",
+                    div { class: "skeleton-bar skeleton-card-thumb" }
+                    div { class: "skeleton-bar skeleton-card-bar-row" }
+                }
+            }
+            div { class: "skeleton-card-group",
+                div { class: "skeleton-card-group-header",
+                    div { class: "skeleton-bar skeleton-card-bar-header skeleton-card-bar-header-wide" }
+                }
+                for i in 0..6 {
+                    div { key: "{i}", class: "skeleton-card-row",
+                        div { class: "skeleton-bar skeleton-card-thumb" }
+                        div { class: "skeleton-bar skeleton-card-bar-row" }
+                    }
+                }
+            }
+        }
+    }
+}

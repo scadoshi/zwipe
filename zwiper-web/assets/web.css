@@ -763,6 +763,13 @@ body {
     transition: transform 0.25s ease;
 }
 
+.web-buy-link.web-menu-link {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    box-sizing: border-box;
+}
+
 @media (hover: hover) {
     .web-buy-link:hover .web-buy-ext {
         transform: translate(0.12em, -0.12em);
@@ -1178,5 +1185,77 @@ body {
     .web-export-body > textarea {
         grid-row: 2;
         min-height: calc(100vh - 14rem) !important;
+    }
+}
+
+/* ---- Deck view ---- */
+
+/* Below the breakpoint the columns are one stack, as in the app, with no
+   cards column. */
+.web-deck-view {
+    width: calc(100% - 4rem);
+    max-width: 40rem;
+    display: flex;
+    flex-direction: column;
+    gap: var(--panel-gap);
+    padding: 1rem 0;
+}
+
+.web-deck-view-profile,
+.web-deck-view-stats {
+    display: flex;
+    flex-direction: column;
+    gap: var(--panel-gap);
+    min-width: 0;
+}
+
+.web-deck-view-cards {
+    display: none;
+}
+
+@media (min-width: 900px) {
+    /* Profile, Budget and Tags over the stats on the left, the cards on
+       the right. */
+    .web-deck-view {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-areas:
+            "profile cards"
+            "stats cards";
+        align-items: start;
+        align-content: start;
+        width: 100%;
+        max-width: 90rem;
+        padding: 1rem 1.5rem 2rem;
+        box-sizing: border-box;
+        column-gap: 1.5rem;
+    }
+
+    .web-deck-view-profile {
+        grid-area: profile;
+    }
+
+    .web-deck-view-stats {
+        grid-area: stats;
+    }
+
+    .web-deck-view-cards {
+        grid-area: cards;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+    }
+
+    .web-deck-cards {
+        display: flex;
+        flex-direction: column;
+        gap: var(--panel-gap);
+    }
+}
+
+@media (min-width: 1280px) {
+    .web-deck-view {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-areas: "profile stats cards";
     }
 }

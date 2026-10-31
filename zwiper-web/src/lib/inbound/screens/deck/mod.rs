@@ -8,3 +8,4 @@ pub mod form;
 pub mod import;
 pub mod list;
 pub mod skeletons;
+pub mod view;

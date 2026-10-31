@@ -16,10 +16,9 @@ use crate::inbound::screens::deck::edit::EditDeck;
 use crate::inbound::screens::deck::export::ExportDeck;
 use crate::inbound::screens::deck::import::ImportDeck;
 use crate::inbound::screens::deck::list::DeckList;
+use crate::inbound::screens::deck::view::ViewDeck;
 use crate::inbound::screens::home::Home;
-use crate::inbound::screens::placeholders::{
-    AddDeckCard, NotFound, RemoveDeckCard, ViewDeck, ViewDeckCard,
-};
+use crate::inbound::screens::placeholders::{AddDeckCard, NotFound, RemoveDeckCard, ViewDeckCard};
 use crate::inbound::screens::playstyle::Playstyle;
 use crate::inbound::screens::privacy_policy::PrivacyPolicy;
 use crate::inbound::session::auth_gate::AuthGate;
