@@ -23,12 +23,6 @@ fn names(commanders: &[Named]) -> Vec<&str> {
 use Color::{Black, Blue, Green, Red, White};
 
 #[test]
-fn identity_of_runs_wubrg_once_each() {
-    assert_eq!(identity_of(&[Red, White, Red]), vec![White, Red]);
-    assert_eq!(identity_of(&[]), Vec::<Color>::new());
-}
-
-#[test]
 fn identities_present_are_distinct_fewest_colors_first_colorless_last() {
     let held = [
         commander("Narset", &[White, Blue, Red]),
@@ -41,7 +35,7 @@ fn identities_present_are_distinct_fewest_colors_first_colorless_last() {
         commander("Zada", &[Red]),
     ];
     assert_eq!(
-        identities_present(held.iter().map(colors_of)),
+        colors::identities_present(held.iter().map(colors_of)),
         vec![
             vec![Blue],
             vec![Red],
@@ -52,12 +46,12 @@ fn identities_present_are_distinct_fewest_colors_first_colorless_last() {
         ]
     );
     assert_eq!(
-        identities_present(std::iter::empty()),
+        colors::identities_present(std::iter::empty()),
         Vec::<Vec<Color>>::new()
     );
     let chosen: &[Color] = &[Green];
     assert_eq!(
-        identities_present(held.iter().map(colors_of).chain([chosen])),
+        colors::identities_present(held.iter().map(colors_of).chain([chosen])),
         vec![
             vec![Blue],
             vec![Red],
@@ -242,25 +236,6 @@ fn matching(
         .iter()
         .map(|s| s.0)
         .collect()
-}
-
-#[test]
-fn has_type_reads_every_word_of_the_front_face() {
-    let line = Some("Legendary Artifact Creature — Golem");
-    assert!(has_type(line, CardType::Artifact));
-    assert!(has_type(line, CardType::Creature));
-    assert!(!has_type(line, CardType::Enchantment));
-    let modal = Some("Sorcery // Land");
-    assert!(has_type(modal, CardType::Sorcery));
-    assert!(
-        !has_type(modal, CardType::Land),
-        "the back face is not read"
-    );
-    assert!(!has_type(None, CardType::Creature));
-    assert!(
-        !has_type(Some("Snow Artifacts"), CardType::Artifact),
-        "a whole word, not a prefix"
-    );
 }
 
 #[test]

@@ -8,6 +8,7 @@ use std::collections::BTreeMap;
 use zwipe_core::domain::card::card_role;
 use zwipe_core::domain::card::scryfall_data::colors::{self, Color};
 use zwipe_core::domain::card::search_card::card_type::CardType;
+use zwipe_core::domain::card::search_card::type_line;
 use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
 use zwipe_core::http::contracts::suggestions::{
     HttpBuilderProfile, HttpColorAffinity, HttpProfileRole, HttpProfileTag, HttpSharedTag,
@@ -40,34 +41,6 @@ pub const STAPLE_TYPES: [CardType; 7] = [
     CardType::Land,
 ];
 
-/// A commander's exact color identity in WUBRG order, each color once; empty is colorless.
-#[must_use]
-pub fn identity_of(colors: &[Color]) -> Vec<Color> {
-    Color::all()
-        .into_iter()
-        .filter(|c| colors.contains(c))
-        .collect()
-}
-
-/// The distinct color identities among `colors` (one entry per commander), in the deck list's group order: fewest colors first, WUBRG order between identities of the same size, colorless last.
-pub fn identities_present<'a>(colors: impl IntoIterator<Item = &'a [Color]>) -> Vec<Vec<Color>> {
-    let mut identities: Vec<Vec<Color>> = Vec::new();
-    for commander in colors {
-        let identity = identity_of(commander);
-        if !identities.contains(&identity) {
-            identities.push(identity);
-        }
-    }
-    identities.sort_by_key(|identity| {
-        let order: Vec<usize> = identity
-            .iter()
-            .map(|c| Color::all().iter().position(|a| a == c).unwrap_or(0))
-            .collect();
-        (identity.is_empty(), identity.len(), order)
-    });
-    identities
-}
-
 /// The items whose `colors` are exactly `identity`, in the order given; every item when `identity` is `None` (the All chip). The server already spreads its 100 across identities, so this is a plain predicate over that order and applies no cap.
 pub fn of_identity<T: Clone>(
     items: &[T],
@@ -76,7 +49,7 @@ pub fn of_identity<T: Clone>(
 ) -> Vec<T> {
     items
         .iter()
-        .filter(|item| identity.is_none_or(|wanted| identity_of(colors(item)) == wanted))
+        .filter(|item| identity.is_none_or(|wanted| colors::identity_of(colors(item)) == wanted))
         .cloned()
         .collect()
 }
@@ -95,7 +68,7 @@ pub fn identity_label(identity: &[Color]) -> Option<&'static str> {
 /// The list's empty state under a Show chip whose commanders are all gone, "No Jeskai commanders in your top 100". The names that describe rather than name (colorless, mono-color, five-color) go lowercase mid-sentence.
 #[must_use]
 pub fn empty_identity_line(identity: &[Color]) -> String {
-    let identity = identity_of(identity);
+    let identity = colors::identity_of(identity);
     let name = colors::identity_name(&identity);
     let name = match identity.len() {
         0 | 1 | 5 => name.to_lowercase(),
@@ -217,7 +190,7 @@ pub fn profile_summary(profile: &HttpBuilderProfile) -> ProfileSummary {
             .filter_map(|code| Color::try_from(code.as_str()).ok())
             .collect();
         SummaryValue {
-            pips: identity_of(&parsed),
+            pips: colors::identity_of(&parsed),
             count: format!("({})", top.decks),
         }
     });
@@ -362,20 +335,6 @@ impl StapleColor {
     }
 }
 
-/// The front face of a type line. Scryfall joins a multi-faced card's faces with `" // "`; a single-faced line comes back whole.
-fn front_face(type_line: &str) -> &str {
-    type_line
-        .split_once(" // ")
-        .map_or(type_line, |(front, _)| front)
-}
-
-/// Whether the front face of `type_line` has `card_type` as one of its words, so "Artifact Creature" has both Artifact and Creature.
-#[must_use]
-pub fn has_type(type_line: Option<&str>, card_type: CardType) -> bool {
-    let word = card_type.to_string();
-    type_line.is_some_and(|line| front_face(line).split_whitespace().any(|w| w == word))
-}
-
 /// A staple's type line, its first face's where the card has no top-level one.
 #[must_use]
 pub fn staple_type_line(staple: &HttpStaple) -> Option<&str> {
@@ -401,7 +360,7 @@ pub fn staple_types_present<T>(
         .filter(|card_type| {
             items
                 .iter()
-                .any(|item| has_type(type_line(item), *card_type))
+                .any(|item| type_line::has_type(type_line(item), *card_type))
         })
         .collect()
 }
@@ -425,7 +384,7 @@ pub fn matching_staples<T: Clone>(
     items
         .iter()
         .filter(|item| {
-            card_type.is_none_or(|wanted| has_type(type_line(item), wanted))
+            card_type.is_none_or(|wanted| type_line::has_type(type_line(item), wanted))
                 && color.is_none_or(|chip| chip.matches(colors(item)))
         })
         .take(LIST_SIZE)
