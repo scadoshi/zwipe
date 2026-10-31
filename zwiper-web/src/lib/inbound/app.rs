@@ -13,7 +13,7 @@ use crate::inbound::router::Route;
 use crate::inbound::screens::auth::login::LoginPrefill;
 use crate::inbound::screens::update_required::UpdateRequired;
 use crate::inbound::session::upkeep;
-use crate::inbound::{caches, catalog};
+use crate::inbound::{caches, card_stores, catalog};
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
 const WEB_CSS: Asset = asset!("/assets/web.css");
@@ -33,6 +33,7 @@ pub fn App() -> Element {
     let upgrade_required = upkeep::use_session_upkeep();
     caches::use_root_caches();
     catalog::use_catalog_cache();
+    card_stores::use_card_stores();
     // Dialogs and sheets register here, so Esc closes the top one.
     let mut overlay_back_stack = use_overlay_back_stack();
     use_context_provider(|| overlay_back_stack);

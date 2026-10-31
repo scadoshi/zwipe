@@ -12,6 +12,7 @@ use uuid::Uuid;
 use zwipe_core::domain::deck::{ImportDeckCardsResult, ImportMode};
 use zwipe_ui::deck::form::{ImportTone, import_outcome};
 
+use crate::inbound::card_stores::CardStores;
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::router::Route;
@@ -39,6 +40,7 @@ const BOARDS: [(&str, Option<&str>); 3] = [
 pub fn ImportDeck(deck_id: Uuid) -> Element {
     let navigator = use_navigator();
     let authed = use_authed();
+    let stores: CardStores = use_context();
     let toast = use_toast();
     let hint_open = use_one_time_hint(OneTimeHint::Import);
     let mut source = use_signal(|| Source::Text);
@@ -76,7 +78,10 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
             let Ok(reply) = reply else {
                 return;
             };
-            // TODO(wave D): clear the deck's undo history when any card came in.
+            if !reply.imported.is_empty() {
+                let mut undo = stores.undo;
+                undo.write().clear(deck_id);
+            }
             let (tone, message) = import_outcome(reply.imported.len(), reply.unresolved.len());
             let quick = ToastOptions::default().duration(TOAST_QUICK);
             match tone {
