@@ -763,3 +763,32 @@ fn the_swipe_picker_flies_skipped_and_saved_cards_off_and_undo_brings_them_back(
     render(&harness.app, 100, 40);
     render(&harness.app, 12, 5);
 }
+
+#[test]
+fn the_form_and_its_pickers_keep_every_key_on_a_narrow_terminal() {
+    use crate::test_support::{assert_key_bar_fits, rows};
+
+    let mut harness = commander_form();
+    assert_key_bar_fits(&harness.app, "F2 Save");
+    focus(&mut harness, Field::Power);
+    let narrow = rows(&harness.app, 60, 20).join("\n");
+    assert!(
+        narrow.contains("Optimized (4)") && narrow.contains("cEDH (5)"),
+        "the power chips wrap instead of running off the box:\n{narrow}"
+    );
+    for field in [Field::Format, Field::DeckTags, Field::OracleTags] {
+        focus(&mut harness, field);
+        assert_key_bar_fits(&harness.app, "F2 Save");
+        harness.press(KeyCode::Enter);
+        assert_key_bar_fits(&harness.app, "F2 Save");
+        harness.press(KeyCode::Esc);
+    }
+    focus(&mut harness, Field::Card(Slot::Commander));
+    harness.press(KeyCode::F(4));
+    assert_key_bar_fits(&harness.app, "Esc Back");
+    let hint = rows(&harness.app, 80, 24).join("\n");
+    assert!(
+        hint.contains("Swipe right picks that commander") && !hint.contains("commander• Swipe"),
+        "each hint bullet starts its own line:\n{hint}"
+    );
+}

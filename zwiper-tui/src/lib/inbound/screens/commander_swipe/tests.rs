@@ -652,3 +652,9 @@ fn the_swipe_keys_read_add_skip_maybeboard_undo_in_the_apps_swipe_colors() {
         );
     }
 }
+
+#[test]
+fn the_commander_swipe_keeps_every_key_on_a_narrow_terminal() {
+    crate::test_support::assert_key_bar_fits(&swiping().app, "Esc Back");
+    crate::test_support::assert_key_bar_fits(&commander(HashSet::new()).app, "Esc Back");
+}

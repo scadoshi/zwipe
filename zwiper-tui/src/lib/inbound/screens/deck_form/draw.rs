@@ -20,6 +20,7 @@ use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::screens::card_sheets;
 use crate::inbound::widgets::card_motion::{self, CardMotion, Phase};
+use crate::inbound::widgets::measure::height_of;
 use crate::inbound::widgets::pill::{self, PillState, pill};
 use crate::inbound::widgets::text_input::TextInput;
 use crate::inbound::widgets::{action_bar, header, skeleton};
@@ -35,14 +36,17 @@ const CURRENCIES: [PriceCurrency; 3] = [PriceCurrency::Usd, PriceCurrency::Eur, 
 
 pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &DeckForm) {
     let palette = &shared.palette;
+    let bar = keys_line(palette, form);
+    let bar_height = action_bar::height(&bar, f.area().width.saturating_sub(2));
     let [header, body, status, keys] = Layout::vertical([
         Constraint::Length(1),
         Constraint::Fill(1),
         Constraint::Length(1),
-        Constraint::Length(1),
+        Constraint::Length(bar_height),
     ])
     .margin(1)
     .areas(f.area());
+    f.render_widget(action_bar::wrap(bar, keys.width), keys);
 
     match &form.overlay {
         Some(Overlay::Format(picker)) => {
@@ -105,10 +109,43 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &DeckForm) {
         Line::from(shared.status.clone()).style(palette.muted),
         status,
     );
-    f.render_widget(form_keys(palette, form), keys);
     if let Some(Overlay::Info(popup)) = &form.overlay {
         popup.draw(f, palette);
     }
+}
+
+/// The action bar for what is up: the open picker's keys, else the form's.
+fn keys_line(palette: &Palette, form: &DeckForm) -> Line<'static> {
+    match &form.overlay {
+        Some(Overlay::Format(picker)) => picker_keys(palette, format_changed(form, picker)),
+        Some(Overlay::DeckTags(picker)) => picker_keys(palette, tags_changed(form, picker)),
+        Some(Overlay::OracleTags(picker)) => picker_keys(palette, oracle_changed(form, picker)),
+        Some(Overlay::Swipe(picker)) => swipe_keys(palette, picker),
+        Some(Overlay::Info(_)) | None => form_keys(palette, form),
+    }
+}
+
+/// Whether the format picker holds a format other than the one it opened on.
+fn format_changed(form: &DeckForm, picker: &FormatPicker) -> bool {
+    form.format != picker.snapshot.format
+}
+
+/// Whether the deck tag picker holds other tags than it opened on, in any order.
+fn tags_changed(form: &DeckForm, picker: &TagPicker) -> bool {
+    let mut snapshot = picker.snapshot.clone();
+    let mut now = form.tags.clone();
+    snapshot.sort();
+    now.sort();
+    snapshot != now
+}
+
+/// Whether the oracle tag picker holds other tags than it opened on, in any order.
+fn oracle_changed(form: &DeckForm, picker: &OraclePicker) -> bool {
+    let mut snapshot = picker.snapshot.clone();
+    let mut now = form.oracle_tags.clone();
+    snapshot.sort();
+    now.sort();
+    snapshot != now
 }
 
 /// The action bar: what the focused field takes, then Back and Save.
@@ -194,7 +231,7 @@ fn form_lines(
             }
             Field::Card(slot) => card_slot_lines(&mut lines, palette, form, slot, focused),
             Field::Power => {
-                power_lines(&mut lines, palette, form, focused);
+                power_lines(&mut lines, palette, form, focused, width);
                 None
             }
             Field::Land => {
@@ -202,7 +239,7 @@ fn form_lines(
                 None
             }
             Field::Currency => {
-                currency_lines(&mut lines, palette, form, focused);
+                currency_lines(&mut lines, palette, form, focused, width);
                 None
             }
             Field::Price => price_lines(&mut lines, palette, form, focused),
@@ -215,7 +252,7 @@ fn form_lines(
                 None
             }
             Field::OtherTags => {
-                other_tag_lines(&mut lines, palette, form, focused);
+                other_tag_lines(&mut lines, palette, form, focused, width);
                 None
             }
         };
@@ -340,7 +377,13 @@ fn card_slot_lines(
 }
 
 /// The Power level chips, then the Budget heading.
-fn power_lines(lines: &mut Vec<Line<'static>>, palette: &Palette, form: &DeckForm, focused: bool) {
+fn power_lines(
+    lines: &mut Vec<Line<'static>>,
+    palette: &Palette,
+    form: &DeckForm,
+    focused: bool,
+    width: usize,
+) {
     lines.push(heading_gap());
     lines.push(label_line(
         palette,
@@ -362,7 +405,7 @@ fn power_lines(lines: &mut Vec<Line<'static>>, palette: &Palette, form: &DeckFor
             )
         })
         .collect();
-    lines.push(indented(chips));
+    lines.extend(pill::wrap(INDENT, chips, width));
     lines.push(Line::default());
     lines.push(heading("Budget", palette.warning));
 }
@@ -392,6 +435,7 @@ fn currency_lines(
     palette: &Palette,
     form: &DeckForm,
     focused: bool,
+    width: usize,
 ) {
     lines.push(label_line(
         palette,
@@ -412,7 +456,7 @@ fn currency_lines(
             )
         })
         .collect();
-    lines.push(indented(chips));
+    lines.extend(pill::wrap(INDENT, chips, width));
 }
 
 /// The price input, then the Tags heading; returns the cursor when focused.
@@ -486,6 +530,7 @@ fn other_tag_lines(
     palette: &Palette,
     form: &DeckForm,
     focused: bool,
+    width: usize,
 ) {
     lines.push(label_line(
         palette,
@@ -507,17 +552,11 @@ fn other_tag_lines(
             )
         })
         .collect();
-    lines.push(indented(chips));
+    lines.extend(pill::wrap(INDENT, chips, width));
 }
 
 fn heading_gap() -> Line<'static> {
     Line::default()
-}
-
-fn indented(chips: Vec<Span<'static>>) -> Line<'static> {
-    let mut spans = vec![Span::raw(INDENT)];
-    spans.extend(pill::row(chips).spans);
-    Line::from(spans)
 }
 
 /// The selected tags, each with its "×", or "Not set".
@@ -560,10 +599,9 @@ struct PickerParts {
     extras: Vec<Span<'static>>,
     /// The definition bar's name and lines.
     bar: (String, Vec<String>),
-    save_enabled: bool,
 }
 
-/// A picker's frame: its title, the search box and its extras, the definition bar, then the grid; and its action bar. Returns the grid's area.
+/// A picker's frame: its title, the search box and its extras, the definition bar, then the grid. Returns the grid's area.
 fn picker_frame(
     f: &mut Frame<'_>,
     palette: &Palette,
@@ -571,15 +609,18 @@ fn picker_frame(
     search: &TextInput,
     frame: PickerParts,
 ) -> Rect {
-    let PickerParts {
-        title,
-        extras,
-        bar,
-        save_enabled,
-    } = frame;
-    let [header, body, _, keys] = areas;
+    let PickerParts { title, extras, bar } = frame;
+    let [header, body, _, _] = areas;
     header::draw(f, palette, header, title, header::Corner::Hint);
-    let bar_height = u16::try_from(bar.1.len()).unwrap_or(1).saturating_add(3);
+    let mut bar_lines = vec![Line::from(Span::styled(bar.0, palette.accent.bold()))];
+    bar_lines.extend(bar.1.into_iter().map(Line::from));
+    let bar = Paragraph::new(bar_lines)
+        .wrap(Wrap { trim: true })
+        .block(Block::bordered().border_style(palette.border));
+    // The definition wraps to the width, but never takes more than half the room under the search box.
+    let bar_height = height_of(bar.line_count(body.width))
+        .min(body.height.saturating_sub(4) / 2)
+        .max(3);
     let [controls, search_area, bar_area, grid] = Layout::vertical([
         Constraint::Length(1),
         Constraint::Length(3),
@@ -595,14 +636,12 @@ fn picker_frame(
     f.render_widget(Line::from(head), controls);
     search.draw(f, palette, search_area, "Search", true);
     f.set_cursor_position(search.cursor_position(search_area));
-    let mut bar_lines = vec![Line::from(Span::styled(bar.0, palette.accent.bold()))];
-    bar_lines.extend(bar.1.into_iter().map(Line::from));
-    f.render_widget(
-        Paragraph::new(bar_lines)
-            .wrap(Wrap { trim: true })
-            .block(Block::bordered().border_style(palette.border)),
-        bar_area,
-    );
+    f.render_widget(bar, bar_area);
+    grid
+}
+
+/// A picker's action bar, its Save bright only once the picks differ from where the picker opened.
+fn picker_keys(palette: &Palette, save_enabled: bool) -> Line<'static> {
     let save_style = if save_enabled {
         palette.base.bold()
     } else {
@@ -619,8 +658,7 @@ fn picker_frame(
     );
     bar.spans.push(Span::styled("F2 ", save_style));
     bar.spans.push(Span::styled("Save", palette.muted));
-    f.render_widget(bar, keys);
-    grid
+    bar
 }
 
 /// Chips wrapped across the grid, scrolled so the focused one shows.
@@ -673,7 +711,6 @@ fn draw_format(
             title: "Format",
             extras: Vec::new(),
             bar: pickers::format_bar(picker.detail),
-            save_enabled: form.format != picker.snapshot.format,
         },
     );
     let formats = picker.formats();
@@ -715,10 +752,6 @@ fn draw_tags(
             vec!["Tap a tag to see its definition here.".to_owned()],
         ),
     };
-    let mut snapshot = picker.snapshot.clone();
-    let mut now = form.tags.clone();
-    snapshot.sort();
-    now.sort();
     let grid = picker_frame(
         f,
         palette,
@@ -734,7 +767,6 @@ fn draw_tags(
                 Span::styled("F8 ×", palette.muted),
             ],
             bar,
-            save_enabled: snapshot != now,
         },
     );
     let tags = picker.tags(&form.deck_tag_catalog);
@@ -784,10 +816,6 @@ fn draw_oracle(
             ],
         ),
     };
-    let mut snapshot = picker.snapshot.clone();
-    let mut now = form.oracle_tags.clone();
-    snapshot.sort();
-    now.sort();
     let grid = picker_frame(
         f,
         palette,
@@ -804,7 +832,6 @@ fn draw_oracle(
                 Span::styled("F8 ×", palette.muted),
             ],
             bar,
-            save_enabled: snapshot != now,
         },
     );
     let Some(catalog) = catalog else {
@@ -842,7 +869,7 @@ fn draw_oracle(
 /// The swipe picker: the card up now and what it says, or a ghost while loading, with the filter sheet over it while open.
 fn draw_swipe(f: &mut Frame<'_>, shared: &Shared, picker: &SwipePicker, areas: [Rect; 4]) {
     let palette = &shared.palette;
-    let [header, body, _, keys] = areas;
+    let [header, body, _, _] = areas;
     header::draw(f, palette, header, "Swipe select", header::Corner::Hint);
     let block = Block::bordered().border_style(palette.border);
     let inner = block.inner(body);
@@ -879,6 +906,13 @@ fn draw_swipe(f: &mut Frame<'_>, shared: &Shared, picker: &SwipePicker, areas: [
             });
         }
     }
+    if let Some(sheet) = &picker.sheet {
+        card_sheets::filter::draw::draw(f, shared, sheet, f.area());
+    }
+}
+
+/// The swipe picker's action bar: the swipes in their colors, maybeboard only for the commander and partner, then the rest.
+fn swipe_keys(palette: &Palette, picker: &SwipePicker) -> Line<'static> {
     let up = matches!(picker.slot, Slot::Commander | Slot::Partner).then_some(("↑", "maybeboard"));
     let mut shown = action_bar::swipes(palette, ("→", "add"), ("←", "skip"), up, ("↓", "undo"));
     let filter_label = if picker.filter_dot() {
@@ -896,10 +930,7 @@ fn draw_swipe(f: &mut Frame<'_>, shared: &Shared, picker: &SwipePicker, areas: [
         .into_iter()
         .map(|(k, a)| (k, a, palette.muted)),
     );
-    f.render_widget(action_bar::styled_line(&shown), keys);
-    if let Some(sheet) = &picker.sheet {
-        card_sheets::filter::draw::draw(f, shared, sheet, f.area());
-    }
+    action_bar::styled_line(&shown)
 }
 
 /// A card's name, cost, type, rules and stats.

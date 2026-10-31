@@ -34,11 +34,13 @@ const INFO_HEIGHT: u16 = 5;
 pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &SwipeView) {
     let palette = &shared.palette;
     let area = f.area();
+    let bar = key_line(palette, view);
+    let bar_height = action_bar::height(&bar, area.width.saturating_sub(2));
     let [header, sources, body, keys] = Layout::vertical([
         Constraint::Length(1),
         Constraint::Length(1),
         Constraint::Fill(1),
-        Constraint::Length(1),
+        Constraint::Length(bar_height),
     ])
     .margin(1)
     .areas(area);
@@ -56,7 +58,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &SwipeView) {
         draw_motion(f, shared, view, motion, body, now);
     }
 
-    f.render_widget(key_line(palette, view), keys);
+    f.render_widget(action_bar::wrap(bar, keys.width), keys);
 
     if let Some(details) = &view.details {
         details.draw(f, shared, area);

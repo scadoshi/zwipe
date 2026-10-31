@@ -350,7 +350,7 @@ impl CardRows {
         if !tags.is_empty() {
             keys.push(("Tab", "Tags"));
         }
-        lines.push(action_bar::line(palette, &keys));
+        lines.push(action_bar::unbreakable(action_bar::line(palette, &keys)));
         lines
     }
 
@@ -453,6 +453,7 @@ mod tests {
             .map(ToString::to_string)
             .collect::<Vec<_>>()
             .join("\n")
+            .replace('\u{a0}', " ")
     }
 
     fn screen(state: &CardRows, rows: &[CardRow<'_>], width: u16, height: u16) -> String {

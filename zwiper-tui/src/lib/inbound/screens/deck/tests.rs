@@ -908,3 +908,13 @@ fn a_short_pane_with_no_items_scrolls_to_its_last_row() {
     harness.press(KeyCode::Tab);
     assert_eq!(view(&harness).scroll, 0, "a new pane starts at its top");
 }
+
+#[test]
+fn the_deck_screen_keeps_every_key_on_a_narrow_terminal() {
+    let mut harness = loaded(elves());
+    crate::test_support::assert_key_bar_fits(&harness.app, "q quit");
+    harness.press(KeyCode::Enter);
+    crate::test_support::assert_key_bar_fits(&harness.app, "q quit");
+    harness.press(KeyCode::Char('m'));
+    crate::test_support::assert_key_bar_fits(&harness.app, "Esc");
+}

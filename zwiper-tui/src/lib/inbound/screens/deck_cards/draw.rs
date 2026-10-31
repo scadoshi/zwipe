@@ -18,17 +18,19 @@ use crate::domain::{deck_cards, filter};
 use crate::inbound::app::Shared;
 use crate::inbound::screens::card_sheets;
 use crate::inbound::widgets::sheet::Sheet;
-use crate::inbound::widgets::{action_bar, card_info, header, mana, otag, skeleton};
+use crate::inbound::widgets::{action_bar, card_info, header, mana, measure, otag, skeleton};
 
 pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &DeckCardsView) {
     let palette = &shared.palette;
     let area = f.area();
+    let bar = key_line(palette, view, shared);
+    let bar_height = action_bar::height(&bar, area.width.saturating_sub(2));
     let [title, header, controls, list, keys] = Layout::vertical([
         Constraint::Length(1),
         Constraint::Length(3),
         Constraint::Length(if view.loaded { 6 } else { 4 }),
         Constraint::Fill(1),
-        Constraint::Length(1),
+        Constraint::Length(bar_height),
     ])
     .margin(1)
     .areas(area);
@@ -43,7 +45,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &DeckCardsView) {
         f.render_widget(Paragraph::new(skeleton::rows(palette, 3, width)), controls);
         f.render_widget(Paragraph::new(skeleton::rows(palette, 8, width)), list);
     }
-    f.render_widget(key_line(palette, view, shared), keys);
+    f.render_widget(action_bar::wrap(bar, keys.width), keys);
 
     if let Some((card, face)) = &view.preview {
         Sheet::new(
@@ -203,6 +205,8 @@ fn draw_list(f: &mut Frame<'_>, shared: &Shared, view: &DeckCardsView, area: Rec
     let items = view.items();
     let mut lines: Vec<Line<'static>> = Vec::new();
     let mut cursor_line = 0;
+    // The open row's action lines, as where they start in `lines` and the lines themselves.
+    let mut open_actions: Option<(usize, Vec<Line<'static>>)> = None;
     for (i, item) in items.iter().enumerate() {
         let selected = i == view.cursor && !view.quick.focused;
         if i == view.cursor {
@@ -225,7 +229,14 @@ fn draw_list(f: &mut Frame<'_>, shared: &Shared, view: &DeckCardsView, area: Rec
                 lines.push(Line::from(spans));
             }
             Item::Card { card, kind } => {
-                lines.push(row_line(palette, view, card, *kind, selected));
+                lines.push(row_line(
+                    palette,
+                    view,
+                    card,
+                    *kind,
+                    selected,
+                    usize::from(area.width),
+                ));
                 if view.expanded == Some(card.scryfall_data.id) && i == view.cursor {
                     lines.push(Line::from("    ────").style(palette.border));
                     let details: Vec<Line<'static>> =
@@ -252,7 +263,21 @@ fn draw_list(f: &mut Frame<'_>, shared: &Shared, view: &DeckCardsView, area: Rec
                             .collect();
                         lines.extend(card_info::wrap(indented, usize::from(area.width), 4));
                     }
-                    lines.push(actions_line(palette, view, card, *kind));
+                    let actions = action_bar::wrap(
+                        actions_line(palette, view, card, *kind),
+                        area.width.saturating_sub(4),
+                    );
+                    let actions: Vec<Line<'static>> = actions
+                        .lines
+                        .into_iter()
+                        .map(|row| {
+                            let mut spans = vec![Span::raw("    ")];
+                            spans.extend(row.spans);
+                            Line::from(spans)
+                        })
+                        .collect();
+                    open_actions = Some((lines.len(), actions.clone()));
+                    lines.extend(actions);
                     lines.push(Line::from("    ────").style(palette.border));
                 }
             }
@@ -261,12 +286,35 @@ fn draw_list(f: &mut Frame<'_>, shared: &Shared, view: &DeckCardsView, area: Rec
     if view.boards.main && view.display.groups.is_empty() && view.display.lands.is_empty() {
         lines.push(Line::from("No cards").style(palette.muted));
     }
-    let rows = usize::from(area.height);
-    let scroll = cursor_line
-        .saturating_sub(rows / 3)
-        .min(lines.len().saturating_sub(rows));
-    let shown: Vec<Line<'static>> = lines.into_iter().skip(scroll).take(rows).collect();
+    let shown = in_view(lines, cursor_line, open_actions, usize::from(area.height));
     f.render_widget(Paragraph::new(shown), area);
+}
+
+/// The `rows` of `lines` in view: from a third of the list above the cursor, scrolled further to show the open row's actions (`open_actions`, where they start and the lines) but never past its name, and with those actions kept in the bottom rows when the open row is taller than the list.
+fn in_view(
+    lines: Vec<Line<'static>>,
+    cursor_line: usize,
+    open_actions: Option<(usize, Vec<Line<'static>>)>,
+    rows: usize,
+) -> Vec<Line<'static>> {
+    let mut scroll = cursor_line.saturating_sub(rows / 3);
+    if let Some((start, actions)) = &open_actions {
+        let end = start.saturating_add(actions.len());
+        scroll = scroll.max(end.saturating_sub(rows)).min(cursor_line);
+    }
+    let scroll = scroll.min(lines.len().saturating_sub(rows));
+    let pinned = open_actions
+        .filter(|(start, actions)| {
+            start.saturating_add(actions.len()) > scroll.saturating_add(rows)
+        })
+        .map(|(_, actions)| actions)
+        .unwrap_or_default();
+    lines
+        .into_iter()
+        .skip(scroll)
+        .take(rows.saturating_sub(pinned.len()))
+        .chain(pinned)
+        .collect()
 }
 
 fn pointer(palette: &Palette, selected: bool) -> Span<'static> {
@@ -285,13 +333,14 @@ fn pip_spans(palette: &Palette, colors: &[Color]) -> Vec<Span<'static>> {
         .collect()
 }
 
-/// A compact row: arrow, quantity, star and name, stats, price, color pips.
+/// A compact row no wider than `width`: arrow, quantity, star and name, stats, price, color pips.
 fn row_line(
     palette: &Palette,
     view: &DeckCardsView,
     card: &Card,
     kind: Kind,
     selected: bool,
+    width: usize,
 ) -> Line<'static> {
     let data = &card.scryfall_data;
     let open = view.expanded == Some(data.id);
@@ -314,6 +363,7 @@ fn row_line(
     } else {
         palette.base
     };
+    let name_at = spans.len();
     spans.push(Span::styled(data.name.clone(), name_style));
     let stats = match (&data.power, &data.toughness, &data.loyalty) {
         (Some(p), Some(t), _) => Some(format!("{p}/{t}")),
@@ -332,6 +382,14 @@ fn row_line(
     }
     spans.push(Span::raw("  "));
     spans.extend(pip_spans(palette, &data.color_identity));
+    // A name too long for the row ends in an ellipsis, keeping its stats, price and pips.
+    let overflow = Line::from(spans.clone()).width().saturating_sub(width);
+    if overflow > 0
+        && let Some(name) = spans.get_mut(name_at)
+    {
+        let keep = name.width().saturating_sub(overflow);
+        name.content = measure::ellipsize(&name.content, keep).into();
+    }
     Line::from(spans)
 }
 
@@ -376,9 +434,7 @@ fn actions_line(palette: &Palette, view: &DeckCardsView, card: &Card, kind: Kind
         Kind::Token => {}
     }
     let pairs: Vec<(&str, &str)> = keys.iter().map(|(k, a)| (*k, a.as_str())).collect();
-    let mut line = action_bar::line(palette, &pairs);
-    line.spans.insert(0, Span::raw("    "));
-    line
+    action_bar::line(palette, &pairs)
 }
 
 fn key_line(palette: &Palette, view: &DeckCardsView, shared: &Shared) -> Line<'static> {

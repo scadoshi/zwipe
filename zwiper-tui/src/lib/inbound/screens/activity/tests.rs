@@ -595,3 +595,13 @@ fn a_role_with_no_tags_is_a_grey_chip() {
         "Tap a role to see the tags you swiped under it. A grey role has none yet"
     );
 }
+
+#[test]
+fn activity_keeps_every_key_on_a_narrow_terminal() {
+    let mut harness = on_activity();
+    crate::test_support::assert_key_bar_fits(&harness.app, "Esc Back");
+    harness.apply(Update::Loaded(Box::new(sample())));
+    crate::test_support::assert_key_bar_fits(&harness.app, "Esc Back");
+    view_mut(&mut harness).focus = Focus::Passes;
+    crate::test_support::assert_key_bar_fits(&harness.app, "Esc Back");
+}

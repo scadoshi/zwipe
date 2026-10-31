@@ -28,6 +28,16 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &ForgotForm) {
         "Reset password",
         body_height,
         Placement::Centered,
+        action_bar::line(
+            palette,
+            &[
+                ("Tab", "move"),
+                ("Enter", "select"),
+                ("F1", "help"),
+                ("Esc", "back"),
+            ],
+        )
+        .centered(),
     );
     if form.sent {
         let block = Block::bordered()
@@ -74,18 +84,5 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &ForgotForm) {
     f.render_widget(
         action_bar::buttons(palette, &row, focused).centered(),
         areas.buttons,
-    );
-    f.render_widget(
-        action_bar::line(
-            palette,
-            &[
-                ("Tab", "move"),
-                ("Enter", "select"),
-                ("F1", "help"),
-                ("Esc", "back"),
-            ],
-        )
-        .centered(),
-        areas.keys,
     );
 }

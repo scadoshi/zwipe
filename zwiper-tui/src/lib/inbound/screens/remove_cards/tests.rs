@@ -262,3 +262,9 @@ fn the_swipe_keys_use_the_apps_verbs_in_its_hint_colors() {
     );
     assert!(!screen_text(&harness.app).contains(" keep "));
 }
+
+#[test]
+fn remove_keeps_every_key_on_a_narrow_terminal() {
+    let (harness, _, _) = loaded();
+    crate::test_support::assert_key_bar_fits(&harness.app, "Esc back");
+}

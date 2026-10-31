@@ -296,3 +296,11 @@ fn view_mut(harness: &mut Harness) -> &mut ExamplesView {
         other => panic!("not the examples: {other:?}"),
     }
 }
+
+#[test]
+fn the_examples_keep_every_key_on_a_narrow_terminal() {
+    let mut harness = on_examples();
+    crate::test_support::assert_key_bar_fits(&harness.app, "? Hint");
+    harness.apply(page(0, 2));
+    crate::test_support::assert_key_bar_fits(&harness.app, "? Hint");
+}

@@ -483,3 +483,18 @@ fn the_view_fits_a_tiny_terminal() {
     harness.press(KeyCode::Char('i'));
     render(&harness.app, 12, 5);
 }
+
+#[test]
+fn the_view_keeps_every_key_on_a_narrow_terminal() {
+    let (mut harness, _, _) = loaded();
+    crate::test_support::assert_key_bar_fits(&harness.app, "? hint");
+    open_row(&mut harness, "Elf");
+    crate::test_support::assert_key_bar_fits(&harness.app, "? hint");
+    for (width, height) in crate::test_support::NARROW {
+        let screen = crate::test_support::rows(&harness.app, width, height).join("\n");
+        assert!(
+            screen.contains("b to sideboard") && screen.contains("Elf"),
+            "the open row keeps its name and every action in view at {width}x{height}:\n{screen}"
+        );
+    }
+}

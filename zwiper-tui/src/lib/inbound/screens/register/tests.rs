@@ -189,3 +189,13 @@ fn the_screen_shows_its_fields_and_buttons_and_fits_a_tiny_terminal() {
         render(&harness.app, width, height);
     }
 }
+
+#[test]
+fn register_keeps_every_key_on_a_narrow_terminal() {
+    let mut harness = registering();
+    crate::test_support::assert_key_bar_fits(&harness.app, "Esc back");
+    harness.press(KeyCode::Tab);
+    harness.press(KeyCode::Tab);
+    assert_eq!(form(&harness).focus, RegisterField::Password);
+    crate::test_support::assert_key_bar_fits(&harness.app, "Esc back");
+}

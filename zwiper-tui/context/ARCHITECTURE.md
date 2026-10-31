@@ -68,7 +68,7 @@ Say the screen is `search`.
 
 A screen with no background work, like `update_required`, skips the request and update enums and their arms.
 
-Tests go through `Harness`: `Harness::on(Screen::Search(..))` or `harness.open(search::open)`, then `press`, `type_text`, `apply`, and assertions on `pending()` and `screen()`. `test_support::screen_text(&harness.app)` renders the app at 100 by 40 for drawing tests.
+Tests go through `Harness`: `Harness::on(Screen::Search(..))` or `harness.open(search::open)`, then `press`, `type_text`, `apply`, and assertions on `pending()` and `screen()`. `test_support::screen_text(&harness.app)` renders the app at 100 by 40 for drawing tests. `test_support::assert_key_bar_fits(&harness.app, "Esc back")` draws at 80 by 24 and 60 by 20 and checks the key bar's last hint shows whole.
 
 ## Widgets
 
@@ -76,7 +76,7 @@ All live in `widgets/` and draw in the account theme's `Palette`.
 
 - `toast`: success, error, info and warning toasts in the top-left corner, at most three, the newest on top and the older ones tucked behind it; Ctrl+T expands them. `cx.toast(kind, message)` shows one for `toast::NORMAL` (5 s), `cx.toast_for(kind, message, toast::QUICK | NORMAL | LONG)` for 3, 5 or 8 s, and the `Toast` and `ToastFor` updates do the same from a result.
 - `alert`: `AlertDialog` with a title, rules, a body and buttons, one focused; a button can be danger or disabled, and `draw_with` leaves room under the body for a field.
-- `sheet`: a bottom sheet with a scrolling body, a focused line kept in view, an optional `?` corner and footer keys. `sheet::frame` draws only the chrome, for a sheet with a form inside.
+- `sheet`: a bottom sheet with a scrolling body, a focused line kept in view, an optional `?` corner and footer keys; body lines too wide wrap between words under their own indent. `sheet::frame` draws only the chrome, for a sheet with a form inside.
 - `header`: the screen header, `!` on the left, the title, and `?` on the right when the screen has a hint. `!` and F1 open `help`, the Help & feedback dialog (`help::open(cx)`).
 - `hint`: `?` topics and one-time hints. `hint::topic(cx, HintTopic::Email)` opens a topic; `hint::once(cx, key)` opens the app's one-time hint for a key from `zwipe_core::domain::user::hints` the first time only, marks it and sends `mark_hint_shown`; `hint::reopen(cx, key)` opens it again for a header `?`; `hint::keys::swipe_select(..)` with `hint::once_with` covers the one hint whose copy changes. While a hint is up it takes every key.
 - `hero`: the logo and everybody's three counters on the sign-in screens, over the shared `Counts` copy. `hero::mount(cx)` makes one and fetches the counts when they are stale. Home reads the same `shared.counts` for its Everybody figures and asks for `Request::FetchCounts` under the same 60 second rule, so Login and Home never fetch twice; the user's own counters live in `shared.caches`.
@@ -85,7 +85,7 @@ All live in `widgets/` and draw in the account theme's `Palette`.
 - `stagger`: entrances inside a screen, delayed and rising, and the hero's scope-in.
 - `card_rows`: expandable card rows with classification, printings (`printings::open` in `Mode::Pick`) and image keys, for Activity, Playstyle and the maybeboard.
 - `otag`: an oracle tag's definition with its `x Examples` key, and `RoleTags`, a row of tag chips with one open. The details sheet and the deck cards view's open row reveal a card's tags with it.
-- `item_list`: a list of items of different heights, one focused, paged to keep it in view.
+- `item_list`: a list of items of different heights, one focused, paged to keep it in view; a focused item taller than the list keeps its last line, a card row's keys, in its bottom rows, as Activity's `draw_lines` does for its column.
 - `card_text` and `card_info`: a card as text, and the card screens' info block, details body and text stand-in.
 - `menu` and `pill`: a sheet of buttons, and one chip drawn on its own.
 - `text_area`: a text box of many lines, for pasting a decklist.
@@ -101,7 +101,7 @@ All live in `widgets/` and draw in the account theme's `Palette`.
 - `chips`: a chip row picking one or many.
 - `collapsible`: a section that opens and closes, and an accordion that keeps one open.
 - `info`: the "?" popup of bullet points.
-- `action_bar`: the bottom row of key hints, and `action_bar::buttons` for a row of buttons the focus moves across. A swipe screen builds its swipe keys with `action_bar::swipes(palette, right, left, up, down)`, which colors each verb like the app's swipe hints (right success, left error, up warning, down tertiary), and draws them with `styled_line`. The labels use only add, remove, skip, maybeboard and undo (the commander swipe and the oracle tag Examples too: Examples reads skip and undo); toasts and hint prose stay the app's own words, so Remove's skip still toasts "Kept".
+- `action_bar`: the bottom row of key hints, and `action_bar::buttons` for a row of buttons the focus moves across. A swipe screen builds its swipe keys with `action_bar::swipes(palette, right, left, up, down)`, which colors each verb like the app's swipe hints (right success, left error, up warning, down tertiary), and draws them with `styled_line`. The labels use only add, remove, skip, maybeboard and undo (the commander swipe and the oracle tag Examples too: Examples reads skip and undo); toasts and hint prose stay the app's own words, so Remove's skip still toasts "Kept". A bar too wide for the screen wraps between hints, never splitting a key from its action: a screen reserves `action_bar::height(&bar, width)` rows for it and draws `action_bar::wrap(bar, width)`, and the deck view wraps its pane keys and screen keys each on their own. Keys inside text a paragraph wraps, like a card row's actions, go through `action_bar::unbreakable` so the wrap falls only between hints.
 - `skeleton`: ghost rows for content still loading.
 - `stats`: a strip of figures whose digits roll until they load. A screen showing one should animate while `stats::loading` is true.
 - `browser`: `browser::open(cx, url)` runs `open` on macOS and `xdg-open` elsewhere, and shows the link in a toast when that fails.

@@ -240,3 +240,8 @@ fn i_opens_the_rows_topic_and_the_screen_fits_a_tiny_terminal() {
     harness.press(KeyCode::Enter);
     render(&harness.app, 12, 5);
 }
+
+#[test]
+fn config_keeps_every_key_on_a_narrow_terminal() {
+    crate::test_support::assert_key_bar_fits(&on_config().app, "Esc back");
+}

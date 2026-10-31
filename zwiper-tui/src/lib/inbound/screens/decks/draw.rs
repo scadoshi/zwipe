@@ -14,7 +14,7 @@ use crate::domain::deck::list::{DeckGroup, GroupBy};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::widgets::pill::{self, PillState, pill};
-use crate::inbound::widgets::{action_bar, header, mana, skeleton};
+use crate::inbound::widgets::{action_bar, header, mana, measure, skeleton};
 
 /// Ghost rows while the decks load.
 const SKELETON_ROWS: usize = 8;
@@ -29,12 +29,24 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, list: &DeckList) {
     } else {
         0
     };
+    let bar = action_bar::line(
+        palette,
+        &[
+            ("Tab", "focus"),
+            ("Enter", "open"),
+            ("c", "Create"),
+            ("m", "More"),
+            ("Esc", "Back"),
+            ("q", "quit"),
+        ],
+    );
+    let bar_height = action_bar::height(&bar, f.area().width.saturating_sub(2));
     let [header, chips_area, body, status, keys] = Layout::vertical([
         Constraint::Length(1),
         Constraint::Length(chips),
         Constraint::Fill(1),
         Constraint::Length(1),
-        Constraint::Length(1),
+        Constraint::Length(bar_height),
     ])
     .margin(1)
     .areas(f.area());
@@ -58,20 +70,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, list: &DeckList) {
         Line::from(shared.status.clone()).style(palette.muted),
         status,
     );
-    f.render_widget(
-        action_bar::line(
-            palette,
-            &[
-                ("Tab", "focus"),
-                ("Enter", "open"),
-                ("c", "Create"),
-                ("m", "More"),
-                ("Esc", "Back"),
-                ("q", "quit"),
-            ],
-        ),
-        keys,
-    );
+    f.render_widget(action_bar::wrap(bar, keys.width), keys);
     if let Some(menu) = &list.more {
         menu.draw(f, palette, f.area());
     }
@@ -199,7 +198,15 @@ fn draw_list(f: &mut Frame<'_>, palette: &Palette, list: &DeckList, area: Rect) 
                 lines.push(header_line(palette, group, *collapsed, pointer, here));
             }
             Row::Deck(profile) => {
-                let (first, chips) = deck_lines(palette, profile, here);
+                let (mut first, chips) = deck_lines(palette, profile, here);
+                // A name too long for the row ends in an ellipsis, keeping its pips and count on the row.
+                let overflow = first.width().saturating_sub(width.saturating_sub(4));
+                if overflow > 0
+                    && let Some(name) = first.spans.first_mut()
+                {
+                    let keep = name.width().saturating_sub(overflow);
+                    name.content = measure::ellipsize(&name.content, keep).into();
+                }
                 let mut spans = vec![pointer, Span::raw("  ")];
                 spans.extend(first.spans);
                 lines.push(Line::from(spans));
