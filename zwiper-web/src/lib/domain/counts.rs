@@ -3,10 +3,7 @@
 
 use chrono::{DateTime, Duration, Utc};
 use zwipe_core::http::contracts::metrics::HttpPublicMetrics;
-
-/// How long a fetched copy serves before the next screen with the hero asks
-/// again, so moving between Login, Register and Forgot password reuses it.
-pub const COUNTS_FRESH: Duration = Duration::seconds(60);
+use zwipe_ui::timing::COUNTS_FRESH;
 
 /// The counters as last known, held above the router so every hero shares
 /// them.
@@ -36,11 +33,12 @@ impl CachedCounts {
         }
     }
 
-    /// Restored, or older than [`COUNTS_FRESH`] at `now`, so a mounting hero
-    /// fetches again. The copy stays on screen while it does.
+    /// Restored, or older than zwipe-ui's [`COUNTS_FRESH`] at `now`, so a
+    /// mounting hero fetches again. The copy stays on screen while it does.
     pub fn is_stale(&self, now: DateTime<Utc>) -> bool {
+        let fresh = Duration::from_std(COUNTS_FRESH).unwrap_or(Duration::MAX);
         self.fetched_at
-            .is_none_or(|at| now.signed_duration_since(at) >= COUNTS_FRESH)
+            .is_none_or(|at| now.signed_duration_since(at) >= fresh)
     }
 
     /// Fetched during this visit, which the hero tags `Live`.
@@ -50,7 +48,7 @@ impl CachedCounts {
 }
 
 /// Whether a hero mounting at `now` should fetch: no copy, a restored one,
-/// or one past [`COUNTS_FRESH`].
+/// or one past zwipe-ui's [`COUNTS_FRESH`].
 pub fn needs_fetch(cache: Option<&CachedCounts>, now: DateTime<Utc>) -> bool {
     cache.is_none_or(|cached| cached.is_stale(now))
 }
