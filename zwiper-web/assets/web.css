@@ -619,6 +619,13 @@ body {
 
 /* ---- Swipe surfaces ---- */
 
+/* The app's stack fills what its column leaves; a browser column may leave
+   nothing, so the stack keeps room for a card. */
+.web-swipe-stack {
+    flex: 1 0 auto;
+    min-height: min(55vh, 32rem);
+}
+
 .web-swipe-stack .swipe-stack-card.top {
     touch-action: none;
     cursor: grab;
@@ -649,9 +656,14 @@ body {
 }
 
 @media (min-width: 900px) {
+    /* The transform makes the modal the containing block of its own fixed
+       grid backdrop, so the backdrop stays inside it and the page around it
+       dims. */
     .screen.web-large-modal {
         inset: 4vh max(2rem, calc(50vw - 38rem));
+        width: auto;
         height: auto;
+        transform: translateZ(0);
         border: 1px solid var(--border-secondary);
         border-radius: 1rem;
         overflow: hidden;
@@ -786,7 +798,21 @@ body {
 
 @media (min-width: 900px) {
     .web-activity {
-        max-width: 64rem;
+        max-width: 72rem;
+    }
+
+    /* A year fits, so the heatmap scales to its column instead of scrolling;
+       the grid's inline pixel width is the phone's scroll width. */
+    .web-activity-heat .activity-scroll {
+        overflow-x: visible;
+        mask-image: none;
+        -webkit-mask-image: none;
+    }
+
+    .web-activity-heat .activity-plot,
+    .web-activity-heat .heat-grid {
+        width: 100% !important;
+        height: auto;
     }
 
     /* The Activity section full width: the year's heatmap unscrolled with
