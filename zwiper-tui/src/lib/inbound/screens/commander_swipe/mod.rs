@@ -10,7 +10,7 @@ pub(crate) mod keys;
 mod tests;
 
 use std::collections::HashSet;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use crossterm::event::KeyCode;
 use uuid::Uuid;
@@ -43,7 +43,7 @@ pub(crate) const LOAD_MORE_AT: usize = 5;
 pub(crate) const PULL_AHEAD: u8 = 4;
 
 /// How long the maybeboard save toast stays up, as the app's `MAYBEBOARD_TOAST_MS`.
-pub(crate) const SAVED_TOAST: std::time::Duration = std::time::Duration::from_millis(1500);
+pub(crate) const SAVED_TOAST: Duration = Duration::from_millis(1500);
 
 /// The Suggested mode's title and its hint's.
 pub(crate) const SUGGESTED_TITLE: &str = "Suggested commanders";

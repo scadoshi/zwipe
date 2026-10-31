@@ -131,9 +131,9 @@ impl HomeView {
                 .is_some_and(|_| self.map_elapsed() < color_map::entrance())
             || loading_map
             || stagger::entering(self.opened.elapsed(), stagger::DELAY, entrance::DURATION)
-            || self.scope_at.is_some_and(|t| {
-                stagger::entering(t.elapsed(), std::time::Duration::ZERO, stagger::SCOPE_IN)
-            })
+            || self
+                .scope_at
+                .is_some_and(|t| stagger::entering(t.elapsed(), Duration::ZERO, stagger::SCOPE_IN))
     }
 
     /// Marks the figures arrived now if they just turned up.
