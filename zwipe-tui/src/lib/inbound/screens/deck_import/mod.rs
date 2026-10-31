@@ -6,6 +6,7 @@ pub(crate) mod keys;
 mod tests;
 
 use uuid::Uuid;
+use zwipe_client::ClientError;
 use zwipe_core::domain::deck::ImportMode;
 use zwipe_core::domain::deck::requests::import_deck_cards::ImportDeckCardsResult;
 
@@ -277,10 +278,15 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
         }
     }
     .await;
-    Some(match result {
+    Some(outcome(result))
+}
+
+/// What an import's answer means for the screen. A list over the server's line cap (422) or body limit (413) comes back as the client's user message, which Import toasts as an error, as the app does.
+fn outcome(result: Result<ImportDeckCardsResult, ClientError>) -> screens::Update {
+    match result {
         Ok(result) => Update::Imported(result).into(),
         Err(e) => failure(&e, |m| Update::Failed(m).into()),
-    })
+    }
 }
 
 pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {

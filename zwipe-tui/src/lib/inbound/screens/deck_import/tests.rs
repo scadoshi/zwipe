@@ -114,6 +114,28 @@ fn import_fits_a_tiny_terminal() {
 }
 
 #[test]
+fn the_servers_line_cap_and_body_limit_toast_as_the_app_words_them() {
+    let cases = [
+        (
+            ClientError::UnprocessableEntity("too many card lines, the limit is 1000".to_owned()),
+            "too many card lines, the limit is 1000",
+        ),
+        (
+            ClientError::PayloadTooLarge("length limit exceeded".to_owned()),
+            "request too large, try importing fewer cards",
+        ),
+    ];
+    for (error, message) in cases {
+        let (mut harness, _) = opened();
+        harness.apply(outcome(Err(error)));
+        let toast = &harness.app.shared.toasts.items()[0];
+        assert_eq!(toast.message, message);
+        assert_eq!(toast.kind, ToastKind::Error);
+        assert!(!view(&harness).loading);
+    }
+}
+
+#[test]
 fn an_import_clears_the_decks_undo_log_and_only_that_deck() {
     let (mut harness, deck_id) = opened();
     let other = Uuid::new_v4();
