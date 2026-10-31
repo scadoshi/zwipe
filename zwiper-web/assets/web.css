@@ -242,6 +242,37 @@ body {
     }
 }
 
+/* ---- Changelog ---- */
+
+/* The chip rows become a sticky filter column beside the release cards.
+   Each level keeps its own row, one under the other. */
+@media (min-width: 900px) {
+    .changelog-screen.web-changelog {
+        display: grid;
+        grid-template-columns: 14rem minmax(0, 1fr);
+        align-items: start;
+        column-gap: 2rem;
+        max-width: 60rem;
+        padding-top: 1rem;
+    }
+
+    .web-changelog > .changelog-filters,
+    .web-changelog > .changelog-skeleton-chips {
+        position: sticky;
+        top: 1rem;
+        margin-bottom: 0;
+    }
+
+    .web-changelog > .changelog-filters .changelog-filter + .changelog-filter {
+        padding-top: 0.5rem;
+        border-top: 1px solid var(--border-secondary);
+    }
+
+    .web-changelog > .chip-note {
+        grid-column: 1 / -1;
+    }
+}
+
 /* ---- Sheets on a wide window ---- */
 
 @media (min-width: 900px) {

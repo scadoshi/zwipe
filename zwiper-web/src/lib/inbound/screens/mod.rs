@@ -2,6 +2,7 @@
 
 pub mod account;
 pub mod auth;
+pub mod changelog;
 pub mod config;
 pub mod placeholders;
 pub mod privacy_policy;

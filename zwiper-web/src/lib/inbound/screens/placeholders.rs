@@ -32,12 +32,6 @@ pub fn Home() -> Element {
     rsx! { Placeholder { title: "Home" } }
 }
 
-/// Changelog, not built yet.
-#[component]
-pub fn Changelog() -> Element {
-    rsx! { Placeholder { title: "Changelog" } }
-}
-
 /// Activity, not built yet.
 #[component]
 pub fn Activity() -> Element {
