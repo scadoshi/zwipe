@@ -28,7 +28,7 @@ use crate::inbound::screens::{self, oracle_tags};
 use crate::inbound::widgets::alert::AlertDialog;
 use crate::inbound::widgets::info::InfoPopup;
 use crate::inbound::widgets::toast::ToastKind;
-use crate::inbound::widgets::{color_map, hint};
+use crate::inbound::widgets::{color_map, entrance, hint};
 use crate::outbound::account::Account;
 use crate::outbound::home_file::HomeFile;
 
@@ -64,6 +64,8 @@ pub(crate) struct HomeView {
     pub(crate) play_style_failed: bool,
     /// A color map summary is on screen, cached or fetched.
     pub(crate) play_style_seen: bool,
+    /// When the scope last changed, which drives its label's `hero-scope-in`.
+    pub(crate) scope_at: Option<Instant>,
     pub(crate) overlay: Option<Overlay>,
 }
 
@@ -81,6 +83,7 @@ impl Default for HomeView {
             opened: long_ago,
             play_style_failed: false,
             play_style_seen: true,
+            scope_at: None,
             overlay: None,
         }
     }
@@ -134,6 +137,10 @@ impl HomeView {
                 .map_started
                 .is_some_and(|_| self.map_elapsed() < color_map::entrance())
             || loading_map
+            || entrance::entering(self.opened.elapsed(), entrance::DELAY, entrance::ENTER)
+            || self.scope_at.is_some_and(|t| {
+                entrance::entering(t.elapsed(), std::time::Duration::ZERO, entrance::SCOPE_IN)
+            })
     }
 
     /// Marks the figures arrived now if they just turned up.
@@ -155,6 +162,7 @@ impl HomeView {
         cx.shared.caches.scope = scope;
         cx.request(Request::SaveScope(scope).into());
         self.figures_opened = Instant::now();
+        self.scope_at = Some(Instant::now());
         self.figures_arrived = figures_for(cx.shared).map(|_| Instant::now());
         fetch_my_counts_if_stale(cx);
     }
@@ -391,6 +399,7 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
                 cx.shared.caches.scope = scope;
                 if let Some(view) = nav.find_mut(pick) {
                     view.figures_opened = Instant::now();
+                    view.scope_at = Some(Instant::now());
                     view.figures_arrived = None;
                 }
                 fetch_my_counts_if_stale(cx);

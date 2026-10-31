@@ -91,6 +91,8 @@ pub(crate) struct Palette {
     pub(crate) muted: Style,
     pub(crate) border: Style,
     pub(crate) accent: Style,
+    /// The logo, as orangui's `--logo`: the text color on dark themes, the accent on light ones.
+    pub(crate) logo: Style,
     /// Adding a card, success messages and focused boxes.
     pub(crate) add: Style,
     /// Passing on a card and errors.
@@ -108,6 +110,7 @@ impl Palette {
             muted: Style::new().dim(),
             border: Style::new(),
             accent: Style::new().cyan(),
+            logo: Style::new(),
             add: Style::new().green(),
             error: Style::new().red(),
             warning: Style::new().yellow(),
@@ -129,11 +132,12 @@ impl Palette {
         let Some(family) = FAMILIES.iter().find(|f| f.slug == slug) else {
             return Self::terminal();
         };
-        Self::from_colors(if dark_mode {
+        let colors = if dark_mode {
             &family.dark
         } else {
             &family.light
-        })
+        };
+        Self::from_colors(colors, dark_mode)
     }
 
     /// The palette the account's preferences ask for: its theme and mode, with pips in the theme's colors or Magic's classic ones.
@@ -148,7 +152,7 @@ impl Palette {
         }
     }
 
-    fn from_colors(colors: &Colors) -> Self {
+    fn from_colors(colors: &Colors, dark_mode: bool) -> Self {
         let color = |[r, g, b]: Rgb| Color::Rgb(r, g, b);
         let fg = |rgb: Rgb| Style::new().fg(color(rgb));
         Self {
@@ -156,6 +160,11 @@ impl Palette {
             muted: fg(colors.muted),
             border: fg(colors.border),
             accent: fg(colors.accent),
+            logo: fg(if dark_mode {
+                colors.text
+            } else {
+                colors.accent
+            }),
             add: fg(colors.success),
             error: fg(colors.error),
             warning: fg(colors.warning),
@@ -175,6 +184,16 @@ mod tests {
     use zwipe_core::domain::user::ALLOWED_THEMES;
 
     use super::*;
+
+    #[test]
+    fn the_logo_is_the_text_color_in_dark_mode_and_the_accent_in_light() {
+        let dark = Palette::for_account("gruvbox", true);
+        assert_eq!(dark.logo.fg, dark.base.fg);
+        assert_ne!(dark.logo.fg, dark.accent.fg);
+        let light = Palette::for_account("gruvbox", false);
+        assert_eq!(light.logo, light.accent);
+        assert_eq!(Palette::terminal().logo, Style::new());
+    }
 
     #[test]
     fn palettes_cover_exactly_the_themes_zwipe_allows() {

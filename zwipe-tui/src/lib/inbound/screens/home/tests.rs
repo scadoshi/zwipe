@@ -323,6 +323,7 @@ fn home_draws_the_strip_map_key_and_flavor() {
         view.figures_arrived = Some(long_ago);
         view.map_started = Some(long_ago);
         view.logo_started = None;
+        view.opened = long_ago;
     }
     let screen = screen_text(&harness.app);
     for expected in [
@@ -348,6 +349,7 @@ fn home_draws_the_strip_map_key_and_flavor() {
 #[test]
 fn a_user_without_decks_is_asked_to_build_one() {
     let mut harness = on_home();
+    settle_entrance(&mut harness);
     let user_id = me(&harness);
     harness.apply(Update::PlayStyle {
         user_id,
@@ -361,6 +363,7 @@ fn a_user_without_decks_is_asked_to_build_one() {
 #[test]
 fn a_failed_map_says_so_and_loading_panels_ghost() {
     let mut harness = on_home();
+    settle_entrance(&mut harness);
     let loading = screen_text(&harness.app);
     assert!(loading.contains("▒▒") || loading.contains("░"));
     assert!(!loading.contains("Featured flavor"));
@@ -384,4 +387,65 @@ fn home_fits_a_tiny_terminal() {
     render(&harness.app, 12, 5);
     render(&harness.app, 40, 12);
     render(&harness.app, 1, 1);
+}
+
+/// Moves home's entrance past its end, keeping the logo and figures as they are.
+fn settle_entrance(harness: &mut Harness) {
+    if let Screen::Home(view) = harness.screen_mut() {
+        view.opened = Instant::now().checked_sub(Duration::from_secs(5)).unwrap();
+    }
+}
+
+#[test]
+fn the_panels_enter_after_the_hero() {
+    let harness = on_home();
+    let screen = screen_text(&harness.app);
+    assert!(screen.contains("Decks created"), "the hero enters at once");
+    assert!(!screen.contains("░░░░"), "the panels wait 0.15 s");
+}
+
+#[test]
+fn a_return_through_the_back_stack_replays_the_entrance() {
+    let mut harness = on_home();
+    harness.press(KeyCode::Char('c'));
+    assert!(matches!(harness.screen(), Screen::Config(_)));
+    let _ = harness.app.nav.find_mut(|s| match s {
+        Screen::Home(view) => {
+            **view = HomeView::default();
+            Some(view)
+        }
+        _ => None,
+    });
+    harness.press(KeyCode::Esc);
+    let view = home(&harness);
+    assert!(view.logo_started.is_some(), "the logo decodes again");
+    assert!(view.opened.elapsed() < Duration::from_secs(1));
+    assert!(view.animating());
+}
+
+#[test]
+fn switching_scope_plays_the_scope_in() {
+    let mut harness = on_home();
+    harness.press(KeyCode::Char('s'));
+    assert!(home(&harness).scope_at.is_some());
+    assert!(home(&harness).animating());
+}
+
+#[test]
+fn the_logo_draws_in_the_palette_logo_color() {
+    let mut harness = on_home();
+    harness.app.shared.palette = crate::domain::theme::Palette::for_account("gruvbox", true);
+    settle_entrance(&mut harness);
+    if let Screen::Home(view) = harness.screen_mut() {
+        view.logo_started = None;
+    }
+    let terminal = render(&harness.app, 100, 45);
+    let logo = harness.app.shared.palette.logo.fg.unwrap();
+    let drawn = terminal
+        .backend()
+        .buffer()
+        .content()
+        .iter()
+        .any(|c| c.symbol() == "▉" && c.fg == logo);
+    assert!(drawn);
 }

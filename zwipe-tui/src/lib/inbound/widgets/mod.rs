@@ -42,6 +42,8 @@ pub(crate) mod clipboard;
 pub(crate) mod collapsible;
 /// The color map's tiles and key.
 pub(crate) mod color_map;
+/// The app's entrance effects: content-enter, its delayed form, and hero-scope-in.
+pub(crate) mod entrance;
 /// The compact strip of three rolling figures.
 pub(crate) mod figures;
 /// One-time hint dialogs.

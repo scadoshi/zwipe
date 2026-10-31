@@ -1,5 +1,7 @@
 //! Home: the hero (logo, figures and chips), the color map panel and the featured flavor panel, then the action bar.
 
+use std::time::Duration;
+
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Margin, Rect};
 use ratatui::style::{Style, Stylize};
@@ -17,7 +19,7 @@ use crate::domain::theme::Palette;
 use crate::domain::{decode, home};
 use crate::inbound::app::Shared;
 use crate::inbound::widgets::measure::{height_of, width_of};
-use crate::inbound::widgets::{action_bar, color_map, figures, skeleton};
+use crate::inbound::widgets::{action_bar, color_map, entrance, figures, skeleton};
 
 /// The two lower panels sit side by side from this width, in cells.
 const SIDE_BY_SIDE: u16 = 90;
@@ -62,8 +64,19 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &HomeView) {
         Line::styled("Home", palette.accent).bold().centered(),
         title,
     );
-    draw_hero(f, shared, view, logo_text, hero);
-    draw_panels(f, shared, view, panels);
+    let since = view.opened.elapsed();
+    if let Some(hero) =
+        entrance::area(hero, since, Duration::ZERO).map(|r| r.intersection(f.area()))
+    {
+        draw_hero(f, shared, view, logo_text, hero);
+        entrance::fade(f, hero, since, Duration::ZERO, entrance::ENTER);
+    }
+    if let Some(panels) =
+        entrance::area(panels, since, entrance::DELAY).map(|r| r.intersection(f.area()))
+    {
+        draw_panels(f, shared, view, panels);
+        entrance::fade(f, panels, since, entrance::DELAY, entrance::ENTER);
+    }
     f.render_widget(Line::styled(shared.status.clone(), palette.muted), status);
     f.render_widget(
         action_bar::line(
@@ -123,7 +136,7 @@ fn draw_hero(
                 .map(|l| Line::from(l.to_owned()))
                 .collect::<Vec<_>>(),
         )
-        .style(palette.accent);
+        .style(palette.logo);
         f.render_widget(
             Paragraph::new(art),
             logo_area.centered_horizontally(Constraint::Length(width)),
@@ -137,13 +150,17 @@ fn draw_hero(
         super::since_open(view),
         view.since_arrival(),
     );
+    let settling = view
+        .scope_at
+        .is_some_and(|t| entrance::entering(t.elapsed(), Duration::ZERO, entrance::SCOPE_IN));
+    let scope_in = |style: Style| if settling { style.dim() } else { style };
     let mut spans = Vec::new();
     if super::live(shared) {
-        spans.push(chip("Live", palette.add));
+        spans.push(chip("Live", scope_in(palette.add)));
         spans.push(Span::raw(" "));
     }
     spans.push(Span::raw("s ").bold());
-    spans.push(chip(shared.caches.scope.label(), palette.accent));
+    spans.push(chip(shared.caches.scope.label(), scope_in(palette.accent)));
     spans.push(Span::raw("  "));
     spans.extend(button(palette, "v", "Activity"));
     f.render_widget(Line::from(spans).centered(), chips);
