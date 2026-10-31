@@ -97,6 +97,30 @@ impl SwipeControl {
     }
 }
 
+/// Where a key or button press goes on a surface whose pile can run out.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SwipeRoute {
+    /// To the stack, which plays it on its top card.
+    Stack,
+    /// Straight to the host's undo.
+    Undo,
+    /// Nowhere, since no card is on top to take it.
+    Ignore,
+}
+
+impl SwipeRoute {
+    /// Routes `swipe` by whether a card is on top. With none, down goes
+    /// straight to undo and never through [`SwipeControl`], where it would
+    /// wait for the next stack to mount and swipe its first card.
+    pub fn of(swipe: Swipe, card_on_top: bool) -> Self {
+        match (card_on_top, swipe) {
+            (true, _) => Self::Stack,
+            (false, Swipe::Down) => Self::Undo,
+            (false, _) => Self::Ignore,
+        }
+    }
+}
+
 /// A control with nothing asked for yet.
 pub fn use_swipe_control() -> SwipeControl {
     SwipeControl(use_signal(|| None))
@@ -305,6 +329,43 @@ pub fn SwipeButtons(control: SwipeControl, buttons: Vec<(Swipe, &'static str)>) 
     }
 }
 
+/// The lone down button under an empty pile, named `label`. It calls
+/// `on_press` itself, since there is no card for [`SwipeControl`] to swipe.
+#[component]
+pub fn EndUndoButton(label: &'static str, on_press: EventHandler<()>) -> Element {
+    rsx! {
+        div { class: "web-swipe-buttons",
+            button {
+                class: "card-action-btn web-swipe-button",
+                onclick: move |_| on_press.call(()),
+                span { class: "web-swipe-arrow", "{Swipe::Down.arrow()}" }
+                " {label}"
+            }
+        }
+    }
+}
+
+/// Listens for arrow keys like [`use_swipe_keys`], routed by
+/// [`SwipeRoute::of`]: through `control` while `card_on_top` says a card is
+/// on top, else down calls `on_undo` and the rest do nothing.
+pub fn use_swipe_keys_or_undo(
+    control: SwipeControl,
+    keys: Vec<Swipe>,
+    card_on_top: Callback<(), bool>,
+    on_undo: Callback<()>,
+) {
+    use_swipe_key_handler(
+        keys,
+        Callback::new(
+            move |swipe: Swipe| match SwipeRoute::of(swipe, card_on_top.call(())) {
+                SwipeRoute::Stack => control.press(swipe),
+                SwipeRoute::Undo => on_undo.call(()),
+                SwipeRoute::Ignore => {}
+            },
+        ),
+    );
+}
+
 /// Listens for the arrow keys in `keys` while this surface is the top one
 /// and no text field or dialog has focus, and presses them on `control`.
 /// Surfaces stack: one mounted over another takes the keys until it goes.
@@ -377,6 +438,25 @@ mod tests {
     fn a_short_drag_springs_back() {
         assert_eq!(Swipe::of_drag(89.0, 0.0), None);
         assert_eq!(Swipe::of_drag(0.0, -89.0), None);
+    }
+
+    #[test]
+    fn a_card_on_top_takes_every_press() {
+        for swipe in [Swipe::Left, Swipe::Right, Swipe::Up, Swipe::Down] {
+            assert_eq!(SwipeRoute::of(swipe, true), SwipeRoute::Stack, "{swipe:?}");
+        }
+    }
+
+    #[test]
+    fn an_empty_pile_undoes_on_down_and_ignores_the_rest() {
+        assert_eq!(SwipeRoute::of(Swipe::Down, false), SwipeRoute::Undo);
+        for swipe in [Swipe::Left, Swipe::Right, Swipe::Up] {
+            assert_eq!(
+                SwipeRoute::of(swipe, false),
+                SwipeRoute::Ignore,
+                "{swipe:?}"
+            );
+        }
     }
 
     #[test]

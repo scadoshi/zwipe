@@ -11,6 +11,7 @@ use zwipe_core::http::contracts::metrics::AnonymousEventKind;
 
 use crate::config::APP_VERSION;
 use crate::domain::{theme, version_gate};
+use crate::inbound::root_signal::use_root_signal;
 use crate::inbound::session::ensure_fresh::ensure_fresh;
 use crate::inbound::session::funnel;
 use crate::outbound::session_store::SessionStore;
@@ -43,11 +44,11 @@ impl UpgradeRequired {
 /// the session from a task that outlives any screen.
 pub fn use_session_upkeep() -> UpgradeRequired {
     let session: Signal<Option<Session>> =
-        use_hook(|| Signal::new_in_scope(SessionStore::browser().infallible_load(), ScopeId::ROOT));
+        use_root_signal(|| SessionStore::browser().infallible_load());
     use_context_provider(|| session);
 
     let built: ZwipeClient = use_context();
-    let client = use_hook(|| Signal::new_in_scope(built, ScopeId::ROOT));
+    let client = use_root_signal(|| built);
     use_context_provider(|| client);
 
     let theme: Signal<ThemeConfig> = use_signal(|| {

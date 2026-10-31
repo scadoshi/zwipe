@@ -11,6 +11,7 @@ use zwipe_client::ZwipeClient;
 use zwipe_ui::stores::catalog::{Catalog, Kind};
 
 use crate::inbound::chrome::authed::Authed;
+use crate::inbound::root_signal::use_root_signal;
 
 /// The root's catalog lists. `Copy`; read a list with
 /// `cache.0.read().oracle_tags.ready()`.
@@ -93,9 +94,9 @@ impl CatalogCache {
     }
 }
 
-/// Provides the [`CatalogCache`] to everything under the root. Call once,
-/// in the root.
+/// Provides the [`CatalogCache`] to everything under the root, owned by the
+/// root scope its fetches run in. Call once, in the root.
 pub fn use_catalog_cache() {
-    let cache = CatalogCache(use_signal(Catalog::default));
+    let cache = CatalogCache(use_root_signal(Catalog::default));
     use_context_provider(|| cache);
 }

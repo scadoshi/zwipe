@@ -14,6 +14,7 @@ use zwipe_ui::home::next_hour;
 use zwipe_ui::timing::COUNTS_FRESH;
 
 use crate::domain::counts::CachedCounts;
+use crate::inbound::root_signal::use_root_signal;
 use crate::outbound::counts_store::CountsStore;
 use crate::outbound::scope_store::ScopeStore;
 
@@ -143,7 +144,8 @@ impl FlavorCard {
 ///
 /// - `Signal<Option<CachedCounts>>`: everybody's counters for the heroes,
 ///   starting from the copy an earlier visit stored.
-/// - [`ChangelogCache`] and [`UbFranchises`].
+/// - [`ChangelogCache`], and [`UbFranchises`] in the root scope its
+///   fetches run in.
 /// - [`CreateDeckSeed`], empty.
 /// - `Signal<Option<CachedMyCounts>>`, `Signal<Option<CachedPlayStyle>>` and
 ///   `Signal<Option<FlavorCard>>`, empty.
@@ -182,7 +184,7 @@ pub fn use_root_caches() {
     let scope = use_signal(|| ScopeStore::browser().load());
     use_context_provider(|| scope);
 
-    let franchises = UbFranchises(use_signal(|| Load::Loading));
+    let franchises = UbFranchises(use_root_signal(|| Load::Loading));
     use_context_provider(|| franchises);
     use_hook(move || franchises.fetch(client));
 }
