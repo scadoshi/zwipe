@@ -195,43 +195,38 @@ pub fn SwipeStack(
                         let mut state = state;
                         let on_swipe_down = on_swipe_down;
                         move || {
-                            let latest = state.peek().latest_swipe.clone();
+                            let latest = state.peek().latest_swipe;
                             if let Some(dir) = latest {
                                 state.write().latest_swipe = None;
-                                match dir {
+                                let on_exit = match dir {
                                     Direction::Down => {
                                         on_swipe_down.call(card.clone());
+                                        return;
                                     }
-                                    d @ (Direction::Left
-                                    | Direction::Right
-                                    | Direction::Up) => {
-                                        // Seed the exit from the release
-                                        // position, mirroring the drag
-                                        // transform's axis clamping above.
-                                        let delta = state
-                                            .peek()
-                                            .release_delta
-                                            .unwrap_or(DeltaPoint::new(0.0, 0.0));
-                                        let (from_x, from_y) = match d {
-                                            Direction::Up => (0.0, delta.y.min(0.0)),
-                                            _ => (delta.x, 0.0),
-                                        };
-                                        exiting_overlay.write().push(ExitingCard {
-                                            id: card.scryfall_data.id,
-                                            direction: d.clone(),
-                                            card: card.clone(),
-                                            from_x,
-                                            from_y,
-                                            from_rot: from_x * TILT_PER_PX,
-                                        });
-                                        match d {
-                                            Direction::Left => on_swipe_left.call(card.clone()),
-                                            Direction::Right => on_swipe_right.call(card.clone()),
-                                            Direction::Up => on_swipe_up.call(card.clone()),
-                                            Direction::Down => unreachable!(),
-                                        }
-                                    }
-                                }
+                                    Direction::Left => on_swipe_left,
+                                    Direction::Right => on_swipe_right,
+                                    Direction::Up => on_swipe_up,
+                                };
+                                // Seed the exit from the release position,
+                                // mirroring the drag transform's axis
+                                // clamping above.
+                                let delta = state
+                                    .peek()
+                                    .release_delta
+                                    .unwrap_or(DeltaPoint::new(0.0, 0.0));
+                                let (from_x, from_y) = match dir {
+                                    Direction::Up => (0.0, delta.y.min(0.0)),
+                                    _ => (delta.x, 0.0),
+                                };
+                                exiting_overlay.write().push(ExitingCard {
+                                    id: card.scryfall_data.id,
+                                    direction: dir,
+                                    card: card.clone(),
+                                    from_x,
+                                    from_y,
+                                    from_rot: from_x * TILT_PER_PX,
+                                });
+                                on_exit.call(card.clone());
                             }
                         }
                     };
