@@ -4,6 +4,10 @@
 pub(crate) mod account;
 /// A card as text: faces, mana symbols, rules and stats.
 pub(crate) mod card;
+/// The color map's tiles, ported from the app.
+pub(crate) mod color_map;
+/// Orangui's rolling figures and compact numbers.
+pub(crate) mod count_up;
 /// A deck's row in the deck list.
 pub(crate) mod deck;
 /// The logo entrance, ported from orangui.

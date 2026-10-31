@@ -81,14 +81,14 @@ pub(crate) fn deck(deck_profile: DeckProfile, cards: Vec<Card>) -> Deck {
     }
 }
 
-/// A user named scotty, with the email verified or not.
+/// A user named scotty, with the email verified or not, who has seen home's welcome hint.
 pub(crate) fn user(verified: bool) -> User {
     let mut user: User = serde_json::from_value(serde_json::json!({
         "id": "00000000-0000-0000-0000-000000000001",
         "username": "scotty",
         "email": "scotty@zwipe.net",
         "email_verified_at": null,
-        "hints_shown": {},
+        "hints_shown": {"first_login": true},
     }))
     .unwrap();
     if verified {

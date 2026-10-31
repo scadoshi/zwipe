@@ -1,5 +1,6 @@
-//! The home screen: the logo, the counters, the color map and the featured flavor card.
+//! The home screen: the logo and the counters, the color map, and the featured flavor card, each drawn from the caches kept above the screens.
 
+pub(crate) mod cache;
 pub(crate) mod draw;
 pub(crate) mod keys;
 #[cfg(test)]
@@ -7,38 +8,105 @@ mod tests;
 
 use std::time::{Duration, Instant};
 
+use chrono::Utc;
+use uuid::Uuid;
 use zwipe_core::domain::card::Card;
+use zwipe_core::domain::user::User;
+use zwipe_core::domain::user::models::hints::HINT_FIRST_LOGIN;
+use zwipe_core::domain::user::preferences::UserPreferences;
+use zwipe_core::http::contracts::metrics::HttpPublicMetrics;
 use zwipe_core::http::contracts::suggestions::HttpPlayStyleSummary;
 
+use self::cache::{CachedCounts, CachedMyCounts, CachedPlayStyle, FlavorCard};
 use super::{Screen, failure};
-use crate::domain::decode;
-use crate::domain::home::{Figures, Scope};
-use crate::inbound::app::Context;
+use crate::domain::color_map::seed_from_id;
+use crate::domain::home::{self, Figures, Scope};
+use crate::domain::{count_up, decode};
+use crate::inbound::app::{Context, Shared};
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;
+use crate::inbound::widgets::alert::AlertDialog;
+use crate::inbound::widgets::info::InfoPopup;
+use crate::inbound::widgets::toast::ToastKind;
+use crate::inbound::widgets::{color_map, hint};
 use crate::outbound::account::Account;
+use crate::outbound::home_file::HomeFile;
 
-/// The home screen's state.
-#[derive(Debug, Default)]
+/// The welcome hint's title.
+const WELCOME_TITLE: &str = "Welcome to Zwipe";
+
+/// The welcome hint, one bullet per line.
+const WELCOME: &str = "• Decks holds your decks\n• Color map grows from your decks' colors. Tap Playstyle for suggested commanders\n• Account has your email, password and log out\n• Config sets your theme and which cards show\n• Verify your email in Account for full deck and card limits";
+
+/// A popup over home.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum Overlay {
+    /// The color map's "?".
+    Info(InfoPopup),
+    /// The featured card's Buy dialog.
+    Buy(AlertDialog),
+}
+
+/// The home screen's state. The figures, map and card live in [`cache::Caches`]; this holds what moves on screen.
+#[derive(Debug)]
 pub(crate) struct HomeView {
-    pub(crate) scope: Scope,
-    pub(crate) everybody: Option<Figures>,
-    pub(crate) mine: Option<Figures>,
-    pub(crate) play_style: Option<HttpPlayStyleSummary>,
-    pub(crate) play_style_failed: bool,
-    /// The card the server features this hour. Shown only when it has flavor text.
-    pub(crate) flavor: Option<Card>,
     /// When the logo started decoding in. `None` draws it settled.
     pub(crate) logo_started: Option<Instant>,
+    /// When the strip appeared, which drives the waiting roll.
+    pub(crate) figures_opened: Instant,
+    /// When the strip's figures arrived, which drives the landing roll.
+    pub(crate) figures_arrived: Option<Instant>,
+    /// When the color map first drew, which drives its sweep.
+    pub(crate) map_started: Option<Instant>,
+    /// When the screen opened, which drives the loading ghosts.
+    pub(crate) opened: Instant,
+    /// The color map failed to load this visit.
+    pub(crate) play_style_failed: bool,
+    /// A color map summary is on screen, cached or fetched.
+    pub(crate) play_style_seen: bool,
+    pub(crate) overlay: Option<Overlay>,
+}
+
+impl Default for HomeView {
+    /// A settled home: no entrance left to play.
+    fn default() -> Self {
+        let long_ago = Instant::now()
+            .checked_sub(Duration::from_secs(60))
+            .unwrap_or_else(Instant::now);
+        Self {
+            logo_started: None,
+            figures_opened: long_ago,
+            figures_arrived: Some(long_ago),
+            map_started: Some(long_ago),
+            opened: long_ago,
+            play_style_failed: false,
+            play_style_seen: true,
+            overlay: None,
+        }
+    }
 }
 
 impl HomeView {
-    /// A home screen whose logo starts decoding in now.
-    pub(crate) fn opening() -> Self {
-        Self {
-            logo_started: Some(Instant::now()),
+    /// A home screen whose entrance plays from now, with figures already cached rolling to land.
+    pub(crate) fn opening(shared: &Shared) -> Self {
+        let now = Instant::now();
+        let mut view = Self {
+            logo_started: Some(now),
+            figures_opened: now,
+            figures_arrived: None,
+            map_started: None,
+            opened: now,
+            play_style_seen: false,
             ..Self::default()
+        };
+        if figures_for(shared).is_some() {
+            view.figures_arrived = Some(now);
         }
+        if play_style_for(shared).is_some() {
+            view.play_style_seen = true;
+            view.map_started = Some(now);
+        }
+        view
     }
 
     /// How far the logo's entrance has run; settled when it never started.
@@ -46,37 +114,94 @@ impl HomeView {
         self.logo_started.map_or(decode::DURATION, |t| t.elapsed())
     }
 
-    /// Whether the logo is still decoding in.
+    /// The time since the figures arrived, zero while they are still out.
+    pub(crate) fn since_arrival(&self) -> Duration {
+        self.figures_arrived.map_or(Duration::ZERO, |t| t.elapsed())
+    }
+
+    /// The time since the map first drew.
+    pub(crate) fn map_elapsed(&self) -> Duration {
+        self.map_started.map_or(Duration::ZERO, |t| t.elapsed())
+    }
+
+    /// Whether something on home is moving: the logo, a rolling figure, the map's sweep or a loading ghost.
     pub(crate) fn animating(&self) -> bool {
+        let loading_map = !self.play_style_seen && !self.play_style_failed;
         self.logo_elapsed() < decode::DURATION
+            || self.figures_arrived.is_none()
+            || self.since_arrival() < count_up::ROLL
+            || self
+                .map_started
+                .is_some_and(|_| self.map_elapsed() < color_map::entrance())
+            || loading_map
     }
 
-    /// The counters for the scope on screen, `None` until they arrive.
-    pub(crate) fn figures(&self) -> Option<Figures> {
-        match self.scope {
-            Scope::Everybody => self.everybody,
-            Scope::OnlyMe => self.mine,
+    /// Marks the figures arrived now if they just turned up.
+    fn note_figures(&mut self, shared: &Shared) {
+        if self.figures_arrived.is_none() && figures_for(shared).is_some() {
+            self.figures_arrived = Some(Instant::now());
         }
     }
 
-    /// Starts over in the same scope: the logo decodes again and every panel is fetched again.
+    /// Remounts home the way the app does on every return: the entrance plays again and every panel refreshes.
     pub(crate) fn refresh(&mut self, cx: &mut Context<'_>) {
-        let scope = self.scope;
-        *self = Self {
-            scope,
-            ..Self::opening()
-        };
-        fetch_panels(cx);
-        if scope == Scope::OnlyMe {
-            cx.request(Request::MyMetrics.into());
-        }
+        *self = Self::opening(cx.shared);
+        mount(cx);
     }
+
+    /// Switches whose counters show, remembers the choice, and rolls the strip again.
+    pub(crate) fn toggle_scope(&mut self, cx: &mut Context<'_>) {
+        let scope = cx.shared.caches.scope.toggled();
+        cx.shared.caches.scope = scope;
+        cx.request(Request::SaveScope(scope).into());
+        self.figures_opened = Instant::now();
+        self.figures_arrived = figures_for(cx.shared).map(|_| Instant::now());
+        fetch_my_counts_if_stale(cx);
+    }
+}
+
+/// The signed-in user's id.
+pub(crate) fn user_id(shared: &Shared) -> Option<Uuid> {
+    shared.user.as_ref().map(|u| u.id)
+}
+
+/// The figures for the scope on screen: everybody's, or the signed-in user's own.
+pub(crate) fn figures_for(shared: &Shared) -> Option<Figures> {
+    match shared.caches.scope {
+        Scope::Everybody => shared.caches.counts.map(|c| c.figures),
+        Scope::OnlyMe => shared.caches.my_figures(user_id(shared)),
+    }
+}
+
+/// Whether the figures on screen count as live: everybody's fetched this launch, or any copy of the user's own.
+pub(crate) fn live(shared: &Shared) -> bool {
+    match shared.caches.scope {
+        Scope::Everybody => shared.caches.counts.is_some_and(|c| c.fetched_at.is_some()),
+        Scope::OnlyMe => shared.caches.my_figures(user_id(shared)).is_some(),
+    }
+}
+
+/// The signed-in user's color map summary, if cached.
+pub(crate) fn play_style_for(shared: &Shared) -> Option<&HttpPlayStyleSummary> {
+    shared.caches.play_style_of(user_id(shared))
+}
+
+/// The color map's seed for the signed-in user, the same one Playstyle draws with.
+pub(crate) fn seed(shared: &Shared) -> u64 {
+    user_id(shared).map_or(0, |id| seed_from_id(id.as_u128()))
 }
 
 /// The home screen's work.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Request {
-    /// Everybody's counters.
+    /// Reads the counters and scope the last launch saved.
+    Restore,
+    /// Saves the scope for the next launch.
+    SaveScope(Scope),
+    /// The user as the server has it now.
+    User,
+    Preferences,
+    /// Everybody's counters, saved for the next launch.
     PublicMetrics,
     /// The user's own counters.
     MyMetrics,
@@ -89,11 +214,24 @@ pub(crate) enum Request {
 /// The home screen's results.
 #[derive(Debug)]
 pub(crate) enum Update {
+    Restored {
+        counts: Option<HttpPublicMetrics>,
+        scope: Scope,
+    },
+    User(Box<User>),
+    UserFailed,
+    Preferences(Box<UserPreferences>),
     PublicMetrics(Figures),
-    MyMetrics(Figures),
-    PlayStyle(Box<HttpPlayStyleSummary>),
+    MyMetrics {
+        user_id: Uuid,
+        figures: Figures,
+    },
+    PlayStyle {
+        user_id: Uuid,
+        summary: Box<HttpPlayStyleSummary>,
+    },
     PlayStyleFailed,
-    Flavor(Box<Card>),
+    Flavor(Box<FlavorCard>),
 }
 
 impl From<Request> for screens::Request {
@@ -115,57 +253,208 @@ fn pick(screen: &mut Screen) -> Option<&mut HomeView> {
     }
 }
 
-/// Starts over from home and fetches its counters, color map and featured card.
+/// Starts over from home: its entrance plays, its panels refresh, and the welcome hint shows the first time.
 pub(crate) fn open(cx: &mut Context<'_>) {
-    cx.reset(Screen::Home(Box::new(HomeView::opening())));
-    fetch_panels(cx);
+    cx.reset(Screen::Home(Box::new(HomeView::opening(cx.shared))));
+    mount(cx);
 }
 
-fn fetch_panels(cx: &mut Context<'_>) {
-    for request in [Request::PublicMetrics, Request::PlayStyle, Request::Flavor] {
-        cx.request(request.into());
+/// What the app does on every mount of home.
+fn mount(cx: &mut Context<'_>) {
+    let caches = &mut cx.shared.caches;
+    let restore = !caches.restore_asked;
+    caches.restore_asked = true;
+    let now = Instant::now();
+    let counts_stale = caches.counts_stale(now);
+    let flavor_expired = caches.flavor_expired(Utc::now());
+    if restore {
+        cx.request(Request::Restore.into());
+    }
+    cx.request(Request::User.into());
+    cx.request(Request::Preferences.into());
+    if counts_stale {
+        cx.request(Request::PublicMetrics.into());
+    }
+    fetch_my_counts_if_stale(cx);
+    cx.request(Request::PlayStyle.into());
+    if flavor_expired {
+        cx.request(Request::Flavor.into());
+    }
+    hint::show(cx, HINT_FIRST_LOGIN, WELCOME_TITLE, WELCOME);
+}
+
+/// Asks for the user's own counters when home shows them and the cached copy is missing, another user's or a minute old.
+fn fetch_my_counts_if_stale(cx: &mut Context<'_>) {
+    let Some(user) = user_id(cx.shared) else {
+        return;
+    };
+    if cx.shared.caches.scope == Scope::OnlyMe
+        && cx.shared.caches.my_counts_stale(user, Instant::now())
+    {
+        cx.request(Request::MyMetrics.into());
     }
 }
 
 pub(crate) async fn perform(account: &Account, request: Request) -> Option<screens::Update> {
     let client = &account.client;
     let update = match request {
-        Request::PublicMetrics => client
-            .public_metrics()
-            .await
-            .ok()
-            .map(|metrics| Update::PublicMetrics(Figures::from(&metrics)))?,
-        Request::MyMetrics => async { client.my_metrics(&account.fresh().await?).await }
-            .await
-            .ok()
-            .map(|counters| Update::MyMetrics(Figures::from(&counters)))?,
+        Request::Restore => {
+            let file = HomeFile::in_config_dir().ok()?;
+            Update::Restored {
+                counts: file.load_counts(),
+                scope: file.load_scope(),
+            }
+        }
+        Request::SaveScope(scope) => {
+            // A failed write only means the next launch opens on everybody.
+            HomeFile::in_config_dir()
+                .and_then(|f| f.save_scope(scope))
+                .ok();
+            return None;
+        }
+        Request::User => match async { client.fetch_user(&account.fresh().await?).await }.await {
+            Ok(user) => {
+                account.set_user(user.clone()).await;
+                Update::User(Box::new(user))
+            }
+            Err(e) => return Some(failure(&e, |_| Update::UserFailed.into())),
+        },
+        Request::Preferences => {
+            let preferences = async { client.fetch_preferences(&account.fresh().await?).await }
+                .await
+                .ok()?;
+            Update::Preferences(Box::new(preferences))
+        }
+        Request::PublicMetrics => {
+            let metrics = client.public_metrics().await.ok()?;
+            // A failed save only means the next launch starts from an older copy.
+            HomeFile::in_config_dir()
+                .and_then(|f| f.save_counts(&metrics))
+                .ok();
+            Update::PublicMetrics(Figures::from(&metrics))
+        }
+        Request::MyMetrics => {
+            let session = account.fresh().await.ok()?;
+            let counters = client.my_metrics(&session).await.ok()?;
+            Update::MyMetrics {
+                user_id: session.user.id,
+                figures: Figures::from(&counters),
+            }
+        }
         Request::PlayStyle => {
-            match async { client.play_style_summary(&account.fresh().await?).await }.await {
-                Ok(summary) => Update::PlayStyle(Box::new(summary)),
+            let result = async {
+                let session = account.fresh().await?;
+                let summary = client.play_style_summary(&session).await?;
+                Ok((session.user.id, summary))
+            }
+            .await;
+            match result {
+                Ok((user_id, summary)) => Update::PlayStyle {
+                    user_id,
+                    summary: Box::new(summary),
+                },
                 Err(e) => return Some(failure(&e, |_| Update::PlayStyleFailed.into())),
             }
         }
-        Request::Flavor => client
-            .featured_flavor()
-            .await
-            .ok()
-            .map(|card| Update::Flavor(Box::new(card)))?,
+        Request::Flavor => {
+            let card: Card = client.featured_flavor().await.ok()?;
+            Update::Flavor(Box::new(FlavorCard {
+                card,
+                expires_at: home::next_hour(Utc::now()),
+            }))
+        }
     };
     Some(update.into())
 }
 
-pub(crate) fn apply(nav: &mut Nav, update: Update, _cx: &mut Context<'_>) {
-    let Some(view) = nav.find_mut(pick) else {
-        return;
-    };
-    match update {
-        Update::PublicMetrics(figures) => view.everybody = Some(figures),
-        Update::MyMetrics(figures) => view.mine = Some(figures),
-        Update::PlayStyle(summary) => {
-            view.play_style = Some(*summary);
-            view.play_style_failed = false;
-        }
-        Update::PlayStyleFailed => view.play_style_failed = true,
-        Update::Flavor(card) => view.flavor = Some(*card),
+/// Says hello once per launch.
+fn greet(cx: &mut Context<'_>, username: &str) {
+    if !cx.shared.caches.greeted {
+        cx.shared.caches.greeted = true;
+        cx.toast(ToastKind::Info, format!("Hello, {username}!"));
     }
+}
+
+pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
+    match update {
+        Update::Restored { counts, scope } => {
+            if cx.shared.caches.counts.is_none()
+                && let Some(metrics) = counts
+            {
+                cx.shared.caches.counts = Some(CachedCounts {
+                    figures: Figures::from(&metrics),
+                    fetched_at: None,
+                });
+            }
+            if cx.shared.caches.scope != scope {
+                cx.shared.caches.scope = scope;
+                if let Some(view) = nav.find_mut(pick) {
+                    view.figures_opened = Instant::now();
+                    view.figures_arrived = None;
+                }
+                fetch_my_counts_if_stale(cx);
+            }
+        }
+        Update::User(user) => {
+            let username = user.username.to_string();
+            let verified = user.email_verified_at.is_some();
+            cx.shared.username = Some(username.clone());
+            cx.shared.user = Some(*user);
+            if verified {
+                greet(cx, &username);
+            } else {
+                cx.toast(ToastKind::Error, "Verify your email!".to_owned());
+            }
+        }
+        Update::UserFailed => {
+            let cached = cx
+                .shared
+                .user
+                .as_ref()
+                .filter(|u| u.email_verified_at.is_some())
+                .map(|u| u.username.to_string());
+            if let Some(username) = cached {
+                greet(cx, &username);
+            }
+        }
+        Update::Preferences(preferences) => cx.use_preferences(&preferences),
+        Update::PublicMetrics(figures) => {
+            cx.shared.caches.counts = Some(CachedCounts {
+                figures,
+                fetched_at: Some(Instant::now()),
+            });
+        }
+        Update::MyMetrics { user_id, figures } => {
+            cx.shared.caches.my_counts = Some(CachedMyCounts {
+                user_id,
+                figures,
+                fetched_at: Instant::now(),
+            });
+        }
+        Update::PlayStyle { user_id, summary } => {
+            cx.shared.caches.play_style = Some(CachedPlayStyle {
+                user_id,
+                summary: *summary,
+            });
+            if let Some(view) = nav.find_mut(pick) {
+                view.play_style_failed = false;
+                view.play_style_seen = true;
+                view.map_started.get_or_insert_with(Instant::now);
+            }
+        }
+        Update::PlayStyleFailed => {
+            if let Some(view) = nav.find_mut(pick) {
+                view.play_style_failed = true;
+            }
+        }
+        Update::Flavor(flavor) => cx.shared.caches.flavor = Some(*flavor),
+    }
+    if let Some(view) = nav.find_mut(pick) {
+        view.note_figures(cx.shared);
+    }
+}
+
+/// How long the strip has waited for its figures, for drawing.
+pub(crate) fn since_open(view: &HomeView) -> Duration {
+    view.figures_opened.elapsed()
 }

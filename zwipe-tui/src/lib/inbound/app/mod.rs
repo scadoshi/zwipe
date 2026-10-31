@@ -12,6 +12,7 @@ use zwipe_core::domain::user::User;
 pub(crate) use self::context::{Context, Effects, Navigation};
 use super::nav::Nav;
 use super::screens::Screen;
+use super::screens::home::cache::Caches;
 use super::screens::login::LoginForm;
 use super::widgets::hint::HintDialog;
 use super::widgets::toast::Toasts;
@@ -41,6 +42,8 @@ pub(crate) struct Shared {
     pub(crate) toasts: Toasts,
     /// A one-time hint over the screen, which takes every key until it closes.
     pub(crate) hint: Option<HintDialog>,
+    /// What the app keeps above its screens: counters, the color map, the featured card, the oracle tag catalog.
+    pub(crate) caches: Caches,
 }
 
 impl App {
@@ -56,6 +59,7 @@ impl App {
                 images: None,
                 toasts: Toasts::default(),
                 hint: None,
+                caches: Caches::default(),
             },
         }
     }

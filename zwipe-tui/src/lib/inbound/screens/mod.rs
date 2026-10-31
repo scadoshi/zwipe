@@ -7,6 +7,7 @@ pub(crate) mod config;
 pub(crate) mod deck;
 pub(crate) mod decks;
 pub(crate) mod home;
+pub(crate) mod image_preview;
 pub(crate) mod login;
 pub(crate) mod swipe;
 pub(crate) mod update_required;
@@ -24,6 +25,7 @@ use self::config::ConfigView;
 use self::deck::DeckView;
 use self::decks::DeckList;
 use self::home::HomeView;
+use self::image_preview::ImagePreview;
 use self::login::LoginForm;
 use self::swipe::SwipeView;
 use super::app::{Context, Shared};
@@ -45,6 +47,7 @@ pub(crate) enum Screen {
     Swipe(Box<SwipeView>),
     Account(Box<AccountView>),
     Config(Box<ConfigView>),
+    ImagePreview(Box<ImagePreview>),
     /// The server no longer accepts this version. Only quitting is possible.
     UpdateRequired,
 }
@@ -60,6 +63,7 @@ impl Screen {
             Self::Swipe(view) => swipe::keys::handle(view, code, cx),
             Self::Account(view) => account::keys::handle(view, code, cx),
             Self::Config(view) => config::keys::handle(view, code, cx),
+            Self::ImagePreview(view) => image_preview::keys::handle(view, code, cx),
             Self::UpdateRequired => update_required::keys::handle(code, cx),
         }
     }
@@ -73,6 +77,7 @@ impl Screen {
             Self::Swipe(view) => swipe::draw::draw(f, shared, view),
             Self::Account(view) => account::draw::draw(f, shared, view),
             Self::Config(view) => config::draw::draw(f, shared, view),
+            Self::ImagePreview(view) => image_preview::draw::draw(f, shared, view),
             Self::UpdateRequired => update_required::draw::draw(f, shared),
         }
     }
@@ -106,13 +111,6 @@ pub(crate) enum Request {
     /// Saves the account's theme for drawing before the next sign-in.
     RememberTheme(RememberedTheme),
     /// Tells the server a one-time hint has been shown, by its key.
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "sent by the hint widget, which no screen shows yet"
-        )
-    )]
     MarkHintShown(String),
     Login(login::Request),
     Home(home::Request),
@@ -121,6 +119,7 @@ pub(crate) enum Request {
     Swipe(swipe::Request),
     Account(account::Request),
     Config(config::Request),
+    ImagePreview(image_preview::Request),
 }
 
 /// A result from a background request: the app's own, or one screen's.
@@ -151,6 +150,7 @@ pub(crate) enum Update {
     Swipe(swipe::Update),
     Account(account::Update),
     Config(config::Update),
+    ImagePreview(image_preview::Update),
 }
 
 /// Runs one request off the main loop.
@@ -192,6 +192,7 @@ pub(crate) async fn perform(
         Request::Swipe(request) => swipe::perform(account, request).await,
         Request::Account(request) => account::perform(account, request).await,
         Request::Config(request) => config::perform(account, request).await,
+        Request::ImagePreview(request) => image_preview::perform(account, request).await,
     }
 }
 
@@ -217,6 +218,7 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
         Update::Swipe(update) => swipe::apply(nav, update, cx),
         Update::Account(update) => account::apply(nav, update, cx),
         Update::Config(update) => config::apply(nav, update, cx),
+        Update::ImagePreview(update) => image_preview::apply(nav, update, cx),
     }
 }
 

@@ -11,11 +11,9 @@ pub(crate) mod action_bar;
 )]
 pub(crate) mod alert;
 /// Opening a link in the browser.
-#[expect(
-    dead_code,
-    reason = "no screen uses it yet; its tests open links through a stand-in program"
-)]
 pub(crate) mod browser;
+/// A card as lines of text.
+pub(crate) mod card_text;
 /// Bar charts from the deck metrics.
 pub(crate) mod charts;
 /// A row of chips to pick one or several.
@@ -33,11 +31,13 @@ pub(crate) mod clipboard;
 /// Sections that open and close, and the accordion over them.
 #[cfg_attr(not(test), expect(dead_code, reason = "no screen uses it yet"))]
 pub(crate) mod collapsible;
+/// The color map's tiles and key.
+pub(crate) mod color_map;
+/// The compact strip of three rolling figures.
+pub(crate) mod figures;
 /// One-time hint dialogs.
-#[cfg_attr(not(test), expect(dead_code, reason = "no screen uses it yet"))]
 pub(crate) mod hint;
 /// The "?" popup of bullet points.
-#[cfg_attr(not(test), expect(dead_code, reason = "no screen uses it yet"))]
 pub(crate) mod info;
 /// Mana colors and pips.
 pub(crate) mod mana;
@@ -49,7 +49,6 @@ pub(crate) mod panel;
 #[cfg_attr(not(test), expect(dead_code, reason = "no screen uses it yet"))]
 pub(crate) mod sheet;
 /// Ghost rows for content still loading.
-#[cfg_attr(not(test), expect(dead_code, reason = "no screen uses it yet"))]
 pub(crate) mod skeleton;
 /// Figures in a row, rolling while they load.
 #[cfg_attr(not(test), expect(dead_code, reason = "no screen uses it yet"))]
