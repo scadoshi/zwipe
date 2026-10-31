@@ -26,42 +26,6 @@ fn Placeholder(title: String, #[props(default)] deck_id: Option<Uuid>) -> Elemen
     }
 }
 
-/// Decks, not built yet.
-#[component]
-pub fn DeckList() -> Element {
-    rsx! { Placeholder { title: "Decks" } }
-}
-
-/// Create deck, not built yet.
-#[component]
-pub fn CreateDeck() -> Element {
-    rsx! { Placeholder { title: "Create deck" } }
-}
-
-/// Edit deck for one deck, not built yet.
-#[component]
-pub fn EditDeck(deck_id: Uuid) -> Element {
-    rsx! { Placeholder { title: "Edit deck", deck_id } }
-}
-
-/// Deck for one deck, not built yet.
-#[component]
-pub fn ViewDeck(deck_id: Uuid) -> Element {
-    rsx! { Placeholder { title: "Deck", deck_id } }
-}
-
-/// Import for one deck, not built yet.
-#[component]
-pub fn ImportDeck(deck_id: Uuid) -> Element {
-    rsx! { Placeholder { title: "Import", deck_id } }
-}
-
-/// Export for one deck, not built yet.
-#[component]
-pub fn ExportDeck(deck_id: Uuid) -> Element {
-    rsx! { Placeholder { title: "Export", deck_id } }
-}
-
 /// Add cards for one deck, not built yet.
 #[component]
 pub fn AddDeckCard(deck_id: Uuid) -> Element {

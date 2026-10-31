@@ -41,12 +41,13 @@ pub fn use_card_overlays() -> CardOverlays {
 
 /// The image preview and printing sheet the screen's rows open. A saved
 /// printing goes to `on_printing_save`, which swaps it into the screen's
-/// list.
+/// list; a `read_only` sheet only browses the printings.
 #[component]
 pub fn CardOverlaysHost(
     overlays: CardOverlays,
     on_printing_save: EventHandler<Card>,
     #[props(default = "Printing saved")] saved_message: &'static str,
+    #[props(default)] read_only: bool,
 ) -> Element {
     let CardOverlays {
         preview,
@@ -67,6 +68,7 @@ pub fn CardOverlaysHost(
                 card,
                 open,
                 on_save: on_printing_save,
+                read_only,
                 saved_message,
             }
         }

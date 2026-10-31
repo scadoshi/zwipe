@@ -10,6 +10,8 @@ use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_ui::stores::catalog::{Catalog, Kind};
 
+use crate::inbound::chrome::authed::Authed;
+
 /// The root's catalog lists. `Copy`; read a list with
 /// `cache.0.read().oracle_tags.ready()`.
 #[derive(Debug, Clone, Copy)]
@@ -47,12 +49,29 @@ impl CatalogCache {
                     Kind::CardRoles => settle!(card_roles, http.fetch_card_roles()),
                     Kind::OracleTags => settle!(oracle_tags, http.fetch_oracle_tags()),
                     Kind::UbFranchises => settle!(ub_franchises, http.fetch_ub_franchises()),
-                    // TODO(wave C): the deck tag list needs a session; the deck
-                    // form fetches it through the authed facade.
+                    // The deck tag list needs a session: see `ensure_deck_tags`.
                     Kind::DeckTags => cell.write().deck_tags.settle(None, Utc::now()),
                 }
             });
         }
+    }
+
+    /// Fetches the deck tag catalog when it needs it, through the authed
+    /// facade since the list needs a session. Quiet: the picker shows
+    /// `No results` until it loads, as in the app.
+    pub fn ensure_deck_tags(mut self, authed: Authed) {
+        if !self.0.write().deck_tags.claim(Utc::now()) {
+            return;
+        }
+        let mut cell = self.0;
+        spawn_forever(async move {
+            let answer = authed
+                .run_quiet("load_deck_tags", |c, s| async move {
+                    c.fetch_deck_tags(&s).await
+                })
+                .await;
+            cell.write().deck_tags.settle(answer, Utc::now());
+        });
     }
 
     /// Fetches the oracle tag catalog when it needs it, for the screens that

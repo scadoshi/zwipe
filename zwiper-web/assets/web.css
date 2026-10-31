@@ -701,10 +701,6 @@ body {
     margin-bottom: auto;
 }
 
-.web-flavor-image {
-    display: none;
-}
-
 @media (min-width: 900px) {
     /* The hero spans the top: the mark on the left, the figures and their
        tags on the right. */
@@ -745,31 +741,44 @@ body {
         margin-top: var(--panel-gap);
     }
 
-    /* The flavor card's image beside its quote, which the phone keeps
-       behind Image. */
-    .web-flavor-body {
-        display: flex;
-        align-items: center;
-        gap: 0.25rem;
-        padding: 1rem 1rem 0;
-    }
-
-    .web-flavor-image {
-        display: block;
-        width: 9rem;
-        flex: none;
-        border-radius: 4.75% / 3.5%;
-        animation: flavor-enter 0.3s ease-out 0.1s backwards;
-    }
-
-    .web-flavor-body .flavor-quote {
-        flex: 1;
-        text-align: left;
-    }
-
     /* The sidebar holds Decks, Account and Config. */
     .web-screen > .action-bar.web-home-actions {
         display: none;
+    }
+}
+
+/* ---- Buy links ---- */
+
+/* A retailer link drawn as the action buttons beside it, with zite's
+   trailing arrow that nudges along its diagonal on hover. */
+.web-buy-link {
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+}
+
+.web-buy-ext {
+    display: inline-block;
+    margin-left: 1ch;
+    transition: transform 0.25s ease;
+}
+
+.web-buy-link.web-menu-link {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+@media (hover: hover) {
+    .web-buy-link:hover .web-buy-ext {
+        transform: translate(0.12em, -0.12em);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .web-buy-link:hover .web-buy-ext {
+        transform: none;
     }
 }
 
@@ -986,5 +995,267 @@ body {
     .web-dict-browse .dict-list {
         max-width: 48rem;
         min-height: 0;
+    }
+}
+
+/* ---- Deck list ---- */
+
+/* The app's column below the breakpoint. The Tags fold chip and the tags it
+   keeps in view while folded are items of the Show row. */
+.web-deck-list {
+    max-width: 40rem;
+    width: 100%;
+    padding: 0 1rem;
+    box-sizing: border-box;
+}
+
+.web-deck-tags-fold {
+    display: contents;
+}
+
+@media (min-width: 900px) {
+    .web-deck-list {
+        max-width: 64rem;
+        padding: 1rem 1.5rem 2rem;
+    }
+
+    /* There is room for every tag, so the row stays unfolded and the fold
+       chip goes. */
+    .web-deck-tags-fold {
+        display: none;
+    }
+
+    .web-deck-tags.collapsible {
+        grid-template-rows: 1fr;
+        opacity: 1;
+    }
+
+    .web-deck-tags > .collapsible-inner {
+        overflow: visible;
+    }
+
+    /* Two decks to a line in each group, with a rule between the columns
+       and none under the last line. */
+    .web-deck-group > .collapsible > .collapsible-inner {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .web-deck-group .card-row:nth-child(odd):not(:last-child) {
+        border-right: 1px solid var(--border-secondary);
+    }
+
+    .web-deck-group .card-row:nth-child(odd):nth-last-child(2) {
+        border-bottom: none;
+    }
+
+    .web-deck-group .deck-row-art-img {
+        width: 4.8rem;
+        height: 4.3rem;
+    }
+}
+
+/* ---- Deck form (Create, Edit) ---- */
+
+/* Below the breakpoint the two columns stack into the app's one form. */
+.web-deck-form-heading {
+    margin-top: 1.5rem;
+}
+
+@media (min-width: 900px) {
+    /* Profile on the left, Budget above Tags on the right. */
+    .web-deck-form.container-sm {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: start;
+        column-gap: 3rem;
+        width: 100%;
+        max-width: 64rem;
+        padding: 1rem 1.5rem 2rem;
+        box-sizing: border-box;
+    }
+
+    .web-deck-form-column > .web-deck-form-heading:first-child {
+        margin-top: 0;
+    }
+
+    /* A picker is a panel over the right column, so the form and its
+       cascades stay in view beside it. */
+    .web-picker.swipe-select-screen {
+        left: auto;
+        width: min(30rem, 46vw);
+        border-left: 1px solid var(--border-secondary);
+        box-shadow: var(--shadow-lg);
+        transform: translateX(1.5rem);
+        transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    .web-picker.swipe-select-screen.show {
+        transform: none;
+    }
+
+    .web-picker > .grid-cells {
+        position: absolute;
+    }
+}
+
+@media (min-width: 900px) and (prefers-reduced-motion: reduce) {
+    .web-picker.swipe-select-screen {
+        transform: none;
+        transition: opacity 0.2s ease;
+    }
+}
+
+/* ---- Import, Export ---- */
+
+@media (min-width: 900px) {
+    /* Import: the controls over the input on the left, the results on the
+       right beside them. The phone's scroll wrapper adds no box here; the
+       screen's column scrolls. */
+    .web-import.screen-content,
+    .web-export.screen-content {
+        display: grid;
+        align-items: start;
+        align-content: start;
+        column-gap: 2.5rem;
+        width: 100%;
+        max-width: 72rem;
+        margin: 0 auto;
+        padding: 1rem 1.5rem 2rem;
+        box-sizing: border-box;
+    }
+
+    .web-import.screen-content {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .web-import > .import-controls,
+    .web-export > .import-controls {
+        grid-column: 1;
+        grid-row: 1;
+        max-width: none;
+        padding: 0 0 0.75rem;
+    }
+
+    .web-import > .import-scroll,
+    .web-export > .import-scroll,
+    .web-import-body.container-sm,
+    .web-export-body.container-sm {
+        display: contents;
+    }
+
+    .web-import-input {
+        grid-column: 1;
+        grid-row: 2;
+    }
+
+    .web-import-results {
+        grid-column: 2;
+        grid-row: 1 / span 2;
+    }
+
+    .web-import-results > .label:first-child {
+        margin-top: 0;
+    }
+
+    /* Export: the board chips in a narrow column, the decklist at full
+       height beside them. */
+    .web-export.screen-content {
+        grid-template-columns: 16rem minmax(0, 1fr);
+        flex: 1 1 auto;
+    }
+
+    .web-export > .import-controls {
+        grid-row: 1 / span 2;
+    }
+
+    .web-export > .import-controls .chip-row {
+        flex-wrap: wrap;
+    }
+
+    .web-export-body > * {
+        grid-column: 2;
+    }
+
+    .web-export-body > .label {
+        grid-row: 1;
+        margin-top: 0;
+    }
+
+    .web-export-body > textarea {
+        grid-row: 2;
+        min-height: calc(100vh - 14rem) !important;
+    }
+}
+
+/* ---- Deck view ---- */
+
+/* Below the breakpoint the columns are one stack, as in the app, with no
+   cards column. */
+.web-deck-view {
+    width: calc(100% - 4rem);
+    max-width: 40rem;
+    display: flex;
+    flex-direction: column;
+    gap: var(--panel-gap);
+    padding: 1rem 0;
+}
+
+.web-deck-view-profile,
+.web-deck-view-stats {
+    display: flex;
+    flex-direction: column;
+    gap: var(--panel-gap);
+    min-width: 0;
+}
+
+.web-deck-view-cards {
+    display: none;
+}
+
+@media (min-width: 900px) {
+    /* Profile, Budget and Tags over the stats on the left, the cards on
+       the right. */
+    .web-deck-view {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-areas:
+            "profile cards"
+            "stats cards";
+        align-items: start;
+        align-content: start;
+        width: 100%;
+        max-width: 90rem;
+        padding: 1rem 1.5rem 2rem;
+        box-sizing: border-box;
+        column-gap: 1.5rem;
+    }
+
+    .web-deck-view-profile {
+        grid-area: profile;
+    }
+
+    .web-deck-view-stats {
+        grid-area: stats;
+    }
+
+    .web-deck-view-cards {
+        grid-area: cards;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+    }
+
+    .web-deck-cards {
+        display: flex;
+        flex-direction: column;
+        gap: var(--panel-gap);
+    }
+}
+
+@media (min-width: 1280px) {
+    .web-deck-view {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-areas: "profile stats cards";
     }
 }

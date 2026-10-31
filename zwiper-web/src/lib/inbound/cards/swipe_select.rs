@@ -16,13 +16,17 @@
 //! ```
 //!
 //! [`SwipeMode::Commander`] deals commanders most played first through
-//! `search_commanders`, leaving out `exclude_oracle_ids`. [`SwipeMode::Suggested`]
+//! `search_commanders`, leaving out `exclude_oracle_ids`; the deck form's
+//! [`SwipeMode::Partner`], [`SwipeMode::Background`] and
+//! [`SwipeMode::SignatureSpell`] deal the same way for their slot, the last
+//! within the `commander` prop's colors. [`SwipeMode::Suggested`]
 //! deals the host's `suggested_pile` instead, read again on every open, and
 //! its Filter holds the host's `suggested_filter` chips; a change to the pile
 //! mid-session re-deals it behind the cards already swiped.
 //!
 //! Right picks (`on_select`), left skips (a week's dismissal in suggested
-//! mode), up saves to the commander maybeboard, down undoes. The card drags,
+//! mode), up saves to the commander maybeboard (not for a background or a
+//! signature spell), down undoes. The card drags,
 //! the arrow keys swipe, and four buttons under the card do the same.
 
 use std::collections::HashSet;
@@ -38,9 +42,11 @@ use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::colors::Color;
+use zwipe_core::domain::card::search_card::card_filter::CardQuery;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::deck::format::Format;
 use zwipe_core::http::contracts::suggestions::HttpCommanderSuggestion;
+use zwipe_ui::deck::form::{self, Slot};
 use zwipe_ui::generation::Generation;
 use zwipe_ui::hint::SwipeSelectMode;
 use zwipe_ui::playstyle::empty_identity_line;
@@ -65,23 +71,48 @@ use crate::inbound::screens::playstyle::SuggestionReasons;
 /// empty a page, before it waits for the next swipe.
 const EXCLUDED_PAGE_RETRIES: usize = 4;
 
-/// What a Swipe select deals.
+/// What a Swipe select deals. A host keys the overlay by its mode's inputs
+/// (the format, the commander), so a change deals a fresh pile while an
+/// unchanged reopen keeps the old one.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SwipeMode {
     /// Commanders legal in the format, most played first.
     Commander(Format),
+    /// Partner commanders, for the deck form's Partner slot.
+    Partner,
+    /// Backgrounds, for the deck form's Background slot.
+    Background,
+    /// Signature spells within the `commander` prop's colors.
+    SignatureSpell,
     /// The host's suggested commanders, a fixed ranking.
     Suggested,
 }
 
 impl SwipeMode {
-    /// The word a right swipe picks: `oathbreaker` in a format with a
-    /// signature spell, `commander` otherwise.
-    fn noun(self) -> &'static str {
+    /// The deck form slot this mode fills and the format it searches in,
+    /// for zwipe-ui's query; `None` for the suggested pile.
+    fn slot(self) -> Option<(Slot, Option<Format>)> {
         match self {
-            Self::Commander(format) if format.has_signature_spell() => "oathbreaker",
-            Self::Commander(_) | Self::Suggested => "commander",
+            Self::Commander(format) => Some((Slot::Commander, Some(format))),
+            Self::Partner => Some((Slot::Partner, None)),
+            Self::Background => Some((Slot::Background, None)),
+            Self::SignatureSpell => Some((Slot::SignatureSpell, None)),
+            Self::Suggested => None,
         }
+    }
+
+    /// The word a right swipe picks, as zwipe-ui's slot names it.
+    fn noun(self) -> &'static str {
+        match self.slot() {
+            Some((slot, format)) => slot.noun(format),
+            None => "commander",
+        }
+    }
+
+    /// Whether up saves to the commander maybeboard: commanders and
+    /// partners, which can lead a deck.
+    fn saves_up(self) -> bool {
+        !matches!(self, Self::Background | Self::SignatureSpell)
     }
 }
 
@@ -117,16 +148,15 @@ impl StackAction for SelectSwipe {
     }
 }
 
-/// The commander search for `format` at `offset`: no tokens, a page at a
-/// time, and no sort, so the server serves its most-played order.
-fn commander_filter(format: Format, offset: u32) -> CardQueryBuilder {
-    let mut builder = CardQueryBuilder::new();
-    builder
-        .set_is_commander_in_format(format)
-        .set_is_token(false)
-        .set_limit(PAGE_SIZE)
-        .set_offset(offset);
-    builder
+/// The page at `offset` for `mode`: zwipe-ui's slot query with no tokens, a
+/// page at a time, and no sort, so the server serves its most-played order.
+/// A signature spell needs the commander whose colors bound it.
+fn page_query(mode: SwipeMode, commander: Option<&Card>, offset: u32) -> Option<CardQuery> {
+    let (slot, format) = mode.slot()?;
+    if slot == Slot::SignatureSpell && commander.is_none() {
+        return None;
+    }
+    form::swipe_query(&CardQueryBuilder::new(), slot, format, commander, offset).ok()
 }
 
 /// Whether a card is one of the host's exclusions.
@@ -160,6 +190,7 @@ pub fn SwipeSelect(
     #[props(default)] exclude_oracle_ids: Option<ReadSignal<HashSet<Uuid>>>,
     #[props(default)] suggested_pile: Option<ReadSignal<SuggestedPile>>,
     #[props(default)] suggested_filter: Option<Element>,
+    #[props(default)] commander: Option<Card>,
 ) -> Element {
     use_overlay_back(open);
     let session: Signal<Option<Session>> = use_context();
@@ -205,19 +236,18 @@ pub fn SwipeSelect(
 
     // The next page of commanders. The host's exclusions can empty a page
     // while more remain, so it keeps pulling a few pages until cards land.
+    let commander_for_more = commander.clone();
     let load_more = use_callback(move |(): ()| {
-        let SwipeMode::Commander(format) = mode else {
-            return;
-        };
-        if *loading_more.peek() || *exhausted.peek() {
+        if mode == SwipeMode::Suggested || *loading_more.peek() || *exhausted.peek() {
             return;
         }
         loading_more.set(true);
         let ticket = loads.peek().current();
+        let commander = commander_for_more.clone();
         spawn(async move {
             for _ in 0..EXCLUDED_PAGE_RETRIES {
                 let at = *offset.peek();
-                let Ok(filter) = commander_filter(format, at).build() else {
+                let Some(filter) = page_query(mode, commander.as_ref(), at) else {
                     break;
                 };
                 let reply = authed
@@ -261,6 +291,7 @@ pub fn SwipeSelect(
         });
     });
 
+    let commander_for_deal = commander;
     // Deal on the first open and on Refresh. The suggested pile is read
     // again on every open, since the host's own actions change it between
     // opens; a commander pile is kept across a close.
@@ -291,10 +322,7 @@ pub fn SwipeSelect(
             suggestions.set(held.suggestions);
             return;
         }
-        let SwipeMode::Commander(format) = mode else {
-            return;
-        };
-        let Ok(filter) = commander_filter(format, 0).build() else {
+        let Some(filter) = page_query(mode, commander_for_deal.as_ref(), 0) else {
             return;
         };
         loading.set(true);
@@ -360,7 +388,10 @@ pub fn SwipeSelect(
         SwipeMode::Suggested => SwipeSelectMode::Suggested {
             has_filter: suggested_filter.is_some(),
         },
-        SwipeMode::Commander(_) => SwipeSelectMode::Picking(mode.noun()),
+        SwipeMode::Commander(_)
+        | SwipeMode::Partner
+        | SwipeMode::Background
+        | SwipeMode::SignatureSpell => SwipeSelectMode::Picking(mode.noun()),
     };
     let suggested_identity = suggested_pile.and_then(|held| held.read().identity.clone());
     let pile_empty = suggested_pile.is_some_and(|held| held.read().suggestions.is_empty());
@@ -427,8 +458,11 @@ fn SwipeSelectBody(
     let mut printing_open = use_signal(|| false);
     let mut filter_open = use_signal(|| false);
     let suggested = mode == SwipeMode::Suggested;
-    // Up saves a commander to the maybeboard in every mode this overlay has.
-    let allowed = vec![Swipe::Left, Swipe::Right, Swipe::Up, Swipe::Down];
+    let allowed = if mode.saves_up() {
+        vec![Swipe::Left, Swipe::Right, Swipe::Up, Swipe::Down]
+    } else {
+        vec![Swipe::Left, Swipe::Right, Swipe::Down]
+    };
     let control: SwipeControl = use_swipe_control();
     use_swipe_keys(control, allowed.clone());
 
@@ -598,12 +632,15 @@ fn SwipeSelectBody(
                     }
                     SwipeButtons {
                         control,
-                        buttons: vec![
+                        buttons: [
                             (Swipe::Left, "Skip"),
                             (Swipe::Up, "Save"),
                             (Swipe::Down, "Undo"),
                             (Swipe::Right, "Pick"),
-                        ],
+                        ]
+                            .into_iter()
+                            .filter(|(swipe, _)| *swipe != Swipe::Up || mode.saves_up())
+                            .collect(),
                     }
                     CardInfoDisplay { card }
                 } else if loading() || loading_more() {

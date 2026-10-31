@@ -4,6 +4,7 @@
 pub mod account;
 pub mod commander_maybeboard;
 pub mod counts;
+pub mod deck;
 pub mod login;
 pub mod preferences;
 pub mod privacy;

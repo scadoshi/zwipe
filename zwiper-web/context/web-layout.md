@@ -6,7 +6,7 @@ Esc closes the top overlay (dialog, then modal, then side panel, then full overl
 
 ## Shared chrome
 
-- The sidebar shows the six screens plus `Help`, which opens the same `Help & feedback` dialog as the app's `!` button. The current screen is highlighted; screens reached from a deck (Deck view, Edit, Import, Export, the card screens) highlight `Decks`. Logged-out screens have no sidebar.
+- The sidebar shows the six screens plus `Help`, which opens the same `Help & feedback` dialog as the app's `!` button. The current screen is highlighted; screens reached from a deck (Deck view, Edit, Import, Export, the card screens) highlight `Decks`, and the Commander maybeboard highlights `Playstyle`. Logged-out screens have no sidebar.
 - The header is the app's `ScreenHeader` at the top of the main area: title, then the `?` hint button on the right when the screen has one. The `!` moves into the sidebar as `Help`. Below 900px there is no separate top bar: the header carries the menu button on the left, then the title and `?`, and `Help` sits in the menu.
 - On a wide window the action bar becomes a toolbar under the header, buttons in the app's order, so actions sit next to the content instead of at the bottom of a tall window. Below 900px it is pinned at the bottom as in the app. `Back` stays in the toolbar on every screen that has it.
 - Toasts keep the app's kinds, text, durations, stack of three and click to expand. On a wide window they sit top right so they do not cover the sidebar; below 900px top left as in the app.
@@ -44,7 +44,7 @@ Esc closes the top overlay (dialog, then modal, then side panel, then full overl
 ## Home
 
 - On a wide window the hero panel spans the top (logo left, the three counters and the `Live`, `Everybody`/`Only me`, `Activity` chips right). Below it the `Color map` panel and the `Featured flavor` panel sit side by side.
-- The featured flavor panel shows the card image next to the quote, which the phone keeps behind `Image`; `Image` still opens the full preview and `Buy` still opens the `Buy card` dialog.
+- The featured flavor panel is the app's: the quote, then the card's name and price, `Image` (the full preview), and in place of `Buy` the `TCGplayer ↗` and `Card Kingdom ↗` links that open in a new tab, as on zite.
 - The app's action bar (`Decks`, `Account`, `Config`) is dropped on a wide window because the sidebar holds the same three; below 900px it stays.
 - `Playstyle` under the color map and `Activity` in the hero stay as buttons.
 - Below 900px it is the phone stack: hero, color map, featured flavor.
@@ -141,7 +141,7 @@ Esc closes the top overlay (dialog, then modal, then side panel, then full overl
 
 - At 1280px and up there are three columns: `Profile` with `Budget` and `Tags` under it; the stats (`Distributions`, `Mana`, `Draw odds`, `Warnings`); and a cards column listing the mainboard by type with the command zone on top, as compact rows that expand on click. Between 900px and 1279px the stats move under the profile in the left column and the cards column stays on the right.
 - Every section is open at once, so the phone's single-open accordion and its default `Budget` go away on a wide window; `Warnings` keeps its warning border and fix buttons (`Add cards`, `Import`, `Fix to {n}`, `Clear`, `Remove`).
-- The toolbar keeps `Back`, `Edit`, `Cards`, `More`. `Cards` opens Deck cards for full editing; the cards column here is for reading. `More` is a popover with `Import cards`, `Export cards`, `Buy deck`, `Clone deck`, `Share deck`, `Clear skips`, `Delete deck`, and their dialogs are the app's.
+- The toolbar keeps `Back`, `Edit`, `Cards`, `More`. `Cards` opens Deck cards for full editing; the cards column here is for reading. `More` is a popover with `Import cards`, `Export cards`, the `TCGplayer ↗` and `Card Kingdom ↗` links in place of `Buy deck`, `Clone deck`, `Share deck`, `Clear skips`, `Delete deck`, and the other dialogs are the app's.
 - The `Draw odds` stepper `-` / `+` buttons also answer ← and → while the stepper has focus.
 - Below 900px it is the phone screen: profile card, accordion with `Budget` open, no cards column.
 
@@ -182,6 +182,7 @@ Esc closes the top overlay (dialog, then modal, then side panel, then full overl
 
 - Buttons under swipe cards use the app's own action names for each mode: `Skip`, `Maybeboard`, `Undo`, `Add` on Add cards; `Keep`, `Move`, `Undo`, `Remove` on Remove; `Skip`, `Save`, `Undo`, `Pick` in Swipe select; `Next`, `Back one` in Examples.
 - Update required shows `Reload` in place of the store link.
+- `Buy` is a link per retailer (`TCGplayer ↗`, `Card Kingdom ↗`) opening in a new tab, as on zite, for a single card and for a deck; the app's `Buy` dialog goes.
 - `Report a problem ↗` names the platform `Web` in the mail body.
 - The one-time `filter` hint fires the first time the user opens a filter section, not when Add or Remove mounts with the filter docked.
 - A command zone input clears its chosen card only when typing starts, never on a click.

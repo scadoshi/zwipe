@@ -1,10 +1,10 @@
 //! Home: the counters, the color map and the featured flavor card.
 //!
 //! On a wide window the hero spans the top and the color map and flavor
-//! panels sit side by side under it, the flavor card's image beside its
-//! quote; the app's action bar (`Decks`, `Account`, `Config`) goes, since
-//! the sidebar holds the same three. Below the breakpoint it is the app's
-//! stack.
+//! panels sit side by side under it; the app's action bar (`Decks`,
+//! `Account`, `Config`) goes, since the sidebar holds the same three. Below
+//! the breakpoint it is the app's stack. The flavor card's `Buy` is a link
+//! per retailer, as zite's is, in place of the app's dialog.
 
 pub mod color_map;
 pub mod hero;
@@ -12,22 +12,20 @@ pub mod hero;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use chrono::Utc;
-use components::{
-    ActionBar, AlertDialog, Button, ButtonVariant, DialogAction, TOAST_QUICK, ThemeConfig,
-};
+use components::{ActionBar, Button, ButtonVariant, TOAST_QUICK, ThemeConfig};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
+use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::deck_metrics;
 use zwipe_core::domain::user::models::preferences::PipStyle;
-use zwipe_ui::buy;
 
 use self::color_map::HomePlayStyle;
 use self::hero::HomeHeroScoped;
 use crate::inbound::caches::FlavorCard;
+use crate::inbound::cards::buy_links::CardBuyLinks;
 use crate::inbound::cards::image_preview::ImagePreview;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::router::Route;
@@ -51,7 +49,6 @@ pub fn Home() -> Element {
     let mut theme: Signal<ThemeConfig> = use_context();
     let mut pip_style: Signal<PipStyle> = use_context();
     let mut preview: Signal<Option<(ScryfallData, usize)>> = use_signal(|| None);
-    let mut buy_open = use_signal(|| false);
     let mut flavor: Signal<Option<FlavorCard>> = use_context();
 
     // The user, for a current verification state, then the greeting.
@@ -137,31 +134,6 @@ pub fn Home() -> Element {
         });
     });
 
-    let buy_actions: Vec<DialogAction> = {
-        let shown = flavor.read();
-        let links = shown.as_ref().map(|entry| {
-            let sd = &entry.card.scryfall_data;
-            (
-                buy::tcgplayer_card_url(&sd.name, sd.tcgplayer_id),
-                buy::cardkingdom_card_url(&sd.name),
-            )
-        });
-        std::iter::once(DialogAction::Dismiss("Close".into()))
-            .chain(links.into_iter().flat_map(|(tcg, ck)| {
-                [
-                    DialogAction::Link {
-                        label: "TCGplayer \u{2197}".into(),
-                        href: tcg,
-                    },
-                    DialogAction::Link {
-                        label: "Card Kingdom \u{2197}".into(),
-                        href: ck,
-                    },
-                ]
-            }))
-            .collect()
-    };
-
     rsx! {
         ScreenFrame { title: "Home",
             div { class: "screen-content home-content web-home",
@@ -171,7 +143,6 @@ pub fn Home() -> Element {
                     FlavorPanel {
                         flavor: flavor(),
                         on_image: move |sd: ScryfallData| preview.set(Some((sd, 0))),
-                        on_buy: move |()| buy_open.set(true),
                     }
                 }
             }
@@ -201,25 +172,15 @@ pub fn Home() -> Element {
         }
         OneTimeHintDialog { hint: OneTimeHint::FirstLogin, open: hint_open }
         ImagePreview { card: preview }
-        AlertDialog {
-            open: buy_open,
-            title: "Buy card",
-            actions: buy_actions,
-            "Buy this card from a retailer."
-        }
     }
 }
 
 /// The featured flavor card: its quote, then its name, its USD price when it
-/// has one, `Image`, and `Buy` when priced. A wide window shows the card's
-/// image beside the quote. A card without flavor text leaves the panel
-/// empty; before any card it ghosts.
+/// has one, `Image`, and when priced the `TCGplayer` and `Card Kingdom`
+/// links. A card without flavor text leaves the panel empty; before any card
+/// it ghosts.
 #[component]
-fn FlavorPanel(
-    flavor: Option<FlavorCard>,
-    on_image: EventHandler<ScryfallData>,
-    on_buy: EventHandler<()>,
-) -> Element {
+fn FlavorPanel(flavor: Option<FlavorCard>, on_image: EventHandler<ScryfallData>) -> Element {
     let body = match flavor {
         Some(entry) => {
             let sd = entry.card.scryfall_data;
@@ -230,18 +191,12 @@ fn FlavorPanel(
             };
             let price = deck_metrics::card_price(&sd, PriceCurrency::Usd)
                 .map(|p| PriceCurrency::Usd.format_amount(p));
-            let image = sd.primary_image_url(ImageSize::Normal).map(str::to_owned);
             let sd_for_image = sd.clone();
             rsx! {
                 div { class: "settings-list-header", style: "justify-content: center;",
                     span { class: "settings-list-title", "Featured flavor" }
                 }
-                div { class: "web-flavor-body",
-                    if let Some(url) = image {
-                        img { class: "web-flavor-image", src: "{url}", alt: "{sd.name}" }
-                    }
-                    div { class: "flavor-quote", style: "padding: 1rem;", "{flavor_text} " }
-                }
+                div { class: "flavor-quote", style: "padding: 1rem;", "{flavor_text} " }
                 div { class: "flavor-buy-row",
                     span { class: "flavor-name", "{sd.name}" }
                     if let Some(price) = price.as_ref() {
@@ -253,11 +208,7 @@ fn FlavorPanel(
                         "Image"
                     }
                     if price.is_some() {
-                        button {
-                            class: "card-action-btn",
-                            onclick: move |_| on_buy.call(()),
-                            "Buy"
-                        }
+                        CardBuyLinks { name: sd.name.clone(), tcgplayer_id: sd.tcgplayer_id }
                     }
                 }
             }
