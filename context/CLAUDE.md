@@ -113,7 +113,7 @@ The frontend's API client lives in the `zwipe-client` crate, which both clients 
 
 ## Linting
 
-The workspace `Cargo.toml` carries the scadoshi-rust lint set (clippy `all` and `pedantic`, `missing_docs`, no `unwrap`/`expect`/`panic`/indexing outside tests). Every member opts in with `[lints] workspace = true`. Lints that still have findings sit in the phase 2 block at the bottom as `"allow"`, each with its remaining count; fix a lint's findings, then delete its line.
+The workspace `Cargo.toml` carries the scadoshi-rust lint set (clippy `all` and `pedantic`, `missing_docs`, no `unwrap`/`expect`/`panic`/indexing outside tests). Every member opts in with `[lints] workspace = true`. Every lint in the set is enforced, `as_conversions` and `arithmetic_side_effects` included: a cast is a `From`, a handled `TryFrom` or an `#[expect]` with a reason, and arithmetic that can overflow is checked or saturating.
 
 Thresholds and test allowances live in `clippy.toml` (zwiper has its own copy). Above 7 arguments, refactor to a builder.
 
