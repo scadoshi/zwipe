@@ -692,8 +692,16 @@ impl PlaystyleView {
         DeckLimit::of(cx.shared.user.as_ref(), self.decks)
     }
 
-    /// Swaps in a printing picked from a row: into the staples when a staple is open, else into the held list.
+    /// Refetches when the commander swipe closed, taking the identity its Filter left picked, and swaps in a printing picked from a row: into the staples when a staple is open, else into the held list.
     pub(crate) fn on_return(&mut self, cx: &mut Context<'_>) {
+        if let Some(closed) = cx.shared.caches.handoff.commander_swipe.take() {
+            if closed.identity != self.identity {
+                self.show_cursor = 0;
+            }
+            self.identity = closed.identity;
+            self.refetch(cx);
+            self.settle_focus();
+        }
         if self.staple_rows.expanded().is_some() {
             if let Some(profile) = &mut self.profile {
                 self.staple_rows
@@ -771,6 +779,7 @@ fn pick(screen: &mut Screen) -> Option<&mut PlaystyleView> {
 
 /// Opens Playstyle: fetches the ranking, the user's decks and the tag catalog, and shows the hint the first time.
 pub(crate) fn open(cx: &mut Context<'_>) {
+    cx.shared.caches.handoff.commander_swipe = None;
     let mut view = PlaystyleView::loading();
     view.refetch(cx);
     cx.push(Screen::Playstyle(Box::new(view)));

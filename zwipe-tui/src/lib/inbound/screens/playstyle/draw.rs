@@ -2,6 +2,7 @@
 //!
 //! The column scrolls so the focused piece is in view, in Activity's grammar: a marker beside the focused line, section bodies indented under their headers.
 
+use std::mem;
 use std::time::Duration;
 
 use ratatui::Frame;
@@ -61,6 +62,8 @@ pub(crate) enum Reasons {
     Folded,
     /// Under an open chip.
     Unfolded,
+    /// Open under a plain heading, as the commander swipe shows the card on top.
+    Heading,
 }
 
 pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &PlaystyleView) {
@@ -143,6 +146,9 @@ fn key_hints(view: &PlaystyleView) -> Vec<(&'static str, &'static str)> {
         if view.topic().is_some() {
             keys.push(("?", "About"));
         }
+    }
+    if !view.cold_start() {
+        keys.push(("s", "Swipe"));
     }
     keys.push(("M", "More"));
     keys.push(("H", "Hint"));
@@ -232,6 +238,31 @@ pub(crate) fn show_line(
     chip_line(palette, "Show", chips, cursor, focused)
 }
 
+/// `line` broken into lines at most `width` cells wide, only at the plain one-space gaps between chips, so no chip splits.
+pub(crate) fn wrap_at_gaps(line: Line<'static>, width: usize) -> Vec<Line<'static>> {
+    let mut lines = Vec::new();
+    let mut current: Vec<Span<'static>> = Vec::new();
+    let mut chip: Vec<Span<'static>> = Vec::new();
+    for span in line.spans {
+        let gap = span.content == " " && span.style == Style::default();
+        chip.push(span);
+        if !gap {
+            continue;
+        }
+        let used: usize = current.iter().map(Span::width).sum();
+        let adding: usize = chip.iter().map(Span::width).sum();
+        if !current.is_empty() && used.saturating_add(adding) > width {
+            lines.push(Line::from(mem::take(&mut current)));
+        }
+        current.append(&mut chip);
+    }
+    current.append(&mut chip);
+    if !current.is_empty() {
+        lines.push(Line::from(current));
+    }
+    lines
+}
+
 /// The loaded column and the range of the focused piece.
 fn loaded_lines(shared: &Shared, view: &PlaystyleView, width: u16) -> Body {
     let palette = &shared.palette;
@@ -263,13 +294,16 @@ fn loaded_lines(shared: &Shared, view: &PlaystyleView, width: u16) -> Body {
         body.line(Line::default());
     }
     body.item(
-        vec![show_line(
-            palette,
-            &view.identities(),
-            view.identity.as_deref(),
-            view.show_cursor,
-            view.focus == Focus::Show,
-        )],
+        wrap_at_gaps(
+            show_line(
+                palette,
+                &view.identities(),
+                view.identity.as_deref(),
+                view.show_cursor,
+                view.focus == Focus::Show,
+            ),
+            usize::from(width).saturating_sub(GUTTER.len()),
+        ),
         view.focus == Focus::Show,
     );
     body.line(Line::default());
@@ -635,6 +669,7 @@ pub(crate) fn reasons_lines(
             Span::raw("w ").bold(),
             Span::styled(format!(" {WHY} {UNFOLDED} "), palette.accent.reversed()),
         ]),
+        Reasons::Heading => Line::styled(WHY, palette.muted),
     }];
     if fold == Reasons::Folded {
         return lines;

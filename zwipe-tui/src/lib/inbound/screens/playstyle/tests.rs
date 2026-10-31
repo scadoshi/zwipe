@@ -781,6 +781,24 @@ async fn a_rejected_session_ends_it() {
 }
 
 #[test]
+fn a_long_chip_row_wraps_between_chips() {
+    let palette = crate::domain::theme::Palette::terminal();
+    let identities = vec![
+        vec![Red],
+        vec![Blue, White],
+        vec![Blue, Red],
+        vec![White, Blue, Red],
+    ];
+    let line = draw::show_line(&palette, &identities, None, 0, false);
+    let lines = draw::wrap_at_gaps(line.clone(), 30);
+    assert!(lines.len() > 1);
+    let texts: Vec<String> = lines.iter().map(ToString::to_string).collect();
+    assert!(texts.iter().all(|t| t.chars().count() <= 30), "{texts:?}");
+    assert_eq!(texts.concat(), line.to_string(), "nothing lost or split");
+    assert_eq!(draw::wrap_at_gaps(line, 500).len(), 1);
+}
+
+#[test]
 fn tiny_terminals_do_not_panic() {
     let mut harness = on_playstyle(true);
     for (w, h) in [(8, 3), (1, 1)] {

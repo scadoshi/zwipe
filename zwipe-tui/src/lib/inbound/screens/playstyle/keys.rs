@@ -12,6 +12,7 @@ use super::{
 };
 use crate::domain::theme::Palette;
 use crate::inbound::app::Context;
+use crate::inbound::screens::commander_swipe::{self, Deal, SuggestedPile};
 use crate::inbound::screens::otag_examples;
 use crate::inbound::widgets::alert::{AlertChoice, AlertDialog};
 use crate::inbound::widgets::card_rows::CardRow;
@@ -26,6 +27,7 @@ pub(crate) fn handle(view: &mut PlaystyleView, code: KeyCode, cx: &mut Context<'
     match code {
         KeyCode::Esc => return cx.back(),
         KeyCode::Char('H') => return reopen_hint(cx),
+        KeyCode::Char('s') if !view.cold_start() => return swipe(view, cx),
         KeyCode::Char('M') => {
             view.overlay = Some(Overlay::More(more_sheet(&cx.shared.palette)));
             return;
@@ -47,6 +49,17 @@ pub(crate) fn handle(view: &mut PlaystyleView, code: KeyCode, cx: &mut Context<'
         Focus::Colors => on_colors(view, code),
         Focus::Staples => on_staples(view, code, cx),
     }
+}
+
+/// Opens the commander swipe on the held ranking, narrowed by the Show row's identity.
+fn swipe(view: &PlaystyleView, cx: &mut Context<'_>) {
+    let pile = SuggestedPile {
+        held: view.entries.clone(),
+        deck_count: view.deck_count,
+        identity: view.identity.clone(),
+    };
+    let limit = view.deck_limit(cx);
+    commander_swipe::open(cx, Deal::Suggested(pile), limit);
 }
 
 /// The More sheet: its one danger button, Clear skips, pressed with `c` or Enter.

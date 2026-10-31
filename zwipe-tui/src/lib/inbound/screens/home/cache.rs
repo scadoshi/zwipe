@@ -86,6 +86,8 @@ pub(crate) struct Handoff {
     pub(crate) printing: Option<Card>,
     /// The oracle tag the dictionary's Use adopted.
     pub(crate) oracle_tag: Option<String>,
+    /// Left by the commander swipe when it closes, so its host refetches and takes the identity its Filter picked.
+    pub(crate) commander_swipe: Option<crate::inbound::screens::commander_swipe::Closed>,
 }
 
 /// Everything kept above the screens.
