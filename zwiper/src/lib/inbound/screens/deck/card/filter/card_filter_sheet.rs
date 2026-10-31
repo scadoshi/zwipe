@@ -173,7 +173,7 @@ pub(crate) fn CardFilterSheet(
         if let Some(CollapseExpanded(mut collapse)) = should_collapse {
             collapse.set(true);
         }
-        filter_reset_counter.set(filter_reset_counter() + 1);
+        filter_reset_counter.set(filter_reset_counter().wrapping_add(1));
     };
 
     // Oracle-tag dictionary overlay. Owned here (not in the `OracleTags` section)
@@ -311,6 +311,10 @@ pub(crate) fn CardFilterSheet(
 
     // Track accordion item index: shifts when format filter is included
     let mut idx = 0usize;
+    #[expect(
+        clippy::arithmetic_side_effects,
+        reason = "counts this sheet's accordion items, 15 at most"
+    )]
     let mut next_idx = move || {
         idx += 1;
         idx

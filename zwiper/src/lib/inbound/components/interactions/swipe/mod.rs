@@ -19,8 +19,6 @@ pub mod onmouse;
 pub mod onswipe;
 /// Touch event handlers for mobile swipe gestures.
 pub mod ontouch;
-/// Screen offset utilities for position calculations.
-pub mod screen_offset;
 /// Peeking card stack component.
 pub mod stack;
 /// Swipe state management and gesture tracking.

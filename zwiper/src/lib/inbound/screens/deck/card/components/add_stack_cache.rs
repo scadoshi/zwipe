@@ -55,7 +55,7 @@ impl AddStackCache {
         let cut = parked.index.saturating_sub(PARKED_BEHIND_CARDS);
         if cut > 0 {
             parked.cards.drain(..cut);
-            parked.index -= cut;
+            parked.index = parked.index.min(PARKED_BEHIND_CARDS);
         }
         // History deeper than the kept zone has no card to step back onto.
         let excess = parked.history.len().saturating_sub(parked.index);

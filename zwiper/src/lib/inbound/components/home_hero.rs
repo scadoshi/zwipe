@@ -164,7 +164,13 @@ fn my_figures(metrics: Option<&HttpLifetimeCounters>) -> Vec<(Option<u64>, &'sta
     figures(
         metrics.map(|m| i64::from(m.decks_created)),
         metrics.map(|m| m.searches),
-        metrics.map(|m| m.swipes_right + m.swipes_left + m.swipes_up + m.swipes_down),
+        // A sum past i64 is no number to show, so it waits like a loading one.
+        metrics.and_then(|m| {
+            m.swipes_right
+                .checked_add(m.swipes_left)?
+                .checked_add(m.swipes_up)?
+                .checked_add(m.swipes_down)
+        }),
     )
 }
 
@@ -328,6 +334,29 @@ mod tests {
                 (Some(6), "Decks created"),
                 (Some(5), "Searches run"),
                 (Some(10), "Cards swiped"),
+            ]
+        );
+    }
+
+    #[test]
+    fn my_cards_swiped_past_i64_waits_instead_of_overflowing() {
+        let mine = HttpLifetimeCounters {
+            user_id: Uuid::nil(),
+            swipes_right: i64::MAX,
+            swipes_left: 1,
+            swipes_up: 0,
+            swipes_down: 0,
+            searches: 5,
+            decks_created: 6,
+            decks_completed: 0,
+            updated_at: Utc::now(),
+        };
+        assert_eq!(
+            my_figures(Some(&mine)),
+            vec![
+                (Some(6), "Decks created"),
+                (Some(5), "Searches run"),
+                (None, "Cards swiped"),
             ]
         );
     }

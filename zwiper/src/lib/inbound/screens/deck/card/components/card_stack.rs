@@ -95,10 +95,9 @@ impl<A: 'static> CardStack<A> {
     /// Card under the cursor with wrap-around (cycling stacks).
     pub(crate) fn current_wrapping(&self) -> Option<Card> {
         let cards = self.cards.read();
-        if cards.is_empty() {
-            return None;
-        }
-        cards.get(self.index() % cards.len()).cloned()
+        // `None` for an empty stack, which has no remainder.
+        let i = self.index().checked_rem(cards.len())?;
+        cards.get(i).cloned()
     }
 
     /// The enter-animation signal, passed straight through as `SwipeStack`'s
@@ -188,32 +187,36 @@ impl<A: 'static> CardStack<A> {
     /// stays aligned with the swipe that committed. Returns false only when
     /// already past the end.
     pub(crate) fn advance(&mut self) -> bool {
-        let next = (self.index)() + 1;
-        if next <= self.cards.read().len() {
-            self.index.set(next);
-            true
-        } else {
-            false
+        let len = self.cards.read().len();
+        match (self.index)().checked_add(1).filter(|&next| next <= len) {
+            Some(next) => {
+                self.index.set(next);
+                true
+            }
+            None => false,
         }
     }
 
     /// Moves the cursor forward with wrap-around (cycling stacks).
     pub(crate) fn advance_wrapping(&mut self) {
         let len = self.cards.read().len();
-        if len > 0 {
-            self.index.set(((self.index)() + 1) % len);
+        // The cursor stays put on an empty stack, which has no remainder.
+        if let Some(next) = (self.index)()
+            .checked_add(1)
+            .and_then(|next| next.checked_rem(len))
+        {
+            self.index.set(next);
         }
     }
 
     /// Steps the cursor back with wrap-around (cycling stacks). Returns false
     /// when the stack is empty.
     pub(crate) fn retreat_wrapping(&mut self) -> bool {
-        let len = self.cards.read().len();
-        if len == 0 {
+        let Some(last) = self.cards.read().len().checked_sub(1) else {
             return false;
-        }
+        };
         let idx = (self.index)();
-        self.index.set(if idx == 0 { len - 1 } else { idx - 1 });
+        self.index.set(idx.checked_sub(1).unwrap_or(last));
         true
     }
 
@@ -233,7 +236,10 @@ impl<A: 'static> CardStack<A> {
     /// action, restores the cursor, cancels the primed animation.
     pub(crate) fn unwind_undo(&mut self, action: A) {
         self.history.write().push(action);
-        self.index.set((self.index)() + 1);
+        // `step_back` moved the cursor down one, so stepping up cannot overflow.
+        if let Some(next) = (self.index)().checked_add(1) {
+            self.index.set(next);
+        }
         self.entering.set(None);
     }
 
@@ -253,11 +259,10 @@ impl<A: StackAction + 'static> CardStack<A> {
     /// from the action's exit direction. Returns false at the first card,
     /// callers should `record` the action back.
     pub(crate) fn step_back(&mut self, action: &A) -> bool {
-        let idx = (self.index)();
-        if idx == 0 {
+        let Some(previous) = (self.index)().checked_sub(1) else {
             return false;
-        }
-        self.index.set(idx - 1);
+        };
+        self.index.set(previous);
         self.entering.set(Some(action.exited()));
         true
     }

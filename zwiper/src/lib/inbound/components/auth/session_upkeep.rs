@@ -47,8 +47,9 @@ const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 /// version.
 const UPKEEP_INTERVAL: Duration = Duration::from_secs(60);
 
-const SECS_PER_MINUTE: i64 = 60;
-const SECS_PER_HOUR: i64 = 3600;
+/// The latest point into an hour [`next_hour`] counts, so the gap it adds is
+/// always at least a second.
+const LAST_SECOND_OF_HOUR: chrono::Duration = chrono::Duration::seconds(3599);
 
 /// The featured flavor card cached for the Home screen, with the time it
 /// goes stale.
@@ -69,13 +70,9 @@ impl FlavorCard {
     /// Wrap a freshly fetched card, expiring at the top of the next UTC hour
     /// (the server's rotation boundary).
     pub fn new(card: Card) -> Self {
-        use chrono::Timelike;
-        let now = Utc::now();
-        let secs_into_hour = i64::from(now.minute()) * SECS_PER_MINUTE + i64::from(now.second());
         Self {
             card,
-            expires_at: now
-                + chrono::Duration::seconds(SECS_PER_HOUR - secs_into_hour.min(SECS_PER_HOUR - 1)),
+            expires_at: next_hour(Utc::now()),
         }
     }
 
@@ -83,6 +80,24 @@ impl FlavorCard {
     pub fn is_expired(&self) -> bool {
         Utc::now() >= self.expires_at
     }
+}
+
+/// The top of the UTC hour after `now`, keeping `now`'s fraction of a second.
+/// Past the last representable instant, the end of time.
+fn next_hour(now: DateTime<Utc>) -> DateTime<Utc> {
+    use chrono::Timelike;
+    // Same fraction of a second as `now`, so the gap is whole seconds.
+    let hour_start = now
+        .with_minute(0)
+        .and_then(|t| t.with_second(0))
+        .unwrap_or(now);
+    let into_hour = now
+        .signed_duration_since(hour_start)
+        .min(LAST_SECOND_OF_HOUR);
+    chrono::Duration::hours(1)
+        .checked_sub(&into_hour)
+        .and_then(|gap| now.checked_add_signed(gap))
+        .unwrap_or(DateTime::<Utc>::MAX_UTC)
 }
 
 /// App-wide changelog cache, populated by a background fetch at startup.
@@ -400,4 +415,32 @@ fn use_version_gate(
     });
 
     UpgradeRequired(upgrade_required)
+}
+
+#[cfg(test)]
+mod tests {
+    use chrono::{TimeZone, Timelike};
+
+    use super::*;
+
+    #[test]
+    fn a_flavor_card_expires_at_the_top_of_the_next_hour() {
+        let at = |h, m, s| {
+            Utc.with_ymd_and_hms(2026, 10, 30, h, m, s)
+                .unwrap()
+                .with_nanosecond(789_000_000)
+                .unwrap()
+        };
+        assert_eq!(next_hour(at(12, 34, 56)), at(13, 0, 0));
+        assert_eq!(next_hour(at(12, 0, 0)), at(13, 0, 0));
+        assert_eq!(next_hour(at(12, 59, 59)), at(13, 0, 0));
+    }
+
+    #[test]
+    fn a_flavor_card_fetched_at_the_end_of_time_never_expires() {
+        assert_eq!(
+            next_hour(DateTime::<Utc>::MAX_UTC),
+            DateTime::<Utc>::MAX_UTC
+        );
+    }
 }

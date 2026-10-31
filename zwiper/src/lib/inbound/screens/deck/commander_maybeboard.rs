@@ -156,7 +156,7 @@ impl SavedList {
     fn refetch(&mut self) {
         self.loads.next_ticket();
         let tick = *self.reload.peek();
-        self.reload.set(tick + 1);
+        self.reload.set(tick.wrapping_add(1));
     }
 
     /// Restarts a load that went out before a local edit.

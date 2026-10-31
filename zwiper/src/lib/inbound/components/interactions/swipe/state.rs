@@ -123,7 +123,9 @@ impl SwipeState {
         else {
             return None;
         };
-        Some(gesture_math::gap_millis(curr.time - prev.time))
+        Some(gesture_math::gap_millis(
+            curr.time.signed_duration_since(prev.time),
+        ))
     }
 
     /// Calculates the current swipe speed in pixels per millisecond.
@@ -248,6 +250,10 @@ impl SwipeState {
 }
 
 #[cfg(test)]
+#[expect(
+    clippy::arithmetic_side_effects,
+    reason = "test fixtures; overflow fails the test"
+)]
 mod tests {
     use chrono::NaiveDate;
     use dioxus::html::geometry::euclid::Point2D;

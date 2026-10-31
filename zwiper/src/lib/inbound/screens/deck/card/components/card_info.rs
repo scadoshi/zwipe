@@ -14,25 +14,16 @@ pub(crate) fn CardInfoDisplay(card: Card) -> Element {
         || card.scryfall_data.prices.tix.is_some();
 
     let price_text = if has_prices {
-        let mut display = String::from("Prices:");
-        let mut count = 0;
-        if let Some(usd) = card.scryfall_data.prices.usd {
-            display.push_str(format!(" ${usd}").as_str());
-            count += 1;
-        }
-        if let Some(eur) = card.scryfall_data.prices.eur {
-            if count > 0 {
-                display.push_str(" |");
-            }
-            display.push_str(format!(" €{eur}").as_str());
-            count += 1;
-        }
-        if let Some(tix) = card.scryfall_data.prices.tix {
-            if count > 0 {
-                display.push_str(" |");
-            }
-            display.push_str(format!(" {tix} TIX").as_str());
-        }
+        let prices = &card.scryfall_data.prices;
+        let shown: Vec<String> = [
+            prices.usd.as_ref().map(|usd| format!(" ${usd}")),
+            prices.eur.as_ref().map(|eur| format!(" €{eur}")),
+            prices.tix.as_ref().map(|tix| format!(" {tix} TIX")),
+        ]
+        .into_iter()
+        .flatten()
+        .collect();
+        let display = format!("Prices:{}", shown.join(" |"));
         display
     } else {
         "\u{00a0}".to_string()

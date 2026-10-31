@@ -17,7 +17,11 @@ pub(crate) fn has_any_tags(p: &DeckProfile) -> bool {
 
 /// Total tag count across all three axes (for the collapsed-section badge).
 pub(crate) fn total_tag_count(p: &DeckProfile) -> usize {
-    p.tags.len() + p.oracle_tags.len() + p.other_tags.len()
+    // A display count; three in-memory lists never reach the cap.
+    p.tags
+        .len()
+        .saturating_add(p.oracle_tags.len())
+        .saturating_add(p.other_tags.len())
 }
 
 /// The tag rows (deck tags, oracle tags, other tags), each shown only when

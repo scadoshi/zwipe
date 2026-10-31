@@ -100,7 +100,8 @@ pub fn SwipeStack(
                     let card_id = card.scryfall_data.id;
                     let card_name = card.scryfall_data.name.clone();
                     let peek_i = gesture_math::layout_index(i);
-                    let z = n - i;
+                    // i < n, so this never floors.
+                    let z = n.saturating_sub(i);
 
                     // Build the inline transform for this card. We let the
                     // `.swipe-stack-card` CSS class own the default transform

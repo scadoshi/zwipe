@@ -203,7 +203,8 @@ pub fn Add(deck_id: Uuid) -> Element {
     // down-swipe to undo back into the pile (no card, so no SwipeStack).
     let mut end_swipe_start: Signal<Option<(f64, f64)>> = use_signal(|| None);
 
-    // Reset counter for collapsing accordions and clearing search queries
+    // Reset counter for collapsing accordions and clearing search queries.
+    // Readers only see that it moved, so bumps wrap.
     let mut filter_reset_counter: Signal<u32> = use_signal(|| 0);
     use_context_provider(|| filter_reset_counter);
 
@@ -399,7 +400,12 @@ pub fn Add(deck_id: Uuid) -> Element {
         if stack.index() >= total && pagination_exhausted() {
             // Past the last card with nothing left to fetch.
             toast.warning("End of results".to_string(), ToastOptions::default());
-        } else if total > 0 && stack.index() + 1 >= total.saturating_sub(load_more_threshold) {
+        } else if total > 0
+            && stack
+                .index()
+                .checked_add(1)
+                .is_some_and(|seen| seen >= total.saturating_sub(load_more_threshold))
+        {
             // Within the prefetch threshold: top the stack up.
             load_more_cards();
         }
@@ -529,7 +535,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                 // when it does. The counts rewind now, like a finished undo.
                 if in_flight_adds.write().undo(card_id) {
                     if was_land {
-                        mainboard_land_count.set((mainboard_land_count() - 1).max(0));
+                        mainboard_land_count.set(mainboard_land_count().saturating_sub(1).max(0));
                     }
                     deck_total_price.set((deck_total_price() - was_price).max(0.0));
                     toast.success(
@@ -588,7 +594,8 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 deck_cards_ids.write().remove(&oid);
                             }
                             if was_land {
-                                mainboard_land_count.set((mainboard_land_count() - 1).max(0));
+                                mainboard_land_count
+                                    .set(mainboard_land_count().saturating_sub(1).max(0));
                             }
                             deck_total_price.set((deck_total_price() - was_price).max(0.0));
                             toast.success(
@@ -867,7 +874,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                 // A non-empty stack is a preserved session; leave it be.
                 if stack.peek_is_empty() {
                     let current = *filter_reset_counter.peek();
-                    filter_reset_counter.set(current + 1);
+                    filter_reset_counter.set(current.wrapping_add(1));
                 }
             }
         });
@@ -1289,7 +1296,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                     add_source.set(variant);
                                     mb_stack.rewind();
                                     let current = *filter_reset_counter.peek();
-                                    filter_reset_counter.set(current + 1);
+                                    filter_reset_counter.set(current.wrapping_add(1));
                                 },
                                 "{label}"
                             }
@@ -1307,7 +1314,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                         let on = !filter_builder.peek().synergy();
                                         filter_builder.write().set_synergy(on);
                                         let current = *filter_reset_counter.peek();
-                                        filter_reset_counter.set(current + 1);
+                                        filter_reset_counter.set(current.wrapping_add(1));
                                     },
                                     "Synergy"
                                 }
@@ -1534,7 +1541,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                     mb_entries.set(mb);
                                     mb_stack.rewind();
                                     let current = *filter_reset_counter.peek();
-                                    filter_reset_counter.set(current + 1);
+                                    filter_reset_counter.set(current.wrapping_add(1));
                                 }
                             });
                             toast.info(
