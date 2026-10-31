@@ -27,6 +27,7 @@ use crate::domain::commander_maybeboard;
 use crate::inbound::caches::CreateDeckSeed;
 use crate::inbound::cards::card_row::{CardOverlaysHost, CardRow, ShowRowArt, use_card_overlays};
 use crate::inbound::cards::otag::{OtagExamplesHost, use_otag_reveals};
+use crate::inbound::cards::swipe_select::{SwipeMode, SwipeSelect};
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::more_menu::{MoreButton, MoreMenu, use_more_menu};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
@@ -263,6 +264,7 @@ pub fn CommanderMaybeboard() -> Element {
             })
             .await
     });
+    let mut swipe_open = use_signal(|| false);
     let create_with = use_callback(move |card: Card| {
         let at_limit = session.peek().as_ref().is_some_and(|s| {
             s.user.email_verified_at.is_none()
@@ -517,9 +519,7 @@ pub fn CommanderMaybeboard() -> Element {
                 // side panel (no format filter, active indicators shown, Clear
                 // empties the builder) and shows a dot while it has a criterion
                 // or a sort; its Apply re-filters the list above.
-                // TODO(swipe select): `Swipe` opens Swipe select in commander
-                // mode over this screen, excluding `saved_oracles`; a right swipe
-                // goes to `create_with`, and closing it calls `list.refetch()`.
+                Button { variant: ButtonVariant::Action, onclick: move |_| swipe_open.set(true), "Swipe" }
                 MoreButton { menu: more }
             }
         }
@@ -546,6 +546,20 @@ pub fn CommanderMaybeboard() -> Element {
         }
         CardOverlaysHost { overlays, on_printing_save }
         OtagExamplesHost { examples }
+        SwipeSelect {
+            open: swipe_open,
+            mode: SwipeMode::Commander(Format::Commander),
+            exclude_oracle_ids: Some(saved_oracles.into()),
+            on_select: move |card: Card| {
+                swipe_open.set(false);
+                list.refetch();
+                create_with.call(card);
+            },
+            on_close: move |()| {
+                swipe_open.set(false);
+                list.refetch();
+            },
+        }
     }
 }
 
