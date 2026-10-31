@@ -24,7 +24,7 @@ use crate::domain::home::{self, Figures, Scope};
 use crate::domain::{count_up, decode};
 use crate::inbound::app::{Context, Shared};
 use crate::inbound::nav::Nav;
-use crate::inbound::screens;
+use crate::inbound::screens::{self, oracle_tags};
 use crate::inbound::widgets::alert::AlertDialog;
 use crate::inbound::widgets::info::InfoPopup;
 use crate::inbound::widgets::toast::ToastKind;
@@ -280,6 +280,7 @@ fn mount(cx: &mut Context<'_>) {
     if flavor_expired {
         cx.request(Request::Flavor.into());
     }
+    oracle_tags::ensure_catalog(cx);
     hint::show(cx, HINT_FIRST_LOGIN, WELCOME_TITLE, WELCOME);
 }
 

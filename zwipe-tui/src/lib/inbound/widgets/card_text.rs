@@ -2,8 +2,9 @@
 
 use ratatui::style::Stylize;
 use ratatui::text::{Line, Span};
+use zwipe_core::domain::card::scryfall_data::ScryfallData;
 
-use crate::domain::card::Face;
+use crate::domain::card::{self, Face};
 use crate::domain::theme::Palette;
 
 /// One face as lines: the name and cost, the type line, the rules, the stats.
@@ -30,6 +31,18 @@ pub(crate) fn face_lines(palette: &Palette, face: &Face) -> Vec<Line<'static>> {
     lines
 }
 
+/// Every face of `data`, front first, split by a muted `//`.
+pub(crate) fn lines(palette: &Palette, data: &ScryfallData) -> Vec<Line<'static>> {
+    let mut lines = Vec::new();
+    for (i, face) in card::faces(data).iter().enumerate() {
+        if i > 0 {
+            lines.push(Line::styled("//", palette.muted));
+        }
+        lines.extend(face_lines(palette, face));
+    }
+    lines
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -40,15 +53,13 @@ mod tests {
         let mut card = test_support::card("Llanowar Elves");
         card.scryfall_data.type_line = Some("Creature — Elf Druid".to_owned());
         card.scryfall_data.oracle_text = Some("{T}: Add {G}.".to_owned());
-        let text: Vec<String> = face_lines(
-            &Palette::terminal(),
-            &crate::domain::card::faces(&card.scryfall_data)[0],
-        )
-        .iter()
-        .map(ToString::to_string)
-        .collect();
+        let text: Vec<String> = lines(&Palette::terminal(), &card.scryfall_data)
+            .iter()
+            .map(ToString::to_string)
+            .collect();
         assert_eq!(text[0], "Llanowar Elves");
         assert!(text.contains(&"Creature — Elf Druid".to_owned()));
         assert!(text.iter().any(|l| l.contains("Add {G}")));
+        assert!(!text.contains(&"//".to_owned()), "one face, no split");
     }
 }

@@ -69,6 +69,7 @@ fn the_first_home_restores_then_fetches_every_panel() {
             ask(Request::PublicMetrics),
             ask(Request::PlayStyle),
             ask(Request::Flavor),
+            screens::oracle_tags::Request::Catalog.into(),
         ]
     );
 }
