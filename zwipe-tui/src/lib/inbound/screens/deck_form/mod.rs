@@ -33,7 +33,7 @@ use crate::inbound::screens;
 use crate::inbound::widgets::hint;
 use crate::inbound::widgets::info::InfoPopup;
 use crate::inbound::widgets::text_input::TextInput;
-use crate::inbound::widgets::toast::ToastKind;
+use crate::inbound::widgets::toast::{self, ToastKind};
 use crate::outbound::account::Account;
 
 /// How long typing must pause before a command-zone search goes out, as in the app.
@@ -1130,9 +1130,10 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
             ToastKind::Success,
             "Added to your commander maybeboard".to_owned(),
         ),
-        Update::MaybeboardRemoved => cx.toast(
+        Update::MaybeboardRemoved => cx.toast_for(
             ToastKind::Info,
             "Removed from your commander maybeboard".to_owned(),
+            toast::QUICK,
         ),
         Update::Error(message) => cx.toast(ToastKind::Error, message),
     }

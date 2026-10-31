@@ -85,14 +85,27 @@ fn results_toast_and_list_what_came_in() {
             reason: "not found".to_owned(),
         }],
     }));
-    assert_eq!(
-        harness.app.shared.toasts.items()[0].message,
-        "Imported 1, 1 unresolved"
-    );
+    let up = &harness.app.shared.toasts.items()[0];
+    assert_eq!(up.message, "Imported 1, 1 unresolved");
+    assert_eq!(up.expires_at.duration_since(up.shown_at), toast::QUICK);
     let screen = screen_text(&harness.app);
     for expected in ["Imported", "Sol Ring", "x1", "Unresolved", "not found"] {
         assert!(screen.contains(expected), "missing {expected}");
     }
+
+    harness.apply(Update::Imported(ImportDeckCardsResult {
+        imported: Vec::new(),
+        unresolved: vec![UnresolvedCard {
+            name: "Nope".to_owned(),
+            reason: "not found".to_owned(),
+        }],
+    }));
+    let failed = harness.app.shared.toasts.items().last().unwrap();
+    assert_eq!(failed.message, "1 card unresolved");
+    assert_eq!(
+        failed.expires_at.duration_since(failed.shown_at),
+        toast::NORMAL
+    );
 }
 
 #[test]

@@ -29,7 +29,7 @@ use crate::domain::stores::catalog::Catalog;
 use crate::inbound::app::Context;
 use crate::inbound::widgets::hint;
 use crate::inbound::widgets::text_input::TextInput;
-use crate::inbound::widgets::toast::ToastKind;
+use crate::inbound::widgets::toast::{self, ToastKind};
 
 /// The produced-mana chips: the five colors and colorless.
 const PRODUCED: [&str; 6] = ["W", "U", "B", "R", "G", "C"];
@@ -268,7 +268,11 @@ impl FilterSheet {
                         input.set_value(&n.to_string());
                     }
                 }
-                Err(()) => cx.toast(ToastKind::Error, "Invalid mana value".to_owned()),
+                Err(()) => cx.toast_for(
+                    ToastKind::Error,
+                    "Invalid mana value".to_owned(),
+                    toast::QUICK,
+                ),
             },
             NumberField::ManaMin | NumberField::ManaMax => {
                 let (min, max) = (
@@ -283,7 +287,11 @@ impl FilterSheet {
                         self.draft.set_cmc_range((min, max));
                     }
                     (Ok(_), Ok(_)) => {}
-                    _ => cx.toast(ToastKind::Error, "Invalid mana value range".to_owned()),
+                    _ => cx.toast_for(
+                        ToastKind::Error,
+                        "Invalid mana value range".to_owned(),
+                        toast::QUICK,
+                    ),
                 }
             }
             NumberField::PriceMin | NumberField::PriceMax => {
@@ -297,7 +305,9 @@ impl FilterSheet {
                             (false, Some(n)) => self.draft.set_price_max(n),
                         };
                     }
-                    Err(()) => cx.toast(ToastKind::Error, "Invalid price".to_owned()),
+                    Err(()) => {
+                        cx.toast_for(ToastKind::Error, "Invalid price".to_owned(), toast::QUICK);
+                    }
                 }
             }
         }
@@ -306,7 +316,7 @@ impl FilterSheet {
     /// Back: closes the sheet, saying so when edits are dropped.
     pub(crate) fn back(&self, cx: &mut Context<'_>) -> SheetOutcome {
         if !self.unchanged() {
-            cx.toast(ToastKind::Info, "Filter unchanged".to_owned());
+            cx.toast_for(ToastKind::Info, "Filter unchanged".to_owned(), toast::QUICK);
         }
         SheetOutcome::Closed
     }
@@ -325,7 +335,11 @@ impl FilterSheet {
         );
         match action {
             ApplyAction::RefuseEmpty => {
-                cx.toast(ToastKind::Warning, "Filter is already empty".to_owned());
+                cx.toast_for(
+                    ToastKind::Warning,
+                    "Filter is already empty".to_owned(),
+                    toast::QUICK,
+                );
                 SheetOutcome::Open
             }
             ApplyAction::NoChange => SheetOutcome::Closed,
@@ -335,7 +349,7 @@ impl FilterSheet {
                 } else {
                     "Filter applied"
                 };
-                cx.toast(ToastKind::Success, message.to_owned());
+                cx.toast_for(ToastKind::Success, message.to_owned(), toast::QUICK);
                 SheetOutcome::Applied(Box::new(self.draft.clone()))
             }
         }
@@ -352,9 +366,13 @@ impl FilterSheet {
             ResetRule::AddMaybeboard => filter::reset_maybeboard(&mut self.draft),
         };
         match result {
-            Ok(()) => cx.toast(ToastKind::Info, "Filter reset".to_owned()),
+            Ok(()) => cx.toast_for(ToastKind::Info, "Filter reset".to_owned(), toast::QUICK),
             Err(filter::AlreadyDefault) => {
-                cx.toast(ToastKind::Warning, "Filter already at default".to_owned());
+                cx.toast_for(
+                    ToastKind::Warning,
+                    "Filter already at default".to_owned(),
+                    toast::QUICK,
+                );
             }
         }
         self.sync_inputs();

@@ -13,7 +13,7 @@ use super::Request;
 use crate::domain::theme::Palette;
 use crate::inbound::app::Context;
 use crate::inbound::widgets::card_info;
-use crate::inbound::widgets::toast::ToastKind;
+use crate::inbound::widgets::toast::{self, ToastKind};
 
 /// What a key did to the sheet.
 #[derive(Debug, Clone, PartialEq)]
@@ -110,13 +110,17 @@ impl PrintingSheet {
             }
             KeyCode::Esc | KeyCode::Char('b') => {
                 if !self.read_only && self.has_changed() {
-                    cx.toast(ToastKind::Info, "Printing unchanged".to_owned());
+                    cx.toast_for(
+                        ToastKind::Info,
+                        "Printing unchanged".to_owned(),
+                        toast::QUICK,
+                    );
                 }
                 return PrintingOutcome::Closed;
             }
             KeyCode::Char('s') if !self.read_only && self.has_changed() => {
                 if let Some(card) = self.visible().cloned() {
-                    cx.toast(ToastKind::Info, self.saved_message.to_owned());
+                    cx.toast_for(ToastKind::Info, self.saved_message.to_owned(), toast::QUICK);
                     return PrintingOutcome::Saved(Box::new(card));
                 }
             }

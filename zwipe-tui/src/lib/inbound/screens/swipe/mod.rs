@@ -44,7 +44,7 @@ use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;
 use crate::inbound::widgets::hint;
-use crate::inbound::widgets::toast::ToastKind;
+use crate::inbound::widgets::toast::{self, ToastKind};
 use crate::outbound::account::Account;
 use crate::outbound::images;
 
@@ -194,11 +194,19 @@ impl SwipeView {
                     }
                     .into(),
                 );
-                cx.toast(ToastKind::Info, "Maybeboard refreshed".to_owned());
+                cx.toast_for(
+                    ToastKind::Info,
+                    "Maybeboard refreshed".to_owned(),
+                    toast::QUICK,
+                );
             }
             Source::Search => {
                 let Ok(query) = add::normalized(&self.filter).build() else {
-                    cx.toast(ToastKind::Warning, "Filter is empty".to_owned());
+                    cx.toast_for(
+                        ToastKind::Warning,
+                        "Filter is empty".to_owned(),
+                        toast::QUICK,
+                    );
                     return;
                 };
                 self.generation = self.generation.wrapping_add(1);
@@ -217,7 +225,7 @@ impl SwipeView {
                     }
                     .into(),
                 );
-                cx.toast(ToastKind::Info, "Stack refreshed".to_owned());
+                cx.toast_for(ToastKind::Info, "Stack refreshed".to_owned(), toast::QUICK);
             }
         }
     }
@@ -277,9 +285,10 @@ impl SwipeView {
         if (CARDS_WARNING_THRESHOLD..MAX_CARDS_IN_STACK).contains(&total)
             && total.is_multiple_of(STACK_WARNING_EVERY)
         {
-            cx.toast(
+            cx.toast_for(
                 ToastKind::Info,
                 "Approaching the card stack limit, refresh your search to continue".to_owned(),
+                toast::QUICK,
             );
         }
         let index = self.stack.index();
@@ -329,7 +338,7 @@ impl SwipeView {
                 };
                 self.stack.record(AddAction::Add);
                 self.create(cx, &card, Board::Deck);
-                cx.toast(ToastKind::Success, "Added to deck".to_owned());
+                cx.toast_for(ToastKind::Success, "Added to deck".to_owned(), toast::QUICK);
                 if card.scryfall_data.is_land() {
                     let before = self.deck.land_count;
                     self.deck.land_count = before.saturating_add(1);
@@ -378,7 +387,7 @@ impl SwipeView {
                     }
                     .into(),
                 );
-                cx.toast(ToastKind::Success, "Moved to deck".to_owned());
+                cx.toast_for(ToastKind::Success, "Moved to deck".to_owned(), toast::QUICK);
             }
         }
         self.after_swipe(cx);
@@ -401,7 +410,7 @@ impl SwipeView {
                     );
                 }
                 self.stack.record(AddAction::Skip);
-                cx.toast(ToastKind::Info, "Skipped".to_owned());
+                cx.toast_for(ToastKind::Info, "Skipped".to_owned(), toast::QUICK);
                 self.advance_after_commit(cx);
             }
             Source::Maybeboard => {
@@ -409,7 +418,7 @@ impl SwipeView {
                     return;
                 }
                 self.mb_stack.record(MaybeboardAction::Skip);
-                cx.toast(ToastKind::Info, "Skipped".to_owned());
+                cx.toast_for(ToastKind::Info, "Skipped".to_owned(), toast::QUICK);
                 self.mb_stack.advance_wrapping();
             }
         }
@@ -425,12 +434,20 @@ impl SwipeView {
                 };
                 self.stack.record(AddAction::Maybe);
                 self.create(cx, &card, Board::Maybeboard);
-                cx.toast(ToastKind::Info, "Added to maybeboard".to_owned());
+                cx.toast_for(
+                    ToastKind::Info,
+                    "Added to maybeboard".to_owned(),
+                    toast::QUICK,
+                );
                 self.advance_after_commit(cx);
             }
             Source::Maybeboard => {
                 if self.mb_stack.current_wrapping().is_some() {
-                    cx.toast(ToastKind::Info, "Already on maybeboard".to_owned());
+                    cx.toast_for(
+                        ToastKind::Info,
+                        "Already on maybeboard".to_owned(),
+                        toast::QUICK,
+                    );
                 }
             }
         }
@@ -479,7 +496,7 @@ impl SwipeView {
                 if let Some(oracle_id) = card.scryfall_data.oracle_id {
                     cx.request(Request::Unskip { deck_id, oracle_id }.into());
                 }
-                cx.toast(ToastKind::Info, "Undid skip".to_owned());
+                cx.toast_for(ToastKind::Info, "Undid skip".to_owned(), toast::QUICK);
             }
             AddAction::Add | AddAction::Maybe => {
                 let board = if action == AddAction::Add {
@@ -493,7 +510,7 @@ impl SwipeView {
                     if board == Board::Deck {
                         self.rewind_counts(&card);
                     }
-                    cx.toast(ToastKind::Success, toast.to_owned());
+                    cx.toast_for(ToastKind::Success, toast.to_owned(), toast::QUICK);
                     return;
                 }
                 let taken = cx.shared.cards.undo.take_newest(
@@ -501,7 +518,7 @@ impl SwipeView {
                     |a| matches!(a, UndoAction::Added { card_id: id, .. } if *id == card_id),
                 );
                 if taken.is_none() && !self.deck.holds(&card) {
-                    cx.toast(ToastKind::Success, toast.to_owned());
+                    cx.toast_for(ToastKind::Success, toast.to_owned(), toast::QUICK);
                     return;
                 }
                 cx.request(
@@ -529,7 +546,7 @@ impl SwipeView {
                     self.mb_stack.cancel_entering();
                     return;
                 }
-                cx.toast(ToastKind::Info, "Undid skip".to_owned());
+                cx.toast_for(ToastKind::Info, "Undid skip".to_owned(), toast::QUICK);
             }
             MaybeboardAction::Promote { card } => {
                 let deck_id = self.deck.id;
@@ -544,7 +561,7 @@ impl SwipeView {
                     .any(|e| e.card.scryfall_data.id == card_id);
                 if taken.is_none() && already_back {
                     self.mb_stack.cancel_entering();
-                    cx.toast(ToastKind::Info, "Already changed".to_owned());
+                    cx.toast_for(ToastKind::Info, "Already changed".to_owned(), toast::QUICK);
                     return;
                 }
                 self.mb_stack.insert_current((*card).clone());
@@ -1249,7 +1266,11 @@ fn undid_add(
                     .maybeboard
                     .retain(|e| e.card.scryfall_data.id != id);
             }
-            cx.toast(ToastKind::Success, undone_message(board).to_owned());
+            cx.toast_for(
+                ToastKind::Success,
+                undone_message(board).to_owned(),
+                toast::QUICK,
+            );
         }
         Err(failure) => {
             if let UndoFailure::Session(m) = &failure {
@@ -1289,7 +1310,11 @@ fn demoted(
             deck_card.board = Board::Maybeboard;
             deck_card.mvp_at = None;
             view.deck.maybeboard.push(DeckEntry { card, deck_card });
-            cx.toast(ToastKind::Success, "Undid move to deck".to_owned());
+            cx.toast_for(
+                ToastKind::Success,
+                "Undid move to deck".to_owned(),
+                toast::QUICK,
+            );
         }
         Err(failure) => {
             match failure {

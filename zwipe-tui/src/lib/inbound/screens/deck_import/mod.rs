@@ -18,7 +18,7 @@ use crate::inbound::screens;
 use crate::inbound::widgets::hint;
 use crate::inbound::widgets::text_area::TextArea;
 use crate::inbound::widgets::text_input::TextInput;
-use crate::inbound::widgets::toast::ToastKind;
+use crate::inbound::widgets::toast::{self, ToastKind};
 use crate::outbound::account::Account;
 
 /// The key the server stores the import hint under.
@@ -298,12 +298,13 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
         Update::Imported(result) => {
             let (tone, message) =
                 form::import_outcome(result.imported.len(), result.unresolved.len());
-            let kind = match tone {
-                ImportTone::Info => ToastKind::Info,
-                ImportTone::Error => ToastKind::Error,
-                ImportTone::Success => ToastKind::Success,
+            // Unresolved lines are worth reading; the rest are routine.
+            let (kind, band) = match tone {
+                ImportTone::Info => (ToastKind::Info, toast::QUICK),
+                ImportTone::Error => (ToastKind::Error, toast::NORMAL),
+                ImportTone::Success => (ToastKind::Success, toast::QUICK),
             };
-            cx.toast(kind, message);
+            cx.toast_for(kind, message, band);
             if !result.imported.is_empty() {
                 cx.shared.cards.undo.clear(view.deck_id);
             }

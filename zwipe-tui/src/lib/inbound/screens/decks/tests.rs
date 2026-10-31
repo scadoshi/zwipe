@@ -171,9 +171,15 @@ fn create_is_refused_for_an_unverified_user_with_a_deck() {
     harness.app.shared.user = Some(user(false));
     harness.press(KeyCode::Char('c'));
     assert!(matches!(harness.screen(), Screen::Decks(_)));
+    let refused = &harness.app.shared.toasts.items()[0];
     assert_eq!(
-        harness.app.shared.toasts.items()[0].message,
+        refused.message,
         "Verify your email to create more than 1 deck"
+    );
+    assert_eq!(
+        refused.expires_at.duration_since(refused.shown_at),
+        crate::inbound::widgets::toast::LONG,
+        "a next step stays up long"
     );
 
     let mut empty = loaded(Vec::new());

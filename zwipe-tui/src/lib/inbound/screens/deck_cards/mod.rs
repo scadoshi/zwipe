@@ -39,7 +39,7 @@ use crate::inbound::nav::Nav;
 use crate::inbound::screens;
 use crate::inbound::widgets::hint;
 use crate::inbound::widgets::text_input::TextInput;
-use crate::inbound::widgets::toast::ToastKind;
+use crate::inbound::widgets::toast::{self, ToastKind};
 use crate::outbound::account::Account;
 
 /// Quick add waits this long after the last keystroke before it searches.
@@ -449,7 +449,7 @@ impl DeckCardsView {
     pub(crate) fn reset_filter(&mut self, cx: &mut Context<'_>) {
         self.filter.clear();
         self.rerun_collapsed();
-        cx.toast(ToastKind::Info, "Filter reset".to_owned());
+        cx.toast_for(ToastKind::Info, "Filter reset".to_owned(), toast::QUICK);
     }
 
     /// Opens the printing sheet over a row.
@@ -518,7 +518,7 @@ impl DeckCardsView {
                 .retain(|e| e.deck_card.scryfall_data_id != card_id);
             self.rerun();
             self.signals(cx, lands, price);
-            cx.toast(ToastKind::Info, "Card removed".to_owned());
+            cx.toast_for(ToastKind::Info, "Card removed".to_owned(), toast::QUICK);
         } else {
             if let (Some(entry), Ok(quantity)) = (self.entry_mut(card_id), Quantity::new(next)) {
                 entry.deck_card.quantity = quantity;
@@ -603,9 +603,10 @@ impl DeckCardsView {
             .into(),
         );
         if record {
-            cx.toast(
+            cx.toast_for(
                 ToastKind::Info,
                 format!("Moved to {}", target.display_name()),
+                toast::QUICK,
             );
         }
     }
@@ -636,7 +637,7 @@ impl DeckCardsView {
             return;
         };
         if deck_cards::is_stale(&action, &self.entries, &self.zone) {
-            cx.toast(ToastKind::Info, "Already changed".to_owned());
+            cx.toast_for(ToastKind::Info, "Already changed".to_owned(), toast::QUICK);
             return;
         }
         let message = deck_cards::undo_message(&action);
@@ -700,7 +701,7 @@ impl DeckCardsView {
                 );
             }
         }
-        cx.toast(ToastKind::Info, message);
+        cx.toast_for(ToastKind::Info, message, toast::QUICK);
     }
 
     /// A quick add keystroke: closes the dropdown under two characters, else shows "Searching..." and searches after a pause.
@@ -1503,9 +1504,10 @@ fn record_undo(update: &Update, cx: &mut Context<'_>) {
                 card_name: entry.card.scryfall_data.name.clone(),
             },
         );
-        cx.toast(
+        cx.toast_for(
             ToastKind::Info,
             format!("Added {}", entry.card.scryfall_data.name),
+            toast::QUICK,
         );
     }
 }
@@ -1684,7 +1686,11 @@ fn loaded_deck(view: &mut DeckCardsView, cx: &mut Context<'_>, loaded: Loaded) {
     let first = !view.loaded;
     view.loaded = true;
     if first && !view.filter.is_empty() {
-        cx.toast(ToastKind::Warning, "Filter is active".to_owned());
+        cx.toast_for(
+            ToastKind::Warning,
+            "Filter is active".to_owned(),
+            toast::QUICK,
+        );
     }
     if !view.hint_seen && !view.entries.is_empty() {
         view.hint_seen = true;

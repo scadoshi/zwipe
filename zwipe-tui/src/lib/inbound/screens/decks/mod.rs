@@ -19,7 +19,7 @@ use crate::inbound::nav::Nav;
 use crate::inbound::screens;
 use crate::inbound::widgets::hint;
 use crate::inbound::widgets::menu::{Menu, MenuItem};
-use crate::inbound::widgets::toast::ToastKind;
+use crate::inbound::widgets::toast::{self, ToastKind};
 use crate::outbound::account::Account;
 
 /// The key the server stores the deck list's hint under.
@@ -258,9 +258,10 @@ pub(crate) fn create(list: &DeckList, cx: &mut Context<'_>) {
         .as_ref()
         .is_some_and(|u| u.email_verified_at.is_none());
     if unverified && !list.decks.is_empty() {
-        cx.toast(
+        cx.toast_for(
             ToastKind::Warning,
             "Verify your email to create more than 1 deck".to_owned(),
+            toast::LONG,
         );
         return;
     }

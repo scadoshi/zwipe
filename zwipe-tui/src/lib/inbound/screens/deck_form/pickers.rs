@@ -10,7 +10,7 @@ use crate::domain::deck::form::{self, Slot};
 use crate::inbound::app::Context;
 use crate::inbound::widgets::info::InfoPopup;
 use crate::inbound::widgets::text_input::TextInput;
-use crate::inbound::widgets::toast::ToastKind;
+use crate::inbound::widgets::toast::{self, ToastKind};
 
 /// An oracle tag search shows at most this many hits.
 const ORACLE_SEARCH_LIMIT: usize = 40;
@@ -198,7 +198,7 @@ pub(crate) fn handle_format(
                 form.set_format(snapshot.format);
                 form.set_card(Slot::Commander, snapshot.commander);
                 form.set_card(Slot::SignatureSpell, snapshot.signature_spell);
-                cx.toast(ToastKind::Info, "Format unchanged".to_owned());
+                cx.toast_for(ToastKind::Info, "Format unchanged".to_owned(), toast::QUICK);
             }
             return None;
         }
@@ -239,7 +239,11 @@ pub(crate) fn handle_tags(
         KeyCode::Esc => {
             if !same_set(&form.tags, &picker.snapshot) {
                 form.tags = picker.snapshot;
-                cx.toast(ToastKind::Info, "Deck tags unchanged".to_owned());
+                cx.toast_for(
+                    ToastKind::Info,
+                    "Deck tags unchanged".to_owned(),
+                    toast::QUICK,
+                );
             }
             form.reseed(cx);
             return None;
@@ -271,9 +275,10 @@ pub(crate) fn handle_tags(
                 if let Some(at) = form.tags.iter().position(|t| *t == slug) {
                     form.tags.remove(at);
                 } else if form.tags.len() >= MAX_DECK_TAGS {
-                    cx.toast(
+                    cx.toast_for(
                         ToastKind::Warning,
                         "You may only choose up to 5 tags".to_owned(),
+                        toast::QUICK,
                     );
                 } else {
                     form.tags.push(slug);
@@ -301,7 +306,11 @@ pub(crate) fn handle_oracle(
         KeyCode::Esc => {
             if !same_set(&form.oracle_tags, &picker.snapshot) {
                 form.oracle_tags = picker.snapshot;
-                cx.toast(ToastKind::Info, "Oracle tags unchanged".to_owned());
+                cx.toast_for(
+                    ToastKind::Info,
+                    "Oracle tags unchanged".to_owned(),
+                    toast::QUICK,
+                );
             }
             return None;
         }
@@ -328,9 +337,10 @@ pub(crate) fn handle_oracle(
                 if let Some(at) = form.oracle_tags.iter().position(|t| *t == slug) {
                     form.oracle_tags.remove(at);
                 } else if form.oracle_tags.len() >= MAX_DECK_ORACLE_TAGS {
-                    cx.toast(
+                    cx.toast_for(
                         ToastKind::Warning,
                         "You may only choose up to 30 oracle tags".to_owned(),
+                        toast::QUICK,
                     );
                 } else {
                     form.oracle_tags.push(slug.clone());

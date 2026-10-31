@@ -13,7 +13,7 @@ use crate::inbound::screens::card_sheets;
 use crate::inbound::screens::card_sheets::filter::{FilterSheet, SheetConfig, SheetOutcome};
 use crate::inbound::widgets::hint;
 use crate::inbound::widgets::info::InfoPopup;
-use crate::inbound::widgets::toast::ToastKind;
+use crate::inbound::widgets::toast::{self, ToastKind};
 
 /// The key the server stores the swipe picker's hint under.
 pub(crate) const HINT_KEY: &str = "swipe_select";
@@ -225,14 +225,15 @@ pub(crate) fn handle(
         }
         KeyCode::F(5) => {
             picker.refresh(cx);
-            cx.toast(ToastKind::Info, "Stack refreshed".to_owned());
+            cx.toast_for(ToastKind::Info, "Stack refreshed".to_owned(), toast::QUICK);
         }
         KeyCode::F(3) => picker.open_filter(cx),
         KeyCode::Right | KeyCode::Char('l') => {
             if let Some(card) = picker.current().cloned() {
-                cx.toast(
+                cx.toast_for(
                     ToastKind::Success,
                     format!("{} selected", capitalized(picker.noun())),
+                    toast::QUICK,
                 );
                 form.pick_card(picker.slot, card, cx);
                 return None;
@@ -242,7 +243,7 @@ pub(crate) fn handle(
             if picker.current().is_some() {
                 picker.index = picker.index.saturating_add(1);
                 picker.history.push(Swiped::Skipped);
-                cx.toast(ToastKind::Info, "Skipped".to_owned());
+                cx.toast_for(ToastKind::Info, "Skipped".to_owned(), toast::QUICK);
                 picker.fetch_more(cx);
             }
         }
@@ -266,7 +267,9 @@ pub(crate) fn handle(
             Some(swiped) => {
                 picker.index = picker.index.saturating_sub(1);
                 match swiped {
-                    Swiped::Skipped => cx.toast(ToastKind::Info, "Undid skip".to_owned()),
+                    Swiped::Skipped => {
+                        cx.toast_for(ToastKind::Info, "Undid skip".to_owned(), toast::QUICK);
+                    }
                     Swiped::Saved(oracle_id) => {
                         cx.request(Request::MaybeboardRemove(oracle_id).into());
                     }

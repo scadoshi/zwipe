@@ -32,7 +32,7 @@ use crate::inbound::nav::Nav;
 use crate::inbound::screens;
 use crate::inbound::screens::card_sheets::printing::PrintingSheet;
 use crate::inbound::widgets::hint;
-use crate::inbound::widgets::toast::ToastKind;
+use crate::inbound::widgets::toast::{self, ToastKind};
 use crate::outbound::account::Account;
 
 /// Which board is being trimmed.
@@ -132,7 +132,7 @@ impl RemoveView {
             return;
         }
         self.stack.record(RemoveAction::Keep);
-        cx.toast(ToastKind::Info, "Kept".to_owned());
+        cx.toast_for(ToastKind::Info, "Kept".to_owned(), toast::QUICK);
         self.stack.advance_wrapping();
         self.face = 0;
     }
@@ -161,7 +161,11 @@ impl RemoveView {
                 .into(),
             );
         }
-        cx.toast(ToastKind::Success, "Removed from deck".to_owned());
+        cx.toast_for(
+            ToastKind::Success,
+            "Removed from deck".to_owned(),
+            toast::QUICK,
+        );
         let (lands, price) = (deck_signals::land_count(&self.entries), self.price());
         self.entries.retain(|e| e.deck_card.scryfall_data_id != id);
         self.stack.remove_current();
@@ -200,7 +204,7 @@ impl RemoveView {
         } else {
             "Moved to maybeboard"
         };
-        cx.toast(ToastKind::Info, message.to_owned());
+        cx.toast_for(ToastKind::Info, message.to_owned(), toast::QUICK);
         let (lands, price) = (deck_signals::land_count(&self.entries), self.price());
         if let Some(entry) = self
             .entries
@@ -250,7 +254,7 @@ impl RemoveView {
                 if !self.stack.retreat_wrapping() {
                     self.stack.cancel_entering();
                 }
-                cx.toast(ToastKind::Info, "Undid keep".to_owned());
+                cx.toast_for(ToastKind::Info, "Undid keep".to_owned(), toast::QUICK);
             }
             RemoveAction::Remove {
                 card,
@@ -263,7 +267,7 @@ impl RemoveView {
                 });
                 if taken.is_none() && self.entry(id).is_some() {
                     self.stack.cancel_entering();
-                    cx.toast(ToastKind::Info, "Already changed".to_owned());
+                    cx.toast_for(ToastKind::Info, "Already changed".to_owned(), toast::QUICK);
                     return;
                 }
                 self.stack.insert_current((*card).clone());
@@ -286,7 +290,7 @@ impl RemoveView {
                 let already_back = self.entry(id).is_some_and(|e| e.deck_card.board == from);
                 if taken.is_none() && already_back {
                     self.stack.cancel_entering();
-                    cx.toast(ToastKind::Info, "Already changed".to_owned());
+                    cx.toast_for(ToastKind::Info, "Already changed".to_owned(), toast::QUICK);
                     return;
                 }
                 self.stack.insert_current((*card).clone());
@@ -310,7 +314,7 @@ impl RemoveView {
             self.rerun();
         }
         self.face = 0;
-        cx.toast(ToastKind::Info, "Stack refreshed".to_owned());
+        cx.toast_for(ToastKind::Info, "Stack refreshed".to_owned(), toast::QUICK);
     }
 
     pub(crate) fn set_board(&mut self, board: BoardFilter) {
@@ -687,7 +691,7 @@ fn undid_remove(
                 card,
                 deck_card: *deck_card,
             });
-            cx.toast(ToastKind::Success, "Undid remove".to_owned());
+            cx.toast_for(ToastKind::Success, "Undid remove".to_owned(), toast::QUICK);
         }
         Err(UndoFailure::Session(_)) => view.stack.cancel_entering(),
         Err(UndoFailure::Call(_)) => {}
@@ -712,7 +716,7 @@ fn undid_move(
             {
                 entry.deck_card.board = from;
             }
-            cx.toast(ToastKind::Success, "Undid move".to_owned());
+            cx.toast_for(ToastKind::Success, "Undid move".to_owned(), toast::QUICK);
         }
         Err(UndoFailure::Session(_)) => view.stack.cancel_entering(),
         Err(UndoFailure::Call(_)) => {}

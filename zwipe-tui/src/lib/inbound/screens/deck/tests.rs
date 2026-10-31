@@ -321,9 +321,11 @@ fn warnings_offer_their_fixes_and_run_them() {
         deck_id,
         message: "Quantity set to 1".to_owned(),
     });
+    let fixed = &harness.app.shared.toasts.items()[0];
+    assert_eq!(fixed.message, "Quantity set to 1");
     assert_eq!(
-        harness.app.shared.toasts.items()[0].message,
-        "Quantity set to 1"
+        fixed.expires_at.duration_since(fixed.shown_at),
+        crate::inbound::widgets::toast::QUICK
     );
     assert_eq!(
         harness.pending(),

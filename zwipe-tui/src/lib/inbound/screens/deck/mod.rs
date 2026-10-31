@@ -28,7 +28,7 @@ use crate::inbound::widgets::hint;
 use crate::inbound::widgets::info::InfoPopup;
 use crate::inbound::widgets::menu::{Menu, MenuItem};
 use crate::inbound::widgets::text_input::TextInput;
-use crate::inbound::widgets::toast::ToastKind;
+use crate::inbound::widgets::toast::{self, ToastKind};
 use crate::outbound::account::Account;
 
 /// The key the server stores the first-deck hint under.
@@ -893,14 +893,18 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
         }
         Update::OracleTags(tags) => view.oracle_tags = tags,
         Update::Fixed { deck_id, message } => {
-            cx.toast(ToastKind::Info, message);
+            cx.toast_for(ToastKind::Info, message, toast::QUICK);
             if view.profile.id == deck_id {
                 view.reload(cx);
             }
         }
         Update::Error(message) => cx.toast(ToastKind::Error, message),
         Update::Cloned { profile } => {
-            cx.toast(ToastKind::Info, format!("Cloned as \"{}\"", profile.name));
+            cx.toast_for(
+                ToastKind::Info,
+                format!("Cloned as \"{}\"", profile.name),
+                toast::QUICK,
+            );
             if on_top {
                 replace_with(cx, *profile);
             }
@@ -923,9 +927,11 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
             if view.profile.id == deck_id {
                 view.share_token = None;
             }
-            cx.toast(ToastKind::Info, "Link disabled".to_owned());
+            cx.toast_for(ToastKind::Info, "Link disabled".to_owned(), toast::QUICK);
         }
-        Update::SkipsCleared => cx.toast(ToastKind::Info, "Skips cleared".to_owned()),
+        Update::SkipsCleared => {
+            cx.toast_for(ToastKind::Info, "Skips cleared".to_owned(), toast::QUICK);
+        }
         Update::Deleted(deck_id) => {
             if on_top && view.profile.id == deck_id {
                 cx.back();
@@ -937,7 +943,7 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
 /// Copies `text` to the clipboard and says `done`, or says it could not.
 pub(crate) fn copy(cx: &mut Context<'_>, text: &str, done: &str) {
     if crate::inbound::widgets::clipboard::copy(text).is_ok() {
-        cx.toast(ToastKind::Info, done.to_owned());
+        cx.toast_for(ToastKind::Info, done.to_owned(), toast::QUICK);
     } else {
         cx.toast(ToastKind::Error, format!("Could not copy {text}"));
     }

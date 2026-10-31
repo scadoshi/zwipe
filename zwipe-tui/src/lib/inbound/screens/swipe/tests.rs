@@ -95,6 +95,12 @@ fn swipes_send_their_calls_and_toast() {
         last_toast(&harness),
         (ToastKind::Info, "Skipped".to_owned())
     );
+    let skipped = harness.app.shared.toasts.items().last().unwrap();
+    assert_eq!(
+        skipped.expires_at.duration_since(skipped.shown_at),
+        crate::inbound::widgets::toast::QUICK,
+        "a routine swipe toast is quick"
+    );
     harness.press(KeyCode::Char('m'));
     assert_eq!(
         last_toast(&harness),
