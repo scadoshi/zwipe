@@ -2,6 +2,6 @@
 //! hero beside its form on a wide window.
 
 pub mod forgot_password;
-mod hero;
+pub mod hero;
 pub mod login;
 pub mod register;

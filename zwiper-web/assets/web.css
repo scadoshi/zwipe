@@ -676,3 +676,87 @@ body {
         display: none;
     }
 }
+
+/* ---- Home ---- */
+
+/* Below the breakpoint the pair is the app's stack: the panels are the home
+   column's own children. */
+.web-home-pair {
+    display: contents;
+}
+
+.web-home-pair > :last-child {
+    margin-bottom: auto;
+}
+
+.web-flavor-image {
+    display: none;
+}
+
+@media (min-width: 900px) {
+    /* The hero spans the top: the mark on the left, the figures and their
+       tags on the right. */
+    .web-home .home-hero {
+        max-width: 56rem;
+    }
+
+    .web-home .home-hero .hero-head {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        column-gap: 2.5rem;
+        row-gap: 1rem;
+        align-items: center;
+    }
+
+    .web-home .home-hero .logo {
+        grid-row: span 2;
+        font-size: 0.85rem;
+    }
+
+    /* Under it, the color map and the featured flavor side by side. */
+    .web-home-pair {
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        gap: var(--panel-gap);
+        width: 100%;
+        max-width: 56rem;
+        padding: 0 1rem;
+        box-sizing: border-box;
+        margin-bottom: auto;
+    }
+
+    .web-home-pair > .home-flavor {
+        flex: 1 1 0;
+        width: auto;
+        max-width: none;
+        margin-top: var(--panel-gap);
+    }
+
+    /* The flavor card's image beside its quote, which the phone keeps
+       behind Image. */
+    .web-flavor-body {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 1rem 1rem 0;
+    }
+
+    .web-flavor-image {
+        display: block;
+        width: 9rem;
+        flex: none;
+        border-radius: 4.75% / 3.5%;
+        animation: flavor-enter 0.3s ease-out 0.1s backwards;
+    }
+
+    .web-flavor-body .flavor-quote {
+        flex: 1;
+        text-align: left;
+    }
+
+    /* The sidebar holds Decks, Account and Config. */
+    .web-screen > .action-bar.web-home-actions {
+        display: none;
+    }
+}

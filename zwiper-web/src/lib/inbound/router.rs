@@ -9,8 +9,9 @@ use crate::inbound::screens::auth::login::Login;
 use crate::inbound::screens::auth::register::Register;
 use crate::inbound::screens::changelog::Changelog;
 use crate::inbound::screens::config::Config;
+use crate::inbound::screens::home::Home;
 use crate::inbound::screens::placeholders::{
-    Activity, AddDeckCard, CommanderMaybeboard, CreateDeck, DeckList, EditDeck, ExportDeck, Home,
+    Activity, AddDeckCard, CommanderMaybeboard, CreateDeck, DeckList, EditDeck, ExportDeck,
     ImportDeck, NotFound, Playstyle, RemoveDeckCard, ViewDeck, ViewDeckCard,
 };
 use crate::inbound::screens::privacy_policy::PrivacyPolicy;

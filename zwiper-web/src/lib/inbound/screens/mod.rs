@@ -4,6 +4,7 @@ pub mod account;
 pub mod auth;
 pub mod changelog;
 pub mod config;
+pub mod home;
 pub mod oracle_tag_examples;
 pub mod placeholders;
 pub mod privacy_policy;

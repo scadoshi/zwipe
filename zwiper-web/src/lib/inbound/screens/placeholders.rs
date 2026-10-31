@@ -26,12 +26,6 @@ fn Placeholder(title: String, #[props(default)] deck_id: Option<Uuid>) -> Elemen
     }
 }
 
-/// Home, not built yet.
-#[component]
-pub fn Home() -> Element {
-    rsx! { Placeholder { title: "Home" } }
-}
-
 /// Activity, not built yet.
 #[component]
 pub fn Activity() -> Element {
