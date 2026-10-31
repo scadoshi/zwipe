@@ -324,7 +324,7 @@ fn quick_add_waits_searches_and_adds() {
     );
     harness.type_text("o");
     assert_eq!(view(&harness).quick.results, Dropdown::Searching);
-    let generation = view(&harness).quick.generation;
+    let generation = view(&harness).quick.generation.current();
     harness.clear();
     harness.apply(Update::QuickDue {
         deck_id,

@@ -21,6 +21,7 @@ use zwipe_core::domain::deck::{
 use zwipe_core::http::contracts::deck::{HttpCreateDeckProfile, HttpUpdateDeckProfile};
 use zwipe_core::http::helpers::Patch;
 use zwipe_ui::deck::form::{self, Slot};
+use zwipe_ui::generation::{Generation, Ticket};
 use zwipe_ui::timing;
 
 use self::pickers::{FormatPicker, OraclePicker, TagPicker};
@@ -81,8 +82,8 @@ pub(crate) struct CardField {
     /// The chosen card's name, or the query being typed.
     pub(crate) input: TextInput,
     pub(crate) filter_on: bool,
-    /// Counts searches so a reply to an older one is dropped.
-    pub(crate) generation: u64,
+    /// The search generation: each keystroke and pick takes a new ticket, so a reply to an older search is dropped.
+    pub(crate) generation: Generation,
     pub(crate) dropdown: Dropdown,
     /// The highlighted hit.
     pub(crate) highlighted: usize,
@@ -96,7 +97,7 @@ impl Default for CardField {
             card: None,
             input: TextInput::default().with_placeholder("Not set"),
             filter_on: true,
-            generation: 0,
+            generation: Generation::default(),
             dropdown: Dropdown::Hidden,
             highlighted: 0,
             swipe_filter: CardQueryBuilder::new(),
@@ -114,7 +115,7 @@ impl CardField {
         self.input.set_value(&name);
         self.card = card;
         self.dropdown = Dropdown::Hidden;
-        self.generation = self.generation.saturating_add(1);
+        self.generation.next_ticket();
     }
 
     pub(crate) fn card_id(&self) -> Option<Uuid> {
@@ -485,20 +486,14 @@ impl DeckForm {
     /// Restarts a slot's search for what is typed: hidden below the slot's minimum, else "Searching..." until the pause passes.
     pub(crate) fn search(&mut self, slot: Slot, cx: &mut Context<'_>) {
         let field = self.card_mut(slot);
-        field.generation = field.generation.saturating_add(1);
+        let generation = field.generation.next_ticket();
         field.highlighted = 0;
         if field.input.len() < slot.min_chars() {
             field.dropdown = Dropdown::Hidden;
             return;
         }
         field.dropdown = Dropdown::Searching;
-        cx.request(
-            Request::Debounce {
-                slot,
-                generation: field.generation,
-            }
-            .into(),
-        );
+        cx.request(Request::Debounce { slot, generation }.into());
     }
 
     /// The query for a slot's search once the pause has passed.
@@ -793,11 +788,11 @@ pub(crate) enum Request {
     /// Waits out the typing pause before a slot's search.
     Debounce {
         slot: Slot,
-        generation: u64,
+        generation: Ticket,
     },
     Search {
         slot: Slot,
-        generation: u64,
+        generation: Ticket,
         query: Box<CardQuery>,
     },
     /// Looks for the commander's named partner.
@@ -817,7 +812,7 @@ pub(crate) enum Request {
     },
     /// A page of the swipe picker's pile.
     SwipePage {
-        generation: u64,
+        generation: Ticket,
         query: Box<CardQuery>,
     },
     MaybeboardAdd(Uuid),
@@ -851,16 +846,16 @@ pub(crate) enum Update {
     OracleCatalog(Vec<OracleTag>),
     Debounced {
         slot: Slot,
-        generation: u64,
+        generation: Ticket,
     },
     Results {
         slot: Slot,
-        generation: u64,
+        generation: Ticket,
         cards: Vec<Card>,
     },
     SearchFailed {
         slot: Slot,
-        generation: u64,
+        generation: Ticket,
     },
     PartnerHits {
         commander_id: Uuid,
@@ -877,7 +872,7 @@ pub(crate) enum Update {
     Updated,
     SaveFailed(String),
     SwipePage {
-        generation: u64,
+        generation: Ticket,
         cards: Vec<Card>,
     },
     MaybeboardAdded,
@@ -1103,14 +1098,14 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
             cards,
         } => {
             let field = form.card_mut(slot);
-            if field.generation == generation {
+            if field.generation.is_current(generation) {
                 field.dropdown = Dropdown::Results(cards);
                 field.highlighted = 0;
             }
         }
         Update::SearchFailed { slot, generation } => {
             let field = form.card_mut(slot);
-            if field.generation == generation {
+            if field.generation.is_current(generation) {
                 field.dropdown = Dropdown::Hidden;
             }
         }
@@ -1161,8 +1156,8 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
 }
 
 /// Runs the slot's search once typing settles, unless a newer keystroke superseded it.
-fn debounced(form: &mut DeckForm, slot: Slot, generation: u64, cx: &mut Context<'_>) {
-    if form.card(slot).generation != generation {
+fn debounced(form: &mut DeckForm, slot: Slot, generation: Ticket, cx: &mut Context<'_>) {
+    if !form.card(slot).generation.is_current(generation) {
         return;
     }
     match form.search_query(slot) {

@@ -9,6 +9,7 @@ use zwipe_core::domain::deck::Format;
 use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_ui::deck::form::{self, Slot};
 use zwipe_ui::filter::draft::SheetConfig;
+use zwipe_ui::generation::{Generation, Ticket};
 use zwipe_ui::hint::{Block, HintContent, SwipeSelectMode, one_time};
 use zwipe_ui::stack::Direction;
 use zwipe_ui::{filter, timing};
@@ -46,8 +47,8 @@ pub(crate) struct SwipePicker {
     pub(crate) loading: bool,
     /// An empty page came back, so there are no more.
     pub(crate) exhausted: bool,
-    /// Counts refreshes so a page for an older pile is dropped.
-    pub(crate) generation: u64,
+    /// The pile generation: each refresh takes a new ticket, so a page for an older pile is dropped. A next page continues it.
+    pub(crate) generation: Generation,
     /// The user's filter the slot's rule goes on top of.
     pub(crate) filter: CardQueryBuilder,
     /// The card filter sheet, while it is open over the pile.
@@ -69,7 +70,7 @@ impl SwipePicker {
             offset: 0,
             loading: false,
             exhausted: false,
-            generation: 0,
+            generation: Generation::default(),
             filter: form.card(slot).swipe_filter.clone(),
             sheet: None,
             motion: None,
@@ -144,7 +145,7 @@ impl SwipePicker {
         self.loading = true;
         cx.request(
             Request::SwipePage {
-                generation: self.generation,
+                generation: self.generation.current(),
                 query: Box::new(query),
             }
             .into(),
@@ -152,8 +153,8 @@ impl SwipePicker {
     }
 
     /// Takes a page: new cards join the pile, and an empty page ends it.
-    pub(crate) fn take_page(&mut self, generation: u64, cards: Vec<Card>, cx: &mut Context<'_>) {
-        if generation != self.generation {
+    pub(crate) fn take_page(&mut self, generation: Ticket, cards: Vec<Card>, cx: &mut Context<'_>) {
+        if !self.generation.is_current(generation) {
             return;
         }
         self.loading = false;
@@ -176,7 +177,7 @@ impl SwipePicker {
 
     /// Starts the pile over from the top.
     pub(crate) fn refresh(&mut self, cx: &mut Context<'_>) {
-        self.generation = self.generation.saturating_add(1);
+        self.generation.next_ticket();
         self.cards.clear();
         self.index = 0;
         self.history.clear();

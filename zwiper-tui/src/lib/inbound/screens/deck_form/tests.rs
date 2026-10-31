@@ -3,7 +3,9 @@ use zwipe_core::domain::deck::{DeckOtherTag, MAX_DECK_ORACLE_TAGS};
 
 use super::*;
 use crate::inbound::event_loop::harness::Harness;
-use crate::test_support::{card, deck, deck_profile, render, screen_text, user, word_colors};
+use crate::test_support::{
+    card, deck, deck_profile, render, screen_text, ticket, user, word_colors,
+};
 
 /// Create over the deck list, with its hint closed and nothing queued.
 fn create() -> Harness {
@@ -207,7 +209,7 @@ fn the_commander_search_waits_for_three_letters_and_the_pause() {
         form(&harness).card(Slot::Commander).dropdown,
         Dropdown::Searching
     );
-    let generation = form(&harness).card(Slot::Commander).generation;
+    let generation = form(&harness).card(Slot::Commander).generation.current();
     assert_eq!(
         harness.pending().last(),
         Some(&screens::Request::DeckForm(Request::Debounce {
@@ -218,7 +220,7 @@ fn the_commander_search_waits_for_three_letters_and_the_pause() {
     harness.clear();
     harness.apply(Update::Debounced {
         slot: Slot::Commander,
-        generation: generation - 1,
+        generation: ticket(0),
     });
     assert_eq!(harness.pending(), [], "a stale pause is dropped");
     harness.apply(Update::Debounced {
@@ -451,7 +453,7 @@ fn the_swipe_picker_skips_picks_saves_and_undoes() {
     let Some(Overlay::Swipe(picker)) = &form(&harness).overlay else {
         panic!("the swipe picker is not open");
     };
-    let generation = picker.generation;
+    let generation = picker.generation.current();
     assert!(matches!(
         harness.pending(),
         [screens::Request::DeckForm(Request::SwipePage { .. }), ..]
@@ -532,7 +534,7 @@ fn the_swipe_pickers_filter_opens_the_filter_sheet_and_narrows_the_pile() {
         harness.pending().iter().any(|r| matches!(
             r,
             screens::Request::DeckForm(Request::SwipePage { generation, query })
-                if *generation == applied.generation && query.criteria().name_contains() == Some("elf")
+                if applied.generation.is_current(*generation) && query.criteria().name_contains() == Some("elf")
         )),
         "the pile starts over under the filter: {:?}",
         harness.pending()
@@ -733,7 +735,7 @@ fn the_swipe_picker_flies_skipped_and_saved_cards_off_and_undo_brings_them_back(
     let Some(Overlay::Swipe(picker)) = &form(&harness).overlay else {
         panic!("the swipe picker is not open");
     };
-    let generation = picker.generation;
+    let generation = picker.generation.current();
     harness.apply(Update::SwipePage {
         generation,
         cards: vec![card("Atraxa"), card("Krenko"), card("Edgar")],

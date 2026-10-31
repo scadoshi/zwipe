@@ -11,6 +11,7 @@ use zwipe_core::domain::card::scryfall_data::universe::UbFranchiseView;
 use zwipe_core::domain::user::hints::HINT_CONFIG;
 use zwipe_core::domain::user::preferences::{PipStyle, UserPreferences};
 use zwipe_core::http::contracts::user::HttpUpdatePreferences;
+use zwipe_ui::generation::{Generation, Ticket};
 
 use super::Screen;
 use crate::domain::theme::{self, Palette, PickerRow};
@@ -238,8 +239,8 @@ pub(crate) struct ConfigView {
     /// Whether the preferences loaded; the Universes Beyond controls wait on it.
     pub(crate) loaded: bool,
     pub(crate) focus: usize,
-    /// Each toggle's request count: Dark/Light, pips, Universes Beyond.
-    pub(crate) seqs: [u64; 3],
+    /// Each toggle's save generation: Dark/Light, pips, Universes Beyond.
+    pub(crate) seqs: [Generation; 3],
     pub(crate) sheet: Option<Sheet>,
     /// The franchises the exceptions can name, as the server lists them; empty until they load.
     pub(crate) franchises: Vec<UbFranchiseView>,
@@ -254,7 +255,7 @@ impl ConfigView {
             shown,
             loaded: false,
             focus: 0,
-            seqs: [0; 3],
+            seqs: [Generation::default(); 3],
             sheet: None,
             franchises: Vec::new(),
             exceptions_opened: false,
@@ -285,22 +286,21 @@ impl ConfigView {
         }
     }
 
-    /// Shows a toggle at once and numbers it; returns its count.
-    pub(crate) fn begin(&mut self, change: &PreferenceChange) -> u64 {
+    /// Shows a toggle at once and gives it a ticket; `None` for a change that is no toggle.
+    pub(crate) fn begin(&mut self, change: &PreferenceChange) -> Option<Ticket> {
         change.apply(&mut self.shown);
-        let Some(slot) = change.toggle().and_then(|i| self.seqs.get_mut(i)) else {
-            return 0;
-        };
-        *slot = slot.saturating_add(1);
-        *slot
-    }
-
-    /// Whether `seq` is still the latest tap of `change`'s toggle.
-    pub(crate) fn latest(&self, change: &PreferenceChange, seq: u64) -> bool {
         change
             .toggle()
-            .and_then(|i| self.seqs.get(i))
-            .is_none_or(|latest| *latest == seq)
+            .and_then(|i| self.seqs.get_mut(i))
+            .map(Generation::next_ticket)
+    }
+
+    /// Whether `seq` is still the latest tap of `change`'s toggle. A change that is no toggle is always the latest.
+    pub(crate) fn latest(&self, change: &PreferenceChange, seq: Option<Ticket>) -> bool {
+        match (change.toggle().and_then(|i| self.seqs.get(i)), seq) {
+            (Some(generation), Some(ticket)) => generation.is_current(ticket),
+            _ => true,
+        }
     }
 }
 
@@ -311,7 +311,7 @@ pub(crate) enum Request {
     LoadPreferences,
     /// Sends a change; `undo` puts back what it replaced if it fails.
     Save {
-        seq: u64,
+        seq: Option<Ticket>,
         change: PreferenceChange,
         undo: PreferenceChange,
     },
@@ -336,12 +336,12 @@ pub(crate) enum Update {
     Preferences(Box<UserPreferences>),
     PreferencesUnavailable,
     Saved {
-        seq: u64,
+        seq: Option<Ticket>,
         change: PreferenceChange,
         preferences: Box<UserPreferences>,
     },
     SaveFailed {
-        seq: u64,
+        seq: Option<Ticket>,
         undo: PreferenceChange,
         message: String,
     },

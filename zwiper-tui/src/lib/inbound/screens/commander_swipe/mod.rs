@@ -22,6 +22,7 @@ use zwipe_core::domain::deck::format::Format;
 use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_core::http::contracts::suggestions::HttpCommanderSuggestion;
 use zwipe_ui::filter::draft::SheetConfig;
+use zwipe_ui::generation::{Generation, Ticket};
 use zwipe_ui::hint::{HintContent, SwipeSelectMode, one_time};
 use zwipe_ui::stack::Direction;
 use zwipe_ui::{filter, playstyle, timing};
@@ -94,8 +95,8 @@ pub(crate) enum Swiped {
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct Search {
     pub(crate) exclude: HashSet<Uuid>,
-    /// The newest search's ticket; only its pages land.
-    pub(crate) ticket: u64,
+    /// The search generation; only the newest search's pages land. A next page continues it.
+    pub(crate) ticket: Generation,
     /// The next page's offset.
     pub(crate) offset: u32,
     /// The server ran out.
@@ -169,7 +170,7 @@ impl CommanderSwipeView {
             Deal::Suggested(pile) => Mode::Suggested(pile),
             Deal::Commander { exclude } => Mode::Commander(Search {
                 exclude,
-                ticket: 0,
+                ticket: Generation::default(),
                 offset: 0,
                 exhausted: false,
                 loading: false,
@@ -449,7 +450,7 @@ impl CommanderSwipeView {
                 search.offset = 0;
                 search.exhausted = false;
                 search.pulls = 0;
-                search.ticket = search.ticket.wrapping_add(1);
+                search.ticket.next_ticket();
                 search.loading = false;
                 load_more(search, cx);
             }
@@ -464,11 +465,11 @@ impl CommanderSwipeView {
     }
 
     /// Takes a page: drops cards already dealt or excluded, and pulls ahead when exclusions emptied a page the server had more behind.
-    fn land(&mut self, ticket: u64, offset: u32, page: Vec<Card>, cx: &mut Context<'_>) {
+    fn land(&mut self, ticket: Ticket, offset: u32, page: Vec<Card>, cx: &mut Context<'_>) {
         let Mode::Commander(search) = &mut self.mode else {
             return;
         };
-        if ticket != search.ticket || offset != search.offset {
+        if !search.ticket.is_current(ticket) || offset != search.offset {
             return;
         }
         search.loading = false;
@@ -512,7 +513,7 @@ fn load_more(search: &mut Search, cx: &mut Context<'_>) {
     search.loading = true;
     cx.request(
         Request::Search {
-            ticket: search.ticket,
+            ticket: search.ticket.current(),
             offset: search.offset,
             filter: search.filter.clone(),
         }
@@ -552,7 +553,7 @@ pub(crate) fn reopen_hint(view: &CommanderSwipeView, cx: &mut Context<'_>) {
 pub(crate) enum Request {
     /// One page of commanders under a ticket, narrowed by the card filter.
     Search {
-        ticket: u64,
+        ticket: Ticket,
         offset: u32,
         filter: Box<CardQueryBuilder>,
     },
@@ -583,13 +584,13 @@ impl Request {
 #[derive(Debug)]
 pub(crate) enum Update {
     Page {
-        ticket: u64,
+        ticket: Ticket,
         offset: u32,
         cards: Vec<Card>,
     },
     /// A page failed; the swipe stops loading and keeps what it has.
     SearchFailed {
-        ticket: u64,
+        ticket: Ticket,
     },
     Saved,
     Unsaved,
@@ -711,7 +712,7 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
         Update::SearchFailed { ticket } => {
             if let Some(view) = nav.find_mut(pick)
                 && let Mode::Commander(search) = &mut view.mode
-                && search.ticket == ticket
+                && search.ticket.is_current(ticket)
             {
                 search.loading = false;
             }

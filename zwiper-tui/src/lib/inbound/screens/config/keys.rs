@@ -166,7 +166,7 @@ fn handle_exceptions(
             let undo = change.undo(&view.shown);
             cx.request(
                 Request::Save {
-                    seq: 0,
+                    seq: None,
                     change,
                     undo,
                 }

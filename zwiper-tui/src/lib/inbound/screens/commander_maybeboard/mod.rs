@@ -26,6 +26,7 @@ use zwipe_core::domain::card::search_card::cards::Cards;
 use zwipe_core::domain::deck::format::Format;
 use zwipe_core::domain::user::models::hints::HINT_COMMANDER_MAYBEBOARD;
 use zwipe_ui::filter::draft::SheetConfig;
+use zwipe_ui::generation::{Generation, Ticket};
 use zwipe_ui::{filter, timing};
 
 use super::card_sheets::filter::{FilterSheet, SheetOutcome};
@@ -114,8 +115,8 @@ pub(crate) struct QuickAdd {
     pub(crate) query: TextInput,
     /// Whether keys type into the box.
     pub(crate) typing: bool,
-    /// The newest query edit's ticket; only its debounce and search land.
-    pub(crate) ticket: u64,
+    /// The query edit generation; only the newest ticket's debounce and search land.
+    pub(crate) ticket: Generation,
     /// A search for the current query is waiting or out.
     pub(crate) searching: bool,
     /// The last search's commanders, saved ones included.
@@ -129,7 +130,7 @@ impl Default for QuickAdd {
         Self {
             query: TextInput::default().with_placeholder(PLACEHOLDER),
             typing: false,
-            ticket: 0,
+            ticket: Generation::default(),
             searching: false,
             results: Vec::new(),
             cursor: 0,
@@ -146,8 +147,8 @@ pub(crate) struct MaybeboardView {
     pub(crate) load_failed: bool,
     /// The saved commanders, newest save first.
     pub(crate) entries: Vec<Card>,
-    /// The newest load's ticket; only its reply lands.
-    pub(crate) ticket: u64,
+    /// The load generation; only the newest ticket's reply lands.
+    pub(crate) ticket: Generation,
     /// Whether the newest load is still out.
     pub(crate) load_out: bool,
     /// How many decks the user owns, once fetched, for the create gate.
@@ -173,7 +174,7 @@ impl MaybeboardView {
             is_loading: true,
             load_failed: false,
             entries: Vec::new(),
-            ticket: 0,
+            ticket: Generation::default(),
             load_out: false,
             decks: None,
             quick: QuickAdd::default(),
@@ -325,14 +326,9 @@ impl MaybeboardView {
 
     /// Starts a new load whose reply replaces any still out.
     pub(crate) fn refetch(&mut self, cx: &mut Context<'_>) {
-        self.ticket = self.ticket.wrapping_add(1);
+        let ticket = self.ticket.next_ticket();
         self.load_out = true;
-        cx.request(
-            Request::Load {
-                ticket: self.ticket,
-            }
-            .into(),
-        );
+        cx.request(Request::Load { ticket }.into());
     }
 
     /// Starts again a load that went out before a local edit.
@@ -344,15 +340,10 @@ impl MaybeboardView {
 
     /// Takes the query after an edit: a new ticket, then either the results cleared (too short) or a debounce before searching.
     pub(crate) fn query_changed(&mut self, cx: &mut Context<'_>) {
-        self.quick.ticket = self.quick.ticket.wrapping_add(1);
+        let ticket = self.quick.ticket.next_ticket();
         if self.searching_catalog() {
             self.quick.searching = true;
-            cx.request(
-                Request::Debounce {
-                    ticket: self.quick.ticket,
-                }
-                .into(),
-            );
+            cx.request(Request::Debounce { ticket }.into());
         } else {
             self.quick.searching = false;
             self.quick.results.clear();
@@ -440,13 +431,13 @@ pub(crate) fn search_query(query: &str) -> CardQueryBuilder {
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum Request {
     /// The saved list, under a ticket.
-    Load { ticket: u64 },
+    Load { ticket: Ticket },
     /// The user's decks, for the create gate.
     DeckProfiles,
     /// Waits out the debounce for the query edit with this ticket.
-    Debounce { ticket: u64 },
+    Debounce { ticket: Ticket },
     /// Searches commanders by name for the query edit with this ticket.
-    Search { ticket: u64, query: String },
+    Search { ticket: Ticket, query: String },
     /// Saves a commander from the result chips.
     Add(Box<Card>),
     /// Takes a commander off by oracle id.
@@ -474,26 +465,26 @@ impl Request {
 #[derive(Debug)]
 pub(crate) enum Update {
     Loaded {
-        ticket: u64,
+        ticket: Ticket,
         cards: Vec<Card>,
     },
     LoadFailed {
-        ticket: u64,
+        ticket: Ticket,
         message: String,
     },
     /// How many decks the user owns.
     DeckProfiles(usize),
     /// The debounce for this query edit is over.
     Debounced {
-        ticket: u64,
+        ticket: Ticket,
     },
     Searched {
-        ticket: u64,
+        ticket: Ticket,
         cards: Vec<Card>,
     },
     /// A search failed, quietly; the old results stay.
     SearchFailed {
-        ticket: u64,
+        ticket: Ticket,
     },
     Added(Box<Card>),
     Removed(Uuid),
@@ -638,7 +629,7 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
     let view = nav.find_mut(pick);
     match update {
         Update::Loaded { ticket, cards } => {
-            if let Some(view) = view.filter(|v| v.ticket == ticket) {
+            if let Some(view) = view.filter(|v| v.ticket.is_current(ticket)) {
                 view.entries = cards;
                 view.load_failed = false;
                 view.is_loading = false;
@@ -650,7 +641,7 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
             cx.shared
                 .toasts
                 .push_for(ToastKind::Error, message, toast::NORMAL);
-            if let Some(view) = view.filter(|v| v.ticket == ticket) {
+            if let Some(view) = view.filter(|v| v.ticket.is_current(ticket)) {
                 view.load_failed = view.entries.is_empty();
                 view.is_loading = false;
                 view.load_out = false;
@@ -663,13 +654,13 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
             }
         }
         Update::Debounced { ticket } => {
-            if let Some(view) = view.filter(|v| v.quick.ticket == ticket) {
+            if let Some(view) = view.filter(|v| v.quick.ticket.is_current(ticket)) {
                 let query = view.quick.query.value().trim().to_owned();
                 cx.request(Request::Search { ticket, query }.into());
             }
         }
         Update::Searched { ticket, cards } => {
-            if let Some(view) = view.filter(|v| v.quick.ticket == ticket) {
+            if let Some(view) = view.filter(|v| v.quick.ticket.is_current(ticket)) {
                 view.quick.results = cards;
                 view.quick.searching = false;
                 view.quick.cursor = 0;
@@ -677,7 +668,7 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
             }
         }
         Update::SearchFailed { ticket } => {
-            if let Some(view) = view.filter(|v| v.quick.ticket == ticket) {
+            if let Some(view) = view.filter(|v| v.quick.ticket.is_current(ticket)) {
                 view.quick.searching = false;
                 view.settle_focus();
             }

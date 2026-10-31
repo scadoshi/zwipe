@@ -20,7 +20,9 @@ use crate::inbound::event_loop::harness::Harness;
 use crate::inbound::screens::printings::Mode;
 use crate::inbound::widgets::toast::Toast;
 use crate::outbound::account::SessionFile;
-use crate::test_support::{card, create_opened_with, render, screen_text, user};
+use crate::test_support::{
+    card, create_opened_with, generation_at, render, screen_text, ticket, user,
+};
 
 /// The app's copy for this hint, as it reads.
 const HINT: &str = "Your colors, card roles and top oracle tags, read from every deck you own in any format\n• Create deck begins a deck with that commander\n• Maybeboard saves it to your commander maybeboard\n• Remove hides it for a week and pulls the next one up\n• Swipe deals the same ranking: right starts a deck, up saves, left skips it\n• Show narrows the list to one color identity\nBelow them, your top 10 commanders ranked against all your decks, best fit first. Swipe keeps going down the same ranking";
@@ -155,7 +157,7 @@ fn on_playstyle(verified: bool) -> Harness {
 fn loaded() -> Harness {
     let mut harness = on_playstyle(true);
     harness.apply(Update::Loaded {
-        ticket: 1,
+        ticket: ticket(1),
         found: found(held()),
     });
     view_mut(&mut harness).map_opened = Instant::now().checked_sub(Duration::from_secs(5));
@@ -229,7 +231,7 @@ fn p_on_home_opens_playstyle_and_asks_for_everything_once() {
     assert_eq!(
         harness.pending(),
         [
-            Request::Load { ticket: 1 }.into(),
+            Request::Load { ticket: ticket(1) }.into(),
             Request::DeckProfiles.into(),
             oracle_tags::Request::Catalog.into(),
             screens::Request::MarkHintShown(HINT_SUGGESTED_COMMANDERS.to_owned()),
@@ -336,14 +338,14 @@ fn summary_shows_decks_and_the_top_colors() {
 #[test]
 fn an_old_ticket_never_lands() {
     let mut harness = loaded();
-    view_mut(&mut harness).ticket = 2;
+    view_mut(&mut harness).ticket = generation_at(2);
     harness.apply(Update::Loaded {
-        ticket: 1,
+        ticket: ticket(1),
         found: found(vec![suggestion("Stale", &[Green])]),
     });
     assert_ne!(names(&harness), ["Stale"], "the older reply is dropped");
     harness.apply(Update::Loaded {
-        ticket: 2,
+        ticket: ticket(2),
         found: found(vec![suggestion("Fresh", &[Green])]),
     });
     assert_eq!(names(&harness), ["Fresh"]);
@@ -354,7 +356,7 @@ fn an_old_ticket_never_lands() {
 fn a_failed_first_load_says_so_and_a_failed_refetch_keeps_the_rows() {
     let mut harness = on_playstyle(true);
     harness.apply(Update::LoadFailed {
-        ticket: 1,
+        ticket: ticket(1),
         message: "The server is down".to_owned(),
     });
     assert!(view(&harness).load_failed);
@@ -369,9 +371,9 @@ fn a_failed_first_load_says_so_and_a_failed_refetch_keeps_the_rows() {
     );
 
     let mut harness = loaded();
-    view_mut(&mut harness).ticket = 2;
+    view_mut(&mut harness).ticket = generation_at(2);
     harness.apply(Update::LoadFailed {
-        ticket: 2,
+        ticket: ticket(2),
         message: "Offline".to_owned(),
     });
     assert!(!view(&harness).load_failed, "rows on screen stay");
@@ -382,7 +384,7 @@ fn a_failed_first_load_says_so_and_a_failed_refetch_keeps_the_rows() {
 fn no_decks_is_a_cold_start() {
     let mut harness = on_playstyle(true);
     harness.apply(Update::Loaded {
-        ticket: 1,
+        ticket: ticket(1),
         found: Box::new(HttpCommanderSuggestions {
             suggestions: Vec::new(),
             deck_count: 0,
@@ -400,7 +402,7 @@ fn no_decks_is_a_cold_start() {
 fn nothing_suggested_says_so() {
     let mut harness = on_playstyle(true);
     harness.apply(Update::Loaded {
-        ticket: 1,
+        ticket: ticket(1),
         found: found(Vec::new()),
     });
     assert!(render_text(&harness, 110, 90).contains(NO_SUGGESTIONS));
@@ -482,7 +484,7 @@ fn a_drop_refetches_when_the_list_runs_short_or_a_load_is_out() {
     harness.apply(Update::Dismissed(first));
     assert_eq!(
         harness.pending(),
-        [Request::Load { ticket: 2 }.into()],
+        [Request::Load { ticket: ticket(2) }.into()],
         "a load from before the drop would bring the row back"
     );
     harness.clear();
@@ -495,7 +497,7 @@ fn a_drop_refetches_when_the_list_runs_short_or_a_load_is_out() {
     harness.apply(Update::Maybeboarded(red));
     assert_eq!(
         harness.pending(),
-        [Request::Load { ticket: 3 }.into()],
+        [Request::Load { ticket: ticket(3) }.into()],
         "nine red left is short"
     );
     harness.clear();
@@ -515,7 +517,7 @@ fn create_deck_opens_with_the_card_or_warns_at_the_deck_limit() {
 
     let mut harness = on_playstyle(false);
     harness.apply(Update::Loaded {
-        ticket: 1,
+        ticket: ticket(1),
         found: found(held()),
     });
     harness.apply(Update::DeckProfiles(1));
@@ -614,7 +616,10 @@ fn clear_skips_asks_first_then_clears_and_refetches() {
         toasts(&harness).last(),
         Some(&(ToastKind::Info, SKIPS_CLEARED.to_owned()))
     );
-    assert_eq!(harness.pending(), [Request::Load { ticket: 2 }.into()]);
+    assert_eq!(
+        harness.pending(),
+        [Request::Load { ticket: ticket(2) }.into()]
+    );
     harness.press(KeyCode::Char('M'));
     harness.press(KeyCode::Esc);
     assert_eq!(view(&harness).overlay, None);
@@ -774,7 +779,7 @@ async fn a_rejected_session_ends_it() {
     let file = SessionFile::at(std::env::temp_dir().join("zwiper-tui-tests-no-session.json"));
     let account = Arc::new(Account::new(client, file));
     for request in [
-        Request::Load { ticket: 1 },
+        Request::Load { ticket: ticket(1) },
         Request::DeckProfiles,
         Request::ClearSkips,
     ] {
@@ -808,7 +813,7 @@ fn tiny_terminals_do_not_panic() {
         render(&harness.app, w, h);
     }
     harness.apply(Update::Loaded {
-        ticket: 1,
+        ticket: ticket(1),
         found: found(held()),
     });
     for (w, h) in [(8, 3), (1, 1), (20, 6)] {

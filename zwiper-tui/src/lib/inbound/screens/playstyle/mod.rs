@@ -25,6 +25,7 @@ use zwipe_core::http::contracts::suggestions::{
     HttpBuilderProfile, HttpCommanderSuggestion, HttpCommanderSuggestions, HttpStaple,
 };
 use zwipe_ui::activity::Bar;
+use zwipe_ui::generation::{Generation, Ticket};
 use zwipe_ui::playstyle::{self, HELD_SIZE, LIST_SIZE, StapleColor, TagRow, of_identity};
 
 use super::{Screen, deck_form, home, oracle_tags};
@@ -271,8 +272,8 @@ pub(crate) struct PlaystyleView {
     pub(crate) entries: Vec<HttpCommanderSuggestion>,
     pub(crate) deck_count: u32,
     pub(crate) profile: Option<HttpBuilderProfile>,
-    /// The newest load's ticket; only its reply lands.
-    pub(crate) ticket: u64,
+    /// The load generation; only the newest ticket's reply lands.
+    pub(crate) ticket: Generation,
     /// Whether the newest load is still out.
     pub(crate) load_out: bool,
     /// How many decks the user owns, once fetched, for the create gate.
@@ -315,7 +316,7 @@ impl PlaystyleView {
             entries: Vec::new(),
             deck_count: 0,
             profile: None,
-            ticket: 0,
+            ticket: Generation::default(),
             load_out: false,
             decks: None,
             identity: None,
@@ -656,14 +657,9 @@ impl PlaystyleView {
 
     /// Starts a new load whose reply replaces any still out.
     pub(crate) fn refetch(&mut self, cx: &mut Context<'_>) {
-        self.ticket = self.ticket.wrapping_add(1);
+        let ticket = self.ticket.next_ticket();
         self.load_out = true;
-        cx.request(
-            Request::Load {
-                ticket: self.ticket,
-            }
-            .into(),
-        );
+        cx.request(Request::Load { ticket }.into());
     }
 
     /// Drops the row with `oracle_id`; the next held suggestion of that identity moves up, and the server is asked again only when the filtered list runs short of ten or a load that predates the drop is still out.
@@ -716,7 +712,7 @@ impl PlaystyleView {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum Request {
     /// The ranking and profile, under a ticket.
-    Load { ticket: u64 },
+    Load { ticket: Ticket },
     /// The user's decks, for the create gate.
     DeckProfiles,
     /// Saves a suggestion to the commander maybeboard by oracle id.
@@ -744,11 +740,11 @@ impl Request {
 #[derive(Debug)]
 pub(crate) enum Update {
     Loaded {
-        ticket: u64,
+        ticket: Ticket,
         found: Box<HttpCommanderSuggestions>,
     },
     LoadFailed {
-        ticket: u64,
+        ticket: Ticket,
         message: String,
     },
     /// How many decks the user owns.
@@ -879,7 +875,7 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
     let view = nav.find_mut(pick);
     match update {
         Update::Loaded { ticket, found } => {
-            if let Some(view) = view.filter(|v| v.ticket == ticket) {
+            if let Some(view) = view.filter(|v| v.ticket.is_current(ticket)) {
                 view.land(*found);
             }
         }
@@ -887,7 +883,7 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
             cx.shared
                 .toasts
                 .push_for(ToastKind::Error, message, toast::NORMAL);
-            if let Some(view) = view.filter(|v| v.ticket == ticket) {
+            if let Some(view) = view.filter(|v| v.ticket.is_current(ticket)) {
                 view.load_failed = view.entries.is_empty();
                 view.is_loading = false;
                 view.load_out = false;

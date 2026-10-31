@@ -14,7 +14,7 @@ use crate::domain::theme::Palette;
 use crate::inbound::event_loop::harness::Harness;
 use crate::inbound::widgets::card_motion::{CardMotion, Phase, Snapshot};
 use crate::inbound::widgets::toast::ToastKind;
-use crate::test_support::{card, deck, deck_profile, render, screen_text, word_colors};
+use crate::test_support::{card, deck, deck_profile, render, screen_text, ticket, word_colors};
 
 fn toasts(harness: &Harness) -> Vec<(ToastKind, String)> {
     harness
@@ -257,7 +257,7 @@ fn the_end_of_results_says_so_and_low_stacks_fetch_more() {
         )),
         "two cards is low"
     );
-    let generation = view(&harness).generation;
+    let generation = view(&harness).generation.current();
     let filter = Box::new(view(&harness).filter.clone());
     harness.apply(Update::Searched {
         deck_id,
@@ -290,10 +290,10 @@ fn an_empty_first_page_explains_synergy_and_a_stale_answer_is_dropped() {
     harness.press(KeyCode::Char('y'));
     assert!(!view(&harness).filter.synergy());
     harness.press(KeyCode::Char('y'));
-    let generation = view(&harness).generation;
+    let generation = view(&harness).generation.current();
     harness.apply(Update::Searched {
         deck_id,
-        generation: generation - 1,
+        generation: ticket(0),
         filter: Box::new(view(&harness).filter.clone()),
         page: Page::First,
         result: Ok(HttpDeckCardSearch {
@@ -328,7 +328,7 @@ fn an_empty_first_page_explains_synergy_and_a_stale_answer_is_dropped() {
 fn the_first_related_card_is_announced_once() {
     let (mut harness, deck_id) = Harness::swiping(Vec::new());
     harness.press(KeyCode::Char('r'));
-    let generation = view(&harness).generation;
+    let generation = view(&harness).generation.current();
     harness.apply(Update::Searched {
         deck_id,
         generation,

@@ -29,6 +29,7 @@ use zwipe_ui::deck_cards::{self, Boards, Burst, Bursts, Display, Write, Zone};
 use zwipe_ui::deck_signals::{self, Crossing};
 use zwipe_ui::filter::draft::SheetConfig;
 use zwipe_ui::filter::picker::Sources;
+use zwipe_ui::generation::{Generation, Ticket};
 use zwipe_ui::stores::filters::FilterScope;
 use zwipe_ui::stores::undo::{self, UndoAction};
 use zwipe_ui::timing;
@@ -77,7 +78,8 @@ pub(crate) enum Item {
 pub(crate) struct QuickAdd {
     pub(crate) input: TextInput,
     pub(crate) focused: bool,
-    pub(crate) generation: u64,
+    /// The search generation: each keystroke takes a new ticket, so an older search's results are dropped.
+    pub(crate) generation: Generation,
     pub(crate) results: Dropdown,
     pub(crate) highlight: usize,
 }
@@ -705,7 +707,7 @@ impl DeckCardsView {
 
     /// A quick add keystroke: closes the dropdown under two characters, else shows "Searching..." and searches after a pause.
     pub(crate) fn quick_edit(&mut self, cx: &mut Context<'_>) {
-        self.quick.generation = self.quick.generation.wrapping_add(1);
+        let generation = self.quick.generation.next_ticket();
         self.quick.highlight = 0;
         if self.quick.input.value().trim().chars().count() < timing::QUICK_ADD_MIN_CHARS {
             self.quick.results = Dropdown::Closed;
@@ -715,7 +717,7 @@ impl DeckCardsView {
         cx.request(
             Request::QuickDebounce {
                 deck_id: self.deck_id,
-                generation: self.quick.generation,
+                generation,
             }
             .into(),
         );
@@ -863,11 +865,11 @@ pub(crate) enum Request {
     },
     QuickDebounce {
         deck_id: Uuid,
-        generation: u64,
+        generation: Ticket,
     },
     QuickSearch {
         deck_id: Uuid,
-        generation: u64,
+        generation: Ticket,
         query: String,
     },
     QuickAdd {
@@ -958,11 +960,11 @@ pub(crate) enum Update {
     },
     QuickDue {
         deck_id: Uuid,
-        generation: u64,
+        generation: Ticket,
     },
     QuickResults {
         deck_id: Uuid,
-        generation: u64,
+        generation: Ticket,
         cards: Option<Vec<Card>>,
     },
     QuickAdded {
@@ -1404,7 +1406,7 @@ async fn quick_search(
     account: &Account,
     session: Option<&Session>,
     deck_id: Uuid,
-    generation: u64,
+    generation: Ticket,
     query: &str,
 ) -> Option<screens::Update> {
     let mut filter = CardQueryBuilder::with_name_contains(query.trim());
@@ -1605,7 +1607,7 @@ fn apply_to_view(view: &mut DeckCardsView, update: Update, cx: &mut Context<'_>)
             deck_id,
             generation,
         } => {
-            if generation == view.quick.generation {
+            if view.quick.generation.is_current(generation) {
                 cx.request(
                     Request::QuickSearch {
                         deck_id,
@@ -1619,7 +1621,7 @@ fn apply_to_view(view: &mut DeckCardsView, update: Update, cx: &mut Context<'_>)
         Update::QuickResults {
             generation, cards, ..
         } => {
-            if generation == view.quick.generation {
+            if view.quick.generation.is_current(generation) {
                 view.quick.results = cards.map_or(Dropdown::Closed, Dropdown::Results);
                 view.quick.highlight = 0;
             }

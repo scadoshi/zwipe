@@ -137,7 +137,7 @@ fn a_failed_toggle_puts_back_the_value_from_before_that_tap_and_stale_answers_ar
     focus(&mut harness, Stop::UniversesBeyond);
     harness.press(KeyCode::Enter);
     harness.press(KeyCode::Enter);
-    let saves: Vec<(u64, PreferenceChange)> = harness
+    let saves: Vec<(Option<Ticket>, PreferenceChange)> = harness
         .pending()
         .iter()
         .filter_map(|r| match r {

@@ -29,6 +29,7 @@ use zwipe_ui::add::{self, AddDeck};
 use zwipe_ui::deck_signals::{self, Crossing, Level};
 use zwipe_ui::filter::draft::{ResetRule, SheetConfig};
 use zwipe_ui::filter::picker::Sources;
+use zwipe_ui::generation::{Generation, Ticket};
 use zwipe_ui::stack::{
     AddAction, CARDS_WARNING_THRESHOLD, CardStack, Direction, MAX_CARDS_IN_STACK, MaybeboardAction,
     STACK_WARNING_EVERY, StackAction,
@@ -88,8 +89,8 @@ pub(crate) struct SwipeView {
     pub(crate) mb_stack: CardStack<MaybeboardAction>,
     /// The filter that produced the search stack.
     pub(crate) last_search_filter: Option<CardQueryBuilder>,
-    /// Bumped by every fresh search, so answers for an older stack are dropped.
-    pub(crate) generation: u64,
+    /// The search generation: every fresh search takes a new ticket, so answers for an older stack are dropped. A next page continues it.
+    pub(crate) generation: Generation,
     pub(crate) loading_cards: bool,
     pub(crate) loading_more: bool,
     /// Paging ran dry.
@@ -187,7 +188,7 @@ impl SwipeView {
 
     /// A fresh search: drops the stack, then fetches the first page if the filter is enough to serve.
     pub(crate) fn search(&mut self, cx: &mut Context<'_>) {
-        self.generation = self.generation.wrapping_add(1);
+        self.generation.next_ticket();
         self.loading_cards = false;
         self.loading_more = false;
         self.stack.reset();
@@ -207,7 +208,7 @@ impl SwipeView {
         cx.request(
             Request::Search {
                 deck_id: self.deck.id,
-                generation: self.generation,
+                generation: self.generation.current(),
                 query: Box::new(query),
                 filter: Box::new(self.filter.clone()),
                 page: Page::First,
@@ -241,7 +242,7 @@ impl SwipeView {
                     );
                     return;
                 };
-                self.generation = self.generation.wrapping_add(1);
+                self.generation.next_ticket();
                 self.stack.reset();
                 self.last_search_filter = None;
                 self.exhausted = false;
@@ -250,7 +251,7 @@ impl SwipeView {
                 cx.request(
                     Request::Search {
                         deck_id: self.deck.id,
-                        generation: self.generation,
+                        generation: self.generation.current(),
                         query: Box::new(query),
                         filter: Box::new(self.filter.clone()),
                         page: Page::Refresh,
@@ -299,7 +300,7 @@ impl SwipeView {
         cx.request(
             Request::Search {
                 deck_id: self.deck.id,
-                generation: self.generation,
+                generation: self.generation.current(),
                 query: Box::new(query),
                 filter: Box::new(self.filter.clone()),
                 page: Page::More,
@@ -805,7 +806,7 @@ pub(crate) enum UndoFailure {
 pub(crate) enum Request {
     Search {
         deck_id: Uuid,
-        generation: u64,
+        generation: Ticket,
         query: Box<CardQuery>,
         /// The filter that built `query`, kept as the stack's filter when it lands.
         filter: Box<CardQueryBuilder>,
@@ -880,7 +881,7 @@ impl Request {
 pub(crate) enum Update {
     Searched {
         deck_id: Uuid,
-        generation: u64,
+        generation: Ticket,
         filter: Box<CardQueryBuilder>,
         page: Page,
         result: Result<HttpDeckCardSearch, String>,
@@ -954,7 +955,7 @@ pub(crate) fn open(cx: &mut Context<'_>, deck: &Deck) {
         stack: CardStack::default(),
         mb_stack: CardStack::default(),
         last_search_filter: None,
-        generation: 0,
+        generation: Generation::default(),
         loading_cards: false,
         loading_more: false,
         exhausted: false,
@@ -1094,7 +1095,7 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
 /// A search answer as its update: a signed-out session ends it, anything else lands on the stack.
 fn searched_update(
     deck_id: Uuid,
-    generation: u64,
+    generation: Ticket,
     filter: Box<CardQueryBuilder>,
     page: Page,
     result: Result<HttpDeckCardSearch, ClientError>,
@@ -1258,7 +1259,7 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
             page,
             result,
         } => {
-            if deck_id != view.deck.id || generation != view.generation {
+            if deck_id != view.deck.id || !view.generation.is_current(generation) {
                 return;
             }
             searched(view, cx, *filter, page, result);

@@ -117,7 +117,7 @@ impl Harness {
         let view = self.swipe_view();
         let update = swipe::Update::Searched {
             deck_id: view.deck.id,
-            generation: view.generation,
+            generation: view.generation.current(),
             filter: Box::new(view.filter.clone()),
             page: swipe::Page::First,
             result: Ok(HttpDeckCardSearch {
