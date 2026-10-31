@@ -8,7 +8,7 @@ use zwipe_core::http::endpoints::auth::Login;
 use crate::{ClientError, ZwipeClient};
 
 impl ZwipeClient {
-    /// Authenticates users via the login endpoint.
+    /// Authenticates users via the login endpoint. A request with no platform is stamped with [`ClientPlatform::CURRENT`]; one that names its platform, as the terminal client does, keeps it.
     ///
     /// # Errors
     ///
@@ -18,10 +18,32 @@ impl ZwipeClient {
         &self,
         request: HttpAuthenticateUser,
     ) -> Result<Session, ClientError> {
-        let mut request = request;
-        request.platform = Some(ClientPlatform::CURRENT);
-        request.client_version = Some(env!("CARGO_PKG_VERSION").to_string());
+        self.call(Login(stamped(request)), None).await
+    }
+}
 
-        self.call(Login(request), None).await
+/// `request` with this build's version, and [`ClientPlatform::CURRENT`] unless it already names a platform.
+fn stamped(mut request: HttpAuthenticateUser) -> HttpAuthenticateUser {
+    request.platform = request.platform.or(Some(ClientPlatform::CURRENT));
+    request.client_version = Some(env!("CARGO_PKG_VERSION").to_string());
+    request
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_named_platform_is_kept_and_a_missing_one_is_stamped() {
+        let mut terminal = HttpAuthenticateUser::new("alice", "pw");
+        terminal.platform = Some(ClientPlatform::Terminal);
+        assert_eq!(stamped(terminal).platform, Some(ClientPlatform::Terminal));
+
+        let unnamed = stamped(HttpAuthenticateUser::new("alice", "pw"));
+        assert_eq!(unnamed.platform, Some(ClientPlatform::CURRENT));
+        assert_eq!(
+            unnamed.client_version.as_deref(),
+            Some(env!("CARGO_PKG_VERSION"))
+        );
     }
 }
