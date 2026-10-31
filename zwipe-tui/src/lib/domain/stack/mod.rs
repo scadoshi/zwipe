@@ -163,6 +163,20 @@ impl<A> CardStack<A> {
         self.cards.get(self.index.checked_rem(self.cards.len())?)
     }
 
+    /// The card under the top one on a linear stack.
+    pub(crate) fn next(&self) -> Option<&Card> {
+        self.cards.get(self.index.checked_add(1)?)
+    }
+
+    /// The card under the top one on a cycling stack, wrapping around; `None` with fewer than two cards, since the top card would sit under itself.
+    pub(crate) fn next_wrapping(&self) -> Option<&Card> {
+        if self.cards.len() < 2 {
+            return None;
+        }
+        let at = self.index.checked_add(1)?.checked_rem(self.cards.len())?;
+        self.cards.get(at)
+    }
+
     /// Swaps in new cards and moves the cursor to the first. History stays.
     pub(crate) fn replace(&mut self, cards: Vec<Card>) {
         self.cards = cards;
@@ -386,6 +400,22 @@ mod tests {
         );
         stack.reset();
         assert!(stack.is_empty());
+    }
+
+    #[test]
+    fn the_card_under_the_top_wraps_only_on_a_cycling_stack() {
+        let mut stack = stack(&["A", "B"]);
+        assert_eq!(name(stack.next()), Some("B"));
+        assert_eq!(name(stack.next_wrapping()), Some("B"));
+        stack.advance();
+        assert_eq!(stack.next(), None);
+        assert_eq!(name(stack.next_wrapping()), Some("A"));
+        let lone = self::stack(&["A"]);
+        assert_eq!(
+            lone.next_wrapping(),
+            None,
+            "a lone card is not under itself"
+        );
     }
 
     #[test]

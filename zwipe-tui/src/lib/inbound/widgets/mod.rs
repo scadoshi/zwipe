@@ -10,6 +10,8 @@ pub(crate) mod alert;
 pub(crate) mod browser;
 /// A card's info block, details and text stand-in.
 pub(crate) mod card_info;
+/// A swiped card flying off, and an undone one coming back.
+pub(crate) mod card_motion;
 /// Bar charts from the deck metrics.
 pub(crate) mod charts;
 /// A row of chips to pick one or several.
