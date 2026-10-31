@@ -1,6 +1,7 @@
 //! One module per screen. A screen not built yet is a placeholder.
 
 pub mod account;
+pub mod activity;
 pub mod auth;
 pub mod changelog;
 pub mod config;

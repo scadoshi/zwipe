@@ -760,3 +760,64 @@ body {
         display: none;
     }
 }
+
+/* ---- Activity ---- */
+
+.web-activity {
+    max-width: 40rem;
+    width: 100%;
+    padding: 0 1rem;
+    gap: var(--panel-gap);
+    box-sizing: border-box;
+}
+
+.web-activity-column {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: var(--panel-gap);
+}
+
+/* Below the breakpoint the sections are one accordion column. */
+.web-activity-year,
+.web-activity-rates {
+    display: contents;
+}
+
+@media (min-width: 900px) {
+    .web-activity {
+        max-width: 64rem;
+    }
+
+    /* The Activity section full width: the year's heatmap unscrolled with
+       Totals beside it. */
+    .web-activity-year {
+        display: block;
+        width: 100%;
+    }
+
+    .web-activity-year-body {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(14rem, 18rem);
+        column-gap: 1.5rem;
+        align-items: start;
+    }
+
+    .web-activity-year-body > .activity-rule {
+        display: none;
+    }
+
+    .web-activity-year-body > .activity-outcomes {
+        margin-top: 0;
+        padding-right: 0.75rem;
+    }
+
+    /* Card roles and Oracle tags side by side, both open. */
+    .web-activity-rates {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: var(--panel-gap);
+        align-items: start;
+        width: 100%;
+    }
+}

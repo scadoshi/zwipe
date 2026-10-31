@@ -4,6 +4,7 @@ use dioxus::prelude::*;
 use uuid::Uuid;
 
 use crate::inbound::screens::account::Account;
+use crate::inbound::screens::activity::Activity;
 use crate::inbound::screens::auth::forgot_password::ForgotPassword;
 use crate::inbound::screens::auth::login::Login;
 use crate::inbound::screens::auth::register::Register;
@@ -11,8 +12,8 @@ use crate::inbound::screens::changelog::Changelog;
 use crate::inbound::screens::config::Config;
 use crate::inbound::screens::home::Home;
 use crate::inbound::screens::placeholders::{
-    Activity, AddDeckCard, CommanderMaybeboard, CreateDeck, DeckList, EditDeck, ExportDeck,
-    ImportDeck, NotFound, Playstyle, RemoveDeckCard, ViewDeck, ViewDeckCard,
+    AddDeckCard, CommanderMaybeboard, CreateDeck, DeckList, EditDeck, ExportDeck, ImportDeck,
+    NotFound, Playstyle, RemoveDeckCard, ViewDeck, ViewDeckCard,
 };
 use crate::inbound::screens::privacy_policy::PrivacyPolicy;
 use crate::inbound::session::auth_gate::AuthGate;
