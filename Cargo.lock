@@ -9001,6 +9001,7 @@ dependencies = [
  "components",
  "dioxus",
  "dioxus-primitives",
+ "email_address",
  "getrandom 0.4.3",
  "gloo-timers 0.4.0",
  "reqwest",
