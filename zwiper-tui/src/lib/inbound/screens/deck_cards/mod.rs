@@ -25,15 +25,17 @@ use zwipe_core::domain::user::hints::HINT_DECK_CARDS;
 use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
 use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpPatchDeckCard};
 use zwipe_core::http::helpers::Patch;
+use zwipe_ui::deck::form::Slot;
+use zwipe_ui::deck_cards::{self, Boards, Burst, Bursts, Display, Write, Zone};
+use zwipe_ui::deck_signals::{self, Crossing};
+use zwipe_ui::filter::picker::Sources;
+use zwipe_ui::stores::filters::FilterScope;
+use zwipe_ui::stores::undo::{self, UndoAction};
+use zwipe_ui::timing;
 
 use super::card_sheets::filter::{FilterSheet, SheetConfig};
 use super::card_sheets::printing::PrintingSheet;
 use super::{Screen, remove_cards, swipe};
-use crate::domain::deck_cards::{self, Boards, Burst, Bursts, Display, Write, Zone};
-use crate::domain::deck_signals::{self, Crossing};
-use crate::domain::filter::picker::Sources;
-use crate::domain::stores::filters::FilterScope;
-use crate::domain::stores::undo::{self, CommandZoneSlot, UndoAction};
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;
@@ -59,7 +61,7 @@ pub(crate) enum Kind {
     /// A maybeboard or sideboard row.
     Board(Board),
     /// A command zone row: Printing only.
-    Zone(CommandZoneSlot),
+    Zone(Slot),
     /// A token: no actions.
     Token,
 }
@@ -102,7 +104,7 @@ pub(crate) enum Dropdown {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum PrintingTarget {
     Deck,
-    Zone(CommandZoneSlot),
+    Zone(Slot),
 }
 
 /// The deck cards view.
@@ -345,12 +347,12 @@ impl DeckCardsView {
     /// The command zone: the leaders under one header, then the background and signature spell.
     fn push_zone(&self, items: &mut Vec<Item>) {
         let zone = &self.display.zone;
-        let leaders: Vec<&(CommandZoneSlot, Card)> = zone
+        let leaders: Vec<&(Slot, Card)> = zone
             .iter()
-            .filter(|(s, _)| matches!(s, CommandZoneSlot::Commander | CommandZoneSlot::Partner))
+            .filter(|(s, _)| matches!(s, Slot::Commander | Slot::Partner))
             .collect();
         if !leaders.is_empty() {
-            let has_partner = leaders.iter().any(|(s, _)| *s == CommandZoneSlot::Partner);
+            let has_partner = leaders.iter().any(|(s, _)| *s == Slot::Partner);
             let title = if self.is_oathbreaker() {
                 "Oathbreaker"
             } else if has_partner {
@@ -366,8 +368,8 @@ impl DeckCardsView {
             );
         }
         for (slot, title) in [
-            (CommandZoneSlot::Background, "Background"),
-            (CommandZoneSlot::SignatureSpell, "Signature spell"),
+            (Slot::Background, "Background"),
+            (Slot::SignatureSpell, "Signature spell"),
         ] {
             if let Some((slot, card)) = zone.iter().find(|(s, _)| *s == slot) {
                 items.push(zone_header(title));
@@ -784,7 +786,7 @@ fn zone_header(title: &str) -> Item {
     }
 }
 
-fn zone_item(slot: CommandZoneSlot, card: &Card) -> Item {
+fn zone_item(slot: Slot, card: &Card) -> Item {
     Item::Card {
         card: Box::new(card.clone()),
         kind: Kind::Zone(slot),
@@ -844,7 +846,7 @@ pub(crate) enum Request {
     /// Writes a command zone slot's printing; `old_card` is kept for the undo log, `None` for an undo.
     ZonePrinting {
         deck_id: Uuid,
-        slot: CommandZoneSlot,
+        slot: Slot,
         new_card: Box<Card>,
         old_card: Option<Box<Card>>,
     },
@@ -947,7 +949,7 @@ pub(crate) enum Update {
     },
     ZonePrintingSaved {
         deck_id: Uuid,
-        slot: CommandZoneSlot,
+        slot: Slot,
         old_card: Box<Card>,
         new_card: Box<Card>,
     },
@@ -1146,7 +1148,7 @@ async fn fetch_tokens(
 
 /// Waits out a quantity burst, then says it is due to write.
 async fn flush_timer(deck_id: Uuid, card_id: Uuid, generation: u64) -> screens::Update {
-    tokio::time::sleep(Duration::from_millis(deck_cards::QTY_FLUSH_MS)).await;
+    tokio::time::sleep(timing::QUANTITY_FLUSH).await;
     Update::FlushDue {
         deck_id,
         card_id,
@@ -1188,10 +1190,10 @@ async fn load(
     let ids = profile.as_ref().unwrap_or(&deck.deck_profile);
     let mut zone = Zone::default();
     for (slot, id) in [
-        (CommandZoneSlot::Commander, ids.commander_id),
-        (CommandZoneSlot::SignatureSpell, ids.signature_spell_id),
-        (CommandZoneSlot::Partner, ids.partner_commander_id),
-        (CommandZoneSlot::Background, ids.background_id),
+        (Slot::Commander, ids.commander_id),
+        (Slot::SignatureSpell, ids.signature_spell_id),
+        (Slot::Partner, ids.partner_commander_id),
+        (Slot::Background, ids.background_id),
     ] {
         if let Some(id) = id {
             *zone.slot_mut(slot) = client.fetch_card(id).await.ok();
@@ -1311,17 +1313,17 @@ async fn save_zone_printing(
     account: &Account,
     session: Option<&Session>,
     deck_id: Uuid,
-    slot: CommandZoneSlot,
+    slot: Slot,
     new_card: Box<Card>,
     old_card: Option<Box<Card>>,
 ) -> Option<screens::Update> {
     let id = Patch::Set(Some(new_card.scryfall_data.id));
     let builder = HttpUpdateDeckProfile::builder();
     let body = match slot {
-        CommandZoneSlot::Commander => builder.commander_id(id),
-        CommandZoneSlot::Partner => builder.partner_commander_id(id),
-        CommandZoneSlot::Background => builder.background_id(id),
-        CommandZoneSlot::SignatureSpell => builder.signature_spell_id(id),
+        Slot::Commander => builder.commander_id(id),
+        Slot::Partner => builder.partner_commander_id(id),
+        Slot::Background => builder.background_id(id),
+        Slot::SignatureSpell => builder.signature_spell_id(id),
     }
     .build();
     match account

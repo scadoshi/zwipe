@@ -1,8 +1,8 @@
 use crossterm::event::KeyCode;
 use zwipe_core::domain::deck::Quantity;
+use zwipe_ui::stack::Direction;
 
 use super::*;
-use crate::domain::stack::Direction;
 use crate::inbound::event_loop::harness::Harness;
 use crate::inbound::widgets::card_motion::{CardMotion, Phase};
 use crate::test_support::{card, deck, deck_profile, render, screen_text, word_colors};

@@ -567,7 +567,7 @@ fn a_picked_printing_swaps_in_place() {
 
 #[test]
 fn filter_opens_the_card_filter_and_the_list_narrows_only_on_apply() {
-    use crate::domain::filter::sections::Section as FilterSection;
+    use zwipe_ui::filter::sections::Section as FilterSection;
 
     let mut harness = loaded();
     harness.press(KeyCode::Char('f'));
@@ -607,8 +607,8 @@ fn filter_opens_the_card_filter_and_the_list_narrows_only_on_apply() {
 
 #[test]
 fn the_filters_dictionary_lands_in_the_sheet_and_refetches_nothing() {
-    use crate::domain::filter::fields::MatchGroup;
-    use crate::domain::filter::picker::PickerField;
+    use zwipe_ui::filter::fields::MatchGroup;
+    use zwipe_ui::filter::picker::PickerField;
 
     let mut harness = loaded();
     harness.press(KeyCode::Char('f'));

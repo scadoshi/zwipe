@@ -10,6 +10,7 @@ use ratatui::widgets::Block;
 use ratatui_image::picker::Picker;
 use zwipe_core::domain::user::{User, UserPreferences};
 use zwipe_ui::changelog::ChangelogCache;
+use zwipe_ui::stores::CardStores;
 
 pub(crate) use self::context::{Context, Effects, Navigation};
 use super::nav::Nav;
@@ -22,7 +23,6 @@ use super::widgets::hint::HintDialog;
 use super::widgets::splash::Splash;
 use super::widgets::toast::Toasts;
 use super::widgets::wipe::Wipe;
-use crate::domain::stores::CardStores;
 use crate::domain::theme::Palette;
 
 /// Everything the UI draws from.

@@ -6,13 +6,18 @@ pub(crate) mod details;
 pub(crate) mod filter;
 pub(crate) mod printing;
 
+use std::collections::HashMap;
+
+use chrono::Utc;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::card_role::CardRoleView;
 use zwipe_core::domain::card::oracle_tag::OracleTag;
+use zwipe_core::domain::card::scryfall_data::universe::UbFranchiseView;
+use zwipe_core::domain::deck::DeckTagView;
+use zwipe_ui::stores::catalog::Kind;
 
 use super::Screen;
-use crate::domain::stores::catalog::Kind;
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;
@@ -45,6 +50,9 @@ pub(crate) enum Update {
     Words(Kind, Option<Vec<String>>),
     Roles(Option<Vec<CardRoleView>>),
     Tags(Option<Vec<OracleTag>>),
+    Reminders(Option<HashMap<String, String>>),
+    Franchises(Option<Vec<UbFranchiseView>>),
+    DeckTags(Option<Vec<DeckTagView>>),
     Printings {
         oracle_id: Uuid,
         printings: Result<Vec<Card>, String>,
@@ -74,6 +82,15 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
             Kind::CardTypes => Update::Words(kind, client.fetch_card_types().await.ok()),
             Kind::Artists => Update::Words(kind, client.fetch_artists().await.ok()),
             Kind::Sets => Update::Words(kind, client.fetch_sets().await.ok()),
+            Kind::KeywordReminders => {
+                Update::Reminders(client.fetch_keyword_reminders().await.ok())
+            }
+            Kind::UbFranchises => Update::Franchises(client.fetch_ub_franchises().await.ok()),
+            Kind::DeckTags => Update::DeckTags(
+                async { client.fetch_deck_tags(&account.fresh().await?).await }
+                    .await
+                    .ok(),
+            ),
         },
         Request::Printings { oracle_id } => Update::Printings {
             oracle_id,
@@ -88,17 +105,25 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
 
 pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
     let catalog = &mut cx.shared.cards.catalog;
+    let now = Utc::now();
     match update {
         Update::Words(kind, words) => match kind {
-            Kind::Keywords => catalog.keywords.settle(words),
-            Kind::OracleWords => catalog.oracle_words.settle(words),
-            Kind::CardTypes => catalog.card_types.settle(words),
-            Kind::Artists => catalog.artists.settle(words),
-            Kind::Sets => catalog.sets.settle(words),
-            Kind::CardRoles | Kind::OracleTags => {}
+            Kind::Keywords => catalog.keywords.settle(words, now),
+            Kind::OracleWords => catalog.oracle_words.settle(words, now),
+            Kind::CardTypes => catalog.card_types.settle(words, now),
+            Kind::Artists => catalog.artists.settle(words, now),
+            Kind::Sets => catalog.sets.settle(words, now),
+            Kind::KeywordReminders
+            | Kind::CardRoles
+            | Kind::OracleTags
+            | Kind::UbFranchises
+            | Kind::DeckTags => {}
         },
-        Update::Roles(roles) => catalog.card_roles.settle(roles),
-        Update::Tags(tags) => catalog.oracle_tags.settle(tags),
+        Update::Roles(roles) => catalog.card_roles.settle(roles, now),
+        Update::Tags(tags) => catalog.oracle_tags.settle(tags, now),
+        Update::Reminders(reminders) => catalog.keyword_reminders.settle(reminders, now),
+        Update::Franchises(franchises) => catalog.ub_franchises.settle(franchises, now),
+        Update::DeckTags(tags) => catalog.deck_tags.settle(tags, now),
         Update::Printings {
             oracle_id,
             printings,

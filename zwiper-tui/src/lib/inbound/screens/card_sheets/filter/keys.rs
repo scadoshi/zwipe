@@ -6,9 +6,9 @@
 
 use crossterm::event::KeyCode;
 use zwipe_core::domain::user::hints::HINT_FILTER;
+use zwipe_ui::filter::sections::{self, Clear, Row, Section};
 
 use super::{FilterSheet, PickerInput, SheetOutcome, Target};
-use crate::domain::filter::sections::{self, Clear, Row, Section};
 use crate::inbound::app::Context;
 use crate::inbound::toward::Toward;
 use crate::inbound::widgets::hint::{self, HintTopic};

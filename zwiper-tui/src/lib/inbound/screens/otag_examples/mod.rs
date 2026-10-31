@@ -19,9 +19,9 @@ use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCur
 use zwipe_core::domain::card::search_card::card_filter::{CardQuery, CardSortKey};
 use zwipe_core::domain::deck::deck_metrics;
 use zwipe_core::domain::user::models::hints::HINT_OTAG_EXAMPLES;
+use zwipe_ui::stack::Direction;
 
 use super::Screen;
-use crate::domain::stack::Direction;
 use crate::domain::theme::Palette;
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;

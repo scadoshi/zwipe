@@ -422,8 +422,8 @@ fn the_filter_and_printing_sheets_open_and_esc_leaves() {
 
 #[test]
 fn the_filter_sheets_dictionary_returns_to_the_sheet_without_a_reload() {
-    use crate::domain::filter::fields::MatchGroup;
-    use crate::domain::filter::picker::PickerField;
+    use zwipe_ui::filter::fields::MatchGroup;
+    use zwipe_ui::filter::picker::PickerField;
 
     let (mut harness, _, _) = loaded();
     harness.press(KeyCode::Char('f'));

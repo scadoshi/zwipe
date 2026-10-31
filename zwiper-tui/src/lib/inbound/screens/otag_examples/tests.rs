@@ -246,7 +246,8 @@ fn the_examples_fit_a_tiny_terminal() {
 
 #[test]
 fn the_next_card_flies_off_left_and_a_step_back_flies_it_in() {
-    use crate::domain::stack::Direction;
+    use zwipe_ui::stack::Direction;
+
     use crate::inbound::widgets::card_motion::Phase;
 
     let mut harness = on_examples();

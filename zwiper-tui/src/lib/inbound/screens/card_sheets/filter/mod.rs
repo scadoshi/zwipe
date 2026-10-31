@@ -9,6 +9,7 @@ mod tests;
 
 use std::collections::HashMap;
 
+use chrono::Utc;
 use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::card::scryfall_data::rarity::Rarity;
 use zwipe_core::domain::card::search_card::card_filter::CardSortKey;
@@ -16,16 +17,16 @@ use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilde
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::Format;
 use zwipe_core::domain::user::hints::HINT_FILTER;
-
-use super::Request;
-use crate::domain::filter::fields::{
-    End, Exclude, MatchGroup, RangeGroup, SideGroup, StrList, TextField, card_types,
+use zwipe_ui::filter::fields::{
+    End, Exclude, InvalidNumber, MatchGroup, RangeGroup, SideGroup, StrList, TextField, card_types,
     identity_colors, parse_number, toggle_identity, toggled,
 };
-use crate::domain::filter::picker::{PickerField, Sources};
-use crate::domain::filter::sections::{self, ChipSet, Modes, NumberField, Row, Section, StepRow};
-use crate::domain::filter::{self, AddContext, Adopted, ApplyAction, FilterState};
-use crate::domain::stores::catalog::Catalog;
+use zwipe_ui::filter::picker::{PickerField, Sources};
+use zwipe_ui::filter::sections::{self, ChipSet, Modes, NumberField, Row, Section, StepRow};
+use zwipe_ui::filter::{self, AddContext, Adopted, ApplyAction, FilterState};
+use zwipe_ui::stores::catalog::Catalog;
+
+use super::Request;
 use crate::inbound::app::Context;
 use crate::inbound::screens::oracle_tags;
 use crate::inbound::toward::Toward;
@@ -124,13 +125,17 @@ impl FilterSheet {
     ) -> Self {
         hint::once(cx, HINT_FILTER);
         let catalog = &mut cx.shared.cards.catalog;
-        if catalog.any_failed() {
+        if catalog.any_public_failed() {
             cx.toast(
                 ToastKind::Warning,
                 "Filter lists didn't load, trying again".to_owned(),
             );
         }
-        let wanted = cx.shared.cards.catalog.claim(config.sources.needs());
+        let wanted = cx
+            .shared
+            .cards
+            .catalog
+            .claim(config.sources.needs(), Utc::now());
         for kind in wanted {
             cx.request(Request::Catalog(kind).into());
         }
@@ -276,7 +281,7 @@ impl FilterSheet {
                         input.set_value(&n.to_string());
                     }
                 }
-                Err(()) => cx.toast_for(
+                Err(InvalidNumber) => cx.toast_for(
                     ToastKind::Error,
                     "Invalid mana value".to_owned(),
                     toast::QUICK,
@@ -313,7 +318,7 @@ impl FilterSheet {
                             (false, Some(n)) => self.draft.set_price_max(n),
                         };
                     }
-                    Err(()) => {
+                    Err(InvalidNumber) => {
                         cx.toast_for(ToastKind::Error, "Invalid price".to_owned(), toast::QUICK);
                     }
                 }

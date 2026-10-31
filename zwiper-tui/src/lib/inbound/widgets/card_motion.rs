@@ -12,8 +12,8 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::{Position, Rect};
 use ratatui::style::{Modifier, Style};
 use zwipe_core::domain::card::Card;
+use zwipe_ui::stack::Direction;
 
-use crate::domain::stack::Direction;
 use crate::domain::theme::Palette;
 
 /// How long an exit takes: the app's `card-stack-exit-*` duration.

@@ -25,22 +25,23 @@ use zwipe_core::domain::deck::{Board, Deck, DeckCard, DeckEntry};
 use zwipe_core::domain::user::hints::HINT_ADD_DECK_CARDS;
 use zwipe_core::http::contracts::deck::HttpDeckCardSearch;
 use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpPatchDeckCard};
+use zwipe_ui::add::{self, AddDeck};
+use zwipe_ui::deck_signals::{self, Crossing, Level};
+use zwipe_ui::filter::picker::Sources;
+use zwipe_ui::stack::{
+    AddAction, CARDS_WARNING_THRESHOLD, CardStack, Direction, MAX_CARDS_IN_STACK, MaybeboardAction,
+    STACK_WARNING_EVERY, StackAction,
+};
+use zwipe_ui::stores::filters::FilterScope;
+use zwipe_ui::stores::in_flight::AddOutcome;
+use zwipe_ui::stores::parked::ParkedStack;
+use zwipe_ui::stores::undo::UndoAction;
+use zwipe_ui::timing;
 
 use super::Screen;
 use super::card_sheets::details::DetailsSheet;
 use super::card_sheets::filter::{FilterSheet, ResetRule, SheetConfig};
 use super::card_sheets::printing::PrintingSheet;
-use crate::domain::add::{self, AddDeck, LOAD_MORE_THRESHOLD};
-use crate::domain::deck_signals::{self, Crossing, Level};
-use crate::domain::filter::picker::Sources;
-use crate::domain::stack::{
-    AddAction, CARDS_WARNING_THRESHOLD, CardStack, Direction, MAX_CARDS_IN_STACK, MaybeboardAction,
-    STACK_WARNING_EVERY, StackAction,
-};
-use crate::domain::stores::filters::FilterScope;
-use crate::domain::stores::in_flight::AddOutcome;
-use crate::domain::stores::parked::ParkedStack;
-use crate::domain::stores::undo::UndoAction;
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;
@@ -324,7 +325,7 @@ impl SwipeView {
         let index = self.stack.index();
         if index >= total && self.exhausted {
             cx.toast(ToastKind::Warning, "End of results".to_owned());
-        } else if total > 0 && index.saturating_add(1) >= total.saturating_sub(LOAD_MORE_THRESHOLD)
+        } else if total > 0 && index.saturating_add(1) >= total.saturating_sub(timing::LOAD_MORE_AT)
         {
             self.load_more(cx);
         }
@@ -1120,7 +1121,7 @@ async fn create(
     let request = HttpCreateDeckCard::new(
         &card.scryfall_data,
         1,
-        crate::domain::stores::undo::create_board_field(board),
+        zwipe_ui::stores::undo::create_board_field(board),
     );
     let result = async {
         let session = account.fresh().await?;

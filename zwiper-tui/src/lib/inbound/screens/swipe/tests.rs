@@ -7,9 +7,9 @@ use ratatui::style::Color;
 use ratatui_image::picker::{Picker, ProtocolType};
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::deck::{DeckCard, Format, Quantity};
+use zwipe_ui::stack::Direction;
 
 use super::*;
-use crate::domain::stack::Direction;
 use crate::domain::theme::Palette;
 use crate::inbound::event_loop::harness::Harness;
 use crate::inbound::widgets::card_motion::{CardMotion, Phase, Snapshot};
@@ -125,7 +125,7 @@ fn swipes_send_their_calls_and_toast() {
         }
     ));
     assert_eq!(
-        view(&harness).stack.history(),
+        view(&harness).stack.park_state().2,
         [AddAction::Add, AddAction::Skip, AddAction::Maybe]
     );
 }
@@ -223,7 +223,7 @@ fn undo_says_when_there_is_nothing_and_skips_unskip() {
     assert!(matches!(requests(&harness)[..], [Request::Unskip { .. }]));
     assert_eq!(
         view(&harness).stack.entering(),
-        Some(crate::domain::stack::Direction::Left)
+        Some(zwipe_ui::stack::Direction::Left)
     );
 }
 
@@ -428,7 +428,7 @@ fn leaving_parks_the_stack_and_coming_back_resumes() {
     harness.open(|cx| open(cx, &d));
     assert_eq!(requests(&harness).len(), 0, "no refetch");
     assert_eq!(view(&harness).stack.index(), 1);
-    assert_eq!(view(&harness).stack.history(), [AddAction::Skip]);
+    assert_eq!(view(&harness).stack.park_state().2, [AddAction::Skip]);
 }
 
 #[test]

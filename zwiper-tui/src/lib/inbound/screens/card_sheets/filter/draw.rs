@@ -5,10 +5,10 @@ use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::style::{Style, Stylize};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Clear as ClearWidget, Padding, Paragraph};
+use zwipe_ui::filter::picker::PickerField;
+use zwipe_ui::filter::sections::{self, ChipSet, Row, Section, StepRow};
 
 use super::{FilterSheet, Target};
-use crate::domain::filter::picker::PickerField;
-use crate::domain::filter::sections::{self, ChipSet, Row, Section, StepRow};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::widgets::{action_bar, mana};
@@ -188,8 +188,8 @@ fn row_lines(
             let mut spans = indent(palette, focused);
             if matches!(
                 field,
-                crate::domain::filter::sections::NumberField::ManaMax
-                    | crate::domain::filter::sections::NumberField::PriceMax
+                zwipe_ui::filter::sections::NumberField::ManaMax
+                    | zwipe_ui::filter::sections::NumberField::PriceMax
             ) {
                 spans.push(Span::styled("to ", palette.muted));
             }

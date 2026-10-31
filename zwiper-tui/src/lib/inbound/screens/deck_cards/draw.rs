@@ -9,10 +9,10 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::card::search_card::group_cards::GroupByOption;
 use zwipe_core::domain::deck::{Board, deck_metrics, deck_tag};
+use zwipe_ui::{deck_cards, filter};
 
 use super::{DeckCardsView, Dropdown, Item, Kind};
 use crate::domain::theme::Palette;
-use crate::domain::{deck_cards, filter};
 use crate::inbound::app::Shared;
 use crate::inbound::screens::card_sheets;
 use crate::inbound::widgets::sheet::Sheet;

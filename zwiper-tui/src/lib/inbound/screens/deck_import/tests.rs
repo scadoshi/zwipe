@@ -155,7 +155,7 @@ fn an_import_clears_the_decks_undo_log_and_only_that_deck() {
     for id in [deck_id, other] {
         harness.app.shared.cards.undo.push(
             id,
-            crate::domain::stores::undo::UndoAction::Added {
+            zwipe_ui::stores::undo::UndoAction::Added {
                 card_id: Uuid::new_v4(),
                 card_name: "Sol Ring".to_owned(),
             },

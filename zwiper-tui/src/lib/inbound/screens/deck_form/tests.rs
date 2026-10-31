@@ -494,7 +494,7 @@ fn the_swipe_picker_skips_picks_saves_and_undoes() {
 
 #[test]
 fn the_swipe_pickers_filter_opens_the_filter_sheet_and_narrows_the_pile() {
-    use crate::domain::filter::sections::Section as FilterSection;
+    use zwipe_ui::filter::sections::Section as FilterSection;
 
     let picker = |harness: &Harness| -> SwipePicker {
         let Some(Overlay::Swipe(picker)) = &form(harness).overlay else {
@@ -717,7 +717,8 @@ fn the_swipe_pickers_keys_use_the_apps_verbs_in_its_hint_colors() {
 
 #[test]
 fn the_swipe_picker_flies_skipped_and_saved_cards_off_and_undo_brings_them_back() {
-    use crate::domain::stack::Direction;
+    use zwipe_ui::stack::Direction;
+
     use crate::inbound::widgets::card_motion::Phase;
 
     let motion = |harness: &Harness| {

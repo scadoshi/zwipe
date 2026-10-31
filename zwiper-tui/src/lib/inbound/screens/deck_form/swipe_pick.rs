@@ -7,11 +7,10 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::deck::Format;
 use zwipe_ui::deck::form::{self, Slot};
-use zwipe_ui::timing;
+use zwipe_ui::stack::Direction;
+use zwipe_ui::{filter, timing};
 
 use super::{DeckForm, Overlay, Request};
-use crate::domain::filter;
-use crate::domain::stack::Direction;
 use crate::inbound::app::Context;
 use crate::inbound::screens::card_sheets;
 use crate::inbound::screens::card_sheets::filter::{FilterSheet, SheetConfig, SheetOutcome};

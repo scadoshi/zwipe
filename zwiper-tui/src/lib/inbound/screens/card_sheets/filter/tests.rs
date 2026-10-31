@@ -3,11 +3,11 @@ use ratatui::Terminal;
 use ratatui::backend::TestBackend;
 use zwipe_core::domain::card::search_card::card_filter::CardSortKey;
 use zwipe_core::domain::card::search_card::card_type::CardType;
+use zwipe_ui::filter::fields::{MatchGroup, Toggle};
+use zwipe_ui::filter::sections::Row;
+use zwipe_ui::stores::catalog::Kind;
 
 use super::*;
-use crate::domain::filter::fields::{MatchGroup, Toggle};
-use crate::domain::filter::sections::Row;
-use crate::domain::stores::catalog::Kind;
 use crate::domain::theme::Palette;
 use crate::inbound::app::App;
 use crate::inbound::screens;
@@ -80,7 +80,7 @@ fn opening_shows_the_hint_once_and_fetches_the_lists_this_host_needs() {
     assert_eq!(app.shared.hint.as_ref().unwrap().content.title, "Filters");
 
     app.shared.hint = None;
-    app.shared.cards.catalog.keywords.settle(None);
+    app.shared.cards.catalog.keywords.settle(None, Utc::now());
     let mut cx = Context::new(&mut app.shared);
     let config = SheetConfig {
         sources: Sources::deck(&[card("A")]),
@@ -360,7 +360,7 @@ fn steppers_and_tri_toggles_write_the_draft() {
     assert_eq!(
         sheet.focused(),
         Some(Target::Row(Row::Stepper(StepRow::Exact(
-            crate::domain::filter::fields::Stat::Power
+            zwipe_ui::filter::fields::Stat::Power
         ))))
     );
     assert_eq!(sheet.draft.power_equals(), Some(1));
@@ -390,7 +390,10 @@ fn draw(app: &App, sheet: &FilterSheet, width: u16, height: u16) -> String {
 #[test]
 fn the_sheet_draws_its_sections_and_the_open_rows() {
     let mut app = app();
-    app.shared.cards.catalog.claim(&[Kind::CardRoles]);
+    app.shared
+        .cards
+        .catalog
+        .claim(&[Kind::CardRoles], Utc::now());
     let mut filter = CardQueryBuilder::default();
     filter.set_name_contains("bolt");
     let mut sheet = FilterSheet::new(&filter, plain());
@@ -425,7 +428,7 @@ fn focus_row(sheet: &mut FilterSheet, row: impl Fn(Row) -> bool) {
 
 #[test]
 fn the_dictionary_chips_open_the_dictionary_and_its_use_lands_in_the_list() {
-    use crate::domain::filter::sections;
+    use zwipe_ui::filter::sections;
 
     let mut app = app();
     let mut sheet = FilterSheet::new(&CardQueryBuilder::default(), plain());

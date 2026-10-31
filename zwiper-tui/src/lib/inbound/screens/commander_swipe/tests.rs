@@ -527,7 +527,7 @@ fn tiny_terminals_do_not_panic() {
 
 #[test]
 fn commander_modes_filter_is_the_card_filter_and_apply_deals_again() {
-    use crate::domain::filter::sections::Section as FilterSection;
+    use zwipe_ui::filter::sections::Section as FilterSection;
 
     let mut harness = commander(HashSet::new());
     harness.apply(Update::Page {
@@ -575,7 +575,8 @@ fn commander_modes_filter_is_the_card_filter_and_apply_deals_again() {
 
 #[test]
 fn skips_and_saves_fly_off_and_an_undo_flies_back_from_the_same_side() {
-    use crate::domain::stack::Direction;
+    use zwipe_ui::stack::Direction;
+
     use crate::inbound::widgets::card_motion::{CardMotion, Phase};
 
     let mut harness = swiping();

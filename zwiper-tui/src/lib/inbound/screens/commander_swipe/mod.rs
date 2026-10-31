@@ -20,13 +20,12 @@ use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::deck::format::Format;
 use zwipe_core::http::contracts::suggestions::HttpCommanderSuggestion;
-use zwipe_ui::playstyle;
+use zwipe_ui::stack::Direction;
+use zwipe_ui::{filter, playstyle};
 
 use super::card_sheets::filter::{FilterSheet, SheetConfig, SheetOutcome};
 use super::playstyle::{DeckLimit, create_deck_with, suggestion_colors};
 use super::{Screen, card_sheets};
-use crate::domain::filter;
-use crate::domain::stack::Direction;
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;
