@@ -13,6 +13,7 @@ pub(crate) use self::context::{Context, Effects, Navigation};
 use super::nav::Nav;
 use super::screens::Screen;
 use super::screens::login::LoginForm;
+use super::widgets::alert::AlertDialog;
 use super::widgets::hint::HintDialog;
 use super::widgets::toast::Toasts;
 use crate::domain::theme::Palette;
@@ -39,12 +40,18 @@ pub(crate) struct Shared {
     pub(crate) images: Option<Picker>,
     /// Toasts up in the bottom-right corner.
     pub(crate) toasts: Toasts,
-    /// A one-time hint over the screen, which takes every key until it closes.
+    /// A hint over the screen, a `?` topic or a one-time hint, which takes every key until it closes.
     pub(crate) hint: Option<HintDialog>,
+    /// The Help & feedback dialog, over everything but the toasts.
+    pub(crate) help: Option<AlertDialog>,
 }
 
 impl App {
     /// The sign-in screen in `palette`.
+    #[expect(
+        clippy::large_types_passed_by_value,
+        reason = "the palette is copied once, at start"
+    )]
     pub(crate) fn new(palette: Palette) -> Self {
         Self {
             nav: Nav::new(Screen::Login(LoginForm::default())),
@@ -56,6 +63,7 @@ impl App {
                 images: None,
                 toasts: Toasts::default(),
                 hint: None,
+                help: None,
             },
         }
     }
@@ -70,13 +78,16 @@ impl App {
         self.shared.toasts.prune(now);
     }
 
-    /// Draws the screen on top over the theme's background, then the hint and the toasts over it.
+    /// Draws the screen on top over the theme's background, then the hint, the help dialog and the toasts over it.
     pub(crate) fn draw(&self, f: &mut Frame<'_>) {
         let palette = &self.shared.palette;
         f.render_widget(Block::new().style(palette.base), f.area());
         self.nav.top().draw(f, &self.shared);
         if let Some(hint) = &self.shared.hint {
             hint.draw(f, palette);
+        }
+        if let Some(help) = &self.shared.help {
+            help.draw(f, palette);
         }
         self.shared.toasts.draw(f, palette, f.area());
     }

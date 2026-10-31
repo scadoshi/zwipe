@@ -22,7 +22,7 @@ use zwipe_core::domain::auth::models::session::Session;
 use super::app::{App, Context, Effects, Navigation};
 use super::screens::login::{self, LoginForm};
 use super::screens::{self, Request, Screen, Update};
-use super::widgets::hint;
+use super::widgets::help;
 use crate::domain::decode;
 use crate::outbound::account::Account;
 use crate::outbound::theme_file::ThemeFile;
@@ -113,18 +113,32 @@ impl EventLoop {
         self.settle(app, effects)
     }
 
-    /// Hands a key to the open hint, else to the screen on top. Ctrl+C quits from anywhere.
+    /// Hands a key to the open dialog, else to the screen on top. Ctrl+C quits from anywhere, Ctrl+T expands or collapses the toasts, and F1 opens Help & feedback.
     fn handle_key(&mut self, app: &mut App, key: KeyEvent) -> Flow {
-        if key.code == KeyCode::Char('c') && key.modifiers.contains(KeyModifiers::CONTROL) {
+        let control = key.modifiers.contains(KeyModifiers::CONTROL);
+        if control && key.code == KeyCode::Char('c') {
             return Flow::Quit;
         }
-        if app.shared.hint.is_some() {
-            if hint::dismisses(key.code) {
-                app.shared.hint = None;
-            }
+        if control && key.code == KeyCode::Char('t') {
+            app.shared.toasts.toggle_expanded();
             return Flow::Continue;
         }
         let mut cx = Context::new(&mut app.shared);
+        if cx.shared.help.is_some() {
+            help::handle_key(&mut cx, key.code);
+            let effects = cx.into_effects();
+            return self.settle(app, effects);
+        }
+        if key.code == KeyCode::F(1) {
+            help::open(&mut cx);
+            return Flow::Continue;
+        }
+        if let Some(open) = &mut cx.shared.hint {
+            if open.handle_key(key.code) {
+                cx.shared.hint = None;
+            }
+            return Flow::Continue;
+        }
         app.nav.top_mut().handle_key(key.code, &mut cx);
         let effects = cx.into_effects();
         self.settle(app, effects)

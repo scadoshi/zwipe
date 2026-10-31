@@ -11,10 +11,6 @@ pub(crate) mod action_bar;
 )]
 pub(crate) mod alert;
 /// Opening a link in the browser.
-#[expect(
-    dead_code,
-    reason = "no screen uses it yet; its tests open links through a stand-in program"
-)]
 pub(crate) mod browser;
 /// Bar charts from the deck metrics.
 pub(crate) mod charts;
@@ -33,7 +29,12 @@ pub(crate) mod clipboard;
 /// Sections that open and close, and the accordion over them.
 #[cfg_attr(not(test), expect(dead_code, reason = "no screen uses it yet"))]
 pub(crate) mod collapsible;
-/// One-time hint dialogs.
+/// The screen header: `!`, the title, and `?`.
+#[cfg_attr(not(test), expect(dead_code, reason = "no screen uses it yet"))]
+pub(crate) mod header;
+/// The `!` Help & feedback dialog.
+pub(crate) mod help;
+/// `?` topics and one-time hint dialogs.
 #[cfg_attr(not(test), expect(dead_code, reason = "no screen uses it yet"))]
 pub(crate) mod hint;
 /// The "?" popup of bullet points.

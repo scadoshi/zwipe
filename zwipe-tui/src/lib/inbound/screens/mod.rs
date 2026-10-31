@@ -12,6 +12,7 @@ pub(crate) mod swipe;
 pub(crate) mod update_required;
 
 use std::fmt;
+use std::time::Duration;
 
 use crossterm::event::KeyCode;
 use ratatui::Frame;
@@ -133,7 +134,7 @@ pub(crate) enum Update {
     SignedOut,
     /// A message for the status line.
     Status(String),
-    /// A toast for a result that has no screen to show it on.
+    /// A toast for a result that has no screen to show it on, up for the app's default time.
     #[cfg_attr(
         not(test),
         expect(
@@ -142,6 +143,15 @@ pub(crate) enum Update {
         )
     )]
     Toast(ToastKind, String),
+    /// A toast up for one of the app's three bands of time.
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "for screens still to come; no request toasts its result yet"
+        )
+    )]
+    ToastFor(ToastKind, String, Duration),
     /// The user as the server keeps it after marking a hint shown.
     HintMarked(Box<User>),
     Login(login::Update),
@@ -175,15 +185,16 @@ pub(crate) async fn perform(
         }
         Request::MarkHintShown(hint) => {
             // The hint is already marked on the local copy, so a failure only means it may show again next launch.
-            async {
+            let user = async {
                 account
                     .client
                     .mark_hint_shown(&hint, &account.fresh().await?)
                     .await
             }
             .await
-            .ok()
-            .map(|user| Update::HintMarked(Box::new(user)))
+            .ok()?;
+            account.set_user(user.clone()).await;
+            Some(Update::HintMarked(Box::new(user)))
         }
         Request::Login(request) => login::perform(account, request).await,
         Request::Home(request) => home::perform(account, request).await,
@@ -206,6 +217,7 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
         Update::SignedOut => login::signed_out(cx, None),
         Update::Status(status) => cx.shared.status = status,
         Update::Toast(kind, message) => cx.toast(kind, message),
+        Update::ToastFor(kind, message, duration) => cx.toast_for(kind, message, duration),
         Update::HintMarked(user) => {
             cx.shared.username = Some(user.username.to_string());
             cx.shared.user = Some(*user);
@@ -258,6 +270,30 @@ mod tests {
             failure(&ClientError::NotFound("gone".to_owned()), Update::Status),
             Update::Status(m) if m == "gone"
         ));
+    }
+
+    #[test]
+    fn a_toast_update_raises_a_toast_for_its_time() {
+        use crate::inbound::event_loop::harness::Harness;
+        use crate::inbound::widgets::toast;
+
+        let mut harness = Harness::new();
+        harness.apply(Update::ToastFor(
+            ToastKind::Warning,
+            "Careful".to_owned(),
+            toast::LONG,
+        ));
+        harness.apply(Update::Toast(ToastKind::Info, "Hello".to_owned()));
+        let toasts = harness.app.shared.toasts.items();
+        assert_eq!(toasts.len(), 2);
+        assert_eq!(
+            toasts[0].expires_at.duration_since(toasts[0].shown_at),
+            toast::LONG
+        );
+        assert_eq!(
+            toasts[1].expires_at.duration_since(toasts[1].shown_at),
+            toast::NORMAL
+        );
     }
 
     #[test]
