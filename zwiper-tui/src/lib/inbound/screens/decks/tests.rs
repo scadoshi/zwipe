@@ -4,6 +4,7 @@ use zwipe_core::domain::deck::{DeckOtherTag, Format};
 use super::*;
 use crate::inbound::event_loop::harness::Harness;
 use crate::inbound::screens::{self, deck, deck_form};
+use crate::inbound::widgets::toast::Toasts;
 use crate::test_support::{deck_profile, render, screen_text, user};
 
 fn colored(name: &str, identity: &[&str]) -> DeckProfile {
@@ -238,8 +239,9 @@ fn states_read_as_the_app_words_them() {
     let mut harness = loaded(Vec::new());
     assert!(screen_text(&harness.app).contains("No decks"));
     harness.apply(Update::Failed("offline".to_owned()));
-    assert!(screen_text(&harness.app).contains("Could not load decks"));
     assert_eq!(harness.app.shared.toasts.items()[0].message, "offline");
+    harness.app.shared.toasts = Toasts::default();
+    assert!(screen_text(&harness.app).contains("Could not load decks"));
 }
 
 #[test]

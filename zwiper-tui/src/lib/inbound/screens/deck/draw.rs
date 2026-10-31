@@ -57,7 +57,7 @@ type Hint = (&'static str, &'static str);
 
 pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &DeckView) {
     let palette = &shared.palette;
-    let area = f.area().inner(Margin::new(1, 1));
+    let area = f.area().inner(Margin::new(1, 0));
     let (pane_keys, screen_keys) = key_hints(view);
     let pane_line = action_bar::line(palette, &pane_keys);
     let screen_line = action_bar::line(palette, &screen_keys);

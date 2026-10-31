@@ -42,7 +42,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &SwipeView) {
         Constraint::Fill(1),
         Constraint::Length(bar_height),
     ])
-    .margin(1)
+    .horizontal_margin(1)
     .areas(area);
 
     header::draw(f, palette, header, "Add deck cards", header::Corner::Hint);

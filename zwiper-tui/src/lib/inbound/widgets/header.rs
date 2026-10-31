@@ -1,7 +1,7 @@
 //! The app's screen header: a faded `!` on the left for Help & feedback, the title centered, and a faded `?` on the right when the screen has a hint to reopen.
 
 use ratatui::Frame;
-use ratatui::layout::Rect;
+use ratatui::layout::{Margin, Rect};
 use ratatui::style::Stylize;
 use ratatui::text::Line;
 
@@ -16,12 +16,17 @@ pub(crate) enum Corner {
     Hint,
 }
 
-/// Draws the header along the top row of `area`.
+/// Draws the header along the top row of `area`, spanning the frame's width less one column on each side, so `!` and `?` sit in the same columns on every screen whatever margin the screen keeps.
 pub(crate) fn draw(f: &mut Frame<'_>, palette: &Palette, area: Rect, title: &str, corner: Corner) {
-    if area.height == 0 || area.width == 0 {
+    let frame = f.area().inner(Margin::new(1, 0));
+    if area.height == 0 || frame.width == 0 {
         return;
     }
-    let row = Rect { height: 1, ..area };
+    let row = Rect {
+        y: area.y,
+        height: 1,
+        ..frame
+    };
     f.render_widget(
         Line::from(title.to_owned())
             .style(palette.accent)
@@ -58,9 +63,10 @@ mod tests {
 
     #[test]
     fn the_title_sits_between_the_help_and_hint_corners() {
-        let row = header(Corner::Hint, 21);
-        assert_eq!(row, "!      Account      ?");
-        assert_eq!(header(Corner::Empty, 21).trim_end(), "!      Account");
+        let row = header(Corner::Hint, 23);
+        assert_eq!(row, " !      Account      ? ");
+        assert_eq!(header(Corner::Empty, 23).trim_end(), " !      Account");
         header(Corner::Hint, 1);
+        header(Corner::Hint, 2);
     }
 }

@@ -37,7 +37,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &ImportView) {
         Constraint::Length(1),
         Constraint::Length(1),
     ])
-    .margin(1)
+    .horizontal_margin(1)
     .areas(f.area());
     header::draw(f, palette, header, "Import", header::Corner::Hint);
     f.render_widget(Paragraph::new(chip_lines(palette, view)), chips);

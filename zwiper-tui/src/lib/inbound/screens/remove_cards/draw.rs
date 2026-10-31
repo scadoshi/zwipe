@@ -31,7 +31,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &RemoveView) {
         Constraint::Length(5),
         Constraint::Length(bar_height),
     ])
-    .margin(1)
+    .horizontal_margin(1)
     .areas(area);
     header::draw(f, palette, title, "Remove deck cards", header::Corner::Hint);
     let mut chips = vec![Span::styled("Boards ", palette.muted.bold())];

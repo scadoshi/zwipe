@@ -44,7 +44,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &DeckForm) {
         Constraint::Length(1),
         Constraint::Length(bar_height),
     ])
-    .margin(1)
+    .horizontal_margin(1)
     .areas(f.area());
     f.render_widget(action_bar::wrap(bar, keys.width), keys);
 

@@ -33,7 +33,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &ExportView) {
         Constraint::Length(1),
         Constraint::Length(bar_height),
     ])
-    .margin(1)
+    .horizontal_margin(1)
     .areas(f.area());
     header::draw(f, palette, header, "Export", header::Corner::Hint);
 

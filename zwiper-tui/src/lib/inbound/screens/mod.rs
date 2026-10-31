@@ -557,6 +557,9 @@ impl fmt::Debug for Password {
 }
 
 #[cfg(test)]
+mod header_tests;
+
+#[cfg(test)]
 mod tests {
     use super::*;
 

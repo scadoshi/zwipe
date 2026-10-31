@@ -47,7 +47,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, list: &DeckList) {
         Constraint::Length(1),
         Constraint::Length(bar_height),
     ])
-    .margin(1)
+    .horizontal_margin(1)
     .areas(f.area());
 
     header::draw(f, palette, header, "Decks", header::Corner::Hint);

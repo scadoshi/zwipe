@@ -3,6 +3,7 @@ use zwipe_core::domain::deck::{DeckOtherTag, MAX_DECK_ORACLE_TAGS};
 
 use super::*;
 use crate::inbound::event_loop::harness::Harness;
+use crate::inbound::widgets::toast::Toasts;
 use crate::test_support::{
     card, deck, deck_profile, render, screen_text, ticket, user, word_colors,
 };
@@ -634,6 +635,7 @@ fn a_failed_edit_load_says_so() {
     harness.open(|cx| open_edit(cx, Uuid::new_v4()));
     assert!(screen_text(&harness.app).contains("░"));
     harness.apply(Update::LoadFailed("deck not found".to_owned()));
+    harness.app.shared.toasts = Toasts::default();
     assert!(screen_text(&harness.app).contains("Could not load deck"));
 }
 
