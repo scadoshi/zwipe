@@ -641,6 +641,24 @@ pub(crate) enum Request {
     Delete(Uuid),
 }
 
+impl Request {
+    /// The action an error from this request is reported under, fixed so a renamed variant keeps its reports.
+    pub(crate) fn action(&self) -> &'static str {
+        match self {
+            Self::Load(..) => "load",
+            Self::LoadOracleTags => "load_oracle_tags",
+            Self::FixQuantity { .. } => "fix_quantity",
+            Self::ClearCommander { .. } => "clear_commander",
+            Self::RemoveCard { .. } => "remove_card",
+            Self::Clone { .. } => "clone",
+            Self::Share(..) => "share",
+            Self::Unshare(..) => "unshare",
+            Self::ClearSkips(..) => "clear_skips",
+            Self::Delete(..) => "delete",
+        }
+    }
+}
+
 /// The deck screen's results.
 #[derive(Debug)]
 pub(crate) enum Update {

@@ -66,9 +66,11 @@ pub async fn run() -> Result<()> {
 
     let mut terminal = ratatui::try_init()?;
     app.shared.images = card_images();
-    let result = EventLoop::new(account, Arc::new(theme_file))
+    let result = EventLoop::new(Arc::clone(&account), Arc::new(theme_file))
         .run(&mut terminal, &mut app)
         .await;
     ratatui::try_restore()?;
+    // After the restore, so a slow send never holds the terminal.
+    inbound::app::session::flush_on_quit(&account, inbound::app::session::QUIT_FLUSH_TIMEOUT).await;
     result
 }

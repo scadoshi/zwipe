@@ -1,6 +1,6 @@
 //! Keeping the session and the version gate up to date, as the app's root does on every screen, Login included.
 //!
-//! Every [`UPKEEP_INTERVAL`], starting at launch, [`upkeep`] refreshes the session when its access token is close to expiring, flushes the usage batch of handled errors, and asks the server for its minimum client version. A refresh the server rejects ends the session, which returns the app to Login without a word; the version gate opens and closes both ways, and a failed version check changes nothing.
+//! Every [`UPKEEP_INTERVAL`], starting at launch, [`upkeep`] refreshes the session when its access token is close to expiring and asks the server for its minimum client version. A refresh the server rejects ends the session, which returns the app to Login without a word; the version gate opens and closes both ways, and a failed version check changes nothing.
 
 use std::time::Duration;
 
@@ -15,11 +15,30 @@ use crate::outbound::account::Account;
 /// How often the session and the version gate are checked, from the app's `UPKEEP_INTERVAL`.
 pub(crate) const UPKEEP_INTERVAL: Duration = Duration::from_secs(60);
 
-/// Refreshes the session if it needs it, sends the waiting error reports, then checks the version. Returns whether a session there before has ended, and whether this build is too old, `None` when the server could not say.
+/// How often waiting error reports go out as a usage batch, from the app's `FLUSH_INTERVAL_SECS`.
+pub(crate) const FLUSH_INTERVAL: Duration = Duration::from_secs(30);
+
+/// How long quitting waits on the last usage batch, so a dead connection never holds the terminal.
+pub(crate) const QUIT_FLUSH_TIMEOUT: Duration = Duration::from_secs(2);
+
+/// A ticker for `period` whose first tick fires at once and whose missed ticks wait instead of bunching up.
+pub(crate) fn ticker(period: Duration) -> tokio::time::Interval {
+    let mut ticker = tokio::time::interval(period);
+    ticker.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+    ticker
+}
+
+/// Sends the last usage batch on a clean quit, the terminal's version of the app's flush when it goes to the background, giving up after `timeout`.
+pub(crate) async fn flush_on_quit(account: &Account, timeout: Duration) {
+    tokio::time::timeout(timeout, account.flush_usage())
+        .await
+        .ok();
+}
+
+/// Refreshes the session if it needs it, then checks the version. Returns whether a session there before has ended, and whether this build is too old, `None` when the server could not say.
 pub(crate) async fn upkeep(account: &Account) -> Update {
     let had_session = account.session().await.is_some();
     let refreshed = account.fresh().await;
-    account.flush_usage().await;
     let ended = had_session
         && matches!(refreshed, Err(ClientError::Unauthorized(_)))
         && account.session().await.is_none();
@@ -66,6 +85,63 @@ mod tests {
     use crate::inbound::event_loop::harness::Harness;
     use crate::inbound::screens::Screen;
     use crate::test_support::user;
+
+    #[tokio::test]
+    async fn the_flush_ticks_at_once_then_every_thirty_seconds() {
+        let mut flush = ticker(FLUSH_INTERVAL);
+        let first = tokio::time::timeout(Duration::from_millis(50), flush.tick()).await;
+        assert!(first.is_ok(), "the first flush is at once");
+        assert_eq!(
+            flush.period(),
+            Duration::from_secs(30),
+            "the app's FLUSH_INTERVAL_SECS"
+        );
+        assert_eq!(
+            flush.missed_tick_behavior(),
+            tokio::time::MissedTickBehavior::Delay
+        );
+    }
+
+    #[tokio::test]
+    async fn a_quit_flush_gives_up_on_a_server_that_never_answers() {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let url = format!("http://{}", listener.local_addr().unwrap())
+            .parse()
+            .unwrap();
+        // Accepts the connection and never answers.
+        let held = tokio::spawn(async move { listener.accept().await });
+        let dir =
+            std::env::temp_dir().join(format!("zwiper-tui-quit-flush-{}", std::process::id()));
+        let account = Account::new(
+            zwipe_client::ZwipeClient::new(url),
+            crate::outbound::account::SessionFile::at(dir.join("session.json")),
+        );
+        account
+            .set_session_for_test(crate::test_support::session(
+                &user(true),
+                &zwipe_core::domain::user::UserPreferences::default(),
+            ))
+            .await;
+        account.usage.report_error(
+            "decks",
+            "",
+            "load",
+            &ClientError::NotFound("gone".to_owned()),
+        );
+
+        let started = std::time::Instant::now();
+        flush_on_quit(&account, Duration::from_millis(200)).await;
+        assert!(
+            started.elapsed() < Duration::from_secs(2),
+            "{:?}",
+            started.elapsed()
+        );
+        assert!(held.await.unwrap().is_ok(), "the batch was on its way");
+        assert!(
+            account.usage.snapshot_and_zero().is_none(),
+            "taken for the send"
+        );
+    }
 
     #[test]
     fn the_version_gate_opens_and_closes_and_a_failed_check_keeps_it() {

@@ -730,6 +730,19 @@ pub(crate) enum Request {
     ClearSkips,
 }
 
+impl Request {
+    /// The action an error from this request is reported under, fixed so a renamed variant keeps its reports.
+    pub(crate) fn action(&self) -> &'static str {
+        match self {
+            Self::Load { .. } => "load",
+            Self::DeckProfiles => "deck_profiles",
+            Self::Maybeboard(..) => "maybeboard",
+            Self::Dismiss(..) => "dismiss",
+            Self::ClearSkips => "clear_skips",
+        }
+    }
+}
+
 /// The screen's results.
 #[derive(Debug)]
 pub(crate) enum Update {

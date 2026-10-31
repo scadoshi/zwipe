@@ -183,6 +183,15 @@ pub(crate) enum Request {
     Page { slug: String, offset: u32 },
 }
 
+impl Request {
+    /// The action an error from this request is reported under, fixed so a renamed variant keeps its reports.
+    pub(crate) fn action(&self) -> &'static str {
+        match self {
+            Self::Page { .. } => "page",
+        }
+    }
+}
+
 /// The examples' results.
 #[derive(Debug)]
 pub(crate) enum Update {

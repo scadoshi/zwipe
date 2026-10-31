@@ -112,6 +112,15 @@ pub(crate) enum Request {
     Send(String),
 }
 
+impl Request {
+    /// The action an error from this request is reported under, fixed so a renamed variant keeps its reports.
+    pub(crate) fn action(&self) -> &'static str {
+        match self {
+            Self::Send(..) => "send",
+        }
+    }
+}
+
 /// The Reset password screen's results.
 #[derive(Debug)]
 pub(crate) enum Update {

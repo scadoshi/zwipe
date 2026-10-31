@@ -97,6 +97,15 @@ pub(crate) enum Request {
     Image { face: usize, url: String },
 }
 
+impl Request {
+    /// The action an error from this request is reported under, fixed so a renamed variant keeps its reports.
+    pub(crate) fn action(&self) -> &'static str {
+        match self {
+            Self::Image { .. } => "image",
+        }
+    }
+}
+
 /// The preview's results.
 pub(crate) enum Update {
     Image {

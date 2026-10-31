@@ -2,7 +2,7 @@
 //!
 //! Card rows use these inside an expanded card; Activity's and Playstyle's charts use [`RoleTags`] under a picked role. Descriptions come from the oracle tag catalog in `shared.caches`, so a screen that shows tags calls `oracle_tags::ensure_catalog` when it opens. Until the catalog loads, every tag reads "No description yet".
 //!
-//! [`RoleTags`] keys: Tab opens the next tag's definition and BackTab the previous one, and stepping past either end closes it; `x` opens the examples for the open tag.
+//! [`RoleTags`] keys: Tab opens the next tag's definition and `BackTab` the previous one, and stepping past either end closes it; `x` opens the examples for the open tag.
 
 use crossterm::event::KeyCode;
 use ratatui::text::{Line, Span};

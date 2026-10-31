@@ -10,9 +10,7 @@ pub(crate) mod alert;
 pub(crate) mod browser;
 /// A card's info block, details and text stand-in.
 pub(crate) mod card_info;
-/// A swiped card flying off, and an undone one coming back.
 pub(crate) mod card_motion;
-/// Expandable card rows with their classification, printings and image keys.
 #[cfg_attr(
     not(test),
     expect(
@@ -47,9 +45,7 @@ pub(crate) mod clipboard;
 pub(crate) mod collapsible;
 /// The color map's tiles and key.
 pub(crate) mod color_map;
-/// Rolling counters.
 pub(crate) mod count_up;
-/// A screen's entrance.
 pub(crate) mod entrance;
 /// The compact strip of three rolling figures.
 pub(crate) mod figures;
@@ -57,17 +53,13 @@ pub(crate) mod figures;
 pub(crate) mod grid;
 /// The screen header: `!`, the title, and `?`.
 pub(crate) mod header;
-/// The `!` Help & feedback dialog.
 pub(crate) mod help;
-/// The logo and everybody's counters on the sign-in screens.
 pub(crate) mod hero;
-/// `?` topics and one-time hint dialogs.
 pub(crate) mod hint;
 /// The "?" popup of bullet points.
 pub(crate) mod info;
 /// A list of items of different heights, one focused, paged to keep it in view.
 pub(crate) mod item_list;
-/// The ZWIPE logo decoding in.
 pub(crate) mod logo;
 /// Mana colors and pips.
 pub(crate) mod mana;
@@ -75,7 +67,6 @@ pub(crate) mod mana;
 pub(crate) mod measure;
 /// A sheet of buttons, one focused.
 pub(crate) mod menu;
-/// An oracle tag's definition, and a row of tag chips with one open.
 #[cfg_attr(
     not(test),
     expect(
@@ -86,7 +77,6 @@ pub(crate) mod menu;
 pub(crate) mod otag;
 /// A framed panel centered over the screen.
 pub(crate) mod panel;
-/// One chip drawn on its own.
 pub(crate) mod pill;
 /// The bottom sheet with a scrolling body.
 pub(crate) mod sheet;
@@ -96,7 +86,6 @@ pub(crate) mod skeleton;
 pub(crate) mod spinner;
 /// The opening over the first screen.
 pub(crate) mod splash;
-/// Delayed and rising entrances inside a screen, and the hero's scope-in.
 pub(crate) mod stagger;
 /// Figures in a row, rolling while they load.
 #[cfg_attr(
@@ -108,7 +97,6 @@ pub(crate) mod stats;
 pub(crate) mod text_area;
 /// A one-line text box.
 pub(crate) mod text_input;
-/// Short messages in the top-left corner.
 pub(crate) mod toast;
 /// The sweep from one theme to the next.
 pub(crate) mod wipe;

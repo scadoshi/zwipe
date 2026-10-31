@@ -17,7 +17,6 @@ use crossterm::event::{Event, EventStream, KeyCode, KeyEvent, KeyEventKind, KeyM
 use futures::StreamExt;
 use ratatui::DefaultTerminal;
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
-use tokio::time::MissedTickBehavior;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::http::contracts::metrics::AnonymousEventKind;
 
@@ -27,6 +26,17 @@ use super::widgets::help;
 use super::widgets::splash::Splash;
 use crate::outbound::account::Account;
 use crate::outbound::theme_file::ThemeFile;
+
+/// With this set, a debug build panics on F12, to try the crash report and the terminal restore by hand. Release builds have no such key.
+#[cfg(debug_assertions)]
+const CRASH_VAR: &str = "ZWIPER_TUI_DEBUG_CRASH";
+
+/// Panics on F12 when [`CRASH_VAR`] is set, in debug builds only.
+#[cfg(debug_assertions)]
+fn crash_on_request(code: KeyCode) {
+    let requested = code == KeyCode::F(12) && std::env::var_os(CRASH_VAR).is_some();
+    assert!(!requested, "debug crash requested with F12");
+}
 
 /// How often the loop redraws while something moves: the rolling counters' 16 ms tick, which the slower animations land on too.
 const FRAME: Duration = Duration::from_millis(16);
@@ -73,8 +83,8 @@ impl EventLoop {
         self.start(app, session.as_ref());
         let mut events = EventStream::new();
         // The first tick fires at once: the launch's refresh and version check.
-        let mut upkeep = tokio::time::interval(session::UPKEEP_INTERVAL);
-        upkeep.set_missed_tick_behavior(MissedTickBehavior::Delay);
+        let mut upkeep = session::ticker(session::UPKEEP_INTERVAL);
+        let mut flush = session::ticker(session::FLUSH_INTERVAL);
 
         loop {
             self.dispatch();
@@ -90,6 +100,7 @@ impl EventLoop {
                 }
                 () = tokio::time::sleep(FRAME), if animating => {}
                 _ = upkeep.tick() => self.pending.push(Request::Upkeep),
+                _ = flush.tick() => self.pending.push(Request::FlushUsage),
                 event = events.next() => match event {
                     Some(Ok(Event::Key(key))) if key.kind == KeyEventKind::Press => {
                         if self.handle_key(app, key) == Flow::Quit {
@@ -134,6 +145,8 @@ impl EventLoop {
         if control && key.code == KeyCode::Char('c') {
             return Flow::Quit;
         }
+        #[cfg(debug_assertions)]
+        crash_on_request(key.code);
         if app.shared.update_required {
             return if matches!(key.code, KeyCode::Esc | KeyCode::Char('q')) {
                 Flow::Quit

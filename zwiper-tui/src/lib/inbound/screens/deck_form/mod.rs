@@ -831,6 +831,26 @@ pub(crate) enum Request {
     MaybeboardRemove(Uuid),
 }
 
+impl Request {
+    /// The action an error from this request is reported under, fixed so a renamed variant keeps its reports.
+    pub(crate) fn action(&self) -> &'static str {
+        match self {
+            Self::DeckTagCatalog => "deck_tag_catalog",
+            Self::OracleCatalog => "oracle_catalog",
+            Self::Debounce { .. } => "debounce",
+            Self::Search { .. } => "search",
+            Self::FindPartner { .. } => "find_partner",
+            Self::LoadDeck(..) => "load_deck",
+            Self::FetchCard { .. } => "fetch_card",
+            Self::Create(..) => "create",
+            Self::Update { .. } => "update",
+            Self::SwipePage { .. } => "swipe_page",
+            Self::MaybeboardAdd(..) => "maybeboard_add",
+            Self::MaybeboardRemove(..) => "maybeboard_remove",
+        }
+    }
+}
+
 /// The form's results.
 #[derive(Debug)]
 pub(crate) enum Update {

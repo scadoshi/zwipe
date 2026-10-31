@@ -151,6 +151,12 @@ impl Account {
         self.usage.clear();
     }
 
+    /// Holds `session` without saving it, for tests.
+    #[cfg(test)]
+    pub(crate) async fn set_session_for_test(&self, session: Session) {
+        *self.session.lock().await = Some(session);
+    }
+
     /// Sends the waiting errors as one usage batch, as the app's flush does. With no session, or when the send fails, the batch is dropped: it is not worth retrying.
     pub(crate) async fn flush_usage(&self) {
         let Some(batch) = self.usage.snapshot_and_zero() else {
@@ -239,10 +245,12 @@ mod tests {
     async fn a_flush_sends_the_waiting_errors_once() {
         let (url, request) = crate::test_support::server::serve_once("204 No Content", "").await;
         let account = Account::new(ZwipeClient::new(url), temp_file("flush"));
-        *account.session.lock().await = Some(crate::test_support::session(
-            &crate::test_support::user(true),
-            &zwipe_core::domain::user::UserPreferences::default(),
-        ));
+        account
+            .set_session_for_test(crate::test_support::session(
+                &crate::test_support::user(true),
+                &zwipe_core::domain::user::UserPreferences::default(),
+            ))
+            .await;
         account.usage.report_error(
             "decks",
             "",

@@ -246,6 +246,8 @@ pub(crate) enum Request {
     FetchChangelog,
     /// Sends the crash report a previous run left, once at launch.
     SendCrashReport,
+    /// Sends the waiting error reports as one usage batch, every 30 seconds.
+    FlushUsage,
     /// Fetches everybody's counts for the hero, and saves them for the next launch.
     FetchCounts,
     /// Saves the account's theme for drawing before the next sign-in.
@@ -347,64 +349,48 @@ tokio::task_local! {
 #[derive(Debug)]
 struct Origin {
     screen: &'static str,
-    action: String,
+    action: &'static str,
     usage: UsageBuffer,
 }
 
 impl Request {
-    /// The screen and action an error from this request is reported under: the screen's module name and the request's variant name in snake case, or `app` for the app's own requests.
-    fn origin(&self) -> (&'static str, String) {
+    /// The screen and action an error from this request is reported under: the screen's module name and its request's fixed action name, or `app` for the app's own requests.
+    fn origin(&self) -> (&'static str, &'static str) {
         match self {
-            Self::Upkeep => ("app", "upkeep".to_owned()),
-            Self::SignOut => ("app", "sign_out".to_owned()),
-            Self::Record(_) => ("app", "record".to_owned()),
-            Self::FetchChangelog => ("app", "fetch_changelog".to_owned()),
-            Self::FetchCounts => ("app", "fetch_counts".to_owned()),
-            Self::RememberTheme(_) => ("app", "remember_theme".to_owned()),
-            Self::MarkHintShown(_) => ("app", "mark_hint_shown".to_owned()),
-            Self::SendCrashReport => ("app", "send_crash_report".to_owned()),
-            Self::Login(r) => ("login", variant_name(r)),
-            Self::Register(r) => ("register", variant_name(r)),
-            Self::ForgotPassword(r) => ("forgot_password", variant_name(r)),
-            Self::Home(r) => ("home", variant_name(r)),
-            Self::Decks(r) => ("decks", variant_name(r)),
-            Self::Deck(r) => ("deck", variant_name(r)),
-            Self::DeckForm(r) => ("deck_form", variant_name(r)),
-            Self::DeckImport(r) => ("deck_import", variant_name(r)),
-            Self::DeckExport(r) => ("deck_export", variant_name(r)),
-            Self::Swipe(r) => ("swipe", variant_name(r)),
-            Self::DeckCards(r) => ("deck_cards", variant_name(r)),
-            Self::RemoveCards(r) => ("remove_cards", variant_name(r)),
-            Self::Account(r) => ("account", variant_name(r)),
-            Self::Activity(r) => ("activity", variant_name(r)),
-            Self::Config(r) => ("config", variant_name(r)),
-            Self::CardSheets(r) => ("card_sheets", variant_name(r)),
-            Self::ImagePreview(r) => ("image_preview", variant_name(r)),
-            Self::OracleTags(r) => ("oracle_tags", variant_name(r)),
-            Self::OtagExamples(r) => ("otag_examples", variant_name(r)),
-            Self::Printings(r) => ("printings", variant_name(r)),
-            Self::Playstyle(r) => ("playstyle", variant_name(r)),
-            Self::CommanderSwipe(r) => ("commander_swipe", variant_name(r)),
-            Self::CommanderMaybeboard(r) => ("commander_maybeboard", variant_name(r)),
+            Self::Upkeep => ("app", "upkeep"),
+            Self::SignOut => ("app", "sign_out"),
+            Self::Record(_) => ("app", "record"),
+            Self::FetchChangelog => ("app", "fetch_changelog"),
+            Self::FetchCounts => ("app", "fetch_counts"),
+            Self::RememberTheme(_) => ("app", "remember_theme"),
+            Self::MarkHintShown(_) => ("app", "mark_hint_shown"),
+            Self::SendCrashReport => ("app", "send_crash_report"),
+            Self::FlushUsage => ("app", "flush_usage"),
+            Self::Login(r) => ("login", r.action()),
+            Self::Register(r) => ("register", r.action()),
+            Self::ForgotPassword(r) => ("forgot_password", r.action()),
+            Self::Home(r) => ("home", r.action()),
+            Self::Decks(r) => ("decks", r.action()),
+            Self::Deck(r) => ("deck", r.action()),
+            Self::DeckForm(r) => ("deck_form", r.action()),
+            Self::DeckImport(r) => ("deck_import", r.action()),
+            Self::DeckExport(r) => ("deck_export", r.action()),
+            Self::Swipe(r) => ("swipe", r.action()),
+            Self::DeckCards(r) => ("deck_cards", r.action()),
+            Self::RemoveCards(r) => ("remove_cards", r.action()),
+            Self::Account(r) => ("account", r.action()),
+            Self::Activity(r) => ("activity", r.action()),
+            Self::Config(r) => ("config", r.action()),
+            Self::CardSheets(r) => ("card_sheets", r.action()),
+            Self::ImagePreview(r) => ("image_preview", r.action()),
+            Self::OracleTags(r) => ("oracle_tags", r.action()),
+            Self::OtagExamples(r) => ("otag_examples", r.action()),
+            Self::Printings(r) => ("printings", r.action()),
+            Self::Playstyle(r) => ("playstyle", r.action()),
+            Self::CommanderSwipe(r) => ("commander_swipe", r.action()),
+            Self::CommanderMaybeboard(r) => ("commander_maybeboard", r.action()),
         }
     }
-}
-
-/// An enum value's variant name in snake case, read from the front of its derived `Debug` output, so no field ever reaches a report.
-fn variant_name(value: &impl fmt::Debug) -> String {
-    let debug = format!("{value:?}");
-    let mut name = String::new();
-    for c in debug.chars().take_while(char::is_ascii_alphanumeric) {
-        if c.is_ascii_uppercase() {
-            if !name.is_empty() {
-                name.push('_');
-            }
-            name.push(c.to_ascii_lowercase());
-        } else {
-            name.push(c);
-        }
-    }
-    name
 }
 
 /// Runs one request off the main loop, with any error it shows reported under its screen and action.
@@ -432,6 +418,10 @@ async fn run_request(
 ) -> Option<Update> {
     match request {
         Request::Upkeep => Some(session::upkeep(account).await),
+        Request::FlushUsage => {
+            account.flush_usage().await;
+            None
+        }
         Request::SendCrashReport => {
             account.crashes.send_pending(&account.client).await;
             None
@@ -569,7 +559,7 @@ pub(crate) fn shown(error: &ClientError) -> String {
         .try_with(|origin| {
             origin
                 .usage
-                .report_error(origin.screen, "", &origin.action, error);
+                .report_error(origin.screen, "", origin.action, error);
         })
         .ok();
     error.to_user_message()
@@ -598,8 +588,10 @@ mod tests {
     #[test]
     fn a_request_names_its_screen_and_action_without_its_fields() {
         let request = Request::Deck(deck::Request::Load(uuid::Uuid::nil()));
-        assert_eq!(request.origin(), ("deck", "load".to_owned()));
-        assert_eq!(variant_name(&Request::FetchCounts), "fetch_counts");
+        assert_eq!(request.origin(), ("deck", "load"));
+        assert_eq!(Request::FetchCounts.origin(), ("app", "fetch_counts"));
+        let fix = deck::Request::LoadOracleTags;
+        assert_eq!(fix.action(), "load_oracle_tags");
     }
 
     #[tokio::test]
@@ -607,7 +599,7 @@ mod tests {
         let usage = UsageBuffer::default();
         let origin = Origin {
             screen: "decks",
-            action: "load".to_owned(),
+            action: "load",
             usage: usage.clone(),
         };
         ORIGIN

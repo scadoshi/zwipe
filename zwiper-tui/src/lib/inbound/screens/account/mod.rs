@@ -435,6 +435,18 @@ pub(crate) enum Request {
     Change(AccountChange),
 }
 
+impl Request {
+    /// The action an error from this request is reported under, fixed so a renamed variant keeps its reports.
+    pub(crate) fn action(&self) -> &'static str {
+        match self {
+            Self::LoadUser => "load_user",
+            Self::Resend => "resend",
+            Self::CheckVerification => "check_verification",
+            Self::Change(..) => "change",
+        }
+    }
+}
+
 /// A change to the account, with the password the server checks it against.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum AccountChange {

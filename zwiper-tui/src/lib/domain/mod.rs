@@ -10,7 +10,6 @@ pub(crate) mod add;
 pub(crate) mod card;
 /// The changelog cache and how its releases are filed.
 pub(crate) mod changelog;
-/// The color map's tiles, ported from the app.
 pub(crate) mod color_map;
 /// Orangui's rolling figures and compact numbers.
 pub(crate) mod count_up;
@@ -30,7 +29,6 @@ pub(crate) mod home;
 pub(crate) mod legal;
 /// The Playstyle screen's identities, reasons, profile sections and staples filters.
 pub(crate) mod playstyle;
-/// The swipe stacks the Add and Remove screens share, and their undo actions.
 pub(crate) mod stack;
 /// The stores the card screens share for the whole run.
 pub(crate) mod stores;

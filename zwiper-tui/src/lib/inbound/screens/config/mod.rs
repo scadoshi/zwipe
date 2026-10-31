@@ -318,6 +318,17 @@ pub(crate) enum Request {
     LoadFranchises,
 }
 
+impl Request {
+    /// The action an error from this request is reported under, fixed so a renamed variant keeps its reports.
+    pub(crate) fn action(&self) -> &'static str {
+        match self {
+            Self::LoadPreferences => "load_preferences",
+            Self::Save { .. } => "save",
+            Self::LoadFranchises => "load_franchises",
+        }
+    }
+}
+
 /// Config's results.
 #[derive(Debug)]
 pub(crate) enum Update {

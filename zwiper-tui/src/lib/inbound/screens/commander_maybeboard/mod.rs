@@ -467,6 +467,21 @@ pub(crate) enum Request {
     Clear,
 }
 
+impl Request {
+    /// The action an error from this request is reported under, fixed so a renamed variant keeps its reports.
+    pub(crate) fn action(&self) -> &'static str {
+        match self {
+            Self::Load { .. } => "load",
+            Self::DeckProfiles => "deck_profiles",
+            Self::Debounce { .. } => "debounce",
+            Self::Search { .. } => "search",
+            Self::Add(..) => "add",
+            Self::Remove(..) => "remove",
+            Self::Clear => "clear",
+        }
+    }
+}
+
 /// The screen's results.
 #[derive(Debug)]
 pub(crate) enum Update {

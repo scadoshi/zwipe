@@ -46,7 +46,7 @@ pub(crate) fn at(art: &str, elapsed: Duration) -> String {
     decoded(art, decode, noise, u64::try_from(frame).unwrap_or(0))
 }
 
-/// `art` as it looks `elapsed` into leaving a splash: the two waves in reverse, a fast one turning the art to noise and a slower one clearing it, blank from [`EXIT`] on.
+/// `art` as it looks `elapsed` into leaving a splash: the two waves in reverse, a fast one turning the art to noise and a slower one clearing it, blank from `EXIT` (480 ms) on.
 pub(crate) fn leaving(art: &str, elapsed: Duration) -> String {
     let frames = frame_count(EXIT_MS);
     let frame = frame_at(elapsed);

@@ -435,6 +435,19 @@ pub(crate) enum Request {
     },
 }
 
+impl Request {
+    /// The action an error from this request is reported under, fixed so a renamed variant keeps its reports.
+    pub(crate) fn action(&self) -> &'static str {
+        match self {
+            Self::Load { .. } => "load",
+            Self::Remove { .. } => "remove",
+            Self::Move { .. } => "move",
+            Self::UndoRemove { .. } => "undo_remove",
+            Self::UndoMove { .. } => "undo_move",
+        }
+    }
+}
+
 /// Remove's results.
 #[derive(Debug)]
 pub(crate) enum Update {

@@ -12,7 +12,7 @@
 //! |---|---|
 //! | j/k, Down/Up | move the focus a row (an expanded row stays open) |
 //! | Enter | expand the focused row, or collapse it when it is the open one |
-//! | Tab, BackTab | open the next or previous tag's definition in the expanded row; past either end closes it |
+//! | Tab, `BackTab` | open the next or previous tag's definition in the expanded row; past either end closes it |
 //! | x | open the examples for the open tag (`otag_examples::open`) |
 //! | i | open the expanded card's image (`image_preview::open(cx, card, 0)`) |
 //! | p | open the expanded card's printings to pick one (`printings::open` in `Mode::Pick`) |

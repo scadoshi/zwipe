@@ -855,6 +855,24 @@ pub(crate) enum Request {
     },
 }
 
+impl Request {
+    /// The action an error from this request is reported under, fixed so a renamed variant keeps its reports.
+    pub(crate) fn action(&self) -> &'static str {
+        match self {
+            Self::Search { .. } => "search",
+            Self::Create { .. } => "create",
+            Self::DeleteUndone { .. } => "delete_undone",
+            Self::Skip { .. } => "skip",
+            Self::Unskip { .. } => "unskip",
+            Self::UndoAdd { .. } => "undo_add",
+            Self::Promote { .. } => "promote",
+            Self::Demote { .. } => "demote",
+            Self::ReloadMaybeboard { .. } => "reload_maybeboard",
+            Self::Image { .. } => "image",
+        }
+    }
+}
+
 /// The Add screen's results.
 #[derive(Debug)]
 pub(crate) enum Update {

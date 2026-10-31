@@ -128,7 +128,7 @@ pub(crate) struct DeckCardsView {
     pub(crate) collapsed: HashSet<String>,
     /// The open row, by printing ID.
     pub(crate) expanded: Option<Uuid>,
-    /// The open row's oracle tag whose definition shows, by its place in [`card_info::oracle_tags`].
+    /// The open row's oracle tag whose definition shows, by its place in [`card_info::oracle_tags`](crate::inbound::widgets::card_info::oracle_tags).
     pub(crate) open_tag: Option<usize>,
     /// The face the open row shows.
     pub(crate) face: usize,
@@ -876,6 +876,28 @@ pub(crate) enum Request {
         deck_id: Uuid,
         card: Box<Card>,
     },
+}
+
+impl Request {
+    /// The action an error from this request is reported under, fixed so a renamed variant keeps its reports.
+    pub(crate) fn action(&self) -> &'static str {
+        match self {
+            Self::Load { .. } => "load",
+            Self::Tokens { .. } => "tokens",
+            Self::FlushTimer { .. } => "flush_timer",
+            Self::WriteQuantity { .. } => "write_quantity",
+            Self::Move { .. } => "move",
+            Self::Printing { .. } => "printing",
+            Self::ZonePrinting { .. } => "zone_printing",
+            Self::Mvp { .. } => "mvp",
+            Self::UndoDelete { .. } => "undo_delete",
+            Self::UndoCreate { .. } => "undo_create",
+            Self::UndoPrinting { .. } => "undo_printing",
+            Self::QuickDebounce { .. } => "quick_debounce",
+            Self::QuickSearch { .. } => "quick_search",
+            Self::QuickAdd { .. } => "quick_add",
+        }
+    }
 }
 
 /// The view's results.

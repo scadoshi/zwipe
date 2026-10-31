@@ -210,6 +210,21 @@ pub(crate) enum Request {
     Flavor,
 }
 
+impl Request {
+    /// The action an error from this request is reported under, fixed so a renamed variant keeps its reports.
+    pub(crate) fn action(self) -> &'static str {
+        match self {
+            Self::Restore => "restore",
+            Self::SaveScope(..) => "save_scope",
+            Self::User => "user",
+            Self::Preferences => "preferences",
+            Self::MyMetrics => "my_metrics",
+            Self::PlayStyle => "play_style",
+            Self::Flavor => "flavor",
+        }
+    }
+}
+
 /// The home screen's results.
 #[derive(Debug)]
 pub(crate) enum Update {

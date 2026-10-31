@@ -571,6 +571,19 @@ pub(crate) enum Request {
     Undismiss(Uuid),
 }
 
+impl Request {
+    /// The action an error from this request is reported under, fixed so a renamed variant keeps its reports.
+    pub(crate) fn action(&self) -> &'static str {
+        match self {
+            Self::Search { .. } => "search",
+            Self::Save(..) => "save",
+            Self::Unsave(..) => "unsave",
+            Self::Dismiss(..) => "dismiss",
+            Self::Undismiss(..) => "undismiss",
+        }
+    }
+}
+
 /// The swipe's results.
 #[derive(Debug)]
 pub(crate) enum Update {

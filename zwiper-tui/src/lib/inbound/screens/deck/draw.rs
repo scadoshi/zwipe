@@ -1,4 +1,4 @@
-//! One deck: the Profile card and the sections in as many panels as fit, laid out by [`layout`](super::layout), with the More sheet and dialogs over them.
+//! One deck: the Profile card and the sections in as many panels as fit, laid out by [`layout`], with the More sheet and dialogs over them.
 
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Margin, Rect};

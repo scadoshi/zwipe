@@ -15,7 +15,7 @@ use zwipe_core::http::contracts::metrics::{ClientErrorReport, HttpUsageBatch};
 struct ErrorKey {
     screen: &'static str,
     component: &'static str,
-    action: String,
+    action: &'static str,
     kind: &'static str,
     message: String,
 }
@@ -34,7 +34,7 @@ impl UsageBuffer {
         &self,
         screen: &'static str,
         component: &'static str,
-        action: &str,
+        action: &'static str,
         error: &ClientError,
     ) {
         let (kind, message) = match error {
@@ -54,7 +54,7 @@ impl UsageBuffer {
         let key = ErrorKey {
             screen,
             component,
-            action: action.to_owned(),
+            action,
             kind,
             message,
         };
@@ -85,7 +85,7 @@ impl UsageBuffer {
             .map(|(key, count)| ClientErrorReport {
                 screen: key.screen.to_owned(),
                 component: key.component.to_owned(),
-                action: key.action,
+                action: key.action.to_owned(),
                 kind: key.kind.to_owned(),
                 message: key.message,
                 count,
@@ -161,7 +161,8 @@ mod tests {
             buffer.report_error("deck_form", "", "save", &error);
         }
         for i in 0..(HttpUsageBatch::MAX_CLIENT_ERRORS_PER_FLUSH + 10) {
-            buffer.report_error("deck_form", "", &format!("action_{i}"), &error);
+            let action: &'static str = Box::leak(format!("action_{i}").into_boxed_str());
+            buffer.report_error("deck_form", "", action, &error);
         }
 
         let batch = buffer.snapshot_and_zero().expect("errors buffered");

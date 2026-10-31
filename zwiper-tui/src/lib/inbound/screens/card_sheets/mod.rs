@@ -28,6 +28,16 @@ pub(crate) enum Request {
     Printings { oracle_id: Uuid },
 }
 
+impl Request {
+    /// The action an error from this request is reported under, fixed so a renamed variant keeps its reports.
+    pub(crate) fn action(&self) -> &'static str {
+        match self {
+            Self::Catalog(..) => "catalog",
+            Self::Printings { .. } => "printings",
+        }
+    }
+}
+
 /// The sheets' results.
 #[derive(Debug)]
 pub(crate) enum Update {

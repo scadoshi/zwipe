@@ -14,5 +14,4 @@ pub(crate) mod home_file;
 pub(crate) mod images;
 /// The last account's theme, for drawing before sign-in.
 pub(crate) mod theme_file;
-/// Handled errors waiting for the next usage batch.
 pub(crate) mod usage_buffer;

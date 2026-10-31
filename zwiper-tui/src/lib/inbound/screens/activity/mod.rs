@@ -523,6 +523,15 @@ pub(crate) enum Request {
     Load,
 }
 
+impl Request {
+    /// The action an error from this request is reported under, fixed so a renamed variant keeps its reports.
+    pub(crate) fn action(self) -> &'static str {
+        match self {
+            Self::Load => "load",
+        }
+    }
+}
+
 /// The screen's results.
 #[derive(Debug)]
 pub(crate) enum Update {
