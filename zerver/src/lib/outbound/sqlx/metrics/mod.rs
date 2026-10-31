@@ -71,11 +71,11 @@ impl MetricsRepository for Postgres {
         // the weekly INTEGER columns. Lifetime and daily counters are BIGINT.
         let batch = batch.clamped();
 
-        let r = i64::from(batch.swipes_right);
-        let l = i64::from(batch.swipes_left);
-        let u = i64::from(batch.swipes_up);
-        let d = i64::from(batch.swipes_down);
-        let s = i64::from(batch.searches);
+        let right = i64::from(batch.swipes_right);
+        let left = i64::from(batch.swipes_left);
+        let up = i64::from(batch.swipes_up);
+        let down = i64::from(batch.swipes_down);
+        let searches = i64::from(batch.searches);
 
         let mut tx = self.pool.begin().await.map_err(db)?;
 
@@ -89,11 +89,11 @@ impl MetricsRepository for Postgres {
                    updated_at   = NOW()
                WHERE user_id = $1"#,
             user_id,
-            r,
-            l,
-            u,
-            d,
-            s,
+            right,
+            left,
+            up,
+            down,
+            searches,
         )
         .execute(&mut *tx)
         .await
@@ -110,11 +110,11 @@ impl MetricsRepository for Postgres {
                    swipes_down  = user_daily_activity.swipes_down  + EXCLUDED.swipes_down,
                    searches     = user_daily_activity.searches     + EXCLUDED.searches"#,
             user_id,
-            r,
-            l,
-            u,
-            d,
-            s,
+            right,
+            left,
+            up,
+            down,
+            searches,
         )
         .execute(&mut *tx)
         .await
