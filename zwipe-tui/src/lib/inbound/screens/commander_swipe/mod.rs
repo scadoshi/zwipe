@@ -10,6 +10,7 @@ pub(crate) mod keys;
 mod tests;
 
 use std::collections::HashSet;
+use std::time::Instant;
 
 use crossterm::event::KeyCode;
 use uuid::Uuid;
@@ -22,10 +23,12 @@ use zwipe_core::http::contracts::suggestions::HttpCommanderSuggestion;
 use super::card_sheets::filter::{FilterSheet, SheetConfig, SheetOutcome};
 use super::playstyle::{DeckLimit, create_deck_with, suggestion_colors};
 use super::{Screen, card_sheets, failure};
+use crate::domain::stack::Direction;
 use crate::domain::{filter, playstyle};
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;
+use crate::inbound::widgets::card_motion::CardMotion;
 use crate::inbound::widgets::hint::{self, HintContent};
 use crate::inbound::widgets::toast::{self, ToastKind};
 use crate::outbound::account::Account;
@@ -161,6 +164,8 @@ pub(crate) struct CommanderSwipeView {
     pub(crate) filter: Option<Filter>,
     /// Commander mode's card filter sheet, while it is open over the stack.
     pub(crate) sheet: Option<FilterSheet>,
+    /// The swiped card flying off, or the undone one coming back. A pick closes the swipe, so it has no exit.
+    pub(crate) motion: Option<CardMotion<Card>>,
 }
 
 impl CommanderSwipeView {
@@ -185,6 +190,7 @@ impl CommanderSwipeView {
             limit,
             filter: None,
             sheet: None,
+            motion: None,
         };
         if let Mode::Suggested(pile) = &view.mode {
             view.cards = dealt(pile);
@@ -269,6 +275,23 @@ impl CommanderSwipeView {
         }
     }
 
+    /// Whether a card is in motion, so the loop redraws.
+    pub(crate) fn animating(&self) -> bool {
+        self.motion
+            .as_ref()
+            .is_some_and(|m| m.running(Instant::now()))
+    }
+
+    /// The card under the top one, which a card coming back after an undo covers.
+    pub(crate) fn under(&self) -> Option<&Card> {
+        self.cards.get(self.index.checked_add(1)?)
+    }
+
+    /// Sends `card` off by `direction`, replacing any motion still running.
+    fn exit(&mut self, direction: Direction, card: Card) {
+        self.motion = Some(CardMotion::exit(direction, card, Instant::now()));
+    }
+
     /// Moves past the top card, asking for more in Commander when few are left.
     fn advance(&mut self, cx: &mut Context<'_>) {
         self.index = self.index.saturating_add(1);
@@ -296,10 +319,11 @@ impl CommanderSwipeView {
 
     /// Up: saves the top card to the commander maybeboard and moves on.
     pub(crate) fn save(&mut self, cx: &mut Context<'_>) {
-        let Some(card) = self.current() else {
+        let Some(card) = self.current().cloned() else {
             return;
         };
         let oracle_id = card.scryfall_data.oracle_id;
+        self.exit(Direction::Up, card);
         self.advance(cx);
         let Some(oracle_id) = oracle_id else {
             self.history.push(Swiped::Skip);
@@ -314,10 +338,11 @@ impl CommanderSwipeView {
 
     /// Left: skips the top card, in Suggested hiding it for a week.
     pub(crate) fn skip(&mut self, cx: &mut Context<'_>) {
-        let Some(card) = self.current() else {
+        let Some(card) = self.current().cloned() else {
             return;
         };
         let oracle_id = card.scryfall_data.oracle_id;
+        self.exit(Direction::Left, card);
         self.advance(cx);
         match (&self.mode, oracle_id) {
             (Mode::Suggested(_), Some(oracle_id)) => {
@@ -340,7 +365,13 @@ impl CommanderSwipeView {
             return;
         };
         self.index = index;
-        match self.history.pop() {
+        let swiped = self.history.pop();
+        let side = match swiped {
+            Some(Swiped::Maybe(_)) => Direction::Up,
+            Some(Swiped::Dismissed(_) | Swiped::Skip) | None => Direction::Left,
+        };
+        self.motion = Some(CardMotion::enter(side, Instant::now()));
+        match swiped {
             Some(Swiped::Maybe(oracle_id)) => cx.request(Request::Unsave(oracle_id).into()),
             Some(Swiped::Dismissed(oracle_id)) => {
                 cx.request(Request::Undismiss(oracle_id).into());
@@ -413,6 +444,7 @@ impl CommanderSwipeView {
 
     /// Deals from the top again without a word.
     fn restart(&mut self, cx: &mut Context<'_>) {
+        self.motion = None;
         self.index = 0;
         self.history.clear();
         match &mut self.mode {

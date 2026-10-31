@@ -124,10 +124,13 @@ fn an_empty_page_ends_the_browse_and_down_comes_back() {
     assert!(view(&harness).exhausted);
     harness.press(KeyCode::Left);
     assert_eq!(view(&harness).index, 2);
+    // The last card is still flying off over the line; let it land.
+    view_mut(&mut harness).motion = None;
     assert!(screen_text(&harness.app).contains("No more cards. Swipe down to go back."));
     harness.press(KeyCode::Left);
     assert_eq!(view(&harness).index, 2, "nothing past the end");
     harness.press(KeyCode::Down);
+    view_mut(&mut harness).motion = None;
     assert!(screen_text(&harness.app).contains("Card 1"));
 }
 
@@ -232,4 +235,62 @@ fn the_examples_fit_a_tiny_terminal() {
     harness.press(KeyCode::Char('d'));
     render(&harness.app, 8, 3);
     render(&harness.app, 1, 1);
+}
+
+#[test]
+fn the_next_card_flies_off_left_and_a_step_back_flies_it_in() {
+    use crate::domain::stack::Direction;
+    use crate::inbound::widgets::card_motion::Phase;
+
+    let mut harness = on_examples();
+    harness.apply(page(0, 3));
+    harness.press(KeyCode::Left);
+    let motion = view(&harness).motion.clone().expect("the card flies off");
+    assert_eq!(motion.direction(), Direction::Left);
+    assert!(matches!(motion.phase(), Phase::Exit(c) if c.scryfall_data.name == "Card 0"));
+    assert!(harness.app.nav.top().animating());
+    render(&harness.app, 80, 30);
+
+    harness.press(KeyCode::Down);
+    let motion = view(&harness).motion.clone().unwrap();
+    assert_eq!(
+        (motion.direction(), motion.phase()),
+        (Direction::Left, &Phase::Enter)
+    );
+    assert_eq!(
+        view(&harness)
+            .under()
+            .map(|c| c.scryfall_data.name.as_str()),
+        Some("Card 1")
+    );
+    render(&harness.app, 80, 30);
+
+    view_mut(&mut harness).motion = None;
+    harness.press(KeyCode::Down);
+    assert!(
+        view(&harness).motion.is_none(),
+        "nothing flies at the first card"
+    );
+}
+
+#[test]
+fn the_swipe_keys_read_skip_and_undo_in_the_apps_swipe_colors() {
+    use crate::test_support::word_colors;
+
+    let mut harness = on_examples();
+    harness.apply(page(0, 3));
+    let palette = harness.app.shared.palette;
+    let row = "← skip  ↓ undo";
+    assert!(screen_text(&harness.app).contains(row));
+    assert_eq!(
+        word_colors(&harness.app, row, &["skip", "undo"]),
+        [palette.error.fg, palette.tertiary.fg]
+    );
+}
+
+fn view_mut(harness: &mut Harness) -> &mut ExamplesView {
+    match harness.screen_mut() {
+        Screen::OtagExamples(view) => view,
+        other => panic!("not the examples: {other:?}"),
+    }
 }

@@ -178,7 +178,7 @@ fn the_card_on_top_shows_its_text_and_why() {
         "• Shares oracle tags with your decks",
         "Other tags:  goblin-typal ",
         "• You build in red (2 of your 4 decks)",
-        "→/l Pick  ↑/k Save  ←/h Skip  ↓/j Undo  f Filter  r Refresh  ? Hint  Esc Back",
+        "→ add  ← skip  ↑ maybeboard  ↓ undo  f Filter  r Refresh  ? Hint  Esc Back",
     ] {
         assert!(text.contains(expected), "missing {expected} in\n{text}");
     }
@@ -569,4 +569,86 @@ fn commander_modes_filter_is_the_card_filter_and_apply_deals_again() {
     assert_eq!(query.name_contains(), Some("elf"));
     assert_eq!(query.is_commander_in_format(), Some(&Format::Commander));
     assert_eq!(query.offset(), PAGE);
+}
+
+#[test]
+fn skips_and_saves_fly_off_and_an_undo_flies_back_from_the_same_side() {
+    use crate::domain::stack::Direction;
+    use crate::inbound::widgets::card_motion::{CardMotion, Phase};
+
+    let mut harness = swiping();
+    let first = top(&harness);
+    harness.press(KeyCode::Left);
+    let motion = view(&harness).motion.clone().expect("a skip flies off");
+    assert_eq!(motion.direction(), Direction::Left);
+    assert!(matches!(motion.phase(), Phase::Exit(c) if c.scryfall_data.name == first));
+    assert!(
+        harness.app.nav.top().animating(),
+        "the loop redraws while it flies"
+    );
+    render(&harness.app, 80, 30);
+
+    let second = top(&harness);
+    harness.press(KeyCode::Up);
+    let motion = view(&harness).motion.clone().unwrap();
+    assert_eq!(motion.direction(), Direction::Up);
+    assert!(matches!(motion.phase(), Phase::Exit(c) if c.scryfall_data.name == second));
+
+    harness.press(KeyCode::Down);
+    let motion = view(&harness).motion.clone().unwrap();
+    assert_eq!(
+        (motion.direction(), motion.phase()),
+        (Direction::Up, &Phase::Enter)
+    );
+    assert_eq!(top(&harness), second);
+    assert_eq!(
+        view(&harness).under().map(|c| c.scryfall_data.name.clone()),
+        Some(top_after(&harness)),
+        "the card it covers rests under it"
+    );
+    render(&harness.app, 80, 30);
+    harness.press(KeyCode::Down);
+    assert_eq!(
+        view(&harness).motion.as_ref().map(CardMotion::direction),
+        Some(Direction::Left)
+    );
+
+    harness.press(KeyCode::Right);
+    assert!(
+        !matches!(harness.screen(), Screen::CommanderSwipe(_)),
+        "a pick closes the swipe"
+    );
+}
+
+/// The name of the card under the top one.
+fn top_after(harness: &Harness) -> String {
+    let at = view(harness).index.saturating_add(1);
+    view(harness).cards[at].scryfall_data.name.clone()
+}
+
+#[test]
+fn the_swipe_keys_read_add_skip_maybeboard_undo_in_the_apps_swipe_colors() {
+    use crate::test_support::word_colors;
+
+    for mut harness in [swiping(), commander(HashSet::new())] {
+        harness.apply(Update::Page {
+            ticket: 0,
+            offset: 0,
+            cards: named(&["Krenko", "Zada"]),
+        });
+        let palette = harness.app.shared.palette;
+        let row = "→ add  ← skip  ↑ maybeboard  ↓ undo";
+        let text = screen_text(&harness.app);
+        assert!(text.contains(row), "{text}");
+        assert!(!text.contains("keep") && !text.contains("pass") && !text.contains("Pick"));
+        assert_eq!(
+            word_colors(&harness.app, row, &["add", "skip", "maybeboard", "undo"]),
+            [
+                palette.add.fg,
+                palette.error.fg,
+                palette.warning.fg,
+                palette.tertiary.fg
+            ]
+        );
+    }
 }

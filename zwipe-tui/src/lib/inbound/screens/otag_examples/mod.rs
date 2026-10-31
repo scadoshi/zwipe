@@ -9,6 +9,8 @@ pub(crate) mod keys;
 #[cfg(test)]
 mod tests;
 
+use std::time::Instant;
+
 use ratatui::text::Line;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
@@ -19,10 +21,12 @@ use zwipe_core::domain::deck::deck_metrics;
 use zwipe_core::domain::user::models::hints::HINT_OTAG_EXAMPLES;
 
 use super::{Screen, failure};
+use crate::domain::stack::Direction;
 use crate::domain::theme::Palette;
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;
+use crate::inbound::widgets::card_motion::CardMotion;
 use crate::inbound::widgets::sheet::Sheet;
 use crate::inbound::widgets::toast::ToastKind;
 use crate::inbound::widgets::{card_text, hint};
@@ -64,6 +68,8 @@ pub(crate) struct ExamplesView {
     pub(crate) exhausted: bool,
     /// The details sheet over the card, when open.
     pub(crate) details: Option<Sheet>,
+    /// The card flying off to the left, or the one coming back after a step back.
+    pub(crate) motion: Option<CardMotion<Card>>,
 }
 
 impl ExamplesView {
@@ -76,7 +82,20 @@ impl ExamplesView {
             loading: false,
             exhausted: false,
             details: None,
+            motion: None,
         }
+    }
+
+    /// Whether a card is in motion, so the loop redraws.
+    pub(crate) fn animating(&self) -> bool {
+        self.motion
+            .as_ref()
+            .is_some_and(|m| m.running(Instant::now()))
+    }
+
+    /// The card under the one on screen, which a card coming back covers.
+    pub(crate) fn under(&self) -> Option<&Card> {
+        self.cards.get(self.index.checked_add(1)?)
     }
 
     /// The card on screen, `None` past the last one.
@@ -106,9 +125,10 @@ impl ExamplesView {
     /// Moves to the next card, possibly past the last, and asks for more when few are left ahead.
     pub(crate) fn next(&mut self, cx: &mut Context<'_>) {
         let total = self.cards.len();
-        if self.index >= total {
+        let Some(card) = self.current().cloned() else {
             return;
-        }
+        };
+        self.motion = Some(CardMotion::exit(Direction::Left, card, Instant::now()));
         self.index = self.index.saturating_add(1);
         if self.index.saturating_add(1) >= total.saturating_sub(LOAD_MORE_THRESHOLD) {
             self.load_more(cx);
@@ -118,7 +138,10 @@ impl ExamplesView {
     /// Steps back one card, or says it is already at the first.
     pub(crate) fn back_one(&mut self, cx: &mut Context<'_>) {
         match self.index.checked_sub(1) {
-            Some(index) => self.index = index,
+            Some(index) => {
+                self.index = index;
+                self.motion = Some(CardMotion::enter(Direction::Left, Instant::now()));
+            }
             None => cx.toast(ToastKind::Info, AT_FIRST.to_owned()),
         }
     }

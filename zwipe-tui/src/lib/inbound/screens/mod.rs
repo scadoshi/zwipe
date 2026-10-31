@@ -187,6 +187,8 @@ impl Screen {
             Self::ForgotPassword(form) => form.sending() || form.hero.animating(Instant::now()),
             Self::Activity(view) => view.animating(),
             Self::Playstyle(view) => view.animating(),
+            Self::CommanderSwipe(view) => view.animating(),
+            Self::OtagExamples(view) => view.animating(),
             _ => false,
         }
     }

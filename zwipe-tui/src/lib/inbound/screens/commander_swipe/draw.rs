@@ -1,10 +1,13 @@
 //! The commander swipe: the title, the card on top as text with its reasons under it in Suggested, then the swipe keys. The Suggested Filter draws as a bottom sheet holding the Show chips.
 
+use std::time::Instant;
+
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Margin};
-use ratatui::style::Stylize;
+use ratatui::style::{Style, Stylize};
 use ratatui::text::Line;
-use ratatui::widgets::{Paragraph, Wrap};
+use ratatui::widgets::{Paragraph, Widget, Wrap};
+use zwipe_core::domain::card::Card;
 
 use super::CommanderSwipeView;
 use crate::domain::playstyle;
@@ -12,6 +15,7 @@ use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::screens::card_sheets::filter::draw as filter_sheet;
 use crate::inbound::screens::playstyle::draw::{Reasons, reasons_lines, show_line, wrap_at_gaps};
+use crate::inbound::widgets::card_motion::{self, CardMotion, Phase};
 use crate::inbound::widgets::sheet::Sheet;
 use crate::inbound::widgets::{action_bar, card_text, skeleton};
 
@@ -35,12 +39,37 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &CommanderSwipeView
         title,
     );
     let body = body.inner(Margin::new(1, 1));
-    f.render_widget(
-        Paragraph::new(body_lines(palette, view, usize::from(body.width)))
-            .wrap(Wrap { trim: false }),
-        body,
-    );
-    f.render_widget(action_bar::line(palette, &key_hints(view)), keys);
+    let now = Instant::now();
+    let motion = view.motion.as_ref().filter(|m| m.running(now));
+    // While a card comes back after an undo, the card it covers rests under it.
+    let resting = match motion.map(CardMotion::phase) {
+        Some(Phase::Enter) => view.under(),
+        _ => view.current(),
+    };
+    let paragraph = |lines| Paragraph::new(lines).wrap(Wrap { trim: false });
+    match resting {
+        Some(card) => f.render_widget(paragraph(card_lines(palette, view, card)), body),
+        None if view.current().is_none() => f.render_widget(
+            paragraph(body_lines(palette, view, usize::from(body.width))),
+            body,
+        ),
+        None => {}
+    }
+    if let Some(motion) = motion {
+        let moving = match motion.phase() {
+            Phase::Exit(card) => Some(card),
+            Phase::Enter => view.current(),
+        };
+        if let Some(card) = moving
+            && let Some(placement) = motion.placement(now, body, body)
+        {
+            let text = paragraph(card_lines(palette, view, card));
+            card_motion::draw(f.buffer_mut(), &placement, palette.base, |buf| {
+                text.render(body, buf);
+            });
+        }
+    }
+    f.render_widget(action_bar::styled_line(&key_hints(palette, view)), keys);
     if let (Some(filter), Some(pile)) = (view.filter, view.suggested()) {
         let chips = show_line(
             palette,
@@ -76,10 +105,19 @@ fn body_lines(palette: &Palette, view: &CommanderSwipeView, width: usize) -> Vec
         }
         return skeleton::rows(palette, GHOST_ROWS, width);
     };
+    card_lines(palette, view, card)
+}
+
+/// A card as text with its rarity, and its reasons when it is the Suggested card on top.
+fn card_lines(palette: &Palette, view: &CommanderSwipeView, card: &Card) -> Vec<Line<'static>> {
     let data = &card.scryfall_data;
     let mut lines = card_text::lines(palette, data);
     lines.push(Line::styled(data.rarity.to_long_name(), palette.muted));
-    if let (Some(suggestion), Some(pile)) = (view.current_suggestion(), view.suggested()) {
+    let on_top = view
+        .current()
+        .is_some_and(|top| top.scryfall_data.id == data.id);
+    if on_top && let (Some(suggestion), Some(pile)) = (view.current_suggestion(), view.suggested())
+    {
         let reasons = reasons_lines(
             palette,
             &suggestion.reasons,
@@ -94,23 +132,36 @@ fn body_lines(palette: &Palette, view: &CommanderSwipeView, width: usize) -> Vec
     lines
 }
 
-/// The swipe keys, the Filter with a dot while it narrows the stack, Refresh, the hint and Back.
-fn key_hints(view: &CommanderSwipeView) -> Vec<(&'static str, &'static str)> {
-    let mut keys = Vec::new();
-    if view.current().is_some() {
-        keys.extend([("→/l", "Pick"), ("↑/k", "Save"), ("←/h", "Skip")]);
-    }
-    keys.push(("↓/j", "Undo"));
-    keys.push((
-        "f",
-        if view.filter_dot() {
-            "Filter •"
-        } else {
-            "Filter"
-        },
-    ));
-    keys.push(("r", "Refresh"));
-    keys.push(("?", "Hint"));
-    keys.push(("Esc", "Back"));
+/// The swipe keys in the app's swipe colors (add, skip, maybeboard, undo), then the Filter with a dot while it narrows the stack, Refresh, the hint and Back.
+fn key_hints(
+    palette: &Palette,
+    view: &CommanderSwipeView,
+) -> Vec<(&'static str, &'static str, Style)> {
+    let mut keys = if view.current().is_some() {
+        action_bar::swipes(
+            palette,
+            ("→", "add"),
+            ("←", "skip"),
+            Some(("↑", "maybeboard")),
+            ("↓", "undo"),
+        )
+    } else {
+        vec![("↓", "undo", palette.tertiary)]
+    };
+    let filter = if view.filter_dot() {
+        "Filter •"
+    } else {
+        "Filter"
+    };
+    keys.extend(
+        [
+            ("f", filter),
+            ("r", "Refresh"),
+            ("?", "Hint"),
+            ("Esc", "Back"),
+        ]
+        .into_iter()
+        .map(|(k, a)| (k, a, palette.muted)),
+    );
     keys
 }
