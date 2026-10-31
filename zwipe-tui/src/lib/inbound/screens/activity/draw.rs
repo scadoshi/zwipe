@@ -203,7 +203,11 @@ fn key_hints(view: &ActivityView) -> Vec<(&'static str, &'static str)> {
                     keys.push(("x", "Examples"));
                 }
             }
-            Focus::Passes => keys.push(("Enter", "Expand")),
+            Focus::Passes => {
+                if view.loaded().is_some_and(|l| !l.activity.passes.is_empty()) {
+                    keys.push(("Enter", "Expand"));
+                }
+            }
         }
         let topic = view.focused_section().is_none_or(|s| view.is_open(s));
         if topic {
@@ -287,14 +291,18 @@ fn loaded_lines(
         }
     }
     let passes = &loaded.activity.passes;
-    if !passes.is_empty() {
-        if !view.sections.is_empty() {
-            body.line(Line::default());
-        }
-        body.line(Line::from(vec![
-            Span::raw(PASSES_TITLE).bold(),
-            Span::styled("  ?", palette.muted),
-        ]));
+    body.line(Line::default());
+    let header = Line::from(vec![
+        Span::raw(PASSES_TITLE).bold(),
+        Span::styled("  ?", palette.muted),
+    ]);
+    if passes.is_empty() {
+        body.item(
+            vec![header, Line::styled(activity::PASSES_EMPTY, palette.muted)],
+            view.focus == Focus::Passes,
+        );
+    } else {
+        body.line(header);
         let rows: Vec<CardRow<'_>> = passes.iter().map(|p| pass_row(palette, p)).collect();
         let lines = view.rows.lines(palette, &shared.caches.oracle_tags, &rows);
         let focused_row = view.rows.focused().min(rows.len().saturating_sub(1));
@@ -410,7 +418,7 @@ fn heat_lines(
     } else {
         1
     };
-    let visible = heat.columns.min(room / cell_width);
+    let visible = heat.columns.min(room.checked_div(cell_width).unwrap_or(0));
     let cursor_column = heat.cells.get(view.cursor).map_or(0, |c| c.column);
     let (start, end) = window(heat.columns, visible, cursor_column);
 
@@ -463,7 +471,12 @@ fn heat_lines(
                 continue;
             };
             let mut style = heat_style(palette, cell.level, cell.peak);
-            if into < super::SWEEP.saturating_mul(BRIGHT_SHARE) / 100 {
+            if into
+                < super::SWEEP
+                    .saturating_mul(BRIGHT_SHARE)
+                    .checked_div(100)
+                    .unwrap_or_default()
+            {
                 style = style.bold();
             }
             if view.focus == Focus::Heat && index == view.cursor {
@@ -480,7 +493,10 @@ fn heat_lines(
 
 /// Totals: a title chip, then four columns, each its count over a bar of its share of the largest, its label uppercase under it.
 fn totals_lines(palette: &Palette, bars: &[Bar], width: usize) -> Vec<Line<'static>> {
-    let column = (width / bars.len().max(1)).clamp(1, TOTALS_COLUMN);
+    let column = width
+        .checked_div(bars.len())
+        .unwrap_or(width)
+        .clamp(1, TOTALS_COLUMN);
     let bar_width = TOTALS_BAR.min(column.saturating_sub(2)).max(1);
     let mut lines = vec![Line::from(chip("Totals", palette.muted)), Line::default()];
     let full_eighths = TOTALS_ROWS.saturating_mul(8);
@@ -535,13 +551,27 @@ fn rates_body(
     width: usize,
 ) {
     let palette = &shared.palette;
+    if !view.has_rates(section) {
+        let line = match section {
+            Section::Tags => activity::TAGS_EMPTY,
+            _ => activity::ROLES_EMPTY,
+        };
+        body.line(indented(Line::styled(line, palette.muted)));
+        return;
+    }
     body.item(
         vec![indented(show_chips(palette, view.rate))],
         view.focus == Focus::Chips(section),
     );
     let bars = view.bars(section);
     if bars.is_empty() {
-        body.line(indented(Line::styled(super::NO_RATE, palette.muted)));
+        let line = match (section, view.loaded()) {
+            (Section::Tags, Some(loaded)) => {
+                activity::tag_empty_line(view.rate, &loaded.activity.tags)
+            }
+            _ => activity::NONE_REMOVED,
+        };
+        body.line(indented(Line::styled(line, palette.muted)));
         return;
     }
     let open = match section {
@@ -575,7 +605,8 @@ fn rates_body(
             };
             Span::styled(format!(" {label} "), style)
         } else {
-            Span::styled(format!(" {label} "), palette.base)
+            // A role with no tags to open is a grey chip that takes no Enter.
+            Span::styled(format!(" {label} "), palette.muted.reversed())
         };
         let row = charts::row(
             label_span,
@@ -643,7 +674,10 @@ fn skeleton(palette: &Palette, width: u16) -> Vec<Line<'static>> {
     body.line(indented(Line::styled("─".repeat(width), palette.muted)));
     body.line(indented(Line::from(ghost(8))));
     body.line(Line::default());
-    let column = (width / GHOST_HEIGHTS.len()).clamp(1, TOTALS_COLUMN);
+    let column = width
+        .checked_div(GHOST_HEIGHTS.len())
+        .unwrap_or(width)
+        .clamp(1, TOTALS_COLUMN);
     let bar_width = TOTALS_BAR.min(column.saturating_sub(2)).max(1);
     for row in 0..=TOTALS_ROWS {
         let from_bottom = TOTALS_ROWS.saturating_add(1).saturating_sub(row);

@@ -347,7 +347,10 @@ fn the_show_chips_switch_both_charts() {
     view_mut(&mut harness).focus = Focus::Chips(Section::Tags);
     press(&mut harness, &[KeyCode::Char('l'), KeyCode::Char('l')]);
     assert_eq!(view(&harness).rate, RateKind::Removed, "the end stays put");
-    assert!(screen_text(&harness.app).contains(NO_RATE));
+    assert!(
+        screen_text(&harness.app).contains(activity::NONE_REMOVED),
+        "no tag has a removal, so the tag chart says so"
+    );
     press(&mut harness, &[KeyCode::Char('h')]);
     assert_eq!(view(&harness).rate, RateKind::Maybed);
 }
@@ -521,4 +524,71 @@ fn tiny_terminals_do_not_panic() {
     for (w, h) in [(8, 3), (1, 1), (20, 6)] {
         render(&harness.app, w, h);
     }
+}
+
+#[test]
+fn empty_sections_stay_with_a_line_saying_what_fills_them() {
+    let mut harness = on_activity();
+    let mut only_days = empty();
+    only_days.days.push(HttpActivityDay {
+        day: only_days.through,
+        swipes: 4,
+        searches: 0,
+    });
+    harness.apply(Update::Loaded(Box::new(only_days)));
+    let v = view(&harness);
+    assert_eq!(
+        v.sections,
+        [Section::Activity, Section::Roles, Section::Tags]
+    );
+    let text = screen_text(&harness.app);
+    assert!(text.contains("▸ Card roles"), "{text}");
+    assert!(text.contains("▸ Oracle tags"), "{text}");
+    assert!(text.contains(activity::PASSES_EMPTY), "{text}");
+
+    view_mut(&mut harness).focus = Focus::Header(Section::Roles);
+    harness.press(KeyCode::Enter);
+    assert!(screen_text(&harness.app).contains(activity::ROLES_EMPTY));
+    harness.press(KeyCode::Char('j'));
+    assert_eq!(
+        view(&harness).focus,
+        Focus::Header(Section::Tags),
+        "no Show chips without roles"
+    );
+    press(&mut harness, &[KeyCode::Enter, KeyCode::Char('j')]);
+    assert!(screen_text(&harness.app).contains(activity::TAGS_EMPTY));
+    assert_eq!(view(&harness).focus, Focus::Passes);
+    press(&mut harness, &[KeyCode::Enter, KeyCode::Char('j')]);
+    assert!(matches!(harness.screen(), Screen::Activity(_)));
+    harness.press(KeyCode::Char('?'));
+    assert_eq!(view(&harness).overlay, Some(passes_topic()));
+}
+
+#[test]
+fn a_role_with_no_tags_is_a_grey_chip() {
+    let mut harness = loaded();
+    view_mut(&mut harness).focus = Focus::Header(Section::Roles);
+    harness.press(KeyCode::Enter);
+    let terminal = render(&harness.app, 100, 40);
+    let buffer = terminal.backend().buffer();
+    let symbols: Vec<&str> = buffer
+        .content()
+        .iter()
+        .map(ratatui::buffer::Cell::symbol)
+        .collect();
+    let text = symbols.concat();
+    let at = text.find(" REMOV ").unwrap();
+    let cell = &buffer.content()[text[..at].chars().count() + 1];
+    assert!(
+        cell.modifier.contains(ratatui::style::Modifier::REVERSED),
+        "a chip"
+    );
+    assert!(
+        cell.modifier.contains(ratatui::style::Modifier::DIM),
+        "grey"
+    );
+    assert_eq!(
+        Section::Roles.topic().bullets[1],
+        "Tap a role to see the tags you swiped under it. A grey role has none yet"
+    );
 }

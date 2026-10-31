@@ -43,9 +43,6 @@ pub(crate) const LOAD_FAILED: &str = "Could not load your activity";
 /// Said when there is nothing to show yet.
 pub(crate) const NOTHING_YET: &str = "Swipe some cards to see your activity";
 
-/// Said when a rate chart has no rows for the picked rate.
-pub(crate) const NO_RATE: &str = "Nothing to show for this rate yet";
-
 /// The Most skipped group's header.
 pub(crate) const PASSES_TITLE: &str = "Most skipped";
 
@@ -93,15 +90,15 @@ impl Section {
             Self::Roles => InfoPopup::new(
                 "Card roles",
                 &[
-                    "Your rate for each card role. Pick one under Show: Added, Skipped and Maybeboard are shares of the cards dealt to you, and Removed is the share of added cards you later took out",
-                    "Tap a role to see the tags you swiped under it",
-                    "From your decks with a commander, for roles dealt at least 10 times",
+                    "Your share for each card role. Pick one under Show: Added, Skipped and Maybeboard are shares of the cards dealt to you, and Removed is the share of added cards you later took out",
+                    "Tap a role to see the tags you swiped under it. A grey role has none yet",
+                    "From your decks with a commander",
                 ],
             ),
             Self::Tags => InfoPopup::new(
                 "Oracle tags",
                 &[
-                    "The tags where your rate stands out most from other players', with your own rate",
+                    "The tags where your share stands out most from other players', with your own share",
                     "A tag everyone passes on shows only after a lot of skips. Tap a tag to see what it means",
                     "From your decks with a commander, for tags dealt at least 10 times",
                 ],
@@ -215,7 +212,7 @@ impl ActivityView {
         }
     }
 
-    /// Takes the payload: lays out the heatmap, keeps the sections with something to show, and opens Activity.
+    /// Takes the payload: lays out the heatmap, opens Activity when it has something to show and leaves it out otherwise, and keeps Card roles and Oracle tags either way, as they say what fills them.
     pub(crate) fn land(&mut self, activity: HttpActivity) {
         let heat = activity::heat_layout(activity.through, &activity.days);
         self.cursor = heat.cells.len().saturating_sub(1);
@@ -223,12 +220,8 @@ impl ActivityView {
         if !activity.days.is_empty() || activity::has_outcomes(&activity.outcomes) {
             sections.push(Section::Activity);
         }
-        if !activity.roles.is_empty() {
-            sections.push(Section::Roles);
-        }
-        if !activity.tags.is_empty() {
-            sections.push(Section::Tags);
-        }
+        sections.push(Section::Roles);
+        sections.push(Section::Tags);
         let titles: Vec<&str> = sections.iter().map(|s| s.title()).collect();
         self.accordion = Accordion::new(&titles);
         if let Some(first) = self.accordion.sections.first_mut()
@@ -279,6 +272,15 @@ impl ActivityView {
         }
     }
 
+    /// Whether a rate section has any roles or tags to chart at some share; without any it shows only a line saying what fills it.
+    pub(crate) fn has_rates(&self, section: Section) -> bool {
+        self.loaded().is_some_and(|l| match section {
+            Section::Roles => !l.activity.roles.is_empty(),
+            Section::Tags => !l.activity.tags.is_empty(),
+            Section::Activity => false,
+        })
+    }
+
     /// Whether the heatmap shows: the section is open and there are days.
     fn heat_shows(&self) -> bool {
         self.is_open(Section::Activity)
@@ -300,13 +302,16 @@ impl ActivityView {
                     }
                 }
                 Section::Roles | Section::Tags => {
+                    if !self.has_rates(section) {
+                        continue;
+                    }
                     stops.push(Focus::Chips(section));
                     let count = self.bars(section).len();
                     stops.extend((0..count).map(|i| Focus::Bar(section, i)));
                 }
             }
         }
-        if self.loaded().is_some_and(|l| !l.activity.passes.is_empty()) {
+        if self.loaded().is_some() {
             stops.push(Focus::Passes);
         }
         stops

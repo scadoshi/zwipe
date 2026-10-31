@@ -35,6 +35,21 @@ const EVEN_ODDS: f64 = 0.5;
 /// How many cards' worth of the overall rate a tag's rate among other players starts from, so a tag few others have been dealt sits near the overall rate.
 const TAG_BASELINE_WEIGHT: f64 = 10.0;
 
+/// Card roles' line before any role has enough swipes to show.
+pub(crate) const ROLES_EMPTY: &str = "Swipe more cards to see your card roles";
+
+/// Oracle tags' line before any tag has enough swipes to show.
+pub(crate) const TAGS_EMPTY: &str = "Swipe more cards to see your Oracle tags";
+
+/// Most skipped's line before any card qualifies.
+pub(crate) const PASSES_EMPTY: &str = "Skipped cards show here";
+
+/// A chart's line on Removed before any card counted there was removed. Only Removed can chart no role: every role sent has a dealt card, but Removed needs an added one.
+pub(crate) const NONE_REMOVED: &str = "You haven't removed any cards yet";
+
+/// Oracle tags' line when no tag's share beats other players'.
+pub(crate) const NO_TAG_STANDS_OUT: &str = "No tags stand out from other players yet";
+
 /// Rows on the Oracle tags chart.
 pub(crate) const TAG_ROWS: usize = 10;
 
@@ -130,8 +145,20 @@ pub(crate) fn level(count: u32, busy: &[u32]) -> u8 {
 
 /// Every day of the year ending `through`, laid out like GitHub's grid: columns are weeks starting on Sunday, rows are weekdays. A day missing from `days` is empty. A month is labeled at the first column whose Sunday falls in it, unless the next label lands within [`LABEL_SPAN`] columns, which leaves a partial first month unlabeled.
 pub(crate) fn heat_layout(through: NaiveDate, days: &[HttpActivityDay]) -> HeatLayout {
-    let start = through - Duration::days(ACTIVITY_DAYS.saturating_sub(1));
-    let first_sunday = start - Duration::days(i64::from(start.weekday().num_days_from_sunday()));
+    // A year reaching back past the first date has no grid to lay out.
+    let Some((start, first_sunday)) = through
+        .checked_sub_signed(Duration::days(ACTIVITY_DAYS.saturating_sub(1)))
+        .and_then(|start| {
+            let to_sunday = Duration::days(i64::from(start.weekday().num_days_from_sunday()));
+            Some((start, start.checked_sub_signed(to_sunday)?))
+        })
+    else {
+        return HeatLayout {
+            cells: Vec::new(),
+            months: Vec::new(),
+            columns: 0,
+        };
+    };
     let by_day: HashMap<NaiveDate, &HttpActivityDay> = days.iter().map(|d| (d.day, d)).collect();
     let mut busy: Vec<u32> = days.iter().map(activity_of).filter(|&n| n > 0).collect();
     busy.sort_unstable();
@@ -141,7 +168,8 @@ pub(crate) fn heat_layout(through: NaiveDate, days: &[HttpActivityDay]) -> HeatL
     let mut last_month = None;
     let mut date = start;
     while date <= through {
-        let offset = usize::try_from((date - first_sunday).num_days()).unwrap_or(0);
+        let offset =
+            usize::try_from(date.signed_duration_since(first_sunday).num_days()).unwrap_or(0);
         let (column, row) = (offset / DAYS_PER_WEEK, offset % DAYS_PER_WEEK);
         let (swipes, searches) = by_day.get(&date).map_or((0, 0), |d| (d.swipes, d.searches));
         if row == 0 && last_month != Some(date.month()) {
@@ -232,7 +260,11 @@ pub(crate) fn outcome_bars(outcomes: &HttpSwipeOutcomes) -> Vec<Bar> {
             key: label.to_owned(),
             label: label.to_owned(),
             count: n,
-            pct: u32::try_from(n.saturating_mul(100) / top).unwrap_or(100),
+            pct: n
+                .saturating_mul(100)
+                .checked_div(top)
+                .and_then(|pct| u32::try_from(pct).ok())
+                .unwrap_or(100),
             revealable: false,
         })
         .collect()
@@ -296,7 +328,8 @@ impl RateKind {
     /// The share as a whole percent, rounded down; `None` with nothing to take a share of.
     pub(crate) fn percent(self, outcomes: &HttpSwipeOutcomes) -> Option<u32> {
         let (count, of) = self.parts(outcomes);
-        (of > 0).then(|| u32::try_from(count.saturating_mul(100) / of).unwrap_or(100))
+        let pct = count.saturating_mul(100).checked_div(of)?;
+        Some(u32::try_from(pct).unwrap_or(100))
     }
 }
 
@@ -386,4 +419,13 @@ pub(crate) fn tag_rate_bars(kind: RateKind, tags: &[HttpTagRates]) -> Vec<Bar> {
         .collect();
     bars.sort_by_key(|bar| Reverse(bar.pct));
     bars
+}
+
+/// Oracle tags' line when the picked share charts no tag: nothing removed under any tag on Removed, otherwise no tag the user beats others on.
+pub(crate) fn tag_empty_line(kind: RateKind, tags: &[HttpTagRates]) -> &'static str {
+    if kind == RateKind::Removed && tags.iter().all(|t| t.outcomes.removed == 0) {
+        NONE_REMOVED
+    } else {
+        NO_TAG_STANDS_OUT
+    }
 }

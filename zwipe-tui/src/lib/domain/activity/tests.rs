@@ -441,3 +441,41 @@ fn the_tag_chart_shows_at_most_its_rows() {
     assert_eq!(bars.len(), TAG_ROWS);
     assert_eq!(bars[0].key, "t00", "ties go by slug");
 }
+
+#[test]
+fn an_empty_tag_chart_says_nothing_was_removed_only_on_removed_with_none() {
+    let none_removed = [tag(
+        "ramp",
+        "ramp",
+        outcomes(2, 8, 0, 0),
+        outcomes(5, 5, 0, 0),
+    )];
+    let one_removed = [tag(
+        "ramp",
+        "ramp",
+        outcomes(2, 8, 0, 1),
+        outcomes(5, 5, 0, 5),
+    )];
+    assert_eq!(
+        tag_empty_line(RateKind::Removed, &none_removed),
+        NONE_REMOVED,
+        "Removed with nothing removed under any tag"
+    );
+    assert_eq!(
+        tag_empty_line(RateKind::Removed, &one_removed),
+        NO_TAG_STANDS_OUT,
+        "Removed with a removal that does not stand out"
+    );
+    assert_eq!(
+        tag_empty_line(RateKind::Added, &none_removed),
+        NO_TAG_STANDS_OUT,
+        "any other share"
+    );
+}
+
+#[test]
+fn a_year_before_the_first_date_has_no_grid() {
+    let layout = heat_layout(NaiveDate::MIN, &[]);
+    assert_eq!(layout.cells, Vec::new());
+    assert_eq!(layout.columns, 0);
+}
