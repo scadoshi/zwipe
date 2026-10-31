@@ -634,3 +634,52 @@ fn the_swipe_pickers_keys_use_the_apps_verbs_in_its_hint_colors() {
         );
     }
 }
+
+#[test]
+fn the_swipe_picker_flies_skipped_and_saved_cards_off_and_undo_brings_them_back() {
+    use crate::domain::stack::Direction;
+    use crate::inbound::widgets::card_motion::Phase;
+
+    let motion = |harness: &Harness| {
+        let Some(Overlay::Swipe(picker)) = &form(harness).overlay else {
+            panic!("the swipe picker is not open");
+        };
+        picker.motion.clone()
+    };
+    let mut harness = commander_form();
+    harness.press(KeyCode::F(4));
+    harness.app.shared.hint = None;
+    let Some(Overlay::Swipe(picker)) = &form(&harness).overlay else {
+        panic!("the swipe picker is not open");
+    };
+    let generation = picker.generation;
+    harness.apply(Update::SwipePage {
+        generation,
+        cards: vec![card("Atraxa"), card("Krenko"), card("Edgar")],
+    });
+    assert!(!harness.screen().animating());
+    harness.press(KeyCode::Left);
+    let exit = motion(&harness).unwrap();
+    assert_eq!(exit.direction(), Direction::Left);
+    assert!(matches!(exit.phase(), Phase::Exit(c) if c.scryfall_data.name == "Atraxa"));
+    assert!(harness.screen().animating());
+    let Some(Overlay::Swipe(picker)) = &form(&harness).overlay else {
+        panic!("the swipe picker is not open");
+    };
+    assert_eq!(
+        picker.current().map(|c| c.scryfall_data.name.as_str()),
+        Some("Krenko"),
+        "the next card is up at once"
+    );
+
+    harness.press(KeyCode::Up);
+    assert_eq!(motion(&harness).map(|m| m.direction()), Some(Direction::Up));
+    harness.press(KeyCode::Down);
+    let enter = motion(&harness).unwrap();
+    assert_eq!(
+        (enter.phase(), enter.direction()),
+        (&Phase::Enter, Direction::Up)
+    );
+    render(&harness.app, 100, 40);
+    render(&harness.app, 12, 5);
+}

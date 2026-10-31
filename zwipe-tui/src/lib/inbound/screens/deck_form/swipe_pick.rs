@@ -1,5 +1,7 @@
 //! The swipe picker for a command-zone slot: one card at a time in popularity order, right to pick it, left to skip, up to save it to the commander maybeboard, down to undo.
 
+use std::time::Instant;
+
 use crossterm::event::KeyCode;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
@@ -8,9 +10,11 @@ use zwipe_core::domain::deck::Format;
 use super::{DeckForm, Overlay, Request};
 use crate::domain::deck::form::{self, SWIPE_PAGE, Slot};
 use crate::domain::filter;
+use crate::domain::stack::Direction;
 use crate::inbound::app::Context;
 use crate::inbound::screens::card_sheets;
 use crate::inbound::screens::card_sheets::filter::{FilterSheet, SheetConfig, SheetOutcome};
+use crate::inbound::widgets::card_motion::CardMotion;
 use crate::inbound::widgets::hint;
 use crate::inbound::widgets::info::InfoPopup;
 use crate::inbound::widgets::toast::ToastKind;
@@ -51,6 +55,8 @@ pub(crate) struct SwipePicker {
     pub(crate) filter: CardQueryBuilder,
     /// The card filter sheet, while it is open over the pile.
     pub(crate) sheet: Option<FilterSheet>,
+    /// The swiped card flying off, or the undone one coming back. A pick closes the picker, so it has no exit.
+    pub(crate) motion: Option<CardMotion<Card>>,
 }
 
 impl SwipePicker {
@@ -69,7 +75,25 @@ impl SwipePicker {
             generation: 0,
             filter: form.card(slot).swipe_filter.clone(),
             sheet: None,
+            motion: None,
         }
+    }
+
+    /// Whether a card is in motion, so the loop redraws.
+    pub(crate) fn animating(&self) -> bool {
+        self.motion
+            .as_ref()
+            .is_some_and(|m| m.running(Instant::now()))
+    }
+
+    /// The card under the one up now, which a card coming back after an undo covers.
+    pub(crate) fn under(&self) -> Option<&Card> {
+        self.cards.get(self.index.checked_add(1)?)
+    }
+
+    /// Sends `card` off by `direction`, replacing any motion still running.
+    fn exit(&mut self, direction: Direction, card: Card) {
+        self.motion = Some(CardMotion::exit(direction, card, Instant::now()));
     }
 
     /// Whether the Filter key shows its dot: any user filter or an explicit sort.
@@ -159,6 +183,7 @@ impl SwipePicker {
         self.cards.clear();
         self.index = 0;
         self.history.clear();
+        self.motion = None;
         self.offset = 0;
         self.loading = false;
         self.exhausted = false;
@@ -239,7 +264,8 @@ pub(crate) fn handle(
             }
         }
         KeyCode::Left | KeyCode::Char('h') => {
-            if picker.current().is_some() {
+            if let Some(card) = picker.current().cloned() {
+                picker.exit(Direction::Left, card);
                 picker.index = picker.index.saturating_add(1);
                 picker.history.push(Swiped::Skipped);
                 cx.toast(ToastKind::Info, "Skipped".to_owned());
@@ -249,9 +275,10 @@ pub(crate) fn handle(
         KeyCode::Up | KeyCode::Char('k')
             if matches!(picker.slot, Slot::Commander | Slot::Partner) =>
         {
-            if let Some(card) = picker.current() {
+            if let Some(card) = picker.current().cloned() {
                 match card.scryfall_data.oracle_id {
                     Some(oracle_id) => {
+                        picker.exit(Direction::Up, card);
                         cx.request(Request::MaybeboardAdd(oracle_id).into());
                         picker.index = picker.index.saturating_add(1);
                         picker.history.push(Swiped::Saved(oracle_id));
@@ -265,6 +292,11 @@ pub(crate) fn handle(
             None => cx.toast(ToastKind::Info, "Nothing to undo".to_owned()),
             Some(swiped) => {
                 picker.index = picker.index.saturating_sub(1);
+                let side = match swiped {
+                    Swiped::Skipped => Direction::Left,
+                    Swiped::Saved(_) => Direction::Up,
+                };
+                picker.motion = Some(CardMotion::enter(side, Instant::now()));
                 match swiped {
                     Swiped::Skipped => cx.toast(ToastKind::Info, "Undid skip".to_owned()),
                     Swiped::Saved(oracle_id) => {
