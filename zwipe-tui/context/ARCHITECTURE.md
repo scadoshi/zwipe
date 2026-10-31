@@ -11,10 +11,25 @@ src/lib/inbound/
 ├── screens/
 │   ├── mod.rs      Screen, Request, Update, and the arms that route to each screen
 │   ├── login/      mod.rs, keys.rs, draw.rs, tests.rs
-│   ├── home/  decks/  deck/  swipe/  account/  config/
-│   └── update_required/
+│   ├── register/  forgot_password/  update_required/
+│   ├── home/  activity/  playstyle/  commander_maybeboard/  commander_swipe/
+│   ├── oracle_tags/  otag_examples/  printings/  image_preview/
+│   ├── decks/  deck/  deck_form/  deck_import/  deck_export/
+│   ├── swipe/  deck_cards/  remove_cards/  card_sheets/
+│   └── account/  config/  privacy/  changelog/
 └── widgets/        shared drawing pieces, each with its own tests
 ```
+
+## Screens
+
+- Sign-in: `login`, `register`, `forgot_password`, and `update_required`, which the app draws over every screen while the server refuses this version.
+- Home and what it leads to: `home` (counters, color map, featured card), `activity` (`v`), `playstyle` (`p`, the color map's Playstyle), `commander_maybeboard`, and `commander_swipe`, the `SwipeSelect` overlay in its Suggested and Commander modes.
+- Oracle tags: `oracle_tags`, the dictionary, whose Use leaves a slug in `shared.caches.handoff.oracle_tag` for the screen under it; `otag_examples`, a tag's example cards; `printings`, a card's printings to pick or browse; and `image_preview`.
+- Decks: `decks` (its More sheet opens the Commander maybeboard and Playstyle), `deck`, `deck_form` (Create and Edit; `open_create_with_commander` seeds Create from Playstyle, the commander swipe and the maybeboard), `deck_import`, `deck_export`.
+- Cards: `swipe` (Add), `deck_cards`, `remove_cards`, and `card_sheets`, which holds the filter, details and printing sheets those screens and the commander screens open over themselves.
+- `account`, `config`, `privacy`, `changelog`.
+
+A sheet that opens a screen over its host, as the filter sheet's Dictionary does, gets its answer back through the host's arm of `Screen::on_return`: `card_sheets::filter::returned_from_dictionary(sheet, cx)` adopts the slug and says whether the return was the dictionary's, so the host skips its own refresh.
 
 ## How a key or a result flows
 
@@ -56,8 +71,17 @@ All live in `widgets/` and draw in the account theme's `Palette`.
 - `sheet`: a bottom sheet with a scrolling body, a focused line kept in view, an optional `?` corner and footer keys. `sheet::frame` draws only the chrome, for a sheet with a form inside.
 - `header`: the screen header, `!` on the left, the title, and `?` on the right when the screen has a hint. `!` and F1 open `help`, the Help & feedback dialog (`help::open(cx)`).
 - `hint`: `?` topics and one-time hints. `hint::topic(cx, HintTopic::Email)` opens a topic; `hint::once(cx, key)` opens the app's one-time hint for a key from `zwipe_core::domain::user::hints` the first time only, marks it and sends `mark_hint_shown`; `hint::reopen(cx, key)` opens it again for a header `?`; `hint::keys::swipe_select(..)` with `hint::once_with` covers the one hint whose copy changes. While a hint is up it takes every key.
-- `hero`: the logo and everybody's three counters on the sign-in screens, over the shared `Counts` copy. `hero::mount(cx)` makes one and fetches the counts when they are stale.
-- Animations, each driven by elapsed time with a matching `animating` check for `Screen::animating`: `logo` (the decode, `logo::draw(f, area, art, palette.logo, Some(elapsed))`), `count_up` (`CountUp::new(start, value)`, `set`, `shown_after(elapsed)`), `grid` (the rain, `grid::draw(f, palette, area, Some(elapsed))` and `grid::raining`), `entrance` (`entrance::draw(f, area, elapsed)`; the app runs it on every new screen), `spinner`, `splash` and `wipe` (the app runs both). Logos draw in `palette.logo`.
+- `hero`: the logo and everybody's three counters on the sign-in screens, over the shared `Counts` copy. `hero::mount(cx)` makes one and fetches the counts when they are stale. Home reads the same `shared.counts` for its Everybody figures and asks for `Request::FetchCounts` under the same 60 second rule, so Login and Home never fetch twice; the user's own counters live in `shared.caches`.
+- `figures`: home's and Activity's compact strip of three rolling figures.
+- `color_map`: the color map's tiles two cells wide in their four shades, the ring sweep, the loading ghost, and the key with its chips and Playstyle button.
+- `stagger`: entrances inside a screen, delayed and rising, and the hero's scope-in.
+- `card_rows`: expandable card rows with classification, printings (`printings::open` in `Mode::Pick`) and image keys, for Activity, Playstyle and the maybeboard.
+- `otag`: an oracle tag's definition with its `x Examples` key, and `RoleTags`, a row of tag chips with one open. The details sheet and the deck cards view's open row reveal a card's tags with it.
+- `item_list`: a list of items of different heights, one focused, paged to keep it in view.
+- `card_text` and `card_info`: a card as text, and the card screens' info block, details body and text stand-in.
+- `menu` and `pill`: a sheet of buttons, and one chip drawn on its own.
+- `text_area`: a text box of many lines, for pasting a decklist.
+- Animations, each driven by elapsed time with a matching `animating` check for `Screen::animating`: `logo` (the decode, `logo::draw(f, area, art, palette.logo, Some(elapsed))`), `count_up` (`CountUp::new(start, value)`, `set`, `shown_after(elapsed)`), `grid` (the rain, `grid::draw(f, palette, area, Some(elapsed))` and `grid::raining`), `entrance` (`entrance::draw(f, area, elapsed)`; the app runs it on every new screen), `spinner` (a request in flight), `splash` (the opening over the first screen) and `wipe` (the sweep between themes); the app runs the last two itself. Logos draw in `palette.logo`.
 - `text_input`: a one-line box with cursor movement, masking, a placeholder and an error line. The caller places the terminal cursor with `cursor_position`.
 - `chips`: a chip row picking one or many.
 - `collapsible`: a section that opens and closes, and an accordion that keeps one open.

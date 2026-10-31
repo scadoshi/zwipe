@@ -49,7 +49,7 @@ Screen modules under `inbound/screens/<name>/`, a back stack, and the shared wid
 - ColorMap: the tile algorithm ported exactly, drawn two cells per tile with the four shades and the ring sweep.
 - Activity: the 371-day heatmap and readout, Totals, the role and oracle tag rate charts, Most skipped.
 - Playstyle: Color map, Summary, Card roles, the Oracle tags table, the top-10 list with Show, each row's actions, Staples with its filters, Clear skips, the suggested-mode swipe.
-- Commander maybeboard: quick add, the color filter, swipe, remove, clear. It uses the filter sheet from package D once that lands.
+- Commander maybeboard: quick add, the color filter, the card filter sheet from package D, swipe, remove, clear.
 - Oracle tag dictionary and Examples overlays.
 
 ### C. Decks (spec 3)
@@ -70,6 +70,8 @@ Screen modules under `inbound/screens/<name>/`, a back stack, and the shared wid
 ## Wave 2: integration
 
 Merge the packages, wire cross-links (Playstyle "Create deck" to Create, Commander maybeboard to the filter sheet, deck view to cards, import and export), then audit each spec against the running app one screen at a time and fix what differs.
+
+Wired: Create with a commander from Playstyle, the commander swipe and the maybeboard; the deck list's More sheet to the maybeboard and Playstyle; the deck view's Roles tag Examples; the deck form's and the filter sheet's oracle tag Dictionary; the maybeboard's and the commander swipe's card filter; tag Examples in the details sheet and the deck cards view. Home and Login share one copy of everybody's counts.
 
 ## Done means
 

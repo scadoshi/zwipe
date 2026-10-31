@@ -297,7 +297,7 @@ pub(crate) enum Update {
         not(test),
         expect(
             dead_code,
-            reason = "for screens still to come; no request toasts its result yet"
+            reason = "the app-level twin of `Toast` for a timed band; every screen toasts its own results"
         )
     )]
     ToastFor(ToastKind, String, Duration),
