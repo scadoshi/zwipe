@@ -75,14 +75,19 @@ pub fn MoreButton(menu: MoreMenuState) -> Element {
 /// them in a popover under the [`MoreButton`] that a click anywhere else
 /// closes; a narrow one in the app's `More` bottom sheet with its `Close`.
 /// Esc closes either. Render it beside the screen's action bar, not in it,
-/// since the bar is a containing block for fixed elements.
+/// since the bar is a containing block for fixed elements. `title` is the
+/// sheet's title, `More` unless the app names it otherwise.
 #[component]
-pub fn MoreMenu(menu: MoreMenuState, children: Element) -> Element {
+pub fn MoreMenu(
+    menu: MoreMenuState,
+    #[props(default = "More".to_string())] title: String,
+    children: Element,
+) -> Element {
     let mut open = menu.open;
     let Anchor { top, left } = (menu.anchor)();
     rsx! {
         div { class: "web-more-sheet",
-            BottomSheet { open, title: "More".to_string(), {children.clone()} }
+            BottomSheet { open, title, {children.clone()} }
         }
         if open() {
             div { class: "web-more-popover-layer",
