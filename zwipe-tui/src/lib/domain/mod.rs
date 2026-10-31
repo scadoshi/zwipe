@@ -16,6 +16,12 @@ pub(crate) mod deck;
 pub(crate) mod decode;
 /// The home screen's counters and color map.
 pub(crate) mod home;
+/// The Playstyle screen's identities, reasons, profile sections and staples filters.
+#[cfg_attr(
+    not(test),
+    expect(dead_code, reason = "the Playstyle screen comes in the next change")
+)]
+pub(crate) mod playstyle;
 /// The swipe stack and the query that fills it.
 pub(crate) mod swipe;
 /// Orangui's palettes, mapped to the roles the screens draw with.
