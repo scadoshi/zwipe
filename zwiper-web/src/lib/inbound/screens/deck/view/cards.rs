@@ -16,7 +16,7 @@ use zwipe_ui::deck_cards::{self, Zone};
 use crate::inbound::cards::card_row::CardRow;
 
 /// The command zone's cards in their slots, matched by printing id.
-fn zone(deck: &Deck) -> Zone {
+pub(crate) fn zone(deck: &Deck) -> Zone {
     let profile = &deck.deck_profile;
     let find = |id: Option<Uuid>| -> Option<Card> {
         let id = id?;

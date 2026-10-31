@@ -26,12 +26,6 @@ fn Placeholder(title: String, #[props(default)] deck_id: Option<Uuid>) -> Elemen
     }
 }
 
-/// Cards for one deck, not built yet.
-#[component]
-pub fn ViewDeckCard(deck_id: Uuid) -> Element {
-    rsx! { Placeholder { title: "Cards", deck_id } }
-}
-
 /// Remove cards for one deck, not built yet.
 #[component]
 pub fn RemoveDeckCard(deck_id: Uuid) -> Element {

@@ -1390,3 +1390,106 @@ body {
         grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr) minmax(20rem, 0.95fr);
     }
 }
+
+/* ---- Deck cards ---- */
+
+/* Below the breakpoint it is the app's list: the controls over the groups,
+   rows opening inline, no pane. */
+.web-deck-cards-controls,
+.web-deck-cards-list {
+    max-width: 40rem;
+    width: 100%;
+    padding: 0 1rem;
+    box-sizing: border-box;
+}
+
+.web-deck-cards-pane {
+    display: none;
+}
+
+/* A row being dragged onto a board's header. */
+.card-group-header.web-drop-over {
+    color: var(--accent-primary);
+    outline: 1px dashed var(--accent-primary);
+    outline-offset: 2px;
+}
+
+@media (min-width: 900px) {
+    /* The controls over the groups on the left, the selected row's pane on
+       the right; a click selects into the pane instead of opening the row. */
+    .web-deck-cards-view.screen-content {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(20rem, 28rem);
+        grid-template-areas:
+            "controls pane"
+            "list pane";
+        align-items: start;
+        align-content: start;
+        column-gap: 1.5rem;
+        width: 100%;
+        max-width: 96rem;
+        margin: 0 auto;
+        padding: 1rem 1.5rem 2rem;
+        box-sizing: border-box;
+    }
+
+    .web-deck-cards-controls {
+        grid-area: controls;
+        max-width: none;
+        padding: 0;
+    }
+
+    .web-deck-cards-list {
+        grid-area: list;
+        max-width: none;
+        padding: 0;
+    }
+
+    .web-deck-cards-pane {
+        grid-area: pane;
+        display: block;
+        position: sticky;
+        top: 0;
+        max-height: calc(100vh - 9rem);
+        overflow-y: auto;
+        min-width: 0;
+    }
+
+    .web-deck-cards-list .card-row-collapse {
+        display: none;
+    }
+
+    .web-deck-row.selected .card-row-name {
+        color: var(--accent-primary);
+    }
+
+    .web-deck-pane-image {
+        display: block;
+        width: min(100%, 18rem);
+        margin: 0 auto 0.75rem;
+    }
+
+    .web-deck-pane-image img {
+        display: block;
+        width: 100%;
+        height: auto;
+        border-radius: 0.9rem;
+    }
+
+    .web-deck-cards-pane-empty {
+        text-align: center;
+        padding-top: 2rem;
+    }
+}
+
+@media (min-width: 1280px) {
+    .web-deck-cards-view.screen-content {
+        grid-template-columns: minmax(18rem, 0.8fr) minmax(0, 1.2fr) minmax(20rem, 26rem);
+        grid-template-areas: "controls list pane";
+    }
+
+    .web-deck-cards-controls {
+        position: sticky;
+        top: 0;
+    }
+}

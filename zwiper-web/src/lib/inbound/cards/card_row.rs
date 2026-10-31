@@ -8,6 +8,8 @@ use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
+use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
+use zwipe_core::domain::deck::Board;
 
 use crate::inbound::cards::image_preview::ImagePreview;
 use crate::inbound::cards::otag::{OtagDescribe, OtagExamplesOpen};
@@ -83,6 +85,11 @@ const HOVER_DELAY: Duration = Duration::from_millis(450);
 /// `extra_actions`. One row per screen is open at a time, by
 /// `expanded_card`. Resting the cursor on the compact line shows the card's
 /// image beside it.
+///
+/// The deck cards view adds the editing actions: the quantity stepper
+/// (`on_qty_change`), the board moves (`on_move_to` from `current_board`)
+/// and the MVP star (`mvp`, `on_toggle_mvp`), prices in `price_currency`,
+/// and `on_drag_start`, which makes the row draggable onto a board.
 #[component]
 pub fn CardRow(
     card: Card,
@@ -91,6 +98,14 @@ pub fn CardRow(
     #[props(default)] extra_actions: Option<Element>,
     #[props(default)] footer: Option<Element>,
     #[props(default)] qty_tags: Vec<String>,
+    #[props(default)] on_qty_change: Option<EventHandler<i32>>,
+    #[props(default)] on_move_to: Option<EventHandler<Board>>,
+    #[props(default)] current_board: Option<Board>,
+    #[props(default)] mvp: Option<bool>,
+    #[props(default)] on_toggle_mvp: Option<EventHandler<()>>,
+    #[props(default)] price_currency: PriceCurrency,
+    #[props(default)] on_drag_start: Option<EventHandler<()>>,
+    #[props(default)] on_printing: Option<EventHandler<Card>>,
 ) -> Element {
     let overlays = try_use_context::<CardOverlays>();
     let mut face = use_signal(|| 0usize);
@@ -105,13 +120,23 @@ pub fn CardRow(
     let on_image = overlays.map(|CardOverlays { mut preview, .. }| {
         EventHandler::new(move |()| preview.set(Some((sd_for_image.clone(), face()))))
     });
-    let on_printing = overlays.map(|CardOverlays { mut printing, .. }| {
-        EventHandler::new(move |picked: Card| printing.set(Some(picked)))
+    let on_printing = on_printing.or_else(|| {
+        overlays.map(|CardOverlays { mut printing, .. }| {
+            EventHandler::new(move |picked: Card| printing.set(Some(picked)))
+        })
     });
     let (x, y) = cursor();
     rsx! {
         div {
             class: "web-card-row",
+            draggable: on_drag_start.is_some(),
+            ondragstart: move |_| {
+                hovering.set(false);
+                hover_shown.set(false);
+                if let Some(handler) = on_drag_start {
+                    handler.call(());
+                }
+            },
             onmousemove: move |e| {
                 let p = e.client_coordinates();
                 cursor.set((p.x, p.y));
@@ -123,12 +148,13 @@ pub fn CardRow(
                 show_art,
                 on_image,
                 on_face_change: move |f: usize| face.set(f),
-                on_qty_change: None,
-                on_move_to: None,
-                current_board: None,
+                on_qty_change,
+                on_move_to,
+                current_board,
                 on_printing,
-                mvp: None,
-                on_toggle_mvp: None,
+                mvp,
+                on_toggle_mvp,
+                price_currency,
                 on_hover_enter: move |()| {
                     hovering.set(true);
                     spawn(async move {
