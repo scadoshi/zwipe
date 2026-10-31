@@ -47,8 +47,17 @@ jobs:
         with:
           toolchain: stable
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+      # nextest runs every test from every binary in one parallel queue, where
+      # cargo test runs the 39 binaries one after another. Each #[sqlx::test]
+      # gets its own database, so they are safe side by side.
+      - uses: taiki-e/install-action@1e29709c0ec63babbe8f266397a465f29a825f91 # v2
+        with:
+          tool: cargo-nextest
       - name: Test
-        run: cargo test -p zwipe-core -p zerver
+        run: cargo nextest run -p zwipe-core -p zerver
+      # nextest does not run doctests.
+      - name: Doctests
+        run: cargo test --doc -p zwipe-core -p zerver
 
   # Format + lint gate (the build below needs it too).
   lint:
