@@ -3,14 +3,17 @@
 //! Each screen lives in its own folder: `mod.rs` for its state, its request and update enums, `perform` and `apply`; `keys.rs` for its keys; `draw.rs` for drawing it. This file only routes to them, one arm per screen. `context/ARCHITECTURE.md` lists every place a new screen registers.
 
 pub(crate) mod account;
+pub(crate) mod card_sheets;
 pub(crate) mod config;
 pub(crate) mod deck;
+pub(crate) mod deck_cards;
 pub(crate) mod deck_export;
 pub(crate) mod deck_form;
 pub(crate) mod deck_import;
 pub(crate) mod decks;
 pub(crate) mod home;
 pub(crate) mod login;
+pub(crate) mod remove_cards;
 pub(crate) mod swipe;
 pub(crate) mod update_required;
 
@@ -52,6 +55,8 @@ pub(crate) enum Screen {
     DeckImport(Box<ImportView>),
     DeckExport(Box<ExportView>),
     Swipe(Box<SwipeView>),
+    DeckCards(Box<deck_cards::DeckCardsView>),
+    RemoveCards(Box<remove_cards::RemoveView>),
     Account(Box<AccountView>),
     Config(Box<ConfigView>),
     /// The server no longer accepts this version. Only quitting is possible.
@@ -70,6 +75,8 @@ impl Screen {
             Self::DeckImport(view) => deck_import::keys::handle(view, code, cx),
             Self::DeckExport(view) => deck_export::keys::handle(view, code, cx),
             Self::Swipe(view) => swipe::keys::handle(view, code, cx),
+            Self::DeckCards(view) => deck_cards::keys::handle(view, code, cx),
+            Self::RemoveCards(view) => remove_cards::keys::handle(view, code, cx),
             Self::Account(view) => account::keys::handle(view, code, cx),
             Self::Config(view) => config::keys::handle(view, code, cx),
             Self::UpdateRequired => update_required::keys::handle(code, cx),
@@ -86,6 +93,8 @@ impl Screen {
             Self::DeckImport(view) => deck_import::draw::draw(f, shared, view),
             Self::DeckExport(view) => deck_export::draw::draw(f, shared, view),
             Self::Swipe(view) => swipe::draw::draw(f, shared, view),
+            Self::DeckCards(view) => deck_cards::draw::draw(f, shared, view),
+            Self::RemoveCards(view) => remove_cards::draw::draw(f, shared, view),
             Self::Account(view) => account::draw::draw(f, shared, view),
             Self::Config(view) => config::draw::draw(f, shared, view),
             Self::UpdateRequired => update_required::draw::draw(f, shared),
@@ -107,6 +116,7 @@ impl Screen {
             Self::Home(view) => view.refresh(cx),
             Self::Decks(list) => list.reload(cx),
             Self::Deck(view) => view.reload(cx),
+            Self::DeckCards(view) => view.reload(cx),
             _ => {}
         }
     }
@@ -130,8 +140,11 @@ pub(crate) enum Request {
     DeckImport(deck_import::Request),
     DeckExport(deck_export::Request),
     Swipe(swipe::Request),
+    DeckCards(deck_cards::Request),
+    RemoveCards(remove_cards::Request),
     Account(account::Request),
     Config(config::Request),
+    CardSheets(card_sheets::Request),
 }
 
 /// A result from a background request: the app's own, or one screen's.
@@ -145,13 +158,6 @@ pub(crate) enum Update {
     /// A message for the status line.
     Status(String),
     /// A toast for a result that has no screen to show it on.
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "for screens still to come; no request toasts its result yet"
-        )
-    )]
     Toast(ToastKind, String),
     /// The user as the server keeps it after marking a hint shown.
     HintMarked(Box<User>),
@@ -163,8 +169,11 @@ pub(crate) enum Update {
     DeckImport(deck_import::Update),
     DeckExport(deck_export::Update),
     Swipe(swipe::Update),
+    DeckCards(deck_cards::Update),
+    RemoveCards(remove_cards::Update),
     Account(account::Update),
     Config(config::Update),
+    CardSheets(card_sheets::Update),
 }
 
 /// Runs one request off the main loop.
@@ -207,8 +216,11 @@ pub(crate) async fn perform(
         Request::DeckImport(request) => deck_import::perform(account, request).await,
         Request::DeckExport(request) => deck_export::perform(account, request).await,
         Request::Swipe(request) => swipe::perform(account, request).await,
+        Request::DeckCards(request) => deck_cards::perform(account, request).await,
+        Request::RemoveCards(request) => remove_cards::perform(account, request).await,
         Request::Account(request) => account::perform(account, request).await,
         Request::Config(request) => config::perform(account, request).await,
+        Request::CardSheets(request) => card_sheets::perform(account, request).await,
     }
 }
 
@@ -235,8 +247,11 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
         Update::DeckImport(update) => deck_import::apply(nav, update, cx),
         Update::DeckExport(update) => deck_export::apply(nav, update, cx),
         Update::Swipe(update) => swipe::apply(nav, update, cx),
+        Update::DeckCards(update) => deck_cards::apply(nav, update, cx),
+        Update::RemoveCards(update) => remove_cards::apply(nav, update, cx),
         Update::Account(update) => account::apply(nav, update, cx),
         Update::Config(update) => config::apply(nav, update, cx),
+        Update::CardSheets(update) => card_sheets::apply(nav, update, cx),
     }
 }
 

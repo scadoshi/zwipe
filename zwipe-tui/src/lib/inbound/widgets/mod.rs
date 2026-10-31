@@ -8,6 +8,8 @@ pub(crate) mod action_bar;
 pub(crate) mod alert;
 /// Opening a link in the browser.
 pub(crate) mod browser;
+/// A card's info block, details and text stand-in.
+pub(crate) mod card_info;
 /// Bar charts from the deck metrics.
 pub(crate) mod charts;
 /// A row of chips to pick one or several.
@@ -37,7 +39,6 @@ pub(crate) mod panel;
 /// One chip drawn on its own.
 pub(crate) mod pill;
 /// The bottom sheet with a scrolling body.
-#[cfg_attr(not(test), expect(dead_code, reason = "no screen uses it yet"))]
 pub(crate) mod sheet;
 /// Ghost rows for content still loading.
 pub(crate) mod skeleton;

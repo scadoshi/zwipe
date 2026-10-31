@@ -268,7 +268,10 @@ pub(crate) fn create(list: &DeckList, cx: &mut Context<'_>) {
         .as_ref()
         .is_some_and(|u| u.email_verified_at.is_none());
     if unverified && !list.decks.is_empty() {
-        screens::deck::warn(cx, "Verify your email to create more than 1 deck");
+        cx.toast(
+            ToastKind::Warning,
+            "Verify your email to create more than 1 deck".to_owned(),
+        );
         return;
     }
     screens::deck_form::open_create(cx);

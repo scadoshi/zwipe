@@ -7,6 +7,7 @@ use reqwest::Url;
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::Card;
+use zwipe_core::domain::deck::Format;
 use zwipe_core::http::contracts::deck::HttpDeckCardSearch;
 
 use super::{EventLoop, Flow};
@@ -91,10 +92,12 @@ impl Harness {
         self.app.nav.top_mut()
     }
 
-    /// Home, then the deck list, then a fresh deck, then swiping into it with `cards` served as the first page, with nothing left queued.
+    /// Home, then the deck list, then a fresh commander deck, then swiping into it with `cards` served as the first page, with nothing left queued.
     pub(crate) fn swiping(cards: Vec<Card>) -> (Self, Uuid) {
         let mut harness = Self::on(Screen::Home(Box::default()));
-        let profile = deck_profile("Pile");
+        let mut profile = deck_profile("Pile");
+        profile.commander_id = Some(Uuid::new_v4());
+        profile.format = Some(Format::Commander);
         let deck_id = profile.id;
         harness.open(decks::open);
         harness.apply(decks::Update::Loaded(vec![profile.clone()]));
@@ -104,16 +107,26 @@ impl Harness {
             Vec::new(),
         ))));
         harness.press(KeyCode::Char('s'));
-        harness.apply(swipe::Update::Cards {
-            deck_id,
-            page: HttpDeckCardSearch {
-                cards,
-                synergy_applied: false,
-                related_from: None,
-            },
-        });
+        harness.serve(cards);
         harness.clear();
         (harness, deck_id)
+    }
+
+    /// Answers the swipe screen's open search with `cards`, synergy applied.
+    pub(crate) fn serve(&mut self, cards: Vec<Card>) {
+        let view = self.swipe_view();
+        let update = swipe::Update::Searched {
+            deck_id: view.deck.id,
+            generation: view.generation,
+            filter: Box::new(view.filter.clone()),
+            page: swipe::Page::First,
+            result: Ok(HttpDeckCardSearch {
+                cards,
+                synergy_applied: true,
+                related_from: None,
+            }),
+        };
+        self.apply(update);
     }
 
     /// The swipe screen's state, or a panic naming the screen on top.

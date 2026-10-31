@@ -38,11 +38,6 @@ const HINT_TITLE: &str = "Welcome to your deck";
 /// The first-deck hint's bullets, as the app words them.
 const HINT_BODY: &str = "• Cards browses, adds and removes cards\n• Edit changes the name, format, command zone, tags and targets\n• More imports, exports, clones, shares or deletes the deck\n• Skipped and removed cards stay out of the add stack. More then Clear skips brings them back\n• Stats fill in as the deck grows. Tap a section to expand it\n• Warnings flag rule problems, each with a one-tap fix";
 
-/// Shows a warning toast. The toast widget has no warning kind of its own, so warnings show in the error color.
-pub(crate) fn warn(cx: &mut Context<'_>, message: &str) {
-    cx.toast(ToastKind::Error, message.to_owned());
-}
-
 /// One section of the deck screen, in the app's order.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Section {

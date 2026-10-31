@@ -1,21 +1,22 @@
-//! The swipe screen: the deck at the top, the card in the middle, the keys at the bottom.
+//! The Add screen: the title, the From and Synergy chips, the card with its info block under it, the keys, and any sheet over them.
 
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Rect};
-use ratatui::style::Stylize;
+use ratatui::style::{Style, Stylize};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Padding, Paragraph, Wrap};
 use ratatui_image::StatefulImage;
 use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::scryfall_data::ImageSize;
 
-use super::{CardImage, SwipeView};
-use crate::domain;
-use crate::domain::card::{self, Face};
+use super::{CardImage, Source, SwipeView};
+use crate::domain::stack::Direction;
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
-use crate::inbound::widgets::action_bar;
+use crate::inbound::screens::card_sheets::filter;
+use crate::inbound::widgets::{action_bar, card_info, skeleton};
 
-/// The card is at most this wide, in cells, so it reads like a card on a wide terminal.
+/// The card is at most this wide, in cells.
 const CARD_WIDTH: u16 = 64;
 
 /// An image's width for each row of height, in tenths of a cell: a card is about 0.72 as wide as tall, and a cell about half as wide as tall.
@@ -24,136 +25,191 @@ const IMAGE_WIDTH_PER_ROW_TENTHS: u16 = 14;
 /// Cells between the image and the text.
 const GAP: u16 = 2;
 
-/// The card's border and padding, across both sides.
-const CARD_FRAME: u16 = 4;
+/// The info block's height.
+const INFO_HEIGHT: u16 = 5;
 
 pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &SwipeView) {
     let palette = &shared.palette;
-    let [header, body, footer, status, keys] = Layout::vertical([
+    let area = f.area();
+    let [header, sources, body, keys] = Layout::vertical([
+        Constraint::Length(1),
         Constraint::Length(1),
         Constraint::Fill(1),
         Constraint::Length(1),
-        Constraint::Length(1),
-        Constraint::Length(1),
     ])
     .margin(1)
-    .areas(f.area());
+    .areas(area);
 
-    let count = domain::deck::card_count(&view.deck).saturating_add(view.added);
-    let commander = view
-        .deck
-        .commander_name
-        .as_deref()
-        .map_or_else(String::new, |c| format!("  {c}"));
     f.render_widget(
         Line::from(vec![
-            Span::styled(view.deck.name.to_string(), palette.accent).bold(),
-            Span::styled(commander, palette.muted),
-            Span::styled(
-                format!("  {}", domain::deck::cards_label(count)),
-                palette.muted,
-            ),
+            Span::styled("Add deck cards", palette.accent).bold(),
+            Span::styled(format!("  {}", view.deck_name), palette.muted),
         ]),
         header,
     );
+    f.render_widget(source_line(palette, view), sources);
 
-    let current = view.stack.as_ref().and_then(|s| s.current());
-    match (current, placeholder(view)) {
-        (Some(card), _) => draw_current(f, shared, view, card, body),
-        (None, Some(message)) => {
-            f.render_widget(
-                Paragraph::new(message.style(palette.muted))
-                    .centered()
-                    .wrap(Wrap { trim: true }),
-                body.centered(Constraint::Max(CARD_WIDTH), Constraint::Length(1)),
+    match view.current() {
+        Some(card) => draw_card(f, shared, view, card, body),
+        None => draw_empty(f, palette, view, body),
+    }
+
+    f.render_widget(key_line(palette, view), keys);
+
+    if let Some(details) = &view.details {
+        details.draw(f, palette, area);
+    }
+    if let Some(printing) = &view.printing {
+        printing.draw(f, palette, area);
+    }
+    if let Some(sheet) = &view.sheet {
+        filter::draw::draw(f, shared, sheet, area);
+    }
+}
+
+/// "From" with the Search and Maybeboard chips, and Synergy when it applies.
+fn source_line(palette: &Palette, view: &SwipeView) -> Line<'static> {
+    let chip = |label: &str, on: bool| -> Span<'static> {
+        let style = if on {
+            palette.accent.bold().reversed()
+        } else {
+            palette.muted
+        };
+        Span::styled(format!(" {label} "), style)
+    };
+    let mut spans = vec![
+        Span::styled("From ", palette.muted.bold()),
+        chip("Search", view.source == Source::Search),
+        Span::raw(" "),
+        chip("Maybeboard", view.source == Source::Maybeboard),
+    ];
+    if view.synergy_shown() {
+        spans.push(Span::raw("   "));
+        spans.push(chip("Synergy", view.filter.synergy()));
+    }
+    Line::from(spans)
+}
+
+/// The keys, with a dot on Filter when a user filter is on.
+fn key_line(palette: &Palette, view: &SwipeView) -> Line<'static> {
+    let filter = if view.filter_dot() {
+        "filter •"
+    } else {
+        "filter"
+    };
+    let mut keys = vec![
+        ("h", "skip"),
+        ("l", "add"),
+        ("m", "maybe"),
+        ("u", "undo"),
+        ("f", filter),
+        ("r", "refresh"),
+    ];
+    if view.current().is_some() {
+        keys.push(("e", "details"));
+    }
+    keys.push(("Tab", "from"));
+    if view.synergy_shown() {
+        keys.push(("y", "synergy"));
+    }
+    keys.push(("?", "hint"));
+    keys.push(("Esc", "back"));
+    action_bar::line(palette, &keys)
+}
+
+/// No card on top: loading, the end of results, or nothing.
+fn draw_empty(f: &mut Frame<'_>, palette: &Palette, view: &SwipeView, area: Rect) {
+    let width = area.width.min(CARD_WIDTH);
+    let loading = match view.source {
+        Source::Search => {
+            (view.stack.is_empty() && view.loading_cards)
+                || (!view.stack.is_empty() && view.loading_more)
+        }
+        Source::Maybeboard => false,
+    };
+    let lines = if loading {
+        skeleton::rows(palette, 5, usize::from(width))
+    } else {
+        let mut lines = vec![Line::from("No cards").style(palette.muted).centered()];
+        if view.source == Source::Search && !view.stack.is_empty() {
+            lines.push(
+                Line::from("u steps back into the pile")
+                    .style(palette.muted)
+                    .centered(),
             );
         }
-        (None, None) => {}
-    }
-
-    let remaining = view
-        .stack
-        .as_ref()
-        .map_or(0, crate::domain::swipe::Stack::remaining);
-    let footer_text = if view.fetching && current.is_some() {
-        format!("{remaining} left, finding more...")
-    } else if current.is_some() {
-        format!("{remaining} left")
-    } else {
-        String::new()
+        lines
     };
+    let height = u16::try_from(lines.len())
+        .unwrap_or(u16::MAX)
+        .min(area.height);
     f.render_widget(
-        Line::from(footer_text).style(palette.muted).centered(),
-        footer,
-    );
-    f.render_widget(
-        Line::from(shared.status.clone())
-            .style(palette.accent)
-            .centered(),
-        status,
-    );
-    f.render_widget(
-        action_bar::line(
-            palette,
-            &[
-                ("h", "pass"),
-                ("l", "add"),
-                ("m", "maybe"),
-                ("u", "undo"),
-                ("i", "image/text"),
-                ("Esc", "deck"),
-            ],
-        )
-        .centered(),
-        keys,
+        Paragraph::new(lines),
+        area.centered(Constraint::Length(width), Constraint::Length(height)),
     );
 }
 
-/// What to show when there is no card: loading, an error, or the end of the cards.
-fn placeholder(view: &SwipeView) -> Option<Line<'static>> {
-    if let Some(error) = &view.error {
-        return Some(Line::from(error.clone()));
-    }
-    let message = match &view.stack {
-        None => "Loading the deck...",
-        Some(_) if view.fetching => "Finding cards...",
-        Some(stack) if stack.is_exhausted() => "No more cards match this deck.",
-        Some(_) => return None,
+/// The border color of a card coming back after an undo: the side it left by.
+fn entering_style(palette: &Palette, view: &SwipeView) -> Style {
+    let entering = match view.source {
+        Source::Search => view.stack.entering(),
+        Source::Maybeboard => view.mb_stack.entering(),
     };
-    Some(Line::from(message))
+    match entering {
+        Some(Direction::Right) => palette.add,
+        Some(Direction::Left) => palette.error,
+        Some(Direction::Up) => palette.warning,
+        None => palette.accent,
+    }
 }
 
-/// Draws the card on screen: its image beside its text when the terminal is wide enough, else the one `i` picks.
-fn draw_current(f: &mut Frame<'_>, shared: &Shared, view: &SwipeView, card: &Card, area: Rect) {
+/// The card: its image beside its text when there is room, else the one `i` picks, with the info block under.
+fn draw_card(f: &mut Frame<'_>, shared: &Shared, view: &SwipeView, card: &Card, area: Rect) {
     let palette = &shared.palette;
+    let [card_area, _, info_area] = Layout::vertical([
+        Constraint::Fill(1),
+        Constraint::Length(1),
+        Constraint::Length(INFO_HEIGHT),
+    ])
+    .areas(area);
+    let info_width = card_area.width.min(CARD_WIDTH);
+    f.render_widget(
+        Paragraph::new(card_info::info_lines(palette, card)),
+        info_area.centered_horizontally(Constraint::Length(info_width)),
+    );
+
+    let border = entering_style(palette, view);
     if shared.images.is_none() {
-        draw_card(f, palette, card, area);
+        draw_text(f, palette, card, view.face, border, card_area);
         return;
     }
-    let image = view.images.get(&card.scryfall_data.id);
-    let image_width = area.height.saturating_mul(IMAGE_WIDTH_PER_ROW_TENTHS) / 10;
-    if area.width >= image_width.saturating_add(CARD_WIDTH).saturating_add(GAP) {
+    let image = card
+        .scryfall_data
+        .face_image_url(view.face % card_info::face_count(card), ImageSize::Normal)
+        .and_then(|url| view.images.get(url));
+    let image_width = card_area.height.saturating_mul(IMAGE_WIDTH_PER_ROW_TENTHS) / 10;
+    if card_area.width >= image_width.saturating_add(CARD_WIDTH).saturating_add(GAP) {
         let [image_area, _, text_area] = Layout::horizontal([
             Constraint::Length(image_width),
             Constraint::Length(GAP),
             Constraint::Fill(1),
         ])
-        .areas(area);
+        .areas(card_area);
         draw_image(f, palette, image, image_area);
-        draw_card(f, palette, card, text_area);
+        draw_text(f, palette, card, view.face, border, text_area);
     } else if view.show_image {
         draw_image(
             f,
             palette,
             image,
-            area.centered_horizontally(Constraint::Length(image_width)),
+            card_area.centered_horizontally(Constraint::Length(image_width)),
         );
     } else {
-        draw_card(f, palette, card, area);
+        draw_text(f, palette, card, view.face, border, card_area);
     }
 }
 
-/// Draws a card's image fitted into `area`, or what stands in for it while it loads or when there is none.
+/// A card's image fitted into `area`, or what stands in for it while it loads or when there is none.
 fn draw_image(f: &mut Frame<'_>, palette: &Palette, image: Option<&CardImage>, area: Rect) {
     let message = match image {
         Some(CardImage::Ready(protocol)) => {
@@ -172,62 +228,29 @@ fn draw_image(f: &mut Frame<'_>, palette: &Palette, image: Option<&CardImage>, a
     );
 }
 
-/// Draws the card centered in `area`, as tall as its text.
-fn draw_card(f: &mut Frame<'_>, palette: &Palette, card: &Card, area: Rect) {
-    let data = &card.scryfall_data;
-    let mut lines = Vec::new();
-    for (i, face) in card::faces(data).iter().enumerate() {
-        if i > 0 {
-            lines.push(Line::default());
-            lines.push(Line::from("//").style(palette.muted).centered());
-            lines.push(Line::default());
-        }
-        lines.extend(face_lines(palette, face));
-    }
-    lines.push(Line::default());
-    lines.push(Line::from(data.set_name.clone()).style(palette.muted));
-
-    let card = Paragraph::new(lines).wrap(Wrap { trim: true }).block(
-        Block::bordered()
-            .border_style(palette.accent)
-            .padding(Padding::horizontal(1)),
-    );
+/// The card as text, one face at a time, centered in `area`.
+fn draw_text(
+    f: &mut Frame<'_>,
+    palette: &Palette,
+    card: &Card,
+    face: usize,
+    border: Style,
+    area: Rect,
+) {
+    let text = Paragraph::new(card_info::proxy_lines(palette, card, face))
+        .wrap(Wrap { trim: true })
+        .block(
+            Block::bordered()
+                .border_style(border)
+                .padding(Padding::horizontal(1)),
+        );
     let width = area.width.min(CARD_WIDTH);
-    let height =
-        u16::try_from(card.line_count(width.saturating_sub(CARD_FRAME))).unwrap_or(u16::MAX);
+    let height = u16::try_from(text.line_count(width.saturating_sub(4))).unwrap_or(u16::MAX);
     f.render_widget(
-        card,
+        text,
         area.centered(
             Constraint::Length(width),
             Constraint::Length(height.min(area.height)),
         ),
     );
-}
-
-fn face_lines(palette: &Palette, face: &Face) -> Vec<Line<'static>> {
-    let mut title = vec![Span::raw(face.name.clone()).bold()];
-    if !face.mana_cost.is_empty() {
-        title.push(Span::raw("  "));
-        title.extend(face.mana_cost.iter().map(|symbol| {
-            let style = symbol
-                .color
-                .and_then(|i| palette.mana.get(i).copied())
-                .map_or(palette.muted, ratatui::prelude::Style::bold);
-            Span::styled(format!("{{{}}}", symbol.text), style)
-        }));
-    }
-
-    let mut lines = vec![Line::from(title)];
-    if !face.type_line.is_empty() {
-        lines.push(Line::from(face.type_line.clone()).italic());
-    }
-    if !face.rules.is_empty() {
-        lines.push(Line::default());
-        lines.extend(face.rules.iter().map(|rule| Line::from(rule.clone())));
-    }
-    if let Some(stats) = &face.stats {
-        lines.push(Line::default());
-        lines.push(Line::from(stats.clone()).bold().right_aligned());
-    }
-    lines
 }

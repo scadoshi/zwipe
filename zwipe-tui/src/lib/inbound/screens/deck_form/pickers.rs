@@ -8,7 +8,6 @@ use zwipe_core::domain::deck::{DeckTagView, Format, MAX_DECK_ORACLE_TAGS, MAX_DE
 use super::{DeckForm, Overlay};
 use crate::domain::deck::form::{self, Slot};
 use crate::inbound::app::Context;
-use crate::inbound::screens::deck::warn;
 use crate::inbound::widgets::info::InfoPopup;
 use crate::inbound::widgets::text_input::TextInput;
 use crate::inbound::widgets::toast::ToastKind;
@@ -272,7 +271,10 @@ pub(crate) fn handle_tags(
                 if let Some(at) = form.tags.iter().position(|t| *t == slug) {
                     form.tags.remove(at);
                 } else if form.tags.len() >= MAX_DECK_TAGS {
-                    warn(cx, "You may only choose up to 5 tags");
+                    cx.toast(
+                        ToastKind::Warning,
+                        "You may only choose up to 5 tags".to_owned(),
+                    );
                 } else {
                     form.tags.push(slug);
                 }
@@ -326,7 +328,10 @@ pub(crate) fn handle_oracle(
                 if let Some(at) = form.oracle_tags.iter().position(|t| *t == slug) {
                     form.oracle_tags.remove(at);
                 } else if form.oracle_tags.len() >= MAX_DECK_ORACLE_TAGS {
-                    warn(cx, "You may only choose up to 30 oracle tags");
+                    cx.toast(
+                        ToastKind::Warning,
+                        "You may only choose up to 30 oracle tags".to_owned(),
+                    );
                 } else {
                     form.oracle_tags.push(slug.clone());
                 }
