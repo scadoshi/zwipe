@@ -37,7 +37,7 @@ const STARTS: [(i32, i32); 5] = [(0, -2), (2, -1), (1, 2), (-1, 2), (-2, -1)];
 pub(crate) const SWEEP_RINGS: u32 = 7;
 /// The wait between one ring's sweep and the next, in milliseconds. With orangui's 0.4s `heat-sweep`, the last ring lands about 700ms after mount.
 pub(crate) const SWEEP_STEP_MS: u32 = 50;
-/// The counts a [`ColorMapGhost`] grows from: about 40 tiles, enough to branch like a real map while staying a small cluster. The counts the ghost map grows from: about 40 tiles, enough to branch like a real map while staying a small cluster.
+/// The counts the ghost map grows from: about 40 tiles, enough to branch like a real map while staying a small cluster.
 const GHOST_COUNTS: ColorMapCounts = ColorMapCounts {
     cards: [8, 6, 6, 5, 5],
     colorless: 0,
@@ -55,7 +55,7 @@ const POCKET_PASSES: u32 = 4;
 /// Salt for the step costs.
 const COST_SALT: u64 = 0x636f_7374;
 
-/// The counts a [`ColorMap`] draws.
+/// The counts a the map draws.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub(crate) struct ColorMapCounts {
     /// Cards whose color identity includes each color, in WUBRG order.
@@ -98,7 +98,7 @@ pub(crate) struct Tile {
     pub(crate) ring: u32,
 }
 
-/// Everything a [`ColorMap`] draws, computed once from its counts and seed.
+/// Everything a the map draws, computed once from its counts and seed.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct ColorMapModel {
     /// Every tile, by row and then column.
@@ -119,7 +119,7 @@ fn mix(mut z: u64) -> u64 {
     z ^ (z >> 31)
 }
 
-/// A seed for [`ColorMap`] from a 128-bit id such as a user's UUID.
+/// A seed for the map from a 128-bit id such as a user's UUID.
 pub(crate) fn seed_from_id(id: u128) -> u64 {
     let high = u64::try_from(id >> 64).unwrap_or(0);
     let low = u64::try_from(id & u128::from(u64::MAX)).unwrap_or(0);
@@ -143,7 +143,9 @@ pub(crate) fn tile_total(colored: u64) -> u32 {
         return 0;
     }
     let per_root = u64::from(TILES_PER_ROOT_TENTHS);
-    let grown = (per_root * per_root).saturating_mul(colored).isqrt() / 10;
+    // 34 squared, nowhere near saturating.
+    let per_root_squared = per_root.saturating_mul(per_root);
+    let grown = per_root_squared.saturating_mul(colored).isqrt() / 10;
     u32::try_from(grown)
         .unwrap_or(MAX_TILES)
         .saturating_add(MIN_TILES)
@@ -156,18 +158,28 @@ pub(crate) fn quotas(cards: [u32; 5], total: u32) -> [u32; 5] {
     if sum == 0 {
         return [0; 5];
     }
-    let share = |n: u32| u64::from(total) * u64::from(n);
-    let mut quotas = cards.map(|n| u32::try_from(share(n) / sum).unwrap_or(0));
+    // A u32 times a u32 always fits a u64, so this never saturates.
+    let share = |n: u32| u64::from(total).saturating_mul(u64::from(n));
+    let mut quotas = cards.map(|n| {
+        share(n)
+            .checked_div(sum)
+            .and_then(|q| u32::try_from(q).ok())
+            .unwrap_or(0)
+    });
     let given: u32 = quotas.iter().sum();
     let mut order: Vec<usize> = (0..5).collect();
     order.sort_by_key(|&i| {
-        let remainder = cards.get(i).map_or(0, |&n| share(n) % sum);
+        let remainder = cards
+            .get(i)
+            .and_then(|&n| share(n).checked_rem(sum))
+            .unwrap_or(0);
         (std::cmp::Reverse(remainder), i)
     });
     let leftover = usize::try_from(total.saturating_sub(given)).unwrap_or(0);
     for i in order.into_iter().take(leftover) {
         if let Some(q) = quotas.get_mut(i) {
-            *q += 1;
+            // At most `total`, a u32, after the leftover tile.
+            *q = q.saturating_add(1);
         }
     }
     quotas
@@ -175,15 +187,24 @@ pub(crate) fn quotas(cards: [u32; 5], total: u32) -> [u32; 5] {
 
 /// A cell's index in the grid, or `None` off the grid.
 fn index((x, y): (i32, i32)) -> Option<usize> {
-    if x.abs() > GRID_REACH || y.abs() > GRID_REACH {
+    let column = x.checked_add(GRID_REACH)?;
+    let row = y.checked_add(GRID_REACH)?;
+    if !(0..GRID_SIDE).contains(&column) || !(0..GRID_SIDE).contains(&row) {
         return None;
     }
-    usize::try_from((y + GRID_REACH) * GRID_SIDE + (x + GRID_REACH)).ok()
+    usize::try_from(row.checked_mul(GRID_SIDE)?.checked_add(column)?).ok()
 }
 
-/// The four cells beside `(x, y)`.
-fn neighbors((x, y): (i32, i32)) -> [(i32, i32); 4] {
-    [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)]
+/// The four cells beside `(x, y)`, less any past the edge of `i32`.
+fn neighbors((x, y): (i32, i32)) -> impl Iterator<Item = (i32, i32)> {
+    [
+        (x.checked_add(1), Some(y)),
+        (x.checked_sub(1), Some(y)),
+        (Some(x), y.checked_add(1)),
+        (Some(x), y.checked_sub(1)),
+    ]
+    .into_iter()
+    .filter_map(|(x, y)| Some((x?, y?)))
 }
 
 /// The seed's random cost for taking `cell`, heavy tailed above [`COST_FLOOR`].
@@ -198,7 +219,8 @@ fn color_cost(seed: u64, color: usize, cell: (i32, i32)) -> f64 {
     let shared = step_cost(seed, COST_SALT, cell);
     let own = step_cost(
         seed,
-        COST_SALT ^ mix(u64::try_from(color).unwrap_or(0) + 1),
+        // `color` is a WUBRG index, 0 to 4, so this never saturates.
+        COST_SALT ^ mix(u64::try_from(color).unwrap_or(0).saturating_add(1)),
         cell,
     );
     ((1.0 - OWN_COST) * shared + OWN_COST * own) * (1.0 + HOME_PULL * (1.0 - (angle - home).cos()))
@@ -233,7 +255,9 @@ impl PartialOrd for Claim {
 /// Grows every color with a quota from its start at once, each always taking the cheapest free cell beside its own ground, until each holds exactly its quota. Returns each claimed cell with its color index.
 fn grow(seed: u64, quotas: [u32; 5]) -> Vec<((i32, i32), usize)> {
     let side = usize::try_from(GRID_SIDE).unwrap_or(0);
-    let mut owner: Vec<Option<usize>> = vec![None; side * side];
+    // GRID_SIDE is 81, so this never saturates.
+    let cells = side.saturating_mul(side);
+    let mut owner: Vec<Option<usize>> = vec![None; cells];
     let mut room = quotas;
     let mut claimed = Vec::new();
     let mut frontier = std::collections::BinaryHeap::new();
@@ -251,7 +275,7 @@ fn grow(seed: u64, quotas: [u32; 5]) -> Vec<((i32, i32), usize)> {
             .and_then(|i| owner.get(i))
             .is_some_and(Option::is_none)
     };
-    let mut visited = vec![[false; 5]; side * side];
+    let mut visited = vec![[false; 5]; cells];
     while let Some(Claim { cost, cell, color }) = frontier.pop() {
         let Some(left) = room.get_mut(color) else {
             continue;
@@ -262,7 +286,10 @@ fn grow(seed: u64, quotas: [u32; 5]) -> Vec<((i32, i32), usize)> {
         else {
             continue;
         };
-        if *left == 0 || *was_visited {
+        let Some(rest) = left.checked_sub(1) else {
+            continue;
+        };
+        if *was_visited {
             continue;
         }
         *was_visited = true;
@@ -271,7 +298,7 @@ fn grow(seed: u64, quotas: [u32; 5]) -> Vec<((i32, i32), usize)> {
             if let Some(slot) = index(cell).and_then(|i| owner.get_mut(i)) {
                 *slot = Some(color);
             }
-            *left -= 1;
+            *left = rest;
             claimed.push((cell, color));
             1.0
         } else {
@@ -294,7 +321,7 @@ fn grow(seed: u64, quotas: [u32; 5]) -> Vec<((i32, i32), usize)> {
 
     // A color walled in by the others before its quota fills the free cells inside its own ground first, then the free cells beside the map nearest its ground, so every quota is met.
     for (color, left) in room.iter_mut().enumerate() {
-        while *left > 0 {
+        while let Some(rest) = left.checked_sub(1) {
             let own: Vec<(i32, i32)> = claimed
                 .iter()
                 .filter(|&&(_, c)| c == color)
@@ -302,7 +329,7 @@ fn grow(seed: u64, quotas: [u32; 5]) -> Vec<((i32, i32), usize)> {
                 .collect();
             let near_own = |cell: (i32, i32)| {
                 own.iter()
-                    .map(|&(x, y)| (x - cell.0).abs() + (y - cell.1).abs())
+                    .map(|&(x, y)| x.abs_diff(cell.0).saturating_add(y.abs_diff(cell.1)))
                     .min()
                     .unwrap_or(0)
             };
@@ -320,7 +347,7 @@ fn grow(seed: u64, quotas: [u32; 5]) -> Vec<((i32, i32), usize)> {
             if let Some(slot) = index(cell).and_then(|i| owner.get_mut(i)) {
                 *slot = Some(color);
             }
-            *left -= 1;
+            *left = rest;
             claimed.push((cell, color));
         }
     }
@@ -350,15 +377,23 @@ fn empty_cells(owner: &BTreeMap<(i32, i32), usize>) -> EmptyCells {
             walled: Vec::new(),
         };
     };
-    let (frame_x, frame_y) = ((low_x - 1)..=(high_x + 1), (low_y - 1)..=(high_y + 1));
+    // The frame one cell out; tiles at the edge of `i32` have none.
+    let (Some(left), Some(right), Some(top), Some(bottom)) = (
+        low_x.checked_sub(1),
+        high_x.checked_add(1),
+        low_y.checked_sub(1),
+        high_y.checked_add(1),
+    ) else {
+        return EmptyCells {
+            open,
+            walled: Vec::new(),
+        };
+    };
+    let (frame_x, frame_y) = (left..=right, top..=bottom);
     let mut stack: Vec<(i32, i32)> = frame_x
         .clone()
-        .flat_map(|x| [(x, low_y - 1), (x, high_y + 1)])
-        .chain(
-            frame_y
-                .clone()
-                .flat_map(|y| [(low_x - 1, y), (high_x + 1, y)]),
-        )
+        .flat_map(|x| [(x, top), (x, bottom)])
+        .chain(frame_y.clone().flat_map(|y| [(left, y), (right, y)]))
         .collect();
     while let Some(cell) = stack.pop() {
         let inside = frame_x.contains(&cell.0) && frame_y.contains(&cell.1);
@@ -386,23 +421,23 @@ fn close_pockets(claimed: &mut Vec<((i32, i32), usize)>) {
             break;
         }
         for pocket in pockets {
-            let mut around = [0_u32; 5];
-            for next in neighbors(pocket) {
-                if let Some(slot) = owner.get(&next).and_then(|&c| around.get_mut(c)) {
-                    *slot += 1;
-                }
-            }
+            let around: [usize; 5] = std::array::from_fn(|c| {
+                neighbors(pocket)
+                    .filter(|next| owner.get(next) == Some(&c))
+                    .count()
+            });
             let mut colors: Vec<usize> = (0..5).filter(|&c| around.get(c) > Some(&0)).collect();
             colors.sort_by_key(|&c| (std::cmp::Reverse(around.get(c).copied()), c));
             let open_sides =
-                |cell: (i32, i32)| neighbors(cell).iter().filter(|n| open.contains(n)).count();
+                |cell: (i32, i32)| neighbors(cell).filter(|n| open.contains(n)).count();
             let donor = colors.into_iter().find_map(|color| {
                 owner
                     .iter()
                     .filter(|&(&cell, &c)| c == color && open_sides(cell) > 0)
                     .map(|(&cell, _)| cell)
                     .max_by(|&a, &b| {
-                        let far = |(x, y): (i32, i32)| x * x + y * y;
+                        let far =
+                            |(x, y): (i32, i32)| x.checked_mul(x)?.checked_add(y.checked_mul(y)?);
                         open_sides(a)
                             .cmp(&open_sides(b))
                             .then(far(a).cmp(&far(b)))
@@ -434,7 +469,11 @@ fn label(counts: &ColorMapCounts) -> String {
         .into_iter()
         .enumerate()
         .map(|(i, (color, n))| {
-            let percent = (u64::from(n) * 100 + sum / 2) / sum.max(1);
+            let percent = u64::from(n)
+                .checked_mul(100)
+                .and_then(|scaled| scaled.checked_add(sum / 2))
+                .and_then(|scaled| scaled.checked_div(sum))
+                .unwrap_or(0);
             let name = color.to_long_name();
             let name = if i == 0 { name } else { name.to_lowercase() };
             format!("{name} {percent} percent")
@@ -467,7 +506,10 @@ fn distance((ax, ay): (f64, f64), (bx, by): (f64, f64)) -> f64 {
 
 /// Sets each tile's shade and ring from one measure: its distance from the middle of the map's `columns` by `rows` box over the farthest tile's. The shade fades from [`FULL_SHADE`] at the middle to 1 at the farthest tiles in quarters of that ratio, and the ring is its band of [`SWEEP_RINGS`].
 fn shade_and_ring(tiles: &mut [Tile], columns: i32, rows: i32) {
-    let middle = (f64::from(columns - 1) / 2.0, f64::from(rows - 1) / 2.0);
+    let middle = (
+        (f64::from(columns) - 1.0) / 2.0,
+        (f64::from(rows) - 1.0) / 2.0,
+    );
     let spot = |t: &Tile| distance((f64::from(t.column), f64::from(t.row)), middle);
     let reach = tiles.iter().map(spot).fold(0.0, f64::max);
     let steps = u32::from(FULL_SHADE);
@@ -509,7 +551,11 @@ impl ColorMapModel {
         let bounds = |pick: fn(&((i32, i32), usize)) -> i32| {
             let low = claimed.iter().map(pick).min().unwrap_or(0);
             let high = claimed.iter().map(pick).max().unwrap_or(-1);
-            (low, high - low + 1)
+            let span = high
+                .checked_sub(low)
+                .and_then(|d| d.checked_add(1))
+                .unwrap_or(0);
+            (low, span)
         };
         let (min_x, columns) = bounds(|c| c.0.0);
         let (min_y, rows) = bounds(|c| c.0.1);
@@ -520,8 +566,8 @@ impl ColorMapModel {
                 Some(Tile {
                     color: *palette.get(color)?,
                     cell,
-                    column: cell.0 - min_x,
-                    row: cell.1 - min_y,
+                    column: cell.0.checked_sub(min_x)?,
+                    row: cell.1.checked_sub(min_y)?,
                     shade: FULL_SHADE,
                     ring: 0,
                 })

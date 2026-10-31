@@ -5,6 +5,24 @@ use super::*;
 const SEED: u64 = 0x5eed_c0de_1234_5678;
 const SEEDS: [u64; 6] = [SEED, 1, 2, 3, 42, 99];
 
+#[test]
+fn index_rejects_cells_at_the_edge_of_i32() {
+    assert_eq!(index((i32::MIN, 0)), None);
+    assert_eq!(index((0, i32::MIN)), None);
+    assert_eq!(index((i32::MAX, i32::MAX)), None);
+    assert_eq!(index((-GRID_REACH, -GRID_REACH)), Some(0));
+}
+
+#[test]
+fn neighbors_skip_cells_past_the_edge_of_i32() {
+    let corner: Vec<(i32, i32)> = neighbors((i32::MAX, i32::MIN)).collect();
+    assert_eq!(
+        corner,
+        vec![(i32::MAX - 1, i32::MIN), (i32::MAX, i32::MIN + 1)]
+    );
+    assert_eq!(neighbors((0, 0)).count(), 4);
+}
+
 fn sample() -> ColorMapCounts {
     ColorMapCounts {
         cards: [180, 200, 70, 190, 80],
@@ -265,8 +283,8 @@ fn spread() -> Vec<ColorMapCounts> {
 /// shade, nearest first.
 fn shades_by_distance(model: &ColorMapModel) -> Vec<(f64, u8)> {
     let middle = (
-        f64::from(model.columns - 1) / 2.0,
-        f64::from(model.rows - 1) / 2.0,
+        (f64::from(model.columns) - 1.0) / 2.0,
+        (f64::from(model.rows) - 1.0) / 2.0,
     );
     let mut by_distance: Vec<(f64, u8)> = model
         .tiles
