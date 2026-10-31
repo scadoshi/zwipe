@@ -30,27 +30,8 @@ pub(crate) fn styled_line(keys: &[(&str, &str, Style)]) -> Line<'static> {
     Line::from(spans)
 }
 
-/// The key that opens Help & feedback on a screen as it stands.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum HelpKey {
-    /// `!`, where no text field takes the letters.
-    Bang,
-    /// F1, while a text field has the cursor and `!` would be typed.
-    F1,
-}
-
-impl HelpKey {
-    /// The key as the bar shows it.
-    fn label(self) -> &'static str {
-        match self {
-            HelpKey::Bang => "!",
-            HelpKey::F1 => "F1",
-        }
-    }
-}
-
-/// `bar` with the Help & feedback hint for `key`, every screen's in the same spot: just before the run of Esc and `q` hints nearest the end, or last when the bar has no such run past its first hint.
-pub(crate) fn with_help(palette: &Palette, bar: Line<'static>, key: HelpKey) -> Line<'static> {
+/// `bar` with the F1 Help & feedback hint, every screen's in the same spot: just before the run of Esc and `q` hints nearest the end, or last when the bar has no such run past its first hint.
+pub(crate) fn with_help(palette: &Palette, bar: Line<'static>) -> Line<'static> {
     let Line {
         style,
         alignment,
@@ -81,7 +62,7 @@ pub(crate) fn with_help(palette: &Palette, bar: Line<'static>, key: HelpKey) -> 
         }
     };
     let help = vec![
-        key.label().bold(),
+        "F1".bold(),
         Span::styled(format!(" help{GAP}"), palette.muted),
     ];
     groups.insert(at, help);
@@ -294,34 +275,23 @@ mod tests {
     #[test]
     fn help_goes_before_the_closing_back_and_quit_hints() {
         let palette = Palette::terminal();
-        let shown =
-            |keys: &[(&str, &str)], key| with_help(&palette, line(&palette, keys), key).to_string();
+        let shown = |keys: &[(&str, &str)]| with_help(&palette, line(&palette, keys)).to_string();
         assert_eq!(
-            shown(
-                &[("c", "Create"), ("Esc", "Back"), ("q", "quit")],
-                HelpKey::Bang
-            ),
-            "c Create  ! help  Esc Back  q quit  "
+            shown(&[("c", "Create"), ("Esc", "Back"), ("q", "quit")]),
+            "c Create  F1 help  Esc Back  q quit  "
         );
         assert_eq!(
-            shown(
-                &[("Tab", "next"), ("Esc", "Back"), ("F2", "Save")],
-                HelpKey::F1
-            ),
+            shown(&[("Tab", "next"), ("Esc", "Back"), ("F2", "Save")]),
             "Tab next  F1 help  Esc Back  F2 Save  ",
             "a hint after Esc stays after it"
         );
         assert_eq!(
-            shown(&[("Esc", "Back"), ("?", "Hint")], HelpKey::Bang),
-            "Esc Back  ? Hint  ! help  ",
+            shown(&[("Esc", "Back"), ("?", "Hint")]),
+            "Esc Back  ? Hint  F1 help  ",
             "a bar that opens with Esc takes help last"
         );
-        let centered = with_help(
-            &palette,
-            line(&palette, &[("q", "quit")]).centered(),
-            HelpKey::Bang,
-        );
-        assert_eq!(centered.to_string(), "q quit  ! help  ");
+        let centered = with_help(&palette, line(&palette, &[("q", "quit")]).centered());
+        assert_eq!(centered.to_string(), "q quit  F1 help  ");
         assert_eq!(centered.alignment, Some(ratatui::layout::Alignment::Center));
     }
 
@@ -331,7 +301,7 @@ mod tests {
         let mut bar = line(&palette, &[("Tab", "next")]);
         bar.spans.push(Span::raw("F2 "));
         bar.spans.push(Span::raw("Import"));
-        let bar = with_help(&palette, bar, HelpKey::F1);
+        let bar = with_help(&palette, bar);
         assert_eq!(bar.to_string(), "Tab next  F2 Import  F1 help  ");
         let text: Vec<String> = wrap(bar, 20).lines.iter().map(Line::to_string).collect();
         assert_eq!(text, ["Tab next  F2 Import", "F1 help"]);

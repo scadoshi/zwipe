@@ -14,7 +14,6 @@ use super::layout::{self, Pane, Panel};
 use super::{CloneDialog, DeckView, Dialog, Item, Section};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
-use crate::inbound::widgets::action_bar::HelpKey;
 use crate::inbound::widgets::charts::Column;
 use crate::inbound::widgets::measure::BORDERS;
 use crate::inbound::widgets::pill::{self, PillState};
@@ -61,11 +60,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &DeckView) {
     let area = f.area().inner(Margin::new(1, 0));
     let (pane_keys, screen_keys) = key_hints(view);
     let pane_line = action_bar::line(palette, &pane_keys);
-    let screen_line = action_bar::with_help(
-        palette,
-        action_bar::line(palette, &screen_keys),
-        HelpKey::Bang,
-    );
+    let screen_line = action_bar::with_help(palette, action_bar::line(palette, &screen_keys));
     // The hints take one row when they fit, else the pane's keys go over the screen's, each wrapping on its own.
     let one_row = pane_line.width().saturating_add(screen_line.width()) <= usize::from(area.width);
     let keys_text = if one_row {

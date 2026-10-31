@@ -12,7 +12,6 @@ use zwipe_ui::changelog::{self, ChangelogCache, Tag};
 use super::{ChangelogView, Chip, FAILED};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
-use crate::inbound::widgets::action_bar::HelpKey;
 use crate::inbound::widgets::button::{self, Button};
 use crate::inbound::widgets::header::{self, Corner};
 use crate::inbound::widgets::{action_bar, entrance, measure, skeleton};
@@ -32,7 +31,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &ChangelogView) {
             ("Esc", "back"),
         ],
     );
-    let bar = action_bar::with_help(palette, bar, HelpKey::Bang).centered();
+    let bar = action_bar::with_help(palette, bar).centered();
     let bar_height = action_bar::height(&bar, f.area().width);
     let [head, _, body, buttons, keys] = Layout::vertical([
         Constraint::Length(1),

@@ -19,7 +19,6 @@ use super::{HomeView, Overlay, keys};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::screens::swipe::CardImage;
-use crate::inbound::widgets::action_bar::HelpKey;
 use crate::inbound::widgets::color_map::Scale;
 use crate::inbound::widgets::{
     action_bar, color_map, entrance, figures, header, logo, measure, skeleton, stagger,
@@ -94,7 +93,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &HomeView) {
             ("q", "quit"),
         ],
     );
-    f.render_widget(action_bar::with_help(palette, bar, HelpKey::Bang), keys);
+    f.render_widget(action_bar::with_help(palette, bar), keys);
     match &view.overlay {
         Some(Overlay::Info(info)) => info.draw(f, palette),
         Some(Overlay::Buy(dialog)) => dialog.draw(f, palette),

@@ -16,7 +16,6 @@ use super::{CardImage, Motion, Source, SwipeView};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::screens::card_sheets::filter;
-use crate::inbound::widgets::action_bar::HelpKey;
 use crate::inbound::widgets::card_motion::{self, Phase};
 use crate::inbound::widgets::{action_bar, card_info, header, skeleton};
 
@@ -35,7 +34,7 @@ const INFO_HEIGHT: u16 = 5;
 pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &SwipeView) {
     let palette = &shared.palette;
     let area = f.area();
-    let bar = action_bar::with_help(palette, key_line(palette, view), HelpKey::Bang);
+    let bar = action_bar::with_help(palette, key_line(palette, view));
     let bar_height = action_bar::height(&bar, area.width.saturating_sub(2));
     let [header, sources, body, keys] = Layout::vertical([
         Constraint::Length(1),

@@ -12,7 +12,6 @@ use super::PrivacyView;
 use crate::domain::legal::{self, Block, Run};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
-use crate::inbound::widgets::action_bar::HelpKey;
 use crate::inbound::widgets::button::{self, Button};
 use crate::inbound::widgets::header::{self, Corner};
 use crate::inbound::widgets::{action_bar, card_info, measure};
@@ -131,7 +130,6 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &PrivacyView) {
         action_bar::with_help(
             palette,
             action_bar::line(palette, &[("j/k", "scroll"), ("Esc", "back")]),
-            HelpKey::Bang,
         )
         .centered(),
         keys,

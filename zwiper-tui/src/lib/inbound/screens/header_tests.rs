@@ -69,14 +69,9 @@ fn every_header_holds_the_first_row_with_no_help_corner() {
 }
 
 #[test]
-fn the_key_bar_names_the_help_key_on_every_screen() {
+fn the_key_bar_names_f1_help_on_every_screen() {
+    let help = "F1 help";
     for (title, harness) in screens() {
-        // These open with a text field taking letters, where only F1 opens Help.
-        let help = if matches!(title, "Login" | "Create deck" | "Import") {
-            "F1 help"
-        } else {
-            "! help"
-        };
         for (width, height) in [(120, 40), (60, 20)] {
             let rows = rows(&harness.app, width, height);
             let bar = rows.iter().rev().take(4).any(|row| row.contains(help));

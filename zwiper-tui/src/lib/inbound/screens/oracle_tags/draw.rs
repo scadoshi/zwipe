@@ -10,7 +10,6 @@ use super::{FAILED, OTHER, OracleTagsView, TITLE, letters};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::screens::home::cache::Catalog;
-use crate::inbound::widgets::action_bar::HelpKey;
 use crate::inbound::widgets::text_input::BOX_HEIGHT;
 use crate::inbound::widgets::{action_bar, header, item_list, skeleton};
 
@@ -44,12 +43,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &OracleTagsView) {
         }
         Catalog::Failed | Catalog::Idle | Catalog::Loading => &[("Esc", "Back"), ("?", "Hint")],
     };
-    let help = if view.typing {
-        HelpKey::F1
-    } else {
-        HelpKey::Bang
-    };
-    let bar = action_bar::with_help(palette, action_bar::line(palette, hints), help);
+    let bar = action_bar::with_help(palette, action_bar::line(palette, hints));
     let bar_height = action_bar::height(&bar, area.width);
     let [title, body, keys] = Layout::vertical([
         Constraint::Length(1),

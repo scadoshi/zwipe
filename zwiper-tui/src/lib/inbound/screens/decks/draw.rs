@@ -12,7 +12,6 @@ use zwipe_ui::deck::list::{DeckGroup, GroupBy};
 use super::{DeckList, Focus, Row, ShowChip};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
-use crate::inbound::widgets::action_bar::HelpKey;
 use crate::inbound::widgets::pill::{self, PillState};
 use crate::inbound::widgets::{action_bar, header, mana, measure, skeleton};
 
@@ -40,7 +39,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, list: &DeckList) {
             ("q", "quit"),
         ],
     );
-    let bar = action_bar::with_help(palette, bar, HelpKey::Bang);
+    let bar = action_bar::with_help(palette, bar);
     let bar_height = action_bar::height(&bar, f.area().width.saturating_sub(2));
     let [header, chips_area, body, status, keys] = Layout::vertical([
         Constraint::Length(1),

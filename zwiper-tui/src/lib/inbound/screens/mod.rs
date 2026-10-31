@@ -688,8 +688,8 @@ mod tests {
             let row = rows.first().filter(|row| row.contains(title));
             let row = row.unwrap_or_else(|| panic!("{title} has no header"));
             assert!(
-                rows.iter().rev().take(4).any(|row| row.contains("! help")),
-                "{title} has no ! help in its bar"
+                rows.iter().rev().take(4).any(|row| row.contains("F1 help")),
+                "{title} has no F1 help in its bar"
             );
             assert_eq!(row.trim_end().ends_with('?'), hint, "{title}'s ? corner");
             harness.press(KeyCode::Char('!'));

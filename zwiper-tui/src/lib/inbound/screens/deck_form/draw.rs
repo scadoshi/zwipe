@@ -20,7 +20,6 @@ use super::{DeckForm, Dropdown, Field, Mode, Overlay};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::screens::card_sheets;
-use crate::inbound::widgets::action_bar::HelpKey;
 use crate::inbound::widgets::card_motion::{self, CardMotion, Phase};
 use crate::inbound::widgets::pill::{self, PillState};
 use crate::inbound::widgets::text_input::TextInput;
@@ -38,7 +37,7 @@ const CURRENCIES: [PriceCurrency; 3] = [PriceCurrency::Usd, PriceCurrency::Eur, 
 pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &DeckForm) {
     let palette = &shared.palette;
     // The form never reads `!` as Help, so its bar names F1 over every field and picker.
-    let bar = action_bar::with_help(palette, keys_line(palette, form), HelpKey::F1);
+    let bar = action_bar::with_help(palette, keys_line(palette, form));
     let bar_height = action_bar::height(&bar, f.area().width.saturating_sub(2));
     let [header, body, status, keys] = Layout::vertical([
         Constraint::Length(1),
