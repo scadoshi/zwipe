@@ -26,12 +26,6 @@ fn Placeholder(title: String, #[props(default)] deck_id: Option<Uuid>) -> Elemen
     }
 }
 
-/// Decks, not built yet.
-#[component]
-pub fn DeckList() -> Element {
-    rsx! { Placeholder { title: "Decks" } }
-}
-
 /// Create deck, not built yet.
 #[component]
 pub fn CreateDeck() -> Element {

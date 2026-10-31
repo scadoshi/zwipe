@@ -990,3 +990,60 @@ body {
         min-height: 0;
     }
 }
+
+/* ---- Deck list ---- */
+
+/* The app's column below the breakpoint. The Tags fold chip and the tags it
+   keeps in view while folded are items of the Show row. */
+.web-deck-list {
+    max-width: 40rem;
+    width: 100%;
+    padding: 0 1rem;
+    box-sizing: border-box;
+}
+
+.web-deck-tags-fold {
+    display: contents;
+}
+
+@media (min-width: 900px) {
+    .web-deck-list {
+        max-width: 64rem;
+        padding: 1rem 1.5rem 2rem;
+    }
+
+    /* There is room for every tag, so the row stays unfolded and the fold
+       chip goes. */
+    .web-deck-tags-fold {
+        display: none;
+    }
+
+    .web-deck-tags.collapsible {
+        grid-template-rows: 1fr;
+        opacity: 1;
+    }
+
+    .web-deck-tags > .collapsible-inner {
+        overflow: visible;
+    }
+
+    /* Two decks to a line in each group, with a rule between the columns
+       and none under the last line. */
+    .web-deck-group > .collapsible > .collapsible-inner {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .web-deck-group .card-row:nth-child(odd):not(:last-child) {
+        border-right: 1px solid var(--border-secondary);
+    }
+
+    .web-deck-group .card-row:nth-child(odd):nth-last-child(2) {
+        border-bottom: none;
+    }
+
+    .web-deck-group .deck-row-art-img {
+        width: 4.8rem;
+        height: 4.3rem;
+    }
+}
