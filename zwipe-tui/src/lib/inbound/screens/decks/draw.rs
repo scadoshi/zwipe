@@ -22,8 +22,8 @@ const SKELETON_ROWS: usize = 8;
 pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, list: &DeckList) {
     let palette = &shared.palette;
     let chips = if list.chips_shown() {
-        let tag_row = u16::from(list.tags_open && !list.tags().is_empty());
-        2_u16.saturating_add(tag_row)
+        let width = usize::from(f.area().width.saturating_sub(2));
+        u16::try_from(chip_rows(&shared.palette, list, width).len()).unwrap_or(u16::MAX)
     } else if list.loading {
         2
     } else {
@@ -47,7 +47,10 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, list: &DeckList) {
         header,
     );
     if list.chips_shown() {
-        f.render_widget(Paragraph::new(chip_rows(palette, list)), chips_area);
+        f.render_widget(
+            Paragraph::new(chip_rows(palette, list, usize::from(chips_area.width))),
+            chips_area,
+        );
     } else if list.loading {
         let width = usize::from(chips_area.width) / 2;
         f.render_widget(
@@ -81,7 +84,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, list: &DeckList) {
 }
 
 /// The Group by row, the Show row, and the tag row while it is open.
-fn chip_rows(palette: &Palette, list: &DeckList) -> Vec<Line<'static>> {
+fn chip_rows(palette: &Palette, list: &DeckList, width: usize) -> Vec<Line<'static>> {
     let state = |picked: bool, focus: Focus, index: usize, at: usize| PillState {
         picked,
         focused: list.focus == focus && index == at,
@@ -158,9 +161,7 @@ fn chip_rows(palette: &Palette, list: &DeckList) -> Vec<Line<'static>> {
             })
             .collect();
         if !tags.is_empty() {
-            let mut row = vec![Span::raw("     ")];
-            row.extend(tags);
-            lines.push(pill::row(row));
+            lines.extend(pill::wrap("     ", tags, width));
         }
     }
     lines

@@ -46,6 +46,31 @@ pub(crate) fn row(spans: Vec<Span<'static>>) -> Line<'static> {
     Line::from(out)
 }
 
+/// Chips laid out in lines no wider than `width`, each line starting with `indent`.
+pub(crate) fn wrap(indent: &str, spans: Vec<Span<'static>>, width: usize) -> Vec<Line<'static>> {
+    let mut lines = Vec::new();
+    let mut current: Vec<Span<'static>> = vec![Span::raw(indent.to_owned())];
+    let mut used = indent.chars().count();
+    let start = used;
+    for span in spans {
+        let len = span.width().saturating_add(1);
+        if used > start && used.saturating_add(len) > width {
+            lines.push(Line::from(std::mem::replace(
+                &mut current,
+                vec![Span::raw(indent.to_owned())],
+            )));
+            used = start;
+        }
+        current.push(span);
+        current.push(Span::raw(" "));
+        used = used.saturating_add(len);
+    }
+    if current.len() > 1 {
+        lines.push(Line::from(current));
+    }
+    lines
+}
+
 #[cfg(test)]
 mod tests {
     use ratatui::style::Modifier;
@@ -70,5 +95,19 @@ mod tests {
         assert!(picked.style.add_modifier.contains(Modifier::UNDERLINED));
         let line = row(vec![label(&palette, "Show"), plain]);
         assert_eq!(line.to_string(), "Show   All ");
+    }
+
+    #[test]
+    fn wrapping_starts_a_new_line_when_the_next_chip_will_not_fit() {
+        let chips = ["Aggro", "Tokens", "Draw"]
+            .iter()
+            .map(|l| pill(l, Style::new(), PillState::default()))
+            .collect();
+        let lines: Vec<String> = wrap("  ", chips, 20)
+            .iter()
+            .map(ToString::to_string)
+            .collect();
+        assert_eq!(lines, ["   Aggro   Tokens  ", "   Draw  "]);
+        assert_eq!(wrap("  ", Vec::new(), 20), Vec::<Line<'static>>::new());
     }
 }

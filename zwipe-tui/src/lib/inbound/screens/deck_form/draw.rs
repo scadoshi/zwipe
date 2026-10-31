@@ -81,7 +81,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &DeckForm) {
     } else {
         let inner = block.inner(body);
         f.render_widget(block, body);
-        let (lines, focus_line, cursor) = form_lines(palette, form);
+        let (lines, focus_line, cursor) = form_lines(palette, form, usize::from(inner.width));
         let rows = usize::from(inner.height);
         let scroll = focus_line.saturating_sub(rows.saturating_sub(4));
         f.render_widget(
@@ -176,6 +176,7 @@ fn text_line(palette: &Palette, input: &TextInput) -> Line<'static> {
 fn form_lines(
     palette: &Palette,
     form: &DeckForm,
+    width: usize,
 ) -> (Vec<Line<'static>>, usize, Option<(usize, usize)>) {
     let mut lines: Vec<Line<'static>> = Vec::new();
     let mut focus_line = 0;
@@ -364,10 +365,12 @@ fn form_lines(
                 let mut extras = vec![count];
                 extras.extend(clear(!form.tags.is_empty()));
                 lines.push(label_line(palette, "Deck tags", focused, extras));
-                lines.push(chip_box(
+                let labels: Vec<String> = form.tags.iter().map(|t| deck_tag_label(t)).collect();
+                lines.extend(chip_box(
                     palette,
-                    form.tags.iter().map(|t| deck_tag_label(t)).collect(),
+                    &labels,
                     focused.then_some(form.tag_focus),
+                    width,
                 ));
             }
             Field::OracleTags => {
@@ -378,10 +381,11 @@ fn form_lines(
                 let mut extras = vec![count];
                 extras.extend(clear(!form.oracle_tags.is_empty()));
                 lines.push(label_line(palette, "Oracle tags", focused, extras));
-                lines.push(chip_box(
+                lines.extend(chip_box(
                     palette,
-                    form.oracle_tags.clone(),
+                    &form.oracle_tags,
                     focused.then_some(form.oracle_focus),
+                    width,
                 ));
             }
             Field::OtherTags => {
@@ -423,14 +427,20 @@ fn indented(chips: Vec<Span<'static>>) -> Line<'static> {
 }
 
 /// The selected tags, each with its "×", or "Not set".
-fn chip_box(palette: &Palette, labels: Vec<String>, focus: Option<usize>) -> Line<'static> {
+fn chip_box(
+    palette: &Palette,
+    labels: &[String],
+    focus: Option<usize>,
+    width: usize,
+) -> Vec<Line<'static>> {
     if labels.is_empty() {
-        return Line::from(vec![
+        return vec![Line::from(vec![
             Span::raw(INDENT),
             Span::styled("Not set", palette.muted),
-        ]);
+        ])];
     }
-    indented(
+    pill::wrap(
+        INDENT,
         labels
             .iter()
             .enumerate()
@@ -445,6 +455,7 @@ fn chip_box(palette: &Palette, labels: Vec<String>, focus: Option<usize>) -> Lin
                 )
             })
             .collect(),
+        width,
     )
 }
 
