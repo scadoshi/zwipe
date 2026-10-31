@@ -188,6 +188,7 @@ fn draw_list(f: &mut Frame<'_>, palette: &Palette, list: &DeckList, area: Rect) 
     }
 
     let focused = list.focus == Focus::List;
+    let width = usize::from(area.width.saturating_sub(2));
     let mut lines: Vec<Line<'static>> = Vec::new();
     let mut selected_end = 0;
     for (i, row) in list.rows().iter().enumerate() {
@@ -198,15 +199,11 @@ fn draw_list(f: &mut Frame<'_>, palette: &Palette, list: &DeckList, area: Rect) 
                 lines.push(header_line(palette, group, *collapsed, pointer, here));
             }
             Row::Deck(profile) => {
-                let (first, second) = deck_lines(palette, profile, here);
+                let (first, chips) = deck_lines(palette, profile, here);
                 let mut spans = vec![pointer, Span::raw("  ")];
                 spans.extend(first.spans);
                 lines.push(Line::from(spans));
-                if let Some(second) = second {
-                    let mut spans = vec![Span::raw("      ")];
-                    spans.extend(second.spans);
-                    lines.push(Line::from(spans));
-                }
+                lines.extend(pill::wrap("      ", chips, width));
             }
         }
         if i == list.selected {
@@ -255,12 +252,12 @@ fn header_line(
     if here { line.bold() } else { line }
 }
 
-/// A deck's two lines, as the app's row lays it out: the name, pips and count; then the format, power level, command zone and tags.
+/// A deck's name line, as the app's row lays it out (the name, pips and count), and the chips under it: the format, power level, command zone and tags.
 fn deck_lines(
     palette: &Palette,
     deck: &DeckProfile,
     here: bool,
-) -> (Line<'static>, Option<Line<'static>>) {
+) -> (Line<'static>, Vec<Span<'static>>) {
     let name_style = if here {
         palette.accent.bold()
     } else {
@@ -321,6 +318,5 @@ fn deck_lines(
             .iter()
             .map(|t| pill(t.display_name(), palette.warning, PillState::default())),
     );
-    let second = (!second.is_empty()).then(|| pill::row(second));
     (Line::from(first), second)
 }

@@ -23,6 +23,7 @@ Specs:
 - A deck with nothing to narrow its search follows the app: Add refuses with "Try a filter to start swiping" instead of serving the whole pool.
 - Platform-only pieces are skipped: the app icon picker, haptics, telemetry.
 - Images use the terminal's graphics protocol, with half-blocks as the fallback.
+- Card rows draw no art thumbnails, so the app's "Art" chip is left out of the deck cards, Playstyle and Commander maybeboard Show rows.
 - The deck view shows several sections at once on wide terminals and collapses to tabs on narrow ones, with every app action still available. Its sections are panels instead of the app's accordion: Tab moves between them, Enter zooms one to fill the screen, and Esc unzooms before it goes back.
 
 ## Phase 0: foundation (done before the waves)

@@ -186,8 +186,6 @@ fn control_lines(palette: &Palette, view: &DeckCardsView) -> Vec<Line<'static>> 
         Span::styled(" Tokens ", on(view.show_tokens)),
         Span::raw(" "),
         Span::styled(" Command zone ", on(view.show_zone)),
-        Span::raw(" "),
-        Span::styled(" Art ", on(view.show_art)),
     ]);
     vec![
         Line::from(input),

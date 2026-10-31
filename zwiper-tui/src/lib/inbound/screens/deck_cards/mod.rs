@@ -125,7 +125,6 @@ pub(crate) struct DeckCardsView {
     pub(crate) boards: Boards,
     pub(crate) show_tokens: bool,
     pub(crate) show_zone: bool,
-    pub(crate) show_art: bool,
     pub(crate) collapsed: HashSet<String>,
     /// The open row, by printing ID.
     pub(crate) expanded: Option<Uuid>,
@@ -168,7 +167,6 @@ impl DeckCardsView {
             boards: Boards::default(),
             show_tokens: false,
             show_zone: true,
-            show_art: true,
             collapsed: HashSet::new(),
             expanded: None,
             open_tag: None,

@@ -128,12 +128,18 @@ fn the_list_shows_the_zone_groups_and_lands_in_order() {
         "Group by",
         "Boards",
         "Show",
+        " Tokens ",
+        " Command zone ",
     ] {
         assert!(screen.contains(expected), "missing {expected}");
     }
     assert!(
         !screen.contains("Maybeboard ("),
         "the maybeboard is off by default"
+    );
+    assert!(
+        !screen.contains(" Art "),
+        "rows draw no thumbnails, so there is no Art chip"
     );
 }
 

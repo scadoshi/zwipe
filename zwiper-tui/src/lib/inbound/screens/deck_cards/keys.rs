@@ -57,7 +57,6 @@ pub(crate) fn handle(view: &mut DeckCardsView, code: KeyCode, cx: &mut Context<'
         KeyCode::Char('3') => toggle_board(view, Board::Sideboard),
         KeyCode::Char('T') => view.show_tokens = !view.show_tokens,
         KeyCode::Char('C') => view.show_zone = !view.show_zone,
-        KeyCode::Char('A') => view.show_art = !view.show_art,
         KeyCode::Char('f') if view.loaded => view.open_filter(cx),
         KeyCode::Char('x') if !view.filter.is_empty() => view.reset_filter(cx),
         KeyCode::Char('u') => view.undo(cx),

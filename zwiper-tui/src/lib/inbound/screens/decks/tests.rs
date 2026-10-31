@@ -279,3 +279,35 @@ fn the_deck_list_fits_a_tiny_terminal() {
         5,
     );
 }
+
+#[test]
+fn a_row_too_wide_for_one_line_wraps_its_chips_under_the_name() {
+    let mut deck = deck_profile("Isshin");
+    deck.format = Some(Format::Commander);
+    deck.commander_name = Some("Isshin, Two Heavens as One".to_owned());
+    deck.tags = ["attack_triggers", "aggro", "treasure", "tokens"]
+        .map(str::to_owned)
+        .to_vec();
+    let harness = loaded(vec![deck]);
+    let terminal = render(&harness.app, 50, 20);
+    let rows: Vec<String> = terminal
+        .backend()
+        .buffer()
+        .content()
+        .chunks(50)
+        .map(|row| row.iter().map(ratatui::buffer::Cell::symbol).collect())
+        .collect();
+    let chips: Vec<&String> = rows
+        .iter()
+        .skip_while(|row| !row.contains("Isshin  "))
+        .skip(1)
+        .take_while(|row| !row.trim_matches(|c| c == '│' || c == ' ').is_empty())
+        .collect();
+    assert!(chips.len() > 1, "the chips wrap: {chips:?}");
+    for row in chips {
+        assert!(
+            row.starts_with(" │      "),
+            "a wrapped row keeps the indent: {row:?}"
+        );
+    }
+}
