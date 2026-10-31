@@ -15,6 +15,7 @@ use super::screens::Screen;
 use super::screens::login::LoginForm;
 use super::widgets::hint::HintDialog;
 use super::widgets::toast::Toasts;
+use crate::domain::stores::CardStores;
 use crate::domain::theme::Palette;
 
 /// Everything the UI draws from.
@@ -41,6 +42,9 @@ pub(crate) struct Shared {
     pub(crate) toasts: Toasts,
     /// A one-time hint over the screen, which takes every key until it closes.
     pub(crate) hint: Option<HintDialog>,
+    /// The card screens' filters, parked stacks, undo logs and picker lists.
+    #[expect(dead_code, reason = "the card screens use it next")]
+    pub(crate) cards: CardStores,
 }
 
 impl App {
@@ -56,6 +60,7 @@ impl App {
                 images: None,
                 toasts: Toasts::default(),
                 hint: None,
+                cards: CardStores::default(),
             },
         }
     }
