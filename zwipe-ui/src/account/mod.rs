@@ -71,12 +71,15 @@ pub fn password_required(password: &str) -> Option<String> {
         .then(|| "Password is required".to_owned())
 }
 
-/// The note under a pending email change, the app's `link_expiry_text`: how long its link lasts, or that it has expired. The link is expired only once no time at all is left. Whole seconds left round up to minutes; from an hour on, minutes round to the nearest hour.
+/// The note under a pending email change, the app's `link_expiry_text`: how long its link lasts, or that it has expired. The link is expired only once no time at all is left. Under a minute left reads "less than a minute"; otherwise seconds round up to minutes, and from an hour on, minutes round to the nearest hour.
 #[must_use]
 pub fn pending_note(expires_at: DateTime<Utc>, now: DateTime<Utc>) -> String {
     let left = expires_at.signed_duration_since(now);
     if left <= chrono::Duration::zero() {
         return "Link expired; tap Change to send a new one".to_owned();
+    }
+    if left < chrono::Duration::minutes(1) {
+        return "Link expires in less than a minute".to_owned();
     }
     let minutes = left.num_seconds().saturating_add(59) / 60;
     if minutes < 60 {
@@ -170,7 +173,12 @@ mod tests {
     fn the_pending_note_counts_down_in_minutes_then_hours() {
         let now = Utc::now();
         let note = |d: Duration| pending_note(now + d, now);
-        assert_eq!(note(Duration::seconds(30)), "Link expires in 1 minute");
+        assert_eq!(
+            note(Duration::seconds(30)),
+            "Link expires in less than a minute"
+        );
+        assert_eq!(note(Duration::seconds(60)), "Link expires in 1 minute");
+        assert_eq!(note(Duration::seconds(61)), "Link expires in 2 minutes");
         assert_eq!(note(Duration::minutes(45)), "Link expires in 45 minutes");
         assert_eq!(note(Duration::hours(1)), "Link expires in 1 hour");
         assert_eq!(note(Duration::hours(23)), "Link expires in 23 hours");
@@ -191,11 +199,11 @@ mod tests {
     }
 
     #[test]
-    fn under_a_second_left_is_not_yet_expired_as_in_the_app() {
+    fn under_a_second_left_is_not_yet_expired() {
         let now = Utc::now();
         assert_eq!(
             pending_note(now + Duration::milliseconds(500), now),
-            "Link expires in 0 minutes"
+            "Link expires in less than a minute"
         );
     }
 }

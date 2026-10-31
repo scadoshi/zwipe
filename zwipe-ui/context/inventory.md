@@ -168,5 +168,5 @@ The TUI's palettes and their generator scripts, the privacy policy parser, mana 
 
 - web-a's domain files (validation, counts, session, version gate, support) stay in zwiper-web until `feat/web-a` merges, then move to zwipe-ui (decision 7).
 - The deck rules in `filter` and `add` (`ensure_lands_excluded`, the deck context default, the serve gate) move to core once the server is confirmed to apply the same ones (decision 6).
-- The pending email note matches the app exactly, including "Link expires in 0 minutes" with under a second left, which both the app and zwipe-ui show. Worth a look when the app moves over.
+- The pending email note says "Link expires in less than a minute" for anything under a minute, where the app says "1 minute" from 1 to 59 seconds and "0 minutes" under a second. An owner-approved change the app picks up when it moves over.
 - No client uses zwipe-ui yet. The TUI's session switches its own domain modules; the app moves last, one piece at a time.
