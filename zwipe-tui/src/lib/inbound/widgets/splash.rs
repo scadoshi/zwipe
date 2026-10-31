@@ -80,10 +80,7 @@ impl Splash {
                     Constraint::Length(width),
                     Constraint::Length(height_of(lines.len())),
                 );
-                f.render_widget(
-                    Paragraph::new(Text::from(lines).style(palette.accent)),
-                    spot,
-                );
+                f.render_widget(Paragraph::new(Text::from(lines).style(palette.logo)), spot);
             }
             return;
         }

@@ -35,7 +35,19 @@ const DROP_TILES: f64 = 3.0;
 const SHADES: [f64; 5] = [0.015, 0.03, 0.05, 0.075, 0.1];
 
 /// When the rain is over on a screen `rows` tiles tall: the last row's latest landing.
-#[cfg(test)]
+/// Whether rain over an area `height` rows tall is still falling `elapsed` in.
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "Home drives its animations by elapsed time at merge"
+    )
+)]
+pub(crate) fn raining(elapsed: Duration, height: u16) -> bool {
+    elapsed < rain_length(height)
+}
+
+/// When the rain over an area `height` rows tall has landed.
 pub(crate) fn rain_length(height: u16) -> Duration {
     let rows = u64::from(height.div_ceil(PITCH_Y));
     Duration::from_millis(
@@ -185,6 +197,7 @@ mod tests {
 
     #[test]
     fn the_rain_starts_empty_and_lands_every_tile() {
+        assert!(raining(Duration::ZERO, 12) && !raining(rain_length(12), 12));
         let palette = Palette::for_account("gruvbox", true);
         assert_eq!(tinted(&palette, Some(Duration::ZERO)), 0);
         assert!(tinted(&palette, Some(Duration::from_millis(200))) < 10 * 6 * 3);

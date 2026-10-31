@@ -3,10 +3,9 @@
 mod context;
 pub(crate) mod session;
 
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use ratatui::Frame;
-use ratatui::style::{Modifier, Style};
 use ratatui::widgets::Block;
 use ratatui_image::picker::Picker;
 use zwipe_core::domain::user::User;
@@ -15,6 +14,7 @@ pub(crate) use self::context::{Context, Effects, Navigation};
 use super::nav::Nav;
 use super::screens::{Screen, update_required};
 use super::widgets::alert::AlertDialog;
+use super::widgets::entrance::{self, DURATION as ENTRANCE};
 use super::widgets::hero::Counts;
 use super::widgets::hint::HintDialog;
 use super::widgets::splash::Splash;
@@ -22,9 +22,6 @@ use super::widgets::toast::Toasts;
 use super::widgets::wipe::Wipe;
 use crate::domain::changelog::ChangelogCache;
 use crate::domain::theme::Palette;
-
-/// How long a screen's entrance takes, from the app's `content-enter`. A terminal has no opacity, so the screen draws faint for the first half.
-const ENTRANCE: Duration = Duration::from_millis(300);
 
 /// Everything the UI draws from.
 #[derive(Debug)]
@@ -126,7 +123,7 @@ impl App {
 
     /// Whether the screen on top is still making its entrance at `now`, so the loop should redraw until it is in.
     pub(crate) fn entering(&self, now: Instant) -> bool {
-        now.saturating_duration_since(self.entered_at) < ENTRANCE
+        entrance::animating(now.saturating_duration_since(self.entered_at))
     }
 
     /// Notes that a new screen took over at `now`, so it makes its entrance.
@@ -164,11 +161,8 @@ impl App {
             return;
         }
         self.nav.top().draw(f, &self.shared);
-        if now.saturating_duration_since(self.entered_at) < ENTRANCE / 2 {
-            let area = f.area();
-            f.buffer_mut()
-                .set_style(area, Style::new().add_modifier(Modifier::DIM));
-        }
+        let area = f.area();
+        entrance::draw(f, area, now.saturating_duration_since(self.entered_at));
         if let Some(hint) = &self.shared.hint {
             hint.draw(f, palette);
         }
@@ -193,6 +187,8 @@ impl App {
 
 #[cfg(test)]
 mod tests {
+    use std::time::Duration;
+
     use super::*;
     use crate::test_support::render;
 

@@ -31,6 +31,8 @@ pub(crate) mod clipboard;
 pub(crate) mod collapsible;
 /// Rolling counters.
 pub(crate) mod count_up;
+/// A screen's entrance.
+pub(crate) mod entrance;
 /// The backdrop of faint tiles, still or raining in.
 pub(crate) mod grid;
 /// The screen header: `!`, the title, and `?`.
@@ -45,6 +47,8 @@ pub(crate) mod hint;
 /// The "?" popup of bullet points.
 #[cfg_attr(not(test), expect(dead_code, reason = "no screen uses it yet"))]
 pub(crate) mod info;
+/// The ZWIPE logo decoding in.
+pub(crate) mod logo;
 /// Mana colors and pips.
 pub(crate) mod mana;
 /// Text widths and heights in cells.

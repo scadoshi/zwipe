@@ -7,15 +7,14 @@ use std::time::{Duration, Instant};
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::style::Stylize;
-use ratatui::text::{Line, Span, Text};
-use ratatui::widgets::{Block, Paragraph};
-use zwipe_core::domain::logo;
+use ratatui::text::{Line, Span};
+use ratatui::widgets::Block;
 use zwipe_core::http::contracts::metrics::HttpPublicMetrics;
 
 use super::count_up::CountUp;
-use super::measure::{BORDERS, height_of, width_of};
+use super::logo as mark;
+use super::measure::{BORDERS, height_of};
 use crate::domain::count_up::{self, BLANK};
-use crate::domain::decode;
 use crate::domain::theme::Palette;
 use crate::inbound::app::{Context, Shared};
 use crate::inbound::screens::Request;
@@ -112,19 +111,17 @@ impl Hero {
     /// Whether the logo is decoding or a counter is rolling at `now`.
     pub(crate) fn animating(&self, now: Instant) -> bool {
         self.start.is_some_and(|start| {
-            now < start.checked_add(decode::DURATION).unwrap_or(start)
+            mark::animating(now.saturating_duration_since(start))
                 || self.counters.iter().any(|c| c.animating(now))
         })
     }
 
     /// The logo that fits `area` with `room` rows for the panel: the full mark, the compact Z, or none.
     fn logo(width: u16, room: u16) -> Option<&'static str> {
-        [logo::ZWIPE, logo::Z].into_iter().find(|art| {
-            let w = art.lines().map(width_of).max().unwrap_or(0);
-            let h = height_of(art.lines().count());
-            w.saturating_add(BORDERS).saturating_add(BORDERS) <= width
-                && h.saturating_add(CHROME_ROWS) <= room
-        })
+        mark::fitting(
+            width.saturating_sub(BORDERS).saturating_sub(BORDERS),
+            room.saturating_sub(CHROME_ROWS),
+        )
     }
 
     /// How tall the hero draws in an area `width` wide with at most `room` rows: the panel with the biggest logo that fits, the panel alone, or nothing.
@@ -156,18 +153,8 @@ impl Hero {
         ])
         .areas(inner);
         if let Some(art) = art {
-            let frame = match self.start {
-                Some(start) if now < start => decode::at(art, Duration::ZERO),
-                Some(start) => decode::at(art, now.saturating_duration_since(start)),
-                None => art.to_owned(),
-            };
-            let width = art.lines().map(width_of).max().unwrap_or(0);
-            let lines: Vec<Line<'static>> =
-                frame.lines().map(|l| Line::from(l.to_owned())).collect();
-            f.render_widget(
-                Paragraph::new(Text::from(lines).style(palette.accent)),
-                logo_area.centered_horizontally(Constraint::Length(width)),
-            );
+            let elapsed = self.start.map(|start| now.saturating_duration_since(start));
+            mark::draw(f, logo_area, art, palette.logo, elapsed);
         }
         let columns = Layout::horizontal([Constraint::Fill(1); 3]).split(figures);
         let label_columns = Layout::horizontal([Constraint::Fill(1); 3]).split(labels);

@@ -115,6 +115,8 @@ pub(crate) struct Palette {
     pub(crate) warning: Style,
     /// The five mana colors, in WUBRG order.
     pub(crate) mana: [Style; 5],
+    /// The logo, orangui's `--logo`: the text color on dark themes, the accent on light ones, where block letters in the text color look smudged.
+    pub(crate) logo: Style,
     /// The app's `--accent-secondary`.
     pub(crate) secondary: Style,
     /// The app's `--accent-tertiary`: sheet titles and some hint words.
@@ -147,6 +149,7 @@ impl Palette {
                 Style::new().red(),
                 Style::new().green(),
             ],
+            logo: Style::new(),
             secondary: Style::new().yellow(),
             tertiary: Style::new().magenta(),
             skeleton: Style::new().dark_gray(),
@@ -177,7 +180,14 @@ impl Palette {
         } else {
             &family.light
         };
-        let palette = Self::from_colors(colors);
+        let palette = Self {
+            logo: fg(if dark_mode {
+                colors.text
+            } else {
+                colors.accent
+            }),
+            ..Self::from_colors(colors)
+        };
         extras(slug, dark_mode).map_or(palette, |extras| palette.with_extras(&extras))
     }
 
@@ -371,6 +381,16 @@ mod tests {
         assert_eq!(Palette::swatches_of("nope", true), Vec::<Style>::new());
         assert!(gruvbox.is_dark());
         assert!(!Palette::for_account("gruvbox", false).is_dark());
+    }
+
+    #[test]
+    fn the_logo_is_the_text_color_on_dark_and_the_accent_on_light() {
+        let dark = Palette::for_account("gruvbox", true);
+        let light = Palette::for_account("gruvbox", false);
+        assert_eq!(dark.logo.fg, dark.base.fg);
+        assert_eq!(light.logo.fg, light.accent.fg);
+        assert_ne!(light.logo.fg, light.base.fg);
+        assert_eq!(Palette::terminal().logo, Style::new());
     }
 
     #[test]
