@@ -1,4 +1,10 @@
-//! A deck's row in the deck list: its card count as the app counts it, and its color pips.
+//! Deck rules the app keeps in its own crates: a deck row's count and pips here, and the list, form, export, buy and warning rules in the modules.
+
+pub(crate) mod buy;
+pub(crate) mod export;
+pub(crate) mod form;
+pub(crate) mod list;
+pub(crate) mod warning;
 
 use zwipe_core::domain::deck::DeckProfile;
 

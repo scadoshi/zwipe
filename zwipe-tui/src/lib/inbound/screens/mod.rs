@@ -5,6 +5,9 @@
 pub(crate) mod account;
 pub(crate) mod config;
 pub(crate) mod deck;
+pub(crate) mod deck_export;
+pub(crate) mod deck_form;
+pub(crate) mod deck_import;
 pub(crate) mod decks;
 pub(crate) mod home;
 pub(crate) mod login;
@@ -22,6 +25,9 @@ use zwipe_core::version::version_at_least;
 use self::account::AccountView;
 use self::config::ConfigView;
 use self::deck::DeckView;
+use self::deck_export::ExportView;
+use self::deck_form::DeckForm;
+use self::deck_import::ImportView;
 use self::decks::DeckList;
 use self::home::HomeView;
 use self::login::LoginForm;
@@ -42,6 +48,9 @@ pub(crate) enum Screen {
     Home(Box<HomeView>),
     Decks(DeckList),
     Deck(Box<DeckView>),
+    DeckForm(Box<DeckForm>),
+    DeckImport(Box<ImportView>),
+    DeckExport(Box<ExportView>),
     Swipe(Box<SwipeView>),
     Account(Box<AccountView>),
     Config(Box<ConfigView>),
@@ -57,6 +66,9 @@ impl Screen {
             Self::Home(view) => home::keys::handle(view, code, cx),
             Self::Decks(list) => decks::keys::handle(list, code, cx),
             Self::Deck(view) => deck::keys::handle(view, code, cx),
+            Self::DeckForm(form) => deck_form::keys::handle(form, code, cx),
+            Self::DeckImport(view) => deck_import::keys::handle(view, code, cx),
+            Self::DeckExport(view) => deck_export::keys::handle(view, code, cx),
             Self::Swipe(view) => swipe::keys::handle(view, code, cx),
             Self::Account(view) => account::keys::handle(view, code, cx),
             Self::Config(view) => config::keys::handle(view, code, cx),
@@ -70,6 +82,9 @@ impl Screen {
             Self::Home(view) => home::draw::draw(f, shared, view),
             Self::Decks(list) => decks::draw::draw(f, shared, list),
             Self::Deck(view) => deck::draw::draw(f, shared, view),
+            Self::DeckForm(form) => deck_form::draw::draw(f, shared, form),
+            Self::DeckImport(view) => deck_import::draw::draw(f, shared, view),
+            Self::DeckExport(view) => deck_export::draw::draw(f, shared, view),
             Self::Swipe(view) => swipe::draw::draw(f, shared, view),
             Self::Account(view) => account::draw::draw(f, shared, view),
             Self::Config(view) => config::draw::draw(f, shared, view),
@@ -106,18 +121,14 @@ pub(crate) enum Request {
     /// Saves the account's theme for drawing before the next sign-in.
     RememberTheme(RememberedTheme),
     /// Tells the server a one-time hint has been shown, by its key.
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "sent by the hint widget, which no screen shows yet"
-        )
-    )]
     MarkHintShown(String),
     Login(login::Request),
     Home(home::Request),
     Decks(decks::Request),
     Deck(deck::Request),
+    DeckForm(deck_form::Request),
+    DeckImport(deck_import::Request),
+    DeckExport(deck_export::Request),
     Swipe(swipe::Request),
     Account(account::Request),
     Config(config::Request),
@@ -148,6 +159,9 @@ pub(crate) enum Update {
     Home(home::Update),
     Decks(decks::Update),
     Deck(deck::Update),
+    DeckForm(deck_form::Update),
+    DeckImport(deck_import::Update),
+    DeckExport(deck_export::Update),
     Swipe(swipe::Update),
     Account(account::Update),
     Config(config::Update),
@@ -189,6 +203,9 @@ pub(crate) async fn perform(
         Request::Home(request) => home::perform(account, request).await,
         Request::Decks(request) => decks::perform(account, request).await,
         Request::Deck(request) => deck::perform(account, request).await,
+        Request::DeckForm(request) => deck_form::perform(account, request).await,
+        Request::DeckImport(request) => deck_import::perform(account, request).await,
+        Request::DeckExport(request) => deck_export::perform(account, request).await,
         Request::Swipe(request) => swipe::perform(account, request).await,
         Request::Account(request) => account::perform(account, request).await,
         Request::Config(request) => config::perform(account, request).await,
@@ -214,6 +231,9 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
         Update::Home(update) => home::apply(nav, update, cx),
         Update::Decks(update) => decks::apply(nav, update, cx),
         Update::Deck(update) => deck::apply(nav, update, cx),
+        Update::DeckForm(update) => deck_form::apply(nav, update, cx),
+        Update::DeckImport(update) => deck_import::apply(nav, update, cx),
+        Update::DeckExport(update) => deck_export::apply(nav, update, cx),
         Update::Swipe(update) => swipe::apply(nav, update, cx),
         Update::Account(update) => account::apply(nav, update, cx),
         Update::Config(update) => config::apply(nav, update, cx),

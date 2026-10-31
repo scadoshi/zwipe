@@ -1,0 +1,791 @@
+//! The deck form in its three sections, Profile, Budget and Tags, and the pickers over it.
+
+use ratatui::Frame;
+use ratatui::layout::{Constraint, Layout, Position, Rect};
+use ratatui::style::{Style, Stylize};
+use ratatui::text::{Line, Span};
+use ratatui::widgets::{Block, Paragraph, Wrap};
+use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
+use zwipe_core::domain::deck::deck_tag::deck_tag_label;
+use zwipe_core::domain::deck::{DeckOtherTag, MAX_DECK_ORACLE_TAGS, MAX_DECK_TAGS, PowerLevel};
+
+use super::pickers::{self, FormatPicker, OraclePicker, TagPicker};
+use super::swipe_pick::SwipePicker;
+use super::{DeckForm, Dropdown, Field, Mode, Overlay};
+use crate::domain::deck::form::Slot;
+use crate::domain::theme::Palette;
+use crate::inbound::app::Shared;
+use crate::inbound::widgets::pill::{self, PillState, pill};
+use crate::inbound::widgets::text_input::TextInput;
+use crate::inbound::widgets::{action_bar, skeleton};
+
+/// Values sit this far in from the left, under their labels.
+const INDENT: &str = "    ";
+
+/// The skeleton chips the oracle tag picker shows while its catalog loads.
+const SKELETON_CHIPS: usize = 12;
+
+/// The currencies in the app's chip order.
+const CURRENCIES: [PriceCurrency; 3] = [PriceCurrency::Usd, PriceCurrency::Eur, PriceCurrency::Tix];
+
+pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &DeckForm) {
+    let palette = &shared.palette;
+    let [header, body, status, keys] = Layout::vertical([
+        Constraint::Length(1),
+        Constraint::Fill(1),
+        Constraint::Length(1),
+        Constraint::Length(1),
+    ])
+    .margin(1)
+    .areas(f.area());
+
+    match &form.overlay {
+        Some(Overlay::Format(picker)) => {
+            return draw_format(f, palette, form, picker, [header, body, status, keys]);
+        }
+        Some(Overlay::DeckTags(picker)) => {
+            return draw_tags(f, palette, form, picker, [header, body, status, keys]);
+        }
+        Some(Overlay::OracleTags(picker)) => {
+            return draw_oracle(f, palette, form, picker, [header, body, status, keys]);
+        }
+        Some(Overlay::Swipe(picker)) => {
+            return draw_swipe(f, palette, picker, [header, body, status, keys]);
+        }
+        Some(Overlay::Info(_)) | None => {}
+    }
+
+    f.render_widget(
+        Line::from(vec![
+            Span::styled(form.mode.title(), palette.accent).bold(),
+            Span::styled("  ? hint", palette.muted),
+        ]),
+        header,
+    );
+    let block = Block::bordered().border_style(palette.border);
+    if form.loading || form.load_error.is_some() {
+        let inner = block.inner(body);
+        f.render_widget(block, body);
+        if form.load_error.is_some() {
+            f.render_widget(
+                Line::from("Could not load deck").style(palette.muted),
+                inner,
+            );
+        } else {
+            f.render_widget(
+                Paragraph::new(skeleton::rows(palette, 12, usize::from(inner.width))),
+                inner,
+            );
+        }
+    } else {
+        let inner = block.inner(body);
+        f.render_widget(block, body);
+        let (lines, focus_line, cursor) = form_lines(palette, form);
+        let rows = usize::from(inner.height);
+        let scroll = focus_line.saturating_sub(rows.saturating_sub(4));
+        f.render_widget(
+            Paragraph::new(lines).scroll((u16::try_from(scroll).unwrap_or(u16::MAX), 0)),
+            inner,
+        );
+        if let Some((line, column)) = cursor
+            && line >= scroll
+            && line < scroll.saturating_add(rows)
+        {
+            let y = inner
+                .y
+                .saturating_add(u16::try_from(line.saturating_sub(scroll)).unwrap_or(u16::MAX));
+            let x = inner
+                .x
+                .saturating_add(u16::try_from(column).unwrap_or(u16::MAX))
+                .min(inner.right().saturating_sub(1));
+            f.set_cursor_position(Position { x, y });
+        }
+    }
+
+    f.render_widget(
+        Line::from(shared.status.clone()).style(palette.muted),
+        status,
+    );
+    f.render_widget(form_keys(palette, form), keys);
+    if let Some(Overlay::Info(popup)) = &form.overlay {
+        popup.draw(f, palette);
+    }
+}
+
+/// The action bar: what the focused field takes, then Back and Save.
+fn form_keys(palette: &Palette, form: &DeckForm) -> Line<'static> {
+    let mut keys: Vec<(&str, &str)> = vec![("Tab", "next")];
+    match form.focus {
+        Field::Format | Field::DeckTags | Field::OracleTags => keys.push(("Enter", "pick")),
+        Field::Card(_) => keys.extend([("F3", "Filter"), ("F4", "Swipe")]),
+        Field::Power | Field::OtherTags => keys.push(("h/l Space", "pick")),
+        Field::Land => keys.push(("-/+", "step")),
+        Field::Currency => keys.push(("h/l", "currency")),
+        Field::Name | Field::Price => {}
+    }
+    keys.extend([("F8", "×"), ("F1", "?"), ("Esc", "Back")]);
+    let save = match form.mode {
+        _ if form.saving => Some("Saving..."),
+        Mode::Create => Some("Save"),
+        Mode::Edit { .. } if form.has_changes() => Some("Save changes"),
+        Mode::Edit { .. } => None,
+    };
+    if let Some(save) = save {
+        keys.push(("F2", save));
+    }
+    action_bar::line(palette, &keys)
+}
+
+/// A field's label row: a marker while focused, the label, and any extras after it.
+fn label_line(
+    palette: &Palette,
+    label: &str,
+    focused: bool,
+    extras: Vec<Span<'static>>,
+) -> Line<'static> {
+    let style = if focused {
+        palette.accent.bold()
+    } else {
+        palette.muted
+    };
+    let mut spans = vec![
+        Span::raw(if focused { "> " } else { "  " }),
+        Span::styled(label.to_owned(), style),
+    ];
+    for extra in extras {
+        spans.push(Span::raw("  "));
+        spans.push(extra);
+    }
+    Line::from(spans)
+}
+
+/// A text box's value line, or its placeholder, and the cursor column while focused.
+fn text_line(palette: &Palette, input: &TextInput) -> Line<'static> {
+    if input.is_empty() {
+        Line::from(vec![
+            Span::raw(INDENT),
+            Span::styled("Not set", palette.muted),
+        ])
+    } else {
+        Line::from(vec![Span::raw(INDENT), Span::raw(input.value().to_owned())])
+    }
+}
+
+/// Every line of the form, the focused field's first line, and where the cursor goes.
+fn form_lines(
+    palette: &Palette,
+    form: &DeckForm,
+) -> (Vec<Line<'static>>, usize, Option<(usize, usize)>) {
+    let mut lines: Vec<Line<'static>> = Vec::new();
+    let mut focus_line = 0;
+    let mut cursor = None;
+    let heading =
+        |text: &str, style: Style| Line::from(Span::styled(text.to_owned(), style.bold()));
+    let clear = |shown: bool| -> Vec<Span<'static>> {
+        if shown {
+            vec![Span::styled("×", palette.muted)]
+        } else {
+            Vec::new()
+        }
+    };
+    let cursor_at = |input: &TextInput| INDENT.len().saturating_add(input.cursor());
+
+    lines.push(heading("Profile", palette.accent));
+    for field in form.fields() {
+        let focused = form.focus == field;
+        if focused {
+            focus_line = lines.len();
+        }
+        match field {
+            Field::Name => {
+                lines.push(label_line(palette, "Deck name", focused, Vec::new()));
+                if focused {
+                    cursor = Some((lines.len(), cursor_at(&form.name)));
+                }
+                lines.push(text_line(palette, &form.name));
+                if let Some(error) = form.name.error() {
+                    lines.push(Line::from(vec![
+                        Span::raw(INDENT),
+                        Span::styled(error.to_owned(), palette.error),
+                    ]));
+                }
+            }
+            Field::Format => {
+                lines.push(label_line(
+                    palette,
+                    "Format",
+                    focused,
+                    clear(form.format.is_some()),
+                ));
+                lines.push(Line::from(vec![
+                    Span::raw(INDENT),
+                    match form.format {
+                        Some(format) => Span::raw(format.display_name().to_owned()),
+                        None => Span::styled("Not set", palette.muted),
+                    },
+                ]));
+            }
+            Field::Card(slot) => {
+                let card = form.card(slot);
+                let label = match slot {
+                    Slot::Commander if form.format.is_some_and(|f| f.has_signature_spell()) => {
+                        "Oathbreaker"
+                    }
+                    Slot::Commander => "Commander",
+                    Slot::Partner => "Partner",
+                    Slot::Background => "Background",
+                    Slot::SignatureSpell => "Signature spell",
+                };
+                let mut extras = vec![pill(
+                    "Filter",
+                    palette.accent,
+                    PillState {
+                        picked: card.filter_on,
+                        focused: false,
+                    },
+                )];
+                extras.extend(clear(card.card.is_some()));
+                extras.push(pill("Swipe", palette.add, PillState::default()));
+                lines.push(label_line(palette, label, focused, extras));
+                if focused {
+                    cursor = Some((lines.len(), cursor_at(&card.input)));
+                }
+                lines.push(text_line(palette, &card.input));
+                match &card.dropdown {
+                    Dropdown::Hidden => {}
+                    Dropdown::Searching => lines.push(Line::from(vec![
+                        Span::raw(INDENT),
+                        pill("Searching...", palette.muted, PillState::default()),
+                    ])),
+                    Dropdown::Results(cards) if cards.is_empty() => lines.push(Line::from(vec![
+                        Span::raw(INDENT),
+                        pill("No results", palette.muted, PillState::default()),
+                    ])),
+                    Dropdown::Results(cards) => {
+                        lines.extend(cards.iter().enumerate().map(|(i, c)| {
+                            Line::from(vec![
+                                Span::raw(INDENT),
+                                pill(
+                                    &c.scryfall_data.name,
+                                    palette.accent,
+                                    PillState {
+                                        picked: focused && i == card.highlighted,
+                                        focused: false,
+                                    },
+                                ),
+                            ])
+                        }));
+                    }
+                }
+            }
+            Field::Power => {
+                lines.push(heading_gap());
+                lines.push(label_line(
+                    palette,
+                    "Power level",
+                    focused,
+                    clear(form.power.is_some()),
+                ));
+                let chips: Vec<Span<'static>> = PowerLevel::all()
+                    .iter()
+                    .enumerate()
+                    .map(|(i, p)| {
+                        pill(
+                            p.display_name(),
+                            palette.muted,
+                            PillState {
+                                picked: form.power == Some(*p),
+                                focused: focused && i == form.power_focus,
+                            },
+                        )
+                    })
+                    .collect();
+                lines.push(indented(chips));
+                lines.push(Line::default());
+                lines.push(heading("Budget", palette.warning));
+            }
+            Field::Land => {
+                lines.push(label_line(
+                    palette,
+                    "Land target",
+                    focused,
+                    clear(form.land_target.is_some()),
+                ));
+                let value = form
+                    .land_target
+                    .map_or_else(|| "Not set".to_owned(), |v| v.to_string());
+                lines.push(Line::from(vec![
+                    Span::raw(INDENT),
+                    Span::styled("-", palette.accent.bold()),
+                    Span::raw(format!("  {value}  ")),
+                    Span::styled("+", palette.accent.bold()),
+                ]));
+            }
+            Field::Currency => {
+                lines.push(label_line(
+                    palette,
+                    "Price target",
+                    focused,
+                    clear(!form.price.is_empty()),
+                ));
+                let chips: Vec<Span<'static>> = CURRENCIES
+                    .iter()
+                    .map(|c| {
+                        pill(
+                            c.label(),
+                            palette.muted,
+                            PillState {
+                                picked: form.currency == *c,
+                                focused: focused && form.currency == *c,
+                            },
+                        )
+                    })
+                    .collect();
+                lines.push(indented(chips));
+            }
+            Field::Price => {
+                if focused {
+                    cursor = Some((lines.len(), cursor_at(&form.price)));
+                }
+                let mut line = text_line(palette, &form.price);
+                if focused && let Some(first) = line.spans.first_mut() {
+                    *first = Span::raw("  > ");
+                }
+                lines.push(line);
+                lines.push(Line::default());
+                lines.push(heading("Tags", palette.add));
+            }
+            Field::DeckTags => {
+                let count = Span::styled(
+                    format!("{}/{MAX_DECK_TAGS}", form.tags.len()),
+                    palette.muted,
+                );
+                let mut extras = vec![count];
+                extras.extend(clear(!form.tags.is_empty()));
+                lines.push(label_line(palette, "Deck tags", focused, extras));
+                lines.push(chip_box(
+                    palette,
+                    form.tags.iter().map(|t| deck_tag_label(t)).collect(),
+                    focused.then_some(form.tag_focus),
+                ));
+            }
+            Field::OracleTags => {
+                let count = Span::styled(
+                    format!("{}/{MAX_DECK_ORACLE_TAGS}", form.oracle_tags.len()),
+                    palette.muted,
+                );
+                let mut extras = vec![count];
+                extras.extend(clear(!form.oracle_tags.is_empty()));
+                lines.push(label_line(palette, "Oracle tags", focused, extras));
+                lines.push(chip_box(
+                    palette,
+                    form.oracle_tags.clone(),
+                    focused.then_some(form.oracle_focus),
+                ));
+            }
+            Field::OtherTags => {
+                lines.push(label_line(
+                    palette,
+                    "Other tags",
+                    focused,
+                    clear(!form.other_tags.is_empty()),
+                ));
+                let chips: Vec<Span<'static>> = DeckOtherTag::all()
+                    .iter()
+                    .enumerate()
+                    .map(|(i, t)| {
+                        pill(
+                            t.display_name(),
+                            palette.muted,
+                            PillState {
+                                picked: form.other_tags.contains(t),
+                                focused: focused && i == form.other_focus,
+                            },
+                        )
+                    })
+                    .collect();
+                lines.push(indented(chips));
+            }
+        }
+    }
+    (lines, focus_line, cursor)
+}
+
+fn heading_gap() -> Line<'static> {
+    Line::default()
+}
+
+fn indented(chips: Vec<Span<'static>>) -> Line<'static> {
+    let mut spans = vec![Span::raw(INDENT)];
+    spans.extend(pill::row(chips).spans);
+    Line::from(spans)
+}
+
+/// The selected tags, each with its "×", or "Not set".
+fn chip_box(palette: &Palette, labels: Vec<String>, focus: Option<usize>) -> Line<'static> {
+    if labels.is_empty() {
+        return Line::from(vec![
+            Span::raw(INDENT),
+            Span::styled("Not set", palette.muted),
+        ]);
+    }
+    indented(
+        labels
+            .iter()
+            .enumerate()
+            .map(|(i, label)| {
+                pill(
+                    &format!("{label} ×"),
+                    palette.accent,
+                    PillState {
+                        picked: false,
+                        focused: focus == Some(i),
+                    },
+                )
+            })
+            .collect(),
+    )
+}
+
+/// What a picker's frame shows around its grid.
+struct PickerParts {
+    title: &'static str,
+    /// What follows "Search" in the controls row.
+    extras: Vec<Span<'static>>,
+    /// The definition bar's name and lines.
+    bar: (String, Vec<String>),
+    save_enabled: bool,
+}
+
+/// A picker's frame: its title, the search box and its extras, the definition bar, then the grid; and its action bar. Returns the grid's area.
+fn picker_frame(
+    f: &mut Frame<'_>,
+    palette: &Palette,
+    areas: [Rect; 4],
+    search: &TextInput,
+    frame: PickerParts,
+) -> Rect {
+    let PickerParts {
+        title,
+        extras,
+        bar,
+        save_enabled,
+    } = frame;
+    let [header, body, _, keys] = areas;
+    f.render_widget(
+        Line::from(vec![
+            Span::styled(title.to_owned(), palette.accent).bold(),
+            Span::styled("  F1 hint", palette.muted),
+        ]),
+        header,
+    );
+    let bar_height = u16::try_from(bar.1.len()).unwrap_or(1).saturating_add(3);
+    let [controls, search_area, bar_area, grid] = Layout::vertical([
+        Constraint::Length(1),
+        Constraint::Length(3),
+        Constraint::Length(bar_height),
+        Constraint::Fill(1),
+    ])
+    .areas(body);
+    let mut head = vec![Span::styled("Search", palette.muted)];
+    for extra in extras {
+        head.push(Span::raw("  "));
+        head.push(extra);
+    }
+    f.render_widget(Line::from(head), controls);
+    search.draw(f, palette, search_area, "Search", true);
+    f.set_cursor_position(search.cursor_position(search_area));
+    let mut bar_lines = vec![Line::from(Span::styled(bar.0, palette.accent.bold()))];
+    bar_lines.extend(bar.1.into_iter().map(Line::from));
+    f.render_widget(
+        Paragraph::new(bar_lines)
+            .wrap(Wrap { trim: true })
+            .block(Block::bordered().border_style(palette.border)),
+        bar_area,
+    );
+    let save_style = if save_enabled {
+        palette.base.bold()
+    } else {
+        palette.muted
+    };
+    let mut bar = action_bar::line(
+        palette,
+        &[("arrows", "move"), ("Enter", "pick"), ("Esc", "Back")],
+    );
+    bar.spans.push(Span::styled("F2 ", save_style));
+    bar.spans.push(Span::styled("Save", palette.muted));
+    f.render_widget(bar, keys);
+    grid
+}
+
+/// Chips wrapped across the grid, scrolled so the focused one shows.
+fn draw_grid(f: &mut Frame<'_>, chips: Vec<Span<'static>>, focus: usize, area: Rect) {
+    let width = usize::from(area.width);
+    let mut lines: Vec<Line<'static>> = Vec::new();
+    let mut current: Vec<Span<'static>> = Vec::new();
+    let mut used: usize = 0;
+    let mut focus_line = 0;
+    for (i, chip) in chips.into_iter().enumerate() {
+        let len = chip.width().saturating_add(1);
+        if used > 0 && used.saturating_add(len) > width {
+            lines.push(Line::from(std::mem::take(&mut current)));
+            used = 0;
+        }
+        if i == focus {
+            focus_line = lines.len();
+        }
+        current.push(chip);
+        current.push(Span::raw(" "));
+        used = used.saturating_add(len);
+    }
+    if !current.is_empty() {
+        lines.push(Line::from(current));
+    }
+    let scroll = focus_line.saturating_sub(usize::from(area.height).saturating_sub(1));
+    f.render_widget(
+        Paragraph::new(lines).scroll((u16::try_from(scroll).unwrap_or(u16::MAX), 0)),
+        area,
+    );
+}
+
+fn no_results(f: &mut Frame<'_>, palette: &Palette, area: Rect) {
+    f.render_widget(Line::from("No results").style(palette.muted), area);
+}
+
+fn draw_format(
+    f: &mut Frame<'_>,
+    palette: &Palette,
+    form: &DeckForm,
+    picker: &FormatPicker,
+    areas: [Rect; 4],
+) {
+    let grid = picker_frame(
+        f,
+        palette,
+        areas,
+        &picker.search,
+        PickerParts {
+            title: "Format",
+            extras: Vec::new(),
+            bar: pickers::format_bar(picker.detail),
+            save_enabled: form.format != picker.snapshot.format,
+        },
+    );
+    let formats = picker.formats();
+    if formats.is_empty() {
+        return no_results(f, palette, grid);
+    }
+    let chips = formats
+        .iter()
+        .enumerate()
+        .map(|(i, format)| {
+            pill(
+                format.display_name(),
+                palette.muted,
+                PillState {
+                    picked: form.format == Some(*format),
+                    focused: i == picker.focus,
+                },
+            )
+        })
+        .collect();
+    draw_grid(f, chips, picker.focus, grid);
+}
+
+fn draw_tags(
+    f: &mut Frame<'_>,
+    palette: &Palette,
+    form: &DeckForm,
+    picker: &TagPicker,
+    areas: [Rect; 4],
+) {
+    let bar = match picker
+        .detail
+        .as_ref()
+        .and_then(|slug| form.deck_tag_catalog.iter().find(|t| t.slug == *slug))
+    {
+        Some(tag) => (tag.display_name.clone(), vec![tag.description.clone()]),
+        None => (
+            "Hint".to_owned(),
+            vec!["Tap a tag to see its definition here.".to_owned()],
+        ),
+    };
+    let mut snapshot = picker.snapshot.clone();
+    let mut now = form.tags.clone();
+    snapshot.sort();
+    now.sort();
+    let grid = picker_frame(
+        f,
+        palette,
+        areas,
+        &picker.search,
+        PickerParts {
+            title: "Deck tags",
+            extras: vec![
+                Span::styled(
+                    format!("{}/{MAX_DECK_TAGS}", form.tags.len()),
+                    palette.muted,
+                ),
+                Span::styled("F8 ×", palette.muted),
+            ],
+            bar,
+            save_enabled: snapshot != now,
+        },
+    );
+    let tags = picker.tags(&form.deck_tag_catalog);
+    if tags.is_empty() {
+        return no_results(f, palette, grid);
+    }
+    let chips = tags
+        .iter()
+        .enumerate()
+        .map(|(i, tag)| {
+            pill(
+                &tag.display_name,
+                palette.muted,
+                PillState {
+                    picked: form.tags.contains(&tag.slug),
+                    focused: i == picker.focus,
+                },
+            )
+        })
+        .collect();
+    draw_grid(f, chips, picker.focus, grid);
+}
+
+fn draw_oracle(
+    f: &mut Frame<'_>,
+    palette: &Palette,
+    form: &DeckForm,
+    picker: &OraclePicker,
+    areas: [Rect; 4],
+) {
+    let catalog = form.oracle_catalog.as_deref();
+    let bar = match &picker.detail {
+        Some(slug) => (
+            slug.clone(),
+            vec![
+                catalog
+                    .and_then(|c| c.iter().find(|t| t.slug == *slug))
+                    .and_then(|t| t.description.clone())
+                    .unwrap_or_else(|| "No description for this tag.".to_owned()),
+            ],
+        ),
+        None => (
+            "Hint".to_owned(),
+            vec![
+                "Tap a tag to see what it means. Picking a deck tag pre-selects some of these for you."
+                    .to_owned(),
+            ],
+        ),
+    };
+    let mut snapshot = picker.snapshot.clone();
+    let mut now = form.oracle_tags.clone();
+    snapshot.sort();
+    now.sort();
+    let grid = picker_frame(
+        f,
+        palette,
+        areas,
+        &picker.search,
+        PickerParts {
+            title: "Oracle tags",
+            extras: vec![
+                pill("F3 Dictionary", palette.accent, PillState::default()),
+                Span::styled(
+                    format!("{}/{MAX_DECK_ORACLE_TAGS}", form.oracle_tags.len()),
+                    palette.muted,
+                ),
+                Span::styled("F8 ×", palette.muted),
+            ],
+            bar,
+            save_enabled: snapshot != now,
+        },
+    );
+    let Some(catalog) = catalog else {
+        let ghosts = (0..SKELETON_CHIPS)
+            .map(|i| Span::styled("░".repeat(6_usize.saturating_add(i % 4 * 2)), palette.muted))
+            .collect();
+        return draw_grid(f, ghosts, usize::MAX, grid);
+    };
+    let slugs = picker.slugs(catalog, &form.oracle_tags);
+    if slugs.is_empty() {
+        return no_results(f, palette, grid);
+    }
+    let chips = slugs
+        .iter()
+        .enumerate()
+        .map(|(i, slug)| {
+            pill(
+                slug,
+                palette.muted,
+                PillState {
+                    picked: form.oracle_tags.contains(slug),
+                    focused: i == picker.focus,
+                },
+            )
+        })
+        .collect();
+    draw_grid(f, chips, picker.focus, grid);
+}
+
+/// The swipe picker: the card up now and what it says, or a ghost while loading.
+fn draw_swipe(f: &mut Frame<'_>, palette: &Palette, picker: &SwipePicker, areas: [Rect; 4]) {
+    let [header, body, _, keys] = areas;
+    f.render_widget(
+        Line::from(vec![
+            Span::styled("Swipe select", palette.accent).bold(),
+            Span::styled("  F1 hint", palette.muted),
+        ]),
+        header,
+    );
+    let block = Block::bordered().border_style(palette.border);
+    let inner = block.inner(body);
+    f.render_widget(block, body);
+    match picker.current() {
+        Some(card) => f.render_widget(
+            Paragraph::new(card_lines(palette, card)).wrap(Wrap { trim: true }),
+            inner,
+        ),
+        None => f.render_widget(
+            Paragraph::new(skeleton::rows(palette, 6, usize::from(inner.width))),
+            inner,
+        ),
+    }
+    let mut shown = vec![("←", "skip"), ("→", "pick")];
+    if matches!(picker.slot, Slot::Commander | Slot::Partner) {
+        shown.push(("↑", "save"));
+    }
+    shown.extend([
+        ("↓", "undo"),
+        ("F3", "Filter"),
+        ("F5", "Refresh"),
+        ("Esc", "Back"),
+    ]);
+    f.render_widget(action_bar::line(palette, &shown), keys);
+}
+
+/// A card's name, cost, type, rules and stats.
+fn card_lines(palette: &Palette, card: &Card) -> Vec<Line<'static>> {
+    let data = &card.scryfall_data;
+    let mut lines = vec![Line::from(vec![
+        Span::styled(data.name.clone(), palette.accent.bold()),
+        Span::styled(
+            format!("  {}", data.mana_cost.clone().unwrap_or_default()),
+            palette.muted,
+        ),
+    ])];
+    if let Some(type_line) = &data.type_line {
+        lines.push(Line::from(Span::styled(type_line.clone(), palette.muted)));
+    }
+    lines.push(Line::default());
+    if let Some(text) = &data.oracle_text {
+        lines.extend(text.lines().map(|l| Line::from(l.to_owned())));
+    }
+    if let (Some(power), Some(toughness)) = (&data.power, &data.toughness) {
+        lines.push(Line::default());
+        lines.push(Line::from(format!("{power}/{toughness}")).bold());
+    }
+    lines
+}

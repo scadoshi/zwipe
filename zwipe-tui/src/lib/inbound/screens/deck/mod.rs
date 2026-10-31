@@ -1,4 +1,4 @@
-//! One deck: its profile beside the app's stat sections, one tab at a time.
+//! One deck: its Profile card beside the app's sections as an accordion, the warning fixes, and the More sheet with its dialogs.
 
 pub(crate) mod draw;
 pub(crate) mod keys;
@@ -6,17 +6,44 @@ pub(crate) mod keys;
 mod tests;
 
 use uuid::Uuid;
+use zwipe_core::domain::card::oracle_tag::OracleTag;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
 use zwipe_core::domain::deck::{Deck, DeckProfile};
+use zwipe_core::domain::site::WEB_BASE;
+use zwipe_core::http::contracts::deck::{HttpCloneDeck, HttpUpdateDeckProfile};
+use zwipe_core::http::contracts::deck_card::HttpPatchDeckCard;
+use zwipe_core::http::helpers::Patch;
 
 use super::{Screen, failure};
+use crate::domain::deck::buy;
+use crate::domain::deck::warning::{self, Fix};
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;
+use crate::inbound::widgets::alert::{AlertDialog, Tone};
+use crate::inbound::widgets::hint::{self, HintDialog};
+use crate::inbound::widgets::info::InfoPopup;
+use crate::inbound::widgets::menu::{Menu, MenuItem};
+use crate::inbound::widgets::text_input::TextInput;
+use crate::inbound::widgets::toast::ToastKind;
 use crate::outbound::account::Account;
 
-/// One tab of the deck screen, in the app's order.
+/// The key the server stores the first-deck hint under.
+pub(crate) const HINT_KEY: &str = "first_deck";
+
+/// The first-deck hint's title.
+const HINT_TITLE: &str = "Welcome to your deck";
+
+/// The first-deck hint's bullets, as the app words them.
+const HINT_BODY: &str = "• Cards browses, adds and removes cards\n• Edit changes the name, format, command zone, tags and targets\n• More imports, exports, clones, shares or deletes the deck\n• Skipped and removed cards stay out of the add stack. More then Clear skips brings them back\n• Stats fill in as the deck grows. Tap a section to expand it\n• Warnings flag rule problems, each with a one-tap fix";
+
+/// Shows a warning toast. The toast widget has no warning kind of its own, so warnings show in the error color.
+pub(crate) fn warn(cx: &mut Context<'_>, message: &str) {
+    cx.toast(ToastKind::Error, message.to_owned());
+}
+
+/// One section of the deck screen, in the app's order.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Section {
     Budget,
@@ -47,79 +74,207 @@ impl Section {
             Self::Warnings => "Warnings",
         }
     }
+
+    /// The section's "?" explainers, as the app's info buttons word them.
+    pub(crate) fn info(self) -> InfoPopup {
+        match self {
+            Self::Budget => InfoPopup::new(
+                "Price target",
+                &["A budget for the mainboard. Going over warns on the deck"],
+            ),
+            Self::Tags => InfoPopup::new(
+                "Tags",
+                &[
+                    "Deck tags: the archetypes the deck is built around, like Aristocrats or Voltron",
+                    "Oracle tags: the specific things the deck does, like spot removal, ramp or reanimation",
+                    "Other tags: labels that do not change suggestions, like Budget or Jank",
+                ],
+            ),
+            Self::Distributions => InfoPopup::new(
+                "Distributions",
+                &[
+                    "Types: mainboard cards by type",
+                    "Roles: mainboard cards by role, like ramp or removal. Cards with no role are left out. Tap a role to see its tags",
+                ],
+            ),
+            Self::Mana => InfoPopup::new(
+                "Mana",
+                &[
+                    "Mana curve: nonland mainboard cards by mana value",
+                    "Colors: mainboard cards by color",
+                    "Mana cost fulfillment: per color, the pips your lands and sources make against the pips your spells need",
+                    "A check means you make at least as much as you need",
+                ],
+            ),
+            Self::DrawOdds => InfoPopup::new(
+                "Draw odds",
+                &[
+                    "Chance of at least one card from each group in the opening hand, or by a turn. - and + step the turn",
+                    "Random draw only. Mulligans, tutors and card draw are not counted",
+                ],
+            ),
+            Self::Warnings => InfoPopup::new(
+                "Warnings",
+                &["Warnings flag rule problems, each with a one-tap fix"],
+            ),
+        }
+    }
 }
 
-/// Which way a tab change moves.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum Step {
-    Next,
-    Previous,
+/// Something in the accordion the focus can rest on.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum Target {
+    Header(Section),
+    /// A role in the Roles chart that has tags to show.
+    Role(String),
+    /// An oracle tag under the open role.
+    Tag(String),
+    /// The open tag's Examples button.
+    Examples(String),
+    /// One fix button of one warning.
+    Fix {
+        warning: usize,
+        button: usize,
+    },
+}
+
+/// A dialog over the deck screen.
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) enum Dialog {
+    Buy(AlertDialog),
+    Clone(CloneDialog),
+    Share(AlertDialog),
+    ClearSkips(AlertDialog),
+    Delete(AlertDialog),
+    Info(InfoPopup),
+}
+
+/// The Clone dialog: a name for the copy, and whether the copy is on its way.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct CloneDialog {
+    pub(crate) name: TextInput,
+    /// Focused button: 0 Cancel, 1 Save.
+    pub(crate) focused: usize,
+    pub(crate) busy: bool,
+}
+
+impl CloneDialog {
+    /// Prefilled with "{deck name} (clone)".
+    pub(crate) fn new(deck_name: &str) -> Self {
+        Self {
+            name: TextInput::default()
+                .with_placeholder("New deck name")
+                .with_value(&format!("{deck_name} (clone)")),
+            focused: 1,
+            busy: false,
+        }
+    }
+
+    /// The name to send, or `None` while it is blank.
+    pub(crate) fn trimmed(&self) -> Option<String> {
+        let name = self.name.value().trim();
+        (!name.is_empty()).then(|| name.to_owned())
+    }
 }
 
 /// The furthest turn the draw odds look ahead, as in the app.
 pub(crate) const MAX_TURN: u32 = 20;
 
-/// One deck: its profile, and the stats once the full deck has loaded.
+/// One deck: its profile, the full deck once loaded, and what is open over it.
 #[derive(Debug)]
 pub(crate) struct DeckView {
     pub(crate) profile: DeckProfile,
     pub(crate) deck: Option<Deck>,
     pub(crate) metrics: Option<DeckMetrics>,
-    pub(crate) section: Section,
+    /// The open section; none is open once the open one is closed.
+    pub(crate) open: Option<Section>,
+    /// The focused target in the accordion.
+    pub(crate) focus: usize,
+    /// The role whose tags show under it.
+    pub(crate) role_open: Option<String>,
+    /// The tag whose definition shows under the role's tags.
+    pub(crate) tag_open: Option<String>,
+    /// The budget's currency, seeded from the price target's.
     pub(crate) currency: PriceCurrency,
     /// The turn the draw odds are for; 0 is the opening hand.
     pub(crate) turn: u32,
-    pub(crate) error: Option<String>,
+    /// Whether the deck failed to load.
+    pub(crate) failed: bool,
+    /// The oracle tag catalog, for tag definitions.
+    pub(crate) oracle_tags: Vec<OracleTag>,
+    pub(crate) share_token: Option<Uuid>,
+    pub(crate) more: Option<Menu>,
+    pub(crate) dialog: Option<Dialog>,
 }
 
 impl DeckView {
     pub(crate) fn opening(profile: DeckProfile) -> Self {
         let currency = profile.price_target_currency.unwrap_or_default();
+        let share_token = profile.share_token;
         Self {
             profile,
             deck: None,
             metrics: None,
-            section: Section::Budget,
+            open: Some(Section::Budget),
+            focus: 0,
+            role_open: None,
+            tag_open: None,
             currency,
             turn: 0,
-            error: None,
+            failed: false,
+            oracle_tags: Vec::new(),
+            share_token,
+            more: None,
+            dialog: None,
         }
     }
 
-    /// Takes the loaded deck and works out its stats, keeping the tab when it still applies.
+    /// Takes the loaded deck and works out its stats.
     pub(crate) fn load(&mut self, deck: Deck) {
         self.profile = deck.deck_profile.clone();
+        self.share_token = self.profile.share_token;
         self.metrics =
             (!deck.entries.is_empty() || !deck.command_zone_cards.is_empty()).then(|| {
                 DeckMetrics::from_entries_and_command_zone(&deck.entries, &deck.command_zone_cards)
             });
         self.deck = Some(deck);
-        self.error = None;
-        let sections = self.sections();
-        if !sections.contains(&self.section)
-            && let Some(first) = sections.first()
-        {
-            self.section = *first;
-        }
+        self.failed = false;
+        self.clamp();
     }
 
-    /// Fetches the deck again, keeping the tab, currency and turn; the stats show as loading until it arrives.
+    /// Fetches the deck again, keeping what is open; the stats show as loading until it arrives.
     pub(crate) fn reload(&mut self, cx: &mut Context<'_>) {
         cx.shared.status.clear();
         self.deck = None;
         self.metrics = None;
-        self.error = None;
+        self.failed = false;
         cx.request(Request::Load(self.profile.id).into());
     }
 
-    /// The metrics when the deck has cards to chart.
+    /// Whether the deck has any card to export or buy: the app's `has_cards`.
+    pub(crate) fn has_cards(&self) -> bool {
+        self.metrics.is_some()
+    }
+
+    /// Whether stats could come once the deck loads, so a skeleton stands in for them meanwhile.
+    pub(crate) fn stats_coming(&self) -> bool {
+        self.deck.is_none()
+            && !self.failed
+            && (self.profile.card_count > 0
+                || self.profile.commander_id.is_some()
+                || self.profile.partner_commander_id.is_some()
+                || self.profile.background_id.is_some()
+                || self.profile.signature_spell_id.is_some())
+    }
+
+    /// The metrics when the deck has a mainboard card to chart.
     pub(crate) fn charted(&self) -> Option<&DeckMetrics> {
         self.metrics
             .as_ref()
             .filter(|m| m.land_count.saturating_add(m.nonland_count) > 0)
     }
 
-    /// The tabs that have something to show, under the same rules as the app's sections.
+    /// The sections that have something to show, under the app's rules.
     pub(crate) fn sections(&self) -> Vec<Section> {
         let profile = &self.profile;
         let has_tags = !profile.tags.is_empty()
@@ -139,24 +294,90 @@ impl DeckView {
             .collect()
     }
 
-    /// Moves to the next or previous tab that applies, wrapping around.
-    pub(crate) fn step_section(&mut self, step: Step) {
-        let sections = self.sections();
-        let Some(here) = sections.iter().position(|s| *s == self.section) else {
-            if let Some(first) = sections.first() {
-                self.section = *first;
+    /// Every target in order: each header, with the open section's own targets under it.
+    pub(crate) fn targets(&self) -> Vec<Target> {
+        let mut targets = Vec::new();
+        for section in self.sections() {
+            targets.push(Target::Header(section));
+            if self.open != Some(section) {
+                continue;
             }
+            match section {
+                Section::Distributions => self.role_targets(&mut targets),
+                Section::Warnings => {
+                    for (i, w) in self.deck.iter().flat_map(|d| &d.warnings).enumerate() {
+                        if let Some(fix) = warning::fix(w) {
+                            targets.extend(
+                                (0..warning::labels(fix).len())
+                                    .map(|button| Target::Fix { warning: i, button }),
+                            );
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+        targets
+    }
+
+    fn role_targets(&self, targets: &mut Vec<Target>) {
+        let Some(metrics) = self.charted() else {
             return;
         };
-        let count = sections.len();
-        let next = match step {
-            Step::Next => here.saturating_add(1) % count,
-            Step::Previous => here
-                .checked_sub(1)
-                .unwrap_or_else(|| count.saturating_sub(1)),
+        for (role, _, _) in metrics.card_role_bars().unwrap_or_default() {
+            let Some(tags) = metrics.card_role_tags.get(role) else {
+                continue;
+            };
+            targets.push(Target::Role(role.to_owned()));
+            if self.role_open.as_deref() != Some(role) {
+                continue;
+            }
+            for tag in tags {
+                targets.push(Target::Tag(tag.clone()));
+                if self.tag_open.as_deref() == Some(tag) {
+                    targets.push(Target::Examples(tag.clone()));
+                }
+            }
+        }
+    }
+
+    /// The focused target.
+    pub(crate) fn focused(&self) -> Option<Target> {
+        self.targets().get(self.focus).cloned()
+    }
+
+    /// The section the focus is in: its header's, or the open one's for a target inside it.
+    pub(crate) fn focused_section(&self) -> Option<Section> {
+        match self.focused()? {
+            Target::Header(section) => Some(section),
+            _ => self.open,
+        }
+    }
+
+    /// Keeps the focus in range and on a section that still shows.
+    pub(crate) fn clamp(&mut self) {
+        let sections = self.sections();
+        if self.open.is_some_and(|s| !sections.contains(&s)) {
+            self.open = None;
+        }
+        self.focus = self.focus.min(self.targets().len().saturating_sub(1));
+    }
+
+    /// Opens `section` and closes the others, or closes it when it is open; the focus stays on its header.
+    pub(crate) fn toggle(&mut self, section: Section) {
+        self.open = if self.open == Some(section) {
+            None
+        } else {
+            Some(section)
         };
-        if let Some(section) = sections.get(next) {
-            self.section = *section;
+        self.role_open = None;
+        self.tag_open = None;
+        if let Some(at) = self
+            .targets()
+            .iter()
+            .position(|t| *t == Target::Header(section))
+        {
+            self.focus = at;
         }
     }
 
@@ -168,6 +389,14 @@ impl DeckView {
         };
     }
 
+    pub(crate) fn previous_currency(&mut self) {
+        self.currency = match self.currency {
+            PriceCurrency::Usd => PriceCurrency::Tix,
+            PriceCurrency::Eur => PriceCurrency::Usd,
+            PriceCurrency::Tix => PriceCurrency::Eur,
+        };
+    }
+
     pub(crate) fn later_turn(&mut self) {
         self.turn = self.turn.saturating_add(1).min(MAX_TURN);
     }
@@ -175,13 +404,167 @@ impl DeckView {
     pub(crate) fn earlier_turn(&mut self) {
         self.turn = self.turn.saturating_sub(1);
     }
+
+    /// The description of `slug` from the catalog.
+    pub(crate) fn tag_description(&self, slug: &str) -> Option<&str> {
+        self.oracle_tags
+            .iter()
+            .find(|t| t.slug == slug)
+            .and_then(|t| t.description.as_deref())
+    }
+
+    /// The share link for the current token.
+    pub(crate) fn share_link(&self) -> Option<String> {
+        self.share_token.map(|t| format!("{WEB_BASE}/deck/{t}"))
+    }
+
+    /// The More sheet, with Export and Buy off until the deck has cards.
+    pub(crate) fn more_menu(&self) -> Menu {
+        let has_cards = self.has_cards();
+        Menu::new(
+            "More actions",
+            vec![
+                MenuItem::new("Import cards"),
+                MenuItem::new("Export cards").enabled(has_cards),
+                MenuItem::new("Buy deck").enabled(has_cards),
+                MenuItem::new("Clone deck"),
+                MenuItem::new("Share deck"),
+                MenuItem::new("Clear skips").danger(),
+                MenuItem::new("Delete deck").danger(),
+            ],
+        )
+    }
+
+    /// The Buy dialog, with links once the deck has loaded.
+    pub(crate) fn buy_dialog(&self) -> AlertDialog {
+        let body = if self.deck.is_some() {
+            "Buy this deck's cards from a retailer."
+        } else {
+            "No buy links are available for this deck."
+        };
+        let dialog = AlertDialog::new("Buy deck", body).with_button("Close", None);
+        if self.deck.is_some() {
+            dialog
+                .with_button("TCGplayer \u{2197}", Some('t'))
+                .with_button("Card Kingdom \u{2197}", Some('k'))
+        } else {
+            dialog
+        }
+    }
+
+    /// The Share dialog for whether the deck is shared now.
+    pub(crate) fn share_dialog(&self) -> AlertDialog {
+        if self.share_token.is_some() {
+            AlertDialog::new(
+                "Share deck",
+                "Anyone with the link can view this deck. Stop sharing disables the link; sharing again creates a new one.",
+            )
+            .with_button("Close", None)
+            .with_button("Copy link", None)
+            .with_button("Stop share", None)
+        } else {
+            AlertDialog::new(
+                "Share deck",
+                "Anyone with the link can view this deck. You can stop sharing at any time.",
+            )
+            .with_button("Close", None)
+            .with_button("Create link", None)
+        }
+    }
+
+    /// The buy links: `TCGplayer`, then `CardKingdom`.
+    pub(crate) fn buy_links(&self) -> Option<(String, String)> {
+        self.deck.as_ref().map(buy::links)
+    }
+}
+
+/// The Clear skips dialog, focused on Cancel.
+pub(crate) fn clear_skips_dialog() -> AlertDialog {
+    let mut dialog = AlertDialog::new(
+        "Clear skips",
+        "Skipped cards come back on their own after a week, and removed cards after a month. Clearing brings them all back now. This can't be undone.",
+    )
+    .with_button("Clear", None)
+    .with_button("Cancel", None)
+    .with_tone(Tone::Danger);
+    dialog.focused = 1;
+    dialog
+}
+
+/// The Delete dialog, focused on Cancel.
+pub(crate) fn delete_dialog() -> AlertDialog {
+    let mut dialog = AlertDialog::new("Delete deck", "Are you sure you want to delete this deck?")
+        .with_button("Delete", None)
+        .with_button("Cancel", None)
+        .with_tone(Tone::Danger);
+    dialog.focused = 1;
+    dialog
+}
+
+/// Shows the first-deck hint again, whether or not it has been seen.
+pub(crate) fn reopen_hint(cx: &mut Context<'_>) {
+    cx.shared.hint = Some(HintDialog {
+        key: HINT_KEY.to_owned(),
+        title: HINT_TITLE.to_owned(),
+        body: HINT_BODY.to_owned(),
+    });
+}
+
+/// Stand-in for the deck cards screen, which package D builds. Wire it to that screen's `open` with this deck.
+pub(crate) fn open_deck_cards_stub(cx: &mut Context<'_>, _deck_id: Uuid) {
+    cx.toast(
+        ToastKind::Info,
+        "The deck cards screen is not in the terminal yet".to_owned(),
+    );
+}
+
+/// Stand-in for the add screen the below-minimum warning's "Add cards" opens, which package D builds. Wire it to that screen's `open` with this deck.
+pub(crate) fn open_add_cards_stub(cx: &mut Context<'_>, _deck_id: Uuid) {
+    cx.toast(
+        ToastKind::Info,
+        "The add screen is not in the terminal yet; s starts swiping".to_owned(),
+    );
+}
+
+/// Stand-in for the oracle tag Examples overlay, which package B builds. Wire it to that overlay with `slug`.
+pub(crate) fn open_tag_examples_stub(cx: &mut Context<'_>, _slug: &str) {
+    cx.toast(
+        ToastKind::Info,
+        "Oracle tag examples are not in the terminal yet".to_owned(),
+    );
 }
 
 /// The deck screen's work.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum Request {
     /// Fetches the full deck.
     Load(Uuid),
+    /// Fetches the oracle tag catalog for the role tags' definitions.
+    LoadOracleTags,
+    /// Sets a card's quantity, the copy-limit fix.
+    FixQuantity {
+        deck_id: Uuid,
+        card: Uuid,
+        quantity: i32,
+    },
+    /// Clears the commander, the invalid-commander fix.
+    ClearCommander {
+        deck_id: Uuid,
+        oathbreaker: bool,
+    },
+    /// Takes a card out of the deck.
+    RemoveCard {
+        deck_id: Uuid,
+        card: Uuid,
+    },
+    Clone {
+        deck_id: Uuid,
+        name: String,
+    },
+    Share(Uuid),
+    Unshare(Uuid),
+    ClearSkips(Uuid),
+    Delete(Uuid),
 }
 
 /// The deck screen's results.
@@ -189,6 +572,25 @@ pub(crate) enum Request {
 pub(crate) enum Update {
     Loaded(Box<Deck>),
     Failed(String),
+    OracleTags(Vec<OracleTag>),
+    /// A warning fix went through: its toast, and whether the profile changed too.
+    Fixed {
+        deck_id: Uuid,
+        message: String,
+    },
+    /// A request failed with this message for an error toast.
+    Error(String),
+    Cloned {
+        profile: Box<DeckProfile>,
+    },
+    CloneFailed(String),
+    Shared {
+        deck_id: Uuid,
+        token: Uuid,
+    },
+    Unshared(Uuid),
+    SkipsCleared,
+    Deleted(Uuid),
 }
 
 impl From<Request> for screens::Request {
@@ -210,15 +612,27 @@ fn pick(screen: &mut Screen) -> Option<&mut DeckView> {
     }
 }
 
-/// Opens a deck over the current screen and fetches it.
+/// Opens a deck over the current screen and fetches it, then shows the first-deck hint once.
 pub(crate) fn open(cx: &mut Context<'_>, profile: DeckProfile) {
     cx.shared.status.clear();
     cx.request(Request::Load(profile.id).into());
+    cx.request(Request::LoadOracleTags.into());
     cx.push(Screen::Deck(Box::new(DeckView::opening(profile))));
+    hint::show(cx, HINT_KEY, HINT_TITLE, HINT_BODY);
+}
+
+/// Swaps the screen on top for this deck, as after creating or cloning one, so going back reaches the list.
+pub(crate) fn replace_with(cx: &mut Context<'_>, profile: DeckProfile) {
+    cx.shared.status.clear();
+    cx.request(Request::Load(profile.id).into());
+    cx.request(Request::LoadOracleTags.into());
+    cx.replace(Screen::Deck(Box::new(DeckView::opening(profile))));
+    hint::show(cx, HINT_KEY, HINT_TITLE, HINT_BODY);
 }
 
 pub(crate) async fn perform(account: &Account, request: Request) -> Option<screens::Update> {
     let client = &account.client;
+    let error = |e: &zwipe_client::ClientError| failure(e, |m| Update::Error(m).into());
     match request {
         Request::Load(deck_id) => Some(
             match async { client.fetch_deck(deck_id, &account.fresh().await?).await }.await {
@@ -226,11 +640,142 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
                 Err(e) => failure(&e, |m| Update::Failed(m).into()),
             },
         ),
+        // Definitions only add to the role tags, so a failure shows none.
+        Request::LoadOracleTags => client
+            .fetch_oracle_tags()
+            .await
+            .ok()
+            .map(|tags| Update::OracleTags(tags).into()),
+        Request::FixQuantity {
+            deck_id,
+            card,
+            quantity,
+        } => Some(
+            match async {
+                let body = HttpPatchDeckCard::new(Some(quantity), None);
+                client
+                    .update_deck_card(deck_id, card, &body, &account.fresh().await?)
+                    .await
+            }
+            .await
+            {
+                Ok(_) => Update::Fixed {
+                    deck_id,
+                    message: format!("Quantity set to {quantity}"),
+                }
+                .into(),
+                Err(e) => error(&e),
+            },
+        ),
+        Request::ClearCommander {
+            deck_id,
+            oathbreaker,
+        } => Some(
+            match async {
+                let body = HttpUpdateDeckProfile::builder()
+                    .commander_id(Patch::Set(None))
+                    .build();
+                client
+                    .update_deck_profile(deck_id, &body, &account.fresh().await?)
+                    .await
+            }
+            .await
+            {
+                Ok(_) => Update::Fixed {
+                    deck_id,
+                    message: if oathbreaker {
+                        "Oathbreaker cleared"
+                    } else {
+                        "Commander cleared"
+                    }
+                    .to_owned(),
+                }
+                .into(),
+                Err(e) => error(&e),
+            },
+        ),
+        Request::RemoveCard { deck_id, card } => Some(
+            match async {
+                client
+                    .delete_deck_card(deck_id, card, &account.fresh().await?)
+                    .await
+            }
+            .await
+            {
+                Ok(()) => Update::Fixed {
+                    deck_id,
+                    message: "Card removed".to_owned(),
+                }
+                .into(),
+                Err(e) => error(&e),
+            },
+        ),
+        Request::Clone { deck_id, name } => Some(
+            match async {
+                let session = account.fresh().await?;
+                let cloned = client
+                    .clone_deck(
+                        deck_id,
+                        &HttpCloneDeck {
+                            new_name: name.clone(),
+                        },
+                        &session,
+                    )
+                    .await?;
+                client.fetch_deck_profile(cloned.deck_id, &session).await
+            }
+            .await
+            {
+                Ok(profile) => Update::Cloned {
+                    profile: Box::new(profile),
+                }
+                .into(),
+                Err(e) => failure(&e, |m| Update::CloneFailed(m).into()),
+            },
+        ),
+        Request::Share(deck_id) => Some(
+            match async { client.share_deck(deck_id, &account.fresh().await?).await }.await {
+                Ok(share) => Update::Shared {
+                    deck_id,
+                    token: share.share_token,
+                }
+                .into(),
+                Err(e) => error(&e),
+            },
+        ),
+        Request::Unshare(deck_id) => Some(
+            match async { client.unshare_deck(deck_id, &account.fresh().await?).await }.await {
+                Ok(()) => Update::Unshared(deck_id).into(),
+                Err(e) => error(&e),
+            },
+        ),
+        Request::ClearSkips(deck_id) => Some(
+            match async {
+                client
+                    .clear_deck_suppressions(deck_id, &account.fresh().await?)
+                    .await
+            }
+            .await
+            {
+                Ok(_) => Update::SkipsCleared.into(),
+                Err(e) => error(&e),
+            },
+        ),
+        Request::Delete(deck_id) => Some(
+            match async { client.delete_deck(deck_id, &account.fresh().await?).await }.await {
+                Ok(()) => Update::Deleted(deck_id).into(),
+                Err(e) => error(&e),
+            },
+        ),
     }
 }
 
-pub(crate) fn apply(nav: &mut Nav, update: Update, _cx: &mut Context<'_>) {
+pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
+    let on_top = matches!(nav.top(), Screen::Deck(_));
     let Some(view) = nav.find_mut(pick) else {
+        if let Update::Error(message) | Update::CloneFailed(message) = update {
+            cx.toast(ToastKind::Error, message);
+        }
         return;
     };
     match update {
@@ -239,6 +784,83 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, _cx: &mut Context<'_>) {
                 view.load(*deck);
             }
         }
-        Update::Failed(error) => view.error = Some(error),
+        Update::Failed(error) => {
+            view.failed = true;
+            cx.toast(ToastKind::Error, error);
+        }
+        Update::OracleTags(tags) => view.oracle_tags = tags,
+        Update::Fixed { deck_id, message } => {
+            cx.toast(ToastKind::Info, message);
+            if view.profile.id == deck_id {
+                view.reload(cx);
+            }
+        }
+        Update::Error(message) => cx.toast(ToastKind::Error, message),
+        Update::Cloned { profile } => {
+            cx.toast(ToastKind::Info, format!("Cloned as \"{}\"", profile.name));
+            if on_top {
+                replace_with(cx, *profile);
+            }
+        }
+        Update::CloneFailed(message) => {
+            if let Some(Dialog::Clone(dialog)) = &mut view.dialog {
+                dialog.busy = false;
+            }
+            cx.toast(ToastKind::Error, message);
+        }
+        Update::Shared { deck_id, token } => {
+            if view.profile.id == deck_id {
+                view.share_token = Some(token);
+                if let Some(link) = view.share_link() {
+                    copy(cx, &link, "Share link copied");
+                }
+            }
+        }
+        Update::Unshared(deck_id) => {
+            if view.profile.id == deck_id {
+                view.share_token = None;
+            }
+            cx.toast(ToastKind::Info, "Link disabled".to_owned());
+        }
+        Update::SkipsCleared => cx.toast(ToastKind::Info, "Skips cleared".to_owned()),
+        Update::Deleted(deck_id) => {
+            if on_top && view.profile.id == deck_id {
+                cx.back();
+            }
+        }
+    }
+}
+
+/// Copies `text` to the clipboard and says `done`, or says it could not.
+pub(crate) fn copy(cx: &mut Context<'_>, text: &str, done: &str) {
+    if crate::inbound::widgets::clipboard::copy(text).is_ok() {
+        cx.toast(ToastKind::Info, done.to_owned());
+    } else {
+        cx.toast(ToastKind::Error, format!("Could not copy {text}"));
+    }
+}
+
+/// Runs the fix behind a warning's button.
+pub(crate) fn run_fix(view: &DeckView, fix: Fix, button: usize, cx: &mut Context<'_>) {
+    let deck_id = view.profile.id;
+    match fix {
+        Fix::BelowMinimum if button == 0 => open_add_cards_stub(cx, deck_id),
+        Fix::BelowMinimum => screens::deck_import::open(cx, deck_id),
+        Fix::Quantity { card, quantity } => cx.request(
+            Request::FixQuantity {
+                deck_id,
+                card,
+                quantity,
+            }
+            .into(),
+        ),
+        Fix::ClearCommander => cx.request(
+            Request::ClearCommander {
+                deck_id,
+                oathbreaker: view.profile.format.is_some_and(|f| f.has_signature_spell()),
+            }
+            .into(),
+        ),
+        Fix::Remove { card } => cx.request(Request::RemoveCard { deck_id, card }.into()),
     }
 }

@@ -14,10 +14,6 @@ pub(crate) enum Navigation {
     /// Opens a screen over the current one.
     Push(Screen),
     /// Swaps the screen on top for another.
-    #[expect(
-        dead_code,
-        reason = "part of the back stack's API for new screens; no screen swaps itself out yet"
-    )]
     Replace(Screen),
     /// Closes the screen on top and tells the one under it, or quits from the bottom screen.
     Back,
@@ -60,10 +56,6 @@ impl<'app> Context<'app> {
     }
 
     /// Swaps the screen on top for `screen`, so going back skips the one it replaces.
-    #[expect(
-        dead_code,
-        reason = "part of the back stack's API for new screens; no screen swaps itself out yet"
-    )]
     pub(crate) fn replace(&mut self, screen: Screen) {
         self.effects.navigation.push(Navigation::Replace(screen));
     }
