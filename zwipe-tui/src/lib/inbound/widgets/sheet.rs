@@ -15,6 +15,13 @@ use crate::domain::theme::Palette;
 const MAX_HEIGHT_PERCENT: u16 = 70;
 
 /// What a key did to the sheet.
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "for a sheet whose body only scrolls; the sheets so far handle their own keys"
+    )
+)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum SheetKey {
     /// The key scrolled the body, or did nothing.
@@ -68,6 +75,10 @@ impl Sheet {
     }
 
     /// Scrolls down a line, stopping at the last body line.
+    #[cfg_attr(
+        not(test),
+        expect(dead_code, reason = "for a sheet whose body only scrolls")
+    )]
     pub(crate) fn scroll_down(&mut self) {
         self.scroll = self
             .scroll
@@ -75,11 +86,19 @@ impl Sheet {
             .min(self.body.len().saturating_sub(1));
     }
 
+    #[cfg_attr(
+        not(test),
+        expect(dead_code, reason = "for a sheet whose body only scrolls")
+    )]
     pub(crate) fn scroll_up(&mut self) {
         self.scroll = self.scroll.saturating_sub(1);
     }
 
     /// Scrolls with j/k, the arrows and Page Up/Down; closes on Esc or q.
+    #[cfg_attr(
+        not(test),
+        expect(dead_code, reason = "for a sheet whose body only scrolls")
+    )]
     pub(crate) fn handle_key(&mut self, code: KeyCode) -> SheetKey {
         match code {
             KeyCode::Esc | KeyCode::Char('q') => return SheetKey::Close,

@@ -1,4 +1,6 @@
-//! The config screen: the preferences as saved and as shown, the selected row, and the theme and exceptions lists.
+//! The Config screen: the theme with its Dark/Light button and the Themes sheet, the pip style, Universes Beyond and its Exceptions sheet.
+//!
+//! The toggles are optimistic, each with its own request count: the new value shows at once, an answer to a tap that a newer tap has overtaken is ignored, and a failure puts back the value from before that tap. Theme and pips show from the start; the Universes Beyond controls wait for the preferences to load, and stay off for good if they cannot.
 
 pub(crate) mod draw;
 pub(crate) mod keys;
@@ -6,7 +8,8 @@ pub(crate) mod keys;
 mod tests;
 
 use zwipe_core::domain::card::scryfall_data::universe::UbFranchiseView;
-use zwipe_core::domain::user::preferences::UserPreferences;
+use zwipe_core::domain::user::hints::HINT_CONFIG;
+use zwipe_core::domain::user::preferences::{PipStyle, UserPreferences};
 use zwipe_core::http::contracts::user::HttpUpdatePreferences;
 
 use super::{Screen, failure};
@@ -14,12 +17,14 @@ use crate::domain::theme::{self, Palette, PickerRow};
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;
+use crate::inbound::widgets::hint::{self, HintTopic};
+use crate::inbound::widgets::toast::{self, ToastKind};
 use crate::outbound::account::Account;
 
-/// A change to one preference, as the config screen sends it.
+/// A change to one preference, as Config sends it.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum PreferenceChange {
-    /// A new theme from the picker, keeping the mode.
+    /// A theme from the Themes sheet, keeping the mode.
     Theme {
         theme: String,
         dark_mode: bool,
@@ -29,13 +34,13 @@ pub(crate) enum PreferenceChange {
         theme: String,
         dark_mode: bool,
     },
-    Pips(zwipe_core::domain::user::preferences::PipStyle),
+    Pips(PipStyle),
     HideUniversesBeyond(bool),
     Exceptions(Vec<String>),
 }
 
 impl PreferenceChange {
-    /// Applies the change to `preferences`, the way the screen shows it before the server answers.
+    /// Applies the change to `preferences`, the way the screen shows it.
     pub(crate) fn apply(&self, preferences: &mut UserPreferences) {
         match self {
             Self::Theme { theme, dark_mode } | Self::DarkMode { theme, dark_mode } => {
@@ -48,226 +53,53 @@ impl PreferenceChange {
         }
     }
 
-    /// The app's message when the server takes the change.
-    pub(crate) fn saved_message(&self) -> &'static str {
+    /// The same preference as `preferences` hold it now, to put back if this change fails.
+    pub(crate) fn undo(&self, preferences: &UserPreferences) -> Self {
+        match self {
+            Self::Theme { .. } => Self::Theme {
+                theme: preferences.theme.clone(),
+                dark_mode: preferences.dark_mode,
+            },
+            Self::DarkMode { .. } => Self::DarkMode {
+                theme: preferences.theme.clone(),
+                dark_mode: preferences.dark_mode,
+            },
+            Self::Pips(_) => Self::Pips(preferences.pip_style),
+            Self::HideUniversesBeyond(_) => {
+                Self::HideUniversesBeyond(preferences.exclude_universes_beyond)
+            }
+            Self::Exceptions(_) => {
+                Self::Exceptions(preferences.universes_beyond_exceptions.clone())
+            }
+        }
+    }
+
+    /// The app's toast when the server takes the change, read from its answer.
+    pub(crate) fn saved_message(&self, saved: &UserPreferences) -> &'static str {
         match self {
             Self::Theme { .. } => "Theme saved",
-            Self::DarkMode {
-                dark_mode: true, ..
-            } => "Dark mode on",
-            Self::DarkMode {
-                dark_mode: false, ..
-            } => "Dark mode off",
-            Self::Pips(zwipe_core::domain::user::preferences::PipStyle::Theme) => {
-                "Pips in theme colors"
+            Self::DarkMode { .. } if saved.dark_mode => "Dark mode on",
+            Self::DarkMode { .. } => "Dark mode off",
+            Self::Pips(_) => match saved.pip_style {
+                PipStyle::Theme => "Pips in theme colors",
+                PipStyle::Natural => "Pips in natural colors",
+            },
+            Self::HideUniversesBeyond(_) if saved.exclude_universes_beyond => {
+                "Universes Beyond hidden"
             }
-            Self::Pips(zwipe_core::domain::user::preferences::PipStyle::Natural) => {
-                "Pips in natural colors"
-            }
-            Self::HideUniversesBeyond(true) => "Universes Beyond hidden",
-            Self::HideUniversesBeyond(false) => "Universes Beyond shown",
+            Self::HideUniversesBeyond(_) => "Universes Beyond shown",
             Self::Exceptions(_) => "Exceptions saved",
         }
     }
-}
 
-/// A row of the config screen, in the app's order.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum ConfigRow {
-    Theme,
-    Mode,
-    Pips,
-    UniversesBeyond,
-    Exceptions,
-}
-
-impl ConfigRow {
-    pub(crate) const ALL: [Self; 5] = [
-        Self::Theme,
-        Self::Mode,
-        Self::Pips,
-        Self::UniversesBeyond,
-        Self::Exceptions,
-    ];
-}
-
-/// The config screen.
-#[derive(Debug, Default)]
-pub(crate) struct ConfigView {
-    /// The preferences as the server last confirmed them; `None` until they load.
-    pub(crate) saved: Option<UserPreferences>,
-    /// The preferences on screen, ahead of the server while a change is out.
-    pub(crate) shown: Option<UserPreferences>,
-    pub(crate) row: usize,
-    /// Numbers each change, so only the answer to the latest one counts.
-    pub(crate) seq: u64,
-    pub(crate) picker: Option<ThemePicker>,
-    pub(crate) exceptions: Option<ExceptionsEditor>,
-}
-
-impl ConfigView {
-    pub(crate) fn selected(&self) -> ConfigRow {
-        ConfigRow::ALL
-            .get(self.row)
-            .copied()
-            .unwrap_or(ConfigRow::Theme)
-    }
-
-    pub(crate) fn next_row(&mut self) {
-        self.row = self
-            .row
-            .saturating_add(1)
-            .min(ConfigRow::ALL.len().saturating_sub(1));
-    }
-
-    pub(crate) fn previous_row(&mut self) {
-        self.row = self.row.saturating_sub(1);
-    }
-
-    /// Whether the exceptions can be changed: only once the preferences have loaded, and only while Universes Beyond is hidden.
-    pub(crate) fn exceptions_open(&self) -> bool {
-        self.shown
-            .as_ref()
-            .is_some_and(|p| p.exclude_universes_beyond)
-    }
-
-    /// Shows `change` at once and numbers it. `None` before the preferences load.
-    pub(crate) fn begin(&mut self, change: &PreferenceChange) -> Option<u64> {
-        let shown = self.shown.as_mut()?;
-        change.apply(shown);
-        self.seq = self.seq.saturating_add(1);
-        Some(self.seq)
-    }
-
-    /// Takes the server's preferences after change `seq`; an answer to an older change is ignored.
-    pub(crate) fn confirm(&mut self, seq: u64, preferences: UserPreferences) -> bool {
-        if seq != self.seq {
-            return false;
+    /// Which optimistic toggle this is, for its own request count; `None` for the two sheets' saves.
+    fn toggle(&self) -> Option<usize> {
+        match self {
+            Self::DarkMode { .. } => Some(0),
+            Self::Pips(_) => Some(1),
+            Self::HideUniversesBeyond(_) => Some(2),
+            Self::Theme { .. } | Self::Exceptions(_) => None,
         }
-        self.saved = Some(preferences.clone());
-        self.shown = Some(preferences);
-        true
-    }
-
-    /// Puts back the last confirmed preferences after change `seq` failed; an older failure is ignored.
-    pub(crate) fn revert(&mut self, seq: u64) -> bool {
-        if seq != self.seq {
-            return false;
-        }
-        self.shown.clone_from(&self.saved);
-        true
-    }
-}
-
-/// The theme list, previewing the theme under the selection.
-#[derive(Debug)]
-pub(crate) struct ThemePicker {
-    /// The selected row of [`theme::picker_rows`], always a theme, never a header.
-    pub(crate) row: usize,
-    /// The theme the picker opened on, which Esc puts back.
-    pub(crate) original: String,
-}
-
-impl ThemePicker {
-    /// A picker on `current`, or on the first theme when `current` is not listed.
-    pub(crate) fn opening(current: &str) -> Self {
-        let slug = theme::current_slug(current);
-        let rows = theme::picker_rows();
-        let row = rows
-            .iter()
-            .position(|r| matches!(r, PickerRow::Theme(s) if *s == slug))
-            .or_else(|| rows.iter().position(|r| matches!(r, PickerRow::Theme(_))))
-            .unwrap_or(0);
-        Self {
-            row,
-            original: current.to_owned(),
-        }
-    }
-
-    /// The theme under the selection.
-    pub(crate) fn theme(&self) -> Option<&'static str> {
-        match theme::picker_rows().get(self.row) {
-            Some(PickerRow::Theme(slug)) => Some(slug),
-            _ => None,
-        }
-    }
-
-    /// Moves to the next theme down, skipping headers.
-    pub(crate) fn down(&mut self) {
-        let rows = theme::picker_rows();
-        if let Some(row) = (self.row.saturating_add(1)..rows.len())
-            .find(|i| matches!(rows.get(*i), Some(PickerRow::Theme(_))))
-        {
-            self.row = row;
-        }
-    }
-
-    /// Moves to the next theme up, skipping headers.
-    pub(crate) fn up(&mut self) {
-        let rows = theme::picker_rows();
-        if let Some(row) = (0..self.row)
-            .rev()
-            .find(|i| matches!(rows.get(*i), Some(PickerRow::Theme(_))))
-        {
-            self.row = row;
-        }
-    }
-}
-
-/// The franchise exceptions being edited.
-#[derive(Debug)]
-pub(crate) struct ExceptionsEditor {
-    /// Every franchise, as the server lists them; `None` until they load.
-    pub(crate) franchises: Option<Vec<UbFranchiseView>>,
-    /// The picked slugs, in the order they were picked.
-    pub(crate) draft: Vec<String>,
-    pub(crate) saved: Vec<String>,
-    pub(crate) row: usize,
-}
-
-impl ExceptionsEditor {
-    pub(crate) fn opening(saved: &[String]) -> Self {
-        Self {
-            franchises: None,
-            draft: saved.to_vec(),
-            saved: saved.to_vec(),
-            row: 0,
-        }
-    }
-
-    /// Whether the draft picks a different set than what is saved, ignoring order.
-    pub(crate) fn changed(&self) -> bool {
-        let mut draft = self.draft.clone();
-        let mut saved = self.saved.clone();
-        draft.sort_unstable();
-        saved.sort_unstable();
-        draft != saved
-    }
-
-    /// Picks or unpicks the franchise under the selection.
-    pub(crate) fn toggle(&mut self) {
-        let Some(slug) = self
-            .franchises
-            .as_ref()
-            .and_then(|f| f.get(self.row))
-            .map(|f| f.slug.clone())
-        else {
-            return;
-        };
-        if let Some(i) = self.draft.iter().position(|s| *s == slug) {
-            self.draft.remove(i);
-        } else {
-            self.draft.push(slug);
-        }
-    }
-
-    pub(crate) fn down(&mut self) {
-        let count = self.franchises.as_ref().map_or(0, Vec::len);
-        self.row = self.row.saturating_add(1).min(count.saturating_sub(1));
-    }
-
-    pub(crate) fn up(&mut self) {
-        self.row = self.row.saturating_sub(1);
     }
 }
 
@@ -298,31 +130,207 @@ impl From<PreferenceChange> for HttpUpdatePreferences {
     }
 }
 
-/// The config screen's work.
+/// A button on Config's rows, in focus order.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Stop {
+    /// The Dark or Light button in the Theme row.
+    Mode,
+    /// The Theme row's Change, which opens the Themes sheet.
+    Theme,
+    Pips,
+    UniversesBeyond,
+    Exceptions,
+}
+
+impl Stop {
+    pub(crate) const ALL: [Self; 5] = [
+        Self::Mode,
+        Self::Theme,
+        Self::Pips,
+        Self::UniversesBeyond,
+        Self::Exceptions,
+    ];
+}
+
+/// The Themes sheet: the theme it opened on, and the row under the selection.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct ThemeSheet {
+    /// The theme the sheet opened on, which Back puts back.
+    pub(crate) original: String,
+    /// The selected row of [`theme::picker_rows`], always a theme.
+    pub(crate) row: usize,
+}
+
+impl ThemeSheet {
+    /// A sheet on `current`, or on the first theme when `current` is not listed.
+    pub(crate) fn opening(current: &str) -> Self {
+        let slug = theme::current_slug(current);
+        let rows = theme::picker_rows();
+        let row = rows
+            .iter()
+            .position(|r| matches!(r, PickerRow::Theme(s) if *s == slug))
+            .or_else(|| rows.iter().position(|r| matches!(r, PickerRow::Theme(_))))
+            .unwrap_or(0);
+        Self {
+            original: slug.to_owned(),
+            row,
+        }
+    }
+
+    /// The theme under the selection.
+    pub(crate) fn theme(&self) -> Option<&'static str> {
+        match theme::picker_rows().get(self.row) {
+            Some(PickerRow::Theme(slug)) => Some(slug),
+            _ => None,
+        }
+    }
+
+    /// Whether a different theme than the one it opened on is picked.
+    pub(crate) fn picked(&self) -> bool {
+        self.theme().is_some_and(|t| t != self.original)
+    }
+
+    /// Moves to the next theme down or up, skipping section labels.
+    pub(crate) fn step(&mut self, down: bool) {
+        let rows = theme::picker_rows();
+        let is_theme = |i: &usize| matches!(rows.get(*i), Some(PickerRow::Theme(_)));
+        let found = if down {
+            (self.row.saturating_add(1)..rows.len()).find(is_theme)
+        } else {
+            (0..self.row).rev().find(is_theme)
+        };
+        if let Some(row) = found {
+            self.row = row;
+        }
+    }
+}
+
+/// The Exceptions sheet: the draft of picked franchises and the focused chip.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct ExceptionsSheet {
+    /// The picked slugs, in the order they were picked.
+    pub(crate) draft: Vec<String>,
+    pub(crate) chip: usize,
+}
+
+/// Whether two lists of slugs pick the same set, ignoring order.
+pub(crate) fn same_set(a: &[String], b: &[String]) -> bool {
+    let mut a = a.to_vec();
+    let mut b = b.to_vec();
+    a.sort_unstable();
+    b.sort_unstable();
+    a == b
+}
+
+/// What is open over Config.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum Sheet {
+    Themes(ThemeSheet),
+    Exceptions(ExceptionsSheet),
+}
+
+/// The Config screen's state.
+#[derive(Debug)]
+pub(crate) struct ConfigView {
+    /// The preferences on screen.
+    pub(crate) shown: UserPreferences,
+    /// Whether the preferences loaded; the Universes Beyond controls wait on it.
+    pub(crate) loaded: bool,
+    pub(crate) focus: usize,
+    /// Each toggle's request count: Dark/Light, pips, Universes Beyond.
+    pub(crate) seqs: [u64; 3],
+    pub(crate) sheet: Option<Sheet>,
+    /// The franchises the exceptions can name, as the server lists them; empty until they load.
+    pub(crate) franchises: Vec<UbFranchiseView>,
+    /// Whether the Exceptions sheet has opened on this screen, for its one-time hint.
+    pub(crate) exceptions_opened: bool,
+}
+
+impl ConfigView {
+    /// Config on `shown`, the preferences as last applied.
+    pub(crate) fn new(shown: UserPreferences) -> Self {
+        Self {
+            shown,
+            loaded: false,
+            focus: 0,
+            seqs: [0; 3],
+            sheet: None,
+            franchises: Vec::new(),
+            exceptions_opened: false,
+        }
+    }
+
+    pub(crate) fn focused(&self) -> Stop {
+        Stop::ALL.get(self.focus).copied().unwrap_or(Stop::Mode)
+    }
+
+    pub(crate) fn next(&mut self) {
+        self.focus = self
+            .focus
+            .saturating_add(1)
+            .min(Stop::ALL.len().saturating_sub(1));
+    }
+
+    pub(crate) fn previous(&mut self) {
+        self.focus = self.focus.saturating_sub(1);
+    }
+
+    /// Whether `stop` can be pressed: the Universes Beyond button once loaded, and Exceptions once loaded while Universes Beyond is hidden.
+    pub(crate) fn enabled(&self, stop: Stop) -> bool {
+        match stop {
+            Stop::UniversesBeyond => self.loaded,
+            Stop::Exceptions => self.loaded && self.shown.exclude_universes_beyond,
+            _ => true,
+        }
+    }
+
+    /// Shows a toggle at once and numbers it; returns its count.
+    pub(crate) fn begin(&mut self, change: &PreferenceChange) -> u64 {
+        change.apply(&mut self.shown);
+        let Some(slot) = change.toggle().and_then(|i| self.seqs.get_mut(i)) else {
+            return 0;
+        };
+        *slot = slot.saturating_add(1);
+        *slot
+    }
+
+    /// Whether `seq` is still the latest tap of `change`'s toggle.
+    pub(crate) fn latest(&self, change: &PreferenceChange, seq: u64) -> bool {
+        change
+            .toggle()
+            .and_then(|i| self.seqs.get(i))
+            .is_none_or(|latest| *latest == seq)
+    }
+}
+
+/// Config's work.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum Request {
     /// Fetches the preferences. Also sent at sign-in, to draw in the account's theme.
     LoadPreferences,
-    SavePreferences {
+    /// Sends a change; `undo` puts back what it replaced if it fails.
+    Save {
         seq: u64,
         change: PreferenceChange,
+        undo: PreferenceChange,
     },
     /// Fetches the franchises the exceptions can name.
     LoadFranchises,
 }
 
-/// The config screen's results.
+/// Config's results.
 #[derive(Debug)]
 pub(crate) enum Update {
     Preferences(Box<UserPreferences>),
     PreferencesUnavailable,
     Saved {
         seq: u64,
+        change: PreferenceChange,
         preferences: Box<UserPreferences>,
-        message: &'static str,
     },
     SaveFailed {
         seq: u64,
+        undo: PreferenceChange,
         message: String,
     },
     Franchises(Vec<UbFranchiseView>),
@@ -347,11 +355,23 @@ fn pick(screen: &mut Screen) -> Option<&mut ConfigView> {
     }
 }
 
-/// Opens the config screen over the current one and fetches the preferences it shows.
+/// Opens Config on the preferences as last applied, fetches them and the franchises, and shows the `config` hint the first time.
 pub(crate) fn open(cx: &mut Context<'_>) {
-    cx.shared.status.clear();
-    cx.push(Screen::Config(Box::default()));
+    let shown = cx.shared.preferences.clone().unwrap_or_default();
+    cx.push(Screen::Config(Box::new(ConfigView::new(shown))));
     cx.request(Request::LoadPreferences.into());
+    cx.request(Request::LoadFranchises.into());
+    hint::once(cx, HINT_CONFIG);
+}
+
+/// The `?` topic of a stop's row.
+pub(crate) fn topic(stop: Stop) -> Option<HintTopic> {
+    match stop {
+        Stop::Mode | Stop::Theme => Some(HintTopic::Theme),
+        Stop::Pips => Some(HintTopic::Pips),
+        Stop::UniversesBeyond => Some(HintTopic::UniversesBeyond),
+        Stop::Exceptions => None,
+    }
 }
 
 pub(crate) async fn perform(account: &Account, request: Request) -> Option<screens::Update> {
@@ -363,16 +383,14 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
                     account.set_preferences(preferences.clone()).await;
                     Some(Update::Preferences(Box::new(preferences)).into())
                 }
-                // A launch that cannot fetch the preferences keeps the session's copy.
                 Err(e) => Some(failure(&e, |_| Update::PreferencesUnavailable.into())),
             }
         }
-        Request::SavePreferences { seq, change } => {
-            let message = change.saved_message();
+        Request::Save { seq, change, undo } => {
             let result = async {
                 let session = account.fresh().await?;
                 client
-                    .update_preferences(HttpUpdatePreferences::from(change), &session)
+                    .update_preferences(HttpUpdatePreferences::from(change.clone()), &session)
                     .await
             }
             .await;
@@ -381,12 +399,14 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
                     account.set_preferences(preferences.clone()).await;
                     Update::Saved {
                         seq,
+                        change,
                         preferences: Box::new(preferences),
-                        message,
                     }
                     .into()
                 }
-                Err(e) => failure(&e, |message| Update::SaveFailed { seq, message }.into()),
+                Err(e) => failure(&e, |message| {
+                    Update::SaveFailed { seq, undo, message }.into()
+                }),
             })
         }
         Request::LoadFranchises => client
@@ -397,46 +417,76 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
     }
 }
 
+/// Draws in `preferences`' theme and pips, as the app's live theme.
+fn show(cx: &mut Context<'_>, preferences: &UserPreferences) {
+    cx.shared.palette = Palette::for_preferences(preferences);
+}
+
 pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
     let view = nav.find_mut(pick);
     match update {
-        Update::Preferences(preferences) => {
-            // Fills the config screen when it is waiting, and draws in the preferences either way.
-            if let Some(view) = view {
-                if view.saved.is_some() {
-                    return;
-                }
-                view.saved = Some((*preferences).clone());
-                view.shown = Some((*preferences).clone());
+        Update::Preferences(preferences) => match view {
+            // An open Config takes the Universes Beyond settings and the pips; the theme stays the live one.
+            Some(view) => {
+                view.shown.exclude_universes_beyond = preferences.exclude_universes_beyond;
+                view.shown
+                    .universes_beyond_exceptions
+                    .clone_from(&preferences.universes_beyond_exceptions);
+                view.shown.pip_style = preferences.pip_style;
+                view.loaded = true;
             }
-            cx.use_preferences(&preferences);
-        }
+            None => cx.use_preferences(&preferences),
+        },
         Update::PreferencesUnavailable => {}
         Update::Saved {
             seq,
+            change,
             preferences,
-            message,
         } => {
-            if let Some(view) = view
-                && view.confirm(seq, (*preferences).clone())
-            {
-                message.clone_into(&mut cx.shared.status);
+            let Some(view) = view else {
                 cx.use_preferences(&preferences);
+                return;
+            };
+            if !view.latest(&change, seq) {
+                return;
             }
+            let kept_theme = (view.shown.theme.clone(), view.shown.dark_mode);
+            view.shown.clone_from(&preferences);
+            if matches!(
+                change,
+                PreferenceChange::Pips(_)
+                    | PreferenceChange::HideUniversesBeyond(_)
+                    | PreferenceChange::Exceptions(_)
+            ) {
+                // A toggle elsewhere leaves a theme preview or a newer mode tap on screen.
+                (view.shown.theme, view.shown.dark_mode) = kept_theme;
+            }
+            let shown = view.shown.clone();
+            cx.use_preferences(&shown);
+            let duration = match change {
+                PreferenceChange::Theme { .. } | PreferenceChange::Exceptions(_) => toast::QUICK,
+                _ => toast::NORMAL,
+            };
+            cx.toast_for(
+                ToastKind::Success,
+                change.saved_message(&preferences).to_owned(),
+                duration,
+            );
         }
-        Update::SaveFailed { seq, message } => {
+        Update::SaveFailed { seq, undo, message } => {
             if let Some(view) = view
-                && view.revert(seq)
+                && view.latest(&undo, seq)
+                && undo.toggle().is_some()
             {
-                if let Some(shown) = &view.shown {
-                    cx.shared.palette = Palette::for_preferences(shown);
-                }
-                cx.shared.status = message;
+                undo.apply(&mut view.shown);
+                let shown = view.shown.clone();
+                show(cx, &shown);
             }
+            cx.toast(ToastKind::Error, message);
         }
         Update::Franchises(franchises) => {
-            if let Some(editor) = view.and_then(|view| view.exceptions.as_mut()) {
-                editor.franchises = Some(franchises);
+            if let Some(view) = view {
+                view.franchises = franchises;
             }
         }
     }

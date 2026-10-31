@@ -8,7 +8,7 @@ use std::time::Instant;
 use ratatui::Frame;
 use ratatui::widgets::Block;
 use ratatui_image::picker::Picker;
-use zwipe_core::domain::user::User;
+use zwipe_core::domain::user::{User, UserPreferences};
 
 pub(crate) use self::context::{Context, Effects, Navigation};
 use super::nav::Nav;
@@ -59,6 +59,8 @@ pub(crate) struct Shared {
     pub(crate) update_required: bool,
     /// The changelog, fetched once at launch.
     pub(crate) changelog: ChangelogCache,
+    /// The account's preferences as last applied, which Config opens on before it fetches them.
+    pub(crate) preferences: Option<UserPreferences>,
     /// Everybody's counts, which the sign-in screens' hero shows.
     pub(crate) counts: Counts,
     /// The opening over the first screen, while it runs.
@@ -106,6 +108,7 @@ impl App {
                 help: None,
                 update_required: false,
                 changelog: ChangelogCache::default(),
+                preferences: None,
                 counts: Counts::default(),
                 splash: None,
                 gate: now,

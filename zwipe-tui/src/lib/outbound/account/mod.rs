@@ -129,12 +129,6 @@ impl Account {
         }
     }
 
-    /// Forgets the session here without telling the server, for an account the server has already deleted.
-    pub(crate) async fn forget(&self) {
-        self.session.lock().await.take();
-        self.store.clear().ok();
-    }
-
     /// Ends the session on the server, waiting at most [`LOGOUT_TIMEOUT`], then forgets it here whether the server answered or not.
     pub(crate) async fn sign_out(&self) {
         let logout = async {

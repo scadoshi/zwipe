@@ -96,6 +96,7 @@ impl<'app> Context<'app> {
     /// Draws in `preferences` from now on and remembers their theme for the next launch.
     pub(crate) fn use_preferences(&mut self, preferences: &UserPreferences) {
         self.shared.palette = Palette::for_preferences(preferences);
+        self.shared.preferences = Some(preferences.clone());
         self.request(Request::RememberTheme(RememberedTheme {
             theme: preferences.theme.clone(),
             dark_mode: preferences.dark_mode,

@@ -11,7 +11,6 @@ pub(crate) const RESEND_COOLDOWN_SECS: u64 = 60;
 pub(crate) const DELETE_DELAY_SECS: u64 = 5;
 
 /// What is wrong with a new password on Change password, in the app's order: the policy, then a mismatch once a submit was tried or the confirmation is as long, then sameness with the current one.
-#[cfg_attr(not(test), expect(dead_code, reason = "Change password uses it next"))]
 pub(crate) fn change_password_error(
     current: &str,
     new: &str,
@@ -74,17 +73,6 @@ pub(crate) fn password_required(password: &str) -> Option<String> {
         .then(|| "Password is required".to_owned())
 }
 
-/// What is wrong with a new password, checked in the app's order: the password rules, then the confirmation, then sameness with the current one.
-pub(crate) fn new_password_error(current: &str, new: &str, confirm: &str) -> Option<String> {
-    if let Err(e) = password::validate(new) {
-        return Some(e.to_string());
-    }
-    if new != confirm {
-        return Some("Passwords do not match".to_owned());
-    }
-    (new == current).then(|| "New password must be different from your current password".to_owned())
-}
-
 /// The note under a pending email change, the app's `link_expiry_text`: how long its link lasts, or that it has expired. Minutes round up; from an hour on, minutes round to the nearest hour.
 pub(crate) fn pending_note(expires_at: DateTime<Utc>, now: DateTime<Utc>) -> String {
     let seconds = expires_at.signed_duration_since(now).num_seconds();
@@ -141,6 +129,11 @@ mod tests {
 
     #[test]
     fn change_password_waits_on_the_mismatch_until_the_confirmation_is_long_enough() {
+        assert_eq!(
+            password_required("").as_deref(),
+            Some("Password is required")
+        );
+        assert_eq!(password_required("x"), None);
         let check = |confirm, attempted| {
             change_password_error("Old!pass1", "New!pass22", confirm, attempted)
         };
@@ -158,28 +151,6 @@ mod tests {
             change_password_error("Same!pass1", "Same!pass1", "Same!pass1", true).as_deref(),
             Some("New password must be different from your current password")
         );
-    }
-
-    #[test]
-    fn new_passwords_are_checked_in_the_apps_order() {
-        assert!(new_password_error("Old!pass1", "short", "short").is_some());
-        assert_eq!(
-            new_password_error("Old!pass1", "New!pass22", "New!pass23").as_deref(),
-            Some("Passwords do not match")
-        );
-        assert_eq!(
-            new_password_error("Same!pass1", "Same!pass1", "Same!pass1").as_deref(),
-            Some("New password must be different from your current password")
-        );
-        assert_eq!(
-            new_password_error("Old!pass1", "New!pass22", "New!pass22"),
-            None
-        );
-        assert_eq!(
-            password_required("").as_deref(),
-            Some("Password is required")
-        );
-        assert_eq!(password_required("x"), None);
     }
 
     #[test]

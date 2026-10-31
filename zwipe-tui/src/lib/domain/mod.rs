@@ -14,6 +14,8 @@ pub(crate) mod deck;
 pub(crate) mod decode;
 /// The home screen's counters and color map.
 pub(crate) mod home;
+/// The privacy policy's HTML as text.
+pub(crate) mod legal;
 /// The swipe stack and the query that fills it.
 pub(crate) mod swipe;
 /// Orangui's palettes, mapped to the roles the screens draw with.

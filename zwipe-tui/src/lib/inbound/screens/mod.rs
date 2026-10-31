@@ -3,12 +3,14 @@
 //! Each screen lives in its own folder: `mod.rs` for its state, its request and update enums, `perform` and `apply`; `keys.rs` for its keys; `draw.rs` for drawing it. This file only routes to them, one arm per screen. `context/ARCHITECTURE.md` lists every place a new screen registers.
 
 pub(crate) mod account;
+pub(crate) mod changelog;
 pub(crate) mod config;
 pub(crate) mod deck;
 pub(crate) mod decks;
 pub(crate) mod forgot_password;
 pub(crate) mod home;
 pub(crate) mod login;
+pub(crate) mod privacy;
 pub(crate) mod register;
 pub(crate) mod swipe;
 pub(crate) mod update_required;
@@ -24,16 +26,19 @@ use zwipe_core::http::contracts::changelog::HttpChangelog;
 use zwipe_core::http::contracts::metrics::{AnonymousEventKind, HttpPublicMetrics};
 
 use self::account::AccountView;
+use self::changelog::ChangelogView;
 use self::config::ConfigView;
 use self::deck::DeckView;
 use self::decks::DeckList;
 use self::forgot_password::ForgotForm;
 use self::home::HomeView;
 use self::login::LoginForm;
+use self::privacy::PrivacyView;
 use self::register::RegisterForm;
 use self::swipe::SwipeView;
 use super::app::{Context, Shared, session};
 use super::nav::Nav;
+use super::widgets;
 use super::widgets::hero::{self, Counts, Hero};
 use super::widgets::toast::ToastKind;
 use crate::domain::changelog::ChangelogCache;
@@ -55,6 +60,8 @@ pub(crate) enum Screen {
     Swipe(Box<SwipeView>),
     Account(Box<AccountView>),
     Config(Box<ConfigView>),
+    Privacy(Box<PrivacyView>),
+    Changelog(Box<ChangelogView>),
     /// The update notice as a screen of its own. The app shows it over the stack instead, while `Shared::update_required` holds; tests use it as a screen with no state.
     #[cfg_attr(
         not(test),
@@ -76,6 +83,8 @@ impl Screen {
             Self::Swipe(view) => swipe::keys::handle(view, code, cx),
             Self::Account(view) => account::keys::handle(view, code, cx),
             Self::Config(view) => config::keys::handle(view, code, cx),
+            Self::Privacy(view) => privacy::keys::handle(view, code, cx),
+            Self::Changelog(view) => changelog::keys::handle(view, code, cx),
             Self::UpdateRequired => update_required::keys::handle(code, cx),
         }
     }
@@ -91,6 +100,8 @@ impl Screen {
             Self::Swipe(view) => swipe::draw::draw(f, shared, view),
             Self::Account(view) => account::draw::draw(f, shared, view),
             Self::Config(view) => config::draw::draw(f, shared, view),
+            Self::Privacy(view) => privacy::draw::draw(f, shared, view),
+            Self::Changelog(view) => changelog::draw::draw(f, shared, view),
             Self::UpdateRequired => update_required::draw::draw(f, shared),
         }
     }
@@ -101,6 +112,7 @@ impl Screen {
             Self::Home(view) => view.animating(),
             Self::Account(view) => view.animating(),
             Self::Login(form) => form.hero.animating(Instant::now()),
+            Self::Changelog(view) => widgets::entrance::animating(view.filtered_at.elapsed()),
             Self::Register(form) => form.hero.animating(Instant::now()),
             Self::ForgotPassword(form) => form.sending() || form.hero.animating(Instant::now()),
             _ => false,
@@ -144,13 +156,6 @@ pub(crate) enum Request {
     /// Saves the account's theme for drawing before the next sign-in.
     RememberTheme(RememberedTheme),
     /// Tells the server a one-time hint has been shown, by its key.
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "sent by the hint widget, which no screen shows yet"
-        )
-    )]
     MarkHintShown(String),
     Login(login::Request),
     Register(register::Request),

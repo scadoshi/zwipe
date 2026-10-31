@@ -191,10 +191,6 @@ impl Palette {
         extras(slug, dark_mode).map_or(palette, |extras| palette.with_extras(&extras))
     }
 
-    #[cfg_attr(
-        not(test),
-        expect(dead_code, reason = "the theme list's swatches use it next")
-    )]
     /// `--palette-1` to `--palette-6` of `theme` in dark or light mode, the swatches beside it in the theme list. Empty for an unknown theme.
     pub(crate) fn swatches_of(theme: &str, dark_mode: bool) -> Vec<Style> {
         extras(current_slug(theme), dark_mode)

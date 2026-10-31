@@ -24,10 +24,6 @@ impl<'label> Button<'label> {
         }
     }
 
-    #[cfg_attr(
-        not(test),
-        expect(dead_code, reason = "Account's Log out uses it next")
-    )]
     pub(crate) fn danger(self) -> Self {
         Self {
             danger: true,

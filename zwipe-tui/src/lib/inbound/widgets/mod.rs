@@ -56,10 +56,8 @@ pub(crate) mod measure;
 /// A framed panel centered over the screen.
 pub(crate) mod panel;
 /// The bottom sheet with a scrolling body.
-#[cfg_attr(not(test), expect(dead_code, reason = "no screen uses it yet"))]
 pub(crate) mod sheet;
 /// Ghost rows for content still loading.
-#[cfg_attr(not(test), expect(dead_code, reason = "no screen uses it yet"))]
 pub(crate) mod skeleton;
 /// The turning glyph of a request in flight.
 pub(crate) mod spinner;
