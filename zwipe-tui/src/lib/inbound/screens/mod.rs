@@ -3,6 +3,7 @@
 //! Each screen lives in its own folder: `mod.rs` for its state, its request and update enums, `perform` and `apply`; `keys.rs` for its keys; `draw.rs` for drawing it. This file only routes to them, one arm per screen. `context/ARCHITECTURE.md` lists every place a new screen registers.
 
 pub(crate) mod account;
+pub(crate) mod card_sheets;
 pub(crate) mod config;
 pub(crate) mod deck;
 pub(crate) mod decks;
@@ -106,13 +107,6 @@ pub(crate) enum Request {
     /// Saves the account's theme for drawing before the next sign-in.
     RememberTheme(RememberedTheme),
     /// Tells the server a one-time hint has been shown, by its key.
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "sent by the hint widget, which no screen shows yet"
-        )
-    )]
     MarkHintShown(String),
     Login(login::Request),
     Home(home::Request),
@@ -121,6 +115,7 @@ pub(crate) enum Request {
     Swipe(swipe::Request),
     Account(account::Request),
     Config(config::Request),
+    CardSheets(card_sheets::Request),
 }
 
 /// A result from a background request: the app's own, or one screen's.
@@ -134,13 +129,6 @@ pub(crate) enum Update {
     /// A message for the status line.
     Status(String),
     /// A toast for a result that has no screen to show it on.
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "for screens still to come; no request toasts its result yet"
-        )
-    )]
     Toast(ToastKind, String),
     /// The user as the server keeps it after marking a hint shown.
     HintMarked(Box<User>),
@@ -151,6 +139,7 @@ pub(crate) enum Update {
     Swipe(swipe::Update),
     Account(account::Update),
     Config(config::Update),
+    CardSheets(card_sheets::Update),
 }
 
 /// Runs one request off the main loop.
@@ -192,6 +181,7 @@ pub(crate) async fn perform(
         Request::Swipe(request) => swipe::perform(account, request).await,
         Request::Account(request) => account::perform(account, request).await,
         Request::Config(request) => config::perform(account, request).await,
+        Request::CardSheets(request) => card_sheets::perform(account, request).await,
     }
 }
 
@@ -217,6 +207,7 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
         Update::Swipe(update) => swipe::apply(nav, update, cx),
         Update::Account(update) => account::apply(nav, update, cx),
         Update::Config(update) => config::apply(nav, update, cx),
+        Update::CardSheets(update) => card_sheets::apply(nav, update, cx),
     }
 }
 

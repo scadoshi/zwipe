@@ -8,6 +8,9 @@ pub(crate) mod in_flight;
 pub(crate) mod parked;
 pub(crate) mod undo;
 
+use uuid::Uuid;
+use zwipe_core::domain::card::Card;
+
 use self::catalog::Catalog;
 use self::filters::FilterStore;
 use self::in_flight::InFlightAdds;
@@ -22,4 +25,6 @@ pub(crate) struct CardStores {
     pub(crate) undo: UndoStore,
     pub(crate) in_flight: InFlightAdds,
     pub(crate) catalog: Catalog,
+    /// The printings fetched last and the card they belong to, by oracle ID, which reopening the printing sheet on that card reuses.
+    pub(crate) printings: Option<(Uuid, Vec<Card>)>,
 }

@@ -28,6 +28,7 @@ pub(crate) enum ToastKind {
     Success,
     Error,
     Info,
+    Warning,
 }
 
 impl ToastKind {
@@ -36,6 +37,7 @@ impl ToastKind {
             Self::Success => palette.add,
             Self::Error => palette.error,
             Self::Info => palette.accent,
+            Self::Warning => palette.warning,
         }
     }
 }

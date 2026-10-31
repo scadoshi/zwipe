@@ -16,6 +16,8 @@ pub(crate) mod alert;
     reason = "no screen uses it yet; its tests open links through a stand-in program"
 )]
 pub(crate) mod browser;
+/// A card's info block, details and text stand-in.
+pub(crate) mod card_info;
 /// Bar charts from the deck metrics.
 pub(crate) mod charts;
 /// A row of chips to pick one or several.
@@ -46,10 +48,8 @@ pub(crate) mod measure;
 /// A framed panel centered over the screen.
 pub(crate) mod panel;
 /// The bottom sheet with a scrolling body.
-#[cfg_attr(not(test), expect(dead_code, reason = "no screen uses it yet"))]
 pub(crate) mod sheet;
 /// Ghost rows for content still loading.
-#[cfg_attr(not(test), expect(dead_code, reason = "no screen uses it yet"))]
 pub(crate) mod skeleton;
 /// Figures in a row, rolling while they load.
 #[cfg_attr(not(test), expect(dead_code, reason = "no screen uses it yet"))]

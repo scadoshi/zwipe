@@ -2,21 +2,33 @@
 
 /// The account forms' validation and copy.
 pub(crate) mod account;
+/// The Add screen's view of its deck and its search rules.
+pub(crate) mod add;
 /// A card as text: faces, mana symbols, rules and stats.
 pub(crate) mod card;
 /// A deck's row in the deck list.
 pub(crate) mod deck;
+/// Land and budget signals as a deck changes.
+#[cfg_attr(
+    not(test),
+    expect(dead_code, reason = "the deck cards and Remove screens use the rest")
+)]
+pub(crate) mod deck_signals;
 /// The logo entrance, ported from orangui.
 pub(crate) mod decode;
+/// The card filter's sections, fields, pickers and Apply rules.
+#[cfg_attr(
+    not(test),
+    expect(dead_code, reason = "the deck cards and Remove screens use the rest")
+)]
+pub(crate) mod filter;
 /// The home screen's counters and color map.
 pub(crate) mod home;
 /// The swipe stacks the Add and Remove screens share, and their undo actions.
-#[expect(dead_code, reason = "the card screens use it next")]
+#[expect(dead_code, reason = "the deck cards and Remove screens use the rest")]
 pub(crate) mod stack;
 /// The stores the card screens share for the whole run.
-#[expect(dead_code, reason = "the card screens use it next")]
+#[expect(dead_code, reason = "the deck cards and Remove screens use the rest")]
 pub(crate) mod stores;
-/// The swipe stack and the query that fills it.
-pub(crate) mod swipe;
 /// Orangui's palettes, mapped to the roles the screens draw with.
 pub(crate) mod theme;

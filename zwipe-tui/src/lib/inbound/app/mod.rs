@@ -43,7 +43,6 @@ pub(crate) struct Shared {
     /// A one-time hint over the screen, which takes every key until it closes.
     pub(crate) hint: Option<HintDialog>,
     /// The card screens' filters, parked stacks, undo logs and picker lists.
-    #[expect(dead_code, reason = "the card screens use it next")]
     pub(crate) cards: CardStores,
 }
 

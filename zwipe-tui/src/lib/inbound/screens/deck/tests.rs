@@ -6,7 +6,9 @@ use crate::test_support::{card, deck, deck_profile, render, screen_text};
 
 #[test]
 fn s_on_a_loaded_deck_starts_swiping_and_fetches_the_first_page() {
-    let profile = deck_profile("Pile");
+    let mut profile = deck_profile("Pile");
+    profile.commander_id = Some(uuid::Uuid::new_v4());
+    profile.format = Some(zwipe_core::domain::deck::Format::Commander);
     let mut harness = Harness::on(Screen::Deck(Box::new(DeckView::opening(profile.clone()))));
     harness.press(KeyCode::Char('s'));
     assert!(
@@ -16,11 +18,10 @@ fn s_on_a_loaded_deck_starts_swiping_and_fetches_the_first_page() {
 
     harness.apply(Update::Loaded(Box::new(deck(profile.clone(), Vec::new()))));
     harness.press(KeyCode::Char('s'));
-    let view = harness.swipe_view();
-    assert!(view.stack.is_some() && view.fetching);
+    assert!(harness.swipe_view().loading_cards);
     assert!(matches!(
         harness.pending(),
-        [screens::Request::Swipe(screens::swipe::Request::FetchCards { deck_id, .. })] if *deck_id == profile.id
+        [screens::Request::Swipe(screens::swipe::Request::Search { deck_id, .. })] if *deck_id == profile.id
     ));
 }
 
