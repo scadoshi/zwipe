@@ -128,6 +128,20 @@ mod tests {
     }
 
     #[test]
+    fn a_new_password_is_measured_in_characters_by_the_core_validator() {
+        let seven = "Aé1!bcd";
+        assert_eq!(
+            change_password_error("Old!pass1", seven, seven, true).as_deref(),
+            Some("must be at least 8 characters long"),
+            "eight bytes but seven characters is too short"
+        );
+        assert_eq!(
+            change_password_error("Old!pass1", "Aé1!bcde", "Aé1!bcde", true),
+            None
+        );
+    }
+
+    #[test]
     fn change_password_waits_on_the_mismatch_until_the_confirmation_is_long_enough() {
         assert_eq!(
             password_required("").as_deref(),
