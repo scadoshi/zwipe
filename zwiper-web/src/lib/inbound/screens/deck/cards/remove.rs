@@ -37,7 +37,7 @@ use crate::inbound::cards::card_info::{
 };
 use crate::inbound::cards::printing_sheet::PrintingSheet;
 use crate::inbound::cards::swipe_stack::{
-    Swipe, SwipeButtons, SwipeStack, use_swipe_control, use_swipe_key_handler,
+    Swipe, SwipeButtons, SwipeStack, use_swipe_control, use_swipe_keys_or_undo,
 };
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
@@ -439,15 +439,11 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
         );
     });
 
-    use_swipe_key_handler(
+    use_swipe_keys_or_undo(
+        control,
         ALL_SWIPES.to_vec(),
-        Callback::new(move |swipe: Swipe| {
-            if stack.peek().current_wrapping().is_some() {
-                control.press(swipe);
-            } else if swipe == Swipe::Down {
-                undo_last.call(());
-            }
-        }),
+        Callback::new(move |()| stack.peek().current_wrapping().is_some()),
+        undo_last,
     );
     use_undo_key(Callback::new(move |()| undo_last.call(())));
     use_page_keys(Callback::new(move |key: String| match key.as_str() {

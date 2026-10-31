@@ -49,7 +49,7 @@ use crate::inbound::cards::card_info::{
 };
 use crate::inbound::cards::printing_sheet::PrintingSheet;
 use crate::inbound::cards::swipe_stack::{
-    Swipe, SwipeButtons, SwipeStack, use_swipe_control, use_swipe_key_handler,
+    EndUndoButton, Swipe, SwipeButtons, SwipeStack, use_swipe_control, use_swipe_keys_or_undo,
 };
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
@@ -789,19 +789,14 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         AddSource::Maybeboard => mb_stack.read().current_wrapping().cloned(),
     };
     let has_current = current.is_some();
-    use_swipe_key_handler(
+    use_swipe_keys_or_undo(
+        control,
         ALL_SWIPES.to_vec(),
-        Callback::new(move |swipe: Swipe| {
-            let on_top = match *source.peek() {
-                AddSource::Search => stack.peek().current().is_some(),
-                AddSource::Maybeboard => mb_stack.peek().current_wrapping().is_some(),
-            };
-            if on_top {
-                control.press(swipe);
-            } else if swipe == Swipe::Down {
-                undo_now.call(());
-            }
+        Callback::new(move |()| match *source.peek() {
+            AddSource::Search => stack.peek().current().is_some(),
+            AddSource::Maybeboard => mb_stack.peek().current_wrapping().is_some(),
         }),
+        undo_now,
     );
     use_undo_key(Callback::new(move |()| undo_now.call(())));
     use_page_keys(Callback::new(move |key: String| match key.as_str() {
@@ -930,14 +925,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                                     },
                                     CardSkeleton {}
                                 }
-                                div { class: "web-swipe-buttons",
-                                    button {
-                                        class: "card-action-btn web-swipe-button",
-                                        onclick: move |_| undo_search.call(()),
-                                        span { class: "web-swipe-arrow", "{Swipe::Down.arrow()}" }
-                                        " Undo"
-                                    }
-                                }
+                                EndUndoButton { label: "Undo", on_press: undo_search }
                             }
                         } else if at == AddSource::Search && loading_cards() {
                             CardSkeleton { is_loading: true }

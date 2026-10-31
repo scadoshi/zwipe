@@ -23,7 +23,7 @@ use crate::inbound::cards::card_info::{
 use crate::inbound::cards::otag::use_describe_tag;
 use crate::inbound::cards::printing_sheet::PrintingSheet;
 use crate::inbound::cards::swipe_stack::{
-    Swipe, SwipeButtons, SwipeStack, use_swipe_control, use_swipe_keys,
+    EndUndoButton, Swipe, SwipeButtons, SwipeStack, use_swipe_control, use_swipe_keys_or_undo,
 };
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
@@ -59,7 +59,6 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
     let show_details = use_signal(|| false);
     let mut printing_open = use_signal(|| false);
     let control = use_swipe_control();
-    use_swipe_keys(control, vec![Swipe::Left, Swipe::Down]);
 
     let mut load_more = move || {
         if *loading_more.peek() || *exhausted.peek() {
@@ -108,7 +107,7 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
 
     use_hook(load_more);
 
-    let mut go_back = move || {
+    let go_back = use_callback(move |()| {
         let mut s = stack.write();
         let Some(action) = s.pop_action() else {
             drop(s);
@@ -121,7 +120,13 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
         if !s.step_back(&action) {
             s.record(action);
         }
-    };
+    });
+    use_swipe_keys_or_undo(
+        control,
+        vec![Swipe::Left, Swipe::Down],
+        Callback::new(move |()| stack.peek().current().is_some()),
+        go_back,
+    );
 
     let on_swipe = move |(swipe, _card): (Swipe, Card)| match swipe {
         Swipe::Left => {
@@ -138,7 +143,7 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
                 load_more();
             }
         }
-        Swipe::Down => go_back(),
+        Swipe::Down => go_back.call(()),
         Swipe::Right | Swipe::Up => {}
     };
 
@@ -183,7 +188,7 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
                         } else {
                             div { class: "flex-col flex-center", style: "flex: 1; min-height: 0; width: 100%;",
                                 div { class: "dict-empty", "No more cards. Swipe down to go back." }
-                                SwipeButtons { control, buttons: vec![(Swipe::Down, "Back one")] }
+                                EndUndoButton { label: "Back one", on_press: go_back }
                             }
                         }
                     } else if loading() || (empty && loading_more()) {

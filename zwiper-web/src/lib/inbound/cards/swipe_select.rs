@@ -63,7 +63,8 @@ use crate::inbound::cards::card_info::{
 use crate::inbound::cards::otag::{OtagExamplesOpen, use_describe_tag};
 use crate::inbound::cards::printing_sheet::PrintingSheet;
 use crate::inbound::cards::swipe_stack::{
-    Swipe, SwipeButtons, SwipeControl, SwipeStack, use_swipe_control, use_swipe_keys,
+    EndUndoButton, Swipe, SwipeButtons, SwipeControl, SwipeStack, use_swipe_control,
+    use_swipe_keys_or_undo,
 };
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, SwipeSelectHint, open_and_record_hint};
@@ -480,7 +481,6 @@ fn SwipeSelectBody(
         vec![Swipe::Left, Swipe::Right, Swipe::Down]
     };
     let control: SwipeControl = use_swipe_control();
-    use_swipe_keys(control, allowed.clone());
 
     let mut advance = move || {
         let near_end = {
@@ -493,7 +493,7 @@ fn SwipeSelectBody(
         }
     };
 
-    let mut undo = move || {
+    let undo = use_callback(move |()| {
         let action = {
             let mut s = stack.write();
             let Some(action) = s.pop_action() else {
@@ -545,7 +545,13 @@ fn SwipeSelectBody(
                 );
             }
         }
-    };
+    });
+    use_swipe_keys_or_undo(
+        control,
+        allowed.clone(),
+        Callback::new(move |()| stack.peek().current().is_some()),
+        undo,
+    );
 
     let on_swipe = move |(swipe, card): (Swipe, Card)| match swipe {
         Swipe::Left => {
@@ -609,7 +615,7 @@ fn SwipeSelectBody(
                 }
             });
         }
-        Swipe::Down => undo(),
+        Swipe::Down => undo.call(()),
     };
 
     let (window, current, entering) = {
@@ -667,7 +673,7 @@ fn SwipeSelectBody(
                     }
                 } else {
                     CardSkeleton {}
-                    SwipeButtons { control, buttons: vec![(Swipe::Down, "Undo")] }
+                    EndUndoButton { label: "Undo", on_press: undo }
                 }
             }
             if let Some(card) = current.clone() {
