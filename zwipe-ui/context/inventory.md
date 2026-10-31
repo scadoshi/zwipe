@@ -1,6 +1,6 @@
 # zwipe-ui inventory
 
-Step 1 of the zwipe-ui plan, for the owner's review. Nothing is built yet.
+Step 1 of the zwipe-ui plan. The owner approved every recommendation below; step 2 built the crate and the core moves, and the Status column says where each piece landed. Screen models (Part 2) are not built yet.
 
 zwipe-ui is the crate all three clients pull their screen logic from: zwiper (the app), zwiper-web and zwiper-tui. It names no UI crate, so it builds for iOS, Android, the terminal and wasm32 alike. The owner's direction is to share as much as possible, so this goes past pure helpers to a screen model per screen: its state, the actions it takes, what each action asks the client to do, and its verbatim copy. Each client then maps a tap, click or key to an action and draws the state.
 
@@ -8,59 +8,59 @@ Sources read: zwiper and components on `origin/main` (72f67e16), zwiper-tui on `
 
 ## What zwipe-ui can depend on
 
-zwipe-core, chrono, uuid, serde and thiserror. Not orangui, because orangui depends on Dioxus. Not zwipe-client, unless the owner decides otherwise (open decision 3).
+zwipe-core, orangui-core, chrono, uuid and email_address. Not orangui, because orangui depends on Dioxus. Not zwipe-client (decision 3).
 
-That rules out reusing orangui's `short`, `with_separators`, `peak_indices`, the toast bands and the entrance math from zwipe-ui as they stand. The TUI copied all five by hand. Open decision 1 covers how to keep one copy.
+Resolved by decision 1: orangui's pure pieces (`short`, `with_separators`, `peak_indices`, the toast bands, the count-up and decode math) now live in orangui-core, pinned at rev `932abb5` on orangui's `feat/orangui-core` branch until it merges.
 
 ## Part 1: the pieces
 
 Home is where each piece goes: **ui** is zwipe-ui, **core** is zwipe-core, or a client name when only that client needs it. Waves are zwiper-web's: A (auth, chrome, account, config, mostly built on `feat/web-a`), B (home, activity, playstyle), C (decks), D (cards, add, filters).
 
-| Piece | App today | TUI today | Web | Home | Drift | Waves |
-|---|---|---|---|---|---|---|
-| Color map model: growth, pockets, shades, rings, ghost | `components/src/color_map.rs` (model plus Dioxus in one file, 18 tests) | `tui/domain/color_map` with `golden.txt` | B: Home | ui; components keeps the Dioxus half and calls it | none; all 20 constants equal | B |
-| Count-up rolling figures, `short`, `with_separators` | orangui `entrance.rs` (private fns inside signal loops) | `tui/domain/count_up` | A, B (heroes, figures) | see decision 1 | none in what was ported; TUI lacks reduced motion, splash pacing, shimmer | A, B |
-| Logo decode frames | orangui `entrance.rs` | `tui/domain/decode` | none (web has no splash) | see decision 1 | none; TUI rounds 850 and 450 ms to whole 40 ms ticks on purpose | none |
-| Activity math: heatmap layout, readout tags, totals, rate kinds, role and tag rate bars | `app/screens/activity/sections.rs` (pure, 16 tests) | `tui/domain/activity` | B: Activity | ui; the baseline weight to core | `year_line` missing in TUI | B |
-| Home figures, count scope, flavor card expiry, has-data | `app/components/home_hero.rs`, `zwiper/src/lib/outbound/count_scope_store.rs`, `session_upkeep.rs` `next_hour` | `tui/domain/home` | A built `counts.rs`; B: Home | ui | three edge cases, see Drift | A, B |
-| Buy links, deck and single card | `zwiper/src/lib/outbound/buy_links.rs` (pure, untested) | `tui/domain/deck/buy.rs`, `tui/domain/home` (deck only) | B: flavor card; C: Buy | ui | TUI lacks single-card links | B, C |
-| Playstyle helpers: identities, Show filter, reasons, summary, roles, tag table, staples | `app/screens/deck/suggested_commanders.rs` (pure, ~26 tests) | `tui/domain/playstyle` | B: Playstyle | ui; identity and type-line helpers to core | none | B |
-| Deck list Show filter and Group by | `app/screens/deck/list.rs` (2 tests) | `tui/domain/deck/list.rs` | C: Deck list | ui | none | C |
-| Deck row count and pips | `list.rs` `row_card_count` | `tui/domain/deck/mod.rs` | C | ui | none | C |
-| Deck form: land stepper, price box, format details, command-zone search rules, knock-on clears, oracle tag reseed, change detection | `app/screens/deck/components/deck_fields.rs`, `format_select.rs`, `create.rs`, `edit.rs` (signals, untested) | `tui/domain/deck/form.rs`, `tui/inbound/screens/deck_form` | C: Create and Edit | ui | none; app duplicates `MAX_LAND_TARGET` and writes the reseed twice | C |
-| Import outcome toast | `app/screens/deck/import.rs` | `form.rs` `import_outcome` | C: Import | ui | none | C |
-| Export text | `app/screens/deck/export.rs` | `tui/domain/deck/export.rs` | C: Export | ui | none | C |
-| Warning fix choice | `app/screens/deck/components/deck_warnings.rs` | `tui/domain/deck/warning.rs` | C: Deck view | ui now, core later (decision 6) | none | C |
-| Card filter Apply decision | `card_filter_sheet.rs` `apply_action` (4 tests) | `tui/domain/filter/mod.rs` | D: filter panel | ui | Apply when unchanged, see Drift | D |
-| Filter sections, fields, pickers (15 sections, mode chips, picker sources and caps) | the 25 files under `app/screens/deck/card/filter/` (inside components) | `tui/domain/filter/{sections,fields,picker}.rs` | D | ui | none | D |
-| Filter draft, snapshot, reset rules per host | `card_filter_sheet.rs`, `add.rs` `clear_filters` | `tui/inbound/screens/card_sheets/filter` | D | ui, returning an outcome instead of toasting | none | D |
-| Add deck context: lands excluded, legality plus identity defaults, serve gate | `add.rs` | `tui/domain/filter/mod.rs`, `tui/domain/add` | D | ui; possibly core (decision 6) | none | D |
-| Per-deck filter store | `app/screens/deck/card/components/filter_store.rs` | `tui/domain/stores/filters.rs` | D: the stores | ui | none | D |
-| Parked add stacks (20 decks, 50 behind) | `add_stack_cache.rs` | `tui/domain/stores/parked.rs` | D | ui | app can panic on trim, see Drift | D |
-| Shared undo log (cap 100) | `undo_log.rs` (3 tests) | `tui/domain/stores/undo.rs` | D | ui | none; TUI merges the live and parked halves into one store | D |
-| In-flight adds | `in_flight_adds.rs` (4 tests) | `tui/domain/stores/in_flight.rs` | D | ui | none | D |
-| Catalog cache: which lists, freshness | `app/components/catalog_cache.rs` | `tui/domain/stores/catalog.rs` | D: picker sources | ui (freshness and slots); fetching stays in clients | TUI has no 24 h TTL and 3 fewer lists | B, C, D |
-| Card stack, linear and cycling, and its actions | `card_stack.rs`, `action_history.rs` (no tests) | `tui/domain/stack` (8 tests) | C: Swipe select; D: Add, Remove | ui | app lacks a clamp, see Drift | C, D |
-| Add rules: page 25, load-more at 5, seed, land target, empty-results copy, related ids | `add.rs` (closures over signals) | `tui/domain/add` | D: Add | ui | none | D |
-| Deck cards pass, featured strip, quantity bursts, undo messages, stale check | `app/screens/deck/card/view.rs` (5 tests) | `tui/domain/deck_cards` | D: deck cards view | ui | none | D |
-| Land and budget crossings | written three times: `view.rs`, `add.rs`, `remove.rs` | `tui/domain/deck_signals` | D | ui | none | D |
-| Changelog filing and filter | `components/src/changelog.rs` (pure, tested) | `tui/domain/changelog` | A: Changelog | ui; web keeps its anchors | two edge cases, see Drift | A |
-| Card as text: which faces, stats line, rules | `components/src/card_details.rs` | `tui/domain/card` | D: details | ui for face choice and stats; mana symbol parsing stays in TUI | three differences, see Drift | B, D |
-| Privacy policy HTML to text | renders the HTML as is | `tui/domain/legal` | renders the HTML as is | tui | n/a | none |
-| Theme palettes as RGB per role | n/a (CSS) | `tui/domain/theme`, `scripts/gen_themes.py`, `gen_theme_extras.py` | n/a (CSS) | tui | n/a | none |
-| Account form wording and checks | `zwiper/src/lib/domain/error.rs`, the account and auth screens | `tui/domain/account`, `tui/inbound/screens/register` | `web-a/domain/validation.rs`, `account.rs` | ui | link expiry boundary; TUI repeats the password rule | A |
-| Session freshness and refresh-rejected rule | `app/components/auth/ensure_session.rs` | `tui/outbound/account` | `web-a/domain/session.rs` | ui; storage and timers stay in clients | TUI checks in a different order | A |
-| Version gate change | `session_upkeep.rs` | `tui/inbound/app/session.rs` | `web-a/domain/version_gate.rs` | ui | none | A |
-| Problem report mailto, platform as a parameter | `app/components/support.rs` | `tui/inbound/widgets/help.rs` | `web-a/domain/support.rs` | ui | none; `urlencode` is written three times | A |
-| `?` hint topics: titles and bodies | `app/components/hint_host.rs`, `concept_explainers.rs` (RSX) | `tui/inbound/widgets/hint/topics.rs` (markup strings) | `web-a/inbound/chrome/hint_topic.rs` (RSX) | ui, as typed copy (decision 2) | TUI has stale RoleRates and TagRates copy | A, and every wave |
-| One-time hints: ids and copy | ids in `zwipe-core/src/domain/user/models/hints.rs`; copy in 19 screens | `tui/inbound/widgets/hint/keys.rs` | `web-a/inbound/chrome/one_time_hint.rs` (an enum over the ids) | ids enum in core, copy in ui | none; verbatim in all three | A, and every wave |
-| Toast bands 3, 5 and 8 s | orangui `toast_timing.rs` | `tui/inbound/widgets/toast.rs` (copied) | orangui | see decision 1 | none | all |
-| Behavior timings: debounces 300 and 800 ms, quantity flush 300, resend 60 s, delete 5 s, upkeep 60 s, counts 60 s, catalog 24 h, heat pick 4 s, maybeboard toast 1.5 s | spread across the app | spread across the TUI | partly in web-a | ui, as named constants | none | all |
-| Search limits: min query length, result caps 8 and 5, page 25, held size, tile counts | spread | spread | none yet | ui | none | B, C, D |
-| Animation timings: splash, stagger, entrance, wipe, spinner, sweeps, card motion | orangui CSS and JS, `main.css` | `tui/inbound/widgets` | CSS | each client | none | none |
-| Generation ticket for out-of-order replies | `app/components/generation.rs` (Dioxus `CopyValue`) | in the TUI's loop | none yet | ui as a plain counter; app keeps its hook over it | n/a | C, D |
-| Swipe gesture engine | `app/components/interactions/swipe` (33 tests) | keys | keys and buttons | zwiper | n/a | none |
-| Usage telemetry buffer and screen vocabulary | `app/components/telemetry` (11 tests) | none | anonymous funnel only | not audited; see decision 8 | n/a | none |
+| Piece | App today | TUI today | Web | Home | Drift | Waves | Status |
+|---|---|---|---|---|---|---|---|
+| Color map model: growth, pockets, shades, rings, ghost | `components/src/color_map.rs` (model plus Dioxus in one file, 18 tests) | `tui/domain/color_map` with `golden.txt` | B: Home | ui; components keeps the Dioxus half and calls it | none; all 20 constants equal | B | in zwipe-ui `color_map`, golden test passing |
+| Count-up rolling figures, `short`, `with_separators` | orangui `entrance.rs` (private fns inside signal loops) | `tui/domain/count_up` | A, B (heroes, figures) | see decision 1 | none in what was ported; TUI lacks reduced motion, splash pacing, shimmer | A, B | orangui-core (`number`, `count_up`); `short` and `with_separators` used from there |
+| Logo decode frames | orangui `entrance.rs` | `tui/domain/decode` | none (web has no splash) | see decision 1 | none; TUI rounds 850 and 450 ms to whole 40 ms ticks on purpose | none | orangui-core `decode` |
+| Activity math: heatmap layout, readout tags, totals, rate kinds, role and tag rate bars | `app/screens/activity/sections.rs` (pure, 16 tests) | `tui/domain/activity` | B: Activity | ui; the baseline weight to core | `year_line` missing in TUI | B | in zwipe-ui `activity`, `year_line` added; peaks from orangui-core; weight from core |
+| Home figures, count scope, flavor card expiry, has-data | `app/components/home_hero.rs`, `zwiper/src/lib/outbound/count_scope_store.rs`, `session_upkeep.rs` `next_hour` | `tui/domain/home` | A built `counts.rs`; B: Home | ui | three edge cases, see Drift | A, B | in zwipe-ui `home`; drift 1 to 3 fixed |
+| Buy links, deck and single card | `zwiper/src/lib/outbound/buy_links.rs` (pure, untested) | `tui/domain/deck/buy.rs`, `tui/domain/home` (deck only) | B: flavor card; C: Buy | ui | TUI lacks single-card links | B, C | in zwipe-ui `buy`, with single-card links |
+| Playstyle helpers: identities, Show filter, reasons, summary, roles, tag table, staples | `app/screens/deck/suggested_commanders.rs` (pure, ~26 tests) | `tui/domain/playstyle` | B: Playstyle | ui; identity and type-line helpers to core | none | B | in zwipe-ui `playstyle`; identity and type-line helpers in core |
+| Deck list Show filter and Group by | `app/screens/deck/list.rs` (2 tests) | `tui/domain/deck/list.rs` | C: Deck list | ui | none | C | in zwipe-ui `deck::list` |
+| Deck row count and pips | `list.rs` `row_card_count` | `tui/domain/deck/mod.rs` | C | ui | none | C | in zwipe-ui `deck` |
+| Deck form: land stepper, price box, format details, command-zone search rules, knock-on clears, oracle tag reseed, change detection | `app/screens/deck/components/deck_fields.rs`, `format_select.rs`, `create.rs`, `edit.rs` (signals, untested) | `tui/domain/deck/form.rs`, `tui/inbound/screens/deck_form` | C: Create and Edit | ui | none; app duplicates `MAX_LAND_TARGET` and writes the reseed twice | C | in zwipe-ui `deck::form` |
+| Import outcome toast | `app/screens/deck/import.rs` | `form.rs` `import_outcome` | C: Import | ui | none | C | in zwipe-ui `deck::form` |
+| Export text | `app/screens/deck/export.rs` | `tui/domain/deck/export.rs` | C: Export | ui | none | C | in zwipe-ui `deck::export` |
+| Warning fix choice | `app/screens/deck/components/deck_warnings.rs` | `tui/domain/deck/warning.rs` | C: Deck view | ui now, core later (decision 6) | none | C | in zwipe-ui `deck::warning` |
+| Card filter Apply decision | `card_filter_sheet.rs` `apply_action` (4 tests) | `tui/domain/filter/mod.rs` | D: filter panel | ui | Apply when unchanged, see Drift | D | in zwipe-ui `filter`; drift 10 fixed in `filter::draft` |
+| Filter sections, fields, pickers (15 sections, mode chips, picker sources and caps) | the 25 files under `app/screens/deck/card/filter/` (inside components) | `tui/domain/filter/{sections,fields,picker}.rs` | D | ui | none | D | in zwipe-ui `filter::{sections, fields, picker}` |
+| Filter draft, snapshot, reset rules per host | `card_filter_sheet.rs`, `add.rs` `clear_filters` | `tui/inbound/screens/card_sheets/filter` | D | ui, returning an outcome instead of toasting | none | D | in zwipe-ui `filter::draft`, returning toasts |
+| Add deck context: lands excluded, legality plus identity defaults, serve gate | `add.rs` | `tui/domain/filter/mod.rs`, `tui/domain/add` | D | ui; possibly core (decision 6) | none | D | in zwipe-ui `filter` and `add` (decision 6) |
+| Per-deck filter store | `app/screens/deck/card/components/filter_store.rs` | `tui/domain/stores/filters.rs` | D: the stores | ui | none | D | in zwipe-ui `stores::filters` |
+| Parked add stacks (20 decks, 50 behind) | `add_stack_cache.rs` | `tui/domain/stores/parked.rs` | D | ui | app can panic on trim, see Drift | D | in zwipe-ui `stores::parked`, clamped (decision 4) |
+| Shared undo log (cap 100) | `undo_log.rs` (3 tests) | `tui/domain/stores/undo.rs` | D | ui | none; TUI merges the live and parked halves into one store | D | in zwipe-ui `stores::undo` |
+| In-flight adds | `in_flight_adds.rs` (4 tests) | `tui/domain/stores/in_flight.rs` | D | ui | none | D | in zwipe-ui `stores::in_flight` |
+| Catalog cache: which lists, freshness | `app/components/catalog_cache.rs` | `tui/domain/stores/catalog.rs` | D: picker sources | ui (freshness and slots); fetching stays in clients | TUI has no 24 h TTL and 3 fewer lists | B, C, D | in zwipe-ui `stores::catalog`, 24 h TTL and all ten lists |
+| Card stack, linear and cycling, and its actions | `card_stack.rs`, `action_history.rs` (no tests) | `tui/domain/stack` (8 tests) | C: Swipe select; D: Add, Remove | ui | app lacks a clamp, see Drift | C, D | in zwipe-ui `stack`, clamped (decision 4) |
+| Add rules: page 25, load-more at 5, seed, land target, empty-results copy, related ids | `add.rs` (closures over signals) | `tui/domain/add` | D: Add | ui | none | D | in zwipe-ui `add` and `timing` |
+| Deck cards pass, featured strip, quantity bursts, undo messages, stale check | `app/screens/deck/card/view.rs` (5 tests) | `tui/domain/deck_cards` | D: deck cards view | ui | none | D | in zwipe-ui `deck_cards` |
+| Land and budget crossings | written three times: `view.rs`, `add.rs`, `remove.rs` | `tui/domain/deck_signals` | D | ui | none | D | in zwipe-ui `deck_signals` |
+| Changelog filing and filter | `components/src/changelog.rs` (pure, tested) | `tui/domain/changelog` | A: Changelog | ui; web keeps its anchors | two edge cases, see Drift | A | in zwipe-ui `changelog`; drift 7 fixed |
+| Card as text: which faces, stats line, rules | `components/src/card_details.rs` | `tui/domain/card` | D: details | ui for face choice and stats; mana symbol parsing stays in TUI | three differences, see Drift | B, D | in zwipe-ui `card`; drift 6 fixed |
+| Privacy policy HTML to text | renders the HTML as is | `tui/domain/legal` | renders the HTML as is | tui | n/a | none | stays in zwiper-tui |
+| Theme palettes as RGB per role | n/a (CSS) | `tui/domain/theme`, `scripts/gen_themes.py`, `gen_theme_extras.py` | n/a (CSS) | tui | n/a | none | stays in zwiper-tui |
+| Account form wording and checks | `zwiper/src/lib/domain/error.rs`, the account and auth screens | `tui/domain/account`, `tui/inbound/screens/register` | `web-a/domain/validation.rs`, `account.rs` | ui | link expiry boundary; TUI repeats the password rule | A | in zwipe-ui `account`; drift 14 matched to the app |
+| Session freshness and refresh-rejected rule | `app/components/auth/ensure_session.rs` | `tui/outbound/account` | `web-a/domain/session.rs` | ui; storage and timers stay in clients | TUI checks in a different order | A | in zwipe-ui `session`; drift 8 fixed |
+| Version gate change | `session_upkeep.rs` | `tui/inbound/app/session.rs` | `web-a/domain/version_gate.rs` | ui | none | A | in zwipe-ui `session::update_required` |
+| Problem report mailto, platform as a parameter | `app/components/support.rs` | `tui/inbound/widgets/help.rs` | `web-a/domain/support.rs` | ui | none; `urlencode` is written three times | A | in zwipe-ui `support` |
+| `?` hint topics: titles and bodies | `app/components/hint_host.rs`, `concept_explainers.rs` (RSX) | `tui/inbound/widgets/hint/topics.rs` (markup strings) | `web-a/inbound/chrome/hint_topic.rs` (RSX) | ui, as typed copy (decision 2) | TUI has stale RoleRates and TagRates copy | A, and every wave | in zwipe-ui `hint::topics` as typed spans, app copy, AppIcon included |
+| One-time hints: ids and copy | ids in `zwipe-core/src/domain/user/models/hints.rs`; copy in 19 screens | `tui/inbound/widgets/hint/keys.rs` | `web-a/inbound/chrome/one_time_hint.rs` (an enum over the ids) | ids enum in core, copy in ui | none; verbatim in all three | A, and every wave | `OneTimeHint` in core; copy in zwipe-ui `hint::one_time` |
+| Toast bands 3, 5 and 8 s | orangui `toast_timing.rs` | `tui/inbound/widgets/toast.rs` (copied) | orangui | see decision 1 | none | all | orangui-core `toast`, used by zwipe-ui `toast` |
+| Behavior timings: debounces 300 and 800 ms, quantity flush 300, resend 60 s, delete 5 s, upkeep 60 s, counts 60 s, catalog 24 h, heat pick 4 s, maybeboard toast 1.5 s | spread across the app | spread across the TUI | partly in web-a | ui, as named constants | none | all | in zwipe-ui `timing` |
+| Search limits: min query length, result caps 8 and 5, page 25, held size, tile counts | spread | spread | none yet | ui | none | B, C, D | in zwipe-ui `timing` |
+| Animation timings: splash, stagger, entrance, wipe, spinner, sweeps, card motion | orangui CSS and JS, `main.css` | `tui/inbound/widgets` | CSS | each client | none | none | stays in each client |
+| Generation ticket for out-of-order replies | `app/components/generation.rs` (Dioxus `CopyValue`) | in the TUI's loop | none yet | ui as a plain counter; app keeps its hook over it | n/a | C, D | in zwipe-ui `generation` |
+| Swipe gesture engine | `app/components/interactions/swipe` (33 tests) | keys | keys and buttons | zwiper | n/a | none | stays in zwiper |
+| Usage telemetry buffer and screen vocabulary | `app/components/telemetry` (11 tests) | none | anonymous funnel only | not audited; see decision 8 | n/a | none | stays in zwiper (decision 8) |
 
 ## Part 2: screen models
 
@@ -141,18 +141,18 @@ Duplicates inside one client: the app has `MAX_LAND_TARGET` again beside core's,
 
 The spec `4-cards-add-filters.md` has a "Gaps and differences" section (from line 895) written before the port. It says the TUI has no filter sheet, no stores and no serve gate, and it has all three now.
 
-## Moves to zwipe-core
+## Moves to zwipe-core (done)
 
 - `PASS_BASELINE_WEIGHT` (10.0) lives in zerver's domain; the app's `TAG_BASELINE_WEIGHT` copies it and says the server weighs the same way. One constant in core.
 - `identity_of`, `identities_present`, `has_type` and `front_face` are card rules that sit beside core's `colors.rs` and `commander_eligibility.rs`.
 - A `OneTimeHint` enum over core's 20 `HINT_*` strings, which web-a already wrote.
-- The below-minimum deck warning is matched on its text (`"requires at least"`). It should be a `WarningAction` variant, once a minimum-version floor lets the app rely on it.
+- Not done yet: the below-minimum deck warning is matched on its text (`"requires at least"`). It should be a `WarningAction` variant, once a minimum-version floor lets the app rely on it.
 
 ## Stays in one client
 
 The TUI's palettes and their generator scripts, the privacy policy parser, mana symbol tokens, and the terminal's preview of the next card. The app's gesture engine, app icon, haptics, keyring, crash capture and shake to edit. The web's changelog anchors, `localStorage` and its timers.
 
-## Open decisions for the owner
+## Decisions (all approved as recommended)
 
 1. **orangui's pure pieces.** `short`, `with_separators`, `peak_indices`, the toast bands and the count-up and decode math sit in orangui, which depends on Dioxus, so the TUI and zwipe-ui can't use them. Options: (a) a Dioxus-free `orangui-core` crate or module in the orangui repo that orangui, zwipe-ui and the TUI all use; (b) move them into zwipe-ui and leave orangui's own copies, which keeps two copies across two repos; (c) leave the TUI's copies where they are. I'd pick (a). It touches a repo outside zwipe.
 2. **Hint copy format.** The app and web write emphasis in RSX with CSS variable names; the TUI uses a small string markup (`[Key|role]`, `{word|role}`). A shared table needs one neutral form. Typed spans (`Line` and `Bullet` blocks of `Text`, `Key` and `Emph` spans with a `Role` enum) or the TUI's string markup with a parser per client. I'd pick typed spans; the app then renders them through its existing `HintKey` and `HintColored`, and the brief's rule that lifted pieces render byte-identically applies.
@@ -163,3 +163,10 @@ The TUI's palettes and their generator scripts, the privacy policy parser, mana 
 7. **web-a's domain files.** Wave A ported account validation, counts, session, version gate and support, but `feat/web-a` hasn't merged into `feat/web`. Move those into zwipe-ui before or after it merges?
 8. **Telemetry.** The app's usage buffer and screen vocabulary are pure and tested, but neither port sends usage counts yet. Leave them in zwiper until a second client needs them?
 9. **Screen-model scope.** All 28 screens, or the waves B to D screens first, with Wave A's screens lifted when the TUI or the app needs them?
+
+## Follow-ups
+
+- web-a's domain files (validation, counts, session, version gate, support) stay in zwiper-web until `feat/web-a` merges, then move to zwipe-ui (decision 7).
+- The deck rules in `filter` and `add` (`ensure_lands_excluded`, the deck context default, the serve gate) move to core once the server is confirmed to apply the same ones (decision 6).
+- The pending email note matches the app exactly, including "Link expires in 0 minutes" with under a second left, which both the app and zwipe-ui show. Worth a look when the app moves over.
+- No client uses zwipe-ui yet. The TUI's session switches its own domain modules; the app moves last, one piece at a time.

@@ -12,6 +12,7 @@ Zwipe is a mobile-first Magic: The Gathering deck builder with swipe-based navig
 - `zite/`: Dioxus static site at zwipe.net
 - `zwipe-client/`: the typed API client. Both zwiper and zite call the API through it
 - `components/`: the Magic UI pieces over [orangui](https://github.com/scadoshi/orangui), the generic Dioxus kit it re-exports
+- `zwipe-ui/`: the screen logic the clients share (color map, filter draft, stores, swipe stack, hint copy, timings), with no UI crate, so it builds for mobile, the terminal and wasm32. See `zwipe-ui/README.md`
 - Database: ~118k Magic cards synced nightly from Scryfall
 
 ## zwipe-core Purity Rules
@@ -73,6 +74,8 @@ zite   ──→ zwipe-client
 zwiper ──→ components ←── zite
 components ──(git)──→ orangui
 portfolio, cairn ──(git)──→ orangui
+zwipe-ui ──→ zwipe-core
+zwipe-ui ──(git)──→ orangui-core
 ```
 
 zwipe-core owns all shared domain types, including every `Http*` contract (`zwipe-core/src/http/contracts/`) and the route path constants. zerver re-exports them and adds server-specific layers (ports, services, database adapters, HTTP handlers).
@@ -82,6 +85,7 @@ zwipe-core owns all shared domain types, including every `Http*` contract (`zwip
 - So both clients import everything as `components::` (`::components::` in a module that has its own `components` submodule), and `cargo update -p orangui` moves the pin.
 - The portfolio site and cairn (the counter app) take orangui directly as a git dependency. Nothing outside this repo imports components.
 - zwipe-client holds the typed API client and depends on zwipe-core and reqwest only, so it carries no Dioxus and no platform code. Both clients use it; neither builds a request by hand.
+- zwipe-ui holds the logic behind the screens that the app, zwiper-web and zwiper-tui share. It depends on zwipe-core and on orangui-core, orangui's Dioxus-free half (number formatting, chart math, toast bands), and never on zwipe-client or a UI crate. Clients fetch, then hand the results in. No client depends on it yet; each switches over piece by piece.
 
 ### Hexagonal (Ports & Adapters) Pattern
 
