@@ -10,7 +10,7 @@ use std::collections::HashMap;
 
 use chrono::{DateTime, Utc};
 pub use email::{Email, InvalidEmail};
-pub use hints::{InvalidHintKey, MarkHintShown};
+pub use hints::{InvalidHintKey, MarkHintShown, OneTimeHint};
 pub use preferences::{
     ALLOWED_THEMES, InvalidUpdatePreferences, ParsePipStyleError, PipStyle, UpdatePreferences,
     UserPreferences,

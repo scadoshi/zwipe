@@ -101,6 +101,40 @@ pub fn identity_name(colors: &[Color]) -> &'static str {
     }
 }
 
+/// A color identity in WUBRG order, each color once; empty is colorless.
+///
+/// Order and repeats in `colors` are ignored, so two cards with the same
+/// identity always compare equal: `[Red, White, Red]` gives `[White, Red]`.
+#[must_use]
+pub fn identity_of(colors: &[Color]) -> Vec<Color> {
+    Color::all()
+        .into_iter()
+        .filter(|c| colors.contains(c))
+        .collect()
+}
+
+/// The distinct color identities among `colors`, one slice per card, in the
+/// deck list's group order: fewest colors first, WUBRG order between
+/// identities of the same size, colorless last.
+#[must_use]
+pub fn identities_present<'a>(colors: impl IntoIterator<Item = &'a [Color]>) -> Vec<Vec<Color>> {
+    let mut identities: Vec<Vec<Color>> = Vec::new();
+    for card in colors {
+        let identity = identity_of(card);
+        if !identities.contains(&identity) {
+            identities.push(identity);
+        }
+    }
+    identities.sort_by_key(|identity| {
+        let order: Vec<usize> = identity
+            .iter()
+            .map(|c| Color::all().iter().position(|a| a == c).unwrap_or(0))
+            .collect();
+        (identity.is_empty(), identity.len(), order)
+    });
+    identities
+}
+
 impl std::fmt::Display for Color {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.to_long_name())
@@ -294,5 +328,40 @@ mod tests {
         }
         assert_eq!(identity_name(&[Red, White, Blue]), "Jeskai");
         assert_eq!(identity_name(&[Green, Black, White]), "Abzan");
+    }
+
+    #[test]
+    fn identity_of_runs_wubrg_once_each() {
+        assert_eq!(identity_of(&[Red, White, Red]), vec![White, Red]);
+        assert_eq!(identity_of(&[]), Vec::<Color>::new());
+    }
+
+    #[test]
+    fn identities_present_are_distinct_fewest_colors_first_colorless_last() {
+        let held: [&[Color]; 8] = [
+            &[White, Blue, Red],
+            &[Black, White],
+            &[],
+            &[Red],
+            &[Blue],
+            &[Red, Green, White],
+            &[White, Black],
+            &[Red],
+        ];
+        assert_eq!(
+            identities_present(held),
+            vec![
+                vec![Blue],
+                vec![Red],
+                vec![White, Black],
+                vec![White, Blue, Red],
+                vec![White, Red, Green],
+                vec![],
+            ]
+        );
+        assert_eq!(
+            identities_present(std::iter::empty()),
+            Vec::<Vec<Color>>::new()
+        );
     }
 }

@@ -4,23 +4,10 @@
 //! The SQL filter in zerver's `search_scryfall_data` must mirror this logic.
 
 use crate::domain::card::Card;
+use crate::domain::card::search_card::type_line::front_face;
 use crate::domain::deck::Format;
 
 // == Commander Eligibility ==
-
-/// The front face of a type line.
-///
-/// Scryfall joins both faces into one `type_line` with `" // "`, and commander
-/// legality is decided by the front face alone. Testing the whole string makes
-/// a card eligible for what its back face is: Westvale Abbey is a Land that
-/// transforms into a legendary creature, and it is not a legal commander.
-///
-/// Single-faced type lines have no separator and come back whole.
-fn front_face(type_line: &str) -> &str {
-    type_line
-        .split_once(" // ")
-        .map_or(type_line, |(front, _)| front)
-}
 
 /// Whether this card is the result of a meld, rather than one of its parts.
 ///

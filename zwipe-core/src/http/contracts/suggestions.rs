@@ -467,6 +467,13 @@ pub const ACTIVITY_MIN_SEEN: u64 = 10;
 /// Oracle tags [`HttpActivity::tags`] carries, the most seen first.
 pub const ACTIVITY_TAGS_SENT: usize = 100;
 
+/// How many dealt cards' worth of a baseline rate a card's or tag's rate
+/// among other players starts from before their own swipes count. A card or
+/// tag few others have been dealt sits near the baseline instead of swinging
+/// to 0 or 1. The server's hard passes and the Activity screen's oracle tag
+/// chart both weigh this way.
+pub const PASS_BASELINE_WEIGHT: f64 = 10.0;
+
 /// Most cards [`HttpActivity::passes`] carries.
 pub const ACTIVITY_PASSES_SENT: usize = 10;
 
