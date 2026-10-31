@@ -36,13 +36,14 @@ dioxus-primitives = { git = "https://github.com/DioxusLabs/components", rev = "0
 
 # Android-only: keyring has no Android backend, so we persist the session to a
 # file in the app's private internal storage, reached via JNI (Context.getFilesDir()).
-# JNI + ndk-context also back `open_url` (ACTION_VIEW intents).
+# JNI + ndk-context also back `open_url` (ACTION_VIEW intents, Custom Tabs).
 [target.'cfg(target_os = "android")'.dependencies]
 ndk-context = "0.1"
 jni = "0.21"
 
-# iOS-only: `open_url` opens mailto:/http links via UIApplication.openURL, since
-# the webview's webbrowser backend rejects non-http(s) URLs on mobile.
+# iOS-only: `open_url` opens http(s) links in SFSafariViewController and mailto:
+# and the rest via UIApplication.openURL, since the webview's webbrowser backend
+# rejects non-http(s) URLs on mobile.
 # keyring-core + the protected store: keyring's v1 wrapper has no iOS arm (it
 # errors at runtime), and iOS requires the store crate's `protected` feature
 # (enabled here, unified into the copy keyring already pulls) — see
