@@ -1,9 +1,10 @@
-//! The app's backdrop of faint tiles, ported from orangui's `grid-cells.js`: every tile a seeded shade of the text color over the background, brightest at the top and fading down.
+//! The app's backdrop of faint tiles, orangui's `grid-cells.js` drawn from orangui-core's `grid_rain`: every tile a seeded shade of the text color over the background, brightest at the top and fading down.
 //!
 //! The splash draws it raining in: each tile lands at `row * 18 ms` plus up to 160 ms of seeded scatter, falling three tiles over 350 ms with an ease-out. A tile here is three cells wide on every other row, four cells apart, which reads as the app's 28-pixel squares at a terminal's cell size. Only the background changes, so text drawn over a tile stays as it is; a palette with no colors of its own draws no tiles.
 
 use std::time::Duration;
 
+use orangui_core::grid_rain;
 use ratatui::Frame;
 use ratatui::layout::Rect;
 use ratatui::style::Color;
@@ -19,40 +20,15 @@ const PITCH_Y: u16 = 2;
 /// A tile's width in cells.
 const TILE_WIDTH: u16 = 3;
 
-/// How far apart the rows land, in milliseconds.
-const RAIN_STEP_MS: u64 = 18;
-
-/// Each tile's scatter inside its row, in milliseconds.
-const JITTER_MS: u64 = 160;
-
-/// One tile's fall, in milliseconds.
-const DROP_MS: u32 = 350;
-
-/// How many tiles a tile falls.
-const DROP_TILES: f64 = 3.0;
-
-/// The tile shades, as shares of the text color.
-const SHADES: [f64; 5] = [0.015, 0.03, 0.05, 0.075, 0.1];
-
 /// When the rain over an area `height` rows tall has landed.
 #[cfg(test)]
 fn rain_length(height: u16) -> Duration {
     let rows = u64::from(height.div_ceil(PITCH_Y));
     Duration::from_millis(
-        rows.saturating_mul(RAIN_STEP_MS)
-            .saturating_add(JITTER_MS)
-            .saturating_add(u64::from(DROP_MS)),
+        rows.saturating_mul(u64::from(grid_rain::RAIN_STEP_MS))
+            .saturating_add(u64::from(grid_rain::JITTER_MS))
+            .saturating_add(u64::from(grid_rain::DROP_MS)),
     )
-}
-
-/// The seeded sequence `grid-cells.js` rolls each tile from.
-struct Lcg(u32);
-
-impl Lcg {
-    fn next(&mut self) -> u32 {
-        self.0 = self.0.wrapping_mul(1_664_525).wrapping_add(1_013_904_223);
-        self.0 >> 8
-    }
 }
 
 /// `color` mixed into `base` at `share`, both 24-bit; `None` otherwise.
@@ -88,67 +64,53 @@ pub(crate) fn draw(f: &mut Frame<'_>, palette: &Palette, area: Rect, elapsed: Op
     }
     let cols = area.width.div_ceil(PITCH_X);
     let rows = area.height.div_ceil(PITCH_Y);
-    let mut lcg = Lcg(0x9e37_79b9);
     let height = f64::from(area.height.max(1));
+    #[expect(
+        clippy::as_conversions,
+        clippy::cast_precision_loss,
+        reason = "a few seconds of whole milliseconds is exact in f64"
+    )]
+    let elapsed_ms = elapsed.map(|t| t.as_millis() as f64);
     let buffer = f.buffer_mut();
-    for row in 0..rows {
-        for col in 0..cols {
-            let roll = lcg.next();
-            let shade = SHADES
-                .get(usize::try_from(roll % 5).unwrap_or(0))
-                .copied()
-                .unwrap_or(0.0);
-            let at = u64::from(row)
-                .saturating_mul(RAIN_STEP_MS)
-                .saturating_add(u64::from(roll >> 4) % JITTER_MS);
-            let progress = elapsed.map_or(1.0, |t| {
-                let since = t.as_millis().saturating_sub(u128::from(at));
-                #[expect(
-                    clippy::as_conversions,
-                    clippy::cast_precision_loss,
-                    reason = "a few seconds of milliseconds is exact in f64"
-                )]
-                let since = since as f64;
-                if t.as_millis() < u128::from(at) {
-                    0.0
-                } else {
-                    (since / f64::from(DROP_MS)).min(1.0)
-                }
-            });
-            if progress <= 0.0 {
-                continue;
-            }
-            let eased = 1.0 - (1.0 - progress).powi(3);
-            #[expect(
-                clippy::as_conversions,
-                clippy::cast_possible_truncation,
-                clippy::cast_sign_loss,
-                reason = "the fall is at most three tiles of two rows and never below zero"
-            )]
-            let lift = ((1.0 - eased) * DROP_TILES * f64::from(PITCH_Y)).round() as u16;
-            let Some(y) = row
-                .saturating_mul(PITCH_Y)
-                .checked_sub(lift)
-                .filter(|_| row.saturating_mul(PITCH_Y) >= lift)
-            else {
-                continue;
-            };
-            let fade = 1.0 - f64::from(y) / height * 0.75;
-            let Some(tile) = mix(base, ink, shade * eased * fade) else {
-                continue;
-            };
-            for dx in 0..TILE_WIDTH {
-                let x = area
-                    .x
-                    .saturating_add(col.saturating_mul(PITCH_X))
-                    .saturating_add(dx);
-                let y = area.y.saturating_add(y);
-                if x < area.right()
-                    && y < area.bottom()
-                    && let Some(cell) = buffer.cell_mut((x, y))
-                {
-                    cell.set_bg(tile);
-                }
+    for cell in grid_rain::cells(u32::from(cols), u32::from(rows)) {
+        let (Ok(row), Ok(col)) = (u16::try_from(cell.row), u16::try_from(cell.column)) else {
+            continue;
+        };
+        let progress = elapsed_ms.map_or(1.0, |ms| cell.progress(ms));
+        if progress <= 0.0 {
+            continue;
+        }
+        let eased = grid_rain::ease(progress);
+        #[expect(
+            clippy::as_conversions,
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            reason = "the fall is at most three tiles of two rows and never below zero"
+        )]
+        let lift =
+            ((1.0 - eased) * f64::from(grid_rain::DROP_CELLS) * f64::from(PITCH_Y)).round() as u16;
+        let Some(y) = row
+            .saturating_mul(PITCH_Y)
+            .checked_sub(lift)
+            .filter(|_| row.saturating_mul(PITCH_Y) >= lift)
+        else {
+            continue;
+        };
+        let fade = 1.0 - f64::from(y) / height * 0.75;
+        let Some(tile) = mix(base, ink, cell.shade * eased * fade) else {
+            continue;
+        };
+        for dx in 0..TILE_WIDTH {
+            let x = area
+                .x
+                .saturating_add(col.saturating_mul(PITCH_X))
+                .saturating_add(dx);
+            let y = area.y.saturating_add(y);
+            if x < area.right()
+                && y < area.bottom()
+                && let Some(cell) = buffer.cell_mut((x, y))
+            {
+                cell.set_bg(tile);
             }
         }
     }

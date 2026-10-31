@@ -1,9 +1,10 @@
-//! The opening, ported from orangui's `Splash`: an overlay over the first screen while the backdrop rains in, the ZWIPE mark decodes over it and leaves the way it came, then the overlay dissolves.
+//! The opening, orangui's `Splash` on orangui-core's `splash` timeline: an overlay over the first screen while the backdrop rains in, the ZWIPE mark decodes over it and leaves the way it came, then the overlay dissolves.
 //!
 //! The timeline is orangui's at full pace: the mark mounts at 400 ms and decodes, starts to leave at 1350 ms over 450 ms, and at 1800 ms the overlay starts to fade, which opens the gate the first screen's entrances wait on. It is gone at 2100 ms. A terminal has no opacity, so the fade dissolves the overlay cell by cell. Any key ends the opening early.
 
 use std::time::{Duration, Instant};
 
+use orangui_core::splash;
 use ratatui::Frame;
 use ratatui::layout::Constraint;
 use ratatui::text::{Line, Text};
@@ -14,17 +15,26 @@ use super::{grid, measure};
 use crate::domain::decode;
 use crate::domain::theme::Palette;
 
+/// orangui-core's milliseconds as a [`Duration`].
+#[expect(
+    clippy::as_conversions,
+    reason = "u32 to u64 only widens, and From is not const"
+)]
+const fn ms(ms: u32) -> Duration {
+    Duration::from_millis(ms as u64)
+}
+
 /// When the mark mounts and starts to decode.
-const MARK_AT: Duration = Duration::from_millis(400);
+const MARK_AT: Duration = ms(splash::MARK_AT_MS);
 
 /// When the mark starts to leave.
-const LEAVE_AT: Duration = Duration::from_millis(1350);
+const LEAVE_AT: Duration = ms(splash::LEAVE_AT_MS);
 
 /// When the overlay starts to fade and the first screen's entrances start.
-pub(crate) const OUT_AT: Duration = Duration::from_millis(1800);
+pub(crate) const OUT_AT: Duration = ms(splash::OUT_AT_MS);
 
 /// How long the fade takes.
-const FADE: Duration = Duration::from_millis(300);
+const FADE: Duration = ms(splash::FADE_MS);
 
 /// The opening, from when it started.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
