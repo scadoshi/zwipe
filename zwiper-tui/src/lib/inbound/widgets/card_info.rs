@@ -2,8 +2,10 @@
 //!
 //! Faces are shown one at a time, as the app does; the caller keeps which face is up.
 
+use std::iter;
+
 use ratatui::layout::{Constraint, Rect};
-use ratatui::style::{Style, Stylize};
+use ratatui::style::{Modifier, Style, Stylize};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Padding, Paragraph, Wrap};
 use zwipe_core::domain::card::{Card, card_role};
@@ -237,6 +239,26 @@ pub(crate) fn proxy_card(
         Constraint::Length(height.min(area.height)),
     );
     (text, rect)
+}
+
+/// The bullet that starts a list line in hints, popups and the privacy policy.
+pub(crate) const BULLET: &str = "• ";
+
+/// `bullet` and `spans` wrapped to `width` cells with each continuation hung under the text after the bullet. A reversed span, a key chip, never breaks inside.
+pub(crate) fn bulleted(
+    bullet: Span<'static>,
+    spans: Vec<Span<'static>>,
+    width: usize,
+) -> Vec<Line<'static>> {
+    let indent = bullet.width();
+    let glued = spans.into_iter().map(|mut span| {
+        if span.style.add_modifier.contains(Modifier::REVERSED) {
+            span.content = span.content.replace(' ', "\u{a0}").into();
+        }
+        span
+    });
+    let line = Line::from(iter::once(bullet).chain(glued).collect::<Vec<_>>());
+    wrap(vec![line], width, indent)
 }
 
 /// Breaks lines wider than `width` between words, keeping each word's style; a continuation starts with `indent` spaces.

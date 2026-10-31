@@ -19,16 +19,13 @@ use zwipe_core::domain::user::hints::OneTimeHint;
 pub(crate) use zwipe_ui::hint::HintTopic;
 use zwipe_ui::hint::{Block, GOT_IT, HintContent, KeyIcon, Role, Span, one_time};
 
-use super::{measure, panel};
+use super::{card_info, measure, panel};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Context;
 use crate::inbound::screens::Request;
 
 /// The dialog is at most this wide inside its panel, in cells.
 const WIDTH: u16 = 56;
-
-/// Starts each bullet.
-const BULLET: &str = "• ";
 
 /// The palette color a key chip or an emphasized word in `role` takes.
 fn role_style(palette: &Palette, role: Role) -> Style {
@@ -61,8 +58,30 @@ fn icon_glyph(icon: KeyIcon) -> &'static str {
 pub(crate) fn line(palette: &Palette, block: &Block) -> Line<'static> {
     let mut spans: Vec<text::Span<'static>> = Vec::new();
     if matches!(block, Block::Bullet(_)) {
-        spans.push(text::Span::styled(BULLET, palette.muted));
+        spans.push(bullet(palette));
     }
+    spans.extend(block_spans(palette, block));
+    Line::from(spans)
+}
+
+/// The muted bullet that starts a hint's list line.
+fn bullet(palette: &Palette) -> text::Span<'static> {
+    text::Span::styled(card_info::BULLET, palette.muted)
+}
+
+/// One block of hint copy as `width` cells wide lines: a paragraph as one line for the dialog to wrap, a bullet broken between words with its continuations hung under its text.
+fn block_lines(palette: &Palette, block: &Block, width: usize) -> Vec<Line<'static>> {
+    match block {
+        Block::Bullet(_) => {
+            card_info::bulleted(bullet(palette), block_spans(palette, block), width)
+        }
+        Block::Line(_) => vec![line(palette, block)],
+    }
+}
+
+/// A block's spans with no bullet: key chips reversed with a space each side, emphasized words bold in their color.
+fn block_spans(palette: &Palette, block: &Block) -> Vec<text::Span<'static>> {
+    let mut spans: Vec<text::Span<'static>> = Vec::new();
     for span in block.spans() {
         spans.push(match span {
             Span::Text(text) => text::Span::raw(text.clone()),
@@ -78,7 +97,7 @@ pub(crate) fn line(palette: &Palette, block: &Block) -> Line<'static> {
             }
         });
     }
-    Line::from(spans)
+    spans
 }
 
 /// The dialog as it reads, one block per line, styling dropped and runs of spaces closed up.
@@ -123,14 +142,14 @@ impl HintDialog {
 
     /// Draws the hint centered over the screen: title, rule, body, rule, and the `Got it` button.
     pub(crate) fn draw(&self, f: &mut Frame<'_>, palette: &Palette) {
+        let width = WIDTH.min(f.area().width.saturating_sub(4));
         let lines: Vec<Line<'static>> = self
             .content
             .blocks
             .iter()
-            .map(|block| line(palette, block))
+            .flat_map(|block| block_lines(palette, block, usize::from(width)))
             .collect();
         let body = Paragraph::new(lines).wrap(Wrap { trim: false });
-        let width = WIDTH.min(f.area().width.saturating_sub(4));
         let body_height = measure::height_of(body.line_count(width));
         let room = f.area().height.saturating_sub(6);
         let shown = body_height.min(room);
@@ -256,6 +275,25 @@ mod tests {
         assert!(once_with(&mut cx, "swipe", content));
         topic(&mut cx, HintTopic::Email);
         assert!(screen_text(&app).contains("Where password resets and verification go"));
+    }
+
+    #[test]
+    fn a_wrapped_bullet_hangs_under_its_text_and_keeps_its_key_chips_whole() {
+        for topic in [HintTopic::ColorMap, HintTopic::DrawOdds] {
+            let mut app = App::new(Palette::terminal());
+            app.shared.hint = Some(HintDialog::new(topic.content()));
+            for (width, height) in [(200, 50), (120, 40), (80, 24), (60, 20)] {
+                let rows = crate::test_support::rows(&app, width, height);
+                crate::test_support::assert_bullets_hang(&rows);
+                if topic == HintTopic::DrawOdds {
+                    let text = rows.join("\n");
+                    assert!(
+                        text.contains(" - "),
+                        "the - chip is whole at {width}x{height}"
+                    );
+                }
+            }
+        }
     }
 
     #[test]

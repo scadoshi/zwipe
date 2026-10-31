@@ -7,14 +7,11 @@ use ratatui::style::Stylize;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Paragraph, Wrap};
 
-use super::{action_bar, measure, panel};
+use super::{action_bar, card_info, measure, panel};
 use crate::domain::theme::Palette;
 
 /// The popup is at most this wide inside its panel, in cells.
 const WIDTH: u16 = 56;
-
-/// Starts each point.
-const BULLET: &str = "• ";
 
 /// Whether `code` closes an info popup.
 pub(crate) fn closes_on(code: KeyCode) -> bool {
@@ -39,22 +36,26 @@ impl InfoPopup {
         }
     }
 
-    fn lines(&self, palette: &Palette) -> Vec<Line<'static>> {
+    /// Each bullet wrapped to `width` cells, its continuations hung under its text.
+    fn lines(&self, palette: &Palette, width: usize) -> Vec<Line<'static>> {
         self.bullets
             .iter()
-            .map(|bullet| {
-                Line::from(vec![
-                    Span::styled(BULLET, palette.accent),
-                    Span::raw(bullet.clone()),
-                ])
+            .flat_map(|bullet| {
+                card_info::bulleted(
+                    Span::styled(card_info::BULLET, palette.accent),
+                    vec![Span::raw(bullet.clone())],
+                    width,
+                )
             })
             .collect()
     }
 
     /// Draws the popup centered over the screen.
     pub(crate) fn draw(&self, f: &mut Frame<'_>, palette: &Palette) {
-        let body = Paragraph::new(self.lines(palette)).wrap(Wrap { trim: true });
-        let body_height = measure::height_of(body.line_count(WIDTH));
+        let width = WIDTH.min(f.area().width.saturating_sub(4));
+        let body =
+            Paragraph::new(self.lines(palette, usize::from(width))).wrap(Wrap { trim: false });
+        let body_height = measure::height_of(body.line_count(width));
         let inner = panel::draw(f, palette, f.area(), WIDTH, body_height.saturating_add(4));
         let [title_area, body_area, _, keys_area] = Layout::vertical([
             Constraint::Length(1),
@@ -97,6 +98,25 @@ mod tests {
         assert!(screen.contains("• Right adds the card"));
         assert!(screen.contains("• Left passes"));
         assert!(screen.contains("Esc close"));
+    }
+
+    #[test]
+    fn a_long_point_wraps_under_its_text() {
+        let info = InfoPopup::new(
+            "Swiping",
+            &["Right adds the card to the deck and moves on to the next one in the stack"],
+        );
+        for (width, height) in [(200, 50), (120, 40), (80, 24), (60, 20)] {
+            let mut terminal = Terminal::new(TestBackend::new(width, height)).unwrap();
+            terminal
+                .draw(|f| info.draw(f, &Palette::terminal()))
+                .unwrap();
+            let buffer = terminal.backend().buffer();
+            let rows: Vec<String> = (0..height)
+                .map(|y| (0..width).map(|x| buffer[(x, y)].symbol()).collect())
+                .collect();
+            crate::test_support::assert_bullets_hang(&rows);
+        }
     }
 
     #[test]

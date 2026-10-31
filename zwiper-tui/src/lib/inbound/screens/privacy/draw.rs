@@ -14,7 +14,7 @@ use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::widgets::action_bar::{self, Button};
 use crate::inbound::widgets::header::{self, Corner};
-use crate::inbound::widgets::measure;
+use crate::inbound::widgets::{card_info, measure};
 
 /// The text is at most this wide, in cells.
 const WIDTH: u16 = 76;
@@ -72,11 +72,11 @@ pub(crate) fn lines(palette: &Palette, width: usize) -> Vec<Line<'static>> {
         for block in blocks {
             match block {
                 Block::Paragraph(runs) => lines.push(Line::from(spans(palette, runs))),
-                Block::Bullet(runs) => {
-                    let mut line = vec![Span::styled("• ", palette.muted)];
-                    line.extend(spans(palette, runs));
-                    lines.push(Line::from(line));
-                }
+                Block::Bullet(runs) => lines.extend(card_info::bulleted(
+                    Span::styled(card_info::BULLET, palette.muted),
+                    spans(palette, runs),
+                    width,
+                )),
             }
         }
     };

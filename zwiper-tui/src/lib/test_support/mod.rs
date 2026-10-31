@@ -223,3 +223,30 @@ pub(crate) fn generation_at(n: u64) -> Generation {
 pub(crate) fn ticket(n: u64) -> Ticket {
     generation_at(n).current()
 }
+
+/// Asserts that a bullet in `rows` wraps, and that no wrapped bullet's next row carries its sentence on left of its text, two columns right of the `•`; prints the rows when one does.
+pub(crate) fn assert_bullets_hang(rows: &[String]) {
+    let mut hung = 0_usize;
+    for (y, row) in rows.iter().enumerate() {
+        let Some(bullet) = row.chars().position(|c| c == '•') else {
+            continue;
+        };
+        let Some(next) = rows
+            .get(y.saturating_add(1))
+            .filter(|next| !next.contains('•'))
+        else {
+            continue;
+        };
+        let under: Vec<char> = next.chars().skip(bullet).take(3).collect();
+        // A lowercase letter is a sentence carrying on; a capital is a paragraph after the list.
+        assert!(
+            !under.first().is_some_and(|c| c.is_lowercase()),
+            "the bullet on row {y} wraps to its margin:\n{}",
+            rows.join("\n")
+        );
+        if under.get(2).is_some_and(|c| c.is_alphanumeric()) {
+            hung = hung.saturating_add(1);
+        }
+    }
+    assert!(hung > 0, "no bullet wraps:\n{}", rows.join("\n"));
+}

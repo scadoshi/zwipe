@@ -54,3 +54,16 @@ fn esc_goes_back_and_the_screen_fits_a_tiny_terminal() {
 fn privacy_keeps_every_key_on_a_narrow_terminal() {
     crate::test_support::assert_key_bar_fits(&on_privacy().app, "Esc back");
 }
+
+#[test]
+fn a_wrapped_bullet_hangs_under_its_text() {
+    for (width, height) in [(200, 50), (120, 40), (80, 24), (60, 20)] {
+        let mut harness = on_privacy();
+        let mut rows = Vec::new();
+        for _ in 0..3 {
+            rows.extend(crate::test_support::rows(&harness.app, width, height));
+            harness.press(KeyCode::PageDown);
+        }
+        crate::test_support::assert_bullets_hang(&rows);
+    }
+}
