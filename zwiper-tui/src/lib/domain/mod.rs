@@ -1,7 +1,5 @@
 //! What the screens draw, free of terminal and network code.
 
-/// Orangui's rolling figures and compact numbers.
-pub(crate) mod count_up;
 /// The logo entrance, ported from orangui.
 pub(crate) mod decode;
 /// The privacy policy's HTML as text.

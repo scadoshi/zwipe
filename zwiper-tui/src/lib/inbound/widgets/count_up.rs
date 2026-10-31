@@ -1,10 +1,25 @@
-//! A rolling counter on screen: orangui's `CountUp` in time, from [`crate::domain::count_up`].
+//! A rolling counter on screen: orangui's `CountUp` in time, its frames from orangui-core's `count_up`.
 //!
 //! A counter starts when its screen's entrance does (after the splash on the first screen). Until its value arrives it rolls random four-digit numbers every 16 ms; once it has one it lands on it over a second; before it starts it shows four figure spaces. A screen showing one reports itself animating while [`CountUp::animating`] holds, so the loop redraws it.
 
-use std::time::Instant;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::time::{Duration, Instant};
 
-use crate::domain::count_up::{self, BLANK, FRAMES, TICK};
+use orangui_core::count_up::{self, FRAMES, PLACEHOLDER};
+use orangui_core::number;
+
+/// Hands each counter its own index, so neighbors waiting side by side do not roll in step.
+static NEXT_INDEX: AtomicU64 = AtomicU64::new(1);
+
+/// A fresh seed for a new counter, as orangui hands one to each.
+pub(crate) fn next_seed() -> u64 {
+    count_up::seed_for(NEXT_INDEX.fetch_add(1, Ordering::Relaxed))
+}
+
+/// The time between frames, orangui-core's [`count_up::TICK_MS`].
+pub(crate) fn tick() -> Duration {
+    Duration::from_millis(u64::from(count_up::TICK_MS))
+}
 
 /// One counter's seed, when it started, and its value once it arrived.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -20,7 +35,7 @@ impl CountUp {
     /// A counter that starts rolling at `start`, with `value` already known or still loading.
     pub(crate) fn new(start: Instant, value: Option<u64>) -> Self {
         Self {
-            seed: count_up::next_seed(),
+            seed: next_seed(),
             start,
             value,
             arrived: start,
@@ -43,7 +58,7 @@ impl CountUp {
     /// Frames of 16 ms from `from` to `now`.
     fn frames(from: Instant, now: Instant) -> u64 {
         let elapsed = now.saturating_duration_since(from).as_millis();
-        u64::try_from(elapsed.checked_div(TICK.as_millis()).unwrap_or(0)).unwrap_or(u64::MAX)
+        u64::try_from(elapsed.checked_div(tick().as_millis()).unwrap_or(0)).unwrap_or(u64::MAX)
     }
 
     /// The number shown at `now`, `None` before the first frame.
@@ -61,20 +76,23 @@ impl CountUp {
             return (landing_from > self.start)
                 .then(|| count_up::waiting(self.seed, Self::frames(self.start, now)));
         }
-        Some(count_up::landing(value, frame))
+        Some(count_up::count_frame(
+            value,
+            u32::try_from(frame).unwrap_or(u32::MAX),
+        ))
     }
 
     /// The figure at `now` as printed: compact, or four figure spaces before the first frame.
     pub(crate) fn shown(&self, now: Instant) -> String {
         self.number(now)
-            .map_or_else(|| BLANK.to_owned(), count_up::compact)
+            .map_or_else(|| PLACEHOLDER.to_owned(), number::short)
     }
 
     /// Whether the counter is still moving at `now`.
     pub(crate) fn animating(&self, now: Instant) -> bool {
         match self.value {
             None => true,
-            Some(_) => Self::frames(self.arrived.max(self.start), now) < FRAMES,
+            Some(_) => Self::frames(self.arrived.max(self.start), now) < u64::from(FRAMES),
         }
     }
 }
@@ -98,9 +116,9 @@ mod tests {
                     .checked_sub(Duration::from_millis(1))
                     .expect("the clock is past a millisecond")
             ),
-            BLANK
+            PLACEHOLDER
         );
-        let rolling = counter.number(start + TICK * 3).unwrap();
+        let rolling = counter.number(start + tick() * 3).unwrap();
         assert!((1_000..10_000).contains(&rolling));
         assert!(counter.animating(start + Duration::from_secs(9)));
 
@@ -109,7 +127,7 @@ mod tests {
         assert!(
             counter.animating(
                 (arrived + DURATION)
-                    .checked_sub(TICK * 2)
+                    .checked_sub(tick() * 2)
                     .expect("a landing is longer than two ticks")
             )
         );
@@ -123,7 +141,7 @@ mod tests {
         let mut counter = CountUp::new(start, Some(2_065));
         assert_eq!(
             counter.shown(start),
-            BLANK,
+            PLACEHOLDER,
             "nothing before the first frame"
         );
         assert_eq!(counter.shown(start + DURATION), "2,065");
@@ -133,7 +151,7 @@ mod tests {
             "the same value stays put"
         );
         counter.set(3_000, start + DURATION);
-        assert!(counter.animating(start + DURATION + TICK));
+        assert!(counter.animating(start + DURATION + tick()));
         assert_eq!(counter.value(), Some(3_000));
     }
 }

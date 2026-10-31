@@ -3,6 +3,8 @@
 use std::sync::OnceLock;
 use std::time::Duration;
 
+use orangui_core::count_up::{self, PLACEHOLDER};
+use orangui_core::number;
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::style::Stylize;
@@ -10,16 +12,16 @@ use ratatui::text::{Line, Text};
 use ratatui::widgets::Paragraph;
 use zwipe_ui::home::Figures;
 
-use crate::domain::count_up;
+use super::count_up as count_up_widget;
 use crate::domain::theme::Palette;
 
 /// Each figure's roll seed, handed out once per launch as orangui hands one to each counter, so neighbors never roll in step.
 fn seeds() -> [u64; 3] {
     static SEEDS: OnceLock<[u64; 3]> = OnceLock::new();
-    *SEEDS.get_or_init(|| [(); 3].map(|()| count_up::next_seed()))
+    *SEEDS.get_or_init(|| [(); 3].map(|()| count_up_widget::next_seed()))
 }
 
-/// How long a figure takes to land once it arrives: [`count_up::FRAMES`] ticks of [`count_up::TICK`].
+/// How long a figure takes to land once it arrives: [`count_up::FRAMES`] ticks of [`count_up::TICK_MS`].
 pub(crate) const ROLL: Duration = Duration::from_millis(1_008);
 
 /// The rows the strip takes: the numbers, then the labels.
@@ -38,20 +40,23 @@ pub(crate) fn numbers(
         let seed = seeds().get(i).copied().unwrap_or_default();
         *slot = match value {
             None => match ticks(since_open) {
-                0 => count_up::BLANK.to_owned(),
-                tick => count_up::compact(count_up::waiting(seed, tick)),
+                0 => PLACEHOLDER.to_owned(),
+                tick => number::short(count_up::waiting(seed, tick)),
             },
-            Some(value) => count_up::compact(count_up::landing(value, ticks(since_arrival))),
+            Some(value) => number::short(count_up::count_frame(
+                value,
+                u32::try_from(ticks(since_arrival)).unwrap_or(u32::MAX),
+            )),
         };
     }
     out
 }
 
-/// Whole ticks of [`count_up::TICK`] in `elapsed`.
+/// Whole ticks of [`count_up::TICK_MS`] in `elapsed`.
 fn ticks(elapsed: Duration) -> u64 {
     let ticks = elapsed
         .as_millis()
-        .checked_div(count_up::TICK.as_millis())
+        .checked_div(count_up_widget::tick().as_millis())
         .unwrap_or(0);
     u64::try_from(ticks).unwrap_or(u64::MAX)
 }
@@ -94,7 +99,7 @@ mod tests {
     #[test]
     fn missing_figures_start_blank_then_roll() {
         let blank = numbers(None, Duration::ZERO, Duration::ZERO);
-        assert!(blank.iter().all(|n| n == count_up::BLANK));
+        assert!(blank.iter().all(|n| n == PLACEHOLDER));
         let rolling = numbers(None, Duration::from_millis(100), Duration::ZERO);
         assert!(
             rolling

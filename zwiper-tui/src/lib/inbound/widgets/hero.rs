@@ -4,6 +4,8 @@
 
 use std::time::Instant;
 
+use orangui_core::count_up::PLACEHOLDER;
+use orangui_core::number;
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::style::Stylize;
@@ -15,7 +17,6 @@ use zwipe_ui::timing;
 use super::count_up::CountUp;
 use super::measure::BORDERS;
 use super::{logo as mark, measure};
-use crate::domain::count_up::{self, BLANK};
 use crate::domain::theme::Palette;
 use crate::inbound::app::{Context, Shared};
 use crate::inbound::screens::Request;
@@ -167,7 +168,7 @@ impl Hero {
             let shown = if self.start.is_some() {
                 counter.shown(now)
             } else {
-                value.map_or_else(|| BLANK.to_owned(), count_up::compact)
+                value.map_or_else(|| PLACEHOLDER.to_owned(), number::short)
             };
             f.render_widget(
                 Line::from(shown).style(palette.accent).bold().centered(),
@@ -295,7 +296,7 @@ mod tests {
             60,
             24,
         );
-        assert!(before.contains(BLANK), "nothing before its start");
+        assert!(before.contains(PLACEHOLDER), "nothing before its start");
         text(&app, &hero, Instant::now(), 8, 3);
         let still = Hero::default();
         assert!(!still.animating(Instant::now()), "never mounted");

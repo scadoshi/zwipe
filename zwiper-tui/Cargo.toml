@@ -29,6 +29,8 @@ futures = "0.3"
 image = { version = "0.25", default-features = false, features = ["jpeg"] }
 ratatui = { version = "0.30", features = ["unstable-rendered-line-info"] }
 ratatui-image = { version = "11.1", default-features = false, features = ["crossterm"] }
+# orangui's Dioxus-free half: the count-up, decode, grid rain and splash math. The same rev as zwipe-ui's.
+orangui-core = { git = "https://github.com/scadoshi/orangui", rev = "932abb5", package = "orangui-core" }
 reqwest = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

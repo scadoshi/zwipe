@@ -2,6 +2,7 @@
 
 use std::time::Duration;
 
+use orangui_core::number;
 use ratatui::style::{Color as TermColor, Style, Stylize};
 use ratatui::text::{Line, Span};
 use zwipe_core::domain::card::scryfall_data::colors::Color;
@@ -10,7 +11,6 @@ use zwipe_ui::color_map::{
 };
 
 use super::mana;
-use crate::domain::count_up;
 use crate::domain::theme::Palette;
 
 /// Joins the parts of one key chip so a wrapping key breaks only between chips, as the app's flex-wrapped chips do.
@@ -200,7 +200,7 @@ pub(crate) fn key(
         spans.push(mana::pip(palette, i));
         spans.push(Span::raw(format!(
             "{NBSP}{}  ",
-            count_up::with_separators(u64::from(*n))
+            number::with_separators(u64::from(*n))
         )));
     }
     spans.push(Span::styled("C", palette.muted.bold()));
@@ -208,7 +208,7 @@ pub(crate) fn key(
     spans.push(Span::styled("Colorless", palette.muted));
     spans.push(Span::raw(format!(
         "{NBSP}{}",
-        count_up::with_separators(u64::from(counts.colorless))
+        number::with_separators(u64::from(counts.colorless))
     )));
     if let Some((letter, label)) = action {
         spans.push(Span::raw("  "));

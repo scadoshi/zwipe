@@ -4,6 +4,7 @@
 
 use std::time::Duration;
 
+use orangui_core::number;
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Margin, Rect};
 use ratatui::style::{Color as TermColor, Modifier, Style, Stylize};
@@ -12,7 +13,6 @@ use ratatui::widgets::{Block, Paragraph, Wrap};
 use zwipe_ui::activity::{self, Bar, DAYS_PER_WEEK, HeatLayout, RateKind, WEEKDAY_LABELS};
 
 use super::{ActivityView, Focus, Load, Loaded, PASSES_TITLE, Section, pass_row};
-use crate::domain::count_up;
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::screens::home::draw as home_draw;
@@ -534,7 +534,7 @@ fn totals_lines(palette: &Palette, bars: &[Bar], width: usize) -> Vec<Line<'stat
                 let glyph = EIGHTHS.get(eighths % 8).copied().unwrap_or(" ");
                 glyph.repeat(bar_width)
             } else if from_bottom == filled_rows.saturating_add(1) && bar.count > 0 {
-                count_up::with_separators(bar.count)
+                number::with_separators(bar.count)
             } else {
                 String::new()
             };
