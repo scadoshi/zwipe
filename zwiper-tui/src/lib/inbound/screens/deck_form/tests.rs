@@ -573,7 +573,7 @@ fn edit_fills_the_form_and_saves_only_what_changed() {
 
     harness.type_text("s");
     assert!(screen_text(&harness.app).contains("Save changes"));
-    harness.press(KeyCode::Enter);
+    harness.press(KeyCode::F(2));
     let Some(screens::Request::DeckForm(Request::Update {
         deck_id: id,
         changes,
@@ -643,6 +643,27 @@ fn f1_explains_the_focused_field() {
     assert!(screen_text(&harness.app).contains("Not set uses the format's usual count"));
     harness.press(KeyCode::Esc);
     assert!(form(&harness).overlay.is_none());
+}
+
+#[test]
+fn enter_in_a_text_field_saves_nothing() {
+    let mut harness = create();
+    harness.type_text("Tokens");
+    harness.press(KeyCode::Enter);
+    focus(&mut harness, Field::Price);
+    harness.type_text("12");
+    harness.press(KeyCode::Enter);
+    form_mut(&mut harness).set_format(Some(Format::Commander));
+    focus(&mut harness, Field::Card(Slot::Commander));
+    harness.press(KeyCode::Enter);
+    assert_eq!(
+        harness.pending(),
+        [],
+        "only F2 saves, as the app's Save button does"
+    );
+    assert!(!form(&harness).saving);
+    harness.press(KeyCode::F(2));
+    assert!(form(&harness).saving);
 }
 
 #[test]

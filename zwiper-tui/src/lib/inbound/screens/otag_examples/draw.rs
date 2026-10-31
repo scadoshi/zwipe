@@ -94,7 +94,7 @@ fn key_hints(palette: &Palette, view: &ExamplesView) -> Vec<(&'static str, &'sta
     if view.current().is_some() {
         keys.push(("d", "Details", palette.muted));
     }
-    keys.push(("?", "Help", palette.muted));
+    keys.push(("?", "Hint", palette.muted));
     keys
 }
 

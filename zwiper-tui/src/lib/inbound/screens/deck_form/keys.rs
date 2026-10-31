@@ -1,11 +1,11 @@
-//! The deck form's keys. Tab, Shift-Tab and the arrows move between fields; text fields take typing; F2 saves, F8 clears the focused field, F6 explains it, Esc goes back. On a command-zone field, F3 toggles Filter and F4 opens Swipe.
+//! The deck form's keys. Tab, Shift-Tab and the arrows move between fields; text fields take typing, and Enter in one saves nothing, as in the app, whose Save sits outside the form; F2 saves, F8 clears the focused field, F6 explains it, Esc goes back. On a command-zone field, F3 toggles Filter and F4 opens Swipe.
 
 use crossterm::event::KeyCode;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::{DeckOtherTag, PowerLevel};
 
 use super::pickers::{self, FormatPicker, OraclePicker, TagPicker};
-use super::{DeckForm, Dropdown, Field, Overlay, reopen_hint, swipe_pick};
+use super::{DeckForm, Field, Overlay, reopen_hint, swipe_pick};
 use crate::domain::deck::form::{self, Slot, Step};
 use crate::inbound::app::Context;
 use crate::inbound::widgets::info;
@@ -44,7 +44,7 @@ pub(crate) fn handle(form: &mut DeckForm, code: KeyCode, cx: &mut Context<'_>) {
     }
     match form.focus {
         Field::Name => match code {
-            KeyCode::Enter => form.save(cx),
+            KeyCode::Enter => {}
             KeyCode::Up => form.step_focus(true),
             KeyCode::Down => form.step_focus(false),
             other => {
@@ -55,7 +55,7 @@ pub(crate) fn handle(form: &mut DeckForm, code: KeyCode, cx: &mut Context<'_>) {
         },
         Field::Card(slot) => handle_card(form, slot, code, cx),
         Field::Price => match code {
-            KeyCode::Enter => form.save(cx),
+            KeyCode::Enter => {}
             KeyCode::Up => form.step_focus(true),
             KeyCode::Down => form.step_focus(false),
             KeyCode::Char(c) if !form::price_char(c) => {}
@@ -189,10 +189,8 @@ fn handle_card(form: &mut DeckForm, slot: Slot, code: KeyCode, cx: &mut Context<
         KeyCode::Down => form.step_focus(false),
         KeyCode::Enter => {
             let field = form.card(slot);
-            match field.hits().get(field.highlighted).cloned() {
-                Some(card) => form.pick_card(slot, card, cx),
-                None if field.dropdown == Dropdown::Hidden => form.save(cx),
-                None => {}
+            if let Some(card) = field.hits().get(field.highlighted).cloned() {
+                form.pick_card(slot, card, cx);
             }
         }
         other => {

@@ -45,7 +45,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &OracleTagsView) {
                     ("j/k", "Move"),
                     ("x", "Examples"),
                     ("u", "Use"),
-                    ("?", "Help"),
+                    ("?", "Hint"),
                 ]
             }
         }
@@ -54,11 +54,11 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &OracleTagsView) {
                 Paragraph::new(Line::styled(FAILED, palette.muted)).centered(),
                 body.centered_vertically(Constraint::Length(1)),
             );
-            &[("Esc", "Back"), ("?", "Help")]
+            &[("Esc", "Back"), ("?", "Hint")]
         }
         Catalog::Idle | Catalog::Loading => {
             draw_skeleton(f, palette, body);
-            &[("Esc", "Back"), ("?", "Help")]
+            &[("Esc", "Back"), ("?", "Hint")]
         }
     };
     f.render_widget(action_bar::line(palette, hints), keys);
