@@ -83,3 +83,8 @@ fn export_fits_a_tiny_terminal() {
     render(&harness.app, 12, 5);
     render(&harness.app, 1, 1);
 }
+
+#[test]
+fn export_keeps_every_key_on_a_narrow_terminal() {
+    crate::test_support::assert_key_bar_fits(&loaded().0.app, "q quit");
+}

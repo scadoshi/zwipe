@@ -25,16 +25,8 @@ const LETTER_CELLS: u16 = 2;
 pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &OracleTagsView) {
     let palette = &shared.palette;
     let area = f.area().inner(Margin::new(1, 0));
-    let [title, body, keys] = Layout::vertical([
-        Constraint::Length(1),
-        Constraint::Fill(1),
-        Constraint::Length(1),
-    ])
-    .areas(area);
-    header::draw(f, palette, title, TITLE, header::Corner::Hint);
     let hints: &[(&str, &str)] = match &shared.caches.oracle_tags {
-        Catalog::Loaded { tags, .. } => {
-            draw_loaded(f, palette, view, tags, body);
+        Catalog::Loaded { .. } => {
             if view.typing {
                 &[("Enter", "Done"), ("Esc", "Clear"), ("↑/↓", "Move")]
             } else {
@@ -49,19 +41,26 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &OracleTagsView) {
                 ]
             }
         }
-        Catalog::Failed => {
-            f.render_widget(
-                Paragraph::new(Line::styled(FAILED, palette.muted)).centered(),
-                body.centered_vertically(Constraint::Length(1)),
-            );
-            &[("Esc", "Back"), ("?", "Help")]
-        }
-        Catalog::Idle | Catalog::Loading => {
-            draw_skeleton(f, palette, body);
-            &[("Esc", "Back"), ("?", "Help")]
-        }
+        Catalog::Failed | Catalog::Idle | Catalog::Loading => &[("Esc", "Back"), ("?", "Help")],
     };
-    f.render_widget(action_bar::line(palette, hints), keys);
+    let bar = action_bar::line(palette, hints);
+    let bar_height = action_bar::height(&bar, area.width);
+    let [title, body, keys] = Layout::vertical([
+        Constraint::Length(1),
+        Constraint::Fill(1),
+        Constraint::Length(bar_height),
+    ])
+    .areas(area);
+    header::draw(f, palette, title, TITLE, header::Corner::Hint);
+    match &shared.caches.oracle_tags {
+        Catalog::Loaded { tags, .. } => draw_loaded(f, palette, view, tags, body),
+        Catalog::Failed => f.render_widget(
+            Paragraph::new(Line::styled(FAILED, palette.muted)).centered(),
+            body.centered_vertically(Constraint::Length(1)),
+        ),
+        Catalog::Idle | Catalog::Loading => draw_skeleton(f, palette, body),
+    }
+    f.render_widget(action_bar::wrap(bar, keys.width), keys);
 }
 
 fn draw_loaded(

@@ -505,3 +505,27 @@ fn the_color_maps_playstyle_and_the_heros_activity_open_their_screens() {
     harness.press(KeyCode::Char('v'));
     assert!(matches!(harness.screen(), Screen::Activity(_)));
 }
+
+#[test]
+fn home_keeps_every_key_on_a_narrow_terminal() {
+    let mut harness = on_home();
+    let user_id = me(&harness);
+    harness.apply(Update::PlayStyle {
+        user_id,
+        summary: Box::new(summary(2)),
+    });
+    harness.app.shared.caches.flavor = Some(FlavorCard {
+        card: flavored("Elves"),
+        expires_at: Utc::now(),
+    });
+    settle_entrance(&mut harness);
+    crate::test_support::assert_key_bar_fits(&harness.app, "q quit");
+    harness.press(KeyCode::Char('!'));
+    for (width, height) in crate::test_support::NARROW {
+        let screen = crate::test_support::rows(&harness.app, width, height).join("\n");
+        assert!(
+            screen.contains("Join the Discord"),
+            "help fits at {width}x{height}:\n{screen}"
+        );
+    }
+}

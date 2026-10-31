@@ -101,3 +101,8 @@ fn the_screen_shows_its_title_and_buttons_and_fits_a_tiny_terminal() {
         render(&harness.app, width, height);
     }
 }
+
+#[test]
+fn reset_keeps_every_key_on_a_narrow_terminal() {
+    crate::test_support::assert_key_bar_fits(&forgetting().app, "Esc back");
+}

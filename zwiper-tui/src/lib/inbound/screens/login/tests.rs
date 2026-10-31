@@ -184,3 +184,8 @@ fn the_login_screen_fits_a_tiny_terminal() {
         render(&harness.app, width, height);
     }
 }
+
+#[test]
+fn login_keeps_every_key_on_a_narrow_terminal() {
+    crate::test_support::assert_key_bar_fits(&Harness::new().app, "Esc quit");
+}

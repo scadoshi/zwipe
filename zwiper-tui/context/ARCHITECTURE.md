@@ -60,7 +60,7 @@ Say the screen is `search`.
 
 A screen with no background work, like `update_required`, skips the request and update enums and their arms.
 
-Tests go through `Harness`: `Harness::on(Screen::Search(..))` or `harness.open(search::open)`, then `press`, `type_text`, `apply`, and assertions on `pending()` and `screen()`. `test_support::screen_text(&harness.app)` renders the app at 100 by 40 for drawing tests.
+Tests go through `Harness`: `Harness::on(Screen::Search(..))` or `harness.open(search::open)`, then `press`, `type_text`, `apply`, and assertions on `pending()` and `screen()`. `test_support::screen_text(&harness.app)` renders the app at 100 by 40 for drawing tests. `test_support::assert_key_bar_fits(&harness.app, "Esc back")` draws at 80 by 24 and 60 by 20 and checks the key bar's last hint shows whole.
 
 ## Widgets
 
@@ -93,7 +93,7 @@ All live in `widgets/` and draw in the account theme's `Palette`.
 - `chips`: a chip row picking one or many.
 - `collapsible`: a section that opens and closes, and an accordion that keeps one open.
 - `info`: the "?" popup of bullet points.
-- `action_bar`: the bottom row of key hints, and `action_bar::buttons` for a row of buttons the focus moves across. A swipe screen builds its swipe keys with `action_bar::swipes(palette, right, left, up, down)`, which colors each verb like the app's swipe hints (right success, left error, up warning, down tertiary), and draws them with `styled_line`. The labels use only add, remove, skip, maybeboard and undo (the commander swipe and the oracle tag Examples too: Examples reads skip and undo); toasts and hint prose stay the app's own words, so Remove's skip still toasts "Kept".
+- `action_bar`: the bottom row of key hints, and `action_bar::buttons` for a row of buttons the focus moves across. A swipe screen builds its swipe keys with `action_bar::swipes(palette, right, left, up, down)`, which colors each verb like the app's swipe hints (right success, left error, up warning, down tertiary), and draws them with `styled_line`. The labels use only add, remove, skip, maybeboard and undo (the commander swipe and the oracle tag Examples too: Examples reads skip and undo); toasts and hint prose stay the app's own words, so Remove's skip still toasts "Kept". A bar too wide for the screen wraps between hints, never splitting a key from its action: a screen reserves `action_bar::height(&bar, width)` rows for it and draws `action_bar::wrap(bar, width)`, and the deck view wraps its pane keys and screen keys each on their own. Keys inside text a paragraph wraps, like a card row's actions, go through `action_bar::unbreakable` so the wrap falls only between hints.
 - `skeleton`: ghost rows for content still loading.
 - `stats`: a strip of figures whose digits roll until they load. A screen showing one should animate while `stats::loading` is true.
 - `browser`: `browser::open(cx, url)` runs `open` on macOS and `xdg-open` elsewhere, and shows the link in a toast when that fails.

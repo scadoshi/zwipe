@@ -316,3 +316,8 @@ fn the_screen_and_its_sheets_fit_a_tiny_terminal() {
     render(&harness.app, 12, 5);
     render(&harness.app, 1, 1);
 }
+
+#[test]
+fn account_keeps_every_key_on_a_narrow_terminal() {
+    crate::test_support::assert_key_bar_fits(&on_account(false).app, "Esc back");
+}

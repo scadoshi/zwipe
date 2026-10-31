@@ -22,12 +22,14 @@ const CARD_WIDTH: u16 = 64;
 pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &RemoveView) {
     let palette = &shared.palette;
     let area = f.area();
+    let bar = key_line(palette, view);
+    let bar_height = action_bar::height(&bar, area.width.saturating_sub(2));
     let [title, boards, body, info, keys] = Layout::vertical([
         Constraint::Length(1),
         Constraint::Length(1),
         Constraint::Fill(1),
         Constraint::Length(5),
-        Constraint::Length(1),
+        Constraint::Length(bar_height),
     ])
     .margin(1)
     .areas(area);
@@ -73,6 +75,21 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &RemoveView) {
         draw_motion(f, palette, view, motion, body, now);
     }
 
+    f.render_widget(action_bar::wrap(bar, keys.width), keys);
+
+    if let Some(details) = &view.details {
+        details.draw(f, shared, area);
+    }
+    if let Some(printing) = &view.printing {
+        printing.draw(f, palette, area);
+    }
+    if let Some(sheet) = &view.sheet {
+        card_sheets::filter::draw::draw(f, shared, sheet, area);
+    }
+}
+
+/// The keys: the swipes in their colors, then the boards, the filter with a dot when one is on, and the rest.
+fn key_line(palette: &Palette, view: &RemoveView) -> Line<'static> {
     let filter_label = if filter::shows_dot(&view.filter) {
         "filter •"
     } else {
@@ -91,17 +108,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &RemoveView) {
     }
     rest.extend([("?", "hint"), ("Esc", "back")]);
     pairs.extend(rest.into_iter().map(|(k, a)| (k, a, palette.muted)));
-    f.render_widget(action_bar::styled_line(&pairs), keys);
-
-    if let Some(details) = &view.details {
-        details.draw(f, shared, area);
-    }
-    if let Some(printing) = &view.printing {
-        printing.draw(f, palette, area);
-    }
-    if let Some(sheet) = &view.sheet {
-        card_sheets::filter::draw::draw(f, shared, sheet, area);
-    }
+    action_bar::styled_line(&pairs)
 }
 
 /// The border of the top card: the side it came back from after an undo, else the accent.

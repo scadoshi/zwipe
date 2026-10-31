@@ -3,7 +3,7 @@
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Margin, Rect};
 use ratatui::style::{Style, Stylize};
-use ratatui::text::{Line, Span};
+use ratatui::text::{Line, Span, Text};
 use ratatui::widgets::{Block, BorderType, Paragraph, Wrap};
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
@@ -62,13 +62,24 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &DeckView) {
     let (pane_keys, screen_keys) = key_hints(view);
     let pane_line = action_bar::line(palette, &pane_keys);
     let screen_line = action_bar::line(palette, &screen_keys);
-    // The hints take one row when they fit, else the pane's keys go on a row over the screen's.
+    // The hints take one row when they fit, else the pane's keys go over the screen's, each wrapping on its own.
     let one_row = pane_line.width().saturating_add(screen_line.width()) <= usize::from(area.width);
+    let keys_text = if one_row {
+        let mut spans = pane_line.spans;
+        spans.extend(screen_line.spans);
+        Text::from(Line::from(spans))
+    } else {
+        let mut text = action_bar::wrap(pane_line, area.width);
+        text.lines
+            .extend(action_bar::wrap(screen_line, area.width).lines);
+        text
+    };
+    let keys_height = u16::try_from(keys_text.lines.len()).unwrap_or(u16::MAX);
     let [header, body, status, keys] = Layout::vertical([
         Constraint::Length(1),
         Constraint::Fill(1),
         Constraint::Length(1),
-        Constraint::Length(if one_row { 1 } else { 2 }),
+        Constraint::Length(keys_height),
     ])
     .areas(area);
 
@@ -106,13 +117,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &DeckView) {
         Line::from(shared.status.clone()).style(palette.muted),
         status,
     );
-    if one_row {
-        let mut spans = pane_line.spans;
-        spans.extend(screen_line.spans);
-        f.render_widget(Line::from(spans), keys);
-    } else {
-        f.render_widget(Paragraph::new(vec![pane_line, screen_line]), keys);
-    }
+    f.render_widget(keys_text, keys);
 
     if let Some(menu) = &view.more {
         menu.draw(f, palette, f.area());

@@ -15,12 +15,23 @@ const SKELETON_ROWS: usize = 10;
 
 pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &ExportView) {
     let palette = &shared.palette;
+    let bar = action_bar::line(
+        palette,
+        &[
+            ("h/l Space", "boards"),
+            ("j/k", "scroll"),
+            ("y", "Copy"),
+            ("Esc", "Back"),
+            ("q", "quit"),
+        ],
+    );
+    let bar_height = action_bar::height(&bar, f.area().width.saturating_sub(2));
     let [header, chips, body, status, keys] = Layout::vertical([
         Constraint::Length(1),
         Constraint::Length(2),
         Constraint::Fill(1),
         Constraint::Length(1),
-        Constraint::Length(1),
+        Constraint::Length(bar_height),
     ])
     .margin(1)
     .areas(f.area());
@@ -81,17 +92,5 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &ExportView) {
         Line::from(shared.status.clone()).style(palette.muted),
         status,
     );
-    f.render_widget(
-        action_bar::line(
-            palette,
-            &[
-                ("h/l Space", "boards"),
-                ("j/k", "scroll"),
-                ("y", "Copy"),
-                ("Esc", "Back"),
-                ("q", "quit"),
-            ],
-        ),
-        keys,
-    );
+    f.render_widget(action_bar::wrap(bar, keys.width), keys);
 }

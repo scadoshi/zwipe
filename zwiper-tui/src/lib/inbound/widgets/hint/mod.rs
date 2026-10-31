@@ -156,14 +156,14 @@ pub(crate) fn reopen(cx: &mut Context<'_>, key: &str) {
     }
 }
 
-/// Shows a one-time hint with a plain body, for copy that is not in the app's table.
+/// Shows a one-time hint with a plain body, for copy that is not in the app's table. Each line of `body` is a block of its own.
 pub(crate) fn show(cx: &mut Context<'_>, key: &str, title: &str, body: &str) -> bool {
     once_with(
         cx,
         key,
         HintContent {
             title: title.to_owned(),
-            blocks: vec![body.to_owned()],
+            blocks: body.lines().map(str::to_owned).collect(),
         },
     )
 }

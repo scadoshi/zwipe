@@ -25,12 +25,27 @@ const LABEL_WIDTH: usize = 16;
 
 pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &AccountView) {
     let palette = &shared.palette;
+    let bar = action_bar::line(
+        palette,
+        &[
+            ("j/k", "move"),
+            ("Enter", "select"),
+            ("i", "about row"),
+            ("?", "hint"),
+            ("!", "help"),
+            ("L", "log out"),
+            ("m", "more"),
+            ("Esc", "back"),
+        ],
+    )
+    .centered();
+    let bar_height = action_bar::height(&bar, f.area().width);
     let [head, _, body, buttons, keys] = Layout::vertical([
         Constraint::Length(1),
         Constraint::Length(1),
         Constraint::Fill(1),
         Constraint::Length(1),
-        Constraint::Length(1),
+        Constraint::Length(bar_height),
     ])
     .areas(f.area());
     header::draw(f, palette, head, "Account", Corner::Hint);
@@ -52,23 +67,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &AccountView) {
         .centered(),
         buttons,
     );
-    f.render_widget(
-        action_bar::line(
-            palette,
-            &[
-                ("j/k", "move"),
-                ("Enter", "select"),
-                ("i", "about row"),
-                ("?", "hint"),
-                ("!", "help"),
-                ("L", "log out"),
-                ("m", "more"),
-                ("Esc", "back"),
-            ],
-        )
-        .centered(),
-        keys,
-    );
+    f.render_widget(action_bar::wrap(bar, keys.width), keys);
     match &view.overlay {
         Some(Overlay::Form(form)) => draw_form(f, palette, form),
         Some(Overlay::ConfirmPassword { form, alert }) => {

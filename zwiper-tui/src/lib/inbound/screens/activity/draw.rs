@@ -71,11 +71,13 @@ const EIGHTHS: [&str; 8] = [" ", "▁", "▂", "▃", "▄", "▅", "▆", "▇"
 pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &ActivityView) {
     let palette = &shared.palette;
     let area = f.area().inner(Margin::new(1, 0));
+    let bar = action_bar::line(palette, &key_hints(view));
+    let bar_height = action_bar::height(&bar, area.width);
     let [title, counts, body, keys] = Layout::vertical([
         Constraint::Length(1),
         Constraint::Length(COUNTS_HEIGHT),
         Constraint::Fill(1),
-        Constraint::Length(1),
+        Constraint::Length(bar_height),
     ])
     .areas(area);
     header::draw(f, palette, title, super::TITLE, header::Corner::Hint);
@@ -91,7 +93,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &ActivityView) {
             draw_lines(f, lines, focus, body);
         }
     }
-    f.render_widget(action_bar::line(palette, &key_hints(view)), keys);
+    f.render_widget(action_bar::wrap(bar, keys.width), keys);
     if let Some(info) = &view.overlay {
         info.draw(f, palette);
     }

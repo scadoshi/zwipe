@@ -23,12 +23,14 @@ use crate::inbound::widgets::{action_bar, card_info, header, mana, otag, skeleto
 pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &DeckCardsView) {
     let palette = &shared.palette;
     let area = f.area();
+    let bar = key_line(palette, view, shared);
+    let bar_height = action_bar::height(&bar, area.width.saturating_sub(2));
     let [title, header, controls, list, keys] = Layout::vertical([
         Constraint::Length(1),
         Constraint::Length(3),
         Constraint::Length(if view.loaded { 6 } else { 4 }),
         Constraint::Fill(1),
-        Constraint::Length(1),
+        Constraint::Length(bar_height),
     ])
     .margin(1)
     .areas(area);
@@ -43,7 +45,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &DeckCardsView) {
         f.render_widget(Paragraph::new(skeleton::rows(palette, 3, width)), controls);
         f.render_widget(Paragraph::new(skeleton::rows(palette, 8, width)), list);
     }
-    f.render_widget(key_line(palette, view, shared), keys);
+    f.render_widget(action_bar::wrap(bar, keys.width), keys);
 
     if let Some((card, face)) = &view.preview {
         Sheet::new(
@@ -252,7 +254,15 @@ fn draw_list(f: &mut Frame<'_>, shared: &Shared, view: &DeckCardsView, area: Rec
                             .collect();
                         lines.extend(card_info::wrap(indented, usize::from(area.width), 4));
                     }
-                    lines.push(actions_line(palette, view, card, *kind));
+                    let actions = action_bar::wrap(
+                        actions_line(palette, view, card, *kind),
+                        area.width.saturating_sub(4),
+                    );
+                    lines.extend(actions.lines.into_iter().map(|row| {
+                        let mut spans = vec![Span::raw("    ")];
+                        spans.extend(row.spans);
+                        Line::from(spans)
+                    }));
                     lines.push(Line::from("    ────").style(palette.border));
                 }
             }
@@ -376,9 +386,7 @@ fn actions_line(palette: &Palette, view: &DeckCardsView, card: &Card, kind: Kind
         Kind::Token => {}
     }
     let pairs: Vec<(&str, &str)> = keys.iter().map(|(k, a)| (*k, a.as_str())).collect();
-    let mut line = action_bar::line(palette, &pairs);
-    line.spans.insert(0, Span::raw("    "));
-    line
+    action_bar::line(palette, &pairs)
 }
 
 fn key_line(palette: &Palette, view: &DeckCardsView, shared: &Shared) -> Line<'static> {

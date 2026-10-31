@@ -28,10 +28,12 @@ const SHEET_FRAME: usize = 4;
 pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &CommanderSwipeView) {
     let palette = &shared.palette;
     let area = f.area().inner(Margin::new(1, 0));
+    let bar = action_bar::styled_line(&key_hints(palette, view));
+    let bar_height = action_bar::height(&bar, area.width);
     let [title, body, keys] = Layout::vertical([
         Constraint::Length(1),
         Constraint::Fill(1),
-        Constraint::Length(1),
+        Constraint::Length(bar_height),
     ])
     .areas(area);
     header::draw(f, palette, title, view.title(), header::Corner::Hint);
@@ -66,7 +68,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &CommanderSwipeView
             });
         }
     }
-    f.render_widget(action_bar::styled_line(&key_hints(palette, view)), keys);
+    f.render_widget(action_bar::wrap(bar, keys.width), keys);
     if let (Some(filter), Some(pile)) = (view.filter, view.suggested()) {
         let chips = show_line(
             palette,

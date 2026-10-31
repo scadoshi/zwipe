@@ -172,3 +172,9 @@ fn the_printings_fit_a_tiny_terminal() {
     render(&harness.app, 8, 3);
     render(&harness.app, 1, 1);
 }
+
+#[test]
+fn the_printings_keep_every_key_on_a_narrow_terminal() {
+    let (harness, _) = on_printings(Mode::Pick);
+    crate::test_support::assert_key_bar_fits(&harness.app, "i Image");
+}

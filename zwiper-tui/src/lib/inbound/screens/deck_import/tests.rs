@@ -179,3 +179,8 @@ fn an_import_clears_the_decks_undo_log_and_only_that_deck() {
     assert!(harness.app.shared.cards.undo.is_empty(deck_id));
     assert!(!harness.app.shared.cards.undo.is_empty(other));
 }
+
+#[test]
+fn import_keeps_every_key_on_a_narrow_terminal() {
+    crate::test_support::assert_key_bar_fits(&opened().0.app, "F2 Import");
+}

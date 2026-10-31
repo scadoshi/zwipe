@@ -175,3 +175,33 @@ pub(crate) fn screen_text(app: &App) -> String {
         .collect::<String>()
         .replace('\u{a0}', " ")
 }
+
+/// The small terminal sizes every screen must fit: the common 80 by 24 and the narrowest supported, 60 by 20.
+pub(crate) const NARROW: [(u16, u16); 2] = [(80, 24), (60, 20)];
+
+/// The rows of `app` drawn at `width` by `height`, each as text.
+pub(crate) fn rows(app: &App, width: u16, height: u16) -> Vec<String> {
+    let terminal = render(app, width, height);
+    let buffer = terminal.backend().buffer();
+    (0..height)
+        .map(|y| {
+            (0..width)
+                .map(|x| buffer.cell((x, y)).unwrap().symbol())
+                .collect::<String>()
+                .replace('\u{a0}', " ")
+        })
+        .collect()
+}
+
+/// Draws `app` at each [`NARROW`] size and asserts the key bar's last hint, `last` (like `"Esc back"`), shows whole in the bottom rows; prints the screen when it does not.
+pub(crate) fn assert_key_bar_fits(app: &App, last: &str) {
+    for (width, height) in NARROW {
+        let rows = rows(app, width, height);
+        let shown = rows.iter().rev().take(4).any(|row| row.contains(last));
+        assert!(
+            shown,
+            "{last:?} is not in the key bar at {width}x{height}:\n{}",
+            rows.join("\n")
+        );
+    }
+}

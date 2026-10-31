@@ -667,3 +667,9 @@ fn tiny_terminals_do_not_panic() {
         render(&harness.app, w, h);
     }
 }
+
+#[test]
+fn the_maybeboard_keeps_every_key_on_a_narrow_terminal() {
+    crate::test_support::assert_key_bar_fits(&on_maybeboard(true).app, "Esc Back");
+    crate::test_support::assert_key_bar_fits(&loaded().app, "Esc Back");
+}

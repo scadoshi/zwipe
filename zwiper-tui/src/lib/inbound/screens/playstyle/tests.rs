@@ -817,3 +817,12 @@ fn tiny_terminals_do_not_panic() {
         render(&harness.app, w, h);
     }
 }
+
+#[test]
+fn playstyle_keeps_every_key_on_a_narrow_terminal() {
+    crate::test_support::assert_key_bar_fits(&on_playstyle(true).app, "Esc Back");
+    let mut harness = loaded();
+    crate::test_support::assert_key_bar_fits(&harness.app, "Esc Back");
+    expand_first(&mut harness);
+    crate::test_support::assert_key_bar_fits(&harness.app, "Esc Back");
+}

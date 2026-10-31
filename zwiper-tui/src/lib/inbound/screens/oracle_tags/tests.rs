@@ -312,3 +312,12 @@ fn the_dictionary_fits_a_tiny_terminal() {
     render(&loading.app, 8, 3);
     render(&loading.app, 1, 1);
 }
+
+#[test]
+fn the_dictionary_keeps_every_key_on_a_narrow_terminal() {
+    crate::test_support::assert_key_bar_fits(&on_dictionary().app, "? Help");
+    let mut harness = loaded();
+    crate::test_support::assert_key_bar_fits(&harness.app, "? Help");
+    harness.press(KeyCode::Char('/'));
+    crate::test_support::assert_key_bar_fits(&harness.app, "↑/↓ Move");
+}

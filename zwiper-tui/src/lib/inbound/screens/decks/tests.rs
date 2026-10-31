@@ -311,3 +311,19 @@ fn a_row_too_wide_for_one_line_wraps_its_chips_under_the_name() {
         );
     }
 }
+
+#[test]
+fn the_deck_list_keeps_every_key_on_a_narrow_terminal() {
+    let mut long = deck_profile("Isshin, Two Heavens as One and Every Other Name");
+    long.format = Some(Format::Commander);
+    let harness = loaded(vec![long, deck_profile("A")]);
+    crate::test_support::assert_key_bar_fits(&harness.app, "q quit");
+    let narrow = crate::test_support::rows(&harness.app, 60, 20);
+    assert!(
+        narrow
+            .iter()
+            .any(|row| row.contains("Isshin, Two Heavens") && row.contains("…   0 cards")),
+        "a long name ends in an ellipsis and keeps its count on the row:\n{}",
+        narrow.join("\n")
+    );
+}

@@ -49,3 +49,8 @@ fn esc_goes_back_and_the_screen_fits_a_tiny_terminal() {
     harness.press(KeyCode::Esc);
     assert!(matches!(harness.screen(), Screen::Login(_)));
 }
+
+#[test]
+fn privacy_keeps_every_key_on_a_narrow_terminal() {
+    crate::test_support::assert_key_bar_fits(&on_privacy().app, "Esc back");
+}

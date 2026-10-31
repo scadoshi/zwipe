@@ -835,3 +835,14 @@ fn the_swipe_keys_use_the_apps_verbs_in_its_hint_colors() {
         );
     }
 }
+
+#[test]
+fn add_and_its_filter_sheet_keep_every_key_on_a_narrow_terminal() {
+    let mut harness = add_app(card("Tiny"));
+    crate::test_support::assert_key_bar_fits(&harness.app, "Esc back");
+    harness.press(KeyCode::Char('f'));
+    crate::test_support::assert_key_bar_fits(&harness.app, "? hint");
+    harness.press(KeyCode::Esc);
+    harness.press(KeyCode::Char('e'));
+    crate::test_support::assert_key_bar_fits(&harness.app, "Esc back");
+}

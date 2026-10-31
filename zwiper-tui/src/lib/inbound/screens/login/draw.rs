@@ -27,7 +27,6 @@ pub(crate) struct AuthAreas {
     /// The form, `FORM_WIDTH` wide at most and centered.
     pub(crate) body: Rect,
     pub(crate) buttons: Rect,
-    pub(crate) keys: Rect,
 }
 
 /// Whether an auth screen's content sits in the middle of the screen, as Login and Forgot password do, or from the top, as Register does.
@@ -37,7 +36,7 @@ pub(crate) enum Placement {
     Top,
 }
 
-/// Draws an auth screen's header titled `title` and lays out the rest: the hero over a form `body_height` rows tall, then the action bar and its key hints. The hero shrinks, then goes, when the screen is short.
+/// Draws an auth screen's header titled `title` and its key hints `keys`, wrapped when the screen is narrow, and lays out the rest: the hero over a form `body_height` rows tall, then the action bar. The hero shrinks, then goes, when the screen is short.
 pub(crate) fn frame(
     f: &mut Frame<'_>,
     shared: &Shared,
@@ -45,17 +44,20 @@ pub(crate) fn frame(
     title: &str,
     body_height: u16,
     placement: Placement,
+    keys: Line<'static>,
 ) -> AuthAreas {
     let area = f.area();
-    let [head, _, content, buttons, keys] = Layout::vertical([
+    let keys_height = action_bar::height(&keys, area.width);
+    let [head, _, content, buttons, keys_area] = Layout::vertical([
         Constraint::Length(1),
         Constraint::Length(1),
         Constraint::Fill(1),
         Constraint::Length(1),
-        Constraint::Length(1),
+        Constraint::Length(keys_height),
     ])
     .areas(area);
     header::draw(f, &shared.palette, head, title, Corner::Empty);
+    f.render_widget(action_bar::wrap(keys, keys_area.width), keys_area);
     let hero_width = content.width.min(HERO_WIDTH);
     let room = content.height.saturating_sub(body_height).saturating_sub(1);
     let hero_height = Hero::height(hero_width, room);
@@ -85,7 +87,6 @@ pub(crate) fn frame(
     AuthAreas {
         body: body.centered_horizontally(Constraint::Length(FORM_WIDTH.min(body.width))),
         buttons,
-        keys,
     }
 }
 
@@ -137,6 +138,16 @@ pub(crate) fn show_button(
 
 pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &LoginForm) {
     let palette = &shared.palette;
+    let keys = action_bar::line(
+        palette,
+        &[
+            ("Tab", "move"),
+            ("Enter", "select"),
+            ("F1", "help"),
+            ("Esc", "quit"),
+        ],
+    )
+    .centered();
     let areas = frame(
         f,
         shared,
@@ -144,6 +155,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &LoginForm) {
         "Login",
         BOX_HEIGHT.saturating_mul(2),
         Placement::Centered,
+        keys,
     );
     let [identifier, password] =
         Layout::vertical([Constraint::Length(BOX_HEIGHT); 2]).areas(areas.body);
@@ -179,18 +191,5 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &LoginForm) {
     f.render_widget(
         action_bar::buttons(palette, &row, form.focus.button()).centered(),
         areas.buttons,
-    );
-    f.render_widget(
-        action_bar::line(
-            palette,
-            &[
-                ("Tab", "move"),
-                ("Enter", "select"),
-                ("F1", "help"),
-                ("Esc", "quit"),
-            ],
-        )
-        .centered(),
-        areas.keys,
     );
 }

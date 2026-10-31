@@ -17,6 +17,12 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &RegisterForm) {
         form.confirm.height(),
     ];
     let body_height = heights.iter().fold(0_u16, |sum, h| sum.saturating_add(*h));
+    let focus = form.focus;
+    let mut keys = vec![("Tab", "move"), ("Enter", "select")];
+    if focus == RegisterField::Password {
+        keys.push(("F2", "password rules"));
+    }
+    keys.extend([("F1", "help"), ("Esc", "back")]);
     let areas = frame(
         f,
         shared,
@@ -24,10 +30,10 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &RegisterForm) {
         "Create profile",
         body_height,
         Placement::Top,
+        action_bar::line(palette, &keys).centered(),
     );
     let [username, email, password, confirm] =
         Layout::vertical(heights.map(Constraint::Length)).areas(areas.body);
-    let focus = form.focus;
     field(
         f,
         palette,
@@ -87,10 +93,4 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &RegisterForm) {
         action_bar::buttons(palette, &row, focus.button()).centered(),
         areas.buttons,
     );
-    let mut keys = vec![("Tab", "move"), ("Enter", "select")];
-    if focus == RegisterField::Password {
-        keys.push(("F2", "password rules"));
-    }
-    keys.extend([("F1", "help"), ("Esc", "back")]);
-    f.render_widget(action_bar::line(palette, &keys).centered(), areas.keys);
 }
