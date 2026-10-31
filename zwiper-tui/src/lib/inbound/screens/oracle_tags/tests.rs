@@ -286,9 +286,14 @@ fn the_list_draws_descriptions_parents_and_the_selected_row_keys() {
         "x Examples",
         "u Use",
         "Esc Back",
+        "? Hint",
     ] {
         assert!(screen.contains(expected), "missing {expected}");
     }
+    assert!(
+        !screen.contains("? Help"),
+        "? reopens the hint; ! is Help & feedback"
+    );
 }
 
 #[test]

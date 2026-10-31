@@ -131,7 +131,9 @@ fn an_empty_page_ends_the_browse_and_down_comes_back() {
     assert_eq!(view(&harness).index, 2, "nothing past the end");
     harness.press(KeyCode::Down);
     view_mut(&mut harness).motion = None;
-    assert!(screen_text(&harness.app).contains("Card 1"));
+    let screen = screen_text(&harness.app);
+    assert!(screen.contains("Card 1"));
+    assert!(screen.contains("? Hint") && !screen.contains("? Help"));
 }
 
 #[test]
