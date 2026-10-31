@@ -85,12 +85,14 @@ body {
     gap: 0.25rem;
 }
 
+/* The full ZWIPE mark, 49 columns of JetBrains Mono at 0.6em each, sized
+   to fit the sidebar's 11.5rem inside its padding. The color is the app's
+   .logo color: plain text in dark mode, the accent in light mode. */
 .web-sidebar-mark {
-    font-size: 0.45rem;
-    line-height: 1;
-    white-space: pre;
+    font-size: 0.375rem;
+    line-height: 0.9;
+    padding: 0;
     margin: 0 auto 1rem;
-    color: var(--logo-color, var(--accent-primary));
 }
 
 .web-nav-link {

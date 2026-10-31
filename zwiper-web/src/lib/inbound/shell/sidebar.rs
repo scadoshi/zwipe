@@ -34,7 +34,7 @@ pub fn Shell() -> Element {
             nav {
                 class: if menu_open() { "web-sidebar open" } else { "web-sidebar" },
                 "aria-label": "Main",
-                div { class: "web-sidebar-mark logo", "{logo::Z}" }
+                div { class: "web-sidebar-mark logo", "{logo::ZWIPE}" }
                 ul {
                     for section in Section::ALL {
                         li { key: "{section.label()}",
