@@ -30,6 +30,68 @@ pub(crate) fn styled_line(keys: &[(&str, &str, Style)]) -> Line<'static> {
     Line::from(spans)
 }
 
+/// The key that opens Help & feedback on a screen as it stands.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum HelpKey {
+    /// `!`, where no text field takes the letters.
+    Bang,
+    /// F1, while a text field has the cursor and `!` would be typed.
+    F1,
+}
+
+impl HelpKey {
+    /// The key as the bar shows it.
+    fn label(self) -> &'static str {
+        match self {
+            HelpKey::Bang => "!",
+            HelpKey::F1 => "F1",
+        }
+    }
+}
+
+/// `bar` with the Help & feedback hint for `key`, every screen's in the same spot: just before the run of Esc and `q` hints nearest the end, or last when the bar has no such run past its first hint.
+pub(crate) fn with_help(palette: &Palette, bar: Line<'static>, key: HelpKey) -> Line<'static> {
+    let Line {
+        style,
+        alignment,
+        spans,
+    } = bar;
+    let mut groups = hints(spans);
+    let is_exit = |group: &Vec<Span<'static>>| {
+        group
+            .first()
+            .is_some_and(|span| matches!(span.content.as_ref(), "Esc" | "q"))
+    };
+    let run_start = groups.iter().rposition(is_exit).map(|last| {
+        let mut start = last;
+        while start > 0 && groups.get(start.saturating_sub(1)).is_some_and(is_exit) {
+            start = start.saturating_sub(1);
+        }
+        start
+    });
+    let at = match run_start {
+        Some(start) if start > 0 => start,
+        _ => {
+            if let Some(last) = groups.last_mut().and_then(|group| group.last_mut())
+                && !last.content.ends_with(GAP)
+            {
+                last.content = format!("{}{GAP}", last.content).into();
+            }
+            groups.len()
+        }
+    };
+    let help = vec![
+        key.label().bold(),
+        Span::styled(format!(" help{GAP}"), palette.muted),
+    ];
+    groups.insert(at, help);
+    let line = Line::from(groups.into_iter().flatten().collect::<Vec<_>>()).style(style);
+    match alignment {
+        Some(alignment) => line.alignment(alignment),
+        None => line,
+    }
+}
+
 /// The gap that closes each key hint in a [`line`](fn@line) or [`styled_line`], and where [`wrap`] may break a row.
 const GAP: &str = "  ";
 
@@ -227,6 +289,52 @@ mod tests {
             })
             .collect();
         assert_eq!(rows, ["i Image", "c Create deck", "r Remove"]);
+    }
+
+    #[test]
+    fn help_goes_before_the_closing_back_and_quit_hints() {
+        let palette = Palette::terminal();
+        let shown =
+            |keys: &[(&str, &str)], key| with_help(&palette, line(&palette, keys), key).to_string();
+        assert_eq!(
+            shown(
+                &[("c", "Create"), ("Esc", "Back"), ("q", "quit")],
+                HelpKey::Bang
+            ),
+            "c Create  ! help  Esc Back  q quit  "
+        );
+        assert_eq!(
+            shown(
+                &[("Tab", "next"), ("Esc", "Back"), ("F2", "Save")],
+                HelpKey::F1
+            ),
+            "Tab next  F1 help  Esc Back  F2 Save  ",
+            "a hint after Esc stays after it"
+        );
+        assert_eq!(
+            shown(&[("Esc", "Back"), ("?", "Hint")], HelpKey::Bang),
+            "Esc Back  ? Hint  ! help  ",
+            "a bar that opens with Esc takes help last"
+        );
+        let centered = with_help(
+            &palette,
+            line(&palette, &[("q", "quit")]).centered(),
+            HelpKey::Bang,
+        );
+        assert_eq!(centered.to_string(), "q quit  ! help  ");
+        assert_eq!(centered.alignment, Some(ratatui::layout::Alignment::Center));
+    }
+
+    #[test]
+    fn help_after_a_hint_with_no_gap_still_wraps_between_hints() {
+        let palette = Palette::terminal();
+        let mut bar = line(&palette, &[("Tab", "next")]);
+        bar.spans.push(Span::raw("F2 "));
+        bar.spans.push(Span::raw("Import"));
+        let bar = with_help(&palette, bar, HelpKey::F1);
+        assert_eq!(bar.to_string(), "Tab next  F2 Import  F1 help  ");
+        let text: Vec<String> = wrap(bar, 20).lines.iter().map(Line::to_string).collect();
+        assert_eq!(text, ["Tab next  F2 Import", "F1 help"]);
     }
 
     #[test]

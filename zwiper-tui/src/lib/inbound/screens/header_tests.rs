@@ -1,4 +1,4 @@
-//! Every screen's header sits on the first row with `!` in the second column.
+//! Every screen's header sits on the first row, and its key bar names the key that opens Help & feedback.
 
 use uuid::Uuid;
 
@@ -50,7 +50,7 @@ fn screens() -> Vec<(&'static str, Harness)> {
 }
 
 #[test]
-fn every_header_holds_the_first_row_with_help_in_the_second_column() {
+fn every_header_holds_the_first_row_with_no_help_corner() {
     for (title, harness) in screens() {
         for (width, height) in SIZES {
             let rows = rows(&harness.app, width, height);
@@ -61,9 +61,32 @@ fn every_header_holds_the_first_row_with_help_in_the_second_column() {
                 rows.join("\n")
             );
             assert!(
-                first.starts_with(" ! "),
-                "{title}'s ! is not in the second column at {width}x{height}: {first:?}"
+                !first.trim_start().starts_with('!'),
+                "{title}'s header still draws ! at {width}x{height}: {first:?}"
             );
+        }
+    }
+}
+
+#[test]
+fn the_key_bar_names_the_help_key_on_every_screen() {
+    for (title, harness) in screens() {
+        // These open with a text field taking letters, where only F1 opens Help.
+        let help = if matches!(title, "Login" | "Create deck" | "Import") {
+            "F1 help"
+        } else {
+            "! help"
+        };
+        for (width, height) in [(120, 40), (60, 20)] {
+            let rows = rows(&harness.app, width, height);
+            let bar = rows.iter().rev().take(4).any(|row| row.contains(help));
+            assert!(
+                bar,
+                "{title}'s key bar has no {help:?} at {width}x{height}:\n{}",
+                rows.join("\n")
+            );
+            let count: usize = rows.iter().map(|row| row.matches(" help").count()).sum();
+            assert_eq!(count, 1, "{title} shows one help hint at {width}x{height}");
         }
     }
 }

@@ -12,6 +12,7 @@ use zwipe_core::domain::user::preferences::PipStyle;
 use super::{ConfigView, ExceptionsSheet, Sheet, Stop, ThemeSheet};
 use crate::domain::theme::{self, Palette, PickerRow};
 use crate::inbound::app::Shared;
+use crate::inbound::widgets::action_bar::HelpKey;
 use crate::inbound::widgets::button::{self, Button};
 use crate::inbound::widgets::header::{self, Corner};
 use crate::inbound::widgets::{action_bar, measure, sheet};
@@ -34,11 +35,10 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &ConfigView) {
             ("Enter", "select"),
             ("i", "about row"),
             ("?", "hint"),
-            ("!", "help"),
             ("Esc", "back"),
         ],
-    )
-    .centered();
+    );
+    let bar = action_bar::with_help(palette, bar, HelpKey::Bang).centered();
     let area = f.area();
     let bar_height = action_bar::height(&bar, area.width);
     let width = WIDTH.min(area.width);

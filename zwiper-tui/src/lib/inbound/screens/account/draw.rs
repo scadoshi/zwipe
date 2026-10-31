@@ -10,6 +10,7 @@ use super::{AccountView, DeleteDialog, DeleteFocus, Form, FormKind, Overlay, Sto
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::screens::{VERSION, login};
+use crate::inbound::widgets::action_bar::HelpKey;
 use crate::inbound::widgets::alert::AlertDialog;
 use crate::inbound::widgets::button::{self, Button};
 use crate::inbound::widgets::header::{self, Corner};
@@ -35,13 +36,12 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &AccountView) {
             ("Enter", "select"),
             ("i", "about row"),
             ("?", "hint"),
-            ("!", "help"),
             ("L", "log out"),
             ("m", "more"),
             ("Esc", "back"),
         ],
-    )
-    .centered();
+    );
+    let bar = action_bar::with_help(palette, bar, HelpKey::Bang).centered();
     let area = f.area();
     let bar_height = action_bar::height(&bar, area.width);
     let width = WIDTH.min(area.width);

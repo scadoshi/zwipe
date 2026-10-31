@@ -13,6 +13,7 @@ use super::{BoardFilter, RemoveView};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::screens::card_sheets;
+use crate::inbound::widgets::action_bar::HelpKey;
 use crate::inbound::widgets::card_motion::{self, Phase};
 use crate::inbound::widgets::{action_bar, card_info, header};
 
@@ -22,7 +23,7 @@ const CARD_WIDTH: u16 = 64;
 pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &RemoveView) {
     let palette = &shared.palette;
     let area = f.area();
-    let bar = key_line(palette, view);
+    let bar = action_bar::with_help(palette, key_line(palette, view), HelpKey::Bang);
     let bar_height = action_bar::height(&bar, area.width.saturating_sub(2));
     let [title, boards, body, info, keys] = Layout::vertical([
         Constraint::Length(1),

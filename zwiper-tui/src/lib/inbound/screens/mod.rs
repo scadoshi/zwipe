@@ -635,17 +635,17 @@ mod tests {
         assert!(!format!("{request:?}").contains("hunter2"));
     }
 
-    /// The screen's header row: the one holding `title` with the `!` corner first.
-    fn header_row(text: &str, title: &str) -> Option<String> {
+    /// The screen's rows as `screen_text` draws them, 100 cells each.
+    fn screen_rows(text: &str) -> Vec<String> {
         let cells: Vec<char> = text.chars().collect();
         cells
             .chunks(100)
             .map(|line| line.iter().collect::<String>())
-            .find(|line| line.trim_start().starts_with('!') && line.contains(title))
+            .collect()
     }
 
     #[test]
-    fn every_screen_has_the_help_corner_and_a_hint_corner_when_it_has_a_hint() {
+    fn every_screen_has_help_in_its_bar_and_a_hint_corner_when_it_has_a_hint() {
         use uuid::Uuid;
 
         use crate::inbound::event_loop::harness::Harness;
@@ -684,14 +684,22 @@ mod tests {
             harness.open(open);
             harness.app.shared.hint = None;
             let text = screen_text(&harness.app);
-            let row = header_row(&text, title).unwrap_or_else(|| panic!("{title} has no ! corner"));
+            let rows = screen_rows(&text);
+            let row = rows.first().filter(|row| row.contains(title));
+            let row = row.unwrap_or_else(|| panic!("{title} has no header"));
+            assert!(
+                rows.iter().rev().take(4).any(|row| row.contains("! help")),
+                "{title} has no ! help in its bar"
+            );
             assert_eq!(row.trim_end().ends_with('?'), hint, "{title}'s ? corner");
             harness.press(KeyCode::Char('!'));
             assert!(harness.app.shared.help.is_some(), "! opens help on {title}");
         }
         let harness = Harness::on(Screen::Home(Box::default()));
         let text = screen_text(&harness.app);
-        let row = header_row(&text, "Home").expect("Home has a ! corner");
+        let rows = screen_rows(&text);
+        let row = rows.first().filter(|row| row.contains("Home"));
+        let row = row.expect("Home has a header");
         assert!(!row.trim_end().ends_with('?'), "Home has no ? corner");
     }
 }

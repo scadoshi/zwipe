@@ -20,6 +20,7 @@ use crate::inbound::screens::activity::draw::{Body, GHOST, GUTTER};
 use crate::inbound::screens::card_sheets::filter::draw as filter_sheet;
 use crate::inbound::screens::playstyle::draw as playstyle_draw;
 use crate::inbound::screens::playstyle::draw::ChipContent;
+use crate::inbound::widgets::action_bar::HelpKey;
 use crate::inbound::widgets::card_rows::CardRow;
 use crate::inbound::widgets::text_input::BOX_HEIGHT;
 use crate::inbound::widgets::{action_bar, header, mana, skeleton};
@@ -36,7 +37,12 @@ const CLEAR_MARK: &str = "×";
 pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &MaybeboardView) {
     let palette = &shared.palette;
     let area = f.area().inner(Margin::new(1, 0));
-    let bar = action_bar::line(palette, &key_hints(view));
+    let help = if view.quick.typing {
+        HelpKey::F1
+    } else {
+        HelpKey::Bang
+    };
+    let bar = action_bar::with_help(palette, action_bar::line(palette, &key_hints(view)), help);
     let bar_height = action_bar::height(&bar, area.width);
     let [title, input, body, keys] = Layout::vertical([
         Constraint::Length(1),

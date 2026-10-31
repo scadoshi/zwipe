@@ -29,6 +29,7 @@ use crate::inbound::screens::activity::draw as activity_draw;
 use crate::inbound::screens::activity::draw::{Body, GHOST, GUTTER, INDENT};
 use crate::inbound::screens::home;
 use crate::inbound::screens::home::draw as home_draw;
+use crate::inbound::widgets::action_bar::HelpKey;
 use crate::inbound::widgets::card_rows::{CardRow, OTHER_TAGS};
 use crate::inbound::widgets::{action_bar, charts, color_map, header, mana, otag};
 
@@ -70,7 +71,11 @@ pub(crate) enum Reasons {
 pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &PlaystyleView) {
     let palette = &shared.palette;
     let area = f.area().inner(Margin::new(1, 0));
-    let bar = action_bar::line(palette, &key_hints(view));
+    let bar = action_bar::with_help(
+        palette,
+        action_bar::line(palette, &key_hints(view)),
+        HelpKey::Bang,
+    );
     let bar_height = action_bar::height(&bar, area.width);
     let [title, body, keys] = Layout::vertical([
         Constraint::Length(1),

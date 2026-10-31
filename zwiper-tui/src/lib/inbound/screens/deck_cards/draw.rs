@@ -15,13 +15,19 @@ use super::{DeckCardsView, Dropdown, Item, Kind};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::screens::card_sheets;
+use crate::inbound::widgets::action_bar::HelpKey;
 use crate::inbound::widgets::sheet::Sheet;
 use crate::inbound::widgets::{action_bar, card_info, header, mana, measure, otag, skeleton};
 
 pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &DeckCardsView) {
     let palette = &shared.palette;
     let area = f.area();
-    let bar = key_line(palette, view, shared);
+    let help = if view.quick.focused {
+        HelpKey::F1
+    } else {
+        HelpKey::Bang
+    };
+    let bar = action_bar::with_help(palette, key_line(palette, view, shared), help);
     let bar_height = action_bar::height(&bar, area.width.saturating_sub(2));
     let [title, header, controls, list, keys] = Layout::vertical([
         Constraint::Length(1),

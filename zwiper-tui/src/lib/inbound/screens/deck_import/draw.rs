@@ -9,6 +9,7 @@ use zwipe_core::domain::deck::ImportMode;
 use super::{Focus, ImportView, Source, Target};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
+use crate::inbound::widgets::action_bar::HelpKey;
 use crate::inbound::widgets::pill::{self, PillState};
 use crate::inbound::widgets::text_input::BOX_HEIGHT;
 use crate::inbound::widgets::{action_bar, header};
@@ -61,7 +62,12 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &ImportView) {
     bar.spans.push(Span::styled("F2 ", submit_style));
     bar.spans
         .push(Span::styled(view.submit_label().to_owned(), palette.muted));
-    f.render_widget(bar, keys);
+    let help = if view.focus == Focus::Input {
+        HelpKey::F1
+    } else {
+        HelpKey::Bang
+    };
+    f.render_widget(action_bar::with_help(palette, bar, help), keys);
 }
 
 /// The From, Mode and Board rows of chips.

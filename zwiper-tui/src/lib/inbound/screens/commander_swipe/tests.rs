@@ -180,7 +180,7 @@ fn the_card_on_top_shows_its_text_and_why() {
         "• Shares oracle tags with your decks",
         "Other tags:  goblin-typal ",
         "• You build in red (2 of your 4 decks)",
-        "→ add  ← skip  ↑ maybeboard  ↓ undo  f Filter  r Refresh  ? Hint  Esc Back",
+        "→ add  ← skip  ↑ maybeboard  ↓ undo  f Filter  r Refresh  ? Hint  ! help  Esc Back",
     ] {
         assert!(text.contains(expected), "missing {expected} in\n{text}");
     }

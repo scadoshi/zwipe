@@ -12,6 +12,7 @@ use zwipe_core::domain::card::Card;
 use super::{EMPTY, END, ExamplesView, TITLE};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
+use crate::inbound::widgets::action_bar::HelpKey;
 use crate::inbound::widgets::card_motion::{self, CardMotion, Phase};
 use crate::inbound::widgets::{action_bar, card_text, header, skeleton};
 
@@ -24,7 +25,11 @@ const GHOST_ROWS: usize = 6;
 pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &ExamplesView) {
     let palette = &shared.palette;
     let area = f.area().inner(Margin::new(1, 0));
-    let bar = action_bar::styled_line(&key_hints(palette, view));
+    let bar = action_bar::with_help(
+        palette,
+        action_bar::styled_line(&key_hints(palette, view)),
+        HelpKey::Bang,
+    );
     let bar_height = action_bar::height(&bar, area.width);
     let [title, body, keys] = Layout::vertical([
         Constraint::Length(1),
