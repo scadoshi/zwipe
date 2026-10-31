@@ -9,11 +9,12 @@ use crate::inbound::screens::auth::forgot_password::ForgotPassword;
 use crate::inbound::screens::auth::login::Login;
 use crate::inbound::screens::auth::register::Register;
 use crate::inbound::screens::changelog::Changelog;
+use crate::inbound::screens::commander_maybeboard::CommanderMaybeboard;
 use crate::inbound::screens::config::Config;
 use crate::inbound::screens::home::Home;
 use crate::inbound::screens::placeholders::{
-    AddDeckCard, CommanderMaybeboard, CreateDeck, DeckList, EditDeck, ExportDeck, ImportDeck,
-    NotFound, RemoveDeckCard, ViewDeck, ViewDeckCard,
+    AddDeckCard, CreateDeck, DeckList, EditDeck, ExportDeck, ImportDeck, NotFound, RemoveDeckCard,
+    ViewDeck, ViewDeckCard,
 };
 use crate::inbound::screens::playstyle::Playstyle;
 use crate::inbound::screens::privacy_policy::PrivacyPolicy;

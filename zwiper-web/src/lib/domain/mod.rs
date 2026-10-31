@@ -2,6 +2,7 @@
 //! no I/O.
 
 pub mod account;
+pub mod commander_maybeboard;
 pub mod counts;
 pub mod login;
 pub mod preferences;

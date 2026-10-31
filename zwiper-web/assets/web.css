@@ -888,3 +888,31 @@ body {
         display: none;
     }
 }
+
+/* ---- Commander maybeboard ---- */
+
+/* The app's column: Quick add, Show and the list. A wide window keeps it on
+   the left so the filter's side panel opens beside the list. */
+.web-maybeboard {
+    max-width: 40rem;
+    width: 100%;
+    padding: 0 1rem;
+    box-sizing: border-box;
+}
+
+@media (min-width: 900px) {
+    .web-screen > .screen-content:has(> .web-maybeboard) {
+        align-items: flex-start;
+    }
+
+    .web-maybeboard {
+        max-width: 44rem;
+        margin: 1rem 0 2rem 1.5rem;
+    }
+}
+
+/* The Quick add result the arrow keys point at. */
+.web-float-highlight {
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+}

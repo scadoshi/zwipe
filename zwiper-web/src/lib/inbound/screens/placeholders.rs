@@ -32,12 +32,6 @@ pub fn DeckList() -> Element {
     rsx! { Placeholder { title: "Decks" } }
 }
 
-/// Commander maybeboard, not built yet.
-#[component]
-pub fn CommanderMaybeboard() -> Element {
-    rsx! { Placeholder { title: "Commander maybeboard" } }
-}
-
 /// Create deck, not built yet.
 #[component]
 pub fn CreateDeck() -> Element {
