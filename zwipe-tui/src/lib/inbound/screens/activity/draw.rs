@@ -14,13 +14,12 @@ use super::{ActivityView, Focus, Load, Loaded, PASSES_TITLE, Section, pass_row};
 use crate::domain::activity::{
     self, Bar, DAYS_PER_WEEK, HeatLayout, RateKind, WEEKDAY_LABELS, outcome_bars,
 };
-use crate::domain::count_up::with_separators;
+use crate::domain::count_up;
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
-use crate::inbound::screens::home::draw::chip;
+use crate::inbound::screens::home::draw as home_draw;
 use crate::inbound::widgets::card_rows::CardRow;
-use crate::inbound::widgets::item_list::wrapped_height;
-use crate::inbound::widgets::{action_bar, charts, color_map, entrance, figures, otag};
+use crate::inbound::widgets::{action_bar, charts, color_map, entrance, figures, item_list, otag};
 
 /// Rows the counters panel takes: its frame, the figures and the chips.
 const COUNTS_HEIGHT: u16 = figures::HEIGHT.saturating_add(3);
@@ -122,10 +121,10 @@ fn draw_counts(f: &mut Frame<'_>, shared: &Shared, view: &ActivityView, area: Re
     );
     let mut spans = Vec::new();
     if shown.is_some() {
-        spans.push(chip("Live", palette.add));
+        spans.push(home_draw::chip("Live", palette.add));
         spans.push(Span::raw(" "));
     }
-    spans.push(chip("Only me", palette.accent));
+    spans.push(home_draw::chip("Only me", palette.accent));
     f.render_widget(Line::from(spans).centered(), chips);
 }
 
@@ -153,7 +152,7 @@ pub(crate) fn draw_lines(
         if head.is_empty() {
             0
         } else {
-            wrapped_height(head, area.width)
+            item_list::wrapped_height(head, area.width)
         }
     };
     let start = rows_before(focus.0);
@@ -354,7 +353,7 @@ fn readout_line(palette: &Palette, view: &ActivityView) -> Line<'static> {
         if i > 0 {
             spans.push(Span::raw(" "));
         }
-        spans.push(chip(tag, style));
+        spans.push(home_draw::chip(tag, style));
     }
     Line::from(spans)
 }
@@ -498,7 +497,10 @@ fn totals_lines(palette: &Palette, bars: &[Bar], width: usize) -> Vec<Line<'stat
         .unwrap_or(width)
         .clamp(1, TOTALS_COLUMN);
     let bar_width = TOTALS_BAR.min(column.saturating_sub(2)).max(1);
-    let mut lines = vec![Line::from(chip("Totals", palette.muted)), Line::default()];
+    let mut lines = vec![
+        Line::from(home_draw::chip("Totals", palette.muted)),
+        Line::default(),
+    ];
     let full_eighths = TOTALS_ROWS.saturating_mul(8);
     let heights: Vec<usize> = bars
         .iter()
@@ -516,7 +518,7 @@ fn totals_lines(palette: &Palette, bars: &[Bar], width: usize) -> Vec<Line<'stat
                 let glyph = EIGHTHS.get(eighths % 8).copied().unwrap_or(" ");
                 glyph.repeat(bar_width)
             } else if from_bottom == filled_rows.saturating_add(1) && bar.count > 0 {
-                with_separators(bar.count)
+                count_up::with_separators(bar.count)
             } else {
                 String::new()
             };

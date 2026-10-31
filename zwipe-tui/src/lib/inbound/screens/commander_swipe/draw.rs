@@ -7,7 +7,7 @@ use ratatui::text::Line;
 use ratatui::widgets::{Paragraph, Wrap};
 
 use super::CommanderSwipeView;
-use crate::domain::playstyle::empty_identity_line;
+use crate::domain::playstyle;
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::screens::playstyle::draw::{Reasons, reasons_lines, show_line, wrap_at_gaps};
@@ -65,7 +65,10 @@ fn body_lines(palette: &Palette, view: &CommanderSwipeView, width: usize) -> Vec
             .filter(|_| view.cards.is_empty())
             .and_then(|pile| pile.identity.as_deref());
         if let Some(identity) = empty_pile.filter(|_| !view.loading()) {
-            return vec![Line::styled(empty_identity_line(identity), palette.muted)];
+            return vec![Line::styled(
+                playstyle::empty_identity_line(identity),
+                palette.muted,
+            )];
         }
         return skeleton::rows(palette, GHOST_ROWS, width);
     };

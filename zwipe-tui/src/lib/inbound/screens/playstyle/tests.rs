@@ -15,7 +15,7 @@ use zwipe_core::http::contracts::suggestions::{
 };
 
 use super::*;
-use crate::domain::playstyle::empty_identity_line;
+use crate::domain::playstyle;
 use crate::inbound::event_loop::harness::Harness;
 use crate::inbound::screens::printings::Mode;
 use crate::inbound::widgets::toast::Toast;
@@ -425,7 +425,7 @@ fn the_show_row_narrows_the_list_and_its_picked_chip_returns_to_all() {
         vec![Blue],
         "the chosen chip stays after its last commander goes"
     );
-    assert!(render_text(&harness, 110, 90).contains(&empty_identity_line(&[Blue])));
+    assert!(render_text(&harness, 110, 90).contains(&playstyle::empty_identity_line(&[Blue])));
     assert_eq!(
         view(&harness).focus,
         Focus::Show,

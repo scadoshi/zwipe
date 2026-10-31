@@ -12,7 +12,7 @@ use zwipe_core::http::contracts::suggestions::{
     ACTIVITY_DAYS, HttpActivity, HttpActivityDay, HttpRoleRates, HttpSwipeOutcomes, HttpTagRates,
 };
 
-use crate::domain::count_up::with_separators;
+use crate::domain::count_up;
 
 /// A month label needs this many columns before the next one.
 pub(crate) const LABEL_SPAN: usize = 3;
@@ -216,7 +216,7 @@ pub(crate) fn heat_layout(through: NaiveDate, days: &[HttpActivityDay]) -> HeatL
 /// `n` and its noun, singular for one, with thousands separators.
 pub(crate) fn counted(n: u32, one: &str, many: &str) -> String {
     let noun = if n == 1 { one } else { many };
-    format!("{} {noun}", with_separators(u64::from(n)))
+    format!("{} {noun}", count_up::with_separators(u64::from(n)))
 }
 
 /// A picked day's tags: its swipes, its searches and its date.

@@ -21,7 +21,7 @@ use zwipe_core::http::contracts::suggestions::HttpCommanderSuggestion;
 
 use super::playstyle::{DeckLimit, create_deck_with, suggestion_colors};
 use super::{Screen, failure};
-use crate::domain::playstyle::{identities_present, of_identity};
+use crate::domain::playstyle;
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;
@@ -234,7 +234,7 @@ impl CommanderSwipeView {
     /// The identities the Filter offers: those among the held list plus the picked one.
     pub(crate) fn identities(&self) -> Vec<Vec<Color>> {
         self.suggested().map_or_else(Vec::new, |pile| {
-            identities_present(
+            playstyle::identities_present(
                 pile.held
                     .iter()
                     .map(suggestion_colors)
@@ -415,7 +415,7 @@ impl CommanderSwipeView {
 
 /// The Suggested pile's cards: the held list narrowed to the picked identity.
 fn dealt(pile: &SuggestedPile) -> Vec<Card> {
-    of_identity(&pile.held, suggestion_colors, pile.identity.as_deref())
+    playstyle::of_identity(&pile.held, suggestion_colors, pile.identity.as_deref())
         .into_iter()
         .map(|s| s.card)
         .collect()

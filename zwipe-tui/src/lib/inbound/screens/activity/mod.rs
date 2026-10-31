@@ -15,7 +15,7 @@ use zwipe_core::domain::user::models::hints::HINT_ACTIVITY;
 use zwipe_core::http::contracts::suggestions::{HttpActivity, HttpHardPass};
 
 use super::{Screen, failure, home};
-use crate::domain::activity::{self, Bar, HeatLayout, RateKind, counted};
+use crate::domain::activity::{self, Bar, HeatLayout, RateKind};
 use crate::domain::home::Figures;
 use crate::domain::theme::Palette;
 use crate::inbound::app::{Context, Shared};
@@ -516,7 +516,7 @@ pub(crate) fn pass_row<'pass>(palette: &Palette, pass: &'pass HttpHardPass) -> C
     }
     CardRow::new(&pass.card)
         .with_qty(pass.skipped)
-        .with_qty_tags(vec![counted(pass.skipped, "skip", "skips")])
+        .with_qty_tags(vec![activity::counted(pass.skipped, "skip", "skips")])
         .with_footer(footer)
 }
 

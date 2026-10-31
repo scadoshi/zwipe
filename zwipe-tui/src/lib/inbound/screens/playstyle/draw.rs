@@ -32,7 +32,7 @@ use crate::inbound::screens::activity::draw::{
     Body, GHOST, GUTTER, INDENT, draw_lines, draw_note, indented,
 };
 use crate::inbound::screens::home;
-use crate::inbound::screens::home::draw::chip;
+use crate::inbound::screens::home::draw as home_draw;
 use crate::inbound::widgets::card_rows::{CardRow, OTHER_TAGS};
 use crate::inbound::widgets::{action_bar, charts, color_map, mana, otag};
 
@@ -180,7 +180,10 @@ pub(crate) fn chip_line(
     cursor: usize,
     focused: bool,
 ) -> Line<'static> {
-    let mut spans = vec![chip(label, palette.accent).bold(), Span::raw(" ")];
+    let mut spans = vec![
+        home_draw::chip(label, palette.accent).bold(),
+        Span::raw(" "),
+    ];
     for (i, content) in chips.into_iter().enumerate() {
         let base = if content.picked {
             palette.accent.bold().reversed()
@@ -644,7 +647,7 @@ pub(crate) fn staple_row<'card>(
                 .into_iter()
                 .collect(),
         )
-        .with_footer(vec![Line::from(chip(
+        .with_footer(vec![Line::from(home_draw::chip(
             &staple_decks(staple.decks, deck_count),
             palette.muted,
         ))])
