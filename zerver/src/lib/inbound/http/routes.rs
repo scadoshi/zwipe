@@ -24,6 +24,10 @@ use crate::inbound::http::middleware::{CfConnectingIpKeyExtractor, UserIdKeyExtr
 /// truncated panic text, and the route takes it unauthenticated.
 const CRASH_REPORT_BODY_LIMIT: usize = 4096;
 
+/// Largest decklist import body accepted, in bytes. A 500-card list pasted
+/// from any deck site is about 15 KB.
+const IMPORT_BODY_LIMIT: usize = 64 * 1024;
+
 /// Rate-limit error handler for the routes keyed by user id
 /// (`UserIdKeyExtractor`).
 ///
@@ -653,7 +657,11 @@ pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
                             "/{deck_id}/card",
                             Router::new()
                                 .route("/", post(deck_card::create_deck_card))
-                                .route("/import", post(deck_card::import_deck_cards))
+                                .route(
+                                    "/import",
+                                    post(deck_card::import_deck_cards)
+                                        .layer(DefaultBodyLimit::max(IMPORT_BODY_LIMIT)),
+                                )
                                 .route("/search", post(deck::search_deck_cards))
                                 .route(
                                     "/{scryfall_data_id}",

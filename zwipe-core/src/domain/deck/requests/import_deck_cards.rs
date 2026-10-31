@@ -14,6 +14,16 @@ use crate::domain::deck::{Board, ImportMode};
 /// enough that summing every line of a request-sized body stays inside `i32`.
 pub const MAX_IMPORT_LINE_QUANTITY: i32 = 9_999;
 
+/// Most card lines one import may hold. A deck holds at most 500 cards, so
+/// a real list never comes close; past it the import fails rather than
+/// resolving every line.
+pub const MAX_IMPORT_LINES: usize = 1_000;
+
+/// An import with more than [`MAX_IMPORT_LINES`] card lines.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
+#[error("too many card lines, the limit is {MAX_IMPORT_LINES}")]
+pub struct TooManyImportLines;
+
 /// A parsed line from import text.
 #[derive(Debug, Clone)]
 pub struct ImportLine {
@@ -55,6 +65,12 @@ impl ImportDeckCards {
     /// board and section headers in the text are ignored.
     /// With [`ImportMode::Replace`], each board present in the import is
     /// replaced (cards on it not in the import are removed).
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TooManyImportLines`] once the text passes
+    /// [`MAX_IMPORT_LINES`] card lines. Blank lines and section headers don't
+    /// count; a line refused for its quantity does.
     pub fn parse(
         user_id: Uuid,
         deck_id: Uuid,
@@ -62,10 +78,11 @@ impl ImportDeckCards {
         email_verified: bool,
         board_override: Option<Board>,
         mode: ImportMode,
-    ) -> Self {
+    ) -> Result<Self, TooManyImportLines> {
         let mut current_board = board_override.unwrap_or(Board::Deck);
         let mut lines = Vec::new();
         let mut rejected = Vec::new();
+        let mut card_lines: usize = 0;
 
         for (index, line) in text.lines().enumerate() {
             let trimmed = line.trim();
@@ -109,6 +126,11 @@ impl ImportDeckCards {
                 continue;
             }
 
+            card_lines = card_lines.saturating_add(1);
+            if card_lines > MAX_IMPORT_LINES {
+                return Err(TooManyImportLines);
+            }
+
             let (quantity, rest) = match trimmed.split_once(char::is_whitespace) {
                 Some((first, rest)) => {
                     // Handle "4" or "4x" quantity prefix. A leading `+` is part
@@ -141,14 +163,14 @@ impl ImportDeckCards {
                 board: current_board,
             });
         }
-        Self {
+        Ok(Self {
             user_id,
             deck_id,
             lines,
             rejected,
             email_verified,
             mode,
-        }
+        })
     }
 }
 
@@ -216,7 +238,7 @@ pub struct ImportDeckCardsResult {
 mod tests {
     use super::*;
 
-    fn parse_lines(text: &str) -> Vec<ImportLine> {
+    fn parse_text(text: &str) -> Result<ImportDeckCards, TooManyImportLines> {
         ImportDeckCards::parse(
             Uuid::nil(),
             Uuid::nil(),
@@ -225,7 +247,36 @@ mod tests {
             None,
             ImportMode::Add,
         )
-        .lines
+    }
+
+    fn parse_lines(text: &str) -> Vec<ImportLine> {
+        parse_text(text).unwrap().lines
+    }
+
+    #[test]
+    fn card_lines_past_the_limit_fail_the_import() {
+        let lines = |n: usize| "1 Island\n".repeat(n);
+        let at_limit = parse_text(&lines(MAX_IMPORT_LINES)).unwrap();
+        assert_eq!(at_limit.lines.len(), MAX_IMPORT_LINES);
+        assert!(parse_text(&lines(MAX_IMPORT_LINES + 1)).is_err());
+    }
+
+    #[test]
+    fn headers_and_blank_lines_do_not_count_toward_the_limit() {
+        let text = format!(
+            "// Deck\n\n{}// Sideboard\nSideboard\n\n",
+            "1 Island\n".repeat(MAX_IMPORT_LINES)
+        );
+        assert_eq!(parse_text(&text).unwrap().lines.len(), MAX_IMPORT_LINES);
+    }
+
+    #[test]
+    fn rejected_lines_count_toward_the_limit() {
+        let text = format!("{}10000 Island\n", "1 Island\n".repeat(MAX_IMPORT_LINES));
+        assert!(
+            parse_text(&text).is_err(),
+            "an over-quantity line is still a card line"
+        );
     }
 
     /// Does an entry (as the user typed it) resolve to a card stored under
@@ -347,6 +398,7 @@ mod tests {
             None,
             ImportMode::Add,
         )
+        .unwrap()
         .rejected;
         assert_eq!(rejected.len(), 1);
         assert_eq!(rejected[0].name, "Island");
@@ -440,6 +492,7 @@ mod tests {
             Some(Board::Maybeboard),
             ImportMode::Add,
         )
+        .unwrap()
         .lines;
         assert_eq!(lines.len(), 3);
         assert!(lines.iter().all(|l| l.board == Board::Maybeboard));
@@ -495,6 +548,7 @@ mod tests {
             Some(Board::Maybeboard),
             ImportMode::Add,
         )
+        .unwrap()
         .lines;
         assert_eq!(lines.len(), 2);
         assert!(lines.iter().all(|l| l.board == Board::Maybeboard));
