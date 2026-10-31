@@ -399,7 +399,7 @@ fn ease_out(t: f64) -> f64 {
 
 #[cfg(test)]
 mod tests {
-    use ratatui::widgets::{Block, Paragraph, Widget};
+    use ratatui::widgets::{Paragraph, Widget};
 
     use super::*;
 
@@ -553,7 +553,7 @@ mod tests {
                                 assert!(p.width >= 1 && p.height >= 1);
                                 let mut buf = Buffer::empty(bound);
                                 draw(&mut buf, &p, Style::new(), |b| {
-                                    Block::bordered().render(rest, b);
+                                    crate::inbound::widgets::panel::bordered().render(rest, b);
                                 });
                             }
                         }
@@ -593,7 +593,7 @@ mod tests {
     fn card(rest: Rect, text: &str) -> Buffer {
         let mut buf = Buffer::empty(rest);
         Paragraph::new(text.to_owned())
-            .block(Block::bordered())
+            .block(crate::inbound::widgets::panel::bordered())
             .render(rest, &mut buf);
         buf
     }
@@ -667,7 +667,7 @@ mod tests {
             .map(|x| buf.cell((x, 0)).unwrap().symbol().to_owned())
             .collect();
         assert!(
-            top.starts_with("┌─┌──────┐─"),
+            top.starts_with("╭─╭──────╮─"),
             "the outline crosses the lines under it: {top:?}"
         );
         let mut blank = Buffer::empty(bounds);
@@ -699,16 +699,16 @@ mod tests {
         )
         .unwrap();
         draw(&mut buf, &placement, Style::new(), |b| {
-            Block::bordered().render(rest, b);
+            crate::inbound::widgets::panel::bordered().render(rest, b);
         });
         let row: String = (0..20)
             .map(|x| buf.cell((x, 1)).unwrap().symbol().to_owned())
             .collect();
         assert!(
-            row.starts_with("  ") && row.contains('┌') && row.contains('┐'),
+            row.starts_with("  ") && row.contains('╭') && row.contains('╮'),
             "both corners survive the narrowing: {row:?}"
         );
-        let corner = row.find('┌').unwrap();
+        let corner = row.find('╭').unwrap();
         assert!(corner > 2, "the card has moved right of its rest: {row:?}");
         let dimmed = buf.cell((u16::try_from(corner).unwrap(), 1)).unwrap();
         assert_eq!(dimmed.modifier.contains(Modifier::DIM), placement.dim);

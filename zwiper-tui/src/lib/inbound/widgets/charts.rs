@@ -4,7 +4,7 @@ use ratatui::Frame;
 use ratatui::layout::Rect;
 use ratatui::style::Style;
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Bar, BarChart, Block};
+use ratatui::widgets::{Bar, BarChart};
 
 use crate::domain::theme::Palette;
 
@@ -49,7 +49,7 @@ pub(crate) fn columns(
         .collect();
     let chart = BarChart::vertical(bars)
         .block(
-            Block::bordered()
+            crate::inbound::widgets::panel::bordered()
                 .title(format!(" {title} "))
                 .border_style(palette.border),
         )

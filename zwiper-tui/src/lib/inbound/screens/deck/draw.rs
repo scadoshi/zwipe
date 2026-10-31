@@ -4,7 +4,7 @@ use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Margin, Rect};
 use ratatui::style::{Style, Stylize};
 use ratatui::text::{Line, Span, Text};
-use ratatui::widgets::{Block, BorderType, Paragraph, Wrap};
+use ratatui::widgets::{Paragraph, Wrap};
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
 use zwipe_core::domain::deck::{Format, deck_tag, draw_odds};
@@ -184,12 +184,7 @@ fn draw_panel(f: &mut Frame<'_>, palette: &Palette, view: &DeckView, panel: &Pan
         palette.border
     };
     let room = usize::from(panel.area.width.saturating_sub(BORDERS));
-    let block = Block::bordered()
-        .border_type(if has_focus {
-            BorderType::Thick
-        } else {
-            BorderType::Plain
-        })
+    let block = crate::inbound::widgets::panel::bordered()
         .border_style(border)
         .title(tabs(palette, view, &panel.panes, shown, has_focus, room));
     let inner = block.inner(panel.area).inner(Margin::new(1, 0));

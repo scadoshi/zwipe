@@ -5,7 +5,7 @@ use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::style::Stylize;
 use ratatui::text::Line;
-use ratatui::widgets::{Block, Clear, Padding, Paragraph};
+use ratatui::widgets::{Clear, Padding, Paragraph};
 
 use super::measure::BORDERS;
 use super::{action_bar, card_info, measure};
@@ -173,7 +173,7 @@ pub(crate) fn frame(
         .min(area.height);
     let [_, sheet] =
         Layout::vertical([Constraint::Fill(1), Constraint::Length(height)]).areas(area);
-    let mut block = Block::bordered()
+    let mut block = crate::inbound::widgets::panel::bordered()
         .title(
             Line::from(format!(" {title} "))
                 .style(palette.tertiary)

@@ -6,7 +6,7 @@ use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Position, Rect};
 use ratatui::style::{Style, Stylize};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Paragraph, Widget, Wrap};
+use ratatui::widgets::{Paragraph, Widget, Wrap};
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::{
@@ -65,7 +65,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &DeckForm) {
     }
 
     header::draw(f, palette, header, form.mode.title(), header::Corner::Hint);
-    let block = Block::bordered().border_style(palette.border);
+    let block = crate::inbound::widgets::panel::bordered().border_style(palette.border);
     if form.loading || form.load_error.is_some() {
         let inner = block.inner(body);
         f.render_widget(block, body);
@@ -620,7 +620,7 @@ fn picker_frame(
     bar_lines.extend(bar.1.into_iter().map(Line::from));
     let bar = Paragraph::new(bar_lines)
         .wrap(Wrap { trim: true })
-        .block(Block::bordered().border_style(palette.border));
+        .block(crate::inbound::widgets::panel::bordered().border_style(palette.border));
     // The definition wraps to the width, but never takes more than half the room under the search box.
     let bar_height = measure::height_of(bar.line_count(body.width))
         .min(body.height.saturating_sub(4) / 2)
@@ -875,7 +875,7 @@ fn draw_swipe(f: &mut Frame<'_>, shared: &Shared, picker: &SwipePicker, areas: [
     let palette = &shared.palette;
     let [header, body, _, _] = areas;
     header::draw(f, palette, header, "Swipe select", header::Corner::Hint);
-    let block = Block::bordered().border_style(palette.border);
+    let block = crate::inbound::widgets::panel::bordered().border_style(palette.border);
     let inner = block.inner(body);
     f.render_widget(block, body);
     let now = Instant::now();

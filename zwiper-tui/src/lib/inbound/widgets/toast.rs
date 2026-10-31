@@ -10,7 +10,7 @@ use ratatui::Frame;
 use ratatui::layout::Rect;
 use ratatui::style::{Modifier, Style};
 use ratatui::text::Line;
-use ratatui::widgets::{Block, Clear, Padding, Paragraph, Wrap};
+use ratatui::widgets::{Clear, Padding, Paragraph, Wrap};
 pub(crate) use zwipe_ui::toast::{LONG, NORMAL, QUICK, ToastKind};
 
 use super::measure;
@@ -237,7 +237,7 @@ fn render(
     f.render_widget(Clear, rect);
     f.render_widget(
         paragraph.block(
-            Block::bordered()
+            crate::inbound::widgets::panel::bordered()
                 .border_style(border(toast.kind, palette))
                 .style(base)
                 .padding(Padding::horizontal(1)),
@@ -318,13 +318,13 @@ mod tests {
         }
         let screen = rows(&toasts, 40, 12, Instant::now());
         assert!(screen[1].contains("third"), "the newest on top: {screen:?}");
-        assert!(screen[0].starts_with(" ┌"), "one cell in from the left");
+        assert!(screen[0].starts_with(" ╭"), "one cell in from the left");
         assert!(
             !screen.concat().contains("second"),
             "older ones show only an edge"
         );
         assert!(
-            screen[3].contains('└') && screen[4].contains('└'),
+            screen[3].contains('╰') && screen[4].contains('╰'),
             "{screen:?}"
         );
     }

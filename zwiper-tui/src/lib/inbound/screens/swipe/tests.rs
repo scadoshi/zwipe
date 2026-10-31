@@ -743,13 +743,13 @@ fn cells_with(harness: &Harness, symbol: &str) -> Vec<(u16, u16)> {
 #[test]
 fn the_exiting_card_draws_offset_over_the_next_one() {
     let (mut harness, _) = Harness::swiping(vec![card("A"), card("B")]);
-    let rest = cells_with(&harness, "┌");
+    let rest = cells_with(&harness, "╭");
     assert_eq!(rest.len(), 1, "one card at rest: {rest:?}");
     let (rest_x, _) = rest[0];
     harness.press(KeyCode::Char('l'));
     harness.app.shared.toasts = crate::inbound::widgets::toast::Toasts::default();
     view_mut(&mut harness).motion = Some(exit_since(card("A"), Direction::Right, 60));
-    let moving = cells_with(&harness, "┌");
+    let moving = cells_with(&harness, "╭");
     assert_eq!(moving.len(), 2, "B at rest and A flying: {moving:?}");
     assert!(
         moving.iter().any(|(x, _)| *x == rest_x),
@@ -761,7 +761,7 @@ fn the_exiting_card_draws_offset_over_the_next_one() {
     );
     view_mut(&mut harness).motion = None;
     assert_eq!(
-        cells_with(&harness, "┌"),
+        cells_with(&harness, "╭"),
         rest,
         "once it lands only B is left"
     );
@@ -868,8 +868,8 @@ fn a_card_too_tall_for_the_screen_keeps_its_stats_line() {
     for (width, height) in [(200, 50), (120, 40), (80, 24), (60, 20)] {
         let rows = crate::test_support::rows(&harness.app, width, height);
         let text = rows.join("\n");
-        let top = rows.iter().position(|r| r.contains("┌")).unwrap();
-        let bottom = rows.iter().position(|r| r.contains("└")).unwrap();
+        let top = rows.iter().position(|r| r.contains("╭")).unwrap();
+        let bottom = rows.iter().position(|r| r.contains("╰")).unwrap();
         let card = rows[top..=bottom].join("\n");
         for part in [
             "Delina, Wild Mage",

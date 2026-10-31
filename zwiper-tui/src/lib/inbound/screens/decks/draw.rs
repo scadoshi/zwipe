@@ -4,7 +4,7 @@ use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::style::Stylize;
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Paragraph, Wrap};
+use ratatui::widgets::{Paragraph, Wrap};
 use zwipe_core::domain::deck::{DeckProfile, deck_tag};
 use zwipe_ui::deck;
 use zwipe_ui::deck::list::{DeckGroup, GroupBy};
@@ -160,7 +160,7 @@ fn chip_rows(palette: &Palette, list: &DeckList, width: usize) -> Vec<Line<'stat
 }
 
 fn draw_list(f: &mut Frame<'_>, palette: &Palette, list: &DeckList, area: Rect) {
-    let block = Block::bordered().border_style(palette.border);
+    let block = crate::inbound::widgets::panel::bordered().border_style(palette.border);
     let message = if list.loading {
         let width = usize::from(area.width.saturating_sub(4));
         f.render_widget(

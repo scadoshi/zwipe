@@ -6,7 +6,7 @@ use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Margin, Rect};
 use ratatui::style::{Style, Stylize};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Paragraph, Wrap};
+use ratatui::widgets::{Paragraph, Wrap};
 use ratatui_image::StatefulImage;
 use ratatui_image::picker::ProtocolType;
 use zwipe_core::domain::card::Card;
@@ -175,7 +175,7 @@ fn draw_color_map(f: &mut Frame<'_>, shared: &Shared, view: &HomeView, area: Rec
     let palette = &shared.palette;
     let summary = super::play_style_for(shared);
     let ghost = summary.is_none() && !view.play_style_failed;
-    let mut block = Block::bordered().border_style(palette.border);
+    let mut block = crate::inbound::widgets::panel::bordered().border_style(palette.border);
     if ghost {
         block = block.title(Line::styled(" ░░░░░░░░ ", palette.muted).centered());
     } else {
@@ -255,7 +255,7 @@ fn draw_flavor(f: &mut Frame<'_>, shared: &Shared, view: &HomeView, area: Rect) 
         Some(card) if keys::has_flavor(card) => draw_flavor_card(f, shared, view, card, area),
         Some(_) => {}
         None => {
-            let block = Block::bordered().border_style(palette.border);
+            let block = crate::inbound::widgets::panel::bordered().border_style(palette.border);
             let inner = block.inner(area);
             f.render_widget(block, area);
             let width = usize::from(inner.width);
@@ -272,7 +272,7 @@ fn draw_flavor(f: &mut Frame<'_>, shared: &Shared, view: &HomeView, area: Rect) 
 /// The featured card's panel: its image beside or above the quote, name, price and keys when the terminal draws real images and the panel has room, else those alone.
 fn draw_flavor_card(f: &mut Frame<'_>, shared: &Shared, view: &HomeView, card: &Card, area: Rect) {
     let palette = &shared.palette;
-    let block = Block::bordered()
+    let block = crate::inbound::widgets::panel::bordered()
         .title(Line::from(" Featured flavor ").bold().centered())
         .border_style(palette.border);
     let inner = block.inner(area);

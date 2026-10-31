@@ -3,7 +3,7 @@
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Margin};
 use ratatui::text::Line;
-use ratatui::widgets::{Block, Padding, Paragraph, Wrap};
+use ratatui::widgets::{Padding, Paragraph, Wrap};
 use ratatui_image::StatefulImage;
 use zwipe_ui::card;
 
@@ -35,7 +35,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &ImagePreview) {
                 .unwrap_or_default();
             f.render_widget(
                 Paragraph::new(lines).wrap(Wrap { trim: true }).block(
-                    Block::bordered()
+                    crate::inbound::widgets::panel::bordered()
                         .border_style(palette.accent)
                         .padding(Padding::horizontal(1)),
                 ),

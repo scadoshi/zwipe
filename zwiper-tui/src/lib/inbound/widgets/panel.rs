@@ -3,10 +3,15 @@
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Rect};
 use ratatui::text::Line;
-use ratatui::widgets::{Block, Clear, Padding};
+use ratatui::widgets::{Block, BorderType, Clear, Padding};
 
 use super::measure::BORDERS;
 use crate::domain::theme::Palette;
+
+/// A block with a border on every side and rounded corners, the frame every box in the app uses.
+pub(crate) fn bordered() -> Block<'static> {
+    Block::bordered().border_type(BorderType::Rounded)
+}
 
 /// Clears and frames a centered panel of the given inner size, and returns the area inside its border and padding.
 pub(crate) fn draw(
@@ -20,7 +25,7 @@ pub(crate) fn draw(
         Constraint::Max(width.saturating_add(BORDERS).saturating_add(BORDERS)),
         Constraint::Length(height.saturating_add(BORDERS)),
     );
-    let block = Block::bordered()
+    let block = bordered()
         .border_style(palette.border)
         .style(palette.base)
         .padding(Padding::horizontal(1));

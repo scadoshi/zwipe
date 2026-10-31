@@ -7,7 +7,7 @@ use std::{iter, mem};
 use ratatui::layout::{Constraint, Rect};
 use ratatui::style::{Modifier, Style, Stylize};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Padding, Paragraph, Wrap};
+use ratatui::widgets::{Padding, Paragraph, Wrap};
 use zwipe_core::domain::card::{Card, card_role};
 use zwipe_ui::card::{self, Face};
 
@@ -306,7 +306,7 @@ pub(crate) fn proxy_card(
     let text = Paragraph::new(fitted_proxy_lines(palette, card, face, inner, rows))
         .wrap(Wrap { trim: true })
         .block(
-            Block::bordered()
+            crate::inbound::widgets::panel::bordered()
                 .border_style(border)
                 .padding(Padding::horizontal(1)),
         );

@@ -3,7 +3,7 @@
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout};
 use ratatui::text::Line;
-use ratatui::widgets::{Block, Paragraph, Wrap};
+use ratatui::widgets::{Paragraph, Wrap};
 
 use super::ExportView;
 use crate::inbound::app::Shared;
@@ -37,7 +37,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &ExportView) {
     .areas(f.area());
     header::draw(f, palette, header, "Export", header::Corner::Hint);
 
-    let block = Block::bordered()
+    let block = crate::inbound::widgets::panel::bordered()
         .title(" Decklist ")
         .border_style(palette.border);
     if view.failed {

@@ -4,7 +4,7 @@ use crossterm::event::KeyCode;
 use ratatui::Frame;
 use ratatui::layout::{Position, Rect};
 use ratatui::text::Line;
-use ratatui::widgets::{Block, Paragraph};
+use ratatui::widgets::Paragraph;
 
 use crate::domain::theme::Palette;
 
@@ -187,7 +187,7 @@ impl TextArea {
         };
         f.render_widget(
             Paragraph::new(lines).block(
-                Block::bordered()
+                crate::inbound::widgets::panel::bordered()
                     .title(format!(" {title} "))
                     .border_style(border),
             ),

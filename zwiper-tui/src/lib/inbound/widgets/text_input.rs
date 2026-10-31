@@ -5,7 +5,7 @@ use ratatui::Frame;
 use ratatui::layout::{Position, Rect};
 use ratatui::style::Style;
 use ratatui::text::Line;
-use ratatui::widgets::{Block, Paragraph};
+use ratatui::widgets::Paragraph;
 
 use super::measure::BORDERS;
 use crate::domain::theme::Palette;
@@ -200,7 +200,7 @@ impl TextInput {
             let skip = self.skip(box_area.width);
             Line::from(self.shown().chars().skip(skip).collect::<String>()).style(Style::new())
         };
-        let mut block = Block::bordered().border_style(border);
+        let mut block = crate::inbound::widgets::panel::bordered().border_style(border);
         if !title.is_empty() {
             block = block.title(format!(" {title} "));
         }

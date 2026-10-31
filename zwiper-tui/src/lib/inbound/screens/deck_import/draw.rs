@@ -3,7 +3,7 @@
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Paragraph, Wrap};
+use ratatui::widgets::{Paragraph, Wrap};
 use zwipe_core::domain::deck::ImportMode;
 
 use super::{Focus, ImportView, Source, Target};
@@ -172,7 +172,8 @@ fn draw_result(f: &mut Frame<'_>, palette: &Palette, view: &ImportView, area: Re
         }));
     }
     f.render_widget(
-        Paragraph::new(lines).block(Block::bordered().border_style(palette.border)),
+        Paragraph::new(lines)
+            .block(crate::inbound::widgets::panel::bordered().border_style(palette.border)),
         area,
     );
 }

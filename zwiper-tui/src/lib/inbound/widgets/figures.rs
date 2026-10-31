@@ -9,7 +9,7 @@ use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::style::Stylize;
 use ratatui::text::{Line, Text};
-use ratatui::widgets::{Block, BorderType, Paragraph};
+use ratatui::widgets::{BorderType, Paragraph};
 use zwipe_ui::home::Figures;
 
 use super::count_up as count_up_widget;
@@ -113,7 +113,7 @@ pub(crate) fn tiles(f: &mut Frame<'_>, palette: &Palette, area: Rect, numbers: [
         .spacing(1)
         .split(row);
     for ((number, label), column) in numbers.into_iter().zip(Figures::LABELS).zip(columns.iter()) {
-        let block = Block::bordered()
+        let block = crate::inbound::widgets::panel::bordered()
             .border_type(BorderType::Rounded)
             .border_style(palette.border);
         let inner = block.inner(*column);

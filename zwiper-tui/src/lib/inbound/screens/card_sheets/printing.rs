@@ -5,7 +5,7 @@ use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::style::Stylize;
 use ratatui::text::Line;
-use ratatui::widgets::{Block, Clear, Padding, Paragraph, Wrap};
+use ratatui::widgets::{Clear, Padding, Paragraph, Wrap};
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 
@@ -172,7 +172,7 @@ impl PrintingSheet {
         f.render_widget(Clear, sheet);
         f.render_widget(
             Paragraph::new(body).wrap(Wrap { trim: true }).block(
-                Block::bordered()
+                crate::inbound::widgets::panel::bordered()
                     .title(Line::from(" Printings ").bold())
                     .title_bottom(footer)
                     .border_style(palette.accent)

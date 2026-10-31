@@ -9,7 +9,7 @@ use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Margin, Rect};
 use ratatui::style::{Color as TermColor, Modifier, Style, Stylize};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Paragraph, Wrap};
+use ratatui::widgets::{Paragraph, Wrap};
 use zwipe_ui::activity::{self, Bar, DAYS_PER_WEEK, HeatLayout, RateKind, WEEKDAY_LABELS};
 
 use super::{ActivityView, Focus, Load, Loaded, PASSES_TITLE, Section, pass_row};
@@ -100,7 +100,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &ActivityView) {
 /// The user's own counters, rolling until the payload lands, with "Live" and "Only me" under them.
 fn draw_counts(f: &mut Frame<'_>, shared: &Shared, view: &ActivityView, area: Rect) {
     let palette = &shared.palette;
-    let block = Block::bordered().border_style(palette.border);
+    let block = crate::inbound::widgets::panel::bordered().border_style(palette.border);
     let inner = block.inner(area);
     f.render_widget(block, area);
     let [strip, chips] =

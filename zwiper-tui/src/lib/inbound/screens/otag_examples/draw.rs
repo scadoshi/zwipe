@@ -6,7 +6,7 @@ use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Margin, Rect};
 use ratatui::style::Style;
 use ratatui::text::Line;
-use ratatui::widgets::{Block, Padding, Paragraph, Widget, Wrap};
+use ratatui::widgets::{Padding, Paragraph, Widget, Wrap};
 use zwipe_core::domain::card::Card;
 
 use super::{EMPTY, END, ExamplesView, TITLE};
@@ -80,7 +80,7 @@ fn card_widget(palette: &Palette, card: &Card) -> Paragraph<'static> {
     Paragraph::new(card_text::lines(palette, &card.scryfall_data))
         .wrap(Wrap { trim: true })
         .block(
-            Block::bordered()
+            crate::inbound::widgets::panel::bordered()
                 .border_style(palette.accent)
                 .padding(Padding::horizontal(1)),
         )
@@ -102,7 +102,7 @@ fn key_hints(palette: &Palette, view: &ExamplesView) -> Vec<(&'static str, &'sta
 
 /// A card frame of ghost rows, with no text in it.
 fn draw_ghost_card(f: &mut Frame<'_>, palette: &Palette, area: Rect) {
-    let block = Block::bordered()
+    let block = crate::inbound::widgets::panel::bordered()
         .border_style(palette.muted)
         .padding(Padding::horizontal(1));
     let width = usize::from(block.inner(area).width);

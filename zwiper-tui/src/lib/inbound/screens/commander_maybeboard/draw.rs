@@ -6,7 +6,6 @@ use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Margin, Rect};
 use ratatui::style::Stylize;
 use ratatui::text::{Line, Span};
-use ratatui::widgets::Block;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::colors::Color;
 
@@ -49,7 +48,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &MaybeboardView) {
     header::draw(f, palette, title, super::TITLE, header::Corner::Hint);
     if view.is_loading {
         f.render_widget(
-            Block::bordered()
+            crate::inbound::widgets::panel::bordered()
                 .title(Span::styled(GHOST.repeat(QUICK_ADD.len()), palette.accent))
                 .border_style(palette.muted),
             input,

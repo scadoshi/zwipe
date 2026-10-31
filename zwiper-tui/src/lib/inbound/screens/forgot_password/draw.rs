@@ -6,7 +6,7 @@ use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout};
 use ratatui::style::Stylize;
 use ratatui::text::Line;
-use ratatui::widgets::{Block, Paragraph, Wrap};
+use ratatui::widgets::{Paragraph, Wrap};
 
 use super::{ForgotField, ForgotForm, SENT_BODY, SENT_TITLE};
 use crate::inbound::app::Shared;
@@ -41,7 +41,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &ForgotForm) {
         .centered(),
     );
     if form.sent {
-        let block = Block::bordered()
+        let block = crate::inbound::widgets::panel::bordered()
             .border_style(palette.border)
             .title(Line::from(SENT_TITLE).bold().centered());
         f.render_widget(

@@ -4,7 +4,7 @@ use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::style::{Style, Stylize};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Clear as ClearWidget, Padding, Paragraph};
+use ratatui::widgets::{Clear as ClearWidget, Padding, Paragraph};
 use zwipe_ui::filter::picker::PickerField;
 use zwipe_ui::filter::sections::{self, ChipSet, Row, Section, StepRow};
 
@@ -38,7 +38,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, sheet: &FilterSheet, area
     footer
         .spans
         .extend(action_bar::line(palette, &[("r", "reset"), ("x", "clear"), ("?", "hint")]).spans);
-    let block = Block::bordered()
+    let block = crate::inbound::widgets::panel::bordered()
         .title(Line::from(" Filter ").bold())
         .title_bottom(footer)
         .border_style(palette.accent)
