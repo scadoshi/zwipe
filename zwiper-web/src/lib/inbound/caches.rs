@@ -105,7 +105,8 @@ pub fn use_root_caches() {
         });
     });
 
-    use_context_provider(|| CreateDeckSeed(Signal::new(None)));
+    let seed = CreateDeckSeed(use_signal(|| None));
+    use_context_provider(|| seed);
 
     let franchises = UbFranchises(use_signal(|| Load::Loading));
     use_context_provider(|| franchises);
