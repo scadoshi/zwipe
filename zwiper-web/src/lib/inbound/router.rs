@@ -13,8 +13,9 @@ use crate::inbound::screens::config::Config;
 use crate::inbound::screens::home::Home;
 use crate::inbound::screens::placeholders::{
     AddDeckCard, CommanderMaybeboard, CreateDeck, DeckList, EditDeck, ExportDeck, ImportDeck,
-    NotFound, Playstyle, RemoveDeckCard, ViewDeck, ViewDeckCard,
+    NotFound, RemoveDeckCard, ViewDeck, ViewDeckCard,
 };
+use crate::inbound::screens::playstyle::Playstyle;
 use crate::inbound::screens::privacy_policy::PrivacyPolicy;
 use crate::inbound::session::auth_gate::AuthGate;
 use crate::inbound::shell::{PublicFrame, Shell};

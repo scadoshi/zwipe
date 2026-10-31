@@ -821,3 +821,70 @@ body {
         width: 100%;
     }
 }
+
+/* ---- Playstyle ---- */
+
+/* The app's bounded column below the breakpoint: the profile, then the
+   Show row, the suggestions and Staples, a panel gap apart. */
+.web-playstyle {
+    width: 100%;
+    max-width: 40rem;
+    padding: 0 1rem;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: var(--panel-gap);
+}
+
+.web-playstyle-profile,
+.web-playstyle-list {
+    width: 100%;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--panel-gap);
+}
+
+/* A wide window puts the profile sections, all open, in the left column and
+   the list in the right. */
+@media (min-width: 900px) {
+    .web-playstyle {
+        max-width: var(--web-content-max);
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+        align-items: start;
+        gap: 1.5rem;
+        padding: 0 1.5rem;
+    }
+}
+
+/* ---- Swipe select ---- */
+
+/* Hidden while closed and click-through, as in the app; it cross-fades on
+   .show. On a wide window the card and its info sit left and the card's
+   details beside them. */
+.web-swipe-select-details {
+    display: none;
+}
+
+@media (min-width: 900px) {
+    .web-swipe-select-body {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        align-items: start;
+        gap: 1.5rem;
+        max-width: var(--web-content-max);
+        margin: 0 auto;
+        width: 100%;
+        padding: 1rem 1.5rem;
+        box-sizing: border-box;
+    }
+
+    .web-swipe-select-details {
+        display: block;
+    }
+
+    .web-swipe-select .action-bar .btn-action-eye {
+        display: none;
+    }
+}

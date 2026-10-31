@@ -7,4 +7,5 @@ pub mod card_row;
 pub mod image_preview;
 pub mod otag;
 pub mod printing_sheet;
+pub mod swipe_select;
 pub mod swipe_stack;

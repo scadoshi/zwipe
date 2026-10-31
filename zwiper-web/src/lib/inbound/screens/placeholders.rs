@@ -38,12 +38,6 @@ pub fn CommanderMaybeboard() -> Element {
     rsx! { Placeholder { title: "Commander maybeboard" } }
 }
 
-/// Playstyle, not built yet.
-#[component]
-pub fn Playstyle() -> Element {
-    rsx! { Placeholder { title: "Playstyle" } }
-}
-
 /// Create deck, not built yet.
 #[component]
 pub fn CreateDeck() -> Element {
