@@ -178,6 +178,11 @@ impl Screen {
             Self::Account(view) => view.animating(),
             Self::Login(form) => form.hero.animating(Instant::now()),
             Self::Changelog(view) => widgets::entrance::animating(view.filtered_at.elapsed()),
+            Self::Swipe(view) => view.animating(),
+            Self::RemoveCards(view) => view.animating(),
+            Self::DeckForm(form) => {
+                matches!(&form.overlay, Some(deck_form::Overlay::Swipe(picker)) if picker.animating())
+            }
             Self::Register(form) => form.hero.animating(Instant::now()),
             Self::ForgotPassword(form) => form.sending() || form.hero.animating(Instant::now()),
             Self::Activity(view) => view.animating(),

@@ -82,11 +82,18 @@ All live in `widgets/` and draw in the account theme's `Palette`.
 - `menu` and `pill`: a sheet of buttons, and one chip drawn on its own.
 - `text_area`: a text box of many lines, for pasting a decklist.
 - Animations, each driven by elapsed time with a matching `animating` check for `Screen::animating`: `logo` (the decode, `logo::draw(f, area, art, palette.logo, Some(elapsed))`), `count_up` (`CountUp::new(start, value)`, `set`, `shown_after(elapsed)`), `grid` (the rain, `grid::draw(f, palette, area, Some(elapsed))` and `grid::raining`), `entrance` (`entrance::draw(f, area, elapsed)`; the app runs it on every new screen), `spinner` (a request in flight), `splash` (the opening over the first screen) and `wipe` (the sweep between themes); the app runs the last two itself. Logos draw in `palette.logo`.
+- `card_motion`: a swiped card flying off and an undone one coming back, after the app's `card-stack-exit-*` (0.18 s) and `card-stack-enter-*` (0.2 s), both on CSS `ease-out`. The card slides off in the swipe direction, clipped at the bounds, and narrows toward an edge-on sliver (its width for left and right, its height for up) to stand in for the tilt, dim for the second half. Down is undo and has no exit. A swipe screen adopts it in four steps:
+  1. Keep `motion: Option<CardMotion<T>>` on the view. `T` is whatever draws the card that left; `card_motion::Snapshot { card, face }` suits a card screen.
+  2. On a committed swipe, before the stack moves on, set `CardMotion::exit(direction, snapshot, Instant::now())`. On an undo that brings a card back, set `CardMotion::enter(side_it_left, Instant::now())`. A new swipe replaces the motion; keys act on the stack at once.
+  3. In `draw`, keep only a motion that is `running(now)`. Draw the resting card first: the new top card during an exit, the card under the top one during an entrance. Then take `motion.placement(now, rest, bounds)` for the moving card's resting rect and call `card_motion::draw(f.buffer_mut(), &placement, palette.base, |buf| widget.render(rest, buf))`. An exit draws its snapshot; an entrance draws the stack's own top card.
+  4. Report `running(Instant::now())` from the screen's arm in `Screen::animating`.
+
+  `card_motion::side_style` gives a direction's color. Add holds Sixel and iTerm2 images back while a card moves, since those protocols draw as one escape that later cells skip; half blocks and kitty placeholders are ordinary cells and stay.
 - `text_input`: a one-line box with cursor movement, masking, a placeholder and an error line. The caller places the terminal cursor with `cursor_position`.
 - `chips`: a chip row picking one or many.
 - `collapsible`: a section that opens and closes, and an accordion that keeps one open.
 - `info`: the "?" popup of bullet points.
-- `action_bar`: the bottom row of key hints, and `action_bar::buttons` for a row of buttons the focus moves across.
+- `action_bar`: the bottom row of key hints, and `action_bar::buttons` for a row of buttons the focus moves across. A swipe screen builds its swipe keys with `action_bar::swipes(palette, right, left, up, down)`, which colors each verb like the app's swipe hints (right success, left error, up warning, down tertiary), and draws them with `styled_line`. The labels use only add, remove, skip, maybeboard and undo (the commander swipe and the oracle tag Examples too: Examples reads skip and undo); toasts and hint prose stay the app's own words, so Remove's skip still toasts "Kept".
 - `skeleton`: ghost rows for content still loading.
 - `stats`: a strip of figures whose digits roll until they load. A screen showing one should animate while `stats::loading` is true.
 - `browser`: `browser::open(cx, url)` runs `open` on macOS and `xdg-open` elsewhere, and shows the link in a toast when that fails.

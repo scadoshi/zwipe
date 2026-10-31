@@ -1,17 +1,20 @@
 use std::cell::RefCell;
+use std::time::{Duration, Instant};
 
 use crossterm::event::KeyCode;
 use image::DynamicImage;
 use ratatui::style::Color;
-use ratatui_image::picker::Picker;
+use ratatui_image::picker::{Picker, ProtocolType};
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::deck::{DeckCard, Format, Quantity};
 
 use super::*;
+use crate::domain::stack::Direction;
 use crate::domain::theme::Palette;
 use crate::inbound::event_loop::harness::Harness;
+use crate::inbound::widgets::card_motion::{CardMotion, Phase, Snapshot};
 use crate::inbound::widgets::toast::ToastKind;
-use crate::test_support::{card, deck, deck_profile, render, screen_text};
+use crate::test_support::{card, deck, deck_profile, render, screen_text, word_colors};
 
 fn toasts(harness: &Harness) -> Vec<(ToastKind, String)> {
     harness
@@ -648,4 +651,189 @@ fn a_loaded_image_draws_beside_the_card_text_on_a_wide_terminal() {
         screen_text(&harness.app).contains("Loading image..."),
         "i swaps the text for the image"
     );
+}
+
+/// A motion on `card` by `direction` that started `millis` ago.
+fn exit_since(card: Card, direction: Direction, millis: u64) -> Motion {
+    let started = Instant::now()
+        .checked_sub(Duration::from_millis(millis))
+        .unwrap();
+    CardMotion::exit(direction, Snapshot { card, face: 0 }, started)
+}
+
+#[test]
+fn a_swipe_sends_the_card_off_and_the_screen_animates_until_it_lands() {
+    let (mut harness, _) = Harness::swiping(vec![card("A"), card("B"), card("C")]);
+    assert_eq!(view(&harness).motion, None);
+    harness.press(KeyCode::Char('l'));
+    let motion = view(&harness).motion.clone().unwrap();
+    assert_eq!(motion.direction(), Direction::Right);
+    assert!(
+        matches!(motion.phase(), Phase::Exit(s) if s.card.scryfall_data.name == "A"),
+        "the exit carries the card that left"
+    );
+    assert!(
+        harness.screen().animating(),
+        "the loop redraws while it flies"
+    );
+    view_mut(&mut harness).motion = Some(exit_since(card("A"), Direction::Right, 180));
+    assert!(!harness.screen().animating(), "it stops at the end");
+}
+
+#[test]
+fn a_key_during_an_exit_acts_on_the_next_card_and_replaces_the_exit() {
+    let (mut harness, _) = Harness::swiping(vec![card("A"), card("B"), card("C")]);
+    harness.press(KeyCode::Char('l'));
+    harness.press(KeyCode::Char('h'));
+    assert_eq!(view(&harness).stack.index(), 2, "the skip took B at once");
+    assert_eq!(
+        view(&harness)
+            .current()
+            .map(|c| c.scryfall_data.name.as_str()),
+        Some("C")
+    );
+    let motion = view(&harness).motion.clone().unwrap();
+    assert_eq!(motion.direction(), Direction::Left);
+    assert!(matches!(motion.phase(), Phase::Exit(s) if s.card.scryfall_data.name == "B"));
+    harness.press(KeyCode::Char('m'));
+    assert_eq!(
+        view(&harness).motion.as_ref().map(Motion::direction),
+        Some(Direction::Up),
+        "up flies off the top"
+    );
+}
+
+#[test]
+fn undo_brings_the_card_back_from_the_side_it_left() {
+    let (mut harness, _) = Harness::swiping(vec![card("A"), card("B")]);
+    harness.press(KeyCode::Char('h'));
+    harness.press(KeyCode::Char('u'));
+    let motion = view(&harness).motion.clone().unwrap();
+    assert_eq!(motion.phase(), &Phase::Enter);
+    assert_eq!(motion.direction(), Direction::Left);
+    assert_eq!(
+        view(&harness)
+            .under()
+            .map(|c| c.scryfall_data.name.as_str()),
+        Some("B"),
+        "the card it covers rests under it"
+    );
+    harness.press(KeyCode::Char('u'));
+    assert_eq!(
+        view(&harness).motion.as_ref().map(Motion::phase),
+        Some(&Phase::Enter),
+        "nothing to undo leaves the entrance alone"
+    );
+}
+
+/// Where `symbol` is drawn when `harness` renders at 100 by 40.
+fn cells_with(harness: &Harness, symbol: &str) -> Vec<(u16, u16)> {
+    let terminal = render(&harness.app, 100, 40);
+    let buffer = terminal.backend().buffer();
+    let mut found = Vec::new();
+    for y in 0..40 {
+        for x in 0..100 {
+            if buffer.cell((x, y)).unwrap().symbol() == symbol {
+                found.push((x, y));
+            }
+        }
+    }
+    found
+}
+
+#[test]
+fn the_exiting_card_draws_offset_over_the_next_one() {
+    let (mut harness, _) = Harness::swiping(vec![card("A"), card("B")]);
+    let rest = cells_with(&harness, "┌");
+    assert_eq!(rest.len(), 1, "one card at rest: {rest:?}");
+    let (rest_x, _) = rest[0];
+    harness.press(KeyCode::Char('l'));
+    harness.app.shared.toasts = crate::inbound::widgets::toast::Toasts::default();
+    view_mut(&mut harness).motion = Some(exit_since(card("A"), Direction::Right, 60));
+    let moving = cells_with(&harness, "┌");
+    assert_eq!(moving.len(), 2, "B at rest and A flying: {moving:?}");
+    assert!(
+        moving.iter().any(|(x, _)| *x == rest_x),
+        "B rests where A was"
+    );
+    assert!(
+        moving.iter().any(|(x, _)| *x > rest_x),
+        "A is drawn right of its rest: {moving:?}"
+    );
+    view_mut(&mut harness).motion = None;
+    assert_eq!(
+        cells_with(&harness, "┌"),
+        rest,
+        "once it lands only B is left"
+    );
+}
+
+#[test]
+fn sixel_and_iterm2_images_wait_for_the_motion_to_settle() {
+    let elves = card("Llanowar Elves");
+    let url = elves
+        .scryfall_data
+        .face_image_url(
+            0,
+            zwipe_core::domain::card::scryfall_data::ImageSize::Normal,
+        )
+        .unwrap()
+        .to_owned();
+    let mut harness = add_app(elves);
+    let red_drawn = |harness: &Harness| {
+        let terminal = render(&harness.app, 160, 40);
+        let red = Color::Rgb(255, 0, 0);
+        terminal
+            .backend()
+            .buffer()
+            .content()
+            .iter()
+            .any(|c| c.fg == red || c.bg == red)
+    };
+    let mut picker = Picker::halfblocks();
+    let red = image::RgbImage::from_pixel(40, 56, image::Rgb([255, 0, 0]));
+    let protocol = picker.new_resize_protocol(DynamicImage::ImageRgb8(red));
+    view_mut(&mut harness)
+        .images
+        .insert(url, CardImage::Ready(Box::new(RefCell::new(protocol))));
+    harness.app.shared.images = Some(picker.clone());
+    view_mut(&mut harness).motion = Some(exit_since(card("Gone"), Direction::Left, 30));
+    assert!(
+        red_drawn(&harness),
+        "half blocks are cells and stay under the motion"
+    );
+
+    picker.set_protocol_type(ProtocolType::Sixel);
+    harness.app.shared.images = Some(picker);
+    assert!(
+        !red_drawn(&harness),
+        "a sixel image waits while the card flies"
+    );
+    assert!(
+        screen_text(&harness.app).contains("Llanowar Elves"),
+        "the text stays while the image waits"
+    );
+}
+
+#[test]
+fn the_swipe_keys_use_the_apps_verbs_in_its_hint_colors() {
+    let harness = add_app(card("A"));
+    let palette = harness.app.shared.palette;
+    let row = "l add  h skip  m maybeboard  u undo";
+    assert!(screen_text(&harness.app).contains(row));
+    assert_eq!(
+        word_colors(&harness.app, row, &["add", "skip", "maybeboard", "undo"]),
+        [
+            palette.add.fg,
+            palette.error.fg,
+            palette.warning.fg,
+            palette.tertiary.fg
+        ]
+    );
+    for word in ["keep", "pass", "maybe "] {
+        assert!(
+            !screen_text(&harness.app).contains(&format!(" {word} ")),
+            "{word}"
+        );
+    }
 }

@@ -10,6 +10,8 @@ pub(crate) mod alert;
 pub(crate) mod browser;
 /// A card's info block, details and text stand-in.
 pub(crate) mod card_info;
+/// A swiped card flying off, and an undone one coming back.
+pub(crate) mod card_motion;
 /// Expandable card rows with their classification, printings and image keys.
 #[cfg_attr(
     not(test),

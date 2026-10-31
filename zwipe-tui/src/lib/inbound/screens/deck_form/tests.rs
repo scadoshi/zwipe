@@ -3,7 +3,7 @@ use zwipe_core::domain::deck::{DeckOtherTag, MAX_DECK_ORACLE_TAGS};
 
 use super::*;
 use crate::inbound::event_loop::harness::Harness;
-use crate::test_support::{card, deck, deck_profile, render, screen_text, user};
+use crate::test_support::{card, deck, deck_profile, render, screen_text, user, word_colors};
 
 /// Create over the deck list, with its hint closed and nothing queued.
 fn create() -> Harness {
@@ -666,5 +666,79 @@ fn the_form_and_its_pickers_fit_a_tiny_terminal() {
     }
     focus(&mut harness, Field::Card(Slot::Commander));
     harness.press(KeyCode::F(4));
+    render(&harness.app, 12, 5);
+}
+
+#[test]
+fn the_swipe_pickers_keys_use_the_apps_verbs_in_its_hint_colors() {
+    let mut harness = commander_form();
+    harness.press(KeyCode::F(4));
+    harness.app.shared.hint = None;
+    let palette = harness.app.shared.palette;
+    let row = "→ add  ← skip  ↑ maybeboard  ↓ undo";
+    assert!(screen_text(&harness.app).contains(row));
+    assert_eq!(
+        word_colors(&harness.app, row, &["add", "skip", "maybeboard", "undo"]),
+        [
+            palette.add.fg,
+            palette.error.fg,
+            palette.warning.fg,
+            palette.tertiary.fg
+        ]
+    );
+    for word in ["pick", "save", "pass"] {
+        assert!(
+            !screen_text(&harness.app).contains(&format!(" {word} ")),
+            "{word}"
+        );
+    }
+}
+
+#[test]
+fn the_swipe_picker_flies_skipped_and_saved_cards_off_and_undo_brings_them_back() {
+    use crate::domain::stack::Direction;
+    use crate::inbound::widgets::card_motion::Phase;
+
+    let motion = |harness: &Harness| {
+        let Some(Overlay::Swipe(picker)) = &form(harness).overlay else {
+            panic!("the swipe picker is not open");
+        };
+        picker.motion.clone()
+    };
+    let mut harness = commander_form();
+    harness.press(KeyCode::F(4));
+    harness.app.shared.hint = None;
+    let Some(Overlay::Swipe(picker)) = &form(&harness).overlay else {
+        panic!("the swipe picker is not open");
+    };
+    let generation = picker.generation;
+    harness.apply(Update::SwipePage {
+        generation,
+        cards: vec![card("Atraxa"), card("Krenko"), card("Edgar")],
+    });
+    assert!(!harness.screen().animating());
+    harness.press(KeyCode::Left);
+    let exit = motion(&harness).unwrap();
+    assert_eq!(exit.direction(), Direction::Left);
+    assert!(matches!(exit.phase(), Phase::Exit(c) if c.scryfall_data.name == "Atraxa"));
+    assert!(harness.screen().animating());
+    let Some(Overlay::Swipe(picker)) = &form(&harness).overlay else {
+        panic!("the swipe picker is not open");
+    };
+    assert_eq!(
+        picker.current().map(|c| c.scryfall_data.name.as_str()),
+        Some("Krenko"),
+        "the next card is up at once"
+    );
+
+    harness.press(KeyCode::Up);
+    assert_eq!(motion(&harness).map(|m| m.direction()), Some(Direction::Up));
+    harness.press(KeyCode::Down);
+    let enter = motion(&harness).unwrap();
+    assert_eq!(
+        (enter.phase(), enter.direction()),
+        (&Phase::Enter, Direction::Up)
+    );
+    render(&harness.app, 100, 40);
     render(&harness.app, 12, 5);
 }

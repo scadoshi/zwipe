@@ -2,8 +2,10 @@
 //!
 //! Faces are shown one at a time, as the app does; the caller keeps which face is up.
 
+use ratatui::layout::{Constraint, Rect};
 use ratatui::style::{Style, Stylize};
 use ratatui::text::{Line, Span};
+use ratatui::widgets::{Block, Padding, Paragraph, Wrap};
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::card_role::role_label;
 
@@ -211,6 +213,31 @@ pub(crate) fn proxy_lines(palette: &Palette, card: &Card, face: usize) -> Vec<Li
         lines.push(Line::from(stats.clone()).bold().right_aligned());
     }
     lines
+}
+
+/// The bordered text card of [`proxy_lines`], at most `max_width` wide, and the rect it takes centered in `area`.
+pub(crate) fn proxy_card(
+    palette: &Palette,
+    card: &Card,
+    face: usize,
+    border: Style,
+    area: Rect,
+    max_width: u16,
+) -> (Paragraph<'static>, Rect) {
+    let text = Paragraph::new(proxy_lines(palette, card, face))
+        .wrap(Wrap { trim: true })
+        .block(
+            Block::bordered()
+                .border_style(border)
+                .padding(Padding::horizontal(1)),
+        );
+    let width = area.width.min(max_width);
+    let height = u16::try_from(text.line_count(width.saturating_sub(4))).unwrap_or(u16::MAX);
+    let rect = area.centered(
+        Constraint::Length(width),
+        Constraint::Length(height.min(area.height)),
+    );
+    (text, rect)
 }
 
 /// Breaks lines wider than `width` between words, keeping each word's style; a continuation starts with `indent` spaces.

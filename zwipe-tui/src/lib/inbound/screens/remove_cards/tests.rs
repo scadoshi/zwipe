@@ -2,8 +2,10 @@ use crossterm::event::KeyCode;
 use zwipe_core::domain::deck::Quantity;
 
 use super::*;
+use crate::domain::stack::Direction;
 use crate::inbound::event_loop::harness::Harness;
-use crate::test_support::{card, deck, deck_profile, render, screen_text};
+use crate::inbound::widgets::card_motion::{CardMotion, Phase};
+use crate::test_support::{card, deck, deck_profile, render, screen_text, word_colors};
 
 /// Remove over a deck of A and B on the main board and M on the maybeboard, loaded.
 fn loaded() -> (Harness, Uuid, Vec<Card>) {
@@ -66,13 +68,13 @@ fn opening_loads_the_deck_and_shows_the_main_board() {
     let (harness, _, _) = loaded();
     assert_eq!(view(&harness).stack.len(), 2);
     let screen = screen_text(&harness.app);
-    for expected in ["Remove deck cards", "Boards", "Main", "All", "A", "keep"] {
+    for expected in ["Remove deck cards", "Boards", "Main", "All", "A", "skip"] {
         assert!(screen.contains(expected), "missing {expected}");
     }
 }
 
 #[test]
-fn keep_cycles_and_its_undo_steps_back() {
+fn skip_keeps_the_card_cycles_and_its_undo_steps_back_with_the_apps_toasts() {
     let (mut harness, _, _) = loaded();
     harness.press(KeyCode::Char('h'));
     assert_eq!(last_toast(&harness), "Kept");
@@ -214,4 +216,49 @@ fn nothing_to_undo_and_a_tiny_terminal() {
     render(&harness.app, 12, 5);
     harness.press(KeyCode::Char('e'));
     render(&harness.app, 12, 5);
+}
+
+#[test]
+fn each_swipe_flies_its_card_off_and_undo_brings_it_back() {
+    let (mut harness, _, _) = loaded();
+    assert!(!harness.screen().animating());
+    harness.press(KeyCode::Char('l'));
+    let motion = view(&harness).motion.clone().unwrap();
+    assert_eq!(motion.direction(), Direction::Right);
+    assert!(matches!(motion.phase(), Phase::Exit(s) if s.card.scryfall_data.name == "A"));
+    assert!(harness.screen().animating());
+    assert_eq!(current(&harness), "B", "the next card is up at once");
+    let rendered = screen_text(&harness.app);
+    assert!(rendered.contains('B'), "B draws under the flying card");
+
+    harness.press(KeyCode::Char('h'));
+    assert_eq!(
+        view(&harness).motion.as_ref().map(CardMotion::direction),
+        Some(Direction::Left),
+        "a new swipe replaces the exit"
+    );
+    harness.press(KeyCode::Char('u'));
+    let motion = view(&harness).motion.clone().unwrap();
+    assert_eq!(motion.phase(), &Phase::Enter);
+    assert_eq!(motion.direction(), Direction::Left);
+    render(&harness.app, 100, 40);
+    render(&harness.app, 12, 5);
+}
+
+#[test]
+fn the_swipe_keys_use_the_apps_verbs_in_its_hint_colors() {
+    let (harness, _, _) = loaded();
+    let palette = harness.app.shared.palette;
+    let row = "l remove  h skip  m maybeboard  u undo";
+    assert!(screen_text(&harness.app).contains(row));
+    assert_eq!(
+        word_colors(&harness.app, row, &["remove", "skip", "maybeboard", "undo"]),
+        [
+            palette.add.fg,
+            palette.error.fg,
+            palette.warning.fg,
+            palette.tertiary.fg
+        ]
+    );
+    assert!(!screen_text(&harness.app).contains(" keep "));
 }

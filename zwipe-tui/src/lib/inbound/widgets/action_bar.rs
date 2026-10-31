@@ -1,6 +1,6 @@
 //! The app's bottom row of buttons: drawn as key hints, each key in bold and its action muted, or as buttons the focus moves across.
 
-use ratatui::style::Stylize;
+use ratatui::style::{Style, Stylize};
 use ratatui::text::{Line, Span};
 
 use crate::domain::theme::Palette;
@@ -69,16 +69,44 @@ pub(crate) fn buttons(
 
 /// Key hints for `keys`, each a key and what it does.
 pub(crate) fn line(palette: &Palette, keys: &[(&str, &str)]) -> Line<'static> {
+    let styled: Vec<(&str, &str, Style)> = keys
+        .iter()
+        .map(|&(key, action)| (key, action, palette.muted))
+        .collect();
+    styled_line(&styled)
+}
+
+/// Key hints whose actions each take their own style, like the swipe verbs in the colors of the app's swipe hints.
+pub(crate) fn styled_line(keys: &[(&str, &str, Style)]) -> Line<'static> {
     let spans: Vec<Span<'static>> = keys
         .iter()
-        .flat_map(|&(key, action)| {
+        .flat_map(|&(key, action, style)| {
             [
                 key.to_owned().bold(),
-                Span::styled(format!(" {action}  "), palette.muted),
+                Span::styled(format!(" {action}  "), style),
             ]
         })
         .collect();
     Line::from(spans)
+}
+
+/// The four swipe hints, each verb in its direction's color from the app's swipe hint dialogs: right success, left error, up warning, down tertiary. A swipe with no verb is left out.
+pub(crate) fn swipes<'keys>(
+    palette: &Palette,
+    right: (&'keys str, &'keys str),
+    left: (&'keys str, &'keys str),
+    up: Option<(&'keys str, &'keys str)>,
+    down: (&'keys str, &'keys str),
+) -> Vec<(&'keys str, &'keys str, Style)> {
+    let mut keys = vec![
+        (right.0, right.1, palette.add),
+        (left.0, left.1, palette.error),
+    ];
+    if let Some((key, verb)) = up {
+        keys.push((key, verb, palette.warning));
+    }
+    keys.push((down.0, down.1, palette.tertiary));
+    keys
 }
 
 #[cfg(test)]

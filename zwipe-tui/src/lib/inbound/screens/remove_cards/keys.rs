@@ -1,4 +1,4 @@
-//! Remove's keys: h keeps, l removes, m moves between boards, u undoes (or the arrows), 1 to 4 pick the board, f filters, r refreshes, e opens details, t flips, ? shows the hint, Esc goes back.
+//! Remove's keys: h keeps (its label reads skip), l removes, m moves between boards, u undoes (or the arrows), 1 to 4 pick the board, f filters, r refreshes, e opens details, t flips, ? shows the hint, Esc goes back.
 
 use crossterm::event::KeyCode;
 use zwipe_core::domain::user::hints::HINT_REMOVE_DECK_CARDS;

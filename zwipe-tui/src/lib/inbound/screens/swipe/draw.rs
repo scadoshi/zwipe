@@ -1,19 +1,22 @@
 //! The Add screen: the title, the From and Synergy chips, the card with its info block under it, the keys, and any sheet over them.
 
+use std::time::Instant;
+
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::style::{Style, Stylize};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Padding, Paragraph, Wrap};
+use ratatui::widgets::{Paragraph, Widget};
 use ratatui_image::StatefulImage;
+use ratatui_image::picker::ProtocolType;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ImageSize;
 
-use super::{CardImage, Source, SwipeView};
-use crate::domain::stack::Direction;
+use super::{CardImage, Motion, Source, SwipeView};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::screens::card_sheets::filter;
+use crate::inbound::widgets::card_motion::{self, Phase};
 use crate::inbound::widgets::{action_bar, card_info, skeleton};
 
 /// The card is at most this wide, in cells.
@@ -49,9 +52,14 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &SwipeView) {
     );
     f.render_widget(source_line(palette, view), sources);
 
+    let now = Instant::now();
+    let motion = view.motion.as_ref().filter(|m| m.running(now));
     match view.current() {
-        Some(card) => draw_card(f, shared, view, card, body),
+        Some(card) => draw_card(f, shared, view, card, motion, body),
         None => draw_empty(f, palette, view, body),
+    }
+    if let Some(motion) = motion {
+        draw_motion(f, shared, view, motion, body, now);
     }
 
     f.render_widget(key_line(palette, view), keys);
@@ -97,24 +105,25 @@ fn key_line(palette: &Palette, view: &SwipeView) -> Line<'static> {
     } else {
         "filter"
     };
-    let mut keys = vec![
-        ("h", "skip"),
+    let mut keys = action_bar::swipes(
+        palette,
         ("l", "add"),
-        ("m", "maybe"),
+        ("h", "skip"),
+        Some(("m", "maybeboard")),
         ("u", "undo"),
-        ("f", filter),
-        ("r", "refresh"),
-    ];
+    );
+    let mut rest = vec![("f", filter), ("r", "refresh")];
     if view.current().is_some() {
-        keys.push(("e", "details"));
+        rest.push(("e", "details"));
     }
-    keys.push(("Tab", "from"));
+    rest.push(("Tab", "from"));
     if view.synergy_shown() {
-        keys.push(("y", "synergy"));
+        rest.push(("y", "synergy"));
     }
-    keys.push(("?", "hint"));
-    keys.push(("Esc", "back"));
-    action_bar::line(palette, &keys)
+    rest.push(("?", "hint"));
+    rest.push(("Esc", "back"));
+    keys.extend(rest.into_iter().map(|(k, a)| (k, a, palette.muted)));
+    action_bar::styled_line(&keys)
 }
 
 /// No card on top: loading, the end of results, or nothing.
@@ -155,54 +164,133 @@ fn entering_style(palette: &Palette, view: &SwipeView) -> Style {
         Source::Search => view.stack.entering(),
         Source::Maybeboard => view.mb_stack.entering(),
     };
-    match entering {
-        Some(Direction::Right) => palette.add,
-        Some(Direction::Left) => palette.error,
-        Some(Direction::Up) => palette.warning,
-        None => palette.accent,
-    }
+    entering.map_or(palette.accent, |d| card_motion::side_style(palette, d))
 }
 
-/// The card: its image beside its text when there is room, else the one `i` picks, with the info block under.
-fn draw_card(f: &mut Frame<'_>, shared: &Shared, view: &SwipeView, card: &Card, area: Rect) {
-    let palette = &shared.palette;
+/// Splits the body into the card's area and the info block's.
+fn card_areas(area: Rect) -> (Rect, Rect) {
     let [card_area, _, info_area] = Layout::vertical([
         Constraint::Fill(1),
         Constraint::Length(1),
         Constraint::Length(INFO_HEIGHT),
     ])
     .areas(area);
+    (card_area, info_area)
+}
+
+/// The width an image takes in `card_area`, and whether the text fits beside it.
+fn image_layout(card_area: Rect) -> (u16, bool) {
+    let image_width = card_area.height.saturating_mul(IMAGE_WIDTH_PER_ROW_TENTHS) / 10;
+    let beside = card_area.width >= image_width.saturating_add(CARD_WIDTH).saturating_add(GAP);
+    (image_width, beside)
+}
+
+/// The image's area and the text's when the text fits beside the image.
+fn side_by_side(card_area: Rect, image_width: u16) -> (Rect, Rect) {
+    let [image_area, _, text_area] = Layout::horizontal([
+        Constraint::Length(image_width),
+        Constraint::Length(GAP),
+        Constraint::Fill(1),
+    ])
+    .areas(card_area);
+    (image_area, text_area)
+}
+
+/// Whether images wait for a motion to settle: Sixel and iTerm2 draw as one escape that later cells skip, so a card passing over them would leave holes. Half blocks and kitty's placeholders are ordinary cells and stay.
+fn images_held(shared: &Shared) -> bool {
+    shared.images.as_ref().is_some_and(|p| {
+        matches!(
+            p.protocol_type(),
+            ProtocolType::Sixel | ProtocolType::Iterm2
+        )
+    })
+}
+
+/// The top card with its info block under it. While a card comes back after an undo, the card it covers rests here instead.
+fn draw_card(
+    f: &mut Frame<'_>,
+    shared: &Shared,
+    view: &SwipeView,
+    card: &Card,
+    motion: Option<&Motion>,
+    area: Rect,
+) {
+    let palette = &shared.palette;
+    let (card_area, info_area) = card_areas(area);
     let info_width = card_area.width.min(CARD_WIDTH);
     f.render_widget(
         Paragraph::new(card_info::info_lines(palette, card)),
         info_area.centered_horizontally(Constraint::Length(info_width)),
     );
+    let images = if motion.is_some() && images_held(shared) {
+        Images::Held
+    } else {
+        Images::Shown
+    };
+    let resting = match motion.map(Motion::phase) {
+        Some(Phase::Enter) => view.under().map(|under| Resting {
+            card: under,
+            face: 0,
+            border: palette.accent,
+        }),
+        _ => Some(Resting {
+            card,
+            face: view.face,
+            border: entering_style(palette, view),
+        }),
+    };
+    if let Some(resting) = resting {
+        draw_face(f, shared, view, resting, images, card_area);
+    }
+}
 
-    let border = entering_style(palette, view);
+/// A card to draw at rest: which face shows and its border.
+#[derive(Debug, Clone, Copy)]
+struct Resting<'card> {
+    card: &'card Card,
+    face: usize,
+    border: Style,
+}
+
+/// Whether card images draw this frame.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Images {
+    Shown,
+    /// Left out until a motion settles; see [`images_held`].
+    Held,
+}
+
+/// One card's face at rest: its image beside its text when there is room, else the one `i` picks. With images held, the image is left out and a card shown as its image shows as text.
+fn draw_face(
+    f: &mut Frame<'_>,
+    shared: &Shared,
+    view: &SwipeView,
+    resting: Resting<'_>,
+    images: Images,
+    card_area: Rect,
+) {
+    let palette = &shared.palette;
+    let Resting { card, face, border } = resting;
+    let held = images == Images::Held;
     if shared.images.is_none() {
-        draw_text(f, palette, card, view.face, border, card_area);
+        draw_text(f, palette, card, face, border, card_area);
         return;
     }
     let image = card
         .scryfall_data
         .face_image_url(
-            view.face
-                .checked_rem(card_info::face_count(card))
-                .unwrap_or(0),
+            face.checked_rem(card_info::face_count(card)).unwrap_or(0),
             ImageSize::Normal,
         )
         .and_then(|url| view.images.get(url));
-    let image_width = card_area.height.saturating_mul(IMAGE_WIDTH_PER_ROW_TENTHS) / 10;
-    if card_area.width >= image_width.saturating_add(CARD_WIDTH).saturating_add(GAP) {
-        let [image_area, _, text_area] = Layout::horizontal([
-            Constraint::Length(image_width),
-            Constraint::Length(GAP),
-            Constraint::Fill(1),
-        ])
-        .areas(card_area);
-        draw_image(f, palette, image, image_area);
-        draw_text(f, palette, card, view.face, border, text_area);
-    } else if view.show_image {
+    let (image_width, beside) = image_layout(card_area);
+    if beside {
+        let (image_area, text_area) = side_by_side(card_area, image_width);
+        if !held {
+            draw_image(f, palette, image, image_area);
+        }
+        draw_text(f, palette, card, face, border, text_area);
+    } else if view.show_image && !held {
         draw_image(
             f,
             palette,
@@ -210,7 +298,46 @@ fn draw_card(f: &mut Frame<'_>, shared: &Shared, view: &SwipeView, card: &Card, 
             card_area.centered_horizontally(Constraint::Length(image_width)),
         );
     } else {
-        draw_text(f, palette, card, view.face, border, card_area);
+        draw_text(f, palette, card, face, border, card_area);
+    }
+}
+
+/// The card in motion over the body: the one that left, from its snapshot, or the top card coming back. It moves as its text card, clipped at the screen's edge.
+fn draw_motion(
+    f: &mut Frame<'_>,
+    shared: &Shared,
+    view: &SwipeView,
+    motion: &Motion,
+    area: Rect,
+    now: Instant,
+) {
+    let palette = &shared.palette;
+    let (card, face, border) = match motion.phase() {
+        Phase::Exit(snapshot) => (
+            &snapshot.card,
+            snapshot.face,
+            card_motion::side_style(palette, motion.direction()),
+        ),
+        Phase::Enter => {
+            let Some(card) = view.current() else {
+                return;
+            };
+            (card, view.face, entering_style(palette, view))
+        }
+    };
+    let (card_area, _) = card_areas(area);
+    let (image_width, beside) = image_layout(card_area);
+    let text_area = if shared.images.is_some() && beside {
+        side_by_side(card_area, image_width).1
+    } else {
+        card_area
+    };
+    let (text, rest) = card_info::proxy_card(palette, card, face, border, text_area, CARD_WIDTH);
+    let bounds = f.area();
+    if let Some(placement) = motion.placement(now, rest, bounds) {
+        card_motion::draw(f.buffer_mut(), &placement, palette.base, |buf| {
+            text.render(rest, buf);
+        });
     }
 }
 
@@ -242,20 +369,6 @@ fn draw_text(
     border: Style,
     area: Rect,
 ) {
-    let text = Paragraph::new(card_info::proxy_lines(palette, card, face))
-        .wrap(Wrap { trim: true })
-        .block(
-            Block::bordered()
-                .border_style(border)
-                .padding(Padding::horizontal(1)),
-        );
-    let width = area.width.min(CARD_WIDTH);
-    let height = u16::try_from(text.line_count(width.saturating_sub(4))).unwrap_or(u16::MAX);
-    f.render_widget(
-        text,
-        area.centered(
-            Constraint::Length(width),
-            Constraint::Length(height.min(area.height)),
-        ),
-    );
+    let (text, rect) = card_info::proxy_card(palette, card, face, border, area, CARD_WIDTH);
+    f.render_widget(text, rect);
 }

@@ -10,6 +10,7 @@ mod tests;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fmt;
+use std::time::Instant;
 
 use image::DynamicImage;
 use ratatui_image::protocol::StatefulProtocol;
@@ -33,7 +34,7 @@ use crate::domain::add::{self, AddDeck, LOAD_MORE_THRESHOLD};
 use crate::domain::deck_signals::{self, Crossing, Level};
 use crate::domain::filter::picker::Sources;
 use crate::domain::stack::{
-    AddAction, CARDS_WARNING_THRESHOLD, CardStack, MAX_CARDS_IN_STACK, MaybeboardAction,
+    AddAction, CARDS_WARNING_THRESHOLD, CardStack, Direction, MAX_CARDS_IN_STACK, MaybeboardAction,
     STACK_WARNING_EVERY, StackAction,
 };
 use crate::domain::stores::filters::FilterScope;
@@ -43,6 +44,7 @@ use crate::domain::stores::undo::UndoAction;
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;
+use crate::inbound::widgets::card_motion::{CardMotion, Snapshot};
 use crate::inbound::widgets::hint;
 use crate::inbound::widgets::toast::{self, ToastKind};
 use crate::outbound::account::Account;
@@ -104,7 +106,12 @@ pub(crate) struct SwipeView {
     pub(crate) images: HashMap<String, CardImage>,
     /// On a narrow terminal, whether the card shows as its image instead of its text.
     pub(crate) show_image: bool,
+    /// The swiped card flying off, or the undone one coming back.
+    pub(crate) motion: Option<Motion>,
 }
+
+/// A card motion on Add, an exit carrying the card that left.
+pub(crate) type Motion = CardMotion<Snapshot>;
 
 /// A card's image as it loads.
 pub(crate) enum CardImage {
@@ -125,6 +132,30 @@ impl fmt::Debug for CardImage {
 }
 
 impl SwipeView {
+    /// Whether a card is in motion, so the loop redraws.
+    pub(crate) fn animating(&self) -> bool {
+        self.motion
+            .as_ref()
+            .is_some_and(|m| m.running(Instant::now()))
+    }
+
+    /// The card under the top one, which a card coming back after an undo covers.
+    pub(crate) fn under(&self) -> Option<&Card> {
+        match self.source {
+            Source::Search => self.stack.next(),
+            Source::Maybeboard => self.mb_stack.next_wrapping(),
+        }
+    }
+
+    /// Sends the top card off by `direction`, keeping it and its face to draw it leaving. Replaces any motion still running.
+    fn exit(&mut self, direction: Direction, card: Card) {
+        let snapshot = Snapshot {
+            card,
+            face: self.face,
+        };
+        self.motion = Some(CardMotion::exit(direction, snapshot, Instant::now()));
+    }
+
     /// The card on top: the search cursor's, or the maybeboard's, wrapping.
     pub(crate) fn current(&self) -> Option<&Card> {
         match self.source {
@@ -337,6 +368,7 @@ impl SwipeView {
                     return;
                 };
                 self.stack.record(AddAction::Add);
+                self.exit(Direction::Right, card.clone());
                 self.create(cx, &card, Board::Deck);
                 cx.toast_for(ToastKind::Success, "Added to deck".to_owned(), toast::QUICK);
                 if card.scryfall_data.is_land() {
@@ -374,6 +406,7 @@ impl SwipeView {
                 self.mb_stack.record(MaybeboardAction::Promote {
                     card: Box::new(card.clone()),
                 });
+                self.exit(Direction::Right, card.clone());
                 let id = card.scryfall_data.id;
                 self.deck
                     .maybeboard
@@ -397,7 +430,7 @@ impl SwipeView {
     pub(crate) fn swipe_left(&mut self, cx: &mut Context<'_>) {
         match self.source {
             Source::Search => {
-                let Some(card) = self.stack.current() else {
+                let Some(card) = self.stack.current().cloned() else {
                     return;
                 };
                 if let Some(oracle_id) = card.scryfall_data.oracle_id {
@@ -410,14 +443,16 @@ impl SwipeView {
                     );
                 }
                 self.stack.record(AddAction::Skip);
+                self.exit(Direction::Left, card);
                 cx.toast_for(ToastKind::Info, "Skipped".to_owned(), toast::QUICK);
                 self.advance_after_commit(cx);
             }
             Source::Maybeboard => {
-                if self.mb_stack.current_wrapping().is_none() {
+                let Some(card) = self.mb_stack.current_wrapping().cloned() else {
                     return;
-                }
+                };
                 self.mb_stack.record(MaybeboardAction::Skip);
+                self.exit(Direction::Left, card);
                 cx.toast_for(ToastKind::Info, "Skipped".to_owned(), toast::QUICK);
                 self.mb_stack.advance_wrapping();
             }
@@ -433,6 +468,7 @@ impl SwipeView {
                     return;
                 };
                 self.stack.record(AddAction::Maybe);
+                self.exit(Direction::Up, card.clone());
                 self.create(cx, &card, Board::Maybeboard);
                 cx.toast_for(
                     ToastKind::Info,
@@ -469,9 +505,18 @@ impl SwipeView {
 
     /// Undoes the last swipe of the source in use.
     pub(crate) fn undo(&mut self, cx: &mut Context<'_>) {
-        match self.source {
-            Source::Search => self.undo_search(cx),
-            Source::Maybeboard => self.undo_maybeboard(cx),
+        let entering = match self.source {
+            Source::Search => {
+                self.undo_search(cx);
+                self.stack.entering()
+            }
+            Source::Maybeboard => {
+                self.undo_maybeboard(cx);
+                self.mb_stack.entering()
+            }
+        };
+        if let Some(direction) = entering {
+            self.motion = Some(CardMotion::enter(direction, Instant::now()));
         }
         self.after_swipe(cx);
     }
@@ -609,6 +654,7 @@ impl SwipeView {
                 .unwrap_or_else(|| self.deck.context().fresh_search()),
         };
         self.source = to;
+        self.motion = None;
         self.mb_stack.rewind();
         self.rerun(cx);
     }
@@ -903,6 +949,7 @@ pub(crate) fn open(cx: &mut Context<'_>, deck: &Deck) {
         face: 0,
         images: HashMap::new(),
         show_image: false,
+        motion: None,
     };
     let parked = cx.shared.cards.stacks.take(deck_id);
     match parked {

@@ -1,10 +1,12 @@
 //! The deck form in its three sections, Profile, Budget and Tags, and the pickers over it.
 
+use std::time::Instant;
+
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Position, Rect};
 use ratatui::style::{Style, Stylize};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Paragraph, Wrap};
+use ratatui::widgets::{Block, Paragraph, Widget, Wrap};
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::deck_tag::deck_tag_label;
@@ -17,6 +19,7 @@ use crate::domain::deck::form::Slot;
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::screens::card_sheets;
+use crate::inbound::widgets::card_motion::{self, CardMotion, Phase};
 use crate::inbound::widgets::pill::{self, PillState, pill};
 use crate::inbound::widgets::text_input::TextInput;
 use crate::inbound::widgets::{action_bar, skeleton};
@@ -857,32 +860,51 @@ fn draw_swipe(f: &mut Frame<'_>, shared: &Shared, picker: &SwipePicker, areas: [
     let block = Block::bordered().border_style(palette.border);
     let inner = block.inner(body);
     f.render_widget(block, body);
-    match picker.current() {
+    let now = Instant::now();
+    let motion = picker.motion.as_ref().filter(|m| m.running(now));
+    // While a card comes back after an undo, the card it covers rests under it.
+    let resting = match motion.map(CardMotion::phase) {
+        Some(Phase::Enter) => picker.under(),
+        _ => picker.current(),
+    };
+    match resting {
         Some(card) => f.render_widget(
             Paragraph::new(card_lines(palette, card)).wrap(Wrap { trim: true }),
             inner,
         ),
-        None => f.render_widget(
+        None if picker.current().is_none() => f.render_widget(
             Paragraph::new(skeleton::rows(palette, 6, usize::from(inner.width))),
             inner,
         ),
+        None => {}
     }
-    let mut shown = vec![("←", "skip"), ("→", "pick")];
-    if matches!(picker.slot, Slot::Commander | Slot::Partner) {
-        shown.push(("↑", "save"));
+    if let Some(motion) = motion {
+        let moving = match motion.phase() {
+            Phase::Exit(card) => Some(card),
+            Phase::Enter => picker.current(),
+        };
+        if let Some(card) = moving
+            && let Some(placement) = motion.placement(now, inner, inner)
+        {
+            let text = Paragraph::new(card_lines(palette, card)).wrap(Wrap { trim: true });
+            card_motion::draw(f.buffer_mut(), &placement, palette.base, |buf| {
+                text.render(inner, buf);
+            });
+        }
     }
+    let up = matches!(picker.slot, Slot::Commander | Slot::Partner).then_some(("↑", "maybeboard"));
+    let mut shown = action_bar::swipes(palette, ("→", "add"), ("←", "skip"), up, ("↓", "undo"));
     let filter_label = if picker.filter_dot() {
         "Filter •"
     } else {
         "Filter"
     };
-    shown.extend([
-        ("↓", "undo"),
-        ("F3", filter_label),
-        ("F5", "Refresh"),
-        ("Esc", "Back"),
-    ]);
-    f.render_widget(action_bar::line(palette, &shown), keys);
+    shown.extend(
+        [("F3", filter_label), ("F5", "Refresh"), ("Esc", "Back")]
+            .into_iter()
+            .map(|(k, a)| (k, a, palette.muted)),
+    );
+    f.render_widget(action_bar::styled_line(&shown), keys);
     if let Some(sheet) = &picker.sheet {
         card_sheets::filter::draw::draw(f, shared, sheet, f.area());
     }
