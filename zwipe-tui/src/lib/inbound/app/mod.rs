@@ -13,9 +13,9 @@ use zwipe_core::domain::user::User;
 
 pub(crate) use self::context::{Context, Effects, Navigation};
 use super::nav::Nav;
-use super::screens::login::LoginForm;
 use super::screens::{Screen, update_required};
 use super::widgets::alert::AlertDialog;
+use super::widgets::hero::Counts;
 use super::widgets::hint::HintDialog;
 use super::widgets::splash::Splash;
 use super::widgets::toast::Toasts;
@@ -62,6 +62,8 @@ pub(crate) struct Shared {
     pub(crate) update_required: bool,
     /// The changelog, fetched once at launch.
     pub(crate) changelog: ChangelogCache,
+    /// Everybody's counts, which the sign-in screens' hero shows.
+    pub(crate) counts: Counts,
     /// The opening over the first screen, while it runs.
     pub(crate) splash: Option<Splash>,
     /// When the first screen's entrances may start: as the splash fades, or at once without one. Logo decodes and rolling counters wait for it.
@@ -70,7 +72,6 @@ pub(crate) struct Shared {
 
 impl Shared {
     /// When an entrance mounted at `now` starts: now, or when the splash lets it.
-    #[cfg_attr(not(test), expect(dead_code, reason = "the hero uses it next"))]
     pub(crate) fn entrance_start(&self, now: Instant) -> Instant {
         now.max(self.gate)
     }
@@ -96,7 +97,7 @@ impl App {
             entered_at: now.checked_sub(ENTRANCE).unwrap_or(now),
             drawn_palette: palette,
             wipe: None,
-            nav: Nav::new(Screen::Login(LoginForm::default())),
+            nav: Nav::new(Screen::Login(Box::default())),
             shared: Shared {
                 palette,
                 username: None,
@@ -108,6 +109,7 @@ impl App {
                 help: None,
                 update_required: false,
                 changelog: ChangelogCache::default(),
+                counts: Counts::default(),
                 splash: None,
                 gate: now,
             },

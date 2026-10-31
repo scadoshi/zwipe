@@ -11,7 +11,6 @@ use super::harness::Harness;
 use crate::domain::changelog::ChangelogCache;
 use crate::domain::theme::Palette;
 use crate::inbound::screens::decks::DeckList;
-use crate::inbound::screens::login::LoginForm;
 use crate::inbound::screens::{Request, Screen, Update, deck, decks};
 use crate::inbound::widgets::hint;
 use crate::inbound::widgets::toast::{self, ToastKind};
@@ -26,7 +25,8 @@ fn without_a_session_it_asks_to_sign_in_and_fetches_the_changelog() {
         harness.pending(),
         [
             Request::FetchChangelog,
-            Request::Record(AnonymousEventKind::AppOpened)
+            Request::Record(AnonymousEventKind::AppOpened),
+            Request::FetchCounts,
         ]
     );
 }
@@ -91,7 +91,7 @@ fn an_ended_session_returns_to_sign_in_and_clears_the_saved_one() {
     harness.app.shared.user = Some(user(true));
     harness.apply(Update::SessionEnded);
     assert!(
-        matches!(harness.screen(), Screen::Login(form) if form.error.is_none()),
+        matches!(harness.screen(), Screen::Login(_)),
         "silently, as the app's auth gate"
     );
     assert_eq!(harness.app.nav.depth(), 1, "the stack starts over");
@@ -101,7 +101,7 @@ fn an_ended_session_returns_to_sign_in_and_clears_the_saved_one() {
         "the theme stays"
     );
     assert!(harness.app.shared.username.is_none());
-    assert_eq!(harness.pending(), [Request::SignOut]);
+    assert_eq!(harness.pending(), [Request::FetchCounts, Request::SignOut]);
 }
 
 #[test]
@@ -181,7 +181,7 @@ fn every_screen_fits_a_tiny_terminal() {
     let (harness, _) = Harness::swiping(vec![card("Tiny")]);
     render(&harness.app, 12, 5);
     for screen in [
-        Screen::Login(LoginForm::default()),
+        Screen::Login(Box::default()),
         Screen::Decks(DeckList::default()),
         Screen::UpdateRequired,
     ] {

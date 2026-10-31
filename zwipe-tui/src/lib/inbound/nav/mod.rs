@@ -55,6 +55,11 @@ impl Nav {
         self.bottom = screen;
     }
 
+    /// Every open screen, bottom first.
+    pub(crate) fn screens_mut(&mut self) -> impl Iterator<Item = &mut Screen> {
+        iter::once(&mut self.bottom).chain(self.above.iter_mut())
+    }
+
     /// The topmost screen `pick` accepts, searching down from the top.
     pub(crate) fn find_mut<'nav, T: ?Sized>(
         &'nav mut self,
@@ -72,7 +77,6 @@ impl Nav {
 mod tests {
     use super::*;
     use crate::inbound::screens::decks::DeckList;
-    use crate::inbound::screens::login::LoginForm;
 
     fn decks(screen: &mut Screen) -> Option<&mut DeckList> {
         match screen {
@@ -83,7 +87,7 @@ mod tests {
 
     #[test]
     fn push_and_pop_stop_at_the_bottom_screen() {
-        let mut nav = Nav::new(Screen::Login(LoginForm::default()));
+        let mut nav = Nav::new(Screen::Login(Box::default()));
         nav.push(Screen::UpdateRequired);
         assert_eq!(nav.depth(), 2);
         assert!(matches!(nav.top(), Screen::UpdateRequired));
@@ -95,13 +99,13 @@ mod tests {
 
     #[test]
     fn replace_swaps_only_the_top_and_reset_clears_the_rest() {
-        let mut nav = Nav::new(Screen::Login(LoginForm::default()));
+        let mut nav = Nav::new(Screen::Login(Box::default()));
         nav.replace(Screen::UpdateRequired);
         assert!(matches!(nav.top(), Screen::UpdateRequired));
         assert_eq!(nav.depth(), 1);
 
         nav.push(Screen::Decks(DeckList::default()));
-        nav.replace(Screen::Login(LoginForm::default()));
+        nav.replace(Screen::Login(Box::default()));
         assert_eq!(nav.depth(), 2);
         nav.reset(Screen::Decks(DeckList::default()));
         assert_eq!(nav.depth(), 1);

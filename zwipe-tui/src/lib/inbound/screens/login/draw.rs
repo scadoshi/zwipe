@@ -1,93 +1,196 @@
-//! The sign-in screen: the ZWIPE logo over a username and password form.
+//! Login: the header, the hero, the two fields and the action bar; and the frame Register and Forgot password share with it.
+
+use std::time::Instant;
 
 use ratatui::Frame;
-use ratatui::layout::{Constraint, Layout};
-use ratatui::style::Stylize;
-use ratatui::text::{Line, Text};
-use ratatui::widgets::{Paragraph, Wrap};
-use zwipe_core::domain::logo;
+use ratatui::layout::{Constraint, Layout, Rect};
+use ratatui::text::Line;
 
 use super::{LoginField, LoginForm};
+use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
-use crate::inbound::widgets::measure::{height_of, width_of};
-use crate::inbound::widgets::{action_bar, panel};
+use crate::inbound::widgets::action_bar::{self, Button};
+use crate::inbound::widgets::header::{self, Corner};
+use crate::inbound::widgets::hero::Hero;
+use crate::inbound::widgets::measure::width_of;
+use crate::inbound::widgets::text_input::{BOX_HEIGHT, TextInput};
 
-/// The form is this wide inside its panel, in cells.
-const FORM_WIDTH: u16 = 48;
+/// The form is at most this wide, in cells.
+pub(crate) const FORM_WIDTH: u16 = 48;
+
+/// The hero is at most this wide, in cells.
+const HERO_WIDTH: u16 = 64;
+
+/// Where an auth screen's parts go.
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct AuthAreas {
+    /// The form, `FORM_WIDTH` wide at most and centered.
+    pub(crate) body: Rect,
+    pub(crate) buttons: Rect,
+    pub(crate) keys: Rect,
+}
+
+/// Whether an auth screen's content sits in the middle of the screen, as Login and Forgot password do, or from the top, as Register does.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Placement {
+    Centered,
+    Top,
+}
+
+/// Draws an auth screen's header titled `title` and lays out the rest: the hero over a form `body_height` rows tall, then the action bar and its key hints. The hero shrinks, then goes, when the screen is short.
+pub(crate) fn frame(
+    f: &mut Frame<'_>,
+    shared: &Shared,
+    hero: &Hero,
+    title: &str,
+    body_height: u16,
+    placement: Placement,
+) -> AuthAreas {
+    let area = f.area();
+    let [head, _, content, buttons, keys] = Layout::vertical([
+        Constraint::Length(1),
+        Constraint::Length(1),
+        Constraint::Fill(1),
+        Constraint::Length(1),
+        Constraint::Length(1),
+    ])
+    .areas(area);
+    header::draw(f, &shared.palette, head, title, Corner::Empty);
+    let hero_width = content.width.min(HERO_WIDTH);
+    let room = content.height.saturating_sub(body_height).saturating_sub(1);
+    let hero_height = Hero::height(hero_width, room);
+    let total = hero_height
+        .saturating_add(u16::from(hero_height > 0))
+        .saturating_add(body_height)
+        .min(content.height);
+    let top = match placement {
+        Placement::Centered => content
+            .y
+            .saturating_add(content.height.saturating_sub(total) / 2),
+        Placement::Top => content.y,
+    };
+    let column = Rect {
+        y: top,
+        height: total,
+        ..content
+    };
+    let [hero_area, _, body] = Layout::vertical([
+        Constraint::Length(hero_height),
+        Constraint::Length(u16::from(hero_height > 0)),
+        Constraint::Fill(1),
+    ])
+    .areas(column);
+    let hero_area = hero_area.centered_horizontally(Constraint::Length(hero_width));
+    hero.draw(f, shared, hero_area, Instant::now());
+    AuthAreas {
+        body: body.centered_horizontally(Constraint::Length(FORM_WIDTH.min(body.width))),
+        buttons,
+        keys,
+    }
+}
+
+/// Draws a field titled `title` at the top of `area`, and its in-field button (Show or Hide) on the right of its text row, reversed while `button_focused`. Places the cursor in it while `focused`.
+pub(crate) fn field(
+    f: &mut Frame<'_>,
+    palette: &Palette,
+    area: Rect,
+    input: &TextInput,
+    title: &str,
+    focused: bool,
+) {
+    input.draw(f, palette, area, title, focused);
+    if focused {
+        f.set_cursor_position(input.cursor_position(area));
+    }
+}
+
+/// Draws a password field's Show or Hide button inside its box at `area`.
+pub(crate) fn show_button(
+    f: &mut Frame<'_>,
+    palette: &Palette,
+    area: Rect,
+    input: &TextInput,
+    focused: bool,
+) {
+    let label = if input.is_masked() {
+        " Show "
+    } else {
+        " Hide "
+    };
+    let width = width_of(label);
+    if area.width < width.saturating_add(4) || area.height < 2 {
+        return;
+    }
+    let spot = Rect {
+        x: area.right().saturating_sub(width).saturating_sub(1),
+        y: area.y.saturating_add(1),
+        width,
+        height: 1,
+    };
+    let style = if focused {
+        palette.accent.bold().reversed()
+    } else {
+        palette.muted
+    };
+    f.render_widget(Line::from(label).style(style), spot);
+}
 
 pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &LoginForm) {
     let palette = &shared.palette;
-    let logo_lines: Vec<&str> = logo::ZWIPE.lines().collect();
-    let logo_width = logo_lines.iter().map(|l| width_of(l)).max().unwrap_or(0);
-    let logo_height = height_of(logo_lines.len());
-
-    let error = form.error.as_deref().map(|e| {
-        Paragraph::new(Line::from(e.to_owned()).style(palette.error)).wrap(Wrap { trim: true })
-    });
-    let error_height = error
-        .as_ref()
-        .map_or(0, |e| height_of(e.line_count(FORM_WIDTH)));
-    let form_height = 3_u16
-        .saturating_add(3)
-        .saturating_add(error_height)
-        .saturating_add(2);
-
-    let [logo_area, form_area] = Layout::vertical([
-        Constraint::Length(logo_height.saturating_add(1)),
-        Constraint::Length(form_height.saturating_add(2)),
-    ])
-    .areas(f.area().centered(
-        Constraint::Max(logo_width.max(FORM_WIDTH.saturating_add(4))),
-        Constraint::Length(logo_height.saturating_add(form_height).saturating_add(3)),
-    ));
-
-    let logo = Text::from(logo_lines.into_iter().map(Line::from).collect::<Vec<_>>())
-        .style(palette.accent);
-    f.render_widget(
-        Paragraph::new(logo),
-        logo_area.centered_horizontally(Constraint::Length(logo_width)),
+    let areas = frame(
+        f,
+        shared,
+        &form.hero,
+        "Login",
+        BOX_HEIGHT.saturating_mul(2),
+        Placement::Centered,
     );
-
-    let inner = panel::draw(f, palette, form_area, FORM_WIDTH, form_height);
-    let [identifier_area, password_area, error_area, _, hints_area] = Layout::vertical([
-        Constraint::Length(3),
-        Constraint::Length(3),
-        Constraint::Length(error_height),
-        Constraint::Length(1),
-        Constraint::Length(1),
-    ])
-    .areas(inner);
-
-    form.identifier.draw(
+    let [identifier, password] =
+        Layout::vertical([Constraint::Length(BOX_HEIGHT); 2]).areas(areas.body);
+    field(
         f,
         palette,
-        identifier_area,
+        identifier,
+        &form.identifier,
         "Username or email",
         form.focus == LoginField::Identifier,
     );
-    form.password.draw(
+    field(
         f,
         palette,
-        password_area,
+        password,
+        &form.password,
         "Password",
         form.focus == LoginField::Password,
     );
-    let cursor = match form.focus {
-        LoginField::Identifier => form.identifier.cursor_position(identifier_area),
-        LoginField::Password => form.password.cursor_position(password_area),
-    };
-    f.set_cursor_position(cursor);
-
-    if let Some(error) = error {
-        f.render_widget(error, error_area);
-    }
-    let keys = if form.busy {
-        Line::from("Signing in...").style(palette.muted).bold()
-    } else {
+    show_button(
+        f,
+        palette,
+        password,
+        &form.password,
+        form.focus == LoginField::ShowPassword,
+    );
+    let log_in = if form.busy { "Logging in..." } else { "Log in" };
+    let row = [
+        Button::new(log_in).disabled(form.busy),
+        Button::new("Create profile").disabled(form.busy),
+        Button::new("Forgot password").disabled(form.busy),
+    ];
+    f.render_widget(
+        action_bar::buttons(palette, &row, form.focus.button()).centered(),
+        areas.buttons,
+    );
+    f.render_widget(
         action_bar::line(
             palette,
-            &[("Tab", "switch"), ("Enter", "sign in"), ("Esc", "quit")],
+            &[
+                ("Tab", "move"),
+                ("Enter", "select"),
+                ("F1", "help"),
+                ("Esc", "quit"),
+            ],
         )
-    };
-    f.render_widget(keys, hints_area);
+        .centered(),
+        areas.keys,
+    );
 }

@@ -30,15 +30,15 @@ pub(crate) mod clipboard;
 #[cfg_attr(not(test), expect(dead_code, reason = "no screen uses it yet"))]
 pub(crate) mod collapsible;
 /// Rolling counters.
-#[cfg_attr(not(test), expect(dead_code, reason = "the hero uses it next"))]
 pub(crate) mod count_up;
 /// The backdrop of faint tiles, still or raining in.
 pub(crate) mod grid;
 /// The screen header: `!`, the title, and `?`.
-#[cfg_attr(not(test), expect(dead_code, reason = "no screen uses it yet"))]
 pub(crate) mod header;
 /// The `!` Help & feedback dialog.
 pub(crate) mod help;
+/// The logo and everybody's counters on the sign-in screens.
+pub(crate) mod hero;
 /// `?` topics and one-time hint dialogs.
 #[cfg_attr(not(test), expect(dead_code, reason = "no screen uses it yet"))]
 pub(crate) mod hint;
@@ -57,6 +57,8 @@ pub(crate) mod sheet;
 /// Ghost rows for content still loading.
 #[cfg_attr(not(test), expect(dead_code, reason = "no screen uses it yet"))]
 pub(crate) mod skeleton;
+/// The turning glyph of a request in flight.
+pub(crate) mod spinner;
 /// The opening over the first screen.
 pub(crate) mod splash;
 /// Figures in a row, rolling while they load.

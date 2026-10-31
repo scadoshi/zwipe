@@ -22,8 +22,7 @@ use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::http::contracts::metrics::AnonymousEventKind;
 
 use super::app::{App, Context, Effects, Navigation, session};
-use super::screens::login::{self, LoginForm};
-use super::screens::{self, Request, Screen, Update};
+use super::screens::{self, Request, Update, login};
 use super::widgets::help;
 use super::widgets::splash::Splash;
 use crate::outbound::account::Account;
@@ -113,7 +112,8 @@ impl EventLoop {
             login::signed_in(&mut cx, session);
         } else {
             cx.request(Request::Record(AnonymousEventKind::AppOpened));
-            cx.reset(Screen::Login(LoginForm::default()));
+            let login = login::screen(&mut cx);
+            cx.reset(login);
         }
         let effects = cx.into_effects();
         self.settle(app, effects);

@@ -6,30 +6,35 @@ pub(crate) mod account;
 pub(crate) mod config;
 pub(crate) mod deck;
 pub(crate) mod decks;
+pub(crate) mod forgot_password;
 pub(crate) mod home;
 pub(crate) mod login;
+pub(crate) mod register;
 pub(crate) mod swipe;
 pub(crate) mod update_required;
 
 use std::fmt;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use crossterm::event::KeyCode;
 use ratatui::Frame;
 use zwipe_client::ClientError;
 use zwipe_core::domain::user::User;
 use zwipe_core::http::contracts::changelog::HttpChangelog;
-use zwipe_core::http::contracts::metrics::AnonymousEventKind;
+use zwipe_core::http::contracts::metrics::{AnonymousEventKind, HttpPublicMetrics};
 
 use self::account::AccountView;
 use self::config::ConfigView;
 use self::deck::DeckView;
 use self::decks::DeckList;
+use self::forgot_password::ForgotForm;
 use self::home::HomeView;
 use self::login::LoginForm;
+use self::register::RegisterForm;
 use self::swipe::SwipeView;
 use super::app::{Context, Shared, session};
 use super::nav::Nav;
+use super::widgets::hero::{self, Counts, Hero};
 use super::widgets::toast::ToastKind;
 use crate::domain::changelog::ChangelogCache;
 use crate::outbound::account::Account;
@@ -41,7 +46,9 @@ pub(crate) const VERSION: &str = env!("CARGO_PKG_VERSION");
 /// One open screen and its state.
 #[derive(Debug)]
 pub(crate) enum Screen {
-    Login(LoginForm),
+    Login(Box<LoginForm>),
+    Register(Box<RegisterForm>),
+    ForgotPassword(Box<ForgotForm>),
     Home(Box<HomeView>),
     Decks(DeckList),
     Deck(Box<DeckView>),
@@ -61,6 +68,8 @@ impl Screen {
     pub(crate) fn handle_key(&mut self, code: KeyCode, cx: &mut Context<'_>) {
         match self {
             Self::Login(form) => login::keys::handle(form, code, cx),
+            Self::Register(form) => register::keys::handle(form, code, cx),
+            Self::ForgotPassword(form) => forgot_password::keys::handle(form, code, cx),
             Self::Home(view) => home::keys::handle(view, code, cx),
             Self::Decks(list) => decks::keys::handle(list, code, cx),
             Self::Deck(view) => deck::keys::handle(view, code, cx),
@@ -74,6 +83,8 @@ impl Screen {
     pub(crate) fn draw(&self, f: &mut Frame<'_>, shared: &Shared) {
         match self {
             Self::Login(form) => login::draw::draw(f, shared, form),
+            Self::Register(form) => register::draw::draw(f, shared, form),
+            Self::ForgotPassword(form) => forgot_password::draw::draw(f, shared, form),
             Self::Home(view) => home::draw::draw(f, shared, view),
             Self::Decks(list) => decks::draw::draw(f, shared, list),
             Self::Deck(view) => deck::draw::draw(f, shared, view),
@@ -89,7 +100,20 @@ impl Screen {
         match self {
             Self::Home(view) => view.animating(),
             Self::Account(view) => view.animating(),
+            Self::Login(form) => form.hero.animating(Instant::now()),
+            Self::Register(form) => form.hero.animating(Instant::now()),
+            Self::ForgotPassword(form) => form.sending() || form.hero.animating(Instant::now()),
             _ => false,
+        }
+    }
+
+    /// The sign-in screens' hero, which takes everybody's counts as they arrive.
+    pub(crate) fn hero_mut(&mut self) -> Option<&mut Hero> {
+        match self {
+            Self::Login(form) => Some(&mut form.hero),
+            Self::Register(form) => Some(&mut form.hero),
+            Self::ForgotPassword(form) => Some(&mut form.hero),
+            _ => None,
         }
     }
 
@@ -97,6 +121,7 @@ impl Screen {
     pub(crate) fn on_return(&mut self, cx: &mut Context<'_>) {
         match self {
             Self::Home(view) => view.refresh(cx),
+            Self::Login(form) => form.hero = hero::mount(cx),
             Self::Decks(list) => list.reload(cx),
             Self::Deck(view) => view.reload(cx),
             _ => {}
@@ -114,6 +139,8 @@ pub(crate) enum Request {
     Record(AnonymousEventKind),
     /// Fetches the changelog, once at launch.
     FetchChangelog,
+    /// Fetches everybody's counts for the hero, and saves them for the next launch.
+    FetchCounts,
     /// Saves the account's theme for drawing before the next sign-in.
     RememberTheme(RememberedTheme),
     /// Tells the server a one-time hint has been shown, by its key.
@@ -126,6 +153,8 @@ pub(crate) enum Request {
     )]
     MarkHintShown(String),
     Login(login::Request),
+    Register(register::Request),
+    ForgotPassword(forgot_password::Request),
     Home(home::Request),
     Decks(decks::Request),
     Deck(deck::Request),
@@ -150,6 +179,8 @@ pub(crate) enum Update {
     },
     /// The changelog, or `None` when it could not be fetched.
     Changelog(Option<Box<HttpChangelog>>),
+    /// Everybody's counts, freshly fetched.
+    Counts(Box<HttpPublicMetrics>),
     /// The server no longer accepts the session.
     SessionEnded,
     SignedOut,
@@ -176,6 +207,8 @@ pub(crate) enum Update {
     /// The user as the server keeps it after marking a hint shown.
     HintMarked(Box<User>),
     Login(login::Update),
+    Register(register::Update),
+    ForgotPassword(forgot_password::Update),
     Home(home::Update),
     Decks(decks::Update),
     Deck(deck::Update),
@@ -195,6 +228,12 @@ pub(crate) async fn perform(
         Request::Record(kind) => {
             session::record(account, kind).await;
             None
+        }
+        Request::FetchCounts => {
+            // A failed fetch keeps whatever copy is on screen, with no message.
+            let metrics = account.client.public_metrics().await.ok()?;
+            account.counts.save(&metrics).ok();
+            Some(Update::Counts(Box::new(metrics)))
         }
         Request::FetchChangelog => Some(Update::Changelog(
             account.client.fetch_changelog().await.ok().map(Box::new),
@@ -222,6 +261,8 @@ pub(crate) async fn perform(
             Some(Update::HintMarked(Box::new(user)))
         }
         Request::Login(request) => login::perform(account, request).await,
+        Request::Register(request) => register::perform(account, request).await,
+        Request::ForgotPassword(request) => forgot_password::perform(account, request).await,
         Request::Home(request) => home::perform(account, request).await,
         Request::Decks(request) => decks::perform(account, request).await,
         Request::Deck(request) => deck::perform(account, request).await,
@@ -241,6 +282,16 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
                 changelog.map_or(ChangelogCache::Failed, |c| ChangelogCache::Loaded(*c));
         }
         Update::SessionEnded => session::session_ended(cx),
+        Update::Counts(metrics) => {
+            let now = Instant::now();
+            cx.shared.counts = Counts {
+                metrics: Some(*metrics),
+                fetched_at: Some(now),
+            };
+            for hero in nav.screens_mut().filter_map(Screen::hero_mut) {
+                hero.take(&cx.shared.counts, now);
+            }
+        }
         Update::SignedOut => login::signed_out(cx, None),
         Update::Status(status) => cx.shared.status = status,
         Update::Toast(kind, message) => cx.toast(kind, message),
@@ -250,6 +301,8 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
             cx.shared.user = Some(*user);
         }
         Update::Login(update) => login::apply(nav, update, cx),
+        Update::Register(update) => register::apply(nav, update, cx),
+        Update::ForgotPassword(update) => forgot_password::apply(nav, update, cx),
         Update::Home(update) => home::apply(nav, update, cx),
         Update::Decks(update) => decks::apply(nav, update, cx),
         Update::Deck(update) => deck::apply(nav, update, cx),

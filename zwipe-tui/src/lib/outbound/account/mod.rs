@@ -12,6 +12,7 @@ use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::user::{User, UserPreferences};
 use zwipe_core::http::contracts::auth::{HttpAuthenticateUser, HttpRefreshSession};
 
+use super::counts_file::CountsFile;
 use super::files;
 
 /// How long logging out waits on the server before forgetting the session anyway, from the app's `LOGOUT_TIMEOUT`.
@@ -29,6 +30,8 @@ pub(crate) struct Account {
     /// Also the refresh lock: holding it while refreshing makes concurrent requests wait for one refresh.
     session: Mutex<Option<Session>>,
     store: SessionFile,
+    /// Everybody's counts as last fetched, beside the session file.
+    pub(crate) counts: CountsFile,
 }
 
 impl Account {
@@ -39,6 +42,7 @@ impl Account {
             client,
             launch_id: Uuid::new_v4(),
             session: Mutex::new(session),
+            counts: CountsFile::at(store.path.with_file_name("counts.json")),
             store,
         }
     }

@@ -14,6 +14,7 @@ use zwipe_client::ZwipeClient;
 use crate::domain::theme::Palette;
 use crate::inbound::app::App;
 use crate::inbound::event_loop::EventLoop;
+use crate::inbound::widgets::hero::Counts;
 use crate::outbound::account::{Account, SessionFile};
 use crate::outbound::theme_file::ThemeFile;
 
@@ -56,6 +57,8 @@ pub async fn run() -> Result<()> {
         &remembered.theme,
         remembered.dark_mode,
     ));
+
+    app.shared.counts = Counts::restored(account.counts.load());
 
     let mut terminal = ratatui::try_init()?;
     app.shared.images = card_images();

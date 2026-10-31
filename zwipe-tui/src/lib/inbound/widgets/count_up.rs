@@ -27,6 +27,7 @@ impl CountUp {
         }
     }
 
+    #[cfg(test)]
     pub(crate) fn value(&self) -> Option<u64> {
         self.value
     }

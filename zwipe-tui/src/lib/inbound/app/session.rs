@@ -94,9 +94,9 @@ mod tests {
             ended: true,
             too_old: None,
         });
-        assert!(matches!(harness.screen(), Screen::Login(form) if form.error.is_none()));
+        assert!(matches!(harness.screen(), Screen::Login(_)));
         assert!(harness.app.shared.toasts.is_empty(), "no toast");
-        assert_eq!(harness.pending(), [Request::SignOut]);
+        assert_eq!(harness.pending(), [Request::FetchCounts, Request::SignOut]);
         harness.clear();
         harness.apply(Update::SessionEnded);
         assert_eq!(harness.pending(), [], "already signed out");

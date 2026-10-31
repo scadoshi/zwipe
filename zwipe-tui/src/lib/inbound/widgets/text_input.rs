@@ -50,6 +50,15 @@ impl TextInput {
         self
     }
 
+    /// Masks or shows what is typed, as a password's Show and Hide do.
+    pub(crate) fn set_masked(&mut self, masked: bool) {
+        self.masked = masked;
+    }
+
+    pub(crate) fn is_masked(&self) -> bool {
+        self.masked
+    }
+
     pub(crate) fn value(&self) -> &str {
         &self.value
     }
