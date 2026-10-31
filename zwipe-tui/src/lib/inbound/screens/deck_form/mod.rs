@@ -94,6 +94,8 @@ pub(crate) struct CardField {
     pub(crate) dropdown: Dropdown,
     /// The highlighted hit.
     pub(crate) highlighted: usize,
+    /// The filter the swipe picker applied last, kept while the picker is closed.
+    pub(crate) swipe_filter: CardQueryBuilder,
 }
 
 impl Default for CardField {
@@ -105,6 +107,7 @@ impl Default for CardField {
             generation: 0,
             dropdown: Dropdown::Hidden,
             highlighted: 0,
+            swipe_filter: CardQueryBuilder::new(),
         }
     }
 }

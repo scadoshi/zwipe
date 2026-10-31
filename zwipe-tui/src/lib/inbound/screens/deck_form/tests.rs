@@ -433,6 +433,61 @@ fn the_swipe_picker_skips_picks_saves_and_undoes() {
     );
 }
 
+#[test]
+fn the_swipe_pickers_filter_opens_the_filter_sheet_and_narrows_the_pile() {
+    use crate::domain::filter::sections::Section as FilterSection;
+
+    let picker = |harness: &Harness| -> SwipePicker {
+        let Some(Overlay::Swipe(picker)) = &form(harness).overlay else {
+            panic!("the swipe picker is not open");
+        };
+        (**picker).clone()
+    };
+    let mut harness = commander_form();
+    harness.press(KeyCode::F(4));
+    harness.app.shared.hint = None;
+    harness.press(KeyCode::F(3));
+    harness.app.shared.hint = None;
+    let Some(sheet) = picker(&harness).sheet else {
+        panic!("F3 did not open the filter sheet");
+    };
+    assert!(
+        !sheet.sections().contains(&FilterSection::Format),
+        "the swipe picker's sheet has no format section"
+    );
+    assert!(screen_text(&harness.app).contains(" Filter "));
+    render(&harness.app, 12, 5);
+
+    if let Some(Overlay::Swipe(open)) = &mut form_mut(&mut harness).overlay
+        && let Some(sheet) = &mut open.sheet
+    {
+        sheet.draft.set_name_contains("elf");
+    }
+    harness.clear();
+    harness.press(KeyCode::Char('a'));
+    let applied = picker(&harness);
+    assert!(applied.sheet.is_none(), "Apply closes the sheet");
+    assert_eq!(applied.filter.name_contains(), Some("elf"));
+    assert!(applied.filter_dot());
+    assert!(
+        harness.pending().iter().any(|r| matches!(
+            r,
+            screens::Request::DeckForm(Request::SwipePage { generation, query })
+                if *generation == applied.generation && query.criteria().name_contains() == Some("elf")
+        )),
+        "the pile starts over under the filter: {:?}",
+        harness.pending()
+    );
+
+    harness.press(KeyCode::Esc);
+    harness.press(KeyCode::F(4));
+    assert_eq!(
+        picker(&harness).filter.name_contains(),
+        Some("elf"),
+        "the slot keeps its filter while the picker is closed"
+    );
+}
+
 /// Edit for a deck named Pile with a Modern format and one other tag, loaded.
 fn edit() -> (Harness, Uuid) {
     let mut harness = Harness::on(Screen::Decks(

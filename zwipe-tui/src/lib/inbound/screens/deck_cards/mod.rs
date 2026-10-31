@@ -765,14 +765,7 @@ fn zone_item(slot: CommandZoneSlot, card: &Card) -> Item {
     }
 }
 
-/// Opens the deck cards view for `deck_id` over the current screen and loads the deck and its tokens. The deck view links here.
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "the deck view, built in another package, links here at merge"
-    )
-)]
+/// Opens the deck cards view for `deck_id` over the current screen and loads the deck and its tokens. The deck view's `c` opens it.
 pub(crate) fn open(cx: &mut Context<'_>, deck_id: Uuid) {
     let view = DeckCardsView::new(cx, deck_id);
     cx.request(Request::Load { deck_id }.into());

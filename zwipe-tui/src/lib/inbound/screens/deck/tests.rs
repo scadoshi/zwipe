@@ -541,3 +541,37 @@ fn the_deck_screen_fits_a_tiny_terminal() {
     view_mut(&mut harness).dialog = Some(Dialog::Clone(CloneDialog::new("A")));
     render(&harness.app, 12, 5);
 }
+
+#[test]
+fn c_opens_the_deck_cards_view_on_this_deck() {
+    let mut harness = loaded(elves());
+    let deck_id = view(&harness).profile.id;
+    harness.press(KeyCode::Char('c'));
+    let Screen::DeckCards(cards) = harness.screen() else {
+        panic!("not on the deck cards view: {:?}", harness.screen());
+    };
+    assert_eq!(cards.deck_id, deck_id);
+    assert!(harness.pending().contains(&screens::Request::DeckCards(
+        screens::deck_cards::Request::Load { deck_id }
+    )));
+}
+
+#[test]
+fn add_cards_on_the_below_minimum_warning_opens_add_on_this_deck() {
+    let mut harness = loaded(elves_with_short_warning());
+    let deck_id = view(&harness).profile.id;
+    view_mut(&mut harness).open = Some(Section::Warnings);
+    let targets = view(&harness).targets();
+    let add = targets
+        .iter()
+        .position(|t| {
+            *t == Target::Fix {
+                warning: 0,
+                button: 0,
+            }
+        })
+        .unwrap();
+    view_mut(&mut harness).focus = add;
+    harness.press(KeyCode::Enter);
+    assert_eq!(harness.swipe_view().deck.id, deck_id);
+}

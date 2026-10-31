@@ -2,11 +2,15 @@
 
 use crossterm::event::KeyCode;
 use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::deck::Format;
 
 use super::{DeckForm, Overlay, Request};
 use crate::domain::deck::form::{self, SWIPE_PAGE, Slot};
+use crate::domain::filter;
 use crate::inbound::app::Context;
+use crate::inbound::screens::card_sheets;
+use crate::inbound::screens::card_sheets::filter::{FilterSheet, SheetConfig, SheetOutcome};
 use crate::inbound::widgets::hint;
 use crate::inbound::widgets::info::InfoPopup;
 use crate::inbound::widgets::toast::ToastKind;
@@ -43,10 +47,14 @@ pub(crate) struct SwipePicker {
     pub(crate) exhausted: bool,
     /// Counts refreshes so a page for an older pile is dropped.
     pub(crate) generation: u64,
+    /// The user's filter the slot's rule goes on top of.
+    pub(crate) filter: CardQueryBuilder,
+    /// The card filter sheet, while it is open over the pile.
+    pub(crate) sheet: Option<FilterSheet>,
 }
 
 impl SwipePicker {
-    /// The picker for `slot`, with nothing loaded yet.
+    /// The picker for `slot`, with nothing loaded yet and the slot's last applied filter.
     pub(crate) fn new(form: &DeckForm, slot: Slot) -> Self {
         Self {
             slot,
@@ -59,7 +67,23 @@ impl SwipePicker {
             loading: false,
             exhausted: false,
             generation: 0,
+            filter: form.card(slot).swipe_filter.clone(),
+            sheet: None,
         }
+    }
+
+    /// Whether the Filter key shows its dot: any user filter or an explicit sort.
+    pub(crate) fn filter_dot(&self) -> bool {
+        filter::shows_dot(&self.filter)
+    }
+
+    /// Opens the card filter sheet over the picker's filter, without the format section.
+    pub(crate) fn open_filter(&mut self, cx: &mut Context<'_>) {
+        let config = SheetConfig {
+            show_format: false,
+            ..SheetConfig::default()
+        };
+        self.sheet = Some(FilterSheet::open(cx, &self.filter, config));
     }
 
     /// Whether the slot has what it needs to search: a format for the commander, a commander for the signature spell.
@@ -87,9 +111,13 @@ impl SwipePicker {
         if self.loading || self.exhausted || !self.can_search() || left > PREFETCH_AT {
             return;
         }
-        let Ok(query) =
-            form::swipe_query(self.slot, self.format, self.commander.as_ref(), self.offset)
-        else {
+        let Ok(query) = form::swipe_query(
+            &self.filter,
+            self.slot,
+            self.format,
+            self.commander.as_ref(),
+            self.offset,
+        ) else {
             return;
         };
         self.loading = true;
@@ -170,6 +198,19 @@ pub(crate) fn handle(
     code: KeyCode,
     cx: &mut Context<'_>,
 ) -> Option<Overlay> {
+    if let Some(sheet) = &mut picker.sheet {
+        match card_sheets::filter::keys::handle(sheet, code, cx) {
+            SheetOutcome::Open => {}
+            SheetOutcome::Closed => picker.sheet = None,
+            SheetOutcome::Applied(filter) => {
+                picker.sheet = None;
+                form.card_mut(picker.slot).swipe_filter = (*filter).clone();
+                picker.filter = *filter;
+                picker.refresh(cx);
+            }
+        }
+        return Some(Overlay::Swipe(picker));
+    }
     match code {
         KeyCode::Esc => return None,
         KeyCode::F(1) => {
@@ -186,7 +227,7 @@ pub(crate) fn handle(
             picker.refresh(cx);
             cx.toast(ToastKind::Info, "Stack refreshed".to_owned());
         }
-        KeyCode::F(3) => open_filter_stub(cx),
+        KeyCode::F(3) => picker.open_filter(cx),
         KeyCode::Right | KeyCode::Char('l') => {
             if let Some(card) = picker.current().cloned() {
                 cx.toast(
@@ -235,14 +276,6 @@ pub(crate) fn handle(
         _ => {}
     }
     Some(Overlay::Swipe(picker))
-}
-
-/// Stand-in for the card filter sheet, which package D builds. Wire it so the picker's query starts from the user's filter.
-pub(crate) fn open_filter_stub(cx: &mut Context<'_>) {
-    cx.toast(
-        ToastKind::Info,
-        "The card filter is not in the terminal yet".to_owned(),
-    );
 }
 
 #[cfg(test)]

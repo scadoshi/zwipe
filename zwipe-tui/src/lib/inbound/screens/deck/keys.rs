@@ -4,11 +4,11 @@ use crossterm::event::KeyCode;
 
 use super::{
     CloneDialog, DeckView, Dialog, Request, Section, Target, clear_skips_dialog, copy,
-    delete_dialog, open_deck_cards_stub, open_tag_examples_stub, reopen_hint, run_fix,
+    delete_dialog, open_tag_examples_stub, reopen_hint, run_fix,
 };
 use crate::domain::deck::warning;
 use crate::inbound::app::Context;
-use crate::inbound::screens::{deck_export, deck_form, deck_import, swipe};
+use crate::inbound::screens::{deck_cards, deck_export, deck_form, deck_import, swipe};
 use crate::inbound::widgets::alert::AlertChoice;
 use crate::inbound::widgets::menu::MenuKey;
 use crate::inbound::widgets::{browser, info};
@@ -30,7 +30,7 @@ pub(crate) fn handle(view: &mut DeckView, code: KeyCode, cx: &mut Context<'_>) {
         KeyCode::Char('q') => cx.quit(),
         KeyCode::Esc => cx.back(),
         KeyCode::Char('e') => deck_form::open_edit(cx, view.profile.id),
-        KeyCode::Char('c') => open_deck_cards_stub(cx, view.profile.id),
+        KeyCode::Char('c') => deck_cards::open(cx, view.profile.id),
         KeyCode::Char('m') => view.more = Some(view.more_menu()),
         KeyCode::Char('?') => reopen_hint(cx),
         KeyCode::Char('i') => {

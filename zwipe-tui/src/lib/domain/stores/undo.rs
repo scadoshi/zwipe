@@ -112,10 +112,6 @@ impl UndoStore {
     }
 
     /// Drops the deck's whole log, as an import does.
-    #[cfg_attr(
-        not(test),
-        expect(dead_code, reason = "import, in the deck view's package, clears it")
-    )]
     pub(crate) fn clear(&mut self, deck_id: Uuid) {
         self.entries.remove(&deck_id);
     }

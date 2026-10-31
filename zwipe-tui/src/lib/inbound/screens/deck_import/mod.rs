@@ -206,9 +206,6 @@ pub(crate) fn reopen_hint(cx: &mut Context<'_>) {
     });
 }
 
-/// Stand-in for clearing the deck's undo history, which package D's undo store owns. Wire it to that store's clear for `deck_id`.
-pub(crate) fn clear_undo_history_stub(_deck_id: Uuid) {}
-
 /// Import's work.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum Request {
@@ -308,7 +305,7 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
             };
             cx.toast(kind, message);
             if !result.imported.is_empty() {
-                clear_undo_history_stub(view.deck_id);
+                cx.shared.cards.undo.clear(view.deck_id);
             }
             view.result = Some(result);
         }

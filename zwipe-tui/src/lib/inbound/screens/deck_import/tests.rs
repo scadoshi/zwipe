@@ -112,3 +112,35 @@ fn import_fits_a_tiny_terminal() {
     render(&harness.app, 12, 5);
     render(&harness.app, 1, 1);
 }
+
+#[test]
+fn an_import_clears_the_decks_undo_log_and_only_that_deck() {
+    let (mut harness, deck_id) = opened();
+    let other = Uuid::new_v4();
+    for id in [deck_id, other] {
+        harness.app.shared.cards.undo.push(
+            id,
+            crate::domain::stores::undo::UndoAction::Added {
+                card_id: Uuid::new_v4(),
+                card_name: "Sol Ring".to_owned(),
+            },
+        );
+    }
+    harness.apply(Update::Imported(ImportDeckCardsResult {
+        imported: Vec::new(),
+        unresolved: Vec::new(),
+    }));
+    assert!(
+        !harness.app.shared.cards.undo.is_empty(deck_id),
+        "nothing imported keeps the log"
+    );
+    harness.apply(Update::Imported(ImportDeckCardsResult {
+        imported: vec![ImportedCard {
+            name: "Sol Ring".to_owned(),
+            quantity: 1,
+        }],
+        unresolved: Vec::new(),
+    }));
+    assert!(harness.app.shared.cards.undo.is_empty(deck_id));
+    assert!(!harness.app.shared.cards.undo.is_empty(other));
+}

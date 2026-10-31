@@ -199,18 +199,19 @@ pub(crate) fn search_query(
     builder.build()
 }
 
-/// The swipe picker's page for `slot` from `offset`: the slot's rule, no tokens, 25 a page, in the server's popularity order.
+/// The swipe picker's page for `slot` from `offset`: the user's `filter` with the slot's rule on top, no tokens, 25 a page, in the server's popularity order unless the filter sets a sort.
 ///
 /// # Errors
 ///
 /// Fails when nothing narrows the search, which cannot happen with the slot rule set.
 pub(crate) fn swipe_query(
+    filter: &CardQueryBuilder,
     slot: Slot,
     format: Option<Format>,
     commander: Option<&Card>,
     offset: u32,
 ) -> Result<CardQuery, InvalidCardCriteria> {
-    let mut builder = CardQueryBuilder::new();
+    let mut builder = filter.clone();
     match slot {
         Slot::Commander => {
             if let Some(format) = format {
@@ -357,7 +358,7 @@ mod tests {
         assert_eq!(Slot::ALL.map(Slot::limit), [5, 10, 10, 5]);
         assert!(search_query(Slot::Commander, "kre", true, Some(Format::Commander), None).is_ok());
         assert!(search_query(Slot::Partner, "a", false, None, None).is_ok());
-        assert!(swipe_query(Slot::Background, None, None, 25).is_ok());
+        assert!(swipe_query(&CardQueryBuilder::new(), Slot::Background, None, None, 25).is_ok());
         assert_eq!(
             Slot::Commander.noun(Some(Format::Oathbreaker)),
             "oathbreaker"

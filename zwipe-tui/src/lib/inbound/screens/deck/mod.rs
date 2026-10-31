@@ -505,22 +505,6 @@ pub(crate) fn reopen_hint(cx: &mut Context<'_>) {
     });
 }
 
-/// Stand-in for the deck cards screen, which package D builds. Wire it to that screen's `open` with this deck.
-pub(crate) fn open_deck_cards_stub(cx: &mut Context<'_>, _deck_id: Uuid) {
-    cx.toast(
-        ToastKind::Info,
-        "The deck cards screen is not in the terminal yet".to_owned(),
-    );
-}
-
-/// Stand-in for the add screen the below-minimum warning's "Add cards" opens, which package D builds. Wire it to that screen's `open` with this deck.
-pub(crate) fn open_add_cards_stub(cx: &mut Context<'_>, _deck_id: Uuid) {
-    cx.toast(
-        ToastKind::Info,
-        "The add screen is not in the terminal yet; s starts swiping".to_owned(),
-    );
-}
-
 /// Stand-in for the oracle tag Examples overlay, which package B builds. Wire it to that overlay with `slug`.
 pub(crate) fn open_tag_examples_stub(cx: &mut Context<'_>, _slug: &str) {
     cx.toast(
@@ -839,7 +823,11 @@ pub(crate) fn copy(cx: &mut Context<'_>, text: &str, done: &str) {
 pub(crate) fn run_fix(view: &DeckView, fix: Fix, button: usize, cx: &mut Context<'_>) {
     let deck_id = view.profile.id;
     match fix {
-        Fix::BelowMinimum if button == 0 => open_add_cards_stub(cx, deck_id),
+        Fix::BelowMinimum if button == 0 => {
+            if let Some(deck) = &view.deck {
+                screens::swipe::open(cx, deck);
+            }
+        }
         Fix::BelowMinimum => screens::deck_import::open(cx, deck_id),
         Fix::Quantity { card, quantity } => cx.request(
             Request::FixQuantity {

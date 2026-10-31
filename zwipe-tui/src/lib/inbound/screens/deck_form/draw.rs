@@ -16,6 +16,7 @@ use super::{DeckForm, Dropdown, Field, Mode, Overlay};
 use crate::domain::deck::form::Slot;
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
+use crate::inbound::screens::card_sheets;
 use crate::inbound::widgets::pill::{self, PillState, pill};
 use crate::inbound::widgets::text_input::TextInput;
 use crate::inbound::widgets::{action_bar, skeleton};
@@ -51,7 +52,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &DeckForm) {
             return draw_oracle(f, palette, form, picker, [header, body, status, keys]);
         }
         Some(Overlay::Swipe(picker)) => {
-            return draw_swipe(f, palette, picker, [header, body, status, keys]);
+            return draw_swipe(f, shared, picker, [header, body, status, keys]);
         }
         Some(Overlay::Info(_)) | None => {}
     }
@@ -741,8 +742,9 @@ fn draw_oracle(
     draw_grid(f, chips, picker.focus, grid);
 }
 
-/// The swipe picker: the card up now and what it says, or a ghost while loading.
-fn draw_swipe(f: &mut Frame<'_>, palette: &Palette, picker: &SwipePicker, areas: [Rect; 4]) {
+/// The swipe picker: the card up now and what it says, or a ghost while loading, with the filter sheet over it while open.
+fn draw_swipe(f: &mut Frame<'_>, shared: &Shared, picker: &SwipePicker, areas: [Rect; 4]) {
+    let palette = &shared.palette;
     let [header, body, _, keys] = areas;
     f.render_widget(
         Line::from(vec![
@@ -768,13 +770,21 @@ fn draw_swipe(f: &mut Frame<'_>, palette: &Palette, picker: &SwipePicker, areas:
     if matches!(picker.slot, Slot::Commander | Slot::Partner) {
         shown.push(("↑", "save"));
     }
+    let filter_label = if picker.filter_dot() {
+        "Filter •"
+    } else {
+        "Filter"
+    };
     shown.extend([
         ("↓", "undo"),
-        ("F3", "Filter"),
+        ("F3", filter_label),
         ("F5", "Refresh"),
         ("Esc", "Back"),
     ]);
     f.render_widget(action_bar::line(palette, &shown), keys);
+    if let Some(sheet) = &picker.sheet {
+        card_sheets::filter::draw::draw(f, shared, sheet, f.area());
+    }
 }
 
 /// A card's name, cost, type, rules and stats.
