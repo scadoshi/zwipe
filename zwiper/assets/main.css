@@ -3988,3 +3988,8 @@ button {
     color: var(--text-muted);
     text-align: center;
 }
+
+/* The same note alone under a card group's header, spaced off the frame. */
+.activity-total-group {
+    padding-bottom: 0.75rem;
+}

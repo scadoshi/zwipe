@@ -36,6 +36,16 @@ const ROLES_TITLE: &str = "Card roles";
 const TAGS_TITLE: &str = "Oracle tags";
 /// The hard passes group's header.
 const PASSES_TITLE: &str = "Most skipped";
+/// Card roles' line before any role has enough swipes to rate.
+const ROLES_EMPTY: &str = "Swipe more cards to see your card roles";
+/// Oracle tags' line before any tag has enough swipes to rate.
+const TAGS_EMPTY: &str = "Swipe more cards to see your Oracle tags";
+/// Most skipped's line before any card qualifies.
+const PASSES_EMPTY: &str = "Skipped cards show here";
+/// A chart's line on Removed before any card counted there was removed.
+const NONE_REMOVED: &str = "You haven't removed any cards yet";
+/// Oracle tags' line when no tag's share beats other players'.
+const NO_TAG_STANDS_OUT: &str = "No tags stand out from other players yet";
 
 /// Room on the left of the grid for the weekday labels.
 const LEFT: f64 = 24.0;
@@ -341,6 +351,16 @@ fn role_rate_bars(kind: RateKind, roles: &[HttpRoleRates], tags: &[HttpTagRates]
         .collect()
 }
 
+/// Oracle tags' line when the picked share charts no tag: nothing removed
+/// under any tag on Removed, otherwise no tag the user beats others on.
+fn tag_empty_line(kind: RateKind, tags: &[HttpTagRates]) -> &'static str {
+    if kind == RateKind::Removed && tags.iter().all(|t| t.outcomes.removed == 0) {
+        NONE_REMOVED
+    } else {
+        NO_TAG_STANDS_OUT
+    }
+}
+
 /// Other players' share across every tag sent, the rate a tag few of them
 /// have been dealt starts from. Even odds with nothing to go on.
 fn baseline(kind: RateKind, tags: &[HttpTagRates]) -> f64 {
@@ -512,7 +532,8 @@ pub(crate) fn HeatGhost() -> Element {
 /// the oracle tags swiped under each; and Oracle tags, the tags whose share
 /// stands out most from other players', each revealing its description. The
 /// last two share one [`RateChips`] pick of Added, Skipped, Maybeboard or
-/// Removed. Each section is left out when it has nothing to show. The
+/// Removed. Activity is left out when it has nothing to show; Card roles
+/// and Oracle tags stay, with a line saying what fills them. The
 /// heatmap mounts afresh each time its section opens, so its sweep plays in
 /// view.
 #[component]
@@ -534,6 +555,7 @@ pub(crate) fn ActivitySections(
     let swipe_tags = activity.tags.clone();
     let role_bars = role_rate_bars(kind(), &activity.roles, &activity.tags);
     let tag_bars = tag_rate_bars(kind(), &activity.tags);
+    let tag_empty = tag_empty_line(kind(), &activity.tags);
     let mut selected_role: Signal<Option<String>> = use_signal(|| None);
     let mut selected_tag: Signal<Option<String>> = use_signal(|| None);
     let describe_tag = try_use_context::<OtagDescribe>().map(|d| d.0);
@@ -594,22 +616,26 @@ pub(crate) fn ActivitySections(
                 }
             }
         }
-        if !activity.roles.is_empty() {
-            CollapsibleSection {
-                title: ROLES_TITLE,
-                open_section,
-                header_accessory: rsx! {
-                    InfoButton { topic: HintTopic::RoleRates }
-                },
+        CollapsibleSection {
+            title: ROLES_TITLE,
+            open_section,
+            header_accessory: rsx! {
+                InfoButton { topic: HintTopic::RoleRates }
+            },
+            if activity.roles.is_empty() {
+                div { class: "activity-total", "{ROLES_EMPTY}" }
+            } else {
                 div { class: "activity-rates",
                     RateChips { kind }
                     // Keyed on the rate, so a switch mounts a fresh chart:
                     // patched in place, rows that re-sort and flip between a
-                    // chip and a plain label kept stale bar widths.
+                    // tappable chip and a grey one kept stale bar widths.
                     for rate in [kind().label()] {
                         div { key: "{rate}",
+                            // Only Removed can chart no role: every role sent
+                            // has a dealt card, but Removed needs an added one.
                             if role_bars.is_empty() {
-                                div { class: "activity-total", "Nothing to show for this rate yet" }
+                                div { class: "activity-total", "{NONE_REMOVED}" }
                             } else {
                                 BarChart {
                                     bars: role_bars.clone(),
@@ -625,19 +651,21 @@ pub(crate) fn ActivitySections(
                 }
             }
         }
-        if !activity.tags.is_empty() {
-            CollapsibleSection {
-                title: TAGS_TITLE,
-                open_section,
-                header_accessory: rsx! {
-                    InfoButton { topic: HintTopic::TagRates }
-                },
+        CollapsibleSection {
+            title: TAGS_TITLE,
+            open_section,
+            header_accessory: rsx! {
+                InfoButton { topic: HintTopic::TagRates }
+            },
+            if activity.tags.is_empty() {
+                div { class: "activity-total", "{TAGS_EMPTY}" }
+            } else {
                 div { class: "activity-rates",
                     RateChips { kind }
                     for rate in [kind().label()] {
                         div { key: "{rate}",
                             if tag_bars.is_empty() {
-                                div { class: "activity-total", "Nothing to show for this rate yet" }
+                                div { class: "activity-total", "{tag_empty}" }
                             } else {
                                 BarChart {
                                     bars: tag_bars.clone(),
@@ -717,7 +745,7 @@ fn HardPassRow(
 
 /// The cards the user keeps passing on, as [`HardPassRow`]s in a group
 /// headed like Staples', in the server's order: most skipped against other
-/// players first. Renders nothing without any.
+/// players first. Without any, the header over a line saying what fills it.
 #[component]
 pub(crate) fn HardPassesPanel(
     passes: Vec<HttpHardPass>,
@@ -727,21 +755,22 @@ pub(crate) fn HardPassesPanel(
     on_printing: EventHandler<Card>,
 ) -> Element {
     rsx! {
-        if !passes.is_empty() {
-            div { class: "maybeboard-list card-group row-enter",
-                div { class: "card-group-header card-group-header-with-hint",
-                    span { "{PASSES_TITLE}" }
-                    InfoButton { topic: HintTopic::HardPasses }
-                }
-                for pass in passes {
-                    HardPassRow {
-                        key: "{pass.card.scryfall_data.id}",
-                        pass,
-                        expanded_card,
-                        preview_card,
-                        preview_dismissing,
-                        on_printing,
-                    }
+        div { class: "maybeboard-list card-group row-enter",
+            div { class: "card-group-header card-group-header-with-hint",
+                span { "{PASSES_TITLE}" }
+                InfoButton { topic: HintTopic::HardPasses }
+            }
+            if passes.is_empty() {
+                div { class: "activity-total activity-total-group", "{PASSES_EMPTY}" }
+            }
+            for pass in passes {
+                HardPassRow {
+                    key: "{pass.card.scryfall_data.id}",
+                    pass,
+                    expanded_card,
+                    preview_card,
+                    preview_dismissing,
+                    on_printing,
                 }
             }
         }
@@ -889,6 +918,37 @@ mod tests {
             outcomes: mine,
             everyone,
         }
+    }
+
+    #[test]
+    fn an_empty_tag_chart_says_nothing_was_removed_only_on_removed_with_none() {
+        let none_removed = [tag(
+            "ramp",
+            "ramp",
+            outcomes(2, 8, 0, 0),
+            outcomes(5, 5, 0, 0),
+        )];
+        let one_removed = [tag(
+            "ramp",
+            "ramp",
+            outcomes(2, 8, 0, 1),
+            outcomes(5, 5, 0, 5),
+        )];
+        assert_eq!(
+            tag_empty_line(RateKind::Removed, &none_removed),
+            NONE_REMOVED,
+            "Removed with nothing removed"
+        );
+        assert_eq!(
+            tag_empty_line(RateKind::Removed, &one_removed),
+            NO_TAG_STANDS_OUT,
+            "Removed with a removal that does not stand out"
+        );
+        assert_eq!(
+            tag_empty_line(RateKind::Added, &none_removed),
+            NO_TAG_STANDS_OUT,
+            "another share never mentions removing"
+        );
     }
 
     #[test]
