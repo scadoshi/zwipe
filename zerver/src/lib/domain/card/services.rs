@@ -12,9 +12,7 @@ use crate::domain::card::ports::{CardRepository, CardService};
 use crate::domain::card::requests::create_card::CreateCardError;
 use crate::domain::card::requests::get_artists::GetArtistsError;
 use crate::domain::card::requests::get_card::GetCardError;
-use crate::domain::card::requests::get_card_profile::{
-    CardProfileIds, GetCardProfile, GetCardProfileError,
-};
+use crate::domain::card::requests::get_card_profile::GetCardProfileError;
 use crate::domain::card::requests::get_card_types::GetCardTypesError;
 use crate::domain::card::requests::get_keywords::GetKeywordsError;
 use crate::domain::card::requests::get_languages::GetLanguagesError;
@@ -266,36 +264,18 @@ impl<R: CardRepository> CardService for Service<R> {
         self.repo.fetch_languages().await
     }
 
-    async fn fetch_card_profile_with_id(
-        &self,
-        request: &GetCardProfile,
-    ) -> Result<CardProfile, GetCardProfileError> {
-        self.repo.fetch_card_profile_with_id(request).await
-    }
-
-    async fn fetch_card_profile_with_scryfall_data_id(
+    async fn fetch_card_profile(
         &self,
         request: &GetScryfallData,
     ) -> Result<CardProfile, GetCardProfileError> {
-        self.repo
-            .fetch_card_profile_with_scryfall_data_id(request)
-            .await
+        self.repo.fetch_card_profile(request).await
     }
 
-    async fn fetch_card_profiles_with_ids(
-        &self,
-        request: &CardProfileIds,
-    ) -> Result<Vec<CardProfile>, GetCardProfileError> {
-        self.repo.fetch_card_profiles_with_ids(request).await
-    }
-
-    async fn fetch_card_profiles_with_scryfall_data_ids(
+    async fn fetch_card_profiles(
         &self,
         request: &ScryfallDataIds,
     ) -> Result<Vec<CardProfile>, GetCardProfileError> {
-        self.repo
-            .fetch_card_profiles_with_scryfall_data_ids(request)
-            .await
+        self.repo.fetch_card_profiles(request).await
     }
 
     async fn fetch_last_sync_date(&self) -> anyhow::Result<Option<DateTime<Utc>>> {

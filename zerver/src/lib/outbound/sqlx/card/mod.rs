@@ -33,9 +33,7 @@ use crate::domain::card::ports::{CardRepository, DeckServeContext};
 use crate::domain::card::requests::create_card::CreateCardError;
 use crate::domain::card::requests::get_artists::GetArtistsError;
 use crate::domain::card::requests::get_card::GetCardError;
-use crate::domain::card::requests::get_card_profile::{
-    CardProfileIds, GetCardProfile, GetCardProfileError,
-};
+use crate::domain::card::requests::get_card_profile::GetCardProfileError;
 use crate::domain::card::requests::get_card_types::GetCardTypesError;
 use crate::domain::card::requests::get_keywords::GetKeywordsError;
 use crate::domain::card::requests::get_languages::GetLanguagesError;
@@ -1497,9 +1495,7 @@ impl CardRepository for MyPostgres {
 
     async fn fetch_card(&self, request: &GetScryfallData) -> Result<Card, GetCardError> {
         let scryfall_data = self.fetch_scryfall_data(request).await?;
-        let card_profile = self
-            .fetch_card_profile_with_scryfall_data_id(request)
-            .await?;
+        let card_profile = self.fetch_card_profile(request).await?;
         let card = Card::new(card_profile, scryfall_data);
         Ok(card)
     }
@@ -1507,9 +1503,7 @@ impl CardRepository for MyPostgres {
     async fn fetch_cards(&self, request: &ScryfallDataIds) -> Result<Vec<Card>, GetCardError> {
         let scryfall_data = self.fetch_multiple_scryfall_data(request).await?;
         let scryfall_data_ids: ScryfallDataIds = scryfall_data.as_slice().into();
-        let card_profiles = self
-            .fetch_card_profiles_with_scryfall_data_ids(&scryfall_data_ids)
-            .await?;
+        let card_profiles = self.fetch_card_profiles(&scryfall_data_ids).await?;
         let cards = card_profiles.sleeve(scryfall_data);
         Ok(cards)
     }
@@ -1531,9 +1525,7 @@ impl CardRepository for MyPostgres {
             return Ok(vec![]);
         }
         let scryfall_data_ids: ScryfallDataIds = scryfall_data.as_slice().into();
-        let card_profiles = self
-            .fetch_card_profiles_with_scryfall_data_ids(&scryfall_data_ids)
-            .await?;
+        let card_profiles = self.fetch_card_profiles(&scryfall_data_ids).await?;
         let cards = card_profiles.sleeve(scryfall_data);
         Ok(cards)
     }
@@ -1562,9 +1554,7 @@ impl CardRepository for MyPostgres {
             return Ok(vec![]);
         }
         let scryfall_data_ids: ScryfallDataIds = scryfall_data.as_slice().into();
-        let card_profiles = self
-            .fetch_card_profiles_with_scryfall_data_ids(&scryfall_data_ids)
-            .await?;
+        let card_profiles = self.fetch_card_profiles(&scryfall_data_ids).await?;
         let cards = card_profiles.sleeve(scryfall_data);
         Ok(cards)
     }
@@ -1576,9 +1566,7 @@ impl CardRepository for MyPostgres {
             return Ok(vec![]);
         }
         let scryfall_data_ids: ScryfallDataIds = scryfall_data.as_slice().into();
-        let card_profiles = self
-            .fetch_card_profiles_with_scryfall_data_ids(&scryfall_data_ids)
-            .await?;
+        let card_profiles = self.fetch_card_profiles(&scryfall_data_ids).await?;
         let cards = card_profiles.sleeve(scryfall_data);
         Ok(cards)
     }
@@ -1730,22 +1718,7 @@ impl CardRepository for MyPostgres {
         Ok(languages)
     }
 
-    async fn fetch_card_profile_with_id(
-        &self,
-        request: &GetCardProfile,
-    ) -> Result<CardProfile, GetCardProfileError> {
-        let card_profile: CardProfile = query_as!(
-            DatabaseCardProfile,
-            "SELECT scryfall_data_id, is_token, card_roles, oracle_tags, oracle_tags_by_role, other_oracle_tags, created_at, updated_at FROM card_profiles WHERE scryfall_data_id = $1",
-            **request
-        )
-        .fetch_one(&self.pool)
-        .await?
-        .into();
-        Ok(card_profile)
-    }
-
-    async fn fetch_card_profile_with_scryfall_data_id(
+    async fn fetch_card_profile(
         &self,
         request: &GetScryfallData,
     ) -> Result<CardProfile, GetCardProfileError> {
@@ -1761,25 +1734,7 @@ impl CardRepository for MyPostgres {
         Ok(card_profile)
     }
 
-    async fn fetch_card_profiles_with_ids(
-        &self,
-        request: &CardProfileIds,
-    ) -> Result<Vec<CardProfile>, GetCardProfileError> {
-        let card_profiles: Vec<CardProfile> = query_as!(
-            DatabaseCardProfile,
-            "SELECT scryfall_data_id, is_token, card_roles, oracle_tags, oracle_tags_by_role, other_oracle_tags, created_at, updated_at
-            FROM card_profiles WHERE scryfall_data_id = ANY($1)",
-            &**request
-        )
-        .fetch_all(&self.pool)
-        .await?
-        .into_iter()
-        .map(Into::into)
-        .collect();
-        Ok(card_profiles)
-    }
-
-    async fn fetch_card_profiles_with_scryfall_data_ids(
+    async fn fetch_card_profiles(
         &self,
         request: &ScryfallDataIds,
     ) -> Result<Vec<CardProfile>, GetCardProfileError> {
@@ -1851,9 +1806,7 @@ impl CardRepository for MyPostgres {
             return Ok(vec![]);
         }
         let scryfall_data_ids: ScryfallDataIds = scryfall_data.as_slice().into();
-        let card_profiles = self
-            .fetch_card_profiles_with_scryfall_data_ids(&scryfall_data_ids)
-            .await?;
+        let card_profiles = self.fetch_card_profiles(&scryfall_data_ids).await?;
         let cards = card_profiles.sleeve(scryfall_data);
         Ok(cards)
     }
@@ -1872,9 +1825,7 @@ impl CardRepository for MyPostgres {
             return Ok(vec![]);
         }
         let scryfall_data_ids: ScryfallDataIds = scryfall_data.as_slice().into();
-        let card_profiles = self
-            .fetch_card_profiles_with_scryfall_data_ids(&scryfall_data_ids)
-            .await?;
+        let card_profiles = self.fetch_card_profiles(&scryfall_data_ids).await?;
         let cards = card_profiles.sleeve(scryfall_data);
         Ok(cards)
     }
@@ -1911,9 +1862,7 @@ impl CardRepository for MyPostgres {
             return Ok(vec![]);
         }
         let scryfall_data_ids: ScryfallDataIds = scryfall_data.as_slice().into();
-        let card_profiles = self
-            .fetch_card_profiles_with_scryfall_data_ids(&scryfall_data_ids)
-            .await?;
+        let card_profiles = self.fetch_card_profiles(&scryfall_data_ids).await?;
         let cards = card_profiles.sleeve(scryfall_data);
         Ok(cards)
     }
