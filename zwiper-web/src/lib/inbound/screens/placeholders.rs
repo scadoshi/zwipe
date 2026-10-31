@@ -32,12 +32,6 @@ pub fn Home() -> Element {
     rsx! { Placeholder { title: "Home" } }
 }
 
-/// Config, not built yet.
-#[component]
-pub fn Config() -> Element {
-    rsx! { Placeholder { title: "Config" } }
-}
-
 /// Privacy policy, not built yet.
 #[component]
 pub fn PrivacyPolicy() -> Element {

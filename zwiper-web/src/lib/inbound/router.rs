@@ -7,8 +7,9 @@ use crate::inbound::screens::account::Account;
 use crate::inbound::screens::auth::forgot_password::ForgotPassword;
 use crate::inbound::screens::auth::login::Login;
 use crate::inbound::screens::auth::register::Register;
+use crate::inbound::screens::config::Config;
 use crate::inbound::screens::placeholders::{
-    Activity, AddDeckCard, Changelog, CommanderMaybeboard, Config, CreateDeck, DeckList, EditDeck,
+    Activity, AddDeckCard, Changelog, CommanderMaybeboard, CreateDeck, DeckList, EditDeck,
     ExportDeck, Home, ImportDeck, NotFound, Playstyle, PrivacyPolicy, RemoveDeckCard, ViewDeck,
     ViewDeckCard,
 };
