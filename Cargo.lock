@@ -4894,6 +4894,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "orangui-core"
+version = "0.0.0"
+source = "git+https://github.com/scadoshi/orangui?rev=932abb5#932abb52387a0843f600169314b3d0dd58f87fe6"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "ordered-stream"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8959,6 +8967,19 @@ dependencies = [
  "sha2 0.11.0",
  "thiserror 2.0.19",
  "uuid",
+]
+
+[[package]]
+name = "zwipe-ui"
+version = "1.16.2"
+dependencies = [
+ "chrono",
+ "email_address",
+ "getrandom 0.4.3",
+ "orangui-core",
+ "serde_json",
+ "uuid",
+ "zwipe-core",
 ]
 
 [[package]]

@@ -58,6 +58,116 @@ pub const HINT_ACTIVITY: &str = "activity";
 /// Maximum length of a hint key.
 pub const HINT_KEY_MAX_LEN: usize = 64;
 
+/// Every one-time hint a client shows, each recorded under one of the
+/// `HINT_*` keys above.
+///
+/// Clients name a hint by this enum and send [`OneTimeHint::key`] to the
+/// server, so a typo in a key is a compile error instead of a hint that
+/// shows again on every visit.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum OneTimeHint {
+    /// Home, on the first visit after the first login.
+    FirstLogin,
+    /// Account, on mount.
+    Profile,
+    /// Config, on mount.
+    Config,
+    /// The first time the Universes Beyond exceptions open on Config.
+    UniversesBeyondExceptions,
+    /// The deck list, once it has a deck.
+    DeckList,
+    /// Create deck, on mount.
+    CreateDeck,
+    /// Edit deck, on mount.
+    EditDeck,
+    /// The deck view, on mount.
+    FirstDeck,
+    /// The deck cards view, once the deck has cards.
+    DeckCards,
+    /// Add cards, on mount.
+    AddDeckCards,
+    /// Remove cards, on mount.
+    RemoveDeckCards,
+    /// The first use of the card filter.
+    Filter,
+    /// Import, on mount.
+    Import,
+    /// Export, on mount.
+    Export,
+    /// The oracle tag dictionary, on mount.
+    OracleTagDictionary,
+    /// Oracle tag examples, on mount.
+    OtagExamples,
+    /// The commander maybeboard, on mount.
+    CommanderMaybeboard,
+    /// Playstyle, on mount. The key keeps its suggested commanders name.
+    SuggestedCommanders,
+    /// Activity, on mount.
+    Activity,
+    /// The first time Swipe select opens.
+    SwipeSelect,
+}
+
+impl OneTimeHint {
+    /// Every hint, in the order the `HINT_*` keys are declared.
+    pub const ALL: [Self; 20] = [
+        Self::FirstLogin,
+        Self::AddDeckCards,
+        Self::SwipeSelect,
+        Self::RemoveDeckCards,
+        Self::CreateDeck,
+        Self::EditDeck,
+        Self::DeckList,
+        Self::FirstDeck,
+        Self::DeckCards,
+        Self::Profile,
+        Self::Config,
+        Self::Filter,
+        Self::UniversesBeyondExceptions,
+        Self::Import,
+        Self::Export,
+        Self::OracleTagDictionary,
+        Self::OtagExamples,
+        Self::CommanderMaybeboard,
+        Self::SuggestedCommanders,
+        Self::Activity,
+    ];
+
+    /// The key the server records the hint under.
+    #[must_use]
+    pub fn key(self) -> &'static str {
+        match self {
+            Self::FirstLogin => HINT_FIRST_LOGIN,
+            Self::Profile => HINT_PROFILE,
+            Self::Config => HINT_CONFIG,
+            Self::UniversesBeyondExceptions => HINT_UNIVERSES_BEYOND_EXCEPTIONS,
+            Self::DeckList => HINT_DECK_LIST,
+            Self::CreateDeck => HINT_CREATE_DECK,
+            Self::EditDeck => HINT_EDIT_DECK,
+            Self::FirstDeck => HINT_FIRST_DECK,
+            Self::DeckCards => HINT_DECK_CARDS,
+            Self::AddDeckCards => HINT_ADD_DECK_CARDS,
+            Self::RemoveDeckCards => HINT_REMOVE_DECK_CARDS,
+            Self::Filter => HINT_FILTER,
+            Self::Import => HINT_IMPORT,
+            Self::Export => HINT_EXPORT,
+            Self::OracleTagDictionary => HINT_ORACLE_TAG_DICTIONARY,
+            Self::OtagExamples => HINT_OTAG_EXAMPLES,
+            Self::CommanderMaybeboard => HINT_COMMANDER_MAYBEBOARD,
+            Self::SuggestedCommanders => HINT_SUGGESTED_COMMANDERS,
+            Self::Activity => HINT_ACTIVITY,
+            Self::SwipeSelect => HINT_SWIPE_SELECT,
+        }
+    }
+
+    /// The hint recorded under `key`, or `None` for a key this build does not
+    /// know, which clients ignore.
+    #[must_use]
+    pub fn from_key(key: &str) -> Option<Self> {
+        Self::ALL.into_iter().find(|hint| hint.key() == key)
+    }
+}
+
 /// Validated request to mark a one-time hint as shown for a user.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MarkHintShown {
@@ -170,6 +280,29 @@ mod tests {
         assert_eq!(
             MarkHintShown::new(id, "add-swipes").unwrap_err(),
             InvalidHintKey::InvalidCharacters
+        );
+    }
+
+    #[test]
+    fn every_one_time_hint_has_its_own_valid_key() {
+        let mut keys: Vec<&str> = OneTimeHint::ALL.iter().map(|h| h.key()).collect();
+        for key in &keys {
+            assert!(MarkHintShown::new(Uuid::new_v4(), key).is_ok(), "{key}");
+        }
+        keys.sort_unstable();
+        keys.dedup();
+        assert_eq!(keys.len(), OneTimeHint::ALL.len(), "keys are distinct");
+    }
+
+    #[test]
+    fn one_time_hints_round_trip_through_their_keys() {
+        for hint in OneTimeHint::ALL {
+            assert_eq!(OneTimeHint::from_key(hint.key()), Some(hint));
+        }
+        assert_eq!(OneTimeHint::from_key("not_a_hint"), None);
+        assert_eq!(
+            OneTimeHint::from_key(HINT_UNIVERSES_BEYOND_EXCEPTIONS),
+            Some(OneTimeHint::UniversesBeyondExceptions)
         );
     }
 }
