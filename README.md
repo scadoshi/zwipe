@@ -9,6 +9,19 @@ Mobile-first Magic: The Gathering deck builder with swipe-based navigation.
 
 **Status:** live on the iOS App Store and Google Play. Deck building is in the app; [zwipe.net](https://zwipe.net) is the site.
 
+## Crates
+
+| Crate | What it is |
+| --- | --- |
+| `zwipe-core` | Domain types, rules and HTTP contracts |
+| `zwipe-client` | Typed API client |
+| `zerver` | API server |
+| `zite` | The site at zwipe.net |
+| `zwiper` | The app for iOS, Android and desktop |
+| `zwiper-web` | The web app (coming) |
+| `zwiper-tui` | Terminal client |
+| `components` | Magic UI over orangui |
+
 ## Tech stack
 
 Full-stack Rust:

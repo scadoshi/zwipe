@@ -9885,28 +9885,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "zwipe-tui"
-version = "1.16.2"
-dependencies = [
- "anyhow",
- "chrono",
- "crossterm",
- "dirs",
- "email_address",
- "futures",
- "image",
- "ratatui",
- "ratatui-image",
- "reqwest",
- "serde",
- "serde_json",
- "tokio",
- "uuid",
- "zwipe-client",
- "zwipe-core",
-]
-
-[[package]]
 name = "zwiper"
 version = "1.16.2"
 dependencies = [
@@ -9934,6 +9912,28 @@ dependencies = [
  "tracing-subscriber",
  "uuid",
  "webbrowser",
+ "zwipe-client",
+ "zwipe-core",
+]
+
+[[package]]
+name = "zwiper-tui"
+version = "1.16.2"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "crossterm",
+ "dirs",
+ "email_address",
+ "futures",
+ "image",
+ "ratatui",
+ "ratatui-image",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tokio",
+ "uuid",
  "zwipe-client",
  "zwipe-core",
 ]
