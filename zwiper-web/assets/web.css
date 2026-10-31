@@ -22,11 +22,17 @@ body {
     min-height: 100vh;
 }
 
-/* A screen fills its frame instead of the whole viewport. */
+/* A screen fills its frame instead of the whole viewport. It is one window
+   tall, as in the app, so its content column is what scrolls: the sidebar
+   and the toolbar stay put, and sticky columns stick to that column. */
 .screen.web-screen {
     position: relative;
     inset: auto;
-    min-height: 100vh;
+    height: 100vh;
+}
+
+.web-screen > .screen-content {
+    min-height: 0;
 }
 
 /* ---- Public frame (login, register, reset) ---- */
@@ -377,6 +383,10 @@ body {
         box-shadow: var(--shadow-md);
         animation: web-popover-in 0.15s ease-out;
     }
+
+    .web-more-popover > * {
+        margin: 0;
+    }
 }
 
 @keyframes web-popover-in {
@@ -404,7 +414,6 @@ body {
 
     /* The top bar is 3rem tall, so the action bar stays on screen. */
     .web-shell .screen.web-screen {
-        min-height: calc(100vh - 3rem);
         height: calc(100vh - 3rem);
     }
 
