@@ -1,8 +1,6 @@
 //! Login: the hero beside the form on a wide window, stacked below the
 //! breakpoint.
 
-mod hero;
-
 use components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL, TextInput, ThemeConfig};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -13,7 +11,7 @@ use zwipe_core::http::contracts::auth::HttpAuthenticateUser;
 
 use crate::domain::login::{self, SubmitGate};
 use crate::inbound::router::Route;
-use crate::inbound::screens::login::hero::HomeHero;
+use crate::inbound::screens::auth::hero::HomeHero;
 use crate::inbound::shell::ScreenFrame;
 use crate::outbound::session_store::SessionStore;
 

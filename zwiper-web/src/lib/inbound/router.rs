@@ -3,7 +3,7 @@
 use dioxus::prelude::*;
 use uuid::Uuid;
 
-use crate::inbound::screens::login::Login;
+use crate::inbound::screens::auth::login::Login;
 use crate::inbound::screens::placeholders::{
     Account, Activity, AddDeckCard, Changelog, CommanderMaybeboard, Config, CreateDeck, DeckList,
     EditDeck, ExportDeck, ForgotPassword, Home, ImportDeck, NotFound, Playstyle, PrivacyPolicy,

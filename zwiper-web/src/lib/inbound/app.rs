@@ -8,6 +8,7 @@ use dioxus::prelude::*;
 use zwipe_core::domain::logo;
 use zwipe_core::domain::user::models::preferences::PipStyle;
 
+use crate::inbound::caches;
 use crate::inbound::chrome::hint_topic::{HintHost, HintTopic};
 use crate::inbound::router::Route;
 use crate::inbound::screens::update_required::UpdateRequired;
@@ -29,6 +30,7 @@ const ZWIPER_ACCORDION_CSS: &str = include_str!("../../../../zwiper/assets/accor
 #[component]
 pub fn App() -> Element {
     let upgrade_required = upkeep::use_session_upkeep();
+    caches::use_root_caches();
     // Dialogs and sheets register here, so Esc closes the top one.
     let mut overlay_back_stack = use_overlay_back_stack();
     use_context_provider(|| overlay_back_stack);
