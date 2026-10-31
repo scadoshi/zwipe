@@ -95,6 +95,7 @@ impl<'app> Context<'app> {
         }));
     }
 
+    /// What the handler asked for, for the loop to apply once it returns.
     pub(crate) fn into_effects(self) -> Effects {
         self.effects
     }

@@ -47,7 +47,7 @@ pub(crate) struct PrintingsView {
 }
 
 impl PrintingsView {
-    /// The selected printing.
+    /// The printing under the cursor, or `None` while the list is empty.
     pub(crate) fn selected_printing(&self) -> Option<&Card> {
         self.printings.get(self.selected)
     }

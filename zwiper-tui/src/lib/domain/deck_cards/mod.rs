@@ -246,6 +246,7 @@ pub(crate) enum Write {
 }
 
 impl Burst {
+    /// What the burst writes: nothing when the taps cancel out, a delete below one, else the new quantity.
     pub(crate) fn write(&self) -> Write {
         let target = self.baseline.saturating_add(self.delta);
         if self.delta == 0 {
@@ -278,6 +279,7 @@ impl Bursts {
         burst.generation
     }
 
+    /// The quantity the card had before its open burst's first tap.
     pub(crate) fn baseline(&self, card_id: Uuid) -> Option<i32> {
         self.open.get(&card_id).map(|b| b.baseline)
     }

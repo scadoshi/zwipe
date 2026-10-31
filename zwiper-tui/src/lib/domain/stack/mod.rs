@@ -270,6 +270,7 @@ impl<A> CardStack<A> {
         true
     }
 
+    /// Logs a swipe for undo without moving the cursor.
     pub(crate) fn record(&mut self, action: A) {
         self.history.push(action);
     }
@@ -286,10 +287,12 @@ impl<A> CardStack<A> {
         self.entering = None;
     }
 
+    /// Marks the card an undo brings back as coming back from `direction`.
     pub(crate) fn prime_entering(&mut self, direction: Direction) {
         self.entering = Some(direction);
     }
 
+    /// Clears that mark, for an undo that brings nothing back or a key that ends the entrance.
     pub(crate) fn cancel_entering(&mut self) {
         self.entering = None;
     }

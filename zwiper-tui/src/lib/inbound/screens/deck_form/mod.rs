@@ -247,7 +247,7 @@ pub(crate) struct Original {
     pub(crate) other_tags: Vec<DeckOtherTag>,
 }
 
-/// The deck form.
+/// The Create and Edit form's state: every field, which one has the focus, the overlay open over it, and whether a load or save is in flight.
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct DeckForm {
     pub(crate) mode: Mode,

@@ -27,7 +27,7 @@ pub(crate) struct FormatSnapshot {
     pub(crate) signature_spell: Option<Card>,
 }
 
-/// The format picker.
+/// The format list over the form: a search box, the focused row, and the details of the format last tapped.
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct FormatPicker {
     pub(crate) search: TextInput,
