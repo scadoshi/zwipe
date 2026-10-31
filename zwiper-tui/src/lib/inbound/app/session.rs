@@ -1,6 +1,6 @@
 //! Keeping the session and the version gate up to date, as the app's root does on every screen, Login included.
 //!
-//! Every [`timing::UPKEEP_INTERVAL`], starting at launch, [`upkeep`] refreshes the session when its access token is close to expiring and asks the server for its minimum client version. A refresh the server rejects ends the session, which returns the app to Login without a word; the version gate opens and closes both ways, and a failed version check changes nothing.
+//! Every [`zwipe_ui::timing::UPKEEP_INTERVAL`], starting at launch, [`upkeep`] refreshes the session when its access token is close to expiring and asks the server for its minimum client version. A refresh the server rejects ends the session, which returns the app to Login without a word; the version gate opens and closes both ways, and a failed version check changes nothing.
 
 use std::time::Duration;
 
