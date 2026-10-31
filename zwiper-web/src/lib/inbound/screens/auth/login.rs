@@ -87,8 +87,9 @@ pub fn Login() -> Element {
     rsx! {
         ScreenFrame { title: "Login", help: true,
             div { class: "screen-content centered content-enter",
-                div { class: "web-split",
+                div { class: "web-split web-auth-card",
                     HomeHero {}
+                    hr { class: "panel-rule web-auth-rule" }
                     div { class: "container-sm text-center",
                         form {
                             class: "flex-col",
