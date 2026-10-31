@@ -40,8 +40,12 @@ const PASSES_TITLE: &str = "Most skipped";
 const ROLES_EMPTY: &str = "Swipe more cards to see your card roles";
 /// Oracle tags' line before any tag has enough swipes to rate.
 const TAGS_EMPTY: &str = "Swipe more cards to see your Oracle tags";
-/// Most skipped's line before any card qualifies, saying what does.
-const PASSES_EMPTY: &str = "Cards you skip more than once and never keep show here";
+/// Most skipped's line before any card qualifies.
+const PASSES_EMPTY: &str = "Skipped cards show here";
+/// A chart's line on Removed before any card counted there was removed.
+const NONE_REMOVED: &str = "You haven't removed any cards yet";
+/// Oracle tags' line when no tag's share beats other players'.
+const NO_TAG_STANDS_OUT: &str = "No tags stand out from other players yet";
 
 /// Room on the left of the grid for the weekday labels.
 const LEFT: f64 = 24.0;
@@ -325,6 +329,16 @@ fn role_rate_bars(kind: RateKind, roles: &[HttpRoleRates], tags: &[HttpTagRates]
         .collect()
 }
 
+/// Oracle tags' line when the picked share charts no tag: nothing removed
+/// under any tag on Removed, otherwise no tag the user beats others on.
+fn tag_empty_line(kind: RateKind, tags: &[HttpTagRates]) -> &'static str {
+    if kind == RateKind::Removed && tags.iter().all(|t| t.outcomes.removed == 0) {
+        NONE_REMOVED
+    } else {
+        NO_TAG_STANDS_OUT
+    }
+}
+
 /// Other players' share across every tag sent, the rate a tag few of them
 /// have been dealt starts from. Even odds with nothing to go on.
 fn baseline(kind: RateKind, tags: &[HttpTagRates]) -> f64 {
@@ -519,6 +533,7 @@ pub(crate) fn ActivitySections(
     let swipe_tags = activity.tags.clone();
     let role_bars = role_rate_bars(kind(), &activity.roles, &activity.tags);
     let tag_bars = tag_rate_bars(kind(), &activity.tags);
+    let tag_empty = tag_empty_line(kind(), &activity.tags);
     let mut selected_role: Signal<Option<String>> = use_signal(|| None);
     let mut selected_tag: Signal<Option<String>> = use_signal(|| None);
     let describe_tag = try_use_context::<OtagDescribe>().map(|d| d.0);
@@ -595,8 +610,10 @@ pub(crate) fn ActivitySections(
                     // tappable chip and a grey one kept stale bar widths.
                     for rate in [kind().label()] {
                         div { key: "{rate}",
+                            // Only Removed can chart no role: every role sent
+                            // has a dealt card, but Removed needs an added one.
                             if role_bars.is_empty() {
-                                div { class: "activity-total", "Nothing to show for this rate yet" }
+                                div { class: "activity-total", "{NONE_REMOVED}" }
                             } else {
                                 BarChart {
                                     bars: role_bars.clone(),
@@ -626,7 +643,7 @@ pub(crate) fn ActivitySections(
                     for rate in [kind().label()] {
                         div { key: "{rate}",
                             if tag_bars.is_empty() {
-                                div { class: "activity-total", "Nothing to show for this rate yet" }
+                                div { class: "activity-total", "{tag_empty}" }
                             } else {
                                 BarChart {
                                     bars: tag_bars.clone(),
@@ -866,6 +883,34 @@ mod tests {
             outcomes: mine,
             everyone,
         }
+    }
+
+    #[test]
+    fn an_empty_tag_chart_says_nothing_was_removed_only_on_removed_with_none() {
+        let none_removed = [tag(
+            "ramp",
+            "ramp",
+            outcomes(2, 8, 0, 0),
+            outcomes(5, 5, 0, 0),
+        )];
+        let one_removed = [tag(
+            "ramp",
+            "ramp",
+            outcomes(2, 8, 0, 1),
+            outcomes(5, 5, 0, 5),
+        )];
+        assert_eq!(
+            tag_empty_line(RateKind::Removed, &none_removed),
+            NONE_REMOVED
+        );
+        assert_eq!(
+            tag_empty_line(RateKind::Removed, &one_removed),
+            NO_TAG_STANDS_OUT
+        );
+        assert_eq!(
+            tag_empty_line(RateKind::Added, &none_removed),
+            NO_TAG_STANDS_OUT
+        );
     }
 
     #[test]
