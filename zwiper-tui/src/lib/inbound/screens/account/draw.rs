@@ -114,7 +114,7 @@ fn row(
     Line::from(spans)
 }
 
-/// A button on a row, reversed while focused and muted while disabled.
+/// A button on a row, reversed while focused and muted while disabled. Its one cell of padding sits on the left, so a focused pill ends flush with the column of right-aligned labels.
 fn button(
     palette: &Palette,
     view: &AccountView,
@@ -132,7 +132,7 @@ fn button(
     } else {
         style
     };
-    Span::styled(format!(" {label} "), style)
+    Span::styled(format!(" {label}"), style)
 }
 
 /// The screen's lines, top to bottom.

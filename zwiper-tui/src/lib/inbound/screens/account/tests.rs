@@ -1,6 +1,7 @@
 use std::time::{Duration, Instant};
 
 use crossterm::event::KeyCode;
+use ratatui::style::Modifier;
 use zwipe_core::domain::user::hints::HINT_PROFILE;
 
 use super::*;
@@ -320,4 +321,34 @@ fn the_screen_and_its_sheets_fit_a_tiny_terminal() {
 #[test]
 fn account_keeps_every_key_on_a_narrow_terminal() {
     crate::test_support::assert_key_bar_fits(&on_account(false).app, "Esc back");
+}
+
+#[test]
+fn a_focused_row_button_ends_flush_with_the_right_aligned_labels() {
+    let mut harness = on_account(true);
+    while view(&harness).focused() != Some(Stop::Privacy) {
+        harness.press(KeyCode::Char('j'));
+    }
+    for (width, height) in [(200, 50), (120, 40), (80, 24), (60, 20)] {
+        let terminal = crate::test_support::render(&harness.app, width, height);
+        let buffer = terminal.backend().buffer();
+        let row_of = |label: &str| {
+            (0..height)
+                .find(|&y| {
+                    (0..width)
+                        .map(|x| buffer[(x, y)].symbol())
+                        .collect::<String>()
+                        .contains(label)
+                })
+                .unwrap()
+        };
+        let last_lit = |y: u16, lit: &dyn Fn(&ratatui::buffer::Cell) -> bool| {
+            (0..width).rev().find(|&x| lit(&buffer[(x, y)])).unwrap()
+        };
+        let pill = last_lit(row_of("Privacy policy"), &|c| {
+            c.modifier.contains(Modifier::REVERSED)
+        });
+        let changelog = last_lit(row_of("Changelog"), &|c| c.symbol() != " ");
+        assert_eq!(pill, changelog, "at {width}x{height}");
+    }
 }

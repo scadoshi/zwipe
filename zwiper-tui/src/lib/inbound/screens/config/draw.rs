@@ -71,7 +71,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &ConfigView) {
     }
 }
 
-/// A button on a row, reversed while focused and muted while disabled.
+/// A button on a row, reversed while focused and muted while disabled. Its one cell of padding sits on the left, so a focused pill ends flush with the column of right-aligned labels.
 fn button(palette: &Palette, view: &ConfigView, stop: Stop, label: &str) -> Span<'static> {
     let style: Style = if view.enabled(stop) {
         palette.accent
@@ -83,7 +83,7 @@ fn button(palette: &Palette, view: &ConfigView, stop: Stop, label: &str) -> Span
     } else {
         style
     };
-    Span::styled(format!(" {label} "), style)
+    Span::styled(format!(" {label}"), style)
 }
 
 /// A row: its label and `?`, its value, its buttons on the right.
