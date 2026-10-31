@@ -55,6 +55,7 @@ use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::chrome::page_keys::{use_page_keys, use_undo_key};
 use crate::inbound::chrome::sheet::{SheetForm, SheetFrame};
+use crate::inbound::root_signal::use_signal_for_root_tasks;
 use crate::inbound::session::ensure_fresh::ensure_fresh;
 use crate::inbound::shell::ScreenFrame;
 
@@ -104,7 +105,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
     let restored = use_hook(|| filters.peek().restore(FilterScope::AddSearch, deck_id));
     let had_restored = restored.is_some();
     let mut filter = use_signal(|| restored.clone().unwrap_or_default());
-    let mut deck: Signal<Option<AddDeck>> = use_signal(|| None);
+    let mut deck: Signal<Option<AddDeck>> = use_signal_for_root_tasks(|| None);
     let mut source = use_signal(|| AddSource::Search);
     let mut counter = use_signal(|| 0u32);
     let mut mb_stack: Signal<CardStack<MaybeboardAction>> = use_signal(CardStack::default);

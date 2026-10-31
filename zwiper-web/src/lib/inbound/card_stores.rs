@@ -14,6 +14,8 @@ use zwipe_ui::stores::in_flight::InFlightAdds;
 use zwipe_ui::stores::parked::AddStackCache;
 use zwipe_ui::stores::undo::UndoStore;
 
+use crate::inbound::root_signal::use_root_signal;
+
 /// The shared card stores. `Copy`; read with `stores.undo.read()`.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct CardStores {
@@ -32,16 +34,17 @@ pub struct CardStores {
     pub last_search: Signal<Option<CardQueryBuilder>>,
 }
 
-/// Provides [`CardStores`] to everything under the root. Call once, in the
-/// root.
+/// Provides [`CardStores`] to everything under the root, in signals the
+/// root scope owns, since the root tasks the card screens start write them.
+/// Call once, in the root.
 pub fn use_card_stores() {
     let stores = CardStores {
-        filters: use_signal(FilterStore::default),
-        stacks: use_signal(AddStackCache::default),
-        undo: use_signal(UndoStore::default),
-        in_flight: use_signal(InFlightAdds::default),
-        add_stack: use_signal(CardStack::default),
-        last_search: use_signal(|| None),
+        filters: use_root_signal(FilterStore::default),
+        stacks: use_root_signal(AddStackCache::default),
+        undo: use_root_signal(UndoStore::default),
+        in_flight: use_root_signal(InFlightAdds::default),
+        add_stack: use_root_signal(CardStack::default),
+        last_search: use_root_signal(|| None),
     };
     use_context_provider(|| stores);
 }

@@ -7,6 +7,7 @@ pub mod card_stores;
 pub mod cards;
 pub mod catalog;
 pub mod chrome;
+pub mod root_signal;
 pub mod router;
 pub mod screens;
 pub mod session;
