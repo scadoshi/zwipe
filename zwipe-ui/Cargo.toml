@@ -1,0 +1,26 @@
+[package]
+name = "zwipe-ui"
+version.workspace = true
+authors = ["scottyrayfermo"]
+edition = "2024"
+description = "The screen logic every Zwipe client shares, with no UI crate"
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+zwipe-core = { path = "../zwipe-core" }
+chrono = { workspace = true }
+email_address = { workspace = true }
+# orangui's Dioxus-free half. The rev moves to orangui main's commit once
+# feat/orangui-core merges there.
+orangui-core = { git = "https://github.com/scadoshi/orangui", rev = "932abb5", package = "orangui-core" }
+uuid = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }
+
+# uuid pulls getrandom, which needs to be told which browser API to use.
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.4", features = ["wasm_js"] }
