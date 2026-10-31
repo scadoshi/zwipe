@@ -220,6 +220,10 @@ impl From<&Session> for RefreshSession {
 }
 
 #[cfg(test)]
+#[expect(
+    clippy::arithmetic_side_effects,
+    reason = "test fixtures; overflow fails the test"
+)]
 mod tests {
     use std::str::FromStr;
 

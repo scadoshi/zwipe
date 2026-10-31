@@ -483,7 +483,8 @@ pub fn DrawOdds(
 ) -> Element {
     const MAX_TURN: u32 = 20;
     let mut turn = use_signal(|| 0u32);
-    let draws = 7 + turn();
+    // The stepper holds `turn` at MAX_TURN or below, so this never saturates.
+    let draws = turn().saturating_add(7);
     let heading = if turn() == 0 {
         "Odds of ≥1 in opening hand".to_string()
     } else {
@@ -496,7 +497,7 @@ pub fn DrawOdds(
     let rows = buckets.iter().map(|(label, k)| {
         (
             *label,
-            (draw_odds::p_at_least_one(deck_size, *k, draws) * 100.0).round() as u32,
+            whole_percent(draw_odds::p_at_least_one(deck_size, *k, draws)),
         )
     });
     rsx! {
@@ -542,6 +543,16 @@ pub fn DrawOdds(
     }
 }
 
+/// `probability`, from 0 to 1, as a whole percent rounded half away from
+/// zero. NaN and anything below 0 read 0; anything above 1 reads 100.
+fn whole_percent(probability: f64) -> u32 {
+    let rounded = (probability * 100.0).round();
+    (0..=100)
+        .rev()
+        .find(|&percent| f64::from(percent) <= rounded)
+        .unwrap_or(0)
+}
+
 /// Per-color mana cost fulfillment, rendered flat.
 #[component]
 pub fn ManaFulfillment(rows: Vec<ManaBalanceRow>, hint: Option<Element>) -> Element {
@@ -576,6 +587,28 @@ pub fn ManaFulfillment(rows: Vec<ManaBalanceRow>, hint: Option<Element>) -> Elem
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn whole_percent_rounds_probabilities() {
+        let cases = [
+            (0.0, 0),
+            (1.0, 100),
+            (0.5, 50),
+            (0.125, 13),
+            (0.004, 0),
+            (0.996, 100),
+            (0.334, 33),
+            (f64::NAN, 0),
+            (-0.2, 0),
+        ];
+        for (probability, want) in cases {
+            assert_eq!(
+                whole_percent(probability),
+                want,
+                "probability {probability}"
+            );
+        }
+    }
 
     #[test]
     fn a_bar_reveals_unless_opted_out() {

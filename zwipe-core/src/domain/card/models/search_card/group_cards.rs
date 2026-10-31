@@ -94,52 +94,55 @@ pub trait GroupCards {
 
 impl GroupCards for Vec<Card> {
     fn group_by(self, option: GroupByOption) -> Vec<CardGroup> {
-        // Card-role grouping is multi-bucket: a card can appear in multiple groups
-        if option == GroupByOption::CardRole {
-            return group_by_card_role(self);
+        match option {
+            GroupByOption::CardType => group_by_bucket(self, CARD_TYPE_LABELS, classify_card_type),
+            GroupByOption::Cmc => group_by_bucket(self, CMC_LABELS, classify_cmc),
+            // Color grouping has an open-ended bucket set (one per color combination).
+            GroupByOption::Color => group_by_color(self),
+            // Card-role grouping is multi-bucket: a card can appear in multiple groups.
+            GroupByOption::CardRole => group_by_card_role(self),
         }
-        // Color grouping has an open-ended bucket set (one per color combination),
-        // so it can't use the fixed-label path below.
-        if option == GroupByOption::Color {
-            return group_by_color(self);
-        }
-
-        let labels: Vec<&str> = match option {
-            GroupByOption::CardType => vec![
-                "Lands",
-                "Creatures",
-                "Planeswalkers",
-                "Artifacts",
-                "Enchantments",
-                "Instants",
-                "Sorceries",
-                "Other",
-            ],
-            GroupByOption::Cmc => vec!["0", "1", "2", "3", "4", "5", "6+"],
-            GroupByOption::Color => unreachable!("color uses group_by_color"),
-            GroupByOption::CardRole => unreachable!("card role uses group_by_card_role"),
-        };
-        let mut buckets: Vec<Vec<Card>> = vec![Vec::new(); labels.len()];
-        for card in self {
-            if let Some((_, bucket)) = buckets
-                .iter_mut()
-                .enumerate()
-                .find(|(i, _)| *i == classify(&card, option))
-            {
-                bucket.push(card);
-            }
-        }
-        labels
-            .into_iter()
-            .zip(buckets)
-            .filter(|(_, cards)| !cards.is_empty())
-            .map(|(label, cards)| CardGroup {
-                label: label.to_string(),
-                pips: None,
-                cards,
-            })
-            .collect()
     }
+}
+
+/// Labels for [`GroupByOption::CardType`], indexed by [`classify_card_type`].
+const CARD_TYPE_LABELS: &[&str] = &[
+    "Lands",
+    "Creatures",
+    "Planeswalkers",
+    "Artifacts",
+    "Enchantments",
+    "Instants",
+    "Sorceries",
+    "Other",
+];
+
+/// Labels for [`GroupByOption::Cmc`], indexed by [`classify_cmc`].
+const CMC_LABELS: &[&str] = &["0", "1", "2", "3", "4", "5", "6+"];
+
+/// Groups cards into a fixed, ordered set of labeled buckets. `classify`
+/// returns each card's bucket index into `labels`; empty buckets are skipped.
+fn group_by_bucket(
+    cards: Vec<Card>,
+    labels: &[&str],
+    classify: fn(&Card) -> usize,
+) -> Vec<CardGroup> {
+    let mut buckets: Vec<Vec<Card>> = vec![Vec::new(); labels.len()];
+    for card in cards {
+        if let Some(bucket) = buckets.get_mut(classify(&card)) {
+            bucket.push(card);
+        }
+    }
+    labels
+        .iter()
+        .zip(buckets)
+        .filter(|(_, cards)| !cards.is_empty())
+        .map(|(label, cards)| CardGroup {
+            label: (*label).to_string(),
+            pips: None,
+            cards,
+        })
+        .collect()
 }
 
 /// Groups by exact color identity: one group per distinct combination, so
@@ -232,21 +235,11 @@ fn group_by_card_role(cards: Vec<Card>) -> Vec<CardGroup> {
     groups
 }
 
-/// Returns the bucket index for a card under the given grouping option.
-fn classify(card: &Card, option: GroupByOption) -> usize {
-    match option {
-        GroupByOption::CardType => classify_card_type(card),
-        GroupByOption::Cmc => classify_cmc(card),
-        GroupByOption::Color => unreachable!("color uses group_by_color"),
-        GroupByOption::CardRole => unreachable!("card role uses group_by_card_role"),
-    }
-}
-
 /// Bucket index of "Other" in the card type labels, after the seven checked types.
 const OTHER_CARD_TYPE: usize = 7;
 
 /// Bucket index of "6+", the last mana value label.
-const CMC_SIX_PLUS: usize = 6;
+const CMC_SIX_PLUS: u8 = 6;
 
 /// Card type classification; first match wins.
 ///
@@ -274,11 +267,14 @@ fn classify_card_type(card: &Card) -> usize {
         .unwrap_or(OTHER_CARD_TYPE)
 }
 
-/// CMC classification: floor to integer, cap at 6.
-fn classify_cmc(card: &Card) -> usize {
+/// CMC classification: floor to integer, cap at 6. A missing, negative or
+/// NaN mana value reads as 0. Deck metrics bucket the same way.
+pub(crate) fn classify_cmc(card: &Card) -> usize {
     let cmc = card.scryfall_data.cmc.unwrap_or(0.0);
-    let floored = cmc.floor() as usize;
-    floored.min(CMC_SIX_PLUS)
+    (1..=CMC_SIX_PLUS)
+        .rev()
+        .find(|&bucket| cmc >= f64::from(bucket))
+        .map_or(0, usize::from)
 }
 
 #[cfg(test)]
@@ -517,6 +513,25 @@ mod tests {
         card.scryfall_data.cmc = Some(6.0);
         let result = vec![card].group_by(GroupByOption::Cmc);
         assert_eq!(result[0].label, "6+");
+    }
+
+    #[test]
+    fn test_classify_cmc_floors_and_clamps_odd_values() {
+        let cases = [
+            (0.5, 0),
+            (2.5, 2),
+            (5.99, 5),
+            (-1.0, 0),
+            (f64::NAN, 0),
+            (f64::NEG_INFINITY, 0),
+            (f64::INFINITY, 6),
+            (1e300, 6),
+        ];
+        for (cmc, want) in cases {
+            let mut card = make_card("Odd Cost");
+            card.scryfall_data.cmc = Some(cmc);
+            assert_eq!(super::classify_cmc(&card), want, "cmc {cmc}");
+        }
     }
 
     // == GroupByOption::Color ==

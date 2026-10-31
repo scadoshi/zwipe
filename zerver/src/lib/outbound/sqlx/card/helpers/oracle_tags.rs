@@ -34,7 +34,7 @@ fn flatten_correlations(tags: &[OracleTag]) -> Vec<(uuid::Uuid, &str)> {
 /// # Errors
 ///
 /// Returns an error if the transaction or any of its statements fails.
-pub async fn sync_oracle_tags(pool: &PgPool, tags: &[OracleTag]) -> anyhow::Result<(u32, u32)> {
+pub async fn sync_oracle_tags(pool: &PgPool, tags: &[OracleTag]) -> anyhow::Result<(usize, usize)> {
     let correlations = flatten_correlations(tags);
 
     let mut tx = pool.begin().await?;
@@ -116,7 +116,7 @@ pub async fn sync_oracle_tags(pool: &PgPool, tags: &[OracleTag]) -> anyhow::Resu
     let authored = desc_slugs.len().saturating_sub(unknown_count);
     tracing::info!(
         "oracle tag descriptions: {covered}/{} have one ({authored} authored, {blank} blank)",
-        covered + blank
+        covered.saturating_add(blank)
     );
 
     // Correlations: replace only the scryfall-sourced rows, preserving other sources.
@@ -141,7 +141,7 @@ pub async fn sync_oracle_tags(pool: &PgPool, tags: &[OracleTag]) -> anyhow::Resu
     }
 
     tx.commit().await?;
-    Ok((tags.len() as u32, correlations.len() as u32))
+    Ok((tags.len(), correlations.len()))
 }
 
 #[cfg(test)]

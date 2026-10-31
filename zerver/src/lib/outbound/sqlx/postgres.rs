@@ -139,22 +139,22 @@ impl Postgres {
     pub async fn new(path: &str) -> anyhow::Result<Self> {
         const ATTEMPTS: u32 = 12;
         const RETRY_DELAY: std::time::Duration = std::time::Duration::from_secs(5);
-        let mut attempt = 1;
+        // Every attempt but the last is followed by a retry.
+        let mut retried_attempts = 1..ATTEMPTS;
         let pool = loop {
             match PostgresPoolOptions::new().connect(path).await {
                 Ok(pool) => break pool,
-                Err(e) if attempt < ATTEMPTS => {
+                Err(e) => {
+                    let Some(attempt) = retried_attempts.next() else {
+                        return Err(e).context(format!(
+                            "failed to open the database after {ATTEMPTS} attempts"
+                        ));
+                    };
                     tracing::warn!(
                         "database connect attempt {attempt}/{ATTEMPTS} failed: {e}; retrying in {}s",
                         RETRY_DELAY.as_secs()
                     );
-                    attempt += 1;
                     tokio::time::sleep(RETRY_DELAY).await;
-                }
-                Err(e) => {
-                    return Err(e).context(format!(
-                        "failed to open the database after {ATTEMPTS} attempts"
-                    ));
                 }
             }
         };

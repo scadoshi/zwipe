@@ -1,7 +1,7 @@
 //! Swipe direction enum.
 
 /// The four cardinal directions a swipe can resolve to.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 #[expect(missing_docs, reason = "the variants are the direction names")]
 pub enum Direction {
     Left,

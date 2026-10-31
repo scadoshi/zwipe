@@ -275,7 +275,7 @@ impl AuthRepository for Postgres {
             return Err(RefreshSessionError::Revoked(request.user_id));
         }
 
-        if now - existing.login_at > REFRESH_ABSOLUTE_LIFESPAN {
+        if now.signed_duration_since(existing.login_at) > REFRESH_ABSOLUTE_LIFESPAN {
             query!(
                 "DELETE FROM refresh_tokens WHERE family_id = $1",
                 existing.family_id

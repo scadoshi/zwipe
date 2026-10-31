@@ -68,14 +68,14 @@ async fn main() -> anyhow::Result<()> {
 
     // Every step runs non-fatally: a failure logs and the pipeline continues, so one
     // broken step can't skip the rest (e.g. the serve-critical matview refreshes).
-    // Failures are tallied and surfaced as a non-zero exit at the end.
+    // Failures are tallied (capped, never wrapping) and surfaced as a non-zero exit at the end.
     let mut failures = 0u32;
 
     tracing::info!("step 1/5 card sync (default_cards): starting");
     match card_service.scryfall_sync(BulkEndpoint::DefaultCards).await {
         Ok(_) => tracing::info!("step 1/5 card sync: ok"),
         Err(e) => {
-            failures += 1;
+            failures = failures.saturating_add(1);
             tracing::error!("step 1/5 card sync FAILED (continuing): {e:#}");
         }
     }
@@ -87,20 +87,20 @@ async fn main() -> anyhow::Result<()> {
             match card_service.refresh_card_oracle_tags().await {
                 Ok(()) => tracing::info!("step 2/5 oracle tags projection: ok"),
                 Err(e) => {
-                    failures += 1;
+                    failures = failures.saturating_add(1);
                     tracing::error!("step 2/5 oracle tags projection FAILED (continuing): {e:#}");
                 }
             }
             match card_service.refresh_oracle_tag_groups().await {
                 Ok(rows) => tracing::info!("step 2/5 oracle tags grouping: {rows} rows"),
                 Err(e) => {
-                    failures += 1;
+                    failures = failures.saturating_add(1);
                     tracing::error!("step 2/5 oracle tags grouping FAILED (continuing): {e:#}");
                 }
             }
         }
         Err(e) => {
-            failures += 1;
+            failures = failures.saturating_add(1);
             tracing::error!(
                 "step 2/5 oracle tags sync FAILED (skipping projection, continuing): {e:#}"
             );
@@ -118,26 +118,26 @@ async fn main() -> anyhow::Result<()> {
             );
         }
         Err(e) => {
-            failures += 1;
+            failures = failures.saturating_add(1);
             tracing::error!("step 3/5 derive categories FAILED (continuing): {e:#}");
         }
     }
 
     tracing::info!("step 4/5 refresh materialized views: starting");
     if let Err(e) = card_service.refresh_latest_cards().await {
-        failures += 1;
+        failures = failures.saturating_add(1);
         tracing::error!("step 4/5 latest_cards refresh FAILED (continuing): {e:#}");
     } else {
         tracing::info!("step 4/5 latest_cards: refreshed");
     }
     if let Err(e) = card_service.refresh_card_signal_rollup().await {
-        failures += 1;
+        failures = failures.saturating_add(1);
         tracing::error!("step 4/5 card_signal_rollup refresh FAILED (continuing): {e:#}");
     } else {
         tracing::info!("step 4/5 card_signal_rollup: refreshed");
     }
     if let Err(e) = card_service.refresh_otag_context_signal_rollup().await {
-        failures += 1;
+        failures = failures.saturating_add(1);
         tracing::error!("step 4/5 otag_context_signal_rollup refresh FAILED (continuing): {e:#}");
     } else {
         tracing::info!("step 4/5 otag_context_signal_rollup: refreshed");
@@ -147,28 +147,28 @@ async fn main() -> anyhow::Result<()> {
     match upkeep_service.prune_client_errors().await {
         Ok(rows) => tracing::info!("step 5/5 upkeep client_errors: {rows} pruned"),
         Err(e) => {
-            failures += 1;
+            failures = failures.saturating_add(1);
             tracing::error!("step 5/5 upkeep client_errors FAILED (continuing): {e:#}");
         }
     }
     match upkeep_service.prune_crash_reports().await {
         Ok(rows) => tracing::info!("step 5/5 upkeep crash_reports: {rows} pruned"),
         Err(e) => {
-            failures += 1;
+            failures = failures.saturating_add(1);
             tracing::error!("step 5/5 upkeep crash_reports FAILED (continuing): {e:#}");
         }
     }
     match upkeep_service.prune_expired_sessions().await {
         Ok(rows) => tracing::info!("step 5/5 upkeep expired sessions: {rows} pruned"),
         Err(e) => {
-            failures += 1;
+            failures = failures.saturating_add(1);
             tracing::error!("step 5/5 upkeep expired sessions FAILED (continuing): {e:#}");
         }
     }
     match upkeep_service.prune_expired_email_changes().await {
         Ok(rows) => tracing::info!("step 5/5 upkeep expired email changes: {rows} pruned"),
         Err(e) => {
-            failures += 1;
+            failures = failures.saturating_add(1);
             tracing::error!("step 5/5 upkeep expired email changes FAILED (continuing): {e:#}");
         }
     }

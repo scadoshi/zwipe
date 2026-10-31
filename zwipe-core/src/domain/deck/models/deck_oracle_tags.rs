@@ -86,7 +86,8 @@ mod tests {
     /// An unmapped archetype seeds nothing.
     #[test]
     fn unmapped_archetype_seeds_empty() {
-        assert_eq!(DeckTag::Chaos.oracle_tag_slugs(), &[] as &[&str]);
+        let none: &[&str] = &[];
+        assert_eq!(DeckTag::Chaos.oracle_tag_slugs(), none);
         assert_eq!(
             seed_oracle_tags(&["chaos".to_string()]),
             Vec::<String>::new()

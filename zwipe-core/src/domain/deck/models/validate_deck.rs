@@ -80,29 +80,28 @@ pub fn validate_deck(
     warnings
 }
 
-fn plural(n: u32) -> &'static str {
+fn plural(n: i64) -> &'static str {
     if n == 1 { "card" } else { "cards" }
 }
 
 fn check_card_count(format: Format, profile: &DeckProfile, warnings: &mut Vec<DeckWarning>) {
-    let mut count = profile.card_count as u32;
-
     // The commander is stored separately from deck entries, so include it in the total.
-    if format.has_commander() && profile.commander_id.is_some() {
-        count += 1;
-    }
-    if profile.partner_commander_id.is_some() {
-        count += 1;
-    }
-    if profile.background_id.is_some() {
-        count += 1;
-    }
-    if profile.signature_spell_id.is_some() {
-        count += 1;
-    }
+    let zone_slots = [
+        format.has_commander() && profile.commander_id.is_some(),
+        profile.partner_commander_id.is_some(),
+        profile.background_id.is_some(),
+        profile.signature_spell_id.is_some(),
+    ]
+    .into_iter()
+    .filter(|present| *present)
+    .count();
+    // A count for a warning message: it saturates rather than overflows.
+    let count = i64::try_from(zone_slots).map_or(profile.card_count, |slots| {
+        profile.card_count.saturating_add(slots)
+    });
 
     if let Some(min) = format.min_cards()
-        && count < min
+        && count < i64::from(min)
     {
         warnings.push(DeckWarning::new(format!(
             "deck has {} {}, {} requires at least {}",
@@ -114,7 +113,7 @@ fn check_card_count(format: Format, profile: &DeckProfile, warnings: &mut Vec<De
     }
 
     if let Some(max) = format.max_cards()
-        && count > max
+        && count > i64::from(max)
     {
         warnings.push(DeckWarning::new(format!(
             "deck has {} {}, {} allows at most {}",
@@ -225,7 +224,7 @@ fn check_copy_limits(format: Format, entries: &[DeckEntry], warnings: &mut Vec<D
             continue;
         }
 
-        let qty = *entry.deck_card.quantity as u32;
+        let qty = *entry.deck_card.quantity;
 
         // Vintage restricted cards are limited to 1 copy
         let max = if format == Format::Vintage {
@@ -236,6 +235,7 @@ fn check_copy_limits(format: Format, entries: &[DeckEntry], warnings: &mut Vec<D
         } else {
             base_max
         };
+        let max = i32::from(max);
 
         if qty > max {
             warnings.push(DeckWarning::with_action(
@@ -246,7 +246,7 @@ fn check_copy_limits(format: Format, entries: &[DeckEntry], warnings: &mut Vec<D
                     max
                 ),
                 entry.card.scryfall_data.id,
-                WarningAction::FixQuantity(max as i32),
+                WarningAction::FixQuantity(max),
             ));
         }
     }
@@ -469,10 +469,10 @@ fn check_background_validity(
 }
 
 fn check_sideboard_limits(format: Format, entries: &[DeckEntry], warnings: &mut Vec<DeckWarning>) {
-    let sideboard_count: u32 = entries
+    let sideboard_count: i64 = entries
         .iter()
         .filter(|e| e.deck_card.board.is_sideboard())
-        .map(|e| *e.deck_card.quantity as u32)
+        .map(|e| i64::from(*e.deck_card.quantity))
         .sum();
 
     if sideboard_count == 0 {
@@ -488,7 +488,7 @@ fn check_sideboard_limits(format: Format, entries: &[DeckEntry], warnings: &mut 
     }
 
     if let Some(max) = format.sideboard_max()
-        && sideboard_count > max
+        && sideboard_count > i64::from(max)
     {
         warnings.push(DeckWarning::new(format!(
             "sideboard has {} cards, {} allows at most {}",
@@ -569,6 +569,20 @@ mod tests {
         let profile = test_profile(None);
         let warnings = validate_deck(&profile, &[], &empty_command_zone());
         assert_eq!(warnings, Vec::<DeckWarning>::new());
+    }
+
+    #[test]
+    fn card_count_at_the_i64_limit_still_warns() {
+        let mut profile = test_profile(Some(Format::Commander));
+        profile.card_count = i64::MAX;
+        profile.commander_id = Some(uuid::Uuid::new_v4());
+        profile.partner_commander_id = Some(uuid::Uuid::new_v4());
+        let warnings = validate_deck(&profile, &[], &empty_command_zone());
+        let want = format!("deck has {} cards, commander allows at most 100", i64::MAX);
+        assert!(
+            warnings.iter().any(|w| w.contains(&want)),
+            "warnings {warnings:?}"
+        );
     }
 
     fn test_profile(format: Option<Format>) -> DeckProfile {

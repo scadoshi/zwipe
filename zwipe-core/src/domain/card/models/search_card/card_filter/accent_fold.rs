@@ -27,6 +27,10 @@ pub fn fold_accents(text: &str) -> String {
 
 /// The ASCII that `unaccent` puts in place of `c`, or `None` when it keeps
 /// `c` (every ASCII character, and anything outside the table).
+#[expect(
+    clippy::too_many_lines,
+    reason = "a lookup table mirroring unaccent's rules; splitting it hides the one-to-one match"
+)]
 fn fold_char(c: char) -> Option<&'static str> {
     if c.is_ascii() {
         return None;

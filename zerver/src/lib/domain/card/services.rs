@@ -7,7 +7,7 @@ use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::card::search_card::card_filter::CardQuery;
 
 use crate::domain::card::models::search_card::error::SearchCardsError;
-use crate::domain::card::models::zervice_metrics::ZerviceMetrics;
+use crate::domain::card::models::zervice_metrics::{self, ZerviceMetrics};
 use crate::domain::card::ports::{CardRepository, CardService};
 use crate::domain::card::requests::create_card::CreateCardError;
 use crate::domain::card::requests::get_artists::GetArtistsError;
@@ -40,7 +40,19 @@ const POSTGRESQL_PARAMETER_HARD_LIMIT: usize = 65_535;
 ///
 /// With 87 fields per card and the 65,535 param limit, this yields 376 cards per batch.
 fn batch_size() -> usize {
-    POSTGRESQL_PARAMETER_HARD_LIMIT / 2 / scryfall_data_fields::scryfall_data_field_count()
+    // At least one card per batch, even with no fields to bind.
+    (POSTGRESQL_PARAMETER_HARD_LIMIT / 2)
+        .checked_div(scryfall_data_fields::scryfall_data_field_count())
+        .map_or(1, |size| size.max(1))
+}
+
+/// Sort key for a role: its position in the enum's declaration.
+#[expect(
+    clippy::as_conversions,
+    reason = "a fieldless enum's discriminant; its 27 variants fit in u8"
+)]
+fn role_order(role: CardRole) -> u8 {
+    role as u8
 }
 
 /// Card service implementation handling MTG card operations and Scryfall synchronization.
@@ -83,7 +95,7 @@ impl<R: CardRepository> CardService for Service<R> {
         let mut zervice_metrics = ZerviceMetrics::new();
         let batch_size = batch_size();
         let scryfall_data: Vec<ScryfallData> = bulk_endpoint.fetch_cards().await?;
-        zervice_metrics.set_received_count(scryfall_data.len() as i32);
+        zervice_metrics.set_received_count(zervice_metrics::count_column(scryfall_data.len()));
         self.repo
             .batch_delta_upsert(&scryfall_data, batch_size, &mut zervice_metrics)
             .await?;
@@ -93,13 +105,13 @@ impl<R: CardRepository> CardService for Service<R> {
         Ok(zervice_metrics)
     }
 
-    async fn derive_card_categories(&self, batch_size: usize) -> anyhow::Result<(u32, u32)> {
+    async fn derive_card_categories(&self, batch_size: usize) -> anyhow::Result<(u64, usize)> {
         // 1. Oracle-tag subtrees (18) + Tokens via all_parts: one SQL pass, all cards.
         let otag_rows = self.repo.derive_oracle_tag_categories().await?;
 
         // 2. Merge the 4 heuristic stragglers otags can't express (oracle_tag_gaps).
         let ids = self.repo.fetch_card_ids_with_oracle_text().await?;
-        let mut merged = 0u32;
+        let mut merged = 0usize;
         for chunk in ids.chunks(batch_size) {
             let cards = self.repo.fetch_cards_batch(chunk).await?;
             let updates: Vec<_> = cards
@@ -124,16 +136,16 @@ impl<R: CardRepository> CardService for Service<R> {
                     if union.len() == before {
                         return None; // gaps already present, nothing to write
                     }
-                    union.sort_by_key(|c| *c as u8);
+                    union.sort_by_key(|role| role_order(*role));
                     Some((card.scryfall_data.id, union))
                 })
                 .collect();
-            merged += updates.len() as u32;
+            merged = merged.saturating_add(updates.len());
             if !updates.is_empty() {
                 self.repo.update_card_roles(&updates).await?;
             }
         }
-        Ok((otag_rows as u32, merged))
+        Ok((otag_rows, merged))
     }
 
     async fn refresh_latest_cards(&self) -> anyhow::Result<()> {
@@ -148,7 +160,7 @@ impl<R: CardRepository> CardService for Service<R> {
         self.repo.refresh_otag_context_signal_rollup().await
     }
 
-    async fn sync_oracle_tags(&self) -> anyhow::Result<(u32, u32)> {
+    async fn sync_oracle_tags(&self) -> anyhow::Result<(usize, usize)> {
         tracing::info!("performing oracle tags sync");
         let tags = BulkEndpoint::OracleTags.fetch_oracle_tags().await?;
         tracing::info!("fetched {} oracle tags", tags.len());
