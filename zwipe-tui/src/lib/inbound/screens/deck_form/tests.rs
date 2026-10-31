@@ -1,5 +1,5 @@
 use crossterm::event::KeyCode;
-use zwipe_core::domain::deck::DeckOtherTag;
+use zwipe_core::domain::deck::{DeckOtherTag, MAX_DECK_ORACLE_TAGS};
 
 use super::*;
 use crate::inbound::event_loop::harness::Harness;
@@ -381,6 +381,65 @@ fn the_oracle_picker_shows_curated_tags_then_search_hits() {
     );
     harness.press(KeyCode::Esc);
     assert_eq!(form(&harness).oracle_tags, Vec::<String>::new());
+}
+
+/// Opens the dictionary from the oracle tag picker with F3 and comes back from it as Use does, with `slug`.
+fn use_from_dictionary(harness: &mut Harness, slug: &str) {
+    harness.press(KeyCode::F(3));
+    assert!(
+        matches!(harness.screen(), Screen::OracleTags(_)),
+        "F3 opens the dictionary"
+    );
+    harness.app.shared.hint = None;
+    harness.app.shared.caches.handoff.oracle_tag = Some(slug.to_owned());
+    harness.press(KeyCode::Esc);
+}
+
+#[test]
+fn the_dictionarys_use_adds_a_tag_to_the_deck_and_keeps_the_picker_open() {
+    let mut harness = create();
+    focus(&mut harness, Field::OracleTags);
+    harness.press(KeyCode::Enter);
+    let last = |harness: &Harness| {
+        harness
+            .app
+            .shared
+            .toasts
+            .items()
+            .last()
+            .map(|t| (t.kind, t.message.clone()))
+    };
+
+    use_from_dictionary(&mut harness, "ramp");
+    assert_eq!(form(&harness).oracle_tags, ["ramp"]);
+    assert!(matches!(
+        form(&harness).overlay,
+        Some(Overlay::OracleTags(_))
+    ));
+    assert_eq!(
+        last(&harness),
+        Some((ToastKind::Success, "Tag added to deck".to_owned()))
+    );
+    assert!(harness.app.shared.caches.handoff.oracle_tag.is_none());
+
+    use_from_dictionary(&mut harness, "ramp");
+    assert_eq!(form(&harness).oracle_tags, ["ramp"]);
+    assert_eq!(
+        last(&harness),
+        Some((ToastKind::Info, "Tag already added".to_owned()))
+    );
+
+    form_mut(&mut harness).oracle_tags =
+        (0..MAX_DECK_ORACLE_TAGS).map(|i| format!("t{i}")).collect();
+    use_from_dictionary(&mut harness, "ramp");
+    assert!(!form(&harness).oracle_tags.contains(&"ramp".to_owned()));
+    assert_eq!(
+        last(&harness),
+        Some((
+            ToastKind::Warning,
+            "You may only choose up to 30 oracle tags".to_owned()
+        ))
+    );
 }
 
 #[test]

@@ -797,21 +797,12 @@ fn every_sections_keys_work_in_every_layout() {
         }
         harness.press(KeyCode::Char(' '));
         assert!(
-            harness
-                .app
-                .shared
-                .toasts
-                .items()
-                .iter()
-                .any(|t| t.message.contains("Oracle tag examples")),
-            "{size}"
+            matches!(harness.screen(), Screen::OtagExamples(view) if view.slug == "mana-dork"),
+            "{size}: Examples opens the tag's example cards"
         );
-        // The toast sits over the top-left corner; let it go before reading the panels.
-        harness
-            .app
-            .shared
-            .toasts
-            .prune(std::time::Instant::now() + std::time::Duration::from_secs(60));
+        // Close it without the deck's reload on return, which would put the panels back to loading.
+        harness.app.shared.hint = None;
+        harness.app.nav.pop();
 
         harness.press(KeyCode::Tab);
         assert!(

@@ -3,7 +3,7 @@ use zwipe_core::domain::deck::{DeckOtherTag, Format};
 
 use super::*;
 use crate::inbound::event_loop::harness::Harness;
-use crate::inbound::screens::{deck, deck_form};
+use crate::inbound::screens::{self, deck, deck_form};
 use crate::test_support::{deck_profile, render, screen_text, user};
 
 fn colored(name: &str, identity: &[&str]) -> DeckProfile {
@@ -198,13 +198,39 @@ fn the_more_sheet_offers_two_screens_and_closes() {
     assert!(screen.contains("More actions"));
     assert!(screen.contains("Commander maybeboard"));
     assert!(screen.contains("Playstyle"));
-    harness.press(KeyCode::Char('j'));
-    harness.press(KeyCode::Enter);
-    assert!(list(&harness).more.is_none());
-    assert_eq!(harness.app.shared.toasts.len(), 1);
-    harness.press(KeyCode::Char('m'));
     harness.press(KeyCode::Esc);
     assert!(matches!(harness.screen(), Screen::Decks(list) if list.more.is_none()));
+}
+
+#[test]
+fn more_opens_the_commander_maybeboard_and_playstyle() {
+    let mut harness = loaded(vec![deck_profile("A")]);
+    harness.press(KeyCode::Char('m'));
+    harness.press(KeyCode::Enter);
+    assert!(list_under(&mut harness).is_some_and(|l| l.more.is_none()));
+    assert!(matches!(harness.screen(), Screen::CommanderMaybeboard(_)));
+    assert!(
+        harness
+            .pending()
+            .contains(&screens::commander_maybeboard::Request::DeckProfiles.into())
+    );
+
+    let mut harness = loaded(vec![deck_profile("A")]);
+    harness.press(KeyCode::Char('m'));
+    harness.press(KeyCode::Char('j'));
+    harness.press(KeyCode::Enter);
+    assert!(matches!(harness.screen(), Screen::Playstyle(_)));
+    harness.app.shared.hint = None;
+    harness.press(KeyCode::Esc);
+    assert!(matches!(harness.screen(), Screen::Decks(_)));
+}
+
+/// The deck list under whatever is open over it.
+fn list_under(harness: &mut Harness) -> Option<&DeckList> {
+    harness.app.nav.screens_mut().find_map(|s| match s {
+        Screen::Decks(list) => Some(&**list),
+        _ => None,
+    })
 }
 
 #[test]

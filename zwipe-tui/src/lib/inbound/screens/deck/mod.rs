@@ -608,14 +608,6 @@ pub(crate) fn reopen_hint(cx: &mut Context<'_>) {
     hint::reopen(cx, HINT_KEY);
 }
 
-/// Stand-in for the oracle tag Examples overlay, which package B builds. Wire it to that overlay with `slug`.
-pub(crate) fn open_tag_examples_stub(cx: &mut Context<'_>, _slug: &str) {
-    cx.toast(
-        ToastKind::Info,
-        "Oracle tag examples are not in the terminal yet".to_owned(),
-    );
-}
-
 /// The deck screen's work.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum Request {

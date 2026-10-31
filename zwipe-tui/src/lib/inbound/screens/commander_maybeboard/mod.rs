@@ -1,4 +1,4 @@
-//! The Commander maybeboard: the commanders the user saved for later, with a quick add search over every commander, a Show row of color pips, and the commander swipe to find more. The app reaches it from the Decks screen's More sheet; until that sheet lands here, Playstyle's `b` opens it.
+//! The Commander maybeboard: the commanders the user saved for later, with a quick add search over every commander, a Show row of color pips, the card filter sheet, and the commander swipe to find more. The Decks screen's More sheet opens it.
 //!
 //! Entries arrive three ways: an up swipe in any commander swipe, an up swipe in this screen's own Swipe, or a result chip under Quick add. The Quick add search runs once the trimmed query is at least two characters and has rested for 300 ms; it never narrows the saved list, which only the Show pips do (every picked color must be in the card's identity).
 //!

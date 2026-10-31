@@ -81,6 +81,25 @@ pub(crate) fn deck(deck_profile: DeckProfile, cards: Vec<Card>) -> Deck {
     }
 }
 
+/// The commander Create opened with, when the screen on top is Create in the Commander format.
+pub(crate) fn create_opened_with(
+    harness: &crate::inbound::event_loop::harness::Harness,
+) -> Option<&str> {
+    use zwipe_core::domain::deck::Format;
+
+    use crate::inbound::screens::Screen;
+    use crate::inbound::screens::deck_form::Mode;
+
+    match harness.screen() {
+        Screen::DeckForm(form)
+            if form.mode == Mode::Create && form.format == Some(Format::Commander) =>
+        {
+            form.commander().map(|c| c.scryfall_data.name.as_str())
+        }
+        _ => None,
+    }
+}
+
 /// A user named scotty, with the email verified or not, who has seen home's welcome hint.
 pub(crate) fn user(verified: bool) -> User {
     let mut user: User = serde_json::from_value(serde_json::json!({

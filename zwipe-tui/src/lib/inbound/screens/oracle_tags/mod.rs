@@ -199,13 +199,6 @@ pub(crate) fn ensure_catalog(cx: &mut Context<'_>) {
 }
 
 /// Opens the dictionary over the screen that wants a tag, clearing any tag left from an earlier Use. See the module doc for how the host takes the tag.
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "its hosts, the deck's oracle tag picker and the card filter, come with the deck and card screens"
-    )
-)]
 pub(crate) fn open(cx: &mut Context<'_>) {
     cx.shared.caches.handoff.oracle_tag = None;
     ensure_catalog(cx);

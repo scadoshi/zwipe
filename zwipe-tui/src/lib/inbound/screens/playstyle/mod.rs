@@ -24,7 +24,7 @@ use zwipe_core::http::contracts::suggestions::{
     HttpBuilderProfile, HttpCommanderSuggestion, HttpCommanderSuggestions, HttpStaple,
 };
 
-use super::{Screen, failure, home, oracle_tags};
+use super::{Screen, deck_form, failure, home, oracle_tags};
 use crate::domain::activity::Bar;
 use crate::domain::playstyle::{
     self, HELD_SIZE, LIST_SIZE, StapleColor, TagRow, identities_present, of_identity,
@@ -242,7 +242,7 @@ impl DeckLimit {
 
 /// Starts a deck with `card` as its commander, the app's `create_with`, shared by Playstyle's Create deck, a right swipe in the commander swipe, and the Commander maybeboard.
 ///
-/// At the deck limit it warns, as the app does, for the long toast. Otherwise it says the Create screen is still to come: the integrator replaces this body with opening the Create screen seeded with `card` as the commander (format Commander), the app's `CreateDeckCommanderSeed` and `Router::CreateDeck`.
+/// At the deck limit it warns, as the app does, for the long toast. Otherwise it opens Create seeded with `card` as the commander in the Commander format, the app's `CreateDeckCommanderSeed` and `Router::CreateDeck`. The printing on screen is the one the deck gets.
 pub(crate) fn create_deck_with(cx: &mut Context<'_>, card: &Card, limit: DeckLimit) {
     if limit == DeckLimit::Reached {
         cx.shared
@@ -250,12 +250,7 @@ pub(crate) fn create_deck_with(cx: &mut Context<'_>, card: &Card, limit: DeckLim
             .push_for(ToastKind::Warning, VERIFY_TO_CREATE.to_owned(), toast::LONG);
         return;
     }
-    let name = &card.scryfall_data.name;
-    cx.shared.toasts.push_for(
-        ToastKind::Info,
-        format!("Create deck opens with {name} once deck creation lands"),
-        toast::NORMAL,
-    );
+    deck_form::open_create_with_commander(cx, card.clone());
 }
 
 /// A suggestion's colors, what the Show chips read.

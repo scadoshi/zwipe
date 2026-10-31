@@ -8,6 +8,7 @@ use zwipe_core::domain::deck::{DeckTagView, Format, MAX_DECK_ORACLE_TAGS, MAX_DE
 use super::{DeckForm, Overlay};
 use crate::domain::deck::form::{self, Slot};
 use crate::inbound::app::Context;
+use crate::inbound::screens::oracle_tags;
 use crate::inbound::widgets::info::InfoPopup;
 use crate::inbound::widgets::text_input::TextInput;
 use crate::inbound::widgets::toast::{self, ToastKind};
@@ -320,7 +321,7 @@ pub(crate) fn handle_oracle(
             }
         }
         KeyCode::F(6) => return Some(Overlay::Info(hint("oracle tags"))),
-        KeyCode::F(3) => open_dictionary_stub(cx),
+        KeyCode::F(3) => oracle_tags::open(cx),
         KeyCode::F(8) => {
             form.oracle_tags.clear();
             picker.detail = None;
@@ -363,12 +364,20 @@ pub(crate) fn handle_oracle(
     Some(Overlay::OracleTags(picker))
 }
 
-/// Stand-in for the Oracle Tag Dictionary overlay, which package B builds. Wire it to that overlay; its "Use" adds a tag with the toasts in spec 3 section 2.7.
-pub(crate) fn open_dictionary_stub(cx: &mut Context<'_>) {
-    cx.toast(
-        ToastKind::Info,
-        "The oracle tag dictionary is not in the terminal yet".to_owned(),
-    );
+/// Adds the tag the dictionary's Use left, as spec 3 section 2.7 words it: a tag already on the deck, one more, or one past the cap. The picker stays open.
+pub(crate) fn adopt_dictionary_tag(form: &mut DeckForm, slug: String, cx: &mut Context<'_>) {
+    let (kind, message) = if form.oracle_tags.contains(&slug) {
+        (ToastKind::Info, "Tag already added")
+    } else if form.oracle_tags.len() >= MAX_DECK_ORACLE_TAGS {
+        (
+            ToastKind::Warning,
+            "You may only choose up to 30 oracle tags",
+        )
+    } else {
+        form.oracle_tags.push(slug);
+        (ToastKind::Success, "Tag added to deck")
+    };
+    cx.toast_for(kind, message.to_owned(), toast::QUICK);
 }
 
 /// Whether two tag lists hold the same tags, ignoring order.

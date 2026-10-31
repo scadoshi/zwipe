@@ -2,10 +2,7 @@
 
 use crossterm::event::KeyCode;
 
-use super::{
-    DeckList, Focus, Row, create, more_menu, open_commander_maybeboard_stub, open_playstyle_stub,
-    reopen_hint,
-};
+use super::{DeckList, Focus, Row, create, more_menu, reopen_hint};
 use crate::domain::deck::list::GroupBy;
 use crate::inbound::app::Context;
 use crate::inbound::screens::{self, deck};
@@ -20,9 +17,9 @@ pub(crate) fn handle(list: &mut DeckList, code: KeyCode, cx: &mut Context<'_>) {
             MenuKey::Pressed(index) => {
                 list.more = None;
                 if index == 0 {
-                    open_commander_maybeboard_stub(cx);
+                    screens::commander_maybeboard::open(cx);
                 } else {
-                    open_playstyle_stub(cx);
+                    screens::playstyle::open(cx);
                 }
             }
         }

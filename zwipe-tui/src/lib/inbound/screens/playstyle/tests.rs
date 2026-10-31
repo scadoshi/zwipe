@@ -20,7 +20,7 @@ use crate::inbound::event_loop::harness::Harness;
 use crate::inbound::screens::printings::Mode;
 use crate::inbound::widgets::toast::Toast;
 use crate::outbound::account::SessionFile;
-use crate::test_support::{card, render, screen_text, user};
+use crate::test_support::{card, create_opened_with, render, screen_text, user};
 
 /// The app's copy for this hint, as it reads.
 const HINT: &str = "Your colors, card roles and top oracle tags, read from every deck you own in any format\n• Create deck begins a deck with that commander\n• Maybeboard saves it to your commander maybeboard\n• Remove hides it for a week and pulls the next one up\n• Swipe deals the same ranking: right starts a deck, up saves, left skips it\n• Show narrows the list to one color identity\nBelow them, your top 10 commanders ranked against all your decks, best fit first. Swipe keeps going down the same ranking";
@@ -511,13 +511,7 @@ fn create_deck_opens_with_the_card_or_warns_at_the_deck_limit() {
     let mut harness = loaded();
     expand_first(&mut harness);
     harness.press(KeyCode::Char('c'));
-    assert_eq!(
-        toasts(&harness).last(),
-        Some(&(
-            ToastKind::Info,
-            "Create deck opens with Red 00 once deck creation lands".to_owned()
-        ))
-    );
+    assert_eq!(create_opened_with(&harness), Some("Red 00"));
 
     let mut harness = on_playstyle(false);
     harness.apply(Update::Loaded {

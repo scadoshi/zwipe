@@ -13,7 +13,7 @@ use crate::inbound::event_loop::harness::Harness;
 use crate::inbound::screens::playstyle::{self, PlaystyleView};
 use crate::inbound::widgets::hint;
 use crate::inbound::widgets::toast::Toast;
-use crate::test_support::{card, render, screen_text, user};
+use crate::test_support::{card, create_opened_with, render, screen_text, user};
 
 /// The app's copy for this hint, as it reads.
 const SUGGESTED_HINT: &str = "• Swipe right starts a deck with that commander\n• Swipe left skips it for a week\n• Swipe up saves it to your commander maybeboard\n• Swipe down undoes the last swipe\nBest fit first, 100 deep. The eye shows why each one was suggested\nFilter narrows the stack to one color identity";
@@ -188,23 +188,28 @@ fn the_card_on_top_shows_its_text_and_why() {
 fn right_selects_closes_and_starts_a_deck_and_the_host_refetches() {
     let mut harness = swiping();
     harness.press(KeyCode::Right);
-    assert!(matches!(harness.screen(), Screen::Playstyle(_)));
-    let messages: Vec<(ToastKind, String)> = harness
-        .app
-        .shared
-        .toasts
-        .items()
-        .iter()
-        .map(|t| (t.kind, t.message.clone()))
-        .collect();
-    assert!(messages.contains(&(ToastKind::Success, SELECTED.to_owned())));
-    assert!(messages.contains(&(
-        ToastKind::Info,
-        "Create deck opens with Krenko once deck creation lands".to_owned()
-    )));
-    assert_eq!(
-        harness.pending(),
-        [playstyle::Request::Load { ticket: 2 }.into()],
+    assert_eq!(create_opened_with(&harness), Some("Krenko"));
+    let depth = harness.app.nav.depth();
+    assert!(
+        matches!(
+            harness.app.nav.screens_mut().nth(depth.saturating_sub(2)),
+            Some(Screen::Playstyle(_))
+        ),
+        "the swipe closed and Create opened over Playstyle"
+    );
+    assert!(
+        harness
+            .app
+            .shared
+            .toasts
+            .items()
+            .iter()
+            .any(|t| t.kind == ToastKind::Success && t.message == SELECTED)
+    );
+    assert!(
+        harness
+            .pending()
+            .contains(&playstyle::Request::Load { ticket: 2 }.into()),
         "closing the swipe refetches the list"
     );
 }

@@ -203,6 +203,7 @@ impl Screen {
             Self::Decks(list) => list.reload(cx),
             Self::Deck(view) => view.reload(cx),
             Self::DeckCards(view) => view.reload(cx),
+            Self::DeckForm(form) => form.on_return(cx),
             Self::Activity(view) => view.on_return(cx),
             Self::Playstyle(view) => view.on_return(cx),
             Self::CommanderMaybeboard(view) => view.on_return(cx),

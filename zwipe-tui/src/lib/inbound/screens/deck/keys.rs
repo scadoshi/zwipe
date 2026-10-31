@@ -5,11 +5,13 @@ use crossterm::event::KeyCode;
 use super::layout::Pane;
 use super::{
     CloneDialog, DeckView, Dialog, Item, Request, Section, clear_skips_dialog, copy, delete_dialog,
-    open_tag_examples_stub, reopen_hint, run_fix,
+    reopen_hint, run_fix,
 };
 use crate::domain::deck::warning;
 use crate::inbound::app::Context;
-use crate::inbound::screens::{deck_cards, deck_export, deck_form, deck_import, swipe};
+use crate::inbound::screens::{
+    deck_cards, deck_export, deck_form, deck_import, otag_examples, swipe,
+};
 use crate::inbound::widgets::alert::AlertChoice;
 use crate::inbound::widgets::menu::MenuKey;
 use crate::inbound::widgets::{browser, help, info};
@@ -100,7 +102,7 @@ fn press(view: &mut DeckView, cx: &mut Context<'_>) {
                 Some(tag)
             };
         }
-        Some(Item::Examples(slug)) => open_tag_examples_stub(cx, &slug),
+        Some(Item::Examples(slug)) => otag_examples::open(cx, &slug),
         Some(Item::Fix {
             warning: index,
             button,

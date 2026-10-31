@@ -1,13 +1,12 @@
 use Color::{Black, Blue, Green, Red, White};
 use crossterm::event::KeyCode;
-use zwipe_core::domain::user::models::hints::{HINT_SUGGESTED_COMMANDERS, HINT_SWIPE_SELECT};
+use zwipe_core::domain::user::models::hints::HINT_SWIPE_SELECT;
 
 use super::*;
 use crate::inbound::event_loop::harness::Harness;
 use crate::inbound::screens::commander_swipe::{self, Mode};
-use crate::inbound::screens::playstyle::PlaystyleView;
 use crate::inbound::widgets::toast::Toast;
-use crate::test_support::{card, render, screen_text, user};
+use crate::test_support::{card, create_opened_with, render, screen_text, user};
 
 /// The app's copy for this hint, as it reads.
 const HINT: &str = "Commanders you save land here\n• Swipe up while picking a commander saves it here\n• Swipe deals commanders: right starts a deck, up saves one\n• Quick add searches by name\n• Create deck starts a deck with that commander\n• Remove takes it off the list";
@@ -102,13 +101,10 @@ fn expand_first(harness: &mut Harness) {
 }
 
 #[test]
-fn b_on_playstyle_opens_the_maybeboard_and_asks_for_everything_once() {
-    let mut harness = Harness::on(Screen::Playstyle(Box::new(PlaystyleView::loading())));
-    let mut me = user(true);
-    me.hints_shown
-        .insert(HINT_SUGGESTED_COMMANDERS.to_owned(), true);
-    harness.app.shared.user = Some(me);
-    harness.press(KeyCode::Char('b'));
+fn the_maybeboard_opens_asking_for_everything_once() {
+    let mut harness = Harness::on(Screen::Decks(Box::default()));
+    harness.app.shared.user = Some(user(true));
+    harness.open(open);
     assert!(matches!(harness.screen(), Screen::CommanderMaybeboard(_)));
     assert_eq!(
         harness.pending(),
@@ -125,12 +121,6 @@ fn b_on_playstyle_opens_the_maybeboard_and_asks_for_everything_once() {
         hint.content.text(),
         "Commanders you save land here\n• Swipe up while picking a commander saves it here\n• Swipe deals commanders: right starts a deck, up saves one\n• Quick add searches by name\n• Create deck starts a deck with that commander\n• Remove takes it off the list"
     );
-}
-
-#[test]
-fn playstyle_shows_the_maybeboard_key() {
-    let harness = Harness::on(Screen::Playstyle(Box::new(PlaystyleView::loading())));
-    assert!(screen_text(&harness.app).contains("b Maybeboard"));
 }
 
 #[test]
@@ -306,10 +296,7 @@ fn c_on_an_expanded_row_starts_a_deck_behind_the_gate() {
     let mut harness = loaded();
     expand_first(&mut harness);
     harness.press(KeyCode::Char('c'));
-    assert_eq!(
-        last_toast(&harness).message,
-        "Create deck opens with Atraxa once deck creation lands"
-    );
+    assert_eq!(create_opened_with(&harness), Some("Atraxa"));
 
     let mut harness = on_maybeboard(false);
     harness.apply(Update::Loaded {

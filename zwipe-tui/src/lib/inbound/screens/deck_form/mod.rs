@@ -293,6 +293,16 @@ pub(crate) fn slot_index(slot: Slot) -> usize {
 }
 
 impl DeckForm {
+    /// Comes back into view: takes the tag the oracle tag dictionary's Use left, when the oracle tag picker opened it.
+    pub(crate) fn on_return(&mut self, cx: &mut Context<'_>) {
+        let Some(slug) = cx.shared.caches.handoff.oracle_tag.take() else {
+            return;
+        };
+        if matches!(self.overlay, Some(Overlay::OracleTags(_))) {
+            pickers::adopt_dictionary_tag(self, slug, cx);
+        }
+    }
+
     pub(crate) fn new(mode: Mode) -> Self {
         Self {
             mode,
@@ -883,13 +893,6 @@ pub(crate) fn open_create(cx: &mut Context<'_>) {
 }
 
 /// Opens Create seeded with a commander, as the Commander maybeboard's "Create deck" does: the format is Commander and the card is the commander.
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "for the Commander maybeboard's Create deck, which package B builds"
-    )
-)]
 pub(crate) fn open_create_with_commander(cx: &mut Context<'_>, commander: Card) {
     let mut form = DeckForm::new(Mode::Create);
     form.format = Some(Format::Commander);

@@ -150,7 +150,6 @@ fn key_hints(view: &PlaystyleView) -> Vec<(&'static str, &'static str)> {
     if !view.cold_start() {
         keys.push(("s", "Swipe"));
     }
-    keys.push(("b", "Maybeboard"));
     keys.push(("M", "More"));
     keys.push(("H", "Hint"));
     keys.push(("Esc", "Back"));

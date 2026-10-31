@@ -268,22 +268,6 @@ pub(crate) fn create(list: &DeckList, cx: &mut Context<'_>) {
     screens::deck_form::open_create(cx);
 }
 
-/// Stand-in for the Commander maybeboard screen, which package B builds. Wire it to that screen's `open`.
-pub(crate) fn open_commander_maybeboard_stub(cx: &mut Context<'_>) {
-    cx.toast(
-        ToastKind::Info,
-        "Commander maybeboard is not in the terminal yet".to_owned(),
-    );
-}
-
-/// Stand-in for the Playstyle screen, which package B builds. Wire it to that screen's `open`.
-pub(crate) fn open_playstyle_stub(cx: &mut Context<'_>) {
-    cx.toast(
-        ToastKind::Info,
-        "Playstyle is not in the terminal yet".to_owned(),
-    );
-}
-
 /// The deck list's work.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Request {
