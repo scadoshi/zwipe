@@ -1,4 +1,4 @@
-//! One chip drawn on its own, for rows a [`ChipRow`](super::chips::ChipRow) does not fit: mixed chips, label chips, and chips that are only shown.
+//! One chip drawn on its own: the screens build their chip rows, label chips and chips that are only shown from it.
 
 use ratatui::style::Style;
 use ratatui::text::{Line, Span};

@@ -30,7 +30,7 @@ pub(crate) mod swipe;
 pub(crate) mod update_required;
 
 use std::fmt;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use crossterm::event::KeyCode;
 use ratatui::Frame;
@@ -102,12 +102,6 @@ pub(crate) enum Screen {
     Playstyle(Box<PlaystyleView>),
     CommanderSwipe(Box<CommanderSwipeView>),
     CommanderMaybeboard(Box<MaybeboardView>),
-    /// The update notice as a screen of its own. The app shows it over the stack instead, while `Shared::update_required` holds; tests use it as a screen with no state.
-    #[cfg_attr(
-        not(test),
-        expect(dead_code, reason = "the notice draws over the stack instead")
-    )]
-    UpdateRequired,
 }
 
 impl Screen {
@@ -138,7 +132,6 @@ impl Screen {
             Self::Playstyle(view) => playstyle::keys::handle(view, code, cx),
             Self::CommanderSwipe(view) => commander_swipe::keys::handle(view, code, cx),
             Self::CommanderMaybeboard(view) => commander_maybeboard::keys::handle(view, code, cx),
-            Self::UpdateRequired => update_required::keys::handle(code, cx),
         }
     }
 
@@ -168,7 +161,6 @@ impl Screen {
             Self::Playstyle(view) => playstyle::draw::draw(f, shared, view),
             Self::CommanderSwipe(view) => commander_swipe::draw::draw(f, shared, view),
             Self::CommanderMaybeboard(view) => commander_maybeboard::draw::draw(f, shared, view),
-            Self::UpdateRequired => update_required::draw::draw(f, shared),
         }
     }
 
@@ -282,12 +274,6 @@ pub(crate) enum Request {
 /// A result from a background request: the app's own, or one screen's.
 #[derive(Debug)]
 pub(crate) enum Update {
-    /// The server's minimum client version is newer than this build.
-    #[cfg_attr(
-        not(test),
-        expect(dead_code, reason = "upkeep reports the version through Upkept")
-    )]
-    TooOld,
     /// An upkeep's result: whether the session ended, and whether this build is too old, `None` when the server could not say.
     Upkept {
         ended: bool,
@@ -304,15 +290,6 @@ pub(crate) enum Update {
     Status(String),
     /// A toast for a result that has no screen to show it on, up for the app's default time.
     Toast(ToastKind, String),
-    /// A toast up for one of the app's three bands of time.
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "the app-level twin of `Toast` for a timed band; every screen toasts its own results"
-        )
-    )]
-    ToastFor(ToastKind, String, Duration),
     /// The user as the server keeps it after marking a hint shown.
     HintMarked(Box<User>),
     Login(login::Update),
@@ -492,7 +469,6 @@ async fn run_request(
 /// Applies one result: the app's own here, a screen's by its module, which finds its screen in `nav` if it is open.
 pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
     match update {
-        Update::TooOld => cx.shared.update_required = true,
         Update::Upkept { ended, too_old } => session::upkept(cx, ended, too_old),
         Update::Changelog(changelog) => {
             cx.shared.changelog =
@@ -513,7 +489,6 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
         Update::SignedOut => login::signed_out(cx, None),
         Update::Status(status) => cx.shared.status = status,
         Update::Toast(kind, message) => cx.toast(kind, message),
-        Update::ToastFor(kind, message, duration) => cx.toast_for(kind, message, duration),
         Update::HintMarked(user) => {
             cx.shared.username = Some(user.username.to_string());
             cx.shared.user = Some(*user);
@@ -639,20 +614,11 @@ mod tests {
         use crate::inbound::widgets::toast;
 
         let mut harness = Harness::new();
-        harness.apply(Update::ToastFor(
-            ToastKind::Warning,
-            "Careful".to_owned(),
-            toast::LONG,
-        ));
         harness.apply(Update::Toast(ToastKind::Info, "Hello".to_owned()));
         let toasts = harness.app.shared.toasts.items();
-        assert_eq!(toasts.len(), 2);
+        assert_eq!(toasts.len(), 1);
         assert_eq!(
             toasts[0].expires_at.duration_since(toasts[0].shown_at),
-            toast::LONG
-        );
-        assert_eq!(
-            toasts[1].expires_at.duration_since(toasts[1].shown_at),
             toast::NORMAL
         );
     }

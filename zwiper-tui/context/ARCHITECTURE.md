@@ -23,7 +23,7 @@ src/lib/inbound/
 
 ## Screens
 
-- Sign-in: `login`, `register`, `forgot_password`, and `update_required`, which the app draws over every screen while the server refuses this version.
+- Sign-in: `login`, `register`, `forgot_password`, and `update_required`, the notice the app draws over every screen while the server refuses this version. It is not a `Screen`: while it shows, the event loop quits on Esc or `q` and drops every other key.
 - Home and what it leads to: `home` (counters, color map, featured card), `activity` (`v`), `playstyle` (`p`, the color map's Playstyle), `commander_maybeboard`, and `commander_swipe`, the `SwipeSelect` overlay in its Suggested and Commander modes.
 - Oracle tags: `oracle_tags`, the dictionary, whose Use leaves a slug in `shared.caches.handoff.oracle_tag` for the screen under it; `otag_examples`, a tag's example cards; `printings`, a card's printings to pick or browse; and `image_preview`.
 - Decks: `decks` (its More sheet opens the Commander maybeboard and Playstyle), `deck`, `deck_form` (Create and Edit; `open_create_with_commander` seeds Create from Playstyle, the commander swipe and the maybeboard), `deck_import`, `deck_export`.
@@ -40,7 +40,7 @@ When the handler returns, `EventLoop::settle` applies the navigation in order. G
 
 Each queued `Request` runs on a tokio task through `screens::perform`, which hands a screen's own requests to that screen's `perform(account, request)`. The answer comes back as an `Update`. `screens::apply` routes a screen's update to its `apply(nav, update, cx)`, which finds its own screen anywhere in the stack with `nav.find_mut(pick)`, so a result still lands when another screen is open over it. A screen decides for itself what an update means when its screen is closed; config's preferences, for one, still set the theme.
 
-The app's own work sits in the same enums as plain variants: `CheckVersion`, `SignOut`, `RememberTheme`, `MarkHintShown`, and the `TooOld`, `SessionEnded`, `SignedOut`, `Status`, `Toast` and `HintMarked` updates.
+The app's own work sits in the same enums as plain variants: `CheckVersion`, `SignOut`, `RememberTheme`, `MarkHintShown`, and the `Upkept`, `SessionEnded`, `SignedOut`, `Status`, `Toast` and `HintMarked` updates.
 
 ## Crashes and error reports
 
@@ -67,7 +67,7 @@ Say the screen is `search`.
    - an arm in `Screen::animating` only if something on it moves, and in `Screen::on_return` only if it should refresh when a screen over it closes
 6. Call `search::open(cx)` from the screen that leads to it.
 
-A screen with no background work, like `update_required`, skips the request and update enums and their arms.
+A screen with no background work, like `privacy`, skips the request and update enums and their arms.
 
 Tests go through `Harness`: `Harness::on(Screen::Search(..))` or `harness.open(search::open)`, then `press`, `type_text`, `apply`, and assertions on `pending()` and `screen()`. `test_support::screen_text(&harness.app)` renders the app at 100 by 40 for drawing tests. `test_support::assert_key_bar_fits(&harness.app, "Esc back")` draws at 80 by 24 and 60 by 20 and checks the key bar's last hint shows whole.
 
@@ -75,7 +75,7 @@ Tests go through `Harness`: `Harness::on(Screen::Search(..))` or `harness.open(s
 
 All live in `widgets/` and draw in the account theme's `Palette`.
 
-- `toast`: success, error, info and warning toasts in the top-left corner, at most three, the newest on top and the older ones tucked behind it; Ctrl+T expands them. `cx.toast(kind, message)` shows one for `toast::NORMAL` (5 s), `cx.toast_for(kind, message, toast::QUICK | NORMAL | LONG)` for 3, 5 or 8 s, and the `Toast` and `ToastFor` updates do the same from a result.
+- `toast`: success, error, info and warning toasts in the top-left corner, at most three, the newest on top and the older ones tucked behind it; Ctrl+T expands them. `cx.toast(kind, message)` shows one for `toast::NORMAL` (5 s), `cx.toast_for(kind, message, toast::QUICK | NORMAL | LONG)` for 3, 5 or 8 s, and the `Toast` update does the same from a result.
 - `alert`: `AlertDialog` with a title, rules, a body and buttons, one focused; a button can be danger or disabled, and `draw_with` leaves room under the body for a field.
 - `sheet`: a bottom sheet with a scrolling body, a focused line kept in view, an optional `?` corner and footer keys; body lines too wide wrap between words under their own indent. `sheet::frame` draws only the chrome, for a sheet with a form inside.
 - `header`: the screen header, `!` on the left, the title, and `?` on the right when the screen has a hint. `!` and F1 open `help`, the Help & feedback dialog (`help::open(cx)`).
@@ -90,7 +90,7 @@ All live in `widgets/` and draw in the account theme's `Palette`.
 - `card_text` and `card_info`: a card as text, and the card screens' info block, details body and text stand-in.
 - `menu` and `pill`: a sheet of buttons, and one chip drawn on its own.
 - `text_area`: a text box of many lines, for pasting a decklist.
-- Animations, each driven by elapsed time with a matching `animating` check for `Screen::animating`: `logo` (the decode, `logo::draw(f, area, art, palette.logo, Some(elapsed))`), `count_up` (`CountUp::new(start, value)`, `set`, `shown_after(elapsed)`), `grid` (the rain, `grid::draw(f, palette, area, Some(elapsed))` and `grid::raining`), `entrance` (`entrance::draw(f, area, elapsed)`; the app runs it on every new screen), `spinner` (a request in flight), `splash` (the opening over the first screen) and `wipe` (the sweep between themes); the app runs the last two itself. Logos draw in `palette.logo`.
+- Animations, each driven by elapsed time with a matching `animating` check for `Screen::animating`: `logo` (the decode, `logo::draw(f, area, art, palette.logo, Some(elapsed))`), `count_up` (`CountUp::new(start, value)`, `set`, `shown(now)`), `grid` (the rain, `grid::draw(f, palette, area, Some(elapsed))`), `entrance` (`entrance::draw(f, area, elapsed)`; the app runs it on every new screen), `spinner` (a request in flight), `splash` (the opening over the first screen) and `wipe` (the sweep between themes); the app runs the last two itself. Logos draw in `palette.logo`.
 - `card_motion`: a swiped card flying off and an undone one coming back, after the app's `card-stack-exit-*` (0.18 s) and `card-stack-enter-*` (0.2 s), both on CSS `ease-out`. The card slides off in the swipe direction, clipped at the bounds, and narrows toward an edge-on sliver (its width for left and right, its height for up) to stand in for the tilt, dim for the second half. Down is undo and has no exit. Add, Remove, the deck form's swipe picker, the commander swipe and the oracle tag Examples use it. A swipe screen adopts it in four steps:
   1. Keep `motion: Option<CardMotion<T>>` on the view. `T` is whatever draws the card that left; `card_motion::Snapshot { card, face }` suits a card screen.
   2. On a committed swipe, before the stack moves on, set `CardMotion::exit(direction, snapshot, Instant::now())`. On an undo that brings a card back, set `CardMotion::enter(side_it_left, Instant::now())`. A new swipe replaces the motion; keys act on the stack at once.
@@ -99,12 +99,10 @@ All live in `widgets/` and draw in the account theme's `Palette`.
 
   `card_motion::side_style` gives a direction's color. Add holds Sixel and iTerm2 images back while a card moves, since those protocols draw as one escape that later cells skip; half blocks and kitty placeholders are ordinary cells and stay.
 - `text_input`: a one-line box with cursor movement, masking, a placeholder and an error line. The caller places the terminal cursor with `cursor_position`.
-- `chips`: a chip row picking one or many.
-- `collapsible`: a section that opens and closes, and an accordion that keeps one open.
+- `collapsible`: a section header marking it open or closed, and an accordion that keeps one open, for Activity and Playstyle.
 - `info`: the "?" popup of bullet points.
 - `action_bar`: the bottom row of key hints, and `action_bar::buttons` for a row of buttons the focus moves across. A swipe screen builds its swipe keys with `action_bar::swipes(palette, right, left, up, down)`, which colors each verb like the app's swipe hints (right success, left error, up warning, down tertiary), and draws them with `styled_line`. The labels use only add, remove, skip, maybeboard and undo (the commander swipe and the oracle tag Examples too: Examples reads skip and undo); toasts and hint prose stay the app's own words, so Remove's skip still toasts "Kept". A bar too wide for the screen wraps between hints, never splitting a key from its action: a screen reserves `action_bar::height(&bar, width)` rows for it and draws `action_bar::wrap(bar, width)`, and the deck view wraps its pane keys and screen keys each on their own. Keys inside text a paragraph wraps, like a card row's actions, go through `action_bar::unbreakable` so the wrap falls only between hints.
 - `skeleton`: ghost rows for content still loading.
-- `stats`: a strip of figures whose digits roll until they load. A screen showing one should animate while `stats::loading` is true.
 - `browser`: `browser::open(cx, url)` runs `open` on macOS and `xdg-open` elsewhere, and shows the link in a toast when that fails.
 - `clipboard`: `clipboard::copy(text)` writes an OSC 52 sequence.
 - `mana`, `charts`, `panel`, `measure`: mana colors and pips, bar charts, a centered framed panel, and text sizes.

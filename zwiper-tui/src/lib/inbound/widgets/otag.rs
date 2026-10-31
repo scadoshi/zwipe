@@ -73,20 +73,6 @@ impl RoleTags {
         self.open.and_then(|i| self.tags.get(i)).map(String::as_str)
     }
 
-    /// Swaps in other tags, keeping the open one open if it is among them.
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "Activity and Playstyle build a fresh row with `RoleTags::new` when the tags change"
-        )
-    )]
-    pub(crate) fn set_tags(&mut self, tags: Vec<String>) {
-        let open = self.open_tag().map(str::to_owned);
-        self.open = open.and_then(|slug| tags.iter().position(|t| *t == slug));
-        self.tags = tags;
-    }
-
     /// Opens the next tag's definition, closing it after the last.
     pub(crate) fn next(&mut self) {
         self.open = next_open(self.open, self.tags.len());
@@ -95,17 +81,6 @@ impl RoleTags {
     /// Opens the previous tag's definition, closing it before the first.
     pub(crate) fn previous(&mut self) {
         self.open = previous_open(self.open, self.tags.len());
-    }
-
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "Tab and BackTab close the row past either end; no screen closes it otherwise"
-        )
-    )]
-    pub(crate) fn close(&mut self) {
-        self.open = None;
     }
 
     /// Tab and `BackTab` move the open tag; `x` opens the open tag's examples. Returns whether the key was used.
@@ -209,19 +184,6 @@ mod tests {
         assert_eq!(row.open_tag(), None);
         row.previous();
         assert_eq!(row.open_tag(), Some("removal"));
-        row.close();
-        assert_eq!(row.open_tag(), None);
-    }
-
-    #[test]
-    fn new_tags_keep_the_open_one_when_it_is_still_there() {
-        let mut row = tags(&["ramp", "removal"]);
-        row.previous();
-        row.set_tags(vec!["draw".to_owned(), "removal".to_owned()]);
-        assert_eq!(row.open_tag(), Some("removal"));
-        row.set_tags(vec!["draw".to_owned()]);
-        assert_eq!(row.open_tag(), None);
-        assert_eq!(row.tags(), ["draw"]);
     }
 
     #[test]

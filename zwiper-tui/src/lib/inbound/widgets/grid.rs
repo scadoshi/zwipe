@@ -34,20 +34,9 @@ const DROP_TILES: f64 = 3.0;
 /// The tile shades, as shares of the text color.
 const SHADES: [f64; 5] = [0.015, 0.03, 0.05, 0.075, 0.1];
 
-/// Whether rain over an area `height` rows tall is still falling `elapsed` in.
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "only the splash rains, and it times the rain with its own opening"
-    )
-)]
-pub(crate) fn raining(elapsed: Duration, height: u16) -> bool {
-    elapsed < rain_length(height)
-}
-
 /// When the rain over an area `height` rows tall has landed.
-pub(crate) fn rain_length(height: u16) -> Duration {
+#[cfg(test)]
+fn rain_length(height: u16) -> Duration {
     let rows = u64::from(height.div_ceil(PITCH_Y));
     Duration::from_millis(
         rows.saturating_mul(RAIN_STEP_MS)
@@ -197,7 +186,6 @@ mod tests {
 
     #[test]
     fn the_rain_starts_empty_and_lands_every_tile() {
-        assert!(raining(Duration::ZERO, 12) && !raining(rain_length(12), 12));
         let palette = Palette::for_account("gruvbox", true);
         assert_eq!(tinted(&palette, Some(Duration::ZERO)), 0);
         assert!(tinted(&palette, Some(Duration::from_millis(200))) < 10 * 6 * 3);

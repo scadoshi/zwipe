@@ -106,7 +106,7 @@ fn an_ended_session_returns_to_sign_in_and_clears_the_saved_one() {
 
 #[test]
 fn a_toast_shows_over_the_screen_and_redraws_until_it_leaves() {
-    let mut harness = Harness::on(Screen::UpdateRequired);
+    let mut harness = Harness::on(Screen::Decks(Box::default()));
     assert!(!harness.app.animating());
     harness.apply(Update::Toast(ToastKind::Success, "Saved".to_owned()));
     assert!(
@@ -121,7 +121,7 @@ fn a_toast_shows_over_the_screen_and_redraws_until_it_leaves() {
 
 #[test]
 fn an_open_hint_takes_every_key_until_it_closes() {
-    let mut harness = Harness::on(Screen::UpdateRequired);
+    let mut harness = Harness::on(Screen::Decks(Box::default()));
     harness.app.shared.user = Some(user(true));
     harness.open(|cx| {
         hint::show(cx, "swipe", "Swiping", "Right adds the card.");
@@ -157,7 +157,10 @@ fn an_open_hint_takes_every_key_until_it_closes() {
 #[test]
 fn an_old_build_is_stopped_until_it_updates() {
     let mut harness = Harness::new();
-    harness.apply(Update::TooOld);
+    harness.apply(Update::Upkept {
+        ended: false,
+        too_old: Some(true),
+    });
     assert!(harness.app.shared.update_required);
     assert!(screen_text(&harness.app).contains("Update required"));
     assert_eq!(harness.press(KeyCode::Char('l')), Flow::Continue);
@@ -170,7 +173,8 @@ fn an_old_build_is_stopped_until_it_updates() {
 
 #[test]
 fn the_update_notice_gives_the_install_command() {
-    let harness = Harness::on(Screen::UpdateRequired);
+    let mut harness = Harness::new();
+    harness.app.shared.update_required = true;
     let screen = screen_text(&harness.app);
     assert!(screen.contains("Update required"));
     assert!(screen.contains("zwiper-tui"));
@@ -180,11 +184,10 @@ fn the_update_notice_gives_the_install_command() {
 fn every_screen_fits_a_tiny_terminal() {
     let (harness, _) = Harness::swiping(vec![card("Tiny")]);
     render(&harness.app, 12, 5);
-    for screen in [
-        Screen::Login(Box::default()),
-        Screen::Decks(Box::default()),
-        Screen::UpdateRequired,
-    ] {
+    for screen in [Screen::Login(Box::default()), Screen::Decks(Box::default())] {
         render(&Harness::on(screen).app, 12, 5);
     }
+    let mut notice = Harness::new();
+    notice.app.shared.update_required = true;
+    render(&notice.app, 12, 5);
 }

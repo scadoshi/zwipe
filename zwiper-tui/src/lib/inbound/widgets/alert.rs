@@ -14,15 +14,6 @@ use crate::domain::theme::Palette;
 /// A dialog is at most this wide inside its panel, in cells.
 const WIDTH: u16 = 56;
 
-/// Whether the dialog confirms something that cannot be undone.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum Tone {
-    #[default]
-    Normal,
-    /// The title and the first button in the error color.
-    Danger,
-}
-
 /// A button: its label, a letter that presses it from anywhere in the dialog, whether it is in the danger color, and whether it is disabled.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct Button {
@@ -48,7 +39,6 @@ pub(crate) struct AlertDialog {
     pub(crate) body: String,
     pub(crate) buttons: Vec<Button>,
     pub(crate) focused: usize,
-    pub(crate) tone: Tone,
 }
 
 impl AlertDialog {
@@ -58,7 +48,6 @@ impl AlertDialog {
             body: body.to_owned(),
             buttons: Vec::new(),
             focused: 0,
-            tone: Tone::Normal,
         }
     }
 
@@ -98,18 +87,6 @@ impl AlertDialog {
         }
     }
 
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "the danger dialogs color their danger button instead; no dialog takes a danger title yet"
-        )
-    )]
-    pub(crate) fn with_tone(mut self, tone: Tone) -> Self {
-        self.tone = tone;
-        self
-    }
-
     pub(crate) fn focus_next(&mut self) {
         self.focused = self
             .focused
@@ -147,7 +124,7 @@ impl AlertDialog {
         }
     }
 
-    /// The buttons as a row: the focused one reversed, a danger dialog's first one in the error color, each with its letter.
+    /// The buttons as a row: the focused one reversed, a danger button in the error color, each with its letter.
     pub(crate) fn buttons_line(&self, palette: &Palette) -> Line<'static> {
         let spans: Vec<Span<'static>> = self
             .buttons
@@ -156,7 +133,7 @@ impl AlertDialog {
             .flat_map(|(i, button)| {
                 let base: Style = if button.disabled {
                     palette.muted
-                } else if button.danger || (i == 0 && self.tone == Tone::Danger) {
+                } else if button.danger {
                     palette.error
                 } else {
                     palette.accent
@@ -230,17 +207,7 @@ impl AlertDialog {
             Constraint::Length(buttons_height),
         ])
         .areas(inner);
-        let title_style = match self.tone {
-            Tone::Normal => Style::new(),
-            Tone::Danger => palette.error,
-        };
-        f.render_widget(
-            Line::from(self.title.clone())
-                .style(title_style)
-                .bold()
-                .centered(),
-            title_area,
-        );
+        f.render_widget(Line::from(self.title.clone()).bold().centered(), title_area);
         panel::rule(f, palette, top_rule);
         f.render_widget(body, body_area);
         fill(f, extra_area);
@@ -251,8 +218,6 @@ impl AlertDialog {
 
 #[cfg(test)]
 mod tests {
-    use ratatui::Terminal;
-    use ratatui::backend::TestBackend;
 
     use super::*;
 
@@ -309,32 +274,5 @@ mod tests {
             alert.handle_key(KeyCode::Enter),
             Some(AlertChoice::Pressed(1))
         );
-    }
-
-    #[test]
-    fn a_danger_alert_draws_its_title_and_first_button_in_the_error_color() {
-        let palette = Palette::for_account("gruvbox", true);
-        let alert = AlertDialog::new("Delete account", "This cannot be undone.")
-            .with_button("Delete", None)
-            .with_button("Cancel", Some('n'))
-            .with_tone(Tone::Danger);
-        let mut terminal = Terminal::new(TestBackend::new(70, 12)).unwrap();
-        terminal.draw(|f| alert.draw(f, &palette)).unwrap();
-        let buffer = terminal.backend().buffer();
-        let text: String = buffer
-            .content()
-            .iter()
-            .map(ratatui::buffer::Cell::symbol)
-            .collect();
-        assert!(text.contains("Delete account"));
-        assert!(text.contains("This cannot be undone."));
-        assert!(text.contains(" Cancel (n) "));
-        let error = palette.error.fg.unwrap();
-        let red_cells = buffer
-            .content()
-            .iter()
-            .filter(|c| c.fg == error || c.bg == error)
-            .count();
-        assert!(red_cells >= "Delete account".len() + " Delete ".len());
     }
 }

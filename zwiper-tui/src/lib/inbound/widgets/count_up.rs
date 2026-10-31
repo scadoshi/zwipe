@@ -2,7 +2,7 @@
 //!
 //! A counter starts when its screen's entrance does (after the splash on the first screen). Until its value arrives it rolls random four-digit numbers every 16 ms; once it has one it lands on it over a second; before it starts it shows four figure spaces. A screen showing one reports itself animating while [`CountUp::animating`] holds, so the loop redraws it.
 
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use crate::domain::count_up::{self, BLANK, FRAMES, TICK};
 
@@ -70,30 +70,6 @@ impl CountUp {
             .map_or_else(|| BLANK.to_owned(), count_up::compact)
     }
 
-    /// The figure `elapsed` after the counter started, for a screen that keeps time as an elapsed duration.
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "the hero keeps its counters by `Instant`, and Home and Activity roll their figures with `figures`"
-        )
-    )]
-    pub(crate) fn shown_after(&self, elapsed: Duration) -> String {
-        self.shown(self.start.checked_add(elapsed).unwrap_or(self.start))
-    }
-
-    /// Whether the counter is still moving `elapsed` after it started.
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "the hero keeps its counters by `Instant`, and Home and Activity roll their figures with `figures`"
-        )
-    )]
-    pub(crate) fn animating_after(&self, elapsed: Duration) -> bool {
-        self.animating(self.start.checked_add(elapsed).unwrap_or(self.start))
-    }
-
     /// Whether the counter is still moving at `now`.
     pub(crate) fn animating(&self, now: Instant) -> bool {
         match self.value {
@@ -139,13 +115,6 @@ mod tests {
         );
         assert_eq!(counter.shown(arrived + DURATION), "28.0k");
         assert!(!counter.animating(arrived + DURATION));
-    }
-
-    #[test]
-    fn elapsed_time_drives_it_the_same_way() {
-        let counter = CountUp::new(Instant::now(), Some(12));
-        assert_eq!(counter.shown_after(DURATION), "12");
-        assert!(counter.animating_after(TICK) && !counter.animating_after(DURATION));
     }
 
     #[test]

@@ -88,9 +88,9 @@ mod tests {
     #[test]
     fn push_and_pop_stop_at_the_bottom_screen() {
         let mut nav = Nav::new(Screen::Login(Box::default()));
-        nav.push(Screen::UpdateRequired);
+        nav.push(Screen::Decks(Box::default()));
         assert_eq!(nav.depth(), 2);
-        assert!(matches!(nav.top(), Screen::UpdateRequired));
+        assert!(matches!(nav.top(), Screen::Decks(_)));
         assert!(nav.pop().is_some());
         assert!(nav.pop().is_none(), "the bottom screen stays");
         assert!(matches!(nav.top(), Screen::Login(_)));
@@ -100,8 +100,8 @@ mod tests {
     #[test]
     fn replace_swaps_only_the_top_and_reset_clears_the_rest() {
         let mut nav = Nav::new(Screen::Login(Box::default()));
-        nav.replace(Screen::UpdateRequired);
-        assert!(matches!(nav.top(), Screen::UpdateRequired));
+        nav.replace(Screen::Decks(Box::default()));
+        assert!(matches!(nav.top(), Screen::Decks(_)));
         assert_eq!(nav.depth(), 1);
 
         nav.push(Screen::Decks(Box::default()));
@@ -116,10 +116,10 @@ mod tests {
     fn find_looks_down_from_the_top() {
         let mut nav = Nav::new(Screen::Decks(Box::default()));
         nav.push(Screen::Decks(Box::new(DeckList::loading())));
-        nav.push(Screen::UpdateRequired);
+        nav.push(Screen::Login(Box::default()));
         let found = nav.find_mut(decks).map(|list| list.loading);
         assert_eq!(found, Some(true), "the upper deck list");
-        nav.reset(Screen::UpdateRequired);
+        nav.reset(Screen::Login(Box::default()));
         assert!(nav.find_mut(decks).is_none());
     }
 }

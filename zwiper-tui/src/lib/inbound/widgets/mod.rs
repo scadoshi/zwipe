@@ -16,25 +16,9 @@ pub(crate) mod card_rows;
 pub(crate) mod card_text;
 /// Bar charts from the deck metrics.
 pub(crate) mod charts;
-/// A row of chips to pick one or several.
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "no screen draws a chip row through it yet; the screens build their chips with `pill`"
-    )
-)]
-pub(crate) mod chips;
 /// Copying text with OSC 52.
 pub(crate) mod clipboard;
 /// Sections that open and close, and the accordion over them.
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "no screen uses it: the deck view shows its sections as panels"
-    )
-)]
 pub(crate) mod collapsible;
 /// The color map's tiles and key.
 pub(crate) mod color_map;
@@ -73,12 +57,6 @@ pub(crate) mod spinner;
 /// The opening over the first screen.
 pub(crate) mod splash;
 pub(crate) mod stagger;
-/// Figures in a row, rolling while they load.
-#[cfg_attr(
-    not(test),
-    expect(dead_code, reason = "no screen shows a stats strip yet")
-)]
-pub(crate) mod stats;
 /// A text box of many lines.
 pub(crate) mod text_area;
 /// A one-line text box.

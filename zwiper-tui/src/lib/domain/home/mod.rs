@@ -144,22 +144,6 @@ pub(crate) fn cardkingdom_card_url(name: &str) -> String {
     )
 }
 
-/// `1234567` as `1,234,567`.
-pub(crate) fn grouped(n: i64) -> String {
-    let digits = n.unsigned_abs().to_string();
-    let mut out = String::with_capacity(digits.len().saturating_add(digits.len() / 3));
-    for (i, c) in digits.chars().enumerate() {
-        if i > 0 && (digits.len().saturating_sub(i)) % 3 == 0 {
-            out.push(',');
-        }
-        out.push(c);
-    }
-    if n < 0 {
-        out.insert(0, '-');
-    }
-    out
-}
-
 #[cfg(test)]
 mod tests {
     use chrono::TimeZone;
@@ -238,12 +222,5 @@ mod tests {
             cardkingdom_card_url("Urza's Saga, Again"),
             "https://www.cardkingdom.com/builder?c=1+Urza%27s+Saga%2C+Again"
         );
-    }
-
-    #[test]
-    fn grouped_adds_thousands_separators() {
-        assert_eq!(grouped(0), "0");
-        assert_eq!(grouped(1_234_567), "1,234,567");
-        assert_eq!(grouped(-12_345), "-12,345");
     }
 }

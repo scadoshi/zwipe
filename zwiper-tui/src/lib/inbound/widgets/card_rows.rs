@@ -26,8 +26,6 @@
 //! - In its arm of `Screen::on_return`, calls [`CardRows::take_printing`] with its own list, which swaps a printing picked with `p` into place (matched by oracle id) and keeps the row expanded under its new scryfall id. Nothing goes to the server.
 
 use crossterm::event::KeyCode;
-use ratatui::Frame;
-use ratatui::layout::Rect;
 use ratatui::style::Stylize;
 use ratatui::text::{Line, Span};
 use uuid::Uuid;
@@ -36,7 +34,7 @@ use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCur
 use zwipe_core::domain::card::{Card, card_role};
 use zwipe_core::domain::deck::deck_metrics;
 
-use super::{action_bar, card_text, item_list, mana, otag};
+use super::{action_bar, card_text, mana, otag};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Context;
 use crate::inbound::screens::home::cache::Catalog;
@@ -305,32 +303,6 @@ impl CardRows {
             .collect()
     }
 
-    /// Draws the rows into `area`, paged so the focused row is in view, with a marker beside it. No rows draw nothing; the host draws its own empty state.
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "Activity, Playstyle and the Commander maybeboard lay the rows out in their own bodies with `lines`"
-        )
-    )]
-    pub(crate) fn draw(
-        &self,
-        f: &mut Frame<'_>,
-        palette: &Palette,
-        catalog: &Catalog,
-        rows: &[CardRow<'_>],
-        area: Rect,
-    ) {
-        let focused = self.focused.min(rows.len().saturating_sub(1));
-        item_list::draw(
-            f,
-            palette,
-            area,
-            &self.lines(palette, catalog, rows),
-            focused,
-        );
-    }
-
     /// The expanded card: its text, rarity and keywords, classification, open tag, the host's footer and the keys.
     fn detail(
         &self,
@@ -431,9 +403,6 @@ fn compact(palette: &Palette, row: &CardRow<'_>, expanded: bool) -> Line<'static
 mod tests {
     use std::collections::BTreeMap;
 
-    use ratatui::Terminal;
-    use ratatui::backend::TestBackend;
-
     use super::*;
     use crate::inbound::event_loop::harness::Harness;
     use crate::inbound::screens::Screen;
@@ -463,23 +432,6 @@ mod tests {
             .replace('\u{a0}', " ")
     }
 
-    fn screen(state: &CardRows, rows: &[CardRow<'_>], width: u16, height: u16) -> String {
-        let mut terminal = Terminal::new(TestBackend::new(width, height)).unwrap();
-        terminal
-            .draw(|f| {
-                state.draw(f, &Palette::terminal(), &Catalog::Idle, rows, f.area());
-            })
-            .unwrap();
-        terminal
-            .backend()
-            .buffer()
-            .content()
-            .iter()
-            .map(ratatui::buffer::Cell::symbol)
-            .collect()
-    }
-
-    /// Presses `codes` on `state` over home, returning what each did.
     fn press(
         harness: &mut Harness,
         state: &mut CardRows,
@@ -672,22 +624,5 @@ mod tests {
         assert!(!swapped);
         assert_eq!(state.expanded(), None);
         assert!(harness.app.shared.caches.handoff.printing.is_none());
-    }
-
-    #[test]
-    fn rows_draw_paged_with_the_focus_marked_and_fit_tiny_areas() {
-        let cards: Vec<Card> = (0..30).map(|i| card(&format!("Card {i}"))).collect();
-        let rows: Vec<CardRow<'_>> = cards.iter().map(CardRow::new).collect();
-        let mut state = CardRows::default();
-        let mut harness = Harness::on(Screen::Home(Box::default()));
-        press(&mut harness, &mut state, &rows, &[KeyCode::Char('j'); 12]);
-        let drawn = screen(&state, &rows, 40, 10);
-        assert!(drawn.contains("> ▸ 1 Card 12"), "{drawn}");
-        assert!(!drawn.contains("Card 0 "));
-        screen(&state, &rows, 8, 3);
-        screen(&state, &rows, 1, 1);
-        screen(&state, &[], 20, 5);
-        press(&mut harness, &mut state, &rows, &[KeyCode::Enter]);
-        screen(&state, &rows, 8, 3);
     }
 }
