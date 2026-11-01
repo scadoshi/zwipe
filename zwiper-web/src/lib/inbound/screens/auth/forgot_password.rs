@@ -1,8 +1,7 @@
-//! Forgot password: on a wide window the hero card at the top of zite's page
-//! and the email field under it as its own panel, with `Send reset link`
-//! under the field, and the `Check your email` panel in its place once
-//! sent; below the breakpoint the app's stack with the button in the bar. A
-//! link under either goes to Login.
+//! Forgot password: the email field as its own panel, centered at the top
+//! of zite's page, with `Send reset link` under the field on a wide window
+//! and in the bar below the breakpoint, and the `Check your email` panel in
+//! its place once sent. A link under either goes to Login.
 //!
 //! The reset itself happens on the website, from the emailed link.
 
@@ -14,7 +13,6 @@ use zwipe_core::http::contracts::auth::HttpRequestPasswordReset;
 
 use crate::domain::validation;
 use crate::inbound::router::Route;
-use crate::inbound::screens::auth::hero::HomeHero;
 use crate::inbound::shell::ScreenFrame;
 
 /// Reset password: asks for an email, then says a link is on its way. The
@@ -70,7 +68,6 @@ pub fn ForgotPassword() -> Element {
         ScreenFrame { title: "Reset password",
             div { class: "screen-content centered content-enter",
                 div { class: "web-auth web-page",
-                    div { class: "web-hero", HomeHero {} }
                     if sent() {
                         div { class: "outcome-success web-outcome-panel",
                             Panel { title: "Check your email", centered: true,

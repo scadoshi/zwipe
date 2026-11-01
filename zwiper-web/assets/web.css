@@ -192,6 +192,15 @@ body {
         display: none;
     }
 
+    /* Login's three buttons, one under another at one width. */
+    .web-form-actions.web-form-actions-stack {
+        flex-direction: column;
+        align-items: stretch;
+        width: fit-content;
+        min-width: 12rem;
+        margin: 0.25rem auto 0;
+    }
+
     .web-password-rules {
         display: block;
         margin-top: 0.25rem;
@@ -285,10 +294,11 @@ body {
     min-height: 0;
 }
 
-/* The mark as zite draws it, in the logo color. */
+/* The Z mark as zite draws it, in the logo color: seven lines at 0.9 line
+   height, sized to stand as tall as a 1.85rem nav pill. */
 .web-nav-logo {
     font-family: "JetBrains Mono", monospace;
-    font-size: 0.35rem;
+    font-size: calc(1.85rem / 6.3);
     line-height: 0.9;
     white-space: pre;
     display: block;

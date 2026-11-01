@@ -1,5 +1,5 @@
-//! The mark over three counters: everybody's on the public screens, and the
-//! panel Home's scoped hero draws in.
+//! The mark over three counters: the panel Home's scoped hero draws in, and
+//! everybody's counts it shows.
 
 use chrono::Utc;
 use components::{Decode, Panel, StatsStrip};
@@ -7,7 +7,7 @@ use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::logo;
 use zwipe_core::http::contracts::metrics::HttpPublicMetrics;
-use zwipe_ui::home::{Figures, Scope};
+use zwipe_ui::home::Figures;
 
 use crate::domain::counts::{self, CachedCounts};
 use crate::outbound::counts_store::CountsStore;
@@ -44,26 +44,6 @@ pub fn use_public_counts() -> (Option<HttpPublicMetrics>, bool) {
     let metrics = cached.as_ref().map(|c| c.metrics.clone());
     let live = cached.as_ref().is_some_and(CachedCounts::is_live);
     (metrics, live)
-}
-
-/// The app's `HomeHero`: the decoding mark, then decks created, searches run
-/// and cards swiped across everyone, tagged `Everybody` and, once fetched
-/// during this visit, `Live`. Every mount replays the decode and the roll.
-#[component]
-pub fn HomeHero() -> Element {
-    let (metrics, live) = use_public_counts();
-    rsx! {
-        HeroPanel {
-            figures: strip_figures(metrics.as_ref().map(Figures::from)),
-            roll_key: "all",
-            source: rsx! {
-                span { class: "stat-chip", "{Scope::Everybody.label()}" }
-                if live {
-                    span { class: "stat-chip", "Live" }
-                }
-            },
-        }
-    }
 }
 
 /// The panel both heroes draw: the mark over the strip, with `source`

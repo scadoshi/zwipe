@@ -1,4 +1,4 @@
-//! The top nav over every screen, zite's bar: the ZWIPE mark home on the
+//! The top nav over every screen, zite's bar: the Z mark home on the
 //! left and the screens and `Help` on the right, folding behind a hamburger
 //! below the breakpoint.
 
@@ -94,8 +94,8 @@ pub fn PublicNav() -> Element {
     }
 }
 
-/// The ZWIPE mark in the logo color, linking Home (Login when signed out,
-/// through the auth gate).
+/// The Z mark, the app icon's art, in the logo color, linking Home (Login
+/// when signed out, through the auth gate).
 #[component]
 fn NavMark(open: Signal<bool>) -> Element {
     rsx! {
@@ -104,7 +104,7 @@ fn NavMark(open: Signal<bool>) -> Element {
             class: "nav-brand",
             "aria-label": "Home",
             onclick: move |_| open.set(false),
-            span { class: "nav-logo web-nav-logo", "{logo::ZWIPE}" }
+            span { class: "nav-logo web-nav-logo", "{logo::Z}" }
         }
     }
 }

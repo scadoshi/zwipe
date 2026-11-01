@@ -1,7 +1,6 @@
-//! Login: on a wide window the hero card at the top of zite's page and the
-//! form under it as its own panel, with `Log in` under the fields; below the
-//! breakpoint the app's stack with `Log in` in the bar. Links under the form
-//! go to Create profile and Forgot password.
+//! Login: the form as its own panel, centered at the top of zite's page,
+//! with `Log in`, `Create profile` and `Forgot password` stacked under the
+//! fields on a wide window and in the bar below the breakpoint.
 
 use components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL, TextInput, ThemeConfig};
 use dioxus::prelude::*;
@@ -13,7 +12,6 @@ use zwipe_core::http::contracts::auth::HttpAuthenticateUser;
 
 use crate::domain::login::{self, SubmitGate};
 use crate::inbound::router::Route;
-use crate::inbound::screens::auth::hero::HomeHero;
 use crate::inbound::shell::ScreenFrame;
 use crate::outbound::session_store::SessionStore;
 
@@ -92,7 +90,6 @@ pub fn Login() -> Element {
         ScreenFrame { title: "Login",
             div { class: "screen-content centered content-enter",
                 div { class: "web-auth web-page",
-                    div { class: "web-hero", HomeHero {} }
                     div { class: "container-sm text-center web-form-panel",
                         form {
                             class: "flex-col",
@@ -116,15 +113,8 @@ pub fn Login() -> Element {
                             // Enter in a field submits the form through this.
                             button { r#type: "submit", hidden: true }
                         }
-                        div { class: "web-form-actions",
+                        div { class: "web-form-actions web-form-actions-stack",
                             LoginActions { loading: is_loading(), on_submit: submit }
-                        }
-                        p { class: "web-form-link",
-                            "New here? "
-                            Link { to: Route::Register {}, "Create profile" }
-                        }
-                        p { class: "web-form-link",
-                            Link { to: Route::ForgotPassword {}, "Forgot password?" }
                         }
                     }
                 }
@@ -136,16 +126,34 @@ pub fn Login() -> Element {
     }
 }
 
-/// `Log in`, held while a login is out. Under the form on a wide window, in
-/// the action bar below the breakpoint.
+/// `Log in`, `Create profile` and `Forgot password`, all held while a login
+/// is out. Stacked under the form on a wide window, in the action bar below
+/// the breakpoint.
 #[component]
 fn LoginActions(loading: bool, on_submit: Callback<()>) -> Element {
+    let navigator = use_navigator();
     rsx! {
         Button {
             variant: ButtonVariant::Action,
             disabled: loading,
             onclick: move |_| on_submit.call(()),
             if loading { "Logging in..." } else { "Log in" }
+        }
+        Button {
+            variant: ButtonVariant::Action,
+            disabled: loading,
+            onclick: move |_| {
+                navigator.push(Route::Register {});
+            },
+            "Create profile"
+        }
+        Button {
+            variant: ButtonVariant::Action,
+            disabled: loading,
+            onclick: move |_| {
+                navigator.push(Route::ForgotPassword {});
+            },
+            "Forgot password"
         }
     }
 }

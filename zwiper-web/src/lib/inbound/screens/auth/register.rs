@@ -1,7 +1,6 @@
-//! Register: on a wide window the hero card at the top of zite's page and
-//! the four fields under it as their own panel, with `Create profile` under
-//! the fields; below the breakpoint the app's stack with it in the bar. A
-//! link under the form goes to Login.
+//! Register: the four fields as their own panel, centered at the top of
+//! zite's page, with `Create profile` under the fields on a wide window and
+//! in the bar below the breakpoint. A link under the form goes to Login.
 
 use components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL, TextInput};
 use dioxus::prelude::*;
@@ -14,7 +13,6 @@ use crate::domain::validation;
 use crate::inbound::chrome::hint_topic::{self, HintTopic};
 use crate::inbound::chrome::password_rules::PasswordRules;
 use crate::inbound::router::Route;
-use crate::inbound::screens::auth::hero::HomeHero;
 use crate::inbound::screens::auth::login::LoginPrefill;
 use crate::inbound::session::funnel;
 use crate::inbound::shell::ScreenFrame;
@@ -128,7 +126,6 @@ pub fn Register() -> Element {
         ScreenFrame { title: "Create profile",
             div { class: "screen-content content-enter",
                 div { class: "web-auth web-page",
-                    div { class: "web-hero", HomeHero {} }
                     div { class: "container-sm text-center web-form-panel web-password-form",
                         form {
                             class: "flex-col",
