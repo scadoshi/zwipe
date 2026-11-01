@@ -37,15 +37,15 @@ The wide layout copies zite's home page (`zite/assets/style.css`). Screens move 
 
 ## Register
 
-- Not on the page grammar yet: the hero on the left, the four fields with their live error lines right, the `?` beside `Password` opening the `Password` hint.
-- Enter in any field runs `Create profile`; `Back to login` is a button under the form.
-- Below 900px it stacks like the app.
+- On the page grammar, as Login: the `HomeHero` card across the top, then the four fields with their live error lines in their own form panel, the `?` beside `Password` opening the `Password` hint.
+- `Back to login` and `Create profile` sit under the fields in the panel, so a wide window has no toolbar here. Enter in any field runs `Create profile`. Success goes back to Login with the username filled in.
+- Below 900px it stacks like the app, with the two buttons in the bar at the bottom.
 
 ## Forgot password
 
-- Not on the page grammar yet: the hero on the left, the `Email` field (or the `Check your email` panel after success) right.
-- Enter runs `Send reset link`; `Back to login` sits beside it.
-- Below 900px it stacks like the app.
+- On the page grammar, as Login: the hero card across the top, then the `Email` field in its own form panel with `Back to login` and `Send reset link` under it.
+- After a send, the `Check your email` panel takes the form panel's place at the same width, with `Back to login` under its line.
+- Enter runs `Send reset link`. Below 900px it stacks like the app, with the buttons in the bar at the bottom.
 
 ## Update required
 
