@@ -1,5 +1,7 @@
-//! Forgot password: the hero beside the email field on a wide window,
-//! stacked below the breakpoint.
+//! Forgot password: on a wide window the hero card at the top of zite's page
+//! and the email field under it as its own panel, with the actions under
+//! the field, and the `Check your email` panel in its place once sent;
+//! below the breakpoint the app's stack with the actions in the bar.
 //!
 //! The reset itself happens on the website, from the emailed link.
 
@@ -38,7 +40,7 @@ pub fn ForgotPassword() -> Element {
         .then(|| validation::reset_email_error(&email()))
         .flatten();
 
-    let back_to_login = move |_| {
+    let back_to_login = move || {
         if navigator.can_go_back() {
             navigator.go_back();
         } else {
@@ -70,24 +72,30 @@ pub fn ForgotPassword() -> Element {
         });
     };
 
+    let back = use_callback(move |()| back_to_login());
+    let submit = use_callback(move |()| attempt_submit());
+
     rsx! {
         ScreenFrame { title: "Reset password", help: true,
             div { class: "screen-content centered content-enter",
-                div { class: "web-split",
-                    HomeHero {}
+                div { class: "web-auth web-page",
+                    div { class: "web-hero", HomeHero {} }
                     if sent() {
-                        div { class: "outcome-success",
+                        div { class: "outcome-success web-outcome-panel",
                             Panel { title: "Check your email", centered: true,
                                 p { "If that email is registered, a reset link is on its way." }
+                                div { class: "web-form-actions",
+                                    ForgotActions { sent: true, on_back: back, on_submit: submit }
+                                }
                             }
                         }
                     } else {
-                        div { class: "container-sm text-center",
+                        div { class: "container-sm text-center web-form-panel",
                             form {
                                 class: "flex-col",
                                 onsubmit: move |event| {
                                     event.prevent_default();
-                                    attempt_submit();
+                                    submit.call(());
                                 },
                                 TextInput {
                                     value: email,
@@ -101,23 +109,36 @@ pub fn ForgotPassword() -> Element {
                                 }
                                 button { r#type: "submit", hidden: true }
                             }
+                            div { class: "web-form-actions",
+                                ForgotActions { sent: false, on_back: back, on_submit: submit }
+                            }
                         }
                     }
                 }
             }
-            ActionBar {
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: back_to_login,
-                    "Back to login"
-                }
-                if !sent() {
-                    Button {
-                        variant: ButtonVariant::Action,
-                        onclick: move |_| attempt_submit(),
-                        "Send reset link"
-                    }
-                }
+            ActionBar { class: "web-form-toolbar",
+                ForgotActions { sent: sent(), on_back: back, on_submit: submit }
+            }
+        }
+    }
+}
+
+/// `Back to login`, then `Send reset link` until the link is sent. Under
+/// the form (or the sent panel's line) on a wide window, in the action bar
+/// below the breakpoint.
+#[component]
+fn ForgotActions(sent: bool, on_back: Callback<()>, on_submit: Callback<()>) -> Element {
+    rsx! {
+        Button {
+            variant: ButtonVariant::Action,
+            onclick: move |_| on_back.call(()),
+            "Back to login"
+        }
+        if !sent {
+            Button {
+                variant: ButtonVariant::Action,
+                onclick: move |_| on_submit.call(()),
+                "Send reset link"
             }
         }
     }

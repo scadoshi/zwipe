@@ -171,15 +171,8 @@ body {
     flex-direction: column;
 }
 
-.web-split {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1.5rem;
-    width: 100%;
-}
-
-/* Login's stack below the breakpoint, as .web-split. */
+/* Login, Register and Forgot password below the breakpoint: the app's
+   stack, the hero over the form. */
 @media (max-width: 899px) {
     .web-auth {
         display: flex;
@@ -300,22 +293,17 @@ body {
         order: 0;
     }
 
-    .web-split {
-        flex-direction: row;
-        justify-content: center;
-        align-items: center;
-        gap: 3rem;
-        max-width: var(--web-content-max);
+    /* Forgot password's sent outcome stands where the form panel was, at
+       its width. */
+    .web-auth > .web-outcome-panel {
+        width: 100%;
+        max-width: 25rem;
+        margin: 0 auto;
+        padding: 0;
     }
 
-    .web-split > * {
-        flex: 1 1 0;
-        max-width: 28rem;
-    }
-
-    /* The mark sizes to its panel, not to the window. */
-    .web-split .home-hero .logo {
-        font-size: 0.6rem;
+    .web-outcome-panel .web-form-actions {
+        margin-top: 1rem;
     }
 
     /* Toasts move top right so they never cover the sidebar. */

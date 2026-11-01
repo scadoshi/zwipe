@@ -1,5 +1,6 @@
-//! Register: the hero beside the four fields on a wide window, stacked below
-//! the breakpoint.
+//! Register: on a wide window the hero card at the top of zite's page and
+//! the four fields under it as their own panel, with the actions under the
+//! fields; below the breakpoint the app's stack with the actions in the bar.
 
 use components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL, TextInput};
 use dioxus::prelude::*;
@@ -119,17 +120,20 @@ pub fn Register() -> Element {
         });
     };
 
+    let back = use_callback(move |()| back_to_login());
+    let submit = use_callback(move |()| attempt_submit());
+
     rsx! {
         ScreenFrame { title: "Create profile", help: true,
             div { class: "screen-content content-enter",
-                div { class: "web-split",
-                    HomeHero {}
-                    div { class: "container-sm text-center",
+                div { class: "web-auth web-page",
+                    div { class: "web-hero", HomeHero {} }
+                    div { class: "container-sm text-center web-form-panel",
                         form {
                             class: "flex-col",
                             onsubmit: move |event| {
                                 event.prevent_default();
-                                attempt_submit();
+                                submit.call(());
                             },
                             TextInput {
                                 value: username,
@@ -165,23 +169,36 @@ pub fn Register() -> Element {
                             // Enter in a field submits the form through this.
                             button { r#type: "submit", hidden: true }
                         }
+                        div { class: "web-form-actions",
+                            RegisterActions { loading: is_loading(), on_back: back, on_submit: submit }
+                        }
                     }
                 }
             }
-            ActionBar {
-                Button {
-                    variant: ButtonVariant::Action,
-                    disabled: is_loading(),
-                    onclick: move |_| back_to_login(),
-                    "Back to login"
-                }
-                Button {
-                    variant: ButtonVariant::Action,
-                    disabled: is_loading(),
-                    onclick: move |_| attempt_submit(),
-                    if is_loading() { "Creating..." } else { "Create profile" }
-                }
+            ActionBar { class: "web-form-toolbar",
+                RegisterActions { loading: is_loading(), on_back: back, on_submit: submit }
             }
+        }
+    }
+}
+
+/// `Back to login` and `Create profile`, both held while a registration is
+/// out. Under the form on a wide window, in the action bar below the
+/// breakpoint.
+#[component]
+fn RegisterActions(loading: bool, on_back: Callback<()>, on_submit: Callback<()>) -> Element {
+    rsx! {
+        Button {
+            variant: ButtonVariant::Action,
+            disabled: loading,
+            onclick: move |_| on_back.call(()),
+            "Back to login"
+        }
+        Button {
+            variant: ButtonVariant::Action,
+            disabled: loading,
+            onclick: move |_| on_submit.call(()),
+            if loading { "Creating..." } else { "Create profile" }
         }
     }
 }
