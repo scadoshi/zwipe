@@ -40,20 +40,10 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &ConfigView) {
     let bar_height = action_bar::height(&bar, area.width);
     let width = WIDTH.min(area.width);
     let lines = lines(palette, view, usize::from(width));
-    let row = [Button::new("Back")];
-    let room = area
-        .height
-        .saturating_sub(bar_height)
-        .saturating_sub(measure::height_of(lines.len()));
-    let [body, buttons, keys] = Layout::vertical([
-        Constraint::Fill(1),
-        Constraint::Length(button::height(&row, area.width, room)),
-        Constraint::Length(bar_height),
-    ])
-    .areas(area);
+    let [body, keys] =
+        Layout::vertical([Constraint::Fill(1), Constraint::Length(bar_height)]).areas(area);
     let body = body.centered_horizontally(Constraint::Length(width));
     f.render_widget(Paragraph::new(lines), body);
-    button::draw_row(f, palette, buttons, &row, None);
     f.render_widget(action_bar::wrap(bar, keys.width), keys);
     match &view.sheet {
         Some(Sheet::Themes(themes)) => {
@@ -67,9 +57,9 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &ConfigView) {
     }
 }
 
-/// A button on a row as a pill, filled while focused and muted while disabled.
-fn button(palette: &Palette, view: &ConfigView, stop: Stop, label: &str) -> Span<'static> {
-    button::pill(
+/// A button on a row, highlighted while focused and muted while disabled.
+fn button(palette: &Palette, view: &ConfigView, stop: Stop, label: &str) -> Vec<Span<'static>> {
+    button::spans(
         palette,
         &Button::new(label).disabled(!view.enabled(stop)),
         view.focused() == stop && view.sheet.is_none(),
@@ -118,7 +108,7 @@ fn lines(palette: &Palette, view: &ConfigView, width: usize) -> Vec<Line<'static
         width,
         "Exceptions",
         "",
-        vec![button(palette, view, Stop::Exceptions, "Change")],
+        button(palette, view, Stop::Exceptions, "Change"),
     );
     if !hidden {
         exceptions = exceptions.style(Style::new().dim());
@@ -130,18 +120,19 @@ fn lines(palette: &Palette, view: &ConfigView, width: usize) -> Vec<Line<'static
             width,
             "Theme",
             &preferences::display_theme_name(&shown.theme),
-            vec![
+            [
                 button(palette, view, Stop::Mode, mode),
-                Span::raw(" "),
+                vec![Span::raw(" ")],
                 button(palette, view, Stop::Theme, "Change"),
-            ],
+            ]
+            .concat(),
         ),
         row(
             palette,
             width,
             "Pips",
             "",
-            vec![button(palette, view, Stop::Pips, pips)],
+            button(palette, view, Stop::Pips, pips),
         ),
         Line::default(),
         section("Cards"),
@@ -150,12 +141,12 @@ fn lines(palette: &Palette, view: &ConfigView, width: usize) -> Vec<Line<'static
             width,
             "Universes Beyond",
             "",
-            vec![button(
+            button(
                 palette,
                 view,
                 Stop::UniversesBeyond,
                 if hidden { "Hide" } else { "Show" },
-            )],
+            ),
         ),
         exceptions,
     ];

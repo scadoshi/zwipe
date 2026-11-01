@@ -342,16 +342,16 @@ fn a_focused_row_button_lines_up_with_the_row_buttons_under_it() {
                 })
                 .unwrap()
         };
-        let last_lit = |y: u16, lit: &dyn Fn(&ratatui::buffer::Cell) -> bool| {
-            (0..width).rev().find(|&x| lit(&buffer[(x, y)])).unwrap()
+        let closing = |y: u16| {
+            (0..width)
+                .rev()
+                .find(|&x| buffer[(x, y)].symbol() == "]")
+                .unwrap()
         };
-        let pill = last_lit(row_of("Privacy policy"), &|c| {
-            c.modifier.contains(Modifier::REVERSED)
-        });
-        let changelog_row = row_of("Changelog");
-        let page = buffer[(0, changelog_row)].bg;
-        let changelog = last_lit(changelog_row, &|c| c.bg != page);
-        assert_eq!(pill, changelog, "at {width}x{height}");
+        let privacy = row_of("Privacy policy");
+        let focused = closing(privacy);
+        assert!(buffer[(focused, privacy)].modifier.contains(Modifier::BOLD));
+        assert_eq!(focused, closing(row_of("Changelog")), "at {width}x{height}");
     }
 }
 
@@ -377,9 +377,10 @@ fn the_change_sheet_and_log_out_dialog_draw_real_buttons_at_every_size() {
             panic!("Save changes at {width}x{height}:\n{rows}");
         };
         let save = &buffer[(x, y)];
-        assert_eq!(save.fg, palette.accent.fg.unwrap(), "primary");
-        assert!(save.modifier.contains(Modifier::BOLD));
-        assert_ne!(crate::test_support::find_all(buffer, " Back "), []);
+        assert_eq!(save.fg, palette.base.fg.unwrap(), "plain like every button");
+        assert!(!save.modifier.contains(Modifier::BOLD));
+        assert_eq!(buffer[(x - 2, y)].symbol(), "[");
+        assert_ne!(crate::test_support::find_all(buffer, "[ Back ]"), []);
         let label = crate::test_support::find_all(buffer, " New username ")[0];
         let (left, right) = crate::test_support::label_margins(buffer, label, " New username ");
         assert!(left.abs_diff(right) <= 1, "centered at {width}x{height}");
@@ -405,24 +406,23 @@ fn the_change_sheet_and_log_out_dialog_draw_real_buttons_at_every_size() {
         let label = buffer[(x, y)].modifier;
         assert!(
             label.contains(Modifier::BOLD) && !label.contains(Modifier::REVERSED),
-            "the focused button is bold on its edges, not filled"
+            "the focused button is bold, not filled"
         );
+        let bracket = &buffer[(x - 2, y)];
         assert_eq!(
-            buffer[(x - 2, y)].symbol(),
-            "│",
-            "boxed at {width}x{height}:\n{rows}"
+            bracket.symbol(),
+            "[",
+            "bracketed at {width}x{height}:\n{rows}"
         );
+        assert!(bracket.modifier.contains(Modifier::BOLD));
+        assert_eq!(bracket.fg, buffer[(x, y)].fg, "brackets match the label");
         let [(x, y)] = crate::test_support::find_all(buffer, other)[..] else {
             panic!("{other} at {width}x{height}:\n{rows}");
         };
         assert!(!buffer[(x, y)].modifier.contains(Modifier::REVERSED));
         let log_out = crate::test_support::find_all(buffer, "Log out (y)")[0];
         let log_out = &buffer[log_out];
-        assert!(
-            log_out.fg == palette.error.fg.unwrap()
-                || log_out.modifier.contains(Modifier::REVERSED),
-            "danger"
-        );
+        assert_eq!(log_out.fg, palette.error.fg.unwrap(), "danger");
     }
     harness.press(KeyCode::Char('n'));
     assert!(view(&harness).overlay.is_none());

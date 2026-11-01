@@ -3,6 +3,7 @@
 use crossterm::event::KeyCode;
 use ratatui::style::Color;
 use uuid::Uuid;
+use zwipe_core::domain::logo as mark;
 
 use super::{
     Screen, account, activity, changelog, commander_maybeboard, config, deck, deck_cards,
@@ -12,7 +13,8 @@ use super::{
 use crate::domain::theme::Palette;
 use crate::inbound::app::{App, Context};
 use crate::inbound::event_loop::harness::Harness;
-use crate::inbound::widgets::grid;
+use crate::inbound::widgets::hero::Hero;
+use crate::inbound::widgets::{grid, logo};
 use crate::test_support::{BUTTON_SIZES, card, deck_profile, render, rows, user};
 
 /// A screen as the tests open it: the title its header used to show, the key that opens its hint as the bar names it, and the screen itself.
@@ -359,6 +361,120 @@ fn no_box_keeps_a_plain_band_between_its_border_and_the_grid() {
                     !beside,
                     "{title}: the border at {x},{y} keeps a plain band beside the grid:\n{}",
                     rows(&harness.app, width, height).join("\n")
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn no_screen_draws_a_button_label_between_box_borders() {
+    let labels = [
+        "Log in",
+        "Create profile",
+        "Send reset link",
+        "Log out",
+        "More",
+        "Back",
+    ];
+    for Case { title, harness, .. } in cases() {
+        for (width, height) in BUTTON_SIZES {
+            let rows = rows(&harness.app, width, height);
+            for row in &rows {
+                for label in labels {
+                    let boxed = format!("│ {label} │");
+                    assert!(
+                        !row.contains(&boxed),
+                        "{title} boxes {label:?} at {width}x{height}:\n{}",
+                        rows.join("\n")
+                    );
+                }
+            }
+        }
+    }
+}
+
+/// A screen's `open`.
+type Opener = fn(&mut Context<'_>);
+
+#[test]
+fn account_config_privacy_and_changelog_draw_no_back_button_and_esc_still_goes_back() {
+    let screens: [(&str, Opener); 4] = [
+        ("Account", account::open),
+        ("Config", config::open),
+        ("Privacy policy", privacy::open),
+        ("Changelog", changelog::open),
+    ];
+    for (title, open) in screens {
+        let mut harness = Harness::on(Screen::Home(Box::default()));
+        harness.app.shared.user = Some(user(true));
+        harness.open(open);
+        harness.app.shared.hint = None;
+        for (width, height) in BUTTON_SIZES {
+            let screen = rows(&harness.app, width, height).join("\n");
+            assert!(
+                !screen.contains("[ Back ]") && !screen.contains(" Back "),
+                "{title} draws a Back button at {width}x{height}:\n{screen}"
+            );
+            assert!(screen.contains("Esc back"), "{title} names Esc back");
+        }
+        harness.press(KeyCode::Esc);
+        assert!(
+            matches!(harness.screen(), Screen::Home(_)),
+            "Esc leaves {title} for Home"
+        );
+    }
+}
+
+/// The sign-in screens with a settled hero, so the logo draws whole instead of mid-decode.
+fn sign_in_screens() -> Vec<(&'static str, Harness)> {
+    let settle = |mut harness: Harness| {
+        match harness.screen_mut() {
+            Screen::Login(form) => form.hero = Hero::default(),
+            Screen::Register(form) => form.hero = Hero::default(),
+            Screen::ForgotPassword(form) => form.hero = Hero::default(),
+            other => panic!("not a sign-in screen: {other:?}"),
+        }
+        harness
+    };
+    let from_login = |open: fn(&mut Context<'_>)| {
+        let mut harness = Harness::new();
+        harness.open(open);
+        harness
+    };
+    vec![
+        ("Login", settle(Harness::new())),
+        ("Create profile", settle(from_login(register::open))),
+        ("Reset password", settle(from_login(forgot_password::open))),
+    ]
+}
+
+#[test]
+fn the_sign_in_logo_is_whole_and_off_the_top_edge_at_every_size() {
+    let first = |art: &str| logo::solid(art.lines().next().unwrap().trim());
+    let (zwipe, z) = (first(mark::ZWIPE), first(mark::Z));
+    for (title, harness) in sign_in_screens() {
+        for (width, height) in [(200, 50), (120, 40), (100, 30), (80, 24), (60, 20)] {
+            let rows = rows(&harness.app, width, height);
+            let screen = rows.join("\n");
+            let Some(top) = rows.iter().position(|r| r.contains('█')) else {
+                continue;
+            };
+            if height >= 40 {
+                assert!(
+                    top > 0,
+                    "{title}'s logo touches the top at {width}x{height}:\n{screen}"
+                );
+            }
+            let row = rows[top].trim();
+            assert!(
+                row == zwipe || row == z,
+                "{title}'s logo starts with its first art row at {width}x{height}:\n{screen}"
+            );
+            if height >= 40 {
+                assert_eq!(
+                    row, zwipe,
+                    "{title} keeps the full mark at {width}x{height}"
                 );
             }
         }

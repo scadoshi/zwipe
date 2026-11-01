@@ -156,13 +156,6 @@ impl Sheet {
     }
 }
 
-/// The most body rows a sheet over `area` holds before it scrolls or crops.
-pub(crate) fn max_body(area: Rect) -> u16 {
-    (area.height.saturating_mul(MAX_HEIGHT_PERCENT) / 100)
-        .min(area.height)
-        .saturating_sub(BORDERS)
-}
-
 /// Clears and draws a bottom sheet's frame over the bottom of `area`: the title centered in the third accent, a `?` in its right corner when `hint`, and the footer keys on its bottom edge, tall enough for `body` rows up to most of the screen. Returns the area inside, for a body the caller draws, such as a form.
 pub(crate) fn frame(
     f: &mut Frame<'_>,

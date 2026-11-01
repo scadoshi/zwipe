@@ -160,7 +160,7 @@ fn send_reset_link_sits_right_under_the_email_field() {
         let [(_, button)] = crate::test_support::find_all(buffer, "Send reset link")[..] else {
             panic!("the button at {width}x{height}:\n{rows}");
         };
-        let gap = (button - 1) - (label + 2) - 1;
+        let gap = button - (label + 2) - 1;
         assert!(gap <= 1, "{gap} rows at {width}x{height}:\n{rows}");
     }
 }

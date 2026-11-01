@@ -10,11 +10,11 @@ use super::{AccountView, DeleteDialog, DeleteFocus, Form, FormKind, Overlay, Sto
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::screens::{VERSION, login};
+use crate::inbound::widgets::action_bar;
 use crate::inbound::widgets::alert::AlertDialog;
 use crate::inbound::widgets::button::{self, Button};
 use crate::inbound::widgets::sheet::{self, Sheet};
 use crate::inbound::widgets::text_input::{BOX_HEIGHT, MASK, TextInput};
-use crate::inbound::widgets::{action_bar, measure};
 
 /// The lists are at most this wide, in cells.
 const WIDTH: u16 = 72;
@@ -43,18 +43,10 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &AccountView) {
     let bar_height = action_bar::height(&bar, area.width);
     let width = WIDTH.min(area.width);
     let lines = lines(palette, view, usize::from(width));
-    let row = [
-        Button::new("Back"),
-        Button::new("Log out").danger(),
-        Button::new("More"),
-    ];
-    let room = area
-        .height
-        .saturating_sub(bar_height)
-        .saturating_sub(measure::height_of(lines.len()));
+    let row = [Button::new("Log out").danger(), Button::new("More")];
     let [body, buttons, keys] = Layout::vertical([
         Constraint::Fill(1),
-        Constraint::Length(button::height(&row, area.width, room)),
+        Constraint::Length(1),
         Constraint::Length(bar_height),
     ])
     .areas(area);
@@ -109,16 +101,16 @@ fn row(
     Line::from(spans)
 }
 
-/// A button on a row as a pill, filled while focused and muted while disabled.
+/// A button on a row, highlighted while focused and muted while disabled.
 fn button(
     palette: &Palette,
     view: &AccountView,
     stop: Stop,
     label: &str,
     disabled: bool,
-) -> Span<'static> {
+) -> Vec<Span<'static>> {
     let focused = view.focused() == Some(stop) && view.overlay.is_none();
-    button::pill(palette, &Button::new(label).disabled(disabled), focused)
+    button::spans(palette, &Button::new(label).disabled(disabled), focused)
 }
 
 /// The screen's lines, top to bottom.
@@ -145,13 +137,13 @@ fn account_lines(palette: &Palette, view: &AccountView, width: usize) -> Vec<Lin
             "Username",
             false,
             vec![Span::raw(user.username.to_string())],
-            vec![button(
+            button(
                 palette,
                 view,
                 Stop::ChangeUsername,
                 "Change",
                 /* disabled */ false,
-            )],
+            ),
         ),
         row(
             palette,
@@ -166,13 +158,13 @@ fn account_lines(palette: &Palette, view: &AccountView, width: usize) -> Vec<Lin
                     Span::styled("Unverified", palette.error)
                 },
             ],
-            vec![button(
+            button(
                 palette,
                 view,
                 Stop::ChangeEmail,
                 "Change",
                 /* disabled */ false,
-            )],
+            ),
         ),
     ];
     if let Some(pending) = &user.pending_email {
@@ -195,7 +187,7 @@ fn account_lines(palette: &Palette, view: &AccountView, width: usize) -> Vec<Lin
             "Verification",
             true,
             Vec::new(),
-            vec![
+            [
                 button(
                     palette,
                     view,
@@ -203,9 +195,10 @@ fn account_lines(palette: &Palette, view: &AccountView, width: usize) -> Vec<Lin
                     &view.resend_label(),
                     !view.can_resend(),
                 ),
-                Span::raw(" "),
+                vec![Span::raw(" ")],
                 button(palette, view, Stop::Check, "↻", view.checking),
-            ],
+            ]
+            .concat(),
         ));
     }
     lines.push(row(
@@ -214,13 +207,13 @@ fn account_lines(palette: &Palette, view: &AccountView, width: usize) -> Vec<Lin
         "Password",
         false,
         vec![Span::raw(MASK.to_string().repeat(7))],
-        vec![button(
+        button(
             palette,
             view,
             Stop::ChangePassword,
             "Change",
             /* disabled */ false,
-        )],
+        ),
     ));
     lines
 }
@@ -235,13 +228,7 @@ fn about_lines(palette: &Palette, view: &AccountView, width: usize) -> Vec<Line<
             "Website",
             true,
             Vec::new(),
-            vec![button(
-                palette,
-                view,
-                Stop::Website,
-                "zwipe.net \u{2197}",
-                false,
-            )],
+            button(palette, view, Stop::Website, "zwipe.net \u{2197}", false),
         ),
         row(
             palette,
@@ -249,13 +236,13 @@ fn about_lines(palette: &Palette, view: &AccountView, width: usize) -> Vec<Line<
             "Privacy policy",
             false,
             Vec::new(),
-            vec![button(
+            button(
                 palette,
                 view,
                 Stop::Privacy,
                 "View",
                 /* disabled */ false,
-            )],
+            ),
         ),
         row(
             palette,
@@ -263,13 +250,13 @@ fn about_lines(palette: &Palette, view: &AccountView, width: usize) -> Vec<Line<
             "Version",
             true,
             vec![Span::raw(format!("v{VERSION}"))],
-            vec![button(
+            button(
                 palette,
                 view,
                 Stop::Changelog,
                 "Changelog",
                 /* disabled */ false,
-            )],
+            ),
         ),
     ]
 }
@@ -279,7 +266,7 @@ fn more_sheet(palette: &Palette) -> Sheet {
     Sheet::new(
         "More",
         vec![
-            Line::from(button::pill(
+            Line::from(button::spans(
                 palette,
                 &Button::new("Delete account").danger(),
                 /* focused */ true,
@@ -291,7 +278,7 @@ fn more_sheet(palette: &Palette) -> Sheet {
     .with_footer("Esc", "Close")
 }
 
-/// A Change sheet: its fields with their error lines, then Save changes and Back, and its footer keys. The buttons are boxes when the sheet has room for them under the fields, else pills.
+/// A Change sheet: its fields with their error lines, then Save changes and Back on one line, and its footer keys.
 fn draw_form(f: &mut Frame<'_>, palette: &Palette, form: &Form) {
     let heights: Vec<u16> = form.inputs.iter().map(TextInput::height).collect();
     let fields = heights.iter().fold(0_u16, |sum, h| sum.saturating_add(*h));
@@ -301,17 +288,14 @@ fn draw_form(f: &mut Frame<'_>, palette: &Palette, form: &Form) {
         "Save changes"
     };
     let row = [
-        Button::new(save).primary().disabled(form.busy),
+        Button::new(save).disabled(form.busy),
         Button::new("Back").disabled(form.busy),
     ];
     let mut footer = vec![("Tab", "next"), ("Enter", "save"), ("Esc", "back")];
     if form.kind == FormKind::Password && form.focus == 1 {
         footer.insert(1, ("F2", "password rules"));
     }
-    let room = sheet::max_body(f.area())
-        .saturating_sub(fields)
-        .saturating_sub(1);
-    let buttons_height = button::height(&row, FORM_WIDTH.min(f.area().width), room);
+    let buttons_height = 1;
     let inner = sheet::frame(
         f,
         palette,

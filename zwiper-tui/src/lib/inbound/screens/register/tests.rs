@@ -238,7 +238,7 @@ fn create_profile_sits_right_under_confirm_password() {
         let Some(&(_, button)) = found.last() else {
             panic!("the button at {width}x{height}:\n{rows}");
         };
-        let gap = (button - 1) - (label + 2) - 1;
+        let gap = button - (label + 2) - 1;
         assert!(gap <= 1, "{gap} rows at {width}x{height}:\n{rows}");
     }
 }

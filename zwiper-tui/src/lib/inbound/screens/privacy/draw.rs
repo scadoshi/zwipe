@@ -12,7 +12,6 @@ use super::PrivacyView;
 use crate::domain::legal::{self, Block, Run};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
-use crate::inbound::widgets::button::{self, Button};
 use crate::inbound::widgets::{action_bar, card_info, measure};
 
 /// The text is at most this wide, in cells.
@@ -110,18 +109,13 @@ pub(crate) fn lines(palette: &Palette, width: usize) -> Vec<Line<'static>> {
 
 pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &PrivacyView) {
     let palette = &shared.palette;
-    let [body, buttons, keys] = Layout::vertical([
-        Constraint::Fill(1),
-        Constraint::Length(1),
-        Constraint::Length(1),
-    ])
-    .areas(f.area());
+    let [body, keys] =
+        Layout::vertical([Constraint::Fill(1), Constraint::Length(1)]).areas(f.area());
     let body = body.centered_horizontally(Constraint::Length(WIDTH.min(body.width)));
     let text = Paragraph::new(lines(palette, usize::from(body.width))).wrap(Wrap { trim: false });
     let total = measure::height_of(text.line_count(body.width));
     let scroll = view.scroll.min(total.saturating_sub(body.height));
     f.render_widget(text.scroll((scroll, 0)), body);
-    button::draw_row(f, palette, buttons, &[Button::new("Back")], None);
     f.render_widget(
         action_bar::with_help(
             palette,

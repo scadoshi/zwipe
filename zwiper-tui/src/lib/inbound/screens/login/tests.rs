@@ -347,13 +347,10 @@ fn log_in_has_no_accent_at_rest_and_takes_it_on_its_edges_and_label_when_focused
                 panic!("one Log in at {width}x{height}:\n{rows}");
             };
             let log_in = &buffer[(x, y)];
-            assert_eq!(
-                buffer[(x - 2, y)].symbol(),
-                "│",
-                "Log in boxes at {width}x{height}, the logo kept:\n{rows}"
-            );
+            let shown: String = (x - 2..x + 8).map(|c| buffer[(c, y)].symbol()).collect();
+            assert_eq!(shown, "[ Log in ]", "at {width}x{height}:\n{rows}");
             if focus == Some(LoginField::LogIn) {
-                for inside in x - 1..x + 7 {
+                for inside in x - 2..x + 8 {
                     assert!(
                         !buffer[(inside, y)].modifier.contains(Modifier::REVERSED),
                         "cell {inside} stays unfilled at {width}x{height}"
@@ -361,11 +358,13 @@ fn log_in_has_no_accent_at_rest_and_takes_it_on_its_edges_and_label_when_focused
                 }
                 assert!(log_in.modifier.contains(Modifier::BOLD));
                 assert_eq!(log_in.fg, palette.accent.fg.unwrap());
-                assert_eq!(
-                    buffer[(x - 2, y)].fg,
-                    palette.accent.fg.unwrap(),
-                    "the edge takes the accent at {width}x{height}"
-                );
+                for bracket in [x - 2, x + 7] {
+                    assert_eq!(
+                        buffer[(bracket, y)].fg,
+                        palette.accent.fg.unwrap(),
+                        "the bracket takes the accent at {width}x{height}"
+                    );
+                }
             } else {
                 assert!(!log_in.modifier.contains(Modifier::REVERSED));
                 assert!(
@@ -396,8 +395,8 @@ fn log_in_sits_right_under_the_password_field() {
         let [(_, log_in)] = crate::test_support::find_all(buffer, "Log in")[..] else {
             panic!("one Log in at {width}x{height}:\n{rows}");
         };
-        // The password box's bottom border is two rows under its label, and Log in's top border a row over its label.
-        let gap = (log_in - 1) - (label + 2) - 1;
+        // The password box's bottom border is two rows under its label.
+        let gap = log_in - (label + 2) - 1;
         assert!(
             gap <= 1,
             "{gap} rows between Password and Log in at {width}x{height}:\n{rows}"

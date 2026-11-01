@@ -8,7 +8,7 @@ pub(crate) mod action_bar;
 pub(crate) mod alert;
 /// Opening a link in the browser.
 pub(crate) mod browser;
-/// Buttons as rounded boxes or one-line pills, one focused.
+/// Buttons as bracketed labels on one line, one focused.
 pub(crate) mod button;
 /// A card's info block, details and text stand-in.
 pub(crate) mod card_info;

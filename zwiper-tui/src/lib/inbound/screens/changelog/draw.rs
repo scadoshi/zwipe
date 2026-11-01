@@ -12,7 +12,6 @@ use zwipe_ui::changelog::{self, ChangelogCache, Tag};
 use super::{ChangelogView, Chip, FAILED};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
-use crate::inbound::widgets::button::{self, Button};
 use crate::inbound::widgets::{action_bar, entrance, measure, skeleton};
 
 /// The cards are at most this wide, in cells.
@@ -32,12 +31,8 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &ChangelogView) {
     );
     let bar = action_bar::with_help(palette, bar, action_bar::Hint::Absent).centered();
     let bar_height = action_bar::height(&bar, f.area().width);
-    let [body, buttons, keys] = Layout::vertical([
-        Constraint::Fill(1),
-        Constraint::Length(1),
-        Constraint::Length(bar_height),
-    ])
-    .areas(f.area());
+    let [body, keys] =
+        Layout::vertical([Constraint::Fill(1), Constraint::Length(bar_height)]).areas(f.area());
     let body = body.centered_horizontally(Constraint::Length(WIDTH.min(body.width)));
     match &shared.changelog {
         ChangelogCache::Loading => draw_skeleton(f, palette, body),
@@ -79,7 +74,6 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &ChangelogView) {
             );
         }
     }
-    button::draw_row(f, palette, buttons, &[Button::new("Back")], None);
     f.render_widget(action_bar::wrap(bar, keys.width), keys);
 }
 

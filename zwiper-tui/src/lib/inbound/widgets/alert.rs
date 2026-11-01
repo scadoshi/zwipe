@@ -161,18 +161,9 @@ impl AlertDialog {
             })
             .collect();
         let focused = Some(self.focused);
-        // Boxes when the row fits and the dialog still fits the screen with them; else pills, stacked one per line when even they are too wide.
-        let room = f
-            .area()
-            .height
-            .saturating_sub(body_height)
-            .saturating_sub(extra)
-            .saturating_sub(5);
-        let boxed = button::height(&row, width, room) == button::HEIGHT;
-        let stacked = !boxed && button::pills(palette, &row, focused).width() > usize::from(width);
-        let buttons_height = if boxed {
-            button::HEIGHT
-        } else if stacked {
+        // One line, or one button per line when the row is wider than the dialog, as Help's three are on a narrow screen.
+        let stacked = button::row_width(&row) > width;
+        let buttons_height = if stacked {
             measure::height_of(row.len())
         } else {
             1
@@ -212,7 +203,7 @@ impl AlertDialog {
             let lines: Vec<Line<'static>> = row
                 .iter()
                 .enumerate()
-                .map(|(i, b)| Line::from(button::pill(palette, b, focused == Some(i))).centered())
+                .map(|(i, b)| Line::from(button::spans(palette, b, focused == Some(i))).centered())
                 .collect();
             f.render_widget(Paragraph::new(lines), buttons_area);
         } else {
@@ -279,5 +270,41 @@ mod tests {
             alert.handle_key(KeyCode::Enter),
             Some(AlertChoice::Pressed(1))
         );
+    }
+
+    /// The dialog drawn at `width` by `height`, row by row.
+    fn rows(alert: &AlertDialog, width: u16, height: u16) -> Vec<String> {
+        let palette = Palette::for_account("gruvbox", true);
+        let mut terminal =
+            ratatui::Terminal::new(ratatui::backend::TestBackend::new(width, height)).unwrap();
+        terminal.draw(|f| alert.draw(f, &palette)).unwrap();
+        let buffer = terminal.backend().buffer();
+        (0..height)
+            .map(|y| (0..width).map(|x| buffer[(x, y)].symbol()).collect())
+            .collect()
+    }
+
+    #[test]
+    fn the_buttons_are_bracketed_on_one_line_at_every_size() {
+        for (width, height) in crate::test_support::BUTTON_SIZES {
+            let rows = rows(&log_out(), width, height);
+            let found: Vec<&String> = rows.iter().filter(|r| r.contains("[ ")).collect();
+            assert_eq!(found.len(), 1, "one button line at {width}x{height}");
+            assert!(
+                found[0].contains("[ Log out (y) ]  [ Cancel (n) ]"),
+                "at {width}x{height}: {}",
+                found[0]
+            );
+            assert!(!rows.iter().any(|r| r.contains("│ Log out")), "no box");
+        }
+    }
+
+    #[test]
+    fn a_row_wider_than_the_dialog_stacks_one_button_per_line() {
+        let help = super::super::help::dialog();
+        let rows = rows(&help, 60, 20);
+        let lines: Vec<&String> = rows.iter().filter(|r| r.contains("[ ")).collect();
+        assert_eq!(lines.len(), 3, "stacked:\n{}", rows.join("\n"));
+        assert!(lines[0].contains("[ Close (c) ]"));
     }
 }

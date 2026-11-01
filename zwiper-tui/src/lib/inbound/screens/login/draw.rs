@@ -28,7 +28,7 @@ pub(crate) struct AuthAreas {
     pub(crate) gap: Rect,
 }
 
-/// Whether an auth screen's content sits in the middle of the screen, as Login and Forgot password do, or from the top, as Register does.
+/// Whether an auth screen's content sits in the middle of the screen, as Login and Forgot password do, or from the top, a row down when there is room, as Register does.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Placement {
     Centered,
@@ -50,7 +50,7 @@ pub(crate) struct AuthScreen<'parts> {
     pub(crate) min_gap: u16,
 }
 
-/// Draws an auth screen's buttons and its key hints, and lays out the rest: the hero over the form, the buttons a row under the form, the whole group placed as one. The buttons are boxes while they fit and the hero loses nothing to them, else pills; the hero shrinks, then goes, when the screen is short.
+/// Draws an auth screen's buttons and its key hints, and lays out the rest: the hero over the form, the buttons on one line under the form, the whole group placed as one. The hero shrinks, then goes, when the screen is short.
 pub(crate) fn frame(
     f: &mut Frame<'_>,
     shared: &Shared,
@@ -71,7 +71,7 @@ pub(crate) fn frame(
         Layout::vertical([Constraint::Fill(1), Constraint::Length(keys_height)]).areas(area);
     f.render_widget(action_bar::wrap(keys, keys_area.width), keys_area);
     let hero_width = area.width.min(HERO_WIDTH);
-    let pills = u16::from(!row.is_empty());
+    let buttons_height = u16::from(!row.is_empty());
     // The hero's room once the form, `gap` rows and the buttons take theirs, a row kept between the hero and the form.
     let hero_room = |gap: u16, buttons: u16| {
         content
@@ -82,16 +82,6 @@ pub(crate) fn frame(
             .saturating_sub(1)
     };
     let min_gap = if row.is_empty() { 0 } else { min_gap };
-    // Boxes while they fit beside the form and the hero keeps what it shows over pills.
-    let boxed = !row.is_empty()
-        && button::height(
-            row,
-            area.width,
-            hero_room(min_gap, pills).saturating_add(pills),
-        ) == button::HEIGHT
-        && Hero::height(hero_width, hero_room(min_gap, button::HEIGHT))
-            == Hero::height(hero_width, hero_room(min_gap, pills));
-    let buttons_height = if boxed { button::HEIGHT } else { pills };
     let hero_height = Hero::height(hero_width, hero_room(min_gap, buttons_height));
     // A row between the form and its buttons while the hero keeps what it shows without it.
     let gap = if !row.is_empty()
@@ -113,7 +103,8 @@ pub(crate) fn frame(
         Placement::Centered => content
             .y
             .saturating_add(content.height.saturating_sub(total) / 2),
-        Placement::Top => content.y,
+        // A spare row over the hero, so the logo never sits on the screen's top edge.
+        Placement::Top => content.y.saturating_add(u16::from(content.height > total)),
     };
     let column = Rect {
         y: top,

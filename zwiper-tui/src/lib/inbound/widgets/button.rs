@@ -1,30 +1,26 @@
-//! The app's buttons: a row of rounded boxes the focus moves across, or one-line pills where a box has no room.
+//! The app's buttons: a label in brackets on one line, `[ Log in ]`, at every size, alone inside a line of text or in a centered row the focus moves across.
 //!
-//! A plain button has the border color around text in the text color, as the app's `.btn-action`. A primary one takes the accent for both; a danger one, like `Log out` and `Delete`, the error color. A focused box draws its border and a bold label in its focus color (the accent for a plain one) and keeps its inside unfilled, so the highlight sits on the edges and the text. A pill has no edges, so a focused pill fills its padded label with that color instead. A disabled one is muted.
+//! At rest the brackets take the border color and the label the button's color: the text color for a plain one, the error color for a danger one like `Log out` and `Delete`, muted while disabled. A focused button draws its brackets and a bold label in its focus color (the accent for a plain one, its own color for a danger one). No button fills its background, so focus is the only highlight and a filled block is always a tag.
 
 use ratatui::Frame;
-use ratatui::layout::{Constraint, Flex, Layout, Rect};
+use ratatui::layout::Rect;
 use ratatui::style::Style;
 use ratatui::text::{Line, Span};
-use ratatui::widgets::Paragraph;
 
-use super::measure::{self, BORDERS};
-use super::panel;
+use super::measure;
 use crate::domain::theme::Palette;
 
-/// Rows a boxed button takes: its border and its label.
-pub(crate) const HEIGHT: u16 = 3;
-
 /// Cells between two buttons in a row.
-const GAP: u16 = 1;
+const GAP: u16 = 2;
+
+/// Cells a button takes beyond its label: a bracket and a space each side.
+const FRAME: u16 = 4;
 
 /// What a button does, which sets its color.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Kind {
     #[default]
     Plain,
-    /// The screen's main action, in the accent.
-    Primary,
     /// A destructive action, in the error color.
     Danger,
 }
@@ -47,13 +43,6 @@ impl<'label> Button<'label> {
         }
     }
 
-    pub(crate) fn primary(self) -> Self {
-        Self {
-            kind: Kind::Primary,
-            ..self
-        }
-    }
-
     pub(crate) fn danger(self) -> Self {
         Self {
             kind: Kind::Danger,
@@ -65,91 +54,67 @@ impl<'label> Button<'label> {
         Self { disabled, ..self }
     }
 
-    /// The button's own color: muted while disabled, else by its kind, with the text color for a plain one.
+    /// The label's color at rest: muted while disabled, else the text color for a plain one and the error color for a danger one.
     fn color(&self, palette: &Palette) -> Style {
         if self.disabled {
             return palette.muted;
         }
         match self.kind {
             Kind::Plain => Style::new().fg(palette.base.fg.unwrap_or_default()),
-            Kind::Primary => palette.accent,
             Kind::Danger => palette.error,
         }
     }
 
-    /// The color the button fills with while focused: its own, or the accent for a plain one.
-    fn fill(&self, palette: &Palette) -> Style {
+    /// The color the brackets and label take while focused: the accent for a plain one, else its own color.
+    fn focus(&self, palette: &Palette) -> Style {
         match self.kind {
             Kind::Plain if !self.disabled => palette.accent,
             _ => self.color(palette),
         }
     }
 
-    /// The label padded a cell on each side, in the button's color, or filled with it while focused.
-    fn label_span(&self, palette: &Palette, focused: bool) -> Span<'static> {
-        let style = if focused {
-            self.fill(palette).bold().reversed()
-        } else if self.kind == Kind::Primary && !self.disabled {
-            self.color(palette).bold()
-        } else {
-            self.color(palette)
-        };
-        Span::styled(format!(" {} ", self.label), style)
-    }
-
-    /// Cells the button takes boxed: its label, a cell of padding and a border each side.
-    fn box_width(&self) -> u16 {
-        measure::width_of(self.label)
-            .saturating_add(2)
-            .saturating_add(BORDERS)
+    /// Cells the button takes: its label, a space and a bracket each side.
+    fn width(&self) -> u16 {
+        measure::width_of(self.label).saturating_add(FRAME)
     }
 }
 
-/// Cells a row of boxed buttons takes, gaps included.
+/// One button as its spans, for a button inside a line of text such as a list row's `Change`: the opening bracket, the label padded a space each side, and the closing bracket.
+pub(crate) fn spans(palette: &Palette, button: &Button<'_>, focused: bool) -> Vec<Span<'static>> {
+    let (bracket, label) = if focused {
+        let style = button.focus(palette).bold();
+        (style, style)
+    } else {
+        (palette.border, button.color(palette))
+    };
+    vec![
+        Span::styled("[", bracket),
+        Span::styled(format!(" {} ", button.label), label),
+        Span::styled("]", bracket),
+    ]
+}
+
+/// Cells a row of buttons takes, gaps included.
 pub(crate) fn row_width(row: &[Button<'_>]) -> u16 {
     let gaps = GAP.saturating_mul(u16::try_from(row.len().saturating_sub(1)).unwrap_or(u16::MAX));
     row.iter()
-        .fold(gaps, |sum, button| sum.saturating_add(button.box_width()))
+        .fold(gaps, |sum, button| sum.saturating_add(button.width()))
 }
 
-/// Rows to give a row of buttons `width` cells wide with `room` rows to spare: [`HEIGHT`] when the boxes fit both, else one for pills.
-pub(crate) fn height(row: &[Button<'_>], width: u16, room: u16) -> u16 {
-    if row_width(row) <= width && room >= HEIGHT {
-        HEIGHT
-    } else {
-        1
-    }
-}
-
-/// One button as a pill on a single line: the label padded a cell each side on the skeleton shade, or filled with its color while focused. For buttons inside a line of text, such as a list row's `Change`.
-pub(crate) fn pill(palette: &Palette, button: &Button<'_>, focused: bool) -> Span<'static> {
-    let span = button.label_span(palette, focused);
-    match (focused, palette.skeleton.fg) {
-        (false, Some(shade)) => {
-            let style = span.style.bg(shade);
-            span.style(style)
-        }
-        _ => span,
-    }
-}
-
-/// A row of pills, a space between each.
-pub(crate) fn pills(
-    palette: &Palette,
-    row: &[Button<'_>],
-    focused: Option<usize>,
-) -> Line<'static> {
-    let mut spans = Vec::with_capacity(row.len().saturating_mul(2));
+/// A row of buttons on one line, [`GAP`] cells between each, the one at `focused` highlighted.
+pub(crate) fn line(palette: &Palette, row: &[Button<'_>], focused: Option<usize>) -> Line<'static> {
+    let gap = " ".repeat(usize::from(GAP));
+    let mut out = Vec::with_capacity(row.len().saturating_mul(4));
     for (i, button) in row.iter().enumerate() {
         if i > 0 {
-            spans.push(Span::raw(" "));
+            out.push(Span::raw(gap.clone()));
         }
-        spans.push(pill(palette, button, focused == Some(i)));
+        out.extend(spans(palette, button, focused == Some(i)));
     }
-    Line::from(spans)
+    Line::from(out)
 }
 
-/// Draws `row` centered in `area`, the button at `focused` filled: as boxes when `area` is [`HEIGHT`] rows tall and wide enough for them, else as pills on its middle row.
+/// Draws `row` centered on the middle line of `area`, the button at `focused` highlighted.
 pub(crate) fn draw_row(
     f: &mut Frame<'_>,
     palette: &Palette,
@@ -157,46 +122,12 @@ pub(crate) fn draw_row(
     row: &[Button<'_>],
     focused: Option<usize>,
 ) {
-    if area.height >= HEIGHT && row_width(row) <= area.width {
-        let boxes = Layout::horizontal(row.iter().map(|b| Constraint::Length(b.box_width())))
-            .flex(Flex::Center)
-            .spacing(GAP)
-            .split(Rect {
-                height: HEIGHT,
-                y: area
-                    .y
-                    .saturating_add(area.height.saturating_sub(HEIGHT) / 2),
-                ..area
-            });
-        for (i, (button, spot)) in row.iter().zip(boxes.iter()).enumerate() {
-            draw_box(f, palette, *spot, button, focused == Some(i));
-        }
-    } else {
-        let middle = Rect {
-            y: area.y.saturating_add(area.height.saturating_sub(1) / 2),
-            height: area.height.min(1),
-            ..area
-        };
-        f.render_widget(pills(palette, row, focused).centered(), middle);
-    }
-}
-
-/// One boxed button: its border in its color (the border color for a plain one at rest), and its label inside. While focused, the border and a bold label take its focus color and the inside stays unfilled.
-fn draw_box(f: &mut Frame<'_>, palette: &Palette, area: Rect, button: &Button<'_>, focused: bool) {
-    let border = match (focused, button.kind) {
-        (true, _) => button.fill(palette),
-        (false, Kind::Plain) => palette.border,
-        (false, _) => button.color(palette),
+    let middle = Rect {
+        y: area.y.saturating_add(area.height.saturating_sub(1) / 2),
+        height: area.height.min(1),
+        ..area
     };
-    let block = panel::bordered(palette).border_style(border);
-    let inner = block.inner(area);
-    f.render_widget(block, area);
-    let label = if focused {
-        Span::styled(format!(" {} ", button.label), button.fill(palette).bold())
-    } else {
-        button.label_span(palette, false)
-    };
-    f.render_widget(Paragraph::new(Line::from(label).centered()), inner);
+    f.render_widget(line(palette, row, focused).centered(), middle);
 }
 
 #[cfg(test)]
@@ -206,10 +137,11 @@ mod tests {
     use ratatui::style::Modifier;
 
     use super::*;
+    use crate::test_support::BUTTON_SIZES;
 
     fn row() -> [Button<'static>; 3] {
         [
-            Button::new("Log in").primary(),
+            Button::new("Log in"),
             Button::new("Create profile"),
             Button::new("Log out").danger(),
         ]
@@ -239,112 +171,108 @@ mod tests {
             .collect()
     }
 
-    #[test]
-    fn a_row_that_fits_draws_rounded_boxes_centered() {
-        let palette = Palette::for_account("gruvbox", true);
-        let rows = text(&drawn(&palette, 50, 3, None));
-        let trimmed: Vec<&str> = rows.iter().map(|r| r.trim()).collect();
-        assert_eq!(
-            trimmed,
-            [
-                "╭────────╮ ╭────────────────╮ ╭─────────╮",
-                "│ Log in │ │ Create profile │ │ Log out │",
-                "╰────────╯ ╰────────────────╯ ╰─────────╯",
-            ]
-        );
-        let left = rows[0].chars().take_while(|c| *c == ' ').count();
-        let right = rows[0].chars().rev().take_while(|c| *c == ' ').count();
-        assert!(left.abs_diff(right) <= 1, "centered: {left} and {right}");
+    /// The column where `word` starts on row `y` of `rows`.
+    fn column(rows: &[String], y: usize, word: &str) -> u16 {
+        let at = rows[y].find(word).unwrap();
+        u16::try_from(rows[y][..at].chars().count()).unwrap()
     }
 
     #[test]
-    fn the_focused_box_takes_the_accent_on_its_border_and_bold_label() {
+    fn a_row_draws_bracketed_labels_on_one_line_centered_at_every_size() {
         let palette = Palette::for_account("gruvbox", true);
-        let terminal = drawn(&palette, 50, 3, Some(1));
-        let buffer = terminal.backend().buffer();
-        let rows = text(&terminal);
-        let at = rows[1].find("Create").unwrap();
-        let x = u16::try_from(rows[1][..at].chars().count()).unwrap();
-        let label = buffer.cell((x, 1)).unwrap();
-        assert!(label.modifier.contains(Modifier::BOLD));
-        assert!(!label.modifier.contains(Modifier::REVERSED));
-        assert_eq!(label.fg, palette.accent.fg.unwrap());
-        let border = buffer.cell((x - 2, 1)).unwrap();
-        assert_eq!(
-            border.fg,
-            palette.accent.fg.unwrap(),
-            "the border takes the accent"
-        );
-    }
-
-    #[test]
-    fn the_focused_box_leaves_its_inside_unfilled() {
-        let palette = Palette::for_account("gruvbox", true);
-        let row = [Button::new("Log in")];
-        for focused in [true, false] {
-            let mut terminal = Terminal::new(TestBackend::new(30, 3)).unwrap();
-            terminal
-                .draw(|f| draw_box(f, &palette, Rect::new(5, 0, 20, 3), &row[0], focused))
-                .unwrap();
-            let buffer = terminal.backend().buffer();
-            for x in 6..24 {
-                let cell = buffer.cell((x, 1)).unwrap();
-                assert!(
-                    !cell.modifier.contains(Modifier::REVERSED),
-                    "cell {x} stays unfilled, focused {focused}"
-                );
-                assert_eq!(cell.bg, palette.base.bg.unwrap(), "cell {x}");
+        let want = "[ Log in ]  [ Create profile ]  [ Log out ]";
+        for (width, height) in BUTTON_SIZES {
+            for focused in [None, Some(1)] {
+                let rows = text(&drawn(&palette, width, height, focused));
+                let middle = usize::from((height - 1) / 2);
+                for (y, row) in rows.iter().enumerate() {
+                    if y == middle {
+                        assert_eq!(row.trim(), want, "at {width}x{height}, focus {focused:?}");
+                    } else {
+                        assert_eq!(row.trim(), "", "one line at {width}x{height}");
+                    }
+                }
+                let left = rows[middle].chars().take_while(|c| *c == ' ').count();
+                let right = rows[middle].chars().rev().take_while(|c| *c == ' ').count();
+                assert!(left.abs_diff(right) <= 1, "centered: {left} and {right}");
             }
         }
     }
 
     #[test]
-    fn primary_and_danger_take_their_colors_at_rest() {
+    fn a_focused_button_is_bold_accent_brackets_and_label_with_no_fill() {
         let palette = Palette::for_account("gruvbox", true);
-        let terminal = drawn(&palette, 50, 3, None);
+        for (width, height) in BUTTON_SIZES {
+            let rest = drawn(&palette, width, height, None);
+            let terminal = drawn(&palette, width, height, Some(1));
+            let buffer = terminal.backend().buffer();
+            let rows = text(&terminal);
+            let y = (height - 1) / 2;
+            let x = column(&rows, usize::from(y), "[ Create");
+            let end = x + u16::try_from("[ Create profile ]".len()).unwrap();
+            for c in x..end {
+                let cell = buffer.cell((c, y)).unwrap();
+                assert!(!cell.modifier.contains(Modifier::REVERSED), "cell {c}");
+                assert_eq!(
+                    cell.bg,
+                    rest.backend().buffer().cell((c, y)).unwrap().bg,
+                    "no background change at {c}"
+                );
+                if cell.symbol() != " " {
+                    assert!(cell.modifier.contains(Modifier::BOLD), "bold at {c}");
+                    assert_eq!(cell.fg, palette.accent.fg.unwrap(), "accent at {c}");
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn at_rest_the_brackets_take_the_border_color_and_the_label_its_own() {
+        let palette = Palette::for_account("gruvbox", true);
+        let terminal = drawn(&palette, 60, 1, None);
         let buffer = terminal.backend().buffer();
         let rows = text(&terminal);
-        let cell = |word: &str| {
-            let at = rows[1].find(word).unwrap();
-            let x = u16::try_from(rows[1][..at].chars().count()).unwrap();
-            (
-                buffer.cell((x, 1)).unwrap().clone(),
-                buffer.cell((x - 2, 1)).unwrap().clone(),
-            )
+        let cells = |word: &str| {
+            let x = column(&rows, 0, word);
+            let label = buffer.cell((x + 2, 0)).unwrap().clone();
+            (buffer.cell((x, 0)).unwrap().clone(), label)
         };
-        let (log_in, log_in_border) = cell("Log in");
-        assert_eq!(log_in.fg, palette.accent.fg.unwrap());
-        assert!(log_in.modifier.contains(Modifier::BOLD));
-        assert_eq!(log_in_border.fg, palette.accent.fg.unwrap());
-        let (create, create_border) = cell("Create");
-        assert_eq!(create.fg, palette.base.fg.unwrap());
-        assert!(!create.modifier.contains(Modifier::REVERSED));
-        assert_eq!(create_border.fg, palette.border.fg.unwrap());
-        let (log_out, log_out_border) = cell("Log out");
-        assert_eq!(log_out.fg, palette.error.fg.unwrap());
-        assert_eq!(log_out_border.fg, palette.error.fg.unwrap());
+        let (bracket, label) = cells("[ Create");
+        assert_eq!(bracket.fg, palette.border.fg.unwrap());
+        assert_eq!(label.fg, palette.base.fg.unwrap());
+        assert!(!label.modifier.contains(Modifier::BOLD));
+        let (bracket, label) = cells("[ Log out");
+        assert_eq!(bracket.fg, palette.border.fg.unwrap());
+        assert_eq!(label.fg, palette.error.fg.unwrap(), "danger");
+        for cell in buffer.content() {
+            assert!(!cell.modifier.contains(Modifier::REVERSED));
+            assert_eq!(cell.bg, buffer.cell((0, 0)).unwrap().bg, "no fill");
+        }
     }
 
     #[test]
-    fn a_row_with_no_room_for_boxes_falls_back_to_pills() {
+    fn a_focused_danger_button_takes_the_error_color() {
         let palette = Palette::for_account("gruvbox", true);
-        assert_eq!(height(&row(), 80, 3), HEIGHT);
-        assert_eq!(height(&row(), 80, 2), 1, "too short");
-        assert_eq!(height(&row(), 30, 3), 1, "too narrow");
-        let rows = text(&drawn(&palette, 40, 1, Some(0)));
-        assert_eq!(rows[0].trim(), "Log in   Create profile   Log out");
+        let terminal = drawn(&palette, 60, 1, Some(2));
+        let buffer = terminal.backend().buffer();
+        let x = column(&text(&terminal), 0, "[ Log out");
+        for c in [x, x + 2, x + 10] {
+            let cell = buffer.cell((c, 0)).unwrap();
+            assert_eq!(cell.fg, palette.error.fg.unwrap(), "cell {c}");
+            assert!(cell.modifier.contains(Modifier::BOLD), "cell {c}");
+        }
     }
 
     #[test]
-    fn a_pill_rests_on_the_skeleton_shade_and_a_disabled_one_mutes() {
+    fn a_single_button_spans_its_brackets_and_a_disabled_one_mutes() {
         let palette = Palette::for_account("gruvbox", true);
-        let rest = pill(&palette, &Button::new("Change"), false);
-        assert_eq!(rest.content, " Change ");
-        assert_eq!(rest.style.bg, palette.skeleton.fg);
-        let focused = pill(&palette, &Button::new("Change"), true);
-        assert!(focused.style.add_modifier.contains(Modifier::REVERSED));
-        assert_eq!(focused.style.fg, palette.accent.fg);
-        let disabled = pill(&palette, &Button::new("Resend").disabled(true), false);
-        assert_eq!(disabled.style.fg, palette.muted.fg);
+        let rest = spans(&palette, &Button::new("Change"), false);
+        let shown: String = rest.iter().map(|s| s.content.as_ref()).collect();
+        assert_eq!(shown, "[ Change ]");
+        assert!(rest.iter().all(|s| s.style.bg.is_none()), "no fill");
+        let disabled = spans(&palette, &Button::new("Resend").disabled(true), false);
+        assert_eq!(disabled[1].style.fg, palette.muted.fg);
+        assert_eq!(disabled[0].style.fg, palette.border.fg);
+        assert_eq!(row_width(&row()), 43);
     }
 }
