@@ -16,6 +16,7 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::oracle_tag::{self, OracleTag};
 use zwipe_core::domain::deck::MAX_DECK_ORACLE_TAGS;
+use zwipe_ui::filter::fields;
 
 use crate::inbound::components::catalog_cache::CatalogCache;
 use crate::inbound::components::concept_explainers::OracleTagsExplainer;
@@ -24,15 +25,6 @@ use crate::inbound::screens::oracle_tag_dictionary::OracleTagDictionary;
 
 /// Ranked catalog matches a non-empty search shows.
 const SEARCH_RESULT_LIMIT: usize = 40;
-
-/// Whether two slug lists pick the same tags, ignoring tap order.
-fn same_set(a: &[String], b: &[String]) -> bool {
-    let mut a: Vec<&str> = a.iter().map(String::as_str).collect();
-    let mut b: Vec<&str> = b.iter().map(String::as_str).collect();
-    a.sort_unstable();
-    b.sort_unstable();
-    a == b
-}
 
 /// In-place oracle-tag picker. Toggled by `open`; mutates `selected` (slugs)
 /// directly, with Save grayed until the set differs from the one it opened
@@ -88,7 +80,7 @@ pub(crate) fn OracleTagSelect(
     // there was something to revert.
     let back = use_callback(move |(): ()| {
         let mut selected = selected;
-        if !same_set(&selected.peek(), &snapshot.peek()) {
+        if !fields::same_set(&selected.peek(), &snapshot.peek()) {
             toast.info(
                 "Oracle tags unchanged".to_string(),
                 ToastOptions::default().duration(TOAST_QUICK),
@@ -98,7 +90,7 @@ pub(crate) fn OracleTagSelect(
         on_close.call(());
     });
     use_overlay_back_action(open.into(), back);
-    let unchanged = same_set(&selected(), &snapshot());
+    let unchanged = fields::same_set(&selected(), &snapshot());
 
     // Read the shared app-wide oracle-tag catalog (prefetched at startup), warming
     // / revalidating it on open. One copy is shared with the dictionary + filter.
