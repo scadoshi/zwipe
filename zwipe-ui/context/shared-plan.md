@@ -1,0 +1,109 @@
+# Shared crates plan: zwipe-ui first, then small branches
+
+One ordered plan for what moves into zwipe's shared crates, so the app (zwiper), zwiper-web and zwiper-tui stop writing the same logic three times. Nothing here is built yet. It needs the owner's review first.
+
+Sources, read 2026-11-01: `feat/zwipe-ui` (ddb883de, worktree `.claude/worktrees/zwipe-ui`), `feat/tui` (9acbac52), `origin/feat/web` (dbbbe91e) and `origin/feat/web-zite` (15267cd8, the newest web; it changes only `zwiper-web`), app and components on `main`, orangui `feat/orangui-core` (932abb5). Short paths: `app/` is `zwiper/src/lib/inbound/screens/`, `tui/` is `zwiper-tui/src/lib/inbound/screens/`, `web/` is `zwiper-web/src/lib/` on `feat/web-zite`, `ui/` is `zwipe-ui/src/`.
+
+Flow for every branch below (the owner's rule): the TUI session builds it on a small branch off main, the owner merges it, then the web and TUI sessions merge main and switch their own code on their own branches. Feature branches never edit shared crates.
+
+## 1. Corrections
+
+To the inventory (`zwipe-ui/context/inventory.md`):
+
+- **deck::form is half done.** The row says "knock-on clears, change detection" are in `ui/deck/form.rs`. They aren't. It has the land stepper, price box, format text, command-zone search rules, reseed and import outcome. No form values, no create or update request, no knock-on clears, no picker flow. All three clients still write those (branch 5 and 6).
+- **"Deck row count: none" drift is wrong.** The app shows `"{count} cards"` always, so "1 cards" (`app/deck/list.rs:365`). `ui/deck/mod.rs:31` `cards_label` pluralizes. See drift D1.
+- **Decision 8 (telemetry stays in zwiper) is overtaken.** The TUI copied the app's usage buffer into `zwiper-tui/src/lib/outbound/usage_buffer.rs` (240 lines, from `zwiper/src/lib/inbound/components/telemetry/usage_buffer.rs`). Second client exists. See decision 2.
+- **The TUI branch already edits shared crates.** `ClientPlatform::Terminal` in `zwipe-core/.../platform.rs`, `zwipe-client/src/auth/login.rs`, zerver tests (from `chore/terminal-platform`, merged into `feat/tui`), and `zwipe-ui/README.md` plus the inventory (61054507). The first is already its own branch awaiting merge; the docs edit should ride in branch 1.
+- **No consumer of components uses zwipe-ui yet.** components still carries its own `ColorMapModel`, `seed_from_id` (`components/src/color_map.rs`) and changelog filing (`components/src/changelog.rs:158`). The inventory's "components keeps the Dioxus half and calls it" is a plan, not a status (D-side ask K4).
+
+To the web list (`web-needs.md`):
+
+- **Version gate is not a drift.** Web's `domain/version_gate.rs:9` and `ui/session.rs:57` both call `zwipe_core::version::version_at_least`, which returns true when either side can't parse (`zwipe-core/src/version.rs:42`). Both reopen on an unparsable minimum. The only difference is shape: web takes `&str`, ui takes `Option<&str>` (None = check failed, keep the gate).
+- **Command zone labels don't drift.** Every client uses the same words. There are two vocabularies, both from the app: role labels (Commander or Oathbreaker, Partner, Background, Signature spell) in the featured strip, profile rows and form fields, and group headers in the deck cards list, where the partner sits under "Commanders" (`app/deck/card/view.rs:1505`). Web's `view/cards.rs:37` `slot_label` with "Partner" is the role label and matches the app's featured strip (`app/deck/card/view.rs:1192`). The ask stands as dedup, not a fix.
+- **Toast bands are one source already.** orangui's `TOAST_*` and `ui::toast::{QUICK, NORMAL, LONG}` both come from orangui-core. Web already raises `ui::toast::Toast` in `web/inbound/card_filter/rows.rs:20`. Not a drift.
+- **`oracle_tag_examples` using `MAX_CARDS_IN_STACK` is what the app does** (`app/oracle_tag_examples.rs:101`). Both are 500. Tidy only: `EXAMPLES_MAX_CARDS` should be defined as `MAX_CARDS_IN_STACK`.
+- **Heat pick:** correct that there are two sources. Same value (4 s), different homes: orangui-core `heat::PICK_MS` and `ui/timing.rs:48`. Fix in branch 2.
+- Everything else I sampled checks out: same_set three times (plus three more in the app and two in the TUI), the create gate (eight copies, not three), `bucket_of` in all three, `redeal` in all three, `passes_pips`, `link_expiry_text` matching the app.
+
+## 2. Drift to settle
+
+| # | What | App | Web | TUI | Answer | Owner? |
+|---|---|---|---|---|---|---|
+| D1 | Deck row count | `"{count} cards"` always, "1 cards" (`app/deck/list.rs:365`) | same (`web/inbound/screens/deck/list.rs:352`) | `ui::deck::cards_label` (`tui/decks/draw.rs:286`), "1 card" | Pluralize everywhere; fix the app. "1 cards" is a bug, not behavior | yes, decision 1 |
+| D2 | Command zone labels | role labels and group headers as above | `view/cards.rs:37`, `cards/view.rs:99`, `view/sections.rs:37`, `form/fields.rs:65`, `view/mod.rs:147` | `deck_form/draw.rs:338`, `deck/draw.rs:336`, `deck_cards/mod.rs:342` | No copy change. Two functions in `ui::deck` (role label, group header), branch 4 | no |
+| D3 | Pending email link note | "1 minute" for 1 to 59 s (`app/account/components/email_verification.rs:72`) | matches app (`web/domain/account.rs:20`) | `ui::account::pending_note` | `ui` wins: "less than a minute" is owner-approved. Web switches; app switches when it moves | no, decided |
+| D4 | Heat pick 4 s | orangui `use_heat_pick` | orangui `use_heat_pick` (`web/.../activity/sections.rs:44`) | `ui::timing::HEAT_PICK` (`tui/activity/mod.rs:425`) | `ui::timing::HEAT_PICK` derives from `orangui_core::heat::PICK_MS` | no |
+| D5 | Toasts: bands | orangui `TOAST_*` | orangui `TOAST_*` plus two adapters (`web/.../deck/cards/mod.rs:21`, `card_filter/rows.rs:20`) | `ui::toast` | Same numbers. Shared models emit `ui::toast::Toast`; web keeps one `raise` adapter | no |
+| D6 | Toasts: kind and band per message | e.g. "Verify your email!" warning, QUICK (`zwiper/src/lib/inbound/screens/home.rs:78`) | warning, QUICK (`web/.../home/mod.rs:72`) | **error**, default band (`tui/home/mod.rs:455`) | App wins. Each toast moves into `ui` with its kind and band as the app has them, so the TUI's picks get corrected as screens switch | yes, decision 3 (blanket rule) |
+| D7 | Create gate band | warning, LONG (`app/deck/list.rs:696`) | same (`web/.../deck/list.rs:103`) | `tui/decks/mod.rs:260` | App: warning, LONG. One `ui` function | no |
+| D8 | Error toast policy | log, then `to_user_message` | `web/inbound/chrome/authed.rs:48`, 5 s | `tui/mod.rs:531` `shown` | Already one source (`zwipe-client` `to_user_message`). Keep inventory decision 3: each client maps before handing in | no |
+| D9 | Telemetry | swipe counts, card signals, select signals, deck skips by API, errors, pile ends | sends no usage batch; anonymous funnel unsent (`web/inbound/session/funnel.rs`) | errors only; swipes and signals sent as zero (`zwiper-tui/src/lib/outbound/usage_buffer.rs:1`) | Web and TUI swipes count nowhere: not in Home's "Cards swiped", not in the per-commander signals. Lift the buffer | yes, decision 2 |
+
+## 3. The ordered work
+
+Size: S under a day, M one to two days, L three to five. "Both" means web and TUI each delete code after the switch; "web" means only the web gains.
+
+**Step 0, owner merges (no new work):** orangui `feat/orangui-core` into orangui main; zwipe `chore/terminal-platform` (deploy zerver before a TUI release, or production rejects the TUI's sign-in); `chore/zwiper-bin-name`.
+
+| # | Branch | What moves where | Existing copies | Who switches | Tests | Size | For |
+|---|---|---|---|---|---|---|---|
+| 1 | `shared/land-zwipe-ui` | Land `feat/zwipe-ui` on main. Move the orangui-core pin from rev 932abb5 to orangui main. Fold in the TUI's README and inventory edit (61054507) and section 1's corrections | n/a | Web and TUI merge main; their `feat/zwipe-ui` merges become no-ops | workspace clippy, `cargo check --target wasm32-unknown-unknown -p zwipe-ui`, existing ui tests | S | both |
+| 2 | `shared/ui-tidy` | `ui::timing::HEAT_PICK` from `orangui_core::heat::PICK_MS`; `EXAMPLES_MAX_CARDS = stack::MAX_CARDS_IN_STACK`; `same_set` beside `filter::fields::toggled` | same_set: `app/config/universes_beyond.rs:21`, `app/deck/components/tag_select.rs:22`, `oracle_tag_select.rs:29`; `tui/deck_form/pickers.rs:382`, `tui/config/mod.rs:219`; `web/domain/deck.rs:30`, `web/domain/preferences.rs:30` | Web, TUI | `same_set` order and duplicate cases | S | both |
+| 3 | `shared/ui-account` | Into `ui::account`: login submit gate and `MISSING_INPUTS`; reset email check and `INVALID_RESET_EMAIL`; Register's `password_error`; export `PASSWORDS_DIFFER`, `PASSWORD_REQUIRED`, `PASSWORD_UNCHANGED`; `resend_label`, `delete_label`. Into `ui::home`: the greeting rule (verified and not yet greeted gives "Hello, {user}!" info QUICK; unverified gives "Verify your email!" warning QUICK) | login: `app/auth/login.rs:85`, `tui/login/mod.rs:22`, `web/domain/login.rs:4`; labels: `app/account/components/email_verification.rs:169`, `tui/account/mod.rs:135`, `web/domain/account.rs:40`; validation: `web/domain/validation.rs`; greeting: `zwiper/.../screens/home.rs:77`, `web/.../home/mod.rs:72`, `tui/home/mod.rs:426` | Web deletes `domain/login.rs`, `validation.rs`, most of `account.rs`; TUI switches login, register, account, home | port web's tests (they exist) | S | both |
+| 4 | `shared/command-zone` | Into `ui::deck`: role label (slot, format), group header (oathbreaker, has partner), `command_zone_art` (row art order), `slot_request(slot, id) -> HttpUpdateDeckProfile` | labels: section 2 D2; art: `app/deck/list.rs` `command_zone_art`, `web/domain/deck.rs:15`; slot request: `app/deck/card/view.rs:1145` and `:1780`, `web/.../deck/cards/view.rs:110`, `tui/deck_cards/mod.rs:1314` | Both | label table per format; art order with partner and background | S | both (art: web) |
+| 5 | `shared/deck-form` | Into `ui::deck::form`: `FormValues` with its saved copy, `create_request` (empties and budget of 0 or less left out), `update_request` (sparse, None when unchanged), knock-on clears (format pick clears commander, and spell unless the format has one; clearing format clears both; every Filter back on; a commander change after first load clears partner and background), which slots show | app `deck/create.rs:150`, `:341`; `deck/edit.rs:469`, `:675`; `deck/components/deck_fields.rs:237`, `:270`; web `domain/deck.rs:41`, `:102`, `:136`, `form/mod.rs:167`, `form/fields.rs:63`; TUI `deck_form/mod.rs:372`, `:454`, `:678`, `:715` | Both | table tests per field (Set, Clear, unchanged); the first-load rule from `deck_fields.rs:270`; each knock-on | M | both |
+| 6 | `shared/deck-pickers` | Into `ui::deck::pickers`: one draft model for format, deck tag and oracle tag pickers (snapshot on open, Save off when unchanged, Back toasts "{X} unchanged" QUICK, caps toast "You may only choose up to {n} tags" / "oracle tags"), oracle tag result order and limit, bar copy (`PICKER_BAR_HINT`, `FORMAT_BAR_EMPTY`, `DECK_TAG_BAR_EMPTY`, `ORACLE_TAG_BAR_EMPTY`, `ORACLE_TAG_NO_DESCRIPTION`), the three `?` contents beside `hint::topics`, partner autofill guard and its toast | app `deck/components/format_select.rs:84`, `:154`, `:200`; `tag_select.rs:61`, `:162`; `oracle_tag_select.rs:74`, `:93`, `:189`; `deck_fields.rs:113`; web `domain/deck.rs:209`-`270`, `form/pickers.rs`, `form/command_zone.rs:83`; TUI `deck_form/pickers.rs:154`, `:231`, `:298`, `:391`, `deck_form/mod.rs:1183` | Both | draft open, change, revert to unchanged, cap, Back | M | both |
+| 7 | `shared/create-gate` | Move `UNVERIFIED_MAX_DECKS_PER_USER`, `UNVERIFIED_MAX_CARDS_PER_DECK`, `MAX_CARDS_PER_DECK`, `MAX_COMMANDER_MAYBEBOARD` from `zerver/src/lib/domain/deck/mod.rs:13`-`24` to zwipe-core (zerver imports them, no behavior change). Then `ui::deck::create_gate(verified, deck_count) -> Result<(), Toast>` with the app's copy and LONG band | app `deck/list.rs:696`, `deck/suggested_commanders.rs:1277`, `deck/commander_maybeboard.rs:406`; web `deck/list.rs:103`, `playstyle/mod.rs:194`, `commander_maybeboard.rs:285`; TUI `decks/mod.rs:260`, `playstyle/mod.rs:90` | Both | gate cases; zerver tests unchanged | S | both |
+| 8 | `shared/deck-view` | Into `ui::deck`: `has_budget`, `tag_count`, `metrics_possible`, `share_link`, `total_price_line`, clone default name `"{name} (clone)"`, the deck view's toasts (clone, share, clear skips, fix) | app `deck/view.rs:264`, `:565`, `deck/components/deck_budget_section.rs:17`; web `domain/deck.rs:271`-`330`, `deck/view/mod.rs`, `view/more.rs`; TUI `deck/mod.rs:149`, `:521` | Both | port web's tests | S | both |
+| 9 | `shared/commander-select` | New `ui::commander`: maybeboard `passes_pips`, `is_addable`, `step_highlight`, empty lines; swipe select `card_key`, `redeal` | app `deck/commander_maybeboard.rs:455`, `deck/components/swipe_select.rs:90` (with tests at `:884`); web `domain/commander_maybeboard.rs`, `domain/swipe_select.rs`; TUI `commander_maybeboard/mod.rs:185`, `commander_swipe/mod.rs:128` | Both | lift the app's and web's tests | S | both |
+| 10 | `shared/dictionary` | New `ui::dictionary`: `bucket_of`, `rows_for` (ranked search capped at `DICTIONARY_RESULT_CAP`, else tags under the letter) | app `oracle_tag_dictionary.rs:35`, TUI `oracle_tags/mod.rs:134`, web `inbound/screens/oracle_tag_dictionary.rs:36` | Both | bucket edge cases (digits, symbols) | S | both |
+| 11 | `shared/preferences` | New `ui::preferences`: stale-reply guard with rollback for optimistic toggles (web's `RequestSeq`/`settle`; belongs beside `ui::generation`), `exception_names`, the saved message and undo, Config toasts | web `domain/preferences.rs:15`, `:24`, `:40`; TUI `config/mod.rs:59`, `:80`, `:290`, `:299`; app `config/preferences.rs:54`, `config/universes_beyond.rs:80` | Both | port web's rollback tests | S | both |
+| 12 | `shared/telemetry` (decision 2) | Usage buffer into zwipe-ui with plain inputs (screen, action, kind and message strings; a direction enum of its own), so it needs neither Dioxus nor zwipe-client. The app's flush loop and the TUI's 30 s request stay in each client | app `zwiper/src/lib/inbound/components/telemetry/usage_buffer.rs` (630 lines, tested); TUI `zwiper-tui/src/lib/outbound/usage_buffer.rs` | TUI swaps its copy; web adds a flush; app switches when it moves | port the app's tests | M | both |
+| 13 | `shared/filter-chips` | Into `ui::filter`: web's chip lists and tap rules (`PRODUCED`, `ChipOption`, `options`, `is_selected`, `tap`, `toggle_*`) next to `ChipSet`. First check whether the TUI's chip rows already compute the same in its draw code; if so it switches too | web `domain/filter_chips.rs`; app `components` filter chips; TUI `card_sheets/filter` | Web; TUI if it has a copy | lift web's tests | S | web, maybe both |
+| 14 | `shared/card-info` | Into `ui::card`: the details sheet's price, set and artist lines (today `ui::card` covers faces and stats) | app `deck/card/components/card_info.rs`, web `inbound/cards/card_info.rs`, TUI `card_sheets` details | Both | price formatting per currency | S | both |
+
+After these, Part 2's screen models, one branch per screen (`shared/model-<screen>`), in this order: Deck list, Home, Activity, Deck view, Account, Config, Commander maybeboard, Create and Edit (on top of 5 and 6), Import and Export, Dictionary and Examples, Card filter, Remove, Add, Deck cards. Login, Register and Forgot last. Rules for every model: effects carry a `ui::toast::Toast` (text, kind, band) so the web's two adapters become one; no model assumes one open section (the web opens several); copy comes from the app verbatim. Add and Deck cards are L to XL each; the rest S to M.
+
+Branches 2 to 11 are independent of each other once 1 lands, so they can merge in any order; the order above is value and risk.
+
+## 4. Dioxus-side asks (components and orangui)
+
+Rule for all of these: anything zwiper or zite already renders must come out byte-identical. Each branch that touches a rendered component adds a test that renders it with today's props and compares the HTML to a saved copy.
+
+| # | Ask (web list section 4) | Recommendation | Touches app rendering? |
+|---|---|---|---|
+| K1 | Re-export `use_toast`, `ToastOptions`, `Toasts` from orangui and components, so web and app drop the `dioxus-primitives` pin (web `Cargo.toml`, `zwiper/Cargo.toml:35`) | **Do.** S, no markup change. App drops its pin too | no |
+| K2 | `Panel` slot for a title bar and action footer (web `inbound/chrome/form_panel.rs` copies Panel's markup) | **Do.** Optional props; absent renders today's HTML | yes, guard with the HTML test |
+| K3 | Esc and Enter on `AlertDialog`, arrow keys on `ThemeSheet` in orangui (web `inbound/app.rs:97` `KEYS_JS`) | **Do.** Listeners only, no markup. Check portfolio and cairn, which use orangui too | no markup; behavior on desktop |
+| K4 | components uses zwipe-ui's color map model and takes `ui::activity::Bar` (web `inbound/cards/charts.rs:12`, `:35` convert) | **Do**, after branch 1. components gains a zwipe-ui dependency (decision 4). The golden test in `ui/color_map` plus an HTML test keeps it identical | yes, must be identical |
+| K5 | `components::Changelog` files releases with `ui::changelog` | **Do** with K4. `ui::changelog` kept the app's behavior (inventory drift 7), so output matches | yes, must be identical |
+| K6 | Controlled flip on `FlippableCardImage` (web `deck/cards/mod.rs:33` clicks it through the DOM) | **Do.** Optional prop, None keeps today | yes, guard with the HTML test |
+| K7 | `CollapsibleSection` into components (web `inbound/chrome/section.rs` redoes the app's accordion) | **Defer** until the web layout doc settles how sections open. Then lift the app's, not the web's | yes |
+| K8 | Browser back with an overlay open leaves the screen | **Defer.** orangui would track open overlays; it overlaps the app's `use_os_back` (Android back). Needs its own design | yes, behavior |
+| K9 | Configurable nav breakpoint (web.css overrides the kit's 60rem) | **Defer and recheck.** `feat/web-zite` added its own `inbound/shell/top_nav.rs`; the ask may be gone | would not if the default stays |
+| K10 | Web theme store duplicates `use_persisted_theme` (web `outbound/theme_store.rs`, `domain/theme.rs`) | **No.** The web's store sits on a storage trait for its tests. Make sure it resolves retired slugs through orangui-core `theme::current_theme`, then leave it | no |
+| K11 | Swipe stack copies the app's `TILT_PER_PX` and commit distance (web `inbound/cards/swipe_stack.rs`) | **No for now.** The gesture engine stays in zwiper (inventory). Two numbers; note the source in a comment | no |
+| K12 | App components not in components: printing sheet, image preview, card info, skeletons, more menu, help dialog, hint host | **Logic now, markup later.** Card info's lines go to zwipe-ui (branch 14). Lift Dioxus pieces one at a time only when the web needs the identical look | yes, each one |
+
+## 5. Decisions (owner, 2026-11-01)
+
+1. **"1 cards".** Pluralize everywhere, the app included: one card reads "1 card". An approved exception to "the app wins", because it is a grammar bug.
+2. **Telemetry.** Web and TUI send exactly what the app sends (branch 12), so activity counts the same in all three. This reverses inventory decision 8. Each client reports its own platform, so the server has to accept the TUI's `terminal` and the web's platform before their batches land.
+3. **Toast drift rule.** Blanket: the app's toast kind, band and words win everywhere, fixed as each toast moves into zwipe-ui, with no per-toast question.
+4. **components depends on zwipe-ui.** Yes. General rule: pull as much shared code as possible into the shared crates, the app included, so as little as possible is maintained per client. Anything lifted for existing consumers must render byte-identically.
+5. **Deck limits into zwipe-core.** Yes, on its own branch (branch 7), which needs a zerver commit and deploy the owner merges.
+6. **Order.** Branches 1 to 14 first, then the screen models in the web's order (Home, Activity, Playstyle, Deck view), then stop and check value with the owner before more models.
+
+Added after the decisions:
+- **Usage abuse cap (zerver, own branch).** Today one account can send about 12 usage batches a minute at up to 10,000 swipes each (`HttpUsageBatch::MAX_PER_FLUSH`, the usage governor in `zerver/src/lib/inbound/http/routes.rs`), roughly 120,000 swipes a minute, enough to inflate Home's global count. Cap a batch at a human pace (about 10 swipes a second, so about 300 per 30 s flush), drop the excess server side and log the account that hit the cap. Do it before or with branch 12, since more clients will be sending.
+
+## 6. Out of scope, stays per client
+
+- Drawing, focus, scroll, hover, gestures and animation timings in every client (inventory "Stays in one client").
+- The TUI's palettes and generator scripts, privacy text parser, mana symbol tokens, next-card preview, `decode` timing in 40 ms ticks.
+- The app's gesture engine, app icon, haptics, keyring, crash capture, shake to edit, and its telemetry flush loop.
+- The web's changelog anchors, `localStorage`, timers, `web.css`, privacy anchors (`web/domain/privacy.rs`), its theme store (K10).
+- Error-to-message mapping (D8): stays a `zwipe-client` call in each client; zwipe-ui still doesn't depend on zwipe-client.
+- Grid fade into orangui-core `grid_rain` (TUI review, still open): a separate orangui branch, not part of this plan.
+- The below-minimum deck warning as a `WarningAction` variant: waits for a minimum-version floor (inventory).
+- Moving the app onto zwipe-ui: piece by piece later, not in these branches, except where a branch says the app changes (D1 if approved, K1, K4, K5).
