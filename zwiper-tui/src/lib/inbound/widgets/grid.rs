@@ -1,4 +1,4 @@
-//! The app's backdrop of faint tiles, orangui's `grid-cells.js` drawn from orangui-core's `grid_rain`: every tile a seeded shade of the text color over the background, as even from top to bottom as the app's.
+//! The app's backdrop of faint tiles, orangui's `grid-cells.js` drawn from orangui-core's `grid_rain`: every tile a seeded shade of the text color over the background, faded down the screen by the app's mask.
 //!
 //! The app draws it settled behind every screen, right over the theme's background, and the splash draws it raining in: each tile lands at `row * 18 ms` plus up to 160 ms of seeded scatter, falling three tiles over 350 ms with an ease-out.
 //!
@@ -18,6 +18,22 @@ const PITCH_X: u16 = 4;
 
 /// Rows from one tile to the next.
 const PITCH_Y: u16 = 2;
+
+/// Where orangui's mask (`.grid-cells-canvas` in `assets/components.css`) has faded to [`MASK_MIDDLE`], as a share of the screen's height.
+const MASK_KNEE: f64 = 0.45;
+
+/// The mask's strength at [`MASK_KNEE`]; it is full at the top and gone at the bottom.
+const MASK_MIDDLE: f64 = 0.45;
+
+/// How much of a tile shows at `fraction` of the way down the screen: orangui's mask, `linear-gradient(to bottom, #000 0, rgba(0, 0, 0, 0.45) 45vh, transparent 100vh)`, falling in a straight line from full to [`MASK_MIDDLE`] at [`MASK_KNEE`], then to nothing at the bottom.
+fn mask(fraction: f64) -> f64 {
+    let fraction = fraction.clamp(0.0, 1.0);
+    if fraction <= MASK_KNEE {
+        1.0 - (1.0 - MASK_MIDDLE) * fraction / MASK_KNEE
+    } else {
+        MASK_MIDDLE * (1.0 - (fraction - MASK_KNEE) / (1.0 - MASK_KNEE))
+    }
+}
 
 /// When the rain over an area `height` rows tall has landed.
 #[cfg(test)]
@@ -109,14 +125,16 @@ pub(crate) fn shades(
         let Some(top) = row.saturating_mul(PITCH_Y).checked_sub(lift) else {
             continue;
         };
-        let Some(shade) = mix(base, ink, cell.shade * eased) else {
-            continue;
-        };
         for dy in 0..PITCH_Y {
             let y = top.saturating_add(dy);
             if y >= area.height {
                 continue;
             }
+            // The mask is read at the middle of the cell's row, as the canvas reads it per pixel.
+            let down = (f64::from(y) + 0.5) / f64::from(area.height);
+            let Some(shade) = mix(base, ink, cell.shade * eased * mask(down)) else {
+                continue;
+            };
             for dx in 0..PITCH_X {
                 let x = col.saturating_mul(PITCH_X).saturating_add(dx);
                 if x >= area.width {
@@ -182,15 +200,31 @@ mod tests {
     }
 
     #[test]
-    fn the_still_grid_tints_every_cell_as_evenly_at_the_bottom_as_the_top() {
+    fn the_mask_follows_orangui_full_at_the_top_045_at_45_percent_and_gone_at_the_bottom() {
+        assert!((mask(0.0) - 1.0).abs() < 1e-9);
+        assert!((mask(MASK_KNEE) - MASK_MIDDLE).abs() < 1e-9);
+        assert!(mask(1.0).abs() < 1e-9);
+        assert!((mask(0.225) - 0.725).abs() < 1e-9, "halfway to the knee");
+        assert!(mask(0.3) > mask(0.6) && mask(0.6) > mask(0.9));
+    }
+
+    #[test]
+    fn the_still_grid_fills_the_top_and_fades_down_the_screen() {
         let palette = Palette::for_account("gruvbox", true);
         let base = palette.base.bg.unwrap();
         let rows = backgrounds(&palette, None);
-        assert_eq!(tinted(&palette, None), 40 * 12, "no gaps and no bare rows");
-        let (top, bottom) = (strength(&rows[0], base), strength(&rows[11], base));
         assert!(
-            bottom.saturating_mul(3) > top && top.saturating_mul(3) > bottom,
-            "no fade down the screen: top {top}, bottom {bottom}"
+            rows[0].iter().all(|&bg| bg != base),
+            "the top row is all tiles, no gaps"
+        );
+        let (top, middle, bottom) = (
+            strength(&rows[0], base),
+            strength(&rows[6], base),
+            strength(&rows[11], base),
+        );
+        assert!(
+            top > middle && middle > bottom,
+            "{top} > {middle} > {bottom}"
         );
     }
 
