@@ -1,8 +1,8 @@
-//! The app's backdrop of faint tiles, orangui's `grid-cells.js` drawn from orangui-core's `grid_rain`: every tile a seeded shade of the text color over the background, brightest at the top and fading down.
+//! The app's backdrop of faint tiles, orangui's `grid-cells.js` drawn from orangui-core's `grid_rain`: every tile a seeded shade of the text color over the background, as even from top to bottom as the app's.
 //!
 //! The app draws it settled behind every screen, right over the theme's background, and the splash draws it raining in: each tile lands at `row * 18 ms` plus up to 160 ms of seeded scatter, falling three tiles over 350 ms with an ease-out.
 //!
-//! A tile fills four cells by two rows, about square since a cell is about twice as tall as it is wide, and the tiles meet with no gap, a mosaic of shades. The shade falls off with the square of the distance down the area, so the top is at full strength, the middle at a quarter and the bottom edge bare. Only the background changes, so text drawn over a tile stays as it is. Boxes (panels, fields, buttons, sheets, dialogs, toasts) fill with the theme's background and sit on the tiles like cards; loose text draws with no background of its own, so the tiles show up to its letters. A palette with no colors of its own draws no tiles.
+//! A tile fills four cells by two rows, about square since a cell is about twice as tall as it is wide, and the tiles meet with no gap, a mosaic of shades. Only the background changes, so text drawn over a tile stays as it is. Boxes (panels, fields, buttons, sheets, dialogs, toasts) fill with the theme's background and sit on the tiles like cards; loose text draws with no background of its own, so the tiles show up to its letters. A palette with no colors of its own draws no tiles.
 
 use std::time::Duration;
 
@@ -81,7 +81,6 @@ pub(crate) fn shades(
     }
     let cols = area.width.div_ceil(PITCH_X);
     let rows = area.height.div_ceil(PITCH_Y);
-    let height = f64::from(area.height.max(1));
     #[expect(
         clippy::as_conversions,
         clippy::cast_precision_loss,
@@ -110,8 +109,7 @@ pub(crate) fn shades(
         let Some(top) = row.saturating_mul(PITCH_Y).checked_sub(lift) else {
             continue;
         };
-        let fade = (1.0 - f64::from(top) / height).max(0.0).powi(2);
-        let Some(shade) = mix(base, ink, cell.shade * eased * fade) else {
+        let Some(shade) = mix(base, ink, cell.shade * eased) else {
             continue;
         };
         for dy in 0..PITCH_Y {
@@ -184,26 +182,15 @@ mod tests {
     }
 
     #[test]
-    fn the_still_grid_fills_the_top_and_fades_to_nothing_at_the_bottom() {
+    fn the_still_grid_tints_every_cell_as_evenly_at_the_bottom_as_the_top() {
         let palette = Palette::for_account("gruvbox", true);
         let base = palette.base.bg.unwrap();
         let rows = backgrounds(&palette, None);
+        assert_eq!(tinted(&palette, None), 40 * 12, "no gaps and no bare rows");
+        let (top, bottom) = (strength(&rows[0], base), strength(&rows[11], base));
         assert!(
-            rows[0].iter().all(|&bg| bg != base),
-            "the top row is all tiles, no gaps"
-        );
-        let (top, middle, bottom) = (
-            strength(&rows[0], base),
-            strength(&rows[6], base),
-            strength(&rows[11], base),
-        );
-        assert!(
-            top > middle && middle > bottom,
-            "{top} > {middle} > {bottom}"
-        );
-        assert!(
-            bottom * 10 < top,
-            "the bottom is all but bare: {bottom} of {top}"
+            bottom.saturating_mul(3) > top && top.saturating_mul(3) > bottom,
+            "no fade down the screen: top {top}, bottom {bottom}"
         );
     }
 
