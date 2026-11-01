@@ -29,18 +29,13 @@ These are recorded in `web-layout.md`; they are repeated here because they came 
 - ASCII logos use `var(--logo)`: the text color in dark mode, the accent only in light.
 - Screenshots for the owner are viewport-sized at real window sizes (1440x900, 1920x1080, 420x900), never tall full-page captures, and are sent to the owner as each round lands.
 
-## Round 9, in progress
+## Round 9, done
 
-The last commit is a work-in-progress commit. It has the code for compact footer buttons, the password hint back behind `?`, the site footer removed, the action bar pinned to the bottom, and Privacy policy reachable signed out (a pill in the public nav). It has not been gated in full, checked in a browser, or documented. To finish it:
-
-1. Run `zwiper-web/tools/gate.sh` and fix anything red.
-2. Live check at 1440x900 and 420x900: every screen's action bar sits at the window's bottom with the `?` lined up at its right end (the `?` placement assumes a 1.9rem button height and is the likeliest thing to need a fix), nothing at the end of a page hides behind the bar, and signed-out `/privacy` shows the Fan content section.
-3. Update `web-layout.md` (shared chrome, Login, Register, Account), the README line about toolbars, and `ARCHITECTURE.md`'s "Adding a screen" step that still mentions the toolbar and `--web-toolbar-h`.
-4. Render Login, Register (with the `?` hint open), Forgot password, deck view and Add for the owner, then commit and push.
+Compact footer buttons, the password hint behind `?`, no site footer, the action bar pinned to the bottom, and Privacy policy open signed out. Gated in full and checked live at 1440x900 and 420x900 on every screen: the bar sits flush with the window's bottom edge, the `?` sits inside it at its right end without covering a button, nothing at the end of a page hides behind the bar, and signed-out `/privacy` has its nav pill and the Fan content section. Login's three compact buttons wrap to two rows at the 25rem panel width.
 
 ## Review queue
 
-Approved so far: Login, Register and Forgot password (pending round 9's renders). Next, one screen per round with renders for the owner: Home, then Activity, Playstyle, deck view (these four already have a first pass of the hero-plus-columns layout on this branch), then Account, Config, Privacy policy, Changelog, Decks, Create and Edit, Import and Export, Commander maybeboard, Dictionary and Examples, Add, Deck cards, Remove, Update required, Not found. Remove each screen's Back button on its turn.
+Approved so far: Login, Register and Forgot password (round 9's renders sent for sign-off). Next, one screen per round with renders for the owner: Home, then Activity, Playstyle, deck view (these four already have a first pass of the hero-plus-columns layout on this branch), then Account, Config, Privacy policy, Changelog, Decks, Create and Edit, Import and Export, Commander maybeboard, Dictionary and Examples, Add, Deck cards, Remove, Update required, Not found. Remove each screen's Back button on its turn.
 
 ## Open decisions for the owner
 

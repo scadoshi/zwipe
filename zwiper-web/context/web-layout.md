@@ -8,12 +8,12 @@ Esc closes the top overlay (dialog, then modal, then side panel, then full overl
 
 The wide layout copies zite's home page (`zite/assets/style.css`). Screens move onto it one at a time, with the owner reviewing each; the ones below that say so are on it.
 
-- The page is one centered column at most 74rem wide inside a 1.5rem gutter, and it starts at the top: the screen's 1rem top padding under the header or toolbar is the only gap, as zite's page sits 1rem under its nav. Nothing is centered vertically on a wide window.
+- The page is one centered column at most 74rem wide inside a 1.5rem gutter, and it starts at the top: the screen's 1rem top padding under the nav is the only gap, as zite's page sits 1rem under its nav. Nothing is centered vertically on a wide window.
 - A screen with a hero puts it at the top of the page. The rest of its panels share two equal columns under it, each a stack one panel gap (1rem) apart, and the shorter column ends where its last panel does. Panels are ordered so the columns come out about even and related panels sit together.
 - A hero that is a list of rows (a deck's Profile, Playstyle's Summary) stays 40rem wide and centered, since label and value would sit a page apart at full width.
-- A form is its own panel at every width, centered, at zite's form width of 25rem (below 900px it keeps the page's 1rem side gutter), with its actions in the panel's footer under the fields (below). A form is never folded into a hero or stretched across the columns, and a screen whose only actions are its form's has no toolbar.
+- A form is its own panel at every width, centered, at zite's form width of 25rem (below 900px it keeps the page's 1rem side gutter), with its actions in the panel's footer under the fields (below). A form is never folded into a hero or stretched across the columns, and a screen whose only actions are its form's has no action bar.
 - Every input panel wears the kit panel's title bar at every width, zite's panel title over a full-bleed rule, named with the app's own title for its screen: `Login`, `Create profile`, `Reset password` (its sent panel too, with `Check your email` as its first line). A panel beside a form is titled after what it holds, such as Register's `Password`; it sits to the form's right on a wide window and under it below 900px. Create, Edit, Import and the change forms take their screen's title when they move onto the page grammar.
-- A form panel's buttons sit in its footer at every width, the kit panel's action area: a full-bleed rule across the panel, then the buttons one under another at the panel's width, the primary first (Login: `Log in`, `Create profile`, `Forgot password`). Every input panel does this when it moves onto the page grammar.
+- A form panel's buttons sit in its footer at every width, the kit panel's action area: a full-bleed rule across the panel, then the app's compact buttons in one centered row, the primary first, wrapping only when they don't fit (Login: `Log in`, `Create profile`, `Forgot password`). Every input panel does this when it moves onto the page grammar.
 - Below 900px the hero and the columns dissolve into one column in the app's order; the panels, their title bars and footers stay.
 - In `web.css` the pieces are `.web-page`, `.web-hero` (with `.web-hero-narrow`), `.web-columns`, `.web-column`, `.web-form-panel`, `.web-form-actions` and `.web-auth-pair` (a form with a panel beside it), and in Rust `chrome::form_panel`'s `FormPanelHead` and `FormPanelActions`.
 
@@ -22,10 +22,10 @@ The wide layout copies zite's home page (`zite/assets/style.css`). Screens move 
 - The top nav is zite's bar, the kit's `NavBar`: the Z mark (zwipe-core's `logo::Z`, the app icon's art) on the left in `var(--logo)`, sized to stand as tall as a nav pill and linking Home, and on the right `Decks`, `Activity`, `Playstyle`, `Account`, `Config` and `Help` as pills. `Help` opens the same `Help & feedback` dialog as the app's `!` button. The current screen's pill is lit; screens reached from a deck (Deck view, Edit, Import, Export, the card screens) light `Decks`, the Commander maybeboard lights `Playstyle`, and Privacy policy and Changelog light `Account`.
 - Below 900px the links fold behind the kit's hamburger and open as its dropdown under the bar; a link, a tap outside or a new route closes it. The kit folds its bar at 60rem, so `web.css` keeps it open from 900px.
 - Logged out, the nav holds the mark, `Log in` and `Create profile` (the current one lit) and `Help`, which takes the place of the app's `!`.
-- Under the nav there is no screen header at any width: the page starts right under the nav, or under the toolbar where the screen has one. The title stays for assistive tech and names the browser tab. A screen's `?` hint button moves to the right end of its toolbar under the nav. Every screen with a `?` has an action bar.
+- Under the nav there is no screen header at any width: the page starts right under the nav. The title stays for assistive tech and names the browser tab. A screen's `?` hint button sits at the right end of its action bar. Every screen with a `?` has an action bar.
 - Buttons whose only job is to go somewhere (`Back`, `Back to login`, `Back to decks` and the like) go, since the nav and the browser's back do their job. Login keeps `Create profile` and `Forgot password` as buttons under `Log in`; Register and Forgot password have no `Log in` button, since the nav's `Log in` and the browser's back cover it. Every button that does something stays, and so does the `Back` that closes a screen's own sheet, picker or overlay. Screens drop theirs as they move onto the page grammar.
-- Every page ends in zite's footer: `© 2026 Zwipe`, then `Privacy policy`, `Changelog`, `Guides ↗`, `Community ↗`, `Support` (a mail to support) and `zwipe.net ↗`, then zite's Scryfall credit and Fan Content notice. Signed in, `Privacy policy` and `Changelog` are the app's screens; signed out they are zwipe.net's, since the app's need a session. Outside links open a new tab. A screen scrolls as one column under the nav: on a short page the footer sits at the window's foot, on a long one after the content.
-- The web has no bottom action bar. At every width a screen's action bar is a toolbar at the top under the nav, buttons in the app's order, and it stays put as the page scrolls. The footer is the last thing on every page.
+- The web app has no site footer. The Scryfall credit and the Fan Content notice live on zwipe.net and in the Privacy policy screen, as in the app. Privacy policy is open signed in or out: the public nav carries a `Privacy policy` pill, and signed in it is under Account with `Changelog` and `Website`. A screen scrolls as one column under the nav.
+- A screen's action bar is the last thing in it and is pinned to the window's bottom edge at every width (`position: sticky; bottom: 0`), so its actions are always on screen: the app's bar, a top rule over the panel background with the buttons centered in the app's order. The content ends above it, so nothing stays hidden behind it. There is no toolbar under the nav.
 - Toasts keep the app's kinds, text, durations, stack of three and click to expand. On a wide window they sit top right; below 900px top left as in the app.
 - Inline `?` info buttons and the screen `?` open the same `Got it` dialogs as the app, centered. One-time hints fire on the same triggers.
 - `More actions` sheets become a popover menu anchored to `More`, same buttons in the same order; a dialog opened from it closes the popover where the app closes the sheet and leaves it open where the app leaves the sheet open.
@@ -38,19 +38,19 @@ The wide layout copies zite's home page (`zite/assets/style.css`). Screens move 
 ## Login
 
 - On the page grammar with no hero: the page opens on the form panel, centered at the top under the nav. The counters stay on Home and Activity.
-- `Log in`, `Create profile` and `Forgot password` sit stacked in the form panel's footer, `Log in` first, each the panel's full width, so a wide window has no toolbar here. Enter in either field runs `Log in`.
+- `Log in`, `Create profile` and `Forgot password` sit in one row of compact buttons in the form panel's footer, `Log in` first. Enter in either field runs `Log in`.
 - Below 900px it is the same panel in one column.
 
 ## Register
 
 - On the page grammar with no hero: the four fields with their live error lines in their own form panel at the top under the nav.
-- The `Password` hint stays open in its own panel, to the right of the form panel and top-aligned with it a panel gap away on a wide window (the pair centered as a group), under it below 900px: its title over its rules, in the hint's own words from zwipe-core's `requirements()`. The `?` beside `Password` goes at every width, since the rules are always in view. The list is static: zwipe-core checks a password whole and names only the first rule it breaks, so the web ticks nothing off as the user types rather than copy the rules.
-- `Create profile` sits in the form panel's footer at its full width, as on Login, so a wide window has no toolbar here. The app's `Back to login` goes; the nav's `Log in` covers it. Enter in any field runs `Create profile`. Success goes back to Login with the username filled in.
-- Below 900px the form panel is over the `Password` panel in one column.
+- The `?` beside `Password` opens the `Password` hint, as in the app, so the form stays the only panel.
+- `Create profile` sits in the form panel's footer. The app's `Back to login` goes; the nav's `Log in` covers it. Enter in any field runs `Create profile`. Success goes back to Login with the username filled in.
+- Below 900px it is the same panel in one column.
 
 ## Forgot password
 
-- On the page grammar with no hero, as Login: the `Email` field in its own form panel with `Send reset link` in its footer at its full width. The app's `Back to login` goes; the nav's `Log in` covers it.
+- On the page grammar with no hero, as Login: the `Email` field in its own form panel with `Send reset link` in its footer. The app's `Back to login` goes; the nav's `Log in` covers it.
 - After a send, the `Check your email` panel takes the form panel's place at the same width, holding only its message.
 - Enter runs `Send reset link`. Below 900px it is the same panel in one column.
 
@@ -98,10 +98,10 @@ The wide layout copies zite's home page (`zite/assets/style.css`). Screens move 
 ## Account
 
 - On a wide window the `Account` and `About` lists sit side by side.
-- When Account moves onto the page grammar, `Change password` shows the password rules in the same side panel beside its form on a wide window, as Register does, in place of the `?`.
+- `Change password` keeps the `?` beside its `Password` field for the rules, as Register does.
 - `Change username`, `Change email` and `Change password` open as centered modals with the same fields and `Back` / `Save changes` footers; Enter runs `Save changes`. The `Change password` confirm dialog stacks on top, and Esc closes only the top one.
 - `Resend` and the refresh icon button (with a `title` tooltip on hover) stay in the `Verification` row.
-- `Log out` stays in the toolbar and opens its dialog; `More` is a popover with `Delete account`, which opens the countdown dialog.
+- `Log out` stays in the action bar and opens its dialog; `More` is a popover with `Delete account`, which opens the countdown dialog.
 - Below 900px the two lists stack and the sheets slide up as in the app.
 
 ## Config
@@ -134,12 +134,12 @@ The wide layout copies zite's home page (`zite/assets/style.css`). Screens move 
 - On a wide window the form splits into two columns: `Profile` (name, format, command zone fields, power level) on the left, `Budget` above `Tags` on the right.
 - The `Format`, `Deck tags` and `Oracle tags` pickers open as a right side panel over the right column, with the definition bar on top, the chip grid below and `Back` / `Save` at the panel foot. The form stays visible, so the format cascade clearing the commander shows as it happens. `/` focuses the picker's search; Esc is `Back`.
 - Command zone fields: typing shows the floating results; ↑ and ↓ move through them and Enter picks the highlighted card. `Filter` and `Swipe` chips stay in the label row.
-- `Swipe` opens Swipe select as a full-window overlay laid out like Add cards: card and its info on the left, the card details beside it, `Back`, `Filter`, `Refresh` in the toolbar. → picks, ← skips, ↑ saves to the commander maybeboard (commander and partner modes), ↓ undoes. Its `Filter` opens the filter as a side panel inside the overlay.
-- `Save` sits in the toolbar; Enter in the deck name field runs it. Below 900px it is the phone form with full-screen pickers.
+- `Swipe` opens Swipe select as a full-window overlay laid out like Add cards: card and its info on the left, the card details beside it, `Back`, `Filter`, `Refresh` in the action bar. → picks, ← skips, ↑ saves to the commander maybeboard (commander and partner modes), ↓ undoes. Its `Filter` opens the filter as a side panel inside the overlay.
+- `Save` sits in the action bar; Enter in the deck name field runs it. Below 900px it is the phone form with full-screen pickers.
 
 ## Edit deck
 
-- Same layout, pickers and Swipe select as Create deck; the toolbar shows `Back` and, only when something changed, `Save changes`.
+- Same layout, pickers and Swipe select as Create deck; the action bar shows `Back` and, only when something changed, `Save changes`.
 - The loading skeleton follows the two-column shape.
 - Below 900px it is the phone form.
 
@@ -152,21 +152,21 @@ The wide layout copies zite's home page (`zite/assets/style.css`). Screens move 
 ## Export
 
 - On a wide window the `Export` chips (`Deck`, `Maybe`, `Side`) sit in a narrow left column and the read-only `Decklist` fills the right at full height.
-- `Copy` stays in the toolbar.
+- `Copy` stays in the action bar.
 - Below 900px it is the phone stack.
 
 ## Deck view
 
 - On the page grammar. The `Profile` card is the hero, 40rem wide. The left column holds `Budget`, `Tags`, `Distributions`, `Mana` and `Draw odds`; the right column holds `Warnings` over a cards column that lists the mainboard by type with the command zone on top, as compact rows that expand on click.
 - Every section is open at once, so the phone's single-open accordion and its default `Budget` go away on a wide window; `Warnings` keeps its warning border and fix buttons (`Add cards`, `Import`, `Fix to {n}`, `Clear`, `Remove`).
-- The toolbar keeps `Edit`, `Cards`, `More`; the app's `Back` goes, as the nav's `Decks` covers it. `Cards` opens Deck cards for full editing; the cards column here is for reading. `More` is a popover with `Import cards`, `Export cards`, the `TCGplayer ↗` and `Card Kingdom ↗` links in place of `Buy deck`, `Clone deck`, `Share deck`, `Clear skips`, `Delete deck`, and the other dialogs are the app's.
+- The action bar keeps `Edit`, `Cards`, `More`; the app's `Back` goes, as the nav's `Decks` covers it. `Cards` opens Deck cards for full editing; the cards column here is for reading. `More` is a popover with `Import cards`, `Export cards`, the `TCGplayer ↗` and `Card Kingdom ↗` links in place of `Buy deck`, `Clone deck`, `Share deck`, `Clear skips`, `Delete deck`, and the other dialogs are the app's.
 - The `Draw odds` stepper `-` / `+` buttons also answer ← and → while the stepper has focus.
 - Below 900px it is the phone screen: profile card, accordion with `Budget` open, no cards column.
 
 ## Add cards (swipe)
 
 - At 1280px and up there are three columns: the card stack with `CardInfoDisplay` under it; the card details (the `CardDetailsSheet` content: cost, type, oracle text, keywords, card roles) for the top card, which the phone hides behind the eye button; and the filter as a docked panel. Between 900px and 1279px the filter becomes a side panel opened by `Filter`, and the card and details stay side by side.
-- The `From` row (`Search`, `Maybeboard`) and `Synergy` sit above the card. The toolbar keeps `Back`, `Filter`, `Refresh`; the eye button opens the full details sheet as a modal where `Printings` lives.
+- The `From` row (`Search`, `Maybeboard`) and `Synergy` sit above the card. The action bar keeps `Back`, `Filter`, `Refresh`; the eye button opens the full details sheet as a modal where `Printings` lives.
 - Keys: → adds, ← skips, ↑ sends to the maybeboard, ↓ undoes (Ctrl+Z also undoes). F flips a double-faced card, P opens the printing modal, R is `Refresh`. Four buttons under the card do the same as the arrows, and mouse drag still works.
 - The printing sheet opens as a centered modal with the carousel; ← and → step printings while it is open, Enter is `Save`, Esc is `Back`.
 - At the end of results, ↓ (or the undo button) steps back into the pile in place of the phone's down-pull.
@@ -186,14 +186,14 @@ The wide layout copies zite's home page (`zite/assets/style.css`). Screens move 
 - Clicking a row selects it into the detail pane instead of expanding it inline; one row at a time as in the app. With `Maybe` or `Side` on, their groups list above the mainboard as in the app.
 - Keys: `/` focuses `Quick add`, ↑ and ↓ move the selected row, `+` and `-` change its quantity (the app's debounced writes still apply), Ctrl+Z is `Undo`. F flips the selected card everywhere a card shows, so `Filter` has no key here.
 - Drag adds one thing here: dragging a row onto the `Maybeboard`, `Sideboard` or a mainboard group header moves it to that board, the same as the move buttons, with the same toast.
-- The toolbar keeps `Back`, `Add`, `Remove`, `Filter`, `Undo` (only with history) and `Reset filter` (only with a filter). The filter opens as a side panel over the detail pane.
+- The action bar keeps `Back`, `Add`, `Remove`, `Filter`, `Undo` (only with history) and `Reset filter` (only with a filter). The filter opens as a side panel over the detail pane.
 - Below 900px it is the phone list with rows expanding inline.
 
 ## Remove cards
 
 - Same columns as Add cards: card and info, details, docked filter at 1280px and up; the filter becomes a side panel between 900px and 1279px. The `Boards` row (`Main`, `Maybe`, `Side`, `All`) sits above the card.
 - Keys: → removes, ← keeps, ↑ moves between main and maybeboard, ↓ undoes (Ctrl+Z too). F flips, P opens the read-only printing modal, R is `Refresh`. Four buttons under the card match the arrows.
-- The toolbar keeps `Back`, `Filter`, `Refresh` and the eye button.
+- The action bar keeps `Back`, `Filter`, `Refresh` and the eye button.
 - Below 900px it is the phone screen.
 
 ## Owner decisions (approved 2026-10-31)
