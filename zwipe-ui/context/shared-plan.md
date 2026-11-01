@@ -97,6 +97,8 @@ Rule for all of these: anything zwiper or zite already renders must come out byt
 Added after the decisions:
 - **Usage abuse cap (zerver, own branch).** Today one account can send about 12 usage batches a minute at up to 10,000 swipes each (`HttpUsageBatch::MAX_PER_FLUSH`, the usage governor in `zerver/src/lib/inbound/http/routes.rs`), roughly 120,000 swipes a minute, enough to inflate Home's global count. Cap a batch at a human pace (about 10 swipes a second, so about 300 per 30 s flush), drop the excess server side and log the account that hit the cap. Do it before or with branch 12, since more clients will be sending.
 
+- **Platform on usage (with branch 12).** `HttpUsageBatch` has no platform: swipes, searches and signals arrive untagged, and only each `ClientErrorReport` carries a self-reported platform string. The web lists "funnel events need a platform tag" as a launch blocker. Tag usage by platform as part of the telemetry branch, preferably server side from the session the client signed in with, since the client already declares its platform at login, rather than trusting a new self-reported field.
+
 ## 6. Out of scope, stays per client
 
 - Drawing, focus, scroll, hover, gestures and animation timings in every client (inventory "Stays in one client").
