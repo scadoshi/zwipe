@@ -13,6 +13,8 @@ Where the web build stands as of 2026-11-01, written so a fresh session on anoth
 
 Never push to or merge into main. The owner merges.
 
+The shared crates (zwipe-ui, zwipe-core, zwipe-client, components, and orangui with orangui-core) belong to one session, zwiper-tui on scotland-server. Don't edit them on these branches. When zwiper-web needs something shared, send that session a request naming what it needs and where it lives here (file and function). It builds the change on a branch off main, the owner merges it, and then main gets merged into feat/web and feat/web-zite. The ten `// Belongs in zwipe-ui` helpers are already requested; it reads them from origin/feat/web.
+
 ## Rules the owner set during review
 
 These are recorded in `web-layout.md`; they are repeated here because they came from conversation, not from the specs.
@@ -44,7 +46,7 @@ Approved so far: Login, Register and Forgot password (round 9's renders sent for
 - Buy links on card screens: kept off for app parity unless the owner wants them.
 - Launch blockers before zwiper-web goes public: the refresh token moves from `localStorage` to an httpOnly cookie, and funnel events get a platform tag (both zerver changes), then the web's funnel events turn on (`SEND_FUNNEL_EVENTS`).
 - Hosting at `zwipe.net/app` or `app.zwipe.net`.
-- Five helpers marked `// Belongs in zwipe-ui` wait for the zwipe-ui session to lift them.
+- The ten helpers marked `// Belongs in zwipe-ui` (8 in `src/lib/domain/deck.rs`, 2 in `src/lib/inbound/screens/oracle_tag_dictionary.rs`) wait for the shared-crates session to lift them once zwipe-ui is on main.
 
 ## Running it and checking live
 
