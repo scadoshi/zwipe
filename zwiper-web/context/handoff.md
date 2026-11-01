@@ -35,16 +35,11 @@ These are recorded in `web-layout.md`; they are repeated here because they came 
 
 Compact footer buttons, the password hint behind `?`, no site footer, the action bar pinned to the bottom, and Privacy policy open signed out. Gated in full and checked live at 1440x900 and 420x900 on every screen: the bar sits flush with the window's bottom edge, the `?` sits inside it at its right end without covering a button, nothing at the end of a page hides behind the bar, and signed-out `/privacy` has its nav pill and the Fan content section. Login's three compact buttons wrap to two rows at the 25rem panel width.
 
-## When zwipe-ui lands on main
+## Shared code
 
-The shared plan is `zwipe-ui/context/shared-plan.md` on feat/zwipe-ui. The zwiper-tui session messages when zwipe-ui merges. Then:
+zwipe-ui landed on main (c55c3977), and main is merged into feat/web and feat/web-zite. The shared plan is `zwipe-ui/context/shared-plan.md`. The web now takes the session rules, version gate, support mailto, account checks, timing constants, changelog cache, filter toggle, examples cap and "1 card" wording from zwipe-ui. The theme already resolves retired slugs through orangui-core.
 
-- Merge main into feat/web, then into feat/web-zite, and run the gate.
-- Switch the web's copies to zwipe-ui where it already has them: `domain/session.rs`, `version_gate.rs`, `support.rs`, `validation.rs`, the timing constants, the changelog cache, and `toggled`.
-- Theme: resolve retired slugs through orangui-core `theme::current_theme` instead of `ThemeConfig::resolve`.
-- Deck rows read "1 card" for one card (`ui::deck::cards_label`), by the owner's decision.
-- Toasts take the app's kind, band and words as each helper branch lands them.
-- The usage buffer replaces the web's disabled funnel once the telemetry branch (branch 12) lands. That branch also tags usage with the platform server side.
+Still to come, as the zwiper-tui session lands each shared branch: toasts take the app's kind, band and words; the `// Belongs in zwipe-ui` helpers move; and the usage buffer replaces the web's disabled funnel once the telemetry branch (branch 12) lands with server-side platform tagging. Do shared-code switches on feat/web, then merge feat/web into feat/web-zite.
 
 ## Review queue
 
