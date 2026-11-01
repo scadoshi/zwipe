@@ -114,6 +114,6 @@ for name, color in pairs.items():
 
 Edit orangui's `assets/themes.css` only; this repo carries no copy of it.
 
-`zwiper/src/lib/inbound/screens/profile/preferences.rs` imports the same `display_theme_name` from zwipe-core, so one override covers every surface.
+`zwiper/src/lib/inbound/screens/config/preferences.rs` imports the same `display_theme_name` from zwipe-core, so one override covers every surface.
 
 For text/casing/font rules across the app see `context/development/ui_text_conventions.md`.

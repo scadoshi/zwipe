@@ -24,10 +24,12 @@ A self-hosted GitHub Actions runner on the server deploys zerver on every push t
 
 ### Tests and lint gate the deploys
 
-The test suite runs `cargo test -p zwipe-core -p zerver` against a `postgres:18` service.
+The test suite runs `cargo nextest run -p zwipe-core -p zerver` against a `postgres:18` service, then `cargo test --doc` on the same crates, because nextest doesn't run doctests.
 
 - Never `--workspace`: zwiper's Dioxus/GTK stack does not build headless.
 - `SQLX_OFFLINE=true` compiles against the committed `.sqlx`, and `#[sqlx::test]` migrates a fresh DB per test through `DATABASE_URL`.
+- nextest puts every test from every binary in one parallel queue, one process per test. `cargo test` ran the 37 binaries one after another. The fresh DB per test is what makes running them side by side safe, so a test that shares state across tests breaks that.
+- nextest is installed prebuilt through `taiki-e/install-action` (`tool: cargo-nextest`), the same pinned commit the zite build uses for dx.
 
 It runs in two places:
 
@@ -40,6 +42,8 @@ A parallel `lint` job in all three workflows runs:
 
 - `cargo +nightly fmt --check` across the workspace. It needs nightly because `rustfmt.toml` sets unstable options: `imports_granularity = "Module"` (one `use` per module), `group_imports = "StdExternalCrate"` (std, then external crates, then this crate), `hex_literal_case = "Lower"` and `format_macro_matchers = true`.
 - `cargo clippy --workspace --all-targets -- -D warnings`, with `SQLX_OFFLINE=true` and the WebKitGTK libraries installed so zwiper compiles. `deploy-zite.yml` also lints zite with `--features server`.
+
+The WebKitGTK libraries come through `awalsh128/cache-apt-pkgs-action`, keyed on the package list and its `version: 1`. A hit restores the files without `apt-get update` or downloads (8 s against 63 s). Changing the package list rebuilds the cache on the next run; bump `version` to force one.
 
 The lint job dates from 2026-07-10, after fmt was found to have drifted silently.
 
@@ -61,13 +65,51 @@ The design notes are in [`../../archive/integration-tests/`](../../archive/integ
 
 ## What the Workflow Does
 
+Four jobs. `test` and `lint` run on GitHub's runners, while `build` runs on the VPS at the same time; `deploy` runs on the VPS once all three pass.
+
+`build` (self-hosted, no `needs`):
+
 1. Checks out the repo
-2. Installs the stable Rust toolchain (cached)
-3. Restores the cargo cache
-4. Runs migrations: `source /etc/zwipe/migrate.env` for `DATABASE_URL`, then `cargo sqlx migrate run --source zerver/migrations`. New tables exist before the new binary starts
-5. Checks that the committed `.sqlx/` matches the migrated schema with `cargo sqlx prepare --workspace --check -- --workspace --exclude zwiper --exclude zite`, failing fast with "query data is stale". The GUI crates are excluded because `--check` compiles them and their GTK deps don't exist on the headless VPS, which failed the first two verify runs (2026-07-06). Only zerver has queries anyway
-6. Builds `zerver` and `zervice` in release mode (`SQLX_OFFLINE=true`)
-7. Copies the binaries to `/home/runner/deploy`, keeping the installed ones as `*.previous`. Then it stops zerver, installs both to `/usr/local/bin`, starts zerver and waits up to 20 seconds for `/health`. If that never answers, it prints zerver's last 50 journal lines, reinstalls the previous binaries, restarts and fails the run
+2. Caps the target dir: if `/home/runner/.cache/zwipe-target` is over 15 GB it is deleted, and this run builds cold. It logs the dir's size and the disk's free space either way
+3. Installs the stable Rust toolchain
+4. Builds `zerver` and `zervice` in release mode (`SQLX_OFFLINE=true`)
+
+`deploy` (self-hosted, `needs: [test, lint, build]`):
+
+1. Checks out the repo and installs the toolchain
+2. Runs migrations: `source /etc/zwipe/migrate.env` for `DATABASE_URL`, then `cargo sqlx migrate run --source zerver/migrations`. New tables exist before the new binary starts
+3. Checks that the committed `.sqlx/` matches the migrated schema with `cargo sqlx prepare --workspace --check -- --workspace --exclude zwiper --exclude zite`, failing fast with "query data is stale". The GUI crates are excluded because `--check` compiles them and their GTK deps don't exist on the headless VPS, which failed the first two verify runs (2026-07-06). Only zerver has queries anyway
+4. Copies the binaries from the target dir to `/home/runner/deploy`, keeping the installed ones as `*.previous`. Then it stops zerver, installs both to `/usr/local/bin`, starts zerver and waits up to 20 seconds for `/health`. If that never answers, it prints zerver's last 50 journal lines, reinstalls the previous binaries, restarts and fails the run
+
+Building early touches nothing in production. Migrations and the binary swap stay behind the gates, so a red test still ships nothing.
+
+### The target dir lives on the VPS
+
+Both self-hosted jobs set `CARGO_TARGET_DIR=/home/runner/.cache/zwipe-target`, outside the workspace, because checkout's clean step deletes ignored files and `target/` with them. Kept on the VPS's own disk it stays warm between deploys, so a release build takes about 45 s.
+
+- Until 2026-10-31 the job restored `target/` from `actions/cache` instead: about 10 GB downloaded on every deploy, 3 of the job's 4 minutes.
+- Cargo never deletes old builds, so the dir grows with every dependency bump. That is what the 15 GB cap is for. The cap runs before the build, never after, so it can't delete binaries `deploy` is about to install. A cold build takes about 3 minutes.
+- On 2026-10-31 the dir was 2 GB, and the disk had 103 of 150 GB free. The build job's log prints both on every run.
+- The `deploy-zerver` concurrency group (`cancel-in-progress: false`) runs one deploy at a time, so run B's build can't replace binaries run A is about to install. A newer push waits, and a third one replaces the waiting run.
+
+### Speed
+
+Measured on warm runs, push to live. Before is run 41168348616, after is run 41218497972 (PRs #102 and #103, 2026-10-31).
+
+| Step | Before | After |
+|---|---|---|
+| Total | 11.3 min | 5.1 min |
+| test job | 5.8 min | 4.7 min |
+| running the tests | 3.1 min | 1.5 min |
+| lint job | 4.5 min | 3.1 min |
+| apt install | 63 s | 8 s |
+| deploy job | 4.0 min | 17 s |
+| VPS build | 45 s, after the gates | 56 s, beside them |
+
+`test` is now the longest path, and `deploy` waits on it. About 2 minutes of it is compiling the test binaries and about 1.5 is running them, where a few slow tests set the floor (`auth_edges::lockout_is_per_address` alone is 11.5 s).
+
+- Any change to a workflow file makes GitHub's caches miss once, so the first run after it is cold, about 10 minutes. Measure on the second.
+- If a deploy is slow, read the build job's "Cap the target dir" step first: a cleared dir means a cold build that run.
 
 ---
 
