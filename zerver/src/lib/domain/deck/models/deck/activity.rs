@@ -4,14 +4,10 @@
 use chrono::NaiveDate;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
+pub use zwipe_core::http::contracts::suggestions::PASS_BASELINE_WEIGHT;
 use zwipe_core::http::contracts::suggestions::{
     ACTIVITY_MIN_SEEN, ACTIVITY_ROLES_SENT, ACTIVITY_TAGS_SENT,
 };
-
-/// How many dealt cards' worth of the overall skip rate a card's baseline
-/// starts from before other players' swipes on it count. A card few others
-/// have been dealt sits near the overall rate instead of swinging to 0 or 1.
-pub const PASS_BASELINE_WEIGHT: f64 = 10.0;
 
 /// The lift a hard pass needs: its skips times the log of how much more often
 /// the user skips it than other players do. A card others usually keep gets
