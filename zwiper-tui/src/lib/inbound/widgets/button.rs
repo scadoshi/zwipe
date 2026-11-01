@@ -1,6 +1,6 @@
 //! The app's buttons: a row of rounded boxes the focus moves across, or one-line pills where a box has no room.
 //!
-//! A plain button has the border color around text in the text color, as the app's `.btn-action`. A primary one takes the accent for both; a danger one, like `Log out` and `Delete`, the error color. The focused button fills with its color (the accent for a plain one) under a bold label: a box fills its whole inside, a pill its padded label. A disabled one is muted.
+//! A plain button has the border color around text in the text color, as the app's `.btn-action`. A primary one takes the accent for both; a danger one, like `Log out` and `Delete`, the error color. A focused box draws its border and a bold label in its focus color (the accent for a plain one) and keeps its inside unfilled, so the highlight sits on the edges and the text. A pill has no edges, so a focused pill fills its padded label with that color instead. A disabled one is muted.
 
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Flex, Layout, Rect};
@@ -181,7 +181,7 @@ pub(crate) fn draw_row(
     }
 }
 
-/// One boxed button: its border in its color (the border color for a plain one at rest), and its label inside. While focused, the whole inside of the box fills with its color under the label.
+/// One boxed button: its border in its color (the border color for a plain one at rest), and its label inside. While focused, the border and a bold label take its focus color and the inside stays unfilled.
 fn draw_box(f: &mut Frame<'_>, palette: &Palette, area: Rect, button: &Button<'_>, focused: bool) {
     let border = match (focused, button.kind) {
         (true, _) => button.fill(palette),
@@ -191,11 +191,12 @@ fn draw_box(f: &mut Frame<'_>, palette: &Palette, area: Rect, button: &Button<'_
     let block = panel::bordered(palette).border_style(border);
     let inner = block.inner(area);
     f.render_widget(block, area);
-    let mut label = Paragraph::new(Line::from(button.label_span(palette, focused)).centered());
-    if focused {
-        label = label.style(button.fill(palette).reversed());
-    }
-    f.render_widget(label, inner);
+    let label = if focused {
+        Span::styled(format!(" {} ", button.label), button.fill(palette).bold())
+    } else {
+        button.label_span(palette, false)
+    };
+    f.render_widget(Paragraph::new(Line::from(label).centered()), inner);
 }
 
 #[cfg(test)]
@@ -257,7 +258,7 @@ mod tests {
     }
 
     #[test]
-    fn the_focused_box_fills_with_its_color_under_a_bold_label() {
+    fn the_focused_box_takes_the_accent_on_its_border_and_bold_label() {
         let palette = Palette::for_account("gruvbox", true);
         let terminal = drawn(&palette, 50, 3, Some(1));
         let buffer = terminal.backend().buffer();
@@ -265,13 +266,9 @@ mod tests {
         let at = rows[1].find("Create").unwrap();
         let x = u16::try_from(rows[1][..at].chars().count()).unwrap();
         let label = buffer.cell((x, 1)).unwrap();
-        assert!(label.modifier.contains(Modifier::REVERSED | Modifier::BOLD));
+        assert!(label.modifier.contains(Modifier::BOLD));
+        assert!(!label.modifier.contains(Modifier::REVERSED));
         assert_eq!(label.fg, palette.accent.fg.unwrap());
-        let pad = buffer.cell((x - 1, 1)).unwrap();
-        assert!(
-            pad.modifier.contains(Modifier::REVERSED),
-            "the padding fills too"
-        );
         let border = buffer.cell((x - 2, 1)).unwrap();
         assert_eq!(
             border.fg,
@@ -281,43 +278,24 @@ mod tests {
     }
 
     #[test]
-    fn the_focused_box_fills_its_whole_inside() {
+    fn the_focused_box_leaves_its_inside_unfilled() {
         let palette = Palette::for_account("gruvbox", true);
         let row = [Button::new("Log in")];
-        let mut terminal = Terminal::new(TestBackend::new(30, 3)).unwrap();
-        terminal
-            .draw(|f| {
-                draw_box(f, &palette, Rect::new(5, 0, 20, 3), &row[0], true);
-            })
-            .unwrap();
-        let buffer = terminal.backend().buffer();
-        for x in 6..24 {
-            let cell = buffer.cell((x, 1)).unwrap();
-            assert!(
-                cell.modifier.contains(Modifier::REVERSED),
-                "cell {x} inside the box fills"
-            );
-            assert_eq!(cell.fg, palette.accent.fg.unwrap(), "cell {x}");
+        for focused in [true, false] {
+            let mut terminal = Terminal::new(TestBackend::new(30, 3)).unwrap();
+            terminal
+                .draw(|f| draw_box(f, &palette, Rect::new(5, 0, 20, 3), &row[0], focused))
+                .unwrap();
+            let buffer = terminal.backend().buffer();
+            for x in 6..24 {
+                let cell = buffer.cell((x, 1)).unwrap();
+                assert!(
+                    !cell.modifier.contains(Modifier::REVERSED),
+                    "cell {x} stays unfilled, focused {focused}"
+                );
+                assert_eq!(cell.bg, palette.base.bg.unwrap(), "cell {x}");
+            }
         }
-        for (x, y) in [(5, 1), (24, 1), (10, 0), (10, 2)] {
-            assert!(
-                !buffer
-                    .cell((x, y))
-                    .unwrap()
-                    .modifier
-                    .contains(Modifier::REVERSED),
-                "the border at {x},{y} stays a line"
-            );
-        }
-        let mut rest = Terminal::new(TestBackend::new(30, 3)).unwrap();
-        rest.draw(|f| draw_box(f, &palette, Rect::new(5, 0, 20, 3), &row[0], false))
-            .unwrap();
-        let blank = rest.backend().buffer().cell((7, 1)).unwrap();
-        assert!(
-            !blank.modifier.contains(Modifier::REVERSED),
-            "unfocused stays plain"
-        );
-        assert_eq!(blank.bg, palette.base.bg.unwrap());
     }
 
     #[test]

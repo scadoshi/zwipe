@@ -402,10 +402,10 @@ fn the_change_sheet_and_log_out_dialog_draw_real_buttons_at_every_size() {
         let [(x, y)] = crate::test_support::find_all(buffer, pressed)[..] else {
             panic!("{pressed} at {width}x{height}:\n{rows}");
         };
+        let label = buffer[(x, y)].modifier;
         assert!(
-            buffer[(x, y)]
-                .modifier
-                .contains(Modifier::REVERSED | Modifier::BOLD)
+            label.contains(Modifier::BOLD) && !label.contains(Modifier::REVERSED),
+            "the focused button is bold on its edges, not filled"
         );
         assert_eq!(
             buffer[(x - 2, y)].symbol(),

@@ -334,7 +334,7 @@ fn the_hero_boxes_each_counter_in_a_tile_under_the_logo() {
 }
 
 #[test]
-fn log_in_has_no_accent_at_rest_and_fills_its_box_when_focused_at_every_size() {
+fn log_in_has_no_accent_at_rest_and_takes_it_on_its_edges_and_label_when_focused() {
     let palette = crate::domain::theme::Palette::for_account("gruvbox", true);
     for focus in [Some(LoginField::Identifier), Some(LoginField::LogIn)] {
         let mut harness = focused(focus);
@@ -354,14 +354,18 @@ fn log_in_has_no_accent_at_rest_and_fills_its_box_when_focused_at_every_size() {
             );
             if focus == Some(LoginField::LogIn) {
                 for inside in x - 1..x + 7 {
-                    let cell = &buffer[(inside, y)];
                     assert!(
-                        cell.modifier.contains(Modifier::REVERSED),
-                        "cell {inside} fills at {width}x{height}"
+                        !buffer[(inside, y)].modifier.contains(Modifier::REVERSED),
+                        "cell {inside} stays unfilled at {width}x{height}"
                     );
-                    assert_eq!(cell.fg, palette.accent.fg.unwrap());
                 }
                 assert!(log_in.modifier.contains(Modifier::BOLD));
+                assert_eq!(log_in.fg, palette.accent.fg.unwrap());
+                assert_eq!(
+                    buffer[(x - 2, y)].fg,
+                    palette.accent.fg.unwrap(),
+                    "the edge takes the accent at {width}x{height}"
+                );
             } else {
                 assert!(!log_in.modifier.contains(Modifier::REVERSED));
                 assert!(
