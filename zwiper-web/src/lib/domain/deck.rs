@@ -24,17 +24,6 @@ pub fn command_zone_art(profile: &DeckProfile) -> Vec<&str> {
     .collect()
 }
 
-// Belongs in zwipe-ui
-/// Whether two slug lists pick the same tags, ignoring order: a picker's
-/// `Save` stays off while its pick matches the one it opened on.
-pub fn same_set(a: &[String], b: &[String]) -> bool {
-    let mut a: Vec<&str> = a.iter().map(String::as_str).collect();
-    let mut b: Vec<&str> = b.iter().map(String::as_str).collect();
-    a.sort_unstable();
-    b.sort_unstable();
-    a == b
-}
-
 /// What the deck form holds, as Create sends it and Edit compares it. The
 /// command zone is each card's printing id.
 #[derive(Debug, Clone, PartialEq, Default)]
@@ -354,14 +343,6 @@ mod tests {
     fn the_share_link_ends_in_the_token() {
         let token = Uuid::nil();
         assert!(share_link(token).ends_with("/deck/00000000-0000-0000-0000-000000000000"));
-    }
-
-    #[test]
-    fn picker_sets_ignore_order() {
-        let a = ["x".to_owned(), "y".to_owned()];
-        let b = ["y".to_owned(), "x".to_owned()];
-        assert!(same_set(&a, &b));
-        assert!(!same_set(&a, &b[..1]));
     }
 
     #[test]

@@ -59,6 +59,29 @@ pub enum ClientError {
 }
 
 impl ClientError {
+    /// The HTTP status of the server answer this error came from, or `None`
+    /// when no status reached the client: a [`ClientError::Network`] failure
+    /// or a [`ClientError::Decode`] of a body that arrived unreadable.
+    ///
+    /// [`ClientError::InternalServerError`] reports 500 for every status it
+    /// stands for, since it keeps only the message: a 502 or 503 reads as 500,
+    /// and so does one a client builds for a failure of its own.
+    #[must_use]
+    pub fn status(&self) -> Option<u16> {
+        match self {
+            ClientError::BadRequest(_) => Some(400),
+            ClientError::Unauthorized(_) => Some(401),
+            ClientError::Forbidden(_) => Some(403),
+            ClientError::NotFound(_) => Some(404),
+            ClientError::Conflict(_) => Some(409),
+            ClientError::PayloadTooLarge(_) => Some(413),
+            ClientError::UnprocessableEntity(_) => Some(422),
+            ClientError::TooManyRequests(_) => Some(429),
+            ClientError::InternalServerError(_) => Some(500),
+            ClientError::Network(_) | ClientError::Decode(_) => None,
+        }
+    }
+
     /// Returns a safe, user-facing message: never leaks internal details like URLs or stack traces.
     pub fn to_user_message(&self) -> String {
         match self {
@@ -213,5 +236,43 @@ mod tests {
 
         let four_xx = ClientError::UnprocessableEntity("deck name cannot be empty".into());
         assert_eq!(four_xx.to_user_message(), "deck name cannot be empty");
+    }
+
+    /// Every status variant reports the status it was built from, so a
+    /// status survives the round trip through the vocabulary.
+    #[test]
+    fn status_variants_report_their_status() {
+        let statuses = [
+            StatusCode::BAD_REQUEST,
+            StatusCode::UNAUTHORIZED,
+            StatusCode::FORBIDDEN,
+            StatusCode::NOT_FOUND,
+            StatusCode::CONFLICT,
+            StatusCode::PAYLOAD_TOO_LARGE,
+            StatusCode::UNPROCESSABLE_ENTITY,
+            StatusCode::TOO_MANY_REQUESTS,
+            StatusCode::INTERNAL_SERVER_ERROR,
+        ];
+        for status in statuses {
+            let error = ClientError::from((status, "Message".to_string()));
+            assert_eq!(error.status(), Some(status.as_u16()), "{error:?}");
+        }
+    }
+
+    #[test]
+    fn statuses_without_a_variant_report_500() {
+        for status in [StatusCode::BAD_GATEWAY, StatusCode::IM_A_TEAPOT] {
+            let error = ClientError::from((status, "Message".to_string()));
+            assert_eq!(error.status(), Some(500), "{status}");
+        }
+    }
+
+    #[test]
+    fn network_and_decode_errors_have_no_status() {
+        let decode = ClientError::from(serde_json::from_str::<u32>("\"x\"").unwrap_err());
+        assert_eq!(decode.status(), None);
+
+        let builder = reqwest::Client::new().get("not a url").build().unwrap_err();
+        assert_eq!(ClientError::from(builder).status(), None);
     }
 }

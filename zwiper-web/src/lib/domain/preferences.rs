@@ -25,16 +25,6 @@ pub fn settle<T>(seq: RequestSeq, mine: u64, reply: Option<T>, prev: T) -> Optio
     (seq.latest == mine).then(|| reply.unwrap_or(prev))
 }
 
-/// Whether two slug lists pick the same franchises. Order is tap order and
-/// means nothing.
-pub fn same_set(a: &[String], b: &[String]) -> bool {
-    let mut a: Vec<&str> = a.iter().map(String::as_str).collect();
-    let mut b: Vec<&str> = b.iter().map(String::as_str).collect();
-    a.sort_unstable();
-    b.sort_unstable();
-    a == b
-}
-
 /// The saved exceptions as the Config row's chips show them: franchise
 /// names, alphabetical, with slugs this build does not know dropped.
 pub fn exception_names(slugs: &[String]) -> Vec<&'static str> {
@@ -71,13 +61,6 @@ mod tests {
         let _first = seq.begin();
         let second = seq.begin();
         assert_eq!(settle(seq, second, None, true), Some(true));
-    }
-
-    #[test]
-    fn order_does_not_make_a_change() {
-        assert!(same_set(&slugs(&["a", "b"]), &slugs(&["b", "a"])));
-        assert!(!same_set(&slugs(&["a"]), &slugs(&["a", "b"])));
-        assert!(same_set(&[], &[]));
     }
 
     #[test]

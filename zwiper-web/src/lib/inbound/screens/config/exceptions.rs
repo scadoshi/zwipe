@@ -9,7 +9,6 @@ use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::http::contracts::user::HttpUpdatePreferences;
 use zwipe_ui::filter::fields;
 
-use crate::domain::preferences;
 use crate::inbound::caches::UbFranchises;
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::one_time_hint::{self, OneTimeHint};
@@ -52,7 +51,7 @@ pub(super) fn ExceptionsSheet(
     });
 
     let discard = use_callback(move |()| {
-        if !preferences::same_set(&draft.peek(), &exceptions.peek()) {
+        if !fields::same_set(&draft.peek(), &exceptions.peek()) {
             toast.info(
                 "Exceptions unchanged".to_string(),
                 ToastOptions::default().duration(TOAST_QUICK),
@@ -86,7 +85,7 @@ pub(super) fn ExceptionsSheet(
         });
     };
 
-    let unchanged = preferences::same_set(&draft(), &exceptions());
+    let unchanged = fields::same_set(&draft(), &exceptions());
     // Served, not compiled, and already sorted by the server. Nothing shows
     // while it loads or after it failed.
     let offered = franchises.0.read().loaded().cloned().unwrap_or_default();

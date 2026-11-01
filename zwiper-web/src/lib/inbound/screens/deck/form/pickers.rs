@@ -20,12 +20,13 @@ use zwipe_core::domain::deck::{
     DeckTagView, Format, MAX_DECK_ORACLE_TAGS, MAX_DECK_TAGS, seed_oracle_tags_from_catalog,
 };
 use zwipe_ui::deck::form::{format_details, reseed_oracle_tags};
+use zwipe_ui::filter::fields::same_set;
 use zwipe_ui::timing::ORACLE_TAG_PICKER_LIMIT;
 
 use super::DeckForm;
 use crate::domain::deck::{
     self, DECK_TAG_BAR_EMPTY, FORMAT_BAR_EMPTY, ORACLE_TAG_BAR_EMPTY, ORACLE_TAG_NO_DESCRIPTION,
-    PICKER_BAR_HINT, same_set,
+    PICKER_BAR_HINT,
 };
 use crate::inbound::catalog::CatalogCache;
 use crate::inbound::chrome::authed::use_authed;

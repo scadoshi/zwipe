@@ -68,7 +68,7 @@ pub async fn ensure_fresh(
                 Ok(new)
             }
             Err(e) => {
-                if status(&e).is_some_and(session::refresh_rejected) {
+                if e.status().is_some_and(session::refresh_rejected) {
                     tracing::warn!("refresh rejected; clearing session: {e}");
                     SessionStore::browser().infallible_delete();
                     session.set(None);
@@ -116,23 +116,6 @@ fn check(mut session: Signal<Option<Session>>) -> Checked {
     }
 }
 
-/// The HTTP status a server answer carried, or `None` when the request
-/// never got one (a network failure or an unreadable body).
-fn status(error: &ClientError) -> Option<u16> {
-    match error {
-        ClientError::BadRequest(_) => Some(400),
-        ClientError::Unauthorized(_) => Some(401),
-        ClientError::Forbidden(_) => Some(403),
-        ClientError::NotFound(_) => Some(404),
-        ClientError::Conflict(_) => Some(409),
-        ClientError::PayloadTooLarge(_) => Some(413),
-        ClientError::UnprocessableEntity(_) => Some(422),
-        ClientError::TooManyRequests(_) => Some(429),
-        ClientError::InternalServerError(_) => Some(500),
-        ClientError::Network(_) | ClientError::Decode(_) => None,
-    }
-}
-
 fn not_logged_in() -> ClientError {
     ClientError::Unauthorized("not logged in".to_string())
 }
@@ -143,7 +126,7 @@ mod tests {
 
     #[test]
     fn only_auth_rejections_drop_the_session() {
-        let rejected = |error: ClientError| status(&error).is_some_and(session::refresh_rejected);
+        let rejected = |error: ClientError| error.status().is_some_and(session::refresh_rejected);
         let says = || "no".to_string();
         assert!(rejected(ClientError::Unauthorized(says())));
         assert!(rejected(ClientError::Forbidden(says())));

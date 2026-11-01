@@ -9013,6 +9013,7 @@ dependencies = [
  "webbrowser",
  "zwipe-client",
  "zwipe-core",
+ "zwipe-ui",
 ]
 
 [[package]]
