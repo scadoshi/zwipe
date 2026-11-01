@@ -1,6 +1,6 @@
 # In-app browser and guide links from hints
 
-**Status: planned 2026-10-31, not started.** Two app changes that ship together: links open inside Zwipe instead of leaving it, and every `?` hint that has a guide on zwipe.net links to it.
+**Status: planned 2026-10-31. Part 1 is built and awaiting device testing; Part 2 not started.** Two app changes that ship together: links open inside Zwipe instead of leaving it, and every `?` hint that has a guide on zwipe.net links to it.
 
 ## Why
 
