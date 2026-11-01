@@ -82,7 +82,7 @@ The crate, the router with a route per screen at the app's paths (unbuilt screen
 - Home greets once per page load, a browser's launch.
 - `Buy` is a link per retailer that opens in a new tab, as zite's are, for a card and for a deck, where the app opens a dialog to pick one.
 - The app's screen header goes under the top nav: the `!` is the nav's `Help` on every screen, signed in or not, and a screen's `?` sits at the right end of its action bar.
-- Buttons that only navigate (`Back`, `Back to login`, Home's `Decks`, `Account`, `Config`, `Activity` and `Playstyle`) go as each screen moves onto the page grammar; the top nav and the browser's back cover them, and a form's neighbor screen gets a text link in its panel.
+- Buttons that only navigate (`Back`, `Back to login`, Home's `Decks`, `Account`, `Config`, `Activity` and `Playstyle`) go as each screen moves onto the page grammar; the top nav and the browser's back cover them and the auth screens' neighbor screens are buttons stacked under the primary one.
 - `Clear skips` on the deck view clears at once; the app first sends the skips its telemetry holds, and the web records none.
 - Platform-only pieces are skipped: the app icon picker, haptics, crash capture, usage telemetry (a failed call is logged, not reported), the OS back gesture.
 - Escape closes an open dialog before anything else, even where the app's back stack would close the sheet under it first (the Exceptions sheet's hint).
