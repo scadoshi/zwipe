@@ -1,6 +1,6 @@
 # zwiper-web layout
 
-The breakpoint is 900px: at 900px and up the window is wide, below it the web app is the phone layout in one column. Screens with three panels add the third at 1280px and up; between 900px and 1279px they show two. A top nav like zite's holds the Z mark (Home), Decks, Activity, Playstyle, Account, Config and Help, and below 900px folds behind a hamburger. Bottom sheets become side panels when they edit something on the page and centered modals when they are short forms or lists; dialogs stay modal.
+The breakpoint is 900px: at 900px and up the window is wide, below it the web app is one column. The web is panels at every width: the app's bare forms and bottom action bar do not carry over (the app itself is unchanged). Screens with three panels add the third at 1280px and up; between 900px and 1279px they show two. A top nav like zite's holds the Z mark (Home), Decks, Activity, Playstyle, Account, Config and Help, and below 900px folds behind a hamburger. Bottom sheets become side panels when they edit something on the page and centered modals when they are short forms or lists; dialogs stay modal.
 
 Esc closes the top overlay (dialog, then modal, then side panel, then full overlay), browser back does the same for overlays the app puts on its back stack, Enter submits the focused form, and `/` focuses the screen's search or quick add field where there is one. Single-key shortcuts only fire while no text field has focus.
 
@@ -11,21 +11,21 @@ The wide layout copies zite's home page (`zite/assets/style.css`). Screens move 
 - The page is one centered column at most 74rem wide inside a 1.5rem gutter, and it starts at the top: the screen's 1rem top padding under the header or toolbar is the only gap, as zite's page sits 1rem under its nav. Nothing is centered vertically on a wide window.
 - A screen with a hero puts it at the top of the page. The rest of its panels share two equal columns under it, each a stack one panel gap (1rem) apart, and the shorter column ends where its last panel does. Panels are ordered so the columns come out about even and related panels sit together.
 - A hero that is a list of rows (a deck's Profile, Playstyle's Summary) stays 40rem wide and centered, since label and value would sit a page apart at full width.
-- A form is its own panel, centered, at zite's form width of 25rem, with its actions in the panel's footer under the fields (below). A form is never folded into a hero or stretched across the columns, and the toolbar that holds its actions below 900px is dropped on a wide window. This holds for every input panel: Login, Register, Forgot password, Create and Edit, Import, and the change forms.
-- On a wide window every input panel wears the kit panel's title bar, zite's panel title over a full-bleed rule, named with the app's own title for its screen: `Login`, `Create profile`, `Reset password` (its sent panel too, with `Check your email` as its first line). A panel beside a form is titled after what it holds, such as Register's `Password`. Create, Edit, Import and the change forms take their screen's title when they move onto the page grammar. Below 900px the form is the app's bare form with no title bar.
-- A form panel's buttons sit in its footer, the kit panel's action area: a full-bleed rule across the panel, then the buttons one under another at the panel's width, the primary first (Login: `Log in`, `Create profile`, `Forgot password`). Every input panel does this when it moves onto the page grammar. Below 900px the same buttons sit in the screen's action bar.
-- Below 900px none of this applies: the hero, the columns and the form panel dissolve back into the app's single column, in the app's order.
-- In `web.css` the pieces are `.web-page`, `.web-hero` (with `.web-hero-narrow`), `.web-columns`, `.web-column`, `.web-form-panel` and `.web-form-actions`, with `.web-form-toolbar` on the action bar a form panel replaces.
+- A form is its own panel at every width, centered, at zite's form width of 25rem (below 900px it keeps the page's 1rem side gutter), with its actions in the panel's footer under the fields (below). A form is never folded into a hero or stretched across the columns, and a screen whose only actions are its form's has no toolbar.
+- Every input panel wears the kit panel's title bar at every width, zite's panel title over a full-bleed rule, named with the app's own title for its screen: `Login`, `Create profile`, `Reset password` (its sent panel too, with `Check your email` as its first line). A panel beside a form is titled after what it holds, such as Register's `Password`; it sits to the form's right on a wide window and under it below 900px. Create, Edit, Import and the change forms take their screen's title when they move onto the page grammar.
+- A form panel's buttons sit in its footer at every width, the kit panel's action area: a full-bleed rule across the panel, then the buttons one under another at the panel's width, the primary first (Login: `Log in`, `Create profile`, `Forgot password`). Every input panel does this when it moves onto the page grammar.
+- Below 900px the hero and the columns dissolve into one column in the app's order; the panels, their title bars and footers stay.
+- In `web.css` the pieces are `.web-page`, `.web-hero` (with `.web-hero-narrow`), `.web-columns`, `.web-column`, `.web-form-panel`, `.web-form-actions` and `.web-auth-pair` (a form with a panel beside it), and in Rust `chrome::form_panel`'s `FormPanelHead` and `FormPanelActions`.
 
 ## Shared chrome
 
 - The top nav is zite's bar, the kit's `NavBar`: the Z mark (zwipe-core's `logo::Z`, the app icon's art) on the left in `var(--logo)`, sized to stand as tall as a nav pill and linking Home, and on the right `Decks`, `Activity`, `Playstyle`, `Account`, `Config` and `Help` as pills. `Help` opens the same `Help & feedback` dialog as the app's `!` button. The current screen's pill is lit; screens reached from a deck (Deck view, Edit, Import, Export, the card screens) light `Decks`, the Commander maybeboard lights `Playstyle`, and Privacy policy and Changelog light `Account`.
 - Below 900px the links fold behind the kit's hamburger and open as its dropdown under the bar; a link, a tap outside or a new route closes it. The kit folds its bar at 60rem, so `web.css` keeps it open from 900px.
 - Logged out, the nav holds the mark, `Log in` and `Create profile` (the current one lit) and `Help`, which takes the place of the app's `!`.
-- Under the nav there is no screen header at any width: the page starts right under the nav, or under the toolbar where the screen has one. The title stays for assistive tech and names the browser tab. A screen's `?` hint button moves to the right end of its action bar: the toolbar under the nav on a wide window, the bottom bar below 900px. Every screen with a `?` has an action bar.
+- Under the nav there is no screen header at any width: the page starts right under the nav, or under the toolbar where the screen has one. The title stays for assistive tech and names the browser tab. A screen's `?` hint button moves to the right end of its toolbar under the nav. Every screen with a `?` has an action bar.
 - Buttons whose only job is to go somewhere (`Back`, `Back to login`, `Back to decks` and the like) go, since the nav and the browser's back do their job. Login keeps `Create profile` and `Forgot password` as buttons under `Log in`; Register and Forgot password have no `Log in` button, since the nav's `Log in` and the browser's back cover it. Every button that does something stays, and so does the `Back` that closes a screen's own sheet, picker or overlay. Screens drop theirs as they move onto the page grammar.
 - Every page ends in zite's footer: `© 2026 Zwipe`, then `Privacy policy`, `Changelog`, `Guides ↗`, `Community ↗`, `Support` (a mail to support) and `zwipe.net ↗`, then zite's Scryfall credit and Fan Content notice. Signed in, `Privacy policy` and `Changelog` are the app's screens; signed out they are zwipe.net's, since the app's need a session. Outside links open a new tab. A screen scrolls as one column under the nav: on a short page the footer sits at the window's foot, on a long one after the content.
-- On a wide window the action bar becomes a toolbar under the nav that stays put as the page scrolls, buttons in the app's order, so actions sit next to the content instead of at the bottom of a tall window. Below 900px it stays pinned at the bottom as in the app, under the footer.
+- The web has no bottom action bar. At every width a screen's action bar is a toolbar at the top under the nav, buttons in the app's order, and it stays put as the page scrolls. The footer is the last thing on every page.
 - Toasts keep the app's kinds, text, durations, stack of three and click to expand. On a wide window they sit top right; below 900px top left as in the app.
 - Inline `?` info buttons and the screen `?` open the same `Got it` dialogs as the app, centered. One-time hints fire on the same triggers.
 - `More actions` sheets become a popover menu anchored to `More`, same buttons in the same order; a dialog opened from it closes the popover where the app closes the sheet and leaves it open where the app leaves the sheet open.
@@ -39,25 +39,25 @@ The wide layout copies zite's home page (`zite/assets/style.css`). Screens move 
 
 - On the page grammar with no hero: the page opens on the form panel, centered at the top under the nav. The counters stay on Home and Activity.
 - `Log in`, `Create profile` and `Forgot password` sit stacked in the form panel's footer, `Log in` first, each the panel's full width, so a wide window has no toolbar here. Enter in either field runs `Log in`.
-- Below 900px it is the app's form with the three buttons in the bar at the bottom.
+- Below 900px it is the same panel in one column.
 
 ## Register
 
 - On the page grammar with no hero: the four fields with their live error lines in their own form panel at the top under the nav.
-- On a wide window the `Password` hint stays open in its own panel to the right of the form panel, top-aligned with it a panel gap away, the pair centered as a group: its title over its rules, in the hint's own words from zwipe-core's `requirements()`, and the `?` beside `Password` goes. The list is static: zwipe-core checks a password whole and names only the first rule it breaks, so the web ticks nothing off as the user types rather than copy the rules. Below 900px the `?` opens the hint as in the app.
+- The `Password` hint stays open in its own panel, to the right of the form panel and top-aligned with it a panel gap away on a wide window (the pair centered as a group), under it below 900px: its title over its rules, in the hint's own words from zwipe-core's `requirements()`. The `?` beside `Password` goes at every width, since the rules are always in view. The list is static: zwipe-core checks a password whole and names only the first rule it breaks, so the web ticks nothing off as the user types rather than copy the rules.
 - `Create profile` sits in the form panel's footer at its full width, as on Login, so a wide window has no toolbar here. The app's `Back to login` goes; the nav's `Log in` covers it. Enter in any field runs `Create profile`. Success goes back to Login with the username filled in.
-- Below 900px it is the app's form, with `Create profile` in the bar at the bottom.
+- Below 900px the form panel is over the `Password` panel in one column.
 
 ## Forgot password
 
 - On the page grammar with no hero, as Login: the `Email` field in its own form panel with `Send reset link` in its footer at its full width. The app's `Back to login` goes; the nav's `Log in` covers it.
 - After a send, the `Check your email` panel takes the form panel's place at the same width, holding only its message.
-- Enter runs `Send reset link`. Below 900px it is the app's form, with `Send reset link` in the bar at the bottom until the link is sent.
+- Enter runs `Send reset link`. Below 900px it is the same panel in one column.
 
 ## Update required
 
 - Shown instead of everything else, with no nav, as in the app: the empty header bar, the pulsing `Update required` card, then a `Reload` button in place of the store link, since a web build updates by loading the page again.
-- The layout is one centered column at every width. Below 900px the empty action bar sits at the bottom as in the app; on a wide window it is left out, since it would be an empty strip under the header.
+- The layout is one centered column at every width, and its empty action bar is left out.
 
 ## Home
 

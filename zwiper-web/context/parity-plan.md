@@ -85,6 +85,7 @@ The crate, the router with a route per screen at the app's paths (unbuilt screen
 - Buttons that only navigate (`Back`, `Back to login`, Home's `Decks`, `Account`, `Config`, `Activity` and `Playstyle`) go as each screen moves onto the page grammar; the top nav and the browser's back cover them; Login keeps `Create profile` and `Forgot password` as buttons.
 - `Clear skips` on the deck view clears at once; the app first sends the skips its telemetry holds, and the web records none.
 - Every page ends in zite's footer, which the app has no counterpart for.
+- The web is panels at every width: a form is a titled panel with its buttons in its footer, and the app's bottom action bar is a toolbar at the top under the nav, below 900px too.
 - Platform-only pieces are skipped: the app icon picker, haptics, crash capture, usage telemetry (a failed call is logged, not reported), the OS back gesture.
 - Escape closes an open dialog before anything else, even where the app's back stack would close the sheet under it first (the Exceptions sheet's hint).
 - `Back to login` on Register and Forgot password goes to Login when there is no history to go back to, such as a page opened from a link.
