@@ -4879,7 +4879,7 @@ checksum = "04744f49eae99ab78e0d5c0b603ab218f515ea8cfe5a456d7629ad883a3b6e7d"
 [[package]]
 name = "orangui"
 version = "0.0.0"
-source = "git+https://github.com/scadoshi/orangui?branch=main#e6719eb3e267bd3c7ae54dfb666f717c5d3b6f50"
+source = "git+https://github.com/scadoshi/orangui?branch=main#932abb52387a0843f600169314b3d0dd58f87fe6"
 dependencies = [
  "dioxus",
  "dioxus-primitives",
@@ -4887,10 +4887,19 @@ dependencies = [
  "jni 0.21.1",
  "ndk-context",
  "objc2",
+ "orangui-core",
  "serde",
  "serde_json",
  "tokio",
  "web-sys",
+]
+
+[[package]]
+name = "orangui-core"
+version = "0.0.0"
+source = "git+https://github.com/scadoshi/orangui?branch=main#932abb52387a0843f600169314b3d0dd58f87fe6"
+dependencies = [
+ "serde",
 ]
 
 [[package]]
