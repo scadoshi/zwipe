@@ -25,10 +25,11 @@ use crate::inbound::screens::not_found::NotFound;
 use crate::inbound::screens::playstyle::Playstyle;
 use crate::inbound::screens::privacy_policy::PrivacyPolicy;
 use crate::inbound::session::auth_gate::AuthGate;
-use crate::inbound::shell::{PublicFrame, Shell};
+use crate::inbound::shell::{OpenFrame, PublicFrame, Shell};
 
-/// The app's routes. The public ones sit in [`PublicFrame`]; the rest need a
-/// session ([`AuthGate`]) and sit under the top nav [`Shell`].
+/// The app's routes. The public ones sit in [`PublicFrame`], Privacy policy
+/// in [`OpenFrame`] (either nav), and the rest need a session ([`AuthGate`])
+/// and sit under the top nav [`Shell`].
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
 #[expect(missing_docs, reason = "each route field is the URL parameter its path names")]
@@ -46,6 +47,14 @@ pub enum Route {
         ForgotPassword {},
     #[end_layout]
 
+    // == open: the signed-in nav or the public one ==
+    #[layout(OpenFrame)]
+        /// The privacy policy, from Account, or from the public nav
+        /// signed out.
+        #[route("/privacy")]
+        PrivacyPolicy {},
+    #[end_layout]
+
     // == authed ==
     #[layout(AuthGate)]
     #[layout(Shell)]
@@ -58,9 +67,6 @@ pub enum Route {
         /// Theme, pips and Universes Beyond.
         #[route("/config")]
         Config {},
-        /// The privacy policy, from Account.
-        #[route("/privacy")]
-        PrivacyPolicy {},
         /// Release history, from Account.
         #[route("/changelog")]
         Changelog {},

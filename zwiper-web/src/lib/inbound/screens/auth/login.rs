@@ -1,6 +1,6 @@
 //! Login: the form as its own panel at the top of the page at every width,
-//! titled `Login`, with `Log in`, `Create profile` and `Forgot password`
-//! stacked in its footer.
+//! titled `Login`, with `Log in`, `Create profile` and `Forgot password` in
+//! a row in its footer.
 
 use components::{Button, ButtonVariant, TOAST_NORMAL, TextInput, ThemeConfig};
 use dioxus::prelude::*;
@@ -126,7 +126,7 @@ pub fn Login() -> Element {
 }
 
 /// `Log in`, `Create profile` and `Forgot password`, all held while a login
-/// is out. Stacked in the form panel's footer.
+/// is out. In a row in the form panel's footer.
 #[component]
 fn LoginActions(loading: bool, on_submit: Callback<()>) -> Element {
     let navigator = use_navigator();

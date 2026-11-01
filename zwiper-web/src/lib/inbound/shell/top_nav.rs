@@ -55,8 +55,8 @@ pub fn Shell() -> Element {
     }
 }
 
-/// The nav over the public screens: the mark, then `Log in` and `Create
-/// profile`, the current one lit, and `Help`.
+/// The nav over the public screens: the mark, then `Log in`, `Create
+/// profile` and `Privacy policy`, the current one lit, and `Help`.
 #[component]
 pub fn PublicNav() -> Element {
     let route: Route = use_route();
@@ -69,6 +69,7 @@ pub fn PublicNav() -> Element {
     let links = [
         (Route::Login {}, "Log in"),
         (Route::Register {}, "Create profile"),
+        (Route::PrivacyPolicy {}, "Privacy policy"),
     ];
     rsx! {
         NavBar {

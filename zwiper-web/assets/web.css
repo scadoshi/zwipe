@@ -4,9 +4,11 @@
 
 :root {
     --web-content-max: 72rem;
-    /* The wide toolbar's height: 0.75rem of padding either side of a
-       1.9rem button row, and its border. Sticky columns stop under it. */
-    --web-toolbar-h: calc(3.4rem + 1px);
+    /* Where a sticky column stops: the page's 1rem gap under the nav. */
+    --web-sticky-top: 1rem;
+    /* How tall a sticky column may be: the window less the nav, the gap
+       over the column, the bottom action bar and a gap over it. */
+    --web-sticky-max: calc(100dvh - 10rem);
 }
 
 html {
@@ -25,7 +27,7 @@ body {
 }
 
 /* A screen fills its frame instead of the whole viewport: one window tall
-   under the nav, scrolling inside itself (see the footer below). */
+   under the nav, scrolling inside itself (see the action bar below). */
 .screen.web-screen {
     position: relative;
     inset: auto;
@@ -36,11 +38,13 @@ body {
     min-height: 0;
 }
 
-/* ---- Scrolling and the footer ----
+/* ---- Scrolling and the action bar ----
 
-   A screen under the nav scrolls as one column and ends in zite's footer:
-   on a short screen the content grows to push the footer to the window's
-   foot, on a long one the footer comes after it, last on the page. */
+   A screen under the nav scrolls as one column. Its content grows to fill
+   the window, and its action bar comes last, sticking to the window's
+   bottom edge at every width, so its actions are always on screen. At the
+   end of the page the content stops above the bar, so nothing stays
+   hidden behind it. There is no site footer. */
 .web-main > .web-scroll-screen {
     overflow-x: hidden;
     overflow-y: auto;
@@ -48,33 +52,24 @@ body {
 
 .web-scroll-screen > .screen-content,
 .web-scroll-screen > .screen-content.card-swipe {
+    order: 1;
     flex: 1 0 auto;
     overflow: visible;
     padding-bottom: 1.5rem;
 }
 
-.web-scroll-screen > .web-footer {
-    order: 3;
-    flex: none;
-    margin-top: 0;
-}
-
-/* The screen's action bar is a toolbar at the top under the nav at every
-   width, in the app's order; the web has no bottom bar. It stays put as
-   the page scrolls. */
+/* The app's bottom action bar: a top rule over the panel background, the
+   buttons centered in the app's order, wrapping when they don't fit. */
 .web-scroll-screen > .action-bar {
     position: sticky;
-    top: 0;
-    order: 1;
-    z-index: 3;
-    justify-content: flex-start;
-    padding: 0.75rem 1rem;
-    border-top: none;
-    border-bottom: 1px solid var(--border-secondary);
-}
-
-.web-scroll-screen > .screen-content {
+    bottom: 0;
     order: 2;
+    z-index: 3;
+    justify-content: center;
+    padding: 0.75rem 1rem;
+    border-top: 1px solid var(--border-secondary);
+    border-bottom: none;
+    background-color: var(--bg-primary);
 }
 
 /* An action bar with nothing in it would be an empty strip. */
@@ -82,43 +77,8 @@ body {
     display: none;
 }
 
-/* zite's footer, the kit's site rules: the copyright line with the links,
-   then the quieter notes. */
-.web-footer {
-    padding: 2rem 1.5rem;
-    background-color: var(--bg-primary);
-    border-top: 1px solid var(--accent-primary);
-    box-shadow: var(--shadow-md);
-    text-align: center;
-    color: var(--text-muted);
-    font-size: 0.78rem;
-}
-
-.web-footer p {
-    margin: 0;
-}
-
-.web-footer a {
-    color: var(--accent-primary);
-    text-decoration: none;
-}
-
-.web-footer a:hover {
-    text-decoration: underline;
-}
-
-.web-footer .site-footer-note {
-    max-width: 42rem;
-    margin: 0.85rem auto 0;
-    font-size: 0.7rem;
-    line-height: 1.5;
-    color: var(--text-subtle);
-    opacity: 0.75;
-}
-
 /* Under the nav a screen has no header bar. Its title stays for assistive
-   tech, and its `?` sits at the right end of its action bar: the toolbar
-   under the nav on a wide window, the bottom bar below the breakpoint. */
+   tech, and its `?` rides at the right end of its action bar. */
 .web-sr-only {
     position: absolute;
     width: 1px;
@@ -131,14 +91,20 @@ body {
     border: 0;
 }
 
-/* Level with the toolbar's buttons under the nav: below the breakpoint the
-   nav's 1rem padding either side of the 2.25rem hamburger and its border,
-   then the toolbar's padding. */
+/* The `?` comes after the bar and is pulled up into its right end: it
+   sticks the bar's bottom padding above the window's edge, so it moves
+   with the bar. Its height is a fixed button row's, which the pull-up
+   matches. The bar keeps the same room on both sides so its buttons stay
+   centered. */
 .web-screen-hint {
-    position: fixed;
-    top: calc(4.25rem + 1px + 0.75rem);
-    right: 1rem;
+    position: sticky;
+    bottom: 0.75rem;
+    order: 3;
     z-index: 4;
+    align-self: flex-end;
+    box-sizing: border-box;
+    height: 1.9rem;
+    margin: calc(-1.9rem - 0.75rem) 1rem 0.75rem 0;
     opacity: 0.55;
 }
 
@@ -147,14 +113,8 @@ body {
 }
 
 .web-screen:has(> .web-screen-hint) > .action-bar {
+    padding-left: 3.5rem;
     padding-right: 3.5rem;
-}
-
-@media (min-width: 900px) {
-    /* The open nav: 1.25rem of padding either side of a 1.85rem pill. */
-    .web-screen-hint {
-        top: calc(4.35rem + 1px + 0.75rem);
-    }
 }
 
 /* ---- Page grammar ----
@@ -179,10 +139,9 @@ body {
 
    A form is its own panel at every width, at zite's form width: the kit
    panel's title bar named after its screen, the fields, then a footer of
-   buttons under a full-bleed rule, one under another at the panel's
-   width, the primary first. Below the breakpoint it keeps the page's side
-   gutter. A panel beside a form (Register's password rules) sits to its
-   right on a wide window and under it below. */
+   buttons under a full-bleed rule: the app's compact action bar buttons
+   in one centered row, the primary first, wrapping only when they don't
+   fit. Below the breakpoint it keeps the page's side gutter. */
 .web-auth {
     display: flex;
     flex-direction: column;
@@ -194,8 +153,7 @@ body {
     box-sizing: border-box;
 }
 
-.web-form-panel,
-.web-password-rules {
+.web-form-panel {
     width: 100%;
     max-width: 25rem;
     margin: 0 auto;
@@ -207,39 +165,16 @@ body {
     box-shadow: var(--shadow-sm);
 }
 
-.web-form-panel > .panel-head.web-panel-head,
-.web-password-rules > .panel-head.web-panel-head {
+.web-form-panel > .panel-head.web-panel-head {
     text-align: left;
 }
 
 .web-form-actions {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.5rem;
-}
-
-.web-form-actions > .btn-action {
-    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
     justify-content: center;
-}
-
-.web-auth-pair {
-    display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: var(--panel-gap);
-    width: 100%;
-}
-
-.web-password-rules {
-    overflow: hidden;
-}
-
-.web-password-rules-body {
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    text-align: left;
+    gap: 0.5rem;
 }
 
 /* Reset password once sent: the outcome in the success color over its
@@ -260,31 +195,12 @@ body {
     .web-auth {
         padding: 0 1.5rem 1.5rem;
     }
-
-    /* The form and the rules side by side, top-aligned a panel gap apart
-       and centered as a pair. */
-    .web-auth-pair {
-        flex-direction: row;
-        justify-content: center;
-        align-items: flex-start;
-    }
-
-    .web-auth-pair > .web-form-panel {
-        flex: 0 1 25rem;
-        margin: 0;
-    }
-
-    .web-auth-pair > .web-password-rules {
-        flex: 0 1 22rem;
-        min-width: 0;
-        margin: 0;
-    }
 }
 
 @media (min-width: 900px) {
     /* Pinned to the top even in a column that centers its content, so
-       the page starts the screen's 1rem top padding under the header or
-       toolbar, as zite's starts 1rem under its nav. */
+       the page starts the screen's 1rem top padding under the nav, as
+       zite's starts 1rem under its nav. */
     .web-page {
         width: 100%;
         max-width: var(--web-page-max);
@@ -528,7 +444,7 @@ body {
 
     .web-privacy-contents {
         position: sticky;
-        top: calc(var(--web-toolbar-h) + 1rem);
+        top: var(--web-sticky-top);
         display: flex;
         flex-direction: column;
         gap: 0.15rem;
@@ -579,7 +495,7 @@ body {
     .web-changelog > .changelog-filters,
     .web-changelog > .changelog-skeleton-chips {
         position: sticky;
-        top: calc(var(--web-toolbar-h) + 1rem);
+        top: var(--web-sticky-top);
         margin-bottom: 0;
     }
 
@@ -1445,10 +1361,10 @@ body {
    the sheet's parts in a panel that stays, the content scrolling inside. */
 .web-filter-dock {
     position: sticky;
-    top: var(--web-toolbar-h);
+    top: var(--web-sticky-top);
     display: flex;
     flex-direction: column;
-    max-height: calc(100vh - 9rem);
+    max-height: var(--web-sticky-max);
     min-width: 0;
     background: var(--bg-primary);
     border: 1px solid var(--border-secondary);
@@ -1552,7 +1468,7 @@ body {
         display: block;
         min-width: 0;
         position: sticky;
-        top: var(--web-toolbar-h);
+        top: var(--web-sticky-top);
     }
 
     /* The app sizes the card's ghost to the phone's width; in a column it
@@ -1628,8 +1544,8 @@ body {
         grid-area: pane;
         display: block;
         position: sticky;
-        top: var(--web-toolbar-h);
-        max-height: calc(100vh - 9rem);
+        top: var(--web-sticky-top);
+        max-height: var(--web-sticky-max);
         overflow-y: auto;
         min-width: 0;
     }
@@ -1669,6 +1585,6 @@ body {
 
     .web-deck-cards-controls {
         position: sticky;
-        top: var(--web-toolbar-h);
+        top: var(--web-sticky-top);
     }
 }

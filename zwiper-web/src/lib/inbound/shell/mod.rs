@@ -2,12 +2,11 @@
 //! routes and `Log in` and `Create profile` on public ones, and the screen
 //! header.
 
-mod footer;
 mod frame;
 mod help;
 pub mod nav;
 mod top_nav;
 
-pub use frame::{PublicFrame, ScreenFrame};
+pub use frame::{OpenFrame, PublicFrame, ScreenFrame};
 pub use help::HelpDialog;
 pub use top_nav::Shell;

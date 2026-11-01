@@ -1,7 +1,7 @@
 //! Register: the four fields as their own panel at the top of the page at
-//! every width, with `Create profile` in its footer, and the password rules
-//! in a panel beside it on a wide window and under it below the breakpoint.
-//! The nav's `Log in` goes back to Login.
+//! every width, with `Create profile` in its footer. The password rules are
+//! the `?` beside `Password`, as in the app. The nav's `Log in` goes back to
+//! Login.
 
 use components::{Button, ButtonVariant, TOAST_NORMAL, TextInput};
 use dioxus::prelude::*;
@@ -12,7 +12,7 @@ use zwipe_core::http::contracts::metrics::AnonymousEventKind;
 
 use crate::domain::validation;
 use crate::inbound::chrome::form_panel::{FormPanelActions, FormPanelHead};
-use crate::inbound::chrome::password_rules::PasswordRules;
+use crate::inbound::chrome::hint_topic::{self, HintTopic};
 use crate::inbound::router::Route;
 use crate::inbound::screens::auth::login::LoginPrefill;
 use crate::inbound::session::funnel;
@@ -127,53 +127,51 @@ pub fn Register() -> Element {
         ScreenFrame { title: "Create profile",
             div { class: "screen-content content-enter",
                 div { class: "web-auth web-page",
-                    div { class: "web-auth-pair",
-                        div { class: "container-sm text-center web-form-panel web-password-form",
-                            FormPanelHead { title: "Create profile" }
-                            form {
-                                class: "flex-col",
-                                onsubmit: move |event| {
-                                    event.prevent_default();
-                                    submit.call(());
-                                },
-                                TextInput {
-                                    value: username,
-                                    id: "username",
-                                    label: "Username",
-                                    placeholder: "Username",
-                                    error: username_error,
-                                }
-                                TextInput {
-                                    value: email,
-                                    id: "email",
-                                    label: "Email",
-                                    placeholder: "Email",
-                                    input_type: "email",
-                                    error: email_error,
-                                }
-                                TextInput {
-                                    value: password,
-                                    id: "password",
-                                    label: "Password",
-                                    placeholder: "Password",
-                                    input_type: "password",
-                                    error: password_error,
-                                }
-                                TextInput {
-                                    value: confirm_password,
-                                    id: "confirm_password",
-                                    label: "Confirm password",
-                                    placeholder: "Confirm password",
-                                    input_type: "password",
-                                }
-                                // Enter in a field submits the form through this.
-                                button { r#type: "submit", hidden: true }
+                    div { class: "container-sm text-center web-form-panel",
+                        FormPanelHead { title: "Create profile" }
+                        form {
+                            class: "flex-col",
+                            onsubmit: move |event| {
+                                event.prevent_default();
+                                submit.call(());
+                            },
+                            TextInput {
+                                value: username,
+                                id: "username",
+                                label: "Username",
+                                placeholder: "Username",
+                                error: username_error,
                             }
-                            FormPanelActions {
-                                RegisterActions { loading: is_loading(), on_submit: submit }
+                            TextInput {
+                                value: email,
+                                id: "email",
+                                label: "Email",
+                                placeholder: "Email",
+                                input_type: "email",
+                                error: email_error,
                             }
+                            TextInput {
+                                value: password,
+                                id: "password",
+                                label: "Password",
+                                placeholder: "Password",
+                                input_type: "password",
+                                error: password_error,
+                                on_info: hint_topic::open_topic(HintTopic::Password),
+                            }
+                            TextInput {
+                                value: confirm_password,
+                                id: "confirm_password",
+                                label: "Confirm password",
+                                placeholder: "Confirm password",
+                                input_type: "password",
+                            }
+                            // Enter in a field submits the form through this.
+                            button { r#type: "submit", hidden: true }
                         }
-                        PasswordRules {}
+                        FormPanelActions {
+                            RegisterActions { loading: is_loading(), on_submit: submit }
+                        }
                     }
                 }
             }
