@@ -38,4 +38,4 @@ One session owns the shared crates: zwipe-ui, zwipe-core, zwipe-client and compo
 
 ## Not yet
 
-Screen models (a state, actions and effects per screen) come next, starting with zwiper-web's waves B to D. zwiper-tui has switched to everything here; zwiper-web and the app still use their own copies until each one switches over.
+Screen models (a state, actions and effects per screen) come next, starting with zwiper-web's waves B to D. zwiper-tui has switched to everything here; zwiper-web still uses its own copies until it switches over, and the app has switched only `filter::fields::same_set` so far.

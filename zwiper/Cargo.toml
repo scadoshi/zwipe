@@ -17,6 +17,7 @@ path = "src/lib/lib.rs"
 zwipe-core = { path = "../zwipe-core" }
 components = { path = "../components", features = ["toast"] }
 zwipe-client = { path = "../zwipe-client" }
+zwipe-ui = { path = "../zwipe-ui" }
 dioxus = { version = "0.7.10", features = ["router"] }
 reqwest = { workspace = true }
 serde_json = { workspace = true }

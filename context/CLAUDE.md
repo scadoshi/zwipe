@@ -74,7 +74,7 @@ zite   ──→ zwipe-client
 zwiper ──→ components ←── zite
 components ──(git)──→ orangui
 portfolio, cairn ──(git)──→ orangui
-zwipe-ui ──→ zwipe-core
+zwiper ──→ zwipe-ui ──→ zwipe-core
 zwipe-ui ──(git)──→ orangui-core
 ```
 
@@ -85,7 +85,7 @@ zwipe-core owns all shared domain types, including every `Http*` contract (`zwip
 - So both clients import everything as `components::` (`::components::` in a module that has its own `components` submodule), and `cargo update -p orangui` moves the pin.
 - The portfolio site and cairn (the counter app) take orangui directly as a git dependency. Nothing outside this repo imports components.
 - zwipe-client holds the typed API client and depends on zwipe-core and reqwest only, so it carries no Dioxus and no platform code. Both clients use it; neither builds a request by hand.
-- zwipe-ui holds the logic behind the screens that the app, zwiper-web and zwiper-tui share. It depends on zwipe-core and on orangui-core, orangui's Dioxus-free half (number formatting, chart math, toast bands), and never on zwipe-client or a UI crate. Clients fetch, then hand the results in. No client depends on it yet; each switches over piece by piece.
+- zwipe-ui holds the logic behind the screens that the app, zwiper-web and zwiper-tui share. It depends on zwipe-core and on orangui-core, orangui's Dioxus-free half (number formatting, chart math, toast bands), and never on zwipe-client or a UI crate. Clients fetch, then hand the results in. Each client switches over piece by piece; the app uses it so far only for `same_set`.
 
 ### Hexagonal (Ports & Adapters) Pattern
 

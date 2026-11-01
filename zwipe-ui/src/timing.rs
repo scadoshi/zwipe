@@ -4,6 +4,8 @@
 
 use std::time::Duration;
 
+use crate::stack;
+
 /// The wait after the last keystroke before a command-zone search runs on
 /// Create and Edit.
 pub const COMMAND_ZONE_SEARCH_DEBOUNCE: Duration = Duration::from_millis(800);
@@ -44,8 +46,13 @@ pub const UPKEEP_INTERVAL: Duration = Duration::from_secs(60);
 pub const COUNTS_FRESH: Duration = Duration::from_secs(60);
 
 /// How long Activity's heatmap keeps a picked day's readout before letting
-/// it go, orangui's heat pick (`orangui_core::heat::PICK_MS`).
-pub const HEAT_PICK: Duration = Duration::from_secs(4);
+/// it go: orangui's heat pick, [`orangui_core::heat::PICK_MS`], so every
+/// client releases the pick at the same moment.
+#[expect(
+    clippy::as_conversions,
+    reason = "u32 to u64 is lossless, and u64::from is not callable in a const"
+)]
+pub const HEAT_PICK: Duration = Duration::from_millis(orangui_core::heat::PICK_MS as u64);
 
 /// Cards one page of a card search or a swipe deck asks for.
 pub const PAGE_SIZE: u32 = 25;
@@ -59,8 +66,9 @@ pub const DICTIONARY_RESULT_CAP: usize = 100;
 /// Most oracle tags the deck form's oracle tag picker lists for a search.
 pub const ORACLE_TAG_PICKER_LIMIT: usize = 40;
 
-/// Most example cards Oracle tag examples holds.
-pub const EXAMPLES_MAX_CARDS: usize = 500;
+/// Most example cards Oracle tag examples holds: the swipe stack's own cap,
+/// [`stack::MAX_CARDS_IN_STACK`], as the app's examples screen uses it.
+pub const EXAMPLES_MAX_CARDS: usize = stack::MAX_CARDS_IN_STACK;
 
 #[cfg(test)]
 mod tests {
@@ -72,5 +80,6 @@ mod tests {
             HEAT_PICK,
             Duration::from_millis(u64::from(orangui_core::heat::PICK_MS))
         );
+        assert_eq!(HEAT_PICK, Duration::from_secs(4), "the app's 4 s pick");
     }
 }
