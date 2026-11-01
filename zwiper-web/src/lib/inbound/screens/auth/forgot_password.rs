@@ -12,6 +12,7 @@ use zwipe_client::ZwipeClient;
 use zwipe_core::http::contracts::auth::HttpRequestPasswordReset;
 
 use crate::domain::validation;
+use crate::inbound::chrome::form_panel::{FormPanelActions, FormPanelHead};
 use crate::inbound::shell::ScreenFrame;
 
 /// Reset password: asks for an email, then says a link is on its way. The
@@ -68,13 +69,19 @@ pub fn ForgotPassword() -> Element {
             div { class: "screen-content centered content-enter",
                 div { class: "web-auth web-page",
                     if sent() {
-                        div { class: "outcome-success web-outcome-panel",
+                        div { class: "outcome-success web-narrow-only",
                             Panel { title: "Check your email", centered: true,
                                 p { "If that email is registered, a reset link is on its way." }
                             }
                         }
+                        div { class: "web-form-panel web-sent-panel web-wide-only",
+                            FormPanelHead { title: "Reset password" }
+                            p { class: "web-sent-title", "Check your email" }
+                            p { class: "web-sent-line", "If that email is registered, a reset link is on its way." }
+                        }
                     } else {
                         div { class: "container-sm text-center web-form-panel",
+                                FormPanelHead { title: "Reset password" }
                             form {
                                 class: "flex-col",
                                 onsubmit: move |event| {
@@ -93,7 +100,7 @@ pub fn ForgotPassword() -> Element {
                                 }
                                 button { r#type: "submit", hidden: true }
                             }
-                            div { class: "web-form-actions web-form-actions-stack",
+                            FormPanelActions {
                                 ForgotActions { on_submit: submit }
                             }
                         }

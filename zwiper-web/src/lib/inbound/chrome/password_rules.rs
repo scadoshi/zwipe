@@ -4,6 +4,7 @@
 use dioxus::prelude::*;
 use zwipe_ui::hint::HintTopic;
 
+use crate::inbound::chrome::form_panel::FormPanelHead;
 use crate::inbound::chrome::hint_body::HintBody;
 
 /// The `Password` hint as a panel that stays open: its title over its
@@ -15,9 +16,7 @@ use crate::inbound::chrome::hint_body::HintBody;
 pub fn PasswordRules() -> Element {
     rsx! {
         div { class: "web-password-rules",
-            div { class: "settings-list-header",
-                span { class: "settings-list-title", "{HintTopic::Password.title()}" }
-            }
+            FormPanelHead { title: HintTopic::Password.title() }
             div { class: "web-password-rules-body",
                 HintBody { blocks: HintTopic::Password.blocks() }
             }

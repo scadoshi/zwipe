@@ -11,6 +11,7 @@ use zwipe_core::http::contracts::auth::HttpRegisterUser;
 use zwipe_core::http::contracts::metrics::AnonymousEventKind;
 
 use crate::domain::validation;
+use crate::inbound::chrome::form_panel::{FormPanelActions, FormPanelHead};
 use crate::inbound::chrome::hint_topic::{self, HintTopic};
 use crate::inbound::chrome::password_rules::PasswordRules;
 use crate::inbound::router::Route;
@@ -129,6 +130,7 @@ pub fn Register() -> Element {
                 div { class: "web-auth web-page",
                     div { class: "web-auth-pair",
                         div { class: "container-sm text-center web-form-panel web-password-form",
+                            FormPanelHead { title: "Create profile" }
                             form {
                                 class: "flex-col",
                                 onsubmit: move |event| {
@@ -169,7 +171,7 @@ pub fn Register() -> Element {
                                 // Enter in a field submits the form through this.
                                 button { r#type: "submit", hidden: true }
                             }
-                            div { class: "web-form-actions web-form-actions-stack",
+                            FormPanelActions {
                                 RegisterActions { loading: is_loading(), on_submit: submit }
                             }
                         }

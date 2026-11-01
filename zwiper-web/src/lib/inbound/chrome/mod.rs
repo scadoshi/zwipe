@@ -2,6 +2,7 @@
 //! hints and the one-time hints, and the web forms of the app's sheets.
 
 pub mod authed;
+pub mod form_panel;
 pub mod hint_body;
 pub mod hint_topic;
 pub mod media;

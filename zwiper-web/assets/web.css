@@ -166,7 +166,9 @@ body {
     display: contents;
 }
 
-.web-form-actions {
+.web-form-actions,
+.web-panel-head,
+.web-wide-only {
     display: none;
 }
 
@@ -257,7 +259,8 @@ body {
     .web-form-actions.web-form-actions-stack {
         flex-direction: column;
         align-items: stretch;
-        margin-top: 0.5rem;
+        gap: 0.5rem;
+        margin-top: 0;
     }
 
     .web-form-actions-stack > .btn-action {
@@ -283,6 +286,8 @@ body {
         display: block;
         flex: 0 1 22rem;
         min-width: 0;
+        padding: 1.5rem;
+        box-sizing: border-box;
         background-color: var(--bg-primary);
         border: 1px solid var(--border-secondary);
         border-radius: 1rem;
@@ -291,7 +296,7 @@ body {
     }
 
     .web-password-rules-body {
-        padding: 1rem 1.25rem 0.5rem;
+        padding: 0;
         font-size: 0.8rem;
         color: var(--text-muted);
         text-align: left;
@@ -496,11 +501,40 @@ body {
 
     /* Forgot password's sent outcome stands where the form panel was, at
        its width. */
-    .web-auth > .web-outcome-panel {
-        width: 100%;
-        max-width: 25rem;
-        margin: 0 auto;
-        padding: 0;
+    .web-narrow-only {
+        display: none;
+    }
+
+    .web-wide-only {
+        display: block;
+    }
+
+    /* A form panel's title bar and action footer: the kit panel's head and
+       actions, each against a full-bleed rule, the title on the left as
+       zite's panels have it. */
+    .web-form-panel > .panel-head.web-panel-head,
+    .web-password-rules > .panel-head.web-panel-head {
+        display: block;
+        text-align: left;
+    }
+
+    .web-form-panel > .panel-rule.web-panel-head,
+    .web-password-rules > .panel-rule.web-panel-head {
+        display: block;
+    }
+
+    /* Reset password once sent: the outcome in the success color over its
+       line, in the form panel's place. */
+    .web-sent-title {
+        margin: 0 0 0.5rem;
+        color: var(--color-success);
+        font-weight: 700;
+        text-align: center;
+    }
+
+    .web-sent-line {
+        margin: 0;
+        text-align: center;
     }
 
     /* Toasts move top right so they never cover the sidebar. */

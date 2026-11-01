@@ -11,6 +11,7 @@ use zwipe_core::domain::user::models::preferences::PipStyle;
 use zwipe_core::http::contracts::auth::HttpAuthenticateUser;
 
 use crate::domain::login::{self, SubmitGate};
+use crate::inbound::chrome::form_panel::{FormPanelActions, FormPanelHead};
 use crate::inbound::router::Route;
 use crate::inbound::shell::ScreenFrame;
 use crate::outbound::session_store::SessionStore;
@@ -91,6 +92,7 @@ pub fn Login() -> Element {
             div { class: "screen-content centered content-enter",
                 div { class: "web-auth web-page",
                     div { class: "container-sm text-center web-form-panel",
+                        FormPanelHead { title: "Login" }
                         form {
                             class: "flex-col",
                             onsubmit: move |event| {
@@ -113,7 +115,7 @@ pub fn Login() -> Element {
                             // Enter in a field submits the form through this.
                             button { r#type: "submit", hidden: true }
                         }
-                        div { class: "web-form-actions web-form-actions-stack",
+                        FormPanelActions {
                             LoginActions { loading: is_loading(), on_submit: submit }
                         }
                     }
