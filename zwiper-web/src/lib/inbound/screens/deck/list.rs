@@ -16,7 +16,7 @@ use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::deck::DeckProfile;
 use zwipe_core::domain::deck::deck_tag::deck_tag_label;
 use zwipe_ui::deck::list::{self, GroupBy, Show};
-use zwipe_ui::deck::{card_count, count_fits};
+use zwipe_ui::deck::{card_count, cards_label, count_fits};
 
 use crate::domain::deck::command_zone_art;
 use crate::inbound::chrome::authed::use_authed;
@@ -346,10 +346,10 @@ fn DeckRow(profile: DeckProfile) -> Element {
                         }
                     }
                 }
-                // The app always writes "cards", even for one.
+                // "1 card" for one, "{count} cards" otherwise.
                 span {
                     class: if count_bad { "stat-chip stat-chip-warning" } else { "stat-chip" },
-                    "{count} cards"
+                    {cards_label(count)}
                 }
                 if let Some(format) = profile.format {
                     span { class: "stat-chip stat-chip-p3", "{format.display_name()}" }

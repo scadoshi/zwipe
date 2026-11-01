@@ -7,9 +7,9 @@ use uuid::Uuid;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::universe::UbFranchiseView;
-use zwipe_core::http::contracts::changelog::HttpChangelog;
 use zwipe_core::http::contracts::metrics::HttpLifetimeCounters;
 use zwipe_core::http::contracts::suggestions::HttpPlayStyleSummary;
+use zwipe_ui::changelog::ChangelogCache;
 use zwipe_ui::home::next_hour;
 use zwipe_ui::timing::COUNTS_FRESH;
 
@@ -18,7 +18,7 @@ use crate::inbound::root_signal::use_root_signal;
 use crate::outbound::counts_store::CountsStore;
 use crate::outbound::scope_store::ScopeStore;
 
-/// A fetch the root runs once per visit.
+/// A fetch the root runs once per visit and again after a failure.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Load<T> {
     /// Still out.
@@ -38,11 +38,6 @@ impl<T> Load<T> {
         }
     }
 }
-
-/// The release history, fetched once at the start of a visit, logged in or
-/// not, with no retry. The Changelog screen draws from it.
-#[derive(Debug, Clone, Copy)]
-pub struct ChangelogCache(pub Signal<Load<HttpChangelog>>);
 
 /// The Universes Beyond franchises the Exceptions sheet offers, fetched at
 /// the start of a visit and again by [`UbFranchises::ensure`] after a
@@ -144,7 +139,8 @@ impl FlavorCard {
 ///
 /// - `Signal<Option<CachedCounts>>`: everybody's counters for the heroes,
 ///   starting from the copy an earlier visit stored.
-/// - [`ChangelogCache`], and [`UbFranchises`] in the root scope its
+/// - `Signal<ChangelogCache>`, fetched once at the start of a visit, logged
+///   in or not, with no retry; and [`UbFranchises`] in the root scope its
 ///   fetches run in.
 /// - [`CreateDeckSeed`], empty.
 /// - `Signal<Option<CachedMyCounts>>`, `Signal<Option<CachedPlayStyle>>` and
@@ -157,17 +153,17 @@ pub fn use_root_caches() {
 
     let client: Signal<ZwipeClient> = use_context();
 
-    let changelog = ChangelogCache(use_signal(|| Load::Loading));
+    let changelog: Signal<ChangelogCache> = use_signal(ChangelogCache::default);
     use_context_provider(|| changelog);
     use_hook(move || {
-        let mut cell = changelog.0;
+        let mut cell = changelog;
         spawn(async move {
             let http = client.peek().clone();
             match http.fetch_changelog().await {
-                Ok(fetched) => cell.set(Load::Loaded(fetched)),
+                Ok(fetched) => cell.set(ChangelogCache::Loaded(fetched)),
                 Err(e) => {
                     tracing::debug!("changelog not fetched: {e}");
-                    cell.set(Load::Failed);
+                    cell.set(ChangelogCache::Failed);
                 }
             }
         });

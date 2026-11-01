@@ -5,8 +5,8 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::http::contracts::auth::HttpChangeEmail;
+use zwipe_ui::account;
 
-use crate::domain::validation;
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::sheet::{SheetForm, SheetFrame};
 
@@ -50,10 +50,10 @@ pub(super) fn ChangeEmailSheet(mut open: Signal<bool>) -> Element {
 
     let attempted = submit_attempted();
     let email_error = (email_touched() || attempted)
-        .then(|| validation::email_error(&new_email()))
+        .then(|| account::email_error(&new_email()))
         .flatten();
     let password_error = (password_touched() || attempted)
-        .then(|| validation::required_password_error(&password()))
+        .then(|| account::password_required(&password()))
         .flatten();
 
     let mut attempt_submit = move || {
@@ -63,8 +63,8 @@ pub(super) fn ChangeEmailSheet(mut open: Signal<bool>) -> Element {
         submit_attempted.set(true);
         let typed = new_email.peek().clone();
         let typed_password = password.peek().clone();
-        if validation::email_error(&typed).is_some()
-            || validation::required_password_error(&typed_password).is_some()
+        if account::email_error(&typed).is_some()
+            || account::password_required(&typed_password).is_some()
         {
             return;
         }

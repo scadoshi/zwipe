@@ -47,17 +47,6 @@ pub fn exception_names(slugs: &[String]) -> Vec<&'static str> {
     names
 }
 
-/// `slugs` with `slug` taken out when it is in, else added at the end.
-pub fn toggled(slugs: &[String], slug: &str) -> Vec<String> {
-    if slugs.iter().any(|s| s == slug) {
-        slugs.iter().filter(|s| *s != slug).cloned().collect()
-    } else {
-        let mut next = slugs.to_vec();
-        next.push(slug.to_string());
-        next
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -89,12 +78,6 @@ mod tests {
         assert!(same_set(&slugs(&["a", "b"]), &slugs(&["b", "a"])));
         assert!(!same_set(&slugs(&["a"]), &slugs(&["a", "b"])));
         assert!(same_set(&[], &[]));
-    }
-
-    #[test]
-    fn a_tap_adds_at_the_end_or_takes_out() {
-        assert_eq!(toggled(&slugs(&["a"]), "b"), slugs(&["a", "b"]));
-        assert_eq!(toggled(&slugs(&["a", "b"]), "a"), slugs(&["b"]));
     }
 
     #[test]

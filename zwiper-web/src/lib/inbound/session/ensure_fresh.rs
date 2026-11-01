@@ -2,13 +2,14 @@
 
 use std::sync::{Arc, OnceLock};
 
+use chrono::Utc;
 use dioxus::prelude::*;
 use tokio::sync::{Mutex, oneshot};
 use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::http::contracts::auth::HttpRefreshSession;
+use zwipe_ui::session::{self, Freshness};
 
-use crate::domain::session::{self, Freshness};
 use crate::outbound::session_store::SessionStore;
 
 /// The single-flight lock: at most one refresh request out. A caller that
@@ -67,7 +68,7 @@ pub async fn ensure_fresh(
                 Ok(new)
             }
             Err(e) => {
-                if session::refresh_rejected(&e) {
+                if status(&e).is_some_and(session::refresh_rejected) {
                     tracing::warn!("refresh rejected; clearing session: {e}");
                     SessionStore::browser().infallible_delete();
                     session.set(None);
@@ -100,23 +101,55 @@ enum Checked {
 /// Reads the session without subscribing the caller and clears an expired
 /// one.
 fn check(mut session: Signal<Option<Session>>) -> Checked {
-    let current = session.peek().clone();
-    match session::freshness(current.as_ref()) {
-        Freshness::Missing => Checked::Failed(not_logged_in()),
+    let Some(current) = session.peek().clone() else {
+        return Checked::Failed(not_logged_in());
+    };
+    match session::freshness(&current, Utc::now()) {
         Freshness::Expired => {
             tracing::info!("session expired");
             SessionStore::browser().infallible_delete();
             session.set(None);
             Checked::Failed(ClientError::Unauthorized("session expired".to_string()))
         }
-        Freshness::Fresh => current.map_or_else(
-            || Checked::Failed(not_logged_in()),
-            |current| Checked::Ready(Box::new(current)),
-        ),
+        Freshness::Fresh => Checked::Ready(Box::new(current)),
         Freshness::Stale => Checked::Stale,
+    }
+}
+
+/// The HTTP status a server answer carried, or `None` when the request
+/// never got one (a network failure or an unreadable body).
+fn status(error: &ClientError) -> Option<u16> {
+    match error {
+        ClientError::BadRequest(_) => Some(400),
+        ClientError::Unauthorized(_) => Some(401),
+        ClientError::Forbidden(_) => Some(403),
+        ClientError::NotFound(_) => Some(404),
+        ClientError::Conflict(_) => Some(409),
+        ClientError::PayloadTooLarge(_) => Some(413),
+        ClientError::UnprocessableEntity(_) => Some(422),
+        ClientError::TooManyRequests(_) => Some(429),
+        ClientError::InternalServerError(_) => Some(500),
+        ClientError::Network(_) | ClientError::Decode(_) => None,
     }
 }
 
 fn not_logged_in() -> ClientError {
     ClientError::Unauthorized("not logged in".to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn only_auth_rejections_drop_the_session() {
+        let rejected = |error: ClientError| status(&error).is_some_and(session::refresh_rejected);
+        let says = || "no".to_string();
+        assert!(rejected(ClientError::Unauthorized(says())));
+        assert!(rejected(ClientError::Forbidden(says())));
+        assert!(rejected(ClientError::NotFound(says())));
+        assert!(!rejected(ClientError::InternalServerError(says())));
+        assert!(!rejected(ClientError::TooManyRequests(says())));
+        assert!(!rejected(ClientError::BadRequest(says())));
+    }
 }
