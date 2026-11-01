@@ -33,7 +33,7 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-MANIFEST="${1:-$REPO_ROOT/target/dx/zwipe/release/android/app/app/src/main/AndroidManifest.xml}"
+MANIFEST="${1:-$REPO_ROOT/target/dx/zwiper/release/android/app/app/src/main/AndroidManifest.xml}"
 
 [ -f "$MANIFEST" ] || { echo "AndroidManifest.xml not found: $MANIFEST" >&2; exit 1; }
 

@@ -56,7 +56,7 @@ pub struct DatabaseRefreshToken {
     pub login_at: DateTime<Utc>,
     /// Set once the token has been rotated; a later use of it is a replay.
     pub replaced_at: Option<DateTime<Utc>>,
-    /// Client platform string (`ios`/`android`/`desktop`/`web`), NULL if unknown.
+    /// Client platform string (`ios`/`android`/`desktop`/`web`/`terminal`), NULL if unknown.
     pub platform: Option<String>,
     /// Client app version string (e.g. `"1.6.1"`), NULL if unknown.
     pub client_version: Option<String>,

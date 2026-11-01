@@ -565,3 +565,53 @@ async fn pile_ends_store_the_commander_and_drop_other_users_decks(pool: sqlx::Pg
         "only the reporter's own deck lands, keyed by its commander"
     );
 }
+
+#[sqlx::test]
+async fn terminal_platform_accepted_on_crash_and_usage(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let crash_id = Uuid::from_u128(0x7e4);
+    let (status, body) = app
+        .post(
+            RECORD_CRASH_ROUTE,
+            json!({
+                "crash_id": crash_id.to_string(),
+                "client_version": "0.1.0",
+                "platform": "terminal",
+                "message": "panicked",
+                "occurred_at": chrono::Utc::now().to_rfc3339(),
+            }),
+            None,
+        )
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT, "terminal crash: {body}");
+    let platform: String =
+        sqlx::query_scalar("SELECT platform FROM crash_reports WHERE crash_id = $1")
+            .bind(crash_id)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+    assert_eq!(platform, "terminal");
+
+    let (token, _) = app.register("tui").await;
+    let (status, body) = app
+        .post(
+            RECORD_USAGE_ROUTE,
+            json!({
+                "swipes_right": 0, "swipes_left": 0, "swipes_up": 0,
+                "swipes_down": 0, "searches": 0,
+                "client_errors": [{
+                    "screen": "deck_list", "component": "", "action": "fetch_decks",
+                    "kind": "api_internal", "message": "boom", "count": 1,
+                    "client_version": "0.1.0", "platform": "terminal"
+                }]
+            }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT, "terminal usage: {body}");
+    let platform: String = sqlx::query_scalar("SELECT platform FROM client_errors")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(platform, "terminal");
+}

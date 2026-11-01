@@ -12,7 +12,7 @@ The work is in deciding what the toast covers instead, and in three details that
 
 ## What is there now, measured
 
-The provider is mounted in `zwiper/src/bin/zwipe.rs:125` with `max_toasts: 3` and `class: "toast-container"`. That class reaches the DOM through `#[props(extends = GlobalAttributes)]` on `ToastProviderProps`, which is what every selector in `toast.css` hangs off. The library owns the inner DOM: `div.toast-container > ol > li > div[role="alertdialog"][data-type]`.
+The provider is mounted in `zwiper/src/bin/zwiper.rs:125` with `max_toasts: 3` and `class: "toast-container"`. That class reaches the DOM through `#[props(extends = GlobalAttributes)]` on `ToastProviderProps`, which is what every selector in `toast.css` hangs off. The library owns the inner DOM: `div.toast-container > ol > li > div[role="alertdialog"][data-type]`.
 
 Position today is `right: 1rem; bottom: 7rem`, with `flex-direction: column-reverse` and `margin-top: -2.5rem` on the items, so the stack overlaps into a deck with a z-index ladder keeping the newest on top. Animation is a single 0.2s `toast-slide-in`, and the library removes the toast when its duration expires.
 
