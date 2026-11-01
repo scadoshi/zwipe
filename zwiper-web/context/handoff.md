@@ -35,6 +35,17 @@ These are recorded in `web-layout.md`; they are repeated here because they came 
 
 Compact footer buttons, the password hint behind `?`, no site footer, the action bar pinned to the bottom, and Privacy policy open signed out. Gated in full and checked live at 1440x900 and 420x900 on every screen: the bar sits flush with the window's bottom edge, the `?` sits inside it at its right end without covering a button, nothing at the end of a page hides behind the bar, and signed-out `/privacy` has its nav pill and the Fan content section. Login's three compact buttons wrap to two rows at the 25rem panel width.
 
+## When zwipe-ui lands on main
+
+The shared plan is `zwipe-ui/context/shared-plan.md` on feat/zwipe-ui. The zwiper-tui session messages when zwipe-ui merges. Then:
+
+- Merge main into feat/web, then into feat/web-zite, and run the gate.
+- Switch the web's copies to zwipe-ui where it already has them: `domain/session.rs`, `version_gate.rs`, `support.rs`, `validation.rs`, the timing constants, the changelog cache, and `toggled`.
+- Theme: resolve retired slugs through orangui-core `theme::current_theme` instead of `ThemeConfig::resolve`.
+- Deck rows read "1 card" for one card (`ui::deck::cards_label`), by the owner's decision.
+- Toasts take the app's kind, band and words as each helper branch lands them.
+- The usage buffer replaces the web's disabled funnel once the telemetry branch (branch 12) lands. That branch also tags usage with the platform server side.
+
 ## Review queue
 
 Approved so far: Login, Register and Forgot password (round 9's renders sent for sign-off). Next, one screen per round with renders for the owner: Home, then Activity, Playstyle, deck view (these four already have a first pass of the hero-plus-columns layout on this branch), then Account, Config, Privacy policy, Changelog, Decks, Create and Edit, Import and Export, Commander maybeboard, Dictionary and Examples, Add, Deck cards, Remove, Update required, Not found. Remove each screen's Back button on its turn.
