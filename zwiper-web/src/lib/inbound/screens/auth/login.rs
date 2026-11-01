@@ -1,8 +1,8 @@
-//! Login: the form as its own panel, centered at the top of zite's page,
-//! with `Log in`, `Create profile` and `Forgot password` stacked under the
-//! fields on a wide window and in the bar below the breakpoint.
+//! Login: the form as its own panel at the top of the page at every width,
+//! titled `Login`, with `Log in`, `Create profile` and `Forgot password`
+//! stacked in its footer.
 
-use components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL, TextInput, ThemeConfig};
+use components::{Button, ButtonVariant, TOAST_NORMAL, TextInput, ThemeConfig};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
@@ -121,16 +121,12 @@ pub fn Login() -> Element {
                     }
                 }
             }
-            ActionBar { class: "web-form-toolbar",
-                LoginActions { loading: is_loading(), on_submit: submit }
-            }
         }
     }
 }
 
 /// `Log in`, `Create profile` and `Forgot password`, all held while a login
-/// is out. Stacked under the form on a wide window, in the action bar below
-/// the breakpoint.
+/// is out. Stacked in the form panel's footer.
 #[component]
 fn LoginActions(loading: bool, on_submit: Callback<()>) -> Element {
     let navigator = use_navigator();

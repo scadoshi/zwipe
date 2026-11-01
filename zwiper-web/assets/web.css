@@ -40,9 +40,7 @@ body {
 
    A screen under the nav scrolls as one column and ends in zite's footer:
    on a short screen the content grows to push the footer to the window's
-   foot, on a long one the footer comes after it. The action bar sticks, to
-   the top under the nav on a wide window and to the bottom below the
-   breakpoint, as in the app. */
+   foot, on a long one the footer comes after it, last on the page. */
 .web-main > .web-scroll-screen {
     overflow-x: hidden;
     overflow-y: auto;
@@ -61,11 +59,27 @@ body {
     margin-top: 0;
 }
 
+/* The screen's action bar is a toolbar at the top under the nav at every
+   width, in the app's order; the web has no bottom bar. It stays put as
+   the page scrolls. */
 .web-scroll-screen > .action-bar {
     position: sticky;
-    bottom: 0;
-    order: 4;
+    top: 0;
+    order: 1;
     z-index: 3;
+    justify-content: flex-start;
+    padding: 0.75rem 1rem;
+    border-top: none;
+    border-bottom: 1px solid var(--border-secondary);
+}
+
+.web-scroll-screen > .screen-content {
+    order: 2;
+}
+
+/* An action bar with nothing in it would be an empty strip. */
+.web-scroll-screen > .action-bar:empty {
+    display: none;
 }
 
 /* zite's footer, the kit's site rules: the copyright line with the links,
@@ -117,10 +131,13 @@ body {
     border: 0;
 }
 
+/* Level with the toolbar's buttons under the nav: below the breakpoint the
+   nav's 1rem padding either side of the 2.25rem hamburger and its border,
+   then the toolbar's padding. */
 .web-screen-hint {
     position: fixed;
+    top: calc(4.25rem + 1px + 0.75rem);
     right: 1rem;
-    bottom: 1rem;
     z-index: 4;
     opacity: 0.55;
 }
@@ -130,21 +147,13 @@ body {
 }
 
 .web-screen:has(> .web-screen-hint) > .action-bar {
-    padding-left: 3.5rem;
     padding-right: 3.5rem;
 }
 
 @media (min-width: 900px) {
-    /* Level with the toolbar's buttons under the nav: the nav's 1.25rem
-       padding either side of a 1.85rem pill and its border, then the
-       toolbar's padding. */
+    /* The open nav: 1.25rem of padding either side of a 1.85rem pill. */
     .web-screen-hint {
         top: calc(4.35rem + 1px + 0.75rem);
-        bottom: auto;
-    }
-
-    .web-screen:has(> .web-screen-hint) > .action-bar {
-        padding-left: 1rem;
     }
 }
 
@@ -166,20 +175,110 @@ body {
     display: contents;
 }
 
-.web-form-actions,
-.web-panel-head,
-.web-wide-only {
-    display: none;
+/* ---- Input panels ----
+
+   A form is its own panel at every width, at zite's form width: the kit
+   panel's title bar named after its screen, the fields, then a footer of
+   buttons under a full-bleed rule, one under another at the panel's
+   width, the primary first. Below the breakpoint it keeps the page's side
+   gutter. A panel beside a form (Register's password rules) sits to its
+   right on a wide window and under it below. */
+.web-auth {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--panel-gap);
+    width: 100%;
+    margin: 0 auto auto;
+    padding: 0 1rem 1rem;
+    box-sizing: border-box;
+}
+
+.web-form-panel,
+.web-password-rules {
+    width: 100%;
+    max-width: 25rem;
+    margin: 0 auto;
+    padding: 1.5rem;
+    box-sizing: border-box;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.web-form-panel > .panel-head.web-panel-head,
+.web-password-rules > .panel-head.web-panel-head {
+    text-align: left;
+}
+
+.web-form-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+}
+
+.web-form-actions > .btn-action {
+    width: 100%;
+    justify-content: center;
 }
 
 .web-auth-pair {
-    display: contents;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--panel-gap);
+    width: 100%;
 }
 
-/* A new password's rules stay open in a panel beside its form on a wide
-   window; below the breakpoint the field's `?` opens them as in the app. */
 .web-password-rules {
-    display: none;
+    overflow: hidden;
+}
+
+.web-password-rules-body {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    text-align: left;
+}
+
+/* Reset password once sent: the outcome in the success color over its
+   line, in the form panel's place. */
+.web-sent-title {
+    margin: 0 0 0.5rem;
+    color: var(--color-success);
+    font-weight: 700;
+    text-align: center;
+}
+
+.web-sent-line {
+    margin: 0;
+    text-align: center;
+}
+
+@media (min-width: 900px) {
+    .web-auth {
+        padding: 0 1.5rem 1.5rem;
+    }
+
+    /* The form and the rules side by side, top-aligned a panel gap apart
+       and centered as a pair. */
+    .web-auth-pair {
+        flex-direction: row;
+        justify-content: center;
+        align-items: flex-start;
+    }
+
+    .web-auth-pair > .web-form-panel {
+        flex: 0 1 25rem;
+        margin: 0;
+    }
+
+    .web-auth-pair > .web-password-rules {
+        flex: 0 1 22rem;
+        min-width: 0;
+        margin: 0;
+    }
 }
 
 @media (min-width: 900px) {
@@ -226,85 +325,6 @@ body {
         font-size: 0.85rem;
     }
 
-    /* A form is its own panel at zite's form width, centered, never folded
-       into a hero or stretched across the columns. Its actions sit under
-       the fields, so the toolbar that holds them below the breakpoint
-       goes. */
-    .web-form-panel {
-        width: 100%;
-        max-width: 25rem;
-        margin: 0 auto;
-        padding: 1.5rem;
-        box-sizing: border-box;
-        background-color: var(--bg-primary);
-        border: 1px solid var(--border-secondary);
-        border-radius: 1rem;
-        box-shadow: var(--shadow-sm);
-    }
-
-    .web-form-actions {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 0.5rem;
-        margin-top: 0.25rem;
-    }
-
-    .web-screen > .action-bar.web-form-toolbar {
-        display: none;
-    }
-
-    /* An auth form's buttons, one under another at the form's width, the
-       primary first. */
-    .web-form-actions.web-form-actions-stack {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 0.5rem;
-        margin-top: 0;
-    }
-
-    .web-form-actions-stack > .btn-action {
-        width: 100%;
-        justify-content: center;
-    }
-
-    /* The form and the rules panel side by side, top-aligned a panel gap
-       apart and centered as a pair. */
-    .web-auth-pair {
-        display: flex;
-        justify-content: center;
-        align-items: flex-start;
-        gap: var(--panel-gap);
-    }
-
-    .web-auth-pair > .web-form-panel {
-        flex: 0 1 25rem;
-        margin: 0;
-    }
-
-    .web-password-rules {
-        display: block;
-        flex: 0 1 22rem;
-        min-width: 0;
-        padding: 1.5rem;
-        box-sizing: border-box;
-        background-color: var(--bg-primary);
-        border: 1px solid var(--border-secondary);
-        border-radius: 1rem;
-        box-shadow: var(--shadow-sm);
-        overflow: hidden;
-    }
-
-    .web-password-rules-body {
-        padding: 0;
-        font-size: 0.8rem;
-        color: var(--text-muted);
-        text-align: left;
-    }
-
-    .web-password-form .label-hint-anchor > :not(label) {
-        display: none;
-    }
 
     /* A hero that is a list of rows stays the phone column's width. */
     .web-hero.web-hero-narrow {
@@ -339,17 +359,6 @@ body {
 
 /* ---- Public frame (login, register, reset) ---- */
 
-/* Login, Register and Forgot password below the breakpoint: the app's
-   stack, the hero over the form. */
-@media (max-width: 899px) {
-    .web-auth {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 1.5rem;
-        width: 100%;
-    }
-}
 
 /* ---- Top nav ----
 
@@ -467,77 +476,14 @@ body {
     }
 }
 
-/* On a wide window the action bar sits under the header, next to the
-   content, in the app's order. */
+/* Update required has no nav: its header stays, and its empty action bar
+   would be an empty strip. */
+.web-screen > .action-bar:empty {
+    display: none;
+}
+
 @media (min-width: 900px) {
-    .web-screen {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .web-screen > .action-bar {
-        order: 1;
-        top: 0;
-        bottom: auto;
-        justify-content: flex-start;
-        padding: 0.75rem 1rem;
-        border-top: none;
-        border-bottom: 1px solid var(--border-secondary);
-    }
-
-    .web-screen > .screen-content {
-        order: 2;
-    }
-
-    /* An action bar with nothing in it (Update required) would be an empty
-       strip under the header. */
-    .web-screen > .action-bar:empty {
-        display: none;
-    }
-
-    .web-screen > .page-header {
-        order: 0;
-    }
-
-    /* Forgot password's sent outcome stands where the form panel was, at
-       its width. */
-    .web-narrow-only {
-        display: none;
-    }
-
-    .web-wide-only {
-        display: block;
-    }
-
-    /* A form panel's title bar and action footer: the kit panel's head and
-       actions, each against a full-bleed rule, the title on the left as
-       zite's panels have it. */
-    .web-form-panel > .panel-head.web-panel-head,
-    .web-password-rules > .panel-head.web-panel-head {
-        display: block;
-        text-align: left;
-    }
-
-    .web-form-panel > .panel-rule.web-panel-head,
-    .web-password-rules > .panel-rule.web-panel-head {
-        display: block;
-    }
-
-    /* Reset password once sent: the outcome in the success color over its
-       line, in the form panel's place. */
-    .web-sent-title {
-        margin: 0 0 0.5rem;
-        color: var(--color-success);
-        font-weight: 700;
-        text-align: center;
-    }
-
-    .web-sent-line {
-        margin: 0;
-        text-align: center;
-    }
-
-    /* Toasts move top right so they never cover the sidebar. */
+    /* Toasts move top right. */
     .toast-container {
         left: auto;
         right: 1rem;

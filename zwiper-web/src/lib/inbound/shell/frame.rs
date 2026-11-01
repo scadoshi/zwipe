@@ -23,8 +23,8 @@ pub fn PublicFrame() -> Element {
 /// A screen under the top nav: no header bar, so the page starts right
 /// under the nav. `title` names the screen for assistive tech and the
 /// browser tab. The header's `?` (`on_hint`) moves to the right end of the
-/// screen's toolbar: under the nav on a wide window, the bottom bar below
-/// the breakpoint. The public screens' `!` is the nav's `Help`. The screen
+/// screen's toolbar, which sits under the nav at every width. The public
+/// screens' `!` is the nav's `Help`. The screen
 /// scrolls as one column and ends in the footer, which sits at the window's
 /// foot on a short screen.
 #[component]

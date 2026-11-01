@@ -1,9 +1,9 @@
-//! Register: the four fields as their own panel at the top of zite's page,
-//! with `Create profile` under the fields and the password rules in a panel
-//! beside it on a wide window; below the breakpoint the app's form with
-//! `Create profile` in the bar. The nav's `Log in` goes back to Login.
+//! Register: the four fields as their own panel at the top of the page at
+//! every width, with `Create profile` in its footer, and the password rules
+//! in a panel beside it on a wide window and under it below the breakpoint.
+//! The nav's `Log in` goes back to Login.
 
-use components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL, TextInput};
+use components::{Button, ButtonVariant, TOAST_NORMAL, TextInput};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
@@ -12,7 +12,6 @@ use zwipe_core::http::contracts::metrics::AnonymousEventKind;
 
 use crate::domain::validation;
 use crate::inbound::chrome::form_panel::{FormPanelActions, FormPanelHead};
-use crate::inbound::chrome::hint_topic::{self, HintTopic};
 use crate::inbound::chrome::password_rules::PasswordRules;
 use crate::inbound::router::Route;
 use crate::inbound::screens::auth::login::LoginPrefill;
@@ -159,7 +158,6 @@ pub fn Register() -> Element {
                                     placeholder: "Password",
                                     input_type: "password",
                                     error: password_error,
-                                    on_info: hint_topic::open_topic(HintTopic::Password),
                                 }
                                 TextInput {
                                     value: confirm_password,
@@ -179,15 +177,12 @@ pub fn Register() -> Element {
                     }
                 }
             }
-            ActionBar { class: "web-form-toolbar",
-                RegisterActions { loading: is_loading(), on_submit: submit }
-            }
         }
     }
 }
 
-/// `Create profile`, held while a registration is out. Under the form on a
-/// wide window, in the action bar below the breakpoint.
+/// `Create profile`, held while a registration is out, in the form panel's
+/// footer.
 #[component]
 fn RegisterActions(loading: bool, on_submit: Callback<()>) -> Element {
     rsx! {

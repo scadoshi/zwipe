@@ -1,11 +1,11 @@
-//! Forgot password: the email field as its own panel, centered at the top
-//! of zite's page, with `Send reset link` under the field on a wide window
-//! and in the bar below the breakpoint, and the `Check your email` panel in
-//! its place once sent. The nav's `Log in` goes back to Login.
+//! Forgot password: the email field as its own panel at the top of the page
+//! at every width, with `Send reset link` in its footer, and a panel saying
+//! `Check your email` in its place once sent. The nav's `Log in` goes back
+//! to Login.
 //!
 //! The reset itself happens on the website, from the emailed link.
 
-use components::{ActionBar, Button, ButtonVariant, Panel, TOAST_NORMAL, TextInput};
+use components::{Button, ButtonVariant, TOAST_NORMAL, TextInput};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
@@ -69,12 +69,7 @@ pub fn ForgotPassword() -> Element {
             div { class: "screen-content centered content-enter",
                 div { class: "web-auth web-page",
                     if sent() {
-                        div { class: "outcome-success web-narrow-only",
-                            Panel { title: "Check your email", centered: true,
-                                p { "If that email is registered, a reset link is on its way." }
-                            }
-                        }
-                        div { class: "web-form-panel web-sent-panel web-wide-only",
+                        div { class: "web-form-panel web-sent-panel",
                             FormPanelHead { title: "Reset password" }
                             p { class: "web-sent-title", "Check your email" }
                             p { class: "web-sent-line", "If that email is registered, a reset link is on its way." }
@@ -107,17 +102,12 @@ pub fn ForgotPassword() -> Element {
                     }
                 }
             }
-            if !sent() {
-                ActionBar { class: "web-form-toolbar",
-                    ForgotActions { on_submit: submit }
-                }
-            }
         }
     }
 }
 
-/// `Send reset link`. Under the form on a wide window, in the action bar
-/// below the breakpoint; gone once the link is sent.
+/// `Send reset link`, in the form panel's footer; gone once the link is
+/// sent.
 #[component]
 fn ForgotActions(on_submit: Callback<()>) -> Element {
     rsx! {
