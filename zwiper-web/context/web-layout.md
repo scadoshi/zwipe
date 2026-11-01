@@ -1,6 +1,6 @@
 # zwiper-web layout
 
-The breakpoint is 900px: at 900px and up the window is wide, below it the web app is the phone layout in one column. Screens with three panels add the third at 1280px and up; between 900px and 1279px they show two. A top nav like zite's holds the ZWIPE mark (Home), Decks, Activity, Playstyle, Account, Config and Help, and below 900px folds behind a hamburger. Bottom sheets become side panels when they edit something on the page and centered modals when they are short forms or lists; dialogs stay modal.
+The breakpoint is 900px: at 900px and up the window is wide, below it the web app is the phone layout in one column. Screens with three panels add the third at 1280px and up; between 900px and 1279px they show two. A top nav like zite's holds the Z mark (Home), Decks, Activity, Playstyle, Account, Config and Help, and below 900px folds behind a hamburger. Bottom sheets become side panels when they edit something on the page and centered modals when they are short forms or lists; dialogs stay modal.
 
 Esc closes the top overlay (dialog, then modal, then side panel, then full overlay), browser back does the same for overlays the app puts on its back stack, Enter submits the focused form, and `/` focuses the screen's search or quick add field where there is one. Single-key shortcuts only fire while no text field has focus.
 
@@ -17,7 +17,7 @@ The wide layout copies zite's home page (`zite/assets/style.css`). Screens move 
 
 ## Shared chrome
 
-- The top nav is zite's bar, the kit's `NavBar`: the ZWIPE mark in the logo color on the left, linking Home, and on the right `Decks`, `Activity`, `Playstyle`, `Account`, `Config` and `Help` as pills. `Help` opens the same `Help & feedback` dialog as the app's `!` button. The current screen's pill is lit; screens reached from a deck (Deck view, Edit, Import, Export, the card screens) light `Decks`, the Commander maybeboard lights `Playstyle`, and Privacy policy and Changelog light `Account`.
+- The top nav is zite's bar, the kit's `NavBar`: the Z mark (zwipe-core's `logo::Z`, the app icon's art) on the left in `var(--logo)`, sized to stand as tall as a nav pill and linking Home, and on the right `Decks`, `Activity`, `Playstyle`, `Account`, `Config` and `Help` as pills. `Help` opens the same `Help & feedback` dialog as the app's `!` button. The current screen's pill is lit; screens reached from a deck (Deck view, Edit, Import, Export, the card screens) light `Decks`, the Commander maybeboard lights `Playstyle`, and Privacy policy and Changelog light `Account`.
 - Below 900px the links fold behind the kit's hamburger and open as its dropdown under the bar; a link, a tap outside or a new route closes it. The kit folds its bar at 60rem, so `web.css` keeps it open from 900px.
 - Logged out, the nav holds the mark, `Log in` and `Create profile` (the current one lit) and `Help`, which takes the place of the app's `!`.
 - Under the nav there is no screen header at any width: the page starts right under the nav, or under the toolbar where the screen has one. The title stays for assistive tech and names the browser tab. A screen's `?` hint button moves to the right end of its action bar: the toolbar under the nav on a wide window, the bottom bar below 900px. Every screen with a `?` has an action bar.
@@ -34,22 +34,22 @@ The wide layout copies zite's home page (`zite/assets/style.css`). Screens move 
 
 ## Login
 
-- On the page grammar. The `HomeHero` card (the mark beside the counters, `Everybody`, `Live`) is the hero across the top of the page, and the form is its own panel centered under it.
-- `Log in` sits under the fields inside the form panel, so a wide window has no toolbar here. Under it two text links, `New here? Create profile` and `Forgot password?`, replace the app's two buttons that only navigated. Enter in either field runs `Log in`.
-- Below 900px the hero stacks above the form as in the app, with `Log in` in the bar at the bottom and the links in the form.
+- On the page grammar with no hero: the page opens on the form panel, centered at the top under the nav. The counters stay on Home and Activity.
+- `Log in`, `Create profile` and `Forgot password` sit stacked under the fields inside the form panel, `Log in` first, all at one width, so a wide window has no toolbar here. Enter in either field runs `Log in`.
+- Below 900px it is the app's form with the three buttons in the bar at the bottom.
 
 ## Register
 
-- On the page grammar, as Login: the `HomeHero` card across the top, then the four fields with their live error lines in their own form panel.
+- On the page grammar with no hero, as Login: the four fields with their live error lines in their own form panel, centered at the top under the nav.
 - On a wide window the `Password` hint's rules stay open as a quiet list under the password fields, in the hint's own words from zwipe-core's `requirements()`, and the `?` beside `Password` goes. The list is static: zwipe-core checks a password whole and names only the first rule it breaks, so the web ticks nothing off as the user types rather than copy the rules. Below 900px the `?` opens the hint as in the app.
 - `Create profile` sits under the fields in the panel, so a wide window has no toolbar here, and a `Have a profile? Log in` link replaces `Back to login`. Enter in any field runs `Create profile`. Success goes back to Login with the username filled in.
-- Below 900px it stacks like the app, with `Create profile` in the bar at the bottom.
+- Below 900px it is the app's form, with `Create profile` in the bar at the bottom.
 
 ## Forgot password
 
-- On the page grammar, as Login: the hero card across the top, then the `Email` field in its own form panel with `Send reset link` and a `Have a profile? Log in` link under it.
+- On the page grammar with no hero, as Login: the `Email` field in its own form panel with `Send reset link` and a `Have a profile? Log in` link under it.
 - After a send, the `Check your email` panel takes the form panel's place at the same width, with the same link under its line.
-- Enter runs `Send reset link`. Below 900px it stacks like the app, with `Send reset link` in the bar at the bottom until the link is sent.
+- Enter runs `Send reset link`. Below 900px it is the app's form, with `Send reset link` in the bar at the bottom until the link is sent.
 
 ## Update required
 
