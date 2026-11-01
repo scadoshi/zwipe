@@ -20,6 +20,8 @@ pub mod hint_host;
 pub mod home_hero;
 /// Home's Color map panel: the user's color territory map.
 pub mod home_play_style;
+/// Sends plain link clicks to the in-app browser instead of leaving the app.
+pub mod in_app_links;
 /// Persistent, on-demand "?" help button (not one-time, no session dependency).
 pub mod info_button;
 /// Interactive components (buttons, links, etc.).

@@ -8,6 +8,7 @@ use zwipe_core::domain::user::preferences::PipStyle;
 use zwiper::config::Config;
 use zwiper::inbound::components::auth::session_upkeep;
 use zwiper::inbound::components::hint_host::HintHost;
+use zwiper::inbound::components::in_app_links::use_in_app_links;
 use zwiper::inbound::components::update_required::UpdateRequired;
 use zwiper::inbound::router::Router;
 
@@ -98,6 +99,7 @@ fn App() -> Element {
     // Not in main(): UIApplication does not exist until the app has launched,
     // so calling this earlier would silently do nothing.
     use_hook(zwiper::outbound::shake_to_edit::disable);
+    use_in_app_links();
 
     let upgrade_required = session_upkeep::spawn_upkeeper();
     let dialogs = use_dialog_host();
