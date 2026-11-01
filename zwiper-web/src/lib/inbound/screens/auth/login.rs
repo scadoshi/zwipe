@@ -1,6 +1,7 @@
 //! Login: on a wide window the hero card at the top of zite's page and the
-//! form under it as its own panel, with the actions under the fields;
-//! below the breakpoint the app's stack with the actions in the bar.
+//! form under it as its own panel, with `Log in` under the fields; below the
+//! breakpoint the app's stack with `Log in` in the bar. Links under the form
+//! go to Create profile and Forgot password.
 
 use components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL, TextInput, ThemeConfig};
 use dioxus::prelude::*;
@@ -118,6 +119,13 @@ pub fn Login() -> Element {
                         div { class: "web-form-actions",
                             LoginActions { loading: is_loading(), on_submit: submit }
                         }
+                        p { class: "web-form-link",
+                            "New here? "
+                            Link { to: Route::Register {}, "Create profile" }
+                        }
+                        p { class: "web-form-link",
+                            Link { to: Route::ForgotPassword {}, "Forgot password?" }
+                        }
                     }
                 }
             }
@@ -128,34 +136,16 @@ pub fn Login() -> Element {
     }
 }
 
-/// `Log in`, `Create profile` and `Forgot password`, all held while a login
-/// is out. Under the form on a wide window, in the action bar below the
-/// breakpoint.
+/// `Log in`, held while a login is out. Under the form on a wide window, in
+/// the action bar below the breakpoint.
 #[component]
 fn LoginActions(loading: bool, on_submit: Callback<()>) -> Element {
-    let navigator = use_navigator();
     rsx! {
         Button {
             variant: ButtonVariant::Action,
             disabled: loading,
             onclick: move |_| on_submit.call(()),
             if loading { "Logging in..." } else { "Log in" }
-        }
-        Button {
-            variant: ButtonVariant::Action,
-            disabled: loading,
-            onclick: move |_| {
-                navigator.push(Route::Register {});
-            },
-            "Create profile"
-        }
-        Button {
-            variant: ButtonVariant::Action,
-            disabled: loading,
-            onclick: move |_| {
-                navigator.push(Route::ForgotPassword {});
-            },
-            "Forgot password"
         }
     }
 }

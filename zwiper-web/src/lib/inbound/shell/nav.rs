@@ -1,8 +1,8 @@
-//! The sidebar's entries and which one a route belongs to.
+//! The nav's entries and which one a route belongs to.
 
 use crate::inbound::router::Route;
 
-/// One sidebar entry.
+/// One nav entry.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Section {
     /// Home.
@@ -55,7 +55,7 @@ impl Section {
     }
 
     /// The entry `route` lights up, or `None` for a route outside the
-    /// sidebar (the public screens, not found).
+    /// nav (the public screens, not found).
     pub fn of(route: &Route) -> Option<Section> {
         match route {
             Route::Home {} => Some(Section::Home),

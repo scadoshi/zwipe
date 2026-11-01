@@ -30,7 +30,7 @@ pub fn HelpDialog(open: Signal<bool>) -> Element {
     }
 }
 
-/// The app's faded `!` header button, for the screens without a sidebar.
+/// The app's faded `!` header button, for the public screens.
 #[component]
 pub fn HelpButton() -> Element {
     let mut open = use_signal(|| false);

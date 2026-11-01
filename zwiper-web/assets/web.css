@@ -3,11 +3,7 @@
  * phone layout in one column. */
 
 :root {
-    --web-sidebar-width: 13rem;
     --web-content-max: 72rem;
-    /* The app header's height: 1rem of padding above and below a title line
-       1.6rem tall, plus its border. The folded sidebar opens just under it. */
-    --web-header-height: calc(3.6rem + 1px);
 }
 
 html {
@@ -26,7 +22,7 @@ body {
 }
 
 /* A screen fills its frame instead of the whole viewport. It is one window
-   tall, as in the app, so its content column is what scrolls: the sidebar
+   tall, as in the app, so its content column is what scrolls: the nav
    and the toolbar stay put, and sticky columns stick to that column. */
 .screen.web-screen {
     position: relative;
@@ -58,6 +54,21 @@ body {
 
 .web-form-actions {
     display: none;
+}
+
+/* A small text line under a form that links to a neighbor screen, such as
+   `Have a profile? Log in`, in place of a button that only navigates. */
+.web-form-link {
+    margin: 0.75rem 0 0;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    text-align: center;
+}
+
+.web-form-link a {
+    color: var(--accent-primary);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
 }
 
 /* A new password's rules stay open under its fields on a wide window;
@@ -186,12 +197,6 @@ body {
 
 /* ---- Public frame (login, register, reset) ---- */
 
-.web-public {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-}
-
 /* Login, Register and Forgot password below the breakpoint: the app's
    stack, the hero over the form. */
 @media (max-width: 899px) {
@@ -204,84 +209,119 @@ body {
     }
 }
 
-/* ---- Sidebar shell ---- */
+/* ---- Top nav ----
+
+   zite's bar from the kit's NavBar: the ZWIPE mark home on the left and
+   the screens on the right as pills, folding behind the hamburger below
+   the breakpoint. The shell is one window tall: the nav, then the screen,
+   whose content column scrolls. */
 
 .web-shell {
     display: flex;
-    min-height: 100vh;
-}
-
-.web-sidebar {
-    position: sticky;
-    top: 0;
-    align-self: flex-start;
-    flex: 0 0 var(--web-sidebar-width);
+    flex-direction: column;
     height: 100vh;
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    padding: 1rem 0.75rem;
-    border-right: 1px solid var(--border-secondary);
-    background-color: var(--bg-primary);
-    z-index: 2;
+    height: 100dvh;
 }
 
-.web-sidebar ul {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-}
-
-/* The full ZWIPE mark, 49 columns of JetBrains Mono at 0.6em each, sized
-   to fit the sidebar's 11.5rem inside its padding even where a browser
-   rounds each column up to a whole pixel. The color is the app's .logo
-   color: plain text in dark mode, the accent in light mode. */
-.web-sidebar-mark {
-    font-size: 0.34rem;
-    line-height: 0.9;
-    padding: 0;
-    margin: 0 auto 1rem;
-}
-
-.web-nav-link {
-    display: block;
-    width: 100%;
-    padding: 0.45rem 0.75rem;
-    border: 1px solid transparent;
-    border-radius: 0.375rem;
-    background: none;
-    color: var(--text-secondary, var(--text-primary));
-    font: inherit;
-    text-align: left;
-    text-decoration: none;
-    cursor: pointer;
-}
-
-.web-nav-link:hover {
-    border-color: var(--border-secondary);
-    color: var(--text-primary);
-}
-
-.web-nav-link.active {
-    border-color: var(--border-primary);
-    color: var(--accent-primary);
-}
-
-.web-nav-help {
-    margin-top: auto;
+.web-shell > .nav-wrapper {
+    flex: none;
+    margin-bottom: 0;
 }
 
 .web-main {
     flex: 1;
+    min-height: 0;
     min-width: 0;
+    display: flex;
+    flex-direction: column;
 }
 
-/* The header's Menu button only shows where the sidebar folds away. */
-.web-header-menu {
-    display: none;
+.web-main > .screen.web-screen {
+    flex: 1;
+    height: auto;
+    min-height: 0;
+}
+
+/* The mark as zite draws it, in the logo color. */
+.web-nav-logo {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.35rem;
+    line-height: 0.9;
+    white-space: pre;
+    display: block;
+    letter-spacing: 0;
+    color: var(--logo);
+}
+
+@media (hover: hover) {
+    .nav-brand:hover .web-nav-logo {
+        color: var(--accent-primary);
+    }
+}
+
+/* The kit folds the nav at 60rem; zwiper-web's breakpoint is 900px, so
+   between the two the bar stays open as above 60rem. */
+@media (min-width: 900px) and (max-width: 60rem) {
+    .web-shell .nav-wrapper nav {
+        display: flex;
+        padding: 1.25rem 1.5rem;
+        gap: 2rem;
+        max-height: none;
+    }
+
+    .web-shell .nav-toggle {
+        display: none;
+    }
+
+    .web-shell .nav-panel,
+    .web-shell .nav-panel-open {
+        display: flex;
+        flex: 1;
+        justify-content: flex-end;
+        margin: 0;
+        padding: 0;
+        border-top: none;
+        opacity: 1;
+        visibility: visible;
+        transition: none;
+    }
+
+    .web-shell .nav-panel .nav-panel-inner {
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.75rem 1.5rem;
+        overflow: visible;
+        padding: 0;
+    }
+
+    .web-shell .nav-panel .nav-links {
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.75rem 1.5rem;
+        max-height: none;
+        overflow: visible;
+    }
+
+    .web-shell .nav-panel .nav-links li {
+        width: auto;
+        height: 1.85rem;
+    }
+
+    .web-shell .nav-panel .nav-links > li > a,
+    .web-shell .nav-panel .nav-links > li > button.nav-link {
+        width: auto;
+        height: 1.85rem;
+        font-size: 0.8rem;
+        padding: 0 0.8rem;
+    }
+
+    .web-shell .nav-wrapper nav > .nav-brand {
+        justify-self: auto;
+    }
 }
 
 /* On a wide window the action bar sits under the header, next to the
@@ -564,37 +604,6 @@ body {
     }
 }
 
-/* Narrow: the sidebar folds away and the screen header's Menu button opens
-   it under the header. */
-@media (max-width: 899px) {
-    .web-shell {
-        flex-direction: column;
-    }
-
-    .web-header-menu {
-        display: inline-flex;
-    }
-
-    .web-sidebar {
-        display: none;
-    }
-
-    .web-sidebar.open {
-        display: flex;
-        position: fixed;
-        top: var(--web-header-height);
-        left: 0;
-        right: 0;
-        height: auto;
-        border-right: none;
-        border-bottom: 1px solid var(--border-secondary);
-    }
-
-    .web-sidebar.open .web-sidebar-mark {
-        display: none;
-    }
-}
-
 /* ---- Placeholders ---- */
 
 .web-placeholder {
@@ -866,11 +875,6 @@ body {
 
     .web-home-page .home-flavor {
         min-height: 0;
-    }
-
-    /* The sidebar holds Decks, Account and Config. */
-    .web-screen > .action-bar.web-home-actions {
-        display: none;
     }
 }
 

@@ -1,6 +1,7 @@
 //! Register: on a wide window the hero card at the top of zite's page and
-//! the four fields under it as their own panel, with the actions under the
-//! fields; below the breakpoint the app's stack with the actions in the bar.
+//! the four fields under it as their own panel, with `Create profile` under
+//! the fields; below the breakpoint the app's stack with it in the bar. A
+//! link under the form goes to Login.
 
 use components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL, TextInput};
 use dioxus::prelude::*;
@@ -121,7 +122,6 @@ pub fn Register() -> Element {
         });
     };
 
-    let back = use_callback(move |()| back_to_login());
     let submit = use_callback(move |()| attempt_submit());
 
     rsx! {
@@ -172,30 +172,27 @@ pub fn Register() -> Element {
                             button { r#type: "submit", hidden: true }
                         }
                         div { class: "web-form-actions",
-                            RegisterActions { loading: is_loading(), on_back: back, on_submit: submit }
+                            RegisterActions { loading: is_loading(), on_submit: submit }
+                        }
+                        p { class: "web-form-link",
+                            "Have a profile? "
+                            Link { to: Route::Login {}, "Log in" }
                         }
                     }
                 }
             }
             ActionBar { class: "web-form-toolbar",
-                RegisterActions { loading: is_loading(), on_back: back, on_submit: submit }
+                RegisterActions { loading: is_loading(), on_submit: submit }
             }
         }
     }
 }
 
-/// `Back to login` and `Create profile`, both held while a registration is
-/// out. Under the form on a wide window, in the action bar below the
-/// breakpoint.
+/// `Create profile`, held while a registration is out. Under the form on a
+/// wide window, in the action bar below the breakpoint.
 #[component]
-fn RegisterActions(loading: bool, on_back: Callback<()>, on_submit: Callback<()>) -> Element {
+fn RegisterActions(loading: bool, on_submit: Callback<()>) -> Element {
     rsx! {
-        Button {
-            variant: ButtonVariant::Action,
-            disabled: loading,
-            onclick: move |_| on_back.call(()),
-            "Back to login"
-        }
         Button {
             variant: ButtonVariant::Action,
             disabled: loading,

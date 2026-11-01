@@ -20,7 +20,7 @@ src/
         ├── root_signal.rs  signals owned by the root scope, for state root tasks write
         ├── router.rs       Route, one variant per screen at the app's path
         ├── session/        ensure_fresh, the upkeep loop, the auth gate, logout, the funnel events
-        ├── shell/          the sidebar Shell, PublicFrame, ScreenFrame, Help, nav
+        ├── shell/          the top nav Shell, PublicFrame, ScreenFrame, Help, nav
         └── screens/        one module per screen (the deck screens share `deck/`, the card screens are `deck/cards/`), plus not_found.rs
 ```
 
@@ -73,7 +73,7 @@ The root also mounts the kit's `ToastStack` (screens raise toasts with `dioxus_p
 
 ## Styling
 
-The root loads, in order: the kit's `THEMES_CSS`, `COMPONENTS_CSS`, `MAGIC_CSS` and `APP_CSS`, zwiper's `main.css` and `accordion.css` (included from `zwiper/assets` as they are, never copied), `TOAST_CSS`, then `assets/web.css`. A screen uses the app's class names, so it looks like the app with no new CSS. `web.css` only holds what a browser window changes: the sidebar, the wide layouts, the 900px breakpoint, and undoing the phone-only rules (`body` capped to the screen height, `.screen` fixed to the viewport). The fonts are copies of zwiper's, because `asset!` only reads files inside the crate.
+The root loads, in order: the kit's `THEMES_CSS`, `COMPONENTS_CSS`, `MAGIC_CSS` and `APP_CSS`, zwiper's `main.css` and `accordion.css` (included from `zwiper/assets` as they are, never copied), `TOAST_CSS`, then `assets/web.css`. A screen uses the app's class names, so it looks like the app with no new CSS. `web.css` only holds what a browser window changes: the top nav, the wide layouts, the 900px breakpoint, and undoing the phone-only rules (`body` capped to the screen height, `.screen` fixed to the viewport). The fonts are copies of zwiper's, because `asset!` only reads files inside the crate.
 
 ## Adding a screen
 
@@ -84,8 +84,8 @@ Say the screen is Activity.
 3. A one-time hint is `use_one_time_hint(OneTimeHint::Activity)` with a `OneTimeHintDialog` beside the frame and the frame's `on_hint` reopening it.
 4. Take the screen's rules, copy, timings and caps from zwipe-ui. What zwipe-ui lacks goes in `src/lib/domain/<name>.rs` as pure, tested functions marked `// Belongs in zwipe-ui`. The component calls them; it does not repeat them.
 5. Call the API through `use_authed()`, which refreshes the session and toasts a failure. Unauthenticated calls go straight to the `Signal<ZwipeClient>`.
-6. Add `pub mod activity;` to `screens/mod.rs` and a route for it in `router.rs`, then its sidebar entry in `shell/nav.rs` if it has one.
-7. If the screen belongs to a sidebar entry other than the one `Section::of` gives it, change that match in `shell/nav.rs` and its test.
+6. Add `pub mod activity;` to `screens/mod.rs` and a route for it in `router.rs`, then its nav entry in `shell/nav.rs` if it has one.
+7. If the screen belongs to a nav entry other than the one `Section::of` gives it, change that match in `shell/nav.rs` and its test.
 
 Every string comes from the spec, verbatim. A screen that differs from the app in more than layout and input gets a line in the kept deviations of `parity-plan.md`.
 

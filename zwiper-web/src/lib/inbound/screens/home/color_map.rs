@@ -1,5 +1,5 @@
-//! Home's color map panel: the user's color map from every deck, with a
-//! `Playstyle` button that opens the full screen.
+//! Home's color map panel: the user's color map from every deck. The nav's
+//! `Playstyle` opens the full screen.
 
 use components::ColorMap;
 use dioxus::prelude::*;
@@ -10,7 +10,6 @@ use crate::inbound::caches::CachedPlayStyle;
 use crate::inbound::cards::charts::{ColorMapEmpty, ColorMapSkeleton, map_counts, user_seed};
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::hint_topic::{HintTopic, InfoButton};
-use crate::inbound::router::Route;
 
 /// The playstyle summary from the root's copy, refetched quietly on every
 /// mount; with whether the last fetch failed. The copy shows while the
@@ -52,10 +51,9 @@ fn drawable(map: Option<&HttpColorMap>, deck_count: u32) -> Option<components::C
 }
 
 /// The panel: its title with a `?`, then the user's color map seeded by
-/// their id (the same shape as Playstyle's) with `Playstyle` at the end of
-/// its key. Before any deck has colored cards, one line; a failed fetch
-/// with nothing cached, a muted line; either with `Playstyle` under it.
-/// While the fetch is out the whole panel ghosts.
+/// their id (the same shape as Playstyle's). Before any deck has colored
+/// cards, one line; a failed fetch with nothing cached, a muted line. While
+/// the fetch is out the whole panel ghosts.
 #[component]
 pub fn HomePlayStyle() -> Element {
     let (summary, failed) = use_play_style_summary();
@@ -68,17 +66,15 @@ pub fn HomePlayStyle() -> Element {
                     rsx! {
                         PanelHeader {}
                         if let Some(counts) = counts {
-                            ColorMap { counts, seed, key_action: rsx! { PlaystyleButton {} } }
+                            ColorMap { counts, seed }
                         } else {
                             ColorMapEmpty {}
-                            div { class: "home-panel-actions", PlaystyleButton {} }
                         }
                     }
                 }
                 None if failed() => rsx! {
                     PanelHeader {}
                     div { class: "message-empty", style: "padding: 1rem;", "Could not load your playstyle" }
-                    div { class: "home-panel-actions", PlaystyleButton {} }
                 },
                 None => rsx! {
                     div { class: "skeleton-card-header home-panel-header", style: "display: flex;",
@@ -87,7 +83,7 @@ pub fn HomePlayStyle() -> Element {
                         }
                         div { class: "skeleton-bar skeleton-section-label", style: "width: 30%; margin-bottom: 0;" }
                     }
-                    ColorMapSkeleton { key_action: true }
+                    ColorMapSkeleton {}
                 },
             }
         }
@@ -103,21 +99,6 @@ fn PanelHeader() -> Element {
                 InfoButton { topic: HintTopic::ColorMap }
             }
             span { class: "settings-list-title", "Color map" }
-        }
-    }
-}
-
-/// Opens Playstyle.
-#[component]
-fn PlaystyleButton() -> Element {
-    let navigator = use_navigator();
-    rsx! {
-        button {
-            class: "card-action-btn",
-            onclick: move |_| {
-                navigator.push(Route::Playstyle {});
-            },
-            "Playstyle"
         }
     }
 }

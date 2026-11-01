@@ -28,7 +28,7 @@ use crate::inbound::session::auth_gate::AuthGate;
 use crate::inbound::shell::{PublicFrame, Shell};
 
 /// The app's routes. The public ones sit in [`PublicFrame`]; the rest need a
-/// session ([`AuthGate`]) and sit in the sidebar [`Shell`].
+/// session ([`AuthGate`]) and sit under the top nav [`Shell`].
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
 #[expect(missing_docs, reason = "each route field is the URL parameter its path names")]

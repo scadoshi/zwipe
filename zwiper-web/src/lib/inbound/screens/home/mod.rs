@@ -1,11 +1,11 @@
 //! Home: the counters, the color map and the featured flavor card.
 //!
-//! On a wide window the hero sits centered at the top of zite's page and
-//! the color map and flavor panels share the two columns under it; the
-//! app's action bar (`Decks`, `Account`, `Config`) goes, since the sidebar
-//! holds the same three. Below
-//! the breakpoint it is the app's stack. The flavor card's `Buy` is a link
-//! per retailer, as zite's is, in place of the app's dialog.
+//! On a wide window the hero sits at the top of zite's page and the color
+//! map and flavor panels share the two columns under it. Below the
+//! breakpoint it is the app's stack. The app's buttons that only navigate
+//! (`Decks`, `Account`, `Config`, `Activity`, `Playstyle`) go, since the
+//! nav holds them. The flavor card's `Buy` is a link per retailer, as
+//! zite's is, in place of the app's dialog.
 
 pub mod color_map;
 pub mod hero;
@@ -13,7 +13,7 @@ pub mod hero;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use chrono::Utc;
-use components::{ActionBar, Button, ButtonVariant, TOAST_QUICK, ThemeConfig};
+use components::{TOAST_QUICK, ThemeConfig};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
@@ -29,7 +29,6 @@ use crate::inbound::caches::FlavorCard;
 use crate::inbound::cards::buy_links::CardBuyLinks;
 use crate::inbound::cards::image_preview::ImagePreview;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
-use crate::inbound::router::Route;
 use crate::inbound::shell::ScreenFrame;
 use crate::outbound::session_store::SessionStore;
 
@@ -42,7 +41,6 @@ static GREETED: AtomicBool = AtomicBool::new(false);
 /// and pips) and, once the hour's card has expired, the featured flavor.
 #[component]
 pub fn Home() -> Element {
-    let navigator = use_navigator();
     let client: Signal<ZwipeClient> = use_context();
     let mut session: Signal<Option<Session>> = use_context();
     let toast = use_toast();
@@ -149,29 +147,6 @@ pub fn Home() -> Element {
                             }
                         }
                     }
-                }
-            }
-            ActionBar { class: "web-home-actions",
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| {
-                        navigator.push(Route::DeckList {});
-                    },
-                    "Decks"
-                }
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| {
-                        navigator.push(Route::Account {});
-                    },
-                    "Account"
-                }
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| {
-                        navigator.push(Route::Config {});
-                    },
-                    "Config"
                 }
             }
         }

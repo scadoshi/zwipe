@@ -10,7 +10,6 @@ use zwipe_ui::home::{Figures, Scope};
 
 use crate::inbound::caches::CachedMyCounts;
 use crate::inbound::chrome::authed::use_authed;
-use crate::inbound::router::Route;
 use crate::inbound::screens::auth::hero::{HeroPanel, strip_figures, use_public_counts};
 use crate::outbound::scope_store::ScopeStore;
 
@@ -58,13 +57,12 @@ pub fn use_my_counts(scope: Signal<Scope>) -> Option<HttpLifetimeCounters> {
 
 /// Home's hero: the mark over everybody's or the user's own three figures,
 /// tagged `Live` once the figures on screen come from this visit, then the
-/// scope button and `Activity`. A switch is stored, so Home opens on the
+/// scope button. A switch is stored, so Home opens on the
 /// last one, and it rolls the figures to the other counts while its label
 /// fades in.
 #[component]
 pub fn HomeHeroScoped() -> Element {
     let mut scope: Signal<Scope> = use_context();
-    let navigator = use_navigator();
     let (public, public_live) = use_public_counts();
     let mine = use_my_counts(scope);
     let (figures, live) = match scope() {
@@ -91,13 +89,6 @@ pub fn HomeHeroScoped() -> Element {
                     for label in [label] {
                         span { key: "{label}", class: "hero-scope-label", "{label}" }
                     }
-                }
-                button {
-                    class: "card-action-btn",
-                    onclick: move |_| {
-                        navigator.push(Route::Activity {});
-                    },
-                    "Activity"
                 }
             },
         }

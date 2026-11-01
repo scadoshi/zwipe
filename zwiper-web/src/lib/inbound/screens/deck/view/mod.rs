@@ -5,7 +5,8 @@
 //! under it Budget, Tags and the stats share the left column, and Warnings
 //! over the cards column for reading share the right. Every section is open
 //! at once. Below the breakpoint it is the app's accordion with `Budget`
-//! open and no cards column.
+//! open and no cards column. The app's `Back` goes: the nav's `Decks` and
+//! the browser's back do its job.
 
 pub mod cards;
 pub mod more;
@@ -280,13 +281,6 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                 }
             }
             ActionBar { class: "content-enter-delayed",
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| {
-                        navigator.push(Route::DeckList {});
-                    },
-                    "Back"
-                }
                 Button {
                     variant: ButtonVariant::Action,
                     onclick: move |_| {
