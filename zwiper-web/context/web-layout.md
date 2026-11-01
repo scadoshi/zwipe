@@ -21,8 +21,9 @@ The wide layout copies zite's home page (`zite/assets/style.css`). Screens move 
 - Below 900px the links fold behind the kit's hamburger and open as its dropdown under the bar; a link, a tap outside or a new route closes it. The kit folds its bar at 60rem, so `web.css` keeps it open from 900px.
 - Logged out, the nav holds the mark, `Log in` and `Create profile` (the current one lit) and `Help`, which takes the place of the app's `!`.
 - Under the nav there is no screen header at any width: the page starts right under the nav, or under the toolbar where the screen has one. The title stays for assistive tech and names the browser tab. A screen's `?` hint button moves to the right end of its action bar: the toolbar under the nav on a wide window, the bottom bar below 900px. Every screen with a `?` has an action bar.
-- Buttons whose only job is to go somewhere (`Back`, `Back to login`, `Back to decks` and the like) go, since the nav and the browser's back do their job. The auth screens keep their neighbor screens as buttons stacked under the primary one, such as `Log in` under `Create profile`. Every button that does something stays, and so does the `Back` that closes a screen's own sheet, picker or overlay. Screens drop theirs as they move onto the page grammar.
-- On a wide window the action bar becomes a toolbar under the header, buttons in the app's order, so actions sit next to the content instead of at the bottom of a tall window. Below 900px it is pinned at the bottom as in the app.
+- Buttons whose only job is to go somewhere (`Back`, `Back to login`, `Back to decks` and the like) go, since the nav and the browser's back do their job. Login keeps `Create profile` and `Forgot password` as buttons under `Log in`; Register and Forgot password have no `Log in` button, since the nav's `Log in` and the browser's back cover it. Every button that does something stays, and so does the `Back` that closes a screen's own sheet, picker or overlay. Screens drop theirs as they move onto the page grammar.
+- Every page ends in zite's footer: `© 2026 Zwipe`, then `Privacy policy`, `Changelog`, `Guides ↗`, `Community ↗`, `Support` (a mail to support) and `zwipe.net ↗`, then zite's Scryfall credit and Fan Content notice. Signed in, `Privacy policy` and `Changelog` are the app's screens; signed out they are zwipe.net's, since the app's need a session. Outside links open a new tab. A screen scrolls as one column under the nav: on a short page the footer sits at the window's foot, on a long one after the content.
+- On a wide window the action bar becomes a toolbar under the nav that stays put as the page scrolls, buttons in the app's order, so actions sit next to the content instead of at the bottom of a tall window. Below 900px it stays pinned at the bottom as in the app, under the footer.
 - Toasts keep the app's kinds, text, durations, stack of three and click to expand. On a wide window they sit top right; below 900px top left as in the app.
 - Inline `?` info buttons and the screen `?` open the same `Got it` dialogs as the app, centered. One-time hints fire on the same triggers.
 - `More actions` sheets become a popover menu anchored to `More`, same buttons in the same order; a dialog opened from it closes the popover where the app closes the sheet and leaves it open where the app leaves the sheet open.
@@ -42,14 +43,14 @@ The wide layout copies zite's home page (`zite/assets/style.css`). Screens move 
 
 - On the page grammar with no hero: the four fields with their live error lines in their own form panel at the top under the nav.
 - On a wide window the `Password` hint stays open in its own panel to the right of the form panel, top-aligned with it a panel gap away, the pair centered as a group: its title over its rules, in the hint's own words from zwipe-core's `requirements()`, and the `?` beside `Password` goes. The list is static: zwipe-core checks a password whole and names only the first rule it breaks, so the web ticks nothing off as the user types rather than copy the rules. Below 900px the `?` opens the hint as in the app.
-- `Create profile` and `Log in` sit stacked under the fields in the form panel, full width and primary first as on Login, so a wide window has no toolbar here; `Log in` replaces the app's `Back to login`. Enter in any field runs `Create profile`. Success goes back to Login with the username filled in.
-- Below 900px it is the app's form, with both buttons in the bar at the bottom.
+- `Create profile` sits under the fields in the form panel at its full width, as on Login, so a wide window has no toolbar here. The app's `Back to login` goes; the nav's `Log in` covers it. Enter in any field runs `Create profile`. Success goes back to Login with the username filled in.
+- Below 900px it is the app's form, with `Create profile` in the bar at the bottom.
 
 ## Forgot password
 
-- On the page grammar with no hero, as Login: the `Email` field in its own form panel with `Send reset link` and `Log in` stacked under it, full width and primary first.
-- After a send, the `Check your email` panel takes the form panel's place at the same width, with `Log in` under its line.
-- Enter runs `Send reset link`. Below 900px it is the app's form, with the buttons in the bar at the bottom (`Log in` alone once the link is sent).
+- On the page grammar with no hero, as Login: the `Email` field in its own form panel with `Send reset link` under it at its full width. The app's `Back to login` goes; the nav's `Log in` covers it.
+- After a send, the `Check your email` panel takes the form panel's place at the same width, holding only its message.
+- Enter runs `Send reset link`. Below 900px it is the app's form, with `Send reset link` in the bar at the bottom until the link is sent.
 
 ## Update required
 
