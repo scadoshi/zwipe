@@ -38,6 +38,7 @@ use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::card::scryfall_data::colors::{self, Color};
 use zwipe_core::domain::card::search_card::card_type::CardType;
+use zwipe_core::domain::card::search_card::type_line;
 use zwipe_core::domain::card::{Card, card_role};
 use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
 use zwipe_core::domain::deck::deck_profile::DeckProfile;
@@ -75,41 +76,9 @@ const LIST_SIZE: usize = 10;
 /// [`LIST_SIZE`] of them and Swipe deals them all.
 const HELD_SIZE: u32 = MAX_SUGGESTION_LIMIT;
 
-/// A commander's exact color identity in WUBRG order, each color once; empty
-/// is colorless.
-pub(crate) fn identity_of(colors: &[Color]) -> Vec<Color> {
-    Color::all()
-        .into_iter()
-        .filter(|c| colors.contains(c))
-        .collect()
-}
-
 /// A suggestion's colors, the identity the Show chips read.
 fn suggestion_colors(suggestion: &HttpCommanderSuggestion) -> &[Color] {
     &suggestion.card.scryfall_data.color_identity
-}
-
-/// The distinct color identities among `colors` (one entry per commander), in
-/// the deck list's group order: fewest colors first, WUBRG order between
-/// identities of the same size, colorless last.
-pub(crate) fn identities_present<'a>(
-    colors: impl IntoIterator<Item = &'a [Color]>,
-) -> Vec<Vec<Color>> {
-    let mut identities: Vec<Vec<Color>> = Vec::new();
-    for commander in colors {
-        let identity = identity_of(commander);
-        if !identities.contains(&identity) {
-            identities.push(identity);
-        }
-    }
-    identities.sort_by_key(|identity| {
-        let order: Vec<usize> = identity
-            .iter()
-            .map(|c| Color::all().iter().position(|a| a == c).unwrap_or(0))
-            .collect();
-        (identity.is_empty(), identity.len(), order)
-    });
-    identities
 }
 
 /// The items whose `colors` are exactly `identity`, in the order given; every
@@ -124,7 +93,7 @@ pub(crate) fn of_identity<T: Clone>(
 ) -> Vec<T> {
     items
         .iter()
-        .filter(|item| identity.is_none_or(|wanted| identity_of(colors(item)) == wanted))
+        .filter(|item| identity.is_none_or(|wanted| colors::identity_of(colors(item)) == wanted))
         .cloned()
         .collect()
 }
@@ -225,7 +194,7 @@ pub(crate) fn identity_label(identity: &[Color]) -> Option<&'static str> {
 /// "No Jeskai commanders in your top 100". The names that describe rather
 /// than name (colorless, mono-color, five-color) go lowercase mid-sentence.
 pub(crate) fn empty_identity_line(identity: &[Color]) -> String {
-    let identity = identity_of(identity);
+    let identity = colors::identity_of(identity);
     let name = colors::identity_name(&identity);
     let name = match identity.len() {
         0 | 1 | 5 => name.to_lowercase(),
@@ -337,7 +306,7 @@ pub(crate) fn profile_summary(profile: &HttpBuilderProfile) -> ProfileSummary {
             .filter_map(|code| Color::try_from(code.as_str()).ok())
             .collect();
         SummaryValue {
-            pips: identity_of(&parsed),
+            pips: colors::identity_of(&parsed),
             count: format!("({})", top.decks),
         }
     });
@@ -657,21 +626,6 @@ impl StapleColor {
     }
 }
 
-/// The front face of a type line. Scryfall joins a multi-faced card's faces
-/// with `" // "`; a single-faced line comes back whole.
-fn front_face(type_line: &str) -> &str {
-    type_line
-        .split_once(" // ")
-        .map_or(type_line, |(front, _)| front)
-}
-
-/// Whether the front face of `type_line` has `card_type` as one of its words,
-/// so "Artifact Creature" has both Artifact and Creature.
-pub(crate) fn has_type(type_line: Option<&str>, card_type: CardType) -> bool {
-    let word = card_type.to_string();
-    type_line.is_some_and(|line| front_face(line).split_whitespace().any(|w| w == word))
-}
-
 /// A staple's type line, its first face's where the card has no top-level one.
 fn staple_type_line(staple: &HttpStaple) -> Option<&str> {
     let data = &staple.card.scryfall_data;
@@ -696,7 +650,7 @@ pub(crate) fn staple_types_present<T>(
         .filter(|card_type| {
             items
                 .iter()
-                .any(|item| has_type(type_line(item), *card_type))
+                .any(|item| type_line::has_type(type_line(item), *card_type))
         })
         .collect()
 }
@@ -725,7 +679,7 @@ pub(crate) fn matching_staples<T: Clone>(
     items
         .iter()
         .filter(|item| {
-            card_type.is_none_or(|wanted| has_type(type_line(item), wanted))
+            card_type.is_none_or(|wanted| type_line::has_type(type_line(item), wanted))
                 && color.is_none_or(|chip| chip.matches(colors(item)))
         })
         .take(LIST_SIZE)
@@ -1219,7 +1173,7 @@ pub fn SuggestedCommanders() -> Element {
     let identities = use_memo(move || {
         let held = entries();
         let chosen = active_identity();
-        identities_present(held.iter().map(suggestion_colors).chain(chosen.as_deref()))
+        colors::identities_present(held.iter().map(suggestion_colors).chain(chosen.as_deref()))
     });
     let filtered =
         use_memo(move || of_identity(&entries(), suggestion_colors, active_identity().as_deref()));
@@ -1598,12 +1552,6 @@ mod tests {
     use Color::{Black, Blue, Green, Red, White};
 
     #[test]
-    fn identity_of_runs_wubrg_once_each() {
-        assert_eq!(identity_of(&[Red, White, Red]), vec![White, Red]);
-        assert_eq!(identity_of(&[]), Vec::<Color>::new());
-    }
-
-    #[test]
     fn identities_present_are_distinct_fewest_colors_first_colorless_last() {
         let held = [
             commander("Narset", &[White, Blue, Red]),
@@ -1616,7 +1564,7 @@ mod tests {
             commander("Zada", &[Red]),
         ];
         assert_eq!(
-            identities_present(held.iter().map(colors_of)),
+            colors::identities_present(held.iter().map(colors_of)),
             vec![
                 vec![Blue],
                 vec![Red],
@@ -1627,12 +1575,12 @@ mod tests {
             ]
         );
         assert_eq!(
-            identities_present(std::iter::empty()),
+            colors::identities_present(std::iter::empty()),
             Vec::<Vec<Color>>::new()
         );
         let chosen: &[Color] = &[Green];
         assert_eq!(
-            identities_present(held.iter().map(colors_of).chain([chosen])),
+            colors::identities_present(held.iter().map(colors_of).chain([chosen])),
             vec![
                 vec![Blue],
                 vec![Red],
@@ -1811,25 +1759,6 @@ mod tests {
             .iter()
             .map(|s| s.0)
             .collect()
-    }
-
-    #[test]
-    fn has_type_reads_every_word_of_the_front_face() {
-        let line = Some("Legendary Artifact Creature — Golem");
-        assert!(has_type(line, CardType::Artifact));
-        assert!(has_type(line, CardType::Creature));
-        assert!(!has_type(line, CardType::Enchantment));
-        let modal = Some("Sorcery // Land");
-        assert!(has_type(modal, CardType::Sorcery));
-        assert!(
-            !has_type(modal, CardType::Land),
-            "the back face is not read"
-        );
-        assert!(!has_type(None, CardType::Creature));
-        assert!(
-            !has_type(Some("Snow Artifacts"), CardType::Artifact),
-            "a whole word, not a prefix"
-        );
     }
 
     #[test]

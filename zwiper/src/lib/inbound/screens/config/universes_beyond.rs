@@ -10,21 +10,12 @@ use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::user::models::hints::HINT_UNIVERSES_BEYOND_EXCEPTIONS;
 use zwipe_core::http::contracts::user::HttpUpdatePreferences;
+use zwipe_ui::filter::fields;
 
 use crate::inbound::components::auth::authed::use_authed;
 use crate::inbound::components::catalog_cache::CatalogCache;
 use crate::inbound::components::hint_dialog;
 use crate::inbound::components::telemetry::vocabulary::{ProfileScreen, Screen};
-
-/// Whether two slug lists pick the same franchises. Order is tap order and
-/// means nothing, so a re-tap of the same chips is not a change.
-fn same_set(a: &[String], b: &[String]) -> bool {
-    let mut a: Vec<&str> = a.iter().map(String::as_str).collect();
-    let mut b: Vec<&str> = b.iter().map(String::as_str).collect();
-    a.sort_unstable();
-    b.sort_unstable();
-    a == b
-}
 
 /// Bottom sheet editing the exceptions whitelist. `exceptions` is the parent's
 /// saved list: the sheet copies it into a draft on open and writes it back on
@@ -75,7 +66,7 @@ pub fn UniversesBeyondExceptionsSheet(
     });
 
     let discard = use_callback(move |()| {
-        if !same_set(&draft.peek(), &exceptions.peek()) {
+        if !fields::same_set(&draft.peek(), &exceptions.peek()) {
             toast.info(
                 "Exceptions unchanged".to_string(),
                 ToastOptions::default().duration(TOAST_QUICK),
@@ -110,7 +101,7 @@ pub fn UniversesBeyondExceptionsSheet(
         });
     };
 
-    let unchanged = same_set(&draft(), &exceptions());
+    let unchanged = fields::same_set(&draft(), &exceptions());
 
     rsx! {
         BottomSheet {
