@@ -4,7 +4,7 @@ zwiper-tui covers every app screen and has passed the parity audit, live checks,
 
 ## Where things stand
 
-- Branch `feat/tui`, 608 tests, every gate green.
+- Branch `feat/tui`, 615 tests, every gate green.
 - Login is reviewed, and the button grammar below is built across every screen that had boxed buttons or button pills.
 - Next screen: Register, then the rest in screen order (Reset password, Home, Activity, Playstyle, Decks, the deck view and its sheets, Add, Remove, Deck cards, Account, Config, Privacy, Changelog).
 
@@ -28,6 +28,7 @@ Forms and keys:
 - The owner dislikes F-key shortcuts like `F2 Save`. Revisit the deck form's `F2 Save` when it comes up in review, likely as Esc then a letter.
 - Every button looks the same; focus is the only highlight. A button is its label in brackets on one line, `[ Log in ]`, at every size, in rows, inside lines of text and in dialogs. At rest the brackets take the border color and the label the text color (error for danger, muted when disabled). Focused, brackets and label are bold in the accent (a danger button's own color), with no fill. There is no boxed button, no filled pill and no accent `primary` style; Account's Save changes is plain like the rest.
 - A filled block is always a tag (Everybody, Live, deck tags, chips) and never focusable.
+- Every About `?` marker on screen is a bracketed `[?]` button (no inner spaces): brackets in the border color at rest with the `?` in its own color, bold accent brackets and `?` while it is the marker the About key opens. It sits one space after its label. Key bar hints like `? hint` stay bare keys.
 - Account, Config, Privacy and Changelog have no Back button; `Esc back` in the key bar does it. Account keeps Log out and More.
 - Register sits a row down from the top when there is room, so its logo never touches the screen's top edge.
 
