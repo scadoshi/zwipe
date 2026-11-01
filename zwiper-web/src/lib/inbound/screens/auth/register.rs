@@ -11,6 +11,7 @@ use zwipe_core::http::contracts::metrics::AnonymousEventKind;
 
 use crate::domain::validation;
 use crate::inbound::chrome::hint_topic::{self, HintTopic};
+use crate::inbound::chrome::password_rules::PasswordRules;
 use crate::inbound::router::Route;
 use crate::inbound::screens::auth::hero::HomeHero;
 use crate::inbound::screens::auth::login::LoginPrefill;
@@ -128,7 +129,7 @@ pub fn Register() -> Element {
             div { class: "screen-content content-enter",
                 div { class: "web-auth web-page",
                     div { class: "web-hero", HomeHero {} }
-                    div { class: "container-sm text-center web-form-panel",
+                    div { class: "container-sm text-center web-form-panel web-password-form",
                         form {
                             class: "flex-col",
                             onsubmit: move |event| {
@@ -166,6 +167,7 @@ pub fn Register() -> Element {
                                 placeholder: "Confirm password",
                                 input_type: "password",
                             }
+                            PasswordRules {}
                             // Enter in a field submits the form through this.
                             button { r#type: "submit", hidden: true }
                         }

@@ -60,6 +60,12 @@ body {
     display: none;
 }
 
+/* A new password's rules stay open under its fields on a wide window;
+   below the breakpoint the field's `?` opens them as in the app. */
+.web-password-rules {
+    display: none;
+}
+
 @media (min-width: 900px) {
     /* Pinned to the top even in a column that centers its content, so
        the page starts the screen's 1rem top padding under the header or
@@ -129,6 +135,21 @@ body {
     }
 
     .web-screen > .action-bar.web-form-toolbar {
+        display: none;
+    }
+
+    .web-password-rules {
+        display: block;
+        margin-top: 0.25rem;
+        padding: 0.75rem 1rem 0.25rem;
+        border: 1px solid var(--border-secondary);
+        border-radius: 0.5rem;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        text-align: left;
+    }
+
+    .web-password-form .label-hint-anchor > :not(label) {
         display: none;
     }
 

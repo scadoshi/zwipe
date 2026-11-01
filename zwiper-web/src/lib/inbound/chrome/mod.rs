@@ -8,5 +8,6 @@ pub mod media;
 pub mod more_menu;
 pub mod one_time_hint;
 pub mod page_keys;
+pub mod password_rules;
 pub mod section;
 pub mod sheet;

@@ -37,7 +37,8 @@ The wide layout copies zite's home page (`zite/assets/style.css`). Screens move 
 
 ## Register
 
-- On the page grammar, as Login: the `HomeHero` card across the top, then the four fields with their live error lines in their own form panel, the `?` beside `Password` opening the `Password` hint.
+- On the page grammar, as Login: the `HomeHero` card across the top, then the four fields with their live error lines in their own form panel.
+- On a wide window the `Password` hint's rules stay open as a quiet list under the password fields, in the hint's own words from zwipe-core's `requirements()`, and the `?` beside `Password` goes. The list is static: zwipe-core checks a password whole and names only the first rule it breaks, so the web ticks nothing off as the user types rather than copy the rules. Below 900px the `?` opens the hint as in the app.
 - `Back to login` and `Create profile` sit under the fields in the panel, so a wide window has no toolbar here. Enter in any field runs `Create profile`. Success goes back to Login with the username filled in.
 - Below 900px it stacks like the app, with the two buttons in the bar at the bottom.
 
@@ -92,6 +93,7 @@ The wide layout copies zite's home page (`zite/assets/style.css`). Screens move 
 ## Account
 
 - On a wide window the `Account` and `About` lists sit side by side.
+- When Account moves onto the page grammar, `Change password` shows the password rules under its new password fields on a wide window, as Register does, in place of the `?`.
 - `Change username`, `Change email` and `Change password` open as centered modals with the same fields and `Back` / `Save changes` footers; Enter runs `Save changes`. The `Change password` confirm dialog stacks on top, and Esc closes only the top one.
 - `Resend` and the refresh icon button (with a `title` tooltip on hover) stay in the `Verification` row.
 - `Log out` stays in the toolbar and opens its dialog; `More` is a popover with `Delete account`, which opens the countdown dialog.
