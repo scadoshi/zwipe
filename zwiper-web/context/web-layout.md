@@ -1,6 +1,6 @@
 # zwiper-web layout
 
-The breakpoint is 900px: at 900px and up the window is wide, below it the web app is the phone layout in one column. Screens with three panels add the third at 1280px and up; between 900px and 1279px they show two. A left sidebar holds Home, Decks, Activity, Playstyle, Account, Config and Help, and below 900px folds into a menu opened from the screen header. Bottom sheets become side panels when they edit something on the page and centered modals when they are short forms or lists; dialogs stay modal.
+The breakpoint is 900px: at 900px and up the window is wide, below it the web app is the phone layout in one column. Screens with three panels add the third at 1280px and up; between 900px and 1279px they show two. A top nav like zite's holds the ZWIPE mark (Home), Decks, Activity, Playstyle, Account, Config and Help, and below 900px folds behind a hamburger. Bottom sheets become side panels when they edit something on the page and centered modals when they are short forms or lists; dialogs stay modal.
 
 Esc closes the top overlay (dialog, then modal, then side panel, then full overlay), browser back does the same for overlays the app puts on its back stack, Enter submits the focused form, and `/` focuses the screen's search or quick add field where there is one. Single-key shortcuts only fire while no text field has focus.
 
@@ -17,10 +17,13 @@ The wide layout copies zite's home page (`zite/assets/style.css`). Screens move 
 
 ## Shared chrome
 
-- The sidebar shows the six screens plus `Help`, which opens the same `Help & feedback` dialog as the app's `!` button. The current screen is highlighted; screens reached from a deck (Deck view, Edit, Import, Export, the card screens) highlight `Decks`, and the Commander maybeboard highlights `Playstyle`. Logged-out screens have no sidebar.
-- The header is the app's `ScreenHeader` at the top of the main area: title, then the `?` hint button on the right when the screen has one. The `!` moves into the sidebar as `Help`. Below 900px there is no separate top bar: the header carries the menu button on the left, then the title and `?`, and `Help` sits in the menu.
-- On a wide window the action bar becomes a toolbar under the header, buttons in the app's order, so actions sit next to the content instead of at the bottom of a tall window. Below 900px it is pinned at the bottom as in the app. `Back` stays in the toolbar on every screen that has it.
-- Toasts keep the app's kinds, text, durations, stack of three and click to expand. On a wide window they sit top right so they do not cover the sidebar; below 900px top left as in the app.
+- The top nav is zite's bar, the kit's `NavBar`: the ZWIPE mark in the logo color on the left, linking Home, and on the right `Decks`, `Activity`, `Playstyle`, `Account`, `Config` and `Help` as pills. `Help` opens the same `Help & feedback` dialog as the app's `!` button. The current screen's pill is lit; screens reached from a deck (Deck view, Edit, Import, Export, the card screens) light `Decks`, the Commander maybeboard lights `Playstyle`, and Privacy policy and Changelog light `Account`.
+- Below 900px the links fold behind the kit's hamburger and open as its dropdown under the bar; a link, a tap outside or a new route closes it. The kit folds its bar at 60rem, so `web.css` keeps it open from 900px.
+- Logged out, the nav holds the mark and `Log in` and `Create profile`, the current one lit, and the public screens keep the app's `!` in their header.
+- The header is the app's `ScreenHeader` under the nav: title, then the `?` hint button on the right when the screen has one.
+- Buttons whose only job is to go somewhere (`Back`, `Back to login`, `Back to decks` and the like) go, since the nav and the browser's back do their job. Where a form leads to a neighbor screen it gets a small text link in its panel instead, such as `Have a profile? Log in`. Every button that does something stays, and so does the `Back` that closes a screen's own sheet, picker or overlay. Screens drop theirs as they move onto the page grammar.
+- On a wide window the action bar becomes a toolbar under the header, buttons in the app's order, so actions sit next to the content instead of at the bottom of a tall window. Below 900px it is pinned at the bottom as in the app.
+- Toasts keep the app's kinds, text, durations, stack of three and click to expand. On a wide window they sit top right; below 900px top left as in the app.
 - Inline `?` info buttons and the screen `?` open the same `Got it` dialogs as the app, centered. One-time hints fire on the same triggers.
 - `More actions` sheets become a popover menu anchored to `More`, same buttons in the same order; a dialog opened from it closes the popover where the app closes the sheet and leaves it open where the app leaves the sheet open.
 - Every `AlertDialog` stays a centered modal with its actions in order. Enter runs the non-danger primary action; danger actions never fire on Enter.
@@ -32,33 +35,32 @@ The wide layout copies zite's home page (`zite/assets/style.css`). Screens move 
 ## Login
 
 - On the page grammar. The `HomeHero` card (the mark beside the counters, `Everybody`, `Live`) is the hero across the top of the page, and the form is its own panel centered under it.
-- `Log in`, `Create profile` and `Forgot password` sit in a row under the fields inside the form panel, so a wide window has no toolbar here. Enter in either field runs `Log in`. Tab moves identity, password, `Show`, then the buttons.
-- Below 900px the hero stacks above the form as in the app, with the three buttons in the bar at the bottom.
+- `Log in` sits under the fields inside the form panel, so a wide window has no toolbar here. Under it two text links, `New here? Create profile` and `Forgot password?`, replace the app's two buttons that only navigated. Enter in either field runs `Log in`.
+- Below 900px the hero stacks above the form as in the app, with `Log in` in the bar at the bottom and the links in the form.
 
 ## Register
 
 - On the page grammar, as Login: the `HomeHero` card across the top, then the four fields with their live error lines in their own form panel.
 - On a wide window the `Password` hint's rules stay open as a quiet list under the password fields, in the hint's own words from zwipe-core's `requirements()`, and the `?` beside `Password` goes. The list is static: zwipe-core checks a password whole and names only the first rule it breaks, so the web ticks nothing off as the user types rather than copy the rules. Below 900px the `?` opens the hint as in the app.
-- `Back to login` and `Create profile` sit under the fields in the panel, so a wide window has no toolbar here. Enter in any field runs `Create profile`. Success goes back to Login with the username filled in.
-- Below 900px it stacks like the app, with the two buttons in the bar at the bottom.
+- `Create profile` sits under the fields in the panel, so a wide window has no toolbar here, and a `Have a profile? Log in` link replaces `Back to login`. Enter in any field runs `Create profile`. Success goes back to Login with the username filled in.
+- Below 900px it stacks like the app, with `Create profile` in the bar at the bottom.
 
 ## Forgot password
 
-- On the page grammar, as Login: the hero card across the top, then the `Email` field in its own form panel with `Back to login` and `Send reset link` under it.
-- After a send, the `Check your email` panel takes the form panel's place at the same width, with `Back to login` under its line.
-- Enter runs `Send reset link`. Below 900px it stacks like the app, with the buttons in the bar at the bottom.
+- On the page grammar, as Login: the hero card across the top, then the `Email` field in its own form panel with `Send reset link` and a `Have a profile? Log in` link under it.
+- After a send, the `Check your email` panel takes the form panel's place at the same width, with the same link under its line.
+- Enter runs `Send reset link`. Below 900px it stacks like the app, with `Send reset link` in the bar at the bottom until the link is sent.
 
 ## Update required
 
-- Shown instead of everything else, with no sidebar, as in the app: the empty header bar, the pulsing `Update required` card, then a `Reload` button in place of the store link, since a web build updates by loading the page again.
+- Shown instead of everything else, with no nav, as in the app: the empty header bar, the pulsing `Update required` card, then a `Reload` button in place of the store link, since a web build updates by loading the page again.
 - The layout is one centered column at every width. Below 900px the empty action bar sits at the bottom as in the app; on a wide window it is left out, since it would be an empty strip under the header.
 
 ## Home
 
-- On the page grammar. The hero card spans the top of the page (the mark left, the three counters and the `Live`, `Everybody`/`Only me`, `Activity` chips right). Under it `Color map` takes the left column and `Featured flavor` the right.
+- On the page grammar. The hero card spans the top of the page (the mark left, the three counters and the `Live` and `Everybody`/`Only me` chips right). Under it `Color map` takes the left column and `Featured flavor` the right.
 - The featured flavor panel is the app's: the quote, then the card's name and price, `Image` (the full preview), and in place of `Buy` the `TCGplayer ↗` and `Card Kingdom ↗` links that open in a new tab, as on zite.
-- The app's action bar (`Decks`, `Account`, `Config`) is dropped on a wide window because the sidebar holds the same three; below 900px it stays.
-- `Playstyle` under the color map and `Activity` in the hero stay as buttons.
+- The app's buttons that only navigate go at every width, since the nav holds them: the action bar (`Decks`, `Account`, `Config`), `Activity` in the hero and `Playstyle` under the color map.
 - Below 900px it is the phone stack: hero, color map, featured flavor.
 
 ## Activity
@@ -154,7 +156,7 @@ The wide layout copies zite's home page (`zite/assets/style.css`). Screens move 
 
 - On the page grammar. The `Profile` card is the hero, 40rem wide. The left column holds `Budget`, `Tags`, `Distributions`, `Mana` and `Draw odds`; the right column holds `Warnings` over a cards column that lists the mainboard by type with the command zone on top, as compact rows that expand on click.
 - Every section is open at once, so the phone's single-open accordion and its default `Budget` go away on a wide window; `Warnings` keeps its warning border and fix buttons (`Add cards`, `Import`, `Fix to {n}`, `Clear`, `Remove`).
-- The toolbar keeps `Back`, `Edit`, `Cards`, `More`. `Cards` opens Deck cards for full editing; the cards column here is for reading. `More` is a popover with `Import cards`, `Export cards`, the `TCGplayer ↗` and `Card Kingdom ↗` links in place of `Buy deck`, `Clone deck`, `Share deck`, `Clear skips`, `Delete deck`, and the other dialogs are the app's.
+- The toolbar keeps `Edit`, `Cards`, `More`; the app's `Back` goes, as the nav's `Decks` covers it. `Cards` opens Deck cards for full editing; the cards column here is for reading. `More` is a popover with `Import cards`, `Export cards`, the `TCGplayer ↗` and `Card Kingdom ↗` links in place of `Buy deck`, `Clone deck`, `Share deck`, `Clear skips`, `Delete deck`, and the other dialogs are the app's.
 - The `Draw odds` stepper `-` / `+` buttons also answer ← and → while the stepper has focus.
 - Below 900px it is the phone screen: profile card, accordion with `Budget` open, no cards column.
 
