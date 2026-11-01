@@ -1,6 +1,7 @@
-//! Register: the four fields as their own panel, centered at the top of
-//! zite's page, with `Create profile` under the fields on a wide window and
-//! in the bar below the breakpoint. A link under the form goes to Login.
+//! Register: the four fields as their own panel at the top of zite's page,
+//! with `Create profile` and `Log in` stacked under the fields and the
+//! password rules in a panel beside it on a wide window; below the
+//! breakpoint the app's form with both buttons in the bar.
 
 use components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL, TextInput};
 use dioxus::prelude::*;
@@ -126,55 +127,53 @@ pub fn Register() -> Element {
         ScreenFrame { title: "Create profile",
             div { class: "screen-content content-enter",
                 div { class: "web-auth web-page",
-                    div { class: "container-sm text-center web-form-panel web-password-form",
-                        form {
-                            class: "flex-col",
-                            onsubmit: move |event| {
-                                event.prevent_default();
-                                submit.call(());
-                            },
-                            TextInput {
-                                value: username,
-                                id: "username",
-                                label: "Username",
-                                placeholder: "Username",
-                                error: username_error,
+                    div { class: "web-auth-pair",
+                        div { class: "container-sm text-center web-form-panel web-password-form",
+                            form {
+                                class: "flex-col",
+                                onsubmit: move |event| {
+                                    event.prevent_default();
+                                    submit.call(());
+                                },
+                                TextInput {
+                                    value: username,
+                                    id: "username",
+                                    label: "Username",
+                                    placeholder: "Username",
+                                    error: username_error,
+                                }
+                                TextInput {
+                                    value: email,
+                                    id: "email",
+                                    label: "Email",
+                                    placeholder: "Email",
+                                    input_type: "email",
+                                    error: email_error,
+                                }
+                                TextInput {
+                                    value: password,
+                                    id: "password",
+                                    label: "Password",
+                                    placeholder: "Password",
+                                    input_type: "password",
+                                    error: password_error,
+                                    on_info: hint_topic::open_topic(HintTopic::Password),
+                                }
+                                TextInput {
+                                    value: confirm_password,
+                                    id: "confirm_password",
+                                    label: "Confirm password",
+                                    placeholder: "Confirm password",
+                                    input_type: "password",
+                                }
+                                // Enter in a field submits the form through this.
+                                button { r#type: "submit", hidden: true }
                             }
-                            TextInput {
-                                value: email,
-                                id: "email",
-                                label: "Email",
-                                placeholder: "Email",
-                                input_type: "email",
-                                error: email_error,
+                            div { class: "web-form-actions web-form-actions-stack",
+                                RegisterActions { loading: is_loading(), on_submit: submit }
                             }
-                            TextInput {
-                                value: password,
-                                id: "password",
-                                label: "Password",
-                                placeholder: "Password",
-                                input_type: "password",
-                                error: password_error,
-                                on_info: hint_topic::open_topic(HintTopic::Password),
-                            }
-                            TextInput {
-                                value: confirm_password,
-                                id: "confirm_password",
-                                label: "Confirm password",
-                                placeholder: "Confirm password",
-                                input_type: "password",
-                            }
-                            PasswordRules {}
-                            // Enter in a field submits the form through this.
-                            button { r#type: "submit", hidden: true }
                         }
-                        div { class: "web-form-actions",
-                            RegisterActions { loading: is_loading(), on_submit: submit }
-                        }
-                        p { class: "web-form-link",
-                            "Have a profile? "
-                            Link { to: Route::Login {}, "Log in" }
-                        }
+                        PasswordRules {}
                     }
                 }
             }
@@ -185,16 +184,26 @@ pub fn Register() -> Element {
     }
 }
 
-/// `Create profile`, held while a registration is out. Under the form on a
-/// wide window, in the action bar below the breakpoint.
+/// `Create profile`, then `Log in`, both held while a registration is out.
+/// Stacked under the form on a wide window, in the action bar below the
+/// breakpoint.
 #[component]
 fn RegisterActions(loading: bool, on_submit: Callback<()>) -> Element {
+    let navigator = use_navigator();
     rsx! {
         Button {
             variant: ButtonVariant::Action,
             disabled: loading,
             onclick: move |_| on_submit.call(()),
             if loading { "Creating..." } else { "Create profile" }
+        }
+        Button {
+            variant: ButtonVariant::Action,
+            disabled: loading,
+            onclick: move |_| {
+                navigator.push(Route::Login {});
+            },
+            "Log in"
         }
     }
 }

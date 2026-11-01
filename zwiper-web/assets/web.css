@@ -99,23 +99,12 @@ body {
     display: none;
 }
 
-/* A small text line under a form that links to a neighbor screen, such as
-   `Have a profile? Log in`, in place of a button that only navigates. */
-.web-form-link {
-    margin: 0.75rem 0 0;
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    text-align: center;
+.web-auth-pair {
+    display: contents;
 }
 
-.web-form-link a {
-    color: var(--accent-primary);
-    text-decoration: underline;
-    text-underline-offset: 0.2em;
-}
-
-/* A new password's rules stay open under its fields on a wide window;
-   below the breakpoint the field's `?` opens them as in the app. */
+/* A new password's rules stay open in a panel beside its form on a wide
+   window; below the breakpoint the field's `?` opens them as in the app. */
 .web-password-rules {
     display: none;
 }
@@ -192,21 +181,46 @@ body {
         display: none;
     }
 
-    /* Login's three buttons, one under another at one width. */
+    /* An auth form's buttons, one under another at the form's width, the
+       primary first. */
     .web-form-actions.web-form-actions-stack {
         flex-direction: column;
         align-items: stretch;
-        width: fit-content;
-        min-width: 12rem;
-        margin: 0.25rem auto 0;
+        margin-top: 0.5rem;
+    }
+
+    .web-form-actions-stack > .btn-action {
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* The form and the rules panel side by side, top-aligned a panel gap
+       apart and centered as a pair. */
+    .web-auth-pair {
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        gap: var(--panel-gap);
+    }
+
+    .web-auth-pair > .web-form-panel {
+        flex: 0 1 25rem;
+        margin: 0;
     }
 
     .web-password-rules {
         display: block;
-        margin-top: 0.25rem;
-        padding: 0.75rem 1rem 0.25rem;
+        flex: 0 1 22rem;
+        min-width: 0;
+        background-color: var(--bg-primary);
         border: 1px solid var(--border-secondary);
-        border-radius: 0.5rem;
+        border-radius: 1rem;
+        box-shadow: var(--shadow-sm);
+        overflow: hidden;
+    }
+
+    .web-password-rules-body {
+        padding: 1rem 1.25rem 0.5rem;
         font-size: 0.8rem;
         color: var(--text-muted);
         text-align: left;
