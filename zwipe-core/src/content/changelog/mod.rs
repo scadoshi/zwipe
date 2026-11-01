@@ -43,6 +43,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Activity's Card roles, Oracle tags and Most skipped say what fills them while they're empty",
         "Activity's role and tag charts say why they're empty for the pick under Show",
         "Activity's hints say share instead of rate",
+        "Links open inside Zwipe instead of switching to the browser",
     ],
 }];
 
