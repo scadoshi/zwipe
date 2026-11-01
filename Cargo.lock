@@ -8971,6 +8971,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "zwipe-ui"
+version = "1.16.2"
+dependencies = [
+ "chrono",
+ "email_address",
+ "getrandom 0.4.3",
+ "orangui-core",
+ "serde_json",
+ "uuid",
+ "zwipe-core",
+]
+
+[[package]]
 name = "zwiper"
 version = "1.16.2"
 dependencies = [

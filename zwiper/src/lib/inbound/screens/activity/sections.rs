@@ -18,7 +18,7 @@ use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::card::{Card, card_role};
 use zwipe_core::http::contracts::suggestions::{
     ACTIVITY_DAYS, HttpActivity, HttpActivityDay, HttpHardPass, HttpRoleRates, HttpSwipeOutcomes,
-    HttpTagRates,
+    HttpTagRates, PASS_BASELINE_WEIGHT,
 };
 
 use crate::inbound::components::hint_host::HintTopic;
@@ -317,11 +317,6 @@ impl RateKind {
     }
 }
 
-/// How many cards' worth of the overall rate a tag's rate among other
-/// players starts from, so a tag few others have been dealt sits near the
-/// overall rate. The server's hard passes weigh the same way.
-const TAG_BASELINE_WEIGHT: f64 = 10.0;
-
 /// Rows on the Oracle tags chart.
 const TAG_ROWS: usize = 10;
 
@@ -377,7 +372,7 @@ fn baseline(kind: RateKind, tags: &[HttpTagRates]) -> f64 {
 
 /// How much a tag's share stands out for the user: their count times the
 /// log of their rate over other players', the others' rate smoothed toward
-/// `baseline` by [`TAG_BASELINE_WEIGHT`] cards. `None` when the user's rate
+/// `baseline` by [`PASS_BASELINE_WEIGHT`] cards. `None` when the user's rate
 /// is no higher.
 fn lift_score(kind: RateKind, tag: &HttpTagRates, baseline: f64) -> Option<f64> {
     let (count, of) = kind.parts(&tag.outcomes);
@@ -386,8 +381,8 @@ fn lift_score(kind: RateKind, tag: &HttpTagRates, baseline: f64) -> Option<f64> 
     }
     let (theirs, their_of) = kind.parts(&tag.everyone);
     let mine = float(count) / float(of);
-    let others =
-        (float(theirs) + TAG_BASELINE_WEIGHT * baseline) / (float(their_of) + TAG_BASELINE_WEIGHT);
+    let others = (float(theirs) + PASS_BASELINE_WEIGHT * baseline)
+        / (float(their_of) + PASS_BASELINE_WEIGHT);
     (others > 0.0 && mine > others).then(|| float(count) * (mine / others).ln())
 }
 
