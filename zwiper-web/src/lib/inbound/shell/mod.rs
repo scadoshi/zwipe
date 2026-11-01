@@ -2,6 +2,7 @@
 //! routes and `Log in` and `Create profile` on public ones, and the screen
 //! header.
 
+mod footer;
 mod frame;
 mod help;
 pub mod nav;

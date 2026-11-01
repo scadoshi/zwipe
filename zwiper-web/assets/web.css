@@ -4,6 +4,9 @@
 
 :root {
     --web-content-max: 72rem;
+    /* The wide toolbar's height: 0.75rem of padding either side of a
+       1.9rem button row, and its border. Sticky columns stop under it. */
+    --web-toolbar-h: calc(3.4rem + 1px);
 }
 
 html {
@@ -21,9 +24,8 @@ body {
     min-height: 100vh;
 }
 
-/* A screen fills its frame instead of the whole viewport. It is one window
-   tall, as in the app, so its content column is what scrolls: the nav
-   and the toolbar stay put, and sticky columns stick to that column. */
+/* A screen fills its frame instead of the whole viewport: one window tall
+   under the nav, scrolling inside itself (see the footer below). */
 .screen.web-screen {
     position: relative;
     inset: auto;
@@ -32,6 +34,72 @@ body {
 
 .web-screen > .screen-content {
     min-height: 0;
+}
+
+/* ---- Scrolling and the footer ----
+
+   A screen under the nav scrolls as one column and ends in zite's footer:
+   on a short screen the content grows to push the footer to the window's
+   foot, on a long one the footer comes after it. The action bar sticks, to
+   the top under the nav on a wide window and to the bottom below the
+   breakpoint, as in the app. */
+.web-main > .web-scroll-screen {
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.web-scroll-screen > .screen-content,
+.web-scroll-screen > .screen-content.card-swipe {
+    flex: 1 0 auto;
+    overflow: visible;
+    padding-bottom: 1.5rem;
+}
+
+.web-scroll-screen > .web-footer {
+    order: 3;
+    flex: none;
+    margin-top: 0;
+}
+
+.web-scroll-screen > .action-bar {
+    position: sticky;
+    bottom: 0;
+    order: 4;
+    z-index: 3;
+}
+
+/* zite's footer, the kit's site rules: the copyright line with the links,
+   then the quieter notes. */
+.web-footer {
+    padding: 2rem 1.5rem;
+    background-color: var(--bg-primary);
+    border-top: 1px solid var(--accent-primary);
+    box-shadow: var(--shadow-md);
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+}
+
+.web-footer p {
+    margin: 0;
+}
+
+.web-footer a {
+    color: var(--accent-primary);
+    text-decoration: none;
+}
+
+.web-footer a:hover {
+    text-decoration: underline;
+}
+
+.web-footer .site-footer-note {
+    max-width: 42rem;
+    margin: 0.85rem auto 0;
+    font-size: 0.7rem;
+    line-height: 1.5;
+    color: var(--text-subtle);
+    opacity: 0.75;
 }
 
 /* Under the nav a screen has no header bar. Its title stays for assistive
@@ -50,10 +118,10 @@ body {
 }
 
 .web-screen-hint {
-    position: absolute;
+    position: fixed;
     right: 1rem;
     bottom: 1rem;
-    z-index: 2;
+    z-index: 4;
     opacity: 0.55;
 }
 
@@ -67,8 +135,11 @@ body {
 }
 
 @media (min-width: 900px) {
+    /* Level with the toolbar's buttons under the nav: the nav's 1.25rem
+       padding either side of a 1.85rem pill and its border, then the
+       toolbar's padding. */
     .web-screen-hint {
-        top: 0.75rem;
+        top: calc(4.35rem + 1px + 0.75rem);
         bottom: auto;
     }
 
@@ -277,10 +348,10 @@ body {
 
 /* ---- Top nav ----
 
-   zite's bar from the kit's NavBar: the ZWIPE mark home on the left and
-   the screens on the right as pills, folding behind the hamburger below
-   the breakpoint. The shell is one window tall: the nav, then the screen,
-   whose content column scrolls. */
+   zite's bar from the kit's NavBar: the Z mark home on the left and the
+   screens on the right as pills, folding behind the hamburger below the
+   breakpoint. The shell is one window tall: the nav, then the screen,
+   which scrolls. */
 
 .web-shell {
     display: flex;
@@ -401,6 +472,8 @@ body {
 
     .web-screen > .action-bar {
         order: 1;
+        top: 0;
+        bottom: auto;
         justify-content: flex-start;
         padding: 0.75rem 1rem;
         border-top: none;
@@ -428,10 +501,6 @@ body {
         max-width: 25rem;
         margin: 0 auto;
         padding: 0;
-    }
-
-    .web-outcome-panel .web-form-actions {
-        margin-top: 1rem;
     }
 
     /* Toasts move top right so they never cover the sidebar. */
@@ -479,7 +548,7 @@ body {
 
     .web-privacy-contents {
         position: sticky;
-        top: 1rem;
+        top: calc(var(--web-toolbar-h) + 1rem);
         display: flex;
         flex-direction: column;
         gap: 0.15rem;
@@ -530,7 +599,7 @@ body {
     .web-changelog > .changelog-filters,
     .web-changelog > .changelog-skeleton-chips {
         position: sticky;
-        top: 1rem;
+        top: calc(var(--web-toolbar-h) + 1rem);
         margin-bottom: 0;
     }
 
@@ -1396,7 +1465,7 @@ body {
    the sheet's parts in a panel that stays, the content scrolling inside. */
 .web-filter-dock {
     position: sticky;
-    top: 0;
+    top: var(--web-toolbar-h);
     display: flex;
     flex-direction: column;
     max-height: calc(100vh - 9rem);
@@ -1503,7 +1572,7 @@ body {
         display: block;
         min-width: 0;
         position: sticky;
-        top: 0;
+        top: var(--web-toolbar-h);
     }
 
     /* The app sizes the card's ghost to the phone's width; in a column it
@@ -1579,7 +1648,7 @@ body {
         grid-area: pane;
         display: block;
         position: sticky;
-        top: 0;
+        top: var(--web-toolbar-h);
         max-height: calc(100vh - 9rem);
         overflow-y: auto;
         min-width: 0;
@@ -1620,6 +1689,6 @@ body {
 
     .web-deck-cards-controls {
         position: sticky;
-        top: 0;
+        top: var(--web-toolbar-h);
     }
 }
