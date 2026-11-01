@@ -1,7 +1,7 @@
 //! Register: the four fields as their own panel at the top of zite's page,
-//! with `Create profile` and `Log in` stacked under the fields and the
-//! password rules in a panel beside it on a wide window; below the
-//! breakpoint the app's form with both buttons in the bar.
+//! with `Create profile` under the fields and the password rules in a panel
+//! beside it on a wide window; below the breakpoint the app's form with
+//! `Create profile` in the bar. The nav's `Log in` goes back to Login.
 
 use components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL, TextInput};
 use dioxus::prelude::*;
@@ -184,26 +184,16 @@ pub fn Register() -> Element {
     }
 }
 
-/// `Create profile`, then `Log in`, both held while a registration is out.
-/// Stacked under the form on a wide window, in the action bar below the
-/// breakpoint.
+/// `Create profile`, held while a registration is out. Under the form on a
+/// wide window, in the action bar below the breakpoint.
 #[component]
 fn RegisterActions(loading: bool, on_submit: Callback<()>) -> Element {
-    let navigator = use_navigator();
     rsx! {
         Button {
             variant: ButtonVariant::Action,
             disabled: loading,
             onclick: move |_| on_submit.call(()),
             if loading { "Creating..." } else { "Create profile" }
-        }
-        Button {
-            variant: ButtonVariant::Action,
-            disabled: loading,
-            onclick: move |_| {
-                navigator.push(Route::Login {});
-            },
-            "Log in"
         }
     }
 }

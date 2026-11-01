@@ -1,7 +1,7 @@
 //! Forgot password: the email field as its own panel, centered at the top
-//! of zite's page, with `Send reset link` and `Log in` stacked under the
-//! field on a wide window and in the bar below the breakpoint, and the
-//! `Check your email` panel with `Log in` in its place once sent.
+//! of zite's page, with `Send reset link` under the field on a wide window
+//! and in the bar below the breakpoint, and the `Check your email` panel in
+//! its place once sent. The nav's `Log in` goes back to Login.
 //!
 //! The reset itself happens on the website, from the emailed link.
 
@@ -12,7 +12,6 @@ use zwipe_client::ZwipeClient;
 use zwipe_core::http::contracts::auth::HttpRequestPasswordReset;
 
 use crate::domain::validation;
-use crate::inbound::router::Route;
 use crate::inbound::shell::ScreenFrame;
 
 /// Reset password: asks for an email, then says a link is on its way. The
@@ -72,9 +71,6 @@ pub fn ForgotPassword() -> Element {
                         div { class: "outcome-success web-outcome-panel",
                             Panel { title: "Check your email", centered: true,
                                 p { "If that email is registered, a reset link is on its way." }
-                                div { class: "web-form-actions web-form-actions-stack",
-                                    ForgotActions { sent: true, on_submit: submit }
-                                }
                             }
                         }
                     } else {
@@ -98,39 +94,30 @@ pub fn ForgotPassword() -> Element {
                                 button { r#type: "submit", hidden: true }
                             }
                             div { class: "web-form-actions web-form-actions-stack",
-                                ForgotActions { sent: false, on_submit: submit }
+                                ForgotActions { on_submit: submit }
                             }
                         }
                     }
                 }
             }
-            ActionBar { class: "web-form-toolbar",
-                ForgotActions { sent: sent(), on_submit: submit }
+            if !sent() {
+                ActionBar { class: "web-form-toolbar",
+                    ForgotActions { on_submit: submit }
+                }
             }
         }
     }
 }
 
-/// `Send reset link` until the link is sent, then `Log in`. Stacked under
-/// the form (or the sent panel's line) on a wide window, in the action bar
-/// below the breakpoint.
+/// `Send reset link`. Under the form on a wide window, in the action bar
+/// below the breakpoint; gone once the link is sent.
 #[component]
-fn ForgotActions(sent: bool, on_submit: Callback<()>) -> Element {
-    let navigator = use_navigator();
+fn ForgotActions(on_submit: Callback<()>) -> Element {
     rsx! {
-        if !sent {
-            Button {
-                variant: ButtonVariant::Action,
-                onclick: move |_| on_submit.call(()),
-                "Send reset link"
-            }
-        }
         Button {
             variant: ButtonVariant::Action,
-            onclick: move |_| {
-                navigator.push(Route::Login {});
-            },
-            "Log in"
+            onclick: move |_| on_submit.call(()),
+            "Send reset link"
         }
     }
 }
