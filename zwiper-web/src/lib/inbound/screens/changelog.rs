@@ -7,8 +7,8 @@
 
 use components::{ActionBar, Button, ButtonVariant, Changelog as ChangelogContent};
 use dioxus::prelude::*;
+use zwipe_ui::changelog::ChangelogCache;
 
-use crate::inbound::caches::{ChangelogCache, Load};
 use crate::inbound::shell::ScreenFrame;
 
 /// Bullet bars per skeleton card, roughly a real release's.
@@ -21,16 +21,16 @@ const SKELETON_CHIPS: usize = 8;
 #[component]
 pub fn Changelog() -> Element {
     let navigator = use_navigator();
-    let ChangelogCache(cache) = use_context();
+    let cache: Signal<ChangelogCache> = use_context();
 
     rsx! {
         ScreenFrame { title: "Changelog",
             div { class: "screen-content content-enter",
                 div { class: "changelog-screen web-changelog",
                     match cache() {
-                        Load::Loading => rsx! { ChangelogSkeleton {} },
-                        Load::Loaded(data) => rsx! { ChangelogContent { data } },
-                        Load::Failed => rsx! {
+                        ChangelogCache::Loading => rsx! { ChangelogSkeleton {} },
+                        ChangelogCache::Loaded(data) => rsx! { ChangelogContent { data } },
+                        ChangelogCache::Failed => rsx! {
                             span { class: "chip-note", "Could not load the changelog" }
                         },
                     }

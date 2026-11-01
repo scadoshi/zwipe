@@ -7,6 +7,7 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::http::contracts::user::HttpUpdatePreferences;
+use zwipe_ui::filter::fields;
 
 use crate::domain::preferences;
 use crate::inbound::caches::UbFranchises;
@@ -128,7 +129,7 @@ pub(super) fn ExceptionsSheet(
                             key: "{franchise.slug}",
                             class: if draft().contains(&franchise.slug) { "chip selected" } else { "chip" },
                             onclick: move |_| {
-                                let next = preferences::toggled(&draft.peek(), &franchise.slug);
+                                let next = fields::toggled(draft.peek().clone(), &franchise.slug);
                                 draft.set(next);
                             },
                             "{franchise.name}"

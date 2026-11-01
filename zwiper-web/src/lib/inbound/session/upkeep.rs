@@ -1,26 +1,22 @@
 //! The root's session context and the loop that keeps it alive.
 
-use std::time::Duration;
-
 use components::ThemeConfig;
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::user::models::preferences::PipStyle;
 use zwipe_core::http::contracts::metrics::AnonymousEventKind;
+use zwipe_ui::session;
+use zwipe_ui::timing::UPKEEP_INTERVAL;
 
 use crate::config::APP_VERSION;
-use crate::domain::{theme, version_gate};
+use crate::domain::theme;
 use crate::inbound::root_signal::use_root_signal;
 use crate::inbound::session::ensure_fresh::ensure_fresh;
 use crate::inbound::session::funnel;
 use crate::outbound::session_store::SessionStore;
 use crate::outbound::theme_store::ThemeStore;
 use crate::outbound::timer;
-
-/// How often the loop refreshes the session and rechecks the minimum
-/// version. The first round runs at once.
-const UPKEEP_INTERVAL: Duration = Duration::from_secs(60);
 
 /// Whether this build is below the server's minimum version. Provided as
 /// context; the root shows the update screen in place of the router while it
@@ -82,13 +78,16 @@ pub fn use_session_upkeep() -> UpgradeRequired {
             let _ = ensure_fresh(session, client).await;
             let http = client.peek().clone();
             let current = *upgrade_required.peek();
-            if let Ok(min) = http.fetch_min_client_version().await
-                && let Some(required) =
-                    version_gate::gate_change(current, APP_VERSION, &min.min_version)
-            {
-                tracing::info!(min = %min.min_version, required, "min-version gate changed");
-                upgrade_required.set(required);
+            // A failed check leaves the gate as it was.
+            if let Ok(min) = http.fetch_min_client_version().await {
+                let required =
+                    session::update_required(current, APP_VERSION, Some(&min.min_version));
+                if required != current {
+                    tracing::info!(min = %min.min_version, required, "min-version gate changed");
+                    upgrade_required.set(required);
+                }
             }
+            // The first round runs at once.
             timer::sleep(UPKEEP_INTERVAL).await;
         }
     });

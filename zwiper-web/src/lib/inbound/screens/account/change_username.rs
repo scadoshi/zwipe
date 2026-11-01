@@ -5,8 +5,8 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::http::contracts::auth::HttpChangeUsername;
+use zwipe_ui::account;
 
-use crate::domain::validation;
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::sheet::{SheetForm, SheetFrame};
 
@@ -48,10 +48,10 @@ pub(super) fn ChangeUsernameSheet(mut open: Signal<bool>) -> Element {
 
     let attempted = submit_attempted();
     let username_error = (username_touched() || attempted)
-        .then(|| validation::username_error(&new_username()))
+        .then(|| account::username_error(&new_username()))
         .flatten();
     let password_error = (password_touched() || attempted)
-        .then(|| validation::required_password_error(&password()))
+        .then(|| account::password_required(&password()))
         .flatten();
 
     let mut attempt_submit = move || {
@@ -61,8 +61,8 @@ pub(super) fn ChangeUsernameSheet(mut open: Signal<bool>) -> Element {
         submit_attempted.set(true);
         let typed = new_username.peek().clone();
         let typed_password = password.peek().clone();
-        if validation::username_error(&typed).is_some()
-            || validation::required_password_error(&typed_password).is_some()
+        if account::username_error(&typed).is_some()
+            || account::password_required(&typed_password).is_some()
         {
             return;
         }

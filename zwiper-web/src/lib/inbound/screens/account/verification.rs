@@ -9,8 +9,9 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_core::domain::auth::models::session::Session;
+use zwipe_ui::timing::RESEND_COOLDOWN;
 
-use crate::domain::account::{self, RESEND_COOLDOWN_SECS};
+use crate::domain::account;
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::session::ensure_fresh::ensure_fresh;
 use crate::outbound::timer;
@@ -38,7 +39,7 @@ pub(super) fn EmailValue(email: String, is_verified: bool, on_change: EventHandl
 /// server sends it, how long the link has left.
 #[component]
 pub(super) fn PendingEmail(email: String, expires_at: Option<DateTime<Utc>>) -> Element {
-    let note = expires_at.map(|at| account::link_expiry_text(at, Utc::now()));
+    let note = expires_at.map(|at| zwipe_ui::account::pending_note(at, Utc::now()));
     rsx! {
         div { style: "display:flex;flex-direction:column;align-items:flex-end;gap:0.25rem;",
             span { "{email}" }
@@ -68,7 +69,7 @@ pub(super) fn VerificationActions() -> Element {
         event.stop_propagation();
         is_resending.set(true);
         // Gray at once, so quick clicks cannot race the request.
-        cooldown.set(RESEND_COOLDOWN_SECS);
+        cooldown.set(u32::try_from(RESEND_COOLDOWN.as_secs()).unwrap_or(u32::MAX));
         spawn(async move {
             let failed = |e: &ClientError| {
                 tracing::warn!("resend_verification failed: {e}");

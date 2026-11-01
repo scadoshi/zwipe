@@ -7,8 +7,8 @@ use components::{
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_core::http::contracts::auth::HttpChangePassword;
+use zwipe_ui::account;
 
-use crate::domain::validation;
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::hint_topic::{self, HintTopic};
 use crate::inbound::chrome::sheet::{SheetForm, SheetFrame};
@@ -50,7 +50,7 @@ pub(super) fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
     });
 
     let error_now = move |attempted: bool| {
-        validation::new_password_error(
+        account::change_password_error(
             &current.peek(),
             &new_password.peek(),
             &confirm.peek(),
@@ -59,7 +59,7 @@ pub(super) fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
     };
     let attempted = submit_attempted();
     let password_error = (touched() || attempted)
-        .then(|| validation::new_password_error(&current(), &new_password(), &confirm(), attempted))
+        .then(|| account::change_password_error(&current(), &new_password(), &confirm(), attempted))
         .flatten();
 
     let mut ask_to_confirm = move || {

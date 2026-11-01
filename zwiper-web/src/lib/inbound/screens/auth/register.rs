@@ -9,6 +9,7 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
 use zwipe_core::http::contracts::auth::HttpRegisterUser;
 use zwipe_core::http::contracts::metrics::AnonymousEventKind;
+use zwipe_ui::account;
 
 use crate::domain::validation;
 use crate::inbound::chrome::form_panel::{FormPanelActions, FormPanelHead};
@@ -61,10 +62,10 @@ pub fn Register() -> Element {
 
     let attempted = submit_attempted();
     let username_error = (username_touched() || attempted)
-        .then(|| validation::username_error(&username()))
+        .then(|| account::username_error(&username()))
         .flatten();
     let email_error = (email_touched() || attempted)
-        .then(|| validation::email_error(email().trim()))
+        .then(|| account::email_error(email().trim()))
         .flatten();
     let password_error = (password_touched() || attempted)
         .then(|| validation::password_error(&password(), &confirm_password(), attempted))
@@ -86,8 +87,8 @@ pub fn Register() -> Element {
         let username = username.peek().clone();
         let email = email.peek().trim().to_string();
         let password = password.peek().clone();
-        let invalid = validation::username_error(&username).is_some()
-            || validation::email_error(&email).is_some()
+        let invalid = account::username_error(&username).is_some()
+            || account::email_error(&email).is_some()
             || validation::password_error(&password, &confirm_password.peek(), true).is_some();
         if invalid {
             return;

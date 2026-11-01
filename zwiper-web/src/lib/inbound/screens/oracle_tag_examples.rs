@@ -14,8 +14,8 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
-use zwipe_ui::stack::{CardStack, Direction, MAX_CARDS_IN_STACK, StackAction};
-use zwipe_ui::timing::{LOAD_MORE_AT, PAGE_SIZE};
+use zwipe_ui::stack::{CardStack, Direction, StackAction};
+use zwipe_ui::timing::{EXAMPLES_MAX_CARDS, LOAD_MORE_AT, PAGE_SIZE};
 
 use crate::inbound::cards::card_info::{
     CardDetailsSheet, CardInfoDisplay, CardSkeleton, RulesButton,
@@ -64,7 +64,7 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
         if *loading_more.peek() || *exhausted.peek() {
             return;
         }
-        if stack.peek().len() >= MAX_CARDS_IN_STACK {
+        if stack.peek().len() >= EXAMPLES_MAX_CARDS {
             exhausted.set(true);
             loading.set(false);
             return;

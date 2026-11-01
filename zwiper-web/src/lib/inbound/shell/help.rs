@@ -3,9 +3,9 @@
 use components::{AlertDialog, DialogAction};
 use dioxus::prelude::*;
 use zwipe_core::domain::site::DISCORD_URL;
+use zwipe_ui::support;
 
 use crate::config::APP_VERSION;
-use crate::domain::support;
 
 /// The dialog, drawn by the root's dialog host while `open` is true.
 #[component]
@@ -18,7 +18,7 @@ pub fn HelpDialog(open: Signal<bool>) -> Element {
                 DialogAction::Dismiss("Close".into()),
                 DialogAction::Link {
                     label: "Report a problem \u{2197}".into(),
-                    href: support::report_mailto(APP_VERSION),
+                    href: support::report_mailto(APP_VERSION, "Web"),
                 },
                 DialogAction::Link {
                     label: "Join the Discord \u{2197}".into(),
