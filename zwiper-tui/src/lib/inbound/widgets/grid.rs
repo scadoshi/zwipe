@@ -1,6 +1,8 @@
 //! The app's backdrop of faint tiles, orangui's `grid-cells.js` drawn from orangui-core's `grid_rain`: every tile a seeded shade of the text color over the background, brightest at the top and fading down.
 //!
-//! The splash draws it raining in: each tile lands at `row * 18 ms` plus up to 160 ms of seeded scatter, falling three tiles over 350 ms with an ease-out. A tile here is three cells wide on every other row, four cells apart, which reads as the app's 28-pixel squares at a terminal's cell size. Only the background changes, so text drawn over a tile stays as it is; a palette with no colors of its own draws no tiles.
+//! The splash draws it raining in: each tile lands at `row * 18 ms` plus up to 160 ms of seeded scatter, falling three tiles over 350 ms with an ease-out.
+//!
+//! A tile fills four cells by two rows, about square since a cell is about twice as tall as it is wide, and the tiles meet with no gap, a mosaic of shades. The shade falls off with the square of the distance down the area, so the top is at full strength, the middle at a quarter and the bottom edge bare. Only the background changes, so text drawn over a tile stays as it is. A palette with no colors of its own draws no tiles.
 
 use std::time::Duration;
 
@@ -16,9 +18,6 @@ const PITCH_X: u16 = 4;
 
 /// Rows from one tile to the next.
 const PITCH_Y: u16 = 2;
-
-/// A tile's width in cells.
-const TILE_WIDTH: u16 = 3;
 
 /// When the rain over an area `height` rows tall has landed.
 #[cfg(test)]
@@ -71,7 +70,9 @@ pub(crate) fn draw(f: &mut Frame<'_>, palette: &Palette, area: Rect, elapsed: Op
         reason = "a few seconds of whole milliseconds is exact in f64"
     )]
     let elapsed_ms = elapsed.map(|t| t.as_millis() as f64);
-    let buffer = f.buffer_mut();
+    let width = usize::from(area.width);
+    // Each cell's tile shade.
+    let mut cells: Vec<Option<Color>> = vec![None; width.saturating_mul(usize::from(area.height))];
     for cell in grid_rain::cells(u32::from(cols), u32::from(rows)) {
         let (Ok(row), Ok(col)) = (u16::try_from(cell.row), u16::try_from(cell.column)) else {
             continue;
@@ -89,28 +90,37 @@ pub(crate) fn draw(f: &mut Frame<'_>, palette: &Palette, area: Rect, elapsed: Op
         )]
         let lift =
             ((1.0 - eased) * f64::from(grid_rain::DROP_CELLS) * f64::from(PITCH_Y)).round() as u16;
-        let Some(y) = row
-            .saturating_mul(PITCH_Y)
-            .checked_sub(lift)
-            .filter(|_| row.saturating_mul(PITCH_Y) >= lift)
-        else {
+        let Some(top) = row.saturating_mul(PITCH_Y).checked_sub(lift) else {
             continue;
         };
-        let fade = 1.0 - f64::from(y) / height * 0.75;
-        let Some(tile) = mix(base, ink, cell.shade * eased * fade) else {
+        let fade = (1.0 - f64::from(top) / height).max(0.0).powi(2);
+        let Some(shade) = mix(base, ink, cell.shade * eased * fade) else {
             continue;
         };
-        for dx in 0..TILE_WIDTH {
-            let x = area
-                .x
-                .saturating_add(col.saturating_mul(PITCH_X))
-                .saturating_add(dx);
-            let y = area.y.saturating_add(y);
-            if x < area.right()
-                && y < area.bottom()
-                && let Some(cell) = buffer.cell_mut((x, y))
-            {
-                cell.set_bg(tile);
+        for dy in 0..PITCH_Y {
+            let y = top.saturating_add(dy);
+            if y >= area.height {
+                continue;
+            }
+            for dx in 0..PITCH_X {
+                let x = col.saturating_mul(PITCH_X).saturating_add(dx);
+                if x >= area.width {
+                    continue;
+                }
+                let at = usize::from(y)
+                    .saturating_mul(width)
+                    .saturating_add(usize::from(x));
+                if let Some(slot) = cells.get_mut(at) {
+                    *slot = Some(shade);
+                }
+            }
+        }
+    }
+    let buffer = f.buffer_mut();
+    for (y, line) in (area.y..area.bottom()).zip(cells.chunks(width.max(1))) {
+        for (x, &tile) in (area.x..area.right()).zip(line) {
+            if let (Some(shade), Some(cell)) = (tile, buffer.cell_mut((x, y))) {
+                cell.set_bg(shade);
             }
         }
     }
@@ -123,7 +133,8 @@ mod tests {
 
     use super::*;
 
-    fn tinted(palette: &Palette, elapsed: Option<Duration>) -> usize {
+    /// The backgrounds of a 40 by 12 area after the grid draws, row by row.
+    fn backgrounds(palette: &Palette, elapsed: Option<Duration>) -> Vec<Vec<Color>> {
         let mut terminal = Terminal::new(TestBackend::new(40, 12)).unwrap();
         terminal
             .draw(|f| {
@@ -131,27 +142,68 @@ mod tests {
                 draw(f, palette, f.area(), elapsed);
             })
             .unwrap();
-        terminal
-            .backend()
-            .buffer()
-            .content()
+        let buffer = terminal.backend().buffer();
+        (0..12)
+            .map(|y| (0..40).map(|x| buffer.cell((x, y)).unwrap().bg).collect())
+            .collect()
+    }
+
+    /// The cells tiles tint.
+    fn tinted(palette: &Palette, elapsed: Option<Duration>) -> usize {
+        let base = palette.base.bg.unwrap_or_default();
+        backgrounds(palette, elapsed)
             .iter()
-            .filter(|c| c.bg != palette.base.bg.unwrap_or_default())
+            .flatten()
+            .filter(|&&bg| bg != base)
             .count()
     }
 
-    #[test]
-    fn the_still_grid_tints_three_cells_of_each_tile() {
-        let palette = Palette::for_account("gruvbox", true);
-        assert_eq!(tinted(&palette, None), 10 * 6 * 3);
+    /// How far a row's tiles sit from the background, summed over its cells and channels.
+    fn strength(row: &[Color], base: Color) -> u32 {
+        let Color::Rgb(br, bg, bb) = base else {
+            return 0;
+        };
+        row.iter()
+            .map(|&c| match c {
+                Color::Rgb(r, g, b) => u32::from(r.abs_diff(br))
+                    .saturating_add(u32::from(g.abs_diff(bg)))
+                    .saturating_add(u32::from(b.abs_diff(bb))),
+                _ => 0,
+            })
+            .sum()
     }
 
     #[test]
-    fn the_rain_starts_empty_and_lands_every_tile() {
+    fn the_still_grid_fills_the_top_and_fades_to_nothing_at_the_bottom() {
         let palette = Palette::for_account("gruvbox", true);
+        let base = palette.base.bg.unwrap();
+        let rows = backgrounds(&palette, None);
+        assert!(
+            rows[0].iter().all(|&bg| bg != base),
+            "the top row is all tiles, no gaps"
+        );
+        let (top, middle, bottom) = (
+            strength(&rows[0], base),
+            strength(&rows[6], base),
+            strength(&rows[11], base),
+        );
+        assert!(
+            top > middle && middle > bottom,
+            "{top} > {middle} > {bottom}"
+        );
+        assert!(
+            bottom * 10 < top,
+            "the bottom is all but bare: {bottom} of {top}"
+        );
+    }
+
+    #[test]
+    fn the_rain_starts_empty_and_lands_on_the_still_grid() {
+        let palette = Palette::for_account("gruvbox", true);
+        let still = backgrounds(&palette, None);
         assert_eq!(tinted(&palette, Some(Duration::ZERO)), 0);
-        assert!(tinted(&palette, Some(Duration::from_millis(200))) < 10 * 6 * 3);
-        assert_eq!(tinted(&palette, Some(rain_length(12))), 10 * 6 * 3);
+        assert!(tinted(&palette, Some(Duration::from_millis(200))) < tinted(&palette, None));
+        assert_eq!(backgrounds(&palette, Some(rain_length(12))), still);
     }
 
     #[test]

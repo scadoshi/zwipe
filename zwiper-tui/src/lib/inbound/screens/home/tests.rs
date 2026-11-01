@@ -461,7 +461,7 @@ fn the_logo_draws_in_the_palette_logo_color() {
         .buffer()
         .content()
         .iter()
-        .any(|c| c.symbol() == "▉" && c.fg == logo);
+        .any(|c| c.symbol() == "█" && c.fg == logo);
     assert!(drawn);
 }
 
@@ -619,9 +619,16 @@ fn a_short_panel_draws_the_whole_map_at_half_scale_with_its_key() {
         let terminal = render(&harness.app, width, height);
         let buffer = terminal.backend().buffer();
         let (mut full, mut half) = (0, 0);
+        let logo = harness
+            .app
+            .shared
+            .palette
+            .logo
+            .fg
+            .unwrap_or(ratatui::style::Color::Reset);
         for cell in buffer.content() {
             match cell.symbol() {
-                "█" => full += 1,
+                "█" if cell.fg != logo => full += 1,
                 "▀" if cell.bg != ratatui::style::Color::Reset => half += 2,
                 "▀" | "▄" => half += 1,
                 _ => {}

@@ -250,7 +250,7 @@ mod tests {
         let screen = text(&app, &hero, landed, 60, 24);
         assert!(screen.contains("28.0k") && screen.contains("2,065") && screen.contains("12"));
         assert!(screen.contains("Live"));
-        assert!(screen.contains('▉'), "the logo has decoded");
+        assert!(screen.contains('█'), "the logo has decoded");
     }
 
     #[test]

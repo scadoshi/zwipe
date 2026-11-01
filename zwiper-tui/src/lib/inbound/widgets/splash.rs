@@ -82,8 +82,10 @@ impl Splash {
             f.render_widget(Block::new().style(palette.base), area);
             grid::draw(f, palette, area, Some(elapsed));
             if let Some(mark) = Self::mark(elapsed) {
-                let lines: Vec<Line<'static>> =
-                    mark.lines().map(|l| Line::from(l.to_owned())).collect();
+                let lines: Vec<Line<'static>> = super::logo::solid(&mark)
+                    .lines()
+                    .map(|l| Line::from(l.to_owned()))
+                    .collect();
                 let width = mark.lines().map(measure::width_of).max().unwrap_or(0);
                 let spot = area.centered(
                     Constraint::Length(width),

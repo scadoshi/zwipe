@@ -224,7 +224,7 @@ fn the_hero_boxes_each_counter_in_a_tile_under_the_logo() {
         assert!(text.contains("Everybody") && text.contains("Live"));
         if height >= 24 {
             assert!(
-                text.contains('▉'),
+                text.contains('█'),
                 "the logo stays at {width}x{height}:\n{text}"
             );
         }

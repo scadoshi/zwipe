@@ -29,6 +29,11 @@ pub(crate) fn size(art: &str) -> (u16, u16) {
     )
 }
 
+/// `frame` with the art's seven-eighths blocks drawn as full ones, so each letter is solid instead of striped by the gap a `▉` leaves in its cell.
+pub(crate) fn solid(frame: &str) -> String {
+    frame.replace('▉', "█")
+}
+
 /// Whether the decode is still running `elapsed` into it.
 pub(crate) fn animating(elapsed: Duration) -> bool {
     elapsed < decode::DURATION
@@ -42,7 +47,7 @@ pub(crate) fn draw(
     style: Style,
     elapsed: Option<Duration>,
 ) {
-    let frame = elapsed.map_or_else(|| art.to_owned(), |e| decode::at(art, e));
+    let frame = solid(&elapsed.map_or_else(|| art.to_owned(), |e| decode::at(art, e)));
     let (width, height) = size(art);
     let lines: Vec<Line<'static>> = frame.lines().map(|l| Line::from(l.to_owned())).collect();
     let spot = area.centered_horizontally(Constraint::Length(width));
@@ -85,7 +90,7 @@ mod tests {
             .iter()
             .map(ratatui::buffer::Cell::symbol)
             .collect();
-        assert!(text.contains('▉'));
+        assert!(text.contains('█') && !text.contains('▉'));
         let mut tiny = Terminal::new(TestBackend::new(2, 1)).unwrap();
         tiny.draw(|f| draw(f, f.area(), logo::ZWIPE, Style::new(), Some(Duration::ZERO)))
             .unwrap();
