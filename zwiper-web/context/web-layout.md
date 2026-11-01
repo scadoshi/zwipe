@@ -4,6 +4,17 @@ The breakpoint is 900px: at 900px and up the window is wide, below it the web ap
 
 Esc closes the top overlay (dialog, then modal, then side panel, then full overlay), browser back does the same for overlays the app puts on its back stack, Enter submits the focused form, and `/` focuses the screen's search or quick add field where there is one. Single-key shortcuts only fire while no text field has focus.
 
+## Page grammar
+
+The wide layout copies zite's home page (`zite/assets/style.css`). Screens move onto it one at a time, with the owner reviewing each; the ones below that say so are on it.
+
+- The page is one centered column at most 74rem wide inside a 1.5rem gutter, and it starts at the top: the screen's 1rem top padding under the header or toolbar is the only gap, as zite's page sits 1rem under its nav. Nothing is centered vertically on a wide window.
+- A screen with a hero puts it at the top of the page. The rest of its panels share two equal columns under it, each a stack one panel gap (1rem) apart, and the shorter column ends where its last panel does. Panels are ordered so the columns come out about even and related panels sit together.
+- A hero that is a list of rows (a deck's Profile, Playstyle's Summary) stays 40rem wide and centered, since label and value would sit a page apart at full width.
+- A form is its own panel, centered, at zite's form width of 25rem, with its actions in a row under the fields as on zite's form pages. A form is never folded into a hero or stretched across the columns, and the toolbar that holds its actions below 900px is dropped on a wide window. This holds for every input panel: Login, Register, Forgot password, Create and Edit, Import, and the change forms.
+- Below 900px none of this applies: the hero, the columns and the form panel dissolve back into the app's single column, in the app's order.
+- In `web.css` the pieces are `.web-page`, `.web-hero` (with `.web-hero-narrow`), `.web-columns`, `.web-column`, `.web-form-panel` and `.web-form-actions`, with `.web-form-toolbar` on the action bar a form panel replaces.
+
 ## Shared chrome
 
 - The sidebar shows the six screens plus `Help`, which opens the same `Help & feedback` dialog as the app's `!` button. The current screen is highlighted; screens reached from a deck (Deck view, Edit, Import, Export, the card screens) highlight `Decks`, and the Commander maybeboard highlights `Playstyle`. Logged-out screens have no sidebar.
@@ -20,19 +31,19 @@ Esc closes the top overlay (dialog, then modal, then side panel, then full overl
 
 ## Login
 
-- On a wide window the `HomeHero` panel (logo, counters, `Everybody`, `Live`) sits on the left and the form on the right, both vertically centered.
-- Enter in either field runs `Log in`; `Create profile` and `Forgot password` stay as buttons under the form. Tab moves identity, password, `Show`, then the buttons.
-- Below 900px the hero stacks above the form as in the app.
+- On the page grammar. The `HomeHero` card (the mark beside the counters, `Everybody`, `Live`) is the hero across the top of the page, and the form is its own panel centered under it.
+- `Log in`, `Create profile` and `Forgot password` sit in a row under the fields inside the form panel, so a wide window has no toolbar here. Enter in either field runs `Log in`. Tab moves identity, password, `Show`, then the buttons.
+- Below 900px the hero stacks above the form as in the app, with the three buttons in the bar at the bottom.
 
 ## Register
 
-- Same split as Login: hero left, the four fields with their live error lines right, the `?` beside `Password` opening the `Password` hint.
+- Not on the page grammar yet: the hero on the left, the four fields with their live error lines right, the `?` beside `Password` opening the `Password` hint.
 - Enter in any field runs `Create profile`; `Back to login` is a button under the form.
 - Below 900px it stacks like the app.
 
 ## Forgot password
 
-- Same split: hero left, the `Email` field (or the `Check your email` panel after success) right.
+- Not on the page grammar yet: the hero on the left, the `Email` field (or the `Check your email` panel after success) right.
 - Enter runs `Send reset link`; `Back to login` sits beside it.
 - Below 900px it stacks like the app.
 
@@ -43,7 +54,7 @@ Esc closes the top overlay (dialog, then modal, then side panel, then full overl
 
 ## Home
 
-- On a wide window the hero panel spans the top (logo left, the three counters and the `Live`, `Everybody`/`Only me`, `Activity` chips right). Below it the `Color map` panel and the `Featured flavor` panel sit side by side.
+- On the page grammar. The hero card spans the top of the page (the mark left, the three counters and the `Live`, `Everybody`/`Only me`, `Activity` chips right). Under it `Color map` takes the left column and `Featured flavor` the right.
 - The featured flavor panel is the app's: the quote, then the card's name and price, `Image` (the full preview), and in place of `Buy` the `TCGplayer ↗` and `Card Kingdom ↗` links that open in a new tab, as on zite.
 - The app's action bar (`Decks`, `Account`, `Config`) is dropped on a wide window because the sidebar holds the same three; below 900px it stays.
 - `Playstyle` under the color map and `Activity` in the hero stay as buttons.
@@ -51,7 +62,7 @@ Esc closes the top overlay (dialog, then modal, then side panel, then full overl
 
 ## Activity
 
-- On a wide window the counts panel sits on top, then the `Activity` section full width with the heatmap unscrolled (a year fits) and `Totals` beside it. Under that, `Card roles` and `Oracle tags` sit side by side, both open, with `Most skipped` full width below.
+- On the page grammar. The counts panel is the hero. The left column holds the `Activity` section, with the heatmap unscrolled (a year fits) over `Totals`, and `Most skipped` under it; the right column holds `Card roles` over `Oracle tags`.
 - All three accordion sections are open at once, so the shared `Show` rate chips appear above both charts and one click switches both, as in the app.
 - Hovering a heatmap square shows the floating day chip the spec describes for hover devices; clicking a square still drives the readout for 4 seconds.
 - Role and tag chips, `Examples`, and `Most skipped` rows (`Image`, `Printing`) work by click as in the app.
@@ -59,10 +70,10 @@ Esc closes the top overlay (dialog, then modal, then side panel, then full overl
 
 ## Playstyle (Suggested commanders)
 
-- On a wide window the left column holds the profile sections (`Color map`, `Summary`, `Card roles`, `Oracle tags`) all open, stacked. The right column holds the `Show` row with `Art`, the `Suggested commanders` list and `Staples` under it.
+- On the page grammar. `Summary` is the hero, 40rem wide. The left column holds the other profile sections (`Color map`, `Card roles`, `Oracle tags`), all open; the right column holds the `Show` row with `Art`, the `Suggested commanders` list and `Staples` under it.
 - Rows expand inline on click with their footer (`Why this commander?`) and actions `Image`, `Printing`, `Create deck`, `Maybeboard`, `Remove`.
 - `Swipe` opens the Swipe select overlay in suggested mode (see Edit deck); `More` is a popover with `Clear skips`, which opens the `Clear skips` dialog.
-- Below 900px it is the phone column with the profile accordion and `Color map` open.
+- Below 900px it is the phone column with the profile accordion, `Summary` back in it, and `Color map` open.
 
 ## Commander maybeboard
 
@@ -139,7 +150,7 @@ Esc closes the top overlay (dialog, then modal, then side panel, then full overl
 
 ## Deck view
 
-- At 1280px and up there are three columns: `Profile` with `Budget` and `Tags` under it; the stats (`Distributions`, `Mana`, `Draw odds`, `Warnings`); and a cards column listing the mainboard by type with the command zone on top, as compact rows that expand on click. Between 900px and 1279px the stats move under the profile in the left column and the cards column stays on the right.
+- On the page grammar. The `Profile` card is the hero, 40rem wide. The left column holds `Budget`, `Tags`, `Distributions`, `Mana` and `Draw odds`; the right column holds `Warnings` over a cards column that lists the mainboard by type with the command zone on top, as compact rows that expand on click.
 - Every section is open at once, so the phone's single-open accordion and its default `Budget` go away on a wide window; `Warnings` keeps its warning border and fix buttons (`Add cards`, `Import`, `Fix to {n}`, `Clear`, `Remove`).
 - The toolbar keeps `Back`, `Edit`, `Cards`, `More`. `Cards` opens Deck cards for full editing; the cards column here is for reading. `More` is a popover with `Import cards`, `Export cards`, the `TCGplayer ↗` and `Card Kingdom ↗` links in place of `Buy deck`, `Clone deck`, `Share deck`, `Clear skips`, `Delete deck`, and the other dialogs are the app's.
 - The `Draw odds` stepper `-` / `+` buttons also answer ← and → while the stepper has focus.
