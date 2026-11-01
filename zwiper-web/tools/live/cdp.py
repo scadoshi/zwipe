@@ -1,7 +1,14 @@
 """Drives headless Chrome over --remote-debugging-pipe: open a URL, run JS steps, screenshot."""
 import base64, json, os, subprocess, sys, time
 
-CHROME = os.path.expanduser("~/.cache/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-linux64/chrome-headless-shell")
+# CHROME overrides; otherwise the Linux headless shell, then the macOS Chrome app.
+CHROME = os.environ.get("CHROME") or next(
+    (p for p in (
+        os.path.expanduser("~/.cache/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-linux64/chrome-headless-shell"),
+        "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    ) if os.path.exists(p)),
+    "chromium",
+)
 
 class Pipe:
     def __init__(self, width, height):
@@ -9,7 +16,7 @@ class Pipe:
         r_out, w_out = os.pipe() # chrome fd 4 -> we read
         def pre():
             os.dup2(r_in, 3); os.dup2(w_out, 4)
-        self.proc = subprocess.Popen([CHROME, "--remote-debugging-pipe", "--no-sandbox", "--headless",
+        self.proc = subprocess.Popen([CHROME, "--remote-debugging-pipe", "--no-sandbox", "--headless=new", "--hide-scrollbars",
             f"--window-size={width},{height}", "--user-data-dir=" + os.environ.get("PROFILE", "/tmp/webc-profile"), "about:blank"],
             pass_fds=(3, 4), preexec_fn=pre, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         os.close(r_in); os.close(w_out)
