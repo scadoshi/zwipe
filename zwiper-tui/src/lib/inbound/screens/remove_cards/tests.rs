@@ -68,7 +68,7 @@ fn opening_loads_the_deck_and_shows_the_main_board() {
     let (harness, _, _) = loaded();
     assert_eq!(view(&harness).stack.len(), 2);
     let screen = screen_text(&harness.app);
-    for expected in ["Remove deck cards", "Boards", "Main", "All", "A", "skip"] {
+    for expected in ["Boards", "Main", "All", "A", "skip"] {
         assert!(screen.contains(expected), "missing {expected}");
     }
 }

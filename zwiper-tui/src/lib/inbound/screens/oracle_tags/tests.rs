@@ -271,7 +271,6 @@ fn the_list_draws_descriptions_parents_and_the_selected_row_keys() {
     let harness = loaded();
     let screen = screen_text(&harness.app);
     for expected in [
-        "Oracle tags",
         "Search tags or descriptions",
         "A",
         "anthem",
@@ -282,7 +281,7 @@ fn the_list_draws_descriptions_parents_and_the_selected_row_keys() {
         "x Examples",
         "u Use",
         "Esc Back",
-        "? Hint",
+        "? hint",
     ] {
         assert!(screen.contains(expected), "missing {expected}");
     }
@@ -316,9 +315,9 @@ fn the_dictionary_fits_a_tiny_terminal() {
 
 #[test]
 fn the_dictionary_keeps_every_key_on_a_narrow_terminal() {
-    crate::test_support::assert_key_bar_fits(&on_dictionary().app, "? Hint");
+    crate::test_support::assert_key_bar_fits(&on_dictionary().app, "? hint");
     let mut harness = loaded();
-    crate::test_support::assert_key_bar_fits(&harness.app, "? Hint");
+    crate::test_support::assert_key_bar_fits(&harness.app, "? hint");
     harness.press(KeyCode::Char('/'));
     crate::test_support::assert_key_bar_fits(&harness.app, "↑/↓ Move");
 }

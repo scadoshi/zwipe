@@ -1,4 +1,4 @@
-//! Config: the header, the Appearance and Cards lists with their buttons, the action bar, and the Themes and Exceptions sheets on the sheet widget.
+//! Config: the Appearance and Cards lists with their buttons, the action bar, and the Themes and Exceptions sheets on the sheet widget.
 
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout};
@@ -13,7 +13,6 @@ use super::{ConfigView, ExceptionsSheet, Sheet, Stop, ThemeSheet};
 use crate::domain::theme::{self, Palette, PickerRow};
 use crate::inbound::app::Shared;
 use crate::inbound::widgets::button::{self, Button};
-use crate::inbound::widgets::header::{self, Corner};
 use crate::inbound::widgets::{action_bar, measure, sheet};
 
 /// The lists are at most this wide, in cells.
@@ -33,11 +32,10 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &ConfigView) {
             ("j/k", "move"),
             ("Enter", "select"),
             ("i", "about row"),
-            ("?", "hint"),
             ("Esc", "back"),
         ],
     );
-    let bar = action_bar::with_help(palette, bar).centered();
+    let bar = action_bar::with_help(palette, bar, action_bar::Hint::Question).centered();
     let area = f.area();
     let bar_height = action_bar::height(&bar, area.width);
     let width = WIDTH.min(area.width);
@@ -46,17 +44,13 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &ConfigView) {
     let room = area
         .height
         .saturating_sub(bar_height)
-        .saturating_sub(2)
         .saturating_sub(measure::height_of(lines.len()));
-    let [head, _, body, buttons, keys] = Layout::vertical([
-        Constraint::Length(1),
-        Constraint::Length(1),
+    let [body, buttons, keys] = Layout::vertical([
         Constraint::Fill(1),
         Constraint::Length(button::height(&row, area.width, room)),
         Constraint::Length(bar_height),
     ])
     .areas(area);
-    header::draw(f, palette, head, "Config", Corner::Hint);
     let body = body.centered_horizontally(Constraint::Length(width));
     f.render_widget(Paragraph::new(lines), body);
     button::draw_row(f, palette, buttons, &row, None);

@@ -1,6 +1,6 @@
 //! The theme wipe, after orangui's `use_theme_follow`: a new theme sweeps over the old one in 0.4 s, top to bottom, or bottom to top when going from light to dark.
 //!
-//! The screen is drawn in the new theme; the rows the sweep has not reached yet are recolored back to the old theme, role for role.
+//! The screen is drawn in the new theme; the rows the sweep has not reached yet are recolored back to the old theme, role for role, and the grid's tiles back to the old theme's tiles.
 
 use std::time::{Duration, Instant};
 
@@ -8,6 +8,7 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::Color;
 
+use super::grid;
 use crate::domain::theme::Palette;
 
 /// How long a sweep takes.
@@ -76,10 +77,24 @@ impl Wipe {
         } else {
             area.top().saturating_add(swept)..area.bottom()
         };
+        // The grid's tiles are shades of each theme's own, so a tile goes back to the old theme's tile in its place.
+        let new_tiles = grid::shades(to, area, None);
+        let old_tiles = grid::shades(&self.from, area, None);
+        let old_base = self.from.base.bg;
+        let width = usize::from(area.width);
         for y in rows {
             for x in area.left()..area.right() {
+                let at = usize::from(y.saturating_sub(area.y))
+                    .saturating_mul(width)
+                    .saturating_add(usize::from(x.saturating_sub(area.x)));
                 if let Some(cell) = buffer.cell_mut((x, y)) {
-                    let (fg, bg) = (back(cell.fg), back(cell.bg));
+                    let tile = new_tiles
+                        .get(at)
+                        .copied()
+                        .flatten()
+                        .filter(|&shade| shade == cell.bg)
+                        .and_then(|_| old_tiles.get(at).copied().flatten().or(old_base));
+                    let (fg, bg) = (back(cell.fg), tile.unwrap_or_else(|| back(cell.bg)));
                     cell.set_fg(fg);
                     cell.set_bg(bg);
                 }

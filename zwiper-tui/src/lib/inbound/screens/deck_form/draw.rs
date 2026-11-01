@@ -23,7 +23,7 @@ use crate::inbound::screens::card_sheets;
 use crate::inbound::widgets::card_motion::{self, CardMotion, Phase};
 use crate::inbound::widgets::pill::{self, PillState};
 use crate::inbound::widgets::text_input::TextInput;
-use crate::inbound::widgets::{action_bar, header, measure, skeleton};
+use crate::inbound::widgets::{action_bar, measure, skeleton};
 
 /// Values sit this far in from the left, under their labels.
 const INDENT: &str = "    ";
@@ -37,10 +37,17 @@ const CURRENCIES: [PriceCurrency; 3] = [PriceCurrency::Usd, PriceCurrency::Eur, 
 pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &DeckForm) {
     let palette = &shared.palette;
     // The form never reads `!` as Help, so its bar names F1 over every field and picker.
-    let bar = action_bar::with_help(palette, keys_line(palette, form));
+    // `?` reopens the hint only on a field that takes no typing, with no picker open.
+    let hint = match (&form.overlay, form.focus) {
+        (Some(Overlay::Info(_)) | None, Field::Name | Field::Price | Field::Card(_)) => {
+            action_bar::Hint::Absent
+        }
+        (Some(Overlay::Info(_)) | None, _) => action_bar::Hint::Question,
+        _ => action_bar::Hint::Absent,
+    };
+    let bar = action_bar::with_help(palette, keys_line(palette, form), hint);
     let bar_height = action_bar::height(&bar, f.area().width.saturating_sub(2));
-    let [header, body, status, keys] = Layout::vertical([
-        Constraint::Length(1),
+    let [body, status, keys] = Layout::vertical([
         Constraint::Fill(1),
         Constraint::Length(1),
         Constraint::Length(bar_height),
@@ -51,22 +58,21 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &DeckForm) {
 
     match &form.overlay {
         Some(Overlay::Format(picker)) => {
-            return draw_format(f, palette, form, picker, [header, body, status, keys]);
+            return draw_format(f, palette, form, picker, [body, status, keys]);
         }
         Some(Overlay::DeckTags(picker)) => {
-            return draw_tags(f, palette, form, picker, [header, body, status, keys]);
+            return draw_tags(f, palette, form, picker, [body, status, keys]);
         }
         Some(Overlay::OracleTags(picker)) => {
-            return draw_oracle(f, palette, form, picker, [header, body, status, keys]);
+            return draw_oracle(f, palette, form, picker, [body, status, keys]);
         }
         Some(Overlay::Swipe(picker)) => {
-            return draw_swipe(f, shared, picker, [header, body, status, keys]);
+            return draw_swipe(f, shared, picker, [body, status, keys]);
         }
         Some(Overlay::Info(_)) | None => {}
     }
 
-    header::draw(f, palette, header, form.mode.title(), header::Corner::Hint);
-    let block = crate::inbound::widgets::panel::bordered().border_style(palette.border);
+    let block = crate::inbound::widgets::panel::bordered(palette).border_style(palette.border);
     if form.loading || form.load_error.is_some() {
         let inner = block.inner(body);
         f.render_widget(block, body);
@@ -599,29 +605,27 @@ fn chip_box(
 
 /// What a picker's frame shows around its grid.
 struct PickerParts {
-    title: &'static str,
     /// What follows "Search" in the controls row.
     extras: Vec<Span<'static>>,
     /// The definition bar's name and lines.
     bar: (String, Vec<String>),
 }
 
-/// A picker's frame: its title, the search box and its extras, the definition bar, then the grid. Returns the grid's area.
+/// A picker's frame: the search box and its extras, the definition bar, then the grid. Returns the grid's area.
 fn picker_frame(
     f: &mut Frame<'_>,
     palette: &Palette,
-    areas: [Rect; 4],
+    areas: [Rect; 3],
     search: &TextInput,
     frame: PickerParts,
 ) -> Rect {
-    let PickerParts { title, extras, bar } = frame;
-    let [header, body, _, _] = areas;
-    header::draw(f, palette, header, title, header::Corner::Hint);
+    let PickerParts { extras, bar } = frame;
+    let [body, _, _] = areas;
     let mut bar_lines = vec![Line::from(Span::styled(bar.0, palette.accent.bold()))];
     bar_lines.extend(bar.1.into_iter().map(Line::from));
     let bar = Paragraph::new(bar_lines)
         .wrap(Wrap { trim: true })
-        .block(crate::inbound::widgets::panel::bordered().border_style(palette.border));
+        .block(crate::inbound::widgets::panel::bordered(palette).border_style(palette.border));
     // The definition wraps to the width, but never takes more than half the room under the search box.
     let bar_height = measure::height_of(bar.line_count(body.width))
         .min(body.height.saturating_sub(4) / 2)
@@ -648,7 +652,7 @@ fn picker_frame(
 /// A picker's action bar, its Save bright only once the picks differ from where the picker opened.
 fn picker_keys(palette: &Palette, save_enabled: bool) -> Line<'static> {
     let save_style = if save_enabled {
-        palette.base.bold()
+        palette.text().bold()
     } else {
         palette.muted
     };
@@ -705,7 +709,7 @@ fn draw_format(
     palette: &Palette,
     form: &DeckForm,
     picker: &FormatPicker,
-    areas: [Rect; 4],
+    areas: [Rect; 3],
 ) {
     let grid = picker_frame(
         f,
@@ -713,7 +717,6 @@ fn draw_format(
         areas,
         &picker.search,
         PickerParts {
-            title: "Format",
             extras: Vec::new(),
             bar: pickers::format_bar(picker.detail),
         },
@@ -744,7 +747,7 @@ fn draw_tags(
     palette: &Palette,
     form: &DeckForm,
     picker: &TagPicker,
-    areas: [Rect; 4],
+    areas: [Rect; 3],
 ) {
     let bar = match picker
         .detail
@@ -763,7 +766,6 @@ fn draw_tags(
         areas,
         &picker.search,
         PickerParts {
-            title: "Deck tags",
             extras: vec![
                 Span::styled(
                     format!("{}/{MAX_DECK_TAGS}", form.tags.len()),
@@ -800,7 +802,7 @@ fn draw_oracle(
     palette: &Palette,
     form: &DeckForm,
     picker: &OraclePicker,
-    areas: [Rect; 4],
+    areas: [Rect; 3],
 ) {
     let catalog = form.oracle_catalog.as_deref();
     let bar = match &picker.detail {
@@ -827,7 +829,6 @@ fn draw_oracle(
         areas,
         &picker.search,
         PickerParts {
-            title: "Oracle tags",
             extras: vec![
                 pill::pill("F3 Dictionary", palette.accent, PillState::default()),
                 Span::styled(
@@ -872,11 +873,10 @@ fn draw_oracle(
 }
 
 /// The swipe picker: the card up now and what it says, or a ghost while loading, with the filter sheet over it while open.
-fn draw_swipe(f: &mut Frame<'_>, shared: &Shared, picker: &SwipePicker, areas: [Rect; 4]) {
+fn draw_swipe(f: &mut Frame<'_>, shared: &Shared, picker: &SwipePicker, areas: [Rect; 3]) {
     let palette = &shared.palette;
-    let [header, body, _, _] = areas;
-    header::draw(f, palette, header, "Swipe select", header::Corner::Hint);
-    let block = crate::inbound::widgets::panel::bordered().border_style(palette.border);
+    let [body, _, _] = areas;
+    let block = crate::inbound::widgets::panel::bordered(palette).border_style(palette.border);
     let inner = block.inner(body);
     f.render_widget(block, body);
     let now = Instant::now();

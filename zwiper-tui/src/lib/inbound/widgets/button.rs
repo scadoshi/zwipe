@@ -188,7 +188,7 @@ fn draw_box(f: &mut Frame<'_>, palette: &Palette, area: Rect, button: &Button<'_
         (false, Kind::Plain) => palette.border,
         (false, _) => button.color(palette),
     };
-    let block = panel::bordered().border_style(border);
+    let block = panel::bordered(palette).border_style(border);
     f.render_widget(
         Paragraph::new(Line::from(button.label_span(palette, focused)).centered()).block(block),
         area,

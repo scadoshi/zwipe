@@ -83,15 +83,10 @@ fn a_failure_toasts_and_stops_the_spinner() {
 }
 
 #[test]
-fn the_screen_shows_its_title_and_buttons_and_fits_a_tiny_terminal() {
+fn the_screen_shows_its_field_and_buttons_and_fits_a_tiny_terminal() {
     let mut harness = forgetting();
     let screen = screen_text(&harness.app);
-    for text in [
-        "Reset password",
-        "Email",
-        "Back to login",
-        "Send reset link",
-    ] {
+    for text in ["Email", "Back to login", "Send reset link"] {
         assert!(screen.contains(text), "{text}");
     }
     harness.press(KeyCode::Esc);

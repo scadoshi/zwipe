@@ -6,12 +6,12 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::Paragraph;
 use zwipe_core::domain::card::oracle_tag::OracleTag;
 
-use super::{FAILED, OTHER, OracleTagsView, TITLE, letters};
+use super::{FAILED, OTHER, OracleTagsView, letters};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::screens::home::cache::Catalog;
 use crate::inbound::widgets::text_input::BOX_HEIGHT;
-use crate::inbound::widgets::{action_bar, header, item_list, skeleton};
+use crate::inbound::widgets::{action_bar, item_list, skeleton};
 
 /// Ghost letters on the skeleton's rail, as the app draws.
 const GHOST_LETTERS: usize = 12;
@@ -37,21 +37,20 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &OracleTagsView) {
                     ("j/k", "Move"),
                     ("x", "Examples"),
                     ("u", "Use"),
-                    ("?", "Hint"),
                 ]
             }
         }
-        Catalog::Failed | Catalog::Idle | Catalog::Loading => &[("Esc", "Back"), ("?", "Hint")],
+        Catalog::Failed | Catalog::Idle | Catalog::Loading => &[("Esc", "Back")],
     };
-    let bar = action_bar::with_help(palette, action_bar::line(palette, hints));
+    let hint = if view.typing && shared.caches.oracle_tags.tags().is_some() {
+        action_bar::Hint::Absent
+    } else {
+        action_bar::Hint::Question
+    };
+    let bar = action_bar::with_help(palette, action_bar::line(palette, hints), hint);
     let bar_height = action_bar::height(&bar, area.width);
-    let [title, body, keys] = Layout::vertical([
-        Constraint::Length(1),
-        Constraint::Fill(1),
-        Constraint::Length(bar_height),
-    ])
-    .areas(area);
-    header::draw(f, palette, title, TITLE, header::Corner::Hint);
+    let [body, keys] =
+        Layout::vertical([Constraint::Fill(1), Constraint::Length(bar_height)]).areas(area);
     match &shared.caches.oracle_tags {
         Catalog::Loaded { tags, .. } => draw_loaded(f, palette, view, tags, body),
         Catalog::Failed => f.render_widget(
@@ -114,7 +113,7 @@ fn row(
     let slug_style = if selected {
         palette.accent.bold()
     } else {
-        palette.base.bold()
+        palette.text().bold()
     };
     let mut lines = vec![Line::styled(tag.slug.clone(), slug_style)];
     lines.push(match &tag.description {

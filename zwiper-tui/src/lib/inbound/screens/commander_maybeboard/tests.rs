@@ -137,7 +137,6 @@ fn the_skeleton_ghosts_everything() {
     let harness = on_maybeboard(true);
     let text = screen_text(&harness.app);
     assert!(text.contains('░'));
-    assert!(text.contains("Commander maybeboard"), "the title is real");
     for real in [
         "Quick add",
         "Search a commander",

@@ -1,4 +1,4 @@
-//! Changelog: the header, the chip rows, the release cards, and the action bar; a skeleton while loading and a note when the fetch failed.
+//! Changelog: the chip rows, the release cards, and the action bar; a skeleton while loading and a note when the fetch failed.
 
 use std::time::Instant;
 
@@ -13,7 +13,6 @@ use super::{ChangelogView, Chip, FAILED};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::widgets::button::{self, Button};
-use crate::inbound::widgets::header::{self, Corner};
 use crate::inbound::widgets::{action_bar, entrance, measure, skeleton};
 
 /// The cards are at most this wide, in cells.
@@ -31,17 +30,14 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &ChangelogView) {
             ("Esc", "back"),
         ],
     );
-    let bar = action_bar::with_help(palette, bar).centered();
+    let bar = action_bar::with_help(palette, bar, action_bar::Hint::Absent).centered();
     let bar_height = action_bar::height(&bar, f.area().width);
-    let [head, _, body, buttons, keys] = Layout::vertical([
-        Constraint::Length(1),
-        Constraint::Length(1),
+    let [body, buttons, keys] = Layout::vertical([
         Constraint::Fill(1),
         Constraint::Length(1),
         Constraint::Length(bar_height),
     ])
     .areas(f.area());
-    header::draw(f, palette, head, "Changelog", Corner::Empty);
     let body = body.centered_horizontally(Constraint::Length(WIDTH.min(body.width)));
     match &shared.changelog {
         ChangelogCache::Loading => draw_skeleton(f, palette, body),

@@ -24,7 +24,7 @@ pub(crate) fn info_lines(palette: &Palette, card: &Card) -> Vec<Line<'static>> {
         .map(|a| format!("Artist: {a}"))
         .unwrap_or_default();
     vec![
-        Line::from(data.name.clone()).style(palette.base).bold(),
+        Line::from(data.name.clone()).style(palette.text()).bold(),
         Line::from(prices(card)).style(palette.muted),
         Line::from(format!("Set: {}", data.set_name)).style(palette.muted),
         Line::from(format!("Released: {}", data.released_at)).style(palette.muted),
@@ -306,7 +306,7 @@ pub(crate) fn proxy_card(
     let text = Paragraph::new(fitted_proxy_lines(palette, card, face, inner, rows))
         .wrap(Wrap { trim: true })
         .block(
-            crate::inbound::widgets::panel::bordered()
+            crate::inbound::widgets::panel::bordered(palette)
                 .border_style(border)
                 .padding(Padding::horizontal(1)),
         );

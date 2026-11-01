@@ -582,7 +582,6 @@ fn the_card_shows_its_text_info_and_colors_its_mana_by_theme() {
         .map(ratatui::buffer::Cell::symbol)
         .collect();
     for expected in [
-        "Add deck cards",
         "From",
         "Search",
         "Maybeboard",

@@ -4,7 +4,7 @@
 //!
 //! - [`topic`] opens a [`HintTopic`], such as `Email` beside the email row.
 //! - [`once`] opens the one-time hint stored under a key the first time only: it checks the user's `hints_shown`, opens the dialog, marks the hint locally so it cannot show twice, and asks the server to mark it with `mark_hint_shown`. The user the server answers with replaces the shared one and is saved with the session.
-//! - [`reopen`] opens a one-time hint again on demand, as a header `?` does, without recording it.
+//! - [`reopen`] opens a one-time hint again on demand, as the key bar's `? hint` does, without recording it.
 //!
 //! One dialog is up at a time, and it takes every key until it closes: Esc, Enter or Space close it, and j/k scroll a long one.
 
@@ -217,7 +217,7 @@ pub(crate) fn once_with(cx: &mut Context<'_>, key: &str, content: HintContent) -
     true
 }
 
-/// Opens the one-time hint `key` again, as a header `?` does, without recording it.
+/// Opens the one-time hint `key` again, as the key bar's `? hint` does, without recording it.
 pub(crate) fn reopen(cx: &mut Context<'_>, key: &str) {
     if let Some(content) = content_for(key) {
         open(cx, content);

@@ -49,7 +49,7 @@ pub(crate) fn columns(
         .collect();
     let chart = BarChart::vertical(bars)
         .block(
-            crate::inbound::widgets::panel::bordered()
+            crate::inbound::widgets::panel::bordered(palette)
                 .title(format!(" {title} "))
                 .border_style(palette.border),
         )

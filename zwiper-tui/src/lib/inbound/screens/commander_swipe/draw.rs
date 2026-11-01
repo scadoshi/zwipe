@@ -18,7 +18,7 @@ use crate::inbound::screens::playstyle::draw as playstyle_draw;
 use crate::inbound::screens::playstyle::draw::Reasons;
 use crate::inbound::widgets::card_motion::{self, CardMotion, Phase};
 use crate::inbound::widgets::sheet::Sheet;
-use crate::inbound::widgets::{action_bar, card_text, header, skeleton};
+use crate::inbound::widgets::{action_bar, card_text, skeleton};
 
 /// Ghost rows standing in for a card's text.
 const GHOST_ROWS: usize = 8;
@@ -29,15 +29,14 @@ const SHEET_FRAME: usize = 4;
 pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &CommanderSwipeView) {
     let palette = &shared.palette;
     let area = f.area().inner(Margin::new(1, 0));
-    let bar = action_bar::with_help(palette, action_bar::styled_line(&key_hints(palette, view)));
+    let bar = action_bar::with_help(
+        palette,
+        action_bar::styled_line(&key_hints(palette, view)),
+        action_bar::Hint::Question,
+    );
     let bar_height = action_bar::height(&bar, area.width);
-    let [title, body, keys] = Layout::vertical([
-        Constraint::Length(1),
-        Constraint::Fill(1),
-        Constraint::Length(bar_height),
-    ])
-    .areas(area);
-    header::draw(f, palette, title, view.title(), header::Corner::Hint);
+    let [body, keys] =
+        Layout::vertical([Constraint::Fill(1), Constraint::Length(bar_height)]).areas(area);
     let body = body.inner(Margin::new(1, 1));
     let now = Instant::now();
     let motion = view.motion.as_ref().filter(|m| m.running(now));
@@ -154,14 +153,9 @@ fn key_hints(
         "Filter"
     };
     keys.extend(
-        [
-            ("f", filter),
-            ("r", "Refresh"),
-            ("?", "Hint"),
-            ("Esc", "Back"),
-        ]
-        .into_iter()
-        .map(|(k, a)| (k, a, palette.muted)),
+        [("f", filter), ("r", "Refresh"), ("Esc", "Back")]
+            .into_iter()
+            .map(|(k, a)| (k, a, palette.muted)),
     );
     keys
 }

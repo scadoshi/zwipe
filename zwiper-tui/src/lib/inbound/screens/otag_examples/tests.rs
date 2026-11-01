@@ -138,7 +138,7 @@ fn an_empty_page_ends_the_browse_and_down_comes_back() {
     view_mut(&mut harness).motion = None;
     let screen = screen_text(&harness.app);
     assert!(screen.contains("Card 1"));
-    assert!(screen.contains("? Hint") && !screen.contains("? Help"));
+    assert!(screen.contains("? hint") && !screen.contains("? Help"));
 }
 
 #[test]
@@ -308,9 +308,9 @@ fn view_mut(harness: &mut Harness) -> &mut ExamplesView {
 #[test]
 fn the_examples_keep_every_key_on_a_narrow_terminal() {
     let mut harness = on_examples();
-    crate::test_support::assert_key_bar_fits(&harness.app, "? Hint");
+    crate::test_support::assert_key_bar_fits(&harness.app, "? hint");
     harness.apply(page(0, 2));
-    crate::test_support::assert_key_bar_fits(&harness.app, "? Hint");
+    crate::test_support::assert_key_bar_fits(&harness.app, "? hint");
 }
 
 #[test]

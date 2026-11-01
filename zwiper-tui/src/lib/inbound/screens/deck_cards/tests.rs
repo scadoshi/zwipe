@@ -102,7 +102,7 @@ fn opening_loads_the_deck_and_tokens() {
         requests(&harness),
         [&Request::Load { deck_id }, &Request::Tokens { deck_id }]
     );
-    assert!(screen_text(&harness.app).contains("Deck cards"));
+    assert!(screen_text(&harness.app).contains("? hint"));
 }
 
 #[test]

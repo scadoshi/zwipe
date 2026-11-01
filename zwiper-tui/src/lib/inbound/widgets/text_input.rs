@@ -200,7 +200,7 @@ impl TextInput {
             let skip = self.skip(box_area.width);
             Line::from(self.shown().chars().skip(skip).collect::<String>()).style(Style::new())
         };
-        let mut block = crate::inbound::widgets::panel::bordered().border_style(border);
+        let mut block = crate::inbound::widgets::panel::bordered(palette).border_style(border);
         if !title.is_empty() {
             block = block.title(
                 Line::from(format!(" {title} "))

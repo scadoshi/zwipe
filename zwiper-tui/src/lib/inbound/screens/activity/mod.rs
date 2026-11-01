@@ -565,7 +565,7 @@ pub(crate) fn open(cx: &mut Context<'_>) {
     hint::once(cx, HINT_ACTIVITY);
 }
 
-/// Shows the hint again, for the header's "?".
+/// Shows the hint again, for the key bar's `H hint`.
 pub(crate) fn reopen_hint(cx: &mut Context<'_>) {
     hint::reopen(cx, HINT_ACTIVITY);
 }

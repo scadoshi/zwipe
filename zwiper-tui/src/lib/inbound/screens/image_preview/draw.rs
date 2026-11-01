@@ -35,7 +35,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &ImagePreview) {
                 .unwrap_or_default();
             f.render_widget(
                 Paragraph::new(lines).wrap(Wrap { trim: true }).block(
-                    crate::inbound::widgets::panel::bordered()
+                    crate::inbound::widgets::panel::bordered(palette)
                         .border_style(palette.accent)
                         .padding(Padding::horizontal(1)),
                 ),

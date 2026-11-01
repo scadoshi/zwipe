@@ -17,7 +17,7 @@ use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::screens::card_sheets::filter;
 use crate::inbound::widgets::card_motion::{self, Phase};
-use crate::inbound::widgets::{action_bar, card_info, header, skeleton};
+use crate::inbound::widgets::{action_bar, card_info, skeleton};
 
 /// The card is at most this wide, in cells.
 const CARD_WIDTH: u16 = 64;
@@ -34,10 +34,9 @@ const INFO_HEIGHT: u16 = 5;
 pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &SwipeView) {
     let palette = &shared.palette;
     let area = f.area();
-    let bar = action_bar::with_help(palette, key_line(palette, view));
+    let bar = action_bar::with_help(palette, key_line(palette, view), action_bar::Hint::Question);
     let bar_height = action_bar::height(&bar, area.width.saturating_sub(2));
-    let [header, sources, body, keys] = Layout::vertical([
-        Constraint::Length(1),
+    let [sources, body, keys] = Layout::vertical([
         Constraint::Length(1),
         Constraint::Fill(1),
         Constraint::Length(bar_height),
@@ -45,7 +44,6 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &SwipeView) {
     .horizontal_margin(1)
     .areas(area);
 
-    header::draw(f, palette, header, "Add deck cards", header::Corner::Hint);
     f.render_widget(source_line(palette, view), sources);
 
     let now = Instant::now();
@@ -116,7 +114,6 @@ fn key_line(palette: &Palette, view: &SwipeView) -> Line<'static> {
     if view.synergy_shown() {
         rest.push(("y", "synergy"));
     }
-    rest.push(("?", "hint"));
     rest.push(("Esc", "back"));
     keys.extend(rest.into_iter().map(|(k, a)| (k, a, palette.muted)));
     action_bar::styled_line(&keys)

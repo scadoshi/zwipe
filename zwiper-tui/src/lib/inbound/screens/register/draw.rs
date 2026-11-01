@@ -1,4 +1,4 @@
-//! Create profile: the header, the hero, the four fields with their error lines, and the action bar.
+//! Create profile: the hero, the four fields with their error lines, and the action bar.
 
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout};
@@ -39,7 +39,6 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &RegisterForm) {
         shared,
         &form.hero,
         AuthScreen {
-            title: "Create profile",
             body_height,
             placement: Placement::Top,
             keys: action_bar::line(palette, &keys).centered(),

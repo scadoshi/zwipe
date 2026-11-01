@@ -1,4 +1,4 @@
-//! The deck cards view: the header, featured cards, quick add, the Group by, Boards and Show rows, the card list, and the keys.
+//! The deck cards view: the deck's name and chips, featured cards, quick add, the Group by, Boards and Show rows, the card list, and the keys.
 
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Rect};
@@ -16,15 +16,18 @@ use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::screens::card_sheets;
 use crate::inbound::widgets::sheet::Sheet;
-use crate::inbound::widgets::{action_bar, card_info, header, mana, measure, otag, skeleton};
+use crate::inbound::widgets::{action_bar, card_info, mana, measure, otag, skeleton};
 
 pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &DeckCardsView) {
     let palette = &shared.palette;
     let area = f.area();
-    let bar = action_bar::with_help(palette, key_line(palette, view, shared));
+    let bar = action_bar::with_help(
+        palette,
+        key_line(palette, view, shared),
+        action_bar::Hint::Question,
+    );
     let bar_height = action_bar::height(&bar, area.width.saturating_sub(2));
-    let [title, header, controls, list, keys] = Layout::vertical([
-        Constraint::Length(1),
+    let [header, controls, list, keys] = Layout::vertical([
         Constraint::Length(3),
         Constraint::Length(if view.loaded { 6 } else { 4 }),
         Constraint::Fill(1),
@@ -33,7 +36,6 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &DeckCardsView) {
     .horizontal_margin(1)
     .areas(area);
 
-    header::draw(f, palette, title, "Deck cards", header::Corner::Hint);
     f.render_widget(Paragraph::new(header_lines(palette, view)), header);
     if view.loaded {
         f.render_widget(Paragraph::new(control_lines(palette, view)), controls);
@@ -360,7 +362,7 @@ fn row_line(
     let name_style = if selected {
         palette.accent.bold()
     } else {
-        palette.base
+        palette.text()
     };
     let name_at = spans.len();
     spans.push(Span::styled(data.name.clone(), name_style));

@@ -48,14 +48,6 @@ pub(crate) enum Mode {
 }
 
 impl Mode {
-    /// The screen's title.
-    pub(crate) fn title(self) -> &'static str {
-        match self {
-            Self::Create => "Create deck",
-            Self::Edit { .. } => "Edit deck",
-        }
-    }
-
     /// The key the server stores this form's hint under.
     pub(crate) fn hint_key(self) -> &'static str {
         match self {

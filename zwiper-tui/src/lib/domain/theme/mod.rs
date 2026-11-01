@@ -243,6 +243,14 @@ impl Palette {
         ]
     }
 
+    /// The text color of [`Palette::base`] with no background, for loose text drawn straight on the backdrop, so the grid's tiles show up to its letters.
+    pub(crate) fn text(&self) -> Style {
+        Style {
+            bg: None,
+            ..self.base
+        }
+    }
+
     /// Placeholder text in an empty box: the color halfway from the background to the text, and italic.
     ///
     /// Halfway keeps it clearly apart from typed text on every theme, including those whose muted color sits close to the text. The terminal's own colors have no RGB to blend, so they dim the muted color instead.

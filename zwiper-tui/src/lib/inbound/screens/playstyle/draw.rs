@@ -30,7 +30,7 @@ use crate::inbound::screens::activity::draw::{Body, GHOST, GUTTER, INDENT};
 use crate::inbound::screens::home;
 use crate::inbound::screens::home::draw as home_draw;
 use crate::inbound::widgets::card_rows::{CardRow, OTHER_TAGS};
-use crate::inbound::widgets::{action_bar, charts, color_map, header, mana, otag};
+use crate::inbound::widgets::{action_bar, charts, color_map, mana, otag};
 
 /// The tallest the color map draws, in rows, as the app's `14rem`.
 const MAP_ROWS: u16 = 14;
@@ -70,15 +70,14 @@ pub(crate) enum Reasons {
 pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &PlaystyleView) {
     let palette = &shared.palette;
     let area = f.area().inner(Margin::new(1, 0));
-    let bar = action_bar::with_help(palette, action_bar::line(palette, &key_hints(view)));
+    let bar = action_bar::with_help(
+        palette,
+        action_bar::line(palette, &key_hints(view)),
+        action_bar::Hint::ShiftH,
+    );
     let bar_height = action_bar::height(&bar, area.width);
-    let [title, body, keys] = Layout::vertical([
-        Constraint::Length(1),
-        Constraint::Fill(1),
-        Constraint::Length(bar_height),
-    ])
-    .areas(area);
-    header::draw(f, palette, title, super::TITLE, header::Corner::Hint);
+    let [body, keys] =
+        Layout::vertical([Constraint::Fill(1), Constraint::Length(bar_height)]).areas(area);
     if view.is_loading {
         activity_draw::draw_lines(
             f,
@@ -156,7 +155,6 @@ fn key_hints(view: &PlaystyleView) -> Vec<(&'static str, &'static str)> {
         keys.push(("s", "Swipe"));
     }
     keys.push(("M", "More"));
-    keys.push(("H", "Hint"));
     keys.push(("Esc", "Back"));
     keys
 }
@@ -192,7 +190,7 @@ pub(crate) fn chip_line(
         let base = if content.picked {
             palette.accent.bold().reversed()
         } else {
-            palette.base
+            palette.text()
         };
         let style = if focused && i == cursor {
             base.underlined()
@@ -461,7 +459,7 @@ fn role_row(
     let style: Style = match (bar.revealable, selected) {
         (true, true) => palette.accent.bold().reversed(),
         (true, false) => palette.accent,
-        (false, _) => palette.base,
+        (false, _) => palette.text(),
     };
     charts::row(
         Span::styled(format!(" {label} "), style),

@@ -1,8 +1,8 @@
 //! The app's backdrop of faint tiles, orangui's `grid-cells.js` drawn from orangui-core's `grid_rain`: every tile a seeded shade of the text color over the background, brightest at the top and fading down.
 //!
-//! The splash draws it raining in: each tile lands at `row * 18 ms` plus up to 160 ms of seeded scatter, falling three tiles over 350 ms with an ease-out.
+//! The app draws it settled behind every screen, right over the theme's background, and the splash draws it raining in: each tile lands at `row * 18 ms` plus up to 160 ms of seeded scatter, falling three tiles over 350 ms with an ease-out.
 //!
-//! A tile fills four cells by two rows, about square since a cell is about twice as tall as it is wide, and the tiles meet with no gap, a mosaic of shades. The shade falls off with the square of the distance down the area, so the top is at full strength, the middle at a quarter and the bottom edge bare. Only the background changes, so text drawn over a tile stays as it is. A palette with no colors of its own draws no tiles.
+//! A tile fills four cells by two rows, about square since a cell is about twice as tall as it is wide, and the tiles meet with no gap, a mosaic of shades. The shade falls off with the square of the distance down the area, so the top is at full strength, the middle at a quarter and the bottom edge bare. Only the background changes, so text drawn over a tile stays as it is. Boxes (panels, fields, buttons, sheets, dialogs, toasts) fill with the theme's background and sit on the tiles like cards; loose text draws with no background of its own, so the tiles show up to its letters. A palette with no colors of its own draws no tiles.
 
 use std::time::Duration;
 
@@ -55,11 +55,29 @@ fn mix(base: Color, color: Color, share: f64) -> Option<Color> {
 
 /// Draws the tiles over `area`: settled when `elapsed` is `None`, else raining in as of `elapsed`.
 pub(crate) fn draw(f: &mut Frame<'_>, palette: &Palette, area: Rect, elapsed: Option<Duration>) {
+    let width = usize::from(area.width);
+    let cells = shades(palette, area, elapsed);
+    let buffer = f.buffer_mut();
+    for (y, line) in (area.y..area.bottom()).zip(cells.chunks(width.max(1))) {
+        for (x, &tile) in (area.x..area.right()).zip(line) {
+            if let (Some(shade), Some(cell)) = (tile, buffer.cell_mut((x, y))) {
+                cell.set_bg(shade);
+            }
+        }
+    }
+}
+
+/// Each cell's tile shade over `area`, row by row, settled when `elapsed` is `None`, else as of `elapsed` into the rain. Empty for a palette with no colors of its own.
+pub(crate) fn shades(
+    palette: &Palette,
+    area: Rect,
+    elapsed: Option<Duration>,
+) -> Vec<Option<Color>> {
     let (Some(base), Some(ink)) = (palette.base.bg, palette.base.fg) else {
-        return;
+        return Vec::new();
     };
     if mix(base, ink, 0.0).is_none() || area.is_empty() {
-        return;
+        return Vec::new();
     }
     let cols = area.width.div_ceil(PITCH_X);
     let rows = area.height.div_ceil(PITCH_Y);
@@ -71,7 +89,6 @@ pub(crate) fn draw(f: &mut Frame<'_>, palette: &Palette, area: Rect, elapsed: Op
     )]
     let elapsed_ms = elapsed.map(|t| t.as_millis() as f64);
     let width = usize::from(area.width);
-    // Each cell's tile shade.
     let mut cells: Vec<Option<Color>> = vec![None; width.saturating_mul(usize::from(area.height))];
     for cell in grid_rain::cells(u32::from(cols), u32::from(rows)) {
         let (Ok(row), Ok(col)) = (u16::try_from(cell.row), u16::try_from(cell.column)) else {
@@ -116,14 +133,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, palette: &Palette, area: Rect, elapsed: Op
             }
         }
     }
-    let buffer = f.buffer_mut();
-    for (y, line) in (area.y..area.bottom()).zip(cells.chunks(width.max(1))) {
-        for (x, &tile) in (area.x..area.right()).zip(line) {
-            if let (Some(shade), Some(cell)) = (tile, buffer.cell_mut((x, y))) {
-                cell.set_bg(shade);
-            }
-        }
-    }
+    cells
 }
 
 #[cfg(test)]

@@ -553,7 +553,10 @@ mod tests {
                                 assert!(p.width >= 1 && p.height >= 1);
                                 let mut buf = Buffer::empty(bound);
                                 draw(&mut buf, &p, Style::new(), |b| {
-                                    crate::inbound::widgets::panel::bordered().render(rest, b);
+                                    crate::inbound::widgets::panel::bordered(
+                                        &crate::domain::theme::Palette::terminal(),
+                                    )
+                                    .render(rest, b);
                                 });
                             }
                         }
@@ -593,7 +596,9 @@ mod tests {
     fn card(rest: Rect, text: &str) -> Buffer {
         let mut buf = Buffer::empty(rest);
         Paragraph::new(text.to_owned())
-            .block(crate::inbound::widgets::panel::bordered())
+            .block(crate::inbound::widgets::panel::bordered(
+                &crate::domain::theme::Palette::terminal(),
+            ))
             .render(rest, &mut buf);
         buf
     }
@@ -699,7 +704,8 @@ mod tests {
         )
         .unwrap();
         draw(&mut buf, &placement, Style::new(), |b| {
-            crate::inbound::widgets::panel::bordered().render(rest, b);
+            crate::inbound::widgets::panel::bordered(&crate::domain::theme::Palette::terminal())
+                .render(rest, b);
         });
         let row: String = (0..20)
             .map(|x| buf.cell((x, 1)).unwrap().symbol().to_owned())

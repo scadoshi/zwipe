@@ -14,7 +14,7 @@ use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::screens::card_sheets;
 use crate::inbound::widgets::card_motion::{self, Phase};
-use crate::inbound::widgets::{action_bar, card_info, header};
+use crate::inbound::widgets::{action_bar, card_info};
 
 /// The card is at most this wide, in cells.
 const CARD_WIDTH: u16 = 64;
@@ -22,10 +22,9 @@ const CARD_WIDTH: u16 = 64;
 pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &RemoveView) {
     let palette = &shared.palette;
     let area = f.area();
-    let bar = action_bar::with_help(palette, key_line(palette, view));
+    let bar = action_bar::with_help(palette, key_line(palette, view), action_bar::Hint::Question);
     let bar_height = action_bar::height(&bar, area.width.saturating_sub(2));
-    let [title, boards, body, info, keys] = Layout::vertical([
-        Constraint::Length(1),
+    let [boards, body, info, keys] = Layout::vertical([
         Constraint::Length(1),
         Constraint::Fill(1),
         Constraint::Length(5),
@@ -33,7 +32,6 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &RemoveView) {
     ])
     .horizontal_margin(1)
     .areas(area);
-    header::draw(f, palette, title, "Remove deck cards", header::Corner::Hint);
     let mut chips = vec![Span::styled("Boards ", palette.muted.bold())];
     for board in BoardFilter::ALL {
         let style = if board == view.board {
@@ -106,7 +104,7 @@ fn key_line(palette: &Palette, view: &RemoveView) -> Line<'static> {
     if view.current().is_some() {
         rest.push(("e", "details"));
     }
-    rest.extend([("?", "hint"), ("Esc", "back")]);
+    rest.push(("Esc", "back"));
     pairs.extend(rest.into_iter().map(|(k, a)| (k, a, palette.muted)));
     action_bar::styled_line(&pairs)
 }

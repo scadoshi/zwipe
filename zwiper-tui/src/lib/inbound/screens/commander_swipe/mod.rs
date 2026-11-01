@@ -41,10 +41,12 @@ use crate::outbound::account::Account;
 /// Pages pulled in a row when exclusions empty a served page, before giving up until the next swipe.
 pub(crate) const PULL_AHEAD: u8 = 4;
 
-/// The Suggested mode's title and its hint's.
+/// The Suggested mode's hint title.
+#[cfg(test)]
 pub(crate) const SUGGESTED_TITLE: &str = "Suggested commanders";
 
-/// The Commander mode's title and its hint's.
+/// The Commander mode's hint title.
+#[cfg(test)]
 pub(crate) const COMMANDER_TITLE: &str = "Swipe select";
 
 pub(crate) const SELECTED: &str = "Commander selected";
@@ -198,13 +200,6 @@ impl CommanderSwipeView {
         match &self.mode {
             Mode::Suggested(pile) => Some(pile),
             Mode::Commander(_) => None,
-        }
-    }
-
-    pub(crate) fn title(&self) -> &'static str {
-        match self.mode {
-            Mode::Suggested(_) => SUGGESTED_TITLE,
-            Mode::Commander(_) => COMMANDER_TITLE,
         }
     }
 

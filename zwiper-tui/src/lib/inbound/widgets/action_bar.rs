@@ -30,14 +30,44 @@ pub(crate) fn styled_line(keys: &[(&str, &str, Style)]) -> Line<'static> {
     Line::from(spans)
 }
 
+/// Which key opens a screen's hint dialog, for [`with_help`] to name in the bar.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Hint {
+    /// `?` opens the hint, so the bar shows `? hint`.
+    Question,
+    /// `H` opens the hint, on the screens whose `?` explains the focused section instead, so the bar shows `H hint`.
+    ShiftH,
+    /// The screen has no hint, or none while a field takes the letters.
+    Absent,
+}
+
+impl Hint {
+    /// The key that opens the hint, if there is one.
+    fn key(self) -> Option<&'static str> {
+        match self {
+            Self::Question => Some("?"),
+            Self::ShiftH => Some("H"),
+            Self::Absent => None,
+        }
+    }
+}
+
 /// `bar` with the F1 Help & feedback hint, every screen's in the same spot: just before the run of Esc and `q` hints nearest the end, or last when the bar has no such run past its first hint.
-pub(crate) fn with_help(palette: &Palette, bar: Line<'static>) -> Line<'static> {
+///
+/// The screen's hint key, when it has one, goes just before `F1 help` as `? hint` (or `H hint`). Any hint the bar names itself is dropped first, so it shows once under one label.
+pub(crate) fn with_help(palette: &Palette, bar: Line<'static>, hint: Hint) -> Line<'static> {
     let Line {
         style,
         alignment,
         spans,
     } = bar;
+    let names_hint = |group: &Vec<Span<'static>>| {
+        group
+            .get(1)
+            .is_some_and(|span| span.content.trim().eq_ignore_ascii_case(HINT_ACTION))
+    };
     let mut groups = hints(spans);
+    groups.retain(|group| !names_hint(group));
     let is_exit = |group: &Vec<Span<'static>>| {
         group
             .first()
@@ -66,12 +96,24 @@ pub(crate) fn with_help(palette: &Palette, bar: Line<'static>) -> Line<'static> 
         Span::styled(format!(" help{GAP}"), palette.muted),
     ];
     groups.insert(at, help);
+    if let Some(key) = hint.key() {
+        groups.insert(
+            at,
+            vec![
+                key.bold(),
+                Span::styled(format!(" {HINT_ACTION}{GAP}"), palette.muted),
+            ],
+        );
+    }
     let line = Line::from(groups.into_iter().flatten().collect::<Vec<_>>()).style(style);
     match alignment {
         Some(alignment) => line.alignment(alignment),
         None => line,
     }
 }
+
+/// What the bar calls the hint `?` opens.
+const HINT_ACTION: &str = "hint";
 
 /// The gap that closes each key hint in a [`line`](fn@line) or [`styled_line`], and where [`wrap`] may break a row.
 const GAP: &str = "  ";
@@ -275,7 +317,9 @@ mod tests {
     #[test]
     fn help_goes_before_the_closing_back_and_quit_hints() {
         let palette = Palette::terminal();
-        let shown = |keys: &[(&str, &str)]| with_help(&palette, line(&palette, keys)).to_string();
+        let shown = |keys: &[(&str, &str)]| {
+            with_help(&palette, line(&palette, keys), Hint::Absent).to_string()
+        };
         assert_eq!(
             shown(&[("c", "Create"), ("Esc", "Back"), ("q", "quit")]),
             "c Create  F1 help  Esc Back  q quit  "
@@ -286,11 +330,15 @@ mod tests {
             "a hint after Esc stays after it"
         );
         assert_eq!(
-            shown(&[("Esc", "Back"), ("?", "Hint")]),
-            "Esc Back  ? Hint  F1 help  ",
+            shown(&[("Esc", "Back"), ("Tab", "next")]),
+            "Esc Back  Tab next  F1 help  ",
             "a bar that opens with Esc takes help last"
         );
-        let centered = with_help(&palette, line(&palette, &[("q", "quit")]).centered());
+        let centered = with_help(
+            &palette,
+            line(&palette, &[("q", "quit")]).centered(),
+            Hint::Absent,
+        );
         assert_eq!(centered.to_string(), "q quit  F1 help  ");
         assert_eq!(centered.alignment, Some(ratatui::layout::Alignment::Center));
     }
@@ -301,10 +349,50 @@ mod tests {
         let mut bar = line(&palette, &[("Tab", "next")]);
         bar.spans.push(Span::raw("F2 "));
         bar.spans.push(Span::raw("Import"));
-        let bar = with_help(&palette, bar);
+        let bar = with_help(&palette, bar, Hint::Absent);
         assert_eq!(bar.to_string(), "Tab next  F2 Import  F1 help  ");
         let text: Vec<String> = wrap(bar, 20).lines.iter().map(Line::to_string).collect();
         assert_eq!(text, ["Tab next  F2 Import", "F1 help"]);
+    }
+
+    #[test]
+    fn a_screen_with_a_hint_names_it_once_just_before_help() {
+        let palette = Palette::terminal();
+        let shown = |keys: &[(&str, &str)], hint: Hint| {
+            with_help(&palette, line(&palette, keys), hint).to_string()
+        };
+        assert_eq!(
+            shown(&[("c", "Create"), ("Esc", "Back")], Hint::Question),
+            "c Create  ? hint  F1 help  Esc Back  "
+        );
+        assert_eq!(
+            shown(
+                &[("?", "Hint"), ("c", "Create"), ("Esc", "Back")],
+                Hint::Question
+            ),
+            "c Create  ? hint  F1 help  Esc Back  ",
+            "a hint the bar lists itself moves to its spot"
+        );
+        assert_eq!(
+            shown(&[("Esc", "Back"), ("?", "hint")], Hint::Question),
+            "Esc Back  ? hint  F1 help  "
+        );
+        assert_eq!(
+            shown(
+                &[("?", "About"), ("H", "Hint"), ("Esc", "Back")],
+                Hint::ShiftH
+            ),
+            "? About  H hint  F1 help  Esc Back  ",
+            "a ? that opens something else keeps its own name"
+        );
+        assert_eq!(
+            shown(
+                &[("c", "Create"), ("?", "hint"), ("Esc", "Back")],
+                Hint::Absent
+            ),
+            "c Create  F1 help  Esc Back  ",
+            "no hint while a field takes the letters"
+        );
     }
 
     #[test]

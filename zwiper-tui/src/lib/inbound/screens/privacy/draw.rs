@@ -1,4 +1,4 @@
-//! Privacy policy: the header, then the first card (heading, `Last updated` chip, intro), a card per policy section, the Contact card, and the action bar.
+//! Privacy policy: the first card (heading, `Last updated` chip, intro), a card per policy section, the Contact card, and the action bar.
 
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout};
@@ -13,7 +13,6 @@ use crate::domain::legal::{self, Block, Run};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::widgets::button::{self, Button};
-use crate::inbound::widgets::header::{self, Corner};
 use crate::inbound::widgets::{action_bar, card_info, measure};
 
 /// The text is at most this wide, in cells.
@@ -111,15 +110,12 @@ pub(crate) fn lines(palette: &Palette, width: usize) -> Vec<Line<'static>> {
 
 pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &PrivacyView) {
     let palette = &shared.palette;
-    let [head, _, body, buttons, keys] = Layout::vertical([
-        Constraint::Length(1),
-        Constraint::Length(1),
+    let [body, buttons, keys] = Layout::vertical([
         Constraint::Fill(1),
         Constraint::Length(1),
         Constraint::Length(1),
     ])
     .areas(f.area());
-    header::draw(f, palette, head, "Privacy policy", Corner::Empty);
     let body = body.centered_horizontally(Constraint::Length(WIDTH.min(body.width)));
     let text = Paragraph::new(lines(palette, usize::from(body.width))).wrap(Wrap { trim: false });
     let total = measure::height_of(text.line_count(body.width));
@@ -130,6 +126,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &PrivacyView) {
         action_bar::with_help(
             palette,
             action_bar::line(palette, &[("j/k", "scroll"), ("Esc", "back")]),
+            action_bar::Hint::Absent,
         )
         .centered(),
         keys,

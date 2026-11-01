@@ -113,7 +113,7 @@ pub(crate) fn tiles(f: &mut Frame<'_>, palette: &Palette, area: Rect, numbers: [
         .spacing(1)
         .split(row);
     for ((number, label), column) in numbers.into_iter().zip(Figures::LABELS).zip(columns.iter()) {
-        let block = crate::inbound::widgets::panel::bordered()
+        let block = crate::inbound::widgets::panel::bordered(palette)
             .border_type(BorderType::Rounded)
             .border_style(palette.border);
         let inner = block.inner(*column);

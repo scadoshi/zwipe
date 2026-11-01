@@ -12,8 +12,9 @@ use zwipe_ui::deck::list::{DeckGroup, GroupBy};
 use super::{DeckList, Focus, Row, ShowChip};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
+use crate::inbound::widgets::action_bar::{self, Hint};
 use crate::inbound::widgets::pill::{self, PillState};
-use crate::inbound::widgets::{action_bar, header, mana, measure, skeleton};
+use crate::inbound::widgets::{mana, measure, skeleton};
 
 /// Ghost rows while the decks load.
 const SKELETON_ROWS: usize = 8;
@@ -39,10 +40,9 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, list: &DeckList) {
             ("q", "quit"),
         ],
     );
-    let bar = action_bar::with_help(palette, bar);
+    let bar = action_bar::with_help(palette, bar, Hint::Question);
     let bar_height = action_bar::height(&bar, f.area().width.saturating_sub(2));
-    let [header, chips_area, body, status, keys] = Layout::vertical([
-        Constraint::Length(1),
+    let [chips_area, body, status, keys] = Layout::vertical([
         Constraint::Length(chips),
         Constraint::Fill(1),
         Constraint::Length(1),
@@ -51,7 +51,6 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, list: &DeckList) {
     .horizontal_margin(1)
     .areas(f.area());
 
-    header::draw(f, palette, header, "Decks", header::Corner::Hint);
     if list.chips_shown() {
         f.render_widget(
             Paragraph::new(chip_rows(palette, list, usize::from(chips_area.width))),
@@ -161,7 +160,7 @@ fn chip_rows(palette: &Palette, list: &DeckList, width: usize) -> Vec<Line<'stat
 }
 
 fn draw_list(f: &mut Frame<'_>, palette: &Palette, list: &DeckList, area: Rect) {
-    let block = crate::inbound::widgets::panel::bordered().border_style(palette.border);
+    let block = crate::inbound::widgets::panel::bordered(palette).border_style(palette.border);
     let message = if list.loading {
         let width = usize::from(area.width.saturating_sub(4));
         f.render_widget(
@@ -268,7 +267,7 @@ fn deck_lines(
     let name_style = if here {
         palette.accent.bold()
     } else {
-        palette.base.bold()
+        palette.text().bold()
     };
     let mut first = vec![Span::styled(deck.name.to_string(), name_style)];
     let pips = deck::pips(deck);

@@ -17,7 +17,7 @@ use crate::inbound::app::Shared;
 use crate::inbound::widgets::charts::Column;
 use crate::inbound::widgets::measure::BORDERS;
 use crate::inbound::widgets::pill::{self, PillState};
-use crate::inbound::widgets::{action_bar, charts, header, mana, measure, panel, skeleton};
+use crate::inbound::widgets::{action_bar, charts, mana, measure, panel, skeleton};
 
 /// A vertical chart is at most this tall, frame included, so a small deck's bars stay short.
 const CHART_HEIGHT: u16 = 14;
@@ -60,7 +60,11 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &DeckView) {
     let area = f.area().inner(Margin::new(1, 0));
     let (pane_keys, screen_keys) = key_hints(view);
     let pane_line = action_bar::line(palette, &pane_keys);
-    let screen_line = action_bar::with_help(palette, action_bar::line(palette, &screen_keys));
+    let screen_line = action_bar::with_help(
+        palette,
+        action_bar::line(palette, &screen_keys),
+        action_bar::Hint::Question,
+    );
     // The hints take one row when they fit, else the pane's keys go over the screen's, each wrapping on its own.
     let one_row = pane_line.width().saturating_add(screen_line.width()) <= usize::from(area.width);
     let keys_text = if one_row {
@@ -74,15 +78,12 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &DeckView) {
         text
     };
     let keys_height = u16::try_from(keys_text.lines.len()).unwrap_or(u16::MAX);
-    let [header, body, status, keys] = Layout::vertical([
-        Constraint::Length(1),
+    let [body, status, keys] = Layout::vertical([
         Constraint::Fill(1),
         Constraint::Length(1),
         Constraint::Length(keys_height),
     ])
     .areas(area);
-
-    header::draw(f, palette, header, "Deck", header::Corner::Hint);
 
     let panes = view.panes();
     let profile_rows = profile_lines(
@@ -184,7 +185,7 @@ fn draw_panel(f: &mut Frame<'_>, palette: &Palette, view: &DeckView, panel: &Pan
         palette.border
     };
     let room = usize::from(panel.area.width.saturating_sub(BORDERS));
-    let block = crate::inbound::widgets::panel::bordered()
+    let block = crate::inbound::widgets::panel::bordered(palette)
         .border_style(border)
         .title(tabs(palette, view, &panel.panes, shown, has_focus, room));
     let inner = block.inner(panel.area).inner(Margin::new(1, 0));
@@ -623,7 +624,7 @@ fn draw_roles(
                     .to_owned();
                 lines.push(Line::from(vec![
                     Span::raw("        "),
-                    Span::styled(description, palette.base),
+                    Span::styled(description, palette.text()),
                 ]));
                 let examples_focused = focused == Some(Item::Examples(tag.clone()));
                 if examples_focused {

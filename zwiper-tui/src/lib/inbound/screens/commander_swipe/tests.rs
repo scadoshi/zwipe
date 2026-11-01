@@ -180,7 +180,7 @@ fn the_card_on_top_shows_its_text_and_why() {
         "• Shares oracle tags with your decks",
         "Other tags:  goblin-typal ",
         "• You build in red (2 of your 4 decks)",
-        "→ add  ← skip  ↑ maybeboard  ↓ undo  f Filter  r Refresh  ? Hint  F1 help  Esc Back",
+        "→ add  ← skip  ↑ maybeboard  ↓ undo  f Filter  r Refresh  ? hint  F1 help  Esc Back",
     ] {
         assert!(text.contains(expected), "missing {expected} in\n{text}");
     }
@@ -399,7 +399,6 @@ fn commander_mode_pages_most_played_first_without_the_excluded() {
         .into()]
     );
     let text = screen_text(&harness.app);
-    assert!(text.contains("Swipe select"));
     assert!(text.contains('░'), "a ghost while the first page loads");
     harness.clear();
     let mut page = named(&["Edgar", "Krenko", "Ur-Dragon"]);

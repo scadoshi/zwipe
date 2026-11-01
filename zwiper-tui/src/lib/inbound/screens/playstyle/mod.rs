@@ -43,9 +43,6 @@ use crate::inbound::widgets::sheet::Sheet;
 use crate::inbound::widgets::toast::{self, ToastKind};
 use crate::outbound::account::Account;
 
-/// The screen's title and its hint's.
-pub(crate) const TITLE: &str = "Playstyle";
-
 /// Said when the first load failed.
 pub(crate) const LOAD_FAILED: &str = "Could not load your suggestions";
 

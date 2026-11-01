@@ -158,7 +158,6 @@ fn the_login_screen_shows_the_hero_fields_and_buttons_and_masks_the_password() {
     harness.type_text("hunter2");
     let screen = screen_text(&harness.app);
     for text in [
-        "Login",
         "Decks created",
         "Everybody",
         "Username or email",
@@ -265,10 +264,9 @@ fn the_focused_button_fills_and_log_in_is_primary_at_every_size() {
         );
         assert_eq!(log_in.fg, palette.accent.fg.unwrap());
         let boxed = buffer[(x - 2, y)].symbol() == "│";
-        assert_eq!(
+        assert!(
             boxed,
-            height != 24,
-            "boxes unless they cost the logo at {width}x{height}:\n{rows}"
+            "the buttons box at {width}x{height}, the logo kept:\n{rows}"
         );
     }
 }

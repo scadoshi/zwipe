@@ -8,9 +8,11 @@ use ratatui::widgets::{Block, BorderType, Clear, Padding};
 use super::measure::BORDERS;
 use crate::domain::theme::Palette;
 
-/// A block with a border on every side and rounded corners, the frame every box in the app uses.
-pub(crate) fn bordered() -> Block<'static> {
-    Block::bordered().border_type(BorderType::Rounded)
+/// A block with a border on every side and rounded corners, the frame every box in the app uses, filled with the theme's background so the box sits solid on the grid backdrop.
+pub(crate) fn bordered(palette: &Palette) -> Block<'static> {
+    Block::bordered()
+        .border_type(BorderType::Rounded)
+        .style(palette.base)
 }
 
 /// Clears and frames a centered panel of the given inner size, and returns the area inside its border and padding.
@@ -25,9 +27,8 @@ pub(crate) fn draw(
         Constraint::Max(width.saturating_add(BORDERS).saturating_add(BORDERS)),
         Constraint::Length(height.saturating_add(BORDERS)),
     );
-    let block = bordered()
+    let block = bordered(palette)
         .border_style(palette.border)
-        .style(palette.base)
         .padding(Padding::horizontal(1));
     let inner = block.inner(outer);
     f.render_widget(Clear, outer);

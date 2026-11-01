@@ -1,4 +1,4 @@
-//! Login: the header, the hero, the two fields and the action bar; and the frame Register and Forgot password share with it.
+//! Login: the hero, the two fields and the action bar; and the frame Register and Forgot password share with it.
 
 use std::time::Instant;
 
@@ -10,7 +10,6 @@ use super::{LoginField, LoginForm};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::widgets::button::{self, Button};
-use crate::inbound::widgets::header::{self, Corner};
 use crate::inbound::widgets::hero::Hero;
 use crate::inbound::widgets::text_input::{BOX_HEIGHT, TextInput};
 use crate::inbound::widgets::{action_bar, measure};
@@ -37,7 +36,6 @@ pub(crate) enum Placement {
 /// An auth screen's own parts, which [`frame`] lays out around the hero.
 #[derive(Debug)]
 pub(crate) struct AuthScreen<'parts> {
-    pub(crate) title: &'parts str,
     /// The form's rows.
     pub(crate) body_height: u16,
     pub(crate) placement: Placement,
@@ -48,7 +46,7 @@ pub(crate) struct AuthScreen<'parts> {
     pub(crate) focused: Option<usize>,
 }
 
-/// Draws an auth screen's header, its buttons and its key hints, and lays out the rest: the hero over the form. The buttons are boxes while the form fits beside them and the hero loses nothing to them, else pills; the hero shrinks, then goes, when the screen is short.
+/// Draws an auth screen's buttons and its key hints, and lays out the rest: the hero over the form. The buttons are boxes while the form fits beside them and the hero loses nothing to them, else pills; the hero shrinks, then goes, when the screen is short.
 pub(crate) fn frame(
     f: &mut Frame<'_>,
     shared: &Shared,
@@ -56,7 +54,6 @@ pub(crate) fn frame(
     screen: AuthScreen<'_>,
 ) -> AuthAreas {
     let AuthScreen {
-        title,
         body_height,
         placement,
         keys,
@@ -66,11 +63,10 @@ pub(crate) fn frame(
     let area = f.area();
     let keys_height = action_bar::height(&keys, area.width);
     let hero_width = area.width.min(HERO_WIDTH);
-    // The hero's room once the header, its gap, the buttons and the keys take theirs.
+    // The hero's room once the buttons and the keys take theirs.
     let hero_room = |buttons: u16| {
         area.height
             .saturating_sub(keys_height)
-            .saturating_sub(2)
             .saturating_sub(buttons)
             .saturating_sub(body_height)
             .saturating_sub(1)
@@ -80,15 +76,12 @@ pub(crate) fn frame(
         && Hero::height(hero_width, hero_room(button::HEIGHT))
             == Hero::height(hero_width, hero_room(1));
     let buttons_height = if boxed { button::HEIGHT } else { 1 };
-    let [head, _, content, buttons, keys_area] = Layout::vertical([
-        Constraint::Length(1),
-        Constraint::Length(1),
+    let [content, buttons, keys_area] = Layout::vertical([
         Constraint::Fill(1),
         Constraint::Length(buttons_height),
         Constraint::Length(keys_height),
     ])
     .areas(area);
-    header::draw(f, &shared.palette, head, title, Corner::Empty);
     button::draw_row(f, &shared.palette, buttons, row, focused);
     f.render_widget(action_bar::wrap(keys, keys_area.width), keys_area);
     let room = content.height.saturating_sub(body_height).saturating_sub(1);
@@ -190,7 +183,6 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &LoginForm) {
         shared,
         &form.hero,
         AuthScreen {
-            title: "Login",
             body_height: BOX_HEIGHT.saturating_mul(2),
             placement: Placement::Centered,
             keys,

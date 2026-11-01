@@ -894,12 +894,12 @@ fn a_short_pane_with_no_items_scrolls_to_its_last_row() {
     let mut harness = loaded(everything());
     view_mut(&mut harness).focus_on(Pane::Section(Section::DrawOdds));
     harness.press(KeyCode::Enter);
-    assert!(!text_at(&harness, 80, 9).contains("RAMP"));
+    assert!(!text_at(&harness, 80, 8).contains("RAMP"));
     for _ in 0..10 {
         harness.press(KeyCode::Char('j'));
     }
     assert_eq!(view(&harness).scroll, view(&harness).scroll_limit());
-    assert!(text_at(&harness, 80, 9).contains("RAMP"));
+    assert!(text_at(&harness, 80, 8).contains("RAMP"));
     harness.press(KeyCode::Char('k'));
     assert_eq!(
         view(&harness).scroll,

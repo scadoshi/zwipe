@@ -1,4 +1,4 @@
-//! Toasts: short success, error, info and warning messages stacked in the top-left corner over the header, each gone when its time is up.
+//! Toasts: short success, error, info and warning messages stacked in the top-left corner over the screen, each gone when its time is up.
 //!
 //! The three duration bands come from zwipe-ui, which takes them from orangui-core: [`QUICK`] for routine confirmations, [`NORMAL`] for a result worth reading (the default) and [`LONG`] for failures and anything naming a next step. At most [`MAX_TOASTS`] are up; the newest sits on top with the older ones tucked behind it as one-row slivers, and Ctrl+T expands the stack so each shows in full.
 //!
@@ -237,7 +237,7 @@ fn render(
     f.render_widget(Clear, rect);
     f.render_widget(
         paragraph.block(
-            crate::inbound::widgets::panel::bordered()
+            crate::inbound::widgets::panel::bordered(palette)
                 .border_style(border(toast.kind, palette))
                 .style(base)
                 .padding(Padding::horizontal(1)),

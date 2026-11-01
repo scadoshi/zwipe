@@ -33,9 +33,6 @@ use crate::inbound::widgets::toast::ToastKind;
 use crate::inbound::widgets::{card_text, hint};
 use crate::outbound::account::Account;
 
-/// The screen's title.
-pub(crate) const TITLE: &str = "Examples";
-
 /// Said past the last card.
 pub(crate) const END: &str = "No more cards. Swipe down to go back.";
 

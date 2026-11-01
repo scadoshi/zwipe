@@ -41,9 +41,6 @@ use crate::inbound::widgets::text_input::TextInput;
 use crate::inbound::widgets::toast::ToastKind;
 use crate::outbound::account::Account;
 
-/// The dictionary's title, and its hint's.
-pub(crate) const TITLE: &str = "Oracle tags";
-
 /// The search box's placeholder.
 pub(crate) const PLACEHOLDER: &str = "Search tags or descriptions";
 

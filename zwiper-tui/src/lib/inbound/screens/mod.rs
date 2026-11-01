@@ -557,7 +557,7 @@ impl fmt::Debug for Password {
 }
 
 #[cfg(test)]
-mod header_tests;
+mod chrome_tests;
 
 #[cfg(test)]
 mod tests {
@@ -633,73 +633,5 @@ mod tests {
             password: Password("hunter2".to_owned()),
         });
         assert!(!format!("{request:?}").contains("hunter2"));
-    }
-
-    /// The screen's rows as `screen_text` draws them, 100 cells each.
-    fn screen_rows(text: &str) -> Vec<String> {
-        let cells: Vec<char> = text.chars().collect();
-        cells
-            .chunks(100)
-            .map(|line| line.iter().collect::<String>())
-            .collect()
-    }
-
-    #[test]
-    fn every_screen_has_help_in_its_bar_and_a_hint_corner_when_it_has_a_hint() {
-        use uuid::Uuid;
-
-        use crate::inbound::event_loop::harness::Harness;
-        use crate::test_support::screen_text;
-
-        type Open = Box<dyn FnOnce(&mut Context<'_>)>;
-        let deck_id = Uuid::nil();
-        let screens: Vec<(&str, bool, Open)> = vec![
-            ("Activity", true, Box::new(activity::open)),
-            ("Playstyle", true, Box::new(playstyle::open)),
-            (
-                "Commander maybeboard",
-                true,
-                Box::new(commander_maybeboard::open),
-            ),
-            ("Oracle tags", true, Box::new(oracle_tags::open)),
-            (
-                "Examples",
-                true,
-                Box::new(|cx: &mut Context<'_>| otag_examples::open(cx, "ramp")),
-            ),
-            ("Decks", true, Box::new(decks::open)),
-            (
-                "Deck cards",
-                true,
-                Box::new(move |cx: &mut Context<'_>| deck_cards::open(cx, deck_id)),
-            ),
-            (
-                "Remove deck cards",
-                true,
-                Box::new(move |cx: &mut Context<'_>| remove_cards::open(cx, deck_id)),
-            ),
-        ];
-        for (title, hint, open) in screens {
-            let mut harness = Harness::on(Screen::Home(Box::default()));
-            harness.open(open);
-            harness.app.shared.hint = None;
-            let text = screen_text(&harness.app);
-            let rows = screen_rows(&text);
-            let row = rows.first().filter(|row| row.contains(title));
-            let row = row.unwrap_or_else(|| panic!("{title} has no header"));
-            assert!(
-                rows.iter().rev().take(4).any(|row| row.contains("F1 help")),
-                "{title} has no F1 help in its bar"
-            );
-            assert_eq!(row.trim_end().ends_with('?'), hint, "{title}'s ? corner");
-            harness.press(KeyCode::Char('!'));
-            assert!(harness.app.shared.help.is_some(), "! opens help on {title}");
-        }
-        let harness = Harness::on(Screen::Home(Box::default()));
-        let text = screen_text(&harness.app);
-        let rows = screen_rows(&text);
-        let row = rows.first().filter(|row| row.contains("Home"));
-        let row = row.expect("Home has a header");
-        assert!(!row.trim_end().ends_with('?'), "Home has no ? corner");
     }
 }

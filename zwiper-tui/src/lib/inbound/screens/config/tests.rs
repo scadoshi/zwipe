@@ -90,7 +90,6 @@ fn the_screen_shows_the_apps_rows() {
     let harness = on_config();
     let screen = screen_text(&harness.app);
     for text in [
-        "Config",
         "Appearance",
         "Theme ?",
         "Gruvbox",

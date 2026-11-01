@@ -30,8 +30,6 @@ pub(crate) mod entrance;
 pub(crate) mod figures;
 /// The backdrop of faint tiles, still or raining in.
 pub(crate) mod grid;
-/// The screen header: `!`, the title, and `?`.
-pub(crate) mod header;
 pub(crate) mod help;
 pub(crate) mod hero;
 pub(crate) mod hint;

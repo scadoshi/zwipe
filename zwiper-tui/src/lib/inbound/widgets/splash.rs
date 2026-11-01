@@ -112,11 +112,17 @@ impl Splash {
         let (Some(bg), fg) = (palette.base.bg, palette.base.fg) else {
             return;
         };
+        // A held cell is the overlay's: its settled tile, or the bare background where the grid has faded out.
+        let tiles = grid::shades(palette, area, None);
+        let width = usize::from(area.width);
         let buffer = f.buffer_mut();
         for (x, y) in held {
+            let at = usize::from(y.saturating_sub(area.y))
+                .saturating_mul(width)
+                .saturating_add(usize::from(x.saturating_sub(area.x)));
             if let Some(cell) = buffer.cell_mut((x, y)) {
                 cell.reset();
-                cell.set_bg(bg);
+                cell.set_bg(tiles.get(at).copied().flatten().unwrap_or(bg));
                 if let Some(fg) = fg {
                     cell.set_fg(fg);
                 }

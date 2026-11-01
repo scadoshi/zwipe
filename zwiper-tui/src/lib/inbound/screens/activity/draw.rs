@@ -17,9 +17,7 @@ use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::screens::home::draw as home_draw;
 use crate::inbound::widgets::card_rows::CardRow;
-use crate::inbound::widgets::{
-    action_bar, charts, color_map, entrance, figures, header, item_list, otag,
-};
+use crate::inbound::widgets::{action_bar, charts, color_map, entrance, figures, item_list, otag};
 
 /// Rows the counters panel takes: its frame, the figures and the chips.
 const COUNTS_HEIGHT: u16 = figures::HEIGHT.saturating_add(3);
@@ -69,16 +67,18 @@ const EIGHTHS: [&str; 8] = [" ", "▁", "▂", "▃", "▄", "▅", "▆", "▇"
 pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &ActivityView) {
     let palette = &shared.palette;
     let area = f.area().inner(Margin::new(1, 0));
-    let bar = action_bar::with_help(palette, action_bar::line(palette, &key_hints(view)));
+    let bar = action_bar::with_help(
+        palette,
+        action_bar::line(palette, &key_hints(view)),
+        action_bar::Hint::ShiftH,
+    );
     let bar_height = action_bar::height(&bar, area.width);
-    let [title, counts, body, keys] = Layout::vertical([
-        Constraint::Length(1),
+    let [counts, body, keys] = Layout::vertical([
         Constraint::Length(COUNTS_HEIGHT),
         Constraint::Fill(1),
         Constraint::Length(bar_height),
     ])
     .areas(area);
-    header::draw(f, palette, title, super::TITLE, header::Corner::Hint);
     draw_counts(f, shared, view, counts);
     match &view.load {
         Load::Loading => draw_lines(f, skeleton(palette, body.width), (0, 0), body),
@@ -100,7 +100,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &ActivityView) {
 /// The user's own counters, rolling until the payload lands, with "Live" and "Only me" under them.
 fn draw_counts(f: &mut Frame<'_>, shared: &Shared, view: &ActivityView, area: Rect) {
     let palette = &shared.palette;
-    let block = crate::inbound::widgets::panel::bordered().border_style(palette.border);
+    let block = crate::inbound::widgets::panel::bordered(palette).border_style(palette.border);
     let inner = block.inner(area);
     f.render_widget(block, area);
     let [strip, chips] =
@@ -229,7 +229,6 @@ fn key_hints(view: &ActivityView) -> Vec<(&'static str, &'static str)> {
             keys.push(("?", "About"));
         }
     }
-    keys.push(("H", "Hint"));
     keys.push(("Esc", "Back"));
     keys
 }
@@ -539,7 +538,7 @@ fn totals_lines(palette: &Palette, bars: &[Bar], width: usize) -> Vec<Line<'stat
                 String::new()
             };
             let style = if text.starts_with(|c: char| c.is_ascii_digit()) {
-                palette.base.bold()
+                palette.text().bold()
             } else {
                 palette.accent
             };

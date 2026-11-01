@@ -180,7 +180,7 @@ pub(crate) fn frame(
         .min(area.height);
     let [_, sheet] =
         Layout::vertical([Constraint::Fill(1), Constraint::Length(height)]).areas(area);
-    let mut block = crate::inbound::widgets::panel::bordered()
+    let mut block = crate::inbound::widgets::panel::bordered(palette)
         .title(
             Line::from(format!(" {title} "))
                 .style(palette.tertiary)
@@ -189,7 +189,6 @@ pub(crate) fn frame(
         )
         .title_bottom(action_bar::line(palette, footer))
         .border_style(palette.accent)
-        .style(palette.base)
         .padding(Padding::horizontal(1));
     if hint {
         block = block.title(Line::from(" ? ").style(palette.muted).right_aligned());

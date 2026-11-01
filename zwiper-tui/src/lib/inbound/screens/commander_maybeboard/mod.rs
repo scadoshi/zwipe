@@ -44,7 +44,8 @@ use crate::inbound::widgets::text_input::TextInput;
 use crate::inbound::widgets::toast::{self, ToastKind};
 use crate::outbound::account::Account;
 
-/// The screen's title and its hint's.
+/// The hint's title.
+#[cfg(test)]
 pub(crate) const TITLE: &str = "Commander maybeboard";
 
 /// The Quick add row's label.

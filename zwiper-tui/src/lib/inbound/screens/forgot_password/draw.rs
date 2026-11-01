@@ -1,4 +1,4 @@
-//! Reset password: the header, the hero, the email field with its spinner while sending, or the `Check your email` panel once sent; and the action bar.
+//! Reset password: the hero, the email field with its spinner while sending, or the `Check your email` panel once sent; and the action bar.
 
 use std::time::Instant;
 
@@ -46,7 +46,6 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &ForgotForm) {
         shared,
         &form.hero,
         AuthScreen {
-            title: "Reset password",
             body_height,
             placement: Placement::Centered,
             keys,
@@ -55,7 +54,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &ForgotForm) {
         },
     );
     if form.sent {
-        let block = crate::inbound::widgets::panel::bordered()
+        let block = crate::inbound::widgets::panel::bordered(palette)
             .border_style(palette.border)
             .title(Line::from(SENT_TITLE).bold().centered());
         f.render_widget(

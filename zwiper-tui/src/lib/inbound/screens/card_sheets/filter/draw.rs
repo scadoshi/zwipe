@@ -38,11 +38,10 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, sheet: &FilterSheet, area
     footer
         .spans
         .extend(action_bar::line(palette, &[("r", "reset"), ("x", "clear"), ("?", "hint")]).spans);
-    let block = crate::inbound::widgets::panel::bordered()
+    let block = crate::inbound::widgets::panel::bordered(palette)
         .title(Line::from(" Filter ").bold())
         .title_bottom(footer)
         .border_style(palette.accent)
-        .style(palette.base)
         .padding(Padding::horizontal(1));
     let inner = block.inner(sheet_area);
     f.render_widget(ClearWidget, sheet_area);
@@ -111,7 +110,7 @@ fn header_style(palette: &Palette, focused: bool) -> Style {
     if focused {
         palette.accent.bold()
     } else {
-        palette.base
+        palette.text()
     }
 }
 
@@ -252,7 +251,7 @@ fn stepper_line(
             spans.push(Span::styled("- ", palette.muted));
             spans.push(Span::styled(
                 value(stat.exact(&sheet.filter.draft)),
-                palette.base.bold(),
+                palette.text().bold(),
             ));
             spans.push(Span::styled(" +", palette.muted));
         }
@@ -262,7 +261,7 @@ fn stepper_line(
                 let style = if focused && on {
                     palette.accent.bold().underlined()
                 } else {
-                    palette.base.bold()
+                    palette.text().bold()
                 };
                 vec![
                     Span::styled("- ", palette.muted),
@@ -348,7 +347,7 @@ fn input_line(
     if value.is_empty() {
         spans.push(Span::styled(placeholder.to_owned(), palette.muted.italic()));
     } else {
-        spans.push(Span::styled(value.to_owned(), palette.base));
+        spans.push(Span::styled(value.to_owned(), palette.text()));
     }
     if focused {
         spans.push(Span::styled("▏", palette.accent));

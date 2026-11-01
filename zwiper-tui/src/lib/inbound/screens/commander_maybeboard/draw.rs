@@ -22,7 +22,7 @@ use crate::inbound::screens::playstyle::draw as playstyle_draw;
 use crate::inbound::screens::playstyle::draw::ChipContent;
 use crate::inbound::widgets::card_rows::CardRow;
 use crate::inbound::widgets::text_input::BOX_HEIGHT;
-use crate::inbound::widgets::{action_bar, header, mana, skeleton};
+use crate::inbound::widgets::{action_bar, mana, skeleton};
 
 /// Ghost rows in the list while loading, as the app's skeleton.
 const GHOST_ROWS: usize = 6;
@@ -36,19 +36,25 @@ const CLEAR_MARK: &str = "×";
 pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &MaybeboardView) {
     let palette = &shared.palette;
     let area = f.area().inner(Margin::new(1, 0));
-    let bar = action_bar::with_help(palette, action_bar::line(palette, &key_hints(view)));
+    let bar = action_bar::with_help(
+        palette,
+        action_bar::line(palette, &key_hints(view)),
+        if view.quick.typing {
+            action_bar::Hint::Absent
+        } else {
+            action_bar::Hint::ShiftH
+        },
+    );
     let bar_height = action_bar::height(&bar, area.width);
-    let [title, input, body, keys] = Layout::vertical([
-        Constraint::Length(1),
+    let [input, body, keys] = Layout::vertical([
         Constraint::Length(BOX_HEIGHT),
         Constraint::Fill(1),
         Constraint::Length(bar_height),
     ])
     .areas(area);
-    header::draw(f, palette, title, super::TITLE, header::Corner::Hint);
     if view.is_loading {
         f.render_widget(
-            crate::inbound::widgets::panel::bordered()
+            crate::inbound::widgets::panel::bordered(palette)
                 .title(Span::styled(GHOST.repeat(QUICK_ADD.len()), palette.accent))
                 .border_style(palette.muted),
             input,
@@ -132,7 +138,6 @@ fn key_hints(view: &MaybeboardView) -> Vec<(&'static str, &'static str)> {
     ));
     keys.push(("s", "Swipe"));
     keys.push(("M", "More"));
-    keys.push(("H", "Hint"));
     keys.push(("Esc", "Back"));
     keys
 }

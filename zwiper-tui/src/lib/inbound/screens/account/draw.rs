@@ -1,4 +1,4 @@
-//! Account: the header, the Account and About lists with their buttons, the action bar, and the sheets and dialogs over them.
+//! Account: the Account and About lists with their buttons, the action bar, and the sheets and dialogs over them.
 
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Rect};
@@ -12,7 +12,6 @@ use crate::inbound::app::Shared;
 use crate::inbound::screens::{VERSION, login};
 use crate::inbound::widgets::alert::AlertDialog;
 use crate::inbound::widgets::button::{self, Button};
-use crate::inbound::widgets::header::{self, Corner};
 use crate::inbound::widgets::sheet::{self, Sheet};
 use crate::inbound::widgets::text_input::{BOX_HEIGHT, MASK, TextInput};
 use crate::inbound::widgets::{action_bar, measure};
@@ -34,13 +33,12 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &AccountView) {
             ("j/k", "move"),
             ("Enter", "select"),
             ("i", "about row"),
-            ("?", "hint"),
             ("L", "log out"),
             ("m", "more"),
             ("Esc", "back"),
         ],
     );
-    let bar = action_bar::with_help(palette, bar).centered();
+    let bar = action_bar::with_help(palette, bar, action_bar::Hint::Question).centered();
     let area = f.area();
     let bar_height = action_bar::height(&bar, area.width);
     let width = WIDTH.min(area.width);
@@ -53,17 +51,13 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &AccountView) {
     let room = area
         .height
         .saturating_sub(bar_height)
-        .saturating_sub(2)
         .saturating_sub(measure::height_of(lines.len()));
-    let [head, _, body, buttons, keys] = Layout::vertical([
-        Constraint::Length(1),
-        Constraint::Length(1),
+    let [body, buttons, keys] = Layout::vertical([
         Constraint::Fill(1),
         Constraint::Length(button::height(&row, area.width, room)),
         Constraint::Length(bar_height),
     ])
     .areas(area);
-    header::draw(f, palette, head, "Account", Corner::Hint);
     let body = body.centered_horizontally(Constraint::Length(width));
     f.render_widget(Paragraph::new(lines), body);
     button::draw_row(f, palette, buttons, &row, None);

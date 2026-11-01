@@ -8,7 +8,7 @@ use ratatui::widgets::{Paragraph, Wrap};
 use super::ExportView;
 use crate::inbound::app::Shared;
 use crate::inbound::widgets::pill::{self, PillState};
-use crate::inbound::widgets::{action_bar, header, skeleton};
+use crate::inbound::widgets::{action_bar, skeleton};
 
 /// Ghost rows while the deck loads.
 const SKELETON_ROWS: usize = 10;
@@ -25,10 +25,9 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &ExportView) {
             ("q", "quit"),
         ],
     );
-    let bar = action_bar::with_help(palette, bar);
+    let bar = action_bar::with_help(palette, bar, action_bar::Hint::Question);
     let bar_height = action_bar::height(&bar, f.area().width.saturating_sub(2));
-    let [header, chips, body, status, keys] = Layout::vertical([
-        Constraint::Length(1),
+    let [chips, body, status, keys] = Layout::vertical([
         Constraint::Length(2),
         Constraint::Fill(1),
         Constraint::Length(1),
@@ -36,9 +35,8 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &ExportView) {
     ])
     .horizontal_margin(1)
     .areas(f.area());
-    header::draw(f, palette, header, "Export", header::Corner::Hint);
 
-    let block = crate::inbound::widgets::panel::bordered()
+    let block = crate::inbound::widgets::panel::bordered(palette)
         .title(" Decklist ")
         .border_style(palette.border);
     if view.failed {

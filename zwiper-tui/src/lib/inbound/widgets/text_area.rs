@@ -187,7 +187,7 @@ impl TextArea {
         };
         f.render_widget(
             Paragraph::new(lines).block(
-                crate::inbound::widgets::panel::bordered()
+                crate::inbound::widgets::panel::bordered(palette)
                     .title(
                         Line::from(format!(" {title} "))
                             .style(palette.tertiary)

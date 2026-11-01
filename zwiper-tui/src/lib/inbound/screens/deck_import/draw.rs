@@ -9,9 +9,9 @@ use zwipe_core::domain::deck::ImportMode;
 use super::{Focus, ImportView, Source, Target};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
+use crate::inbound::widgets::action_bar;
 use crate::inbound::widgets::pill::{self, PillState};
 use crate::inbound::widgets::text_input::BOX_HEIGHT;
-use crate::inbound::widgets::{action_bar, header};
 
 /// The result list is at most this tall, border included.
 const RESULT_HEIGHT: u16 = 10;
@@ -27,8 +27,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &ImportView) {
         Source::Text => Constraint::Fill(1),
         Source::Archidekt => Constraint::Length(BOX_HEIGHT),
     };
-    let [header, chips, explainer, input, results, _, status, keys] = Layout::vertical([
-        Constraint::Length(1),
+    let [chips, explainer, input, results, _, status, keys] = Layout::vertical([
         Constraint::Length(3),
         Constraint::Length(2),
         input_height,
@@ -39,7 +38,6 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &ImportView) {
     ])
     .horizontal_margin(1)
     .areas(f.area());
-    header::draw(f, palette, header, "Import", header::Corner::Hint);
     f.render_widget(Paragraph::new(chip_lines(palette, view)), chips);
     draw_explainer(f, palette, view, explainer);
     draw_input(f, palette, view, input);
@@ -52,7 +50,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &ImportView) {
     let submit_style = if view.loading || view.blank() {
         palette.muted
     } else {
-        palette.base.bold()
+        palette.text().bold()
     };
     let mut bar = action_bar::line(
         palette,
@@ -61,7 +59,12 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &ImportView) {
     bar.spans.push(Span::styled("F2 ", submit_style));
     bar.spans
         .push(Span::styled(view.submit_label().to_owned(), palette.muted));
-    f.render_widget(action_bar::with_help(palette, bar), keys);
+    let hint = if view.focus == Focus::Input {
+        action_bar::Hint::Absent
+    } else {
+        action_bar::Hint::Question
+    };
+    f.render_widget(action_bar::with_help(palette, bar, hint), keys);
 }
 
 /// The From, Mode and Board rows of chips.
@@ -173,7 +176,7 @@ fn draw_result(f: &mut Frame<'_>, palette: &Palette, view: &ImportView, area: Re
     }
     f.render_widget(
         Paragraph::new(lines)
-            .block(crate::inbound::widgets::panel::bordered().border_style(palette.border)),
+            .block(crate::inbound::widgets::panel::bordered(palette).border_style(palette.border)),
         area,
     );
 }

@@ -18,6 +18,7 @@ use super::screens::home::cache::Caches;
 use super::screens::{Screen, update_required};
 use super::widgets::alert::AlertDialog;
 use super::widgets::entrance::{self, DURATION as ENTRANCE};
+use super::widgets::grid;
 use super::widgets::hero::Counts;
 use super::widgets::hint::HintDialog;
 use super::widgets::splash::Splash;
@@ -162,10 +163,11 @@ impl App {
         self.draw_at(f, Instant::now());
     }
 
-    /// Draws the screen on top over the theme's background, then the hint, the help dialog and the toasts over it, and the splash over everything; or, while this version is no longer accepted, only the update notice. A theme sweep recolors what it has not reached yet.
+    /// Draws the screen on top over the theme's background and the settled grid, then the hint, the help dialog and the toasts over it, and the splash over everything; or, while this version is no longer accepted, only the update notice. A theme sweep recolors what it has not reached yet.
     pub(crate) fn draw_at(&self, f: &mut Frame<'_>, now: Instant) {
         let palette = &self.shared.palette;
         f.render_widget(Block::new().style(palette.base), f.area());
+        grid::draw(f, palette, f.area(), None);
         if self.shared.update_required {
             update_required::draw::draw(f, &self.shared);
             self.sweep(f, now);
