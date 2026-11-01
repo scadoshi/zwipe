@@ -103,4 +103,4 @@ jobs:
         env:
           RUSTDOCFLAGS: -D warnings
       - name: UI tests
-        run: cargo test -p components -p zite -p zwiper
+        run: cargo test -p components -p zite -p zwiper -p zwipe-ui
