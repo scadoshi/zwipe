@@ -840,6 +840,25 @@ pub fn toggled(mut values: Vec<String>, value: &str) -> Vec<String> {
     values
 }
 
+/// Whether two slug lists pick the same set, ignoring order: a picker's Save
+/// stays off while its pick matches the one it opened on, so a re-tap of the
+/// same chips is not a change.
+///
+/// Duplicates count. `["a", "a"]` and `["a"]` are different picks, as they
+/// are in the app, though a picker built on [`toggled`] never holds the same
+/// slug twice.
+#[must_use]
+pub fn same_set<A: AsRef<str>, B: AsRef<str>>(a: &[A], b: &[B]) -> bool {
+    if a.len() != b.len() {
+        return false;
+    }
+    let mut a: Vec<&str> = a.iter().map(AsRef::as_ref).collect();
+    let mut b: Vec<&str> = b.iter().map(AsRef::as_ref).collect();
+    a.sort_unstable();
+    b.sort_unstable();
+    a == b
+}
+
 /// Text typed into a number box that is not a number.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct InvalidNumber;
@@ -986,5 +1005,53 @@ mod tests {
         assert_eq!(parse_number("two"), Err(InvalidNumber));
         assert_eq!(toggled(words(&["a"]), "b"), words(&["a", "b"]));
         assert_eq!(toggled(words(&["a", "b"]), "a"), words(&["b"]));
+    }
+
+    /// The app's copy, as it stands in `universes_beyond.rs`, `tag_select.rs`
+    /// and `oracle_tag_select.rs` (and the web's two), for the cases below.
+    fn app_same_set(a: &[String], b: &[String]) -> bool {
+        let mut a: Vec<&str> = a.iter().map(String::as_str).collect();
+        let mut b: Vec<&str> = b.iter().map(String::as_str).collect();
+        a.sort_unstable();
+        b.sort_unstable();
+        a == b
+    }
+
+    /// The TUI's copy, which sorts owned clones.
+    fn tui_same_set(a: &[String], b: &[String]) -> bool {
+        let mut a = a.to_vec();
+        let mut b = b.to_vec();
+        a.sort_unstable();
+        b.sort_unstable();
+        a == b
+    }
+
+    #[test]
+    fn same_set_ignores_order_and_counts_duplicates() {
+        let cases: [(&[&str], &[&str], bool); 10] = [
+            (&[], &[], true),
+            (&["a"], &["a"], true),
+            (&["a", "b"], &["b", "a"], true),
+            (&["c", "a", "b"], &["b", "c", "a"], true),
+            (&["a"], &["a", "b"], false),
+            (&["a", "b"], &["a"], false),
+            (&["a"], &["b"], false),
+            (&["a", "a"], &["a"], false),
+            (&["a", "a", "b"], &["a", "b", "b"], false),
+            (&["a", "b", "a"], &["a", "a", "b"], true),
+        ];
+        for (a, b, want) in cases {
+            assert_eq!(same_set(a, b), want, "{a:?} vs {b:?}");
+            let (a, b) = (words(a), words(b));
+            assert_eq!(same_set(&a, &b), want, "owned {a:?} vs {b:?}");
+            assert_eq!(app_same_set(&a, &b), want, "app copy, {a:?} vs {b:?}");
+            assert_eq!(tui_same_set(&a, &b), want, "TUI copy, {a:?} vs {b:?}");
+        }
+    }
+
+    #[test]
+    fn same_set_compares_owned_with_borrowed() {
+        assert!(same_set(&words(&["b", "a"]), &["a", "b"]));
+        assert!(!same_set(&words(&["a"]), &["A"]), "case matters");
     }
 }
