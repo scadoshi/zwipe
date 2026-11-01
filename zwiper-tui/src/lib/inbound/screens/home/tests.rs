@@ -871,3 +871,30 @@ fn the_featured_card_shows_its_image_beside_or_above_the_quote_when_there_is_roo
         "the sixel waits under the popup"
     );
 }
+
+#[test]
+fn the_color_maps_about_marker_is_a_button_in_its_corner() {
+    let mut harness = on_home();
+    let palette = crate::domain::theme::Palette::for_account("gruvbox", true);
+    harness.app.shared.palette = palette;
+    let user_id = me(&harness);
+    harness.apply(Update::PlayStyle {
+        user_id,
+        summary: Box::new(summary(2)),
+    });
+    settle_entrance(&mut harness);
+    for (width, height) in crate::test_support::BUTTON_SIZES {
+        let terminal = render(&harness.app, width, height);
+        let buffer = terminal.backend().buffer();
+        let found = crate::test_support::find_all(buffer, " [?] ");
+        let &(x, y) = found
+            .first()
+            .unwrap_or_else(|| panic!("no corner [?] at {width}x{height}"));
+        let context = format!("{width}x{height}");
+        assert!(
+            matches!(buffer[(x + 5, y)].symbol(), "╮" | "─"),
+            "{context}: on the panel's top border"
+        );
+        crate::test_support::assert_about_marker(buffer, &palette, (x + 1, y), false, &context);
+    }
+}

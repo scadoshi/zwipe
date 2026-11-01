@@ -30,7 +30,7 @@ use crate::inbound::screens::activity::draw::{Body, GHOST, GUTTER, INDENT};
 use crate::inbound::screens::home;
 use crate::inbound::screens::home::draw as home_draw;
 use crate::inbound::widgets::card_rows::{CardRow, OTHER_TAGS};
-use crate::inbound::widgets::{action_bar, charts, color_map, mana, otag};
+use crate::inbound::widgets::{action_bar, button, charts, color_map, mana, measure, otag};
 
 /// The tallest the color map draws, in rows, as the app's `14rem`.
 const MAP_ROWS: u16 = 14;
@@ -283,7 +283,12 @@ fn loaded_lines(shared: &Shared, view: &PlaystyleView, width: u16, map_rows: u16
         let focused = view.focus == Focus::Header(section);
         let mut header = collapsible.header(palette, focused);
         if collapsible.open && section.topic().is_some() {
-            header.spans.push(Span::styled("  ?", palette.muted));
+            header.spans.push(Span::raw(" "));
+            header.spans.extend(button::about(
+                palette,
+                palette.muted,
+                view.about_section() == Some(section),
+            ));
         }
         body.item(vec![header], focused);
         if !collapsible.open {
@@ -484,7 +489,7 @@ fn stat_cell(value: Option<u32>, style: Style) -> Vec<Span<'static>> {
     ]
 }
 
-/// The Oracle tags table: its header with each number column's "?", then a row per tag, an open tag's definition under its row.
+/// The Oracle tags table: its header with each number column's `[?]`, then a row per tag, an open tag's definition under its row.
 fn tags_body(body: &mut Body, shared: &Shared, view: &PlaystyleView, width: usize) {
     let palette = &shared.palette;
     let rows = view.tag_rows();
@@ -494,22 +499,30 @@ fn tags_body(body: &mut Body, shared: &Shared, view: &PlaystyleView, width: usiz
         .max()
         .unwrap_or(0)
         .max(5)
-        .min(width / 2);
+        .min(width / 2)
+        .min(width.saturating_sub(COLUMN_WIDTH.saturating_mul(super::Column::ALL.len())));
     let head_focused = view.focus == Focus::TagHead;
     let mut header = vec![Span::styled(
         format!("{:<tag_width$}", "Tag"),
         palette.muted,
     )];
     for column in super::Column::ALL {
-        let text = format!("{} ?", column.label());
-        let style = if head_focused && column == view.column {
+        let picked = head_focused && column == view.column;
+        let style = if picked {
             palette.accent.bold().reversed()
         } else {
             palette.muted
         };
-        let pad = COLUMN_WIDTH.saturating_sub(text.chars().count());
-        header.push(Span::styled(text, style));
-        header.push(Span::raw(" ".repeat(pad)));
+        let used = column
+            .label()
+            .chars()
+            .count()
+            .saturating_add(1)
+            .saturating_add(usize::from(button::ABOUT_WIDTH));
+        header.push(Span::styled(column.label(), style));
+        header.push(Span::raw(" "));
+        header.extend(button::about(palette, palette.muted, picked));
+        header.push(Span::raw(" ".repeat(COLUMN_WIDTH.saturating_sub(used))));
     }
     body.item(
         vec![activity_draw::indented(Line::from(header))],
@@ -517,7 +530,8 @@ fn tags_body(body: &mut Body, shared: &Shared, view: &PlaystyleView, width: usiz
     );
     for (i, row) in rows.iter().enumerate() {
         let open = view.open_tag.as_deref() == Some(row.slug.as_str());
-        let tag_chip = otag::chip(palette, &row.slug, open);
+        let slug = measure::ellipsize(&row.slug, tag_width.saturating_sub(3));
+        let tag_chip = otag::chip(palette, &slug, open);
         let pad = tag_width.saturating_sub(tag_chip.width());
         let mut spans = vec![tag_chip, Span::raw(" ".repeat(pad))];
         spans.extend(stat_cell(Some(row.decks), palette.add));
@@ -535,12 +549,11 @@ fn tags_body(body: &mut Body, shared: &Shared, view: &PlaystyleView, width: usiz
     }
 }
 
-/// A group's header: its title and its "?".
-fn group_header(palette: &Palette, title: &str) -> Line<'static> {
-    Line::from(vec![
-        Span::raw(title.to_owned()).bold(),
-        Span::styled("  ?", palette.muted),
-    ])
+/// A group's header: its title and its `[?]`, focused while `?` opens the group's topic.
+fn group_header(palette: &Palette, title: &str, focused: bool) -> Line<'static> {
+    let mut spans = vec![Span::raw(format!("{title} ")).bold()];
+    spans.extend(button::about(palette, palette.muted, focused));
+    Line::from(spans)
 }
 
 /// The suggestions: the group of rows, or the line saying why there are none.
@@ -559,7 +572,7 @@ fn list_body(body: &mut Body, shared: &Shared, view: &PlaystyleView) {
         ));
         return;
     }
-    body.line(group_header(palette, LIST_TITLE));
+    body.line(group_header(palette, LIST_TITLE, view.focus == Focus::List));
     let rows: Vec<CardRow<'_>> = shown
         .iter()
         .map(|s| suggestion_row(palette, s, view.deck_count, view.why_open))
@@ -611,7 +624,11 @@ fn staples_body(body: &mut Body, shared: &Shared, view: &PlaystyleView) {
         body.line(Line::styled(NO_STAPLES, palette.muted));
         return;
     }
-    body.line(group_header(palette, STAPLES_TITLE));
+    body.line(group_header(
+        palette,
+        STAPLES_TITLE,
+        view.focus == Focus::Staples,
+    ));
     let rows: Vec<CardRow<'_>> = staples
         .iter()
         .map(|s| staple_row(palette, s, view.deck_count))

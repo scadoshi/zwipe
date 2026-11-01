@@ -248,7 +248,7 @@ fn the_loaded_screen_draws_every_section_with_activity_open() {
     assert_eq!(v.focus, Focus::Header(Section::Activity));
     let text = screen_text(&harness.app);
     for expected in [
-        "> ▾ Activity  ?",
+        "> ▾ Activity [?]",
         "Mon",
         "Wed",
         "Fri",
@@ -262,7 +262,7 @@ fn the_loaded_screen_draws_every_section_with_activity_open() {
         "REMOVED",
         "▸ Card roles",
         "▸ Oracle tags",
-        "Most skipped  ?",
+        "Most skipped [?]",
         "3 skips Sol Ring",
     ] {
         assert!(text.contains(expected), "missing {expected} in\n{text}");
@@ -609,4 +609,25 @@ fn activity_keeps_every_key_on_a_narrow_terminal() {
     crate::test_support::assert_key_bar_fits(&harness.app, "Esc Back");
     view_mut(&mut harness).focus = Focus::Passes;
     crate::test_support::assert_key_bar_fits(&harness.app, "Esc Back");
+}
+
+#[test]
+fn section_about_markers_are_buttons_and_the_focused_sections_lights() {
+    let mut harness = loaded();
+    let palette = crate::domain::theme::Palette::for_account("gruvbox", true);
+    harness.app.shared.palette = palette;
+    assert_eq!(view(&harness).focus, Focus::Header(Section::Activity));
+    for (width, height) in crate::test_support::BUTTON_SIZES {
+        let rows = crate::test_support::rows(&harness.app, width, height);
+        let bare = crate::test_support::bare_about_markers(&rows);
+        assert!(bare.is_empty(), "bare ? at {bare:?}:\n{}", rows.join("\n"));
+        let terminal = render(&harness.app, width, height);
+        let buffer = terminal.backend().buffer();
+        let found = crate::test_support::find_all(buffer, "Activity [?]");
+        let &(x, y) = found
+            .first()
+            .unwrap_or_else(|| panic!("{}", rows.join("\n")));
+        let context = format!("{width}x{height}");
+        crate::test_support::assert_about_marker(buffer, &palette, (x + 9, y), true, &context);
+    }
 }

@@ -9,6 +9,7 @@ use crate::inbound::screens::login;
 use crate::inbound::screens::login::draw::{AuthScreen, Placement};
 use crate::inbound::widgets::action_bar;
 use crate::inbound::widgets::button::Button;
+use crate::inbound::widgets::text_input::Label;
 
 /// Create profile's key hints: the form's keys while the focus is in it, with Enter named for what it does from the focused stop; the way back into the form once Esc has ended typing.
 pub(crate) fn keys(form: &RegisterForm) -> Vec<(&'static str, &'static str)> {
@@ -87,7 +88,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &RegisterForm) {
         palette,
         password,
         &form.password,
-        "Password ?",
+        Label::About("Password"),
         focus == Some(RegisterField::Password),
     );
     login::draw::show_button(

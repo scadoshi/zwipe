@@ -74,9 +74,9 @@ fn the_screen_shows_its_rows_and_the_red_unverified_badge() {
         "Account",
         "Username",
         "scotty",
-        "Email ?",
+        "Email [?]",
         "Unverified",
-        "Verification ?",
+        "Verification [?]",
         "Resend",
         "•••••••",
         "About",
@@ -426,4 +426,32 @@ fn the_change_sheet_and_log_out_dialog_draw_real_buttons_at_every_size() {
     }
     harness.press(KeyCode::Char('n'));
     assert!(view(&harness).overlay.is_none());
+}
+
+#[test]
+fn a_rows_about_marker_is_a_button_that_lights_with_its_row() {
+    let mut harness = on_account(false);
+    let palette = crate::domain::theme::Palette::for_account("gruvbox", true);
+    harness.app.shared.palette = palette;
+    let marker = |harness: &Harness, label: &str| {
+        let terminal = render(&harness.app, 100, 40);
+        let buffer = terminal.backend().buffer().clone();
+        let found = crate::test_support::find_all(&buffer, &format!("{label} [?]"));
+        let (x, y) = *found.first().unwrap_or_else(|| panic!("no {label} [?]"));
+        let width = u16::try_from(label.chars().count()).unwrap();
+        (buffer, (x + width + 1, y))
+    };
+    let (buffer, at) = marker(&harness, "Email");
+    crate::test_support::assert_about_marker(&buffer, &palette, at, false, "Email at rest");
+    harness.press(KeyCode::Char('j'));
+    assert_eq!(view(&harness).focused(), Some(Stop::ChangeEmail));
+    let (buffer, at) = marker(&harness, "Email");
+    crate::test_support::assert_about_marker(&buffer, &palette, at, true, "Email focused");
+    let (buffer, at) = marker(&harness, "Verification");
+    crate::test_support::assert_about_marker(&buffer, &palette, at, false, "another row");
+    let text = screen_text(&harness.app);
+    assert!(
+        text.contains("Verification [?]  "),
+        "a gap before the value"
+    );
 }

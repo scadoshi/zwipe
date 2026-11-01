@@ -57,7 +57,7 @@ pub(crate) fn handle(sheet: &mut FilterSheet, code: KeyCode, cx: &mut Context<'_
 }
 
 /// Whether the focus is on the Oracle tags header or one of its rows, where `i` explains oracle tags.
-fn in_oracle_tags(sheet: &FilterSheet) -> bool {
+pub(crate) fn in_oracle_tags(sheet: &FilterSheet) -> bool {
     match sheet.focused() {
         Some(Target::Header(section)) => section == Section::OracleTags,
         Some(Target::Row(_)) => sheet.open == Some(Section::OracleTags),

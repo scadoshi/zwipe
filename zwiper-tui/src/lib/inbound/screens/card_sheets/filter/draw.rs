@@ -11,7 +11,7 @@ use zwipe_ui::filter::sections::{self, ChipSet, Row, Section, StepRow};
 use super::{FilterSheet, Target};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
-use crate::inbound::widgets::{action_bar, mana};
+use crate::inbound::widgets::{action_bar, button, mana};
 
 /// The sheet takes this share of the screen's height, in percent.
 const HEIGHT_PERCENT: u16 = 85;
@@ -78,7 +78,12 @@ pub(crate) fn lines(
             Span::styled(section.title(), header_style(palette, is_focus)),
         ];
         if section == Section::OracleTags {
-            spans.push(Span::styled(" ?", palette.muted));
+            spans.push(Span::raw(" "));
+            spans.extend(button::about(
+                palette,
+                palette.muted,
+                super::keys::in_oracle_tags(sheet),
+            ));
         }
         if section.is_active(&sheet.filter.draft) {
             spans.push(Span::styled("  ×", palette.warning));

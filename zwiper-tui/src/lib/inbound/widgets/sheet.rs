@@ -8,7 +8,7 @@ use ratatui::text::Line;
 use ratatui::widgets::{Clear, Padding, Paragraph};
 
 use super::measure::BORDERS;
-use super::{action_bar, card_info, measure};
+use super::{action_bar, button, card_info, measure};
 use crate::domain::theme::Palette;
 
 /// A sheet takes at most this share of the screen's height, in percent.
@@ -56,7 +56,7 @@ impl Sheet {
         self
     }
 
-    /// Puts a `?` in the header's right corner, for a sheet with a hint to reopen.
+    /// Puts a `[?]` in the header's right corner, for a sheet with a hint to reopen.
     pub(crate) fn with_hint(mut self) -> Self {
         self.hint = true;
         self
@@ -156,7 +156,7 @@ impl Sheet {
     }
 }
 
-/// Clears and draws a bottom sheet's frame over the bottom of `area`: the title centered in the third accent, a `?` in its right corner when `hint`, and the footer keys on its bottom edge, tall enough for `body` rows up to most of the screen. Returns the area inside, for a body the caller draws, such as a form.
+/// Clears and draws a bottom sheet's frame over the bottom of `area`: the title centered in the third accent, a `[?]` in its right corner when `hint`, and the footer keys on its bottom edge, tall enough for `body` rows up to most of the screen. Returns the area inside, for a body the caller draws, such as a form.
 pub(crate) fn frame(
     f: &mut Frame<'_>,
     palette: &Palette,
@@ -184,7 +184,8 @@ pub(crate) fn frame(
         .border_style(palette.accent)
         .padding(Padding::horizontal(1));
     if hint {
-        block = block.title(Line::from(" ? ").style(palette.muted).right_aligned());
+        block =
+            block.title(Line::from(button::about_corner(palette, palette.muted)).right_aligned());
     }
     let inner = block.inner(sheet);
     f.render_widget(Clear, sheet);
@@ -278,7 +279,7 @@ mod tests {
         let screen = text(&sheet, 30, 10);
         assert!(screen.contains("line 31"), "scrolled to the focus");
         assert!(!screen.contains("line 1 "));
-        assert!(screen.contains(" ? "));
+        assert!(screen.contains(" [?] "));
     }
 
     #[test]

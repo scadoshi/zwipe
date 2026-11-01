@@ -503,7 +503,7 @@ fn i_in_the_oracle_tags_section_explains_oracle_tags() {
     let mut app = app();
     let mut sheet = FilterSheet::new(&CardQueryBuilder::default(), plain());
     open_section(&mut app, &mut sheet, Section::OracleTags);
-    assert!(draw(&app, &sheet, 80, 40).contains("Oracle tags ?"));
+    assert!(draw(&app, &sheet, 80, 40).contains("Oracle tags [?]"));
     press(&mut app, &mut sheet, &[KeyCode::Char('i')]);
     assert_eq!(
         app.shared.hint.as_ref().map(|h| h.content.clone()),

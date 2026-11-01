@@ -15,7 +15,9 @@ use crate::inbound::app::{App, Context};
 use crate::inbound::event_loop::harness::Harness;
 use crate::inbound::widgets::hero::Hero;
 use crate::inbound::widgets::{grid, logo};
-use crate::test_support::{BUTTON_SIZES, card, deck_profile, render, rows, user};
+use crate::test_support::{
+    BUTTON_SIZES, bare_about_markers, card, deck_profile, render, rows, user,
+};
 
 /// A screen as the tests open it: the title its header used to show, the key that opens its hint as the bar names it, and the screen itself.
 struct Case {
@@ -389,6 +391,29 @@ fn no_screen_draws_a_button_label_between_box_borders() {
                         rows.join("\n")
                     );
                 }
+            }
+        }
+    }
+}
+
+#[test]
+fn every_about_marker_is_a_bracketed_button_outside_the_key_bars() {
+    let marked = ["Account", "Config", "Create profile"];
+    for Case { title, harness, .. } in cases() {
+        for (width, height) in BUTTON_SIZES {
+            let rows = rows(&harness.app, width, height);
+            let bare = bare_about_markers(&rows);
+            assert!(
+                bare.is_empty(),
+                "{title} draws a bare ? at {bare:?} at {width}x{height}:\n{}",
+                rows.join("\n")
+            );
+            if marked.contains(&title) && width >= 80 {
+                assert!(
+                    rows.iter().any(|row| row.contains("[?]")),
+                    "{title} shows its [?] at {width}x{height}:\n{}",
+                    rows.join("\n")
+                );
             }
         }
     }

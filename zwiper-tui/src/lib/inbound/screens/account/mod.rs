@@ -25,7 +25,7 @@ use crate::inbound::nav::Nav;
 use crate::inbound::screens;
 use crate::inbound::widgets::alert::AlertDialog;
 use crate::inbound::widgets::hint::{self, HintTopic};
-use crate::inbound::widgets::text_input::TextInput;
+use crate::inbound::widgets::text_input::{Label, TextInput};
 use crate::inbound::widgets::toast::{self, ToastKind};
 use crate::outbound::account::Account;
 
@@ -213,14 +213,20 @@ impl FormKind {
     }
 
     /// Each field's label, and whether it hides what is typed.
-    pub(crate) fn fields(self) -> &'static [(&'static str, bool)] {
+    pub(crate) fn fields(self) -> &'static [(Label<'static>, bool)] {
         match self {
-            Self::Username => &[("New username", false), ("Password", true)],
-            Self::Email => &[("New email", false), ("Password", true)],
+            Self::Username => &[
+                (Label::Plain("New username"), false),
+                (Label::Plain("Password"), true),
+            ],
+            Self::Email => &[
+                (Label::Plain("New email"), false),
+                (Label::Plain("Password"), true),
+            ],
             Self::Password => &[
-                ("Current password", true),
-                ("New password ?", true),
-                ("Confirm password", true),
+                (Label::Plain("Current password"), true),
+                (Label::About("New password"), true),
+                (Label::Plain("Confirm password"), true),
             ],
         }
     }

@@ -3,9 +3,10 @@
 use crossterm::event::KeyCode;
 use ratatui::Frame;
 use ratatui::layout::{Position, Rect};
-use ratatui::text::Line;
+use ratatui::text::{Line, Span};
 use ratatui::widgets::Paragraph;
 
+use super::button;
 use super::measure::BORDERS;
 use crate::domain::theme::Palette;
 
@@ -14,6 +15,36 @@ pub(crate) const MASK: char = '•';
 
 /// The box and its border take this many rows; an error adds one.
 pub(crate) const BOX_HEIGHT: u16 = 3;
+
+/// A box's label on its top border, alone or followed by the `[?]` marker of an About topic.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Label<'text> {
+    Plain(&'text str),
+    /// The label and its `[?]`, which takes the focus look while the box has the focus, since the box's About key then opens it.
+    About(&'text str),
+}
+
+impl<'text> From<&'text str> for Label<'text> {
+    fn from(text: &'text str) -> Self {
+        Self::Plain(text)
+    }
+}
+
+impl Label<'_> {
+    /// The label's line for the top border, a space each side, in the third accent; its `[?]` follows a space after the text.
+    fn line(self, palette: &Palette, focused: bool) -> Option<Line<'static>> {
+        match self {
+            Self::Plain("") => None,
+            Self::Plain(text) => Some(Line::from(format!(" {text} ")).style(palette.tertiary)),
+            Self::About(text) => {
+                let mut spans = vec![Span::styled(format!(" {text} "), palette.tertiary)];
+                spans.extend(button::about(palette, palette.tertiary, focused));
+                spans.push(Span::raw(" "));
+                Some(Line::from(spans))
+            }
+        }
+    }
+}
 
 /// A one-line text box's state.
 ///
@@ -173,12 +204,12 @@ impl TextInput {
     }
 
     /// Draws the box titled `title`, centered on its top border, at the top of `area`, its border in the focus color while `focused`, and the error under it.
-    pub(crate) fn draw(
+    pub(crate) fn draw<'text>(
         &self,
         f: &mut Frame<'_>,
         palette: &Palette,
         area: Rect,
-        title: &str,
+        title: impl Into<Label<'text>>,
         focused: bool,
     ) {
         let box_area = Rect {
@@ -189,12 +220,8 @@ impl TextInput {
         let skip = self.skip(box_area.width);
         let text = Line::from(self.shown().chars().skip(skip).collect::<String>());
         let mut block = crate::inbound::widgets::panel::bordered(palette).border_style(border);
-        if !title.is_empty() {
-            block = block.title(
-                Line::from(format!(" {title} "))
-                    .style(palette.tertiary)
-                    .centered(),
-            );
+        if let Some(title) = title.into().line(palette, focused) {
+            block = block.title(title.centered());
         }
         f.render_widget(Paragraph::new(text).block(block), box_area);
         if let Some(error) = &self.error

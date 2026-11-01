@@ -11,7 +11,7 @@ use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::widgets::button::{self, Button};
 use crate::inbound::widgets::hero::Hero;
-use crate::inbound::widgets::text_input::{BOX_HEIGHT, TextInput};
+use crate::inbound::widgets::text_input::{BOX_HEIGHT, Label, TextInput};
 use crate::inbound::widgets::{action_bar, measure};
 
 /// The form is at most this wide, in cells.
@@ -132,12 +132,12 @@ pub(crate) fn frame(
 }
 
 /// Draws a field titled `title` at the top of `area`, and its in-field button (Show or Hide) on the right of its text row, reversed while `button_focused`. Places the cursor in it while `focused`.
-pub(crate) fn field(
+pub(crate) fn field<'text>(
     f: &mut Frame<'_>,
     palette: &Palette,
     area: Rect,
     input: &TextInput,
-    title: &str,
+    title: impl Into<Label<'text>>,
     focused: bool,
 ) {
     input.draw(f, palette, area, title, focused);

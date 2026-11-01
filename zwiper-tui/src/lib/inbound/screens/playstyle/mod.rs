@@ -575,6 +575,21 @@ impl PlaystyleView {
         }
     }
 
+    /// The section whose header `[?]` takes the focus look: the one `?` explains from the focus.
+    pub(crate) fn about_section(&self) -> Option<Section> {
+        match self.focus {
+            Focus::Header(section) => Some(section),
+            Focus::Role(_) => Some(Section::Roles),
+            Focus::Tag(_) => Some(Section::Tags),
+            Focus::TagHead
+            | Focus::List
+            | Focus::Staples
+            | Focus::Show
+            | Focus::Types
+            | Focus::Colors => None,
+        }
+    }
+
     /// Reveals the profile's tags under `role`, or hides them when they show.
     pub(crate) fn toggle_role(&mut self, role: &str) {
         if self.open_role.as_deref() == Some(role) {

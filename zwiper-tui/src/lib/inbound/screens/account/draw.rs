@@ -20,7 +20,7 @@ use crate::inbound::widgets::text_input::{BOX_HEIGHT, MASK, TextInput};
 const WIDTH: u16 = 72;
 
 /// The labels take this many cells.
-const LABEL_WIDTH: usize = 16;
+const LABEL_WIDTH: usize = 18;
 
 /// A Change sheet's fields are at most this wide, in cells.
 const FORM_WIDTH: u16 = 48;
@@ -71,25 +71,25 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &AccountView) {
     }
 }
 
-/// A row: its label (with a `?` when it has a topic), its value, and its buttons on the right.
+/// A row: its label (with its `[?]` when it has a topic), its value, and its buttons on the right.
 fn row(
-    palette: &Palette,
     width: usize,
     label: &str,
-    topic: bool,
+    about: Option<Vec<Span<'static>>>,
     value: Vec<Span<'static>>,
     buttons: Vec<Span<'static>>,
 ) -> Line<'static> {
     let mut spans = vec![Span::raw(format!("{label:<LABEL_WIDTH$}"))];
-    if topic {
+    if let Some(about) = about {
         spans.pop();
-        spans.push(Span::raw(label.to_owned()));
-        spans.push(Span::styled(
-            " ?",
-            palette.swatches.get(5).copied().unwrap_or(palette.muted),
-        ));
-        let pad = LABEL_WIDTH.saturating_sub(label.chars().count().saturating_add(2));
-        spans.push(Span::raw(" ".repeat(pad)));
+        spans.push(Span::raw(format!("{label} ")));
+        spans.extend(about);
+        let used = label
+            .chars()
+            .count()
+            .saturating_add(1)
+            .saturating_add(usize::from(button::ABOUT_WIDTH));
+        spans.push(Span::raw(" ".repeat(LABEL_WIDTH.saturating_sub(used))));
     }
     spans.extend(value);
     let used: usize = spans.iter().map(Span::width).sum();
@@ -99,6 +99,14 @@ fn row(
     ));
     spans.extend(buttons);
     Line::from(spans)
+}
+
+/// A row's `[?]`, focused while one of `stops` has the focus, since `i` then opens its topic.
+fn about(palette: &Palette, view: &AccountView, stops: &[Stop]) -> Vec<Span<'static>> {
+    let focused =
+        view.overlay.is_none() && view.focused().is_some_and(|stop| stops.contains(&stop));
+    let mark = palette.swatches.get(5).copied().unwrap_or(palette.muted);
+    button::about(palette, mark, focused)
 }
 
 /// A button on a row, highlighted while focused and muted while disabled.
@@ -132,10 +140,9 @@ fn account_lines(palette: &Palette, view: &AccountView, width: usize) -> Vec<Lin
     let mut lines = vec![
         section(palette, "Account"),
         row(
-            palette,
             width,
             "Username",
-            false,
+            None,
             vec![Span::raw(user.username.to_string())],
             button(
                 palette,
@@ -146,10 +153,9 @@ fn account_lines(palette: &Palette, view: &AccountView, width: usize) -> Vec<Lin
             ),
         ),
         row(
-            palette,
             width,
             "Email",
-            true,
+            Some(about(palette, view, &[Stop::ChangeEmail])),
             vec![
                 Span::raw(format!("{} ", user.email)),
                 if view.verified() {
@@ -169,10 +175,9 @@ fn account_lines(palette: &Palette, view: &AccountView, width: usize) -> Vec<Lin
     ];
     if let Some(pending) = &user.pending_email {
         lines.push(row(
-            palette,
             width,
             "Pending",
-            false,
+            None,
             Vec::new(),
             vec![Span::raw(pending.to_string())],
         ));
@@ -182,10 +187,9 @@ fn account_lines(palette: &Palette, view: &AccountView, width: usize) -> Vec<Lin
     }
     if !view.verified() {
         lines.push(row(
-            palette,
             width,
             "Verification",
-            true,
+            Some(about(palette, view, &[Stop::Resend, Stop::Check])),
             Vec::new(),
             [
                 button(
@@ -202,10 +206,9 @@ fn account_lines(palette: &Palette, view: &AccountView, width: usize) -> Vec<Lin
         ));
     }
     lines.push(row(
-        palette,
         width,
         "Password",
-        false,
+        None,
         vec![Span::raw(MASK.to_string().repeat(7))],
         button(
             palette,
@@ -223,18 +226,16 @@ fn about_lines(palette: &Palette, view: &AccountView, width: usize) -> Vec<Line<
     vec![
         section(palette, "About"),
         row(
-            palette,
             width,
             "Website",
-            true,
+            Some(about(palette, view, &[Stop::Website])),
             Vec::new(),
             button(palette, view, Stop::Website, "zwipe.net \u{2197}", false),
         ),
         row(
-            palette,
             width,
             "Privacy policy",
-            false,
+            None,
             Vec::new(),
             button(
                 palette,
@@ -245,10 +246,9 @@ fn about_lines(palette: &Palette, view: &AccountView, width: usize) -> Vec<Line<
             ),
         ),
         row(
-            palette,
             width,
             "Version",
-            true,
+            Some(about(palette, view, &[Stop::Changelog])),
             vec![Span::raw(format!("v{VERSION}"))],
             button(
                 palette,
@@ -321,7 +321,7 @@ fn draw_form(f: &mut Frame<'_>, palette: &Palette, form: &Form) {
         .enumerate()
     {
         let focused = i == form.focus;
-        input.draw(f, palette, *area, label, focused);
+        input.draw(f, palette, *area, *label, focused);
         if focused && !form.busy {
             f.set_cursor_position(input.cursor_position(*area));
         }

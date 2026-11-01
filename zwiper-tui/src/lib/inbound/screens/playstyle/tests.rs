@@ -282,19 +282,19 @@ fn the_loaded_screen_draws_the_profile_list_and_staples() {
     assert_eq!(names(&harness).len(), 10, "the top ten of the held list");
     let text = render_text(&harness, 110, 90);
     for expected in [
-        "> ▾ Color map  ?",
+        "> ▾ Color map [?]",
         "██",
         "Colorless 9",
         "▸ Summary",
         "▸ Card roles",
         "▸ Oracle tags",
         " Show   All   U   R   Azorius WU ",
-        "Suggested commanders  ?",
+        "Suggested commanders [?]",
         "▸ 1 Red 00",
         "▸ 1 Red 09",
         " Type   All   Creature   Artifact   Instant ",
         " Color   All   R   Colorless ",
-        "Staples  ?",
+        "Staples [?]",
         "100% Sol Ring",
         "75% Lightning Bolt",
         "50% Goblin Guide",
@@ -703,9 +703,9 @@ fn a_role_reveals_its_tags_and_a_table_tag_its_definition() {
     );
     let table = render_text(&harness, 110, 90);
     assert!(table.contains("Tag"), "{table}");
-    assert!(table.contains("Decks ?"), "{table}");
-    assert!(table.contains("Cards ?"), "{table}");
-    assert!(table.contains("Impact ?"), "{table}");
+    assert!(table.contains("Decks [?]"), "{table}");
+    assert!(table.contains("Cards [?]"), "{table}");
+    assert!(table.contains("Impact [?]"), "{table}");
     assert!(table.contains(" 100 "), "{table}");
     assert!(table.contains(" 50 "), "{table}");
     harness.press(KeyCode::Enter);
@@ -881,5 +881,61 @@ fn a_short_terminal_shrinks_the_map_so_every_show_chip_is_in_view() {
             text.contains(last),
             "the last Show chip at {width}x{height}:\n{text}"
         );
+    }
+}
+
+#[test]
+fn the_tag_tables_column_markers_are_buttons_and_the_picked_one_lights() {
+    let mut harness = loaded();
+    let palette = crate::domain::theme::Palette::for_account("gruvbox", true);
+    harness.app.shared.palette = palette;
+    view_mut(&mut harness).focus = Focus::Header(Section::Tags);
+    press(&mut harness, &[KeyCode::Enter, KeyCode::Char('j')]);
+    assert_eq!(view(&harness).focus, Focus::TagHead);
+    view_mut(&mut harness).column = super::Column::Cards;
+    if let Some(profile) = view_mut(&mut harness).profile.as_mut() {
+        profile.tags.push(HttpProfileTag {
+            slug: "repeatable-creature-tokens".to_owned(),
+            role: None,
+            decks: 1,
+            cards: 3,
+            score: 0.5,
+        });
+    }
+    for (width, height) in crate::test_support::BUTTON_SIZES {
+        let rows = crate::test_support::rows(&harness.app, width, height);
+        let bare = crate::test_support::bare_about_markers(&rows);
+        assert!(bare.is_empty(), "bare ? at {bare:?}:\n{}", rows.join("\n"));
+        let terminal = render(&harness.app, width, height);
+        let buffer = terminal.backend().buffer();
+        for (label, lit) in [("Decks", false), ("Cards", true), ("Impact", false)] {
+            let context = format!("{label} at {width}x{height}");
+            let found = crate::test_support::find_all(buffer, &format!("{label} [?]"));
+            let &(x, y) = found
+                .first()
+                .unwrap_or_else(|| panic!("no {context}:\n{}", rows.join("\n")));
+            let at = x + u16::try_from(label.len()).unwrap() + 1;
+            crate::test_support::assert_about_marker(buffer, &palette, (at, y), lit, &context);
+        }
+        let at = rows.iter().position(|r| r.contains("Decks [?]")).unwrap();
+        let header = &rows[at];
+        assert!(
+            header.contains("Decks [?] Cards [?] Impact [?]"),
+            "{header}"
+        );
+        assert!(
+            !rows[at + 1].trim_start().starts_with("[?]"),
+            "the header never wraps at {width}x{height}:\n{}",
+            rows.join("\n")
+        );
+        let decks = header[..header.find("Decks").unwrap()].chars().count();
+        for row in rows.iter().skip(at + 1).take(3) {
+            let digit = row.find(|c: char| c.is_ascii_digit()).unwrap();
+            assert_eq!(
+                row[..digit].chars().count(),
+                decks + 1,
+                "the numbers sit under their column at {width}x{height}: {row}"
+            );
+        }
     }
 }

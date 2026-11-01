@@ -17,7 +17,9 @@ use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::screens::home::draw as home_draw;
 use crate::inbound::widgets::card_rows::CardRow;
-use crate::inbound::widgets::{action_bar, charts, color_map, entrance, figures, item_list, otag};
+use crate::inbound::widgets::{
+    action_bar, button, charts, color_map, entrance, figures, item_list, otag,
+};
 
 /// Rows the counters panel takes: its frame, the figures and the chips.
 const COUNTS_HEIGHT: u16 = figures::HEIGHT.saturating_add(3);
@@ -291,7 +293,12 @@ fn loaded_lines(
         let focused = view.focus == Focus::Header(section);
         let mut header = collapsible.header(palette, focused);
         if collapsible.open {
-            header.spans.push(Span::styled("  ?", palette.muted));
+            header.spans.push(Span::raw(" "));
+            header.spans.extend(button::about(
+                palette,
+                palette.muted,
+                view.focused_section() == Some(section),
+            ));
         }
         body.item(vec![header], focused);
         if !collapsible.open {
@@ -306,10 +313,13 @@ fn loaded_lines(
     }
     let passes = &loaded.activity.passes;
     body.line(Line::default());
-    let header = Line::from(vec![
-        Span::raw(PASSES_TITLE).bold(),
-        Span::styled("  ?", palette.muted),
-    ]);
+    let mut header = vec![Span::raw(format!("{PASSES_TITLE} ")).bold()];
+    header.extend(button::about(
+        palette,
+        palette.muted,
+        view.focus == Focus::Passes,
+    ));
+    let header = Line::from(header);
     if passes.is_empty() {
         body.item(
             vec![header, Line::styled(activity::PASSES_EMPTY, palette.muted)],

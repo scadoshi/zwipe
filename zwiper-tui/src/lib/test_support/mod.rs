@@ -286,3 +286,73 @@ pub(crate) fn assert_bullets_hang(rows: &[String]) {
     }
     assert!(hung > 0, "no bullet wraps:\n{}", rows.join("\n"));
 }
+
+/// Key hints whose key is `?`, which stay bare in key bars and sheet footers.
+const QUESTION_KEYS: [&str; 4] = ["? hint", "? Hint", "? About", "F6 ?"];
+
+/// Every bare About marker in `rows` as its column and row: a `?` right after a space, outside the `?` key hints. A `?` closing a sentence touches its word and the `[?]` button opens with a bracket, so neither counts.
+pub(crate) fn bare_about_markers(rows: &[String]) -> Vec<(usize, usize)> {
+    let mut found = Vec::new();
+    for (y, row) in rows.iter().enumerate() {
+        let mut row = row.replace('\u{a0}', " ");
+        for key in QUESTION_KEYS {
+            row = row.replace(key, &" ".repeat(key.chars().count()));
+        }
+        let cells: Vec<char> = row.chars().collect();
+        for (x, pair) in cells.windows(2).enumerate() {
+            if pair == [' ', '?'] {
+                found.push((x.saturating_add(1), y));
+            }
+        }
+    }
+    found
+}
+
+/// Asserts the `[?]` starting at `(x, y)` in `buffer` draws as the About button in `palette`: no cell reversed or filled with a marker color, the brackets in the border color at rest, and brackets and `?` bold in the accent when `focused`.
+pub(crate) fn assert_about_marker(
+    buffer: &ratatui::buffer::Buffer,
+    palette: &crate::domain::theme::Palette,
+    (x, y): (u16, u16),
+    focused: bool,
+    context: &str,
+) {
+    use ratatui::style::Modifier;
+    let symbols: String = (x..x.saturating_add(3))
+        .map(|c| buffer[(c, y)].symbol())
+        .collect();
+    assert_eq!(symbols, "[?]", "{context}");
+    let fills = [palette.accent.fg, palette.border.fg, palette.muted.fg];
+    for c in x..x.saturating_add(3) {
+        let cell = &buffer[(c, y)];
+        assert!(
+            !cell.modifier.contains(Modifier::REVERSED),
+            "{context}: reversed at {c}"
+        );
+        assert!(!fills.contains(&Some(cell.bg)), "{context}: filled at {c}");
+        if focused {
+            assert_eq!(
+                cell.fg,
+                palette.accent.fg.unwrap(),
+                "{context}: accent at {c}"
+            );
+            assert!(
+                cell.modifier.contains(Modifier::BOLD),
+                "{context}: bold at {c}"
+            );
+        }
+    }
+    if !focused {
+        for c in [x, x.saturating_add(2)] {
+            assert_eq!(
+                buffer[(c, y)].fg,
+                palette.border.fg.unwrap(),
+                "{context}: bracket at {c}"
+            );
+        }
+        assert_ne!(
+            buffer[(x.saturating_add(1), y)].fg,
+            palette.accent.fg.unwrap(),
+            "{context}: the ? at rest keeps its own color"
+        );
+    }
+}

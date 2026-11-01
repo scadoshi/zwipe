@@ -91,14 +91,14 @@ fn the_screen_shows_the_apps_rows() {
     let screen = screen_text(&harness.app);
     for text in [
         "Appearance",
-        "Theme ?",
+        "Theme [?]",
         "Gruvbox",
         "☾ Dark",
         "Change",
-        "Pips ?",
-        "Universes Beyond ?",
+        "Pips [?]",
+        "Universes Beyond [?]",
         "Show",
-        "Exceptions ?",
+        "Exceptions [?]",
     ] {
         assert!(screen.contains(text), "{text}");
     }
@@ -204,7 +204,7 @@ fn exceptions_open_only_while_hidden_and_save_a_changed_set() {
     }
     harness.press(KeyCode::Enter);
     let screen = screen_text(&harness.app);
-    assert!(screen.contains("Doctor Who") && screen.contains(" ? "));
+    assert!(screen.contains("Doctor Who") && screen.contains(" [?] "));
     harness.press(KeyCode::Char(' '));
     assert!(screen_text(&harness.app).contains("1 selected"));
     harness.press(KeyCode::Esc);

@@ -19,7 +19,7 @@ use crate::inbound::widgets::{action_bar, measure, sheet};
 const WIDTH: u16 = 72;
 
 /// The labels take this many cells.
-const LABEL_WIDTH: usize = 20;
+const LABEL_WIDTH: usize = 22;
 
 /// One swatch dot.
 const SWATCH: &str = "●";
@@ -66,21 +66,30 @@ fn button(palette: &Palette, view: &ConfigView, stop: Stop, label: &str) -> Vec<
     )
 }
 
-/// A row: its label and `?`, its value, its buttons on the right.
+/// A row's `[?]`, focused while one of `stops` has the focus, since `i` then explains the row.
+fn about(palette: &Palette, view: &ConfigView, stops: &[Stop]) -> Vec<Span<'static>> {
+    let focused = view.sheet.is_none() && stops.contains(&view.focused());
+    let mark = palette.swatches.get(5).copied().unwrap_or(palette.muted);
+    button::about(palette, mark, focused)
+}
+
+/// A row: its label and `[?]`, its value, its buttons on the right.
 fn row(
-    palette: &Palette,
     width: usize,
     label: &str,
+    about: Vec<Span<'static>>,
     value: &str,
     buttons: Vec<Span<'static>>,
 ) -> Line<'static> {
-    let question = palette.swatches.get(5).copied().unwrap_or(palette.muted);
-    let mut spans = vec![
-        Span::raw(label.to_owned()),
-        Span::styled(" ?", question),
-        Span::raw(" ".repeat(LABEL_WIDTH.saturating_sub(label.chars().count().saturating_add(2)))),
-        Span::raw(value.to_owned()),
-    ];
+    let used = label
+        .chars()
+        .count()
+        .saturating_add(1)
+        .saturating_add(usize::from(button::ABOUT_WIDTH));
+    let mut spans = vec![Span::raw(format!("{label} "))];
+    spans.extend(about);
+    spans.push(Span::raw(" ".repeat(LABEL_WIDTH.saturating_sub(used))));
+    spans.push(Span::raw(value.to_owned()));
     let used: usize = spans.iter().map(Span::width).sum();
     let tail: usize = buttons.iter().map(Span::width).sum();
     spans.push(Span::raw(
@@ -104,9 +113,9 @@ fn lines(palette: &Palette, view: &ConfigView, width: usize) -> Vec<Line<'static
     };
     let hidden = shown.exclude_universes_beyond;
     let mut exceptions = row(
-        palette,
         width,
         "Exceptions",
+        about(palette, view, &[Stop::Exceptions]),
         "",
         button(palette, view, Stop::Exceptions, "Change"),
     );
@@ -116,9 +125,9 @@ fn lines(palette: &Palette, view: &ConfigView, width: usize) -> Vec<Line<'static
     let mut lines = vec![
         section("Appearance"),
         row(
-            palette,
             width,
             "Theme",
+            about(palette, view, &[Stop::Mode, Stop::Theme]),
             &preferences::display_theme_name(&shown.theme),
             [
                 button(palette, view, Stop::Mode, mode),
@@ -128,18 +137,18 @@ fn lines(palette: &Palette, view: &ConfigView, width: usize) -> Vec<Line<'static
             .concat(),
         ),
         row(
-            palette,
             width,
             "Pips",
+            about(palette, view, &[Stop::Pips]),
             "",
             button(palette, view, Stop::Pips, pips),
         ),
         Line::default(),
         section("Cards"),
         row(
-            palette,
             width,
             "Universes Beyond",
+            about(palette, view, &[Stop::UniversesBeyond]),
             "",
             button(
                 palette,

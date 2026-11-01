@@ -252,7 +252,7 @@ fn the_screen_shows_its_fields_and_buttons_and_fits_a_tiny_terminal() {
         "Create profile",
         "Username",
         "Email",
-        "Password ?",
+        "Password [?]",
         "Confirm password",
         "must be at least 3 characters long",
     ] {
@@ -277,4 +277,35 @@ fn register_keeps_every_key_on_a_narrow_terminal() {
     crate::test_support::assert_key_bar_fits(&harness.app, "Esc done");
     harness.press(KeyCode::Esc);
     crate::test_support::assert_key_bar_fits(&harness.app, "q quit");
+}
+
+#[test]
+fn the_password_label_carries_its_about_marker_lit_while_the_field_is_focused() {
+    let mut harness = registering();
+    let palette = crate::domain::theme::Palette::for_account("gruvbox", true);
+    harness.app.shared.palette = palette;
+    for (focus, lit) in [
+        (Some(RegisterField::Username), false),
+        (Some(RegisterField::Password), true),
+    ] {
+        if let Screen::Register(form) = harness.screen_mut() {
+            form.focus = focus;
+        }
+        for (width, height) in crate::test_support::BUTTON_SIZES {
+            let terminal = render(&harness.app, width, height);
+            let buffer = terminal.backend().buffer();
+            let Some(&(x, y)) = crate::test_support::find_all(buffer, " Password [?] ").first()
+            else {
+                assert!(height < 24, "the Password label shows at {width}x{height}");
+                continue;
+            };
+            let context = format!("{focus:?} at {width}x{height}");
+            crate::test_support::assert_about_marker(buffer, &palette, (x + 10, y), lit, &context);
+            assert_eq!(
+                buffer[(x + 1, y)].fg,
+                palette.tertiary.fg.unwrap(),
+                "{context}"
+            );
+        }
+    }
 }
