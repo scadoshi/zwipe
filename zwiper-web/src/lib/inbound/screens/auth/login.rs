@@ -1,5 +1,6 @@
-//! Login: the hero beside the form on a wide window, stacked below the
-//! breakpoint.
+//! Login: on a wide window the hero card at the top of zite's page and the
+//! form under it as its own panel, with the actions under the fields;
+//! below the breakpoint the app's stack with the actions in the bar.
 
 use components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL, TextInput, ThemeConfig};
 use dioxus::prelude::*;
@@ -84,18 +85,19 @@ pub fn Login() -> Element {
         });
     };
 
+    let submit = use_callback(move |()| attempt_submit());
+
     rsx! {
         ScreenFrame { title: "Login", help: true,
             div { class: "screen-content centered content-enter",
-                div { class: "web-split web-auth-card",
-                    HomeHero {}
-                    hr { class: "panel-rule web-auth-rule" }
-                    div { class: "container-sm text-center",
+                div { class: "web-auth web-page",
+                    div { class: "web-hero", HomeHero {} }
+                    div { class: "container-sm text-center web-form-panel",
                         form {
                             class: "flex-col",
                             onsubmit: move |event| {
                                 event.prevent_default();
-                                attempt_submit();
+                                submit.call(());
                             },
                             TextInput {
                                 value: identifier,
@@ -113,33 +115,47 @@ pub fn Login() -> Element {
                             // Enter in a field submits the form through this.
                             button { r#type: "submit", hidden: true }
                         }
+                        div { class: "web-form-actions",
+                            LoginActions { loading: is_loading(), on_submit: submit }
+                        }
                     }
                 }
             }
-            ActionBar {
-                Button {
-                    variant: ButtonVariant::Action,
-                    disabled: is_loading(),
-                    onclick: move |_| attempt_submit(),
-                    if is_loading() { "Logging in..." } else { "Log in" }
-                }
-                Button {
-                    variant: ButtonVariant::Action,
-                    disabled: is_loading(),
-                    onclick: move |_| {
-                        navigator.push(Route::Register {});
-                    },
-                    "Create profile"
-                }
-                Button {
-                    variant: ButtonVariant::Action,
-                    disabled: is_loading(),
-                    onclick: move |_| {
-                        navigator.push(Route::ForgotPassword {});
-                    },
-                    "Forgot password"
-                }
+            ActionBar { class: "web-form-toolbar",
+                LoginActions { loading: is_loading(), on_submit: submit }
             }
+        }
+    }
+}
+
+/// `Log in`, `Create profile` and `Forgot password`, all held while a login
+/// is out. Under the form on a wide window, in the action bar below the
+/// breakpoint.
+#[component]
+fn LoginActions(loading: bool, on_submit: Callback<()>) -> Element {
+    let navigator = use_navigator();
+    rsx! {
+        Button {
+            variant: ButtonVariant::Action,
+            disabled: loading,
+            onclick: move |_| on_submit.call(()),
+            if loading { "Logging in..." } else { "Log in" }
+        }
+        Button {
+            variant: ButtonVariant::Action,
+            disabled: loading,
+            onclick: move |_| {
+                navigator.push(Route::Register {});
+            },
+            "Create profile"
+        }
+        Button {
+            variant: ButtonVariant::Action,
+            disabled: loading,
+            onclick: move |_| {
+                navigator.push(Route::ForgotPassword {});
+            },
+            "Forgot password"
         }
     }
 }

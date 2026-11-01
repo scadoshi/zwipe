@@ -56,11 +56,18 @@ body {
     display: contents;
 }
 
+.web-form-actions {
+    display: none;
+}
+
 @media (min-width: 900px) {
+    /* Pinned to the top even in a column that centers its content, so
+       the page starts the screen's 1rem top padding under the header or
+       toolbar, as zite's starts 1rem under its nav. */
     .web-page {
         width: 100%;
         max-width: var(--web-page-max);
-        margin: 0 auto;
+        margin: 0 auto auto;
         padding: 0 1.5rem 1.5rem;
         box-sizing: border-box;
         display: flex;
@@ -76,6 +83,53 @@ body {
         margin: 0;
         padding: 0;
         box-sizing: border-box;
+    }
+
+    /* The home hero's card: the mark beside the counters and their tags. */
+    .web-hero .home-hero {
+        padding: 0;
+    }
+
+    .web-hero .home-hero .hero-head {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        column-gap: 2.5rem;
+        row-gap: 1rem;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .web-hero .home-hero .logo {
+        grid-row: span 2;
+        font-size: 0.85rem;
+    }
+
+    /* A form is its own panel at zite's form width, centered, never folded
+       into a hero or stretched across the columns. Its actions sit under
+       the fields, so the toolbar that holds them below the breakpoint
+       goes. */
+    .web-form-panel {
+        width: 100%;
+        max-width: 25rem;
+        margin: 0 auto;
+        padding: 1.5rem;
+        box-sizing: border-box;
+        background-color: var(--bg-primary);
+        border: 1px solid var(--border-secondary);
+        border-radius: 1rem;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .web-form-actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.5rem;
+        margin-top: 0.25rem;
+    }
+
+    .web-screen > .action-bar.web-form-toolbar {
+        display: none;
     }
 
     /* A hero that is a list of rows stays the phone column's width. */
@@ -125,69 +179,14 @@ body {
     width: 100%;
 }
 
-/* Login on a wide window is zite's hero card: one card centered on the
-   page, the mark beside the counters on top, a full-bleed rule, then the
-   form at zite's form width. Below the breakpoint the card dissolves into
-   the app's stack. */
-.web-auth-rule {
-    display: none;
-}
-
-@media (min-width: 900px) {
-    .web-split.web-auth-card {
+/* Login's stack below the breakpoint, as .web-split. */
+@media (max-width: 899px) {
+    .web-auth {
+        display: flex;
         flex-direction: column;
-        align-items: stretch;
-        gap: 0;
-        width: calc(100% - 3rem);
-        max-width: 52rem;
-        padding: 1rem 1.5rem 1.25rem;
-        box-sizing: border-box;
-        background-color: var(--bg-primary);
-        border: 1px solid var(--border-secondary);
-        border-radius: 1rem;
-        box-shadow: var(--shadow-md);
-    }
-
-    .web-split.web-auth-card > * {
-        flex: none;
-        max-width: none;
-    }
-
-    .web-auth-card > .web-auth-rule {
-        display: block;
-    }
-
-    /* The hero's own panel goes flat: the card is the panel. */
-    .web-auth-card .home-hero {
-        width: 100%;
-        padding: 0;
-    }
-
-    .web-auth-card .home-hero .panel-card {
-        padding: 0;
-        background: none;
-        border: none;
-        box-shadow: none;
-    }
-
-    .web-auth-card .home-hero .hero-head {
-        display: grid;
-        grid-template-columns: auto minmax(0, 1fr);
-        column-gap: 2rem;
-        row-gap: 1rem;
         align-items: center;
-    }
-
-    .web-split.web-auth-card .home-hero .logo {
-        grid-row: span 2;
-        font-size: 0.7rem;
-    }
-
-    .web-auth-card > .container-sm {
+        gap: 1.5rem;
         width: 100%;
-        max-width: 25rem;
-        margin: 0 auto;
-        padding: 0;
     }
 }
 
@@ -854,24 +853,6 @@ body {
     .web-home .web-home-page {
         display: flex;
         margin: 0 auto;
-    }
-
-    .web-home-page .home-hero {
-        padding: 0;
-    }
-
-    .web-home .home-hero .hero-head {
-        display: grid;
-        grid-template-columns: auto minmax(0, 1fr);
-        column-gap: 2.5rem;
-        row-gap: 1rem;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .web-home .home-hero .logo {
-        grid-row: span 2;
-        font-size: 0.85rem;
     }
 
     .web-home-page .home-flavor {
