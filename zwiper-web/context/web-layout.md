@@ -11,7 +11,9 @@ The wide layout copies zite's home page (`zite/assets/style.css`). Screens move 
 - The page is one centered column at most 74rem wide inside a 1.5rem gutter, and it starts at the top: the screen's 1rem top padding under the header or toolbar is the only gap, as zite's page sits 1rem under its nav. Nothing is centered vertically on a wide window.
 - A screen with a hero puts it at the top of the page. The rest of its panels share two equal columns under it, each a stack one panel gap (1rem) apart, and the shorter column ends where its last panel does. Panels are ordered so the columns come out about even and related panels sit together.
 - A hero that is a list of rows (a deck's Profile, Playstyle's Summary) stays 40rem wide and centered, since label and value would sit a page apart at full width.
-- A form is its own panel, centered, at zite's form width of 25rem, with its actions under the fields as on zite's form pages: on the auth screens a stack of full-width buttons, primary first. A form is never folded into a hero or stretched across the columns, and the toolbar that holds its actions below 900px is dropped on a wide window. This holds for every input panel: Login, Register, Forgot password, Create and Edit, Import, and the change forms.
+- A form is its own panel, centered, at zite's form width of 25rem, with its actions in the panel's footer under the fields (below). A form is never folded into a hero or stretched across the columns, and the toolbar that holds its actions below 900px is dropped on a wide window. This holds for every input panel: Login, Register, Forgot password, Create and Edit, Import, and the change forms.
+- On a wide window every input panel wears the kit panel's title bar, zite's panel title over a full-bleed rule, named with the app's own title for its screen: `Login`, `Create profile`, `Reset password` (its sent panel too, with `Check your email` as its first line). A panel beside a form is titled after what it holds, such as Register's `Password`. Create, Edit, Import and the change forms take their screen's title when they move onto the page grammar. Below 900px the form is the app's bare form with no title bar.
+- A form panel's buttons sit in its footer, the kit panel's action area: a full-bleed rule across the panel, then the buttons one under another at the panel's width, the primary first (Login: `Log in`, `Create profile`, `Forgot password`). Every input panel does this when it moves onto the page grammar. Below 900px the same buttons sit in the screen's action bar.
 - Below 900px none of this applies: the hero, the columns and the form panel dissolve back into the app's single column, in the app's order.
 - In `web.css` the pieces are `.web-page`, `.web-hero` (with `.web-hero-narrow`), `.web-columns`, `.web-column`, `.web-form-panel` and `.web-form-actions`, with `.web-form-toolbar` on the action bar a form panel replaces.
 
@@ -36,19 +38,19 @@ The wide layout copies zite's home page (`zite/assets/style.css`). Screens move 
 ## Login
 
 - On the page grammar with no hero: the page opens on the form panel, centered at the top under the nav. The counters stay on Home and Activity.
-- `Log in`, `Create profile` and `Forgot password` sit stacked under the fields inside the form panel, `Log in` first, each the form's full width, so a wide window has no toolbar here. Enter in either field runs `Log in`.
+- `Log in`, `Create profile` and `Forgot password` sit stacked in the form panel's footer, `Log in` first, each the panel's full width, so a wide window has no toolbar here. Enter in either field runs `Log in`.
 - Below 900px it is the app's form with the three buttons in the bar at the bottom.
 
 ## Register
 
 - On the page grammar with no hero: the four fields with their live error lines in their own form panel at the top under the nav.
 - On a wide window the `Password` hint stays open in its own panel to the right of the form panel, top-aligned with it a panel gap away, the pair centered as a group: its title over its rules, in the hint's own words from zwipe-core's `requirements()`, and the `?` beside `Password` goes. The list is static: zwipe-core checks a password whole and names only the first rule it breaks, so the web ticks nothing off as the user types rather than copy the rules. Below 900px the `?` opens the hint as in the app.
-- `Create profile` sits under the fields in the form panel at its full width, as on Login, so a wide window has no toolbar here. The app's `Back to login` goes; the nav's `Log in` covers it. Enter in any field runs `Create profile`. Success goes back to Login with the username filled in.
+- `Create profile` sits in the form panel's footer at its full width, as on Login, so a wide window has no toolbar here. The app's `Back to login` goes; the nav's `Log in` covers it. Enter in any field runs `Create profile`. Success goes back to Login with the username filled in.
 - Below 900px it is the app's form, with `Create profile` in the bar at the bottom.
 
 ## Forgot password
 
-- On the page grammar with no hero, as Login: the `Email` field in its own form panel with `Send reset link` under it at its full width. The app's `Back to login` goes; the nav's `Log in` covers it.
+- On the page grammar with no hero, as Login: the `Email` field in its own form panel with `Send reset link` in its footer at its full width. The app's `Back to login` goes; the nav's `Log in` covers it.
 - After a send, the `Check your email` panel takes the form panel's place at the same width, holding only its message.
 - Enter runs `Send reset link`. Below 900px it is the app's form, with `Send reset link` in the bar at the bottom until the link is sent.
 
