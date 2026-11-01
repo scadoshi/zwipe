@@ -36,19 +36,22 @@ Earlier rules that still hold: swipe labels are only add, remove, skip, undo and
 
 ## Waiting on the owner
 
-Paused on 2026-11-01 to save agent usage. The first five items are the latest round, each with a recommendation the owner had not yet answered:
-- One `[?]` color everywhere? Each site kept its old `?` color (swatch on Account and Config, muted in most places, the label color on field borders, bright on Home's corner). Recommended: muted at rest, accent when lit, everywhere.
-- Add `[?]` markers to the deck view's sections and the deck form's fields? Their explainers open with `i` and F6 today and show nothing on screen; the app has info buttons there. Recommended: yes, and replace the deck form's F6 while at it.
-- Playstyle's picked Oracle tags column is still a reversed (filled) label, which reads as a tag. Recommended: bold accent text plus its lit `[?]`.
-- Brighter at-rest brackets? The border color is faint on gruvbox (Account's `[ Change ]` rows). Recommended: a dim text color instead.
-- The Change sheets' `[ Back ]` (listed again below). Recommended: drop it.
+Paused on 2026-11-01 to save agent usage.
+
+Approved by the owner, not built yet (build these first on resume, in one pass):
+- Every `[?]` marker's `?` is gray (muted) at rest at every site, and bold accent when lit, like every button.
+- The deck view's sections and the deck form's fields get `[?]` markers for their explainers, and the deck form's F6 key goes away.
+- Playstyle's picked Oracle tags column shows its label in bold accent with its lit `[?]`, not a reversed (filled) label.
+- At-rest button brackets are brighter: a dim text color instead of the faint border color.
+- The Change sheets on Account drop `[ Back ]`; Esc already goes back.
+
+Still open:
 
 - Two kinds of hint text stayed after placeholders went: the filter sheet's `[Name contains]` row labels and the deck form's `Not set` readouts. Keep or drop?
 - With the title row gone, some screens no longer say where you are: the deck form and its pickers (they look alike), Changelog, Add and Remove cards, Deck cards, Oracle tags and Examples, Activity, Playstyle, Commander maybeboard, the commander swipe, Create profile and Reset password. Decide per screen during the review.
 - Move the grid fade (the two mask values) into orangui-core's `grid_rain` so the TUI reads it from the same place as the shades, with an orangui test that fails if the CSS mask and the constants disagree. That belongs on orangui's `feat/orangui-core` branch.
 - At 200x50, stretch content to fill or center it at a readable width.
 - The deck view's warning fix buttons are still filled pills; convert them to brackets when the deck view comes up.
-- The Change sheets on Account keep `[ Back ]` beside `[ Save changes ]`; their footer already names `Esc back`. Keep or drop?
 - The privacy text says "a deck builder for mobile" (shared legal copy in zwipe-core).
 
 ## Branches waiting on owner merges
