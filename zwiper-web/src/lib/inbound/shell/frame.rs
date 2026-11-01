@@ -1,10 +1,8 @@
 //! The frames screens draw in.
 
-use components::PageHeader;
 use dioxus::prelude::*;
 
 use crate::inbound::router::Route;
-use crate::inbound::shell::HelpButton;
 use crate::inbound::shell::top_nav::PublicNav;
 
 /// The layout over the public routes: the public nav over the screen.
@@ -20,24 +18,29 @@ pub fn PublicFrame() -> Element {
     }
 }
 
-/// A screen: the app's header with `title`, then `children`. Under the top
-/// nav the header's `!` is the nav's `Help`; on a public screen (`help`) the
-/// header carries the `!` as in the app.
+/// A screen under the top nav: no header bar, so the page starts right
+/// under the nav. `title` names the screen for assistive tech and the
+/// browser tab. The header's `?` (`on_hint`) moves to the right end of the
+/// screen's toolbar: under the nav on a wide window, the bottom bar below
+/// the breakpoint. The public screens' `!` is the nav's `Help`.
 #[component]
 pub fn ScreenFrame(
     title: String,
-    #[props(default)] help: bool,
     #[props(default)] on_hint: Option<Callback<()>>,
     children: Element,
 ) -> Element {
-    let leading = if help {
-        rsx! { HelpButton {} }
-    } else {
-        rsx! { span { class: "page-header-corner" } }
-    };
     rsx! {
+        document::Title { "{title} | Zwipe" }
         div { class: "screen web-screen",
-            PageHeader { title, leading, on_hint }
+            h1 { class: "web-sr-only", "{title}" }
+            if let Some(open) = on_hint {
+                button {
+                    class: "btn-action web-screen-hint",
+                    "aria-label": "About this screen",
+                    onclick: move |_| open.call(()),
+                    "?"
+                }
+            }
             {children}
         }
     }

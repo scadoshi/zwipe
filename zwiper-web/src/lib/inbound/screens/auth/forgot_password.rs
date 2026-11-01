@@ -67,7 +67,7 @@ pub fn ForgotPassword() -> Element {
     let submit = use_callback(move |()| attempt_submit());
 
     rsx! {
-        ScreenFrame { title: "Reset password", help: true,
+        ScreenFrame { title: "Reset password",
             div { class: "screen-content centered content-enter",
                 div { class: "web-auth web-page",
                     div { class: "web-hero", HomeHero {} }

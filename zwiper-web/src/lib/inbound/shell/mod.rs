@@ -8,5 +8,5 @@ pub mod nav;
 mod top_nav;
 
 pub use frame::{PublicFrame, ScreenFrame};
-pub use help::{HelpButton, HelpDialog};
+pub use help::HelpDialog;
 pub use top_nav::Shell;

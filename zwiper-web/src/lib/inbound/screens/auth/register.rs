@@ -125,7 +125,7 @@ pub fn Register() -> Element {
     let submit = use_callback(move |()| attempt_submit());
 
     rsx! {
-        ScreenFrame { title: "Create profile", help: true,
+        ScreenFrame { title: "Create profile",
             div { class: "screen-content content-enter",
                 div { class: "web-auth web-page",
                     div { class: "web-hero", HomeHero {} }

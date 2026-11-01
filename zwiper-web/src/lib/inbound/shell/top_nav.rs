@@ -1,6 +1,6 @@
 //! The top nav over every screen, zite's bar: the ZWIPE mark home on the
-//! left and the screens on the right, folding behind a hamburger below the
-//! breakpoint.
+//! left and the screens and `Help` on the right, folding behind a hamburger
+//! below the breakpoint.
 
 use components::NavBar;
 use dioxus::prelude::*;
@@ -17,7 +17,7 @@ use crate::inbound::shell::nav::Section;
 pub fn Shell() -> Element {
     let route: Route = use_route();
     let current = Section::of(&route);
-    let mut help = use_signal(|| false);
+    let help = use_signal(|| false);
     let mut open = use_signal(|| false);
 
     // A new route closes the folded menu.
@@ -43,14 +43,7 @@ pub fn Shell() -> Element {
                         }
                     }
                     li {
-                        button {
-                            class: "nav-link",
-                            onclick: move |_| {
-                                open.set(false);
-                                help.set(true);
-                            },
-                            "Help"
-                        }
+                        HelpLink { open, help }
                     }
                 },
             }
@@ -63,11 +56,12 @@ pub fn Shell() -> Element {
 }
 
 /// The nav over the public screens: the mark, then `Log in` and `Create
-/// profile`, the current one lit.
+/// profile`, the current one lit, and `Help`.
 #[component]
 pub fn PublicNav() -> Element {
     let route: Route = use_route();
     let mut open = use_signal(|| false);
+    let help = use_signal(|| false);
     use_effect(use_reactive!(|route| {
         let _ = route;
         open.set(false);
@@ -91,8 +85,12 @@ pub fn PublicNav() -> Element {
                         }
                     }
                 }
+                li {
+                    HelpLink { open, help }
+                }
             },
         }
+        HelpDialog { open: help }
     }
 }
 
@@ -107,6 +105,21 @@ fn NavMark(open: Signal<bool>) -> Element {
             "aria-label": "Home",
             onclick: move |_| open.set(false),
             span { class: "nav-logo web-nav-logo", "{logo::ZWIPE}" }
+        }
+    }
+}
+
+/// `Help`, a nav pill that folds the menu and opens `Help & feedback`.
+#[component]
+fn HelpLink(mut open: Signal<bool>, mut help: Signal<bool>) -> Element {
+    rsx! {
+        button {
+            class: "nav-link",
+            onclick: move |_| {
+                open.set(false);
+                help.set(true);
+            },
+            "Help"
         }
     }
 }

@@ -29,18 +29,3 @@ pub fn HelpDialog(open: Signal<bool>) -> Element {
         }
     }
 }
-
-/// The app's faded `!` header button, for the public screens.
-#[component]
-pub fn HelpButton() -> Element {
-    let mut open = use_signal(|| false);
-    rsx! {
-        button {
-            class: "btn-action page-header-support",
-            "aria-label": "Help and feedback",
-            onclick: move |_| open.set(true),
-            "!"
-        }
-        HelpDialog { open }
-    }
-}

@@ -89,7 +89,7 @@ pub fn Login() -> Element {
     let submit = use_callback(move |()| attempt_submit());
 
     rsx! {
-        ScreenFrame { title: "Login", help: true,
+        ScreenFrame { title: "Login",
             div { class: "screen-content centered content-enter",
                 div { class: "web-auth web-page",
                     div { class: "web-hero", HomeHero {} }
