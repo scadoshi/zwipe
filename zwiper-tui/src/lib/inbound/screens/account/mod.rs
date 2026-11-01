@@ -212,21 +212,15 @@ impl FormKind {
         }
     }
 
-    /// Each field's label, placeholder, and whether it hides what is typed.
-    pub(crate) fn fields(self) -> &'static [(&'static str, &'static str, bool)] {
+    /// Each field's label, and whether it hides what is typed.
+    pub(crate) fn fields(self) -> &'static [(&'static str, bool)] {
         match self {
-            Self::Username => &[
-                ("New username", "New username", false),
-                ("Password", "Password", true),
-            ],
-            Self::Email => &[
-                ("New email", "New email", false),
-                ("Password", "Password", true),
-            ],
+            Self::Username => &[("New username", false), ("Password", true)],
+            Self::Email => &[("New email", false), ("Password", true)],
             Self::Password => &[
-                ("Current password", "Current password", true),
-                ("New password ?", "New password", true),
-                ("Confirm password", "Confirm new", true),
+                ("Current password", true),
+                ("New password ?", true),
+                ("Confirm password", true),
             ],
         }
     }
@@ -250,13 +244,12 @@ impl Form {
         let inputs: Vec<TextInput> = kind
             .fields()
             .iter()
-            .map(|&(_, placeholder, masked)| {
-                let input = if masked {
+            .map(|&(_, masked)| {
+                if masked {
                     TextInput::masked()
                 } else {
                     TextInput::default()
-                };
-                input.with_placeholder(placeholder)
+                }
             })
             .collect();
         Self {
@@ -395,7 +388,7 @@ impl DeleteDialog {
     /// A dialog with an empty password, its countdown starting now.
     pub(crate) fn new() -> Self {
         Self {
-            password: TextInput::masked().with_placeholder("Password"),
+            password: TextInput::masked(),
             opened_at: Instant::now(),
             focus: DeleteFocus::Password,
             busy: false,

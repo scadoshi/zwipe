@@ -41,9 +41,6 @@ use crate::inbound::widgets::text_input::TextInput;
 use crate::inbound::widgets::toast::ToastKind;
 use crate::outbound::account::Account;
 
-/// The search box's placeholder.
-pub(crate) const PLACEHOLDER: &str = "Search tags or descriptions";
-
 /// What the dictionary says when the catalog failed with nothing cached.
 pub(crate) const FAILED: &str = "Couldn't load the dictionary. Pull back and try again.";
 
@@ -71,7 +68,7 @@ impl Default for OracleTagsView {
     /// Browsing A with an empty search.
     fn default() -> Self {
         Self {
-            search: TextInput::default().with_placeholder(PLACEHOLDER),
+            search: TextInput::default(),
             typing: false,
             letter: 'a',
             selected: 0,

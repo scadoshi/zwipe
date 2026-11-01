@@ -9,7 +9,9 @@ use uuid::Uuid;
 use zwipe_client::ClientError;
 use zwipe_core::domain::deck::ImportMode;
 use zwipe_core::domain::deck::requests::import_deck_cards::ImportDeckCardsResult;
+use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_ui::deck::form::{self, ImportTone};
+use zwipe_ui::hint::{Block, HintContent, Span, one_time};
 
 use super::Screen;
 use crate::inbound::app::Context;
@@ -115,12 +117,8 @@ impl ImportView {
             source: Source::Text,
             mode: ImportMode::Add,
             target: Target::Main,
-            text: TextArea::default().with_placeholder(&[
-                "1 Krenko, Mob Boss",
-                "1 Urza, Lord High Artificer",
-                "1 Sol Ring",
-            ]),
-            url: TextInput::default().with_placeholder("https://archidekt.com/decks/..."),
+            text: TextArea::default(),
+            url: TextInput::default(),
             focus: Focus::Input,
             loading: false,
             result: None,
@@ -190,9 +188,32 @@ impl ImportView {
     }
 }
 
+/// An example decklist, one card a line as the paste box reads it, shown at the end of the import hint.
+pub(crate) const EXAMPLE: [&str; 3] = [
+    "1 Krenko, Mob Boss",
+    "1 Urza, Lord High Artificer",
+    "1 Sol Ring",
+];
+
+/// The app's import hint with [`EXAMPLE`] under it, since the paste box shows nothing while empty.
+pub(crate) fn hint_content() -> Option<HintContent> {
+    let mut content = one_time::content_for(OneTimeHint::Import)?;
+    content.blocks.push(Block::Line(vec![Span::Text(
+        "A pasted list reads one card a line:".to_owned(),
+    )]));
+    content.blocks.extend(
+        EXAMPLE
+            .iter()
+            .map(|line| Block::Line(vec![Span::Text(format!("  {line}"))])),
+    );
+    Some(content)
+}
+
 /// Shows the import hint again.
 pub(crate) fn reopen_hint(cx: &mut Context<'_>) {
-    hint::reopen(cx, HINT_KEY);
+    if let Some(content) = hint_content() {
+        hint::open(cx, content);
+    }
 }
 
 /// Import's work.
@@ -251,7 +272,9 @@ fn pick(screen: &mut Screen) -> Option<&mut ImportView> {
 /// Opens Import for `deck_id` and shows its hint once.
 pub(crate) fn open(cx: &mut Context<'_>, deck_id: Uuid) {
     cx.push(Screen::DeckImport(Box::new(ImportView::opening(deck_id))));
-    hint::once(cx, HINT_KEY);
+    if let Some(content) = hint_content() {
+        hint::once_with(cx, HINT_KEY, content);
+    }
 }
 
 pub(crate) async fn perform(account: &Account, request: Request) -> Option<screens::Update> {

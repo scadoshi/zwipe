@@ -87,7 +87,7 @@ impl Default for CardField {
     fn default() -> Self {
         Self {
             card: None,
-            input: TextInput::default().with_placeholder("Not set"),
+            input: TextInput::default(),
             filter_on: true,
             generation: Generation::default(),
             dropdown: Dropdown::Hidden,
@@ -304,7 +304,7 @@ impl DeckForm {
             loading: matches!(mode, Mode::Edit { .. }),
             load_error: None,
             saving: false,
-            name: TextInput::default().with_placeholder("Not set"),
+            name: TextInput::default(),
             name_touched: false,
             format: None,
             cards: Default::default(),
@@ -312,7 +312,7 @@ impl DeckForm {
             power_focus: 0,
             land_target: None,
             currency: PriceCurrency::Usd,
-            price: TextInput::default().with_placeholder("Not set"),
+            price: TextInput::default(),
             tags: Vec::new(),
             tag_focus: 0,
             oracle_tags: Vec::new(),

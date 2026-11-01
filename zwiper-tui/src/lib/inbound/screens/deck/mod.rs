@@ -149,9 +149,7 @@ impl CloneDialog {
     /// Prefilled with "{deck name} (clone)".
     pub(crate) fn new(deck_name: &str) -> Self {
         Self {
-            name: TextInput::default()
-                .with_placeholder("New deck name")
-                .with_value(&format!("{deck_name} (clone)")),
+            name: TextInput::default().with_value(&format!("{deck_name} (clone)")),
             focused: 1,
             busy: false,
         }

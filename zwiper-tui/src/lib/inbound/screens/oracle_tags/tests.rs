@@ -271,7 +271,6 @@ fn the_list_draws_descriptions_parents_and_the_selected_row_keys() {
     let harness = loaded();
     let screen = screen_text(&harness.app);
     for expected in [
-        "Search tags or descriptions",
         "A",
         "anthem",
         "No description yet",
@@ -285,6 +284,10 @@ fn the_list_draws_descriptions_parents_and_the_selected_row_keys() {
     ] {
         assert!(screen.contains(expected), "missing {expected}");
     }
+    assert!(
+        !screen.contains("Search tags or descriptions"),
+        "no placeholder"
+    );
     assert!(
         !screen.contains("? Help"),
         "? reopens the hint; ! is Help & feedback"

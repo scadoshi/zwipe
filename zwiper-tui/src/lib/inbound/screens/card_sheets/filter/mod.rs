@@ -186,9 +186,7 @@ impl FilterSheet {
             TextField::FlavorContains,
             TextField::FlavorNotContains,
         ] {
-            let input = TextInput::default()
-                .with_placeholder(field.placeholder())
-                .with_value(field.get(&self.filter.draft));
+            let input = TextInput::default().with_value(field.get(&self.filter.draft));
             self.texts.insert(field, input);
         }
         for field in [
@@ -198,9 +196,7 @@ impl FilterSheet {
             NumberField::PriceMin,
             NumberField::PriceMax,
         ] {
-            let input = TextInput::default()
-                .with_placeholder(field.placeholder())
-                .with_value(&field.text(&self.filter.draft));
+            let input = TextInput::default().with_value(&field.text(&self.filter.draft));
             self.numbers.insert(field, input);
         }
     }

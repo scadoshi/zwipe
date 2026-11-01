@@ -51,9 +51,6 @@ pub(crate) const TITLE: &str = "Commander maybeboard";
 /// The Quick add row's label.
 pub(crate) const QUICK_ADD: &str = "Quick add";
 
-/// The Quick add box's placeholder.
-pub(crate) const PLACEHOLDER: &str = "Search a commander to add";
-
 /// The one result chip while a search is out.
 pub(crate) const SEARCHING: &str = "Searching...";
 
@@ -111,7 +108,7 @@ pub(crate) enum Overlay {
 }
 
 /// The Quick add box and its search.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub(crate) struct QuickAdd {
     pub(crate) query: TextInput,
     /// Whether keys type into the box.
@@ -124,19 +121,6 @@ pub(crate) struct QuickAdd {
     pub(crate) results: Vec<Card>,
     /// The result chip under the cursor.
     pub(crate) cursor: usize,
-}
-
-impl Default for QuickAdd {
-    fn default() -> Self {
-        Self {
-            query: TextInput::default().with_placeholder(PLACEHOLDER),
-            typing: false,
-            ticket: Generation::default(),
-            searching: false,
-            results: Vec::new(),
-            cursor: 0,
-        }
-    }
 }
 
 /// The Commander maybeboard's state.

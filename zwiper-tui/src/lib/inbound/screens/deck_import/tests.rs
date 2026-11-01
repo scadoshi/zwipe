@@ -184,3 +184,29 @@ fn an_import_clears_the_decks_undo_log_and_only_that_deck() {
 fn import_keeps_every_key_on_a_narrow_terminal() {
     crate::test_support::assert_key_bar_fits(&opened().0.app, "F2 Import");
 }
+
+#[test]
+fn the_paste_box_draws_empty_and_the_hint_shows_an_example_list() {
+    let mut harness = Harness::on(Screen::Home(Box::default()));
+    harness.app.shared.user = Some(user(true));
+    let deck_id = Uuid::new_v4();
+    harness.open(|cx| open(cx, deck_id));
+    let first = screen_text(&harness.app);
+    for line in EXAMPLE {
+        assert!(first.contains(line), "the first hint shows {line:?}");
+    }
+    harness.press(KeyCode::Enter);
+    assert!(harness.app.shared.hint.is_none());
+    let screen = screen_text(&harness.app);
+    for line in EXAMPLE {
+        assert!(!screen.contains(line), "the empty box shows no {line:?}");
+    }
+    harness.press(KeyCode::Tab);
+    harness.press(KeyCode::Char('?'));
+    let again = screen_text(&harness.app);
+    assert!(
+        again.contains("one card a line"),
+        "? reopens it with the example"
+    );
+    assert!(again.contains(EXAMPLE[2]));
+}

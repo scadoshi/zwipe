@@ -38,7 +38,7 @@ pub(crate) struct FormatPicker {
 impl FormatPicker {
     pub(crate) fn open(form: &DeckForm) -> Self {
         Self {
-            search: TextInput::default().with_placeholder("Search formats"),
+            search: TextInput::default(),
             focus: 0,
             detail: None,
             snapshot: FormatSnapshot {
@@ -73,7 +73,7 @@ pub(crate) struct TagPicker {
 impl TagPicker {
     pub(crate) fn open(form: &DeckForm) -> Self {
         Self {
-            search: TextInput::default().with_placeholder("Search tags"),
+            search: TextInput::default(),
             focus: 0,
             detail: None,
             snapshot: form.tags.clone(),
@@ -105,7 +105,7 @@ pub(crate) struct OraclePicker {
 impl OraclePicker {
     pub(crate) fn open(form: &DeckForm) -> Self {
         Self {
-            search: TextInput::default().with_placeholder("Search all oracle tags"),
+            search: TextInput::default(),
             focus: 0,
             detail: None,
             snapshot: form.oracle_tags.clone(),

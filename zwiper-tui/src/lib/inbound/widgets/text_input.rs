@@ -1,9 +1,8 @@
-//! A one-line text box: a cursor that moves, optional masking for passwords, a placeholder while empty, and an error line under it.
+//! A one-line text box: a cursor that moves, optional masking for passwords, and an error line under it. An empty box draws empty.
 
 use crossterm::event::KeyCode;
 use ratatui::Frame;
 use ratatui::layout::{Position, Rect};
-use ratatui::style::Style;
 use ratatui::text::Line;
 use ratatui::widgets::Paragraph;
 
@@ -25,7 +24,6 @@ pub(crate) struct TextInput {
     /// Characters before the cursor.
     cursor: usize,
     masked: bool,
-    placeholder: String,
     error: Option<String>,
 }
 
@@ -41,12 +39,6 @@ impl TextInput {
     /// The box holding `value`, the cursor at its end.
     pub(crate) fn with_value(mut self, value: &str) -> Self {
         self.set_value(value);
-        self
-    }
-
-    /// Text shown in the [placeholder](Palette::placeholder) style while the box is empty.
-    pub(crate) fn with_placeholder(mut self, placeholder: &str) -> Self {
-        placeholder.clone_into(&mut self.placeholder);
         self
     }
 
@@ -194,12 +186,8 @@ impl TextInput {
             ..area
         };
         let border = if focused { palette.add } else { palette.border };
-        let text = if self.value.is_empty() {
-            Line::from(self.placeholder.clone()).style(palette.placeholder())
-        } else {
-            let skip = self.skip(box_area.width);
-            Line::from(self.shown().chars().skip(skip).collect::<String>()).style(Style::new())
-        };
+        let skip = self.skip(box_area.width);
+        let text = Line::from(self.shown().chars().skip(skip).collect::<String>());
         let mut block = crate::inbound::widgets::panel::bordered(palette).border_style(border);
         if !title.is_empty() {
             block = block.title(
@@ -315,8 +303,8 @@ mod tests {
     }
 
     #[test]
-    fn the_box_shows_the_placeholder_until_typed_and_the_error_under_it() {
-        let palette = Palette::terminal();
+    fn an_empty_box_draws_empty_and_the_error_shows_under_it() {
+        let palette = Palette::for_account("gruvbox", true);
         let draw = |input: &TextInput| -> String {
             let mut terminal = Terminal::new(TestBackend::new(30, 4)).unwrap();
             terminal
@@ -330,14 +318,15 @@ mod tests {
                 .map(ratatui::buffer::Cell::symbol)
                 .collect()
         };
-        let mut input = TextInput::default().with_placeholder("you@example.com");
-        assert!(draw(&input).contains("you@example.com"));
+        let mut input = TextInput::default();
+        let empty = draw(&input);
+        let inside: String = empty.chars().skip(31).take(28).collect();
+        assert_eq!(inside.trim(), "", "nothing inside an empty box");
         input.set_value("scotty@zwipe.net");
         input.set_error(Some("Taken".to_owned()));
         let screen = draw(&input);
         assert!(screen.contains("Email"));
         assert!(screen.contains("scotty@zwipe.net"));
-        assert!(!screen.contains("you@example.com"));
         assert!(screen.contains("Taken"));
     }
 
@@ -377,36 +366,5 @@ mod tests {
             buffer.cell((x, 0)).unwrap().fg,
             palette.tertiary.fg.unwrap()
         );
-    }
-
-    #[test]
-    fn a_placeholder_is_dimmer_than_typed_text_on_dark_and_light_themes() {
-        for (theme, dark) in [("gruvbox", true), ("ayu", false), ("catppuccin", false)] {
-            let palette = Palette::for_account(theme, dark);
-            let empty = drawn(
-                &TextInput::default().with_placeholder("Username or email"),
-                &palette,
-                30,
-            );
-            let typed = drawn(
-                &TextInput::default().with_value("Username or email"),
-                &palette,
-                30,
-            );
-            let placeholder = empty.backend().buffer().cell((1, 1)).unwrap().style();
-            let text = typed.backend().buffer().cell((1, 1)).unwrap().style();
-            assert_eq!(empty.backend().buffer().cell((1, 1)).unwrap().symbol(), "U");
-            assert_ne!(placeholder.fg, text.fg, "{theme}");
-            assert_ne!(
-                placeholder.fg, palette.muted.fg,
-                "{theme}: dimmer than muted"
-            );
-            assert!(
-                placeholder
-                    .add_modifier
-                    .contains(ratatui::style::Modifier::ITALIC)
-            );
-            assert!(!text.add_modifier.contains(ratatui::style::Modifier::ITALIC));
-        }
     }
 }

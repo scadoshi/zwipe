@@ -202,7 +202,7 @@ fn label_line(
     Line::from(spans)
 }
 
-/// A text box's value line, or its placeholder, and the cursor column while focused.
+/// A text field's value line, or `Not set` as every unset field of the form reads, and the cursor column while focused.
 fn text_line(palette: &Palette, input: &TextInput) -> Line<'static> {
     if input.is_empty() {
         Line::from(vec![

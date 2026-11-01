@@ -251,22 +251,6 @@ impl Palette {
         }
     }
 
-    /// Placeholder text in an empty box: the color halfway from the background to the text, and italic.
-    ///
-    /// Halfway keeps it clearly apart from typed text on every theme, including those whose muted color sits close to the text. The terminal's own colors have no RGB to blend, so they dim the muted color instead.
-    pub(crate) fn placeholder(&self) -> Style {
-        match (self.base.fg, self.base.bg) {
-            (Some(Color::Rgb(tr, tg, tb)), Some(Color::Rgb(br, bg, bb))) => Style::new()
-                .fg(Color::Rgb(
-                    u8::midpoint(tr, br),
-                    u8::midpoint(tg, bg),
-                    u8::midpoint(tb, bb),
-                ))
-                .italic(),
-            _ => self.muted.dim().italic(),
-        }
-    }
-
     /// Whether the background is dark, for the direction of the theme wipe. The terminal's colors count as dark.
     pub(crate) fn is_dark(&self) -> bool {
         match self.base.bg {
@@ -421,33 +405,5 @@ mod tests {
     fn an_unknown_theme_uses_the_terminals_colors() {
         assert_eq!(Palette::for_account("nope", true), Palette::terminal());
         assert_eq!(Palette::terminal().base.bg, None);
-    }
-
-    #[test]
-    fn every_themes_placeholder_sits_halfway_between_its_text_and_background() {
-        for family in FAMILIES {
-            for (dark, colors) in [(true, &family.dark), (false, &family.light)] {
-                let palette = Palette::for_account(family.slug, dark);
-                let Some(Color::Rgb(r, g, b)) = palette.placeholder().fg else {
-                    panic!("{} has no RGB placeholder", family.slug);
-                };
-                for (shade, (text, back)) in [r, g, b]
-                    .into_iter()
-                    .zip(colors.text.into_iter().zip(colors.background))
-                {
-                    assert!(
-                        shade.abs_diff(text).abs_diff(shade.abs_diff(back)) <= 1,
-                        "{} dark {dark}",
-                        family.slug
-                    );
-                }
-            }
-        }
-        let terminal = Palette::terminal().placeholder();
-        assert!(
-            terminal
-                .add_modifier
-                .contains(ratatui::style::Modifier::DIM)
-        );
     }
 }

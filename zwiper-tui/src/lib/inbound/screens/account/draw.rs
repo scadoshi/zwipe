@@ -329,7 +329,7 @@ fn draw_form(f: &mut Frame<'_>, palette: &Palette, form: &Form) {
     ])
     .areas(inner);
     let areas = Layout::vertical(heights.iter().map(|h| Constraint::Length(*h))).split(fields_area);
-    for (i, ((input, (label, _, _)), area)) in form
+    for (i, ((input, (label, _)), area)) in form
         .inputs
         .iter()
         .zip(form.kind.fields())

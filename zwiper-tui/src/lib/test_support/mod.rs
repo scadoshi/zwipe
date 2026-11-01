@@ -180,7 +180,7 @@ pub(crate) fn screen_text(app: &App) -> String {
         .replace('\u{a0}', " ")
 }
 
-/// The sizes the button, placeholder and label tests draw at: a roomy terminal and the two of [`NARROW`].
+/// The sizes the button and label tests draw at: a roomy terminal and the two of [`NARROW`].
 pub(crate) const BUTTON_SIZES: [(u16, u16); 3] = [(120, 40), (80, 24), (60, 20)];
 
 /// Every place `text` starts in `buffer`, as its column and row, top to bottom.

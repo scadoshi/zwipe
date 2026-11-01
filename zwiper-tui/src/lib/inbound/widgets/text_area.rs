@@ -1,4 +1,4 @@
-//! A text box of many lines, for pasting a decklist: typing, Enter for a new line, Backspace joining lines, the arrows moving the cursor, and a placeholder of several lines while empty.
+//! A text box of many lines, for pasting a decklist: typing, Enter for a new line, Backspace joining lines and the arrows moving the cursor. An empty box draws empty.
 
 use crossterm::event::KeyCode;
 use ratatui::Frame;
@@ -15,7 +15,6 @@ pub(crate) struct TextArea {
     lines: Vec<String>,
     row: usize,
     column: usize,
-    placeholder: Vec<String>,
 }
 
 impl Default for TextArea {
@@ -24,18 +23,11 @@ impl Default for TextArea {
             lines: vec![String::new()],
             row: 0,
             column: 0,
-            placeholder: Vec::new(),
         }
     }
 }
 
 impl TextArea {
-    /// Lines shown in the [placeholder](Palette::placeholder) style while the box is empty.
-    pub(crate) fn with_placeholder(mut self, lines: &[&str]) -> Self {
-        self.placeholder = lines.iter().map(|&l| l.to_owned()).collect();
-        self
-    }
-
     /// The text, lines joined by newlines.
     pub(crate) fn text(&self) -> String {
         self.lines.join("\n")
@@ -173,18 +165,12 @@ impl TextArea {
         focused: bool,
     ) {
         let border = if focused { palette.add } else { palette.border };
-        let lines: Vec<Line<'static>> = if self.lines.len() == 1 && self.line_len(0) == 0 {
-            self.placeholder
-                .iter()
-                .map(|l| Line::from(l.clone()).style(palette.placeholder()))
-                .collect()
-        } else {
-            self.lines
-                .iter()
-                .skip(self.skip(area.height))
-                .map(|l| Line::from(l.clone()))
-                .collect()
-        };
+        let lines: Vec<Line<'static>> = self
+            .lines
+            .iter()
+            .skip(self.skip(area.height))
+            .map(|l| Line::from(l.clone()))
+            .collect();
         f.render_widget(
             Paragraph::new(lines).block(
                 crate::inbound::widgets::panel::bordered(palette)
@@ -271,8 +257,8 @@ mod tests {
     }
 
     #[test]
-    fn blank_text_shows_the_placeholder() {
-        let area = TextArea::default().with_placeholder(&["1 Sol Ring"]);
+    fn blank_text_draws_an_empty_box() {
+        let area = TextArea::default();
         assert!(area.is_blank());
         assert!(!typed("x").is_blank());
         assert!(typed("  \n ").is_blank());
@@ -288,10 +274,9 @@ mod tests {
             .iter()
             .map(ratatui::buffer::Cell::symbol)
             .collect();
-        assert!(text.contains("1 Sol Ring"));
         let top: String = text.chars().take(20).collect();
         assert_eq!(top, "╭───── Paste ──────╮", "the label sits centered");
-        let cell = terminal.backend().buffer().cell((1, 1)).unwrap();
-        assert!(cell.modifier.contains(ratatui::style::Modifier::ITALIC));
+        let inside: String = text.chars().skip(21).take(18).collect();
+        assert_eq!(inside.trim(), "", "nothing inside an empty box");
     }
 }

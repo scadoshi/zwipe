@@ -156,7 +156,6 @@ fn the_loaded_screen_draws_quick_add_show_and_the_rows() {
     let text = screen_text(&harness.app);
     for piece in [
         "Quick add",
-        "Search a commander to add",
         "Show",
         "All",
         "Commanders",
@@ -171,6 +170,10 @@ fn the_loaded_screen_draws_quick_add_show_and_the_rows() {
     ] {
         assert!(text.contains(piece), "{piece} is missing");
     }
+    assert!(
+        !text.contains("Search a commander to add"),
+        "no placeholder"
+    );
     assert!(!text.contains("Art"), "the terminal has no Art chip");
 }
 
