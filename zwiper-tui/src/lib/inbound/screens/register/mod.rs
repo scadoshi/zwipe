@@ -1,4 +1,6 @@
-//! The Create profile screen: the hero over username, email, password and confirm fields that validate as they are typed, with `Back to login` and `Create profile` in the action bar.
+//! The Create profile screen: the hero over username, email, password and confirm fields that validate as they are typed, with `Create profile` under them.
+//!
+//! Esc ends typing, and Esc again with no field active goes back to Login; Tab or Shift+Tab goes back into the form.
 //!
 //! A field starts showing its error once it has held something, or after a submit; from then on it checks again on every change. A good registration goes back to Login with the username filled in.
 
@@ -27,7 +29,7 @@ pub(crate) const CHECK_INBOX: &str = "Check your inbox to verify your email, the
 /// The mismatch error, shown under Password.
 pub(crate) const MISMATCH: &str = "Passwords do not match";
 
-/// Where the focus is: a field, a password's Show/Hide, or a button.
+/// A stop the focus can rest on: a field, a password's Show/Hide, or the `Create profile` button.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum RegisterField {
     #[default]
@@ -37,20 +39,18 @@ pub(crate) enum RegisterField {
     ShowPassword,
     Confirm,
     ShowConfirm,
-    BackToLogin,
     CreateProfile,
 }
 
 impl RegisterField {
     /// Every stop, in Tab order.
-    const ORDER: [Self; 8] = [
+    const ORDER: [Self; 7] = [
         Self::Username,
         Self::Email,
         Self::Password,
         Self::ShowPassword,
         Self::Confirm,
         Self::ShowConfirm,
-        Self::BackToLogin,
         Self::CreateProfile,
     ];
 
@@ -75,13 +75,9 @@ impl RegisterField {
         Self::ORDER.get(index).copied().unwrap_or_default()
     }
 
-    /// The action bar button this stop is, by its place in the bar.
+    /// The button this stop is, by its place in the row under the form.
     pub(crate) fn button(self) -> Option<usize> {
-        match self {
-            Self::BackToLogin => Some(0),
-            Self::CreateProfile => Some(1),
-            _ => None,
-        }
+        (self == Self::CreateProfile).then_some(0)
     }
 }
 
@@ -92,12 +88,13 @@ pub(crate) struct RegisterForm {
     pub(crate) email: TextInput,
     pub(crate) password: TextInput,
     pub(crate) confirm: TextInput,
-    pub(crate) focus: RegisterField,
+    /// The stop with the focus, or `None` once Esc ends typing.
+    pub(crate) focus: Option<RegisterField>,
     /// Which of username, email, password and confirm have held something.
     pub(crate) touched: [bool; 4],
     /// Set by the first submit, after which every field shows its error.
     pub(crate) attempted: bool,
-    /// Set while the registration is out; both buttons are disabled meanwhile.
+    /// Set while the registration is out; the button is disabled meanwhile.
     pub(crate) busy: bool,
     pub(crate) hero: Hero,
 }
@@ -105,11 +102,11 @@ pub(crate) struct RegisterForm {
 impl Default for RegisterForm {
     fn default() -> Self {
         Self {
-            username: TextInput::default().with_placeholder("Username"),
-            email: TextInput::default().with_placeholder("Email"),
-            password: TextInput::masked().with_placeholder("Password"),
-            confirm: TextInput::masked().with_placeholder("Confirm password"),
-            focus: RegisterField::default(),
+            username: TextInput::default(),
+            email: TextInput::default(),
+            password: TextInput::masked(),
+            confirm: TextInput::masked(),
+            focus: Some(RegisterField::default()),
             touched: [false; 4],
             attempted: false,
             busy: false,
@@ -122,10 +119,10 @@ impl RegisterForm {
     /// The text field with the cursor and its place in `touched`, if the focus is on one.
     pub(crate) fn focused_mut(&mut self) -> Option<(&mut TextInput, usize)> {
         match self.focus {
-            RegisterField::Username => Some((&mut self.username, 0)),
-            RegisterField::Email => Some((&mut self.email, 1)),
-            RegisterField::Password => Some((&mut self.password, 2)),
-            RegisterField::Confirm => Some((&mut self.confirm, 3)),
+            Some(RegisterField::Username) => Some((&mut self.username, 0)),
+            Some(RegisterField::Email) => Some((&mut self.email, 1)),
+            Some(RegisterField::Password) => Some((&mut self.password, 2)),
+            Some(RegisterField::Confirm) => Some((&mut self.confirm, 3)),
             _ => None,
         }
     }

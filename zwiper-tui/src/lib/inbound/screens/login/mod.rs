@@ -1,4 +1,6 @@
-//! The Login screen: the hero over a username-or-email and password form, with `Log in`, `Create profile` and `Forgot password` in the action bar; and what signing in and out do to the app.
+//! The Login screen: the hero over a username-or-email and password form with `Log in` under it, `c Create profile` and `f Forgot password` in the key bar; and what signing in and out do to the app.
+//!
+//! Esc ends typing: with no field active the letters are commands (`c`, `f`, `q` and `!`), and Tab or Shift+Tab goes back into the form. Esc never quits; `q` does, with no field active.
 
 pub(crate) mod draw;
 pub(crate) mod keys;
@@ -25,7 +27,8 @@ pub(crate) struct LoginForm {
     /// Username or email, sent as typed.
     pub(crate) identifier: TextInput,
     pub(crate) password: TextInput,
-    pub(crate) focus: LoginField,
+    /// The stop with the focus, or `None` once Esc ends typing.
+    pub(crate) focus: Option<LoginField>,
     /// Set while the sign-in request is out; every button is disabled meanwhile.
     pub(crate) busy: bool,
     pub(crate) hero: Hero,
@@ -34,9 +37,9 @@ pub(crate) struct LoginForm {
 impl Default for LoginForm {
     fn default() -> Self {
         Self {
-            identifier: TextInput::default().with_placeholder("Username or email"),
-            password: TextInput::masked().with_placeholder("Password"),
-            focus: LoginField::default(),
+            identifier: TextInput::default(),
+            password: TextInput::masked(),
+            focus: Some(LoginField::default()),
             busy: false,
             hero: Hero::default(),
         }
@@ -47,14 +50,14 @@ impl LoginForm {
     /// The text field with the cursor, if the focus is on one.
     pub(crate) fn focused_mut(&mut self) -> Option<&mut TextInput> {
         match self.focus {
-            LoginField::Identifier => Some(&mut self.identifier),
-            LoginField::Password => Some(&mut self.password),
+            Some(LoginField::Identifier) => Some(&mut self.identifier),
+            Some(LoginField::Password) => Some(&mut self.password),
             _ => None,
         }
     }
 }
 
-/// Where the focus is: a field, the password's Show/Hide, or a button in the action bar.
+/// A stop the focus can rest on: a field, the password's Show/Hide, or the `Log in` button under them.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum LoginField {
     #[default]
@@ -63,19 +66,15 @@ pub(crate) enum LoginField {
     /// The Show or Hide button inside the password field.
     ShowPassword,
     LogIn,
-    CreateProfile,
-    ForgotPassword,
 }
 
 impl LoginField {
     /// Every stop, in Tab order.
-    const ORDER: [Self; 6] = [
+    const ORDER: [Self; 4] = [
         Self::Identifier,
         Self::Password,
         Self::ShowPassword,
         Self::LogIn,
-        Self::CreateProfile,
-        Self::ForgotPassword,
     ];
 
     fn index(self) -> usize {
@@ -101,14 +100,9 @@ impl LoginField {
         Self::ORDER.get(index).copied().unwrap_or_default()
     }
 
-    /// The action bar button this stop is, by its place in the bar.
+    /// The button this stop is, by its place in the row under the form.
     pub(crate) fn button(self) -> Option<usize> {
-        match self {
-            Self::LogIn => Some(0),
-            Self::CreateProfile => Some(1),
-            Self::ForgotPassword => Some(2),
-            _ => None,
-        }
+        (self == Self::LogIn).then_some(0)
     }
 }
 
@@ -201,7 +195,7 @@ pub(crate) fn prefill(nav: &mut Nav, username: &str) {
     if let Some(form) = nav.find_mut(pick) {
         form.identifier.set_value(username);
         form.password.set_value("");
-        form.focus = LoginField::Password;
+        form.focus = Some(LoginField::Password);
     }
 }
 

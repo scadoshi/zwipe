@@ -1,4 +1,6 @@
-//! The Reset password screen: the hero over an email field, then `Check your email` once the request is in. The reset itself happens on the website, from the link in the email.
+//! The Reset password screen: the hero over an email field with `Send reset link` under it, then `Check your email` once the request is in. The reset itself happens on the website, from the link in the email.
+//!
+//! Esc ends typing, and Esc again with no field active goes back to Login; Tab or Shift+Tab goes back into the form.
 
 pub(crate) mod draw;
 pub(crate) mod keys;
@@ -27,12 +29,11 @@ pub(crate) const INVALID_EMAIL: &str = "Please enter a valid email address";
 pub(crate) const SENT_TITLE: &str = "Check your email";
 pub(crate) const SENT_BODY: &str = "If that email is registered, a reset link is on its way.";
 
-/// Where the focus is.
+/// A stop the focus can rest on: the email field or the `Send reset link` button under it.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum ForgotField {
     #[default]
     Email,
-    BackToLogin,
     SendResetLink,
 }
 
@@ -40,7 +41,8 @@ pub(crate) enum ForgotField {
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) struct ForgotForm {
     pub(crate) email: TextInput,
-    pub(crate) focus: ForgotField,
+    /// The stop with the focus, or `None` once Esc ends typing or the request is in.
+    pub(crate) focus: Option<ForgotField>,
     /// Whether the email has held something.
     pub(crate) touched: bool,
     pub(crate) attempted: bool,
@@ -54,8 +56,8 @@ pub(crate) struct ForgotForm {
 impl Default for ForgotForm {
     fn default() -> Self {
         Self {
-            email: TextInput::default().with_placeholder("Email"),
-            focus: ForgotField::default(),
+            email: TextInput::default(),
+            focus: Some(ForgotField::default()),
             touched: false,
             attempted: false,
             sending_since: None,
@@ -66,25 +68,24 @@ impl Default for ForgotForm {
 }
 
 impl ForgotForm {
-    /// The stops in Tab order: the field and both buttons, or only `Back to login` once sent.
+    /// The stops in Tab order: the field and its button, or none once sent.
     pub(crate) fn stops(&self) -> &'static [ForgotField] {
         if self.sent {
-            &[ForgotField::BackToLogin]
+            &[]
         } else {
-            &[
-                ForgotField::Email,
-                ForgotField::BackToLogin,
-                ForgotField::SendResetLink,
-            ]
+            &[ForgotField::Email, ForgotField::SendResetLink]
         }
     }
 
-    /// Moves the focus `toward` the next or the previous of [`ForgotForm::stops`], wrapping round.
+    /// Moves the focus `toward` the next or the previous of [`ForgotForm::stops`], wrapping round. With no stop focused, the next is the first and the previous the last.
     pub(crate) fn step(&mut self, toward: Toward) {
         let stops = self.stops();
-        let at = stops.iter().position(|s| *s == self.focus).unwrap_or(0);
-        let next = toward.wrapped(at, stops.len());
-        self.focus = stops.get(next).copied().unwrap_or_default();
+        let next = match self.focus.and_then(|f| stops.iter().position(|s| *s == f)) {
+            Some(at) => toward.wrapped(at, stops.len()),
+            None if toward == Toward::Next => 0,
+            None => stops.len().saturating_sub(1),
+        };
+        self.focus = stops.get(next).copied();
     }
 
     /// The fixed error once the email has held something or a send was tried, checked untrimmed.
@@ -174,7 +175,7 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
             if let Some(form) = form {
                 form.sending_since = None;
                 form.sent = true;
-                form.focus = ForgotField::BackToLogin;
+                form.focus = None;
             }
         }
         Update::Failed(error) => {

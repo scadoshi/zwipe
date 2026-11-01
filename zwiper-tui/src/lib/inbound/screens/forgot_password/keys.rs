@@ -1,4 +1,4 @@
-//! Reset password's keys: typing with live validation, Tab across the field and buttons, Enter to send or go back. Sending again while one is out is allowed, as in the app.
+//! Reset password's keys: typing with live validation, Tab across the field and its button, Enter to send, and Esc to end typing. With no field active, Esc goes back to Login, `q` quits and `!` opens Help. Sending again while one is out is allowed, as in the app.
 
 use std::time::Instant;
 
@@ -11,23 +11,20 @@ use crate::inbound::toward::Toward;
 use crate::inbound::widgets::help;
 
 pub(crate) fn handle(form: &mut ForgotForm, code: KeyCode, cx: &mut Context<'_>) {
-    match code {
-        KeyCode::Esc => cx.back(),
-        KeyCode::Tab | KeyCode::Down => form.step(Toward::Next),
-        KeyCode::BackTab | KeyCode::Up => form.step(Toward::Previous),
-        KeyCode::Right if form.focus != ForgotField::Email => form.step(Toward::Next),
-        KeyCode::Left if form.focus != ForgotField::Email => form.step(Toward::Previous),
-        KeyCode::Enter => match form.focus {
-            ForgotField::BackToLogin => cx.back(),
-            ForgotField::Email | ForgotField::SendResetLink => send(form, cx),
-        },
-        KeyCode::Char('!') if form.focus != ForgotField::Email => help::open(cx),
-        other if form.focus == ForgotField::Email => {
+    match (form.focus, code) {
+        (None, KeyCode::Esc) => cx.back(),
+        (Some(_), KeyCode::Esc) => form.focus = None,
+        (_, KeyCode::Tab | KeyCode::Down) => form.step(Toward::Next),
+        (_, KeyCode::BackTab | KeyCode::Up) => form.step(Toward::Previous),
+        (Some(_), KeyCode::Enter) => send(form, cx),
+        (Some(ForgotField::Email), other) => {
             if form.email.handle_key(other) && !form.email.is_empty() {
                 form.touched = true;
             }
             form.validate();
         }
+        (_, KeyCode::Char('q')) => cx.quit(),
+        (_, KeyCode::Char('!')) => help::open(cx),
         _ => {}
     }
 }

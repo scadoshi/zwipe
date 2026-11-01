@@ -1,4 +1,4 @@
-//! Create profile's keys: typing with live validation, Tab and the arrows across the fields and buttons, Enter on whatever has the focus, F2 for the password rules.
+//! Create profile's keys: typing with live validation, Tab and the arrows across the form, Enter on whatever has the focus, F2 for the password rules, and Esc to end typing. With no field active, Esc goes back to Login, `q` quits and `!` opens Help.
 
 use crossterm::event::KeyCode;
 use zwipe_core::http::contracts::metrics::AnonymousEventKind;
@@ -10,41 +10,53 @@ use crate::inbound::widgets::help;
 use crate::inbound::widgets::hint::{self, HintTopic};
 
 pub(crate) fn handle(form: &mut RegisterForm, code: KeyCode, cx: &mut Context<'_>) {
+    let Some(focus) = form.focus else {
+        match code {
+            KeyCode::Esc => cx.back(),
+            KeyCode::Tab | KeyCode::Down => form.focus = Some(RegisterField::Username),
+            KeyCode::BackTab | KeyCode::Up => form.focus = Some(RegisterField::Confirm),
+            other => command(other, cx),
+        }
+        return;
+    };
     match code {
-        KeyCode::Esc => cx.back(),
-        KeyCode::Tab | KeyCode::Down => form.focus = form.focus.next(),
-        KeyCode::BackTab | KeyCode::Up => form.focus = form.focus.previous(),
-        KeyCode::F(2) if form.focus == RegisterField::Password => {
+        KeyCode::Esc => form.focus = None,
+        KeyCode::Tab | KeyCode::Down => form.focus = Some(focus.next()),
+        KeyCode::BackTab | KeyCode::Up => form.focus = Some(focus.previous()),
+        KeyCode::F(2) if focus == RegisterField::Password => {
             hint::topic(cx, HintTopic::Password);
         }
-        KeyCode::Enter => press(form, cx),
-        KeyCode::Char('!') if form.focused_mut().is_none() => help::open(cx),
-        KeyCode::Left | KeyCode::Right if form.focus.button().is_some() => {
-            form.focus = if code == KeyCode::Left {
-                form.focus.previous()
-            } else {
-                form.focus.next()
-            };
-        }
+        KeyCode::Enter => press(form, focus, cx),
         other => {
-            if let Some((field, index)) = form.focused_mut() {
-                if field.handle_key(other)
-                    && !field.is_empty()
-                    && let Some(touched) = form.touched.get_mut(index)
-                {
-                    *touched = true;
-                }
-                form.validate();
+            let Some((field, index)) = form.focused_mut() else {
+                command(other, cx);
+                return;
+            };
+            if field.handle_key(other)
+                && !field.is_empty()
+                && let Some(touched) = form.touched.get_mut(index)
+            {
+                *touched = true;
             }
+            form.validate();
         }
     }
 }
 
-/// Enter: a field moves on, the confirmation submits, Show and Hide toggle their field, and a button does what it says unless the registration is out.
-fn press(form: &mut RegisterForm, cx: &mut Context<'_>) {
-    match form.focus {
+/// A letter while no field takes it: `q` quits and `!` opens Help.
+fn command(code: KeyCode, cx: &mut Context<'_>) {
+    match code {
+        KeyCode::Char('q') => cx.quit(),
+        KeyCode::Char('!') => help::open(cx),
+        _ => {}
+    }
+}
+
+/// Enter: a field moves on, the confirmation and `Create profile` submit, and Show and Hide toggle their field.
+fn press(form: &mut RegisterForm, focus: RegisterField, cx: &mut Context<'_>) {
+    match focus {
         RegisterField::Username | RegisterField::Email | RegisterField::Password => {
-            form.focus = form.focus.next();
+            form.focus = Some(focus.next());
         }
         RegisterField::ShowPassword => {
             let masked = form.password.is_masked();
@@ -54,9 +66,7 @@ fn press(form: &mut RegisterForm, cx: &mut Context<'_>) {
             let masked = form.confirm.is_masked();
             form.confirm.set_masked(!masked);
         }
-        RegisterField::BackToLogin if !form.busy => cx.back(),
         RegisterField::Confirm | RegisterField::CreateProfile => submit(form, cx),
-        RegisterField::BackToLogin => {}
     }
 }
 

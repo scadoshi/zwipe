@@ -1,6 +1,7 @@
 use crossterm::event::KeyCode;
 
 use super::*;
+use crate::inbound::event_loop::Flow;
 use crate::inbound::event_loop::harness::Harness;
 use crate::inbound::screens::login::LoginField;
 use crate::test_support::{render, screen_text};
@@ -87,7 +88,7 @@ fn the_mismatch_shows_under_password_once_the_confirmation_is_as_long() {
 fn a_submit_shows_every_error_and_sends_nothing_until_they_pass() {
     let mut harness = registering();
     if let Screen::Register(form) = harness.screen_mut() {
-        form.focus = RegisterField::CreateProfile;
+        form.focus = Some(RegisterField::CreateProfile);
     }
     harness.press(KeyCode::Enter);
     let form = form(&harness);
@@ -136,7 +137,7 @@ fn success_goes_back_to_login_with_the_username_and_the_apps_toast() {
     };
     assert_eq!(login.identifier.value(), "scotty");
     assert!(login.password.is_empty());
-    assert_eq!(login.focus, LoginField::Password);
+    assert_eq!(login.focus, Some(LoginField::Password));
     let toasts = harness.app.shared.toasts.items();
     assert_eq!(toasts[0].message, CHECK_INBOX);
     assert_eq!(toasts[0].kind, ToastKind::Info);
@@ -154,15 +155,92 @@ fn a_failure_toasts_and_stays() {
 }
 
 #[test]
-fn f2_on_password_opens_the_rules_and_back_returns_to_login() {
+fn f2_on_password_opens_the_rules() {
     let mut harness = registering();
     harness.press(KeyCode::Tab);
     harness.press(KeyCode::Tab);
     harness.press(KeyCode::F(2));
     assert!(screen_text(&harness.app).contains("At least 6 different characters"));
     harness.press(KeyCode::Enter);
+    assert!(harness.app.shared.hint.is_none());
+    assert!(matches!(harness.screen(), Screen::Register(_)));
+}
+
+#[test]
+fn esc_ends_typing_then_goes_back_to_login() {
+    let mut harness = registering();
+    harness.type_text("scotty");
+    harness.press(KeyCode::Esc);
+    assert!(
+        matches!(harness.screen(), Screen::Register(_)),
+        "still here"
+    );
+    assert_eq!(form(&harness).focus, None, "no field is active");
+    assert_eq!(harness.press(KeyCode::Char('x')), Flow::Continue);
+    assert_eq!(
+        form(&harness).username.value(),
+        "scotty",
+        "letters type nowhere"
+    );
+    harness.press(KeyCode::Tab);
+    assert_eq!(form(&harness).focus, Some(RegisterField::Username));
+    harness.press(KeyCode::Esc);
+    harness.press(KeyCode::BackTab);
+    assert_eq!(form(&harness).focus, Some(RegisterField::Confirm));
+    harness.press(KeyCode::Esc);
     harness.press(KeyCode::Esc);
     assert!(matches!(harness.screen(), Screen::Login(_)));
+}
+
+#[test]
+fn q_types_in_a_field_and_quits_with_none_active() {
+    let mut harness = registering();
+    assert_eq!(harness.press(KeyCode::Char('q')), Flow::Continue);
+    assert_eq!(form(&harness).username.value(), "q");
+    harness.press(KeyCode::Esc);
+    assert_eq!(harness.press(KeyCode::Char('q')), Flow::Quit);
+}
+
+#[test]
+fn the_key_bar_names_enter_and_esc_for_where_the_focus_is() {
+    let bar = |harness: &Harness| {
+        let rows = crate::test_support::rows(&harness.app, 120, 40);
+        rows.last()
+            .unwrap()
+            .split_whitespace()
+            .collect::<Vec<_>>()
+            .join(" ")
+    };
+    let mut harness = registering();
+    assert_eq!(bar(&harness), "Tab move Enter next F1 help Esc done");
+    if let Screen::Register(form) = harness.screen_mut() {
+        form.focus = Some(RegisterField::CreateProfile);
+    }
+    assert_eq!(
+        bar(&harness),
+        "Tab move Enter create profile F1 help Esc done"
+    );
+    harness.press(KeyCode::Esc);
+    assert_eq!(bar(&harness), "Tab fields F1 help Esc back q quit");
+}
+
+#[test]
+fn create_profile_sits_right_under_confirm_password() {
+    let harness = registering();
+    for (width, height) in [(120, 40), (80, 24)] {
+        let terminal = render(&harness.app, width, height);
+        let buffer = terminal.backend().buffer();
+        let rows = crate::test_support::rows(&harness.app, width, height).join("\n");
+        let [(_, label)] = crate::test_support::find_all(buffer, " Confirm password ")[..] else {
+            panic!("one Confirm password at {width}x{height}:\n{rows}");
+        };
+        let found = crate::test_support::find_all(buffer, "Create profile");
+        let Some(&(_, button)) = found.last() else {
+            panic!("the button at {width}x{height}:\n{rows}");
+        };
+        let gap = (button - 1) - (label + 2) - 1;
+        assert!(gap <= 1, "{gap} rows at {width}x{height}:\n{rows}");
+    }
 }
 
 #[test]
@@ -176,7 +254,6 @@ fn the_screen_shows_its_fields_and_buttons_and_fits_a_tiny_terminal() {
         "Email",
         "Password ?",
         "Confirm password",
-        "Back to login",
         "must be at least 3 characters long",
     ] {
         assert!(screen.contains(text), "{text}");
@@ -193,9 +270,11 @@ fn the_screen_shows_its_fields_and_buttons_and_fits_a_tiny_terminal() {
 #[test]
 fn register_keeps_every_key_on_a_narrow_terminal() {
     let mut harness = registering();
-    crate::test_support::assert_key_bar_fits(&harness.app, "Esc back");
+    crate::test_support::assert_key_bar_fits(&harness.app, "Esc done");
     harness.press(KeyCode::Tab);
     harness.press(KeyCode::Tab);
-    assert_eq!(form(&harness).focus, RegisterField::Password);
-    crate::test_support::assert_key_bar_fits(&harness.app, "Esc back");
+    assert_eq!(form(&harness).focus, Some(RegisterField::Password));
+    crate::test_support::assert_key_bar_fits(&harness.app, "Esc done");
+    harness.press(KeyCode::Esc);
+    crate::test_support::assert_key_bar_fits(&harness.app, "q quit");
 }

@@ -1,4 +1,4 @@
-//! Login's keys: typing in the fields, Tab and the arrows across the fields and buttons, Enter on whatever has the focus.
+//! Login's keys: typing in the fields, Tab and the arrows across the form, Enter on whatever has the focus, and Esc to end typing. With no field taking letters, `c` opens Create profile, `f` Reset password, `q` quits and `!` opens Help.
 
 use crossterm::event::KeyCode;
 
@@ -9,39 +9,48 @@ use crate::inbound::widgets::help;
 use crate::inbound::widgets::toast::ToastKind;
 
 pub(crate) fn handle(form: &mut LoginForm, code: KeyCode, cx: &mut Context<'_>) {
-    match code {
-        KeyCode::Esc => cx.quit(),
-        KeyCode::Tab | KeyCode::Down => form.focus = form.focus.next(),
-        KeyCode::BackTab | KeyCode::Up => form.focus = form.focus.previous(),
-        KeyCode::Enter => press(form, cx),
-        KeyCode::Char('!') if form.focused_mut().is_none() => help::open(cx),
-        KeyCode::Left | KeyCode::Right if form.focus.button().is_some() => {
-            form.focus = if code == KeyCode::Left {
-                form.focus.previous()
-            } else {
-                form.focus.next()
-            };
+    let Some(focus) = form.focus else {
+        match code {
+            KeyCode::Tab | KeyCode::Down => form.focus = Some(LoginField::Identifier),
+            KeyCode::BackTab | KeyCode::Up => form.focus = Some(LoginField::Password),
+            other => command(form, other, cx),
         }
-        other => {
-            if let Some(field) = form.focused_mut() {
+        return;
+    };
+    match code {
+        KeyCode::Esc => form.focus = None,
+        KeyCode::Tab | KeyCode::Down => form.focus = Some(focus.next()),
+        KeyCode::BackTab | KeyCode::Up => form.focus = Some(focus.previous()),
+        KeyCode::Enter => press(form, focus, cx),
+        other => match form.focused_mut() {
+            Some(field) => {
                 field.handle_key(other);
             }
-        }
+            None => command(form, other, cx),
+        },
     }
 }
 
-/// Enter: the identifier moves on to the password, the password submits, and a button does what it says. Buttons do nothing while a sign-in is out.
-fn press(form: &mut LoginForm, cx: &mut Context<'_>) {
-    match form.focus {
-        LoginField::Identifier => form.focus = LoginField::Password,
+/// A letter while no field takes it: `c` and `f` open Create profile and Reset password unless a sign-in is out, `q` quits and `!` opens Help.
+fn command(form: &LoginForm, code: KeyCode, cx: &mut Context<'_>) {
+    match code {
+        KeyCode::Char('c') if !form.busy => register::open(cx),
+        KeyCode::Char('f') if !form.busy => forgot_password::open(cx),
+        KeyCode::Char('q') => cx.quit(),
+        KeyCode::Char('!') => help::open(cx),
+        _ => {}
+    }
+}
+
+/// Enter: the identifier moves on to the password, the password and `Log in` submit, and Show or Hide toggles the mask.
+fn press(form: &mut LoginForm, focus: LoginField, cx: &mut Context<'_>) {
+    match focus {
+        LoginField::Identifier => form.focus = Some(LoginField::Password),
         LoginField::Password | LoginField::LogIn => submit(form, cx),
         LoginField::ShowPassword => {
             let masked = form.password.is_masked();
             form.password.set_masked(!masked);
         }
-        LoginField::CreateProfile if !form.busy => register::open(cx),
-        LoginField::ForgotPassword if !form.busy => forgot_password::open(cx),
-        LoginField::CreateProfile | LoginField::ForgotPassword => {}
     }
 }
 

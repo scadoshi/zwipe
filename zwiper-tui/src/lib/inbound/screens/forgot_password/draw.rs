@@ -1,9 +1,8 @@
-//! Reset password: the hero, the email field with its spinner while sending, or the `Check your email` panel once sent; and the action bar.
+//! Reset password: the hero, the email field with `Send reset link` under it and its spinner between the two while sending, or the `Check your email` panel once sent; and the key bar.
 
 use std::time::Instant;
 
 use ratatui::Frame;
-use ratatui::layout::{Constraint, Layout};
 use ratatui::style::Stylize;
 use ratatui::text::Line;
 use ratatui::widgets::{Paragraph, Wrap};
@@ -15,32 +14,34 @@ use crate::inbound::screens::login::draw::{AuthScreen, Placement};
 use crate::inbound::widgets::button::Button;
 use crate::inbound::widgets::{action_bar, spinner};
 
+/// Reset password's key hints: the form's keys while the focus is in it, with Enter named for what it does; the way back into the form, if there is one, once Esc has ended typing or the request is in.
+pub(crate) fn keys(form: &ForgotForm) -> Vec<(&'static str, &'static str)> {
+    if form.focus.is_some() {
+        return vec![
+            ("Tab", "move"),
+            ("Enter", "send link"),
+            ("F1", "help"),
+            ("Esc", "done"),
+        ];
+    }
+    let mut keys = Vec::new();
+    if !form.stops().is_empty() {
+        keys.push(("Tab", "fields"));
+    }
+    keys.extend([("F1", "help"), ("Esc", "back"), ("q", "quit")]);
+    keys
+}
+
 pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &ForgotForm) {
     let palette = &shared.palette;
-    let body_height = if form.sent {
-        4
+    let body_height = if form.sent { 4 } else { form.email.height() };
+    let row = if form.sent {
+        Vec::new()
     } else {
-        form.email.height().saturating_add(1)
+        vec![Button::new("Send reset link")]
     };
-    let mut row = vec![Button::new("Back to login")];
-    if !form.sent {
-        row.push(Button::new("Send reset link").primary());
-    }
-    let focused = match form.focus {
-        ForgotField::BackToLogin => Some(0),
-        ForgotField::SendResetLink => Some(1),
-        ForgotField::Email => None,
-    };
-    let keys = action_bar::line(
-        palette,
-        &[
-            ("Tab", "move"),
-            ("Enter", "select"),
-            ("F1", "help"),
-            ("Esc", "back"),
-        ],
-    )
-    .centered();
+    let focused = (form.focus == Some(ForgotField::SendResetLink)).then_some(0);
+    let keys = action_bar::line(palette, &keys(form)).centered();
     let areas = login::draw::frame(
         f,
         shared,
@@ -51,6 +52,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &ForgotForm) {
             keys,
             buttons: &row,
             focused,
+            min_gap: 1,
         },
     );
     if form.sent {
@@ -64,25 +66,20 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &ForgotForm) {
             areas.body,
         );
     } else {
-        let [email, spin] = Layout::vertical([
-            Constraint::Length(form.email.height()),
-            Constraint::Length(1),
-        ])
-        .areas(areas.body);
         login::draw::field(
             f,
             palette,
-            email,
+            areas.body,
             &form.email,
             "Email",
-            form.focus == ForgotField::Email,
+            form.focus == Some(ForgotField::Email),
         );
         if let Some(since) = form.sending_since {
             f.render_widget(
                 Line::from(spinner::frame(since, Instant::now()))
                     .style(palette.accent)
                     .centered(),
-                spin,
+                areas.gap,
             );
         }
     }

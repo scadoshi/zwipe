@@ -1,4 +1,4 @@
-//! Create profile: the hero, the four fields with their error lines, and the action bar.
+//! Create profile: the hero, the four fields with their error lines, `Create profile` under them, and the key bar.
 
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout};
@@ -10,6 +10,31 @@ use crate::inbound::screens::login::draw::{AuthScreen, Placement};
 use crate::inbound::widgets::action_bar;
 use crate::inbound::widgets::button::Button;
 
+/// Create profile's key hints: the form's keys while the focus is in it, with Enter named for what it does from the focused stop; the way back into the form once Esc has ended typing.
+pub(crate) fn keys(form: &RegisterForm) -> Vec<(&'static str, &'static str)> {
+    let Some(focus) = form.focus else {
+        return vec![
+            ("Tab", "fields"),
+            ("F1", "help"),
+            ("Esc", "back"),
+            ("q", "quit"),
+        ];
+    };
+    let enter = match focus {
+        RegisterField::Username | RegisterField::Email | RegisterField::Password => "next",
+        RegisterField::Confirm | RegisterField::CreateProfile => "create profile",
+        RegisterField::ShowPassword if form.password.is_masked() => "show",
+        RegisterField::ShowConfirm if form.confirm.is_masked() => "show",
+        RegisterField::ShowPassword | RegisterField::ShowConfirm => "hide",
+    };
+    let mut keys = vec![("Tab", "move"), ("Enter", enter)];
+    if focus == RegisterField::Password {
+        keys.push(("F2", "password rules"));
+    }
+    keys.extend([("F1", "help"), ("Esc", "done")]);
+    keys
+}
+
 pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &RegisterForm) {
     let palette = &shared.palette;
     let heights = [
@@ -20,20 +45,12 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &RegisterForm) {
     ];
     let body_height = heights.iter().fold(0_u16, |sum, h| sum.saturating_add(*h));
     let focus = form.focus;
-    let mut keys = vec![("Tab", "move"), ("Enter", "select")];
-    if focus == RegisterField::Password {
-        keys.push(("F2", "password rules"));
-    }
-    keys.extend([("F1", "help"), ("Esc", "back")]);
     let create = if form.busy {
         "Creating..."
     } else {
         "Create profile"
     };
-    let row = [
-        Button::new("Back to login").disabled(form.busy),
-        Button::new(create).primary().disabled(form.busy),
-    ];
+    let row = [Button::new(create).disabled(form.busy)];
     let areas = login::draw::frame(
         f,
         shared,
@@ -41,9 +58,10 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &RegisterForm) {
         AuthScreen {
             body_height,
             placement: Placement::Top,
-            keys: action_bar::line(palette, &keys).centered(),
+            keys: action_bar::line(palette, &keys(form)).centered(),
             buttons: &row,
-            focused: focus.button(),
+            focused: focus.and_then(RegisterField::button),
+            min_gap: 0,
         },
     );
     let [username, email, password, confirm] =
@@ -54,7 +72,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &RegisterForm) {
         username,
         &form.username,
         "Username",
-        focus == RegisterField::Username,
+        focus == Some(RegisterField::Username),
     );
     login::draw::field(
         f,
@@ -62,7 +80,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &RegisterForm) {
         email,
         &form.email,
         "Email",
-        focus == RegisterField::Email,
+        focus == Some(RegisterField::Email),
     );
     login::draw::field(
         f,
@@ -70,14 +88,14 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &RegisterForm) {
         password,
         &form.password,
         "Password ?",
-        focus == RegisterField::Password,
+        focus == Some(RegisterField::Password),
     );
     login::draw::show_button(
         f,
         palette,
         password,
         &form.password,
-        focus == RegisterField::ShowPassword,
+        focus == Some(RegisterField::ShowPassword),
     );
     login::draw::field(
         f,
@@ -85,13 +103,13 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &RegisterForm) {
         confirm,
         &form.confirm,
         "Confirm password",
-        focus == RegisterField::Confirm,
+        focus == Some(RegisterField::Confirm),
     );
     login::draw::show_button(
         f,
         palette,
         confirm,
         &form.confirm,
-        focus == RegisterField::ShowConfirm,
+        focus == Some(RegisterField::ShowConfirm),
     );
 }

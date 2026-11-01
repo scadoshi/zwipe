@@ -1,4 +1,4 @@
-//! Login: the hero, the two fields and the action bar; and the frame Register and Forgot password share with it.
+//! Login: the hero, the two fields, `Log in` under them and the key bar; and the frame Register and Forgot password share with it.
 
 use std::time::Instant;
 
@@ -20,10 +20,12 @@ pub(crate) const FORM_WIDTH: u16 = 48;
 /// The hero is at most this wide, in cells.
 const HERO_WIDTH: u16 = 64;
 
-/// Where an auth screen's form goes: `FORM_WIDTH` wide at most and centered.
+/// Where an auth screen's form goes: `FORM_WIDTH` wide at most and centered, with the row under it, between the form and its buttons, for a screen that has a line to put there.
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct AuthAreas {
     pub(crate) body: Rect,
+    /// The row between the form and its buttons, as wide as the form; empty when there is none.
+    pub(crate) gap: Rect,
 }
 
 /// Whether an auth screen's content sits in the middle of the screen, as Login and Forgot password do, or from the top, as Register does.
@@ -41,12 +43,14 @@ pub(crate) struct AuthScreen<'parts> {
     pub(crate) placement: Placement,
     /// The key hints, wrapped when the screen is narrow.
     pub(crate) keys: Line<'static>,
-    /// The action bar's buttons, and the one with the focus.
+    /// The buttons under the form, if any, and the one with the focus.
     pub(crate) buttons: &'parts [Button<'parts>],
     pub(crate) focused: Option<usize>,
+    /// The rows the screen needs between the form and its buttons, 0 or 1; the frame adds one when the hero loses nothing to it.
+    pub(crate) min_gap: u16,
 }
 
-/// Draws an auth screen's buttons and its key hints, and lays out the rest: the hero over the form. The buttons are boxes while the form fits beside them and the hero loses nothing to them, else pills; the hero shrinks, then goes, when the screen is short.
+/// Draws an auth screen's buttons and its key hints, and lays out the rest: the hero over the form, the buttons a row under the form, the whole group placed as one. The buttons are boxes while they fit and the hero loses nothing to them, else pills; the hero shrinks, then goes, when the screen is short.
 pub(crate) fn frame(
     f: &mut Frame<'_>,
     shared: &Shared,
@@ -59,36 +63,51 @@ pub(crate) fn frame(
         keys,
         buttons: row,
         focused,
+        min_gap,
     } = screen;
     let area = f.area();
     let keys_height = action_bar::height(&keys, area.width);
+    let [content, keys_area] =
+        Layout::vertical([Constraint::Fill(1), Constraint::Length(keys_height)]).areas(area);
+    f.render_widget(action_bar::wrap(keys, keys_area.width), keys_area);
     let hero_width = area.width.min(HERO_WIDTH);
-    // The hero's room once the buttons and the keys take theirs.
-    let hero_room = |buttons: u16| {
-        area.height
-            .saturating_sub(keys_height)
-            .saturating_sub(buttons)
+    let pills = u16::from(!row.is_empty());
+    // The hero's room once the form, `gap` rows and the buttons take theirs, a row kept between the hero and the form.
+    let hero_room = |gap: u16, buttons: u16| {
+        content
+            .height
             .saturating_sub(body_height)
+            .saturating_sub(gap)
+            .saturating_sub(buttons)
             .saturating_sub(1)
     };
-    // Boxes while the form fits beside them and the hero keeps what it shows over pills.
-    let boxed = button::height(row, area.width, hero_room(1).saturating_add(1)) == button::HEIGHT
-        && Hero::height(hero_width, hero_room(button::HEIGHT))
-            == Hero::height(hero_width, hero_room(1));
-    let buttons_height = if boxed { button::HEIGHT } else { 1 };
-    let [content, buttons, keys_area] = Layout::vertical([
-        Constraint::Fill(1),
-        Constraint::Length(buttons_height),
-        Constraint::Length(keys_height),
-    ])
-    .areas(area);
-    button::draw_row(f, &shared.palette, buttons, row, focused);
-    f.render_widget(action_bar::wrap(keys, keys_area.width), keys_area);
-    let room = content.height.saturating_sub(body_height).saturating_sub(1);
-    let hero_height = Hero::height(hero_width, room);
+    let min_gap = if row.is_empty() { 0 } else { min_gap };
+    // Boxes while they fit beside the form and the hero keeps what it shows over pills.
+    let boxed = !row.is_empty()
+        && button::height(
+            row,
+            area.width,
+            hero_room(min_gap, pills).saturating_add(pills),
+        ) == button::HEIGHT
+        && Hero::height(hero_width, hero_room(min_gap, button::HEIGHT))
+            == Hero::height(hero_width, hero_room(min_gap, pills));
+    let buttons_height = if boxed { button::HEIGHT } else { pills };
+    let hero_height = Hero::height(hero_width, hero_room(min_gap, buttons_height));
+    // A row between the form and its buttons while the hero keeps what it shows without it.
+    let gap = if !row.is_empty()
+        && Hero::height(hero_width, hero_room(1, buttons_height)) == hero_height
+        && hero_room(1, buttons_height) > 0
+    {
+        1
+    } else {
+        min_gap
+    };
+    let hero_gap = u16::from(hero_height > 0);
     let total = hero_height
-        .saturating_add(u16::from(hero_height > 0))
+        .saturating_add(hero_gap)
         .saturating_add(body_height)
+        .saturating_add(gap)
+        .saturating_add(buttons_height)
         .min(content.height);
     let top = match placement {
         Placement::Centered => content
@@ -101,16 +120,23 @@ pub(crate) fn frame(
         height: total,
         ..content
     };
-    let [hero_area, _, body] = Layout::vertical([
+    let [hero_area, _, body, gap_area, buttons] = Layout::vertical([
         Constraint::Length(hero_height),
-        Constraint::Length(u16::from(hero_height > 0)),
-        Constraint::Fill(1),
+        Constraint::Length(hero_gap),
+        Constraint::Length(body_height),
+        Constraint::Length(gap),
+        Constraint::Length(buttons_height),
     ])
     .areas(column);
+    if !row.is_empty() {
+        button::draw_row(f, &shared.palette, buttons, row, focused);
+    }
     let hero_area = hero_area.centered_horizontally(Constraint::Length(hero_width));
     hero.draw(f, shared, hero_area, Instant::now());
+    let form_width = Constraint::Length(FORM_WIDTH.min(body.width));
     AuthAreas {
-        body: body.centered_horizontally(Constraint::Length(FORM_WIDTH.min(body.width))),
+        body: body.centered_horizontally(form_width),
+        gap: gap_area.centered_horizontally(form_width),
     }
 }
 
@@ -160,24 +186,34 @@ pub(crate) fn show_button(
     f.render_widget(Line::from(label).style(style), spot);
 }
 
+/// Login's key hints: the form's keys while the focus is in it, with Enter named for what it does from the focused stop and the screen's letters once no field takes them; the way back into the form and the letters once Esc has ended typing.
+pub(crate) fn keys(form: &LoginForm) -> Vec<(&'static str, &'static str)> {
+    let letters = [("c", "Create profile"), ("f", "Forgot password")];
+    let Some(focus) = form.focus else {
+        let mut keys = vec![("Tab", "fields")];
+        keys.extend(letters);
+        keys.extend([("F1", "help"), ("q", "quit")]);
+        return keys;
+    };
+    let enter = match focus {
+        LoginField::Identifier => "next",
+        LoginField::Password | LoginField::LogIn => "log in",
+        LoginField::ShowPassword if form.password.is_masked() => "show",
+        LoginField::ShowPassword => "hide",
+    };
+    let mut keys = vec![("Tab", "move"), ("Enter", enter)];
+    if matches!(focus, LoginField::ShowPassword | LoginField::LogIn) {
+        keys.extend(letters);
+    }
+    keys.extend([("F1", "help"), ("Esc", "done")]);
+    keys
+}
+
 pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &LoginForm) {
     let palette = &shared.palette;
-    let keys = action_bar::line(
-        palette,
-        &[
-            ("Tab", "move"),
-            ("Enter", "select"),
-            ("F1", "help"),
-            ("Esc", "quit"),
-        ],
-    )
-    .centered();
+    let keys = action_bar::line(palette, &keys(form)).centered();
     let log_in = if form.busy { "Logging in..." } else { "Log in" };
-    let row = [
-        Button::new(log_in).primary().disabled(form.busy),
-        Button::new("Create profile").disabled(form.busy),
-        Button::new("Forgot password").disabled(form.busy),
-    ];
+    let row = [Button::new(log_in).disabled(form.busy)];
     let areas = frame(
         f,
         shared,
@@ -187,7 +223,8 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &LoginForm) {
             placement: Placement::Centered,
             keys,
             buttons: &row,
-            focused: form.focus.button(),
+            focused: form.focus.and_then(LoginField::button),
+            min_gap: 0,
         },
     );
     let [identifier, password] =
@@ -198,7 +235,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &LoginForm) {
         identifier,
         &form.identifier,
         "Username or email",
-        form.focus == LoginField::Identifier,
+        form.focus == Some(LoginField::Identifier),
     );
     field(
         f,
@@ -206,13 +243,13 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &LoginForm) {
         password,
         &form.password,
         "Password",
-        form.focus == LoginField::Password,
+        form.focus == Some(LoginField::Password),
     );
     show_button(
         f,
         palette,
         password,
         &form.password,
-        form.focus == LoginField::ShowPassword,
+        form.focus == Some(LoginField::ShowPassword),
     );
 }
