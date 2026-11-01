@@ -28,8 +28,14 @@ Anything that decides what a screen shows or does and that two or more clients n
 
 ## orangui-core
 
-orangui-core is pinned to rev `932abb5` on orangui's `feat/orangui-core` branch. When the owner merges that branch, the rev moves to orangui main's merge commit.
+orangui-core comes from orangui main, the same source components uses for orangui, so Cargo.lock holds one copy of it. `cargo update -p orangui` moves both.
+
+## Who edits the shared crates
+
+One session owns the shared crates: zwipe-ui, zwipe-core, zwipe-client and components, plus orangui and orangui-core. Feature branches never edit them. A shared change goes on a small branch off main, the owner merges it, and feature branches then merge main. zwiper-web and zwiper-tui send requests to the owning session instead of changing shared code themselves.
+
+`context/shared-plan.md` lists the shared branches in order, the drift still to settle and the owner's decisions. `context/inventory.md` records where each piece landed.
 
 ## Not yet
 
-Screen models (a state, actions and effects per screen) come next, starting with zwiper-web's waves B to D. The clients still use their own copies of everything here until each one switches over.
+Screen models (a state, actions and effects per screen) come next, starting with zwiper-web's waves B to D. zwiper-tui has switched to everything here; zwiper-web and the app still use their own copies until each one switches over.

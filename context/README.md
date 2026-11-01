@@ -21,6 +21,10 @@ Plus [`CLAUDE.md`](CLAUDE.md), the authoritative rules for AI assistants.
 
 The running log, newest first. Update this when something ships; [`progress/todo.md`](progress/todo.md) holds what is still open.
 
+## 2026-10-31: zerver deploys take 5 minutes
+
+A zerver deploy went from 11.3 to 5.1 minutes, push to live (PRs #102 and #103). The VPS used to download a 10 GB `target/` from `actions/cache` on every deploy; the target dir now stays on the VPS outside the workspace, capped at 15 GB. The release build runs on the VPS beside test and lint, with migrations and the swap still behind them. Tests run under cargo-nextest, 1.5 minutes where `cargo test` took 3.1, and lint caches its apt packages. `operations/infrastructure/cicd.md` has the jobs, the cap and the numbers; `test` is the longest path now.
+
 ## 2026-10-29: 1.16.2 released
 
 1.16.2 is live on the App Store (build 111) and Google Play (vc73), a day after it was submitted. The changelog dates it 2026-10-29, which is what zite shows.
