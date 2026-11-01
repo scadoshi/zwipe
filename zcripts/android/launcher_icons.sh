@@ -15,7 +15,7 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 # iOS/web, where square icons look right edge-to-edge) has its edges cropped by
 # Android's adaptive mask. Keep these two sources distinct.
 SRC="$REPO_ROOT/zwiper/assets/favicon/icon-1024-android.png"
-RES="${1:-$REPO_ROOT/target/dx/zwipe/release/android/app/app/src/main/res}"
+RES="${1:-$REPO_ROOT/target/dx/zwiper/release/android/app/app/src/main/res}"
 BG="#282828" # icon background color (matches the source icon)
 
 [ -f "$SRC" ] || { echo "source icon not found: $SRC" >&2; exit 1; }

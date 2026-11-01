@@ -73,10 +73,10 @@ magick "$DEST/icon-1024.png" -format "%[pixel:p{512,500}]" info:    # center = f
 
 ## 2. Repack into the existing `.app` (no Rust rebuild)
 
-This assumes you ran `dx build --release --platform ios` recently and `~/Developer/zwipe/target/dx/zwipe/release/ios/Zwipe.app` already exists. If not, do that first (step 1 of `build.md`).
+This assumes you ran `dx build --release --platform ios` recently and `~/Developer/zwipe/target/dx/zwiper/release/ios/Zwiper.app` already exists. If not, do that first (step 1 of `build.md`).
 
 ```bash
-APP=~/Developer/zwipe/target/dx/zwipe/release/ios/Zwipe.app
+APP=~/Developer/zwipe/target/dx/zwiper/release/ios/Zwiper.app
 
 # Stage the icon catalog (same Contents.json as build.md step 3).
 rm -rf /tmp/Assets.xcassets
@@ -134,7 +134,7 @@ codesign --force --sign "<HASH-OR-NAME>" \
 cd ~/Developer/zwipe
 rm -f Zwipe.ipa
 mkdir -p Payload
-cp -r target/dx/zwipe/release/ios/Zwipe.app Payload/
+cp -r target/dx/zwiper/release/ios/Zwiper.app Payload/
 zip -qr Zwipe.ipa Payload
 rm -rf Payload
 

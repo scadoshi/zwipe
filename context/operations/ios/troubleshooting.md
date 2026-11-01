@@ -26,7 +26,7 @@ Dioxus issue [#3817](https://github.com/DioxusLabs/dioxus/issues/3817). The bina
 
 **Diagnose:**
 ```bash
-vtool -show ~/Developer/zwipe/target/dx/zwipe/release/ios/Zwipe.app/zwipe
+vtool -show ~/Developer/zwipe/target/dx/zwiper/release/ios/Zwiper.app/zwiper
 # Should show: LC_VERSION_MIN_IPHONEOS
 # Bad: shows MACOS or platform 7
 ```
@@ -59,7 +59,7 @@ Dioxus `dx build` doesn't inject the `DT*` (Developer Tools) metadata or `Minimu
   -c "Add :DTXcodeBuild string 16A242d" \
   -c "Add :DTCompiler string com.apple.compilers.llvm.clang.1_0" \
   -c "Add :MinimumOSVersion string 16.0" \
-  ~/Developer/zwipe/target/dx/zwipe/release/ios/Zwipe.app/Info.plist
+  ~/Developer/zwipe/target/dx/zwiper/release/ios/Zwiper.app/Info.plist
 ```
 
 After patching, you **must** re-sign and re-package the IPA; changing the plist invalidates the code signature.
@@ -69,7 +69,7 @@ After patching, you **must** re-sign and re-package the IPA; changing the plist 
 /usr/libexec/PlistBuddy \
   -c "Set :CFBundleShortVersionString 1.0" \
   -c "Set :CFBundleVersion 1" \
-  ~/Developer/zwipe/target/dx/zwipe/release/ios/Zwipe.app/Info.plist
+  ~/Developer/zwipe/target/dx/zwiper/release/ios/Zwiper.app/Info.plist
 ```
 
 ---
@@ -86,7 +86,7 @@ Dioxus generates `CFBundleSupportedPlatforms` with both `iPhoneOS` and `iPadOS`.
   -c "Delete :CFBundleSupportedPlatforms" \
   -c "Add :CFBundleSupportedPlatforms array" \
   -c "Add :CFBundleSupportedPlatforms:0 string iPhoneOS" \
-  ~/Developer/zwipe/target/dx/zwipe/release/ios/Zwipe.app/Info.plist
+  ~/Developer/zwipe/target/dx/zwiper/release/ios/Zwiper.app/Info.plist
 ```
 
 Then re-sign and re-package.
@@ -107,7 +107,7 @@ CFBundlePackageType = "APPL"
 **Manual fix:**
 ```bash
 /usr/libexec/PlistBuddy -c "Add :CFBundlePackageType string APPL" \
-  ~/Developer/zwipe/target/dx/zwipe/release/ios/Zwipe.app/Info.plist
+  ~/Developer/zwipe/target/dx/zwiper/release/ios/Zwiper.app/Info.plist
 ```
 
 ---
@@ -124,7 +124,7 @@ Dioxus sets `UIDeviceFamily` to `[1, 2]` (iPhone + iPad). If you don't want to s
   -c "Delete :UIDeviceFamily" \
   -c "Add :UIDeviceFamily array" \
   -c "Add :UIDeviceFamily:0 integer 1" \
-  ~/Developer/zwipe/target/dx/zwipe/release/ios/Zwipe.app/Info.plist
+  ~/Developer/zwipe/target/dx/zwiper/release/ios/Zwiper.app/Info.plist
 ```
 
 This cannot be fixed via `Dioxus.toml` (array value). Must be patched after every build.
@@ -166,7 +166,7 @@ cp ~/Developer/zwipe/zwiper/assets/favicon/icon-{40,60,80,87,120,180,1024}.png \
    /tmp/Assets.xcassets/AppIcon.appiconset/
 
 # 3. Compile with actool
-actool --compile ~/Developer/zwipe/target/dx/zwipe/release/ios/Zwipe.app \
+actool --compile ~/Developer/zwipe/target/dx/zwiper/release/ios/Zwiper.app \
   --platform iphoneos --minimum-deployment-target 16.0 --app-icon AppIcon \
   --output-partial-info-plist /tmp/assetcatalog_generated_info.plist \
   /tmp/Assets.xcassets
@@ -178,7 +178,7 @@ actool --compile ~/Developer/zwipe/target/dx/zwipe/release/ios/Zwipe.app \
   -c "Add :CFBundleIcons:CFBundlePrimaryIcon:CFBundleIconFiles array" \
   -c "Add :CFBundleIcons:CFBundlePrimaryIcon:CFBundleIconFiles:0 string AppIcon60x60" \
   -c "Add :CFBundleIcons:CFBundlePrimaryIcon:CFBundleIconName string AppIcon" \
-  ~/Developer/zwipe/target/dx/zwipe/release/ios/Zwipe.app/Info.plist
+  ~/Developer/zwipe/target/dx/zwiper/release/ios/Zwiper.app/Info.plist
 ```
 
 This produces `Assets.car` and `AppIcon60x60@2x.png` inside the `.app` bundle. Must be done after every release build, before signing.
@@ -260,10 +260,10 @@ Happens when duplicate certificates are cleaned up from Keychain Access; the pro
 
 ```bash
 rm ~/Library/Developer/Xcode/UserData/Provisioning\ Profiles/*.mobileprovision
-rm -rf ~/Developer/zwipe/target/dx/zwipe/debug/ios/
+rm -rf ~/Developer/zwipe/target/dx/zwiper/debug/ios/
 cd ~/Developer/zwipe/zwiper
 BACKEND_URL=https://api.zwipe.net dx build --platform ios --device "scotland-mobile"
-ios-deploy --bundle ~/Developer/zwipe/target/dx/zwipe/debug/ios/Zwipe.app
+ios-deploy --bundle ~/Developer/zwipe/target/dx/zwiper/debug/ios/Zwiper.app
 ```
 
 **Why duplicates happen:** Each time you create a cert in Xcode or via Keychain Access, Apple issues a new cert with the same team ID but a different serial. The old one stays in your keychain. If `dx build` picks the wrong one (ambiguous match), the signature won't match the provisioning profile.

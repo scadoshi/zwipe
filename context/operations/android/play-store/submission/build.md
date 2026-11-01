@@ -21,7 +21,7 @@ Produce a **signed release `.aab`** ready for the Play Console. To upload it, co
 **→ Because of 1, 5, 6 and 7, run one command after every `dx bundle`:**
 
 ```bash
-zcripts/android/patch_bundle.sh     # launcher icons + back handler + manifest + WryActivity
+zcripts/android/patch_bundle.sh     # launcher icons + back handler + manifest + WryActivity + launcher label
 ```
 
 Then do the Gradle edits (step 2) and repackage. **Add future patches to that script, not to this list**: the whole reason it exists is that a list of things to remember is a list of things to forget.
@@ -56,7 +56,7 @@ cd ~/Developer/zwipe/zwiper
 dx bundle --release --platform android --package-types aab
 ```
 
-`JAVA_HOME` and `ANDROID_HOME` are needed again at step 3, so exporting all four here saves re-doing it. This compiles the Rust lib, stages `libmain.so` into the Gradle project's `jniLibs/`, and produces an AAB targeting SDK **34** (wrong, fixed next). Generated Gradle project: `target/dx/zwipe/release/android/app/`.
+`JAVA_HOME` and `ANDROID_HOME` are needed again at step 3, so exporting all four here saves re-doing it. This compiles the Rust lib, stages `libmain.so` into the Gradle project's `jniLibs/`, and produces an AAB targeting SDK **34** (wrong, fixed next). Generated Gradle project: `target/dx/zwiper/release/android/app/`.
 
 ## 1b–1d. Apply every post-bundle patch (one command)
 
@@ -104,7 +104,7 @@ Verified on device 2026-08-17 against the shipped 1.9.1 build: the same `am star
 ## 2. Bump targetSdk (and versionCode) in the generated Gradle
 
 ```bash
-cd ~/Developer/zwipe/target/dx/zwipe/release/android/app
+cd ~/Developer/zwipe/target/dx/zwiper/release/android/app
 # targetSdk -> 36 (Play requires targetSdk within a year of the latest Android
 # release; 36 since the 2026-08-31 deadline: bumped for the 1.7.3 build).
 # compileSdk -> 36 (the installed platform here; any compileSdk >= targetSdk
@@ -125,7 +125,7 @@ grep -nE 'compileSdk|targetSdk|versionCode|versionName' app/build.gradle.kts
 ```bash
 export ANDROID_HOME="$HOME/Library/Android/sdk"
 export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
-cd ~/Developer/zwipe/target/dx/zwipe/release/android/app
+cd ~/Developer/zwipe/target/dx/zwiper/release/android/app
 ./gradlew :app:bundleRelease --console=plain
 # unsigned output:
 ls app/build/outputs/bundle/release/app-release.aab
@@ -147,7 +147,7 @@ cd ~/Developer/zwipe
 "$JAVA_HOME/bin/jarsigner" -keystore ~/certs/zwipe-upload.jks \
   -sigalg SHA256withRSA -digestalg SHA-256 \
   -signedjar zwipe-<VERSION>.aab \
-  target/dx/zwipe/release/android/app/app/build/outputs/bundle/release/app-release.aab \
+  target/dx/zwiper/release/android/app/app/build/outputs/bundle/release/app-release.aab \
   zwipe-upload
 # enter the keystore password when prompted (or -storepass pass:...: avoid leaving it in history)
 "$JAVA_HOME/bin/jarsigner" -verify zwipe-<VERSION>.aab   # -> "jar verified."
@@ -171,9 +171,10 @@ strings /tmp/aabchk/base/manifest/AndroidManifest.xml \
   | grep -E "singleTask|uiMode"                              # manifest -> both
 strings /tmp/aabchk/base/dex/*.dex | grep -c "^onFirstActivityCreate$"  # tao 0.37 activity -> 1
 strings /tmp/aabchk/base/dex/*.dex | grep -c "^getId$"                  # kept from R8 -> >=1
+unzip -p "$AAB" base/resources.pb | strings | grep -oE "Zwiper?" | sort -u  # launcher label -> Zwipe only
 ```
 
-All six greps must hit. Anything missing means `patch_bundle.sh` didn't run, or ran before a later `dx bundle` wiped it.
+All seven greps must hit. Anything missing means `patch_bundle.sh` didn't run, or ran before a later `dx bundle` wiped it.
 
 **Note on tooling:** an AAB's manifest is protobuf, not binary XML, so `aapt2 dump xmltree --file AndroidManifest.xml <aab>` prints nothing, that form only works on an APK. `strings` on the extracted `base/manifest/AndroidManifest.xml` is the reliable check for a bundle. (On an APK you can use `aapt2 dump xmltree --file AndroidManifest.xml app.apk` and expect `launchMode(0x0101001d)=2` plus a `configChanges` value including `uiMode`, e.g. `0x400017a4`.)
 
