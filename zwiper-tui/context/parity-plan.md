@@ -9,11 +9,13 @@ Specs:
 - `specs/3-decks.md`: deck list, Create, Edit, Import, Export, deck view and its More sheet
 - `specs/4-cards-add-filters.md`: the add (swipe) screen, the card filter sheet, the deck cards view, Remove cards
 
+The build is done; `review.md` holds the owner's visual review: what is decided, what is waiting on the owner, and how to pick the work up.
+
 ## Ground rules
 
 - Copy the app. Strings are verbatim, behavior follows the spec, and where the spec records an app quirk, keep it unless this plan says otherwise.
 - Logic the app keeps in Dioxus crates (`zwiper`, `components`, orangui) is ported into `zwiper-tui/src/lib/domain/` as pure, tested functions. zwiper-tui depends only on zwipe-core and zwipe-client, and this branch changes no other crate.
-- Taps become keys. Each screen's action bar becomes its key hints, and the same letter means the same thing everywhere it can (`?` hint, `!` help, `Esc` back, `q` quit outside text fields).
+- Taps become keys. Each screen's action bar becomes its key hints, and the same letter means the same thing everywhere it can (`?` hint, `F1` help, `Esc` back, `q` quit outside text fields).
 - Layout must survive a small terminal without panicking; a render test at a tiny size guards each screen. At 80 by 24 and 60 by 20 every screen keeps its whole key bar and its content without overlap, and a render test at both sizes checks each one.
 - Gate per commit: nightly fmt, clippy `-D warnings`, tests, rustdoc `-D warnings`, all on `-p zwiper-tui`.
 
