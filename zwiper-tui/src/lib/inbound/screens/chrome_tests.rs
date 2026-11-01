@@ -317,3 +317,50 @@ fn the_terminals_own_colors_draw_no_tiles_on_a_screen() {
         "the terminal palette leaves every background as the terminal's"
     );
 }
+
+#[test]
+fn no_box_keeps_a_plain_band_between_its_border_and_the_grid() {
+    const GLYPHS: [&str; 8] = ["╭", "╮", "╰", "╯", "│", "─", "├", "┤"];
+    let palette = Palette::for_account("gruvbox", true);
+    for Case { title, harness, .. } in cases() {
+        let mut harness = harness;
+        harness.app.shared.palette = palette;
+        let (width, height) = (120, 40);
+        let terminal = render(&harness.app, width, height);
+        let buffer = terminal.backend().buffer();
+        let tiles = grid::shades(&palette, buffer.area, None);
+        let base = palette.base.bg.unwrap();
+        let shows = |x: i32, y: i32| {
+            let (Ok(x), Ok(y)) = (u16::try_from(x), u16::try_from(y)) else {
+                return false;
+            };
+            if x >= width || y >= height || GLYPHS.contains(&buffer[(x, y)].symbol()) {
+                return false;
+            }
+            let tile = tiles[usize::from(y) * usize::from(width) + usize::from(x)];
+            tile.is_some_and(|t| t != base && buffer[(x, y)].bg == t)
+        };
+        for y in 0..height {
+            for x in 0..width {
+                let cell = &buffer[(x, y)];
+                let own = tiles[usize::from(y) * usize::from(width) + usize::from(x)];
+                if !GLYPHS.contains(&cell.symbol())
+                    || own.is_none_or(|t| t == base)
+                    || cell.bg != base
+                    || cell.modifier.contains(ratatui::style::Modifier::REVERSED)
+                {
+                    continue;
+                }
+                let (cx, cy) = (i32::from(x), i32::from(y));
+                let beside = [(cx - 1, cy), (cx + 1, cy), (cx, cy - 1), (cx, cy + 1)]
+                    .into_iter()
+                    .any(|(nx, ny)| shows(nx, ny));
+                assert!(
+                    !beside,
+                    "{title}: the border at {x},{y} keeps a plain band beside the grid:\n{}",
+                    rows(&harness.app, width, height).join("\n")
+                );
+            }
+        }
+    }
+}
