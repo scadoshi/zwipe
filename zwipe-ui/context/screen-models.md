@@ -108,6 +108,9 @@ Every fetch takes a `Ticket` from the model's own `Generation` inside `update`, 
 - Two piles means two entrance signals: `Enter { pile, from }` and `StopEnter(pile)`.
 - An undo that needs a fresh session answers `NotSent` apart from `Failed`, because the two compensate differently.
 - A stack that pages marks its search ticket as the epoch, and every page carries it.
+- An overlay a host keeps mounted takes everything it needs in `Open { .. }` each time it opens; the model decides whether to keep the pile or deal afresh.
+- A right swipe that hands a card to the host is `Effect::Pick`; Back on an overlay is `Navigate(Previous)`, which the host maps to its close.
+- Paged searches and fire-and-forget requests share one generation and waiting list; a fresh deal drops only the pile's searches.
 
 ## Wiring it in Dioxus (the app and zwiper-web)
 

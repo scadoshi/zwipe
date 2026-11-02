@@ -45,7 +45,6 @@ use zwipe_core::http::contracts::suggestions::{
     HttpCommanderSuggestion, HttpStaple, HttpSuggestionReasons,
 };
 use zwipe_ui::generation::Ticket;
-pub(crate) use zwipe_ui::playstyle::empty_identity_line;
 use zwipe_ui::playstyle::{
     self, ProfileSummary, StapleColor, SummaryValue, TagRow, identity_label,
 };
