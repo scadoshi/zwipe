@@ -91,9 +91,9 @@ Effort is the work to build the shared model from the TUI's version and test it 
 
 | Screen | What can be shared | What stays in each client, and why | Effort |
 |---|---|---|---|
-| Login | form state, submit, the Register prefill, error and toast copy | inputs and focus | S |
-| Register | fields, live errors (web-a's `validation.rs` is the model), submit, toasts | inputs | S |
-| Forgot password | field, check, submit, toasts | inputs | S |
+| Login | form state, submit, the Register prefill, error and toast copy | inputs and focus | S, built: `screens::login`; the app switched, web and TUI to switch; storing the session stays in the client |
+| Register | fields, live errors (web-a's `validation.rs` is the model), submit, toasts | inputs | S, built: `screens::register`; the app switched, web and TUI to switch |
+| Forgot password | field, check, submit, toasts | inputs | S, built: `screens::forgot_password`; the app switched, web and TUI to switch |
 | Update required | copy | the action differs on purpose (store link, Reload, terminal message) | S |
 | Help and feedback | copy, the mailto builder with platform | opening mail or the browser | S |
 | Splash | decode frame math (decision 1) | all drawing; web has none | none |

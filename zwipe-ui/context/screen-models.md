@@ -90,6 +90,10 @@ Every fetch takes a `Ticket` from the model's own `Generation` inside `update`, 
 - A client whose controls edit the host's value in place syncs it with `Action::Edit` before each action and performs `Restore` on Back; a client with a separate draft ignores `Restore`.
 - A model whose lists come from a client-wide store emits `EnsureLists` and takes no tickets.
 - A warning raised once per opening resets on close, so the order of effects doesn't matter.
+- Typed passwords are `zwipe_ui::account::Password` in actions, effects and state, with its `Debug` redacted. Login, Register and Forgot password give each field its own edit action; Account's shared `Edit` carries `Typed`, whose `Debug` prints only the length.
+- When the model changes a field the client's input owns, it says so in an effect (`SetIdentifier`, `ClearPassword`).
+- Requests that may overlap on purpose (Forgot password's Send) use the waiting list, and a flag any reply clears mirrors the app's spinner.
+- Funnel events stay in the client and go out as it performs the effect.
 
 ## Wiring it in Dioxus (the app and zwiper-web)
 
