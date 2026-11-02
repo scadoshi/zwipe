@@ -47,8 +47,8 @@ pub fn use_public_counts() -> (Option<HttpPublicMetrics>, bool) {
 }
 
 /// The panel both heroes draw: the mark over the strip, with `source`
-/// under it. A new `roll_key` mounts the strip afresh, so its figures roll
-/// to the new counts.
+/// under it, then zite's tagline under a full-bleed rule. A new `roll_key`
+/// mounts the strip afresh, so its figures roll to the new counts.
 #[component]
 pub fn HeroPanel(
     figures: Vec<(Option<u64>, &'static str)>,
@@ -68,6 +68,17 @@ pub fn HeroPanel(
                             source: source.clone(),
                         }
                     }
+                }
+                hr { class: "panel-rule" }
+                p { class: "web-hero-tagline",
+                    "The "
+                    a {
+                        href: "https://magic.wizards.com/en",
+                        target: "_blank",
+                        rel: "noopener",
+                        "Magic: The Gathering"
+                    }
+                    " deck builder. Swipe through cards for any format, and pick a commander to get the best synergy first."
                 }
             }
         }

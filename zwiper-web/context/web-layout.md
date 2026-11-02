@@ -61,7 +61,7 @@ The wide layout copies zite's home page (`zite/assets/style.css`). Screens move 
 
 ## Home
 
-- On the page grammar. The hero card spans the top of the page (the mark left, the three counters and the `Live` and `Everybody`/`Only me` chips right). Under it `Color map` takes the left column and `Featured flavor` the right.
+- On the page grammar. The hero card spans the top of the page (the mark left, the three counters and the `Live` and `Everybody`/`Only me` chips right), then zite's tagline under a full-bleed rule, without zite's "built for mobile" ("The Magic: The Gathering deck builder. Swipe through cards for any format, and pick a commander to get the best synergy first.", the game's name linking Wizards in a new tab). Under it `Color map` takes the left column and `Featured flavor` the right.
 - The featured flavor panel is the app's: the quote, then the card's name and price, `Image` (the full preview), and in place of `Buy` the `TCGplayer ↗` and `Card Kingdom ↗` links that open in a new tab, as on zite.
 - The app's buttons that only navigate go at every width, since the nav holds them: the action bar (`Decks`, `Account`, `Config`), `Activity` in the hero and `Playstyle` under the color map.
 - Below 900px it is the phone stack: hero, color map, featured flavor.

@@ -129,6 +129,20 @@ body {
     --web-page-max: 74rem;
 }
 
+/* zite's tagline under the hero's mark and counters. */
+.web-hero-tagline {
+    margin: 0;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    text-align: center;
+}
+
+.web-hero-tagline a {
+    color: var(--palette-1);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
 .web-hero,
 .web-columns,
 .web-column {
