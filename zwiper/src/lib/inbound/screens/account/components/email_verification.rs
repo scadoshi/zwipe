@@ -9,6 +9,7 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use tokio::time;
 use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_core::domain::auth::models::session::Session;
+use zwipe_ui::account;
 
 use crate::inbound::components::auth::authed::use_authed;
 use crate::inbound::components::auth::ensure_session::EnsureFresh;
@@ -163,13 +164,7 @@ pub(crate) fn VerificationActions() -> Element {
                     }
                 });
             },
-            if is_resending() {
-                "Sending..."
-            } else if cooldown() > 0 {
-                "Resend in {cooldown()}s"
-            } else {
-                "Resend"
-            }
+            "{account::resend_label(is_resending(), u64::from(cooldown()))}"
         }
         Button {
             variant: ButtonVariant::Action,

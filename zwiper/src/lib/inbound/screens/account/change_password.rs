@@ -5,8 +5,8 @@ use components::{
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use zwipe_core::domain::auth::password;
 use zwipe_core::http::contracts::auth::HttpChangePassword;
+use zwipe_ui::account;
 
 use crate::inbound::components::auth::authed::use_authed;
 use crate::inbound::components::hint_host::HintTopic;
@@ -29,21 +29,12 @@ pub fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
     let mut password_touched = use_signal(|| false);
     let mut submit_attempted = use_signal(|| false);
     let mut validate_new_password = move || {
-        if let Err(e) = password::validate(&new_password()) {
-            password_error.set(Some(e.to_string()));
-        } else if new_password().as_str() != confirm_password().as_str()
-            // Mid-typing the confirmation can't match yet; judge it once it
-            // is as long as the password, or on submit.
-            && (submit_attempted() || confirm_password().chars().count() >= new_password().chars().count())
-        {
-            password_error.set(Some("Passwords do not match".to_string()));
-        } else if new_password().as_str() == current_password().as_str() {
-            password_error.set(Some(
-                "New password must be different from your current password".to_string(),
-            ));
-        } else {
-            password_error.set(None);
-        }
+        password_error.set(account::change_password_error(
+            &current_password(),
+            &new_password(),
+            &confirm_password(),
+            submit_attempted(),
+        ));
     };
 
     let mut show_confirm = use_signal(|| false);

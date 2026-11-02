@@ -269,7 +269,6 @@ zwiper/src/
 └── lib/
     ├── config.rs               # Compile-time env config (backend URL etc., baked in by build.rs)
     ├── domain/
-    │   ├── error.rs            # Client error types
     │   └── language.rs         # i18n support
     │
     ├── inbound/
