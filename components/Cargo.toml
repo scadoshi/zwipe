@@ -26,3 +26,9 @@ orangui = { git = "https://github.com/scadoshi/orangui", branch = "main" }
 toast = ["orangui/toast"]
 # open_url and use_in_app_links, for the apps: links open in the in-app browser.
 links = ["orangui/links"]
+
+[dev-dependencies]
+# Renders components to HTML in the golden test.
+dioxus-ssr = "0.7"
+# Builds card fixtures for the golden test.
+serde_json = { workspace = true }

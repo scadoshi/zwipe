@@ -966,7 +966,9 @@ name = "components"
 version = "1.17.0"
 dependencies = [
  "dioxus",
+ "dioxus-ssr",
  "orangui",
+ "serde_json",
  "uuid",
  "zwipe-core",
 ]
