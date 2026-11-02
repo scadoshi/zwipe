@@ -1,19 +1,17 @@
 # zwiper-web handoff
 
-Where the web build stands as of 2026-11-01, written so a fresh session on another machine can pick it up from this branch alone. `web-layout.md`, `parity-plan.md` and `ARCHITECTURE.md` hold the detail; this is the map.
+Where the web build stands as of 2026-11-02, written so a fresh session on another machine can pick it up from this branch alone. `web-layout.md`, `parity-plan.md` and `ARCHITECTURE.md` hold the detail; this is the map.
 
 ## Branches
 
 | Branch | What it is |
 |---|---|
-| `feat/web` | Every app screen built for the browser in waves A to D, integrated and audited (`audit.md`). Not on main. |
-| `feat/web-zite` | This branch: the layout review on top of `feat/web`, one screen at a time with the owner. Not merged into `feat/web` yet. |
-| `feat/zwipe-ui` | The shared screen-logic crate, owned by another session. `feat/web` depends on it. |
-| `feat/in-app-browser`, `plan/in-app-browser` | The app's in-app browser (Safari View Controller, Custom Tabs), waiting on the owner's device test. Separate from the web work. |
+| `feat/web` | The one web branch: every app screen built for the browser in waves A to D, integrated and audited (`audit.md`), plus the layout review done with the owner one screen at a time. Not on main. The old `feat/web-a` to `-d`, `feat/web-int` and `feat/web-zite` were folded in and deleted. |
+| `main` | Holds zwipe-ui (the shared screen-logic crate, owned by the zwiper-tui session) and the app's in-app browser. `feat/web` merges main in as each shared branch lands. |
 
 Never push to or merge into main. The owner merges.
 
-The shared crates (zwipe-ui, zwipe-core, zwipe-client, components, and orangui with orangui-core) belong to one session, zwiper-tui on scotland-server. Don't edit them on these branches. When zwiper-web needs something shared, send that session a request naming what it needs and where it lives here (file and function). It builds the change on a branch off main, the owner merges it, and then main gets merged into feat/web and feat/web-zite. The ten `// Belongs in zwipe-ui` helpers are already requested; it reads them from origin/feat/web.
+The shared crates (zwipe-ui, zwipe-core, zwipe-client, components, and orangui with orangui-core) belong to one session, zwiper-tui on scotland-server. Don't edit them on feat/web. When zwiper-web needs something shared, send that session a request naming what it needs and where it lives here (file and function). It builds the change on a branch off main, the owner merges it, and then main gets merged into feat/web. The ten `// Belongs in zwipe-ui` helpers are already requested; it reads them from origin/feat/web.
 
 ## Rules the owner set during review
 
@@ -38,9 +36,9 @@ Compact footer buttons, the password hint behind `?`, no site footer, the action
 
 ## Shared code
 
-zwipe-ui landed on main (c55c3977), and main is merged into feat/web and feat/web-zite. The shared plan is `zwipe-ui/context/shared-plan.md`. The web now takes the session rules, version gate, support mailto, account checks, timing constants, changelog cache, filter toggle, examples cap and "1 card" wording from zwipe-ui. The theme already resolves retired slugs through orangui-core.
+zwipe-ui landed on main (c55c3977), and main is merged into feat/web. The shared plan is `zwipe-ui/context/shared-plan.md`. The web now takes the session rules, version gate, support mailto, account checks, timing constants, changelog cache, filter toggle, examples cap and "1 card" wording from zwipe-ui. The theme already resolves retired slugs through orangui-core.
 
-Still to come, as the zwiper-tui session lands each shared branch: toasts take the app's kind, band and words; the `// Belongs in zwipe-ui` helpers move; and the usage buffer replaces the web's disabled funnel once the telemetry branch (branch 12) lands with server-side platform tagging. Do shared-code switches on feat/web, then merge feat/web into feat/web-zite.
+Still to come, as the zwiper-tui session lands each shared branch: toasts take the app's kind, band and words; the `// Belongs in zwipe-ui` helpers move; and the usage buffer replaces the web's disabled funnel once the telemetry branch (branch 12) lands with server-side platform tagging.
 
 ## Review queue
 
