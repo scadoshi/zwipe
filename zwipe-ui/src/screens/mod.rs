@@ -9,3 +9,4 @@ pub mod config;
 pub mod deck_list;
 pub mod deck_view;
 pub mod home;
+pub mod playstyle;
