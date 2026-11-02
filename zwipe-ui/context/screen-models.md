@@ -68,6 +68,10 @@ Every fetch takes a `Ticket` from the model's own `Generation` inside `update`, 
 - Saves that race on different controls carry a `SaveTicket` (slot plus ticket) and wait in a list. Toggles drop an overtaken reply through `Toggles` generations; a sheet's save always lands.
 - A model can open and close sheets with `OpenSheet`/`CloseSheet` while openness stays in client signals.
 - A draft stays readable after its sheet closes, so the sheet sliding away still draws it.
+- A debounce is an effect, `Debounce { ticket, wait }`, that the client answers with `Debounced { ticket }` after the wait, so models stay free of timers. A newer edit takes a new ticket, which drops the older wait.
+- A filter the client owns in a shared sheet goes into views as a parameter (`shown(&filter)`, `message(&filter)`).
+- State handed to another screen goes as an effect ahead of `Navigate` (`SeedCommander(card)`), which keeps `Destination` `Copy`.
+- A quiet fetch that only feeds a gate (the maybeboard's deck count) needs no ticket and sends nothing back on failure.
 
 ## Wiring it in Dioxus (the app and zwiper-web)
 
