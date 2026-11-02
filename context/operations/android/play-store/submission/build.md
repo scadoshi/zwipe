@@ -175,7 +175,7 @@ strings /tmp/aabchk/base/dex/*.dex | grep -c "^getId$"                  # kept f
 unzip -p "$AAB" base/resources.pb | strings | grep -oE "Zwiper?" | sort -u  # launcher label -> Zwipe only
 ```
 
-The orientation lock is an integer in the protobuf manifest, so `strings` can't see it; check it on the universal APK from step 5 instead: `aapt2 dump xmltree --file AndroidManifest.xml app.apk | grep screenOrientation` -> `screenOrientation(0x0101001e)=1` (portrait).
+The orientation lock is an integer in the protobuf manifest, so `strings` can't see it. `bundletool` decodes it straight from the AAB: `bundletool dump manifest --bundle="$AAB" | grep -o 'screenOrientation="[^"]*"'` -> `screenOrientation="1"` (portrait).
 
 All seven greps and the orientation check must hit. Anything missing means `patch_bundle.sh` didn't run, or ran before a later `dx bundle` wiped it.
 
