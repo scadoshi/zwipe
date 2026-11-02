@@ -45,6 +45,7 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
     rsx! {
         ScreenFrame {
             title: "Export",
+            description: Some("Copy the deck as a text decklist, board by board".to_string()),
             on_hint: move |()| {
                 let mut hint_open = hint_open;
                 hint_open.set(true);

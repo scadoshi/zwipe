@@ -112,6 +112,13 @@ body {
     opacity: 1;
 }
 
+/* Below the breakpoint the folded nav carries the screen's `?`. */
+@media (max-width: 899px) {
+    .web-screen-hint {
+        display: none;
+    }
+}
+
 /* With no action bar the `?` keeps its own line at the page's end, so it
    never covers the last panel. */
 .web-screen:not(:has(> .action-bar)) > .web-screen-hint {
@@ -598,6 +605,85 @@ body {
     .web-sheet-side > .bottom-sheet,
     .web-sheet-side > .bottom-sheet.show {
         transition: none;
+    }
+}
+
+/* ---- Page head ----
+
+   zite's page header on a wide window: a panel at the top of the page with
+   the screen's title, its `?` at the right end, and the description under
+   a rule. Below the breakpoint it hides and the title and `?` sit in the
+   folded nav between the mark and the hamburger. */
+.web-page-head-wrap {
+    display: none;
+}
+
+.web-nav-brand-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+}
+
+/* Centered in the folded nav, the `?` right after the title. */
+.web-shell .nav-wrapper nav {
+    position: relative;
+}
+
+.web-nav-title {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    max-width: calc(100% - 9rem);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+}
+
+.web-nav-title-text {
+    color: var(--accent-primary);
+    letter-spacing: 0.1em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+@media (min-width: 900px) {
+    .web-nav-title {
+        display: none;
+    }
+
+    .web-page-head-wrap {
+        display: block;
+        width: 100%;
+        max-width: var(--web-page-max);
+        margin: 1rem auto var(--panel-gap);
+        padding: 0 1.5rem;
+        box-sizing: border-box;
+    }
+
+    /* The page's panels start one panel gap under the head, as they sit
+       one panel gap apart everywhere else. */
+    .web-page-head-wrap + .screen-content {
+        padding-top: 0;
+    }
+
+    .web-page-head {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .web-page-head-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .web-page-head-line {
+        margin: 0;
+        color: var(--text-primary);
     }
 }
 

@@ -125,6 +125,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     rsx! {
         ScreenFrame {
             title: "Edit deck",
+            description: Some("Change a deck's profile, budget and tags".to_string()),
             on_hint: move |()| {
                 let mut hint_open = hint_open;
                 hint_open.set(true);

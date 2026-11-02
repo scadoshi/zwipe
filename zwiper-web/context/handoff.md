@@ -20,7 +20,7 @@ These are recorded in `web-layout.md`; they are repeated here because they came 
 - The page follows zite's grammar: a centered page capped at 74rem with a small top gap, a hero where a screen has one, and the other panels in two balanced columns.
 - The web is panels at every width. Every input form is its own panel with a title bar named after its screen and its buttons in an action footer under a full-bleed rule. The mobile app stays panel-less; don't change it.
 - Panel footer buttons are the app's compact buttons in a row, not full-width stacks.
-- The top nav is zite's nav bar with the Z mark (in `var(--logo)`) linking Home, a hamburger below 900px, and no screen title header under it.
+- The top nav is zite's nav bar with the Z mark (in `var(--logo)`) linking Home and a hamburger below 900px. Every screen but Home and the three auth forms opens with a page head on a wide window (title, `?`, one-line description); below 900px the title and `?` sit centered in the folded nav. This replaced round 9's "no screen title header".
 - No navigation-only buttons (Back, Back to login and the like); the nav and the browser cover them. Buttons that do something stay.
 - No site footer in the web app. The Scryfall credit and the Fan Content notice live on zite and in the Privacy policy screen.
 - Each screen's action bar is pinned to the bottom of the window, always on screen.

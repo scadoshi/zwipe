@@ -25,6 +25,7 @@ pub fn Changelog() -> Element {
 
     rsx! {
         ScreenFrame { title: "Changelog",
+            description: Some("What changed in each release".to_string()),
             div { class: "screen-content content-enter",
                 div { class: "changelog-screen web-changelog",
                     match cache() {

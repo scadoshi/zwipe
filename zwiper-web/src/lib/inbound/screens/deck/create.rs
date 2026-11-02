@@ -70,6 +70,7 @@ pub fn CreateDeck() -> Element {
     rsx! {
         ScreenFrame {
             title: "Create deck",
+            description: Some("Name a deck and set its format, commander, budget and tags".to_string()),
             on_hint: move |()| {
                 let mut hint_open = hint_open;
                 hint_open.set(true);

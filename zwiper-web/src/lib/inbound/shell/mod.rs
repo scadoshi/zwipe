@@ -6,5 +6,5 @@ mod frame;
 pub mod nav;
 mod top_nav;
 
-pub use frame::{OpenFrame, PublicFrame, ScreenFrame};
+pub use frame::{OpenFrame, PublicFrame, ScreenFrame, page_description};
 pub use top_nav::Shell;

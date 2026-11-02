@@ -44,7 +44,7 @@ use crate::inbound::chrome::more_menu::{MoreButton, MoreMenu, use_more_menu};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::router::Route;
 use crate::inbound::screens::deck::skeletons::SkeletonInfoList;
-use crate::inbound::shell::ScreenFrame;
+use crate::inbound::shell::{ScreenFrame, page_description};
 
 /// The suggestions list's title.
 const LIST_TITLE: &str = "Suggested commanders";
@@ -268,6 +268,7 @@ pub fn Playstyle() -> Element {
     rsx! {
         ScreenFrame {
             title: "Playstyle",
+            description: page_description(OneTimeHint::SuggestedCommanders),
             on_hint: move |()| {
                 let mut hint_open = hint_open;
                 hint_open.set(true);

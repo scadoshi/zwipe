@@ -22,7 +22,7 @@ use crate::inbound::cards::otag::{OtagExamplesHost, use_otag_reveals};
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::screens::home::hero::MyCountsPanel;
-use crate::inbound::shell::ScreenFrame;
+use crate::inbound::shell::{ScreenFrame, page_description};
 
 /// The screen while its fetch is out, in the loaded layout: the Activity
 /// section open on its loaded shape (the grid's height as empty space,
@@ -121,7 +121,10 @@ pub fn Activity() -> Element {
     let open_section: Signal<Option<String>> = use_signal(|| Some(ACTIVITY_TITLE.to_string()));
 
     rsx! {
-        ScreenFrame { title: "Activity", on_hint: move |()| hint_again.set(true),
+        ScreenFrame {
+            title: "Activity",
+            description: page_description(OneTimeHint::Activity),
+            on_hint: move |()| hint_again.set(true),
             div { class: "screen-content",
                 div { class: "flex-col web-activity web-page web-sections-open",
                     div { class: "web-hero",

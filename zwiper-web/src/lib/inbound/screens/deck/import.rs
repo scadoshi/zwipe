@@ -99,6 +99,7 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
     rsx! {
         ScreenFrame {
             title: "Import",
+            description: Some("Add cards from a pasted decklist or an Archidekt deck link".to_string()),
             on_hint: move |()| {
                 let mut hint_open = hint_open;
                 hint_open.set(true);
