@@ -11,7 +11,6 @@ use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_ui::timing::RESEND_COOLDOWN;
 
-use crate::domain::account;
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::session::ensure_fresh::ensure_fresh;
 use crate::outbound::timer;
@@ -39,7 +38,7 @@ pub(super) fn EmailValue(email: String, is_verified: bool, on_change: EventHandl
 /// server sends it, how long the link has left.
 #[component]
 pub(super) fn PendingEmail(email: String, expires_at: Option<DateTime<Utc>>) -> Element {
-    let note = expires_at.map(|at| account::link_expiry_text(at, Utc::now()));
+    let note = expires_at.map(|at| zwipe_ui::account::pending_note(at, Utc::now()));
     rsx! {
         div { style: "display:flex;flex-direction:column;align-items:flex-end;gap:0.25rem;",
             span { "{email}" }

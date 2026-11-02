@@ -1,7 +1,6 @@
 //! The app's rules, ported from zwiper as pure functions with no Dioxus and
 //! no I/O.
 
-pub mod account;
 pub mod commander_maybeboard;
 pub mod counts;
 pub mod deck;
