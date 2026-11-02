@@ -7,4 +7,7 @@ pub mod commander_maybeboard;
 pub mod config;
 pub mod deck_list;
 pub mod deck_view;
+pub mod forgot_password;
 pub mod home;
+pub mod login;
+pub mod register;
