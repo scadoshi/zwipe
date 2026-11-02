@@ -25,6 +25,10 @@
 #    and `adb backup` archives. Nothing in the app is worth backing up; the
 #    session is re-created by logging in.
 #
+# 4. screenOrientation="portrait" on MainActivity — dx emits none, so the app
+#    rotates to landscape with the phone. The layout is built for portrait
+#    only, as iOS's UISupportedInterfaceOrientations in Dioxus.toml says.
+#
 # dx REGENERATES AndroidManifest.xml on every `dx bundle`, so run this AFTER
 # `dx bundle` and BEFORE the Gradle repackage — the same window as
 # launcher_icons.sh and back_handler.sh. `patch_bundle.sh` runs all three.
@@ -65,6 +69,12 @@ if 'android:launchMode="' in patched:
 else:
     patched = patched.replace("<activity", '<activity android:launchMode="singleTask"', 1)
 
+# 4. screenOrientation: portrait only, the same rule.
+if 'android:screenOrientation="' in patched:
+    patched = re.sub(r'android:screenOrientation="[^"]*"', 'android:screenOrientation="portrait"', patched)
+else:
+    patched = patched.replace("<activity", '<activity android:screenOrientation="portrait"', 1)
+
 if patched != tag:
     src = src.replace(tag, patched, 1)
 
@@ -83,7 +93,7 @@ if app_patched != app_tag:
 
 open(path, "w").write(src)
 
-print("launchMode=singleTask, allowBackup=false, configChanges=" + config_changes)
+print("launchMode=singleTask, screenOrientation=portrait, allowBackup=false, configChanges=" + config_changes)
 PY
 
 echo "Patched MainActivity attributes into $MANIFEST"

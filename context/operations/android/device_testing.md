@@ -49,7 +49,7 @@ Gradle needs both env vars: without `JAVA_HOME` it reports "Unable to locate a J
 unzip -o "$APK" 'classes*.dex' -d /tmp/apkchk
 strings /tmp/apkchk/*.dex | grep -c 'zwipe:back'      # back handler
 strings /tmp/apkchk/*.dex | grep -c '^killProcess$'   # onDestroy kill
-$AAPT dump xmltree --file AndroidManifest.xml "$APK" | grep -iE 'launchMode|configChanges'
+$AAPT dump xmltree --file AndroidManifest.xml "$APK" | grep -iE 'launchMode|configChanges|screenOrientation'
 ```
 
 ## Driving the app
