@@ -1,11 +1,13 @@
 //! Deck rules the app keeps in its own crates: a deck row's count and pips here, and the command zone, list, form, export, buy and warning rules in the modules.
 
 pub mod command_zone;
+mod create_gate;
 pub mod export;
 pub mod form;
 pub mod list;
 pub mod warning;
 
+pub use create_gate::{VERIFY_TO_CREATE, create_gate};
 use zwipe_core::domain::deck::DeckProfile;
 
 /// The deck's size as the app shows it: the cards in the deck, plus each command-zone card it has. The commander counts only in formats that have one.
