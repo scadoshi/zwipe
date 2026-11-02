@@ -21,9 +21,11 @@ Before you run `fmt`, update nightly. CI's rustfmt merges imports that older nig
 
 - [ ] **12, usage telemetry (#126).** The web sends no usage batch today (drift D9, decision 2). Keep one `zwipe_ui::telemetry::UsageBuffer::new(ClientPlatform::Web, env!("CARGO_PKG_VERSION"))` behind an `Rc<RefCell<..>>` or a signal. Call `record_swipe(SwipeDirection)` on every swipe surface and `record_search` on each search; on Add, `record_signal(deck_id, oracle_id, dir)` and `record_pile_end`; on deck card removal, `record_removal`; on swipe select, `record_select_signal`. For each shown API error, `report_error(HandledError::new(screen::.., component::.., action, kind, &msg))` with names from `telemetry::vocabulary`; map `ClientError` to `ErrorKind` and never report Network errors. Own the flush: a 30 s interval plus `visibilitychange` (hidden) and `pagehide`, each calling `snapshot_and_zero()` and posting with `ZwipeClient::record_usage` under a fresh session, dropping the batch on failure; `clear()` when the session ends. The server caps swipes at 4 a second and tags usage by platform from the login (#122, #124). Delete the disabled funnel in `inbound/session/funnel.rs` once this sends.
 
+- [ ] **Screen model: deck list (#127).** Read `zwipe-ui/context/screen-models.md` first; it is the pattern every screen model follows. Replace the deck list's `group_by`, `show`, `tags_open`, `collapsed`, `hint_fired` and its resource with one `Signal<zwipe_ui::screens::deck_list::State>` and a `Driver` like the app's (`zwiper/src/lib/inbound/screens/deck/list.rs`): dispatch `Action`s, perform the returned `Effect`s (fetch with the ticket, then hand back `Loaded`/`Failed`; navigate; raise toasts; offer the hint). Drop the web's own Create gate and toast in favor of `Action::Create`. Map `Destination::Playstyle` to `Route::Playstyle`. Keep the `SessionStore` save in `RefreshUser` and the wide layout's CSS (the model's `tags_open` is only the fold flag).
+
 ## Coming
 
-- Then the screen models, one per screen, starting with Deck list, Home, Activity and Deck view.
+- More screen models, one per screen: Home, Activity and Deck view next, then the rest in the shared plan's order.
 
 ## Doesn't fit
 
