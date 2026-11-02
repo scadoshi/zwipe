@@ -7,9 +7,11 @@ use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::user::preferences::PipStyle;
 use zwipe_core::http::contracts::auth::HttpAuthenticateUser;
+use zwipe_ui::account::{self, LoginGate};
 
 use crate::inbound::components::home_hero::HomeHero;
 use crate::inbound::components::screen_header::ScreenHeader;
+use crate::inbound::components::ui_toast;
 use crate::inbound::router::Router;
 use crate::outbound::app_icon;
 use crate::outbound::session::Persist;
@@ -18,28 +20,6 @@ use crate::outbound::session::Persist;
 /// sends the user here (registration). Provided at the root.
 #[derive(Debug, Clone, Copy)]
 pub struct LoginPrefill(pub Signal<Option<String>>);
-
-/// What a tap on Log in does.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum SubmitGate {
-    /// A request is already out: ignore the tap.
-    Busy,
-    /// Nothing to send: tell the user.
-    MissingInputs,
-    /// Send the request.
-    Send,
-}
-
-/// Decides a Log in tap from the loading flag and the form.
-fn submit_gate(is_loading: bool, inputs_are_present: bool) -> SubmitGate {
-    if is_loading {
-        SubmitGate::Busy
-    } else if inputs_are_present {
-        SubmitGate::Send
-    } else {
-        SubmitGate::MissingInputs
-    }
-}
 
 /// Login form screen for user authentication.
 #[component]
@@ -68,26 +48,16 @@ pub fn Login() -> Element {
     let mut is_loading = use_signal(|| false);
     let toast = use_toast();
 
-    // Login deliberately does NOT apply registration policy to what's typed.
-    // Those rules can tighten, and an account whose password or username predates
-    // a change would be rejected here and never reach the server to be told why,
-    // locking out a user whose credentials are perfectly correct. The server is
-    // the only authority on whether credentials are valid; all we check is that
-    // there is something to send.
-    let inputs_are_present =
-        move || !username_or_email().trim().is_empty() && !password().is_empty();
-
+    // Login applies no registration policy to what's typed; see
+    // `account::login_gate`. The server is the only judge of a credential.
     let mut attempt_submit = move || {
-        match submit_gate(*is_loading.peek(), inputs_are_present()) {
-            SubmitGate::Busy => return,
-            SubmitGate::MissingInputs => {
-                toast.error(
-                    "Enter your username or email and password".to_string(),
-                    ToastOptions::default().duration(TOAST_NORMAL),
-                );
+        match account::login_gate(*is_loading.peek(), &username_or_email(), &password()) {
+            LoginGate::Busy => return,
+            LoginGate::MissingInputs => {
+                ui_toast::raise(toast, account::missing_inputs_toast());
                 return;
             }
-            SubmitGate::Send => {}
+            LoginGate::Send => {}
         }
         is_loading.set(true);
         let request = HttpAuthenticateUser::new(&username_or_email(), &password());
@@ -165,22 +135,5 @@ pub fn Login() -> Element {
             }
         }
     }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn a_tap_while_logging_in_sends_nothing() {
-        assert_eq!(submit_gate(true, true), SubmitGate::Busy);
-        assert_eq!(submit_gate(true, false), SubmitGate::Busy);
-    }
-
-    #[test]
-    fn an_idle_tap_checks_the_form() {
-        assert_eq!(submit_gate(false, true), SubmitGate::Send);
-        assert_eq!(submit_gate(false, false), SubmitGate::MissingInputs);
     }
 }

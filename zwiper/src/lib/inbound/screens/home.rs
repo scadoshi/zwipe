@@ -4,10 +4,10 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 use components::{
     ActionBar, AlertDialog, Button, ButtonVariant, DialogAction, HintBullet, HintBullets,
-    HintDialog, HintKey, TOAST_QUICK, ThemeConfig,
+    HintDialog, HintKey, ThemeConfig,
 };
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
+use dioxus_primitives::toast::use_toast;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
@@ -15,12 +15,14 @@ use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCur
 use zwipe_core::domain::deck::deck_metrics;
 use zwipe_core::domain::user::models::hints::HINT_FIRST_LOGIN;
 use zwipe_core::domain::user::preferences::PipStyle;
+use zwipe_ui::home::{self, UserSource};
 
 use crate::inbound::components::auth::session_upkeep::FlavorCard;
 use crate::inbound::components::hint_dialog::{HintColored, use_one_time_hint};
 use crate::inbound::components::home_hero::HomeHeroScoped;
 use crate::inbound::components::home_play_style::HomePlayStyle;
 use crate::inbound::components::screen_header::ScreenHeader;
+use crate::inbound::components::ui_toast;
 use crate::inbound::router::Router;
 use crate::inbound::screens::deck::card::components::image_preview::ImagePreview;
 use crate::outbound::{app_icon, buy_links};
@@ -52,54 +54,37 @@ pub fn Home() -> Element {
     // The flavor card's Buy button opens its buy sheet (TCGplayer / CK).
     let mut show_buy_sheet = use_signal(|| false);
 
-    // Refresh user on mount so email_verified_at is current without re-login,
-    // then greet: verified users get "Hello, username!", unverified users get
-    // only the verification nudge (no greeting).
-    //
-    // The greeting fires once per launch. Home remounts on every navigation
-    // back to it, so an ungated toast greets you again on each return from a
-    // deck. The verification nudge is deliberately not gated: it is a prompt
-    // to act on, not a welcome, and it stops on its own once verified.
+    // Refresh the user on mount so email_verified_at is current without
+    // re-login, then greet with `home::greeting`: a verified user once per
+    // launch, an unverified one with the verification nudge each time.
     use_effect(move || {
         let Some(s) = session.peek().clone() else {
             return;
         };
         spawn(async move {
-            match client().fetch_user(&s).await {
+            let (user, source) = match client().fetch_user(&s).await {
                 Ok(fresh_user) => {
-                    let needs_verification = fresh_user.email_verified_at.is_none();
-                    let username = fresh_user.username.clone();
                     let current = session.peek().clone();
                     if let Some(mut current) = current {
-                        current.user = fresh_user;
+                        current.user = fresh_user.clone();
                         session.set(Some(current));
                     }
-                    if needs_verification {
-                        toast.warning(
-                            "Verify your email!".to_string(),
-                            ToastOptions::default().duration(TOAST_QUICK),
-                        );
-                    } else if !GREETED.swap(true, Ordering::Relaxed) {
-                        toast.info(
-                            format!("Hello, {username}!"),
-                            ToastOptions::default().duration(TOAST_QUICK),
-                        );
-                    }
+                    (Some(fresh_user), UserSource::Fetched)
                 }
                 Err(e) => {
                     tracing::warn!("home user fetch failed: {e}");
-                    // Fall back to the cached session's verification status so a
-                    // failed refresh still greets verified users.
-                    if let Some(session) = session.peek().clone()
-                        && session.user.email_verified_at.is_some()
-                        && !GREETED.swap(true, Ordering::Relaxed)
-                    {
-                        toast.info(
-                            format!("Hello, {}!", session.user.username),
-                            ToastOptions::default().duration(TOAST_QUICK),
-                        );
-                    }
+                    // Fall back to the cached session so a failed refresh
+                    // still greets verified users.
+                    let cached = session.peek().as_ref().map(|s| s.user.clone());
+                    (cached, UserSource::Cached)
                 }
+            };
+            let greeted = GREETED.load(Ordering::Relaxed);
+            if let Some(greeting) = user.and_then(|u| home::greeting(&u, source, greeted)) {
+                if greeting.uses_greeting() {
+                    GREETED.store(true, Ordering::Relaxed);
+                }
+                ui_toast::raise(toast, greeting.toast());
             }
         });
     });

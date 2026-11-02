@@ -40,5 +40,7 @@ pub mod telemetry;
     reason = "TriToggle's generated props derive PartialEq over its fn pointer props, which always hold the same fn items"
 )]
 pub mod tri_toggle;
+/// Raises zwipe-ui's toasts through the app's toaster.
+pub mod ui_toast;
 /// Blocking "Update required" screen (min-version gate).
 pub mod update_required;

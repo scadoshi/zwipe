@@ -3,11 +3,10 @@
 use components::{BottomSheet, Button, ButtonVariant, TOAST_NORMAL, TextInput};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use zwipe_core::domain::Email;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::http::contracts::auth::HttpChangeEmail;
+use zwipe_ui::account;
 
-use crate::domain::error::UserFacing;
 use crate::inbound::components::auth::authed::use_authed;
 use crate::inbound::components::telemetry::vocabulary::{ProfileScreen, Screen};
 
@@ -21,22 +20,14 @@ pub fn ChangeEmailSheet(mut open: Signal<bool>) -> Element {
     let mut email_error: Signal<Option<String>> = use_signal(|| None);
     let mut email_touched = use_signal(|| false);
     let mut validate_email = move || {
-        if let Err(e) = Email::new(new_email()) {
-            email_error.set(Some(e.to_user_facing_string()));
-        } else {
-            email_error.set(None);
-        }
+        email_error.set(account::email_error(&new_email()));
     };
 
     let mut password = use_signal(String::new);
     let mut password_error: Signal<Option<String>> = use_signal(|| None);
     let mut password_touched = use_signal(|| false);
     let mut validate_password = move || {
-        if password().is_empty() {
-            password_error.set(Some("Password is required".to_string()));
-        } else {
-            password_error.set(None);
-        }
+        password_error.set(account::password_required(&password()));
     };
 
     let mut submit_attempted = use_signal(|| false);

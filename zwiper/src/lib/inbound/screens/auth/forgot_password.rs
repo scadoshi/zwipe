@@ -4,8 +4,8 @@ use components::{ActionBar, Button, ButtonVariant, Panel, TOAST_NORMAL, TextInpu
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
-use zwipe_core::domain::Email;
 use zwipe_core::http::contracts::auth::HttpRequestPasswordReset;
+use zwipe_ui::account;
 
 use crate::inbound::components::home_hero::HomeHero;
 use crate::inbound::components::screen_header::ScreenHeader;
@@ -25,11 +25,7 @@ pub fn ForgotPassword() -> Element {
     let toast = use_toast();
 
     let mut validate_email = move || {
-        if Email::new(email()).is_err() {
-            email_error.set(Some("Please enter a valid email address".to_string()));
-        } else {
-            email_error.set(None);
-        }
+        email_error.set(account::reset_email_error(&email()));
     };
 
     let mut attempt_submit = move || {
