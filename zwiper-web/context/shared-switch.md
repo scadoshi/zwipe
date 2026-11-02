@@ -29,9 +29,11 @@ Before you run `fmt`, update nightly. CI's rustfmt merges imports that older nig
 
 - [ ] **Screen model: Home (#130).** `zwipe_ui::screens::home`. Replace the hero, color map and flavor state in `inbound/screens/home/{mod,hero,color_map}.rs` with one `Signal<State>`, created with `Action::Load(Box::new(Cached { .. }))` in its `use_signal` initializer so cached figures draw on the first render (see the app's `zwiper/src/lib/inbound/screens/home.rs`). Perform `FetchUser`, `FetchCounts`, `FetchMyCounts`, `FetchPlayStyle` and `FetchFlavor` with their tickets and hand back the matching `*Loaded`/`*Failed` actions; write each reply to the web's own stores too (`outbound/counts_store.rs`, the session) since the caches stay in the client. `SaveScope` writes the scope, `MarkGreeted` sets the launch flag, `OfferHint` opens the first-login hint. Send `CheckFlavor { now }` on each session refresh. The playstyle panel reads `Loading`, `Failed`, `Empty` or `Map(ColorMapCounts)`. `domain/counts.rs` goes once nothing reads it.
 
+- [ ] **Screen model: Deck view (#131).** `zwipe_ui::screens::deck_view`. In `inbound/screens/deck/view/{mod,sections,more,cards}.rs`, hold one `Signal<State>` and a `Driver` like the app's `zwiper/src/lib/inbound/screens/deck/view.rs`, started with `Load(deck_id)` (send it again when the route's id changes). Perform the fetch and edit effects with their tickets and hand back the matching actions; one `Generation` mints every ticket, so just echo what you were given. `OpenDialog(Dialog)` opens Buy, Clone, Share, Clear skips or Delete (which one is up stays the web's); `Copy { text, done }` writes the clipboard then raises `done`; warning fixes go through `Action`s and the `deck::warning::Fix` they carry. Drop the web's own `Done` toasts and clone-name handling; the model raises them. Reloads keep the last deck drawn, so remove any skeleton-on-refresh.
+
 ## Coming
 
-- More screen models, one per screen: Deck view next, then Account, Config and the commander maybeboard, then the rest in the shared plan's order.
+- More screen models, one per screen: Config, the commander maybeboard and Account next, then Create and Edit, Import and Export, and the oracle tag screens, then the rest in the shared plan's order.
 
 ## Doesn't fit
 
