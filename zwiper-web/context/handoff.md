@@ -52,6 +52,7 @@ Approved so far: Login, Register and Forgot password (signed off after round 10:
 - Buy links on card screens: kept off for app parity unless the owner wants them.
 - Launch blockers before zwiper-web goes public: the refresh token moves from `localStorage` to an httpOnly cookie, and funnel events get a platform tag (both zerver changes), then the web's funnel events turn on (`SEND_FUNNEL_EVENTS`).
 - Hosting at `zwipe.net/app` or `app.zwipe.net`.
+- Parked by the owner (2026-11-01): making zite and the web app feel like one site. The idea on file is to host at `zwipe.net/app`, have the Z mark go to zwipe.net with a `Home` pill for the app's home, give the signed-out web nav zite's links plus `Log in`, point Changelog and Privacy policy at zite's pages, and add a `Log in` pill on zite at launch.
 - The ten helpers marked `// Belongs in zwipe-ui` (8 in `src/lib/domain/deck.rs`, 2 in `src/lib/inbound/screens/oracle_tag_dictionary.rs`) wait for the shared-crates session to lift them once zwipe-ui is on main.
 
 ## Running it and checking live
