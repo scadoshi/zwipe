@@ -64,6 +64,10 @@ Every fetch takes a `Ticket` from the model's own `Generation` inside `update`, 
 - A screen with several dialogs emits `OpenDialog(Dialog)`; which dialog is up stays in the client.
 - Copying to the clipboard is `Effect::Copy { text, done }`: the client copies `text`, then raises `done`; a client that can tell the copy failed raises its own toast instead.
 - A screen opened for one item takes its id in `Load` (`Load(deck_id)`).
+- Client-wide values that a sheet previews over (Config's theme and pips) stay the client's. The action carries the value shown, and the model answers with `ShowTheme`/`ShowPips` for an optimistic value or a rollback, and `ThemeSaved`/`PipsSaved` once the server holds it.
+- Saves that race on different controls carry a `SaveTicket` (slot plus ticket) and wait in a list. Toggles drop an overtaken reply through `Toggles` generations; a sheet's save always lands.
+- A model can open and close sheets with `OpenSheet`/`CloseSheet` while openness stays in client signals.
+- A draft stays readable after its sheet closes, so the sheet sliding away still draws it.
 
 ## Wiring it in Dioxus (the app and zwiper-web)
 
