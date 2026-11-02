@@ -463,14 +463,27 @@ async fn daily_signal_budget_drops_the_excess(pool: sqlx::PgPool) {
     seed_cards(&pool, &cards).await;
     let deck_id = commander_deck(&app, &pool, &token, atraxa_id).await;
 
-    // 25 cards at the per-signal ceiling of 200 impressions: exactly the
-    // daily cap of 5,000, all of it applied.
+    // The swipe cap keeps one flush far below the daily cap, so the day's
+    // first 4,975 impressions are seeded, and 25 more bring it to exactly
+    // 5,000, all of it applied.
+    let user_id: Uuid = sqlx::query_scalar("SELECT id FROM users WHERE username = 'firehose'")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    sqlx::query(
+        "INSERT INTO usage_signal_budget (user_id, day, shown) \
+         VALUES ($1, (NOW() AT TIME ZONE 'UTC')::date, 4975)",
+    )
+    .bind(user_id)
+    .execute(&pool)
+    .await
+    .unwrap();
     let signals: Vec<_> = filler_oracles
         .iter()
         .map(|o| {
             json!({
                 "card_oracle_id": o.to_string(), "deck_id": deck_id.to_string(),
-                "shown": 200, "added": 100, "skipped": 100, "maybed": 0, "removed": 0
+                "shown": 1, "added": 1, "skipped": 0, "maybed": 0, "removed": 0
             })
         })
         .collect();
