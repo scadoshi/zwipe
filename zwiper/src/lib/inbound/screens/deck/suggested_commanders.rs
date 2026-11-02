@@ -54,14 +54,13 @@ use super::components::swipe_select::{SuggestedPile, SwipeMode, SwipeSelect};
 use crate::inbound::components::auth::authed::use_authed;
 use crate::inbound::components::catalog_cache::CatalogCache;
 use crate::inbound::components::generation::use_generation;
-use crate::inbound::components::guide_link;
 use crate::inbound::components::hint_dialog::{HintColored, use_one_time_hint};
 use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::home_play_style::ColorMapEmpty;
 use crate::inbound::components::info_button::InfoButton;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{Screen, screen};
-use crate::inbound::components::ui_toast;
+use crate::inbound::components::{guide_link, ui_toast};
 use crate::inbound::router::Router;
 use crate::inbound::screens::deck::card::components::card_row::{
     CardRow, OtagDescribe, OtagExamplesOpen, ShowRowArt,
