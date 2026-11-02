@@ -42,7 +42,7 @@ Still to come, as the zwiper-tui session lands each shared branch: toasts take t
 
 ## Review queue
 
-Approved so far: Login, Register and Forgot password (signed off after round 10: page-wide form panels with fields at 26rem, content-sized dialogs, Community in place of Help, Esc closing dialogs, and Enter submitting the form whether a field has focus or not). Next, one screen per round with renders for the owner: Home, then Activity, Playstyle, deck view (these four already have a first pass of the hero-plus-columns layout on this branch), then Account, Config, Privacy policy, Changelog, Decks, Create and Edit, Import and Export, Commander maybeboard, Dictionary and Examples, Add, Deck cards, Remove, Update required, Not found. Remove each screen's Back button on its turn.
+Approved so far: Login, Register and Forgot password (signed off after round 10: page-wide form panels with fields at 26rem, content-sized dialogs, Community in place of Help, Esc closing dialogs, and Enter submitting the form whether a field has focus or not); Home (zite's tagline under the hero); Activity (no Back, the Activity panel spanning the page with its heatmap at size, Most skipped titled like the other sections). Next, one screen per round with renders for the owner: Playstyle, deck view (these two already have a first pass of the hero-plus-columns layout on this branch), then Account, Config, Privacy policy, Changelog, Decks, Create and Edit, Import and Export, Commander maybeboard, Dictionary and Examples, Add, Deck cards, Remove, Update required, Not found. Remove each screen's Back button on its turn.
 
 ## Open decisions for the owner
 
