@@ -426,7 +426,7 @@ mod tests {
         let delta = batch.signals.first().unwrap();
         // The client pushes deck_id only; all context is derived server-side.
         assert_eq!(delta.deck_id, Some(deck));
-        assert!(batch.deck_skips.is_empty());
+        assert_eq!(batch.deck_skips, Vec::new());
 
         assert!(buffer.snapshot_and_zero().is_none());
     }

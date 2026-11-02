@@ -4,6 +4,7 @@ pub mod cache;
 pub mod handlers;
 pub mod middleware;
 pub mod routes;
+pub mod swipe_cap;
 
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -191,6 +192,8 @@ pub struct AppState {
     /// Public web base URL (e.g. `https://zwipe.net`); used for outbound
     /// User-Agent contact info.
     pub web_base_url: Arc<str>,
+    /// Per-account swipe windows that cap usage batches.
+    pub swipe_cap: Arc<swipe_cap::SwipeCap>,
 }
 
 /// Axum HTTP server with pre-configured routes and middleware.
@@ -295,6 +298,7 @@ impl HttpServer {
             featured_flavor: Arc::new(cache::TtlSlot::new()),
             min_client_version: Arc::from(config.min_client_version.as_str()),
             web_base_url: Arc::from(config.web_base_url.as_str()),
+            swipe_cap: Arc::new(swipe_cap::SwipeCap::new()),
         };
 
         let router = build_router(state, jwt_secret, config.allowed_origins);
