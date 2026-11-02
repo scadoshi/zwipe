@@ -3,6 +3,7 @@
 use std::future::Future;
 
 use uuid::Uuid;
+use zwipe_core::domain::auth::models::platform::ClientPlatform;
 use zwipe_core::http::contracts::metrics::{AnonymousEventKind, HttpCrashReport, HttpUsageBatch};
 
 use crate::domain::metrics::models::errors::MetricsError;
@@ -12,10 +13,13 @@ use crate::domain::metrics::models::public_metrics::PublicMetrics;
 
 /// Database port for metrics writes and reads.
 pub trait MetricsRepository: Clone + Send + Sync + 'static {
-    /// Increments lifetime + daily counters for `user_id` by the batch values.
+    /// Increments lifetime + daily counters for `user_id` by the batch values,
+    /// and the day's totals for the session's `platform` (`None` counts as
+    /// unknown).
     fn apply_usage(
         &self,
         user_id: Uuid,
+        platform: Option<ClientPlatform>,
         batch: &HttpUsageBatch,
     ) -> impl Future<Output = Result<(), MetricsError>> + Send;
 
@@ -99,10 +103,11 @@ pub trait MetricsRepository: Clone + Send + Sync + 'static {
 
 /// Service port for metrics business logic.
 pub trait MetricsService: Clone + Send + Sync + 'static {
-    /// Applies a batched usage update from the client.
+    /// Applies a batched usage update from a client on `platform`.
     fn apply_usage(
         &self,
         user_id: Uuid,
+        platform: Option<ClientPlatform>,
         batch: &HttpUsageBatch,
     ) -> impl Future<Output = Result<(), MetricsError>> + Send;
 

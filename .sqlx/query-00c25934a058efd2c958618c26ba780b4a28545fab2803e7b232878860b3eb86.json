@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO platform_daily_usage\n                   (day, platform, swipes_right, swipes_left, swipes_up, swipes_down, searches, flushes)\n               VALUES ((NOW() AT TIME ZONE 'UTC')::date, $1, $2, $3, $4, $5, $6, 1)\n               ON CONFLICT (day, platform) DO UPDATE SET\n                   swipes_right = platform_daily_usage.swipes_right + EXCLUDED.swipes_right,\n                   swipes_left  = platform_daily_usage.swipes_left  + EXCLUDED.swipes_left,\n                   swipes_up    = platform_daily_usage.swipes_up    + EXCLUDED.swipes_up,\n                   swipes_down  = platform_daily_usage.swipes_down  + EXCLUDED.swipes_down,\n                   searches     = platform_daily_usage.searches     + EXCLUDED.searches,\n                   flushes      = platform_daily_usage.flushes      + EXCLUDED.flushes",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Int8",
+        "Int8",
+        "Int8",
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "00c25934a058efd2c958618c26ba780b4a28545fab2803e7b232878860b3eb86"
+}

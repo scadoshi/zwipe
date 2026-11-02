@@ -16,6 +16,7 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use uuid::Uuid;
 
+use crate::domain::auth::models::platform::ClientPlatform;
 use crate::domain::user::models::email::Email;
 use crate::domain::user::models::username::Username;
 
@@ -55,6 +56,11 @@ pub struct UserClaims {
 
     /// Issued at time as Unix timestamp (seconds since epoch).
     pub iat: i64,
+
+    /// Client platform of the session that minted the token. A token without
+    /// the claim decodes as `None`, and `None` leaves the claim out.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub platform: Option<ClientPlatform>,
 }
 
 // == main ==
@@ -221,12 +227,59 @@ mod tests {
             email,
             exp: 1_234_567_890,
             iat: 1_234_567_890,
+            platform: None,
         };
 
         let serialized = serde_json::to_string(&claims).unwrap();
         let deserialized: UserClaims = serde_json::from_str(&serialized).unwrap();
 
         assert_eq!(claims, deserialized);
+    }
+
+    #[test]
+    fn test_user_claims_round_trip_with_platform() {
+        let claims = UserClaims {
+            user_id: uuid::Uuid::new_v4(),
+            username: Username::new("test").unwrap(),
+            email: Email::from_str("test@example.com").unwrap(),
+            exp: 1_234_567_890,
+            iat: 1_234_567_890,
+            platform: Some(ClientPlatform::Terminal),
+        };
+
+        let serialized = serde_json::to_value(&claims).unwrap();
+        assert_eq!(serialized["platform"], "terminal");
+        let deserialized: UserClaims = serde_json::from_value(serialized).unwrap();
+
+        assert_eq!(claims, deserialized);
+    }
+
+    #[test]
+    fn test_user_claims_without_platform_leave_the_claim_out() {
+        let claims = UserClaims {
+            user_id: uuid::Uuid::nil(),
+            username: Username::new("test").unwrap(),
+            email: Email::from_str("test@example.com").unwrap(),
+            exp: 1_234_567_890,
+            iat: 1_234_567_890,
+            platform: None,
+        };
+
+        let serialized = serde_json::to_value(&claims).unwrap();
+        assert!(serialized.get("platform").is_none(), "{serialized}");
+    }
+
+    #[test]
+    fn test_user_claims_missing_platform_decode_as_none() {
+        let json = serde_json::json!({
+            "user_id": uuid::Uuid::nil(),
+            "username": "tester",
+            "email": "test@example.com",
+            "exp": 1_234_567_890,
+            "iat": 1_234_567_890,
+        });
+        let claims: UserClaims = serde_json::from_value(json).unwrap();
+        assert_eq!(claims.platform, None);
     }
 
     #[test]
@@ -267,6 +320,7 @@ mod tests {
             email: email.clone(),
             exp: 1_234_567_890,
             iat: 1_234_567_890,
+            platform: None,
         };
         let claims2 = UserClaims {
             user_id: id1,
@@ -274,6 +328,7 @@ mod tests {
             email: email.clone(),
             exp: 1_234_567_890,
             iat: 1_234_567_890,
+            platform: None,
         };
         let claims3 = UserClaims {
             user_id: id2,
@@ -281,6 +336,7 @@ mod tests {
             email,
             exp: 1_234_567_890,
             iat: 1_234_567_890,
+            platform: None,
         };
 
         assert_eq!(claims1, claims2);
