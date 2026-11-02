@@ -20,14 +20,16 @@ Anything that decides what a screen shows or does and that two or more clients n
 - Config's preference changes, sparse update, toggle settle, exception chips and toasts (`preferences`).
 - The account forms: every field check and its words, the Log in gate, the Resend and Delete account labels; Home's greeting.
 - Hint copy as typed spans: every `?` topic and every one-time hint (`hint`).
+- Usage telemetry: the buffer, handled-error reports, error kinds and the screen vocabulary (`telemetry`), with each client's lock, flush timer and send left to the client.
 - Toasts as values (`toast`), behavior timings and search limits (`timing`), and the generation ticket for replies that arrive out of order.
+- Screen models (`screens`): a screen's state, actions and effects, so a client only draws and wires input. The deck list (`screens::deck_list`) is the first; `context/screen-models.md` holds the pattern.
 
 ## What stays out
 
 - Anything that draws, or names Dioxus, ratatui or web-sys. Focus, scroll, gestures, animation and layout belong to each client.
 - Domain rules the server shares. Those go in zwipe-core, which keeps its purity rules.
 - Networking. Clients fetch through zwipe-client and hand the results in; zwipe-ui does not depend on it.
-- Anything only one client needs: the TUI's palettes, privacy policy parser and mana symbol tokens; the app's gesture engine, app icon, haptics, keyring and telemetry buffer; the web's anchors and `localStorage`.
+- Anything only one client needs: the TUI's palettes, privacy policy parser and mana symbol tokens; the app's gesture engine, app icon, haptics, keyring and its telemetry lock, flush timer and send; the web's anchors and `localStorage`.
 - orangui's pure pieces (number formatting, chart math, toast bands, count-up and decode frames). Those come from orangui-core.
 
 ## orangui-core
@@ -42,4 +44,4 @@ One session owns the shared crates: zwipe-ui, zwipe-core, zwipe-client and compo
 
 ## Not yet
 
-Screen models (a state, actions and effects per screen) come next, starting with zwiper-web's waves B to D. zwiper-tui has switched to everything here; zwiper-web still uses its own copies until it switches over, and the app has switched `filter::fields::same_set`, the account checks and labels, the Log in gate, Home's greeting, the command zone (`deck::command_zone`), the deck form's values, requests, knock-on clears and slot visibility (`deck::form`), the deck form's pickers (`deck::pickers`), the create gate, the deck view (`deck::view`), the commander maybeboard and swipe select rules (`commander`), the oracle tag dictionary (`dictionary`), Config (`preferences`), the filter's chip rows without a mode chip (`filter::chips`) and the card info lines (`card::info`) so far.
+Screen models (a state, actions and effects per screen) are under way: the deck list is built and the app draws from it; the other fifteen follow in the shared plan's order. zwiper-tui has switched to everything here; zwiper-web still uses its own copies until it switches over, and the app has switched `filter::fields::same_set`, the account checks and labels, the Log in gate, Home's greeting, the command zone (`deck::command_zone`), the deck form's values, requests, knock-on clears and slot visibility (`deck::form`), the deck form's pickers (`deck::pickers`), the create gate, the deck view (`deck::view`), the commander maybeboard and swipe select rules (`commander`), the oracle tag dictionary (`dictionary`), Config (`preferences`), the filter's chip rows without a mode chip (`filter::chips`), the card info lines (`card::info`), the usage buffer and vocabulary (`telemetry`) and the deck list screen (`screens::deck_list`) so far.

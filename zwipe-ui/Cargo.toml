@@ -16,6 +16,7 @@ email_address = { workspace = true }
 # orangui's Dioxus-free half, on the same source and commit as components'
 # orangui so Cargo.lock holds one copy.
 orangui-core = { git = "https://github.com/scadoshi/orangui", branch = "main" }
+tracing = { workspace = true }
 uuid = { workspace = true }
 
 [dev-dependencies]

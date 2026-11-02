@@ -27,7 +27,9 @@ use crate::domain::auth::requests::confirm_email_change::{
 };
 use crate::domain::auth::requests::create_session::CreateSessionError;
 use crate::domain::auth::requests::delete_user::{DeleteUser, DeleteUserError};
-use crate::domain::auth::requests::refresh_session::{RefreshSession, RefreshSessionError};
+use crate::domain::auth::requests::refresh_session::{
+    RefreshSession, RefreshSessionError, RotatedRefreshToken,
+};
 use crate::domain::auth::requests::register_user::{RegisterUser, RegisterUserError};
 use crate::domain::auth::requests::reset_password::ResetPasswordError;
 use crate::domain::auth::requests::revoke_sessions::RevokeSessionsError;
@@ -236,7 +238,7 @@ impl AuthRepository for Postgres {
     async fn use_refresh_token(
         &self,
         request: &RefreshSession,
-    ) -> Result<RefreshToken, RefreshSessionError> {
+    ) -> Result<RotatedRefreshToken, RefreshSessionError> {
         let mut tx = self.pool.begin().await?;
 
         // FOR UPDATE serializes concurrent refreshes on the row: the winner
@@ -316,13 +318,16 @@ impl AuthRepository for Postgres {
             id: existing.family_id,
             login_at: existing.login_at,
         };
-        let new = tx
+        let refresh_token = tx
             .create_refresh_token(request.user_id, family, carried, client_version)
             .await?;
 
         tx.commit().await?;
 
-        Ok(new)
+        Ok(RotatedRefreshToken {
+            refresh_token,
+            platform: carried,
+        })
     }
     // == delete ==
     async fn delete_user(&self, request: &DeleteUser) -> Result<(), DeleteUserError> {

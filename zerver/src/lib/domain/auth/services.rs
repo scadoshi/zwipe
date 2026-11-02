@@ -25,7 +25,9 @@ use crate::domain::auth::requests::confirm_email_change::{
 };
 use crate::domain::auth::requests::create_session::{CreateSession, CreateSessionError};
 use crate::domain::auth::requests::delete_user::{DeleteUser, DeleteUserError};
-use crate::domain::auth::requests::refresh_session::{RefreshSession, RefreshSessionError};
+use crate::domain::auth::requests::refresh_session::{
+    RefreshSession, RefreshSessionError, RotatedRefreshToken,
+};
 use crate::domain::auth::requests::register_user::{
     RegisterOutcome, RegisterUser, RegisterUserError,
 };
@@ -369,9 +371,13 @@ where
             .await
             .unwrap_or_default();
 
-        let access_token =
-            AccessToken::generate(&user, &self.jwt_secret, self.access_token_lifetime)
-                .map_err(|e| AuthenticateUserError::FailedAccessToken(anyhow!("{e}")))?;
+        let access_token = AccessToken::generate(
+            &user,
+            request.platform,
+            &self.jwt_secret,
+            self.access_token_lifetime,
+        )
+        .map_err(|e| AuthenticateUserError::FailedAccessToken(anyhow!("{e}")))?;
 
         let refresh_token = self
             .auth_repo
@@ -403,8 +409,12 @@ where
             )
             .await?;
 
-        let access_token =
-            AccessToken::generate(&user, &self.jwt_secret, self.access_token_lifetime)?;
+        let access_token = AccessToken::generate(
+            &user,
+            request.platform,
+            &self.jwt_secret,
+            self.access_token_lifetime,
+        )?;
 
         let session = Session {
             user,
@@ -427,10 +437,17 @@ where
             .await
             .unwrap_or_default();
 
-        let refresh_token = self.auth_repo.use_refresh_token(request).await?;
+        let RotatedRefreshToken {
+            refresh_token,
+            platform,
+        } = self.auth_repo.use_refresh_token(request).await?;
 
-        let access_token =
-            AccessToken::generate(&user, &self.jwt_secret, self.access_token_lifetime)?;
+        let access_token = AccessToken::generate(
+            &user,
+            platform,
+            &self.jwt_secret,
+            self.access_token_lifetime,
+        )?;
 
         let session = Session {
             user,

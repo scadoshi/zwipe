@@ -26,10 +26,12 @@ pub mod hint;
 pub mod home;
 pub mod playstyle;
 pub mod preferences;
+pub mod screens;
 pub mod session;
 pub mod stack;
 pub mod stores;
 pub mod support;
+pub mod telemetry;
 pub mod timing;
 pub mod toast;
 

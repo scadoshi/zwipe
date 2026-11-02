@@ -7,158 +7,142 @@
 //! pips, deck tags, descriptive tags) with All as the reset. Both are
 //! ephemeral per visit: with the 20-deck cap there is no state worth
 //! persisting.
-
-use std::collections::HashSet;
+//!
+//! What the screen knows and does is `zwipe_ui::screens::deck_list`; this
+//! file draws its state and performs its effects.
 
 use components::{
     ActionBar, BottomSheet, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintDialog,
     HintKey,
 };
 use dioxus::prelude::*;
-use dioxus_primitives::toast::use_toast;
-use zwipe_client::{ClientError, ZwipeClient};
+use dioxus::router::Navigator;
+use dioxus_primitives::toast::{Toasts, use_toast};
+use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::deck;
 use zwipe_core::domain::deck::deck_profile::DeckProfile;
-use zwipe_core::domain::deck::format::Format;
 use zwipe_core::domain::user::models::hints::HINT_DECK_LIST;
 use zwipe_ui::deck::command_zone;
+use zwipe_ui::deck::list::{self, GroupBy};
+use zwipe_ui::screens::deck_list::{self, Action, Destination, Effect, MoreItem, State, Status};
 
-use crate::inbound::components::auth::authed::use_authed;
+use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen};
 use crate::inbound::components::{guide_link, hint_dialog, ui_toast};
 use crate::inbound::router::Router;
 use crate::inbound::screens::deck::components::skeletons::{ChipRowSkeleton, DeckListSkeleton};
 
-/// Grouping dimensions for the deck list.
-#[derive(Clone, Copy, Debug, PartialEq)]
-enum DeckGroupBy {
-    /// Flat alphabetical list (the pre-grouping behavior).
-    None,
-    /// Sections per format; format-less decks land in "No format".
-    Format,
-    /// Sections per exact color identity, colorless last.
-    Color,
-    /// Sections per tag (deck + descriptive); a deck appears under each of
-    /// its tags, tagless decks land in "Untagged".
-    Tag,
+/// The deck list's model with the handles that perform its effects. Copy,
+/// so every handler and task holds its own.
+#[derive(Clone, Copy)]
+struct Driver {
+    model: Signal<State>,
+    navigator: Navigator,
+    toast: Toasts,
+    authed: Authed,
+    session: Signal<Option<Session>>,
+    client: Signal<ZwipeClient>,
+    hint_open: Signal<bool>,
 }
 
-impl DeckGroupBy {
-    fn all() -> Vec<Self> {
-        vec![Self::None, Self::Format, Self::Color, Self::Tag]
-    }
-}
-
-impl std::fmt::Display for DeckGroupBy {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let label = match self {
-            Self::None => "None",
-            Self::Format => "Format",
-            Self::Color => "Color",
-            Self::Tag => "Tag",
-        };
-        write!(f, "{label}")
-    }
-}
-
-/// The deck's identity as ordered [`Color`]s (WUBRG order, unknowns dropped).
-fn identity_colors(profile: &DeckProfile) -> Vec<Color> {
-    let present: HashSet<Color> = profile
-        .color_identity
-        .iter()
-        .filter_map(|s| Color::try_from(s.as_str()).ok())
-        .collect();
-    Color::all()
-        .into_iter()
-        .filter(|c| present.contains(c))
-        .collect()
-}
-
-/// Every tag on the deck as (key, label): deck tags keyed by raw slug,
-/// descriptive tags keyed by display name. One namespace, the Show row and
-/// tag grouping treat them alike.
-fn tag_labels(profile: &DeckProfile) -> Vec<(String, String)> {
-    profile
-        .tags
-        .iter()
-        .map(|t| (t.clone(), deck::deck_tag_label(t)))
-        .chain(
-            profile
-                .other_tags
-                .iter()
-                .map(|t| (t.display_name().to_string(), t.display_name().to_string())),
-        )
-        .collect()
-}
-
-/// True when the deck passes the Show row: every selected color is in its
-/// identity (build toward a combo), and, if any tags are selected, it carries
-/// at least one of them. Empty selections mean All.
-fn matches_filters(profile: &DeckProfile, colors: &HashSet<Color>, tags: &HashSet<String>) -> bool {
-    let identity: HashSet<Color> = identity_colors(profile).into_iter().collect();
-    if !colors.iter().all(|c| identity.contains(c)) {
-        return false;
-    }
-    if !tags.is_empty() {
-        let deck_tags: HashSet<String> = tag_labels(profile).into_iter().map(|(k, _)| k).collect();
-        if deck_tags.is_disjoint(tags) {
-            return false;
+impl Driver {
+    /// Applies `action` to the model and performs what it returns.
+    fn dispatch(self, action: Action) {
+        let mut model = self.model;
+        let effects = model.write().update(action);
+        for effect in effects {
+            self.perform(effect);
         }
     }
-    true
-}
 
-/// One rendered section: header text, header pips (color grouping renders
-/// mana icons instead of text), and the decks inside.
-struct DeckGroup {
-    header: String,
-    pips: Option<Vec<Color>>,
-    decks: Vec<DeckProfile>,
-}
-
-impl DeckGroup {
-    /// Stable identity for the collapse set. Color groups render as pips with
-    /// no header text, so they key off the pip sequence instead: otherwise
-    /// every color group would share the empty string and fold as one.
-    fn key(&self) -> String {
-        if !self.header.is_empty() {
-            return self.header.clone();
+    /// Performs one effect, feeding any reply back through [`Self::dispatch`].
+    fn perform(self, effect: Effect) {
+        let Self {
+            navigator,
+            toast,
+            authed,
+            mut session,
+            client,
+            hint_open,
+            ..
+        } = self;
+        match effect {
+            Effect::RefreshUser => {
+                let Some(s) = session.peek().clone() else {
+                    return;
+                };
+                spawn(async move {
+                    match client().fetch_user(&s).await {
+                        Ok(fresh_user) => {
+                            let current = session.peek().clone();
+                            if let Some(mut current) = current {
+                                current.user = fresh_user;
+                                session.set(Some(current));
+                            }
+                        }
+                        Err(e) => {
+                            tracing::warn!("deck list user fetch failed: {e}");
+                        }
+                    }
+                });
+            }
+            Effect::FetchDecks(ticket) => {
+                spawn(async move {
+                    // try_run reports a failure and raises its error toast.
+                    let reply = authed
+                        .try_run("load_decks", |c, s| async move {
+                            c.fetch_deck_profiles(&s).await
+                        })
+                        .await;
+                    self.dispatch(match reply {
+                        Ok(decks) => Action::Loaded { ticket, decks },
+                        Err(_) => Action::Failed { ticket },
+                    });
+                });
+            }
+            Effect::OfferHint(hint) => {
+                hint_dialog::open_and_record_hint(hint.key(), session, client, hint_open);
+            }
+            Effect::Navigate(destination) => {
+                navigator.push(route(destination));
+            }
+            Effect::Toast(warning) => ui_toast::raise(toast, warning),
         }
-        self.pips
-            .as_ref()
-            .map(|pips| pips.iter().map(Color::to_short_name).collect::<String>())
-            .unwrap_or_default()
+    }
+}
+
+/// The app's route for a place the deck list sends the user.
+fn route(destination: Destination) -> Router {
+    match destination {
+        Destination::Home => Router::Home {},
+        Destination::Deck(deck_id) => Router::ViewDeck { deck_id },
+        Destination::CreateDeck => Router::CreateDeck,
+        Destination::CommanderMaybeboard => Router::CommanderMaybeboard {},
+        Destination::Playstyle => Router::SuggestedCommanders {},
     }
 }
 
 /// One collapsible section of the deck list: the card list's group grammar
 /// (tap the header to fold, arrow rotates, rows stay mounted and hide via
-/// CSS). Ephemeral per visit, like the deck cards screen.
+/// CSS).
 #[component]
 fn DeckGroupSection(
-    group_key: String,
     header: String,
     pips: Option<Vec<Color>>,
     count: usize,
-    collapsed_groups: Signal<HashSet<String>>,
+    expanded: bool,
+    ontoggle: EventHandler,
     children: Element,
 ) -> Element {
-    let mut collapsed_groups = collapsed_groups;
-    let expanded = !collapsed_groups().contains(&group_key);
     rsx! {
         div {
             class: if expanded { "card-group row-enter" } else { "card-group row-enter collapsed" },
             div {
                 class: if expanded { "card-group-header group-collapsible expanded" } else { "card-group-header group-collapsible" },
-                onclick: move |_| {
-                    let mut set = collapsed_groups.write();
-                    if !set.remove(&group_key) {
-                        set.insert(group_key.clone());
-                    }
-                },
+                onclick: move |_| ontoggle.call(()),
                 span { class: "card-row-arrow", "▸" }
                 if let Some(pips) = pips.as_ref().filter(|p| !p.is_empty()) {
                     // Same wrapper the deck rows use, so a group's pips are the
@@ -184,138 +168,18 @@ fn DeckGroupSection(
     }
 }
 
-/// Folds an (already filtered, name-sorted) list into sections for the chosen
-/// dimension. `DeckGroupBy::None` returns one headerless group.
-fn group_decks(profiles: &[DeckProfile], by: DeckGroupBy) -> Vec<DeckGroup> {
-    match by {
-        // Ungrouped is still one group, headed "All", so the list looks the
-        // same whether or not Group by is on: one container, one collapsible
-        // header.
-        DeckGroupBy::None => vec![DeckGroup {
-            header: "All".to_string(),
-            pips: None,
-            decks: profiles.to_vec(),
-        }],
-        DeckGroupBy::Format => {
-            let mut groups: Vec<DeckGroup> = Vec::new();
-            for profile in profiles {
-                let header = profile
-                    .format
-                    .as_ref()
-                    .map_or_else(|| "No format".to_string(), |f| f.display_name().to_string());
-                match groups.iter_mut().find(|g| g.header == header) {
-                    Some(group) => group.decks.push(profile.clone()),
-                    None => groups.push(DeckGroup {
-                        header,
-                        pips: None,
-                        decks: vec![profile.clone()],
-                    }),
-                }
-            }
-            // Alphabetical, format-less decks last.
-            groups.sort_by_key(|g| (g.header == "No format", g.header.clone()));
-            groups
-        }
-        DeckGroupBy::Color => {
-            let mut groups: Vec<DeckGroup> = Vec::new();
-            for profile in profiles {
-                let pips = identity_colors(profile);
-                let header = if pips.is_empty() {
-                    "Colorless".to_string()
-                } else {
-                    String::new()
-                };
-                match groups
-                    .iter_mut()
-                    .find(|g| g.pips.as_deref() == Some(pips.as_slice()))
-                {
-                    Some(group) => group.decks.push(profile.clone()),
-                    None => groups.push(DeckGroup {
-                        header,
-                        pips: Some(pips),
-                        decks: vec![profile.clone()],
-                    }),
-                }
-            }
-            // Fewest colors first in WUBRG order, colorless last.
-            groups.sort_by_key(|g| {
-                let pips = g.pips.clone().unwrap_or_default();
-                let order: Vec<usize> = pips
-                    .iter()
-                    .map(|c| Color::all().iter().position(|a| a == c).unwrap_or(0))
-                    .collect();
-                (pips.is_empty(), pips.len(), order)
-            });
-            groups
-        }
-        DeckGroupBy::Tag => {
-            let mut groups: Vec<DeckGroup> = Vec::new();
-            let mut untagged: Vec<DeckProfile> = Vec::new();
-            for profile in profiles {
-                let labels = tag_labels(profile);
-                if labels.is_empty() {
-                    untagged.push(profile.clone());
-                    continue;
-                }
-                for (_, label) in labels {
-                    match groups.iter_mut().find(|g| g.header == label) {
-                        Some(group) => group.decks.push(profile.clone()),
-                        None => groups.push(DeckGroup {
-                            header: label,
-                            pips: None,
-                            decks: vec![profile.clone()],
-                        }),
-                    }
-                }
-            }
-            groups.sort_by_key(|g| g.header.clone());
-            if !untagged.is_empty() {
-                groups.push(DeckGroup {
-                    header: "Untagged".to_string(),
-                    pips: None,
-                    decks: untagged,
-                });
-            }
-            groups
-        }
-    }
-}
-
-/// The row's card count: the deck's cards plus its command zone.
-fn row_card_count(profile: &DeckProfile) -> i64 {
-    let command_zone = [
-        profile.format.as_ref().is_some_and(Format::has_commander)
-            && profile.commander_id.is_some(),
-        profile.partner_commander_id.is_some(),
-        profile.background_id.is_some(),
-        profile.signature_spell_id.is_some(),
-    ];
-    // A display count: a server count at the cap stays there.
-    command_zone
-        .into_iter()
-        .filter(|&held| held)
-        .fold(profile.card_count, |count, _| count.saturating_add(1))
-}
-
 /// One tappable deck row: name, identity pips, and the stat chips.
 #[component]
-fn DeckRow(profile: DeckProfile) -> Element {
-    let navigator = use_navigator();
-    let count = row_card_count(&profile);
+fn DeckRow(profile: DeckProfile, onopen: EventHandler) -> Element {
+    let count = zwipe_ui::deck::card_count(&profile);
     // Out of bounds only when the format defines a size rule the count breaks.
-    let count_bad = profile.format.as_ref().is_some_and(|f| {
-        f.min_cards().is_some_and(|m| count < i64::from(m))
-            || f.max_cards().is_some_and(|m| count > i64::from(m))
-    });
-    let pips = identity_colors(&profile);
+    let count_bad = !zwipe_ui::deck::count_fits(&profile, count);
+    let pips = list::identity_colors(&profile);
     let art = command_zone::art(&profile);
-    let deck_id = profile.id;
     rsx! {
         div {
             class: "card-row deck-row row-enter",
-            onclick: move |_| {
-                navigator.push(Router::ViewDeck { deck_id });
-            },
+            onclick: move |_| onopen.call(()),
             div { class: "deck-list-row",
                 // The command zone leads the row inline, as flex items beside
                 // the name, so the chips wrap onto the next line underneath
@@ -347,7 +211,7 @@ fn DeckRow(profile: DeckProfile) -> Element {
                 }
                 span {
                     class: if count_bad { "stat-chip stat-chip-warning" } else { "stat-chip" },
-                    "{count} cards"
+                    {zwipe_ui::deck::cards_label(count)}
                 }
                 if let Some(ref fmt) = profile.format {
                     span { class: "stat-chip stat-chip-p3", "{fmt.display_name()}" }
@@ -381,90 +245,50 @@ fn DeckRow(profile: DeckProfile) -> Element {
 /// Screen displaying all user's decks with navigation to view/edit.
 #[component]
 pub fn DeckList() -> Element {
-    let navigator = use_navigator();
-    let auth_client: Signal<ZwipeClient> = use_context();
-    let mut session: Signal<Option<Session>> = use_context();
-    let toast = use_toast();
-    let authed = use_authed(Screen::Deck(DeckScreen::List));
-    let decks_hint_open = use_signal(|| false);
-
-    // Deck-list hint: fires once decks have loaded and only if any exist,
-    // its main job is teaching the group/filter chip rows, which an empty
-    // list hides, so it waits for a later visit instead of burning its one
-    // showing (same gate as the deck cards screen's hint).
-    let mut decks_hint_fired = use_signal(|| false);
-
-    let mut group_by = use_signal(|| DeckGroupBy::None);
-    // Collapsed group keys, ephemeral per visit: the deck cards screen's rule:
-    // everything opens fresh next time.
-    let collapsed_groups: Signal<HashSet<String>> = use_signal(HashSet::new);
-    let mut selected_colors: Signal<HashSet<Color>> = use_signal(HashSet::new);
-    let mut selected_tags: Signal<HashSet<String>> = use_signal(HashSet::new);
-    // The deck tags fold behind one chip, so the row stays short on a
-    // library with many; a tag that is on stays in view while folded.
-    let mut tags_open = use_signal(|| false);
+    let driver = Driver {
+        model: use_signal(State::new),
+        navigator: use_navigator(),
+        toast: use_toast(),
+        authed: use_authed(Screen::Deck(DeckScreen::List)),
+        session: use_context(),
+        client: use_context(),
+        hint_open: use_signal(|| false),
+    };
+    let decks_hint_open = driver.hint_open;
+    let session = driver.session;
     let mut show_more_sheet = use_signal(|| false);
 
-    // Refresh user on mount so email_verified_at is current without re-login.
-    use_effect(move || {
-        let Some(s) = session.peek().clone() else {
-            return;
-        };
-        spawn(async move {
-            match auth_client().fetch_user(&s).await {
-                Ok(fresh_user) => {
-                    let current = session.peek().clone();
-                    if let Some(mut current) = current {
-                        current.user = fresh_user;
-                        session.set(Some(current));
-                    }
-                }
-                Err(e) => {
-                    tracing::warn!("deck list user fetch failed: {e}");
-                }
-            }
-        });
-    });
+    // Refreshes the user, so email_verified_at is current without re-login,
+    // and fetches the decks, once per mount.
+    use_effect(move || driver.dispatch(Action::Load));
 
-    let mut deck_profiles_resource: Resource<Result<Vec<DeckProfile>, ClientError>> =
-        use_resource(move || async move {
-            // try_run keeps the Result the errored/loading branches match on;
-            // reporting and the error toast live in the facade.
-            authed
-                .try_run("load_decks", |c, s| async move {
-                    c.fetch_deck_profiles(&s).await
-                })
-                .await
-        });
-
-    // Restart resource on component mount to ensure fresh data
-    use_effect(move || {
-        deck_profiles_resource.restart();
-    });
-
-    use_effect(move || {
-        let has_decks = deck_profiles_resource
-            .read()
-            .as_ref()
-            .and_then(|r| r.as_ref().ok())
-            .is_some_and(|p| !p.is_empty());
-        if has_decks && !*decks_hint_fired.peek() {
-            decks_hint_fired.set(true);
-            hint_dialog::open_and_record_hint(
-                HINT_DECK_LIST,
-                session,
-                auth_client,
-                decks_hint_open,
-            );
-        }
-    });
+    // Snapshot the model once per render.
+    let state = driver.model.read();
+    let loading = state.status() == Status::Loading;
+    // Hide the console when there is nothing it could act on: a
+    // loaded-and-empty list, or a load error.
+    let show_rows = state.chips_shown();
+    let group_by = state.group_by();
+    let all_on = state.show().is_all();
+    let picked_colors = state.show().colors.clone();
+    let picked_tags = state.show().tags.clone();
+    let tags_open = state.tags_open();
+    let tags_present = state.tags();
+    let folded_picks = state.folded_picks();
+    let message = state.message();
+    let mut groups: Vec<(list::DeckGroup, bool)> = Vec::new();
+    for group in state.groups() {
+        let expanded = !state.is_collapsed(&group.key());
+        groups.push((group, expanded));
+    }
+    drop(state);
 
     rsx! {
             div { class: "screen",
-                ScreenHeader { title: "Decks", hint: decks_hint_open }
+                ScreenHeader { title: deck_list::TITLE, hint: decks_hint_open }
 
-                // Auto-opens once per account (HINT_DECK_LIST) via the gated
-                // effect above; the header's ? reopens it on demand.
+                // Auto-opens once per account (HINT_DECK_LIST) when the model
+                // offers it; the header's ? reopens it on demand.
                 HintDialog {
                     open: decks_hint_open,
                     actions: guide_link::one_time(HINT_DECK_LIST),
@@ -483,231 +307,164 @@ pub fn DeckList() -> Element {
                     // header on all three.
                     style: "max-width: 40rem; width: 100%; padding: 0 1rem;",
 
-                    {
-                        // Snapshot the resource once: Some(profiles) when loaded,
-                        // None while loading (errors render their own message).
-                        let profiles: Option<Vec<DeckProfile>> = deck_profiles_resource
-                            .read()
-                            .as_ref()
-                            .and_then(|r| r.as_ref().ok())
-                            .cloned();
-                        let errored = matches!(&*deck_profiles_resource.read(), Some(Err(_)));
-                        let loading = !errored && profiles.is_none();
-
-                        // While the decks load the whole console ghosts with the
-                        // list. Once loaded, the five colors always show (a color
-                        // with no matching decks just yields "No decks match",
-                        // never a selected chip that vanishes), and the
-                        // deck-derived tags fold behind the Tags chip.
-                        let colors_shown: Vec<Color> = Color::all().to_vec();
-                        let tags_present: Vec<(String, String)> = profiles
-                            .as_ref()
-                            .map(|deck_profiles| {
-                                let mut seen = HashSet::new();
-                                let mut tags: Vec<(String, String)> = deck_profiles
-                                    .iter()
-                                    .flat_map(tag_labels)
-                                    .filter(|(key, _)| seen.insert(key.clone()))
-                                    .collect();
-                                tags.sort_by_key(|(_, label)| label.clone());
-                                tags
-                            })
-                            .unwrap_or_default();
-                        let all_on = selected_colors().is_empty() && selected_tags().is_empty();
-                        let filtered: Option<Vec<DeckProfile>> = profiles.as_ref().map(|deck_profiles| {
-                            let mut kept: Vec<DeckProfile> = deck_profiles
-                                .iter()
-                                .filter(|p| matches_filters(p, &selected_colors(), &selected_tags()))
-                                .cloned()
-                                .collect();
-                            kept.sort_by_key(|p| p.name.to_lowercase());
-                            kept
-                        });
-                        // Hide the console when there is nothing it could act
-                        // on: a loaded-and-empty list, or a load error.
-                        let show_rows = profiles.as_ref().is_some_and(|p| !p.is_empty());
-                        rsx! {
-                            if loading {
-                                // Group by, then Show: All, the five pips, Tags.
-                                ChipRowSkeleton { label: "md", chips: vec!["sm", "md", "sm", "sm"] }
-                                ChipRowSkeleton { label: "sm", chips: vec!["sm", "sm", "sm", "sm", "sm", "sm", "md"] }
-                            } else if show_rows {
-                                div { class: "chip-row",
-                                    span { class: "stat-chip stat-chip-p1 chip-row-label", "Group by" }
-                                    for option in DeckGroupBy::all() {
-                                        Chip {
-                                            key: "{option}",
-                                            selected: group_by() == option,
-                                            onclick: move |_| group_by.set(option),
-                                            "{option}"
-                                        }
+                    // While the decks load the whole console ghosts with the
+                    // list. Once loaded, the five colors always show (a color
+                    // with no matching decks just yields "No decks match",
+                    // never a selected chip that vanishes), and the
+                    // deck-derived tags fold behind the Tags chip.
+                    if loading {
+                        // Group by, then Show: All, the five pips, Tags.
+                        ChipRowSkeleton { label: "md", chips: vec!["sm", "md", "sm", "sm"] }
+                        ChipRowSkeleton { label: "sm", chips: vec!["sm", "sm", "sm", "sm", "sm", "sm", "md"] }
+                    } else if show_rows {
+                        div { class: "chip-row",
+                            span { class: "stat-chip stat-chip-p1 chip-row-label", {deck_list::GROUP_BY} }
+                            for option in GroupBy::ALL {
+                                Chip {
+                                    key: "{option.label()}",
+                                    selected: group_by == option,
+                                    onclick: move |_| driver.dispatch(Action::PickGroupBy(option)),
+                                    "{option.label()}"
+                                }
+                            }
+                        }
+                        div { class: "chip-row",
+                            span { class: "stat-chip stat-chip-p1 chip-row-label", {deck_list::SHOW} }
+                            Chip {
+                                selected: all_on,
+                                onclick: move |_| driver.dispatch(Action::ShowAll),
+                                {deck_list::SHOW_ALL}
+                            }
+                            for color in Color::all() {
+                                Chip {
+                                    key: "{color.to_short_name()}",
+                                    selected: picked_colors.contains(&color),
+                                    onclick: move |_| driver.dispatch(Action::ToggleColor(color)),
+                                    i { class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost" }
+                                }
+                            }
+                            // The Tags fold chip shows only when some deck has a tag.
+                            if !tags_present.is_empty() {
+                                Chip {
+                                    selected: tags_open,
+                                    onclick: move |_| driver.dispatch(Action::ToggleTagFold),
+                                    {deck_list::TAGS}
+                                    // The card rows' disclosure arrow: sideways folded, down open.
+                                    span {
+                                        class: if tags_open { "chip-fold-arrow expanded" } else { "chip-fold-arrow" },
+                                        "\u{25B8}"
                                     }
                                 }
-                                div { class: "chip-row",
-                                    span { class: "stat-chip stat-chip-p1 chip-row-label", "Show" }
-                                    Chip {
-                                        selected: all_on,
-                                        onclick: move |_| {
-                                            selected_colors.write().clear();
-                                            selected_tags.write().clear();
-                                        },
-                                        "All"
-                                    }
-                                    for color in colors_shown {
+                                // The tags that are on stay in the row while folded.
+                                if !tags_open {
+                                    for (key, label) in folded_picks {
                                         Chip {
-                                            key: "{color.to_short_name()}",
-                                            selected: selected_colors().contains(&color),
-                                            onclick: move |_| {
-                                                let mut colors = selected_colors.write();
-                                                if !colors.remove(&color) {
-                                                    colors.insert(color);
-                                                }
-                                            },
-                                            i { class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost" }
-                                        }
-                                    }
-                                    // The Tags fold chip shows only when some deck has a tag.
-                                    if !tags_present.is_empty() {
-                                        Chip {
-                                            selected: tags_open(),
-                                            onclick: move |_| tags_open.set(!tags_open()),
-                                            "Tags"
-                                            // The card rows' disclosure arrow: sideways folded, down open.
-                                            span {
-                                                class: if tags_open() { "chip-fold-arrow expanded" } else { "chip-fold-arrow" },
-                                                "\u{25B8}"
-                                            }
-                                        }
-                                        // The tags that are on stay in the row while folded.
-                                        if !tags_open() {
-                                            for (key, label) in tags_present.iter().filter(|(key, _)| selected_tags().contains(key)).cloned() {
-                                                Chip {
-                                                    key: "{key}",
-                                                    selected: true,
-                                                    onclick: move |_| {
-                                                        selected_tags.write().remove(&key);
-                                                    },
-                                                    "{label}"
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                                // The full tag row folds open and closed under the Show row.
-                                if !tags_present.is_empty() {
-                                    div { class: if tags_open() { "collapsible open" } else { "collapsible" },
-                                        div { class: "collapsible-inner",
-                                            div { class: "chip-row",
-                                                for (key, label) in tags_present {
-                                                    Chip {
-                                                        key: "{key}",
-                                                        selected: selected_tags().contains(&key),
-                                                        onclick: move |_| {
-                                                            let mut tags = selected_tags.write();
-                                                            if !tags.remove(&key) {
-                                                                tags.insert(key.clone());
-                                                            }
-                                                        },
-                                                        "{label}"
-                                                    }
-                                                }
-                                            }
+                                            key: "{key}",
+                                            selected: true,
+                                            onclick: move |_| driver.dispatch(Action::ToggleTag(key.clone())),
+                                            "{label}"
                                         }
                                     }
                                 }
                             }
-                            if errored {
-                                div { class: "message-empty",
-                                    span { class: "chip-note", "Could not load decks" }
-                                }
-                            } else if loading {
-                                DeckListSkeleton {}
-                            } else if profiles.as_ref().is_some_and(Vec::is_empty) {
-                                div { class: "message-empty",
-                                    span { class: "chip-note", "No decks" }
-                                }
-                            } else if let Some(filtered) = filtered {
-                                if filtered.is_empty() {
-                                    div { class: "message-empty",
-                                        span { class: "chip-note", "No decks match" }
-                                    }
-                                }
-                                // Every mode renders the same way: contained
-                                // groups with collapsible headers, the same
-                                // grammar as a deck's card list. Ungrouped is
-                                // simply the single "All" group.
-                                for group in group_decks(&filtered, group_by()) {
-                                    DeckGroupSection {
-                                        key: "{group.key()}",
-                                        group_key: group.key(),
-                                        header: group.header.clone(),
-                                        pips: group.pips.clone(),
-                                        count: group.decks.len(),
-                                        collapsed_groups,
-                                        for profile in group.decks {
-                                            DeckRow { key: "{profile.id}", profile }
+                        }
+                        // The full tag row folds open and closed under the Show row.
+                        if !tags_present.is_empty() {
+                            div { class: if tags_open { "collapsible open" } else { "collapsible" },
+                                div { class: "collapsible-inner",
+                                    div { class: "chip-row",
+                                        for (key, label) in tags_present {
+                                            Chip {
+                                                key: "{key}",
+                                                selected: picked_tags.contains(&key),
+                                                onclick: move |_| driver.dispatch(Action::ToggleTag(key.clone())),
+                                                "{label}"
+                                            }
                                         }
                                     }
                                 }
                             }
                         }
                     }
-
+                    if loading {
+                        DeckListSkeleton {}
+                    }
+                    if let Some(message) = message {
+                        div { class: "message-empty",
+                            span { class: "chip-note", {message} }
+                        }
+                    }
+                    // Every mode renders the same way: contained groups with
+                    // collapsible headers, the same grammar as a deck's card
+                    // list. Ungrouped is simply the single "All" group.
+                    for (group, expanded) in groups {
+                        DeckGroupSection {
+                            key: "{group.key()}",
+                            header: group.header.clone(),
+                            pips: group.pips.clone(),
+                            count: group.decks.len(),
+                            expanded,
+                            ontoggle: {
+                                let group_key = group.key();
+                                move |()| driver.dispatch(Action::ToggleGroup(group_key.clone()))
+                            },
+                            for profile in group.decks {
+                                DeckRow {
+                                    key: "{profile.id}",
+                                    onopen: {
+                                        let deck_id = profile.id;
+                                        move |()| driver.dispatch(Action::OpenDeck(deck_id))
+                                    },
+                                    profile,
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
             ActionBar {
                 Button {
                     variant: ButtonVariant::Action,
-                    onclick: move |_| {
-                        navigator.push(Router::Home {});
-                    },
-                    "Back"
+                    onclick: move |_| driver.dispatch(Action::Back),
+                    {deck_list::BACK}
                 }
                 Button {
                     variant: ButtonVariant::Action,
                     onclick: move |_| {
-                        // Proactive guard: unverified users are limited to 1 deck.
-                        // The backend enforces this too, but we surface it here first.
-                        let gate = session().map_or(Ok(()), |s| {
-                            let deck_count = deck_profiles_resource
-                                .read()
-                                .as_ref()
-                                .and_then(|r| r.as_ref().ok())
-                                .map_or(0, Vec::len);
-                            zwipe_ui::deck::create_gate(s.user.email_verified_at.is_some(), deck_count)
-                        });
-                        match gate {
-                            Ok(()) => {
-                                navigator.push(Router::CreateDeck);
-                            }
-                            Err(warning) => ui_toast::raise(toast, warning),
-                        }
+                        // Unverified users are limited to 1 deck. The backend
+                        // enforces this too, but the model surfaces it first.
+                        // With no session only the server can refuse.
+                        let verified = session
+                            .peek()
+                            .as_ref()
+                            .is_none_or(|s| s.user.email_verified_at.is_some());
+                        driver.dispatch(Action::Create { verified });
                     },
-                    "Create"
+                    {deck_list::CREATE}
                 }
                 Button {
                     variant: ButtonVariant::Action,
                     onclick: move |_| show_more_sheet.set(true),
-                    "More"
+                    {deck_list::MORE}
                 }
             }
 
             // Side features live here rather than crowding the action bar.
-            BottomSheet { open: show_more_sheet, title: "More actions",
+            BottomSheet { open: show_more_sheet, title: deck_list::MORE_TITLE,
                 Button {
                     onclick: move |_| {
                         show_more_sheet.set(false);
-                        navigator.push(Router::CommanderMaybeboard {});
+                        driver.dispatch(Action::More(MoreItem::CommanderMaybeboard));
                     },
-                    "Commander maybeboard"
+                    {MoreItem::CommanderMaybeboard.label()}
                 }
                 Button {
                     onclick: move |_| {
                         show_more_sheet.set(false);
-                        navigator.push(Router::SuggestedCommanders {});
+                        driver.dispatch(Action::More(MoreItem::Playstyle));
                     },
-                    "Playstyle"
+                    {MoreItem::Playstyle.label()}
                 }
             }
             }
@@ -716,26 +473,25 @@ pub fn DeckList() -> Element {
 
 #[cfg(test)]
 mod tests {
-    use uuid::Uuid;
-
     use super::*;
     use crate::test_fixtures;
 
     #[test]
-    fn the_row_counts_the_command_zone() {
-        let mut profile = test_fixtures::deck_profile();
-        profile.card_count = 98;
-        profile.format = Some(Format::Commander);
-        profile.commander_id = Some(Uuid::new_v4());
-        profile.partner_commander_id = Some(Uuid::new_v4());
-        assert_eq!(row_card_count(&profile), 100);
-    }
-
-    #[test]
-    fn a_server_count_at_the_cap_stays_there() {
-        let mut profile = test_fixtures::deck_profile();
-        profile.card_count = i64::MAX;
-        profile.signature_spell_id = Some(Uuid::new_v4());
-        assert_eq!(row_card_count(&profile), i64::MAX);
+    fn every_destination_has_the_app_route() {
+        let deck_id = test_fixtures::deck_profile().id;
+        assert_eq!(route(Destination::Home), Router::Home {});
+        assert_eq!(
+            route(Destination::Deck(deck_id)),
+            Router::ViewDeck { deck_id }
+        );
+        assert_eq!(route(Destination::CreateDeck), Router::CreateDeck);
+        assert_eq!(
+            route(Destination::CommanderMaybeboard),
+            Router::CommanderMaybeboard {}
+        );
+        assert_eq!(
+            route(Destination::Playstyle),
+            Router::SuggestedCommanders {}
+        );
     }
 }
