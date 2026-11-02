@@ -4,7 +4,8 @@
 //! `dangerous_inner_html` so the app and the website stay in sync. Its inline
 //! links open in the in-app browser through
 //! [`components::use_in_app_links`];
-//! the contact line calls [`open_url::open`] directly.
+//! the contact line calls [`open_url::open`](crate::outbound::open_url::open)
+//! directly.
 
 use components::{ActionBar, Button, ButtonVariant};
 use dioxus::prelude::*;
