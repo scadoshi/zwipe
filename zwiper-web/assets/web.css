@@ -974,12 +974,6 @@ body {
 
 /* ---- Activity ---- */
 
-/* Most skipped's header names its section, so it reads as the section
-   titles do: their color, regular weight. */
-.card-group-header > .settings-list-title {
-    font-weight: 400;
-}
-
 .web-activity-year,
 .web-activity-rates {
     display: contents;

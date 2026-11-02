@@ -25,6 +25,7 @@ These are recorded in `web-layout.md`; they are repeated here because they came 
 - No site footer in the web app. The Scryfall credit and the Fan Content notice live on zite and in the Privacy policy screen.
 - Each screen's action bar is pinned to the bottom of the window, always on screen.
 - Password rules live behind the `?` next to the Password label, as in the app.
+- Lists of cards (Most skipped, Staples, Suggested commanders) keep the app's card-group header: the theme's accent-tertiary (Gruvbox's pink) in bold. Other panels use the teal section title.
 - Dialogs as few as possible on the web: where a link or a page does the job, it replaces the app's dialog (Help is the nav's `Community` link to zite's Community page). Form panels are page-wide with their fields held to a reading width; dialogs size to their content up to the page width.
 - Web habits win where they differ from the app: Buy is two direct retailer links (TCGplayer, Card Kingdom) opening in a new tab, never a modal; Home's featured flavor shows the flavor with Image and Buy, no card image by default.
 - ASCII logos use `var(--logo)`: the text color in dark mode, the accent only in light.
@@ -42,7 +43,7 @@ Still to come, as the zwiper-tui session lands each shared branch: toasts take t
 
 ## Review queue
 
-Approved so far: Login, Register and Forgot password (signed off after round 10: page-wide form panels with fields at 26rem, content-sized dialogs, Community in place of Help, Esc closing dialogs, and Enter submitting the form whether a field has focus or not); Home (zite's tagline under the hero); Activity (no Back, the Activity panel spanning the page with its heatmap at size, Most skipped titled like the other sections). Next, one screen per round with renders for the owner: Playstyle, deck view (these two already have a first pass of the hero-plus-columns layout on this branch), then Account, Config, Privacy policy, Changelog, Decks, Create and Edit, Import and Export, Commander maybeboard, Dictionary and Examples, Add, Deck cards, Remove, Update required, Not found. Remove each screen's Back button on its turn.
+Approved so far: Login, Register and Forgot password (signed off after round 10: page-wide form panels with fields at 26rem, content-sized dialogs, Community in place of Help, Esc closing dialogs, and Enter submitting the form whether a field has focus or not); Home (zite's tagline under the hero); Activity (no Back, the Activity panel spanning the page with its heatmap at size, Most skipped keeping the app's card-list header). Next, one screen per round with renders for the owner: Playstyle, deck view (these two already have a first pass of the hero-plus-columns layout on this branch), then Account, Config, Privacy policy, Changelog, Decks, Create and Edit, Import and Export, Commander maybeboard, Dictionary and Examples, Add, Deck cards, Remove, Update required, Not found. Remove each screen's Back button on its turn.
 
 ## Open decisions for the owner
 

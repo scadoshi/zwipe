@@ -338,7 +338,7 @@ pub fn HardPassesPanel(passes: Vec<HttpHardPass>, expanded_card: Signal<Option<U
     rsx! {
         div { class: "maybeboard-list card-group row-enter",
             div { class: "card-group-header card-group-header-with-hint",
-                span { class: "settings-list-title", "{PASSES_TITLE}" }
+                span { "{PASSES_TITLE}" }
                 InfoButton { topic: HintTopic::HardPasses }
             }
             if passes.is_empty() {

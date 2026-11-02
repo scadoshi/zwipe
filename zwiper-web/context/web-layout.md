@@ -68,7 +68,7 @@ The wide layout copies zite's home page (`zite/assets/style.css`). Screens move 
 
 ## Activity
 
-- On the page grammar. The counts panel is the hero. The `Activity` section spans the page under it, the year's heatmap scaled to the page width over `Totals`. Under that the left column holds `Most skipped`, titled like the other sections (their color, regular weight), and the right column holds `Card roles` over `Oracle tags`.
+- On the page grammar. The counts panel is the hero. The `Activity` section spans the page under it, the year's heatmap scaled to the page width over `Totals`. Under that the left column holds `Most skipped` with the app's card-list header (the accent-tertiary color, bold), and the right column holds `Card roles` over `Oracle tags`.
 - No action bar: the app's `Back` goes, since the nav lights `Activity`. The screen's `?` sits alone at the bottom right, on its own line at the page's end so it never covers the last panel.
 - All three accordion sections are open at once, so the shared `Show` rate chips appear above both charts and one click switches both, as in the app.
 - Hovering a heatmap square shows the floating day chip the spec describes for hover devices; clicking a square still drives the readout for 4 seconds.
