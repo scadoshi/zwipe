@@ -24,9 +24,8 @@ use zwipe_core::domain::deck::{
     self, Board, DeckEntry, DeckOtherTag, Format, PowerLevel, deck_metrics,
 };
 use zwipe_core::domain::user::models::hints::HINT_DECK_CARDS;
-use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
 use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpPatchDeckCard};
-use zwipe_core::http::helpers::Patch;
+use zwipe_ui::deck::command_zone::Slot;
 
 use super::components::card_row::{CardRow, OtagDescribe, OtagExamplesOpen, ShowRowArt};
 use super::components::filter_store::{FilterScope, FilterStore};
@@ -34,7 +33,7 @@ use super::components::image_preview::ImagePreview;
 use super::components::printing_sheet::PrintingSheet;
 use super::components::quick_add::QuickAdd;
 use super::components::undo_log::{
-    CommandZoneSlot, UndoAction, UndoLog, UndoStore, create_board_field, take_newest_in,
+    UndoAction, UndoLog, UndoStore, create_board_field, take_newest_in,
 };
 use crate::inbound::components::auth::authed::use_authed;
 use crate::inbound::components::catalog_cache::CatalogCache;
@@ -329,8 +328,6 @@ pub fn View(deck_id: Uuid) -> Element {
     let mut commander_card: Signal<Option<Card>> = use_signal(|| None);
     // Signature spell pinned alongside commander (Oathbreaker only)
     let mut signature_spell_card: Signal<Option<Card>> = use_signal(|| None);
-    // Whether the format is Oathbreaker (for label swapping)
-    let mut is_oathbreaker: Signal<bool> = use_signal(|| false);
     // Commander filtered by the active filter (None = filtered out or no commander)
     let mut displayed_commander: Signal<Option<Card>> = use_signal(|| None);
     // Signature spell filtered by the active filter
@@ -358,7 +355,7 @@ pub fn View(deck_id: Uuid) -> Element {
     // Printing sheet state
     let mut printing_sheet_open: Signal<bool> = use_signal(|| false);
     let mut printing_sheet_card: Signal<Option<Card>> = use_signal(|| None);
-    let mut command_zone_slot: Signal<Option<CommandZoneSlot>> = use_signal(|| None);
+    let mut command_zone_slot: Signal<Option<Slot>> = use_signal(|| None);
     // Controls the dismiss animation before clearing the URL
     let preview_dismissing: Signal<bool> = use_signal(|| false);
     // Whether the next filter effect run should collapse the expanded card
@@ -438,12 +435,6 @@ pub fn View(deck_id: Uuid) -> Element {
                         deck_power.set(profile.power_level);
                         deck_tags.set(profile.tags.clone());
                         deck_other_tags.set(profile.other_tags.clone());
-                        is_oathbreaker.set(
-                            profile
-                                .format
-                                .as_ref()
-                                .is_some_and(Format::has_signature_spell),
-                        );
                         // Explicit target only: no toasts unless the user set one.
                         land_target.set(profile.land_target);
                         price_budget.set(profile.price_target);
@@ -1124,10 +1115,10 @@ pub fn View(deck_id: Uuid) -> Element {
                 // in; a commander swapped or cleared since makes the
                 // inverse stale.
                 let mut slot_signal = match slot {
-                    CommandZoneSlot::Commander => commander_card,
-                    CommandZoneSlot::Partner => partner_card,
-                    CommandZoneSlot::Background => background_card,
-                    CommandZoneSlot::SignatureSpell => signature_spell_card,
+                    Slot::Commander => commander_card,
+                    Slot::Partner => partner_card,
+                    Slot::Background => background_card,
+                    Slot::SignatureSpell => signature_spell_card,
                 };
                 let holds_new = slot_signal
                     .peek()
@@ -1139,21 +1130,7 @@ pub fn View(deck_id: Uuid) -> Element {
                 }
                 let card_name = old_card.scryfall_data.name.clone();
                 let old_id = old_card.scryfall_data.id;
-                let id = Patch::Set(Some(old_id));
-                let request = match slot {
-                    CommandZoneSlot::Commander => {
-                        HttpUpdateDeckProfile::builder().commander_id(id).build()
-                    }
-                    CommandZoneSlot::Partner => HttpUpdateDeckProfile::builder()
-                        .partner_commander_id(id)
-                        .build(),
-                    CommandZoneSlot::Background => {
-                        HttpUpdateDeckProfile::builder().background_id(id).build()
-                    }
-                    CommandZoneSlot::SignatureSpell => HttpUpdateDeckProfile::builder()
-                        .signature_spell_id(id)
-                        .build(),
-                };
+                let request = slot.update_request(Some(old_id));
 
                 // Optimistic like the deck-card printing arm: restore the
                 // pinned slot (the featured strip updates in place).
@@ -1177,21 +1154,17 @@ pub fn View(deck_id: Uuid) -> Element {
     // in star order (mainboard only). Reads the live signals, so starring a
     // card updates the strip in place.
     let featured_cards: Vec<(Card, String)> = {
-        let commander_role = if is_oathbreaker() {
-            "Oathbreaker"
-        } else {
-            "Commander"
-        };
+        let format = deck_format();
         let mut mvps: Vec<DeckEntry> = deck_entries()
             .into_iter()
             .filter(|e| e.deck_card.mvp_at.is_some() && matches!(e.deck_card.board, Board::Deck))
             .collect();
         mvps.sort_by_key(|e| e.deck_card.mvp_at);
         [
-            (commander_card(), commander_role),
-            (partner_card(), "Partner"),
-            (background_card(), "Background"),
-            (signature_spell_card(), "Signature spell"),
+            (commander_card(), Slot::Commander.label(format)),
+            (partner_card(), Slot::Partner.label(format)),
+            (background_card(), Slot::Background.label(format)),
+            (signature_spell_card(), Slot::SignatureSpell.label(format)),
         ]
         .into_iter()
         .filter_map(|(card, role)| card.map(|c| (c, role.to_string())))
@@ -1501,13 +1474,7 @@ pub fn View(deck_id: Uuid) -> Element {
                         if displayed_commander().is_some() || displayed_partner().is_some() {
                             div { class: "card-group row-enter",
                                 div { class: "card-group-header",
-                                    if is_oathbreaker() {
-                                        "Oathbreaker"
-                                    } else if displayed_partner().is_some() {
-                                        "Commanders"
-                                    } else {
-                                        "Commander"
-                                    }
+                                    {Slot::Commander.group_header(deck_format(), displayed_partner().is_some())}
                                 }
                                 if let Some(cmd) = displayed_commander() {
                                     CardRow {
@@ -1517,7 +1484,7 @@ pub fn View(deck_id: Uuid) -> Element {
                                         preview_card,
                                         preview_dismissing,
                                         on_printing: move |card: Card| {
-                                            command_zone_slot.set(Some(CommandZoneSlot::Commander));
+                                            command_zone_slot.set(Some(Slot::Commander));
                                             printing_sheet_card.set(Some(card));
                                             printing_sheet_open.set(true);
                                         },
@@ -1531,7 +1498,7 @@ pub fn View(deck_id: Uuid) -> Element {
                                         preview_card,
                                         preview_dismissing,
                                         on_printing: move |card: Card| {
-                                            command_zone_slot.set(Some(CommandZoneSlot::Partner));
+                                            command_zone_slot.set(Some(Slot::Partner));
                                             printing_sheet_card.set(Some(card));
                                             printing_sheet_open.set(true);
                                         },
@@ -1543,7 +1510,7 @@ pub fn View(deck_id: Uuid) -> Element {
                         // Pinned background group
                         if let Some(bg) = displayed_background() {
                             div { class: "card-group row-enter",
-                                div { class: "card-group-header", "Background" }
+                                div { class: "card-group-header", {Slot::Background.group_header(deck_format(), displayed_partner().is_some())} }
                                 CardRow {
                                     card: bg,
                                     qty: 1,
@@ -1551,7 +1518,7 @@ pub fn View(deck_id: Uuid) -> Element {
                                     preview_card,
                                     preview_dismissing,
                                     on_printing: move |card: Card| {
-                                        command_zone_slot.set(Some(CommandZoneSlot::Background));
+                                        command_zone_slot.set(Some(Slot::Background));
                                         printing_sheet_card.set(Some(card));
                                         printing_sheet_open.set(true);
                                     },
@@ -1562,7 +1529,7 @@ pub fn View(deck_id: Uuid) -> Element {
                         // Pinned signature spell (Oathbreaker only)
                         if let Some(spell) = displayed_signature_spell() {
                             div { class: "card-group row-enter",
-                                div { class: "card-group-header", "Signature spell" }
+                                div { class: "card-group-header", {Slot::SignatureSpell.group_header(deck_format(), displayed_partner().is_some())} }
                                 CardRow {
                                     card: spell,
                                     qty: 1,
@@ -1570,7 +1537,7 @@ pub fn View(deck_id: Uuid) -> Element {
                                     preview_card,
                                     preview_dismissing,
                                     on_printing: move |card: Card| {
-                                        command_zone_slot.set(Some(CommandZoneSlot::SignatureSpell));
+                                        command_zone_slot.set(Some(Slot::SignatureSpell));
                                         printing_sheet_card.set(Some(card));
                                         printing_sheet_open.set(true);
                                     },
@@ -1775,13 +1742,7 @@ pub fn View(deck_id: Uuid) -> Element {
 
                         if let Some(slot) = command_zone_slot() {
                             // Command zone card: update deck profile
-                            let id = Patch::Set(Some(new_id));
-                            let request = match slot {
-                                CommandZoneSlot::Commander => HttpUpdateDeckProfile::builder().commander_id(id).build(),
-                                CommandZoneSlot::Partner => HttpUpdateDeckProfile::builder().partner_commander_id(id).build(),
-                                CommandZoneSlot::Background => HttpUpdateDeckProfile::builder().background_id(id).build(),
-                                CommandZoneSlot::SignatureSpell => HttpUpdateDeckProfile::builder().signature_spell_id(id).build(),
-                            };
+                            let request = slot.update_request(Some(new_id));
                             let old_card = card.clone();
                             spawn(async move {
                                 // The facade reports and toasts a failure.
@@ -1793,10 +1754,10 @@ pub fn View(deck_id: Uuid) -> Element {
                                     .is_some()
                                 {
                                     match slot {
-                                        CommandZoneSlot::Commander => commander_card.set(Some(new_card.clone())),
-                                        CommandZoneSlot::Partner => partner_card.set(Some(new_card.clone())),
-                                        CommandZoneSlot::Background => background_card.set(Some(new_card.clone())),
-                                        CommandZoneSlot::SignatureSpell => signature_spell_card.set(Some(new_card.clone())),
+                                        Slot::Commander => commander_card.set(Some(new_card.clone())),
+                                        Slot::Partner => partner_card.set(Some(new_card.clone())),
+                                        Slot::Background => background_card.set(Some(new_card.clone())),
+                                        Slot::SignatureSpell => signature_spell_card.set(Some(new_card.clone())),
                                     }
                                     undo_log.push(UndoAction::CommandZonePrintingChanged { slot, old_card, new_id });
                                     printing_sheet_card.set(Some(new_card));

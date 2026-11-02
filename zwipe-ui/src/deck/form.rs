@@ -7,6 +7,7 @@ use zwipe_core::domain::card::search_card::card_filter::error::InvalidCardCriter
 use zwipe_core::domain::deck::deck_profile::MAX_LAND_TARGET;
 use zwipe_core::domain::deck::{Format, MAX_DECK_ORACLE_TAGS};
 
+pub use crate::deck::command_zone::Slot;
 use crate::timing;
 
 /// Which way a stepper button moves.
@@ -118,60 +119,6 @@ pub fn reseed_oracle_tags(
         }
     }
     (tags, added)
-}
-
-/// One of the four command-zone slots, on the deck form and in the deck
-/// cards view's command zone.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum Slot {
-    /// The commander, or the oathbreaker in Oathbreaker.
-    Commander,
-    /// The commander's partner.
-    Partner,
-    /// The commander's background.
-    Background,
-    /// The oathbreaker's signature spell.
-    SignatureSpell,
-}
-
-impl Slot {
-    /// Every slot, top to bottom on the form.
-    pub const ALL: [Self; 4] = [
-        Self::Commander,
-        Self::Partner,
-        Self::Background,
-        Self::SignatureSpell,
-    ];
-
-    /// Characters typed before a search starts.
-    #[must_use]
-    pub fn min_chars(self) -> usize {
-        match self {
-            Self::Commander | Self::SignatureSpell => 3,
-            Self::Partner | Self::Background => 1,
-        }
-    }
-
-    /// Cards a search returns at most.
-    #[must_use]
-    pub fn limit(self) -> u32 {
-        match self {
-            Self::Commander | Self::SignatureSpell => 5,
-            Self::Partner | Self::Background => 10,
-        }
-    }
-
-    /// What the swipe picker calls the card it picks for this slot.
-    #[must_use]
-    pub fn noun(self, format: Option<Format>) -> &'static str {
-        match self {
-            Self::Commander if format.is_some_and(|f| f.has_signature_spell()) => "oathbreaker",
-            Self::Commander => "commander",
-            Self::Partner => "partner",
-            Self::Background => "background",
-            Self::SignatureSpell => "signature spell",
-        }
-    }
 }
 
 /// The typeahead search for `slot`: the name typed, narrowed by the slot's rule while its Filter is on.

@@ -13,11 +13,9 @@ use zwipe_core::domain::deck::DeckEntry;
 use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
 use zwipe_core::domain::deck::deck_profile::DeckProfile;
 use zwipe_core::domain::deck::deck_warning::DeckWarning;
-use zwipe_core::domain::deck::format::Format;
 use zwipe_core::domain::user::models::hints::HINT_FIRST_DECK;
-use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
 use zwipe_core::http::contracts::deck_card::HttpPatchDeckCard;
-use zwipe_core::http::helpers::Patch;
+use zwipe_ui::deck::command_zone::Slot;
 
 use super::components::clone_deck_dialog::CloneDeckDialog;
 use super::components::collapsible_section::CollapsibleSection;
@@ -458,9 +456,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                             });
                                         },
                                         on_clear_commander: move |()| {
-                                            let request = HttpUpdateDeckProfile::builder()
-                                                .commander_id(Patch::Set(None))
-                                                .build();
+                                            let request = Slot::Commander.update_request(None);
 
                                             spawn(async move {
                                                 if authed
@@ -470,11 +466,8 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                                     .await
                                                     .is_some()
                                                 {
-                                                        let label = if deck_profile_resource().is_some_and(|r| r.as_ref().is_ok_and(|p| p.format.as_ref().is_some_and(Format::has_signature_spell))) {
-                                                            "Oathbreaker"
-                                                        } else {
-                                                            "Commander"
-                                                        };
+                                                        let format = deck_profile_resource().and_then(Result::ok).and_then(|p| p.format);
+                                                        let label = Slot::Commander.label(format);
                                                         toast.info(
                                                             format!("{label} cleared"),
                                                             ToastOptions::default().duration(TOAST_QUICK),
