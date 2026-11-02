@@ -7,12 +7,12 @@ use std::collections::HashMap;
 use uuid::Uuid;
 
 /// Per card, the adds still waiting on the server and how many of them were undone.
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct InFlightAdds {
     cards: HashMap<Uuid, Pending>,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 struct Pending {
     posts: u32,
     undone: u32,

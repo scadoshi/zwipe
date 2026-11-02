@@ -1,5 +1,7 @@
 //! The account forms' rules, as the app has them: Log in, Register, Forgot password and the Account screen. Each check returns the line to show under its field, or `None` when the field is fine; the policy is zwipe-core's and only the words are picked here.
 
+use std::fmt::{self, Debug, Formatter};
+
 use chrono::{DateTime, Utc};
 use zwipe_core::domain::auth::models::password;
 use zwipe_core::domain::user::{Email, Username};
@@ -20,6 +22,37 @@ pub const PASSWORD_REQUIRED: &str = "Password is required";
 
 /// The line under a new password that repeats the current one.
 pub const PASSWORD_UNCHANGED: &str = "New password must be different from your current password";
+
+/// A password as typed, carried by an action, a request or a screen's state. Its `Debug` hides it; [`read`](Self::read) is the way to the text.
+#[derive(Default, Clone, PartialEq, Eq)]
+pub struct Password(String);
+
+impl Password {
+    /// Wraps a password as typed.
+    #[must_use]
+    pub fn new(raw: impl Into<String>) -> Self {
+        Self(raw.into())
+    }
+
+    /// The password as typed, for a check or the request body.
+    #[must_use]
+    pub fn read(&self) -> &str {
+        &self.0
+    }
+
+    /// Whether nothing is typed.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+}
+
+// By hand: the derive would print the password.
+impl Debug for Password {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.write_str("Password(REDACTED)")
+    }
+}
 
 /// What a tap on Log in does.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -437,6 +470,15 @@ mod tests {
         assert_eq!(resend_label(false, 42), "Resend in 42s");
         assert_eq!(resend_label(false, 1), "Resend in 1s", "no singular form");
         assert_eq!(resend_label(false, 0), "Resend");
+    }
+
+    #[test]
+    fn a_password_never_shows_in_debug() {
+        let password = Password::new("hunter22");
+        assert_eq!(format!("{password:?}"), "Password(REDACTED)");
+        assert_eq!(password.read(), "hunter22");
+        assert!(!password.is_empty());
+        assert!(Password::default().is_empty());
     }
 
     #[test]

@@ -86,6 +86,31 @@ Every fetch takes a `Ticket` from the model's own `Generation` inside `update`, 
 - A picker's draft and which picker is open belong to the model, since the draft lives exactly as long as the picker; swipe overlays stay in the client.
 - A text input that owns its own signal stays in step with the model both ways.
 - Effects that carry zwipe-core request contracts can't derive `PartialEq`; tests use `matches!`.
+- A sheet over a host's value takes it in `Open` and hands it back with `Effect::Apply`; its Back is `Effect::Close`, not a navigation.
+- A client whose controls edit the host's value in place syncs it with `Action::Edit` before each action and performs `Restore` on Back; a client with a separate draft ignores `Restore`.
+- A model whose lists come from a client-wide store emits `EnsureLists` and takes no tickets.
+- A warning raised once per opening resets on close, so the order of effects doesn't matter.
+- Typed passwords are `zwipe_ui::account::Password` in actions, effects and state, with its `Debug` redacted. Login, Register and Forgot password give each field its own edit action; Account's shared `Edit` carries `Typed`, whose `Debug` prints only the length.
+- When the model changes a field the client's input owns, it says so in an effect (`SetIdentifier`, `ClearPassword`).
+- Requests that may overlap on purpose (Forgot password's Send) use the waiting list, and a flag any reply clears mirrors the app's spinner.
+- Funnel events stay in the client and go out as it performs the effect.
+- A model that needs a client-owned store's answer emits a request effect (`TakeUndo`) the client answers at once with an action (`Taken`), and writes back with `RecordUndo`.
+- The client's request runner may hold animation state, such as clearing the entrance on a failed session refresh.
+- A client-owned counter other widgets watch can keep driving the model with `Filter(builder)`.
+- Shared chip rows take the value shown plus `on_pick(Option<T>)` (`None` is All), and the model decides the toggle.
+- Client filter state that resets when its panel unmounts becomes a model rule keyed on a view (Playstyle's `shows_staples`).
+- A reveal whose content comes from model data goes to a child component as a `Callback` reading the model (`role_tags`).
+- A sheet that only closes has no `Destination` and emits `Effect::Close`.
+- When the shown index belongs to a gesture or carousel, it comes in as `at` on the actions and views that need it.
+- A list laid out new is `Show(at)`; a reopen on the cached list is `Rewind(at)`.
+- Host props (the printing sheet's mode and Save toast) go into `State::new(..)`.
+- A client-owned filter the model also writes goes out as `SetFilter` and comes back through the client's counter as `Filter`; the model's `Rerun` is that bump.
+- Two piles means two entrance signals: `Enter { pile, from }` and `StopEnter(pile)`.
+- An undo that needs a fresh session answers `NotSent` apart from `Failed`, because the two compensate differently.
+- A stack that pages marks its search ticket as the epoch, and every page carries it.
+- An overlay a host keeps mounted takes everything it needs in `Open { .. }` each time it opens; the model decides whether to keep the pile or deal afresh.
+- A right swipe that hands a card to the host is `Effect::Pick`; Back on an overlay is `Navigate(Previous)`, which the host maps to its close.
+- Paged searches and fire-and-forget requests share one generation and waiting list; a fresh deal drops only the pile's searches.
 
 ## Wiring it in Dioxus (the app and zwiper-web)
 

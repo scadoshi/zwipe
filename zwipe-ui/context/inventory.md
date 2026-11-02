@@ -91,17 +91,17 @@ Effort is the work to build the shared model from the TUI's version and test it 
 
 | Screen | What can be shared | What stays in each client, and why | Effort |
 |---|---|---|---|
-| Login | form state, submit, the Register prefill, error and toast copy | inputs and focus | S |
-| Register | fields, live errors (web-a's `validation.rs` is the model), submit, toasts | inputs | S |
-| Forgot password | field, check, submit, toasts | inputs | S |
-| Update required | copy | the action differs on purpose (store link, Reload, terminal message) | S |
-| Help and feedback | copy, the mailto builder with platform | opening mail or the browser | S |
+| Login | form state, submit, the Register prefill, error and toast copy | inputs and focus | S, built: `screens::login`; the app switched, web and TUI to switch; storing the session stays in the client |
+| Register | fields, live errors (web-a's `validation.rs` is the model), submit, toasts | inputs | S, built: `screens::register`; the app switched, web and TUI to switch |
+| Forgot password | field, check, submit, toasts | inputs | S, built: `screens::forgot_password`; the app switched, web and TUI to switch |
+| Update required | copy | the action differs on purpose (store link, Reload, terminal message) | S, no model by decision: only fragments of copy are shared |
+| Help and feedback | copy, the mailto builder with platform | opening mail or the browser | S, no model: copy and the mailto live in `zwipe_ui::support`; the app switched |
 | Splash | decode frame math (decision 1) | all drawing; web has none | none |
 | Home | hero scope and figures, color map model, flavor card and its hourly expiry, buy link, Playstyle panel states, one-time hint | color map drawing, counter animation, image | M, built: `screens::home`; the app switched, web and TUI to switch; the caches above the router stay in each client |
 | Activity | heatmap layout, readout selection and its 4 s release, totals, rate kind switch, both rate charts, Most skipped, empty lines | heat grid drawing, sweeps, chart drawing | M, built: `screens::activity`; the app switched, web and TUI to switch; the heat pick's 4 s release stays in each client |
-| Playstyle | profile sections, tag table, suggestions with Show, Staples filters, Clear skips flow, reasons, every empty line | chart and card drawing; sections open together on web | L |
+| Playstyle | profile sections, tag table, suggestions with Show, Staples filters, Clear skips flow, reasons, every empty line | chart and card drawing; sections open together on web | L, built: `screens::playstyle`; the app switched, web and TUI to switch; section openness, the role reveal and the swipe overlay stay in the client |
 | Commander maybeboard | list, quick add with its 300 ms debounce, color filter, remove, clear, hand-off to Create | swipe gesture | M, built: `screens::commander_maybeboard`; the app switched, web and TUI to switch; the card filter, Art chip and swipe overlay stay in the client |
-| Swipe select (commander and suggested modes) | the stack, the per-mode constraint, maybeboard save and undo, toasts | the gesture engine and card motion | L |
+| Swipe select (commander and suggested modes) | the stack, the per-mode constraint, maybeboard save and undo, toasts | the gesture engine and card motion | L, built: `screens::swipe_select`; the app switched, web and TUI to switch; gestures, the entering signal and the filter counter stay in the client |
 | Oracle tag dictionary | search, definition, Use hand-off | overlay or panel layout | S, built: `screens::oracle_tag_dictionary`; the app switched, web and TUI to switch; Use keeps the dictionary open (the TUI goes back, drift to settle), and the catalog failure toasts each time (web and TUI once per visit) |
 | Oracle tag examples | load, paging, empty and error lines | card drawing | S, built: `screens::oracle_tag_examples`; the app switched, web and TUI to switch; a failed first page shows the empty line, as the app does |
 | Deck list | the whole TUI `DeckList` minus focus: decks, Group by, Show, tag fold, collapsed groups, Create gate, More items | chip and list drawing | S, built: `screens::deck_list`; the app switched, web and TUI to switch |
@@ -109,16 +109,16 @@ Effort is the work to build the shared model from the TUI's version and test it 
 | Import | paste, submit, outcome toast | text area | S, built: `screens::deck_import`; the app switched, web and TUI to switch |
 | Export | board toggles with the at-least-one rule, the text, copy toast | clipboard API | S, built: `screens::deck_export`; the app switched, web and TUI to switch |
 | Deck view | load, profile, stats, sections, warnings and their fixes, More items, the Buy, Clone, Share, Clear skips and Delete dialogs and their flows, first-deck hint | accordion or columns, charts | M, built: `screens::deck_view`; the app switched, web and TUI to switch; which dialog is up stays in the client |
-| Add cards | sources (Search, Maybeboard), From and Synergy, the stack, paging, every swipe outcome, undo through the shared log, in-flight adds, land and budget crossings, end of results, all 43 toasts | gestures and card motion, image loading | XL |
-| Card filter | draft and Apply, 15 sections, per-host reset, picker sources, contradiction and catalog toasts | accordion or columns, steppers and chips as drawn | L |
+| Add cards | sources (Search, Maybeboard), From and Synergy, the stack, paging, every swipe outcome, undo through the shared log, in-flight adds, land and budget crossings, end of results, all 43 toasts | gestures and card motion, image loading | XL, built: `screens::add_cards`; the app switched, web and TUI to switch; the deck's command zone now comes from the deck reply instead of four card fetches |
+| Card filter | draft and Apply, 15 sections, per-host reset, picker sources, contradiction and catalog toasts | accordion or columns, steppers and chips as drawn | L, built: `screens::card_filter`; the app switched the sheet-level flow (open, Apply, Back, Reset, section clears, the dictionary); the section bodies still edit the host's signal; web and TUI to switch |
 | Deck cards view | load, filter and group pass, boards, Show, quick add, quantities with the 300 ms flush, moves, printings, MVP, Undo, Reset filter, every toast | detail pane, drag to move, row drawing | XL |
-| Remove cards | load, board filter, cycling stack, swipe outcomes, undo, crossings, toasts | gestures | M |
-| Printing sheet | list, pick, toasts | layout | S |
+| Remove cards | load, board filter, cycling stack, swipe outcomes, undo, crossings, toasts | gestures | M, built: `screens::remove_cards`; the app switched, web and TUI to switch; the undo log stays the client's (the app's `undo_log.rs` still duplicates `zwipe_ui::stores::undo`, so `remove.rs` converts between them) |
+| Printing sheet | list, pick, toasts | layout | S, built: `screens::printing_sheet`; the app switched, web and TUI to switch; the carousel index stays in the client |
 | Image preview | which image and face | all of it is drawing | none |
 | Account | both lists, the three change forms, verification with resend cooldown, delete countdown, More, dialogs | inputs, dialogs as drawn | M, built: `screens::account`; the app switched, web and TUI to switch; the clock stays in the client (`Wait`/`Tick`) |
 | Config | theme pick and preview, dark mode, pips, Universes Beyond and its exceptions, toasts | the app icon picker (app only), theme drawing | M, built: `screens::config`; the app switched, web and TUI to switch; theme and pips stay the client's, the app icon stays in the app |
 | Privacy policy | nothing beyond the source text already in core | rendering; the TUI's parser stays in the TUI | none |
-| Changelog | filing and the filter | web anchors | S |
+| Changelog | filing and the filter | web anchors | S, built: `screens::changelog`; the app takes status, copy and Back; components still draws its own chips until K5 |
 
 Adding it up: about 45 days of work on the screen models if one agent does it all, plus the pieces in Part 1, much of which comes along with the screens. Waves B to D need Home through Remove. Wave A is built already, and moving web-a's domain files into zwipe-ui is a small job (decision 7).
 

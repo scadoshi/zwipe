@@ -4,6 +4,9 @@
 
 pub mod account;
 pub mod activity;
+pub mod add_cards;
+pub mod card_filter;
+pub mod changelog;
 pub mod commander_maybeboard;
 pub mod config;
 pub mod deck_export;
@@ -11,7 +14,13 @@ pub mod deck_form;
 pub mod deck_import;
 pub mod deck_list;
 pub mod deck_view;
+pub mod forgot_password;
 pub mod home;
+pub mod login;
 pub mod oracle_tag_dictionary;
 pub mod oracle_tag_examples;
+pub mod playstyle;
+pub mod printing_sheet;
+pub mod register;
+pub mod remove_cards;
 pub mod swipe_select;

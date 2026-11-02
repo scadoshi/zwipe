@@ -118,6 +118,12 @@ impl FilterDraft {
         (Self::new(filter, config), opened)
     }
 
+    /// The filter that was applied when the sheet opened.
+    #[must_use]
+    pub fn snapshot(&self) -> &CardQueryBuilder {
+        &self.snapshot
+    }
+
     /// Whether the draft still matches what was applied, which disables
     /// Apply.
     #[must_use]
