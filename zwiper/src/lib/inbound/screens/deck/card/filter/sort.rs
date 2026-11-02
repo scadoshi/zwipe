@@ -3,6 +3,8 @@
 use dioxus::prelude::*;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
+use zwipe_ui::filter::chips;
+use zwipe_ui::filter::sections::{ChipSet, Modes};
 
 /// Component for selecting card sort order and direction.
 #[component]
@@ -28,18 +30,22 @@ pub fn Sort() -> Element {
             div { class: "flex flex-wrap gap-1 flex-center",
                 for option in CardSortKey::all() {
                     div {
-                        class: if filter_builder().sort() == Some(option) {
+                        class: if chips::is_selected(
+                            ChipSet::SortBy,
+                            &filter_builder(),
+                            &option.to_string(),
+                        ) {
                             "chip selected"
                         } else {
                             "chip"
                         },
                         onclick: move |_| {
-                            let current = filter_builder().sort();
-                            if current == Some(option) {
-                                filter_builder.write().unset_sort();
-                            } else {
-                                filter_builder.write().set_sort(option);
-                            }
+                            chips::tap(
+                                ChipSet::SortBy,
+                                &mut filter_builder.write(),
+                                &Modes::default(),
+                                &option.to_string(),
+                            );
                         },
                         { option.to_string() }
                     }
