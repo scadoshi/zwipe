@@ -131,19 +131,30 @@ impl TagPicker {
         Toast::quick(ToastKind::Warning, text)
     }
 
-    /// Taps `slug`'s chip: removes it when picked, adds it while there is room, and otherwise leaves `picked` alone and returns [`cap_toast`](Self::cap_toast). `None` means `picked` changed.
+    /// Taps `slug`'s chip: removes it when picked, adds it while there is room, and otherwise leaves `picked` alone. At the cap, raise [`cap_toast`](Self::cap_toast).
     #[must_use]
-    pub fn toggle(self, picked: &mut Vec<String>, slug: &str) -> Option<Toast> {
+    pub fn toggle(self, picked: &mut Vec<String>, slug: &str) -> Tapped {
         if let Some(at) = picked.iter().position(|s| s == slug) {
             picked.remove(at);
-            None
+            Tapped::Removed
         } else if picked.len() < self.cap() {
             picked.push(slug.to_owned());
-            None
+            Tapped::Added
         } else {
-            Some(self.cap_toast())
+            Tapped::AtCap
         }
     }
+}
+
+/// What a chip tap in a tag picker did to the picked list.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Tapped {
+    /// The tag joined the list.
+    Added,
+    /// The tag came off the list.
+    Removed,
+    /// The list is at the picker's cap, so nothing changed.
+    AtCap,
 }
 
 /// A value a picker edits, compared the way its Save and Back compare it.
@@ -379,14 +390,20 @@ mod tests {
         assert!(draft.is_unchanged(&picked), "just opened");
         assert_eq!(draft.back_toast(&picked), None, "Back with no change");
 
-        assert_eq!(TagPicker::OracleTags.toggle(&mut picked, "draw"), None);
+        assert_eq!(
+            TagPicker::OracleTags.toggle(&mut picked, "draw"),
+            Tapped::Added
+        );
         assert!(!draft.is_unchanged(&picked));
         assert_eq!(
             draft.back_toast(&picked),
             Some(Toast::new(ToastKind::Info, "Oracle tags unchanged", QUICK)),
         );
 
-        assert_eq!(TagPicker::OracleTags.toggle(&mut picked, "draw"), None);
+        assert_eq!(
+            TagPicker::OracleTags.toggle(&mut picked, "draw"),
+            Tapped::Removed
+        );
         assert!(draft.is_unchanged(&picked), "tapped back to the snapshot");
         assert_eq!(draft.snapshot(), &slugs(&["ramp", "removal"]));
     }
@@ -431,14 +448,21 @@ mod tests {
         let before = picked.clone();
         assert_eq!(
             TagPicker::DeckTags.toggle(&mut picked, "one-more"),
-            Some(Toast::new(
+            Tapped::AtCap
+        );
+        assert_eq!(
+            TagPicker::DeckTags.cap_toast(),
+            Toast::new(
                 ToastKind::Warning,
                 format!("You may only choose up to {MAX_DECK_TAGS} tags"),
                 QUICK,
-            )),
+            ),
         );
         assert_eq!(picked, before);
-        assert_eq!(TagPicker::DeckTags.toggle(&mut picked, "t0"), None);
+        assert_eq!(
+            TagPicker::DeckTags.toggle(&mut picked, "t0"),
+            Tapped::Removed
+        );
         assert_eq!(
             picked.len(),
             MAX_DECK_TAGS - 1,
@@ -449,7 +473,11 @@ mod tests {
     #[test]
     fn the_oracle_tag_cap_says_oracle_tags() {
         let mut picked: Vec<String> = (0..MAX_DECK_ORACLE_TAGS).map(|i| format!("t{i}")).collect();
-        let toast = TagPicker::OracleTags.toggle(&mut picked, "x").unwrap();
+        assert_eq!(
+            TagPicker::OracleTags.toggle(&mut picked, "x"),
+            Tapped::AtCap
+        );
+        let toast = TagPicker::OracleTags.cap_toast();
         assert_eq!(
             toast.text,
             format!("You may only choose up to {MAX_DECK_ORACLE_TAGS} oracle tags"),

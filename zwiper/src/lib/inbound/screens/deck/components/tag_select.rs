@@ -13,7 +13,7 @@ use components::{
 use dioxus::prelude::*;
 use dioxus_primitives::toast::use_toast;
 use zwipe_core::domain::deck::{DeckTagView, MAX_DECK_TAGS};
-use zwipe_ui::deck::pickers::{self, Draft, Picker, TagPicker};
+use zwipe_ui::deck::pickers::{self, Draft, Picker, TagPicker, Tapped};
 
 use crate::inbound::components::concept_explainers::DeckTagsExplainer;
 use crate::inbound::components::screen_header::ScreenHeader;
@@ -142,8 +142,8 @@ pub(crate) fn TagSelect(
                                                 query.set(String::new());
                                                 let mut current = selected_tags();
                                                 match TagPicker::DeckTags.toggle(&mut current, &slug) {
-                                                    Some(cap) => ui_toast::raise(toast, cap),
-                                                    None => selected_tags.set(current),
+                                                    Tapped::AtCap => ui_toast::raise(toast, TagPicker::DeckTags.cap_toast()),
+                                                    Tapped::Added | Tapped::Removed => selected_tags.set(current),
                                                 }
                                             },
                                             "{label}"

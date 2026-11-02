@@ -15,7 +15,7 @@ use dioxus_primitives::toast::use_toast;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::oracle_tag::OracleTag;
 use zwipe_core::domain::deck::MAX_DECK_ORACLE_TAGS;
-use zwipe_ui::deck::pickers::{self, Adopted, Draft, Picker, TagPicker};
+use zwipe_ui::deck::pickers::{self, Adopted, Draft, Picker, TagPicker, Tapped};
 
 use crate::inbound::components::catalog_cache::CatalogCache;
 use crate::inbound::components::concept_explainers::OracleTagsExplainer;
@@ -178,8 +178,8 @@ pub(crate) fn OracleTagSelect(
                                                 query.set(String::new());
                                                 let mut current = selected();
                                                 match TagPicker::OracleTags.toggle(&mut current, &slug) {
-                                                    Some(cap) => ui_toast::raise(toast, cap),
-                                                    None => selected.set(current),
+                                                    Tapped::AtCap => ui_toast::raise(toast, TagPicker::OracleTags.cap_toast()),
+                                                    Tapped::Added | Tapped::Removed => selected.set(current),
                                                 }
                                             },
                                             "{t.slug}"
