@@ -301,15 +301,19 @@ pub(crate) fn SwipeSelect(
         if !open() {
             return;
         }
+        let mode = mode.peek().clone();
+        let filter = filter_builder.peek().clone();
+        let pile = suggested_pile
+            .map(|pile| pile.peek().clone())
+            .unwrap_or_default();
+        let excluded = exclude_oracle_ids
+            .map(|ids| ids.peek().clone())
+            .unwrap_or_default();
         driver.dispatch(Action::Open {
-            mode: mode.peek().clone(),
-            filter: filter_builder.peek().clone(),
-            pile: suggested_pile
-                .map(|pile| pile.peek().clone())
-                .unwrap_or_default(),
-            excluded: exclude_oracle_ids
-                .map(|ids| ids.peek().clone())
-                .unwrap_or_default(),
+            mode,
+            filter,
+            pile,
+            excluded,
         });
     });
 
@@ -320,7 +324,8 @@ pub(crate) fn SwipeSelect(
             return;
         }
         searched_counter.set(counter);
-        driver.dispatch(Action::Filter(filter_builder.peek().clone()));
+        let filter = filter_builder.peek().clone();
+        driver.dispatch(Action::Filter(filter));
     });
 
     // The host's Filter chips changed the suggested pile mid-session: the
@@ -343,7 +348,8 @@ pub(crate) fn SwipeSelect(
         let counter = filter_reset_counter().wrapping_add(1);
         searched_counter.set(counter);
         filter_reset_counter.set(counter);
-        driver.dispatch(Action::Refresh(filter_builder.peek().clone()));
+        let filter = filter_builder.peek().clone();
+        driver.dispatch(Action::Refresh(filter));
     };
 
     // Stage every user-set filter back to the default (all colors, the

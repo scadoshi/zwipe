@@ -179,8 +179,9 @@ pub(crate) fn CardFilterSheet(
     // follows `open` rather than the mount.
     use_effect(move || {
         if open() {
+            let filter = Box::new(filter_builder.peek().clone());
             driver.dispatch(Action::Open {
-                filter: Box::new(filter_builder.peek().clone()),
+                filter,
                 config: Box::new(SheetConfig {
                     show_format: show_format_filter,
                     validate: validate_before_apply,

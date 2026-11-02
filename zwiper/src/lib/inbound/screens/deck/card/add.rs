@@ -592,7 +592,8 @@ pub fn Add(deck_id: Uuid) -> Element {
         if first_run.replace(false) {
             return;
         }
-        driver.dispatch(Action::Filter(filter_builder.peek().clone()));
+        let filter = filter_builder.peek().clone();
+        driver.dispatch(Action::Filter(filter));
     });
 
     // Park this screen's filter under the live source, and the search stack
@@ -850,7 +851,10 @@ pub fn Add(deck_id: Uuid) -> Element {
                 // client-side and its default is a blank filter, so an empty
                 // Apply there (e.g. right after Reset) must commit, not warn.
                 validate_before_apply: validates_apply,
-                on_clear: move |()| driver.dispatch(Action::ResetFilter(filter_builder.peek().clone())),
+                on_clear: move |()| {
+                    let draft = filter_builder.peek().clone();
+                    driver.dispatch(Action::ResetFilter(draft));
+                },
             }
             }
     }

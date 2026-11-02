@@ -592,10 +592,8 @@ pub fn View(deck_id: Uuid) -> Element {
     };
 
     use_effect(move || {
-        driver.dispatch(Action::Load {
-            deck_id,
-            filter: Box::new(filter_builder.peek().clone()),
-        });
+        let filter = Box::new(filter_builder.peek().clone());
+        driver.dispatch(Action::Load { deck_id, filter });
     });
 
     // A tap inside the debounce window must still reach the server when the
@@ -612,7 +610,8 @@ pub fn View(deck_id: Uuid) -> Element {
     // groups the main board by it.
     use_effect(move || {
         let _ = filter_reset_counter();
-        driver.dispatch(Action::Filter(Box::new(filter_builder.peek().clone())));
+        let filter = filter_builder.peek().clone();
+        driver.dispatch(Action::Filter(Box::new(filter)));
         if *should_collapse_expanded.peek() {
             let mut expanded_card = expanded_card;
             expanded_card.set(None);

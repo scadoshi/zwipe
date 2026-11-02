@@ -457,16 +457,15 @@ pub fn Remove(deck_id: Uuid) -> Element {
 
     // Offers the hint on the first render and loads the deck, once per mount.
     use_hook(move || {
-        driver.dispatch(Action::Load {
-            deck_id,
-            filter: filter_builder.peek().clone(),
-        });
+        let filter = filter_builder.peek().clone();
+        driver.dispatch(Action::Load { deck_id, filter });
     });
 
     // Reruns the filter whenever the counter moves.
     use_effect(move || {
         let _ = filter_reset_counter();
-        driver.dispatch(Action::Filter(filter_builder.peek().clone()));
+        let filter = filter_builder.peek().clone();
+        driver.dispatch(Action::Filter(filter));
     });
 
     // Swipe config: the stack owns its own SwipeState internally.

@@ -284,9 +284,8 @@ pub fn Config() -> Element {
                                     DarkModeButton {
                                         is_dark: theme_config().is_dark,
                                         onclick: move |_| {
-                                            driver.dispatch(Action::ToggleDarkMode {
-                                                shown: theme_of(theme_config.peek().clone()),
-                                            });
+                                            let shown = theme_of(theme_config.peek().clone());
+                                            driver.dispatch(Action::ToggleDarkMode { shown });
                                         },
                                     }
                                     Button {
@@ -307,9 +306,8 @@ pub fn Config() -> Element {
                                     Button {
                                         variant: ButtonVariant::Action,
                                         onclick: move |_| {
-                                            driver.dispatch(Action::TogglePips {
-                                                shown: *pip_style.peek(),
-                                            });
+                                            let shown = *pip_style.peek();
+                                            driver.dispatch(Action::TogglePips { shown });
                                         },
                                         {model::pips_label(pip_style())}
                                     }
