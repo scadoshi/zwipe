@@ -6,10 +6,12 @@ use axum::http::StatusCode;
 use zwipe_core::domain::user::User;
 use zwipe_core::http::contracts::auth::HttpChangeEmail;
 
+use crate::domain::auth::ports::AuthService;
 use crate::domain::auth::requests::change_email::{
     ChangeEmail, ChangeEmailError, InvalidChangeEmail,
 };
 use crate::domain::metrics::models::kinds::AuditAction;
+use crate::domain::metrics::ports::MetricsService;
 use crate::inbound::http::middleware::AuthenticatedUser;
 use crate::inbound::http::{ApiError, AppState, To500};
 

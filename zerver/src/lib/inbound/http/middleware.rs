@@ -22,6 +22,8 @@ use zwipe_core::domain::auth::models::access_token::{Jwt, UserClaims};
 use zwipe_core::domain::user::username::Username;
 
 use crate::domain::auth::models::access_token::{JwtSecret, JwtValidate};
+use crate::domain::auth::ports::AuthService;
+use crate::domain::metrics::ports::MetricsService;
 use crate::inbound::http::AppState;
 
 /// Axum extractor that enforces JWT authentication.

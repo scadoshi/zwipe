@@ -5,6 +5,7 @@ use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use zwipe_core::domain::card::Card;
 
+use crate::domain::card::ports::CardService;
 use crate::domain::card::requests::get_card::GetCardError;
 use crate::domain::card::requests::get_card_profile::GetCardProfileError;
 use crate::domain::card::requests::get_scryfall_data::{GetScryfallData, GetScryfallDataError};

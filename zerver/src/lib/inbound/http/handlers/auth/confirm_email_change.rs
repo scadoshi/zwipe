@@ -5,10 +5,12 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use zwipe_core::http::contracts::auth::HttpConfirmEmailChange;
 
+use crate::domain::auth::ports::AuthService;
 use crate::domain::auth::requests::confirm_email_change::{
     ConfirmEmailChange, ConfirmEmailChangeError,
 };
 use crate::domain::metrics::models::kinds::AuditAction;
+use crate::domain::metrics::ports::MetricsService;
 use crate::inbound::http::{ApiError, AppState, To500};
 
 impl From<ConfirmEmailChangeError> for ApiError {

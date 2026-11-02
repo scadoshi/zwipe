@@ -11,6 +11,7 @@
 //! - **[`domain`]**: Core business logic, models, and validation rules
 //! - **[`inbound`]**: HTTP API layer (Axum handlers and routing)
 //! - **[`outbound`]**: Database and external service integrations
+//! - **[`wiring`]**: The concrete service types the HTTP layer holds
 
 #![warn(missing_docs)]
 
@@ -18,3 +19,4 @@ pub mod config;
 pub mod domain;
 pub mod inbound;
 pub mod outbound;
+pub mod wiring;

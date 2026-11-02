@@ -6,6 +6,7 @@ use axum::http::StatusCode;
 use zwipe_core::domain::user::preferences::UserPreferences;
 
 use crate::domain::user::models::preferences::GetPreferencesError;
+use crate::domain::user::ports::UserService;
 use crate::inbound::http::middleware::AuthenticatedUser;
 use crate::inbound::http::{ApiError, AppState, To500};
 

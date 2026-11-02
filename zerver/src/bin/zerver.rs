@@ -73,7 +73,7 @@ async fn run() -> anyhow::Result<()> {
     let auth_service = auth::services::Service::new(
         db.clone(),
         db.clone(),
-        resend,
+        Arc::new(resend),
         config.jwt_secret,
         config.access_token_lifetime,
         config.web_base_url.clone(),
@@ -83,8 +83,7 @@ async fn run() -> anyhow::Result<()> {
     let health_service = health::services::Service::new(db.clone());
     let card_service = card::services::Service::new(db.clone());
     let deck_service = deck::services::Service::new(db.clone(), db.clone());
-    let metrics_service: Arc<dyn metrics::ports::ErasedMetricsService> =
-        Arc::new(metrics::services::Service::new(db.clone()));
+    let metrics_service = metrics::services::Service::new(db.clone());
     let server_config = HttpServerConfig {
         bind_address: &config.bind_address,
         allowed_origins: config.allowed_origins,

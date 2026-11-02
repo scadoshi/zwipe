@@ -87,10 +87,10 @@ static TIMING_EQUALIZER_HASH: LazyLock<HashedPassword> = LazyLock::new(|| {
 /// Operations that modify user data (change username/email/password, delete user)
 /// require password re-authentication for security, even with a valid session.
 #[derive(Debug, Clone)]
-pub struct Service<AR, UR, ES> {
+pub struct Service<AR, UR> {
     auth_repo: AR,
     user_repo: UR,
-    email_sender: ES,
+    email_sender: Arc<dyn EmailSender>,
     jwt_secret: JwtSecret,
     /// How long each minted access token stays valid.
     access_token_lifetime: Duration,
@@ -104,11 +104,10 @@ pub struct Service<AR, UR, ES> {
     support_email: String,
 }
 
-impl<AR, UR, ES> Service<AR, UR, ES>
+impl<AR, UR> Service<AR, UR>
 where
     AR: AuthRepository,
     UR: UserRepository,
-    ES: EmailSender,
 {
     /// Creates a new authentication service with the provided repositories,
     /// email sender, JWT secret and access token lifetime, public web base URL,
@@ -116,7 +115,7 @@ where
     pub fn new(
         auth_repo: AR,
         user_repo: UR,
-        email_sender: ES,
+        email_sender: Arc<dyn EmailSender>,
         jwt_secret: JwtSecret,
         access_token_lifetime: Duration,
         web_base_url: String,
@@ -257,11 +256,10 @@ fn generate_hex_token() -> (String, String) {
     (raw, hash)
 }
 
-impl<AR, UR, ES> AuthService for Service<AR, UR, ES>
+impl<AR, UR> AuthService for Service<AR, UR>
 where
     AR: AuthRepository + Clone,
     UR: UserRepository + Clone,
-    ES: EmailSender,
 {
     // == config ==
     fn jwt_secret(&self) -> &JwtSecret {

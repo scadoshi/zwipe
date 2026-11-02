@@ -9,6 +9,7 @@ use zwipe_core::domain::deck::requests::commander_maybeboard::{
 };
 
 use crate::domain::deck::models::deck::commander_maybeboard::CommanderMaybeboardError;
+use crate::domain::deck::ports::DeckService;
 use crate::inbound::http::middleware::AuthenticatedUser;
 use crate::inbound::http::{ApiError, AppState, To500};
 

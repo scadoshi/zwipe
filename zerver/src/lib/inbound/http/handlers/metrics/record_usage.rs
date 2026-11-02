@@ -7,6 +7,7 @@ use zwipe_core::http::contracts::metrics::HttpUsageBatch;
 
 use crate::domain::metrics::models::errors::MetricsError;
 use crate::domain::metrics::models::kinds::EventKind;
+use crate::domain::metrics::ports::MetricsService;
 use crate::inbound::http::middleware::AuthenticatedUser;
 use crate::inbound::http::{ApiError, AppState, To500};
 
