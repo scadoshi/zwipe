@@ -106,8 +106,8 @@ Effort is the work to build the shared model from the TUI's version and test it 
 | Oracle tag examples | load, paging, empty and error lines | card drawing | S |
 | Deck list | the whole TUI `DeckList` minus focus: decks, Group by, Show, tag fold, collapsed groups, Create gate, More items | chip and list drawing | S, built: `screens::deck_list`; the app switched, web and TUI to switch |
 | Create and Edit | every field, validation, knock-on clears, change detection, the four command-zone searches with debounce and generation tickets, the format, tag and oracle tag pickers (draft, Save disabled when unchanged, Back with "unchanged"), submit and server messages | text inputs, picker layout (sheet, side panel, overlay) | L |
-| Import | paste, submit, outcome toast | text area | S |
-| Export | board toggles with the at-least-one rule, the text, copy toast | clipboard API | S |
+| Import | paste, submit, outcome toast | text area | S, built: `screens::deck_import`; the app switched, web and TUI to switch |
+| Export | board toggles with the at-least-one rule, the text, copy toast | clipboard API | S, built: `screens::deck_export`; the app switched, web and TUI to switch |
 | Deck view | load, profile, stats, sections, warnings and their fixes, More items, the Buy, Clone, Share, Clear skips and Delete dialogs and their flows, first-deck hint | accordion or columns, charts | M, built: `screens::deck_view`; the app switched, web and TUI to switch; which dialog is up stays in the client |
 | Add cards | sources (Search, Maybeboard), From and Synergy, the stack, paging, every swipe outcome, undo through the shared log, in-flight adds, land and budget crossings, end of results, all 43 toasts | gestures and card motion, image loading | XL |
 | Card filter | draft and Apply, 15 sections, per-host reset, picker sources, contradiction and catalog toasts | accordion or columns, steppers and chips as drawn | L |
@@ -115,7 +115,7 @@ Effort is the work to build the shared model from the TUI's version and test it 
 | Remove cards | load, board filter, cycling stack, swipe outcomes, undo, crossings, toasts | gestures | M |
 | Printing sheet | list, pick, toasts | layout | S |
 | Image preview | which image and face | all of it is drawing | none |
-| Account | both lists, the three change forms, verification with resend cooldown, delete countdown, More, dialogs | inputs, dialogs as drawn | M |
+| Account | both lists, the three change forms, verification with resend cooldown, delete countdown, More, dialogs | inputs, dialogs as drawn | M, built: `screens::account`; the app switched, web and TUI to switch; the clock stays in the client (`Wait`/`Tick`) |
 | Config | theme pick and preview, dark mode, pips, Universes Beyond and its exceptions, toasts | the app icon picker (app only), theme drawing | M, built: `screens::config`; the app switched, web and TUI to switch; theme and pips stay the client's, the app icon stays in the app |
 | Privacy policy | nothing beyond the source text already in core | rendering; the TUI's parser stays in the TUI | none |
 | Changelog | filing and the filter | web anchors | S |
