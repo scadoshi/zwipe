@@ -1,6 +1,8 @@
 //! Which zwipe.net guide goes with each hint, for the "See guide ↗" link a hint dialog offers.
 //!
 //! A hint answers the quick question; its guide on zwipe.net answers the long one. Every client links the same hint to the same guide through [`HintTopic::guide_slug`] and [`one_time_slug`], and builds the address with [`url`]. A hint with no guide gets no link. Both matches are exhaustive, so a new hint has to say whether it has a guide.
+//!
+//! Only screen hints link out: the one-time hint a screen opens with and the `?` in a screen's header (the format, deck tag and oracle tag pickers), while a panel's or field's `?` inside a screen shows no link even when its topic has a slug here.
 
 use zwipe_core::domain::user::hints::OneTimeHint;
 
