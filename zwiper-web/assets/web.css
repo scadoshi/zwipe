@@ -601,6 +601,24 @@ body {
     }
 }
 
+/* ---- Width-only pieces: one on a wide window, the other below ---- */
+
+@media (max-width: 899px) {
+    .web-wide-only {
+        display: none !important;
+    }
+}
+
+@media (min-width: 900px) {
+    .web-narrow-only {
+        display: none !important;
+    }
+}
+
+.web-narrow-only {
+    display: contents;
+}
+
 /* ---- More menu: a popover on a wide window, the app's sheet below ---- */
 
 .web-more-anchor {
@@ -638,6 +656,8 @@ body {
         border: 1px solid var(--border-secondary);
         border-radius: 0.75rem;
         box-shadow: var(--shadow-md);
+        /* `top` is the button's top edge; the popover sits above it. */
+        translate: 0 -100%;
         animation: web-popover-in 0.15s ease-out;
     }
 
@@ -649,7 +669,7 @@ body {
 @keyframes web-popover-in {
     from {
         opacity: 0;
-        transform: translateY(-0.25rem);
+        transform: translateY(0.25rem);
     }
     to {
         opacity: 1;
@@ -1046,12 +1066,50 @@ body {
     }
 }
 
-/* A wide window draws Summary as the hero, so the profile column leaves
-   it out. */
+/* A card list's filter chips sit inside its panel, under the header. */
+.web-card-group-filters {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem 0.25rem;
+}
+
+/* A wide window draws Summary in the page's first row, so the profile
+   column leaves it out. The panels pair up in rows of two: Summary beside
+   Color map, Card roles beside Oracle tags, then Suggested commanders
+   beside Staples. */
 @media (min-width: 900px) {
     .web-playstyle-summary-inline {
         display: none;
     }
+
+    .web-playstyle-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        align-items: start;
+    }
+
+    .web-playstyle-grid .web-columns,
+    .web-playstyle-grid .web-playstyle-profile,
+    .web-playstyle-grid .web-playstyle-list {
+        display: contents;
+    }
+
+    .web-playstyle-grid > .web-playstyle-summary-hero.web-hero-narrow {
+        max-width: none;
+        margin: 0;
+    }
+
+    .web-playstyle-cell {
+        min-width: 0;
+    }
+
+    .web-playstyle-summary-hero { order: 1; }
+    .web-playstyle-color-map { order: 2; }
+    .web-playstyle-roles { order: 3; }
+    .web-playstyle-tags { order: 4; }
+    .web-playstyle-suggested { order: 5; }
+    .web-playstyle-staples { order: 6; }
 }
 
 /* ---- Swipe select ---- */

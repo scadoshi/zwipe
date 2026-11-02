@@ -169,27 +169,24 @@ pub fn StaplesPanel(
         active_color(),
     );
     rsx! {
-        div {
-            StapleTypeChips { active_type, types }
-            StapleColorChips { active_color, colors }
-        }
-        if rows.is_empty() {
-            div { class: "message-empty",
-                span { class: "chip-note", "No staples match" }
+        div { class: "maybeboard-list card-group row-enter web-playstyle-cell web-playstyle-staples",
+            div { class: "card-group-header card-group-header-with-hint",
+                span { "{STAPLES_TITLE}" }
+                InfoButton { topic: HintTopic::SuggestionStaples }
             }
-        } else {
-            div { class: "maybeboard-list card-group row-enter",
-                div { class: "card-group-header card-group-header-with-hint",
-                    span { "{STAPLES_TITLE}" }
-                    InfoButton { topic: HintTopic::SuggestionStaples }
-                }
-                for staple in rows {
-                    StapleRow {
-                        key: "{staple.card.scryfall_data.id}",
-                        staple,
-                        deck_count,
-                        expanded_card,
-                    }
+            div { class: "web-card-group-filters",
+                StapleTypeChips { active_type, types }
+                StapleColorChips { active_color, colors }
+            }
+            if rows.is_empty() {
+                div { class: "activity-total activity-total-group", "No staples match" }
+            }
+            for staple in rows {
+                StapleRow {
+                    key: "{staple.card.scryfall_data.id}",
+                    staple,
+                    deck_count,
+                    expanded_card,
                 }
             }
         }

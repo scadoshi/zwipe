@@ -58,6 +58,8 @@ fn suggestion_colors(suggestion: &HttpCommanderSuggestion) -> &[Color] {
 #[component]
 pub fn Playstyle() -> Element {
     let navigator = use_navigator();
+    let more = use_more_menu();
+    let mut more_open = more.open;
     let session: Signal<Option<Session>> = use_context();
     let toast = use_toast();
     let authed = use_authed();
@@ -67,8 +69,6 @@ pub fn Playstyle() -> Element {
     use_context_provider(|| ShowRowArt(show_row_art));
     let examples = use_otag_reveals();
     let overlays = use_card_overlays();
-    let more = use_more_menu();
-    let mut more_open = more.open;
 
     let expanded_card: Signal<Option<Uuid>> = use_signal(|| None);
     let mut swipe_open = use_signal(|| false);
@@ -308,9 +308,9 @@ pub fn Playstyle() -> Element {
                         span { class: "chip-note", "Build a deck to see your playstyle" }
                     }
                 } else {
-                    div { class: "web-playstyle web-page content-enter",
+                    div { class: "web-playstyle web-playstyle-grid web-page content-enter",
                         if let Some(profile) = profile() {
-                            div { class: "web-hero web-hero-narrow web-playstyle-summary-hero web-sections-open",
+                            div { class: "web-hero web-hero-narrow web-playstyle-summary-hero web-playstyle-cell web-sections-open",
                                 ProfileSummary { profile, open_section: summary_section }
                             }
                         }
@@ -321,30 +321,28 @@ pub fn Playstyle() -> Element {
                                 }
                             }
                             div { class: "web-playstyle-list",
-                                ShowIdentityChips { active_identity, identities: identities(),
-                                    Chip {
-                                        selected: show_row_art(),
-                                        onclick: move |_| show_row_art.toggle(),
-                                        "Art"
+                                div { class: "maybeboard-list card-group row-enter web-playstyle-cell web-playstyle-suggested",
+                                    div { class: "card-group-header card-group-header-with-hint",
+                                        span { "{LIST_TITLE}" }
+                                        InfoButton { topic: HintTopic::SuggestionList }
                                     }
-                                }
-                                if !has_entries {
-                                    div { class: "message-empty",
-                                        span { class: "chip-note", "No suggestions right now" }
+                                    div { class: "web-card-group-filters",
+                                        ShowIdentityChips { active_identity, identities: identities(),
+                                            Chip {
+                                                selected: show_row_art(),
+                                                onclick: move |_| show_row_art.toggle(),
+                                                "Art"
+                                            }
+                                        }
                                     }
-                                } else if rows.is_empty() {
-                                    div { class: "message-empty",
-                                        span { class: "chip-note",
+                                    if !has_entries {
+                                        div { class: "activity-total activity-total-group", "No suggestions right now" }
+                                    } else if rows.is_empty() {
+                                        div { class: "activity-total activity-total-group",
                                             {empty_identity_line(&active_identity().unwrap_or_default())}
                                         }
                                     }
-                                } else {
-                                    div { class: "maybeboard-list card-group row-enter",
-                                        div { class: "card-group-header card-group-header-with-hint",
-                                            span { "{LIST_TITLE}" }
-                                            InfoButton { topic: HintTopic::SuggestionList }
-                                        }
-                                        for suggestion in rows {
+                                    for suggestion in rows {
                                             SuggestionRow {
                                                 key: "{suggestion.card.scryfall_data.id}",
                                                 suggestion,
@@ -354,7 +352,6 @@ pub fn Playstyle() -> Element {
                                                 on_maybe,
                                                 on_dismiss,
                                             }
-                                        }
                                     }
                                 }
                                 if !staples.is_empty() {
@@ -366,11 +363,20 @@ pub fn Playstyle() -> Element {
                 }
             }
             ActionBar {
-                Button { variant: ButtonVariant::Action, onclick: move |_| navigator.go_back(), "Back" }
                 if !cold_start {
                     Button { variant: ButtonVariant::Action, onclick: move |_| swipe_open.set(true), "Swipe" }
                 }
-                MoreButton { menu: more }
+                // Wide: Clear skips on the bar. Narrow: the app's More sheet.
+                Button {
+                    variant: ButtonVariant::Action,
+                    danger: true,
+                    class: "web-wide-only",
+                    onclick: move |_| clear_open.set(true),
+                    "Clear skips"
+                }
+                span { class: "web-narrow-only",
+                    MoreButton { menu: more }
+                }
             }
         }
         OneTimeHintDialog { hint: OneTimeHint::SuggestedCommanders, open: hint_open }

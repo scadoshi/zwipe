@@ -28,7 +28,7 @@ The wide layout copies zite's home page (`zite/assets/style.css`). Screens move 
 - A screen's action bar is the last thing in it and is pinned to the window's bottom edge at every width (`position: sticky; bottom: 0`), so its actions are always on screen: the app's bar, a top rule over the panel background with the buttons centered in the app's order. The content ends above it, so nothing stays hidden behind it. There is no toolbar under the nav.
 - Toasts keep the app's kinds, text, durations, stack of three and click to expand. On a wide window they sit top right; below 900px top left as in the app.
 - Inline `?` info buttons and the screen `?` open the same `Got it` dialogs as the app, centered. One-time hints fire on the same triggers.
-- `More actions` sheets become a popover menu anchored to `More`, same buttons in the same order; a dialog opened from it closes the popover where the app closes the sheet and leaves it open where the app leaves the sheet open.
+- A `More` whose only item is one action puts that action on the bar on a wide window and keeps the app's More sheet below 900px. Otherwise `More actions` sheets become a popover menu anchored to `More`, opening above it since the bar sits on the window's bottom edge, same buttons in the same order; a dialog opened from it closes the popover where the app closes the sheet and leaves it open where the app leaves the sheet open.
 - Every `AlertDialog` stays a centered modal with its actions in order. From 900px up a dialog sizes to its content up to the page width, so a long hint spreads out instead of scrolling and a short confirmation stays compact; below 900px it keeps the app's width. Enter runs the non-danger primary action; danger actions never fire on Enter.
 - Skeletons are drawn per panel, so side by side panels load and ghost on their own, and each skeleton keeps the app's ghost shapes.
 - Card rows (`CardRow`) on every screen: hovering the compact line for a moment shows the card image beside the cursor; click still expands the row. `Image` opens the full `ImagePreview`, where Esc or a click closes it and the `Flip` control also answers the F key.
@@ -77,9 +77,9 @@ The wide layout copies zite's home page (`zite/assets/style.css`). Screens move 
 
 ## Playstyle (Suggested commanders)
 
-- On the page grammar. `Summary` is the hero, 40rem wide. The left column holds the other profile sections (`Color map`, `Card roles`, `Oracle tags`), all open; the right column holds the `Show` row with `Art`, the `Suggested commanders` list and `Staples` under it.
+- On the page grammar, in rows of two panels, all open: `Summary` (its table) beside `Color map`, `Card roles` beside `Oracle tags`, then `Suggested commanders` beside `Staples`. The two card lists keep the app's pink card-list headers and hold their own filter chips (the `Show` row with `Art`; `Type` and `Color`) and empty lines inside their panels.
 - Rows expand inline on click with their footer (`Why this commander?`) and actions `Image`, `Printing`, `Create deck`, `Maybeboard`, `Remove`.
-- `Swipe` opens the Swipe select overlay in suggested mode (see Edit deck); `More` is a popover with `Clear skips`, which opens the `Clear skips` dialog.
+- The app's `Back` goes. `Swipe` opens the Swipe select overlay in suggested mode (see Edit deck). On a wide window `Clear skips` sits on the bar, red, since it is More's only item; below 900px the bar shows `More` and `Clear skips` is in the app's More sheet. Either opens the `Clear skips` dialog.
 - Below 900px it is the phone column with the profile accordion, `Summary` back in it, and `Color map` open.
 
 ## Commander maybeboard

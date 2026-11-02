@@ -54,39 +54,45 @@ pub fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
         }
     });
     rsx! {
-        CollapsibleSection {
-            title: COLORS_TITLE,
-            open_section,
-            header_accessory: rsx! { InfoButton { topic: HintTopic::ColorMap } },
-            if let Some(counts) = counts {
-                ColorMap { counts, seed }
-            } else {
-                ColorMapEmpty {}
+        div { class: "web-playstyle-cell web-playstyle-color-map",
+            CollapsibleSection {
+                title: COLORS_TITLE,
+                open_section,
+                header_accessory: rsx! { InfoButton { topic: HintTopic::ColorMap } },
+                if let Some(counts) = counts {
+                    ColorMap { counts, seed }
+                } else {
+                    ColorMapEmpty {}
+                }
             }
         }
         div { class: "web-playstyle-summary-inline",
             ProfileSummary { profile: summary, open_section }
         }
         if !roles.is_empty() {
-            CollapsibleSection {
-                title: ROLES_TITLE,
-                open_section,
-                header_accessory: rsx! { InfoButton { topic: HintTopic::SuggestionRoleChart } },
-                BarChart {
-                    bars: roles,
-                    orientation: BarOrientation::Horizontal,
-                    on_bar: toggle_role,
-                    selected: selected_role(),
-                    reveal: role_reveal,
+            div { class: "web-playstyle-cell web-playstyle-roles",
+                CollapsibleSection {
+                    title: ROLES_TITLE,
+                    open_section,
+                    header_accessory: rsx! { InfoButton { topic: HintTopic::SuggestionRoleChart } },
+                    BarChart {
+                        bars: roles,
+                        orientation: BarOrientation::Horizontal,
+                        on_bar: toggle_role,
+                        selected: selected_role(),
+                        reveal: role_reveal,
+                    }
                 }
             }
         }
         if !tags.is_empty() {
-            CollapsibleSection {
-                title: TAGS_TITLE,
-                open_section,
-                header_accessory: rsx! { InfoButton { topic: HintTopic::SuggestionTagChart } },
-                TagTable { rows: tags }
+            div { class: "web-playstyle-cell web-playstyle-tags",
+                CollapsibleSection {
+                    title: TAGS_TITLE,
+                    open_section,
+                    header_accessory: rsx! { InfoButton { topic: HintTopic::SuggestionTagChart } },
+                    TagTable { rows: tags }
+                }
             }
         }
     }

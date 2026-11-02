@@ -6,8 +6,8 @@ use std::rc::Rc;
 use components::{BottomSheet, Button, ButtonVariant};
 use dioxus::prelude::*;
 
-/// Where the popover sits, in window pixels: under the `More` button's left
-/// edge.
+/// Where the popover hangs from, in window pixels: just over the `More`
+/// button's top edge, at its left edge.
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 struct Anchor {
     top: f64,
@@ -33,11 +33,12 @@ pub fn use_more_menu() -> MoreMenuState {
     }
 }
 
-/// Pixels between the button's bottom edge and the popover.
+/// Pixels between the button's top edge and the popover.
 const GAP_PX: f64 = 6.0;
 
 /// The `More` button, for the screen's action bar. A click places the
-/// popover under it and opens the menu.
+/// popover over it, since the bar sits on the window's bottom edge, and
+/// opens the menu.
 #[component]
 pub fn MoreButton(menu: MoreMenuState) -> Element {
     let MoreMenuState {
@@ -58,7 +59,7 @@ pub fn MoreButton(menu: MoreMenuState) -> Element {
                             && let Ok(rect) = mounted.get_client_rect().await
                         {
                             anchor.set(Anchor {
-                                top: rect.max_y() + GAP_PX,
+                                top: rect.min_y() - GAP_PX,
                                 left: rect.min_x(),
                             });
                         }
@@ -72,7 +73,7 @@ pub fn MoreButton(menu: MoreMenuState) -> Element {
 }
 
 /// The menu's items in `children`, in the app's order. A wide window shows
-/// them in a popover under the [`MoreButton`] that a click anywhere else
+/// them in a popover over the [`MoreButton`] that a click anywhere else
 /// closes; a narrow one in the app's `More` bottom sheet with its `Close`.
 /// Esc closes either. Render it beside the screen's action bar, not in it,
 /// since the bar is a containing block for fixed elements. `title` is the
