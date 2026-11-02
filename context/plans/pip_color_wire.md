@@ -1,6 +1,6 @@
 # Pip color on the wire: `natural` to `classic`
 
-**Status: Phase 1 built on main, uncommitted, 2026-11-02. Phases 2 to 4 not started.**
+**Status: Phase 1 committed on main `c089dcc1f`, 2026-11-02, riding 1.17.1. Phase 4 built on `server/pip-color-classic` (`32428253f`), not merged. Phases 2 and 3 not started.**
 
 **One sentence:** the pip preference's second value is renamed from `natural` to `classic`; the database stores `classic` now, the wire keeps writing `natural` because 1.15.0 through 1.17.0 can only parse that, and once the client floor is past a release that reads both, the server writes `classic` and stops accepting `natural`.
 
@@ -10,7 +10,7 @@
 
 ## What the wire looks like
 
-`UserPreferences` (`zwipe-core/src/domain/user/models/preferences.rs`) carries `pip_style`. It rides in the session the server returns on register, login and refresh, in the access token's claims, in `GET` and `PATCH /api/user/preferences`, and the app keeps it in the stored session. zite keeps the visitor's choice in localStorage under `zwipe.pips` as the serde JSON of the value.
+`UserPreferences` (`zwipe-core/src/domain/user/models/preferences.rs`) carries `pip_style`. It rides in the session the server returns on login and refresh, in `GET` and `PATCH /api/user/preferences`, and the app keeps it in the stored session. zite keeps the visitor's choice in localStorage under `zwipe.pips` as the serde JSON of the value.
 
 The setting shipped in 1.15.0, and 1.15.0 through 1.17.0 carry `PipStyle { Theme, Natural }` with `rename_all = "lowercase"` and nothing else, so it parses `"theme"` and `"natural"` and fails on `"classic"`. A session it cannot parse is a broken sign-in, so the server must not write `"classic"` until 1.17.0 is below the floor.
 
@@ -51,17 +51,18 @@ Record the version here when it is cut: **client reads both from 1.17.1**.
 
 When Phase 2 is live on both stores and rolled out, set `MIN_CLIENT_VERSION` to that version in `/etc/zwipe/zerver.env` and restart zerver. 1.15.0 through 1.17.0 get the update screen. Wait a few quiet days and watch `zcripts/metrics/errors.sql`.
 
-## Phase 4: the server writes `classic` only
+## Phase 4: `classic` only. BUILT on `server/pip-color-classic`
 
-A short branch, merged after Phase 3 is quiet:
+Built 2026-11-02 (`32428253f`), not merged. Merge after Phase 3 is quiet:
 
-- `Classic` becomes plain `Classic` under `rename_all = "lowercase"`: no rename, no alias. The wire writes and reads `classic`.
-- `FromStr` drops the `natural` arm. The database has held only `classic` since Phase 1, so the column needs no migration.
-- zite: a visitor whose localStorage still holds `"natural"` would fall back to Theme. Either map it in `pip_store::load` before parsing or accept the reset; it is one preference on one site. Drop the `"natural"` check in `index.html` either way.
-- Tests: `classic_stores_as_classic_and_reads_either_name` becomes a check that `natural` no longer parses, `the_wire_writes_the_name_shipped_clients_parse` asserts `"classic"`, and the zerver test PATCHes `classic`, expects `classic` back and expects `natural` to be a 4xx.
-- Grep gate: `natural` appears nowhere in the pip code, the migration history aside.
+- `Classic` is plain `Classic` under `rename_all = "lowercase"`, with no rename and no alias, so the wire writes and reads `classic`.
+- `FromStr` drops the `natural` arm. The database has held only `classic` since Phase 1, so no migration.
+- `PATCH` with `natural` is a 422.
+- A session stored on a device before the update that still says `natural` no longer parses, and the app treats that as signed out (`zwiper/src/lib/outbound/session.rs`). That is accepted: those users sign in again, and nothing waits for old sessions to age out. A zite visitor whose localStorage says `"natural"` falls back to Theme, and `index.html` checks `"classic"` only.
+- Tests: `classic_stores_and_writes_as_classic` and `the_earlier_natural_name_no_longer_reads` in core, three request-body tests in `http/contracts/user.rs`, and the zerver test PATCHes `classic`, expects `classic` back and expects `natural` to be refused.
+- Grep gate holds: `natural` appears only in the tests that assert it is refused.
 
-Access token claims carry no preferences (`user_id`, `username`, `email`, `exp`, `iat`, checked 2026-11-02), so tokens are not a concern. The device is: the app stores the session, preferences included, and a build from Phase 2 on writes `"natural"` there. The server dropping `natural` is safe because it never reads that file, but a later app build on a core without the alias would fail to read a session stored before it. So Phase 4 removes `natural` from what the server accepts, not from what the app can read back. Either keep the alias on the client's stored-session path, or confirm that an unreadable stored session falls through to a refresh rather than a sign-out before dropping it.
+Access token claims carry no preferences (`user_id`, `username`, `email`, `exp`, `iat`, checked 2026-11-02), so tokens are not a concern.
 
 ## Verification
 
