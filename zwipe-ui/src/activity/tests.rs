@@ -487,6 +487,12 @@ fn a_year_before_the_first_date_has_no_grid() {
 }
 
 #[test]
+fn a_year_ending_on_the_last_date_stops_there() {
+    let layout = heat_layout(NaiveDate::MAX, &[]);
+    assert_eq!(layout.cells.last().map(|c| c.date), Some(NaiveDate::MAX));
+}
+
+#[test]
 fn the_year_line_reads_the_year_for_screen_readers() {
     assert_eq!(year_line(&[]), "0 swipes and 0 searches in the last year");
     let on = NaiveDate::from_ymd_opt(2026, 10, 1).unwrap();
