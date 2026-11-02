@@ -86,6 +86,14 @@ mod tests {
     }
 
     #[test]
+    fn a_server_count_at_the_cap_stays_there() {
+        let mut profile = deck_profile("Capped");
+        profile.card_count = i64::MAX;
+        profile.signature_spell_id = Some(Uuid::new_v4());
+        assert_eq!(card_count(&profile), i64::MAX);
+    }
+
+    #[test]
     fn a_commander_counts_only_where_the_format_has_one() {
         let mut profile = deck_profile("Standard");
         profile.card_count = 60;

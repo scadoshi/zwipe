@@ -21,6 +21,7 @@ Anything that decides what a screen shows or does and that two or more clients n
 - The account forms: every field check and its words, the Log in gate, the Resend and Delete account labels; Home's greeting.
 - Hint copy as typed spans: every `?` topic and every one-time hint (`hint`).
 - Toasts as values (`toast`), behavior timings and search limits (`timing`), and the generation ticket for replies that arrive out of order.
+- Screen models (`screens`): a screen's state, actions and effects, so a client only draws and wires input. The deck list (`screens::deck_list`) is the first; `context/screen-models.md` holds the pattern.
 
 ## What stays out
 
@@ -42,4 +43,4 @@ One session owns the shared crates: zwipe-ui, zwipe-core, zwipe-client and compo
 
 ## Not yet
 
-Screen models (a state, actions and effects per screen) come next, starting with zwiper-web's waves B to D. zwiper-tui has switched to everything here; zwiper-web still uses its own copies until it switches over, and the app has switched `filter::fields::same_set`, the account checks and labels, the Log in gate, Home's greeting, the command zone (`deck::command_zone`), the deck form's values, requests, knock-on clears and slot visibility (`deck::form`), the deck form's pickers (`deck::pickers`), the create gate, the deck view (`deck::view`), the commander maybeboard and swipe select rules (`commander`), the oracle tag dictionary (`dictionary`), Config (`preferences`), the filter's chip rows without a mode chip (`filter::chips`) and the card info lines (`card::info`) so far.
+Screen models (a state, actions and effects per screen) are under way: the deck list is built and the app draws from it; the other fifteen follow in the shared plan's order. zwiper-tui has switched to everything here; zwiper-web still uses its own copies until it switches over, and the app has switched `filter::fields::same_set`, the account checks and labels, the Log in gate, Home's greeting, the command zone (`deck::command_zone`), the deck form's values, requests, knock-on clears and slot visibility (`deck::form`), the deck form's pickers (`deck::pickers`), the create gate, the deck view (`deck::view`), the commander maybeboard and swipe select rules (`commander`), the oracle tag dictionary (`dictionary`), Config (`preferences`), the filter's chip rows without a mode chip (`filter::chips`) and the card info lines (`card::info`) so far.
