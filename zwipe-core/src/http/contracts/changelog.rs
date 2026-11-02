@@ -80,6 +80,7 @@ impl HttpChangelog {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::version::Version;
 
     #[test]
     fn current_projects_the_compiled_in_source() {
@@ -89,7 +90,7 @@ mod tests {
 
         // Newest first, notes preserved.
         let latest = changelog.releases.first().expect("at least one release");
-        assert_eq!(latest.version, RELEASES[0].version);
+        assert_eq!(latest.version, RELEASES[0].version.to_string());
         assert_eq!(latest.released_on, RELEASES[0].date);
         assert_eq!(latest.entries.len(), RELEASES[0].entries.len());
     }
@@ -106,7 +107,7 @@ mod tests {
     #[test]
     fn date_keeps_the_display_format() {
         let release = Release {
-            version: "1.11.2",
+            version: Version::new(1, 11, 2),
             date: NaiveDate::from_ymd_opt(2026, 10, 9),
             entries: &[],
         };
@@ -119,7 +120,7 @@ mod tests {
     #[test]
     fn upcoming_leaves_released_on_off_the_wire() {
         let release = Release {
-            version: "9.9.9",
+            version: Version::new(9, 9, 9),
             date: None,
             entries: &[],
         };

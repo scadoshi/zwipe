@@ -7,6 +7,7 @@
 use anyhow::Context;
 use axum::http::HeaderValue;
 use chrono::Duration;
+use zwipe_core::version::Version;
 
 use crate::domain::auth::models::access_token::JwtSecret;
 
@@ -173,7 +174,7 @@ impl Config {
         let log_dir = std::env::var(LOG_DIR_KEY).unwrap_or_else(|_| LOG_DIR_DEFAULT.to_string());
         let min_client_version = std::env::var(MIN_CLIENT_VERSION_KEY)
             .unwrap_or_else(|_| MIN_CLIENT_VERSION_DEFAULT.to_string());
-        if zwipe_core::version::parse_version(&min_client_version).is_none() {
+        if min_client_version.parse::<Version>().is_err() {
             anyhow::bail!(
                 "invalid {MIN_CLIENT_VERSION_KEY}: {min_client_version:?} (expected x.y.z)"
             );

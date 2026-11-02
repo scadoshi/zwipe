@@ -5,7 +5,7 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::http::contracts::auth::HttpAuthenticateUser;
-use zwipe_core::version;
+use zwipe_core::version::Version;
 
 use crate::domain::auth::ports::AuthService;
 use crate::domain::auth::requests::authenticate_user::{
@@ -70,7 +70,8 @@ pub async fn authenticate_user(
     request.client_version = body
         .client_version
         .as_deref()
-        .and_then(version::canonical_version);
+        .and_then(|raw| raw.parse::<Version>().ok())
+        .map(|parsed| parsed.to_string());
     request.client_ip = Some(client_ip);
 
     let session = state
