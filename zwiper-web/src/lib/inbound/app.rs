@@ -91,7 +91,9 @@ pub fn App() -> Element {
 /// they registered; with no dialog it sends `true` to the root, which closes
 /// the top overlay. Enter with a dialog open runs its non-danger primary action, if
 /// it has one, and never reaches the page under the dialog; a focused button
-/// or link in the dialog answers Enter itself. With the Themes panel open,
+/// or link in the dialog answers Enter itself. Enter with nothing focused
+/// submits the page's form panel when it has exactly one, as Enter in one
+/// of its fields does. With the Themes panel open,
 /// the up and down arrows preview the row above or below the selected one,
 /// and Enter is `Save` unless a button in the panel has focus.
 const KEYS_JS: &str = r#"
@@ -112,6 +114,16 @@ document.addEventListener('keydown', (e) => {
         const primary = dialog.querySelector('.alert-dialog-actions .alert-dialog-action:not([disabled])');
         if (primary) primary.click();
         return;
+    }
+    const inField = focus && focus.closest('input, textarea, select, [contenteditable="true"]');
+    if (e.key === 'Enter' && !e.isComposing && !onControl && !inField) {
+        const forms = Array.from(document.querySelectorAll('.web-form-panel form'))
+            .filter((form) => form.offsetParent !== null);
+        if (forms.length === 1 && !document.querySelector('.bottom-sheet.show')) {
+            e.preventDefault();
+            forms[0].requestSubmit();
+            return;
+        }
     }
     const themes = document.querySelector('.web-theme-sheet .bottom-sheet.show');
     if (!themes) return;

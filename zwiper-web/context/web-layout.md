@@ -2,7 +2,7 @@
 
 The breakpoint is 900px: at 900px and up the window is wide, below it the web app is one column. The web is panels at every width: the app's bare forms and bottom action bar do not carry over (the app itself is unchanged). Screens with three panels add the third at 1280px and up; between 900px and 1279px they show two. A top nav like zite's holds the Z mark (Home), Decks, Activity, Playstyle, Account, Config and Community, and below 900px folds behind a hamburger. Bottom sheets become side panels when they edit something on the page and centered modals when they are short forms or lists; dialogs stay modal, and the web uses as few as it can: where a link or a page does the job, it replaces the app's dialog.
 
-Esc closes the top overlay (dialog, then modal, then side panel, then full overlay), browser back does the same for overlays the app puts on its back stack, Enter submits the focused form, and `/` focuses the screen's search or quick add field where there is one. Single-key shortcuts only fire while no text field has focus.
+Esc closes the top overlay (dialog, then modal, then side panel, then full overlay), browser back does the same for overlays the app puts on its back stack, Enter submits the focused form (and, with nothing focused, the page's form panel when it has exactly one), and `/` focuses the screen's search or quick add field where there is one. Single-key shortcuts only fire while no text field has focus.
 
 ## Page grammar
 

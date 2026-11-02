@@ -62,8 +62,12 @@ def main():
             for ch in step[1]:
                 p.send("Input.insertText", {"text": ch})
         elif kind == "key":
+            vk = {"Enter": 13, "Escape": 27}.get(step[1], 0)
             for t_ in ("keyDown", "keyUp"):
-                p.send("Input.dispatchKeyEvent", {"type": t_, "key": step[1], "code": step[1], "windowsVirtualKeyCode": 13 if step[1] == "Enter" else 0})
+                ev = {"type": t_, "key": step[1], "code": step[1], "windowsVirtualKeyCode": vk}
+                if t_ == "keyDown" and step[1] == "Enter":
+                    ev["text"] = "\r"
+                p.send("Input.dispatchKeyEvent", ev)
         elif kind == "shot":
             n += 1
             data = p.send("Page.captureScreenshot", {"format": "png"})["data"]
