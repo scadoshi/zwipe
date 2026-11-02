@@ -15,7 +15,7 @@ path = "src/lib/lib.rs"
 
 [dependencies]
 zwipe-core = { path = "../zwipe-core" }
-components = { path = "../components", features = ["toast"] }
+components = { path = "../components", features = ["toast", "links"] }
 zwipe-client = { path = "../zwipe-client" }
 zwipe-ui = { path = "../zwipe-ui" }
 dioxus = { version = "0.7.10", features = ["router"] }
@@ -37,28 +37,19 @@ dioxus-primitives = { git = "https://github.com/DioxusLabs/components", rev = "0
 
 # Android-only: keyring has no Android backend, so we persist the session to a
 # file in the app's private internal storage, reached via JNI (Context.getFilesDir()).
-# JNI + ndk-context also back `open_url` (ACTION_VIEW intents, Custom Tabs).
 [target.'cfg(target_os = "android")'.dependencies]
 ndk-context = "0.1"
 jni = "0.21"
 
-# iOS-only: `open_url` opens http(s) links in SFSafariViewController and mailto:
-# and the rest via UIApplication.openURL, since the webview's webbrowser backend
-# rejects non-http(s) URLs on mobile.
 # keyring-core + the protected store: keyring's v1 wrapper has no iOS arm (it
 # errors at runtime), and iOS requires the store crate's `protected` feature
 # (enabled here, unified into the copy keyring already pulls) — see
 # `outbound/keyring_entry.rs`.
 [target.'cfg(target_os = "ios")'.dependencies]
 objc2 = "0.6"
-objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSString", "NSURL", "NSDictionary"] }
+objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSString"] }
 keyring-core = "1.0"
 apple-native-keyring-store = { version = "1.0", features = ["protected"] }
-
-# Desktop (dev) only: webbrowser is pulled transitively by dioxus-desktop; depend
-# on it directly so `open_url` can hand off mailto:/http on macOS/Windows/Linux.
-[target.'cfg(not(any(target_os = "ios", target_os = "android")))'.dependencies]
-webbrowser = "1"
 
 [build-dependencies]
 dotenvy = { workspace = true }

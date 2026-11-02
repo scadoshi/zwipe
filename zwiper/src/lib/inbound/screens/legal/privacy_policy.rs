@@ -3,7 +3,7 @@
 //! Renders the shared policy copy from [`zwipe_core::legal`] via
 //! `dangerous_inner_html` so the app and the website stay in sync. Its inline
 //! links open in the in-app browser through
-//! [`use_in_app_links`](crate::inbound::components::in_app_links::use_in_app_links);
+//! [`components::use_in_app_links`];
 //! the contact line calls [`open_url::open`] directly.
 
 use components::{ActionBar, Button, ButtonVariant};
