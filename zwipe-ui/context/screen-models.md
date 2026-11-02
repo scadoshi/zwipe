@@ -47,6 +47,15 @@ Every fetch takes a `Ticket` from the model's own `Generation` inside `update`, 
 - I/O: zwipe-client calls, session storage, the hint's "seen" check and record, opening URLs.
 - Telemetry and error reporting, through each client's request runner.
 
+## Variations seen so far
+
+- Back that returns to wherever the user came from emits `Navigate(Destination::Previous)`; the client maps it to its own history back (the app's `go_back`, the TUI's `cx.back()`). Activity does this; the deck list goes to Home.
+- When clients lay out a screen's sections differently (an accordion with one open on the phone and in the terminal, all open on a wide web page), openness stays in the client. The model lists which sections draw (`sections()`) and which one opens on entry (`Section::opens_on_entry`).
+- A hint offered on arrival goes out with the first fetch in `Load`'s effects. The app dispatches `Load` from `use_hook` so the hint opens on the first render, as before.
+- A view with more than two shapes gets its own enum instead of two flags. Activity's `Rates` is `Unrated(line)`, `Uncharted(line)` or `Charted(bars)`.
+- A screen with no toast besides its request failure has no `Effect::Toast`.
+- When a model shares its name with a Phase 1 module (`zwipe_ui::activity` the math, `screens::activity` the model), clients import the model `as model`.
+
 ## Wiring it in Dioxus (the app and zwiper-web)
 
 The app's deck list keeps the model in one signal and puts it with the handles that perform effects in a `Copy` struct:
