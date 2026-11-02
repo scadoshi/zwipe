@@ -2,14 +2,14 @@
 //! heatmap, what their swipes came to, their rates by card role and oracle
 //! tag, and the cards they keep passing on. Reached from Home's counters.
 //!
-//! On a wide window the counts are the hero at the top of zite's page, and
-//! under them the Activity section and Most skipped share the left column,
-//! Card roles and Oracle tags the right, every section open. Below the
+//! On a wide window the counts are the hero at the top of zite's page, the
+//! Activity section spans the page under them so the year's heatmap reads
+//! at size, and under it Most skipped takes the left column, Card roles and
+//! Oracle tags the right, every section open. Below the
 //! breakpoint it is the app's accordion with Activity open.
 
 pub mod sections;
 
-use components::{ActionBar, Button, ButtonVariant};
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
@@ -94,7 +94,6 @@ fn ActivitySkeleton() -> Element {
 /// toasts and says so, and an account with nothing swiped gets one line.
 #[component]
 pub fn Activity() -> Element {
-    let navigator = use_navigator();
     let authed = use_authed();
     let hint_open = use_one_time_hint(OneTimeHint::Activity);
     let mut hint_again = hint_open;
@@ -135,9 +134,9 @@ pub fn Activity() -> Element {
                             span { class: "chip-note", "Could not load your activity" }
                         }
                     } else if let Some(found) = activity().filter(has_anything) {
+                        ActivityYear { activity: found.clone(), open_section }
                         div { class: "web-columns",
                             div { class: "web-column",
-                                ActivityYear { activity: found.clone(), open_section }
                                 HardPassesPanel { passes: found.passes.clone(), expanded_card }
                             }
                             div { class: "web-column",
@@ -150,9 +149,6 @@ pub fn Activity() -> Element {
                         }
                     }
                 }
-            }
-            ActionBar {
-                Button { variant: ButtonVariant::Action, onclick: move |_| navigator.go_back(), "Back" }
             }
         }
         OneTimeHintDialog { hint: OneTimeHint::Activity, open: hint_open }

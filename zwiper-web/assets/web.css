@@ -112,6 +112,12 @@ body {
     opacity: 1;
 }
 
+/* With no action bar the `?` keeps its own line at the page's end, so it
+   never covers the last panel. */
+.web-screen:not(:has(> .action-bar)) > .web-screen-hint {
+    margin-top: 0;
+}
+
 .web-screen:has(> .web-screen-hint) > .action-bar {
     padding-left: 3.5rem;
     padding-right: 3.5rem;
@@ -967,6 +973,12 @@ body {
 }
 
 /* ---- Activity ---- */
+
+/* Most skipped's header names its section, so it reads as the section
+   titles do: their color, regular weight. */
+.card-group-header > .settings-list-title {
+    font-weight: 400;
+}
 
 .web-activity-year,
 .web-activity-rates {
