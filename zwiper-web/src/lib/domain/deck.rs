@@ -9,21 +9,6 @@ use zwipe_core::http::helpers::Patch;
 use zwipe_ui::deck::form::{parse_price, price_text};
 use zwipe_ui::hint::{Block, HintContent, HintTopic, Span};
 
-// Belongs in zwipe-ui
-/// The deck's command-zone art crops for its list row, in the order
-/// commander, partner, background, signature spell, only those it has.
-pub fn command_zone_art(profile: &DeckProfile) -> Vec<&str> {
-    [
-        profile.commander_art_url.as_deref(),
-        profile.partner_commander_art_url.as_deref(),
-        profile.background_art_url.as_deref(),
-        profile.signature_spell_art_url.as_deref(),
-    ]
-    .into_iter()
-    .flatten()
-    .collect()
-}
-
 /// What the deck form holds, as Create sends it and Edit compares it. The
 /// command zone is each card's printing id.
 #[derive(Debug, Clone, PartialEq, Default)]
@@ -386,13 +371,5 @@ mod tests {
         assert_eq!(wire["price_target"], serde_json::Value::Null);
         assert_eq!(wire["price_target_currency"], serde_json::Value::Null);
         assert_eq!(wire["format"], "commander");
-    }
-
-    #[test]
-    fn art_follows_the_command_zone_order() {
-        let mut profile = test_fixtures::deck_profile("Pair");
-        profile.background_art_url = Some("bg".to_owned());
-        profile.commander_art_url = Some("cmd".to_owned());
-        assert_eq!(command_zone_art(&profile), ["cmd", "bg"]);
     }
 }

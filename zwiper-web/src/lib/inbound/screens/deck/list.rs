@@ -16,9 +16,8 @@ use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::deck::DeckProfile;
 use zwipe_core::domain::deck::deck_tag::deck_tag_label;
 use zwipe_ui::deck::list::{self, GroupBy, Show};
-use zwipe_ui::deck::{card_count, cards_label, count_fits};
+use zwipe_ui::deck::{card_count, cards_label, command_zone, count_fits};
 
-use crate::domain::deck::command_zone_art;
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::more_menu::{MoreButton, MoreMenu, use_more_menu};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, open_and_record_hint};
@@ -314,7 +313,7 @@ fn DeckRow(profile: DeckProfile) -> Element {
     let count = card_count(&profile);
     let count_bad = !count_fits(&profile, count);
     let pips = list::identity_colors(&profile);
-    let art = command_zone_art(&profile).into_iter().map(str::to_owned);
+    let art = command_zone::art(&profile).into_iter().map(str::to_owned);
     let deck_id = profile.id;
     rsx! {
         div {

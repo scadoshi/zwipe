@@ -10,6 +10,7 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
 use zwipe_core::domain::deck::{DeckProfile, DeckWarning, deck_tag_label};
+use zwipe_ui::deck::form::Slot;
 use zwipe_ui::deck::warning::{self, Fix};
 
 use crate::domain::deck::total_price_line;
@@ -33,11 +34,7 @@ fn InfoRow(label: String, value: String) -> Element {
 /// level. The commander row prefers the fetched card's name.
 #[component]
 pub fn ProfileCard(profile: DeckProfile, commander: Option<Card>, cards: usize) -> Element {
-    let label = if profile.format.is_some_and(|f| f.has_signature_spell()) {
-        "Oathbreaker"
-    } else {
-        "Commander"
-    };
+    let label = Slot::Commander.label(profile.format);
     let commander_name = commander
         .map(|c| c.scryfall_data.name)
         .or_else(|| profile.commander_name.clone())
@@ -57,13 +54,13 @@ pub fn ProfileCard(profile: DeckProfile, commander: Option<Card>, cards: usize) 
                 InfoRow { label, value: commander_name }
             }
             if let Some(name) = profile.partner_commander_name.clone() {
-                InfoRow { label: "Partner", value: name }
+                InfoRow { label: Slot::Partner.label(profile.format), value: name }
             }
             if let Some(name) = profile.background_name.clone() {
-                InfoRow { label: "Background", value: name }
+                InfoRow { label: Slot::Background.label(profile.format), value: name }
             }
             if let Some(name) = profile.signature_spell_name.clone() {
-                InfoRow { label: "Signature spell", value: name }
+                InfoRow { label: Slot::SignatureSpell.label(profile.format), value: name }
             }
             if let Some(power) = profile.power_level {
                 InfoRow { label: "Power level", value: power.display_name() }

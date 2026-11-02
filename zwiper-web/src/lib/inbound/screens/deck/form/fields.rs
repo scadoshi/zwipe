@@ -61,11 +61,6 @@ fn ProfileFields(form: DeckForm, on_enter: EventHandler<()>) -> Element {
             .as_ref()
             .is_some_and(commander_eligibility::has_choose_a_background);
     let show_spell = format.is_some_and(|f| f.has_signature_spell());
-    let commander_label = if show_spell {
-        "Oathbreaker"
-    } else {
-        "Commander"
-    };
     let mut format_open = form.format_open;
     let mut power_level = form.power_level;
     rsx! {
@@ -108,16 +103,16 @@ fn ProfileFields(form: DeckForm, on_enter: EventHandler<()>) -> Element {
             }
         }
         Collapsible { show: show_commander,
-            CommandZoneField { form, slot: Slot::Commander, label: commander_label }
+            CommandZoneField { form, slot: Slot::Commander, label: Slot::Commander.label(format) }
         }
         Collapsible { show: show_partner,
-            CommandZoneField { form, slot: Slot::Partner, label: "Partner" }
+            CommandZoneField { form, slot: Slot::Partner, label: Slot::Partner.label(format) }
         }
         Collapsible { show: show_background,
-            CommandZoneField { form, slot: Slot::Background, label: "Background" }
+            CommandZoneField { form, slot: Slot::Background, label: Slot::Background.label(format) }
         }
         Collapsible { show: show_spell,
-            CommandZoneField { form, slot: Slot::SignatureSpell, label: "Signature spell" }
+            CommandZoneField { form, slot: Slot::SignatureSpell, label: Slot::SignatureSpell.label(format) }
         }
         div { style: "margin-top: 1rem;",
             div { class: "label-row",

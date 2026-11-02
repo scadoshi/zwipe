@@ -22,10 +22,9 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
 use zwipe_core::domain::deck::{Deck, DeckProfile};
-use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
 use zwipe_core::http::contracts::deck_card::HttpPatchDeckCard;
-use zwipe_core::http::helpers::Patch;
 use zwipe_ui::buy;
+use zwipe_ui::deck::form::Slot;
 
 use self::cards::CardsColumn;
 use self::more::DeckMore;
@@ -131,9 +130,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
             });
         }),
         clear_commander: use_callback(move |()| {
-            let request = HttpUpdateDeckProfile::builder()
-                .commander_id(Patch::Set(None))
-                .build();
+            let request = Slot::Commander.update_request(None);
             spawn(async move {
                 let cleared = authed
                     .run("remove_commander", |c, s| async move {
@@ -143,11 +140,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                 let Some(cleared) = cleared else {
                     return;
                 };
-                let label = if cleared.format.is_some_and(|f| f.has_signature_spell()) {
-                    "Oathbreaker"
-                } else {
-                    "Commander"
-                };
+                let label = Slot::Commander.label(cleared.format);
                 toast.info(
                     format!("{label} cleared"),
                     ToastOptions::default().duration(TOAST_QUICK),

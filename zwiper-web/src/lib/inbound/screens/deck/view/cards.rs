@@ -9,8 +9,7 @@ use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::card::search_card::group_cards::GroupByOption;
-use zwipe_core::domain::deck::{Deck, DeckProfile};
-use zwipe_ui::deck::form::Slot;
+use zwipe_core::domain::deck::Deck;
 use zwipe_ui::deck_cards::{self, Zone};
 
 use crate::inbound::cards::card_row::CardRow;
@@ -30,17 +29,6 @@ pub(crate) fn zone(deck: &Deck) -> Zone {
         partner: find(profile.partner_commander_id),
         background: find(profile.background_id),
         signature: find(profile.signature_spell_id),
-    }
-}
-
-/// A command-zone slot's header, as the deck cards view names it.
-fn slot_label(slot: Slot, profile: &DeckProfile) -> &'static str {
-    match slot {
-        Slot::Commander if profile.format.is_some_and(|f| f.has_signature_spell()) => "Oathbreaker",
-        Slot::Commander => "Commander",
-        Slot::Partner => "Partner",
-        Slot::Background => "Background",
-        Slot::SignatureSpell => "Signature spell",
     }
 }
 
@@ -74,7 +62,7 @@ pub fn CardsColumn(deck: Deck) -> Element {
         div { class: "web-deck-cards",
             for (slot, card) in shown.zone {
                 div { key: "{slot:?}", class: "card-group row-enter",
-                    div { class: "card-group-header", "{slot_label(slot, &deck.deck_profile)}" }
+                    div { class: "card-group-header", "{slot.label(deck.deck_profile.format)}" }
                     CardRow { card, qty: 1, expanded_card: expanded }
                 }
             }

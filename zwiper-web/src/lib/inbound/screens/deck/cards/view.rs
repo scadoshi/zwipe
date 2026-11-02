@@ -30,9 +30,7 @@ use zwipe_core::domain::card::search_card::cards::Cards;
 use zwipe_core::domain::card::search_card::group_cards::GroupByOption;
 use zwipe_core::domain::deck::deck_metrics::deck_price;
 use zwipe_core::domain::deck::{Board, DeckEntry, DeckProfile, Quantity, deck_tag_label};
-use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
 use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpPatchDeckCard};
-use zwipe_core::http::helpers::Patch;
 use zwipe_ui::deck::form::Slot;
 use zwipe_ui::deck_cards::{self, Boards, Bursts, Write, Zone};
 use zwipe_ui::deck_signals::{Crossing, budget_crossing, land_count, land_crossing};
@@ -93,32 +91,6 @@ struct Meta {
     qty: i32,
     board: Board,
     mvp: bool,
-}
-
-/// A command zone slot's header, as the app names it.
-fn zone_header(slot: Slot, oathbreaker: bool, has_partner: bool) -> &'static str {
-    match slot {
-        Slot::Commander | Slot::Partner if oathbreaker => "Oathbreaker",
-        Slot::Commander | Slot::Partner if has_partner => "Commanders",
-        Slot::Commander | Slot::Partner => "Commander",
-        Slot::Background => "Background",
-        Slot::SignatureSpell => "Signature spell",
-    }
-}
-
-/// The deck profile request that puts `id` in `slot`.
-fn slot_request(slot: Slot, id: Uuid) -> HttpUpdateDeckProfile {
-    let id = Patch::Set(Some(id));
-    match slot {
-        Slot::Commander => HttpUpdateDeckProfile::builder().commander_id(id).build(),
-        Slot::Partner => HttpUpdateDeckProfile::builder()
-            .partner_commander_id(id)
-            .build(),
-        Slot::Background => HttpUpdateDeckProfile::builder().background_id(id).build(),
-        Slot::SignatureSpell => HttpUpdateDeckProfile::builder()
-            .signature_spell_id(id)
-            .build(),
-    }
 }
 
 /// The editing actions a row passes to its [`CardRow`], by its kind.
@@ -687,7 +659,7 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
         let new_id = picked.scryfall_data.id;
         spawn(async move {
             if let Some(slot) = slot {
-                let request = slot_request(slot, new_id);
+                let request = slot.update_request(Some(new_id));
                 if authed
                     .run("change_printing", |c, s| async move {
                         c.update_deck_profile(deck_id, &request, &s).await
@@ -830,7 +802,7 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
             UndoAction::CommandZonePrintingChanged { slot, old_card, .. } => {
                 let old_id = old_card.scryfall_data.id;
                 *zone.write().slot_mut(slot) = Some(*old_card);
-                let request = slot_request(slot, old_id);
+                let request = slot.update_request(Some(old_id));
                 spawn(async move {
                     authed
                         .run("undo", |c, s| async move {
@@ -881,11 +853,8 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
     let row_meta = meta();
     let applied = filter.read().clone();
     let shown_boards = boards();
-    let oathbreaker = profile
-        .read()
-        .as_ref()
-        .and_then(|p| p.format)
-        .is_some_and(|f| f.has_signature_spell());
+    let format = profile.read().as_ref().and_then(|p| p.format);
+    let oathbreaker = format.is_some_and(|f| f.has_signature_spell());
     let main_row = |card: &Card| -> RowInfo { main_row_of(&row_meta, card) };
     let pane_row =
         selected().and_then(|id| rows.iter().find(|r| r.card.scryfall_data.id == id).cloned());
@@ -1214,7 +1183,7 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
                         for (slot, card) in zone_rows.clone() {
                             if slot != Slot::Partner || !zone_rows.iter().any(|(s, _)| *s == Slot::Commander) {
                                 div { key: "{slot:?}", class: "card-group row-enter",
-                                    div { class: "card-group-header", "{zone_header(slot, oathbreaker, has_partner)}" }
+                                    div { class: "card-group-header", "{slot.group_header(format, has_partner)}" }
                                     {row_view(RowInfo { card, qty: 1, kind: RowKind::Zone(slot) })}
                                     if slot == Slot::Commander {
                                         for (partner_slot, partner) in zone_rows.iter().filter(|(s, _)| *s == Slot::Partner).cloned() {
