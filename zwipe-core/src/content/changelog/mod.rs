@@ -44,6 +44,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Activity's role and tag charts say why they're empty for the pick under Show",
         "Activity's hints say share instead of rate",
         "Links open inside Zwipe instead of switching to the browser",
+        "Hints with a guide on zwipe.net link to it",
     ],
 }];
 

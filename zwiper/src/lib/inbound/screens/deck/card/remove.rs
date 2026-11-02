@@ -21,6 +21,7 @@ use super::components::filter_store::{FilterScope, FilterStore};
 use super::components::printing_sheet::PrintingSheet;
 use crate::inbound::components::auth::authed::use_authed;
 use crate::inbound::components::auth::ensure_session::EnsureFresh;
+use crate::inbound::components::guide_link;
 use crate::inbound::components::hint_dialog::{HintColored, use_one_time_hint};
 use crate::inbound::components::interactions::swipe::SwipeStack;
 use crate::inbound::components::interactions::swipe::config::SwipeConfig;
@@ -709,6 +710,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
 
             HintDialog {
                 open: swipe_hint_open,
+                actions: guide_link::one_time(HINT_REMOVE_DECK_CARDS),
                 title: "Swipe to trim",
                 HintBullets {
                     HintBullet { "Swipe " HintColored { color: "--color-success", "right" } " removes the card" }

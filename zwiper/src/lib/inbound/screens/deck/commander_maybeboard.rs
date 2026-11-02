@@ -42,6 +42,7 @@ use super::components::swipe_select::{SwipeMode, SwipeSelect};
 use crate::inbound::components::auth::authed::use_authed;
 use crate::inbound::components::catalog_cache::CatalogCache;
 use crate::inbound::components::generation::{Generation, Ticket, use_generation};
+use crate::inbound::components::guide_link;
 use crate::inbound::components::hint_dialog::{HintColored, use_one_time_hint};
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
@@ -509,6 +510,7 @@ pub fn CommanderMaybeboard() -> Element {
 
             HintDialog {
                 open: hint_open,
+                actions: guide_link::one_time(HINT_COMMANDER_MAYBEBOARD),
                 title: "Commander maybeboard",
                 HintLine { "Commanders you save land here" }
                 HintBullets {

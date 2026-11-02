@@ -17,6 +17,7 @@ use zwipe_core::domain::deck::{DeckTagView, MAX_DECK_TAGS};
 use zwipe_ui::filter::fields;
 
 use crate::inbound::components::concept_explainers::DeckTagsExplainer;
+use crate::inbound::components::guide_link;
 use crate::inbound::components::screen_header::ScreenHeader;
 
 /// In-place tag picker. Toggled by `open`; mutates `selected_tags` (slugs)
@@ -181,6 +182,7 @@ pub(crate) fn TagSelect(
 
                 HintDialog {
                     open: hint_open,
+                    actions: guide_link::shared_topic(zwipe_ui::hint::HintTopic::DeckTags),
                     title: "Deck tags",
                     DeckTagsExplainer {}
                     HintBullets {

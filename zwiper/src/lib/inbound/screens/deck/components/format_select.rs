@@ -14,6 +14,7 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_core::domain::deck::format::Format;
 
+use crate::inbound::components::guide_link;
 use crate::inbound::components::screen_header::ScreenHeader;
 
 /// Deck size summary, e.g. "100 cards, singleton" or "60+ cards, up to 4 copies".
@@ -195,6 +196,7 @@ pub(crate) fn FormatSelect(
 
                 HintDialog {
                     open: hint_open,
+                    actions: guide_link::shared_topic(zwipe_ui::hint::HintTopic::Format),
                     title: "Format",
                     HintBullets {
                         HintBullet { "Tap the picked format again to clear it" }

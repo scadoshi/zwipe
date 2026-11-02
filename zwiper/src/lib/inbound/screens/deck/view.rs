@@ -30,6 +30,7 @@ use super::components::more_buttons::MoreButtons;
 use super::components::skeletons::{DeckProfileSkeleton, DeckStatsSkeleton};
 use crate::inbound::components::auth::authed::use_authed;
 use crate::inbound::components::catalog_cache::CatalogCache;
+use crate::inbound::components::guide_link;
 use crate::inbound::components::hint_dialog::use_one_time_hint;
 use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::info_button::InfoButton;
@@ -566,6 +567,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
 
             HintDialog {
                 open: first_deck_hint_open,
+                actions: guide_link::one_time(HINT_FIRST_DECK),
                 title: "Welcome to your deck",
                 HintBullets {
                     HintBullet { HintKey { "Cards" } " browses, adds and removes cards" }

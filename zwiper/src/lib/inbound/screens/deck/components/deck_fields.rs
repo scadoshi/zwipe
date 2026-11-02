@@ -21,6 +21,7 @@ use zwipe_core::domain::deck::{
 use zwipe_ui::deck::command_zone::Slot;
 
 use crate::inbound::components::generation::use_generation;
+use crate::inbound::components::guide_link;
 use crate::inbound::components::hint_dialog::HintColored;
 use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::info_button::{self, InfoButton};
@@ -1184,12 +1185,14 @@ pub(crate) fn DeckFields(
 
 /// Explainer dialog for the deck create/edit form. Shared by both screens so
 /// the command-zone behavior is described in one place. `open` is owned by the
-/// screen (a one-time hint plus a "?" button).
+/// screen (a one-time hint plus a "?" button); `hint_key` is the one-time
+/// hint it is recorded under, which picks its guide link.
 #[component]
-pub(crate) fn DeckFieldsHint(open: Signal<bool>) -> Element {
+pub(crate) fn DeckFieldsHint(open: Signal<bool>, hint_key: &'static str) -> Element {
     rsx! {
         HintDialog {
             open,
+            actions: guide_link::one_time(hint_key),
             title: "Building a deck",
             HintBullets {
                 HintBullet { HintColored { color: "--accent-primary", "Profile" } " is what the deck is, " HintColored { color: "--accent-secondary", "Budget" } " what it may cost, " HintColored { color: "--accent-tertiary", "Tags" } " what it does" }

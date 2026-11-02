@@ -14,8 +14,8 @@ use zwipe_ui::filter::fields;
 
 use crate::inbound::components::auth::authed::use_authed;
 use crate::inbound::components::catalog_cache::CatalogCache;
-use crate::inbound::components::hint_dialog;
 use crate::inbound::components::telemetry::vocabulary::{ProfileScreen, Screen};
+use crate::inbound::components::{guide_link, hint_dialog};
 
 /// Bottom sheet editing the exceptions whitelist. `exceptions` is the parent's
 /// saved list: the sheet copies it into a draft on open and writes it back on
@@ -179,6 +179,7 @@ pub fn UniversesBeyondExceptionsSheet(
 
         HintDialog {
             open: hint_open,
+            actions: guide_link::one_time(HINT_UNIVERSES_BEYOND_EXCEPTIONS),
             title: "Franchise exceptions",
             HintLine { "Picked franchises still show while Universes Beyond is hidden" }
         }

@@ -20,6 +20,7 @@ use zwipe_ui::filter::fields;
 
 use crate::inbound::components::catalog_cache::CatalogCache;
 use crate::inbound::components::concept_explainers::OracleTagsExplainer;
+use crate::inbound::components::guide_link;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::screens::oracle_tag_dictionary::OracleTagDictionary;
 
@@ -251,11 +252,14 @@ pub(crate) fn OracleTagSelect(
                 HintDialog {
                     open: hint_open,
                     title: "Oracle tags",
-                    actions: vec![DialogAction::Confirm {
+                    actions: [DialogAction::Confirm {
                         label: "Dictionary".into(),
                         danger: false,
                         on_confirm: open_dictionary,
-                    }],
+                    }]
+                    .into_iter()
+                    .chain(guide_link::shared_topic(zwipe_ui::hint::HintTopic::OracleTags))
+                    .collect(),
                     OracleTagsExplainer {}
                 }
 

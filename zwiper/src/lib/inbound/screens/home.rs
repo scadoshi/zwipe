@@ -22,7 +22,7 @@ use crate::inbound::components::hint_dialog::{HintColored, use_one_time_hint};
 use crate::inbound::components::home_hero::HomeHeroScoped;
 use crate::inbound::components::home_play_style::HomePlayStyle;
 use crate::inbound::components::screen_header::ScreenHeader;
-use crate::inbound::components::ui_toast;
+use crate::inbound::components::{guide_link, ui_toast};
 use crate::inbound::router::Router;
 use crate::inbound::screens::deck::card::components::image_preview::ImagePreview;
 use crate::outbound::{app_icon, buy_links};
@@ -231,6 +231,7 @@ pub fn Home() -> Element {
             }
             HintDialog {
                 open: first_login_hint_open,
+                actions: guide_link::one_time(HINT_FIRST_LOGIN),
                 title: "Welcome to Zwipe",
                 HintBullets {
                     HintBullet { HintKey { "Decks" } " holds your decks" }

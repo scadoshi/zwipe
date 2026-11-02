@@ -26,9 +26,9 @@ use zwipe_core::domain::user::models::hints::HINT_DECK_LIST;
 use zwipe_ui::deck::command_zone;
 
 use crate::inbound::components::auth::authed::use_authed;
-use crate::inbound::components::hint_dialog;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen};
+use crate::inbound::components::{guide_link, hint_dialog};
 use crate::inbound::router::Router;
 use crate::inbound::screens::deck::components::skeletons::{ChipRowSkeleton, DeckListSkeleton};
 
@@ -467,6 +467,7 @@ pub fn DeckList() -> Element {
                 // effect above; the header's ? reopens it on demand.
                 HintDialog {
                     open: decks_hint_open,
+                    actions: guide_link::one_time(HINT_DECK_LIST),
                     title: "Your decks",
                     HintBullets {
                         HintBullet { "Tap a deck to open it" }

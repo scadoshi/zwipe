@@ -14,6 +14,7 @@ use crate::inbound::components::accordion::{
     Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 };
 use crate::inbound::components::catalog_cache::CatalogCache;
+use crate::inbound::components::guide_link;
 use crate::inbound::components::hint_dialog::{self, HintColored};
 use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::info_button::InfoButton;
@@ -831,6 +832,7 @@ pub(crate) fn CardFilterSheet(
 
         HintDialog {
             open: hint_open,
+            actions: guide_link::one_time(HINT_FILTER),
             title: "Filters",
             HintBullets {
                 HintBullet { "Picks which cards show: the ones served to " HintColored { color: "--accent-primary", "swipe" } ", or which of the deck's cards list" }

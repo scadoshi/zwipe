@@ -14,6 +14,7 @@ use zwipe_core::domain::deck::requests::import_deck_cards::ImportDeckCardsResult
 use zwipe_core::domain::user::models::hints::HINT_IMPORT;
 
 use crate::inbound::components::auth::authed::use_authed;
+use crate::inbound::components::guide_link;
 use crate::inbound::components::hint_dialog::use_one_time_hint;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen};
@@ -118,6 +119,7 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
 
                 HintDialog {
                     open: import_hint,
+                    actions: guide_link::one_time(HINT_IMPORT),
                     title: "Importing cards",
                     HintBullets {
                         HintBullet { "Paste a decklist, or switch " HintKey { "From" } " to an Archidekt deck link" }
