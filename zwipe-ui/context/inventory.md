@@ -74,7 +74,7 @@ Home is where each piece goes: **ui** is zwipe-ui, **core** is zwipe-core, or a 
 | Animation timings: splash, stagger, entrance, wipe, spinner, sweeps, card motion | orangui CSS and JS, `main.css` | `tui/inbound/widgets` | CSS | each client | none | none | stays in each client |
 | Generation ticket for out-of-order replies | `app/components/generation.rs` (Dioxus `CopyValue`) | in the TUI's loop | none yet | ui as a plain counter; app keeps its hook over it | n/a | C, D | in zwipe-ui `generation`; the TUI switched |
 | Swipe gesture engine | `app/components/interactions/swipe` (33 tests) | keys | keys and buttons | zwiper | n/a | none | stays in zwiper |
-| Usage telemetry buffer and screen vocabulary | `app/components/telemetry` (11 tests) | `zwiper-tui/src/lib/outbound/usage_buffer.rs`, copied from the app; sends errors only, swipes and signals as zero | anonymous funnel only | ui (shared plan decision 2, which reverses decision 8) | TUI and web swipes count nowhere | none | not moved yet; shared plan branch 12 lifts the buffer, the flush loop stays in each client |
+| Usage telemetry buffer and screen vocabulary | `app/components/telemetry` (11 tests) | `zwiper-tui/src/lib/outbound/usage_buffer.rs`, copied from the app; sends errors only, swipes and signals as zero | anonymous funnel only | ui (shared plan decision 2, which reverses decision 8) | TUI and web swipes count nowhere | none | in zwipe-ui `telemetry` (`UsageBuffer`, a plain struct the client locks; `HandledError`, `ErrorKind`, `SwipeDirection`, `vocabulary`); the app switched behind a wrapper, its flush loop, `ClientError` mapping and logging stay in zwiper; web adds a flush, TUI swaps its copy; decision 8 resolved by decision 2 |
 
 ## Part 2: screen models
 
@@ -104,7 +104,7 @@ Effort is the work to build the shared model from the TUI's version and test it 
 | Swipe select (commander and suggested modes) | the stack, the per-mode constraint, maybeboard save and undo, toasts | the gesture engine and card motion | L |
 | Oracle tag dictionary | search, definition, Use hand-off | overlay or panel layout | S |
 | Oracle tag examples | load, paging, empty and error lines | card drawing | S |
-| Deck list | the whole TUI `DeckList` minus focus: decks, Group by, Show, tag fold, collapsed groups, Create gate, More items | chip and list drawing | S |
+| Deck list | the whole TUI `DeckList` minus focus: decks, Group by, Show, tag fold, collapsed groups, Create gate, More items | chip and list drawing | S, built: `screens::deck_list`; the app switched, web and TUI to switch |
 | Create and Edit | every field, validation, knock-on clears, change detection, the four command-zone searches with debounce and generation tickets, the format, tag and oracle tag pickers (draft, Save disabled when unchanged, Back with "unchanged"), submit and server messages | text inputs, picker layout (sheet, side panel, overlay) | L |
 | Import | paste, submit, outcome toast | text area | S |
 | Export | board toggles with the at-least-one rule, the text, copy toast | clipboard API | S |

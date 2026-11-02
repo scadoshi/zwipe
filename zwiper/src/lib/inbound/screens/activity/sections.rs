@@ -255,7 +255,7 @@ fn outcome_bars(outcomes: &HttpSwipeOutcomes) -> Vec<Bar> {
                 .checked_div(top)
                 .and_then(|pct| u32::try_from(pct).ok())
                 .unwrap_or(100);
-            Bar::new(label, usize::try_from(n).unwrap_or(usize::MAX), pct)
+            Bar::new(label, n, pct)
         })
         .collect()
 }
@@ -339,7 +339,7 @@ fn role_rate_bars(kind: RateKind, roles: &[HttpRoleRates], tags: &[HttpTagRates]
         .map(|(role, rate)| Bar {
             key: role.role.clone(),
             label: card_role::role_short_label(&role.role),
-            count: usize::try_from(rate).unwrap_or(100),
+            count: u64::from(rate),
             pct: rate,
             revealable: tags.iter().any(|t| t.role == role.role),
         })
@@ -405,7 +405,7 @@ fn tag_rate_bars(kind: RateKind, tags: &[HttpTagRates]) -> Vec<Bar> {
             Some(Bar {
                 key: tag.tag.clone(),
                 label: tag.tag.clone(),
-                count: usize::try_from(rate).unwrap_or(100),
+                count: u64::from(rate),
                 pct: rate,
                 revealable: true,
             })
@@ -980,7 +980,7 @@ mod tests {
             ],
             &swiped,
         );
-        let rows: Vec<(String, usize, bool)> = bars
+        let rows: Vec<(String, u64, bool)> = bars
             .into_iter()
             .map(|b| (b.key, b.count, b.revealable))
             .collect();

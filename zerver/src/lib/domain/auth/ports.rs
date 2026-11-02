@@ -25,7 +25,9 @@ use crate::domain::auth::requests::confirm_email_change::{
 };
 use crate::domain::auth::requests::create_session::{CreateSession, CreateSessionError};
 use crate::domain::auth::requests::delete_user::{DeleteUser, DeleteUserError};
-use crate::domain::auth::requests::refresh_session::{RefreshSession, RefreshSessionError};
+use crate::domain::auth::requests::refresh_session::{
+    RefreshSession, RefreshSessionError, RotatedRefreshToken,
+};
 use crate::domain::auth::requests::register_user::{
     RegisterOutcome, RegisterUser, RegisterUserError,
 };
@@ -75,11 +77,12 @@ pub trait AuthRepository: Clone + Send + Sync + 'static {
     /// Exchanges a refresh token for a new one (token rotation).
     ///
     /// Validates the old refresh token, deletes it, and generates a new one.
-    /// This implements refresh token rotation to prevent replay attacks.
+    /// This implements refresh token rotation to prevent replay attacks. The
+    /// new token keeps the family's platform, which comes back with it.
     fn use_refresh_token(
         &self,
         request: &RefreshSession,
-    ) -> impl Future<Output = Result<RefreshToken, RefreshSessionError>> + Send;
+    ) -> impl Future<Output = Result<RotatedRefreshToken, RefreshSessionError>> + Send;
 
     // == get ==
 

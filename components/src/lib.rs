@@ -24,8 +24,9 @@
 //! zwipe-core's theme list equal to orangui's.
 //!
 //! These components deliberately depend only on base `dioxus` (no platform
-//! features), orangui and `zwipe-core`, so any Dioxus target can consume them.
-//! The `toast` feature enables orangui's, and `links` its in-app browser
+//! features), orangui, `zwipe-core` and `zwipe-ui`, so any Dioxus target can
+//! consume them. The `toast` feature enables orangui's toast stack with
+//! `use_toast`, `Toasts` and `ToastOptions`, and `links` its in-app browser
 //! (`open_url`, `use_in_app_links`).
 
 mod architecture;
@@ -50,7 +51,7 @@ pub use charts::{
     Bar, BarChart, BarOrientation, ChartLabel, ColorChart, DeckCharts, DrawOdds, LabelCase,
     ManaCurve, ManaFulfillment,
 };
-pub use color_map::{ColorMap, ColorMapCounts, ColorMapGhost, ColorMapModel, seed_from_id};
+pub use color_map::{ColorMap, ColorMapGhost};
 pub use flippable_card_image::{FlippableCardImage, reset_image_ease};
 pub use keyword_chips::{KeywordChips, KeywordReminders};
 pub use oracle_text::OracleText;
@@ -70,9 +71,12 @@ pub use orangui::{
 #[cfg(feature = "links")]
 pub use orangui::{OpenUrlError, open_url, use_in_app_links};
 #[cfg(feature = "toast")]
-pub use orangui::{TOAST_CSS, ToastStack};
+pub use orangui::{TOAST_CSS, ToastOptions, ToastStack, Toasts, use_toast};
 pub use role_tags::{OtagDef, RoleTags};
 pub use theme::{pip_style_class, theme_from_preferences};
+/// The color map's counts and a player's seed, from zwipe-ui, for the props
+/// [`ColorMap`] takes.
+pub use zwipe_ui::color_map::{ColorMapCounts, seed_from_id};
 
 /// The Magic rules: oracle text, keyword chips, card rows, the flippable card
 /// image, the changelog and the mana glyph inside a chip. Load it after

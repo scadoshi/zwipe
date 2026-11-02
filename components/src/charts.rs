@@ -12,6 +12,9 @@ use std::collections::BTreeMap;
 use dioxus::prelude::*;
 use zwipe_core::domain::deck::deck_metrics::ManaBalanceRow;
 use zwipe_core::domain::deck::draw_odds;
+/// One bar of a [`BarChart`], zwipe-ui's chart bar, so a client hands the
+/// bars zwipe-ui computes straight to the chart.
+pub use zwipe_ui::activity::Bar;
 
 use crate::role_tags::RoleTags;
 
@@ -29,53 +32,6 @@ pub fn ChartLabel(text: &'static str, hint: Option<Element>) -> Element {
             span { class: "stat-chip chart-label-chip", "{text}" }
             if let Some(h) = hint { {h} }
         }
-    }
-}
-
-/// One bar of a [`BarChart`].
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Bar {
-    /// What `on_bar` reports when the label is tapped; the label unless the
-    /// host names something else (a slug behind an abbreviated label).
-    pub key: String,
-    /// The text under or beside the bar.
-    pub label: String,
-    /// Shown above (or beside) the bar when above 0.
-    pub count: usize,
-    /// The bar's size as a percentage of the chart's tallest bar, 0 to 100.
-    pub pct: u32,
-    /// Whether a chip chart draws the label as a tappable chip. False draws
-    /// it as a grey chip that takes no tap, for a bar with nothing to reveal.
-    pub revealable: bool,
-}
-
-impl Bar {
-    /// A bar whose key is its label.
-    #[must_use]
-    pub fn new(label: impl Into<String>, count: usize, pct: u32) -> Self {
-        let label = label.into();
-        Self {
-            key: label.clone(),
-            label,
-            count,
-            pct,
-            revealable: true,
-        }
-    }
-
-    /// The same bar with a grey, untappable chip in a chip chart.
-    #[must_use]
-    pub fn with_no_reveal(self) -> Self {
-        Self {
-            revealable: false,
-            ..self
-        }
-    }
-}
-
-impl From<(&'static str, usize, u32)> for Bar {
-    fn from((label, count, pct): (&'static str, usize, u32)) -> Self {
-        Self::new(label, count, pct)
     }
 }
 
@@ -344,9 +300,14 @@ pub fn BarChart(
     }
 }
 
+/// A `DeckMetrics` tuple as a bar.
+fn tuple_bar((label, count, pct): (&'static str, usize, u32)) -> Bar {
+    Bar::new(label, u64::try_from(count).unwrap_or(u64::MAX), pct)
+}
+
 /// `DeckMetrics` tuples as bars.
 fn tuple_bars(bars: &[(&'static str, usize, u32)]) -> Vec<Bar> {
-    bars.iter().copied().map(Bar::from).collect()
+    bars.iter().copied().map(tuple_bar).collect()
 }
 
 /// Role bars whose roles reveal their tags: a role with none in
@@ -358,7 +319,7 @@ fn role_bars(
     bars.iter()
         .copied()
         .map(|(label, count, pct)| {
-            let bar = Bar::new(label, count, pct);
+            let bar = tuple_bar((label, count, pct));
             if role_tags.get(label).is_some_and(|tags| !tags.is_empty()) {
                 bar
             } else {
@@ -611,19 +572,6 @@ mod tests {
     }
 
     #[test]
-    fn a_bar_reveals_unless_opted_out() {
-        let bar = Bar::new("ramp", 3, 100);
-        assert!(bar.revealable, "new bars reveal");
-        let plain = bar.clone().with_no_reveal();
-        assert!(!plain.revealable);
-        assert_eq!(
-            (plain.key, plain.label, plain.count, plain.pct),
-            (bar.key, bar.label, bar.count, bar.pct),
-            "only the reveal changes"
-        );
-    }
-
-    #[test]
     fn reveal_follows_the_selected_row() {
         assert_eq!(
             reveal_at(Some("ramp"), Some("removal")),
@@ -657,7 +605,7 @@ mod tests {
             &[("ramp", 5, 100), ("draw", 3, 60), ("remov", 2, 40)],
             &role_tags,
         );
-        let got: Vec<(&str, usize, u32, bool)> = bars
+        let got: Vec<(&str, u64, u32, bool)> = bars
             .iter()
             .map(|b| (b.key.as_str(), b.count, b.pct, b.revealable))
             .collect();

@@ -3,11 +3,10 @@ use std::time::Duration;
 
 use components::{
     ActionBar, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintDialog, HintKey, HintLine,
-    TOAST_NORMAL, TOAST_QUICK,
+    TOAST_NORMAL, TOAST_QUICK, ToastOptions, use_toast,
 };
 use dioxus::core::spawn_forever;
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
 use tokio::time;
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;

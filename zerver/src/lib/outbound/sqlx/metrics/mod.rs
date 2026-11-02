@@ -5,6 +5,7 @@ use std::num::TryFromIntError;
 
 use sqlx::query;
 use uuid::Uuid;
+use zwipe_core::domain::auth::models::platform::ClientPlatform;
 use zwipe_core::http::contracts::metrics::{
     AnonymousEventKind, CardSignalDelta, CommanderSelectDelta, HttpCrashReport, HttpUsageBatch,
 };
@@ -44,6 +45,17 @@ where
             anyhow::Error::new(err).context("a usage tally overflows its INTEGER column"),
         )
     })
+}
+
+/// `platform_daily_usage.platform` for a session with no platform.
+const UNKNOWN_PLATFORM: &str = "unknown";
+
+/// The `platform_daily_usage.platform` key: the platform's stored string, or
+/// [`UNKNOWN_PLATFORM`].
+fn platform_key(platform: Option<ClientPlatform>) -> &'static str {
+    platform
+        .as_ref()
+        .map_or(UNKNOWN_PLATFORM, ClientPlatform::as_str)
 }
 
 /// Impressions one user may feed the pooled signals per UTC day. A heavy
@@ -92,7 +104,12 @@ impl MetricsRepository for Postgres {
         clippy::too_many_lines,
         reason = "one usage flush in one transaction, each counter table written in turn"
     )]
-    async fn apply_usage(&self, user_id: Uuid, batch: &HttpUsageBatch) -> Result<(), MetricsError> {
+    async fn apply_usage(
+        &self,
+        user_id: Uuid,
+        platform: Option<ClientPlatform>,
+        batch: &HttpUsageBatch,
+    ) -> Result<(), MetricsError> {
         // Clamp untrusted counts before they touch any counter: stops a client
         // inflating lifetime / marketing totals, and bounds the i32 casts for
         // the weekly INTEGER columns. Lifetime and daily counters are BIGINT.
@@ -674,6 +691,30 @@ impl MetricsRepository for Postgres {
             .await
             .map_err(db)?;
         }
+
+        // Every flush on a platform writes the same row, so it goes last and
+        // stays locked only until the commit.
+        query!(
+            r#"INSERT INTO platform_daily_usage
+                   (day, platform, swipes_right, swipes_left, swipes_up, swipes_down, searches, flushes)
+               VALUES ((NOW() AT TIME ZONE 'UTC')::date, $1, $2, $3, $4, $5, $6, 1)
+               ON CONFLICT (day, platform) DO UPDATE SET
+                   swipes_right = platform_daily_usage.swipes_right + EXCLUDED.swipes_right,
+                   swipes_left  = platform_daily_usage.swipes_left  + EXCLUDED.swipes_left,
+                   swipes_up    = platform_daily_usage.swipes_up    + EXCLUDED.swipes_up,
+                   swipes_down  = platform_daily_usage.swipes_down  + EXCLUDED.swipes_down,
+                   searches     = platform_daily_usage.searches     + EXCLUDED.searches,
+                   flushes      = platform_daily_usage.flushes      + EXCLUDED.flushes"#,
+            platform_key(platform),
+            right,
+            left,
+            up,
+            down,
+            searches,
+        )
+        .execute(&mut *tx)
+        .await
+        .map_err(db)?;
 
         tx.commit().await.map_err(db)?;
 

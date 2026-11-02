@@ -1,8 +1,9 @@
 //! User login screen.
 
-use components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL, TextInput, ThemeConfig};
+use components::{
+    ActionBar, Button, ButtonVariant, TOAST_NORMAL, TextInput, ThemeConfig, ToastOptions, use_toast,
+};
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::user::preferences::PipStyle;

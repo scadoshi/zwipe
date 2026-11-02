@@ -10,9 +10,8 @@
 
 use std::time::Duration;
 
-use components::TOAST_QUICK;
+use components::{TOAST_QUICK, ToastOptions, use_toast};
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
 use tokio::time;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;

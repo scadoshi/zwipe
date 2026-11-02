@@ -2,10 +2,9 @@
 
 use components::{
     ActionBar, AlertDialog, Button, ButtonVariant, DialogAction, HintBullet, HintBullets,
-    HintDialog, HintKey, TOAST_NORMAL,
+    HintDialog, HintKey, TOAST_NORMAL, ToastOptions, use_toast,
 };
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
 use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_core::domain::card::Card;

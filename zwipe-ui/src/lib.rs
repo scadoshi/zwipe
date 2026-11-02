@@ -31,6 +31,7 @@ pub mod session;
 pub mod stack;
 pub mod stores;
 pub mod support;
+pub mod telemetry;
 pub mod timing;
 pub mod toast;
 

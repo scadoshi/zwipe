@@ -10,11 +10,10 @@ use std::time::Instant;
 use chrono::Utc;
 use components::{
     ActionBar, AlertDialog, Button, ButtonVariant, DialogAction, HintBullet, HintBullets,
-    HintDialog, HintKey, ThemeConfig,
+    HintDialog, HintKey, ThemeConfig, Toasts, use_toast,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
-use dioxus_primitives::toast::{Toasts, use_toast};
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;

@@ -3,9 +3,8 @@
 use std::time::Duration;
 
 use chrono::{DateTime, Utc};
-use components::{Button, ButtonVariant, TOAST_LONG, TOAST_NORMAL};
+use components::{Button, ButtonVariant, TOAST_LONG, TOAST_NORMAL, ToastOptions, use_toast};
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
 use tokio::time;
 use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_core::domain::auth::models::session::Session;
