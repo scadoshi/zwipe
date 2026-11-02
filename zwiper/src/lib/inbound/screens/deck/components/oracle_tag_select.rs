@@ -8,24 +8,20 @@
 //! these (handled by the host screen); here the user tunes the set.
 
 use components::{
-    ActionBar, Button, ButtonVariant, DialogAction, HintDialog, TOAST_QUICK,
-    use_overlay_back_action,
+    ActionBar, Button, ButtonVariant, DialogAction, HintDialog, use_overlay_back_action,
 };
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
+use dioxus_primitives::toast::use_toast;
 use zwipe_client::ZwipeClient;
-use zwipe_core::domain::card::oracle_tag::{self, OracleTag};
+use zwipe_core::domain::card::oracle_tag::OracleTag;
 use zwipe_core::domain::deck::MAX_DECK_ORACLE_TAGS;
-use zwipe_ui::filter::fields;
+use zwipe_ui::deck::pickers::{self, Adopted, Draft, Picker, TagPicker};
 
 use crate::inbound::components::catalog_cache::CatalogCache;
 use crate::inbound::components::concept_explainers::OracleTagsExplainer;
-use crate::inbound::components::guide_link;
 use crate::inbound::components::screen_header::ScreenHeader;
+use crate::inbound::components::{guide_link, ui_toast};
 use crate::inbound::screens::oracle_tag_dictionary::OracleTagDictionary;
-
-/// Ranked catalog matches a non-empty search shows.
-const SEARCH_RESULT_LIMIT: usize = 40;
 
 /// In-place oracle-tag picker. Toggled by `open`; mutates `selected` (slugs)
 /// directly, with Save grayed until the set differs from the one it opened
@@ -50,30 +46,17 @@ pub(crate) fn OracleTagSelect(
     // Stays in place (no return to the form), toasting the outcome.
     let adopt_tag = move |slug: String| {
         let mut current = selected();
-        if current.contains(&slug) {
-            toast.info(
-                "Tag already added".to_string(),
-                ToastOptions::default().duration(TOAST_QUICK),
-            );
-        } else if current.len() < MAX_DECK_ORACLE_TAGS {
-            current.push(slug);
+        let adopted = pickers::adopt_oracle_tag(&mut current, slug);
+        if adopted == Adopted::Added {
             selected.set(current);
-            toast.success(
-                "Tag added to deck".to_string(),
-                ToastOptions::default().duration(TOAST_QUICK),
-            );
-        } else {
-            toast.warning(
-                format!("You may only choose up to {MAX_DECK_ORACLE_TAGS} oracle tags"),
-                ToastOptions::default().duration(TOAST_QUICK),
-            );
         }
+        ui_toast::raise(toast, adopted.toast());
     };
     // Snapshot the selection when the picker opens, so Back can revert to it.
-    let mut snapshot = use_signal(Vec::<String>::new);
+    let mut draft = use_signal(|| Draft::tags(TagPicker::OracleTags, Vec::new()));
     use_effect(move || {
         if open() {
-            snapshot.set(selected.peek().clone());
+            draft.set(Draft::tags(TagPicker::OracleTags, selected.peek().clone()));
         }
     });
 
@@ -81,17 +64,14 @@ pub(crate) fn OracleTagSelect(
     // there was something to revert.
     let back = use_callback(move |(): ()| {
         let mut selected = selected;
-        if !fields::same_set(&selected.peek(), &snapshot.peek()) {
-            toast.info(
-                "Oracle tags unchanged".to_string(),
-                ToastOptions::default().duration(TOAST_QUICK),
-            );
+        if let Some(discarded) = draft.peek().back_toast(&selected.peek()) {
+            ui_toast::raise(toast, discarded);
         }
-        selected.set(snapshot());
+        selected.set(draft().into_snapshot());
         on_close.call(());
     });
     use_overlay_back_action(open.into(), back);
-    let unchanged = fields::same_set(&selected(), &snapshot());
+    let unchanged = draft.read().is_unchanged(&selected());
 
     // Read the shared app-wide oracle-tag catalog (prefetched at startup), warming
     // / revalidating it on open. One copy is shared with the dictionary + filter.
@@ -110,27 +90,13 @@ pub(crate) fn OracleTagSelect(
     let tags: &[OracleTag] = cell_read.loaded().map_or(&[], Vec::as_slice);
     let sel = selected();
 
-    // Empty search → the server-marked curated grid plus any selected slug
-    // not already in it, alphabetical. Non-empty search →
-    // the shared ranked catalog search, capped to the 40 best matches.
+    // Empty search shows the server-marked curated grid plus any selected
+    // slug, alphabetical; a search shows the best ranked matches.
     let q = query();
     let results: Vec<OracleTag> = if !open() || tags.is_empty() {
         Vec::new()
-    } else if q.trim().is_empty() {
-        // The server marks which tags the default grid shows, so retuning it
-        // is a deploy. A tag the backend stopped serving cannot be curated, so
-        // the grid does not intersect against the served set.
-        let mut curated: Vec<OracleTag> = tags
-            .iter()
-            .filter(|t| t.curated || sel.contains(&t.slug))
-            .cloned()
-            .collect();
-        curated.sort_by(|a, b| a.slug.cmp(&b.slug));
-        curated
     } else {
-        let mut matches = oracle_tag::search_oracle_tags(tags, &q);
-        matches.truncate(SEARCH_RESULT_LIMIT);
-        matches
+        pickers::oracle_tag_results(tags, &sel, &q)
     };
 
     rsx! {
@@ -139,7 +105,7 @@ pub(crate) fn OracleTagSelect(
             // clear and the one beneath would show through.
             ::components::GridCells { still: true }
             if open() {
-                ScreenHeader { title: "Oracle tags", hint: hint_open }
+                ScreenHeader { title: Picker::OracleTags.title(), hint: hint_open }
 
                 div { class: "screen-content content-enter tag-screen",
                     div { class: "tag-controls",
@@ -179,13 +145,11 @@ pub(crate) fn OracleTagSelect(
                             if let Some(t) = focused() {
                                 div { class: "tag-def-name", "{t.slug}" }
                                 div { class: "tag-def-text",
-                                    { t.description.unwrap_or_else(|| "No description for this tag.".to_string()) }
+                                    { t.description.unwrap_or_else(|| pickers::ORACLE_TAG_NO_DESCRIPTION.to_string()) }
                                 }
                             } else {
-                                div { class: "tag-def-name", "Hint" }
-                                div { class: "tag-def-text",
-                                    "Tap a tag to see what it means. Picking a deck tag pre-selects some of these for you."
-                                }
+                                div { class: "tag-def-name", "{pickers::PICKER_BAR_HINT}" }
+                                div { class: "tag-def-text", "{Picker::OracleTags.bar_empty()}" }
                             }
                         }
                     }
@@ -213,17 +177,9 @@ pub(crate) fn OracleTagSelect(
                                                 // Clear the search so the curated grid returns after picking.
                                                 query.set(String::new());
                                                 let mut current = selected();
-                                                if let Some(pos) = current.iter().position(|s| s == &slug) {
-                                                    current.remove(pos);
-                                                    selected.set(current);
-                                                } else if current.len() < MAX_DECK_ORACLE_TAGS {
-                                                    current.push(slug.clone());
-                                                    selected.set(current);
-                                                } else {
-                                                    toast.warning(
-                                                        format!("You may only choose up to {MAX_DECK_ORACLE_TAGS} oracle tags"),
-                                                        ToastOptions::default().duration(TOAST_QUICK),
-                                                    );
+                                                match TagPicker::OracleTags.toggle(&mut current, &slug) {
+                                                    Some(cap) => ui_toast::raise(toast, cap),
+                                                    None => selected.set(current),
                                                 }
                                             },
                                             "{t.slug}"
@@ -251,7 +207,7 @@ pub(crate) fn OracleTagSelect(
 
                 HintDialog {
                     open: hint_open,
-                    title: "Oracle tags",
+                    title: Picker::OracleTags.title(),
                     actions: [DialogAction::Confirm {
                         label: "Dictionary".into(),
                         danger: false,
