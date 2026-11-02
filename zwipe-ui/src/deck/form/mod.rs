@@ -1,4 +1,6 @@
-//! The deck form's rules, ported from the app's `deck_fields.rs`, `format_select.rs`, `create.rs` and `edit.rs`: the land stepper, the price box, the format details, the oracle tag seeding, and the four command-zone searches.
+//! The deck form's rules, ported from the app's `deck_fields.rs`, `format_select.rs`, `create.rs` and `edit.rs`: the form's values with Create's request and Edit's sparse update, the knock-on clears and which slots show (`values`), the land stepper, the price box, the format details, the oracle tag seeding, and the four command-zone searches.
+
+mod values;
 
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::CardQuery;
@@ -7,6 +9,7 @@ use zwipe_core::domain::card::search_card::card_filter::error::InvalidCardCriter
 use zwipe_core::domain::deck::deck_profile::MAX_LAND_TARGET;
 use zwipe_core::domain::deck::{Format, MAX_DECK_ORACLE_TAGS};
 
+pub use self::values::{Cascade, FormValues, clears_mates, shows};
 pub use crate::deck::command_zone::Slot;
 use crate::timing;
 

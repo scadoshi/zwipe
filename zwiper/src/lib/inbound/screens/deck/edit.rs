@@ -15,10 +15,9 @@ use zwipe_core::domain::deck::{
     self, Deck, DeckName, DeckOtherTag, DeckTagView, MAX_DECK_ORACLE_TAGS, PowerLevel,
 };
 use zwipe_core::domain::user::models::hints::HINT_EDIT_DECK;
-use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
-use zwipe_core::http::helpers::Patch;
+use zwipe_ui::deck::form::{FormValues, Slot};
 
-use super::components::deck_fields::{self, DeckFields, DeckFieldsHint};
+use super::components::deck_fields::{self, DeckFields, DeckFieldsHint, FormSignals};
 use super::components::format_select::FormatSelect;
 use super::components::oracle_tag_select::OracleTagSelect;
 use super::components::skeletons::EditDeckSkeleton;
@@ -46,14 +45,14 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     let client: Signal<ZwipeClient> = use_context();
 
     // current values
-    let mut deck_name: Signal<String> = use_signal(String::new);
+    let deck_name: Signal<String> = use_signal(String::new);
     let mut deck_name_error: Signal<Option<String>> = use_signal(|| None);
     let mut commander: Signal<Option<Card>> = use_signal(|| None);
     let mut commander_display = use_signal(String::new);
     let mut show_commander_swipe = use_signal(|| false);
     let edit_hint = use_one_time_hint(HINT_EDIT_DECK);
     let mut selected_format: Signal<Option<Format>> = use_signal(|| None);
-    let mut selected_tags: Signal<Vec<String>> = use_signal(Vec::new);
+    let selected_tags: Signal<Vec<String>> = use_signal(Vec::new);
     // Server-driven deck-tag catalog for the picker: read from the app-wide
     // catalog cache (warmed after session), empty until loaded.
     let cache: CatalogCache = use_context();
@@ -76,11 +75,11 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     let mut show_signature_spell_swipe = use_signal(|| false);
     let mut show_tags_select = use_signal(|| false);
     let mut show_format_select = use_signal(|| false);
-    let mut land_target = use_signal(|| None::<i32>);
-    let mut price_target = use_signal(String::new);
-    let mut price_target_currency = use_signal(|| PriceCurrency::Usd);
-    let mut power_level: Signal<Option<PowerLevel>> = use_signal(|| None);
-    let mut other_tags: Signal<Vec<DeckOtherTag>> = use_signal(Vec::new);
+    let land_target = use_signal(|| None::<i32>);
+    let price_target = use_signal(String::new);
+    let price_target_currency = use_signal(|| PriceCurrency::Usd);
+    let power_level: Signal<Option<PowerLevel>> = use_signal(|| None);
+    let other_tags: Signal<Vec<DeckOtherTag>> = use_signal(Vec::new);
     let mut oracle_tags: Signal<Vec<String>> = use_signal(Vec::new);
     let mut show_oracle_tags_select = use_signal(|| false);
     // Oracle tags currently contributed by deck-tag seeding. Reconciled when the
@@ -112,21 +111,28 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
         commander().map(|c| SwipeMode::SignatureSpell(c.scryfall_data.color_identity))
     });
 
-    // original values (for change detection)
-    let mut original_deck_name: Signal<String> = use_signal(String::new);
-    let mut original_commander: Signal<Option<Card>> = use_signal(|| None);
-    let mut original_format: Signal<Option<Format>> = use_signal(|| None);
-    let mut original_tags: Signal<Vec<String>> = use_signal(Vec::new);
-    let mut original_land_target: Signal<Option<i32>> = use_signal(|| None);
-    let mut original_price_target: Signal<String> = use_signal(String::new);
-    let mut original_price_target_currency: Signal<PriceCurrency> =
-        use_signal(|| PriceCurrency::Usd);
-    let mut original_power_level: Signal<Option<PowerLevel>> = use_signal(|| None);
-    let mut original_other_tags: Signal<Vec<DeckOtherTag>> = use_signal(Vec::new);
-    let mut original_oracle_tags: Signal<Vec<String>> = use_signal(Vec::new);
-    let mut original_partner: Signal<Option<Card>> = use_signal(|| None);
-    let mut original_background: Signal<Option<Card>> = use_signal(|| None);
-    let mut original_signature_spell: Signal<Option<Card>> = use_signal(|| None);
+    let form = FormSignals {
+        name: deck_name,
+        format: selected_format,
+        tags: selected_tags,
+        commander,
+        commander_display,
+        partner: partner_commander,
+        partner_display: partner_commander_display,
+        background,
+        background_display,
+        signature_spell,
+        signature_spell_display,
+        land_target,
+        price_target,
+        price_target_currency,
+        power_level,
+        other_tags,
+        oracle_tags,
+    };
+
+    // The values as loaded, for change detection. The command zone fills in as each card arrives.
+    let mut saved: Signal<FormValues> = use_signal(FormValues::default);
 
     let toast = use_toast();
     let usage_buffer: Signal<UsageBuffer> = use_context();
@@ -145,33 +151,17 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
         });
     use_effect(move || {
         if let Some(Ok(deck)) = original_deck_resource() {
-            original_deck_name.set(deck.deck_profile.name.to_string());
-            deck_name.set(deck.deck_profile.name.to_string());
-            original_format.set(deck.deck_profile.format);
-            selected_format.set(deck.deck_profile.format);
-            original_tags.set(deck.deck_profile.tags.clone());
-            selected_tags.set(deck.deck_profile.tags.clone());
-            original_land_target.set(deck.deck_profile.land_target);
-            land_target.set(deck.deck_profile.land_target);
-            let pt = deck
-                .deck_profile
-                .price_target
-                .map(|v| format!("{v}"))
-                .unwrap_or_default();
-            original_price_target.set(pt.clone());
-            price_target.set(pt);
-            let ptc = deck
-                .deck_profile
-                .price_target_currency
-                .unwrap_or(PriceCurrency::Usd);
-            original_price_target_currency.set(ptc);
-            price_target_currency.set(ptc);
-            original_power_level.set(deck.deck_profile.power_level);
-            power_level.set(deck.deck_profile.power_level);
-            original_other_tags.set(deck.deck_profile.other_tags.clone());
-            other_tags.set(deck.deck_profile.other_tags);
-            original_oracle_tags.set(deck.deck_profile.oracle_tags.clone());
-            oracle_tags.set(deck.deck_profile.oracle_tags.clone());
+            let loaded = FormValues::saved(&deck.deck_profile);
+            form.fill(&loaded);
+            saved.with_mut(|held| {
+                *held = FormValues {
+                    commander: held.commander.take(),
+                    partner: held.partner.take(),
+                    background: held.background.take(),
+                    signature_spell: held.signature_spell.take(),
+                    ..loaded
+                };
+            });
             // Seed contribution the saved deck tags account for, so the next
             // deck-tag reconcile drops exactly those and keeps manual picks.
             applied_seed.set(deck::seed_oracle_tags(&deck.deck_profile.tags));
@@ -196,7 +186,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
         });
     use_effect(move || match original_commander_resource() {
         Some(Ok(Some(original))) => {
-            original_commander.set(Some(original.clone()));
+            *saved.write().slot_mut(Slot::Commander) = Some(original.clone());
             commander.set(Some(original.clone()));
             commander_display.set(original.scryfall_data.name);
         }
@@ -233,7 +223,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
         });
     use_effect(move || match original_partner_resource() {
         Some(Ok(Some(original))) => {
-            original_partner.set(Some(original.clone()));
+            *saved.write().slot_mut(Slot::Partner) = Some(original.clone());
             partner_commander.set(Some(original.clone()));
             partner_commander_display.set(original.scryfall_data.name);
         }
@@ -270,7 +260,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
         });
     use_effect(move || match original_background_resource() {
         Some(Ok(Some(original))) => {
-            original_background.set(Some(original.clone()));
+            *saved.write().slot_mut(Slot::Background) = Some(original.clone());
             background.set(Some(original.clone()));
             background_display.set(original.scryfall_data.name);
         }
@@ -307,7 +297,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
         });
     use_effect(move || match original_spell_resource() {
         Some(Ok(Some(original))) => {
-            original_signature_spell.set(Some(original.clone()));
+            *saved.write().slot_mut(Slot::SignatureSpell) = Some(original.clone());
             signature_spell.set(Some(original.clone()));
             signature_spell_display.set(original.scryfall_data.name);
         }
@@ -327,124 +317,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     });
 
     // Change tracking
-    let deck_name_update = use_memo(move || {
-        if deck_name() == original_deck_name() {
-            None
-        } else {
-            Some(deck_name())
-        }
-    });
-    let commander_id_update = use_memo(move || {
-        if commander() == original_commander() {
-            Patch::Unchanged
-        } else {
-            Patch::Set(commander().map(|c| c.scryfall_data.id))
-        }
-    });
-    let partner_id_update = use_memo(move || {
-        if partner_commander() == original_partner() {
-            Patch::Unchanged
-        } else {
-            Patch::Set(partner_commander().map(|c| c.scryfall_data.id))
-        }
-    });
-    let background_id_update = use_memo(move || {
-        if background() == original_background() {
-            Patch::Unchanged
-        } else {
-            Patch::Set(background().map(|c| c.scryfall_data.id))
-        }
-    });
-    let signature_spell_id_update = use_memo(move || {
-        if signature_spell() == original_signature_spell() {
-            Patch::Unchanged
-        } else {
-            Patch::Set(signature_spell().map(|c| c.scryfall_data.id))
-        }
-    });
-    let format_update = use_memo(move || {
-        if selected_format() == original_format() {
-            Patch::Unchanged
-        } else {
-            Patch::Set(selected_format().map(|f| f.to_legality_key().to_string()))
-        }
-    });
-    let tags_update = use_memo(move || {
-        if selected_tags() == original_tags() {
-            Patch::Unchanged
-        } else {
-            Patch::Set(Some(selected_tags()))
-        }
-    });
-    let land_target_update = use_memo(move || {
-        if land_target() == original_land_target() {
-            Patch::Unchanged
-        } else {
-            // `None` here clears the override back to the heuristic.
-            Patch::Set(land_target())
-        }
-    });
-    let price_target_update = use_memo(move || {
-        let cur: Option<f64> = price_target().parse().ok().filter(|v: &f64| *v > 0.0);
-        let orig: Option<f64> = original_price_target()
-            .parse()
-            .ok()
-            .filter(|v: &f64| *v > 0.0);
-        if cur == orig {
-            Patch::Unchanged
-        } else {
-            // Empty/zero parses to `None` → clears the budget.
-            Patch::Set(cur)
-        }
-    });
-    let price_currency_update = use_memo(move || {
-        if price_target_currency() == original_price_target_currency() {
-            Patch::Unchanged
-        } else {
-            Patch::Set(Some(price_target_currency()))
-        }
-    });
-    let power_level_update = use_memo(move || {
-        if power_level() == original_power_level() {
-            Patch::Unchanged
-        } else {
-            Patch::Set(power_level().map(|p| p.to_string()))
-        }
-    });
-    let other_tags_update = use_memo(move || {
-        if other_tags() == original_other_tags() {
-            Patch::Unchanged
-        } else {
-            Patch::Set(Some(
-                other_tags()
-                    .iter()
-                    .map(ToString::to_string)
-                    .collect::<Vec<_>>(),
-            ))
-        }
-    });
-    let oracle_tags_update = use_memo(move || {
-        if oracle_tags() == original_oracle_tags() {
-            Patch::Unchanged
-        } else {
-            Patch::Set(Some(oracle_tags()))
-        }
-    });
-    let has_made_changes = use_memo(move || {
-        deck_name_update().is_some()
-            || commander_id_update().is_changed()
-            || partner_id_update().is_changed()
-            || background_id_update().is_changed()
-            || signature_spell_id_update().is_changed()
-            || format_update().is_changed()
-            || tags_update().is_changed()
-            || land_target_update().is_changed()
-            || price_target_update().is_changed()
-            || price_currency_update().is_changed()
-            || power_level_update().is_changed()
-            || other_tags_update().is_changed()
-            || oracle_tags_update().is_changed()
-    });
+    let has_made_changes = use_memo(move || form.values().update_request(&saved()).is_some());
 
     // save state
     let mut is_saving = use_signal(|| false);
@@ -457,30 +330,14 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
         is_saving.set(true);
 
         spawn(async move {
-            if !has_made_changes() {
+            let Some(request) = form.values().update_request(&saved.peek()) else {
                 toast.error(
                     InvalidUpdateDeckProfile::NoUpdates.to_string(),
                     ToastOptions::default().duration(TOAST_NORMAL),
                 );
                 is_saving.set(false);
                 return;
-            }
-
-            let request = HttpUpdateDeckProfile::builder()
-                .name(deck_name_update().as_deref())
-                .commander_id(commander_id_update())
-                .partner_commander_id(partner_id_update())
-                .background_id(background_id_update())
-                .signature_spell_id(signature_spell_id_update())
-                .format(format_update())
-                .tags(tags_update())
-                .land_target(land_target_update())
-                .price_target(price_target_update())
-                .price_target_currency(price_currency_update())
-                .power_level(power_level_update())
-                .other_tags(other_tags_update())
-                .oracle_tags(oracle_tags_update())
-                .build();
+            };
 
             match authed
                 .try_run("save_profile", |c, s| async move {
@@ -670,22 +527,8 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             FormatSelect {
                 open: show_format_select,
                 selected_format,
-                on_select: move |fmt: Format| {
-                    selected_format.set(Some(fmt));
-                    commander.set(None);
-                    commander_display.set(String::new());
-                    if !fmt.has_signature_spell() {
-                        signature_spell.set(None);
-                        signature_spell_display.set(String::new());
-                    }
-                },
-                on_clear: move |()| {
-                    selected_format.set(None);
-                    commander.set(None);
-                    commander_display.set(String::new());
-                    signature_spell.set(None);
-                    signature_spell_display.set(String::new());
-                },
+                on_select: move |fmt: Format| form.set_format(Some(fmt)),
+                on_clear: move |()| form.set_format(None),
                 on_close: move |()| show_format_select.set(false),
                 on_cancel: move |()| {
                     let (f, c, cd, ss, ssd) = fmt_snapshot();
