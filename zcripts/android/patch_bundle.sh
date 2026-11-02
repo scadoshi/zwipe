@@ -39,7 +39,7 @@ echo "== launcher icons =="
 echo "== back navigation =="
 "$HERE/back_handler.sh" "$MAIN/kotlin/dev/dioxus/main/MainActivity.kt"
 
-echo "== manifest (launchMode + configChanges + allowBackup) =="
+echo "== manifest (launchMode + screenOrientation + configChanges + allowBackup) =="
 "$HERE/manifest.sh" "$MAIN/AndroidManifest.xml"
 
 echo "== WryActivity (tao 0.37 entry points) =="
