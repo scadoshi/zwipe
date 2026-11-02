@@ -44,7 +44,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Activity's role and tag charts say why they're empty for the pick under Show",
         "Activity's hints say share instead of rate",
         "Links open inside Zwipe instead of switching to the browser",
-        "Activity's Most skipped title matches the other section titles",
+        "Activity's Most skipped and Playstyle's Staples and Suggested commanders titles match the other section titles",
     ],
 }];
 

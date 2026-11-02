@@ -791,7 +791,7 @@ fn StaplesPanel(
         } else {
             div { class: "maybeboard-list card-group row-enter",
                 div { class: "card-group-header card-group-header-with-hint",
-                    span { "{STAPLES_TITLE}" }
+                    span { class: "settings-list-title", "{STAPLES_TITLE}" }
                     InfoButton { topic: HintTopic::SuggestionStaples }
                 }
                 for staple in rows {
@@ -1388,7 +1388,7 @@ pub fn SuggestedCommanders() -> Element {
                             } else {
                                 div { class: "maybeboard-list card-group row-enter",
                                     div { class: "card-group-header card-group-header-with-hint",
-                                        span { "{LIST_TITLE}" }
+                                        span { class: "settings-list-title", "{LIST_TITLE}" }
                                         InfoButton { topic: HintTopic::SuggestionList }
                                     }
                                     for suggestion in rows {
