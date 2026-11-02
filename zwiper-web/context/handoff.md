@@ -43,7 +43,15 @@ Still to come, as the zwiper-tui session lands each shared branch: toasts take t
 
 ## Review queue
 
-Approved so far: Login, Register and Forgot password (signed off after round 10: page-wide form panels with fields at 26rem, content-sized dialogs, Community in place of Help, Esc closing dialogs, and Enter submitting the form whether a field has focus or not); Home (zite's tagline under the hero); Activity (no Back, the Activity panel spanning the page with its heatmap at size, Most skipped keeping the app's card-list header). Next, one screen per round with renders for the owner: Playstyle, deck view (these two already have a first pass of the hero-plus-columns layout on this branch), then Account, Config, Privacy policy, Changelog, Decks, Create and Edit, Import and Export, Commander maybeboard, Dictionary and Examples, Add, Deck cards, Remove, Update required. Remove each screen's Back button on its turn. Not found is done: zite's dead end under either nav.
+Approved: Login, Register and Forgot password (round 10: page-wide form panels with fields at 26rem, content-sized dialogs, Community in place of Help, Esc closing dialogs, Enter submitting the form with or without focus); Home (zite's tagline under the hero); Activity (no Back, the Activity panel spanning the page with its heatmap at size, Most skipped keeping the app's card-list header); Playstyle (paired rows: Summary with Color map, Card roles with Oracle tags, Suggested commanders with Staples; card lists holding their own filters; Clear skips on the bar when wide and in More on phones); Not found (zite's dead end under either nav). Page heads then went onto every screen (title, `?`, one-line description on wide windows; title and `?` centered in the folded nav), and the owner accepted the auth screens showing their title twice on phones.
+
+Next session starts with the deck view. Renders of it as it stood were sent on 2026-11-01, with four proposals the owner hasn't answered yet:
+1. Profile becomes the first panel in the left column instead of a lone 40rem strip.
+2. The page head shows the deck's name instead of "Deck".
+3. On wide windows More breaks up: the TCGplayer and Card Kingdom links go in Budget's footer, Import and Export cards go at the top of the cards column, and Clone, Share, Clear skips and Delete go on the bar beside Edit and Cards (the destructive two in red). Phones keep the app's More sheet.
+4. The Warnings panel's `Add cards` button stays on one line.
+
+Then one screen per round with renders: Account, Config, Privacy policy, Changelog, Decks, Create and Edit, Import and Export, Commander maybeboard, Dictionary and Examples, Add, Deck cards, Remove, Update required. Remove each screen's Back button on its turn. When a change touches approved screens, re-render from Login onward for the owner to re-confirm.
 
 ## Open decisions for the owner
 
@@ -52,7 +60,7 @@ Approved so far: Login, Register and Forgot password (signed off after round 10:
 - Buy links on card screens: kept off for app parity unless the owner wants them.
 - Launch blockers before zwiper-web goes public: the refresh token moves from `localStorage` to an httpOnly cookie, and funnel events get a platform tag (both zerver changes), then the web's funnel events turn on (`SEND_FUNNEL_EVENTS`).
 - Hosting at `zwipe.net/app` or `app.zwipe.net`.
-- Parked by the owner (2026-11-01): making zite and the web app feel like one site. The idea on file is to host at `zwipe.net/app`, have the Z mark go to zwipe.net with a `Home` pill for the app's home, give the signed-out web nav zite's links plus `Log in`, point Changelog and Privacy policy at zite's pages, and add a `Log in` pill on zite at launch.
+- Parked by the owner (2026-11-01), to come back to after the screens: the glue between zite and the web app, making them feel like one site. The idea on file is to host at `zwipe.net/app`, have the Z mark go to zwipe.net with a `Home` pill for the app's home, give the signed-out web nav zite's links plus `Log in`, point Changelog and Privacy policy at zite's pages, and add a `Log in` pill on zite at launch.
 - The ten helpers marked `// Belongs in zwipe-ui` (8 in `src/lib/domain/deck.rs`, 2 in `src/lib/inbound/screens/oracle_tag_dictionary.rs`) wait for the shared-crates session to lift them once zwipe-ui is on main.
 
 ## Running it and checking live
