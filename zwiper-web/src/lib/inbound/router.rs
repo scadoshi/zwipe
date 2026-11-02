@@ -28,7 +28,7 @@ use crate::inbound::session::auth_gate::AuthGate;
 use crate::inbound::shell::{OpenFrame, PublicFrame, Shell};
 
 /// The app's routes. The public ones sit in [`PublicFrame`], Privacy policy
-/// in [`OpenFrame`] (either nav), and the rest need a session ([`AuthGate`])
+/// and Not found in [`OpenFrame`] (either nav), and the rest need a session ([`AuthGate`])
 /// and sit under the top nav [`Shell`].
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
@@ -110,7 +110,10 @@ pub enum Route {
     #[end_layout]
     #[end_layout]
 
-    /// Any path no route matches.
-    #[route("/:..segments")]
-    NotFound { segments: Vec<String> },
+    // == anything else: zite's dead end, under either nav (the layout runs
+    // to the end) ==
+    #[layout(OpenFrame)]
+        /// Any path no route matches.
+        #[route("/:..segments")]
+        NotFound { segments: Vec<String> },
 }

@@ -769,12 +769,44 @@ body {
     }
 }
 
-/* ---- Placeholders ---- */
+/* ---- Not found: zite's dead end ---- */
 
-.web-placeholder {
+.web-dead-end {
     width: calc(100% - 2rem);
-    max-width: 40rem;
-    margin: 1.5rem auto;
+    max-width: 25rem;
+    margin: 1rem auto auto;
+}
+
+.web-dead-end .panel-title {
+    color: var(--color-error);
+    text-transform: uppercase;
+    text-align: center;
+    animation: web-alert-pulse 1.6s ease-in-out infinite;
+}
+
+.web-dead-end .panel-actions {
+    justify-content: center;
+}
+
+.web-dead-end-line {
+    text-align: center;
+    margin: 0;
+}
+
+@keyframes web-alert-pulse {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.45;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .web-dead-end .panel-title {
+        animation: none;
+    }
 }
 
 /* ---- Collapsible sections ---- */

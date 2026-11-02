@@ -197,12 +197,15 @@ The wide layout copies zite's home page (`zite/assets/style.css`). Screens move 
 - The action bar keeps `Back`, `Filter`, `Refresh` and the eye button.
 - Below 900px it is the phone screen.
 
+## Not found
+
+- zite's dead end, under the nav the user would see anyway (signed in or out): a 25rem panel titled `Page not found` in the error red, uppercase and pulsing, zite's sentence ("Nothing lives at this address. It may have moved with a site update, or the link may be incomplete.") and `Home` in its footer.
+
 ## Owner decisions (approved 2026-10-31)
 
 - Buttons under swipe cards use the app's own action names for each mode: `Skip`, `Maybeboard`, `Undo`, `Add` on Add cards; `Keep`, `Move`, `Undo`, `Remove` on Remove; `Skip`, `Save`, `Undo`, `Pick` in Swipe select; `Next`, `Back one` in Examples.
 - Update required shows `Reload` in place of the store link.
 - `Buy` is a link per retailer (`TCGplayer ↗`, `Card Kingdom ↗`) opening in a new tab, as on zite, for a single card and for a deck; the app's `Buy` dialog goes.
-- `Report a problem ↗` names the platform `Web` in the mail body.
 - The one-time `filter` hint fires the first time the user opens a filter section, not when Add or Remove mounts with the filter docked.
 - A command zone input clears its chosen card only when typing starts, never on a click.
 - Deck view's cards column stays read-only; Deck cards is the editor.
