@@ -38,6 +38,7 @@ use zwipe_core::http::contracts::suggestions::HttpCommanderSuggestion;
 use zwipe_ui::commander::swipe_select;
 
 use crate::inbound::components::generation::use_generation;
+use crate::inbound::components::guide_link;
 use crate::inbound::components::hint_dialog::{self, HintColored};
 use crate::inbound::components::interactions::swipe::config::SwipeConfig;
 use crate::inbound::components::interactions::swipe::direction::Direction;
@@ -823,6 +824,7 @@ pub(crate) fn SwipeSelect(
 
                 HintDialog {
                     open: hint_open,
+                    actions: guide_link::one_time(HINT_SWIPE_SELECT),
                     title,
                     HintBullets {
                         if suggested {

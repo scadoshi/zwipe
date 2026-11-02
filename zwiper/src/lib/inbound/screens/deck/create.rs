@@ -366,6 +366,6 @@ pub fn CreateDeck() -> Element {
                 },
             }
 
-            DeckFieldsHint { open: create_hint }
+            DeckFieldsHint { open: create_hint, hint_key: HINT_CREATE_DECK }
     }
 }

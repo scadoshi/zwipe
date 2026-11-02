@@ -698,6 +698,6 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                 },
             }
 
-            DeckFieldsHint { open: edit_hint }
+            DeckFieldsHint { open: edit_hint, hint_key: HINT_EDIT_DECK }
     }
 }

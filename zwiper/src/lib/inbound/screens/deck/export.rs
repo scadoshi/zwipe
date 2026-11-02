@@ -12,6 +12,7 @@ use zwipe_core::domain::deck::Deck;
 use zwipe_core::domain::user::models::hints::HINT_EXPORT;
 
 use crate::inbound::components::auth::authed::use_authed;
+use crate::inbound::components::guide_link;
 use crate::inbound::components::hint_dialog::use_one_time_hint;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen};
@@ -131,6 +132,7 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
 
                 HintDialog {
                     open: export_hint,
+                    actions: guide_link::one_time(HINT_EXPORT),
                     title: "Exporting your deck",
                     HintBullets {
                         HintBullet { HintKey { "Export" } " picks which boards to include" }

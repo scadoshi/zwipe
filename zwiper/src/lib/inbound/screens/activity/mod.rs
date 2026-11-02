@@ -20,6 +20,7 @@ use zwipe_core::http::contracts::suggestions::HttpActivity;
 use self::sections::{ACTIVITY_TITLE, ActivitySections, HardPassesPanel, HeatGhost};
 use crate::inbound::components::auth::authed::use_authed;
 use crate::inbound::components::catalog_cache::CatalogCache;
+use crate::inbound::components::guide_link;
 use crate::inbound::components::hint_dialog::use_one_time_hint;
 use crate::inbound::components::home_hero::MyCountsPanel;
 use crate::inbound::components::screen_header::ScreenHeader;
@@ -176,6 +177,7 @@ pub fn Activity() -> Element {
 
             HintDialog {
                 open: hint_open,
+                actions: guide_link::one_time(HINT_ACTIVITY),
                 title: "Activity",
                 HintLine { "How you pick, read from your swipes" }
                 HintBullets {

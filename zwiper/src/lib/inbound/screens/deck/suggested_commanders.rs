@@ -60,7 +60,7 @@ use crate::inbound::components::home_play_style::ColorMapEmpty;
 use crate::inbound::components::info_button::InfoButton;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{Screen, screen};
-use crate::inbound::components::ui_toast;
+use crate::inbound::components::{guide_link, ui_toast};
 use crate::inbound::router::Router;
 use crate::inbound::screens::deck::card::components::card_row::{
     CardRow, OtagDescribe, OtagExamplesOpen, ShowRowArt,
@@ -1309,6 +1309,7 @@ pub fn SuggestedCommanders() -> Element {
 
             HintDialog {
                 open: hint_open,
+                actions: guide_link::one_time(HINT_SUGGESTED_COMMANDERS),
                 title: "Playstyle",
                 HintLine { "Your colors, card roles and top oracle tags, read from every deck you own in any format" }
                 HintBullets {

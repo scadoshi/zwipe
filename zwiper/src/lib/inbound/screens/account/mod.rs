@@ -26,6 +26,7 @@ use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::site::WEB_BASE;
 use zwipe_core::domain::user::models::hints::HINT_PROFILE;
 
+use crate::inbound::components::guide_link;
 use crate::inbound::components::hint_dialog::use_one_time_hint;
 use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::info_button::InfoButton;
@@ -83,6 +84,7 @@ pub fn Account() -> Element {
 
                 HintDialog {
                     open: account_hint_open,
+                    actions: guide_link::one_time(HINT_PROFILE),
                     title: "Your account",
                     HintBullets {
                         HintBullet { "Tap a row's " HintKey { color: "--palette-6", "?" } " for what it does" }

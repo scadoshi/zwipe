@@ -1,6 +1,6 @@
 # In-app browser and guide links from hints
 
-**Status: planned 2026-10-31. Part 1 is built and awaiting device testing; Part 2 not started.** Two app changes that ship together: links open inside Zwipe instead of leaving it, and every `?` hint that has a guide on zwipe.net links to it.
+**Status: Part 1 shipped to main 2026-11-01 (#108, #111), tested on an iPhone and a Pixel 6. Part 2 started 2026-11-01 on `feat/see-guide-links`, waiting on the topic-to-guide map in `zwipe-ui`.** Two app changes that ship together: links open inside Zwipe instead of leaving it, and every `?` hint that has a guide on zwipe.net links to it.
 
 ## Why
 
@@ -22,7 +22,8 @@ Every link the app already opens gets this for free: Help's links, the privacy p
 
 - **One map, shared.** A hint topic to guide slug table lives in `zwipe-ui`, the shared client logic crate (no UI dependency), so the app, zwiper-tui and zwiper-web all link the same way. A topic with no guide has no entry and shows no link.
 - **A test keeps it honest.** It fails if a mapped slug isn't one of zite's guide slugs. Renamed guides already keep working through zite's `#[redirect]` routes, so old app builds don't break.
-- **The dialog.** `HintDialog` takes an optional guide link and draws "Read the guide" at the bottom, opened through `open_url::open`, so it lands in the in-app browser. The hint's own copy stays as it is.
+- **The dialog.** A hint with a guide gets a "See guide ↗" action beside Got it: a `DialogAction::Link` to the guide. orangui's `HintDialog` already takes `actions`, and `HintHost` builds its `AlertDialog` actions the same way. orangui's `use_in_app_links` catches the link, so it opens in the in-app browser. The hint's own copy stays as it is.
+- **Which hints.** Every `?` topic with a guide, and the one-time hints with one too (first login, filter, import and export, and the rest).
 - **URL shape.** `https://zwipe.net/guides/<slug>`, built in one place from a base constant.
 
 ## Order

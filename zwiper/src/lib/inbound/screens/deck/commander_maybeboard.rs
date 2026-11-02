@@ -47,7 +47,7 @@ use crate::inbound::components::hint_dialog::{HintColored, use_one_time_hint};
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::{Screen, screen};
-use crate::inbound::components::ui_toast;
+use crate::inbound::components::{guide_link, ui_toast};
 use crate::inbound::router::Router;
 use crate::inbound::screens::deck::card::components::card_row::{
     CardRow, OtagDescribe, OtagExamplesOpen, ShowRowArt,
@@ -499,6 +499,7 @@ pub fn CommanderMaybeboard() -> Element {
 
             HintDialog {
                 open: hint_open,
+                actions: guide_link::one_time(HINT_COMMANDER_MAYBEBOARD),
                 title: "Commander maybeboard",
                 HintLine { "Commanders you save land here" }
                 HintBullets {
