@@ -13,37 +13,39 @@
 //! Right-swiping in the Swipe overlay, or an expanded row's **Create deck**,
 //! seeds the create screen with that commander (capacity-gated like the deck
 //! list's Create). **Remove** un-maybes an entry in place.
+//!
+//! What the screen knows and does is
+//! `zwipe_ui::screens::commander_maybeboard`; this file draws its state and
+//! performs its effects.
 
 use std::collections::HashSet;
-use std::time::Duration;
 
 use components::{
     ActionBar, AlertDialog, BottomSheet, Button, ButtonVariant, Chip, DialogAction, HintBullet,
-    HintBullets, HintDialog, HintKey, HintLine, TOAST_QUICK,
+    HintBullets, HintDialog, HintKey, HintLine, Toasts, use_toast,
 };
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
+use dioxus::router::Navigator;
 use tokio::time;
 use uuid::Uuid;
-use zwipe_client::ZwipeClient;
+use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
-use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
-use zwipe_core::domain::card::search_card::cards::Cards;
-use zwipe_core::domain::deck::deck_profile::DeckProfile;
 use zwipe_core::domain::deck::format::Format;
 use zwipe_core::domain::user::models::hints::HINT_COMMANDER_MAYBEBOARD;
-use zwipe_ui::commander::maybeboard;
+use zwipe_ui::generation::Ticket;
+use zwipe_ui::screens::commander_maybeboard::{
+    self as model, Action, Destination, Effect, QuickAddResults, State, Status,
+};
 
 use super::components::skeletons::{ChipRowSkeleton, QuickAddSkeleton};
 use super::components::swipe_select::{SwipeMode, SwipeSelect};
-use crate::inbound::components::auth::authed::use_authed;
+use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::catalog_cache::CatalogCache;
-use crate::inbound::components::generation::{Generation, Ticket, use_generation};
-use crate::inbound::components::hint_dialog::{HintColored, use_one_time_hint};
+use crate::inbound::components::hint_dialog::{self, HintColored};
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::{Screen, screen};
@@ -57,13 +59,6 @@ use crate::inbound::screens::deck::card::components::printing_sheet::PrintingShe
 use crate::inbound::screens::deck::card::filter::card_filter_sheet::CardFilterSheet;
 use crate::inbound::screens::deck::create::CreateDeckCommanderSeed;
 use crate::inbound::screens::oracle_tag_examples::OracleTagExamples;
-
-/// Minimum characters before the commander search fires.
-const MIN_QUERY_LEN: usize = 2;
-/// Debounce so results follow typing without a request per keystroke.
-const DEBOUNCE_MS: u64 = 300;
-/// Result chips shown under the search bar.
-const RESULT_LIMIT: u32 = 8;
 
 /// One maybeboard entry: the shared expandable card row, with this screen's
 /// Create deck / Remove pair riding the row's own action bar (`extra_actions`)
@@ -95,7 +90,7 @@ fn MaybeboardRow(
                         evt.stop_propagation();
                         on_create.call(card_for_create.clone());
                     },
-                    "Create deck"
+                    {model::CREATE_DECK}
                 }
                 if let Some(oid) = oracle_id {
                     button {
@@ -104,7 +99,7 @@ fn MaybeboardRow(
                             evt.stop_propagation();
                             on_remove.call(oid);
                         },
-                        "Remove"
+                        {model::REMOVE}
                     }
                 }
             },
@@ -112,74 +107,162 @@ fn MaybeboardRow(
     }
 }
 
-/// The saved list and its load state. Entries live in a plain signal (not a
-/// Resource) so Remove and the search-to-add chips can edit the list in
-/// place. Each load takes a ticket, and an edit made while a load is out
-/// starts a new one: that reply left before the edit reached the server, so
-/// it could bring a removed row back.
+/// The maybeboard's model with the handles that perform its effects. Copy,
+/// so every handler and task holds its own.
 #[derive(Clone, Copy)]
-struct SavedList {
-    entries: Signal<Vec<Card>>,
-    is_loading: Signal<bool>,
-    load_failed: Signal<bool>,
-    /// Bumped to refetch; the load effect reads it.
-    reload: Signal<u32>,
-    loads: Generation,
-    /// Whether the newest load's reply is still out.
-    load_out: CopyValue<bool>,
+struct Driver {
+    model: Signal<State>,
+    navigator: Navigator,
+    toast: Toasts,
+    authed: Authed,
+    session: Signal<Option<Session>>,
+    client: Signal<ZwipeClient>,
+    hint_open: Signal<bool>,
+    seed: CreateDeckCommanderSeed,
+    usage_buffer: Signal<UsageBuffer>,
 }
 
-impl SavedList {
-    /// Takes the ticket for a load about to go out.
-    fn begin_load(&mut self) -> Ticket {
-        *self.load_out.write() = true;
-        self.loads.next_ticket()
-    }
-
-    /// Lands a load's reply (`None` on failure) unless a newer load or an
-    /// edit has taken a ticket since.
-    fn land(&mut self, ticket: Ticket, reply: Option<Vec<Card>>) {
-        if !self.loads.is_current(ticket) {
-            return;
-        }
-        *self.load_out.write() = false;
-        if let Some(cards) = reply {
-            self.entries.set(cards);
-            self.load_failed.set(false);
-        } else {
-            let empty = self.entries.peek().is_empty();
-            self.load_failed.set(empty);
-        }
-        self.is_loading.set(false);
-    }
-
-    /// Drops any load still out and fetches again. Silent while entries are
-    /// showing.
-    fn refetch(&mut self) {
-        self.loads.next_ticket();
-        let tick = *self.reload.peek();
-        self.reload.set(tick.wrapping_add(1));
-    }
-
-    /// Restarts a load that went out before a local edit.
-    fn restart_stale_load(&mut self) {
-        if *self.load_out.peek() {
-            self.refetch();
+impl Driver {
+    /// Applies `action` to the model and performs what it returns.
+    fn dispatch(self, action: Action) {
+        let mut model = self.model;
+        let effects = model.write().update(action);
+        for effect in effects {
+            self.perform(effect);
         }
     }
 
-    /// Drops a removed commander's row.
-    fn remove(&mut self, oracle_id: Uuid) {
-        self.entries
-            .write()
-            .retain(|c| c.scryfall_data.oracle_id != Some(oracle_id));
-        self.restart_stale_load();
+    /// Performs one effect, feeding any reply back through [`Self::dispatch`].
+    fn perform(self, effect: Effect) {
+        let authed = self.authed;
+        match effect {
+            Effect::OfferHint(hint) => {
+                hint_dialog::open_and_record_hint(
+                    hint.key(),
+                    self.session,
+                    self.client,
+                    self.hint_open,
+                );
+            }
+            Effect::FetchMaybeboard(ticket) => {
+                spawn(async move {
+                    // try_run reports a failure and raises its error toast.
+                    let reply = authed
+                        .try_run("load_maybeboard", |c, s| async move {
+                            c.fetch_commander_maybeboard(&s).await
+                        })
+                        .await;
+                    self.dispatch(match reply {
+                        Ok(cards) => Action::Loaded { ticket, cards },
+                        Err(_) => Action::Failed { ticket },
+                    });
+                });
+            }
+            Effect::FetchDeckProfiles => {
+                spawn(async move {
+                    // Quiet: backs the create gate only; a failure leaves the
+                    // gate open and telemetry records it.
+                    let found = authed
+                        .run_quiet("load_deck_profiles", |c, s| async move {
+                            c.fetch_deck_profiles(&s).await
+                        })
+                        .await;
+                    if let Some(profiles) = found {
+                        self.dispatch(Action::DeckProfilesLoaded {
+                            count: profiles.len(),
+                        });
+                    }
+                });
+            }
+            Effect::Debounce { ticket, wait } => {
+                spawn(async move {
+                    time::sleep(wait).await;
+                    self.dispatch(Action::Debounced { ticket });
+                });
+            }
+            Effect::SearchCommanders { ticket, query } => {
+                let usage_buffer = self.usage_buffer;
+                usage_buffer().record_search();
+                spawn(async move {
+                    // Quiet: fires per debounced keystroke; a toast per failed
+                    // keypress would bury the screen, and the results simply
+                    // stay stale.
+                    let found = authed
+                        .run_quiet("maybeboard_search", |c, s| async move {
+                            c.search_commanders(&query, &s).await
+                        })
+                        .await;
+                    self.dispatch(match found {
+                        Some(cards) => Action::Searched { ticket, cards },
+                        None => Action::Failed { ticket },
+                    });
+                });
+            }
+            Effect::AddCommander { ticket, oracle_id } => self.edit(
+                "add_commander_maybeboard",
+                ticket,
+                Action::Added { ticket },
+                move |c, s| async move { c.add_commander_maybeboard_card(oracle_id, &s).await },
+            ),
+            Effect::RemoveCommander { ticket, oracle_id } => self.edit(
+                "remove_commander_maybeboard",
+                ticket,
+                Action::Removed { ticket },
+                move |c, s| async move { c.remove_commander_maybeboard_card(oracle_id, &s).await },
+            ),
+            Effect::ClearMaybeboard(ticket) => self.edit(
+                "clear_commander_maybeboard",
+                ticket,
+                Action::Cleared { ticket },
+                |c, s| async move { c.clear_commander_maybeboard(&s).await },
+            ),
+            Effect::SeedCommander(card) => {
+                let mut slot = self.seed.0;
+                slot.set(Some(*card));
+            }
+            Effect::Navigate(destination) => {
+                self.navigator.push(match destination {
+                    Destination::DeckList => Router::DeckList {},
+                    Destination::CreateDeck => Router::CreateDeck,
+                });
+            }
+            Effect::Toast(toast) => ui_toast::raise(self.toast, toast),
+        }
     }
 
-    /// Empties the list after the server cleared it.
-    fn clear(&mut self) {
-        self.entries.set(Vec::new());
-        self.restart_stale_load();
+    /// Runs the list edit `call`, reported under `op`, and answers with
+    /// `done`, or with [`Action::Failed`] carrying `ticket` once the runner
+    /// has raised its error toast.
+    fn edit<Fut>(
+        self,
+        op: &'static str,
+        ticket: Ticket,
+        done: Action,
+        call: impl FnOnce(ZwipeClient, Session) -> Fut + 'static,
+    ) where
+        Fut: Future<Output = Result<(), ClientError>> + 'static,
+    {
+        let authed = self.authed;
+        spawn(async move {
+            let reply = authed.run(op, call).await;
+            self.dispatch(match reply {
+                Some(()) => done,
+                None => Action::Failed { ticket },
+            });
+        });
+    }
+
+    /// Starts a deck with `card`, through the create gate.
+    fn create(self, card: Card) {
+        let verified = self
+            .session
+            .peek()
+            .as_ref()
+            .is_none_or(|s| s.user.email_verified_at.is_some());
+        self.dispatch(Action::Create {
+            card: Box::new(card),
+            verified,
+        });
     }
 }
 
@@ -187,14 +270,22 @@ impl SavedList {
 /// an in-place commander Swipe overlay, and per-entry create-deck / remove.
 #[component]
 pub fn CommanderMaybeboard() -> Element {
-    let navigator = use_navigator();
-    let auth_client: Signal<ZwipeClient> = use_context();
-    let session: Signal<Option<Session>> = use_context();
-    let toast = use_toast();
-    let usage_buffer: Signal<UsageBuffer> = use_context();
-    let authed = use_authed(Screen::CommanderMaybeboard);
-    let hint_open = use_one_time_hint(HINT_COMMANDER_MAYBEBOARD);
-    let seed: CreateDeckCommanderSeed = use_context();
+    let driver = Driver {
+        model: use_signal(State::new),
+        navigator: use_navigator(),
+        toast: use_toast(),
+        authed: use_authed(Screen::CommanderMaybeboard),
+        session: use_context(),
+        client: use_context(),
+        hint_open: use_signal(|| false),
+        seed: use_context(),
+        usage_buffer: use_context(),
+    };
+    let auth_client = driver.client;
+    let hint_open = driver.hint_open;
+    // Offers the hint and fetches the list and the decks once per mount,
+    // while the screen first draws, so the hint opens with the screen.
+    use_hook(move || driver.dispatch(Action::Load));
     // Art-crop thumbnails on the rows, on by default; the "Art" chip in the
     // Show row toggles it, easing the thumbs in and out (the shared row keeps
     // them mounted, same as the deck cards screen). Screen-local.
@@ -225,8 +316,6 @@ pub fn CommanderMaybeboard() -> Element {
     use_context_provider(|| OtagDescribe(describe_tag));
     use_context_provider(|| OtagExamplesOpen(open_examples));
 
-    let mut query = use_signal(String::new);
-    let mut selected_colors: Signal<HashSet<Color>> = use_signal(HashSet::new);
     let expanded_card: Signal<Option<Uuid>> = use_signal(|| None);
     let preview_card: Signal<Option<(ScryfallData, usize)>> = use_signal(|| None);
     let preview_dismissing = use_signal(|| false);
@@ -250,252 +339,50 @@ pub fn CommanderMaybeboard() -> Element {
     let mut show_more_sheet = use_signal(|| false);
     let mut show_clear_dialog = use_signal(|| false);
 
-    // `reload` refetches: bumped when the Swipe overlay closes, since
-    // up-swipes in there add entries server-side. A refetch with entries
-    // present is silent (no skeleton flash).
-    let mut list = SavedList {
-        entries: use_signal(Vec::new),
-        is_loading: use_signal(|| true),
-        load_failed: use_signal(|| false),
-        reload: use_signal(|| 0u32),
-        loads: use_generation(),
-        load_out: use_hook(|| CopyValue::new(false)),
-    };
-    let SavedList {
-        mut entries,
-        is_loading,
-        load_failed,
-        reload,
-        ..
-    } = list;
-    use_effect(move || {
-        let _tick = reload();
-        let ticket = list.begin_load();
-        spawn(async move {
-            let reply = authed
-                .try_run("load_maybeboard", |c, s| async move {
-                    c.fetch_commander_maybeboard(&s).await
-                })
-                .await;
-            list.land(ticket, reply.ok());
-        });
-    });
-
-    // Refetch when the Swipe overlay closes: its up-swipes saved entries.
+    // Tells the model when the Swipe overlay closes: its up-swipes saved
+    // entries, so the list fetches again.
     let mut swipe_was_open = use_signal(|| false);
     use_effect(move || {
         if swipe_open() {
             swipe_was_open.set(true);
         } else if *swipe_was_open.peek() {
             swipe_was_open.set(false);
-            list.refetch();
+            driver.dispatch(Action::SwipeClosed);
         }
     });
 
-    // Debounced commander-name search feeding the result chips under the bar.
-    // Mirrors quick add: sleep, bail if the query moved on, explicit name sort
-    // so the server's popularity ordering doesn't apply to a typed name.
-    // Every edit takes a ticket, so a reply for an older query never lands
-    // over a newer one.
-    let mut search_results: Signal<Vec<Card>> = use_signal(Vec::new);
-    let mut is_searching = use_signal(|| false);
-    let mut searches = use_generation();
-    use_effect(move || {
-        let q = query();
-        let ticket = searches.next_ticket();
-        if q.trim().len() < MIN_QUERY_LEN {
-            is_searching.set(false);
-            search_results.set(Vec::new());
-            return;
-        }
-        is_searching.set(true);
-        spawn(async move {
-            time::sleep(Duration::from_millis(DEBOUNCE_MS)).await;
-            if !searches.is_current(ticket) {
-                return;
-            }
-            let mut builder = CardQueryBuilder::with_name_contains(q.trim());
-            builder.set_is_commander_in_format(Format::Commander);
-            builder.set_is_token(false);
-            builder.set_sort(CardSortKey::Name);
-            builder.set_limit(RESULT_LIMIT);
-            let Ok(filter) = builder.build() else {
-                is_searching.set(false);
-                return;
-            };
-            usage_buffer().record_search();
-            // Quiet: fires per debounced keystroke; a toast per failed keypress
-            // would bury the screen, and the results simply stay stale.
-            let found = authed
-                .run_quiet("maybeboard_search", |c, s| async move {
-                    c.search_commanders(&filter, &s).await
-                })
-                .await;
-            if !searches.is_current(ticket) {
-                return;
-            }
-            if let Some(found) = found {
-                search_results.set(found);
-            }
-            is_searching.set(false);
-        });
-    });
-
-    // Tap a result chip → save it. Dropped from the chips at once (no double
-    // add, instant feel), prepended to the list (newest save first) when the
-    // server confirms.
-    let mut add_from_search = move |card: Card| {
-        let Some(oracle_id) = card.scryfall_data.oracle_id else {
-            return;
-        };
-        search_results
-            .write()
-            .retain(|c| c.scryfall_data.oracle_id != Some(oracle_id));
-        spawn(async move {
-            if let Some(()) = authed
-                .run("add_commander_maybeboard", |c, s| async move {
-                    c.add_commander_maybeboard_card(oracle_id, &s).await
-                })
-                .await
-            {
-                let name = card.scryfall_data.name.clone();
-                let already_saved = entries
-                    .peek()
-                    .iter()
-                    .any(|c| c.scryfall_data.oracle_id == Some(oracle_id));
-                if !already_saved {
-                    entries.write().insert(0, card);
-                }
-                // Belt and braces: a silent refetch reconciles to server
-                // truth (order + preferred printing) behind the
-                // optimistic insert.
-                list.refetch();
-                toast.info(
-                    format!("Added {name}"),
-                    ToastOptions::default().duration(TOAST_QUICK),
-                );
-            }
-        });
-    };
-
-    // Deck profiles back the same proactive create gate as the deck list's
-    // Create button: unverified accounts are limited to 1 deck.
-    // Quiet: backs the create gate only; a failure leaves the gate open and
-    // telemetry records it.
-    let deck_profiles_resource: Resource<Option<Vec<DeckProfile>>> =
-        use_resource(move || async move {
-            authed
-                .run_quiet("load_deck_profiles", |c, s| async move {
-                    c.fetch_deck_profiles(&s).await
-                })
-                .await
-        });
-
-    let gate = move || {
-        session().map_or(Ok(()), |s| {
-            let deck_count = deck_profiles_resource
-                .read()
-                .as_ref()
-                .and_then(|o| o.as_ref())
-                .map_or(0, Vec::len);
-            zwipe_ui::deck::create_gate(s.user.email_verified_at.is_some(), deck_count)
-        })
-    };
-
-    let create_with = move |card: Card| match gate() {
-        Ok(()) => {
-            let mut slot = seed.0;
-            slot.set(Some(card));
-            navigator.push(Router::CreateDeck);
-        }
-        Err(warning) => ui_toast::raise(toast, warning),
-    };
-
-    let on_create = move |card: Card| create_with(card);
+    let on_create = move |card: Card| driver.create(card);
 
     let clear_maybeboard = use_callback(move |()| {
         show_more_sheet.set(false);
-        spawn(async move {
-            if authed
-                .run("clear_commander_maybeboard", |c, s| async move {
-                    c.clear_commander_maybeboard(&s).await
-                })
-                .await
-                .is_some()
-            {
-                list.clear();
-                toast.info(
-                    "Maybeboard cleared".to_string(),
-                    ToastOptions::default().duration(TOAST_QUICK),
-                );
-            }
-        });
+        driver.dispatch(Action::Clear);
     });
 
-    let on_remove = move |oracle_id: Uuid| {
-        spawn(async move {
-            if authed
-                .run("remove_commander_maybeboard", |c, s| async move {
-                    c.remove_commander_maybeboard_card(oracle_id, &s).await
-                })
-                .await
-                .is_some()
-            {
-                list.remove(oracle_id);
-                toast.info(
-                    "Removed".to_string(),
-                    ToastOptions::default().duration(TOAST_QUICK),
-                );
-            }
-        });
-    };
+    let on_remove = move |oracle_id: Uuid| driver.dispatch(Action::Remove(oracle_id));
 
-    // In-memory narrowing: the Show pips (contains-all identity, empty set =
-    // All) compose with the filter sheet's criteria. The quick-add input
-    // deliberately narrows nothing; one input driving two result sets reads
-    // ambiguous. `filter_reset_counter` is the subscription (the sheet's
-    // Apply bumps it); the builder itself is peeked so mid-edit sheet state
-    // doesn't reshuffle the list, mirroring the deck cards screen.
+    // Already-saved oracles: the Swipe overlay excludes them from its pile
+    // (discovery wants fresh commanders; deck create/edit still serve saves).
+    let saved_oracles = use_memo(move || -> HashSet<Uuid> { driver.model.read().saved_oracles() });
+
+    // The card filter sheet narrows after the Show pips. `filter_reset_counter`
+    // is the subscription (the sheet's Apply bumps it); the builder itself is
+    // peeked so mid-edit sheet state doesn't reshuffle the list, mirroring the
+    // deck cards screen.
     let _ = filter_reset_counter();
     let builder = filter_builder.peek().clone();
-    let colors = selected_colors();
-    let all_on = colors.is_empty();
-    let mut filtered: Vec<Card> = entries()
-        .iter()
-        .filter(|c| maybeboard::passes_pips(&c.scryfall_data.color_identity, &colors))
-        .cloned()
-        .collect();
-    if !builder.is_empty()
-        && let Ok(criteria) = builder.build_criteria()
-    {
-        filtered = Cards::from(filtered).matching(&criteria).into();
-    }
-    // Save order (newest first) stands unless the sheet chose a sort.
-    if let Some(sort) = builder.sort() {
-        filtered = Cards::from(filtered)
-            .sorted(sort, builder.direction())
-            .into();
-    }
-    let has_entries = !entries().is_empty();
-    // Already-saved oracles: quick-add result chips skip them (nothing to
-    // add), and the Swipe overlay excludes them from its pile (discovery
-    // wants fresh commanders; deck create/edit still serve saves).
-    let saved_oracles = use_memo(move || -> HashSet<Uuid> {
-        entries()
-            .iter()
-            .filter_map(|c| c.scryfall_data.oracle_id)
-            .collect()
-    });
-    let shown_results: Vec<Card> = search_results()
-        .iter()
-        .filter(|c| maybeboard::is_addable(c.scryfall_data.oracle_id, &saved_oracles.read()))
-        .cloned()
-        .collect();
-    let searching_catalog = query().trim().len() >= MIN_QUERY_LEN;
+    let view = driver.model.read();
+    let is_loading = view.status() == Status::Loading;
+    let query = view.query().to_owned();
+    let quick_add = view.quick_add();
+    let all_on = view.shows_all();
+    let pips = Color::all().map(|color| (color, view.is_picked(color)));
+    let message = view.message(&builder);
+    let filtered = view.shown(&builder);
+    drop(view);
 
     rsx! {
         div { class: "screen",
-            ScreenHeader { title: "Commander maybeboard", hint: hint_open }
+            ScreenHeader { title: model::TITLE, hint: hint_open }
 
             HintDialog {
                 open: hint_open,
@@ -520,7 +407,7 @@ pub fn CommanderMaybeboard() -> Element {
                     style: "max-width: 40rem; width: 100%; padding: 0 1rem;",
                     // The whole page ghosts on the first load: the Quick add and Show
                     // rows as their shapes, the list with its header title as a bar.
-                    if is_loading() {
+                    if is_loading {
                         QuickAddSkeleton {}
                         ChipRowSkeleton { label: "sm", chips: vec!["sm", "sm", "sm", "sm", "sm", "sm", "sm"] }
                         div { class: "maybeboard-list card-group row-enter",
@@ -536,23 +423,23 @@ pub fn CommanderMaybeboard() -> Element {
                         }
                     } else {
                         div { class: "chip-row",
-                            span { class: "stat-chip stat-chip-p1 chip-row-label", "Quick add" }
+                            span { class: "stat-chip stat-chip-p1 chip-row-label", {model::QUICK_ADD} }
                             input {
                                 class: "input input-compact",
                                 style: "flex: 1; margin-bottom: 0;",
                                 id: "commander-maybeboard-search",
                                 r#type: "text",
-                                placeholder: "Search a commander to add",
+                                placeholder: model::QUICK_ADD_PLACEHOLDER,
                                 value: "{query}",
                                 autocapitalize: "none",
                                 autocorrect: "off",
                                 spellcheck: "false",
-                                oninput: move |event| query.set(event.value()),
+                                oninput: move |event| driver.dispatch(Action::Type(event.value())),
                             }
-                            if !query().is_empty() {
+                            if !query.is_empty() {
                                 button {
                                     class: "clear-btn",
-                                    onclick: move |_| query.set(String::new()),
+                                    onclick: move |_| driver.dispatch(Action::Type(String::new())),
                                     "\u{00d7}"
                                 }
                             }
@@ -561,75 +448,70 @@ pub fn CommanderMaybeboard() -> Element {
                         // and list: the shared search-float chips, hung downward
                         // (this console is the top of the page, so down is the
                         // only direction with room). Tap a chip to save it.
-                        if searching_catalog {
+                        if let Some(results) = quick_add {
                             div { class: "search-float-anchor",
-                                if is_searching() {
-                                    div { class: "search-float-results search-float-below",
-                                        div { class: "chip-unselected search-float-chip", "Searching..." }
-                                    }
-                                } else if shown_results.is_empty() {
-                                    div { class: "search-float-results search-float-below",
-                                        div { class: "chip-unselected search-float-chip", "No results" }
-                                    }
-                                } else {
-                                    div { class: "search-float-results search-float-below",
-                                        for (i, card) in shown_results.iter().cloned().enumerate() {
-                                            div {
-                                                key: "{card.scryfall_data.id}",
-                                                class: "chip-unselected search-float-chip",
-                                                style: "animation-delay: {i * 40}ms, {250 + i * 40}ms;",
-                                                onclick: move |_| add_from_search(card.clone()),
-                                                "{card.scryfall_data.name}"
+                                match results {
+                                    QuickAddResults::Searching => rsx! {
+                                        div { class: "search-float-results search-float-below",
+                                            div { class: "chip-unselected search-float-chip", {model::SEARCHING} }
+                                        }
+                                    },
+                                    QuickAddResults::Empty => rsx! {
+                                        div { class: "search-float-results search-float-below",
+                                            div { class: "chip-unselected search-float-chip", {model::NO_RESULTS} }
+                                        }
+                                    },
+                                    QuickAddResults::Found(found) => rsx! {
+                                        div { class: "search-float-results search-float-below",
+                                            for (i, card) in found.into_iter().enumerate() {
+                                                div {
+                                                    key: "{card.scryfall_data.id}",
+                                                    class: "chip-unselected search-float-chip",
+                                                    style: "animation-delay: {i * 40}ms, {250 + i * 40}ms;",
+                                                    onclick: move |_| {
+                                                        if let Some(oracle_id) = card.scryfall_data.oracle_id {
+                                                            driver.dispatch(Action::Add(oracle_id));
+                                                        }
+                                                    },
+                                                    "{card.scryfall_data.name}"
+                                                }
                                             }
                                         }
-                                    }
+                                    },
                                 }
                             }
                         }
                         div { class: "chip-row",
-                            span { class: "stat-chip stat-chip-p1 chip-row-label", "Show" }
+                            span { class: "stat-chip stat-chip-p1 chip-row-label", {model::SHOW} }
                             Chip {
                                 selected: all_on,
-                                onclick: move |_| selected_colors.write().clear(),
-                                "All"
+                                onclick: move |_| driver.dispatch(Action::ShowAll),
+                                {model::SHOW_ALL}
                             }
-                            for color in Color::all() {
+                            for (color, picked) in pips {
                                 Chip {
                                     key: "{color.to_short_name()}",
-                                    selected: selected_colors().contains(&color),
-                                    onclick: move |_| {
-                                        let mut colors = selected_colors.write();
-                                        if !colors.remove(&color) {
-                                            colors.insert(color);
-                                        }
-                                    },
+                                    selected: picked,
+                                    onclick: move |_| driver.dispatch(Action::ToggleColor(color)),
                                     i { class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost" }
                                 }
                             }
                             Chip {
                                 selected: show_row_art(),
                                 onclick: move |_| show_row_art.set(!show_row_art()),
-                                "Art"
+                                {model::ART}
                             }
                         }
 
-                        if load_failed() {
+                        if let Some(message) = message {
                             div { class: "message-empty",
-                                span { class: "chip-note", {maybeboard::LOAD_FAILED} }
-                            }
-                        } else if !has_entries {
-                            div { class: "message-empty",
-                                span { class: "chip-note", {maybeboard::NO_COMMANDERS} }
-                            }
-                        } else if filtered.is_empty() {
-                            div { class: "message-empty",
-                                span { class: "chip-note", {maybeboard::NO_MATCH} }
+                                span { class: "chip-note", {message} }
                             }
                         } else {
                             // Same bordered container the deck cards list wraps
                             // its rows in.
                             div { class: "maybeboard-list card-group row-enter",
-                                div { class: "card-group-header", {maybeboard::LIST_TITLE} }
+                                div { class: "card-group-header", {model::LIST_TITLE} }
                                 for card in filtered {
                                     MaybeboardRow {
                                         key: "{card.scryfall_data.id}",
@@ -654,15 +536,13 @@ pub fn CommanderMaybeboard() -> Element {
             ActionBar {
                 Button {
                     variant: ButtonVariant::Action,
-                    onclick: move |_| {
-                        navigator.push(Router::DeckList {});
-                    },
-                    "Back"
+                    onclick: move |_| driver.dispatch(Action::Back),
+                    {model::BACK}
                 }
                 Button {
                     variant: ButtonVariant::Action,
                     onclick: move |_| filters_overlay_open.set(true),
-                    "Filter"
+                    {model::FILTER}
                     if !filter_builder.read().is_empty() || filter_builder.read().sort().is_some() {
                         span { class: "filter-dot" }
                     }
@@ -670,37 +550,37 @@ pub fn CommanderMaybeboard() -> Element {
                 Button {
                     variant: ButtonVariant::Action,
                     onclick: move |_| swipe_open.set(true),
-                    "Swipe"
+                    {model::SWIPE}
                 }
                 Button {
                     variant: ButtonVariant::Action,
                     onclick: move |_| show_more_sheet.set(true),
-                    "More"
+                    {model::MORE}
                 }
             }
 
-            BottomSheet { open: show_more_sheet, title: "More actions",
+            BottomSheet { open: show_more_sheet, title: model::MORE_TITLE,
                 Button {
                     danger: true,
                     onclick: move |_| {
                         show_clear_dialog.set(true);
                     },
-                    "Clear maybeboard"
+                    {model::CLEAR_MAYBEBOARD}
                 }
             }
 
             AlertDialog {
                 open: show_clear_dialog,
-                title: "Clear maybeboard",
+                title: model::CLEAR_MAYBEBOARD,
                 actions: vec![
-                    DialogAction::Dismiss("Cancel".into()),
+                    DialogAction::Dismiss(model::CANCEL.into()),
                     DialogAction::Confirm {
-                        label: "Clear".into(),
+                        label: model::CLEAR.into(),
                         danger: true,
                         on_confirm: clear_maybeboard,
                     },
                 ],
-                "Every commander on your maybeboard will be removed. This can't be undone."
+                {model::CLEAR_BODY}
             }
 
             CardFilterSheet {
@@ -722,7 +602,7 @@ pub fn CommanderMaybeboard() -> Element {
                 exclude_oracle_ids: Some(saved_oracles.into()),
                 on_select: move |card: Card| {
                     swipe_open.set(false);
-                    create_with(card);
+                    driver.create(card);
                 },
                 on_close: move |()| swipe_open.set(false),
             }
@@ -735,18 +615,11 @@ pub fn CommanderMaybeboard() -> Element {
                     open: printing_open,
                     host_screen: screen::COMMANDER_MAYBEBOARD,
                     on_save: move |new_card: Card| {
-                        let target = new_card.scryfall_data.oracle_id;
-                        if target.is_some() {
+                        if new_card.scryfall_data.oracle_id.is_some() {
                             let mut expanded = expanded_card;
                             expanded.set(Some(new_card.scryfall_data.id));
-                            if let Some(slot) = entries
-                                .write()
-                                .iter_mut()
-                                .find(|c| c.scryfall_data.oracle_id == target)
-                            {
-                                *slot = new_card;
-                            }
                         }
+                        driver.dispatch(Action::PickPrinting(Box::new(new_card)));
                     },
                 }
             }
@@ -757,82 +630,5 @@ pub fn CommanderMaybeboard() -> Element {
 
             ImagePreview { card: preview_card, dismissing: preview_dismissing }
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use std::cell::Cell;
-
-    use super::*;
-    use crate::test_fixtures;
-
-    thread_local! {
-        static LIST: Cell<Option<SavedList>> = const { Cell::new(None) };
-    }
-
-    #[component]
-    fn Root() -> Element {
-        let list = SavedList {
-            entries: use_signal(Vec::new),
-            is_loading: use_signal(|| true),
-            load_failed: use_signal(|| false),
-            reload: use_signal(|| 0u32),
-            loads: use_generation(),
-            load_out: use_hook(|| CopyValue::new(false)),
-        };
-        LIST.with(|l| l.set(Some(list)));
-        rsx! {}
-    }
-
-    fn commander(name: &str) -> (Card, Uuid) {
-        let mut card = test_fixtures::deck_entry(name, 1).card;
-        let oracle_id = Uuid::new_v4();
-        card.scryfall_data.oracle_id = Some(oracle_id);
-        (card, oracle_id)
-    }
-
-    fn names(cards: &[Card]) -> Vec<String> {
-        cards.iter().map(|c| c.scryfall_data.name.clone()).collect()
-    }
-
-    #[test]
-    fn a_load_sent_before_a_remove_does_not_bring_the_row_back() {
-        let mut dom = VirtualDom::new(Root);
-        dom.rebuild_in_place();
-        let mut list = LIST.with(|l| l.get().expect("the root rendered"));
-        let (atraxa, atraxa_id) = commander("Atraxa");
-        let (krenko, _) = commander("Krenko");
-
-        dom.in_runtime(|| {
-            let first = list.begin_load();
-            list.land(first, Some(vec![atraxa.clone(), krenko.clone()]));
-            // A refetch goes out, then the user removes Atraxa before it lands.
-            let refetch = list.begin_load();
-            list.remove(atraxa_id);
-            list.land(refetch, Some(vec![atraxa.clone(), krenko.clone()]));
-        });
-
-        let shown = dom.in_runtime(|| names(&list.entries.peek()));
-        assert_eq!(shown, ["Krenko"], "the older load put the removed row back");
-        let reload = dom.in_runtime(|| *list.reload.peek());
-        assert_eq!(reload, 1, "the dropped load was not fetched again");
-    }
-
-    #[test]
-    fn a_remove_with_no_load_out_fetches_nothing() {
-        let mut dom = VirtualDom::new(Root);
-        dom.rebuild_in_place();
-        let mut list = LIST.with(|l| l.get().expect("the root rendered"));
-        let (atraxa, atraxa_id) = commander("Atraxa");
-
-        dom.in_runtime(|| {
-            let load = list.begin_load();
-            list.land(load, Some(vec![atraxa.clone()]));
-            list.remove(atraxa_id);
-        });
-
-        let reload = dom.in_runtime(|| *list.reload.peek());
-        assert_eq!(reload, 0, "a settled list refetched on remove");
     }
 }

@@ -1,9 +1,8 @@
 //! Account's model with the handles that perform its effects.
 
-use components::TOAST_LONG;
+use components::{TOAST_LONG, ToastOptions, Toasts, use_toast};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
-use dioxus_primitives::toast::{ToastOptions, Toasts};
 use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_core::domain::auth::models::secret::Secret;
 use zwipe_core::domain::auth::models::session::Session;
@@ -129,7 +128,7 @@ pub(crate) fn use_driver() -> Driver {
             confirm_password: use_signal(String::new),
         },
         navigator: use_navigator(),
-        toast: dioxus_primitives::toast::use_toast(),
+        toast: use_toast(),
         runners: Runners {
             main: use_authed(Screen::Profile(ProfileScreen::Main)),
             username: use_authed(Screen::Profile(ProfileScreen::ChangeUsername)),

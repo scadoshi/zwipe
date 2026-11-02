@@ -14,7 +14,7 @@ To the inventory (`zwipe-ui/context/inventory.md`):
 - **"Deck row count: none" drift is wrong.** The app shows `"{count} cards"` always, so "1 cards" (`app/deck/list.rs:365`). `ui/deck/mod.rs:31` `cards_label` pluralizes. See drift D1.
 - **Decision 8 (telemetry stays in zwiper) is overtaken.** The TUI copied the app's usage buffer into `zwiper-tui/src/lib/outbound/usage_buffer.rs` (240 lines, from `zwiper/src/lib/inbound/components/telemetry/usage_buffer.rs`). Second client exists. See decision 2.
 - **The TUI branch already edits shared crates.** `ClientPlatform::Terminal` in `zwipe-core/.../platform.rs`, `zwipe-client/src/auth/login.rs`, zerver tests (from `chore/terminal-platform`, merged into `feat/tui`), and `zwipe-ui/README.md` plus the inventory (61054507). The first is already its own branch awaiting merge; the docs edit should ride in branch 1.
-- **No consumer of components uses zwipe-ui yet.** components still carries its own `ColorMapModel`, `seed_from_id` (`components/src/color_map.rs`) and changelog filing (`components/src/changelog.rs:158`). The inventory's "components keeps the Dioxus half and calls it" is a plan, not a status (D-side ask K4).
+- **components uses zwipe-ui.** It draws `zwipe_ui::color_map`, takes `zwipe_ui::activity::Bar` and files the changelog with `zwipe_ui::changelog` (K4, K5).
 
 To the web list (`web-needs.md`):
 
@@ -75,12 +75,12 @@ Rule for all of these: anything zwiper or zite already renders must come out byt
 
 | # | Ask (web list section 4) | Recommendation | Touches app rendering? |
 |---|---|---|---|
-| K1 | Re-export `use_toast`, `ToastOptions`, `Toasts` from orangui and components, so web and app drop the `dioxus-primitives` pin (web `Cargo.toml`, `zwiper/Cargo.toml:35`) | **Do.** S, no markup change. App drops its pin too | no |
-| K2 | `Panel` slot for a title bar and action footer (web `inbound/chrome/form_panel.rs` copies Panel's markup) | **Do.** Optional props; absent renders today's HTML | yes, guard with the HTML test |
-| K3 | Esc and Enter on `AlertDialog`, arrow keys on `ThemeSheet` in orangui (web `inbound/app.rs:97` `KEYS_JS`) | **Do.** Listeners only, no markup. Check portfolio and cairn, which use orangui too | no markup; behavior on desktop |
-| K4 | components uses zwipe-ui's color map model and takes `ui::activity::Bar` (web `inbound/cards/charts.rs:12`, `:35` convert) | **Do**, after branch 1. components gains a zwipe-ui dependency (decision 4). The golden test in `ui/color_map` plus an HTML test keeps it identical | yes, must be identical |
-| K5 | `components::Changelog` files releases with `ui::changelog` | **Do** with K4. `ui::changelog` kept the app's behavior (inventory drift 7), so output matches | yes, must be identical |
-| K6 | Controlled flip on `FlippableCardImage` (web `deck/cards/mod.rs:33` clicks it through the DOM) | **Do.** Optional prop, None keeps today | yes, guard with the HTML test |
+| K1 | Re-export `use_toast`, `ToastOptions`, `Toasts` from orangui and components, so web and app drop the `dioxus-primitives` pin (web `Cargo.toml`, `zwiper/Cargo.toml:35`) | Done (orangui #3): orangui and components re-export the toast items; zwiper keeps its `dioxus-primitives` pin for the accordion (K7) and two files' toast imports. **Do.** S, no markup change. App drops its pin too | no |
+| K2 | `Panel` slot for a title bar and action footer (web `inbound/chrome/form_panel.rs` copies Panel's markup) | Done as `title_bar` and `class` (Panel already had an `actions` footer). **Do.** Optional props; absent renders today's HTML | yes, guard with the HTML test |
+| K3 | Esc and Enter on `AlertDialog`, arrow keys on `ThemeSheet` in orangui (web `inbound/app.rs:97` `KEYS_JS`) | Done: Esc and Enter on the open dialog, arrows and Enter on the theme sheet; Esc on the theme sheet waits for K8. **Do.** Listeners only, no markup. Check portfolio and cairn, which use orangui too | no markup; behavior on desktop |
+| K4 | components uses zwipe-ui's color map model and takes `ui::activity::Bar` (web `inbound/cards/charts.rs:12`, `:35` convert) | Done: components draws `zwipe_ui::color_map`; `components::Bar` is `zwipe_ui::activity::Bar`. **Do**, after branch 1. components gains a zwipe-ui dependency (decision 4). The golden test in `ui/color_map` plus an HTML test keeps it identical | yes, must be identical |
+| K5 | `components::Changelog` files releases with `ui::changelog` | Done: `components::Changelog` files releases with `zwipe_ui::changelog`. **Do** with K4. `ui::changelog` kept the app's behavior (inventory drift 7), so output matches | yes, must be identical |
+| K6 | Controlled flip on `FlippableCardImage` (web `deck/cards/mod.rs:33` clicks it through the DOM) | Done: `FlippableCardImage` takes an optional `face` signal. **Do.** Optional prop, None keeps today | yes, guard with the HTML test |
 | K7 | `CollapsibleSection` into components (web `inbound/chrome/section.rs` redoes the app's accordion) | **Defer** until the web layout doc settles how sections open. Then lift the app's, not the web's | yes |
 | K8 | Browser back with an overlay open leaves the screen | **Defer.** orangui would track open overlays; it overlaps the app's `use_os_back` (Android back). Needs its own design | yes, behavior |
 | K9 | Configurable nav breakpoint (web.css overrides the kit's 60rem) | **Defer and recheck.** `feat/web-zite` added its own `inbound/shell/top_nav.rs`; the ask may be gone | would not if the default stays |

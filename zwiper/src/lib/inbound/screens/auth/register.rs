@@ -1,8 +1,9 @@
 //! New user registration screen.
 
-use components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL, TextInput};
+use components::{
+    ActionBar, Button, ButtonVariant, TOAST_NORMAL, TextInput, ToastOptions, use_toast,
+};
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
 use zwipe_core::http::contracts::auth::HttpRegisterUser;
 use zwipe_core::http::contracts::metrics::AnonymousEventKind;

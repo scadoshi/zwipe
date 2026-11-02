@@ -1,128 +1,47 @@
 //! Deck warnings section with action buttons for card-specific warnings.
 
-use components::{Button, ButtonVariant, TOAST_NORMAL};
+use components::{Button, ButtonVariant};
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
-use uuid::Uuid;
-use zwipe_client::{ClientError, ZwipeClient};
-use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::deck::deck_warning::{DeckWarning, WarningAction};
-use zwipe_ui::deck::view::Done;
+use zwipe_core::domain::deck::deck_warning::DeckWarning;
+use zwipe_ui::deck::warning::{self, Fix};
+use zwipe_ui::screens::deck_view::{self, Action};
 
-use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
-use crate::inbound::components::telemetry::vocabulary::{component, screen};
-use crate::inbound::components::ui_toast;
-use crate::inbound::router::Router;
+/// The fix buttons' warning color.
+const FIX_STYLE: &str =
+    "color: var(--color-warning); border-color: var(--border-warning); margin-bottom: 0;";
 
 #[component]
 pub(crate) fn DeckWarnings(
     warnings: Vec<DeckWarning>,
-    deck_id: Uuid,
-    on_remove: EventHandler<()>,
-    on_fix_quantity: EventHandler<(Uuid, i32)>,
-    on_clear_commander: EventHandler<()>,
+    ondispatch: EventHandler<Action>,
 ) -> Element {
-    let session: Signal<Option<Session>> = use_context();
-    let client: Signal<ZwipeClient> = use_context();
-    let toast = use_toast();
-    let usage_buffer: Signal<UsageBuffer> = use_context();
-    let navigator = use_navigator();
-
-    // The below-minimum card count warning gets navigation remedies (add or
-    // import) instead of a card action. Matched client-side on the message:
-    // extending the WarningAction enum would break older clients deserializing
-    // the deck response (unknown serde variant fails the whole payload), so
-    // the wire stays untouched until a min-version floor allows the variant.
-    let is_below_min_cards =
-        |w: &DeckWarning| w.scryfall_data_id().is_none() && w.contains("requires at least");
-
     rsx! {
         div { style: "display:flex;flex-direction:column;",
             for warning in warnings.iter() {
                 div { class: "settings-row",
                     style: "justify-content: space-between; gap: 0.5rem;",
                     span { class: "text-muted", "{warning}" }
-                    if is_below_min_cards(warning) {
+                    // The below-minimum warning's two fixes sit together;
+                    // every other warning has one.
+                    if warning::fix(warning) == Some(Fix::BelowMinimum) {
                         span {
                             style: "display: flex; gap: 0.5rem;",
-                            Button {
-                                variant: ButtonVariant::Small,
-                                style: "color: var(--color-warning); border-color: var(--border-warning); margin-bottom: 0;",
-                                onclick: move |_| {
-                                    navigator.push(Router::AddDeckCard { deck_id });
-                                },
-                                "Add cards"
-                            }
-                            Button {
-                                variant: ButtonVariant::Small,
-                                style: "color: var(--color-warning); border-color: var(--border-warning); margin-bottom: 0;",
-                                onclick: move |_| {
-                                    navigator.push(Router::ImportDeck { deck_id });
-                                },
-                                "Import"
+                            for (label, action) in deck_view::fix_buttons(warning) {
+                                Button {
+                                    variant: ButtonVariant::Small,
+                                    style: FIX_STYLE,
+                                    onclick: move |_| ondispatch.call(action.clone()),
+                                    "{label}"
+                                }
                             }
                         }
-                    }
-                    if let Some(card_id) = warning.scryfall_data_id() {
-                        {
-                            let on_remove = on_remove;
-                            let on_fix_quantity = on_fix_quantity;
-                            let on_clear_commander = on_clear_commander;
-                            match warning.action() {
-                                Some(WarningAction::FixQuantity(n)) => {
-                                    let target_qty = *n;
-                                    rsx! {
-                                        Button {
-                                            variant: ButtonVariant::Small,
-                                            style: "color: var(--color-warning); border-color: var(--border-warning); margin-bottom: 0;",
-                                            onclick: move |_| {
-                                                on_fix_quantity((card_id, target_qty));
-                                            },
-                                            "Fix to {target_qty}"
-                                        }
-                                    }
-                                }
-                                Some(WarningAction::ClearCommander) => {
-                                    rsx! {
-                                        Button {
-                                            variant: ButtonVariant::Small,
-                                            style: "color: var(--color-warning); border-color: var(--border-warning); margin-bottom: 0;",
-                                            onclick: move |_| {
-                                                on_clear_commander(());
-                                            },
-                                            "Clear"
-                                        }
-                                    }
-                                }
-                                _ => {
-                                    rsx! {
-                                        Button {
-                                            variant: ButtonVariant::Small,
-                                            style: "color: var(--color-warning); border-color: var(--border-warning); margin-bottom: 0;",
-                                            onclick: move |_| {
-                                                let on_remove = on_remove;
-                                                spawn(async move {
-                                                    let result: Result<(), ClientError> = async {
-                                                        let session = session()
-                                                            .ok_or_else(|| ClientError::Unauthorized("Session expired".to_string()))?;
-                                                        client().delete_deck_card(deck_id, card_id, &session).await
-                                                    }.await;
-                                                    match result {
-                                                        Ok(()) => {
-                                                            ui_toast::raise(toast, Done::CardRemoved.toast());
-                                                            on_remove(());
-                                                        }
-                                                        Err(e) => {
-                                                            usage_buffer.peek().report_error(screen::DECK_VIEW, component::DECK_WARNINGS, "remove_flagged_card", &e);
-                                                            toast.error(e.to_user_message(), ToastOptions::default().duration(TOAST_NORMAL));
-                                                        }
-                                                    }
-                                                });
-                                            },
-                                            "Remove"
-                                        }
-                                    }
-                                }
+                    } else {
+                        for (label, action) in deck_view::fix_buttons(warning) {
+                            Button {
+                                variant: ButtonVariant::Small,
+                                style: FIX_STYLE,
+                                onclick: move |_| ondispatch.call(action.clone()),
+                                "{label}"
                             }
                         }
                     }

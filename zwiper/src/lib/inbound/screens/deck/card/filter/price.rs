@@ -1,8 +1,7 @@
 //! Price range filter component (min/max in a selected currency).
 
-use components::TOAST_QUICK;
+use components::{TOAST_QUICK, ToastOptions, use_toast};
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_ui::filter::chips;
