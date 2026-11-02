@@ -107,18 +107,15 @@ fn NavMark(open: Signal<bool>) -> Element {
 }
 
 /// `Community`, a nav pill to zite's Community page (Discord, email
-/// support) in a new tab, folding the menu.
+/// support), folding the menu.
 #[component]
 fn CommunityLink(mut open: Signal<bool>) -> Element {
     rsx! {
         a {
             class: "nav-link",
             href: "{WEB_BASE}/community",
-            target: "_blank",
-            rel: "noopener",
             onclick: move |_| open.set(false),
             "Community"
-            span { class: "web-buy-ext", "\u{2197}" }
         }
     }
 }

@@ -941,15 +941,13 @@ body {
 }
 
 @media (hover: hover) {
-    .web-buy-link:hover .web-buy-ext,
-    .nav-link:hover .web-buy-ext {
+    .web-buy-link:hover .web-buy-ext {
         transform: translate(0.12em, -0.12em);
     }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .web-buy-link:hover .web-buy-ext,
-    .nav-link:hover .web-buy-ext {
+    .web-buy-link:hover .web-buy-ext {
         transform: none;
     }
 }
