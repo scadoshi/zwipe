@@ -1,39 +1,12 @@
 //! Quick-add search bar for the deck cards screen.
 //!
-//! Type a card name, get a debounced, deck-aware search (cards already in the
-//! deck are excluded server-side, but skipped cards are included, see
-//! `include_skipped` below), and add a result straight to the mainboard
-//! with one tap. Synergy is deliberately off: `set_synergy(false)` drops the
-//! synergy-pool membership, and an explicit name sort keeps the server from
-//! applying synergy *ordering* (which it does whenever no sort is set). The
-//! result is a plain, alphabetically-ordered name match.
+//! Draws the deck cards model's Quick add: the typed query, and the results
+//! floating over the content above. The search itself (debounce, the
+//! deck-aware request, the add) is `zwipe_ui::screens::deck_cards`'.
 
-use std::time::Duration;
-
-use components::{TOAST_QUICK, ToastOptions, use_toast};
 use dioxus::prelude::*;
-use tokio::time;
-use uuid::Uuid;
 use zwipe_core::domain::card::Card;
-use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
-use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
-use zwipe_core::domain::deck::DeckEntry;
-use zwipe_core::http::contracts::deck_card::HttpCreateDeckCard;
-
-use super::undo_log::{UndoAction, UndoLog};
-use crate::inbound::components::auth::authed::use_authed;
-use crate::inbound::components::generation::{Generation, Ticket, use_generation};
-use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
-use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen, component};
-
-/// Minimum characters before a search fires: keeps single-letter typing from
-/// hammering the server and returning a near-full pool.
-const MIN_QUERY_LEN: usize = 2;
-/// Debounce so results follow typing without a request per keystroke.
-const DEBOUNCE_MS: u64 = 300;
-/// Result cap: matches the commander picker's 5, keeping the float to about
-/// two chip rows so the header above comfortably covers it.
-const RESULT_LIMIT: u32 = 5;
+use zwipe_ui::screens::deck_cards::{self, QuickAddResults};
 
 /// Grows the float anchor by exactly the height the results overflow past the
 /// scrollport top (back toward 0 when they fit with slack), so results overlay
@@ -62,157 +35,55 @@ setTimeout(fit, 400);
 
 /// Live card-name search that adds the picked card straight to the mainboard.
 ///
-/// `deck_entries` is the view's source of truth; a successful add pushes the new
-/// entry in and bumps `filter_reset_counter` (read from context) so the deck
-/// list re-groups and shows the card immediately.
+/// `results` is `None` while the dropdown is closed.
 #[component]
-pub fn QuickAdd(deck_id: Uuid, deck_entries: Signal<Vec<DeckEntry>>) -> Element {
-    let usage_buffer: Signal<UsageBuffer> = use_context();
-    let authed = use_authed(Screen::Deck(DeckScreen::CardView));
-    let mut filter_reset_counter: Signal<u32> = use_context();
-    let undo_log: UndoLog = use_context();
-    let toast = use_toast();
-
-    let mut query = use_signal(String::new);
-    let mut results: Signal<Vec<Card>> = use_signal(Vec::new);
-    let mut is_searching = use_signal(|| false);
-    let mut show_dropdown = use_signal(|| false);
-    let mut searches = use_generation();
-
-    // Debounced deck-aware search. Mirrors the commander picker in deck_fields:
-    // reveal the dropdown at once (so "Searching..." shows during the wait),
-    // sleep, then bail if the query moved on before the timer elapsed. Every
-    // edit, the clear button's included, takes a ticket, so a reply for an
-    // older query never lands over a newer one.
-    use_effect(move || {
-        let q = query();
-        let ticket = searches.next_ticket();
-
-        if q.trim().len() < MIN_QUERY_LEN {
-            show_dropdown.set(false);
-            is_searching.set(false);
-            return;
-        }
-
-        is_searching.set(true);
-        show_dropdown.set(true);
-
-        spawn(async move {
-            time::sleep(Duration::from_millis(DEBOUNCE_MS)).await;
-
-            if !searches.is_current(ticket) {
-                return;
-            }
-
-            let mut builder = CardQueryBuilder::with_name_contains(q.trim());
-            // Synergy off: no membership pool, and an explicit sort so the server
-            // doesn't fall back to synergy ordering.
-            builder.set_synergy(false);
-            // A typed card name is explicit intent: surface skipped (and
-            // removed) cards the swipe pile suppresses. Requires a server
-            // that knows the flag; older servers ignore it and keep the
-            // suppressed cards hidden.
-            builder.set_include_skipped(true);
-            builder.set_sort(CardSortKey::Name);
-            builder.set_limit(RESULT_LIMIT);
-            let Ok(card_filter) = builder.build() else {
-                is_searching.set(false);
-                show_dropdown.set(false);
-                return;
-            };
-
-            usage_buffer().record_search();
-            // Quiet: fires per debounced keystroke; the dropdown just closes.
-            let page = authed
-                .run_quiet_at(
-                    component::QUICK_ADD,
-                    "quick_add_search",
-                    |c, s| async move { c.search_deck_cards(deck_id, &card_filter, &s).await },
-                )
-                .await;
-            land_search(
-                searches,
-                ticket,
-                page.map(|page| page.cards),
-                SearchView {
-                    results,
-                    is_searching,
-                    show_dropdown,
-                },
-            );
-        });
-    });
-
-    // Add a result to the mainboard. Drops it from the dropdown at once (so it
-    // can't be double-added and the tap feels instant), then pushes the real
-    // entry once the server returns it and re-runs the deck's filter/group pass.
-    let mut add_card = move |card: Card| {
-        let card_id = card.scryfall_data.id;
-        let card_name = card.scryfall_data.name.clone();
-        results.write().retain(|c| c.scryfall_data.id != card_id);
-
-        let request = HttpCreateDeckCard::new(&card.scryfall_data, 1, None);
-        spawn(async move {
-            if let Some(deck_card) = authed
-                .run_at(component::QUICK_ADD, "quick_add_card", |c, s| async move {
-                    c.create_deck_card(deck_id, &request, &s).await
-                })
-                .await
-            {
-                deck_entries.write().push(DeckEntry { card, deck_card });
-                let current = *filter_reset_counter.peek();
-                filter_reset_counter.set(current.wrapping_add(1));
-                undo_log.push(UndoAction::Added {
-                    card_id,
-                    card_name: card_name.clone(),
-                });
-                toast.info(
-                    format!("Added {card_name}"),
-                    ToastOptions::default().duration(TOAST_QUICK),
-                );
-            }
-        });
-    };
-
+pub fn QuickAdd(
+    query: String,
+    results: Option<QuickAddResults>,
+    oninput: EventHandler<String>,
+    onclear: EventHandler,
+    onadd: EventHandler<Card>,
+) -> Element {
     // Measured overlay: results float over the content above (no reflow) in
     // the common case; when they'd run past the scrollport top, under the
     // screen header; the fit effect below grows the anchor by exactly the
     // overflow, spending real space only in those edge cases.
-    use_effect(move || {
-        let open = show_dropdown();
-        let _ = is_searching();
-        let _ = results();
-        if open {
+    use_effect(use_reactive!(|results| {
+        if results.is_some() {
             let _ = document::eval(QUICK_ADD_FIT_JS);
         }
-    });
+    }));
 
     rsx! {
         div {
             // Results float in a layer hung above the bar from the (measured,
             // normally zero-height) anchor. Tap a chip to add it to the
             // mainboard.
-            if show_dropdown() {
+            if let Some(results) = results {
                 div { class: "search-float-anchor", id: "quick-add-anchor",
-                    if is_searching() {
-                        div { class: "search-float-results", id: "quick-add-results",
-                            div { class: "chip-unselected search-float-chip", "Searching..." }
-                        }
-                    } else if results().is_empty() {
-                        div { class: "search-float-results", id: "quick-add-results",
-                            div { class: "chip-unselected search-float-chip", "No results" }
-                        }
-                    } else {
-                        div { class: "search-float-results", id: "quick-add-results",
-                            for (i, card) in results().iter().cloned().enumerate() {
-                                div {
-                                    class: "chip-unselected search-float-chip",
-                                    style: "animation-delay: {i * 40}ms, {250 + i * 40}ms;",
-                                    onclick: move |_| add_card(card.clone()),
-                                    "{card.scryfall_data.name}"
+                    match results {
+                        QuickAddResults::Searching => rsx! {
+                            div { class: "search-float-results", id: "quick-add-results",
+                                div { class: "chip-unselected search-float-chip", "{deck_cards::SEARCHING}" }
+                            }
+                        },
+                        QuickAddResults::Empty => rsx! {
+                            div { class: "search-float-results", id: "quick-add-results",
+                                div { class: "chip-unselected search-float-chip", "{deck_cards::NO_RESULTS}" }
+                            }
+                        },
+                        QuickAddResults::Found(cards) => rsx! {
+                            div { class: "search-float-results", id: "quick-add-results",
+                                for (i, card) in cards.iter().cloned().enumerate() {
+                                    div {
+                                        class: "chip-unselected search-float-chip",
+                                        style: "animation-delay: {i * 40}ms, {250 + i * 40}ms;",
+                                        onclick: move |_| onadd(card.clone()),
+                                        "{card.scryfall_data.name}"
+                                    }
                                 }
                             }
-                        }
+                        },
                     }
                 }
             }
@@ -220,13 +91,13 @@ pub fn QuickAdd(deck_id: Uuid, deck_entries: Signal<Vec<DeckEntry>>) -> Element 
             // Label sits inline-left like the Group by / Boards / Show rows,
             // in the same accent-tertiary `chip-row-label`; the input fills the rest.
             div { class: "chip-row",
-                span { class: "stat-chip stat-chip-p1 chip-row-label", "Quick add" }
+                span { class: "stat-chip stat-chip-p1 chip-row-label", "{deck_cards::QUICK_ADD}" }
                 input {
                     class: "input input-compact",
                     style: "flex: 1; margin-bottom: 0;",
                     id: "quick-add",
                     r#type: "text",
-                    placeholder: "Search a card to add",
+                    placeholder: deck_cards::QUICK_ADD_PLACEHOLDER,
                     value: "{query}",
                     autocapitalize: "none",
                     autocorrect: "off",
@@ -239,121 +110,16 @@ pub fn QuickAdd(deck_id: Uuid, deck_entries: Signal<Vec<DeckEntry>>) -> Element 
                             "const el = document.querySelector('.screen-content'); if (el) el.scrollTo({ top: 0, behavior: 'smooth' });",
                         );
                     },
-                    oninput: move |event| query.set(event.value()),
+                    oninput: move |event| oninput(event.value()),
                 }
-                if !query().is_empty() {
+                if !query.is_empty() {
                     button {
                         class: "clear-btn",
-                        onclick: move |_| {
-                            query.set(String::new());
-                            results.set(Vec::new());
-                            show_dropdown.set(false);
-                        },
+                        onclick: move |_| onclear(()),
                         "\u{00d7}"
                     }
                 }
             }
         }
-    }
-}
-
-/// The signals a quick-add search reply writes.
-#[derive(Clone, Copy)]
-struct SearchView {
-    results: Signal<Vec<Card>>,
-    is_searching: Signal<bool>,
-    show_dropdown: Signal<bool>,
-}
-
-/// Shows a search reply, or closes the dropdown on a failed search, unless a
-/// newer edit has taken a ticket since `ticket`; that edit's own search owns
-/// the dropdown then.
-fn land_search(searches: Generation, ticket: Ticket, cards: Option<Vec<Card>>, view: SearchView) {
-    if !searches.is_current(ticket) {
-        return;
-    }
-    let SearchView {
-        mut results,
-        mut is_searching,
-        mut show_dropdown,
-    } = view;
-    is_searching.set(false);
-    match cards {
-        Some(cards) => {
-            results.set(cards);
-            show_dropdown.set(true);
-        }
-        None => show_dropdown.set(false),
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use std::cell::Cell;
-
-    use super::*;
-    use crate::test_fixtures;
-
-    thread_local! {
-        static STATE: Cell<Option<(Generation, SearchView)>> = const { Cell::new(None) };
-    }
-
-    #[component]
-    fn Root() -> Element {
-        let searches = use_generation();
-        let view = SearchView {
-            results: use_signal(Vec::new),
-            is_searching: use_signal(|| true),
-            show_dropdown: use_signal(|| true),
-        };
-        STATE.with(|s| s.set(Some((searches, view))));
-        rsx! {}
-    }
-
-    fn card(name: &str) -> Card {
-        test_fixtures::deck_entry(name, 1).card
-    }
-
-    fn names(cards: &[Card]) -> Vec<String> {
-        cards.iter().map(|c| c.scryfall_data.name.clone()).collect()
-    }
-
-    #[test]
-    fn an_older_reply_landing_after_a_newer_one_is_dropped() {
-        let mut dom = VirtualDom::new(Root);
-        dom.rebuild_in_place();
-        let (mut searches, view) = STATE.with(|s| s.get().expect("the root rendered"));
-
-        dom.in_runtime(|| {
-            let typed_so = searches.next_ticket();
-            let typed_sol = searches.next_ticket();
-            land_search(searches, typed_sol, Some(vec![card("Sol Ring")]), view);
-            land_search(searches, typed_so, Some(vec![card("Soldier")]), view);
-        });
-
-        let shown = dom.in_runtime(|| names(&view.results.peek()));
-        assert_eq!(
-            shown,
-            ["Sol Ring"],
-            "the older query's reply replaced the newer one"
-        );
-    }
-
-    #[test]
-    fn a_reply_still_out_when_the_bar_clears_keeps_the_dropdown_closed() {
-        let mut dom = VirtualDom::new(Root);
-        dom.rebuild_in_place();
-        let (mut searches, mut view) = STATE.with(|s| s.get().expect("the root rendered"));
-
-        dom.in_runtime(|| {
-            let typed = searches.next_ticket();
-            // The clear button empties the query, which takes a ticket of its own.
-            searches.next_ticket();
-            view.show_dropdown.set(false);
-            land_search(searches, typed, Some(vec![card("Sol Ring")]), view);
-        });
-
-        let open = dom.in_runtime(|| *view.show_dropdown.peek());
-        assert!(!open, "a reply for the cleared query reopened the dropdown");
     }
 }
