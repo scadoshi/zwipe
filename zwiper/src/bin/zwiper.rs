@@ -98,6 +98,8 @@ fn App() -> Element {
     // Not in main(): UIApplication does not exist until the app has launched,
     // so calling this earlier would silently do nothing.
     use_hook(zwiper::outbound::shake_to_edit::disable);
+    // Unclaimed link clicks open in the in-app browser, not Safari.
+    components::use_in_app_links();
 
     let upgrade_required = session_upkeep::spawn_upkeeper();
     let dialogs = use_dialog_host();
