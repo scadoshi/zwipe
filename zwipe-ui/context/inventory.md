@@ -102,8 +102,8 @@ Effort is the work to build the shared model from the TUI's version and test it 
 | Playstyle | profile sections, tag table, suggestions with Show, Staples filters, Clear skips flow, reasons, every empty line | chart and card drawing; sections open together on web | L |
 | Commander maybeboard | list, quick add with its 300 ms debounce, color filter, remove, clear, hand-off to Create | swipe gesture | M, built: `screens::commander_maybeboard`; the app switched, web and TUI to switch; the card filter, Art chip and swipe overlay stay in the client |
 | Swipe select (commander and suggested modes) | the stack, the per-mode constraint, maybeboard save and undo, toasts | the gesture engine and card motion | L |
-| Oracle tag dictionary | search, definition, Use hand-off | overlay or panel layout | S |
-| Oracle tag examples | load, paging, empty and error lines | card drawing | S |
+| Oracle tag dictionary | search, definition, Use hand-off | overlay or panel layout | S, built: `screens::oracle_tag_dictionary`; the app switched, web and TUI to switch; Use keeps the dictionary open (the TUI goes back, drift to settle), and the catalog failure toasts each time (web and TUI once per visit) |
+| Oracle tag examples | load, paging, empty and error lines | card drawing | S, built: `screens::oracle_tag_examples`; the app switched, web and TUI to switch; a failed first page shows the empty line, as the app does |
 | Deck list | the whole TUI `DeckList` minus focus: decks, Group by, Show, tag fold, collapsed groups, Create gate, More items | chip and list drawing | S, built: `screens::deck_list`; the app switched, web and TUI to switch |
 | Create and Edit | every field, validation, knock-on clears, change detection, the four command-zone searches with debounce and generation tickets, the format, tag and oracle tag pickers (draft, Save disabled when unchanged, Back with "unchanged"), submit and server messages | text inputs, picker layout (sheet, side panel, overlay) | L |
 | Import | paste, submit, outcome toast | text area | S, built: `screens::deck_import`; the app switched, web and TUI to switch |
