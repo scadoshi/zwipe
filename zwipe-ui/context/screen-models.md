@@ -82,6 +82,10 @@ Every fetch takes a `Ticket` from the model's own `Generation` inside `update`, 
 - A screen that reads an app-wide cache it doesn't own takes the cache's state into its views by reference (`Catalog<'_>` into `body`) and holds no copy; the client reports a failure as an action (`CatalogFailed`).
 - A hand-off to the host can be an effect with no `Navigate` when the overlay stays up (the dictionary's `AdoptTag`).
 - A swipe browse's enter animation is an effect (`Enter(Direction)`): the model owns the cards and the cursor, the client the animation.
+- One model can serve two screens through a mode passed in `Load` (Create and Edit share `screens::deck_form` with `Open::Create { seed }` or `Open::Edit(id)`).
+- A picker's draft and which picker is open belong to the model, since the draft lives exactly as long as the picker; swipe overlays stay in the client.
+- A text input that owns its own signal stays in step with the model both ways.
+- Effects that carry zwipe-core request contracts can't derive `PartialEq`; tests use `matches!`.
 
 ## Wiring it in Dioxus (the app and zwiper-web)
 

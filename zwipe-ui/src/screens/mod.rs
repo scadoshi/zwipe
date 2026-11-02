@@ -7,6 +7,7 @@ pub mod activity;
 pub mod commander_maybeboard;
 pub mod config;
 pub mod deck_export;
+pub mod deck_form;
 pub mod deck_import;
 pub mod deck_list;
 pub mod deck_view;
