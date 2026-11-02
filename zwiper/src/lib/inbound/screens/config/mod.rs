@@ -27,13 +27,12 @@ use zwipe_ui::generation::Generation;
 use zwipe_ui::preferences::{self as ui_preferences, PreferenceChange};
 
 use crate::inbound::components::auth::authed::use_authed;
-use crate::inbound::components::guide_link;
 use crate::inbound::components::hint_dialog::use_one_time_hint;
 use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::info_button::InfoButton;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{ProfileScreen, Screen};
-use crate::inbound::components::ui_toast;
+use crate::inbound::components::{guide_link, ui_toast};
 use crate::outbound::app_icon;
 use crate::outbound::session::Persist;
 
