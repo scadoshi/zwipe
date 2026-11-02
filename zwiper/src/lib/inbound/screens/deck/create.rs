@@ -12,9 +12,8 @@ use zwipe_core::domain::deck::{
     self, DeckName, DeckOtherTag, DeckTagView, MAX_DECK_ORACLE_TAGS, PowerLevel,
 };
 use zwipe_core::domain::user::models::hints::HINT_CREATE_DECK;
-use zwipe_core::http::contracts::deck::HttpCreateDeckProfile;
 
-use super::components::deck_fields::{self, DeckFields, DeckFieldsHint};
+use super::components::deck_fields::{self, DeckFields, DeckFieldsHint, FormSignals};
 use super::components::format_select::FormatSelect;
 use super::components::oracle_tag_select::OracleTagSelect;
 use super::components::swipe_select::{SwipeMode, SwipeSelect};
@@ -83,6 +82,25 @@ pub fn CreateDeck() -> Element {
     let mut oracle_tags: Signal<Vec<String>> = use_signal(Vec::new);
     let mut show_oracle_tags_select = use_signal(|| false);
     let create_hint = use_one_time_hint(HINT_CREATE_DECK);
+    let form = FormSignals {
+        name: deck_name,
+        format: selected_format,
+        tags: selected_tags,
+        commander,
+        commander_display,
+        partner: partner_commander,
+        partner_display: partner_commander_display,
+        background,
+        background_display,
+        signature_spell,
+        signature_spell_display,
+        land_target,
+        price_target,
+        price_target_currency,
+        power_level,
+        other_tags,
+        oracle_tags,
+    };
 
     // Commander maybeboard seed: its "Create deck" action parks the picked
     // card here. Taken once at mount; the format is set directly (not through
@@ -141,29 +159,7 @@ pub fn CreateDeck() -> Element {
         is_saving.set(true);
 
         spawn(async move {
-            let commander_id = commander().map(|c| c.scryfall_data.id);
-            let format_str = selected_format().map(|f| f.to_legality_key().to_string());
-            let tags: Vec<String> = selected_tags();
-            let other: Vec<String> = other_tags().iter().map(ToString::to_string).collect();
-            let price_target_val: Option<f64> =
-                price_target().parse().ok().filter(|v: &f64| *v > 0.0);
-            let request = HttpCreateDeckProfile::builder(&deck_name())
-                .commander_id(commander_id)
-                .partner_commander_id(partner_commander().map(|c| c.scryfall_data.id))
-                .background_id(background().map(|c| c.scryfall_data.id))
-                .signature_spell_id(signature_spell().map(|c| c.scryfall_data.id))
-                .format(format_str)
-                .tags(if tags.is_empty() { None } else { Some(tags) })
-                .power_level(power_level().map(|p| p.to_string()))
-                .other_tags(if other.is_empty() { None } else { Some(other) })
-                .oracle_tags({
-                    let ot = oracle_tags();
-                    if ot.is_empty() { None } else { Some(ot) }
-                })
-                .land_target(land_target())
-                .price_target(price_target_val)
-                .price_target_currency(price_target_val.map(|_| price_target_currency()))
-                .build();
+            let request = form.values().create_request();
 
             match authed
                 .try_run("create_deck", |c, s| async move {
@@ -338,22 +334,8 @@ pub fn CreateDeck() -> Element {
             FormatSelect {
                 open: show_format_select,
                 selected_format,
-                on_select: move |fmt: Format| {
-                    selected_format.set(Some(fmt));
-                    commander.set(None);
-                    commander_display.set(String::new());
-                    if !fmt.has_signature_spell() {
-                        signature_spell.set(None);
-                        signature_spell_display.set(String::new());
-                    }
-                },
-                on_clear: move |()| {
-                    selected_format.set(None);
-                    commander.set(None);
-                    commander_display.set(String::new());
-                    signature_spell.set(None);
-                    signature_spell_display.set(String::new());
-                },
+                on_select: move |fmt: Format| form.set_format(Some(fmt)),
+                on_clear: move |()| form.set_format(None),
                 on_close: move |()| show_format_select.set(false),
                 on_cancel: move |()| {
                     let (f, c, cd, ss, ssd) = fmt_snapshot();
