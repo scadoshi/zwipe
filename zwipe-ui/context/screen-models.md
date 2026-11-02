@@ -55,6 +55,15 @@ Every fetch takes a `Ticket` from the model's own `Generation` inside `update`, 
 - A view with more than two shapes gets its own enum instead of two flags. Activity's `Rates` is `Unrated(line)`, `Uncharted(line)` or `Charted(bars)`.
 - A screen with no toast besides its request failure has no `Effect::Toast`.
 - When a model shares its name with a Phase 1 module (`zwipe_ui::activity` the math, `screens::activity` the model), clients import the model `as model`.
+- A screen whose data outlives a visit takes what the client holds in `Load` (Home's `Cached`). The model asks only for what is missing or old, and the client writes each reply to its own cache as well as handing it back.
+- Fetches that run side by side and restart independently each get their own `Generation`, so a reply to one never drops another. Home has five: user, counts, my counts, playstyle and flavor.
+- The model never reads the clock. Anything that depends on the time takes it in the action (`CheckFlavor { now }`), so tests pin it.
+- When the first render must already show the cached state, the app runs `Load` inside the `use_signal` initializer instead of `use_effect`, and performs the effects it returns right after.
+- A screen with many requests in flight at once (the deck view's load, commander art, edits) takes every ticket from one `Generation` and keeps a waiting list keyed by ticket, so each reply finds its own request and a reply after a newer `Load` changes nothing.
+- A reload keeps the last result on screen while it runs, so a refresh after an edit doesn't flash the skeleton.
+- A screen with several dialogs emits `OpenDialog(Dialog)`; which dialog is up stays in the client.
+- Copying to the clipboard is `Effect::Copy { text, done }`: the client copies `text`, then raises `done`; a client that can tell the copy failed raises its own toast instead.
+- A screen opened for one item takes its id in `Load` (`Load(deck_id)`).
 
 ## Wiring it in Dioxus (the app and zwiper-web)
 

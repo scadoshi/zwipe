@@ -97,7 +97,7 @@ Effort is the work to build the shared model from the TUI's version and test it 
 | Update required | copy | the action differs on purpose (store link, Reload, terminal message) | S |
 | Help and feedback | copy, the mailto builder with platform | opening mail or the browser | S |
 | Splash | decode frame math (decision 1) | all drawing; web has none | none |
-| Home | hero scope and figures, color map model, flavor card and its hourly expiry, buy link, Playstyle panel states, one-time hint | color map drawing, counter animation, image | M |
+| Home | hero scope and figures, color map model, flavor card and its hourly expiry, buy link, Playstyle panel states, one-time hint | color map drawing, counter animation, image | M, built: `screens::home`; the app switched, web and TUI to switch; the caches above the router stay in each client |
 | Activity | heatmap layout, readout selection and its 4 s release, totals, rate kind switch, both rate charts, Most skipped, empty lines | heat grid drawing, sweeps, chart drawing | M, built: `screens::activity`; the app switched, web and TUI to switch; the heat pick's 4 s release stays in each client |
 | Playstyle | profile sections, tag table, suggestions with Show, Staples filters, Clear skips flow, reasons, every empty line | chart and card drawing; sections open together on web | L |
 | Commander maybeboard | list, quick add with its 300 ms debounce, color filter, remove, clear, hand-off to Create | swipe gesture | M |
@@ -108,7 +108,7 @@ Effort is the work to build the shared model from the TUI's version and test it 
 | Create and Edit | every field, validation, knock-on clears, change detection, the four command-zone searches with debounce and generation tickets, the format, tag and oracle tag pickers (draft, Save disabled when unchanged, Back with "unchanged"), submit and server messages | text inputs, picker layout (sheet, side panel, overlay) | L |
 | Import | paste, submit, outcome toast | text area | S |
 | Export | board toggles with the at-least-one rule, the text, copy toast | clipboard API | S |
-| Deck view | load, profile, stats, sections, warnings and their fixes, More items, the Buy, Clone, Share, Clear skips and Delete dialogs and their flows, first-deck hint | accordion or columns, charts | M |
+| Deck view | load, profile, stats, sections, warnings and their fixes, More items, the Buy, Clone, Share, Clear skips and Delete dialogs and their flows, first-deck hint | accordion or columns, charts | M, built: `screens::deck_view`; the app switched, web and TUI to switch; which dialog is up stays in the client |
 | Add cards | sources (Search, Maybeboard), From and Synergy, the stack, paging, every swipe outcome, undo through the shared log, in-flight adds, land and budget crossings, end of results, all 43 toasts | gestures and card motion, image loading | XL |
 | Card filter | draft and Apply, 15 sections, per-host reset, picker sources, contradiction and catalog toasts | accordion or columns, steppers and chips as drawn | L |
 | Deck cards view | load, filter and group pass, boards, Show, quick add, quantities with the 300 ms flush, moves, printings, MVP, Undo, Reset filter, every toast | detail pane, drag to move, row drawing | XL |
