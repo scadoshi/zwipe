@@ -16,20 +16,10 @@ use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::deck::{Board, DeckEntry};
+use zwipe_ui::deck::command_zone::Slot;
 
 /// Cap: enough to walk back a whole editing session; oldest entries drop.
 const MAX_UNDO_ACTIONS: usize = 100;
-
-/// Identifies which command zone slot a card occupies for printing updates.
-/// Lives here rather than in `view.rs`: the log is shared infrastructure,
-/// and screens depend on it: never the reverse.
-#[derive(Clone, Copy, PartialEq)]
-pub(crate) enum CommandZoneSlot {
-    Commander,
-    Partner,
-    Background,
-    SignatureSpell,
-}
 
 /// One undoable mutation, carrying what its inverse needs. Quantity bursts
 /// coalesce through the debounce: one burst, one entry.
@@ -61,7 +51,7 @@ pub(crate) enum UndoAction {
     /// not a `deck_card` row; undo rebuilds the profile request with the old
     /// printing id and restores the slot's pinned card signal.
     CommandZonePrintingChanged {
-        slot: CommandZoneSlot,
+        slot: Slot,
         old_card: Card,
         new_id: Uuid,
     },
