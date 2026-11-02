@@ -8,6 +8,7 @@ use zwipe_core::domain::deck::requests::clear_deck_suppressions::{
 use zwipe_core::http::contracts::deck::HttpClearedSuppressions;
 
 use crate::domain::deck::models::deck::clear_deck_suppressions::ClearDeckSuppressionsError;
+use crate::domain::deck::ports::DeckService;
 use crate::inbound::http::middleware::AuthenticatedUser;
 use crate::inbound::http::{ApiError, AppState, To500};
 

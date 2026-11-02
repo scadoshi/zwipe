@@ -5,6 +5,7 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use zwipe_core::http::contracts::auth::HttpRequestPasswordReset;
 
+use crate::domain::auth::ports::AuthService;
 use crate::domain::auth::requests::request_password_reset::{
     RequestPasswordReset, RequestPasswordResetError,
 };

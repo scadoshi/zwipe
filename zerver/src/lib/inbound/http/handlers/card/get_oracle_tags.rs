@@ -5,6 +5,7 @@ use axum::extract::State;
 use reqwest::StatusCode;
 use zwipe_core::domain::card::oracle_tag::OracleTag;
 
+use crate::domain::card::ports::CardService;
 use crate::domain::card::requests::get_oracle_tags::GetOracleTagsError;
 use crate::inbound::http::{ApiError, AppState, To500};
 

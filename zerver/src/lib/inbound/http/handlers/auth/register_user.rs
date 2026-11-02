@@ -10,12 +10,14 @@ use zwipe_core::http::contracts::auth::{
 };
 
 use crate::domain::auth::models::access_token::InvalidJwt;
+use crate::domain::auth::ports::AuthService;
 use crate::domain::auth::requests::create_session::CreateSessionError;
 use crate::domain::auth::requests::enforce_session_maximum::EnforceSessionMaximumError;
 use crate::domain::auth::requests::register_user::{
     InvalidRegisterUser, RegisterOutcome, RegisterUser, RegisterUserError,
 };
 use crate::domain::metrics::models::kinds::EventKind;
+use crate::domain::metrics::ports::MetricsService;
 use crate::domain::user::models::get_user::GetUserError;
 use crate::inbound::http::{ApiError, AppState, To500};
 

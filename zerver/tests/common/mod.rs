@@ -37,7 +37,7 @@ use tower::ServiceExt; // oneshot
 use uuid::Uuid;
 use zwipe::domain::auth::models::access_token::JwtSecret;
 use zwipe::domain::email::models::{SendEmail, SendEmailError};
-use zwipe::domain::email::ports::EmailSender;
+use zwipe::domain::email::ports::{EmailSender, SendEmailFuture};
 use zwipe::domain::{auth, card, deck, health, metrics, user};
 use zwipe::inbound::http::{AppState, build_router};
 use zwipe::outbound::sqlx::postgres::Postgres;
@@ -47,19 +47,18 @@ const TEST_JWT_SECRET: &str = "test-jwt-secret-that-is-at-least-32-characters-lo
 
 /// Captures every outbound email instead of hitting Resend. Later slices read
 /// the verify/reset token out of the last captured body.
-#[derive(Clone, Default)]
+#[derive(Clone, Debug, Default)]
 pub(crate) struct FakeEmailSender {
     pub(crate) sent: Arc<Mutex<Vec<SendEmail>>>,
 }
 
 impl EmailSender for FakeEmailSender {
-    #[expect(
-        clippy::unused_async_trait_impl,
-        reason = "the push stays inside the future so it runs when the service awaits it, as the real sender's send does"
-    )]
-    async fn send_email(&self, email: SendEmail) -> Result<(), SendEmailError> {
-        self.sent.lock().unwrap().push(email);
-        Ok(())
+    fn send_email(&self, email: SendEmail) -> SendEmailFuture<'_> {
+        // The push stays inside the future so it runs when the service awaits it, as the real send does.
+        Box::pin(async move {
+            self.sent.lock().unwrap().push(email);
+            Ok::<(), SendEmailError>(())
+        })
     }
 }
 
@@ -137,7 +136,7 @@ impl TestApp {
         let auth_service = auth::services::Service::new(
             db.clone(),
             db.clone(),
-            emails.clone(),
+            Arc::new(emails.clone()),
             jwt_secret.clone(),
             chrono::Duration::hours(24),
             "http://localhost".to_string(),
@@ -147,8 +146,7 @@ impl TestApp {
         let health_service = health::services::Service::new(db.clone());
         let card_service = card::services::Service::new(db.clone());
         let deck_service = deck::services::Service::new(db.clone(), db.clone());
-        let metrics_service: Arc<dyn metrics::ports::ErasedMetricsService> =
-            Arc::new(metrics::services::Service::new(db));
+        let metrics_service = metrics::services::Service::new(db);
 
         let state = AppState {
             auth_service: Arc::new(auth_service),
@@ -156,7 +154,7 @@ impl TestApp {
             health_service: Arc::new(health_service),
             card_service: Arc::new(card_service),
             deck_service: Arc::new(deck_service),
-            metrics_service,
+            metrics_service: Arc::new(metrics_service),
             last_active_cache: Arc::new(DashMap::new()),
             featured_flavor: Arc::new(zwipe::inbound::http::cache::TtlSlot::new()),
             min_client_version: Arc::from("0.0.0"),

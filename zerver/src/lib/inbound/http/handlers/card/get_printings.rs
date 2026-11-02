@@ -5,6 +5,7 @@ use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use zwipe_core::domain::card::Card;
 
+use crate::domain::card::ports::CardService;
 use crate::inbound::http::{ApiError, AppState};
 
 /// Returns all printings of a card by oracle ID, ordered by release date.

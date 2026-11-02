@@ -7,10 +7,12 @@ use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::http::contracts::auth::HttpAuthenticateUser;
 use zwipe_core::version;
 
+use crate::domain::auth::ports::AuthService;
 use crate::domain::auth::requests::authenticate_user::{
     AuthenticateUser, AuthenticateUserError, InvalidAuthenticateUser,
 };
 use crate::domain::metrics::models::kinds::{AuditAction, EventKind};
+use crate::domain::metrics::ports::MetricsService;
 use crate::inbound::http::middleware::ClientIp;
 use crate::inbound::http::{ApiError, AppState, To500};
 

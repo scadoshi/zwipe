@@ -69,26 +69,19 @@ Zerver files for extracted types become one-liners: `pub use zwipe_core::domain:
 
 ---
 
-## Type-Erased Services: AppState Holds `Arc<dyn ErasedXService>`
+## Concrete Services: AppState Holds Each Service's Own Type
 
-**Decided: 2026-07-05.**
+**Decided: 2026-11-01.** Replaces the 2026-07-05 decision to hold type-erased `Arc<dyn ErasedXService>` trait objects.
 
-`AppState` holds every service as a trait object (`Arc<dyn ErasedAuthService>`, etc.) instead of being generic over five service traits. Each domain's `ports.rs` defines two service traits: the real one (`XService`, RPITIT-style `-> impl Future<...> + Send` methods) and an object-safe twin (`ErasedXService`, same methods returning `BoxFuture<'a, T>`, the alias in `domain/mod.rs`), plus a blanket `impl<T: XService> ErasedXService for T` whose bodies are one-line `Box::pin(XService::method(self, args))` forwards.
+`AppState` holds every service as its concrete type: `Arc<Auth>`, `Arc<Decks>` and so on, from the aliases in `zerver/src/lib/wiring.rs` (e.g. `pub type Decks = deck::services::Service<Postgres, Postgres>`). Handlers take `State(state): State<AppState>` with no generic parameters and no bounds, and they name the aliases, never a sqlx type. A handler that calls a service method brings that service's `XService` trait into scope with a `use` line.
 
-**Why the twin exists at all:** RPITIT traits are not object-safe, since each implementor returns a differently-sized anonymous future, and a vtable needs one fixed signature, so `dyn XService` cannot compile. The twin's boxed-future signatures are uniform (a fat pointer), making it object-safe by construction. The blanket impl performs the erasure at the one point where the concrete type (and thus the future's size) is still known.
+**What stays:** the `XService` and `XRepository` traits in each domain's `ports.rs`, and each service stays generic over its repositories. That is the hexagonal seam, and it is separate from erasure. Only `wiring.rs` picks the concrete types.
 
-**Why erased over generic:** before this, `AppState<AS, US, HS, CS, DS>` threaded five type params through 104 signature sites across ~50 files; every handler carried a 5-line where-clause before its first real line. Now handlers take `State(state): State<AppState>` with zero ceremony. Call sites are unchanged (`state.card_service.search(...)`); mocks still satisfy the fields via the blanket impls.
+**Why concrete:** every service and every repository has exactly one implementation, the Postgres one, and nothing mocks either layer. The integration tests in `zerver/tests` run real HTTP against the real router and a real Postgres database. The erased layer bought runtime polymorphism nothing used, at the cost of an `ErasedXService` twin and a blanket forwarding impl per service (about 1,000 lines) and one more write per new service method. Concrete types keep the handlers as free of generics as erasure did.
 
-**The steady-state trade:**
+**The one erased port:** `EmailSender` (`domain/email/ports.rs`). It is a true outside service, and the tests replace it: production sends through the Resend adapter, the tests through `FakeEmailSender` in `zerver/tests/common/mod.rs`, which captures each message. `auth::services::Service` holds it as an `Arc<dyn EmailSender>` field, and `send_email` returns a boxed future (`SendEmailFuture`) so the trait is object safe.
 
-- A new service method costs one extra write: the twin signature + `Box::pin` forward, compiler-checked and mindless.
-- A new handler costs zero ceremony (it was ~12 lines of bounds).
-- Endpoints usually add one of each, so the per-feature cost is a wash. The payoff was the one-time 104-site cleanup and the permanent reading-cost win in handlers.
-- The repo-trait/service-trait split predates and is independent of this. That's the hexagonal seam, not an erasure cost.
-
-**Runtime cost:** one heap allocation (`Box::pin`) + one vtable jump per service call, which is noise next to the Postgres round-trip every call performs.
-
-**When to revisit:** if hand-writing twins ever becomes a real tax (e.g., many service methods that never get handlers), the `dynosaur` crate generates exactly this pattern from the RPITIT trait via proc-macro. Hand-written was chosen for readability and one fewer proc-macro dep. The metrics domain pioneered the pattern (it was added after the original five and erasing it avoided touching every signature); the other five followed on 2026-07-05.
+**The rule:** fake only true outside services (email today, maybe Scryfall later), never the service or repository layer. A new outside service that tests must fake gets an object-safe port held as `Arc<dyn Port>`; everything else stays concrete.
 
 ---
 

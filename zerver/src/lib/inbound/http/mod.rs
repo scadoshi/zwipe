@@ -25,12 +25,8 @@ use tower_http::timeout::TimeoutLayer;
 use uuid::Uuid;
 
 use crate::domain::auth::access_token::JwtSecret;
-use crate::domain::auth::ports::{AuthService, ErasedAuthService};
-use crate::domain::card::ports::{CardService, ErasedCardService};
-use crate::domain::deck::ports::{DeckService, ErasedDeckService};
-use crate::domain::health::ports::{ErasedHealthService, HealthService};
-use crate::domain::metrics::ports::ErasedMetricsService;
-use crate::domain::user::ports::{ErasedUserService, UserService};
+use crate::domain::auth::ports::AuthService;
+use crate::wiring::{Auth, Cards, Decks, Health, Metrics, Users};
 
 // == error ==
 
@@ -171,21 +167,20 @@ pub struct HttpServerConfig<'a> {
 
 /// Shared application state holding all service implementations.
 ///
-/// Services are held as type-erased trait objects (see the `ErasedXService`
-/// twins in each domain's ports) so handlers stay free of generic parameters;
-/// mock implementations still satisfy the fields via the blanket impls.
-#[derive(Clone)]
+/// Each service is its concrete type from [`crate::wiring`], so handlers take
+/// `State<AppState>` with no generic parameters.
+#[derive(Clone, Debug)]
 #[expect(
     missing_docs,
     reason = "each service field is named for the service it holds"
 )]
 pub struct AppState {
-    pub auth_service: Arc<dyn ErasedAuthService>,
-    pub user_service: Arc<dyn ErasedUserService>,
-    pub health_service: Arc<dyn ErasedHealthService>,
-    pub card_service: Arc<dyn ErasedCardService>,
-    pub deck_service: Arc<dyn ErasedDeckService>,
-    pub metrics_service: Arc<dyn ErasedMetricsService>,
+    pub auth_service: Arc<Auth>,
+    pub user_service: Arc<Users>,
+    pub health_service: Arc<Health>,
+    pub card_service: Arc<Cards>,
+    pub deck_service: Arc<Decks>,
+    pub metrics_service: Arc<Metrics>,
     /// Per-user debounce cache for `users.last_active_at` bumps.
     pub last_active_cache: Arc<DashMap<Uuid, Instant>>,
     /// The hour's featured flavor card, deadline-pinned to the top of the
@@ -196,19 +191,6 @@ pub struct AppState {
     /// Public web base URL (e.g. `https://zwipe.net`); used for outbound
     /// User-Agent contact info.
     pub web_base_url: Arc<str>,
-}
-
-/// The services are trait objects with no `Debug`, so only the plain fields
-/// print.
-impl std::fmt::Debug for AppState {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("AppState")
-            .field("last_active_cache", &self.last_active_cache)
-            .field("featured_flavor", &self.featured_flavor)
-            .field("min_client_version", &self.min_client_version)
-            .field("web_base_url", &self.web_base_url)
-            .finish_non_exhaustive()
-    }
 }
 
 /// Axum HTTP server with pre-configured routes and middleware.
@@ -293,12 +275,12 @@ impl HttpServer {
     ///
     /// Fails when the listener can't bind to the configured address.
     pub async fn new(
-        auth_service: impl AuthService,
-        user_service: impl UserService,
-        health_service: impl HealthService,
-        card_service: impl CardService,
-        deck_service: impl DeckService,
-        metrics_service: Arc<dyn ErasedMetricsService>,
+        auth_service: Auth,
+        user_service: Users,
+        health_service: Health,
+        card_service: Cards,
+        deck_service: Decks,
+        metrics_service: Metrics,
         config: HttpServerConfig<'_>,
     ) -> anyhow::Result<Self> {
         let jwt_secret = auth_service.jwt_secret().clone();
@@ -308,7 +290,7 @@ impl HttpServer {
             health_service: Arc::new(health_service),
             card_service: Arc::new(card_service),
             deck_service: Arc::new(deck_service),
-            metrics_service,
+            metrics_service: Arc::new(metrics_service),
             last_active_cache: Arc::new(DashMap::new()),
             featured_flavor: Arc::new(cache::TtlSlot::new()),
             min_client_version: Arc::from(config.min_client_version.as_str()),

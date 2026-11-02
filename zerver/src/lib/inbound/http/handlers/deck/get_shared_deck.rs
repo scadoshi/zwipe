@@ -7,6 +7,7 @@ use uuid::Uuid;
 use zwipe_core::http::contracts::deck::HttpSharedDeck;
 
 use crate::domain::deck::models::deck::share_deck::GetSharedDeckError;
+use crate::domain::deck::ports::DeckService;
 use crate::inbound::http::{ApiError, AppState, To500};
 
 impl From<GetSharedDeckError> for ApiError {

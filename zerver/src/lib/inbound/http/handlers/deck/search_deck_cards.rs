@@ -9,6 +9,7 @@ use zwipe_core::domain::deck::requests::get_deck_profile::GetDeckProfile;
 use zwipe_core::http::contracts::deck::HttpDeckCardSearch;
 
 use crate::domain::deck::models::deck::search_deck_cards::SearchDeckCardsError;
+use crate::domain::deck::ports::DeckService;
 use crate::inbound::http::middleware::AuthenticatedUser;
 use crate::inbound::http::{ApiError, AppState};
 

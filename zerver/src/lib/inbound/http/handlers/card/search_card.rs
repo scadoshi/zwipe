@@ -7,6 +7,7 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::CardQuery;
 
 use crate::domain::card::models::search_card::error::SearchCardsError;
+use crate::domain::card::ports::CardService;
 use crate::inbound::http::middleware::AuthenticatedUser;
 use crate::inbound::http::{ApiError, AppState, To500};
 
