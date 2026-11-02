@@ -2,7 +2,7 @@
 
 use components::{
     ActionBar, AlertDialog, Button, ButtonVariant, DialogAction, HintBullet, HintBullets,
-    HintDialog, HintKey, TOAST_NORMAL, TOAST_QUICK,
+    HintDialog, HintKey, TOAST_NORMAL,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -16,15 +16,16 @@ use zwipe_core::domain::deck::deck_warning::DeckWarning;
 use zwipe_core::domain::user::models::hints::HINT_FIRST_DECK;
 use zwipe_core::http::contracts::deck_card::HttpPatchDeckCard;
 use zwipe_ui::deck::command_zone::Slot;
+use zwipe_ui::deck::view::{self, Done};
 
 use super::components::clone_deck_dialog::CloneDeckDialog;
 use super::components::collapsible_section::CollapsibleSection;
-use super::components::deck_budget_section::{self, DeckBudgetSection};
+use super::components::deck_budget_section::DeckBudgetSection;
 use super::components::deck_charts::{
     ColorChart, DeckCharts, DrawOdds, ManaBalanceRow, ManaCurve, ManaFulfillment,
 };
 use super::components::deck_profile::DeckProfileSection;
-use super::components::deck_tags_section::{self, DeckTagsSection};
+use super::components::deck_tags_section::DeckTagsSection;
 use super::components::deck_warnings::DeckWarnings;
 use super::components::more_buttons::MoreButtons;
 use super::components::skeletons::{DeckProfileSkeleton, DeckStatsSkeleton};
@@ -36,6 +37,7 @@ use crate::inbound::components::info_button::InfoButton;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen, component, screen};
+use crate::inbound::components::ui_toast;
 use crate::inbound::router::Router;
 use crate::inbound::screens::oracle_tag_examples::OracleTagExamples;
 use crate::outbound::buy_links;
@@ -259,11 +261,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                 div { class: "screen-content",
                     match deck_profile_resource() {
                         Some(Ok(deck_profile)) => {
-                            let metrics_possible = deck_profile.card_count > 0
-                                || deck_profile.commander_id.is_some()
-                                || deck_profile.partner_commander_id.is_some()
-                                || deck_profile.background_id.is_some()
-                                || deck_profile.signature_spell_id.is_some();
+                            let metrics_possible = view::metrics_possible(&deck_profile);
                             // Copied out before the rsx! moves deck_profile into
                             // the Tags section; the Lands row (below, in Mana) needs it.
                             let land_target = deck_profile.land_target;
@@ -276,7 +274,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                     card_count: metrics.as_ref().map_or_else(|| usize::try_from(deck_profile.card_count).unwrap_or(0), |m| m.total_cards),
                                 }
 
-                                if deck_budget_section::has_budget(&deck_profile, metrics.is_some()) {
+                                if view::has_budget(&deck_profile, metrics.is_some()) {
                                     CollapsibleSection {
                                         title: "Budget",
                                         open_section: open_section,
@@ -305,10 +303,10 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                     }
                                 }
 
-                                if deck_tags_section::has_any_tags(&deck_profile) {
+                                if view::tag_count(&deck_profile) > 0 {
                                     CollapsibleSection {
                                         title: "Tags",
-                                        badge: format!("{}", deck_tags_section::total_tag_count(&deck_profile)),
+                                        badge: format!("{}", view::tag_count(&deck_profile)),
                                         open_section: open_section,
                                         DeckTagsSection { deck_profile }
                                     }
@@ -447,10 +445,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                                     .await
                                                     .is_some()
                                                 {
-                                                    toast.info(
-                                                        format!("Quantity set to {target_qty}"),
-                                                        ToastOptions::default().duration(TOAST_QUICK),
-                                                    );
+                                                    ui_toast::raise(toast, Done::QuantitySet(target_qty).toast());
                                                     deck_resource.restart();
                                                 }
                                             });
@@ -467,11 +462,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                                     .is_some()
                                                 {
                                                         let format = deck_profile_resource().and_then(Result::ok).and_then(|p| p.format);
-                                                        let label = Slot::Commander.label(format);
-                                                        toast.info(
-                                                            format!("{label} cleared"),
-                                                            ToastOptions::default().duration(TOAST_QUICK),
-                                                        );
+                                                        ui_toast::raise(toast, Done::CommanderCleared(format).toast());
                                                         commander.set(None);
                                                         deck_profile_resource.restart();
                                                         deck_resource.restart();
@@ -555,7 +546,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                 source_deck_id: deck_id,
                 default_name: deck_profile_resource()
                     .and_then(Result::ok)
-                    .map(|p| format!("{} (clone)", p.name))
+                    .map(|p| view::clone_name(&p.name))
                     .unwrap_or_default(),
                 open: show_clone_dialog,
             }

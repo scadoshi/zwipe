@@ -1,9 +1,10 @@
-//! Deck rules the app keeps in its own crates: a deck row's count and pips here, and the command zone, list, form, export, buy and warning rules in the modules.
+//! Deck rules the app keeps in its own crates: a deck row's count and pips here, and the command zone, list, form, export, buy, view and warning rules in the modules.
 
 pub mod command_zone;
 pub mod export;
 pub mod form;
 pub mod list;
+pub mod view;
 pub mod warning;
 
 use zwipe_core::domain::deck::DeckProfile;
