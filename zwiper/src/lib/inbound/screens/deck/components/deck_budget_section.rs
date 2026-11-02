@@ -11,12 +11,7 @@ use dioxus::prelude::*;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
 use zwipe_core::domain::deck::deck_profile::DeckProfile;
-
-/// Whether the deck has any budget-relevant field to show: a price target set,
-/// or live metrics (which carry the running prices).
-pub(crate) fn has_budget(p: &DeckProfile, has_metrics: bool) -> bool {
-    p.price_target.is_some() || has_metrics
-}
+use zwipe_ui::deck::view;
 
 /// Budget rows: price target, running total, and average card price.
 #[component]
@@ -42,18 +37,9 @@ pub(crate) fn DeckBudgetSection(
         div { style: "display:flex;flex-direction:column;",
             // Total price: running total, shown as `total / target` when a price
             // target is set. The target keeps its own stored currency.
-            if metrics.is_some() || deck_profile.price_target.is_some() {
+            if view::has_budget(&deck_profile, metrics.is_some()) {
                 {
-                    // A running total is a sum, so an empty/priceless deck reads as
-                    // the currency's zero, not "N/A".
-                    let total_fmt = currency.format_amount(total.unwrap_or(0.0));
-                    let value = match deck_profile.price_target {
-                        Some(target) => {
-                            let target_currency = deck_profile.price_target_currency.unwrap_or_default();
-                            format!("{total_fmt} / {}", target_currency.format_amount(target))
-                        }
-                        None => total_fmt,
-                    };
+                    let value = view::total_price_line(&deck_profile, total, currency);
                     rsx! {
                         div { class: "settings-row",
                             span { class: "settings-row-label", "Total price" }
