@@ -2,9 +2,9 @@
 
 use components::{
     AlertDialog, BottomSheet, Button, ButtonVariant, DialogAction, TOAST_QUICK, TextInput,
+    ToastOptions, use_toast,
 };
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_core::http::contracts::auth::HttpChangePassword;
 use zwipe_ui::account;
 

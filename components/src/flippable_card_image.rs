@@ -3,7 +3,9 @@
 //! Shared by zwiper (swipe stack, printing sheet, fullscreen preview) and zite
 //! (shared-deck image overlay) so the flip affordance behaves identically
 //! everywhere. Owns its `face_idx` internally; a host can seed the first face
-//! shown via `initial_face` (e.g. to open an overlay already on the back side).
+//! shown via `initial_face` (e.g. to open an overlay already on the back side),
+//! or hold the face itself through `face` to flip the card from outside, such
+//! as from a key.
 
 use std::collections::HashSet;
 use std::sync::{Mutex, OnceLock};
@@ -33,9 +35,10 @@ pub fn reset_image_ease() {
 
 /// Renders a card image with a flip-icon overlay for cards that have multiple faces.
 ///
-/// Owns the `face_idx` state internally (seeded from `initial_face`). When a
-/// parent re-renders this component with a different `sd`, Dioxus destroys and
-/// recreates it and the face resets to `initial_face`.
+/// Owns the `face_idx` state internally (seeded from `initial_face`), unless
+/// the host passes `face`. When a parent re-renders this component with a
+/// different `sd`, Dioxus destroys and recreates it and an internal face
+/// resets to `initial_face`.
 ///
 /// Single-faced cards render just the image; the flip control is hidden so
 /// non-DFC cards look identical to before.
@@ -58,12 +61,19 @@ pub fn FlippableCardImage(
     /// side (e.g. open its image overlay on the face being viewed).
     #[props(default)]
     on_face_change: Option<EventHandler<usize>>,
+    /// The face shown, held by the host: the flip control writes the next
+    /// face here, and the host may set it too. `None` keeps the face inside
+    /// the component, seeded from `initial_face`. An index past the last face
+    /// shows the last.
+    #[props(default)]
+    face: Option<Signal<usize>>,
     /// Fires once, when the first face shown has its bytes (or failed, or has
     /// no art), so a host can hold an entrance until every image is real.
     #[props(default)]
     on_load: Option<EventHandler<()>>,
 ) -> Element {
-    let mut face_idx: Signal<usize> = use_signal(move || initial_face);
+    let own_face: Signal<usize> = use_signal(move || initial_face);
+    let mut face_idx = face.unwrap_or(own_face);
     let mut announced: Signal<bool> = use_signal(|| false);
     let mut announce = move || {
         if !announced() {

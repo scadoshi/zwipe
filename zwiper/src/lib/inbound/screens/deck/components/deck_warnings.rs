@@ -1,8 +1,7 @@
 //! Deck warnings section with action buttons for card-specific warnings.
 
-use components::{Button, ButtonVariant, TOAST_NORMAL};
+use components::{Button, ButtonVariant, TOAST_NORMAL, ToastOptions, use_toast};
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
 use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_core::domain::auth::models::session::Session;

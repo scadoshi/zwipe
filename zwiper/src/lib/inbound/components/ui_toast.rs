@@ -1,6 +1,6 @@
 //! Raises a toast zwipe-ui decided on through the app's toaster.
 
-use dioxus_primitives::toast::{ToastOptions, Toasts};
+use components::{ToastOptions, Toasts};
 use zwipe_ui::toast::{Toast, ToastKind};
 
 /// Raises `toast` with its kind, words and band.

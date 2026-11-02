@@ -1,9 +1,8 @@
 use components::{
     ActionBar, Button, ButtonVariant, HintBullet, HintBullets, HintDialog, HintKey, TOAST_NORMAL,
-    TOAST_QUICK, use_overlay_back,
+    TOAST_QUICK, ToastOptions, use_overlay_back, use_toast,
 };
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;

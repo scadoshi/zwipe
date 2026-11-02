@@ -1,8 +1,7 @@
 //! Create new deck screen.
 
-use components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL};
+use components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL, ToastOptions, use_toast};
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;

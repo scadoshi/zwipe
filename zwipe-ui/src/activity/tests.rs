@@ -495,3 +495,17 @@ fn the_year_line_reads_the_year_for_screen_readers() {
         "1,234 swipes and 1 search in the last year"
     );
 }
+
+#[test]
+fn a_bar_reveals_unless_opted_out() {
+    let bar = Bar::new("ramp", 3, 100);
+    assert!(bar.revealable, "new bars reveal");
+    assert_eq!(bar.key, "ramp", "the key is the label");
+    let plain = bar.clone().with_no_reveal();
+    assert!(!plain.revealable);
+    assert_eq!(
+        (plain.key, plain.label, plain.count, plain.pct),
+        (bar.key, bar.label, bar.count, bar.pct),
+        "only the reveal changes"
+    );
+}
