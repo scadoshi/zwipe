@@ -114,15 +114,12 @@ pub enum PipColor {
     /// Pips in the current theme's own five mana colors.
     #[default]
     Theme,
-    /// Pips in Magic's classic fills, the same on every theme. Stored as
-    /// `classic`; the wire still writes `natural`, the name 1.15.0 to 1.17.0 parse,
-    /// and reads both.
-    #[serde(rename = "natural", alias = "classic")]
+    /// Pips in Magic's classic fills, the same on every theme.
     Classic,
 }
 
 impl PipColor {
-    /// The stored name: `theme` or `classic`.
+    /// The stored and wire name: `theme` or `classic`.
     #[must_use]
     pub const fn as_str(self) -> &'static str {
         match self {
@@ -147,8 +144,7 @@ impl fmt::Display for PipColor {
     }
 }
 
-/// A pip color name that is none of `theme`, `classic` or the earlier
-/// `natural`.
+/// A pip color name that is neither `theme` nor `classic`.
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
 #[error("unknown pip color")]
 pub struct ParsePipColorError;
@@ -159,7 +155,7 @@ impl FromStr for PipColor {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "theme" => Ok(Self::Theme),
-            "classic" | "natural" => Ok(Self::Classic),
+            "classic" => Ok(Self::Classic),
             _ => Err(ParsePipColorError),
         }
     }
@@ -527,27 +523,18 @@ mod tests {
     }
 
     #[test]
-    fn classic_stores_as_classic_and_reads_either_name() {
+    fn classic_stores_and_writes_as_classic() {
         assert_eq!(PipColor::Classic.as_str(), "classic");
-        for name in ["classic", "natural"] {
-            assert_eq!(name.parse::<PipColor>(), Ok(PipColor::Classic));
-            assert_eq!(
-                serde_json::from_str::<PipColor>(&format!("\"{name}\"")).unwrap(),
-                PipColor::Classic
-            );
-        }
+        assert_eq!(
+            serde_json::to_string(&PipColor::Classic).unwrap(),
+            "\"classic\""
+        );
+        assert_eq!("natural".parse::<PipColor>(), Err(ParsePipColorError));
     }
 
     #[test]
-    fn the_wire_writes_the_name_shipped_clients_parse() {
-        assert_eq!(
-            serde_json::to_string(&PipColor::Classic).unwrap(),
-            "\"natural\""
-        );
-        assert_eq!(
-            serde_json::to_string(&PipColor::Theme).unwrap(),
-            "\"theme\""
-        );
+    fn the_earlier_natural_name_no_longer_reads() {
+        assert!(serde_json::from_str::<PipColor>("\"natural\"").is_err());
     }
 
     #[test]

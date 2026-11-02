@@ -21,8 +21,8 @@ pub struct HttpUpdatePreferences {
     /// unchanged.
     #[serde(default)]
     pub universes_beyond_exceptions: Option<Vec<String>>,
-    /// Pip style, or absent to leave unchanged. serde defaults keep payloads
-    /// from clients that predate the field.
+    /// Pip color, `theme` or `classic`, or absent to leave unchanged. serde
+    /// defaults keep payloads from clients that predate the field.
     #[serde(default)]
     pub pip_style: Option<PipColor>,
 }
@@ -35,4 +35,36 @@ pub struct HttpUpdatePreferences {
 pub struct HttpMarkHintShown {
     /// Hint key (lowercase snake case, e.g. `"add_swipes"`).
     pub hint: String,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn pip_style(body: &str) -> Result<Option<PipColor>, serde_json::Error> {
+        serde_json::from_str::<HttpUpdatePreferences>(body).map(|request| request.pip_style)
+    }
+
+    #[test]
+    fn the_request_takes_theme_or_classic() {
+        assert_eq!(
+            pip_style(r#"{"pip_style":"theme"}"#).unwrap(),
+            Some(PipColor::Theme)
+        );
+        assert_eq!(
+            pip_style(r#"{"pip_style":"classic"}"#).unwrap(),
+            Some(PipColor::Classic)
+        );
+    }
+
+    #[test]
+    fn the_request_refuses_the_earlier_natural() {
+        assert!(pip_style(r#"{"pip_style":"natural"}"#).is_err());
+    }
+
+    #[test]
+    fn an_absent_or_null_pip_color_leaves_it_unchanged() {
+        assert_eq!(pip_style("{}").unwrap(), None);
+        assert_eq!(pip_style(r#"{"pip_style":null}"#).unwrap(), None);
+    }
 }

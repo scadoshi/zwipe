@@ -463,7 +463,7 @@ async fn pip_style_preference_round_trips(pool: sqlx::PgPool) {
         )
         .await;
     assert_eq!(status, StatusCode::OK, "update: {updated}");
-    assert_eq!(updated["pip_style"], "natural");
+    assert_eq!(updated["pip_style"], "classic");
 
     // An old client's payload, without the field, leaves it alone.
     let (status, updated) = app
@@ -474,37 +474,28 @@ async fn pip_style_preference_round_trips(pool: sqlx::PgPool) {
         )
         .await;
     assert_eq!(status, StatusCode::OK, "theme-only update: {updated}");
-    assert_eq!(updated["pip_style"], "natural");
+    assert_eq!(updated["pip_style"], "classic");
 
     let (status, prefs) = app.get(PREFERENCES_ROUTE, Some(&token)).await;
     assert_eq!(status, StatusCode::OK, "get preferences: {prefs}");
-    assert_eq!(prefs["pip_style"], "natural");
+    assert_eq!(prefs["pip_style"], "classic");
 
-    // The stored row is the new name; the wire keeps the one 1.15.0 to 1.17.0 parse.
+    // The stored row is classic too.
     let stored: String = sqlx::query_scalar("SELECT pip_style FROM user_preferences")
         .fetch_one(&pool)
         .await
         .unwrap();
     assert_eq!(stored, "classic");
 
-    // A 1.15.0 to 1.17.0 client sending the earlier name still lands on classic.
-    let (status, updated) = app
-        .patch(
-            PREFERENCES_ROUTE,
-            json!({ "pip_style": "theme" }),
-            Some(&token),
-        )
-        .await;
-    assert_eq!(status, StatusCode::OK, "reset: {updated}");
-    let (status, updated) = app
+    // The earlier name is refused now that the client floor is past it.
+    let (status, body) = app
         .patch(
             PREFERENCES_ROUTE,
             json!({ "pip_style": "natural" }),
             Some(&token),
         )
         .await;
-    assert_eq!(status, StatusCode::OK, "earlier name: {updated}");
-    assert_eq!(updated["pip_style"], "natural");
+    assert!(status.is_client_error(), "earlier name: {status} {body}");
 
     // A color that does not exist is rejected.
     let (status, body) = app
