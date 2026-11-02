@@ -3,10 +3,8 @@
 //! header.
 
 mod frame;
-mod help;
 pub mod nav;
 mod top_nav;
 
 pub use frame::{OpenFrame, PublicFrame, ScreenFrame};
-pub use help::HelpDialog;
 pub use top_nav::Shell;

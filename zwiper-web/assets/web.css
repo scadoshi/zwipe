@@ -137,11 +137,12 @@ body {
 
 /* ---- Input panels ----
 
-   A form is its own panel at every width, at zite's form width: the kit
-   panel's title bar named after its screen, the fields, then a footer of
-   buttons under a full-bleed rule: the app's compact action bar buttons
-   in one centered row, the primary first, wrapping only when they don't
-   fit. Below the breakpoint it keeps the page's side gutter. */
+   A form is its own panel at every width, as wide as the page with its
+   fields held to 26rem in the middle: the kit panel's title bar named
+   after its screen, the fields, then a footer of buttons under a
+   full-bleed rule: the app's compact action bar buttons in one centered
+   row, the primary first, wrapping only when they don't fit. Below the
+   breakpoint it keeps the page's side gutter. */
 .web-auth {
     display: flex;
     flex-direction: column;
@@ -155,7 +156,6 @@ body {
 
 .web-form-panel {
     width: 100%;
-    max-width: 25rem;
     margin: 0 auto;
     padding: 1.5rem;
     box-sizing: border-box;
@@ -167,6 +167,13 @@ body {
 
 .web-form-panel > .panel-head.web-panel-head {
     text-align: left;
+}
+
+/* The fields keep a reading width, centered in the wider panel. */
+.web-form-panel > form {
+    width: 100%;
+    max-width: 26rem;
+    margin: 0 auto;
 }
 
 .web-form-actions {
@@ -934,13 +941,15 @@ body {
 }
 
 @media (hover: hover) {
-    .web-buy-link:hover .web-buy-ext {
+    .web-buy-link:hover .web-buy-ext,
+    .nav-link:hover .web-buy-ext {
         transform: translate(0.12em, -0.12em);
     }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .web-buy-link:hover .web-buy-ext {
+    .web-buy-link:hover .web-buy-ext,
+    .nav-link:hover .web-buy-ext {
         transform: none;
     }
 }
@@ -1586,5 +1595,19 @@ body {
     .web-deck-cards-controls {
         position: sticky;
         top: var(--web-sticky-top);
+    }
+}
+
+/* ---- Dialogs ----
+
+   On a wide window a dialog sizes to its content up to the page width, so
+   a long hint spreads out instead of scrolling in a phone-width column,
+   and a short confirmation stays compact. */
+@media (min-width: 900px) {
+    .alert-dialog {
+        width: max-content;
+        min-width: 20rem;
+        max-width: min(var(--web-page-max), calc(100% - 3rem));
+        max-height: calc(100dvh - 8rem);
     }
 }

@@ -36,8 +36,8 @@ pub fn OpenFrame() -> Element {
 /// under the nav. `title` names the screen for assistive tech and the
 /// browser tab. The screen scrolls as one column, and its action bar, the
 /// last thing in it, sticks to the window's bottom edge at every width. The
-/// header's `?` (`on_hint`) rides at the bar's right end. The public
-/// screens' `!` is the nav's `Help`. There is no site footer.
+/// header's `?` (`on_hint`) rides at the bar's right end. Help is the
+/// nav's `Community` link. There is no site footer.
 #[component]
 pub fn ScreenFrame(
     title: String,

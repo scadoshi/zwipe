@@ -1,23 +1,22 @@
 //! The top nav over every screen, zite's bar: the Z mark home on the
-//! left and the screens and `Help` on the right, folding behind a hamburger
+//! left and the screens and `Community` on the right, folding behind a hamburger
 //! below the breakpoint.
 
 use components::NavBar;
 use dioxus::prelude::*;
 use zwipe_core::domain::logo;
+use zwipe_core::domain::site::WEB_BASE;
 
 use crate::inbound::router::Route;
-use crate::inbound::shell::HelpDialog;
 use crate::inbound::shell::nav::Section;
 
 /// The nav for a signed-in user over the matched screen: Decks, Activity,
-/// Playstyle, Account, Config and `Help`, the current one lit. The mark is
+/// Playstyle, Account, Config and `Community`, the current one lit. The mark is
 /// the way Home.
 #[component]
 pub fn Shell() -> Element {
     let route: Route = use_route();
     let current = Section::of(&route);
-    let help = use_signal(|| false);
     let mut open = use_signal(|| false);
 
     // A new route closes the folded menu.
@@ -43,7 +42,7 @@ pub fn Shell() -> Element {
                         }
                     }
                     li {
-                        HelpLink { open, help }
+                        CommunityLink { open }
                     }
                 },
             }
@@ -51,17 +50,15 @@ pub fn Shell() -> Element {
                 Outlet::<Route> {}
             }
         }
-        HelpDialog { open: help }
     }
 }
 
 /// The nav over the public screens: the mark, then `Log in`, `Create
-/// profile` and `Privacy policy`, the current one lit, and `Help`.
+/// profile` and `Privacy policy`, the current one lit, and `Community`.
 #[component]
 pub fn PublicNav() -> Element {
     let route: Route = use_route();
     let mut open = use_signal(|| false);
-    let help = use_signal(|| false);
     use_effect(use_reactive!(|route| {
         let _ = route;
         open.set(false);
@@ -87,11 +84,10 @@ pub fn PublicNav() -> Element {
                     }
                 }
                 li {
-                    HelpLink { open, help }
+                    CommunityLink { open }
                 }
             },
         }
-        HelpDialog { open: help }
     }
 }
 
@@ -110,17 +106,19 @@ fn NavMark(open: Signal<bool>) -> Element {
     }
 }
 
-/// `Help`, a nav pill that folds the menu and opens `Help & feedback`.
+/// `Community`, a nav pill to zite's Community page (Discord, email
+/// support) in a new tab, folding the menu.
 #[component]
-fn HelpLink(mut open: Signal<bool>, mut help: Signal<bool>) -> Element {
+fn CommunityLink(mut open: Signal<bool>) -> Element {
     rsx! {
-        button {
+        a {
             class: "nav-link",
-            onclick: move |_| {
-                open.set(false);
-                help.set(true);
-            },
-            "Help"
+            href: "{WEB_BASE}/community",
+            target: "_blank",
+            rel: "noopener",
+            onclick: move |_| open.set(false),
+            "Community"
+            span { class: "web-buy-ext", "\u{2197}" }
         }
     }
 }
