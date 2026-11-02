@@ -33,6 +33,8 @@
 
 use thiserror::Error;
 use uuid::Uuid;
+use zwipe_core::domain::auth::models::platform::ClientPlatform;
+use zwipe_core::domain::auth::models::refresh_token::RefreshToken;
 use zwipe_core::domain::auth::models::session::Session;
 
 use crate::domain::auth::models::access_token::InvalidJwt;
@@ -152,6 +154,15 @@ pub struct RefreshSession {
     /// `None` for older clients; the rotation then carries the consumed token's
     /// stored value forward.
     pub client_version: Option<String>,
+}
+
+/// The refresh token a rotation mints, with the platform its family carries.
+#[derive(Debug, Clone, PartialEq)]
+pub struct RotatedRefreshToken {
+    /// The new refresh token.
+    pub refresh_token: RefreshToken,
+    /// Client platform stored on the family, `None` when it has none.
+    pub platform: Option<ClientPlatform>,
 }
 
 /// Redacted: `refresh_token` is a credential.

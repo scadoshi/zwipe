@@ -1,6 +1,7 @@
 //! Service implementation for the metrics domain.
 
 use uuid::Uuid;
+use zwipe_core::domain::auth::models::platform::ClientPlatform;
 use zwipe_core::http::contracts::metrics::{AnonymousEventKind, HttpCrashReport, HttpUsageBatch};
 
 use crate::domain::metrics::models::errors::MetricsError;
@@ -26,8 +27,13 @@ where
 }
 
 impl<R: MetricsRepository> MetricsService for Service<R> {
-    async fn apply_usage(&self, user_id: Uuid, batch: &HttpUsageBatch) -> Result<(), MetricsError> {
-        self.repo.apply_usage(user_id, batch).await
+    async fn apply_usage(
+        &self,
+        user_id: Uuid,
+        platform: Option<ClientPlatform>,
+        batch: &HttpUsageBatch,
+    ) -> Result<(), MetricsError> {
+        self.repo.apply_usage(user_id, platform, batch).await
     }
 
     async fn lifetime_counters(&self, user_id: Uuid) -> Result<LifetimeCounters, MetricsError> {
