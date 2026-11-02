@@ -4,15 +4,11 @@
 use components::{ColorMap, ColorMapCounts, ColorMapGhost};
 use dioxus::prelude::*;
 use uuid::Uuid;
-use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::http::contracts::suggestions::HttpPlayStyleSummary;
+use zwipe_ui::screens::home::{self, PlayStyle};
 
-use crate::inbound::components::auth::authed::use_authed;
 use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::info_button::InfoButton;
-use crate::inbound::components::telemetry::vocabulary::Screen;
-use crate::inbound::router::Router;
-use crate::inbound::screens::deck::suggested_commanders;
 
 /// The last summary fetched, kept above the router (as
 /// `Signal<Option<CachedPlayStyle>>`) so a return to Home shows it at once
@@ -25,41 +21,6 @@ pub struct CachedPlayStyle {
     pub summary: HttpPlayStyleSummary,
 }
 
-/// Fetches the playstyle summary into the cache above the router and returns
-/// this user's copy, if any, with whether the last fetch failed. A cached
-/// copy shows while the refetch is out and is replaced only on success.
-fn use_play_style_summary() -> (Option<HttpPlayStyleSummary>, Signal<bool>) {
-    let session: Signal<Option<Session>> = use_context();
-    let mut cache: Signal<Option<CachedPlayStyle>> = use_context();
-    let mut failed = use_signal(|| false);
-    let authed = use_authed(Screen::Home);
-
-    let user_id = session.peek().as_ref().map(|s| s.user.id);
-    use_effect(move || {
-        let Some(user_id) = user_id else {
-            return;
-        };
-        spawn(async move {
-            match authed
-                .run_quiet("play_style_summary", |c, s| async move {
-                    c.play_style_summary(&s).await
-                })
-                .await
-            {
-                Some(summary) => cache.set(Some(CachedPlayStyle { user_id, summary })),
-                None => failed.set(true),
-            }
-        });
-    });
-
-    let summary = cache
-        .read()
-        .as_ref()
-        .filter(|cached| Some(cached.user_id) == user_id)
-        .map(|cached| cached.summary.clone());
-    (summary, failed)
-}
-
 /// The panel under the hero, a sibling of the featured flavor card: the
 /// title bar, then the user's [`ColorMap`], seeded by their id so it draws
 /// the same shape as the Playstyle screen's Color map section, with a
@@ -67,26 +28,20 @@ fn use_play_style_summary() -> (Option<HttpPlayStyleSummary>, Signal<bool>) {
 /// it shows one line instead; a failed fetch with nothing cached shows a
 /// muted line. Either line has the Playstyle button under it, so the screen
 /// stays reachable from Home; while the fetch is out the whole panel is a
-/// ghost.
+/// ghost. Home's model decides which.
 #[component]
-pub fn HomePlayStyle() -> Element {
-    let (summary, failed) = use_play_style_summary();
-    let session: Signal<Option<Session>> = use_context();
-    let seed = session
-        .peek()
-        .as_ref()
-        .map_or(0, |s| components::seed_from_id(s.user.id.as_u128()));
-
+pub fn HomePlayStyle(play_style: PlayStyle, seed: u64, onplaystyle: EventHandler) -> Element {
     rsx! {
         div { class: "container-sm text-center flex-col home-flavor content-enter-delayed",
-            match summary {
-                Some(summary) => {
-                    let counts = summary
-                        .color_map
-                        .as_ref()
-                        .map(ColorMapCounts::from)
-                        .filter(suggested_commanders::color_map_has_data)
-                        .filter(|_| summary.deck_count > 0);
+            match play_style {
+                PlayStyle::Map(_) | PlayStyle::Empty => {
+                    let counts = match play_style {
+                        PlayStyle::Map(counts) => Some(ColorMapCounts {
+                            cards: counts.cards,
+                            colorless: counts.colorless,
+                        }),
+                        PlayStyle::Empty | PlayStyle::Failed | PlayStyle::Loading => None,
+                    };
                     rsx! {
                         PanelHeader {}
                         if let Some(counts) = counts {
@@ -94,23 +49,23 @@ pub fn HomePlayStyle() -> Element {
                                 counts,
                                 seed,
                                 key_action: rsx! {
-                                    PlaystyleButton {}
+                                    PlaystyleButton { onclick: onplaystyle }
                                 },
                             }
                         } else {
                             ColorMapEmpty {}
-                            div { class: "home-panel-actions", PlaystyleButton {} }
+                            div { class: "home-panel-actions", PlaystyleButton { onclick: onplaystyle } }
                         }
                     }
                 }
-                None if failed() => rsx! {
+                PlayStyle::Failed => rsx! {
                     PanelHeader {}
                     div { class: "message-empty", style: "padding: 1rem;",
-                        "Could not load your playstyle"
+                        {home::PLAY_STYLE_FAILED}
                     }
-                    div { class: "home-panel-actions", PlaystyleButton {} }
+                    div { class: "home-panel-actions", PlaystyleButton { onclick: onplaystyle } }
                 },
-                None => rsx! {
+                PlayStyle::Loading => rsx! {
                     // Everything ghosts until the summary lands: the title as
                     // a bar, the "?" as a bare chip its size, then the map's
                     // ghost with the Playstyle button's at the key's end.
@@ -155,7 +110,7 @@ pub(crate) fn ColorMapSkeleton(#[props(default)] key_action: bool) -> Element {
 #[component]
 pub(crate) fn ColorMapEmpty() -> Element {
     rsx! {
-        div { class: "message-empty", style: "padding: 1rem;", "Build a deck to see your playstyle" }
+        div { class: "message-empty", style: "padding: 1rem;", {home::NO_PLAY_STYLE} }
     }
 }
 
@@ -168,22 +123,19 @@ fn PanelHeader() -> Element {
             span { class: "home-panel-hint",
                 InfoButton { topic: HintTopic::ColorMap }
             }
-            span { class: "settings-list-title", "Color map" }
+            span { class: "settings-list-title", {home::COLOR_MAP} }
         }
     }
 }
 
 /// Opens the Playstyle screen, in the card details bar's button grammar.
 #[component]
-fn PlaystyleButton() -> Element {
-    let navigator = use_navigator();
+fn PlaystyleButton(onclick: EventHandler) -> Element {
     rsx! {
         button {
             class: "card-action-btn",
-            onclick: move |_| {
-                navigator.push(Router::SuggestedCommanders {});
-            },
-            "Playstyle"
+            onclick: move |_| onclick.call(()),
+            {home::PLAYSTYLE}
         }
     }
 }

@@ -6,3 +6,5 @@ pub mod activity;
 pub mod deck_export;
 pub mod deck_import;
 pub mod deck_list;
+pub mod deck_view;
+pub mod home;
