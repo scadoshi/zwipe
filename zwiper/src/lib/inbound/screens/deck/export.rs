@@ -1,133 +1,123 @@
 //! Export deck as plain-text decklist screen.
+//!
+//! What the screen knows and does is `zwipe_ui::screens::deck_export`; this
+//! file draws its state and performs its effects.
 
 use components::{
-    ActionBar, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintDialog, HintKey,
-    TOAST_QUICK, ToastOptions, use_toast,
+    ActionBar, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintDialog, HintKey, Toasts,
+    use_toast,
 };
 use dioxus::prelude::*;
+use dioxus::router::Navigator;
 use uuid::Uuid;
-use zwipe_client::ClientError;
-use zwipe_core::domain::deck::Deck;
+use zwipe_client::ZwipeClient;
+use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::user::models::hints::HINT_EXPORT;
+use zwipe_ui::screens::deck_export::{self, Action, Board, Destination, Effect, State, Status};
 
-use crate::inbound::components::auth::authed::use_authed;
-use crate::inbound::components::guide_link;
-use crate::inbound::components::hint_dialog::use_one_time_hint;
+use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen};
+use crate::inbound::components::{guide_link, hint_dialog, ui_toast};
 use crate::inbound::router::Router;
 use crate::inbound::screens::deck::components::skeletons::ChipRowSkeleton;
 
+/// Export's model with the handles that perform its effects. Copy, so every
+/// handler and task holds its own.
+#[derive(Clone, Copy)]
+struct Driver {
+    model: Signal<State>,
+    navigator: Navigator,
+    toast: Toasts,
+    authed: Authed,
+    session: Signal<Option<Session>>,
+    client: Signal<ZwipeClient>,
+    hint_open: Signal<bool>,
+}
+
+impl Driver {
+    /// Applies `action` to the model and performs what it returns.
+    fn dispatch(self, action: Action) {
+        let mut model = self.model;
+        let effects = model.write().update(action);
+        for effect in effects {
+            self.perform(effect);
+        }
+    }
+
+    /// Performs one effect, feeding any reply back through [`Self::dispatch`].
+    fn perform(self, effect: Effect) {
+        let Self {
+            navigator,
+            toast,
+            authed,
+            session,
+            client,
+            hint_open,
+            ..
+        } = self;
+        match effect {
+            Effect::OfferHint(hint) => {
+                hint_dialog::open_and_record_hint(hint.key(), session, client, hint_open);
+            }
+            Effect::FetchDeck { ticket, deck_id } => {
+                spawn(async move {
+                    // try_run reports a failure and raises its error toast.
+                    let reply = authed
+                        .try_run("load_deck", |c, s| async move {
+                            c.fetch_deck(deck_id, &s).await
+                        })
+                        .await;
+                    self.dispatch(match reply {
+                        Ok(deck) => Action::Loaded {
+                            ticket,
+                            deck: Box::new(deck),
+                        },
+                        Err(_) => Action::Failed { ticket },
+                    });
+                });
+            }
+            Effect::Copy { text, done } => {
+                let js = format!(
+                    "navigator.clipboard.writeText({})",
+                    serde_json::to_string(&text).unwrap_or_default()
+                );
+                document::eval(&js);
+                ui_toast::raise(toast, done);
+            }
+            Effect::Navigate(Destination::Deck(deck_id)) => {
+                navigator.push(Router::ViewDeck { deck_id });
+            }
+        }
+    }
+}
+
 #[component]
 pub fn ExportDeck(deck_id: Uuid) -> Element {
-    let navigator = use_navigator();
-    let toast = use_toast();
-    let authed = use_authed(Screen::Deck(DeckScreen::Export));
-
-    let mut include_deck: Signal<bool> = use_signal(|| true);
-    let mut include_sideboard: Signal<bool> = use_signal(|| false);
-    let mut include_maybeboard: Signal<bool> = use_signal(|| false);
-
+    let driver = Driver {
+        model: use_signal(State::new),
+        navigator: use_navigator(),
+        toast: use_toast(),
+        authed: use_authed(Screen::Deck(DeckScreen::Export)),
+        session: use_context(),
+        client: use_context(),
+        hint_open: use_signal(|| false),
+    };
     // Export hint: auto-opens on first visit; the header "?" reopens it.
-    let export_hint = use_one_time_hint(HINT_EXPORT);
+    let export_hint = driver.hint_open;
+    // Offers the hint and fetches the deck once per mount, while the screen
+    // first draws, so the hint opens with the screen.
+    use_hook(move || driver.dispatch(Action::Load(deck_id)));
 
-    let deck_resource: Resource<Result<Deck, ClientError>> = use_resource(move || async move {
-        // try_run keeps the Result the memo below flattens; reporting and the
-        // error toast live in the facade.
-        authed
-            .try_run("load_deck", |c, s| async move {
-                c.fetch_deck(deck_id, &s).await
-            })
-            .await
-    });
-
-    // Derive export text reactively from deck data + maybeboard toggle
-    let export_text: Memo<Option<String>> = use_memo(move || {
-        let deck = deck_resource()?.ok()?;
-        let mut lines: Vec<String> = Vec::new();
-
-        // Command zone cards (stored on profile, not in entries)
-        let cmd_names: Vec<&str> = [
-            deck.deck_profile.commander_name.as_deref(),
-            deck.deck_profile.partner_commander_name.as_deref(),
-            deck.deck_profile.background_name.as_deref(),
-            deck.deck_profile.signature_spell_name.as_deref(),
-        ]
-        .into_iter()
-        .flatten()
-        .collect();
-        if !cmd_names.is_empty() {
-            lines.push("// Commander".to_string());
-            for name in cmd_names {
-                lines.push(format!("1 {name}"));
-            }
-            lines.push(String::new());
-        }
-
-        // Deck section
-        if include_deck() {
-            let deck_cards: Vec<_> = deck
-                .entries
-                .iter()
-                .filter(|e| e.deck_card.board.is_active())
-                .collect();
-            if !deck_cards.is_empty() {
-                lines.push("// Deck".to_string());
-                for entry in deck_cards {
-                    lines.push(format!(
-                        "{} {}",
-                        *entry.deck_card.quantity, entry.card.scryfall_data.name
-                    ));
-                }
-            }
-        }
-
-        // Maybeboard section (only if toggled on AND cards exist)
-        if include_maybeboard() {
-            let mb: Vec<_> = deck
-                .entries
-                .iter()
-                .filter(|e| e.deck_card.board.is_maybeboard())
-                .collect();
-            if !mb.is_empty() {
-                lines.push(String::new());
-                lines.push("// Maybeboard".to_string());
-                for entry in mb {
-                    lines.push(format!(
-                        "{} {}",
-                        *entry.deck_card.quantity, entry.card.scryfall_data.name
-                    ));
-                }
-            }
-        }
-
-        // Sideboard section (only if toggled on AND cards exist)
-        if include_sideboard() {
-            let sb: Vec<_> = deck
-                .entries
-                .iter()
-                .filter(|e| e.deck_card.board.is_sideboard())
-                .collect();
-            if !sb.is_empty() {
-                lines.push(String::new());
-                lines.push("// Sideboard".to_string());
-                for entry in sb {
-                    lines.push(format!(
-                        "{} {}",
-                        *entry.deck_card.quantity, entry.card.scryfall_data.name
-                    ));
-                }
-            }
-        }
-
-        Some(lines.join("\n"))
-    });
-
-    let export_loading = deck_resource.read().is_none();
+    let model = driver.model.read();
+    let status = model.status();
+    let on = Board::ALL.map(|board| (board, model.is_on(board)));
+    let export_text = model.text();
+    drop(model);
 
     rsx! {
             div { class: "screen",
-                ScreenHeader { title: "Export", hint: export_hint }
+                ScreenHeader { title: deck_export::TITLE, hint: export_hint }
 
                 HintDialog {
                     open: export_hint,
@@ -145,45 +135,17 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                     // decklist slides under the console (dictionary pattern).
                     div { class: "import-controls",
                         // The Export row ghosts with the decklist until the deck lands.
-                        if export_loading {
+                        if status == Status::Loading {
                             ChipRowSkeleton { label: "md", chips: vec!["sm", "md", "sm"] }
                         } else {
                             div { class: "chip-row",
-                                span { class: "stat-chip stat-chip-p1 chip-row-label", "Export" }
-                                Chip {
-                                    selected: include_deck(),
-                                    onclick: move |_| {
-                                        let new_val = !include_deck();
-                                        if !new_val && !include_maybeboard() && !include_sideboard() {
-                                            return;
-                                        }
-                                        include_deck.set(new_val);
-                                    },
-                                    "Deck"
-                                }
-                                Chip {
-                                    selected: include_maybeboard(),
-                                    onclick: move |_| {
-                                        let new_val = !include_maybeboard();
-                                        include_maybeboard.set(new_val);
-                                        if new_val && !include_deck() && !include_sideboard() {
-                                            // at least one is on, fine
-                                        } else if !new_val && !include_deck() && !include_sideboard() {
-                                            include_deck.set(true);
-                                        }
-                                    },
-                                    "Maybe"
-                                }
-                                Chip {
-                                    selected: include_sideboard(),
-                                    onclick: move |_| {
-                                        let new_val = !include_sideboard();
-                                        include_sideboard.set(new_val);
-                                        if !new_val && !include_deck() && !include_maybeboard() {
-                                            include_deck.set(true);
-                                        }
-                                    },
-                                    "Side"
+                                span { class: "stat-chip stat-chip-p1 chip-row-label", "{deck_export::BOARDS}" }
+                                for (board, selected) in on {
+                                    Chip {
+                                        selected,
+                                        onclick: move |_| driver.dispatch(Action::Toggle(board)),
+                                        "{board.label()}"
+                                    }
                                 }
                             }
                         }
@@ -191,9 +153,9 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
 
                     div { class: "import-scroll",
                         div { class: "container-sm",
-                        match export_text() {
+                        match export_text {
                             Some(text) => rsx! {
-                                label { class: "label", r#for: "export-text", "Decklist" }
+                                label { class: "label", r#for: "export-text", "{deck_export::DECKLIST}" }
                                 textarea {
                                     id: "export-text",
                                     class: "input",
@@ -203,8 +165,8 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                                 }
                             },
                             None => {
-                                if deck_resource().is_some_and(|r| r.is_err()) {
-                                    rsx! { p { class: "text-muted", "Could not load deck" } }
+                                if status == Status::Failed {
+                                    rsx! { p { class: "text-muted", "{deck_export::LOAD_FAILED}" } }
                                 } else {
                                     rsx! {
                                         div { class: "skeleton-export",
@@ -222,27 +184,13 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                 ActionBar {
                     Button {
                         variant: ButtonVariant::Action,
-                        onclick: move |_| {
-                            navigator.push(Router::ViewDeck { deck_id });
-                        },
-                        "Back"
+                        onclick: move |_| driver.dispatch(Action::Back),
+                        "{deck_export::BACK}"
                     }
                     Button {
                         variant: ButtonVariant::Action,
-                        onclick: move |_| {
-                            if let Some(text) = export_text() {
-                                let js = format!(
-                                    "navigator.clipboard.writeText({})",
-                                    serde_json::to_string(&text).unwrap_or_default()
-                                );
-                                document::eval(&js);
-                                toast.info(
-                                    "Copied to clipboard".to_string(),
-                                    ToastOptions::default().duration(TOAST_QUICK),
-                                );
-                            }
-                        },
-                        "Copy"
+                        onclick: move |_| driver.dispatch(Action::Copy),
+                        "{deck_export::COPY}"
                     }
                 }
             }
