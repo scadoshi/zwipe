@@ -14,10 +14,9 @@
 
 use components::{
     ActionBar, Button, ButtonVariant, HintBullet, HintBullets, HintDialog, TOAST_QUICK,
-    use_overlay_back,
+    ToastOptions, use_overlay_back, use_toast,
 };
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey;

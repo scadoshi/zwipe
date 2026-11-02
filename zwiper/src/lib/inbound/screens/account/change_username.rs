@@ -1,8 +1,9 @@
 //! Change username bottom sheet.
 
-use components::{BottomSheet, Button, ButtonVariant, TOAST_QUICK, TextInput};
+use components::{
+    BottomSheet, Button, ButtonVariant, TOAST_QUICK, TextInput, ToastOptions, use_toast,
+};
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::http::contracts::auth::HttpChangeUsername;
 use zwipe_ui::account;

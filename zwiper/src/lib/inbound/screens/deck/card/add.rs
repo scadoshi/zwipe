@@ -2,10 +2,9 @@ use std::collections::HashSet;
 
 use components::{
     ActionBar, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintDialog, HintKey, HintLine,
-    TOAST_NORMAL, TOAST_QUICK,
+    TOAST_NORMAL, TOAST_QUICK, ToastOptions, use_toast,
 };
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;

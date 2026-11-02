@@ -20,9 +20,10 @@ zwipe-core = { path = "../zwipe-core" }
 # and the changelog's filing, which this crate draws.
 zwipe-ui = { path = "../zwipe-ui" }
 # The generic UI kit: themes, panels, nav, charts and the entrance effects.
-# Everything here that is not Magic is a re-export of it. The workspace
-# Cargo.lock pins the commit; `cargo update -p orangui` moves it.
-orangui = { git = "https://github.com/scadoshi/orangui", branch = "main" }
+# Everything here that is not Magic is a re-export of it, pinned to a
+# commit, on the same source as zwipe-ui's orangui-core so Cargo.lock holds
+# one copy.
+orangui = { git = "https://github.com/scadoshi/orangui", rev = "6f4a0dc62afd3024ac6671e1b66427bc70e17e53" }
 
 [features]
 # ToastStack and TOAST_CSS, for the apps.

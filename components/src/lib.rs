@@ -25,7 +25,8 @@
 //!
 //! These components deliberately depend only on base `dioxus` (no platform
 //! features), orangui, `zwipe-core` and `zwipe-ui`, so any Dioxus target can
-//! consume them. The `toast` feature enables orangui's, and `links` its in-app browser
+//! consume them. The `toast` feature enables orangui's toast stack with
+//! `use_toast`, `Toasts` and `ToastOptions`, and `links` its in-app browser
 //! (`open_url`, `use_in_app_links`).
 
 mod architecture;
@@ -70,7 +71,7 @@ pub use orangui::{
 #[cfg(feature = "links")]
 pub use orangui::{OpenUrlError, open_url, use_in_app_links};
 #[cfg(feature = "toast")]
-pub use orangui::{TOAST_CSS, ToastStack};
+pub use orangui::{TOAST_CSS, ToastOptions, ToastStack, Toasts, use_toast};
 pub use role_tags::{OtagDef, RoleTags};
 pub use theme::{pip_style_class, theme_from_preferences};
 /// The color map's counts and a player's seed, from zwipe-ui, for the props
