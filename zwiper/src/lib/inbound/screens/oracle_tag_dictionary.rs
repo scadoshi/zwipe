@@ -17,27 +17,14 @@ use components::{
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
-use zwipe_core::domain::card::oracle_tag::{self, OracleTag};
+use zwipe_core::domain::card::oracle_tag::OracleTag;
 use zwipe_core::domain::user::models::hints::HINT_ORACLE_TAG_DICTIONARY;
+use zwipe_ui::dictionary;
 
 use crate::inbound::components::catalog_cache::{CatalogCache, CatalogCell};
 use crate::inbound::components::hint_dialog::{HintColored, use_one_time_hint};
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::screens::oracle_tag_examples::OracleTagExamples;
-
-/// Cap on how many rows a search renders, so a broad query can't mount thousands
-/// of DOM nodes. Matches are ranked (exact, then slug/label, then description)
-/// and alphabetical within tiers, so the shown set is deterministic.
-const SEARCH_RESULT_CAP: usize = 100;
-
-/// The letter bucket a slug falls under: its first character lowercased, or `#`
-/// for anything not starting with a letter (e.g. `40k-model`, `5c-...`).
-fn bucket_of(slug: &str) -> char {
-    match slug.chars().next() {
-        Some(c) if c.is_ascii_alphabetic() => c.to_ascii_lowercase(),
-        _ => '#',
-    }
-}
 
 /// Read-only, searchable dictionary of every oracle tag and its description. An
 /// in-place overlay (the host renders it while `open`); each row offers **Examples**
@@ -94,24 +81,12 @@ pub fn OracleTagDictionary(mut open: Signal<bool>, on_use: EventHandler<String>)
                     CatalogCell::Loaded { data: tags, .. } => {
                         let q = query().trim().to_lowercase();
                         let searching = !q.is_empty();
-                        let has_hash = tags.iter().any(|t| bucket_of(&t.slug) == '#');
+                        let rail = dictionary::letters(tags);
 
                         // Empty query -> the selected letter's tags, alphabetical.
                         // Non-empty -> the shared ranked catalog search, capped.
                         let letter = selected_letter();
-                        let rows: Vec<OracleTag> = if searching {
-                            let mut matches = oracle_tag::search_oracle_tags(tags, &q);
-                            matches.truncate(SEARCH_RESULT_CAP);
-                            matches
-                        } else {
-                            let mut in_letter: Vec<OracleTag> = tags
-                                .iter()
-                                .filter(|t| bucket_of(&t.slug) == letter)
-                                .cloned()
-                                .collect();
-                            in_letter.sort_by(|a, b| a.slug.cmp(&b.slug));
-                            in_letter
-                        };
+                        let rows: Vec<OracleTag> = dictionary::rows_for(tags, &q, letter);
 
                         // Switching letters / searching changes every row's key, so
                         // Dioxus remounts the rows and their entrance animation replays
@@ -131,10 +106,10 @@ pub fn OracleTagDictionary(mut open: Signal<bool>, on_use: EventHandler<String>)
                                 }
 
                                 div { class: "dict-letter-rail scroll-fade-x",
-                                    for c in ('a'..='z').chain(has_hash.then_some('#')) {
+                                    for c in rail {
                                         {
                                             let is_sel = !searching && c == letter;
-                                            let label = if c == '#' { "#".to_string() } else { c.to_ascii_uppercase().to_string() };
+                                            let label = if c == dictionary::OTHER { "#".to_string() } else { c.to_ascii_uppercase().to_string() };
                                             rsx! {
                                                 button {
                                                     key: "{c}",
