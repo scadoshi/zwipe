@@ -29,9 +29,6 @@ use crate::inbound::components::info_button::{self, InfoButton};
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::{guide_link, ui_toast};
 
-/// Upper bound for the land-target stepper: no deck runs more lands than this.
-const MAX_LAND_TARGET: i32 = 100;
-
 /// Pause after the last keystroke before a command-zone search fires.
 const SEARCH_DEBOUNCE_MS: u64 = 800;
 
@@ -325,10 +322,6 @@ pub(crate) fn DeckFields(
     let show_signature_spell = use_memo(move || shows(Slot::SignatureSpell));
 
     let commander_label = use_memo(move || Slot::Commander.label(selected_format()));
-
-    // Format-derived land heuristic. The stepper seeds from it on the first tick
-    // so an empty field starts at the sensible count rather than zero.
-    let land_heuristic = use_memo(move || selected_format().and_then(|f| f.default_land_target()));
 
     // Cascading clear effects
 
@@ -1072,10 +1065,11 @@ pub(crate) fn DeckFields(
                     class: "stepper-btn",
                     r#type: "button",
                     onclick: move |_| {
-                        let next = match land_target() {
-                            None => land_heuristic().unwrap_or(0),
-                            Some(v) => v.saturating_sub(1),
-                        };
+                        let next = form::step_land_target(
+                            land_target(),
+                            selected_format(),
+                            form::Step::Down,
+                        );
                         land_target.set(Some(next));
                     },
                     "-"
@@ -1087,10 +1081,11 @@ pub(crate) fn DeckFields(
                     class: "stepper-btn",
                     r#type: "button",
                     onclick: move |_| {
-                        let next = match land_target() {
-                            None => land_heuristic().unwrap_or(0),
-                            Some(v) => (v + 1).min(MAX_LAND_TARGET),
-                        };
+                        let next = form::step_land_target(
+                            land_target(),
+                            selected_format(),
+                            form::Step::Up,
+                        );
                         land_target.set(Some(next));
                     },
                     "+"
