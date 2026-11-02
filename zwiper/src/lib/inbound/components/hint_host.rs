@@ -10,7 +10,6 @@ use dioxus::prelude::*;
 use zwipe_core::domain::auth::password;
 
 use crate::inbound::components::concept_explainers::{DeckTagsExplainer, OracleTagsExplainer};
-use crate::inbound::components::guide_link;
 
 /// A concept a "?" button can explain. Cheap `Copy` message on the hint channel.
 ///
@@ -325,13 +324,6 @@ impl HintTopic {
     }
 }
 
-/// The topic's guide link, when it has one, then Got it.
-fn hint_actions(topic: Option<HintTopic>) -> Vec<DialogAction> {
-    let mut actions = topic.map(guide_link::topic).unwrap_or_default();
-    actions.push(DialogAction::Dismiss("Got it".into()));
-    actions
-}
-
 /// The receiver: reads the hint channel and describes the current topic's dialog
 /// to the app root's dialog host. Mount once at the app root, beside the router.
 /// `spawn_upkeeper` provides the `Signal<Option<HintTopic>>` this reads.
@@ -355,7 +347,7 @@ pub fn HintHost() -> Element {
         AlertDialog {
             open,
             title: topic.map(|t| t.title()).unwrap_or_default().to_string(),
-            actions: hint_actions(topic),
+            actions: vec![DialogAction::Dismiss("Got it".into())],
             if let Some(topic) = topic {
                 {topic.body()}
             }

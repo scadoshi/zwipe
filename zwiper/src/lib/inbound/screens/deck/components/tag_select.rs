@@ -182,7 +182,7 @@ pub(crate) fn TagSelect(
 
                 HintDialog {
                     open: hint_open,
-                    actions: guide_link::shared_topic(zwipe_ui::hint::HintTopic::DeckTags),
+                    actions: guide_link::screen(zwipe_ui::hint::HintTopic::DeckTags),
                     title: "Deck tags",
                     DeckTagsExplainer {}
                     HintBullets {

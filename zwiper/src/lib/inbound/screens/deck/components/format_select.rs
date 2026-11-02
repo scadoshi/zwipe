@@ -196,7 +196,7 @@ pub(crate) fn FormatSelect(
 
                 HintDialog {
                     open: hint_open,
-                    actions: guide_link::shared_topic(zwipe_ui::hint::HintTopic::Format),
+                    actions: guide_link::screen(zwipe_ui::hint::HintTopic::Format),
                     title: "Format",
                     HintBullets {
                         HintBullet { "Tap the picked format again to clear it" }

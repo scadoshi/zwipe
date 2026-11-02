@@ -258,7 +258,7 @@ pub(crate) fn OracleTagSelect(
                         on_confirm: open_dictionary,
                     }]
                     .into_iter()
-                    .chain(guide_link::shared_topic(zwipe_ui::hint::HintTopic::OracleTags))
+                    .chain(guide_link::screen(zwipe_ui::hint::HintTopic::OracleTags))
                     .collect(),
                     OracleTagsExplainer {}
                 }
