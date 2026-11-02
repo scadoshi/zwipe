@@ -14,8 +14,11 @@
 //! opens. There a left swipe dismisses the commander for a week and the eyeball
 //! sheet carries the reasons it was suggested. Its Filter opens a sheet holding
 //! the host's `suggested_filter` chips; when they change the pile mid-session,
-//! the stack re-deals through [`swipe_select::redeal`], keeping what was
-//! already swiped behind the top card so undo still walks back through it.
+//! the stack re-deals, keeping what was already swiped behind the top card so
+//! undo still walks back through it.
+//!
+//! What the overlay knows and does is `zwipe_ui::screens::swipe_select`; this
+//! file draws its state and performs its effects.
 
 use std::collections::HashSet;
 
@@ -228,9 +231,7 @@ impl Driver {
 
 /// In-place swipe picker for a command-zone slot. Toggled by `open`; `mode` is
 /// the (reactive) slot to fill. `on_select` fires with the chosen card;
-/// `on_close` cancels. Reads `Session` + `ZwipeClient` from context. What the
-/// overlay knows and does is `zwipe_ui::screens::swipe_select`; this draws its
-/// state and performs its effects.
+/// `on_close` cancels. Reads `Session` + `ZwipeClient` from context.
 #[component]
 pub(crate) fn SwipeSelect(
     open: Signal<bool>,
