@@ -395,3 +395,19 @@ fn flippable_card_image_no_art() {
         }),
     );
 }
+
+#[test]
+fn flippable_card_image_controlled_face() {
+    golden(
+        "flip_controlled",
+        &render(|| {
+            let sd = use_signal(double_faced);
+            let face = use_signal(|| 1);
+            let past_the_end = use_signal(|| 7);
+            rsx! {
+                FlippableCardImage { sd, size: ImageSize::Normal, face }
+                FlippableCardImage { sd, size: ImageSize::Normal, face: past_the_end }
+            }
+        }),
+    );
+}
