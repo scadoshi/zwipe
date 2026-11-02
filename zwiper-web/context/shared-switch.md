@@ -25,9 +25,13 @@ Before you run `fmt`, update nightly. CI's rustfmt merges imports that older nig
 
 - [ ] **Components and orangui asks K1 to K6 (#128, orangui #3).** After merging main: delete `inbound/chrome/form_panel.rs` and use orangui's `Panel { class: "web-form-panel ..", title_bar, actions }` (selectors like `.web-form-panel > form` become `.web-form-panel .panel-body > form`). Drop the dialog and theme sheet branches from `inbound/app.rs` `KEYS_JS` (orangui now handles Esc and Enter on dialogs and arrows and Enter on the theme sheet); keep the no-dialog Esc and the form-panel Enter. In `inbound/cards/image_preview.rs` `flip_shown_card`, replace the DOM click with a `face` signal passed to `FlippableCardImage`. Remove the `dioxus-primitives` pin and import `components::{use_toast, Toasts, ToastOptions}` unless the web also uses primitives' accordion. In `inbound/cards/charts.rs`, delete `chart_bars` and pass `zwipe_ui::activity::Bar` values straight to components (they are one type now).
 
+- [ ] **Screen model: Activity (#129).** `zwipe_ui::screens::activity` (import it `as model`; `zwipe_ui::activity` is the math). In `inbound/screens/activity/mod.rs`, hold one `Signal<model::State>` and a `Driver` like the app's `zwiper/src/lib/inbound/screens/activity/mod.rs`: `Load` on mount, perform the fetch effects with their tickets, map `Destination::Previous` to the web's history back. Draw from `sections()`, `totals()` and the `Rates` enum (`Unrated`, `Uncharted`, `Charted`) in `sections.rs`. Section openness stays the web's (all open on a wide page). The heat pick's 4 s release stays in the client.
+
+- [ ] **Screen model: Home (#130).** `zwipe_ui::screens::home`. Replace the hero, color map and flavor state in `inbound/screens/home/{mod,hero,color_map}.rs` with one `Signal<State>`, created with `Action::Load(Box::new(Cached { .. }))` in its `use_signal` initializer so cached figures draw on the first render (see the app's `zwiper/src/lib/inbound/screens/home.rs`). Perform `FetchUser`, `FetchCounts`, `FetchMyCounts`, `FetchPlayStyle` and `FetchFlavor` with their tickets and hand back the matching `*Loaded`/`*Failed` actions; write each reply to the web's own stores too (`outbound/counts_store.rs`, the session) since the caches stay in the client. `SaveScope` writes the scope, `MarkGreeted` sets the launch flag, `OfferHint` opens the first-login hint. Send `CheckFlavor { now }` on each session refresh. The playstyle panel reads `Loading`, `Failed`, `Empty` or `Map(ColorMapCounts)`. `domain/counts.rs` goes once nothing reads it.
+
 ## Coming
 
-- More screen models, one per screen: Home, Activity and Deck view next, then the rest in the shared plan's order.
+- More screen models, one per screen: Deck view next, then Account, Config and the commander maybeboard, then the rest in the shared plan's order.
 
 ## Doesn't fit
 
