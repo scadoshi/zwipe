@@ -67,6 +67,15 @@ After these, Part 2's screen models, one branch per screen (`shared/model-<scree
 
 Part 2 started with `shared/model-deck-list`: `ui::screens::deck_list` and `context/screen-models.md`, the pattern the other models follow (owner-approved 2026-11-02: one `Destination` enum per screen, request-failure toasts stay in each client's runner, Back emits `Navigate(Home)`, hint markup changes wait for their own pass). The app switched.
 
+Part 2 finished on 2026-11-02: a model for every screen, the app switched to each (#127 to #146, Help and feedback and Update required by decision without one). Web's switch list is `zwiper-web/context/shared-switch.md` on `feat/web`. Left over:
+
+- The app's `undo_log.rs` still duplicates `zwipe_ui::stores::undo`, so `remove.rs` (`into_shared`, `from_shared`) and the deck cards view (`to_app_undo`, `to_shared_undo`) convert between them. Switching the app to the shared log deletes all four.
+- `components`' changelog still has its own `chip_rows`; switch it to `screens::changelog` (K5).
+- Card filter switched the sheet-level flow; its fifteen section bodies still edit the host's signal directly.
+- Retire `deck_cards::Bursts` once web and the TUI use the deck cards model.
+- The Create and Edit model routes actions to `field`, `tag` and `command_zone` helpers that end in `_ =>`.
+- Create and Edit and Add cards are the largest app rewrites; look at both on a device.
+
 Branches 2 to 11 are independent of each other once 1 lands, so they can merge in any order; the order above is value and risk.
 
 ## 4. Dioxus-side asks (components and orangui)
