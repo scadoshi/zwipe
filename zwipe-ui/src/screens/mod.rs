@@ -4,3 +4,4 @@
 
 pub mod activity;
 pub mod deck_list;
+pub mod home;
