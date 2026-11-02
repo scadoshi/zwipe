@@ -11,7 +11,7 @@ use zwipe_core::http::contracts::auth::{
 };
 use zwipe_ui::generation::Ticket;
 use zwipe_ui::screens::account::{
-    Action, Destination, Dialog, Effect, Field, Password, Sheet, State, TICK,
+    Action, Destination, Dialog, Effect, Field, Password, Sheet, State, TICK, Typed,
 };
 
 use crate::inbound::components::auth::authed::{Authed, use_authed};
@@ -150,7 +150,7 @@ pub(crate) fn use_field_sync(driver: &Driver, sheet: Sheet, field: Field) {
         driver.dispatch(Action::Edit {
             sheet,
             field,
-            value,
+            value: Typed::new(value),
         });
     });
 }
