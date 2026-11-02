@@ -112,7 +112,7 @@ Effort is the work to build the shared model from the TUI's version and test it 
 | Add cards | sources (Search, Maybeboard), From and Synergy, the stack, paging, every swipe outcome, undo through the shared log, in-flight adds, land and budget crossings, end of results, all 43 toasts | gestures and card motion, image loading | XL |
 | Card filter | draft and Apply, 15 sections, per-host reset, picker sources, contradiction and catalog toasts | accordion or columns, steppers and chips as drawn | L, built: `screens::card_filter`; the app switched the sheet-level flow (open, Apply, Back, Reset, section clears, the dictionary); the section bodies still edit the host's signal; web and TUI to switch |
 | Deck cards view | load, filter and group pass, boards, Show, quick add, quantities with the 300 ms flush, moves, printings, MVP, Undo, Reset filter, every toast | detail pane, drag to move, row drawing | XL |
-| Remove cards | load, board filter, cycling stack, swipe outcomes, undo, crossings, toasts | gestures | M |
+| Remove cards | load, board filter, cycling stack, swipe outcomes, undo, crossings, toasts | gestures | M, built: `screens::remove_cards`; the app switched, web and TUI to switch; the undo log stays the client's (the app's `undo_log.rs` still duplicates `zwipe_ui::stores::undo`, so `remove.rs` converts between them) |
 | Printing sheet | list, pick, toasts | layout | S |
 | Image preview | which image and face | all of it is drawing | none |
 | Account | both lists, the three change forms, verification with resend cooldown, delete countdown, More, dialogs | inputs, dialogs as drawn | M, built: `screens::account`; the app switched, web and TUI to switch; the clock stays in the client (`Wait`/`Tick`) |

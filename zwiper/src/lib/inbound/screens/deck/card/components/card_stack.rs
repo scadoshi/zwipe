@@ -14,7 +14,7 @@ use crate::inbound::screens::deck::card::components::action_history::StackAction
 ///
 /// Two cursor disciplines share this type: linear stacks (the add screen's
 /// search source) move forward through a paginated list, while cycling stacks
-/// (maybeboard source, remove screen) wrap around a fixed list and mutate it
+/// (the add screen's maybeboard source) wrap around a fixed list and mutate it
 /// in place. The `*_wrapping` methods serve the latter.
 pub(crate) struct CardStack<A: 'static> {
     cards: Signal<Vec<Card>>,

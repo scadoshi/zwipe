@@ -94,6 +94,9 @@ Every fetch takes a `Ticket` from the model's own `Generation` inside `update`, 
 - When the model changes a field the client's input owns, it says so in an effect (`SetIdentifier`, `ClearPassword`).
 - Requests that may overlap on purpose (Forgot password's Send) use the waiting list, and a flag any reply clears mirrors the app's spinner.
 - Funnel events stay in the client and go out as it performs the effect.
+- A model that needs a client-owned store's answer emits a request effect (`TakeUndo`) the client answers at once with an action (`Taken`), and writes back with `RecordUndo`.
+- The client's request runner may hold animation state, such as clearing the entrance on a failed session refresh.
+- A client-owned counter other widgets watch can keep driving the model with `Filter(builder)`.
 
 ## Wiring it in Dioxus (the app and zwiper-web)
 
