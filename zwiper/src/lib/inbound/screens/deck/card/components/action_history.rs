@@ -1,10 +1,10 @@
 //! Per-stack swipe action models for undo.
 //!
-//! Split by stack discipline, not by screen. A linear stack (Add screen's
-//! search source) keeps swiped cards behind the cursor, so its actions carry
-//! no data: undo steps back onto the very card it undoes. Cycling stacks
-//! (maybeboard source, Remove screen) drop the card from the list when a
-//! swipe commits, so those variants keep the only surviving copy.
+//! Split by stack discipline, not by screen. `AddAction` is the Add
+//! screen's search swipe as its parked stacks keep it; the screen's own
+//! stacks live in `zwipe_ui::screens::add_cards`. A cycling stack (the Remove
+//! screen) drops the card from the list when a swipe commits, so those
+//! variants keep the only surviving copy.
 
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::deck::Board;
@@ -36,28 +36,6 @@ impl StackAction for AddAction {
             Self::Skip => Direction::Left,
             Self::Add => Direction::Right,
             Self::Maybe => Direction::Up,
-        }
-    }
-}
-
-/// Add screen, maybeboard stack (cycling). Promote removes the card from the
-/// stack, so that variant carries it for undo's re-insert.
-#[derive(Clone, Debug, PartialEq)]
-pub(crate) enum MaybeboardAction {
-    /// Left swipe: cycle past without acting.
-    Skip,
-    /// Right swipe: promoted to the deck.
-    Promote {
-        /// The promoted card (removed from the stack on commit).
-        card: Box<Card>,
-    },
-}
-
-impl StackAction for MaybeboardAction {
-    fn exited(&self) -> Direction {
-        match self {
-            Self::Skip => Direction::Left,
-            Self::Promote { .. } => Direction::Right,
         }
     }
 }
@@ -98,9 +76,3 @@ impl StackAction for RemoveAction {
         }
     }
 }
-
-/// Maximum cards to keep in memory before requiring refresh.
-pub(crate) const MAX_CARDS_IN_STACK: usize = 500;
-
-/// Warning threshold: show a toast when approaching the limit.
-pub(crate) const CARDS_WARNING_THRESHOLD: usize = 400;

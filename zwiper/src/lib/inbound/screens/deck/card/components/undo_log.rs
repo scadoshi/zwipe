@@ -57,6 +57,97 @@ pub(crate) enum UndoAction {
     },
 }
 
+impl From<UndoAction> for zwipe_ui::stores::undo::UndoAction {
+    fn from(action: UndoAction) -> Self {
+        match action {
+            UndoAction::Added { card_id, card_name } => Self::Added { card_id, card_name },
+            UndoAction::Removed { entry, baseline } => Self::Removed {
+                entry: Box::new(entry),
+                baseline,
+            },
+            UndoAction::QuantityChanged {
+                card_id,
+                card_name,
+                net,
+                baseline,
+            } => Self::QuantityChanged {
+                card_id,
+                card_name,
+                net,
+                baseline,
+            },
+            UndoAction::MovedBoard {
+                card_id,
+                card_name,
+                from,
+            } => Self::MovedBoard {
+                card_id,
+                card_name,
+                from,
+            },
+            UndoAction::PrintingChanged { old_card, new_id } => Self::PrintingChanged {
+                old_card: Box::new(old_card),
+                new_id,
+            },
+            UndoAction::CommandZonePrintingChanged {
+                slot,
+                old_card,
+                new_id,
+            } => Self::CommandZonePrintingChanged {
+                slot,
+                old_card: Box::new(old_card),
+                new_id,
+            },
+        }
+    }
+}
+
+impl From<zwipe_ui::stores::undo::UndoAction> for UndoAction {
+    fn from(action: zwipe_ui::stores::undo::UndoAction) -> Self {
+        use zwipe_ui::stores::undo::UndoAction as Shared;
+        match action {
+            Shared::Added { card_id, card_name } => Self::Added { card_id, card_name },
+            Shared::Removed { entry, baseline } => Self::Removed {
+                entry: *entry,
+                baseline,
+            },
+            Shared::QuantityChanged {
+                card_id,
+                card_name,
+                net,
+                baseline,
+            } => Self::QuantityChanged {
+                card_id,
+                card_name,
+                net,
+                baseline,
+            },
+            Shared::MovedBoard {
+                card_id,
+                card_name,
+                from,
+            } => Self::MovedBoard {
+                card_id,
+                card_name,
+                from,
+            },
+            Shared::PrintingChanged { old_card, new_id } => Self::PrintingChanged {
+                old_card: *old_card,
+                new_id,
+            },
+            Shared::CommandZonePrintingChanged {
+                slot,
+                old_card,
+                new_id,
+            } => Self::CommandZonePrintingChanged {
+                slot,
+                old_card: *old_card,
+                new_id,
+            },
+        }
+    }
+}
+
 /// The `board` field of a create request that puts a card back on `board`:
 /// `None` for the main deck, the server's default.
 pub(crate) fn create_board_field(board: Board) -> Option<String> {

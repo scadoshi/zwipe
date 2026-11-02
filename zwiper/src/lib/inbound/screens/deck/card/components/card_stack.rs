@@ -6,16 +6,13 @@ use zwipe_core::domain::card::Card;
 
 use crate::inbound::components::interactions::swipe::STACK_DEPTH;
 use crate::inbound::components::interactions::swipe::direction::Direction;
-use crate::inbound::screens::deck::card::components::action_history::StackAction;
 
 /// A swipeable card stack: the fetched cards, the top-card cursor, the undo
 /// history, and the enter-animation direction. A `Copy` handle over signals,
 /// so closures capture it freely while readers keep per-signal reactivity.
 ///
-/// Two cursor disciplines share this type: linear stacks (the add screen's
-/// search source) move forward through a paginated list, while cycling stacks
-/// (maybeboard source, remove screen) wrap around a fixed list and mutate it
-/// in place. The `*_wrapping` methods serve the latter.
+/// The Remove screen's cycling stack wraps around a fixed list and mutates it
+/// in place; the `*_wrapping` methods serve it.
 pub(crate) struct CardStack<A: 'static> {
     cards: Signal<Vec<Card>>,
     index: Signal<usize>,
@@ -33,9 +30,7 @@ impl<A: 'static> Clone for CardStack<A> {
 
 impl<A: 'static> Copy for CardStack<A> {}
 
-/// Creates a stack owned by the calling component (screen-local stacks). The
-/// add screen's search stack is instead created in `spawn_upkeeper` and
-/// provided as context, so it outlives the screen.
+/// Creates a stack owned by the calling component.
 pub(crate) fn use_card_stack<A: 'static>() -> CardStack<A> {
     CardStack {
         cards: use_signal(Vec::new),
@@ -53,19 +48,9 @@ impl<A: 'static> CardStack<A> {
         (self.cards)()
     }
 
-    /// Number of cards (reactive read).
-    pub(crate) fn len(&self) -> usize {
-        self.cards.read().len()
-    }
-
     /// True when the stack holds no cards (reactive read).
     pub(crate) fn is_empty(&self) -> bool {
         self.cards.read().is_empty()
-    }
-
-    /// `is_empty` without subscribing the caller.
-    pub(crate) fn peek_is_empty(&self) -> bool {
-        self.cards.peek().is_empty()
     }
 
     /// Cursor position (reactive read).
@@ -110,44 +95,11 @@ impl<A: 'static> CardStack<A> {
         self.index.set(0);
     }
 
-    /// Appends a page of cards (pagination).
-    pub(crate) fn append(&mut self, more: Vec<Card>) {
-        self.cards.write().extend(more);
-    }
-
     /// Rewinds the cursor and drops the undo history and any primed
     /// animation. The card list is untouched.
     pub(crate) fn rewind(&mut self) {
         self.index.set(0);
         self.history.write().clear();
-        self.entering.set(None);
-    }
-
-    /// Clears everything: cards, cursor, history, animation.
-    pub(crate) fn reset(&mut self) {
-        self.cards.set(Vec::new());
-        self.index.set(0);
-        self.history.write().clear();
-        self.entering.set(None);
-    }
-
-    /// Snapshot for parking (peeked: no subscriptions).
-    pub(crate) fn park_state(&self) -> (Vec<Card>, usize, Vec<A>)
-    where
-        A: Clone,
-    {
-        (
-            self.cards.peek().clone(),
-            *self.index.peek(),
-            self.history.peek().clone(),
-        )
-    }
-
-    /// Restores a parked snapshot (un-park).
-    pub(crate) fn restore(&mut self, cards: Vec<Card>, index: usize, history: Vec<A>) {
-        self.index.set(index.min(cards.len()));
-        self.cards.set(cards);
-        self.history.set(history);
         self.entering.set(None);
     }
 
@@ -166,31 +118,7 @@ impl<A: 'static> CardStack<A> {
         self.cards.write().insert(idx, card);
     }
 
-    /// Replaces the card at the cursor in place (e.g. swapping in a chosen
-    /// printing before the swipe commits). No-op when the cursor is past the end.
-    pub(crate) fn replace_current(&mut self, card: Card) {
-        let idx = (self.index)();
-        if let Some(slot) = self.cards.write().get_mut(idx) {
-            *slot = card;
-        }
-    }
-
     // == cursor ==
-
-    /// Moves the cursor forward one card (linear stacks). The cursor may land
-    /// one past the end: the just-swiped last card leaves the window and undo
-    /// stays aligned with the swipe that committed. Returns false only when
-    /// already past the end.
-    pub(crate) fn advance(&mut self) -> bool {
-        let len = self.cards.read().len();
-        match (self.index)().checked_add(1).filter(|&next| next <= len) {
-            Some(next) => {
-                self.index.set(next);
-                true
-            }
-            None => false,
-        }
-    }
 
     /// Moves the cursor forward with wrap-around (cycling stacks).
     pub(crate) fn advance_wrapping(&mut self) {
@@ -227,17 +155,6 @@ impl<A: 'static> CardStack<A> {
         self.history.write().pop()
     }
 
-    /// Reverses a `step_back` after a failed async undo: re-records the
-    /// action, restores the cursor, cancels the primed animation.
-    pub(crate) fn unwind_undo(&mut self, action: A) {
-        self.history.write().push(action);
-        // `step_back` moved the cursor down one, so stepping up cannot overflow.
-        if let Some(next) = (self.index)().checked_add(1) {
-            self.index.set(next);
-        }
-        self.entering.set(None);
-    }
-
     /// Primes the enter animation for the next top card.
     pub(crate) fn prime_entering(&mut self, direction: Direction) {
         self.entering.set(Some(direction));
@@ -246,19 +163,5 @@ impl<A: 'static> CardStack<A> {
     /// Cancels a primed enter animation (aborted undo).
     pub(crate) fn cancel_entering(&mut self) {
         self.entering.set(None);
-    }
-}
-
-impl<A: StackAction + 'static> CardStack<A> {
-    /// Linear undo cursor move: steps back one and primes the enter animation
-    /// from the action's exit direction. Returns false at the first card,
-    /// callers should `record` the action back.
-    pub(crate) fn step_back(&mut self, action: &A) -> bool {
-        let Some(previous) = (self.index)().checked_sub(1) else {
-            return false;
-        };
-        self.index.set(previous);
-        self.entering.set(Some(action.exited()));
-        true
     }
 }
