@@ -4,6 +4,7 @@
 
 pub mod account;
 pub mod activity;
+pub mod add_cards;
 pub mod card_filter;
 pub mod changelog;
 pub mod commander_maybeboard;

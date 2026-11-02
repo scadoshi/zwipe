@@ -13,7 +13,6 @@ use tokio::time;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
-use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::user::preferences::PipStyle;
 use zwipe_core::http::contracts::metrics::AnonymousEventKind;
 use zwipe_core::version;
@@ -28,9 +27,7 @@ use crate::inbound::components::home_play_style::CachedPlayStyle;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::{anonymous, flush_loop};
 use crate::inbound::screens::auth::login::LoginPrefill;
-use crate::inbound::screens::deck::card::components::action_history::AddAction;
 use crate::inbound::screens::deck::card::components::add_stack_cache::use_add_stack_cache;
-use crate::inbound::screens::deck::card::components::card_stack::use_card_stack;
 use crate::inbound::screens::deck::card::components::filter_store::use_filter_store;
 use crate::inbound::screens::deck::card::components::undo_log::use_undo_store;
 use crate::inbound::screens::deck::create::CreateDeckCommanderSeed;
@@ -176,19 +173,10 @@ fn use_screen_state() {
     let undo_store = use_undo_store();
     use_context_provider(|| undo_store);
 
-    // The add screen's search stack (cards, cursor, undo history, animation)
-    // app-scoped so leaving and re-entering the screen resumes mid-stack
-    // instead of re-serving already-swiped (and durably skipped) cards.
-    let add_stack = use_card_stack::<AddAction>();
-    use_context_provider(|| add_stack);
-
     // Parked add stacks, one per deck (MRU-capped); leaving the add screen
     // parks the live stack here; returning to that deck restores it.
     let add_stack_cache = use_add_stack_cache();
     use_context_provider(|| add_stack_cache);
-
-    let last_search_filter: Signal<Option<CardQueryBuilder>> = use_signal(|| None);
-    use_context_provider(|| last_search_filter);
 
     // One-shot commander seed for CreateDeck: set by the commander
     // maybeboard's "Create deck" action, taken by CreateDeck at mount. Above

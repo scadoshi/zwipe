@@ -104,6 +104,10 @@ Every fetch takes a `Ticket` from the model's own `Generation` inside `update`, 
 - When the shown index belongs to a gesture or carousel, it comes in as `at` on the actions and views that need it.
 - A list laid out new is `Show(at)`; a reopen on the cached list is `Rewind(at)`.
 - Host props (the printing sheet's mode and Save toast) go into `State::new(..)`.
+- A client-owned filter the model also writes goes out as `SetFilter` and comes back through the client's counter as `Filter`; the model's `Rerun` is that bump.
+- Two piles means two entrance signals: `Enter { pile, from }` and `StopEnter(pile)`.
+- An undo that needs a fresh session answers `NotSent` apart from `Failed`, because the two compensate differently.
+- A stack that pages marks its search ticket as the epoch, and every page carries it.
 
 ## Wiring it in Dioxus (the app and zwiper-web)
 
