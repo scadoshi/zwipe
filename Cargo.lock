@@ -8981,6 +8981,7 @@ dependencies = [
  "getrandom 0.4.3",
  "orangui-core",
  "serde_json",
+ "tracing",
  "uuid",
  "zwipe-core",
 ]
