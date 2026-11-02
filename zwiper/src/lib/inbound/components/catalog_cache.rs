@@ -233,10 +233,13 @@ pub fn use_catalog_cache() -> CatalogCache {
 }
 
 /// Fresh slot: `Loading`, nothing in flight.
+///
+/// The signals belong to the root scope, where `spawn_forever` runs the fetch
+/// that writes them, so the task never touches a value owned by a scope below it.
 fn use_catalog_slot<T: 'static>() -> CatalogSlot<T> {
     CatalogSlot {
-        cell: use_signal(|| CatalogCell::Loading),
-        fetching: use_signal(|| false),
+        cell: use_hook(|| Signal::new_in_scope(CatalogCell::Loading, ScopeId::ROOT)),
+        fetching: use_hook(|| Signal::new_in_scope(false, ScopeId::ROOT)),
     }
 }
 
