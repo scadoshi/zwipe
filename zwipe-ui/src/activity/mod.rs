@@ -93,19 +93,43 @@ impl HeatLayout {
     }
 }
 
-/// One bar of a chart, as the app's `Bar`.
+/// One bar of a chart, the type components' `BarChart` draws, in the deck, Activity and Playstyle charts alike.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Bar {
-    /// What a tap on the bar reveals: a role or tag slug.
+    /// What a tap on the bar reports and reveals: the label, or a role or tag slug behind an abbreviated label.
     pub key: String,
     /// The bar's label.
     pub label: String,
-    /// The figure beside the bar.
+    /// The figure beside the bar, shown when above 0.
     pub count: u64,
-    /// The bar's length, 0 to 100.
+    /// The bar's length as a percentage of the chart's tallest bar, 0 to 100.
     pub pct: u32,
-    /// Whether its label opens a reveal.
+    /// Whether a chip chart draws its label as a tappable chip; false draws a grey chip that takes no tap.
     pub revealable: bool,
+}
+
+impl Bar {
+    /// A bar whose key is its label, and which reveals.
+    #[must_use]
+    pub fn new(label: impl Into<String>, count: u64, pct: u32) -> Self {
+        let label = label.into();
+        Self {
+            key: label.clone(),
+            label,
+            count,
+            pct,
+            revealable: true,
+        }
+    }
+
+    /// The same bar with a grey, untappable chip in a chip chart.
+    #[must_use]
+    pub fn with_no_reveal(self) -> Self {
+        Self {
+            revealable: false,
+            ..self
+        }
+    }
 }
 
 /// A day's activity, the number its cell is shaded by.

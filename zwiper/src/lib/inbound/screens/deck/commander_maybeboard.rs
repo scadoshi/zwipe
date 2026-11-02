@@ -22,11 +22,10 @@ use std::collections::HashSet;
 
 use components::{
     ActionBar, AlertDialog, BottomSheet, Button, ButtonVariant, Chip, DialogAction, HintBullet,
-    HintBullets, HintDialog, HintKey, HintLine,
+    HintBullets, HintDialog, HintKey, HintLine, Toasts, use_toast,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
-use dioxus_primitives::toast::{Toasts, use_toast};
 use tokio::time;
 use uuid::Uuid;
 use zwipe_client::{ClientError, ZwipeClient};

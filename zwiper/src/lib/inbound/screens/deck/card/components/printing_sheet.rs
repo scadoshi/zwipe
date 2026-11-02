@@ -1,10 +1,10 @@
 //! Bottom sheet for browsing and selecting card printings.
 
 use components::{
-    ActionBar, Button, ButtonVariant, TOAST_NORMAL, TOAST_QUICK, use_overlay_back_action,
+    ActionBar, Button, ButtonVariant, TOAST_NORMAL, TOAST_QUICK, ToastOptions,
+    use_overlay_back_action, use_toast,
 };
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::Card;

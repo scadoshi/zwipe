@@ -487,11 +487,31 @@ fn a_year_before_the_first_date_has_no_grid() {
 }
 
 #[test]
+fn a_year_ending_on_the_last_date_stops_there() {
+    let layout = heat_layout(NaiveDate::MAX, &[]);
+    assert_eq!(layout.cells.last().map(|c| c.date), Some(NaiveDate::MAX));
+}
+
+#[test]
 fn the_year_line_reads_the_year_for_screen_readers() {
     assert_eq!(year_line(&[]), "0 swipes and 0 searches in the last year");
     let on = NaiveDate::from_ymd_opt(2026, 10, 1).unwrap();
     assert_eq!(
         year_line(&[day(on, 1, 1), day(on, 1_233, 0)]),
         "1,234 swipes and 1 search in the last year"
+    );
+}
+
+#[test]
+fn a_bar_reveals_unless_opted_out() {
+    let bar = Bar::new("ramp", 3, 100);
+    assert!(bar.revealable, "new bars reveal");
+    assert_eq!(bar.key, "ramp", "the key is the label");
+    let plain = bar.clone().with_no_reveal();
+    assert!(!plain.revealable);
+    assert_eq!(
+        (plain.key, plain.label, plain.count, plain.pct),
+        (bar.key, bar.label, bar.count, bar.pct),
+        "only the reveal changes"
     );
 }

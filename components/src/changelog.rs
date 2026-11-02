@@ -13,7 +13,9 @@
 //! entries appear without an app resubmit. Passing the same wire type either
 //! way keeps one rendering path.
 //!
-//! The chips narrow the list as a tree. The first row is Latest and then each
+//! The filing (where each release goes, which chips each row holds, what a
+//! filter shows) is zwipe-ui's `changelog`, which every client shares; this
+//! module draws it. The chips narrow the list as a tree. The first row is Latest and then each
 //! year, newest first; picking a year adds a row of its months, and picking a
 //! month adds a row of its minor versions (`1.12` for 1.12.0 to 1.12.2), so
 //! the row stays short however many patches ship. Picking a minor shows its
@@ -29,103 +31,11 @@
 //! then scrolls the card into view.
 
 use dioxus::prelude::*;
-use zwipe_core::http::contracts::changelog::{HttpChangelog, HttpRelease};
+use zwipe_core::http::contracts::changelog::HttpChangelog;
+use zwipe_ui::changelog::{Filter, Listed, Tag, listed, minors, months, visible, years};
 
-/// The year and month key of releases whose day cannot be read.
-const EARLIER: &str = "earlier";
-
-/// Where a release sits in the chip tree: year key (`"2026"`), month key
-/// (`"2026-10"`) and month label (`"Oct"`). Releases whose day cannot be read
-/// sit under [`EARLIER`] for both keys.
-#[derive(Debug, Clone, PartialEq, Eq)]
-struct Place {
-    year: String,
-    month: String,
-    month_label: String,
-}
-
-impl Place {
-    fn earlier() -> Self {
-        Self {
-            year: EARLIER.to_string(),
-            month: EARLIER.to_string(),
-            month_label: "Earlier".to_string(),
-        }
-    }
-
-    /// Where a release goes by its own day, if it can be read.
-    fn of(release: &HttpRelease) -> Option<Self> {
-        release.released_on().map(|day| Self {
-            year: day.format("%Y").to_string(),
-            month: day.format("%Y-%m").to_string(),
-            month_label: day.format("%b").to_string(),
-        })
-    }
-}
-
-/// What the chips have narrowed the list to. Each level names its parents, so
-/// a selection is a path down the tree.
-#[derive(Debug, Clone, PartialEq, Eq)]
-enum Selection {
-    /// The upcoming release and the newest shipped one.
-    Latest,
-    /// A whole year (or the Earlier bucket).
-    Year(String),
-    /// One month of a year.
-    Month { year: String, month: String },
-    /// One minor version's releases in a month, the minor as `"1.12"`.
-    Minor {
-        year: String,
-        month: String,
-        minor: String,
-    },
-}
-
-impl Selection {
-    /// One level up: a minor goes back to its month, a month to its year,
-    /// a year to Latest.
-    fn parent(&self) -> Self {
-        match self {
-            Self::Latest | Self::Year(_) => Self::Latest,
-            Self::Month { year, .. } => Self::Year(year.clone()),
-            Self::Minor { year, month, .. } => Self::Month {
-                year: year.clone(),
-                month: month.clone(),
-            },
-        }
-    }
-
-    fn year(&self) -> Option<&str> {
-        match self {
-            Self::Latest => None,
-            Self::Year(year) | Self::Month { year, .. } | Self::Minor { year, .. } => Some(year),
-        }
-    }
-
-    fn month(&self) -> Option<&str> {
-        match self {
-            Self::Month { month, .. } | Self::Minor { month, .. } => Some(month),
-            _ => None,
-        }
-    }
-
-    fn minor(&self) -> Option<&str> {
-        match self {
-            Self::Minor { minor, .. } => Some(minor),
-            _ => None,
-        }
-    }
-}
-
-/// A version's major and minor, `"1.12"` for 1.12.1: the label of its chip
-/// in the last row. A version with no second dot is its own minor.
-fn minor_of(version: &str) -> &str {
-    version
-        .match_indices('.')
-        .nth(1)
-        .and_then(|(dot, _)| version.get(..dot))
-        .unwrap_or(version)
-}
+/// The label of the chip that goes back to [`Filter::Latest`].
+const LATEST_LABEL: &str = "Latest";
 
 /// One chip: its label, whether it lights up, and what clicking it selects.
 /// Clicking the deepest lit chip goes up a level; clicking any other chip
@@ -134,52 +44,14 @@ fn minor_of(version: &str) -> &str {
 struct Chip {
     label: String,
     selected: bool,
-    target: Selection,
-}
-
-/// The place of each release, in display order: upcoming first, then the
-/// shipped releases. An upcoming release has no day of its own, so it counts
-/// in the newest shipped month.
-fn release_places(data: &HttpChangelog) -> Vec<Place> {
-    let newest = data.releases.iter().find_map(Place::of);
-    let upcoming = data.upcoming.iter().map(|release| {
-        Place::of(release)
-            .or_else(|| newest.clone())
-            .unwrap_or_else(Place::earlier)
-    });
-    let shipped = data
-        .releases
-        .iter()
-        .map(|release| Place::of(release).unwrap_or_else(Place::earlier));
-    upcoming.chain(shipped).collect()
-}
-
-/// Every release in display order with its place.
-fn listed(data: &HttpChangelog) -> Vec<(&HttpRelease, Place)> {
-    data.upcoming
-        .iter()
-        .chain(data.releases.iter())
-        .zip(release_places(data))
-        .collect()
-}
-
-/// Each distinct item, in first-seen order. Listed releases run newest first,
-/// so this is newest first too.
-fn distinct<T: Clone + PartialEq>(items: impl Iterator<Item = T>) -> Vec<T> {
-    let mut seen: Vec<T> = Vec::new();
-    for item in items {
-        if !seen.contains(&item) {
-            seen.push(item);
-        }
-    }
-    seen
+    target: Filter,
 }
 
 /// The chip rows for a selection: Latest and the years (Earlier last, when
 /// any release landed there), then the selected year's months, then the
 /// selected month's minor versions.
-fn chip_rows(listed: &[(&HttpRelease, Place)], selection: &Selection) -> Vec<Vec<Chip>> {
-    let chip = |label: String, own: Selection, lit: bool| Chip {
+fn chip_rows(listed: &[Listed<'_>], selection: &Filter) -> Vec<Vec<Chip>> {
+    let chip = |label: String, own: Filter, lit: bool| Chip {
         label,
         selected: lit,
         target: if lit && own == *selection {
@@ -189,46 +61,26 @@ fn chip_rows(listed: &[(&HttpRelease, Place)], selection: &Selection) -> Vec<Vec
         },
     };
 
-    let mut years = distinct(
-        listed
-            .iter()
-            .map(|(_, place)| place.year.clone())
-            .filter(|year| year != EARLIER),
-    );
-    if listed.iter().any(|(_, place)| place.year == EARLIER) {
-        years.push(EARLIER.to_string());
-    }
     let mut first = vec![chip(
-        "Latest".to_string(),
-        Selection::Latest,
-        *selection == Selection::Latest,
+        LATEST_LABEL.to_string(),
+        Filter::Latest,
+        *selection == Filter::Latest,
     )];
-    first.extend(years.into_iter().map(|year| {
-        let label = if year == EARLIER {
-            "Earlier".to_string()
-        } else {
-            year.clone()
-        };
+    first.extend(years(listed).into_iter().map(|(year, label)| {
         let lit = selection.year() == Some(year.as_str());
-        chip(label, Selection::Year(year), lit)
+        chip(label, Filter::Year(year), lit)
     }));
     let mut rows = vec![first];
 
     let Some(year) = selection.year() else {
         return rows;
     };
-    let months = distinct(
-        listed
-            .iter()
-            .filter(|(_, place)| place.year == year)
-            .map(|(_, place)| (place.month.clone(), place.month_label.clone())),
-    );
     rows.push(
-        months
+        months(listed, year)
             .into_iter()
             .map(|(month, label)| {
                 let lit = selection.month() == Some(month.as_str());
-                let own = Selection::Month {
+                let own = Filter::Month {
                     year: year.to_string(),
                     month,
                 };
@@ -240,44 +92,21 @@ fn chip_rows(listed: &[(&HttpRelease, Place)], selection: &Selection) -> Vec<Vec
     let Some(month) = selection.month() else {
         return rows;
     };
-    let minors = distinct(
-        listed
-            .iter()
-            .filter(|(_, place)| place.month == month)
-            .map(|(release, _)| minor_of(&release.version)),
-    );
     rows.push(
-        minors
+        minors(listed, month)
             .into_iter()
             .map(|minor| {
-                let lit = selection.minor() == Some(minor);
-                let own = Selection::Minor {
+                let lit = selection.minor() == Some(minor.as_str());
+                let own = Filter::Minor {
                     year: year.to_string(),
                     month: month.to_string(),
-                    minor: minor.to_string(),
+                    minor: minor.clone(),
                 };
-                chip(minor.to_string(), own, lit)
+                chip(minor, own, lit)
             })
             .collect(),
     );
     rows
-}
-
-/// Which listed releases a selection shows, parallel to `listed`. Latest is
-/// every upcoming release and the first shipped one.
-fn visible(listed: &[(&HttpRelease, Place)], upcoming: usize, selection: &Selection) -> Vec<bool> {
-    listed
-        .iter()
-        .enumerate()
-        .map(|(i, (release, place))| match selection {
-            Selection::Latest => i <= upcoming,
-            Selection::Year(year) => place.year == *year,
-            Selection::Month { month, .. } => place.month == *month,
-            Selection::Minor { month, minor, .. } => {
-                place.month == *month && minor_of(&release.version) == minor
-            }
-        })
-        .collect()
 }
 
 /// The element id of a release's card: `v` and the version with its dots as
@@ -287,18 +116,14 @@ pub(crate) fn anchor_id(version: &str) -> String {
 }
 
 /// The selection down to the minor of the release `fragment` names, in that
-/// release's month. Takes the fragment
-/// with or without its `#`. `None` when no release has that anchor.
-fn anchor_selection(fragment: &str, listed: &[(&HttpRelease, Place)]) -> Option<Selection> {
+/// release's month. Takes the fragment with or without its `#`. `None` when
+/// no release has that anchor.
+fn anchor_selection(fragment: &str, listed: &[Listed<'_>]) -> Option<Filter> {
     let fragment = fragment.strip_prefix('#').unwrap_or(fragment);
     listed
         .iter()
-        .find(|(release, _)| anchor_id(&release.version) == fragment)
-        .map(|(release, place)| Selection::Minor {
-            year: place.year.clone(),
-            month: place.month.clone(),
-            minor: minor_of(&release.version).to_string(),
-        })
+        .find(|item| anchor_id(&item.release.version) == fragment)
+        .map(Listed::minor_filter)
 }
 
 /// The release history: chip rows that narrow a newest-first list of
@@ -316,7 +141,7 @@ pub fn Changelog(
     #[props(default)] link_versions: bool,
 ) -> Element {
     let listed = listed(&data);
-    let mut selection = use_signal(|| Selection::Latest);
+    let mut selection = use_signal(|| Filter::Latest);
     let target = anchor
         .as_deref()
         .and_then(|fragment| anchor_selection(fragment, &listed));
@@ -328,13 +153,13 @@ pub fn Changelog(
 
     let current = selection();
     let rows = chip_rows(&listed, &current);
-    let shown = visible(&listed, data.upcoming.len(), &current);
+    let shown = visible(&listed, &current);
+    // Every listed release keeps its slot, shown or not, so a filter change
+    // toggles cards in place.
+    let show = |item: &Listed<'_>| shown.iter().any(|s| std::ptr::eq(s.release, item.release));
     // Included in each card's key so switching filters remounts the visible
     // cards, replaying their ease-in animation.
     let filter_key = format!("{current:?}");
-    // Upcoming entries render first with an "Upcoming" badge; the first released
-    // entry after them is the "Latest".
-    let upcoming_count = data.upcoming.len();
 
     rsx! {
         div { class: "changelog-filters",
@@ -357,8 +182,8 @@ pub fn Changelog(
             }
         }
         div { class: "changelog-list",
-            for (i , ((release , _) , show)) in listed.iter().zip(shown).enumerate() {
-                if show {
+            for (item , release) in listed.iter().map(|item| (item, item.release)) {
+                if show(item) {
                     div {
                         key: "{filter_key}-{release.version}",
                         id: anchor_id(&release.version),
@@ -376,9 +201,9 @@ pub fn Changelog(
                                 }
                             }
                             span { class: "changelog-date", "{release.date}" }
-                            if i < upcoming_count {
+                            if item.tag == Some(Tag::Upcoming) {
                                 span { class: "status-tag status-doing", "Upcoming" }
-                            } else if i == upcoming_count {
+                            } else if item.tag == Some(Tag::Latest) {
                                 span { class: "status-tag status-done", "Latest" }
                             }
                         }
@@ -396,6 +221,9 @@ pub fn Changelog(
 
 #[cfg(test)]
 mod tests {
+    use zwipe_core::http::contracts::changelog::HttpRelease;
+    use zwipe_ui::changelog::{EARLIER_LABEL, minor_of};
+
     use super::*;
 
     fn release(version: &str, date: &str) -> HttpRelease {
@@ -434,19 +262,19 @@ mod tests {
         )
     }
 
-    fn year(year: &str) -> Selection {
-        Selection::Year(year.to_string())
+    fn year(year: &str) -> Filter {
+        Filter::Year(year.to_string())
     }
 
-    fn month(year: &str, month: &str) -> Selection {
-        Selection::Month {
+    fn month(year: &str, month: &str) -> Filter {
+        Filter::Month {
             year: year.to_string(),
             month: month.to_string(),
         }
     }
 
-    fn minor(year: &str, month: &str, minor: &str) -> Selection {
-        Selection::Minor {
+    fn minor(year: &str, month: &str, minor: &str) -> Filter {
+        Filter::Minor {
             year: year.to_string(),
             month: month.to_string(),
             minor: minor.to_string(),
@@ -465,39 +293,33 @@ mod tests {
             .collect()
     }
 
-    fn shown<'a>(data: &'a HttpChangelog, selection: &Selection) -> Vec<&'a str> {
-        let listed = listed(data);
-        listed
-            .iter()
-            .zip(visible(&listed, data.upcoming.len(), selection))
-            .filter(|(_, show)| *show)
-            .map(|((release, _), _)| release.version.as_str())
+    fn shown<'a>(data: &'a HttpChangelog, selection: &Filter) -> Vec<&'a str> {
+        visible(&listed(data), selection)
+            .into_iter()
+            .map(|item| item.release.version.as_str())
             .collect()
     }
 
-    fn rows(data: &HttpChangelog, selection: &Selection) -> Vec<Vec<Chip>> {
+    fn rows(data: &HttpChangelog, selection: &Filter) -> Vec<Vec<Chip>> {
         chip_rows(&listed(data), selection)
     }
 
     #[test]
     fn latest_shows_upcoming_and_the_newest_release() {
         let data = two_years();
-        let rows = rows(&data, &Selection::Latest);
+        let rows = rows(&data, &Filter::Latest);
         assert_eq!(rows.len(), 1);
         assert_eq!(labels(&rows[0]), ["Latest", "2027", "2026"]);
         assert_eq!(lit(&rows), ["Latest"]);
-        assert_eq!(shown(&data, &Selection::Latest), ["1.16.0", "1.15.1"]);
+        assert_eq!(shown(&data, &Filter::Latest), ["1.16.0", "1.15.1"]);
     }
 
     #[test]
     fn one_year_still_gets_a_year_chip() {
         let data = HttpChangelog::current();
-        let chips = rows(&data, &Selection::Latest);
+        let chips = rows(&data, &Filter::Latest);
         assert_eq!(labels(&chips[0]), ["Latest", "2026"]);
-        assert_eq!(
-            shown(&data, &Selection::Latest).len(),
-            data.upcoming.len() + 1
-        );
+        assert_eq!(shown(&data, &Filter::Latest).len(), data.upcoming.len() + 1);
     }
 
     #[test]
@@ -542,30 +364,17 @@ mod tests {
     }
 
     #[test]
-    fn minors_are_major_dot_minor() {
-        assert_eq!(minor_of("1.12.1"), "1.12");
-        assert_eq!(minor_of("10.0.12"), "10.0");
-        assert_eq!(minor_of("2.1"), "2.1");
-        assert_eq!(minor_of("3"), "3");
-    }
-
-    #[test]
     fn the_compiled_in_months_list_each_minor_once() {
         let data = HttpChangelog::current();
         // The newest month holds the upcoming release, so its minor leads.
-        let newest = &release_places(&data)[0];
-        let rows = rows(&data, &month(&newest.year, &newest.month));
+        let all = listed(&data);
+        let newest = all[0].minor_filter().parent();
+        let rows = chip_rows(&all, &newest);
         let minors = labels(&rows[2]);
-        let newest_version = &data
-            .upcoming
-            .iter()
-            .chain(&data.releases)
-            .next()
-            .unwrap()
-            .version;
-        assert_eq!(minors.first(), Some(&minor_of(newest_version)));
+        assert_eq!(minors.first(), Some(&minor_of(&all[0].release.version)));
         assert!(minors.iter().all(|label| label.matches('.').count() == 1));
-        assert_eq!(minors, distinct(minors.iter().copied()));
+        let unique: std::collections::BTreeSet<&str> = minors.iter().copied().collect();
+        assert_eq!(unique.len(), minors.len());
     }
 
     #[test]
@@ -573,7 +382,7 @@ mod tests {
         let data = two_years();
         let rows = rows(&data, &minor("2026", "2026-12", "1.14"));
         // Latest, the other year, the lit year, the other month.
-        assert_eq!(rows[0][0].target, Selection::Latest);
+        assert_eq!(rows[0][0].target, Filter::Latest);
         assert_eq!(rows[0][1].target, year("2027"));
         assert_eq!(rows[0][2].target, year("2026"));
         assert_eq!(rows[1][1].target, month("2026", "2026-11"));
@@ -588,9 +397,9 @@ mod tests {
         let rows_m = rows(&data, &month("2026", "2026-12"));
         assert_eq!(rows_m[1][0].target, year("2026"));
         let rows_y = rows(&data, &year("2026"));
-        assert_eq!(rows_y[0][2].target, Selection::Latest);
-        let rows_l = rows(&data, &Selection::Latest);
-        assert_eq!(rows_l[0][0].target, Selection::Latest);
+        assert_eq!(rows_y[0][2].target, Filter::Latest);
+        let rows_l = rows(&data, &Filter::Latest);
+        assert_eq!(rows_l[0][0].target, Filter::Latest);
     }
 
     #[test]
@@ -615,11 +424,12 @@ mod tests {
                 ("1.1.0", "Sep 3, 2026"),
             ],
         );
-        let chips = rows(&data, &year(EARLIER));
-        assert_eq!(labels(&chips[0]), ["Latest", "2027", "2026", "Earlier"]);
-        assert_eq!(shown(&data, &year(EARLIER)), ["1.2.0"]);
-        let readable = rows(&two_years(), &Selection::Latest);
-        assert!(!labels(&readable[0]).contains(&"Earlier"));
+        let earlier = rows(&data, &Filter::Latest)[0][3].target.clone();
+        let chips = rows(&data, &earlier);
+        assert_eq!(labels(&chips[0]), ["Latest", "2027", "2026", EARLIER_LABEL]);
+        assert_eq!(shown(&data, &earlier), ["1.2.0"]);
+        let readable = rows(&two_years(), &Filter::Latest);
+        assert!(!labels(&readable[0]).contains(&EARLIER_LABEL));
     }
 
     #[test]

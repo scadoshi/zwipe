@@ -9,9 +9,8 @@
 //! and the hint recorder have shapes that don't fit a screen-scoped facade
 //! and keep calling `ensure_fresh` directly. The facade is for screens.
 
-use components::TOAST_NORMAL;
+use components::{TOAST_NORMAL, ToastOptions, Toasts, use_toast};
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, Toasts, use_toast};
 use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_core::domain::auth::models::session::Session;
 

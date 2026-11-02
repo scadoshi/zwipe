@@ -12,10 +12,9 @@
 
 use components::{
     ActionBar, Button, ButtonVariant, HintBullet, HintBullets, HintDialog, HintKey, TOAST_NORMAL,
-    use_overlay_back,
+    ToastOptions, use_overlay_back, use_toast,
 };
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::oracle_tag::OracleTag;
 use zwipe_core::domain::user::models::hints::HINT_ORACLE_TAG_DICTIONARY;
