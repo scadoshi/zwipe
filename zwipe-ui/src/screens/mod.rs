@@ -5,6 +5,7 @@
 pub mod account;
 pub mod activity;
 pub mod card_filter;
+pub mod changelog;
 pub mod commander_maybeboard;
 pub mod config;
 pub mod deck_export;
@@ -18,5 +19,6 @@ pub mod login;
 pub mod oracle_tag_dictionary;
 pub mod oracle_tag_examples;
 pub mod playstyle;
+pub mod printing_sheet;
 pub mod register;
 pub mod remove_cards;

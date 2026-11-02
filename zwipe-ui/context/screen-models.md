@@ -100,6 +100,10 @@ Every fetch takes a `Ticket` from the model's own `Generation` inside `update`, 
 - Shared chip rows take the value shown plus `on_pick(Option<T>)` (`None` is All), and the model decides the toggle.
 - Client filter state that resets when its panel unmounts becomes a model rule keyed on a view (Playstyle's `shows_staples`).
 - A reveal whose content comes from model data goes to a child component as a `Callback` reading the model (`role_tags`).
+- A sheet that only closes has no `Destination` and emits `Effect::Close`.
+- When the shown index belongs to a gesture or carousel, it comes in as `at` on the actions and views that need it.
+- A list laid out new is `Show(at)`; a reopen on the cached list is `Rewind(at)`.
+- Host props (the printing sheet's mode and Save toast) go into `State::new(..)`.
 
 ## Wiring it in Dioxus (the app and zwiper-web)
 
