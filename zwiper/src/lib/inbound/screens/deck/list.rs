@@ -347,7 +347,7 @@ fn DeckRow(profile: DeckProfile) -> Element {
                 }
                 span {
                     class: if count_bad { "stat-chip stat-chip-warning" } else { "stat-chip" },
-                    "{count} cards"
+                    {zwipe_ui::deck::cards_label(count)}
                 }
                 if let Some(ref fmt) = profile.format {
                     span { class: "stat-chip stat-chip-p3", "{fmt.display_name()}" }
