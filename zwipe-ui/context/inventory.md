@@ -104,7 +104,7 @@ Effort is the work to build the shared model from the TUI's version and test it 
 | Swipe select (commander and suggested modes) | the stack, the per-mode constraint, maybeboard save and undo, toasts | the gesture engine and card motion | L |
 | Oracle tag dictionary | search, definition, Use hand-off | overlay or panel layout | S |
 | Oracle tag examples | load, paging, empty and error lines | card drawing | S |
-| Deck list | the whole TUI `DeckList` minus focus: decks, Group by, Show, tag fold, collapsed groups, Create gate, More items | chip and list drawing | S |
+| Deck list | the whole TUI `DeckList` minus focus: decks, Group by, Show, tag fold, collapsed groups, Create gate, More items | chip and list drawing | S, built: `screens::deck_list`; the app switched, web and TUI to switch |
 | Create and Edit | every field, validation, knock-on clears, change detection, the four command-zone searches with debounce and generation tickets, the format, tag and oracle tag pickers (draft, Save disabled when unchanged, Back with "unchanged"), submit and server messages | text inputs, picker layout (sheet, side panel, overlay) | L |
 | Import | paste, submit, outcome toast | text area | S |
 | Export | board toggles with the at-least-one rule, the text, copy toast | clipboard API | S |

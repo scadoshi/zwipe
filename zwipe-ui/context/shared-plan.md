@@ -65,6 +65,8 @@ Size: S under a day, M one to two days, L three to five. "Both" means web and TU
 
 After these, Part 2's screen models, one branch per screen (`shared/model-<screen>`), in this order: Deck list, Home, Activity, Deck view, Account, Config, Commander maybeboard, Create and Edit (on top of 5 and 6), Import and Export, Dictionary and Examples, Card filter, Remove, Add, Deck cards. Login, Register and Forgot last. Rules for every model: effects carry a `ui::toast::Toast` (text, kind, band) so the web's two adapters become one; no model assumes one open section (the web opens several); copy comes from the app verbatim. Add and Deck cards are L to XL each; the rest S to M.
 
+Part 2 started with `shared/model-deck-list`: `ui::screens::deck_list` and `context/screen-models.md`, the pattern the other models follow (owner-approved 2026-11-02: one `Destination` enum per screen, request-failure toasts stay in each client's runner, Back emits `Navigate(Home)`, hint markup changes wait for their own pass). The app switched.
+
 Branches 2 to 11 are independent of each other once 1 lands, so they can merge in any order; the order above is value and risk.
 
 ## 4. Dioxus-side asks (components and orangui)

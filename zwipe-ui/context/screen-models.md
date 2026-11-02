@@ -1,0 +1,84 @@
+# Screen models
+
+A screen model holds what one screen knows and decides, so the app, zwiper-web and zwiper-tui only draw it and wire input to it. The deck list (`src/screens/deck_list/`) is the worked example; the next fifteen follow it.
+
+## Layout and naming
+
+- One module per screen under `zwipe_ui::screens`, named after the screen in snake case: `screens::deck_list`, `screens::home`, `screens::deck_view`. A big screen splits into `mod.rs` plus leaf files; tests sit in `tests.rs` beside `mod.rs`.
+- `screens` holds models only. The rules a model leans on stay where they are (`deck::list`, `deck::create_gate`, `hint`, `toast`) and the model calls them, so a client that only needs a rule never pulls in a model.
+- Every model names its three types the same: `State`, `Action`, `Effect`. Clients import them through the module (`use zwipe_ui::screens::deck_list::{self, Action, Effect, State}`) so `deck_list::State` reads plainly where two models meet.
+- A model's copy is `pub const`s at the top of its module (`deck_list::TITLE`, `deck_list::NO_MATCH`), or a `label()` on the enum it labels (`MoreItem::label`). The words are the app's, verbatim; a `the_copy_matches_the_app` test pins them.
+
+## The shape
+
+```rust
+#[derive(Debug, Default, Clone, PartialEq)]
+pub struct State { /* private fields */ }
+
+pub enum Action { Load, Loaded { ticket: Ticket, decks: Vec<DeckProfile> }, Failed { ticket: Ticket }, PickGroupBy(GroupBy), /* ... */ }
+
+pub enum Effect { RefreshUser, FetchDecks(Ticket), OfferHint(OneTimeHint), Navigate(Destination), Toast(Toast) }
+
+impl State {
+    #[must_use = "the client performs the effects"]
+    pub fn update(&mut self, action: Action) -> Vec<Effect>;
+    // read-only views: status(), groups(), message(), show_chips() ...
+}
+```
+
+- `State` fields are private. Clients read through accessors and change it only through `update`, so a model can hold invariants (the deck list's `Loaded` is never empty; an empty reply is `Empty`).
+- `State::new()` (and `Default`) is the screen as it first draws: loading, nothing picked. Opening the screen is the client sending `Action::Load` (or the screen's first action) and performing what comes back.
+- `Action` is one variant per thing a user does plus one per reply. Values the model can't know come in on the action: `Action::Create { verified }` carries the session's verification rather than the model holding the user.
+- `Effect` is everything the client must do: a fetch (named for the zwipe-core call, carrying its `Ticket`), `Navigate(Destination)`, `Toast(Toast)`, `OfferHint(OneTimeHint)`, and later timers. `update` returns them in the order to perform them.
+- `Destination` is per screen and lists only the places that screen leads. Each client maps it to its route in one `match`.
+- Views are computed from the state on demand (`groups()`, `show_chips()`, `message()`), not stored, so they can't go stale. Return owned values; the lists are small.
+- A status enum (`Loading`, `Failed`, `Empty`, `Loaded`) tells the client which branch to draw. `message()` returns the line to show, if any, so no client picks between "No decks" and "No decks match" itself.
+- Several sections can be open at once. Collapsed groups are a set, folds are independent flags; no model keeps "the open section".
+- Toasts are `zwipe_ui::toast::Toast` values with kind, text and band. A request's failure toast is the exception: the client's request runner reports the error and raises it, because mapping a `ClientError` to words is the client's (inventory decision 3). The model only hears `Failed { ticket }`.
+
+## Loading and generations
+
+Every fetch takes a `Ticket` from the model's own `Generation` inside `update`, and the effect carries it. The client hands it back on the reply. `update` drops any reply whose ticket a newer fetch has replaced, so a reload, a fast retype or a slow first request can't land over newer data. A request that continues the current one (a next page) uses `Generation::current` instead of `next_ticket`. Tests cover it with an `a_late_reply_is_ignored` case per fetch.
+
+## What stays in the client
+
+- Drawing, layout, focus, scroll, hover, gestures and animation. The TUI's focused chip and selected row, the web's wide layout that keeps the tag row open.
+- Overlays that are pure presentation: whether the More sheet or a `?` dialog is up. The items in them and where they lead are the model's.
+- I/O: zwipe-client calls, session storage, the hint's "seen" check and record, opening URLs.
+- Telemetry and error reporting, through each client's request runner.
+
+## Wiring it in Dioxus (the app and zwiper-web)
+
+The app's deck list keeps the model in one signal and puts it with the handles that perform effects in a `Copy` struct:
+
+```rust
+#[derive(Clone, Copy)]
+struct Driver { model: Signal<State>, navigator: Navigator, toast: Toasts, authed: Authed, /* session, client, hint_open */ }
+
+impl Driver {
+    fn dispatch(self, action: Action) {
+        let effects = self.model.write().update(action);
+        for effect in effects { self.perform(effect); }
+    }
+    fn perform(self, effect: Effect) {
+        match effect {
+            Effect::FetchDecks(ticket) => { spawn(async move {
+                let reply = self.authed.try_run("load_decks", |c, s| async move { c.fetch_deck_profiles(&s).await }).await;
+                self.dispatch(match reply { Ok(decks) => Action::Loaded { ticket, decks }, Err(_) => Action::Failed { ticket } });
+            }); }
+            Effect::Navigate(to) => { self.navigator.push(route(to)); }
+            Effect::Toast(toast) => ui_toast::raise(self.toast, toast),
+            // ...
+        }
+    }
+}
+```
+
+- Mount sends the first action from `use_effect(move || driver.dispatch(Action::Load))`.
+- Render reads `driver.model.read()` once, copies out what the markup needs, and drops the guard before `rsx!`.
+- Every handler is `move |_| driver.dispatch(Action::...)`. Child components take an `EventHandler` (`ontoggle`, `onopen`) rather than the signal.
+- `use_resource` goes away for the model's fetches: the generation does what the resource's restart did, and the reply goes through `update`.
+
+## Wiring it in ratatui (zwiper-tui)
+
+The view struct keeps the model beside its focus fields: `struct DeckList { model: State, focus: Focus, show_focus: usize, selected: usize, more: Option<Menu> }`. A key handler maps the focused chip or row to an `Action` (`model.show_chips()[show_focus].action()`, `Action::ToggleGroup(group.key())`, `Action::OpenDeck(id)`). It performs effects through its `Context`: `FetchDecks(ticket)` becomes a `Request` whose `Update` carries the ticket back into `apply`, which sends `Action::Loaded`; `Navigate` pushes or pops a screen; `Toast` calls `cx.toast_for` with the toast's kind, text and duration. After each `update` the view clamps its focus to the new rows.
