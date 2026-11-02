@@ -597,7 +597,12 @@ mod tests {
     fn the_compiled_in_history_has_its_months() {
         let data = HttpChangelog::current();
         let rows = rows(&data, &year("2026"));
-        assert_eq!(labels(&rows[1]), ["Oct", "Sep", "Aug", "Jul", "Jun"]);
+        // Newer months join the front as releases ship; these are the history.
+        let months = labels(&rows[1]);
+        assert!(
+            months.ends_with(&["Oct", "Sep", "Aug", "Jul", "Jun"]),
+            "months {months:?}"
+        );
     }
 
     #[test]
