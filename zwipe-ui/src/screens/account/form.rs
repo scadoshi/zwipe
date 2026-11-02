@@ -187,27 +187,33 @@ impl Form {
     }
 }
 
-/// A password as typed, carried by a request. Its `Debug` hides it; [`read`](Self::read) is the way to the text.
-#[derive(Clone, PartialEq, Eq)]
-pub struct Password(String);
+/// A field's whole text as typed, carried by [`Action::Edit`](super::Action::Edit). Its `Debug` prints only the length, since the field may hold a password.
+#[derive(Default, Clone, PartialEq, Eq)]
+pub struct Typed(String);
 
-impl Password {
-    /// Wraps a password as typed.
+impl Typed {
+    /// Wraps a field's text as typed.
     #[must_use]
     pub fn new(raw: impl Into<String>) -> Self {
         Self(raw.into())
     }
 
-    /// The password as typed, for the request body.
+    /// The text as typed.
     #[must_use]
     pub fn read(&self) -> &str {
         &self.0
     }
+
+    /// The text as typed, for the form to keep.
+    #[must_use]
+    pub fn into_string(self) -> String {
+        self.0
+    }
 }
 
-// By hand: the derive would print the password.
-impl Debug for Password {
+// By hand: the derive would print the text, which may be a password.
+impl Debug for Typed {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        f.write_str("Password(REDACTED)")
+        write!(f, "Typed({} chars)", self.0.chars().count())
     }
 }
