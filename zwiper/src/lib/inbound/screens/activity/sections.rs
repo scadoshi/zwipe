@@ -752,7 +752,7 @@ pub(crate) fn HardPassesPanel(
     rsx! {
         div { class: "maybeboard-list card-group row-enter",
             div { class: "card-group-header card-group-header-with-hint",
-                span { "{PASSES_TITLE}" }
+                span { class: "settings-list-title", "{PASSES_TITLE}" }
                 InfoButton { topic: HintTopic::HardPasses }
             }
             if passes.is_empty() {

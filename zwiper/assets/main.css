@@ -2983,6 +2983,11 @@ button {
     border-bottom: 1px solid var(--border-secondary);
 }
 
+/* A group header that names its section reads as the section titles do. */
+.card-group-header > .settings-list-title {
+    font-weight: 400;
+}
+
 /* A group header with a "?" at its right end. The button's negative block
    margin keeps the header the height of a plain one. */
 .card-group-header-with-hint {
