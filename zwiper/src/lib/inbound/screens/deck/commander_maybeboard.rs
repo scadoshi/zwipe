@@ -36,6 +36,7 @@ use zwipe_core::domain::card::search_card::cards::Cards;
 use zwipe_core::domain::deck::deck_profile::DeckProfile;
 use zwipe_core::domain::deck::format::Format;
 use zwipe_core::domain::user::models::hints::HINT_COMMANDER_MAYBEBOARD;
+use zwipe_ui::commander::maybeboard;
 
 use super::components::skeletons::{ChipRowSkeleton, QuickAddSkeleton};
 use super::components::swipe_select::{SwipeMode, SwipeSelect};
@@ -464,11 +465,7 @@ pub fn CommanderMaybeboard() -> Element {
     let all_on = colors.is_empty();
     let mut filtered: Vec<Card> = entries()
         .iter()
-        .filter(|c| {
-            colors
-                .iter()
-                .all(|color| c.scryfall_data.color_identity.contains(color))
-        })
+        .filter(|c| maybeboard::passes_pips(&c.scryfall_data.color_identity, &colors))
         .cloned()
         .collect();
     if !builder.is_empty()
@@ -494,11 +491,7 @@ pub fn CommanderMaybeboard() -> Element {
     });
     let shown_results: Vec<Card> = search_results()
         .iter()
-        .filter(|c| {
-            c.scryfall_data
-                .oracle_id
-                .is_some_and(|o| !saved_oracles.read().contains(&o))
-        })
+        .filter(|c| maybeboard::is_addable(c.scryfall_data.oracle_id, &saved_oracles.read()))
         .cloned()
         .collect();
     let searching_catalog = query().trim().len() >= MIN_QUERY_LEN;
@@ -624,21 +617,21 @@ pub fn CommanderMaybeboard() -> Element {
 
                         if load_failed() {
                             div { class: "message-empty",
-                                span { class: "chip-note", "Could not load your commander maybeboard" }
+                                span { class: "chip-note", {maybeboard::LOAD_FAILED} }
                             }
                         } else if !has_entries {
                             div { class: "message-empty",
-                                span { class: "chip-note", "No commanders" }
+                                span { class: "chip-note", {maybeboard::NO_COMMANDERS} }
                             }
                         } else if filtered.is_empty() {
                             div { class: "message-empty",
-                                span { class: "chip-note", "No commanders match" }
+                                span { class: "chip-note", {maybeboard::NO_MATCH} }
                             }
                         } else {
                             // Same bordered container the deck cards list wraps
                             // its rows in.
                             div { class: "maybeboard-list card-group row-enter",
-                                div { class: "card-group-header", "Commanders" }
+                                div { class: "card-group-header", {maybeboard::LIST_TITLE} }
                                 for card in filtered {
                                     MaybeboardRow {
                                         key: "{card.scryfall_data.id}",
