@@ -19,6 +19,7 @@ use zwipe_core::domain::deck::{
     self, DeckName, DeckOtherTag, MAX_DECK_ORACLE_TAGS, MAX_DECK_TAGS, PowerLevel,
 };
 use zwipe_ui::deck::command_zone::Slot;
+use zwipe_ui::deck::form::{self, FormValues};
 
 use crate::inbound::components::generation::use_generation;
 use crate::inbound::components::guide_link;
@@ -43,6 +44,94 @@ const NAME_RESULT_LIMIT: u32 = 5;
 
 /// Results fetched by the partner and background searches.
 const POOL_RESULT_LIMIT: u32 = 10;
+
+/// The deck form's signals as one value: the screens read [`FormValues`] from them for their requests and write a format change's knock-on clears back through them.
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct FormSignals {
+    pub(crate) name: Signal<String>,
+    pub(crate) format: Signal<Option<Format>>,
+    pub(crate) tags: Signal<Vec<String>>,
+    pub(crate) commander: Signal<Option<Card>>,
+    pub(crate) commander_display: Signal<String>,
+    pub(crate) partner: Signal<Option<Card>>,
+    pub(crate) partner_display: Signal<String>,
+    pub(crate) background: Signal<Option<Card>>,
+    pub(crate) background_display: Signal<String>,
+    pub(crate) signature_spell: Signal<Option<Card>>,
+    pub(crate) signature_spell_display: Signal<String>,
+    pub(crate) land_target: Signal<Option<i32>>,
+    pub(crate) price_target: Signal<String>,
+    pub(crate) price_target_currency: Signal<PriceCurrency>,
+    pub(crate) power_level: Signal<Option<PowerLevel>>,
+    pub(crate) other_tags: Signal<Vec<DeckOtherTag>>,
+    pub(crate) oracle_tags: Signal<Vec<String>>,
+}
+
+impl FormSignals {
+    /// The form's values, read so a memo over them follows every edit.
+    pub(crate) fn values(self) -> FormValues {
+        FormValues {
+            name: (self.name)(),
+            format: (self.format)(),
+            commander: (self.commander)(),
+            partner: (self.partner)(),
+            background: (self.background)(),
+            signature_spell: (self.signature_spell)(),
+            tags: (self.tags)(),
+            oracle_tags: (self.oracle_tags)(),
+            other_tags: (self.other_tags)(),
+            power_level: (self.power_level)(),
+            land_target: (self.land_target)(),
+            price_text: (self.price_target)(),
+            currency: (self.price_target_currency)(),
+        }
+    }
+
+    /// Fills every field but the command zone from a saved deck's values.
+    pub(crate) fn fill(mut self, saved: &FormValues) {
+        self.name.set(saved.name.clone());
+        self.format.set(saved.format);
+        self.tags.set(saved.tags.clone());
+        self.land_target.set(saved.land_target);
+        self.price_target.set(saved.price_text.clone());
+        self.price_target_currency.set(saved.currency);
+        self.power_level.set(saved.power_level);
+        self.other_tags.set(saved.other_tags.clone());
+        self.oracle_tags.set(saved.oracle_tags.clone());
+    }
+
+    /// Picks `format` from the format picker, or clears it when `None`, and empties each slot the change clears with the name it shows. [`DeckFields`] turns every Filter back on and empties the partner's and background's searches when it sees the format and the commander change.
+    pub(crate) fn set_format(mut self, format: Option<Format>) {
+        let mut values = FormValues {
+            format: *self.format.peek(),
+            commander: self.commander.peek().clone(),
+            partner: self.partner.peek().clone(),
+            background: self.background.peek().clone(),
+            signature_spell: self.signature_spell.peek().clone(),
+            ..FormValues::default()
+        };
+        let cascade = match format {
+            Some(format) => values.pick_format(format),
+            None => values.clear_format(),
+        };
+        self.format.set(values.format);
+        for &slot in cascade.cleared.iter().chain(&cascade.reset) {
+            let (mut card, mut display) = self.slot(slot);
+            card.set(None);
+            display.set(String::new());
+        }
+    }
+
+    /// The card and shown-name signals of `slot`.
+    fn slot(self, slot: Slot) -> (Signal<Option<Card>>, Signal<String>) {
+        match slot {
+            Slot::Commander => (self.commander, self.commander_display),
+            Slot::Partner => (self.partner, self.partner_display),
+            Slot::Background => (self.background, self.background_display),
+            Slot::SignatureSpell => (self.signature_spell, self.signature_spell_display),
+        }
+    }
+}
 
 /// "Partner with [Name]" names exactly one legal partner, so a commander pick
 /// fills the partner slot automatically: fetch the named mate and set it, with
@@ -168,6 +257,25 @@ pub(crate) fn DeckFields(
     let client: Signal<ZwipeClient> = use_context();
     let usage_buffer: Signal<UsageBuffer> = use_context();
     let toast = use_toast();
+    let fields = FormSignals {
+        name: deck_name,
+        format: selected_format,
+        tags: selected_tags,
+        commander,
+        commander_display,
+        partner: partner_commander,
+        partner_display: partner_commander_display,
+        background,
+        background_display,
+        signature_spell,
+        signature_spell_display,
+        land_target,
+        price_target,
+        price_target_currency,
+        power_level,
+        other_tags,
+        oracle_tags,
+    };
 
     // Deck name inline validation: mirrors the auth/profile per-field pattern:
     // show the error under the field as the user types (after first input), so a
@@ -223,20 +331,11 @@ pub(crate) fn DeckFields(
     let mut spell_searches = use_generation();
 
     // Visibility memos
-    let show_commander = use_memo(move || selected_format().is_some_and(|f| f.has_commander()));
-
-    let show_partner = use_memo(move || {
-        show_commander()
-            && commander().is_some_and(|c| commander_eligibility::partner_kind(&c).is_some())
-    });
-
-    let show_background = use_memo(move || {
-        show_commander()
-            && commander().is_some_and(|c| commander_eligibility::has_choose_a_background(&c))
-    });
-
-    let show_signature_spell =
-        use_memo(move || selected_format().is_some_and(|f| f.has_signature_spell()));
+    let shows = move |slot: Slot| form::shows(slot, selected_format(), commander().as_ref());
+    let show_commander = use_memo(move || shows(Slot::Commander));
+    let show_partner = use_memo(move || shows(Slot::Partner));
+    let show_background = use_memo(move || shows(Slot::Background));
+    let show_signature_spell = use_memo(move || shows(Slot::SignatureSpell));
 
     let commander_label = use_memo(move || Slot::Commander.label(selected_format()));
 
@@ -268,7 +367,7 @@ pub(crate) fn DeckFields(
         let current = commander().map(|c| c.scryfall_data.id);
         let previous = *prev_commander_id.peek();
         prev_commander_id.set(current);
-        if previous.is_none() || previous == current {
+        if !form::clears_mates(previous, current) {
             return;
         }
         partner_commander.set(None);
@@ -525,13 +624,7 @@ pub(crate) fn DeckFields(
                 if selected_format().is_some() {
                     button {
                         class: "clear-btn",
-                        onclick: move |_| {
-                            selected_format.set(None);
-                            commander.set(None);
-                            commander_display.set(String::new());
-                            signature_spell.set(None);
-                            signature_spell_display.set(String::new());
-                        },
+                        onclick: move |_| fields.set_format(None),
                         "\u{00d7}"
                     }
                 }
