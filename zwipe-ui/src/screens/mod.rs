@@ -2,9 +2,20 @@
 //!
 //! Each model is a `State` the client keeps for one visit, an `Action` for every tap, key or reply, and the `Effect`s [`deck_list::State::update`] and its siblings return. The model never fetches, spawns or navigates; the client performs each effect and feeds replies back in as actions. `context/screen-models.md` describes the pattern.
 
+pub mod account;
 pub mod activity;
+pub mod card_filter;
+pub mod commander_maybeboard;
 pub mod config;
+pub mod deck_export;
+pub mod deck_form;
+pub mod deck_import;
 pub mod deck_list;
 pub mod deck_view;
+pub mod forgot_password;
 pub mod home;
+pub mod login;
+pub mod oracle_tag_dictionary;
+pub mod oracle_tag_examples;
+pub mod register;
 pub mod remove_cards;

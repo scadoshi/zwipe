@@ -68,6 +68,35 @@ Every fetch takes a `Ticket` from the model's own `Generation` inside `update`, 
 - Saves that race on different controls carry a `SaveTicket` (slot plus ticket) and wait in a list. Toggles drop an overtaken reply through `Toggles` generations; a sheet's save always lands.
 - A model can open and close sheets with `OpenSheet`/`CloseSheet` while openness stays in client signals.
 - A draft stays readable after its sheet closes, so the sheet sliding away still draws it.
+- A debounce is an effect, `Debounce { ticket, wait }`, that the client answers with `Debounced { ticket }` after the wait, so models stay free of timers. A newer edit takes a new ticket, which drops the older wait.
+- A filter the client owns in a shared sheet goes into views as a parameter (`shown(&filter)`, `message(&filter)`).
+- State handed to another screen goes as an effect ahead of `Navigate` (`SeedCommander(card)`), which keeps `Destination` `Copy`.
+- A quiet fetch that only feeds a gate (the maybeboard's deck count) needs no ticket and sends nothing back on failure.
+- Timers are a self-renewing `Effect::Wait(Ticket)` answered by `Action::Tick { ticket }`. The model counts whole seconds and asks for another wait while time is left; a wait whose count was replaced is answered and ignored, so clients never cancel one.
+- Text forms can live in the model (Account keeps one per sheet), with the client sending each keystroke as `Edit`. Do this when another client duplicates the touched and attempted rules; otherwise the text stays in the client and comes in on submit.
+- Passwords travel as the model's `Password`, whose `Debug` is redacted.
+- A shared component with an inline confirm takes a callback (`LogoutDialog { on_confirm }`) so the confirm goes through the model.
+- A screen with no fetch opens with `Open(id)` instead of `Load` (Import).
+- Input that lives in the client (a text area) comes in on the submit action, and `can_submit(input)` takes it for the disabled check.
+- A model that holds a zwipe-core type without `PartialEq` drops `PartialEq` from `State` and `Action`.
+- A screen that reads an app-wide cache it doesn't own takes the cache's state into its views by reference (`Catalog<'_>` into `body`) and holds no copy; the client reports a failure as an action (`CatalogFailed`).
+- A hand-off to the host can be an effect with no `Navigate` when the overlay stays up (the dictionary's `AdoptTag`).
+- A swipe browse's enter animation is an effect (`Enter(Direction)`): the model owns the cards and the cursor, the client the animation.
+- One model can serve two screens through a mode passed in `Load` (Create and Edit share `screens::deck_form` with `Open::Create { seed }` or `Open::Edit(id)`).
+- A picker's draft and which picker is open belong to the model, since the draft lives exactly as long as the picker; swipe overlays stay in the client.
+- A text input that owns its own signal stays in step with the model both ways.
+- Effects that carry zwipe-core request contracts can't derive `PartialEq`; tests use `matches!`.
+- A sheet over a host's value takes it in `Open` and hands it back with `Effect::Apply`; its Back is `Effect::Close`, not a navigation.
+- A client whose controls edit the host's value in place syncs it with `Action::Edit` before each action and performs `Restore` on Back; a client with a separate draft ignores `Restore`.
+- A model whose lists come from a client-wide store emits `EnsureLists` and takes no tickets.
+- A warning raised once per opening resets on close, so the order of effects doesn't matter.
+- Typed passwords are `zwipe_ui::account::Password` in actions, effects and state, with its `Debug` redacted. Login, Register and Forgot password give each field its own edit action; Account's shared `Edit` carries `Typed`, whose `Debug` prints only the length.
+- When the model changes a field the client's input owns, it says so in an effect (`SetIdentifier`, `ClearPassword`).
+- Requests that may overlap on purpose (Forgot password's Send) use the waiting list, and a flag any reply clears mirrors the app's spinner.
+- Funnel events stay in the client and go out as it performs the effect.
+- A model that needs a client-owned store's answer emits a request effect (`TakeUndo`) the client answers at once with an action (`Taken`), and writes back with `RecordUndo`.
+- The client's request runner may hold animation state, such as clearing the entrance on a failed session refresh.
+- A client-owned counter other widgets watch can keep driving the model with `Filter(builder)`.
 
 ## Wiring it in Dioxus (the app and zwiper-web)
 
