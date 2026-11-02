@@ -12,12 +12,10 @@ Before you run `fmt`, update nightly. CI's rustfmt merges imports that older nig
 - [ ] **9, commander (#118).** `zwipe_ui::commander::maybeboard`: `passes_pips`, `is_addable`, `step_highlight` with `Step::{Down, Up}` (the web's `forward: true` is `Step::Down`), and `LIST_TITLE`, `NO_COMMANDERS`, `NO_MATCH`, `LOAD_FAILED`. `commander::swipe_select`: `card_key`, `redeal`. Delete `domain/commander_maybeboard.rs` and `domain/swipe_select.rs`.
 - [ ] **See guide links (#117).** `zwipe_ui::hint::guide`: `HintTopic::guide_slug`, `one_time_slug(OneTimeHint)`, `url(slug)`. Screen hints link out to zwipe.net's guides, and a panel's `?` doesn't. orangui is repinned to a59165d, where `HintDialog` puts Got it before the host's actions.
 
-## Landing in #120 (switch once it's on main)
-
-- [ ] **10, dictionary.** `zwipe_ui::dictionary`: `bucket_of`, `letters`, `rows_for`, `OTHER`. Delete `bucket_of` and `rows_for` in `inbound/screens/oracle_tag_dictionary.rs`, along with their tests.
-- [ ] **11, preferences.** `zwipe_ui::preferences`: `PreferenceChange`, `From<PreferenceChange> for HttpUpdatePreferences`, `settle` on `Generation` (the web's `RequestSeq` becomes `Generation`, and `begin` becomes `next_ticket`), `exception_names`, `saved_toast`, `theme_unchanged`, `exceptions_unchanged`. Delete `domain/preferences.rs`. Replace the local `update` helper and the hand-built requests in `config/themes.rs` and `exceptions.rs`.
-- [ ] **13, filter chips.** `zwipe_ui::filter::chips` is the web's `domain/filter_chips.rs` lifted with the same API (`PRODUCED`, `ChipOption`, `options`, `is_selected`, `tap`). Delete the web's file and import the shared one.
-- [ ] **14, card info.** `zwipe_ui::card::info`: `price_line`, `set_line`, `released_line`, `artist_line`, where `None` means a blank line. Switch `inbound/cards/card_info.rs`, which keeps its `\u{a0}` for a blank line.
+- [ ] **10, dictionary (#120).** `zwipe_ui::dictionary`: `bucket_of`, `letters`, `rows_for`, `OTHER`. Delete `bucket_of` and `rows_for` in `inbound/screens/oracle_tag_dictionary.rs`, along with their tests.
+- [ ] **11, preferences (#120).** `zwipe_ui::preferences`: `PreferenceChange`, `From<PreferenceChange> for HttpUpdatePreferences`, `settle` on `Generation` (the web's `RequestSeq` becomes `Generation`, and `begin` becomes `next_ticket`), `exception_names`, `saved_toast`, `theme_unchanged`, `exceptions_unchanged`. Delete `domain/preferences.rs`. Replace the local `update` helper and the hand-built requests in `config/themes.rs` and `exceptions.rs`.
+- [ ] **13, filter chips (#120).** `zwipe_ui::filter::chips` is the web's `domain/filter_chips.rs` lifted with the same API (`PRODUCED`, `ChipOption`, `options`, `is_selected`, `tap`). Delete the web's file and import the shared one.
+- [ ] **14, card info (#120).** `zwipe_ui::card::info`: `price_line`, `set_line`, `released_line`, `artist_line`, where `None` means a blank line. Switch `inbound/cards/card_info.rs`, which keeps its `\u{a0}` for a blank line.
 
 ## Coming
 
