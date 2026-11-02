@@ -100,23 +100,23 @@ Effort is the work to build the shared model from the TUI's version and test it 
 | Home | hero scope and figures, color map model, flavor card and its hourly expiry, buy link, Playstyle panel states, one-time hint | color map drawing, counter animation, image | M, built: `screens::home`; the app switched, web and TUI to switch; the caches above the router stay in each client |
 | Activity | heatmap layout, readout selection and its 4 s release, totals, rate kind switch, both rate charts, Most skipped, empty lines | heat grid drawing, sweeps, chart drawing | M, built: `screens::activity`; the app switched, web and TUI to switch; the heat pick's 4 s release stays in each client |
 | Playstyle | profile sections, tag table, suggestions with Show, Staples filters, Clear skips flow, reasons, every empty line | chart and card drawing; sections open together on web | L |
-| Commander maybeboard | list, quick add with its 300 ms debounce, color filter, remove, clear, hand-off to Create | swipe gesture | M |
+| Commander maybeboard | list, quick add with its 300 ms debounce, color filter, remove, clear, hand-off to Create | swipe gesture | M, built: `screens::commander_maybeboard`; the app switched, web and TUI to switch; the card filter, Art chip and swipe overlay stay in the client |
 | Swipe select (commander and suggested modes) | the stack, the per-mode constraint, maybeboard save and undo, toasts | the gesture engine and card motion | L |
 | Oracle tag dictionary | search, definition, Use hand-off | overlay or panel layout | S |
 | Oracle tag examples | load, paging, empty and error lines | card drawing | S |
 | Deck list | the whole TUI `DeckList` minus focus: decks, Group by, Show, tag fold, collapsed groups, Create gate, More items | chip and list drawing | S, built: `screens::deck_list`; the app switched, web and TUI to switch |
 | Create and Edit | every field, validation, knock-on clears, change detection, the four command-zone searches with debounce and generation tickets, the format, tag and oracle tag pickers (draft, Save disabled when unchanged, Back with "unchanged"), submit and server messages | text inputs, picker layout (sheet, side panel, overlay) | L |
-| Import | paste, submit, outcome toast | text area | S |
-| Export | board toggles with the at-least-one rule, the text, copy toast | clipboard API | S |
-| Deck view | load, profile, stats, sections, warnings and their fixes, More items, the Buy, Clone, Share, Clear skips and Delete dialogs and their flows, first-deck hint | accordion or columns, charts | M |
+| Import | paste, submit, outcome toast | text area | S, built: `screens::deck_import`; the app switched, web and TUI to switch |
+| Export | board toggles with the at-least-one rule, the text, copy toast | clipboard API | S, built: `screens::deck_export`; the app switched, web and TUI to switch |
+| Deck view | load, profile, stats, sections, warnings and their fixes, More items, the Buy, Clone, Share, Clear skips and Delete dialogs and their flows, first-deck hint | accordion or columns, charts | M, built: `screens::deck_view`; the app switched, web and TUI to switch; which dialog is up stays in the client |
 | Add cards | sources (Search, Maybeboard), From and Synergy, the stack, paging, every swipe outcome, undo through the shared log, in-flight adds, land and budget crossings, end of results, all 43 toasts | gestures and card motion, image loading | XL |
 | Card filter | draft and Apply, 15 sections, per-host reset, picker sources, contradiction and catalog toasts | accordion or columns, steppers and chips as drawn | L |
 | Deck cards view | load, filter and group pass, boards, Show, quick add, quantities with the 300 ms flush, moves, printings, MVP, Undo, Reset filter, every toast | detail pane, drag to move, row drawing | XL |
 | Remove cards | load, board filter, cycling stack, swipe outcomes, undo, crossings, toasts | gestures | M |
 | Printing sheet | list, pick, toasts | layout | S |
 | Image preview | which image and face | all of it is drawing | none |
-| Account | both lists, the three change forms, verification with resend cooldown, delete countdown, More, dialogs | inputs, dialogs as drawn | M |
-| Config | theme pick and preview, dark mode, pips, Universes Beyond and its exceptions, toasts | the app icon picker (app only), theme drawing | M |
+| Account | both lists, the three change forms, verification with resend cooldown, delete countdown, More, dialogs | inputs, dialogs as drawn | M, built: `screens::account`; the app switched, web and TUI to switch; the clock stays in the client (`Wait`/`Tick`) |
+| Config | theme pick and preview, dark mode, pips, Universes Beyond and its exceptions, toasts | the app icon picker (app only), theme drawing | M, built: `screens::config`; the app switched, web and TUI to switch; theme and pips stay the client's, the app icon stays in the app |
 | Privacy policy | nothing beyond the source text already in core | rendering; the TUI's parser stays in the TUI | none |
 | Changelog | filing and the filter | web anchors | S |
 

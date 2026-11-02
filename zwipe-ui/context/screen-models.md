@@ -59,6 +59,26 @@ Every fetch takes a `Ticket` from the model's own `Generation` inside `update`, 
 - Fetches that run side by side and restart independently each get their own `Generation`, so a reply to one never drops another. Home has five: user, counts, my counts, playstyle and flavor.
 - The model never reads the clock. Anything that depends on the time takes it in the action (`CheckFlavor { now }`), so tests pin it.
 - When the first render must already show the cached state, the app runs `Load` inside the `use_signal` initializer instead of `use_effect`, and performs the effects it returns right after.
+- A screen with many requests in flight at once (the deck view's load, commander art, edits) takes every ticket from one `Generation` and keeps a waiting list keyed by ticket, so each reply finds its own request and a reply after a newer `Load` changes nothing.
+- A reload keeps the last result on screen while it runs, so a refresh after an edit doesn't flash the skeleton.
+- A screen with several dialogs emits `OpenDialog(Dialog)`; which dialog is up stays in the client.
+- Copying to the clipboard is `Effect::Copy { text, done }`: the client copies `text`, then raises `done`; a client that can tell the copy failed raises its own toast instead.
+- A screen opened for one item takes its id in `Load` (`Load(deck_id)`).
+- Client-wide values that a sheet previews over (Config's theme and pips) stay the client's. The action carries the value shown, and the model answers with `ShowTheme`/`ShowPips` for an optimistic value or a rollback, and `ThemeSaved`/`PipsSaved` once the server holds it.
+- Saves that race on different controls carry a `SaveTicket` (slot plus ticket) and wait in a list. Toggles drop an overtaken reply through `Toggles` generations; a sheet's save always lands.
+- A model can open and close sheets with `OpenSheet`/`CloseSheet` while openness stays in client signals.
+- A draft stays readable after its sheet closes, so the sheet sliding away still draws it.
+- A debounce is an effect, `Debounce { ticket, wait }`, that the client answers with `Debounced { ticket }` after the wait, so models stay free of timers. A newer edit takes a new ticket, which drops the older wait.
+- A filter the client owns in a shared sheet goes into views as a parameter (`shown(&filter)`, `message(&filter)`).
+- State handed to another screen goes as an effect ahead of `Navigate` (`SeedCommander(card)`), which keeps `Destination` `Copy`.
+- A quiet fetch that only feeds a gate (the maybeboard's deck count) needs no ticket and sends nothing back on failure.
+- Timers are a self-renewing `Effect::Wait(Ticket)` answered by `Action::Tick { ticket }`. The model counts whole seconds and asks for another wait while time is left; a wait whose count was replaced is answered and ignored, so clients never cancel one.
+- Text forms can live in the model (Account keeps one per sheet), with the client sending each keystroke as `Edit`. Do this when another client duplicates the touched and attempted rules; otherwise the text stays in the client and comes in on submit.
+- Passwords travel as the model's `Password`, whose `Debug` is redacted.
+- A shared component with an inline confirm takes a callback (`LogoutDialog { on_confirm }`) so the confirm goes through the model.
+- A screen with no fetch opens with `Open(id)` instead of `Load` (Import).
+- Input that lives in the client (a text area) comes in on the submit action, and `can_submit(input)` takes it for the disabled check.
+- A model that holds a zwipe-core type without `PartialEq` drops `PartialEq` from `State` and `Action`.
 
 ## Wiring it in Dioxus (the app and zwiper-web)
 

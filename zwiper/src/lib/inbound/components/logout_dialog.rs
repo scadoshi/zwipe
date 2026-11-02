@@ -2,31 +2,25 @@
 
 use components::{AlertDialog, DialogAction};
 use dioxus::prelude::*;
-use zwipe_client::ZwipeClient;
-use zwipe_core::domain::auth::models::session::Session;
+use zwipe_ui::screens::account::{CANCEL, Dialog};
 
-use crate::inbound::components::auth::signal_logout::SignalLogout;
-
-/// Simple logout confirmation dialog.
+/// Simple logout confirmation dialog. `on_confirm` logs out.
 #[component]
-pub(crate) fn LogoutDialog(open: Signal<bool>) -> Element {
-    let session: Signal<Option<Session>> = use_context();
-    let client: Signal<ZwipeClient> = use_context();
-    let log_out = use_callback(move |()| session.logout(client));
-
+pub(crate) fn LogoutDialog(open: Signal<bool>, on_confirm: Callback) -> Element {
+    let dialog = Dialog::LogOut;
     rsx! {
         AlertDialog {
             open,
-            title: "Log out",
+            title: dialog.title(),
             actions: vec![
-                DialogAction::Dismiss("Cancel".into()),
+                DialogAction::Dismiss(CANCEL.into()),
                 DialogAction::Confirm {
-                    label: "Log out".into(),
+                    label: dialog.confirm().into(),
                     danger: true,
-                    on_confirm: log_out,
+                    on_confirm,
                 },
             ],
-            "Are you sure you want to log out?"
+            {dialog.body()}
         }
     }
 }
