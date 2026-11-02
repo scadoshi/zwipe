@@ -23,6 +23,7 @@ use zwipe_core::domain::deck;
 use zwipe_core::domain::deck::deck_profile::DeckProfile;
 use zwipe_core::domain::deck::format::Format;
 use zwipe_core::domain::user::models::hints::HINT_DECK_LIST;
+use zwipe_ui::deck::command_zone;
 
 use crate::inbound::components::auth::authed::use_authed;
 use crate::inbound::components::hint_dialog;
@@ -74,22 +75,6 @@ fn identity_colors(profile: &DeckProfile) -> Vec<Color> {
         .into_iter()
         .filter(|c| present.contains(c))
         .collect()
-}
-
-/// The deck's command-zone art crops, in zone order: commander (or
-/// oathbreaker), then partner, background, and signature spell. Server-resolved
-/// on the profile, so the row draws its command zone without fetching cards.
-/// Realistically one or two: no printed card fills more than two slots.
-fn command_zone_art(profile: &DeckProfile) -> Vec<&str> {
-    [
-        profile.commander_art_url.as_deref(),
-        profile.partner_commander_art_url.as_deref(),
-        profile.background_art_url.as_deref(),
-        profile.signature_spell_art_url.as_deref(),
-    ]
-    .into_iter()
-    .flatten()
-    .collect()
 }
 
 /// Every tag on the deck as (key, label): deck tags keyed by raw slug,
@@ -323,7 +308,7 @@ fn DeckRow(profile: DeckProfile) -> Element {
             || f.max_cards().is_some_and(|m| count > i64::from(m))
     });
     let pips = identity_colors(&profile);
-    let art = command_zone_art(&profile);
+    let art = command_zone::art(&profile);
     let deck_id = profile.id;
     rsx! {
         div {

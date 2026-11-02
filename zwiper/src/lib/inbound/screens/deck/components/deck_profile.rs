@@ -3,7 +3,7 @@
 use dioxus::prelude::*;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::deck::deck_profile::DeckProfile;
-use zwipe_core::domain::deck::format::Format;
+use zwipe_ui::deck::command_zone::Slot;
 
 #[component]
 pub(crate) fn DeckProfileSection(
@@ -12,15 +12,8 @@ pub(crate) fn DeckProfileSection(
     /// Total card count (command-zone variants included) for the "Cards" row.
     card_count: usize,
 ) -> Element {
-    let is_oathbreaker = deck_profile
-        .format
-        .as_ref()
-        .is_some_and(Format::has_signature_spell);
-    let commander_label = if is_oathbreaker {
-        "Oathbreaker"
-    } else {
-        "Commander"
-    };
+    let format = deck_profile.format;
+    let commander_label = Slot::Commander.label(format);
 
     rsx! {
         div { class: "settings-list",
@@ -61,19 +54,19 @@ pub(crate) fn DeckProfileSection(
             }
             if let Some(name) = &deck_profile.partner_commander_name {
                 div { class: "settings-row",
-                    span { class: "settings-row-label", "Partner" }
+                    span { class: "settings-row-label", {Slot::Partner.label(format)} }
                     span { class: "info-row-value", { name.clone() } }
                 }
             }
             if let Some(name) = &deck_profile.background_name {
                 div { class: "settings-row",
-                    span { class: "settings-row-label", "Background" }
+                    span { class: "settings-row-label", {Slot::Background.label(format)} }
                     span { class: "info-row-value", { name.clone() } }
                 }
             }
             if let Some(name) = &deck_profile.signature_spell_name {
                 div { class: "settings-row",
-                    span { class: "settings-row-label", "Signature spell" }
+                    span { class: "settings-row-label", {Slot::SignatureSpell.label(format)} }
                     span { class: "info-row-value", { name.clone() } }
                 }
             }

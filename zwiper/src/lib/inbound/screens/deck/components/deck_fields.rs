@@ -18,6 +18,7 @@ use zwipe_core::domain::deck::format::Format;
 use zwipe_core::domain::deck::{
     self, DeckName, DeckOtherTag, MAX_DECK_ORACLE_TAGS, MAX_DECK_TAGS, PowerLevel,
 };
+use zwipe_ui::deck::command_zone::Slot;
 
 use crate::inbound::components::generation::use_generation;
 use crate::inbound::components::hint_dialog::HintColored;
@@ -236,16 +237,7 @@ pub(crate) fn DeckFields(
     let show_signature_spell =
         use_memo(move || selected_format().is_some_and(|f| f.has_signature_spell()));
 
-    let is_oathbreaker =
-        use_memo(move || selected_format().is_some_and(|f| f.has_signature_spell()));
-
-    let commander_label = use_memo(move || {
-        if is_oathbreaker() {
-            "Oathbreaker"
-        } else {
-            "Commander"
-        }
-    });
+    let commander_label = use_memo(move || Slot::Commander.label(selected_format()));
 
     // Format-derived land heuristic. The stepper seeds from it on the first tick
     // so an empty field starts at the sensible count rather than zero.
@@ -660,7 +652,7 @@ pub(crate) fn DeckFields(
         Collapsible { show: show_partner(),
             div {
                 div { class: "label-row",
-                    label { class: "label", "Partner" }
+                    label { class: "label", {Slot::Partner.label(selected_format())} }
                 InfoButton { topic: HintTopic::Partner }
                     div {
                         class: if partner_filter_on() { "chip-xs selected" } else { "chip-xs" },
@@ -756,7 +748,7 @@ pub(crate) fn DeckFields(
         Collapsible { show: show_background(),
             div {
                 div { class: "label-row",
-                    label { class: "label", "Background" }
+                    label { class: "label", {Slot::Background.label(selected_format())} }
                 InfoButton { topic: HintTopic::Background }
                     div {
                         class: if bg_filter_on() { "chip-xs selected" } else { "chip-xs" },
@@ -852,7 +844,7 @@ pub(crate) fn DeckFields(
         Collapsible { show: show_signature_spell(),
             div {
                 div { class: "label-row",
-                    label { class: "label", "Signature spell" }
+                    label { class: "label", {Slot::SignatureSpell.label(selected_format())} }
                 InfoButton { topic: HintTopic::SignatureSpell }
                     div {
                         class: if spell_filter_on() { "chip-xs selected" } else { "chip-xs" },
