@@ -19,6 +19,7 @@ pub mod commander;
 pub mod deck;
 pub mod deck_cards;
 pub mod deck_signals;
+pub mod dictionary;
 pub mod filter;
 pub mod generation;
 pub mod hint;
