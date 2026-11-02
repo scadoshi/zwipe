@@ -39,7 +39,9 @@ Compact footer buttons, the password hint behind `?`, no site footer, the action
 
 zwipe-ui landed on main (c55c3977), and main is merged into feat/web. The shared plan is `zwipe-ui/context/shared-plan.md`. The web now takes the session rules, version gate, support mailto, account checks, timing constants, changelog cache, filter toggle, examples cap and "1 card" wording from zwipe-ui. The theme already resolves retired slugs through orangui-core.
 
-Still to come, as the zwiper-tui session lands each shared branch: toasts take the app's kind, band and words; the `// Belongs in zwipe-ui` helpers move; and the usage buffer replaces the web's disabled funnel once the telemetry branch (branch 12) lands with server-side platform tagging.
+**Start with `context/shared-switch.md`**: the shared branches already on main that the web still has to switch to, with exact names and files. zwiper-helpers (formerly zwiper-tui) keeps it current.
+
+Still to come, as zwiper-helpers lands each shared branch: toasts take the app's kind, band and words; the `// Belongs in zwipe-ui` helpers move; and the usage buffer replaces the web's disabled funnel once the telemetry branch (branch 12) lands with server-side platform tagging.
 
 ## Review queue
 
