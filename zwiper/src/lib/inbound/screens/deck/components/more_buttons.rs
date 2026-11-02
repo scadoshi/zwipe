@@ -1,180 +1,165 @@
-//! The view deck screen's Buy and More bottom sheets.
+//! The view deck screen's More sheet and the Buy, Share and Clear skips
+//! dialogs it opens.
 
 use components::{AlertDialog, BottomSheet, Button, DialogAction};
 use dioxus::prelude::*;
-use dioxus_primitives::toast::use_toast;
-use uuid::Uuid;
-use zwipe_client::ZwipeClient;
-use zwipe_core::domain::auth::models::session::Session;
-use zwipe_ui::deck::view::{self, Done};
+use zwipe_ui::screens::deck_view::{self, Action, Dialog, MoreItem};
 
-use crate::inbound::components::auth::authed::use_authed;
-use crate::inbound::components::telemetry::flush_loop;
-use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
-use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen, component};
-use crate::inbound::components::ui_toast;
-use crate::inbound::router::Router;
+/// Whether the More sheet and each of the deck view's dialogs is up.
+#[derive(Clone, Copy, PartialEq)]
+pub(crate) struct DeckDialogs {
+    /// The More sheet.
+    pub(crate) sheet: Signal<bool>,
+    /// The Buy dialog.
+    pub(crate) buy: Signal<bool>,
+    /// The Clone dialog.
+    pub(crate) clone: Signal<bool>,
+    /// The Share dialog.
+    pub(crate) share: Signal<bool>,
+    /// The Clear skips dialog.
+    pub(crate) clear_skips: Signal<bool>,
+    /// The Delete dialog.
+    pub(crate) delete: Signal<bool>,
+}
+
+impl DeckDialogs {
+    /// Opens `dialog`.
+    pub(crate) fn open(self, dialog: Dialog) {
+        let mut open = match dialog {
+            Dialog::Buy => self.buy,
+            Dialog::Clone => self.clone,
+            Dialog::Share => self.share,
+            Dialog::ClearSkips => self.clear_skips,
+            Dialog::Delete => self.delete,
+        };
+        open.set(true);
+    }
+}
+
+/// The sheet and every dialog, all closed.
+pub(crate) fn use_deck_dialogs() -> DeckDialogs {
+    DeckDialogs {
+        sheet: use_signal(|| false),
+        buy: use_signal(|| false),
+        clone: use_signal(|| false),
+        share: use_signal(|| false),
+        clear_skips: use_signal(|| false),
+        delete: use_signal(|| false),
+    }
+}
 
 #[component]
 pub(crate) fn MoreButtons(
-    deck_id: Uuid,
-    show_buy_dialog: Signal<bool>,
-    show_more_sheet: Signal<bool>,
-    show_delete_dialog: Signal<bool>,
-    show_clone_dialog: Signal<bool>,
-    /// Live share-link token: `Some` when the deck has a public link. Updated
-    /// in place by the Share / Stop-sharing actions.
-    share_token: Signal<Option<Uuid>>,
-    has_cards: bool,
-    tcg_url: Option<String>,
-    ck_url: Option<String>,
+    dialogs: DeckDialogs,
+    /// The items that can be pressed; the rest show disabled.
+    enabled: Vec<MoreItem>,
+    /// The `TCGplayer` and `Card Kingdom` links, once the deck has loaded.
+    buy_links: Option<(String, String)>,
+    buy_body: &'static str,
+    /// Whether the deck has a public link.
+    shared: bool,
+    share_body: &'static str,
+    ondispatch: EventHandler<Action>,
 ) -> Element {
-    let navigator = use_navigator();
-    let session: Signal<Option<Session>> = use_context();
-    let client: Signal<ZwipeClient> = use_context();
-    let usage_buffer: Signal<UsageBuffer> = use_context();
-    let toast = use_toast();
-    let authed = use_authed(Screen::Deck(DeckScreen::View));
-    let mut show_clear_skips_dialog = use_signal(|| false);
-    let mut show_share_dialog = use_signal(|| false);
-
-    // Copies a shared-deck link to the clipboard and toasts. The token is a
-    // UUID, so it needs no escaping, but we serialize for safety anyway.
-    let copy_link = move |token: Uuid| {
-        let url = view::share_link(token);
-        let js = format!(
-            "navigator.clipboard.writeText({})",
-            serde_json::to_string(&url).unwrap_or_default()
-        );
-        document::eval(&js);
-        ui_toast::raise(toast, Done::LinkCopied.toast());
-    };
+    let DeckDialogs {
+        sheet: mut show_more_sheet,
+        buy: show_buy_dialog,
+        share: show_share_dialog,
+        clear_skips: show_clear_skips_dialog,
+        ..
+    } = dialogs;
 
     let share_deck = use_callback(move |()| {
         show_more_sheet.set(false);
-        spawn(async move {
-            if let Some(result) = authed
-                .run_at(component::MORE_BUTTONS, "share_deck", |c, s| async move {
-                    c.share_deck(deck_id, &s).await
-                })
-                .await
-            {
-                share_token.set(Some(result.share_token));
-                copy_link(result.share_token);
-            }
-        });
+        ondispatch.call(Action::Share);
     });
 
     let copy_shared_link = use_callback(move |()| {
         show_more_sheet.set(false);
-        if let Some(token) = *share_token.peek() {
-            copy_link(token);
-        }
+        ondispatch.call(Action::CopyLink);
     });
 
     let stop_sharing = use_callback(move |()| {
         show_more_sheet.set(false);
-        spawn(async move {
-            if authed
-                .run_at(component::MORE_BUTTONS, "unshare_deck", |c, s| async move {
-                    c.unshare_deck(deck_id, &s).await
-                })
-                .await
-                .is_some()
-            {
-                share_token.set(None);
-                ui_toast::raise(toast, Done::LinkDisabled.toast());
-            }
-        });
+        ondispatch.call(Action::StopShare);
     });
 
     let clear_skips = use_callback(move |()| {
         show_more_sheet.set(false);
-        spawn(async move {
-            // Flush pending skips first so this window's not-yet-sent skips
-            // are wiped too, not re-suppressed by the next flush.
-            flush_loop::flush_once(&usage_buffer(), &client, &session).await;
-            if authed
-                .run_at(
-                    component::MORE_BUTTONS,
-                    "clear_suppressions",
-                    |c, s| async move { c.clear_deck_suppressions(deck_id, &s).await },
-                )
-                .await
-                .is_some()
-            {
-                ui_toast::raise(toast, Done::SkipsCleared.toast());
-            }
-        });
+        ondispatch.call(Action::ClearSkips);
     });
 
-    let buy_description = if tcg_url.is_none() && ck_url.is_none() {
-        "No buy links are available for this deck."
-    } else {
-        "Buy this deck's cards from a retailer."
-    };
-    let buy_actions: Vec<DialogAction> = std::iter::once(DialogAction::Dismiss("Close".into()))
-        .chain(tcg_url.map(|href| DialogAction::Link {
-            label: "TCGplayer \u{2197}".into(),
-            href,
-        }))
-        .chain(ck_url.map(|href| DialogAction::Link {
-            label: "Card Kingdom \u{2197}".into(),
-            href,
-        }))
-        .collect();
+    let (tcg_url, ck_url) = buy_links.map_or((None, None), |(tcg, ck)| (Some(tcg), Some(ck)));
+    let buy_actions: Vec<DialogAction> =
+        std::iter::once(DialogAction::Dismiss(deck_view::CLOSE.into()))
+            .chain(tcg_url.map(|href| DialogAction::Link {
+                label: deck_view::TCGPLAYER.into(),
+                href,
+            }))
+            .chain(ck_url.map(|href| DialogAction::Link {
+                label: deck_view::CARD_KINGDOM.into(),
+                href,
+            }))
+            .collect();
 
-    let (share_description, share_actions) = if share_token().is_some() {
-        (
-            "Anyone with the link can view this deck. Stop sharing disables the link; sharing again creates a new one.",
-            vec![
-                DialogAction::Dismiss("Close".into()),
-                DialogAction::Confirm {
-                    label: "Copy link".into(),
-                    danger: false,
-                    on_confirm: copy_shared_link,
-                },
-                DialogAction::Confirm {
-                    label: "Stop share".into(),
-                    danger: true,
-                    on_confirm: stop_sharing,
-                },
-            ],
-        )
+    let share_actions = if shared {
+        vec![
+            DialogAction::Dismiss(deck_view::CLOSE.into()),
+            DialogAction::Confirm {
+                label: deck_view::COPY_LINK.into(),
+                danger: false,
+                on_confirm: copy_shared_link,
+            },
+            DialogAction::Confirm {
+                label: deck_view::STOP_SHARE.into(),
+                danger: true,
+                on_confirm: stop_sharing,
+            },
+        ]
     } else {
-        (
-            "Anyone with the link can view this deck. You can stop sharing at any time.",
-            vec![
-                DialogAction::Dismiss("Close".into()),
-                DialogAction::Confirm {
-                    label: "Create link".into(),
-                    danger: false,
-                    on_confirm: share_deck,
-                },
-            ],
-        )
+        vec![
+            DialogAction::Dismiss(deck_view::CLOSE.into()),
+            DialogAction::Confirm {
+                label: deck_view::CREATE_LINK.into(),
+                danger: false,
+                on_confirm: share_deck,
+            },
+        ]
+    };
+
+    // Import, Export, Buy and Clone close the sheet; Share, Clear skips and
+    // Delete open their dialog over it.
+    let press = move |item: MoreItem| {
+        if matches!(
+            item,
+            MoreItem::ImportCards | MoreItem::ExportCards | MoreItem::BuyDeck | MoreItem::CloneDeck
+        ) {
+            let mut sheet = show_more_sheet;
+            sheet.set(false);
+        }
+        ondispatch.call(Action::More(item));
     };
 
     rsx! {
         AlertDialog {
             open: show_buy_dialog,
-            title: "Buy deck",
+            title: Dialog::Buy.title().to_string(),
             actions: buy_actions,
-            "{buy_description}"
+            "{buy_body}"
         }
 
         AlertDialog {
             open: show_clear_skips_dialog,
-            title: "Clear skips",
+            title: Dialog::ClearSkips.title().to_string(),
             actions: vec![
-                DialogAction::Dismiss("Cancel".into()),
+                DialogAction::Dismiss(deck_view::CANCEL.into()),
                 DialogAction::Confirm {
-                    label: "Clear".into(),
+                    label: deck_view::CLEAR.into(),
                     danger: true,
                     on_confirm: clear_skips,
                 },
             ],
-            "Skipped cards come back on their own after a week, and removed cards after a month. Clearing brings them all back now. This can't be undone."
+            {deck_view::CLEAR_SKIPS_BODY}
         }
 
         // One dialog covers the whole share lifecycle (mirrors the Buy-deck
@@ -183,61 +168,20 @@ pub(crate) fn MoreButtons(
         // so no second confirmation dialog stacks on top.
         AlertDialog {
             open: show_share_dialog,
-            title: "Share deck",
+            title: Dialog::Share.title().to_string(),
             actions: share_actions,
-            "{share_description}"
+            "{share_body}"
         }
 
-        BottomSheet { open: show_more_sheet, title: "More actions",
-            Button {
-                onclick: move |_| {
-                    show_more_sheet.set(false);
-                    navigator.push(Router::ImportDeck { deck_id });
-                },
-                "Import cards"
-            }
-            Button {
-                disabled: !has_cards,
-                onclick: move |_| {
-                    show_more_sheet.set(false);
-                    navigator.push(Router::ExportDeck { deck_id });
-                },
-                "Export cards"
-            }
-            Button {
-                disabled: !has_cards,
-                onclick: move |_| {
-                    show_more_sheet.set(false);
-                    show_buy_dialog.set(true);
-                },
-                "Buy deck"
-            }
-            Button {
-                onclick: move |_| {
-                    show_more_sheet.set(false);
-                    show_clone_dialog.set(true);
-                },
-                "Clone deck"
-            }
-            Button {
-                onclick: move |_| {
-                    show_share_dialog.set(true);
-                },
-                "Share deck"
-            }
-            Button {
-                danger: true,
-                onclick: move |_| {
-                    show_clear_skips_dialog.set(true);
-                },
-                "Clear skips"
-            }
-            Button {
-                danger: true,
-                onclick: move |_| {
-                    show_delete_dialog.set(true);
-                },
-                "Delete deck"
+        BottomSheet { open: show_more_sheet, title: deck_view::MORE_TITLE,
+            for item in MoreItem::ALL {
+                Button {
+                    key: "{item.label()}",
+                    disabled: !enabled.contains(&item),
+                    danger: item.is_danger(),
+                    onclick: move |_| press(item),
+                    {item.label()}
+                }
             }
         }
     }

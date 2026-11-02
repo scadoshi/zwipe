@@ -2,28 +2,14 @@
 
 use components::{ActionButton, AlertDialog, DialogAction};
 use dioxus::prelude::*;
-use dioxus_primitives::toast::use_toast;
-use uuid::Uuid;
-use zwipe_core::http::contracts::deck::HttpCloneDeck;
-use zwipe_ui::deck::view::Done;
+use zwipe_ui::screens::deck_view::{self, Dialog};
 
-use crate::inbound::components::auth::authed::use_authed;
-use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen, component};
-use crate::inbound::components::ui_toast;
-use crate::inbound::router::Router;
+use crate::inbound::screens::deck::view::Driver;
 
-/// Clone deck dialog: prompts for a new name, calls the clone endpoint,
-/// and navigates to the new deck on success.
+/// Clone deck dialog: prompts for a new name, clones through the deck view's
+/// model, and the model opens the new deck on success.
 #[component]
-pub(crate) fn CloneDeckDialog(
-    source_deck_id: Uuid,
-    default_name: String,
-    open: Signal<bool>,
-) -> Element {
-    let navigator = use_navigator();
-    let toast = use_toast();
-    let authed = use_authed(Screen::Deck(DeckScreen::View));
-
+pub(crate) fn CloneDeckDialog(driver: Driver, default_name: String, open: Signal<bool>) -> Element {
     let mut new_name = use_signal(String::new);
 
     // Reseed the prefill with the latest source deck name whenever the dialog
@@ -34,40 +20,21 @@ pub(crate) fn CloneDeckDialog(
         }
     });
 
-    let name_empty = use_memo(move || new_name().trim().is_empty());
+    let name_empty = use_memo(move || !deck_view::can_clone(&new_name()));
 
-    let save = ActionButton::new("Save")
+    let save = ActionButton::new(deck_view::CLONE_SAVE)
         .disabled(name_empty)
-        .busy("Cloning...", move || {
-            let name = new_name.peek().trim().to_string();
-            async move {
-                let body = HttpCloneDeck {
-                    new_name: name.clone(),
-                };
-                let Some(cloned) = authed
-                    .run_at(
-                        component::CLONE_DECK_DIALOG,
-                        "clone_deck",
-                        |c, s| async move { c.clone_deck(source_deck_id, &body, &s).await },
-                    )
-                    .await
-                else {
-                    return false;
-                };
-                ui_toast::raise(toast, Done::Cloned(name).toast());
-                navigator.push(Router::ViewDeck {
-                    deck_id: cloned.deck_id,
-                });
-                true
-            }
+        .busy(deck_view::CLONE_BUSY, move || {
+            let name = new_name.peek().clone();
+            driver.clone_deck(name)
         });
 
     rsx! {
         AlertDialog {
             open,
-            title: "Clone deck",
-            actions: vec![DialogAction::Dismiss("Cancel".into()), save.into()],
-            "Make an exact copy of your deck under a new name."
+            title: Dialog::Clone.title().to_string(),
+            actions: vec![DialogAction::Dismiss(deck_view::CANCEL.into()), save.into()],
+            {deck_view::CLONE_BODY}
             CloneNameInput { name: new_name }
         }
     }
@@ -81,7 +48,7 @@ fn CloneNameInput(mut name: Signal<String>) -> Element {
         input {
             r#type: "text",
             class: "input",
-            placeholder: "New deck name",
+            placeholder: deck_view::CLONE_PLACEHOLDER,
             value: "{name}",
             autocapitalize: "none",
             autocorrect: "off",

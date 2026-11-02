@@ -644,7 +644,7 @@ fn sharing_copies_the_new_link_and_stopping_disables_it() {
             ticket: ticket_of(&effects),
             token
         }),
-        [copied.clone()]
+        std::slice::from_ref(&copied)
     );
     assert_eq!(state.share_token(), Some(token));
     assert_eq!(state.update(Action::CopyLink), [copied]);
