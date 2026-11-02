@@ -5,3 +5,5 @@
 pub mod activity;
 pub mod deck_list;
 pub mod home;
+pub mod oracle_tag_dictionary;
+pub mod oracle_tag_examples;
