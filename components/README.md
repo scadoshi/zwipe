@@ -1,10 +1,10 @@
 # components
 
-The Magic pieces of the Zwipe UI, over [orangui](https://github.com/scadoshi/orangui). orangui is the generic Dioxus kit (themes, panels, nav, charts, the entrance effects, the app and site kits); this crate re-exports all of it and adds what needs `zwipe-core`. The app (`zwiper`) and the website (`zite`) depend on it and import everything as `components::`. The owner's portfolio and cairn take orangui directly.
+The Magic pieces of the Zwipe UI, over [orangui](https://github.com/scadoshi/orangui). orangui is the generic Dioxus kit (themes, panels, nav, charts, the entrance effects, the app and site kits); this crate re-exports all of it and adds what needs `zwipe-core`. The logic behind its pieces (the color map's layout, the chart bars, the changelog's filing) comes from `zwipe-ui`, so every client computes the same thing and this crate only draws it. The app (`zwiper`) and the website (`zite`) depend on it and import everything as `components::`. The owner's portfolio and cairn take orangui directly.
 
 ## Components
 
-Here: `CardDetails`, `CardRow`, `CardRoleChips`, `KeywordChips`, `OracleText`, `FlippableCardImage`, `Changelog`, the deck chart family (`DeckCharts`, `ManaCurve`, `ManaFulfillment`, `DrawOdds`, `ChartLabel`) and `ZwipeArchitecture`.
+Here: `CardDetails`, `CardRow`, `CardRoleChips`, `KeywordChips`, `OracleText`, `FlippableCardImage`, `Changelog`, the deck chart family (`BarChart`, `DeckCharts`, `ManaCurve`, `ManaFulfillment`, `DrawOdds`, `ChartLabel`), `ColorMap` with `ColorMapGhost`, and `ZwipeArchitecture`. `Bar`, `ColorMapCounts` and `seed_from_id` are zwipe-ui's, re-exported for these props.
 
 From orangui, re-exported whole (`pub use orangui::*`): `ActionBar`, `Banner`, `Button`, `Chip`, `NavBar`, `NavDropdown`, `PageMeta`, `Panel`, `PasswordInput`, `ThemePicker`, the diagram pieces, the entrance figures, the app kit (`BottomSheet`, `PageHeader`, `ThemeSheet`, the hint pieces, the overlay back stack and, behind the `toast` feature, `ToastStack`), the site kit (`use_persisted_theme`, `StatsStrip`, `GalleryFrame`, `GalleryFooter`, the scripts), `HeatGrid`, the chart helpers and the theme model (`ThemeConfig`, `ALLOWED_THEMES`, `COLORBLIND_THEMES`, `display_theme_name`).
 
@@ -21,8 +21,8 @@ Load them in this order: `THEMES_CSS`, `COMPONENTS_CSS`, `MAGIC_CSS`, then `APP_
 
 ## Features
 
-- `toast`: enables orangui's `ToastStack` and `TOAST_CSS`. Off by default, so the sites never build `dioxus-primitives`.
+- `toast`: enables orangui's `ToastStack`, `TOAST_CSS` and the toast handle (`use_toast`, `Toasts`, `ToastOptions`), so a client needs no `dioxus-primitives` dependency of its own for toasts. Off by default, so the sites never build `dioxus-primitives`.
 
 ## Notes
 
-Domain types (card data, the changelog entries, the user's preferences) come from `zwipe-core`; this crate adds only presentation. The `Changelog` component renders the shared release history, identical on web and in-app. `scripts/swatch/` renders a themes.css as a review page; point it at orangui's.
+Domain types (card data, the changelog entries, the user's preferences) come from `zwipe-core`; this crate adds only presentation. The `Changelog` component renders the shared release history, identical on web and in-app. `tests/html_golden.rs` renders the drawn pieces with the props the hosts pass and compares them to saved copies in `tests/html/`; after a deliberate markup change, rewrite them with `BLESS_HTML=1 cargo test -p components --test html_golden` and review the diff. `scripts/swatch/` renders a themes.css as a review page; point it at orangui's.

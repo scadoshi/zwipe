@@ -22,10 +22,9 @@ use std::time::Duration;
 
 use components::{
     ActionBar, BottomSheet, Button, ButtonVariant, HintBullet, HintBullets, HintDialog, HintKey,
-    HintLine, TOAST_QUICK, use_overlay_back,
+    HintLine, TOAST_QUICK, ToastOptions, use_overlay_back, use_toast,
 };
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;

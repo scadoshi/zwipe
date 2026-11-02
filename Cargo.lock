@@ -966,9 +966,12 @@ name = "components"
 version = "1.17.0"
 dependencies = [
  "dioxus",
+ "dioxus-ssr",
  "orangui",
+ "serde_json",
  "uuid",
  "zwipe-core",
+ "zwipe-ui",
 ]
 
 [[package]]
@@ -4879,7 +4882,7 @@ checksum = "04744f49eae99ab78e0d5c0b603ab218f515ea8cfe5a456d7629ad883a3b6e7d"
 [[package]]
 name = "orangui"
 version = "0.0.0"
-source = "git+https://github.com/scadoshi/orangui?branch=main#a59165d3aceb35ff240593a54106b610c6b28ab3"
+source = "git+https://github.com/scadoshi/orangui?branch=main#16b8935439fda81020d54f23706bc98d01021571"
 dependencies = [
  "dioxus",
  "dioxus-primitives",
@@ -4899,7 +4902,7 @@ dependencies = [
 [[package]]
 name = "orangui-core"
 version = "0.0.0"
-source = "git+https://github.com/scadoshi/orangui?branch=main#a59165d3aceb35ff240593a54106b610c6b28ab3"
+source = "git+https://github.com/scadoshi/orangui?branch=main#16b8935439fda81020d54f23706bc98d01021571"
 dependencies = [
  "serde",
 ]
@@ -8981,6 +8984,7 @@ dependencies = [
  "getrandom 0.4.3",
  "orangui-core",
  "serde_json",
+ "tracing",
  "uuid",
  "zwipe-core",
 ]

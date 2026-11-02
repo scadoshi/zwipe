@@ -3,9 +3,8 @@
 //! toggle itself lives on the Config screen; this sheet edits only
 //! the whitelist. The server applies both at serve time.
 
-use components::{BottomSheet, Button, ButtonVariant, HintDialog, HintLine};
+use components::{BottomSheet, Button, ButtonVariant, HintDialog, HintLine, use_toast};
 use dioxus::prelude::*;
-use dioxus_primitives::toast::use_toast;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::user::models::hints::HINT_UNIVERSES_BEYOND_EXCEPTIONS;

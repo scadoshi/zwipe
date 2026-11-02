@@ -1,8 +1,7 @@
 //! User preferences screen for theme and dark mode selection.
 
-use components::{ThemeConfig, ThemeSheet};
+use components::{ThemeConfig, ThemeSheet, use_toast};
 use dioxus::prelude::*;
-use dioxus_primitives::toast::use_toast;
 use zwipe_core::http::contracts::user::HttpUpdatePreferences;
 use zwipe_ui::preferences::{self, PreferenceChange};
 

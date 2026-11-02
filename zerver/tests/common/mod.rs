@@ -288,6 +288,19 @@ impl TestApp {
     /// so this is what the app does too. The login comes from its own address
     /// so it doesn't spend the test's login budget.
     pub(crate) async fn register(&self, username: &str) -> (String, String) {
+        let session = self.register_on(username, None).await;
+        (
+            session["access_token"]["value"]
+                .as_str()
+                .unwrap()
+                .to_string(),
+            session["user"]["id"].as_str().unwrap().to_string(),
+        )
+    }
+
+    /// [`Self::register`], with the login reporting `platform` (`None` sends
+    /// no platform). Returns the whole login response.
+    pub(crate) async fn register_on(&self, username: &str, platform: Option<&str>) -> Value {
         let emails_before = self.emails.count();
         let body = serde_json::json!({
             "username": username,
@@ -304,15 +317,15 @@ impl TestApp {
             IpAddr::V4(Ipv4Addr::new(11, o[1], o[2], o[3].max(1))),
             40000,
         );
-        let login = serde_json::json!({ "identifier": username, "password": "TestPass123!" });
+        let mut login = serde_json::json!({ "identifier": username, "password": "TestPass123!" });
+        if let Some(platform) = platform {
+            login["platform"] = Value::from(platform);
+        }
         let (status, v) = self
             .send_from(login_ip, Method::POST, "/api/auth/login", Some(login), None)
             .await;
         assert_eq!(status, StatusCode::OK, "login after register failed: {v}");
-        (
-            v["access_token"]["value"].as_str().unwrap().to_string(),
-            v["user"]["id"].as_str().unwrap().to_string(),
-        )
+        v
     }
 }
 
