@@ -8,8 +8,10 @@ pub(crate) mod collapsible_section;
 pub(crate) mod deck_budget_section;
 /// Deck chart visualizations for the view screen.
 pub(crate) mod deck_charts;
-/// Shared deck name, format selector, and commander search for create/edit screens.
+/// The form fields Create and Edit share: name, format, command zone, budget and tags.
 pub(crate) mod deck_fields;
+/// The Create and Edit screen: the form's model, its effects and its overlays.
+pub(crate) mod deck_form;
 /// Deck profile info and warnings section for the view screen.
 pub(crate) mod deck_profile;
 /// Collapsible "Tags" section (deck tags, oracle tags, other tags) for the view.

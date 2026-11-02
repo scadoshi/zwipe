@@ -4,13 +4,17 @@
 
 pub mod account;
 pub mod activity;
+pub mod card_filter;
 pub mod commander_maybeboard;
 pub mod config;
 pub mod deck_export;
+pub mod deck_form;
 pub mod deck_import;
 pub mod deck_list;
 pub mod deck_view;
 pub mod forgot_password;
 pub mod home;
 pub mod login;
+pub mod oracle_tag_dictionary;
+pub mod oracle_tag_examples;
 pub mod register;

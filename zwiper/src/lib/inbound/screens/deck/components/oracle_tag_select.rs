@@ -8,69 +8,45 @@
 //! these (handled by the host screen); here the user tunes the set.
 
 use components::{
-    ActionBar, Button, ButtonVariant, DialogAction, HintDialog, use_overlay_back_action, use_toast,
+    ActionBar, Button, ButtonVariant, DialogAction, HintDialog, use_overlay_back_action,
 };
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::oracle_tag::OracleTag;
 use zwipe_core::domain::deck::MAX_DECK_ORACLE_TAGS;
-use zwipe_ui::deck::pickers::{self, Adopted, Draft, Picker, TagPicker, Tapped};
+use zwipe_ui::deck::pickers::{self, Picker};
 
 use crate::inbound::components::catalog_cache::CatalogCache;
 use crate::inbound::components::concept_explainers::OracleTagsExplainer;
+use crate::inbound::components::guide_link;
 use crate::inbound::components::screen_header::ScreenHeader;
-use crate::inbound::components::{guide_link, ui_toast};
 use crate::inbound::screens::oracle_tag_dictionary::OracleTagDictionary;
 
-/// In-place oracle-tag picker. Toggled by `open`; mutates `selected` (slugs)
-/// directly, with Save grayed until the set differs from the one it opened
-/// on and Back reverting to it. `on_close` returns to the form.
+/// In-place oracle-tag picker, up while `open`. `selected` holds the deck's oracle tag slugs; a chip tap goes to `on_toggle`, the × to `on_clear` and the dictionary's Use to `on_adopt`. Save (`on_save`) stays off while `unchanged`; Back (`on_back`) and the OS back gesture put back the tags it opened on.
 #[component]
 pub(crate) fn OracleTagSelect(
-    open: Signal<bool>,
-    mut selected: Signal<Vec<String>>,
-    on_close: EventHandler<()>,
+    open: ReadSignal<bool>,
+    selected: Vec<String>,
+    unchanged: bool,
+    on_toggle: EventHandler<String>,
+    on_clear: EventHandler<()>,
+    on_adopt: EventHandler<String>,
+    on_save: EventHandler<()>,
+    on_back: EventHandler<()>,
 ) -> Element {
     let client: Signal<ZwipeClient> = use_context();
     let cache: CatalogCache = use_context();
-    let toast = use_toast();
     let mut query = use_signal(String::new);
     let mut focused = use_signal(|| Option::<OracleTag>::None);
     let hint_open = use_signal(|| false);
-    // Dictionary overlay, stacked above this picker; its Use button adopts a tag.
+    // Dictionary overlay, stacked above this picker; its Use button adopts a tag
+    // and stays in place, toasting the outcome.
     let mut dict_open = use_signal(|| false);
     let open_dictionary = use_callback(move |()| dict_open.set(true));
 
-    // Adopt a tag chosen via the dictionary's Use button, respecting the deck cap.
-    // Stays in place (no return to the form), toasting the outcome.
-    let adopt_tag = move |slug: String| {
-        let mut current = selected();
-        let adopted = pickers::adopt_oracle_tag(&mut current, slug);
-        if adopted == Adopted::Added {
-            selected.set(current);
-        }
-        ui_toast::raise(toast, adopted.toast());
-    };
-    // Snapshot the selection when the picker opens, so Back can revert to it.
-    let mut draft = use_signal(|| Draft::tags(TagPicker::OracleTags, Vec::new()));
-    use_effect(move || {
-        if open() {
-            draft.set(Draft::tags(TagPicker::OracleTags, selected.peek().clone()));
-        }
-    });
-
-    // Back, and the OS back gesture, revert to the snapshot and say so when
-    // there was something to revert.
-    let back = use_callback(move |(): ()| {
-        let mut selected = selected;
-        if let Some(discarded) = draft.peek().back_toast(&selected.peek()) {
-            ui_toast::raise(toast, discarded);
-        }
-        selected.set(draft().into_snapshot());
-        on_close.call(());
-    });
-    use_overlay_back_action(open.into(), back);
-    let unchanged = draft.read().is_unchanged(&selected());
+    // Back, and the OS back gesture, revert to the tags it opened on.
+    let back = use_callback(move |(): ()| on_back.call(()));
+    use_overlay_back_action(open, back);
 
     // Read the shared app-wide oracle-tag catalog (prefetched at startup), warming
     // / revalidating it on open. One copy is shared with the dictionary + filter.
@@ -87,7 +63,7 @@ pub(crate) fn OracleTagSelect(
 
     let cell_read = cell.read();
     let tags: &[OracleTag] = cell_read.loaded().map_or(&[], Vec::as_slice);
-    let sel = selected();
+    let sel = selected;
 
     // Empty search shows the server-marked curated grid plus any selected
     // slug, alphabetical; a search shows the best ranked matches.
@@ -121,7 +97,7 @@ pub(crate) fn OracleTagSelect(
                                 button {
                                     class: "clear-btn",
                                     onclick: move |_| {
-                                        selected.set(Vec::new());
+                                        on_clear.call(());
                                         focused.set(None);
                                     },
                                     "\u{00d7}"
@@ -175,11 +151,7 @@ pub(crate) fn OracleTagSelect(
                                                 focused.set(Some(tag_for_focus.clone()));
                                                 // Clear the search so the curated grid returns after picking.
                                                 query.set(String::new());
-                                                let mut current = selected();
-                                                match TagPicker::OracleTags.toggle(&mut current, &slug) {
-                                                    Tapped::AtCap => ui_toast::raise(toast, TagPicker::OracleTags.cap_toast()),
-                                                    Tapped::Added | Tapped::Removed => selected.set(current),
-                                                }
+                                                on_toggle.call(slug.clone());
                                             },
                                             "{t.slug}"
                                         }
@@ -199,7 +171,7 @@ pub(crate) fn OracleTagSelect(
                     Button {
                         variant: ButtonVariant::Action,
                         disabled: unchanged,
-                        onclick: move |_| on_close.call(()),
+                        onclick: move |_| on_save.call(()),
                         "Save"
                     }
                 }
@@ -219,7 +191,7 @@ pub(crate) fn OracleTagSelect(
                 }
 
                 if dict_open() {
-                    OracleTagDictionary { open: dict_open, on_use: adopt_tag }
+                    OracleTagDictionary { open: dict_open, on_use: move |slug: String| on_adopt.call(slug) }
                 }
             }
         }

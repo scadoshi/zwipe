@@ -79,6 +79,21 @@ Every fetch takes a `Ticket` from the model's own `Generation` inside `update`, 
 - A screen with no fetch opens with `Open(id)` instead of `Load` (Import).
 - Input that lives in the client (a text area) comes in on the submit action, and `can_submit(input)` takes it for the disabled check.
 - A model that holds a zwipe-core type without `PartialEq` drops `PartialEq` from `State` and `Action`.
+- A screen that reads an app-wide cache it doesn't own takes the cache's state into its views by reference (`Catalog<'_>` into `body`) and holds no copy; the client reports a failure as an action (`CatalogFailed`).
+- A hand-off to the host can be an effect with no `Navigate` when the overlay stays up (the dictionary's `AdoptTag`).
+- A swipe browse's enter animation is an effect (`Enter(Direction)`): the model owns the cards and the cursor, the client the animation.
+- One model can serve two screens through a mode passed in `Load` (Create and Edit share `screens::deck_form` with `Open::Create { seed }` or `Open::Edit(id)`).
+- A picker's draft and which picker is open belong to the model, since the draft lives exactly as long as the picker; swipe overlays stay in the client.
+- A text input that owns its own signal stays in step with the model both ways.
+- Effects that carry zwipe-core request contracts can't derive `PartialEq`; tests use `matches!`.
+- A sheet over a host's value takes it in `Open` and hands it back with `Effect::Apply`; its Back is `Effect::Close`, not a navigation.
+- A client whose controls edit the host's value in place syncs it with `Action::Edit` before each action and performs `Restore` on Back; a client with a separate draft ignores `Restore`.
+- A model whose lists come from a client-wide store emits `EnsureLists` and takes no tickets.
+- A warning raised once per opening resets on close, so the order of effects doesn't matter.
+- Typed passwords are `zwipe_ui::account::Password` in actions, effects and state, with its `Debug` redacted. Login, Register and Forgot password give each field its own edit action; Account's shared `Edit` carries `Typed`, whose `Debug` prints only the length.
+- When the model changes a field the client's input owns, it says so in an effect (`SetIdentifier`, `ClearPassword`).
+- Requests that may overlap on purpose (Forgot password's Send) use the waiting list, and a flag any reply clears mirrors the app's spinner.
+- Funnel events stay in the client and go out as it performs the effect.
 
 ## Wiring it in Dioxus (the app and zwiper-web)
 
