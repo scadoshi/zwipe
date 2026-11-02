@@ -10,7 +10,8 @@ Anything that decides what a screen shows or does and that two or more clients n
 
 - The color map's tiles, shades and rings (`color_map`), with the golden test that checks them against the app.
 - Activity's heatmap, totals, rate charts and `year_line`; Playstyle's identities, reasons, profile and staples filters; home's figures, scope and flavor card expiry.
-- The deck list's Group by and Show, the deck form's values and rules (Create's request, Edit's sparse update, the knock-on clears, which slots show), the command zone's labels, group headers, row art and slot update (`deck::command_zone`), export text, the import toast, warning fixes and buy links.
+- The deck list's Group by and Show, the create gate (`deck::create_gate`), the deck form's values and rules (Create's request, Edit's sparse update, the knock-on clears, which slots show), the command zone's labels, group headers, row art and slot update (`deck::command_zone`), the deck view's sections, total price, share link, clone name and toasts (`deck::view`), export text, the import toast, warning fixes and buy links.
+- The commander maybeboard's pip filter, Quick add gate, highlight and copy, and swipe select's key and re-deal (`commander`).
 - The card filter: sections, fields, pickers, the Apply decision, Add's deck context and the draft the sheet edits (`filter::draft`).
 - The stores the card screens share: per-deck filters, parked add stacks, the undo log, adds in flight and the catalog with its 24 hour freshness.
 - The swipe stack and its actions, Add's search rules, the deck cards view's pass and quantity bursts, and the land and budget crossings.
@@ -39,4 +40,4 @@ One session owns the shared crates: zwipe-ui, zwipe-core, zwipe-client and compo
 
 ## Not yet
 
-Screen models (a state, actions and effects per screen) come next, starting with zwiper-web's waves B to D. zwiper-tui has switched to everything here; zwiper-web still uses its own copies until it switches over, and the app has switched `filter::fields::same_set`, the account checks and labels, the Log in gate, Home's greeting the command zone (`deck::command_zone`) and the deck form's values, requests, knock-on clears and slot visibility (`deck::form`) so far.
+Screen models (a state, actions and effects per screen) come next, starting with zwiper-web's waves B to D. zwiper-tui has switched to everything here; zwiper-web still uses its own copies until it switches over, and the app has switched `filter::fields::same_set`, the account checks and labels, the Log in gate, Home's greeting, the command zone (`deck::command_zone`), the deck form's values, requests, knock-on clears and slot visibility (`deck::form`), the create gate, the deck view (`deck::view`) and the commander maybeboard and swipe select rules (`commander`) so far.

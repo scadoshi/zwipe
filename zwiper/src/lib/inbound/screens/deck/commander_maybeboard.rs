@@ -19,7 +19,7 @@ use std::time::Duration;
 
 use components::{
     ActionBar, AlertDialog, BottomSheet, Button, ButtonVariant, Chip, DialogAction, HintBullet,
-    HintBullets, HintDialog, HintKey, HintLine, TOAST_LONG, TOAST_QUICK,
+    HintBullets, HintDialog, HintKey, HintLine, TOAST_QUICK,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -36,6 +36,7 @@ use zwipe_core::domain::card::search_card::cards::Cards;
 use zwipe_core::domain::deck::deck_profile::DeckProfile;
 use zwipe_core::domain::deck::format::Format;
 use zwipe_core::domain::user::models::hints::HINT_COMMANDER_MAYBEBOARD;
+use zwipe_ui::commander::maybeboard;
 
 use super::components::skeletons::{ChipRowSkeleton, QuickAddSkeleton};
 use super::components::swipe_select::{SwipeMode, SwipeSelect};
@@ -46,6 +47,7 @@ use crate::inbound::components::hint_dialog::{HintColored, use_one_time_hint};
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::{Screen, screen};
+use crate::inbound::components::ui_toast;
 use crate::inbound::router::Router;
 use crate::inbound::screens::deck::card::components::card_row::{
     CardRow, OtagDescribe, OtagExamplesOpen, ShowRowArt,
@@ -389,28 +391,24 @@ pub fn CommanderMaybeboard() -> Element {
                 .await
         });
 
-    let at_deck_limit = move || {
-        session().is_some_and(|s| {
-            s.user.email_verified_at.is_none()
-                && deck_profiles_resource
-                    .read()
-                    .as_ref()
-                    .and_then(|o| o.as_ref())
-                    .is_some_and(|p| !p.is_empty())
+    let gate = move || {
+        session().map_or(Ok(()), |s| {
+            let deck_count = deck_profiles_resource
+                .read()
+                .as_ref()
+                .and_then(|o| o.as_ref())
+                .map_or(0, Vec::len);
+            zwipe_ui::deck::create_gate(s.user.email_verified_at.is_some(), deck_count)
         })
     };
 
-    let create_with = move |card: Card| {
-        if at_deck_limit() {
-            toast.warning(
-                "Verify your email to create more than 1 deck".to_string(),
-                ToastOptions::default().duration(TOAST_LONG),
-            );
-        } else {
+    let create_with = move |card: Card| match gate() {
+        Ok(()) => {
             let mut slot = seed.0;
             slot.set(Some(card));
             navigator.push(Router::CreateDeck);
         }
+        Err(warning) => ui_toast::raise(toast, warning),
     };
 
     let on_create = move |card: Card| create_with(card);
@@ -464,11 +462,7 @@ pub fn CommanderMaybeboard() -> Element {
     let all_on = colors.is_empty();
     let mut filtered: Vec<Card> = entries()
         .iter()
-        .filter(|c| {
-            colors
-                .iter()
-                .all(|color| c.scryfall_data.color_identity.contains(color))
-        })
+        .filter(|c| maybeboard::passes_pips(&c.scryfall_data.color_identity, &colors))
         .cloned()
         .collect();
     if !builder.is_empty()
@@ -494,11 +488,7 @@ pub fn CommanderMaybeboard() -> Element {
     });
     let shown_results: Vec<Card> = search_results()
         .iter()
-        .filter(|c| {
-            c.scryfall_data
-                .oracle_id
-                .is_some_and(|o| !saved_oracles.read().contains(&o))
-        })
+        .filter(|c| maybeboard::is_addable(c.scryfall_data.oracle_id, &saved_oracles.read()))
         .cloned()
         .collect();
     let searching_catalog = query().trim().len() >= MIN_QUERY_LEN;
@@ -624,21 +614,21 @@ pub fn CommanderMaybeboard() -> Element {
 
                         if load_failed() {
                             div { class: "message-empty",
-                                span { class: "chip-note", "Could not load your commander maybeboard" }
+                                span { class: "chip-note", {maybeboard::LOAD_FAILED} }
                             }
                         } else if !has_entries {
                             div { class: "message-empty",
-                                span { class: "chip-note", "No commanders" }
+                                span { class: "chip-note", {maybeboard::NO_COMMANDERS} }
                             }
                         } else if filtered.is_empty() {
                             div { class: "message-empty",
-                                span { class: "chip-note", "No commanders match" }
+                                span { class: "chip-note", {maybeboard::NO_MATCH} }
                             }
                         } else {
                             // Same bordered container the deck cards list wraps
                             // its rows in.
                             div { class: "maybeboard-list card-group row-enter",
-                                div { class: "card-group-header", "Commanders" }
+                                div { class: "card-group-header", {maybeboard::LIST_TITLE} }
                                 for card in filtered {
                                     MaybeboardRow {
                                         key: "{card.scryfall_data.id}",

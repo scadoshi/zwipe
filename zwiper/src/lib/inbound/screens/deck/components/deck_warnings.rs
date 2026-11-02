@@ -1,15 +1,17 @@
 //! Deck warnings section with action buttons for card-specific warnings.
 
-use components::{Button, ButtonVariant, TOAST_NORMAL, TOAST_QUICK};
+use components::{Button, ButtonVariant, TOAST_NORMAL};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
 use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::deck::deck_warning::{DeckWarning, WarningAction};
+use zwipe_ui::deck::view::Done;
 
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::{component, screen};
+use crate::inbound::components::ui_toast;
 use crate::inbound::router::Router;
 
 #[component]
@@ -107,10 +109,7 @@ pub(crate) fn DeckWarnings(
                                                     }.await;
                                                     match result {
                                                         Ok(()) => {
-                                                            toast.info(
-                                                                "Card removed".to_string(),
-                                                                ToastOptions::default().duration(TOAST_QUICK),
-                                                            );
+                                                            ui_toast::raise(toast, Done::CardRemoved.toast());
                                                             on_remove(());
                                                         }
                                                         Err(e) => {
