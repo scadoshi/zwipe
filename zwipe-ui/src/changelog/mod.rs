@@ -94,6 +94,48 @@ pub enum Filter {
     },
 }
 
+impl Filter {
+    /// One level up: a minor goes back to its month, a month to its year, a year to `Latest`.
+    #[must_use]
+    pub fn parent(&self) -> Self {
+        match self {
+            Self::Latest | Self::Year(_) => Self::Latest,
+            Self::Month { year, .. } => Self::Year(year.clone()),
+            Self::Minor { year, month, .. } => Self::Month {
+                year: year.clone(),
+                month: month.clone(),
+            },
+        }
+    }
+
+    /// The year key this filter sits under; none for `Latest`.
+    #[must_use]
+    pub fn year(&self) -> Option<&str> {
+        match self {
+            Self::Latest => None,
+            Self::Year(year) | Self::Month { year, .. } | Self::Minor { year, .. } => Some(year),
+        }
+    }
+
+    /// The month key this filter sits under, for a month or a minor.
+    #[must_use]
+    pub fn month(&self) -> Option<&str> {
+        match self {
+            Self::Month { month, .. } | Self::Minor { month, .. } => Some(month),
+            Self::Latest | Self::Year(_) => None,
+        }
+    }
+
+    /// The minor version, for a minor.
+    #[must_use]
+    pub fn minor(&self) -> Option<&str> {
+        match self {
+            Self::Minor { minor, .. } => Some(minor),
+            Self::Latest | Self::Year(_) | Self::Month { .. } => None,
+        }
+    }
+}
+
 /// One listed release, where it files, and its tag.
 #[derive(Debug, Clone)]
 pub struct Listed<'log> {
@@ -102,6 +144,18 @@ pub struct Listed<'log> {
     /// Its tag, if any.
     pub tag: Option<Tag>,
     place: Place,
+}
+
+impl Listed<'_> {
+    /// The filter down to this release's minor version in the month it files under.
+    #[must_use]
+    pub fn minor_filter(&self) -> Filter {
+        Filter::Minor {
+            year: self.place.year.clone(),
+            month: self.place.month.clone(),
+            minor: minor_of(&self.release.version).to_owned(),
+        }
+    }
 }
 
 /// `1.12` for `1.12.3`; a version with no second dot is its own minor.
@@ -261,6 +315,54 @@ mod tests {
         };
         assert_eq!(visible(&listed, &october).len(), 2);
         assert_eq!(visible(&listed, &Filter::Year(EARLIER.to_owned())).len(), 1);
+    }
+
+    #[test]
+    fn a_filter_walks_up_one_level_at_a_time() {
+        let minor = Filter::Minor {
+            year: "2026".to_owned(),
+            month: "2026-10".to_owned(),
+            minor: "1.15".to_owned(),
+        };
+        let month = minor.parent();
+        assert_eq!(
+            month,
+            Filter::Month {
+                year: "2026".to_owned(),
+                month: "2026-10".to_owned(),
+            }
+        );
+        assert_eq!(month.parent(), Filter::Year("2026".to_owned()));
+        assert_eq!(month.parent().parent(), Filter::Latest);
+        assert_eq!(Filter::Latest.parent(), Filter::Latest);
+        assert_eq!(
+            (minor.year(), minor.month(), minor.minor()),
+            (Some("2026"), Some("2026-10"), Some("1.15"))
+        );
+        assert_eq!((month.minor(), Filter::Latest.year()), (None, None));
+    }
+
+    #[test]
+    fn a_release_filters_down_to_its_minor_in_its_month() {
+        let log = changelog();
+        let listed = listed(&log);
+        assert_eq!(
+            listed[0].minor_filter(),
+            Filter::Minor {
+                year: "2026".to_owned(),
+                month: "2026-10".to_owned(),
+                minor: "1.16".to_owned(),
+            },
+            "upcoming files under the newest shipped month"
+        );
+        assert_eq!(
+            listed.last().unwrap().minor_filter(),
+            Filter::Minor {
+                year: EARLIER.to_owned(),
+                month: EARLIER.to_owned(),
+                minor: "0.9".to_owned(),
+            }
+        );
     }
 
     #[test]

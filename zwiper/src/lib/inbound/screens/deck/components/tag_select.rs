@@ -9,9 +9,9 @@
 
 use components::{
     ActionBar, Button, ButtonVariant, HintBullet, HintBullets, HintDialog, use_overlay_back_action,
+    use_toast,
 };
 use dioxus::prelude::*;
-use dioxus_primitives::toast::use_toast;
 use zwipe_core::domain::deck::{DeckTagView, MAX_DECK_TAGS};
 use zwipe_ui::deck::pickers::{self, Draft, Picker, TagPicker, Tapped};
 

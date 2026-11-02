@@ -11,11 +11,10 @@ pub mod universes_beyond;
 use app_icon_sheet::AppIconSheet;
 use components::{
     ActionBar, Button, ButtonVariant, DarkModeButton, HintBullet, HintBullets, HintDialog, HintKey,
-    TOAST_NORMAL, ThemeConfig,
+    TOAST_NORMAL, ThemeConfig, ToastOptions, Toasts, use_toast,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
-use dioxus_primitives::toast::{ToastOptions, Toasts, use_toast};
 use preferences::PreferencesSheet;
 use universes_beyond::UniversesBeyondExceptionsSheet;
 use zwipe_client::ZwipeClient;

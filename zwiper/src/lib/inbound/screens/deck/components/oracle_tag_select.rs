@@ -8,10 +8,9 @@
 //! these (handled by the host screen); here the user tunes the set.
 
 use components::{
-    ActionBar, Button, ButtonVariant, DialogAction, HintDialog, use_overlay_back_action,
+    ActionBar, Button, ButtonVariant, DialogAction, HintDialog, use_overlay_back_action, use_toast,
 };
 use dioxus::prelude::*;
-use dioxus_primitives::toast::use_toast;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::oracle_tag::OracleTag;
 use zwipe_core::domain::deck::MAX_DECK_ORACLE_TAGS;
