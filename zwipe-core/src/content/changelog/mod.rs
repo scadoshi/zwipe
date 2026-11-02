@@ -43,6 +43,7 @@ pub const UPCOMING: &[Release] = &[Release {
     entries: &[
         "A one-card deck shows 1 card in the deck list",
         "The land target stops at 0",
+        "Config's Natural setting for mana symbols is now called Classic",
     ],
 }];
 

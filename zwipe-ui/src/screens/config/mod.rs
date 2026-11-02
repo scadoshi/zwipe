@@ -10,7 +10,7 @@ mod tests;
 use std::mem;
 
 use zwipe_core::domain::user::hints::OneTimeHint;
-use zwipe_core::domain::user::preferences::{PipStyle, UserPreferences};
+use zwipe_core::domain::user::preferences::{PipColor, UserPreferences};
 
 use crate::filter::fields;
 use crate::generation::{Generation, Ticket};
@@ -55,10 +55,10 @@ pub const SAVE: &str = "Save";
 
 /// The Pips button's text for `style`.
 #[must_use]
-pub fn pips_label(style: PipStyle) -> &'static str {
+pub fn pips_label(style: PipColor) -> &'static str {
     match style {
-        PipStyle::Theme => "Theme",
-        PipStyle::Natural => "Natural",
+        PipColor::Theme => "Theme",
+        PipColor::Classic => "Classic",
     }
 }
 
@@ -153,7 +153,7 @@ pub enum Action {
     /// Presses the Pips button.
     TogglePips {
         /// The pip style the client draws in now.
-        shown: PipStyle,
+        shown: PipColor,
     },
     /// Presses the Universes Beyond button. Does nothing until the preferences load.
     ToggleUniversesBeyond,
@@ -200,11 +200,11 @@ pub enum Effect {
     /// Draws the client in this theme: a Dark/Light tap's new mode, or the mode from before a tap whose save failed.
     ShowTheme(Theme),
     /// Draws pips in this style: a tap's new style, the loaded preference, or the style from before a tap whose save failed.
-    ShowPips(PipStyle),
+    ShowPips(PipColor),
     /// The server holds this theme: draw in it, resolved the way the client reads a theme from the account.
     ThemeSaved(Theme),
     /// The server holds this pip style: draw in it and keep it with the stored session, so the next launch opens with it.
-    PipsSaved(PipStyle),
+    PipsSaved(PipColor),
     /// Opens this sheet.
     OpenSheet(Sheet),
     /// Closes this sheet.

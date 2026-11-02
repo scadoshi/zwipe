@@ -6,7 +6,7 @@ use ::components::{
     SCROLL_FADE_JS, SITE_CSS, THEMES_CSS, ThemeConfig, ThemePicker, use_theme_wipe,
 };
 use dioxus::prelude::*;
-use zwipe_core::domain::user::preferences::PipStyle;
+use zwipe_core::domain::user::preferences::PipColor;
 
 mod api;
 mod components;
@@ -226,11 +226,11 @@ fn App() -> Element {
     // The pip style's class sits on <body> beside the theme's, where magic.css
     // looks for it.
     use_effect(move || {
-        let natural = pip_style() == PipStyle::Natural;
-        let class = ::components::pip_style_class(PipStyle::Natural);
+        let classic = pip_style() == PipColor::Classic;
+        let class = ::components::pip_color_class(PipColor::Classic);
         spawn(async move {
             let _ = document::eval(&format!(
-                "document.body.classList.toggle('{class}', {natural});"
+                "document.body.classList.toggle('{class}', {classic});"
             ))
             .await;
         });
@@ -276,7 +276,7 @@ fn App() -> Element {
 #[component]
 pub fn Nav() -> Element {
     let (theme, shown) = use_theme_wipe(use_context::<Signal<ThemeConfig>>(), "body");
-    let pip_style = use_context::<Signal<PipStyle>>();
+    let pip_style = use_context::<Signal<PipColor>>();
     // The pip style only shows on a shared deck, the one page that draws pips.
     let on_shared_deck = matches!(use_route::<Route>(), Route::SharedDeck { .. });
     let mut open = use_signal(|| false);

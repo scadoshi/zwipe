@@ -50,7 +50,7 @@ pub enum HintTopic {
     Verification,
     /// Profile: theme row, with its dark/light toggle.
     Theme,
-    /// Profile: pips row, theme or natural colors.
+    /// Profile: pips row, theme or classic colors.
     Pips,
     /// Profile: app icon row.
     AppIcon,
@@ -212,7 +212,7 @@ impl HintTopic {
             Self::Pips => rsx! {
                 HintBullets {
                     HintBullet { HintKey { "Theme" } " draws mana symbols in your theme's colors" }
-                    HintBullet { HintKey { "Natural" } " keeps Magic's classic colors on every theme" }
+                    HintBullet { HintKey { "Classic" } " keeps Magic's classic colors on every theme" }
                 }
             },
             Self::AppIcon => rsx! {

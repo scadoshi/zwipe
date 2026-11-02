@@ -11,7 +11,7 @@
 //! guard and change nothing until the server answers.
 
 use zwipe_core::domain::card::scryfall_data::universe;
-use zwipe_core::domain::user::preferences::{PipStyle, UserPreferences};
+use zwipe_core::domain::user::preferences::{PipColor, UserPreferences};
 use zwipe_core::http::contracts::user::HttpUpdatePreferences;
 
 use crate::generation::{Generation, Ticket};
@@ -35,7 +35,7 @@ pub enum PreferenceChange {
         dark_mode: bool,
     },
     /// The Pips button.
-    Pips(PipStyle),
+    Pips(PipColor),
     /// The Universes Beyond button: `true` hides them.
     HideUniversesBeyond(bool),
     /// The Exceptions sheet's Save: the whole list of franchise slugs.
@@ -101,8 +101,8 @@ impl PreferenceChange {
             Self::DarkMode { .. } if saved.dark_mode => "Dark mode on",
             Self::DarkMode { .. } => "Dark mode off",
             Self::Pips(_) => match saved.pip_style {
-                PipStyle::Theme => "Pips in theme colors",
-                PipStyle::Natural => "Pips in natural colors",
+                PipColor::Theme => "Pips in theme colors",
+                PipColor::Classic => "Pips in classic colors",
             },
             Self::HideUniversesBeyond(_) if saved.exclude_universes_beyond => {
                 "Universes Beyond hidden"
@@ -253,7 +253,7 @@ mod tests {
             dark_mode: true,
             exclude_universes_beyond: false,
             universes_beyond_exceptions: vec!["a".to_owned()],
-            pip_style: PipStyle::Theme,
+            pip_style: PipColor::Theme,
         }
     }
 
@@ -271,7 +271,7 @@ mod tests {
                 theme: "gruvbox".to_owned(),
                 dark_mode: false,
             },
-            PreferenceChange::Pips(PipStyle::Natural),
+            PreferenceChange::Pips(PipColor::Classic),
             PreferenceChange::HideUniversesBeyond(true),
             PreferenceChange::Exceptions(slugs(&["b", "c"])),
         ]
@@ -356,11 +356,11 @@ mod tests {
     fn each_saved_toast_has_the_apps_words_kind_and_band() {
         let mut on = preferences();
         on.dark_mode = true;
-        on.pip_style = PipStyle::Theme;
+        on.pip_style = PipColor::Theme;
         on.exclude_universes_beyond = true;
         let mut off = preferences();
         off.dark_mode = false;
-        off.pip_style = PipStyle::Natural;
+        off.pip_style = PipColor::Classic;
         off.exclude_universes_beyond = false;
 
         let theme = PreferenceChange::Theme {
@@ -371,7 +371,7 @@ mod tests {
             theme: "gruvbox".to_owned(),
             dark_mode: true,
         };
-        let pips = PreferenceChange::Pips(PipStyle::Theme);
+        let pips = PreferenceChange::Pips(PipColor::Theme);
         let universes = PreferenceChange::HideUniversesBeyond(true);
         let exceptions = PreferenceChange::Exceptions(Vec::new());
         let cases: [(&PreferenceChange, &UserPreferences, &str, Duration); 9] = [
@@ -379,7 +379,7 @@ mod tests {
             (&dark, &on, "Dark mode on", NORMAL),
             (&dark, &off, "Dark mode off", NORMAL),
             (&pips, &on, "Pips in theme colors", NORMAL),
-            (&pips, &off, "Pips in natural colors", NORMAL),
+            (&pips, &off, "Pips in classic colors", NORMAL),
             (&universes, &on, "Universes Beyond hidden", NORMAL),
             (&universes, &off, "Universes Beyond shown", NORMAL),
             (&exceptions, &on, "Exceptions saved", QUICK),
@@ -437,8 +437,8 @@ mod tests {
         assert_eq!(request.dark_mode, Some(true));
         assert_eq!(request.pip_style, None);
 
-        let request = HttpUpdatePreferences::from(PreferenceChange::Pips(PipStyle::Natural));
-        assert_eq!(request.pip_style, Some(PipStyle::Natural));
+        let request = HttpUpdatePreferences::from(PreferenceChange::Pips(PipColor::Classic));
+        assert_eq!(request.pip_style, Some(PipColor::Classic));
         assert_eq!((request.theme, request.dark_mode), (None, None));
         assert_eq!(request.exclude_universes_beyond, None);
         assert_eq!(request.universes_beyond_exceptions, None);

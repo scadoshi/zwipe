@@ -73,7 +73,7 @@ pub use orangui::{OpenUrlError, open_url, use_in_app_links};
 #[cfg(feature = "toast")]
 pub use orangui::{TOAST_CSS, ToastOptions, ToastStack, Toasts, use_toast};
 pub use role_tags::{OtagDef, RoleTags};
-pub use theme::{pip_style_class, theme_from_preferences};
+pub use theme::{pip_color_class, theme_from_preferences};
 /// The color map's counts and a player's seed, from zwipe-ui, for the props
 /// [`ColorMap`] takes.
 pub use zwipe_ui::color_map::{ColorMapCounts, seed_from_id};

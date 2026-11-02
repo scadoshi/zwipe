@@ -2,7 +2,7 @@
  * Inlined by zwiper and zite through the MAGIC_CSS constant, after orangui's
  * THEMES_CSS and COMPONENTS_CSS. Rules reference theme CSS variables, so a
  * component resolves to whichever theme the host has active. The one set of
- * color literals is the mana pips' classic look (`.pips-natural` and the
+ * color literals is the mana pips' classic look (`.pips-classic` and the
  * colorless ink). */
 
 /* ---- Chip (orangui::Chip): the mana glyph inside a chip ---- */
@@ -411,10 +411,10 @@
 /* ---- Mana pips: every `i.ms.ms-cost`, plus the color map ---- */
 
 /* Pips draw in the five `--mana-*` colors each theme block sets from its own
-   palette. `pips-natural`, on the element that carries the theme class,
+   palette. `pips-classic`, on the element that carries the theme class,
    puts back mana-font's classic fills instead. It comes after the themes in
    the cascade, so on the same element it wins. */
-.pips-natural {
+.pips-classic {
     --mana-white: #f0f2c0;
     --mana-blue: #b5cde3;
     --mana-black: #aca29a;
@@ -451,7 +451,7 @@ i.ms.ms-cost {
 }
 
 /* Each colored pip names its fill, the `--mana-*` color the theme (or
-   `.pips-natural`) sets. A hybrid's fill is its first half and
+   `.pips-classic`) sets. A hybrid's fill is its first half and
    `--pip-fill-2` its second; a twobrid ({2/W}) names only the second. */
 i.ms.ms-cost:is(.ms-w, .ms-wp, .ms-wu, .ms-wb, .ms-wup, .ms-wbp) {
     --pip-fill: var(--mana-white);

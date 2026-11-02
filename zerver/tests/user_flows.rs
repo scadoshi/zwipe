@@ -447,7 +447,7 @@ async fn universes_beyond_preference_round_trips(pool: sqlx::PgPool) {
 
 #[sqlx::test]
 async fn pip_style_preference_round_trips(pool: sqlx::PgPool) {
-    let app = TestApp::new(pool);
+    let app = TestApp::new(pool.clone());
     let (token, _) = app.register("pipuser").await;
 
     // Default: the theme's colors.
@@ -458,7 +458,7 @@ async fn pip_style_preference_round_trips(pool: sqlx::PgPool) {
     let (status, updated) = app
         .patch(
             PREFERENCES_ROUTE,
-            json!({ "pip_style": "natural" }),
+            json!({ "pip_style": "classic" }),
             Some(&token),
         )
         .await;
@@ -480,15 +480,41 @@ async fn pip_style_preference_round_trips(pool: sqlx::PgPool) {
     assert_eq!(status, StatusCode::OK, "get preferences: {prefs}");
     assert_eq!(prefs["pip_style"], "natural");
 
-    // A style that does not exist is rejected.
-    let (status, body) = app
+    // The stored row is the new name; the wire keeps the one 1.15.0 to 1.17.0 parse.
+    let stored: String = sqlx::query_scalar("SELECT pip_style FROM user_preferences")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(stored, "classic");
+
+    // A 1.15.0 to 1.17.0 client sending the earlier name still lands on classic.
+    let (status, updated) = app
         .patch(
             PREFERENCES_ROUTE,
-            json!({ "pip_style": "classic" }),
+            json!({ "pip_style": "theme" }),
             Some(&token),
         )
         .await;
-    assert!(status.is_client_error(), "unknown style: {status} {body}");
+    assert_eq!(status, StatusCode::OK, "reset: {updated}");
+    let (status, updated) = app
+        .patch(
+            PREFERENCES_ROUTE,
+            json!({ "pip_style": "natural" }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "earlier name: {updated}");
+    assert_eq!(updated["pip_style"], "natural");
+
+    // A color that does not exist is rejected.
+    let (status, body) = app
+        .patch(
+            PREFERENCES_ROUTE,
+            json!({ "pip_style": "bogus" }),
+            Some(&token),
+        )
+        .await;
+    assert!(status.is_client_error(), "unknown color: {status} {body}");
 }
 
 #[sqlx::test]

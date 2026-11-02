@@ -13,7 +13,7 @@ use tokio::time;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
-use zwipe_core::domain::user::preferences::PipStyle;
+use zwipe_core::domain::user::preferences::PipColor;
 use zwipe_core::http::contracts::metrics::AnonymousEventKind;
 use zwipe_core::version;
 pub use zwipe_ui::changelog::ChangelogCache;
@@ -292,7 +292,7 @@ fn use_theme_and_pips(session: Signal<Option<Session>>) {
     // Pip style: the stored session's preferences, which the Config toggle
     // keeps current, else the default. Login and the preference fetches set
     // it from the server.
-    let pip_style: Signal<PipStyle> = use_signal(|| {
+    let pip_style: Signal<PipColor> = use_signal(|| {
         session
             .peek()
             .as_ref()
