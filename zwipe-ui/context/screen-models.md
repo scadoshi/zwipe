@@ -94,6 +94,20 @@ Every fetch takes a `Ticket` from the model's own `Generation` inside `update`, 
 - When the model changes a field the client's input owns, it says so in an effect (`SetIdentifier`, `ClearPassword`).
 - Requests that may overlap on purpose (Forgot password's Send) use the waiting list, and a flag any reply clears mirrors the app's spinner.
 - Funnel events stay in the client and go out as it performs the effect.
+- A model that needs a client-owned store's answer emits a request effect (`TakeUndo`) the client answers at once with an action (`Taken`), and writes back with `RecordUndo`.
+- The client's request runner may hold animation state, such as clearing the entrance on a failed session refresh.
+- A client-owned counter other widgets watch can keep driving the model with `Filter(builder)`.
+- Shared chip rows take the value shown plus `on_pick(Option<T>)` (`None` is All), and the model decides the toggle.
+- Client filter state that resets when its panel unmounts becomes a model rule keyed on a view (Playstyle's `shows_staples`).
+- A reveal whose content comes from model data goes to a child component as a `Callback` reading the model (`role_tags`).
+- A sheet that only closes has no `Destination` and emits `Effect::Close`.
+- When the shown index belongs to a gesture or carousel, it comes in as `at` on the actions and views that need it.
+- A list laid out new is `Show(at)`; a reopen on the cached list is `Rewind(at)`.
+- Host props (the printing sheet's mode and Save toast) go into `State::new(..)`.
+- A client-owned filter the model also writes goes out as `SetFilter` and comes back through the client's counter as `Filter`; the model's `Rerun` is that bump.
+- Two piles means two entrance signals: `Enter { pile, from }` and `StopEnter(pile)`.
+- An undo that needs a fresh session answers `NotSent` apart from `Failed`, because the two compensate differently.
+- A stack that pages marks its search ticket as the epoch, and every page carries it.
 
 ## Wiring it in Dioxus (the app and zwiper-web)
 

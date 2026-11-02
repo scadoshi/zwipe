@@ -9,15 +9,12 @@ pub(crate) mod card_info;
 /// Expandable card row component.
 pub(crate) mod card_row;
 /// Contained swipe-stack state (cards, cursor, history, enter animation).
-pub(crate) mod card_stack;
 /// Per-(screen, deck) filter memory.
 pub(crate) mod filter_store;
 /// Card image with built-in flip control for double-faced cards.
 pub(crate) mod flippable_card_image;
 /// Fullscreen image preview overlay.
 pub(crate) mod image_preview;
-/// Swipe adds still waiting on the server, so an early undo isn't lost.
-pub(crate) mod in_flight_adds;
 /// Bottom sheet for selecting card printings.
 pub(crate) mod printing_sheet;
 /// Name-search bar that adds a card straight to the deck.
