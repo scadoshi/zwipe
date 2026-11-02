@@ -2,9 +2,9 @@
 
 use std::time::Duration;
 
-use components::{HintBullet, HintBullets, HintDialog, HintKey, TOAST_NORMAL, TextInput};
+use components::{HintBullet, HintBullets, HintDialog, HintKey, TextInput};
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, Toasts, use_toast};
+use dioxus_primitives::toast::{Toasts, use_toast};
 use tokio::time;
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
@@ -20,13 +20,14 @@ use zwipe_core::domain::deck::{
 };
 use zwipe_ui::deck::command_zone::Slot;
 use zwipe_ui::deck::form::{self, FormValues};
+use zwipe_ui::deck::pickers::{self, PartnerAutofill};
 
 use crate::inbound::components::generation::use_generation;
-use crate::inbound::components::guide_link;
 use crate::inbound::components::hint_dialog::HintColored;
 use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::info_button::{self, InfoButton};
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
+use crate::inbound::components::{guide_link, ui_toast};
 
 /// Upper bound for the land-target stepper: no deck runs more lands than this.
 const MAX_LAND_TARGET: i32 = 100;
@@ -168,42 +169,28 @@ pub(crate) fn autofill_named_partner(
         };
         match client().search_cards(&filter, &session).await {
             Ok(cards) => {
-                // Exact full-name match first: the front-face tier is only a
-                // fallback for mates that exist solely as a DFC, and must not
-                // pick a reversible `A // A` printing over the real card.
-                let exact = cards
-                    .iter()
-                    .position(|c| c.scryfall_data.name.eq_ignore_ascii_case(&mate));
-                let front_face = || {
-                    cards.iter().position(|c| {
-                        c.scryfall_data
-                            .name
-                            .split(" // ")
-                            .next()
-                            .is_some_and(|front| front.trim().eq_ignore_ascii_case(&mate))
-                    })
+                let found = {
+                    let commander = commander.peek();
+                    let partner = partner_commander.peek();
+                    match pickers::partner_autofill(
+                        &cards,
+                        &mate,
+                        selected_id,
+                        commander.as_ref(),
+                        partner.as_ref(),
+                    ) {
+                        PartnerAutofill::NoMatch => {
+                            tracing::warn!("partner autofill: no exact match for {mate}");
+                            return;
+                        }
+                        PartnerAutofill::Stale => return,
+                        PartnerAutofill::Fill(found) => found.clone(),
+                    }
                 };
-                let Some(found) = exact
-                    .or_else(front_face)
-                    .and_then(|i| cards.into_iter().nth(i))
-                else {
-                    tracing::warn!("partner autofill: no exact match for {mate}");
-                    return;
-                };
-                let commander_unchanged = commander
-                    .peek()
-                    .as_ref()
-                    .is_some_and(|c| c.scryfall_data.id == selected_id);
-                if !commander_unchanged || partner_commander.peek().is_some() {
-                    return;
-                }
                 let name = found.scryfall_data.name.clone();
                 partner_commander_display.set(name.clone());
                 partner_commander.set(Some(found));
-                toast.info(
-                    format!("Partner found and selected: {name}"),
-                    ToastOptions::default().duration(TOAST_NORMAL),
-                );
+                ui_toast::raise(toast, pickers::partner_found_toast(&name));
             }
             Err(e) => tracing::warn!("partner autofill search failed: {e}"),
         }

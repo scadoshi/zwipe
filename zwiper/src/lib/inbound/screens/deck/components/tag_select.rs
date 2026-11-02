@@ -8,17 +8,16 @@
 //! filters the grid by name for quick jumps.
 
 use components::{
-    ActionBar, Button, ButtonVariant, HintBullet, HintBullets, HintDialog, TOAST_QUICK,
-    use_overlay_back_action,
+    ActionBar, Button, ButtonVariant, HintBullet, HintBullets, HintDialog, use_overlay_back_action,
 };
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
+use dioxus_primitives::toast::use_toast;
 use zwipe_core::domain::deck::{DeckTagView, MAX_DECK_TAGS};
-use zwipe_ui::filter::fields;
+use zwipe_ui::deck::pickers::{self, Draft, Picker, TagPicker, Tapped};
 
 use crate::inbound::components::concept_explainers::DeckTagsExplainer;
-use crate::inbound::components::guide_link;
 use crate::inbound::components::screen_header::ScreenHeader;
+use crate::inbound::components::{guide_link, ui_toast};
 
 /// In-place tag picker. Toggled by `open`; mutates `selected_tags` (slugs)
 /// directly, with Save grayed until the set differs from the one it opened
@@ -37,10 +36,13 @@ pub(crate) fn TagSelect(
     let mut focused = use_signal(|| Option::<DeckTagView>::None);
     let hint_open = use_signal(|| false);
     // Snapshot the selection (tag slugs) when the picker opens, so Cancel reverts.
-    let mut snapshot = use_signal(Vec::<String>::new);
+    let mut draft = use_signal(|| Draft::tags(TagPicker::DeckTags, Vec::new()));
     use_effect(move || {
         if open() {
-            snapshot.set(selected_tags.peek().clone());
+            draft.set(Draft::tags(
+                TagPicker::DeckTags,
+                selected_tags.peek().clone(),
+            ));
         }
     });
 
@@ -49,17 +51,14 @@ pub(crate) fn TagSelect(
     // as the Back button below, saying so when there was something to revert.
     let back = use_callback(move |(): ()| {
         let mut selected_tags = selected_tags;
-        if !fields::same_set(&selected_tags.peek(), &snapshot.peek()) {
-            toast.info(
-                "Deck tags unchanged".to_string(),
-                ToastOptions::default().duration(TOAST_QUICK),
-            );
+        if let Some(discarded) = draft.peek().back_toast(&selected_tags.peek()) {
+            ui_toast::raise(toast, discarded);
         }
-        selected_tags.set(snapshot());
+        selected_tags.set(draft().into_snapshot());
         on_close.call(());
     });
     use_overlay_back_action(open.into(), back);
-    let unchanged = fields::same_set(&selected_tags(), &snapshot());
+    let unchanged = draft.read().is_unchanged(&selected_tags());
 
     let screen_class = if open() {
         "screen swipe-select-screen show"
@@ -68,10 +67,8 @@ pub(crate) fn TagSelect(
     };
 
     let results: Vec<DeckTagView> = if open() {
-        let q = query().to_lowercase();
-        catalog
-            .iter()
-            .filter(|t| q.is_empty() || t.display_name.to_lowercase().contains(&q))
+        pickers::deck_tags_matching(&catalog, &query())
+            .into_iter()
             .cloned()
             .collect()
     } else {
@@ -84,7 +81,7 @@ pub(crate) fn TagSelect(
             // clear and the one beneath would show through.
             ::components::GridCells { still: true }
             if open() {
-                ScreenHeader { title: "Deck tags", hint: hint_open }
+                ScreenHeader { title: Picker::DeckTags.title(), hint: hint_open }
 
                 div { class: "screen-content content-enter tag-screen",
                     div { class: "tag-controls",
@@ -119,8 +116,8 @@ pub(crate) fn TagSelect(
                                 div { class: "tag-def-name", "{tag.display_name}" }
                                 div { class: "tag-def-text", "{tag.description}" }
                             } else {
-                                div { class: "tag-def-name", "Hint" }
-                                div { class: "tag-def-text", "Tap a tag to see its definition here." }
+                                div { class: "tag-def-name", "{pickers::PICKER_BAR_HINT}" }
+                                div { class: "tag-def-text", "{Picker::DeckTags.bar_empty()}" }
                             }
                         }
                     }
@@ -144,17 +141,9 @@ pub(crate) fn TagSelect(
                                                 // Clear the search so the full grid returns after picking.
                                                 query.set(String::new());
                                                 let mut current = selected_tags();
-                                                if let Some(pos) = current.iter().position(|t| *t == slug) {
-                                                    current.remove(pos);
-                                                    selected_tags.set(current);
-                                                } else if current.len() < MAX_DECK_TAGS {
-                                                    current.push(slug.clone());
-                                                    selected_tags.set(current);
-                                                } else {
-                                                    toast.warning(
-                                                        format!("You may only choose up to {MAX_DECK_TAGS} tags"),
-                                                        ToastOptions::default().duration(TOAST_QUICK),
-                                                    );
+                                                match TagPicker::DeckTags.toggle(&mut current, &slug) {
+                                                    Tapped::AtCap => ui_toast::raise(toast, TagPicker::DeckTags.cap_toast()),
+                                                    Tapped::Added | Tapped::Removed => selected_tags.set(current),
                                                 }
                                             },
                                             "{label}"
@@ -183,7 +172,7 @@ pub(crate) fn TagSelect(
                 HintDialog {
                     open: hint_open,
                     actions: guide_link::screen(zwipe_ui::hint::HintTopic::DeckTags),
-                    title: "Deck tags",
+                    title: Picker::DeckTags.title(),
                     DeckTagsExplainer {}
                     HintBullets {
                         HintBullet { "Tap a tag to add or remove it. The bar up top shows what it means" }
