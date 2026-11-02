@@ -9,7 +9,6 @@ use zwipe_core::http::contracts::auth::HttpRegisterUser;
 use zwipe_core::http::contracts::metrics::AnonymousEventKind;
 use zwipe_ui::account;
 
-use crate::domain::validation;
 use crate::inbound::chrome::hint_topic::{self, HintTopic};
 use crate::inbound::router::Route;
 use crate::inbound::screens::auth::hero::HomeHero;
@@ -66,7 +65,7 @@ pub fn Register() -> Element {
         .then(|| account::email_error(email().trim()))
         .flatten();
     let password_error = (password_touched() || attempted)
-        .then(|| validation::password_error(&password(), &confirm_password(), attempted))
+        .then(|| account::password_error(&password(), &confirm_password(), attempted))
         .flatten();
 
     let back_to_login = move || {
@@ -87,7 +86,7 @@ pub fn Register() -> Element {
         let password = password.peek().clone();
         let invalid = account::username_error(&username).is_some()
             || account::email_error(&email).is_some()
-            || validation::password_error(&password, &confirm_password.peek(), true).is_some();
+            || account::password_error(&password, &confirm_password.peek(), true).is_some();
         if invalid {
             return;
         }

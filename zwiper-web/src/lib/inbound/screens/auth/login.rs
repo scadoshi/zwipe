@@ -8,8 +8,9 @@ use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::user::models::preferences::PipStyle;
 use zwipe_core::http::contracts::auth::HttpAuthenticateUser;
+use zwipe_ui::account::{self, LoginGate};
 
-use crate::domain::login::{self, SubmitGate};
+use crate::inbound::chrome::toast::raise;
 use crate::inbound::router::Route;
 use crate::inbound::screens::auth::hero::HomeHero;
 use crate::inbound::shell::ScreenFrame;
@@ -47,16 +48,13 @@ pub fn Login() -> Element {
     });
 
     let mut attempt_submit = move || {
-        match login::submit_gate(*is_loading.peek(), &identifier.peek(), &password.peek()) {
-            SubmitGate::Busy => return,
-            SubmitGate::MissingInputs => {
-                toast.error(
-                    login::MISSING_INPUTS.to_string(),
-                    ToastOptions::default().duration(TOAST_NORMAL),
-                );
+        match account::login_gate(*is_loading.peek(), &identifier.peek(), &password.peek()) {
+            LoginGate::Busy => return,
+            LoginGate::MissingInputs => {
+                raise(toast, &account::missing_inputs_toast());
                 return;
             }
-            SubmitGate::Send => {}
+            LoginGate::Send => {}
         }
         is_loading.set(true);
         let request = HttpAuthenticateUser::new(&identifier.peek(), &password.peek());

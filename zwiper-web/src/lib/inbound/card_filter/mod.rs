@@ -32,12 +32,13 @@ use zwipe_ui::filter::draft::{ApplyOutcome, FilterDraft, SheetConfig};
 use zwipe_ui::filter::picker::PickerField;
 use zwipe_ui::filter::sections::Section;
 
-use self::rows::{SectionRows, bump, raise};
+use self::rows::{SectionRows, bump};
 use crate::inbound::catalog::CatalogCache;
 use crate::inbound::chrome::hint_topic::{HintTopic, InfoButton};
 use crate::inbound::chrome::media::{THREE_COLUMNS_PX, use_min_width};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, open_and_record_hint};
 use crate::inbound::chrome::sheet::{SheetForm, SheetFrame};
+use crate::inbound::chrome::toast::raise;
 use crate::inbound::screens::oracle_tag_dictionary::OracleTagDictionary;
 
 /// Whether the panel is docked open: a host that docks it, on a window at

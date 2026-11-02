@@ -10,9 +10,9 @@ use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::secret::Secret;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::http::contracts::auth::HttpDeleteUser;
+use zwipe_ui::account;
 use zwipe_ui::timing::DELETE_COUNTDOWN;
 
-use crate::domain::account;
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::session::logout;
 use crate::outbound::timer;
@@ -63,7 +63,7 @@ pub(super) fn DeleteAccountDialog(open: Signal<bool>) -> Element {
         }
     });
 
-    let label = use_memo(move || account::delete_label(countdown()));
+    let label = use_memo(move || account::delete_label(u64::from(countdown())));
     let counting = use_memo(move || countdown() > 0);
     let delete = ActionButton::new("Delete")
         .danger()

@@ -39,7 +39,7 @@ pub(super) fn EmailValue(email: String, is_verified: bool, on_change: EventHandl
 /// server sends it, how long the link has left.
 #[component]
 pub(super) fn PendingEmail(email: String, expires_at: Option<DateTime<Utc>>) -> Element {
-    let note = expires_at.map(|at| zwipe_ui::account::pending_note(at, Utc::now()));
+    let note = expires_at.map(|at| account::link_expiry_text(at, Utc::now()));
     rsx! {
         div { style: "display:flex;flex-direction:column;align-items:flex-end;gap:0.25rem;",
             span { "{email}" }
@@ -152,7 +152,7 @@ pub(super) fn VerificationActions() -> Element {
             variant: ButtonVariant::Action,
             disabled: is_resending() || cooldown() > 0,
             onclick: resend,
-            {account::resend_label(is_resending(), cooldown())}
+            {zwipe_ui::account::resend_label(is_resending(), u64::from(cooldown()))}
         }
         span { title: "Check verification", style: "display:inline-flex;",
             Button {

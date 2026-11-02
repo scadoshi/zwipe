@@ -8,8 +8,8 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
 use zwipe_core::http::contracts::auth::HttpRequestPasswordReset;
+use zwipe_ui::account;
 
-use crate::domain::validation;
 use crate::inbound::router::Route;
 use crate::inbound::screens::auth::hero::HomeHero;
 use crate::inbound::shell::ScreenFrame;
@@ -35,7 +35,7 @@ pub fn ForgotPassword() -> Element {
         }
     });
     let email_error = (email_touched() || submit_attempted())
-        .then(|| validation::reset_email_error(&email()))
+        .then(|| account::reset_email_error(&email()))
         .flatten();
 
     let back_to_login = move |_| {
@@ -49,7 +49,7 @@ pub fn ForgotPassword() -> Element {
     let mut attempt_submit = move || {
         submit_attempted.set(true);
         let typed = email.peek().clone();
-        if validation::reset_email_error(&typed).is_some() {
+        if account::reset_email_error(&typed).is_some() {
             return;
         }
         is_loading.set(true);
