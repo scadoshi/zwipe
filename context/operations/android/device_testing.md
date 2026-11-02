@@ -33,8 +33,8 @@ zcripts/android/patch_bundle.sh          # icons + back handler + manifest + Wry
 # whatever is installed or the install is rejected as a downgrade
 perl -i -pe 's/compileSdk = 34/compileSdk = 36/; s/targetSdk = 34/targetSdk = 36/;
              s/versionCode = 1$/versionCode = <NEXT>/' \
-  target/dx/zwipe/release/android/app/app/build.gradle.kts
-cd target/dx/zwipe/release/android/app
+  target/dx/zwiper/release/android/app/app/build.gradle.kts
+cd target/dx/zwiper/release/android/app
 ANDROID_HOME=~/Library/Android/sdk \
 JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home" \
   ./gradlew :app:assembleDebug --console=plain

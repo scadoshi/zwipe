@@ -41,7 +41,7 @@ pub fn BackHandlerLayout() -> Element {
     }
 }
 
-/// The app's WKWebView, for the edge-swipe recognizer.
+/// The app's `WKWebView`, for the edge-swipe recognizer.
 #[cfg(all(target_os = "ios", feature = "mobile"))]
 fn webview() -> Option<NonNull<c_void>> {
     use dioxus::mobile::wry::WebViewExtIOS;

@@ -4,8 +4,8 @@ use components::{BottomSheet, Button, ButtonVariant, TOAST_QUICK, TextInput};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::user::username::Username;
 use zwipe_core::http::contracts::auth::HttpChangeUsername;
+use zwipe_ui::account;
 
 use crate::inbound::components::auth::authed::use_authed;
 use crate::inbound::components::telemetry::vocabulary::{ProfileScreen, Screen};
@@ -20,22 +20,14 @@ pub fn ChangeUsernameSheet(mut open: Signal<bool>) -> Element {
     let mut username_error: Signal<Option<String>> = use_signal(|| None);
     let mut username_touched = use_signal(|| false);
     let mut validate_username = move || {
-        if let Err(e) = Username::new(new_username()) {
-            username_error.set(Some(e.to_string()));
-        } else {
-            username_error.set(None);
-        }
+        username_error.set(account::username_error(&new_username()));
     };
 
     let mut password = use_signal(String::new);
     let mut password_error: Signal<Option<String>> = use_signal(|| None);
     let mut password_touched = use_signal(|| false);
     let mut validate_password = move || {
-        if password().is_empty() {
-            password_error.set(Some("Password is required".to_string()));
-        } else {
-            password_error.set(None);
-        }
+        password_error.set(account::password_required(&password()));
     };
 
     let mut submit_attempted = use_signal(|| false);

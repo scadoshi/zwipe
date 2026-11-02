@@ -4,29 +4,17 @@
 
 use components::Chip;
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, Toasts, use_toast};
+use dioxus_primitives::toast::use_toast;
 use zwipe_ui::filter::draft::FilterDraft;
 use zwipe_ui::filter::fields::{End, Stat};
 use zwipe_ui::filter::picker::{PickerField, Sources};
 use zwipe_ui::filter::sections::{
     self, ChipSet, Clear, ModeChip, NumberField, Row, Section, StepRow,
 };
-use zwipe_ui::toast::{Toast, ToastKind};
 
 use crate::domain::filter_chips;
 use crate::inbound::catalog::CatalogCache;
-
-/// Raises a zwipe-ui toast through the kit's toasts.
-pub(super) fn raise(toast: Toasts, t: &Toast) {
-    let options = ToastOptions::default().duration(t.duration);
-    let text = t.text.clone();
-    match t.kind {
-        ToastKind::Info => toast.info(text, options),
-        ToastKind::Success => toast.success(text, options),
-        ToastKind::Warning => toast.warning(text, options),
-        ToastKind::Error => toast.error(text, options),
-    }
-}
+use crate::inbound::chrome::toast::raise;
 
 /// Moves `epoch` on, remounting the boxes that hold typed text.
 pub(super) fn bump(mut epoch: Signal<u32>) {

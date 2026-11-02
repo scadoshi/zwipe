@@ -14,7 +14,8 @@ Anything that decides what a screen shows or does and that two or more clients n
 - The card filter: sections, fields, pickers, the Apply decision, Add's deck context and the draft the sheet edits (`filter::draft`).
 - The stores the card screens share: per-deck filters, parked add stacks, the undo log, adds in flight and the catalog with its 24 hour freshness.
 - The swipe stack and its actions, Add's search rules, the deck cards view's pass and quantity bursts, and the land and budget crossings.
-- The changelog's filing and filter, a card's faces as text, the account forms' wording, the session freshness rule, the version gate and the problem report link.
+- The changelog's filing and filter, a card's faces as text, the session freshness rule, the version gate and the problem report link.
+- The account forms: every field check and its words, the Log in gate, the Resend and Delete account labels; Home's greeting.
 - Hint copy as typed spans: every `?` topic and every one-time hint (`hint`).
 - Toasts as values (`toast`), behavior timings and search limits (`timing`), and the generation ticket for replies that arrive out of order.
 
@@ -38,4 +39,4 @@ One session owns the shared crates: zwipe-ui, zwipe-core, zwipe-client and compo
 
 ## Not yet
 
-Screen models (a state, actions and effects per screen) come next, starting with zwiper-web's waves B to D. zwiper-tui has switched to everything here; zwiper-web still uses its own copies until it switches over, and the app has switched only `filter::fields::same_set` so far.
+Screen models (a state, actions and effects per screen) come next, starting with zwiper-web's waves B to D. zwiper-tui has switched to everything here; zwiper-web still uses its own copies until it switches over, and the app has switched `filter::fields::same_set`, the account checks and labels, the Log in gate and Home's greeting so far.

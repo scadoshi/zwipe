@@ -36,13 +36,14 @@ pub struct Release {
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
 pub const UPCOMING: &[Release] = &[Release {
-    version: "1.16.3",
+    version: "1.17.0",
     date: None,
     entries: &[
         "Card roles with no Oracle tags to open show as grey chips",
         "Activity's Card roles, Oracle tags and Most skipped say what fills them while they're empty",
         "Activity's role and tag charts say why they're empty for the pick under Show",
         "Activity's hints say share instead of rate",
+        "Links open inside Zwipe instead of switching to the browser",
     ],
 }];
 

@@ -13,15 +13,16 @@ pub mod hero;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use chrono::Utc;
-use components::{TOAST_QUICK, ThemeConfig};
+use components::ThemeConfig;
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
+use dioxus_primitives::toast::use_toast;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::deck_metrics;
 use zwipe_core::domain::user::models::preferences::PipStyle;
+use zwipe_ui::home::{self, UserSource};
 
 use self::color_map::HomePlayStyle;
 use self::hero::HomeHeroScoped;
@@ -29,15 +30,17 @@ use crate::inbound::caches::FlavorCard;
 use crate::inbound::cards::buy_links::CardBuyLinks;
 use crate::inbound::cards::image_preview::ImagePreview;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
+use crate::inbound::chrome::toast::raise;
 use crate::inbound::shell::ScreenFrame;
 use crate::outbound::session_store::SessionStore;
 
-/// Whether this visit has greeted the user. Home mounts again on every
-/// return to it; the greeting shows once per page load.
+/// Whether this page load has said hello. Home mounts again on every return
+/// to it; the hello shows once per page load, the verify-email nudge on every
+/// visit while the email is unverified.
 static GREETED: AtomicBool = AtomicBool::new(false);
 
 /// Home. Each mount refreshes the user (warning while the email is
-/// unverified, greeting once per visit otherwise), the preferences (theme
+/// unverified, greeting once per page load otherwise), the preferences (theme
 /// and pips) and, once the hour's card has expired, the featured flavor.
 #[component]
 pub fn Home() -> Element {
@@ -57,41 +60,30 @@ pub fn Home() -> Element {
         };
         spawn(async move {
             let http = client.peek().clone();
-            match http.fetch_user(&current).await {
+            let (user, source) = match http.fetch_user(&current).await {
                 Ok(fresh) => {
-                    let unverified = fresh.email_verified_at.is_none();
-                    let username = fresh.username.to_string();
                     let latest = session.peek().clone();
                     if let Some(mut latest) = latest {
-                        latest.user = fresh;
+                        latest.user = fresh.clone();
                         SessionStore::browser().infallible_save(&latest);
                         session.set(Some(latest));
                     }
-                    if unverified {
-                        toast.warning(
-                            "Verify your email!".to_string(),
-                            ToastOptions::default().duration(TOAST_QUICK),
-                        );
-                    } else if !GREETED.swap(true, Ordering::Relaxed) {
-                        toast.info(
-                            format!("Hello, {username}!"),
-                            ToastOptions::default().duration(TOAST_QUICK),
-                        );
-                    }
+                    (fresh, UserSource::Fetched)
                 }
                 Err(e) => {
                     tracing::warn!("home user fetch failed: {e}");
-                    let cached = session.peek().clone();
-                    if let Some(cached) = cached
-                        && cached.user.email_verified_at.is_some()
-                        && !GREETED.swap(true, Ordering::Relaxed)
-                    {
-                        toast.info(
-                            format!("Hello, {}!", cached.user.username),
-                            ToastOptions::default().duration(TOAST_QUICK),
-                        );
-                    }
+                    let Some(cached) = session.peek().clone() else {
+                        return;
+                    };
+                    (cached.user, UserSource::Cached)
                 }
+            };
+            let greeted = GREETED.load(Ordering::Relaxed);
+            if let Some(greeting) = home::greeting(&user, source, greeted) {
+                if greeting.uses_greeting() {
+                    GREETED.store(true, Ordering::Relaxed);
+                }
+                raise(toast, &greeting.toast());
             }
         });
     });

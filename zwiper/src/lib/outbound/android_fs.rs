@@ -16,6 +16,10 @@ const LOCAL_FRAME_CAPACITY: i32 = 4;
 ///
 /// The JNI calls run in their own local reference frame, so the references
 /// they create are freed on return even on an already attached thread.
+///
+/// # Errors
+///
+/// Fails if the JVM can't be attached or a JNI call throws.
 pub fn files_dir() -> anyhow::Result<PathBuf> {
     let ctx = ndk_context::android_context();
     // SAFETY: ndk-context guarantees a valid JavaVM and Context jobject for the

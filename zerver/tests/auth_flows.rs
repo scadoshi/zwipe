@@ -118,3 +118,45 @@ async fn concurrent_logins_leave_the_runtime_free(pool: sqlx::PgPool) {
         "the runtime stalled for {longest:?} during the logins"
     );
 }
+
+#[sqlx::test]
+async fn terminal_platform_survives_login_and_refresh(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (_, user_id) = app.register("tui").await;
+
+    let (status, session) = app
+        .post(
+            LOGIN_ROUTE,
+            serde_json::json!({
+                "identifier": "tui",
+                "password": "TestPass123!",
+                "platform": "terminal",
+                "client_version": "0.1.0"
+            }),
+            None,
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "terminal login: {session}");
+    let refresh = session["refresh_token"]["value"]
+        .as_str()
+        .unwrap()
+        .to_string();
+
+    let (status, refreshed) = app
+        .post(
+            REFRESH_SESSION_ROUTE,
+            serde_json::json!({ "user_id": user_id, "refresh_token": refresh }),
+            None,
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "refresh: {refreshed}");
+
+    // The rotated row carries the platform forward from the stored string.
+    let platforms: Vec<Option<String>> = sqlx::query_scalar(
+        "SELECT platform FROM refresh_tokens WHERE replaced_at IS NULL AND platform IS NOT NULL",
+    )
+    .fetch_all(&pool)
+    .await
+    .unwrap();
+    assert_eq!(platforms, vec![Some("terminal".to_string())]);
+}
