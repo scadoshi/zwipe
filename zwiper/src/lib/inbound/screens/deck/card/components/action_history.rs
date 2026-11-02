@@ -2,12 +2,12 @@
 //!
 //! Split by stack discipline, not by screen. A linear stack (Add screen's
 //! search source) keeps swiped cards behind the cursor, so its actions carry
-//! no data: undo steps back onto the very card it undoes. Cycling stacks
-//! (maybeboard source, Remove screen) drop the card from the list when a
-//! swipe commits, so those variants keep the only surviving copy.
+//! no data: undo steps back onto the very card it undoes. A cycling stack
+//! (the maybeboard source) drops the card from the list when a swipe
+//! commits, so that variant keeps the only surviving copy. The Remove
+//! screen's stack lives in `zwipe_ui::screens::remove_cards`.
 
 use zwipe_core::domain::card::Card;
-use zwipe_core::domain::deck::Board;
 
 use crate::inbound::components::interactions::swipe::direction::Direction;
 
@@ -58,61 +58,6 @@ impl StackAction for MaybeboardAction {
         match self {
             Self::Skip => Direction::Left,
             Self::Promote { .. } => Direction::Right,
-        }
-    }
-}
-
-/// Remove screen (cycling). Remove and board moves drop the card from the
-/// displayed stack, so those variants carry it for undo's re-insert.
-#[derive(Clone, Debug, PartialEq)]
-pub(crate) enum RemoveAction {
-    /// Left swipe: keep the card, cycle past.
-    Keep,
-    /// Right swipe: removed from the deck.
-    Remove {
-        /// The removed card (dropped from stack and deck on commit).
-        card: Box<Card>,
-        /// Board the card sat on, so undo puts it back there.
-        board: Board,
-        /// Copies the deck held, so undo restores all of them.
-        quantity: i32,
-    },
-    /// Up swipe: moved between boards. `from` lets undo restore the
-    /// original board.
-    MoveBoard {
-        /// The moved card (dropped from the displayed stack on commit).
-        card: Box<Card>,
-        /// Board the card came from.
-        from: Board,
-        /// Board the card moved to.
-        to: Board,
-    },
-}
-
-impl StackAction for RemoveAction {
-    fn exited(&self) -> Direction {
-        match self {
-            Self::Keep => Direction::Left,
-            Self::Remove { .. } => Direction::Right,
-            Self::MoveBoard { .. } => Direction::Up,
-        }
-    }
-}
-
-/// Oracle-tag examples browse (linear, read-only). Field-less like `AddAction`:
-/// the browsed card stays in the stack at the position "back" rewinds to. The
-/// only committing gesture is a left swipe (advance), so undo always re-enters
-/// from the left.
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub(crate) enum BrowseAction {
-    /// Left swipe: advanced to the next example card.
-    Next,
-}
-
-impl StackAction for BrowseAction {
-    fn exited(&self) -> Direction {
-        match self {
-            Self::Next => Direction::Left,
         }
     }
 }
