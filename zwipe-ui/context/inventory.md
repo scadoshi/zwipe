@@ -110,7 +110,7 @@ Effort is the work to build the shared model from the TUI's version and test it 
 | Export | board toggles with the at-least-one rule, the text, copy toast | clipboard API | S, built: `screens::deck_export`; the app switched, web and TUI to switch |
 | Deck view | load, profile, stats, sections, warnings and their fixes, More items, the Buy, Clone, Share, Clear skips and Delete dialogs and their flows, first-deck hint | accordion or columns, charts | M, built: `screens::deck_view`; the app switched, web and TUI to switch; which dialog is up stays in the client |
 | Add cards | sources (Search, Maybeboard), From and Synergy, the stack, paging, every swipe outcome, undo through the shared log, in-flight adds, land and budget crossings, end of results, all 43 toasts | gestures and card motion, image loading | XL |
-| Card filter | draft and Apply, 15 sections, per-host reset, picker sources, contradiction and catalog toasts | accordion or columns, steppers and chips as drawn | L |
+| Card filter | draft and Apply, 15 sections, per-host reset, picker sources, contradiction and catalog toasts | accordion or columns, steppers and chips as drawn | L, built: `screens::card_filter`; the app switched the sheet-level flow (open, Apply, Back, Reset, section clears, the dictionary); the section bodies still edit the host's signal; web and TUI to switch |
 | Deck cards view | load, filter and group pass, boards, Show, quick add, quantities with the 300 ms flush, moves, printings, MVP, Undo, Reset filter, every toast | detail pane, drag to move, row drawing | XL |
 | Remove cards | load, board filter, cycling stack, swipe outcomes, undo, crossings, toasts | gestures | M |
 | Printing sheet | list, pick, toasts | layout | S |

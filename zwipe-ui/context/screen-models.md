@@ -86,6 +86,10 @@ Every fetch takes a `Ticket` from the model's own `Generation` inside `update`, 
 - A picker's draft and which picker is open belong to the model, since the draft lives exactly as long as the picker; swipe overlays stay in the client.
 - A text input that owns its own signal stays in step with the model both ways.
 - Effects that carry zwipe-core request contracts can't derive `PartialEq`; tests use `matches!`.
+- A sheet over a host's value takes it in `Open` and hands it back with `Effect::Apply`; its Back is `Effect::Close`, not a navigation.
+- A client whose controls edit the host's value in place syncs it with `Action::Edit` before each action and performs `Restore` on Back; a client with a separate draft ignores `Restore`.
+- A model whose lists come from a client-wide store emits `EnsureLists` and takes no tickets.
+- A warning raised once per opening resets on close, so the order of effects doesn't matter.
 
 ## Wiring it in Dioxus (the app and zwiper-web)
 
