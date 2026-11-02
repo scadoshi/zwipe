@@ -9,6 +9,7 @@ pub mod card_filter;
 pub mod changelog;
 pub mod commander_maybeboard;
 pub mod config;
+pub mod deck_cards;
 pub mod deck_export;
 pub mod deck_form;
 pub mod deck_import;
