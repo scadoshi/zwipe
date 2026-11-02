@@ -1,12 +1,14 @@
 //! User preferences screen for theme and dark mode selection.
 
-use components::{TOAST_QUICK, ThemeConfig, ThemeSheet};
+use components::{ThemeConfig, ThemeSheet};
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
+use dioxus_primitives::toast::use_toast;
 use zwipe_core::http::contracts::user::HttpUpdatePreferences;
+use zwipe_ui::preferences::{self, PreferenceChange};
 
 use crate::inbound::components::auth::authed::use_authed;
 use crate::inbound::components::telemetry::vocabulary::{ProfileScreen, Screen};
+use crate::inbound::components::ui_toast;
 use crate::outbound::app_icon;
 
 /// The shared theme sheet, saving a kept pick to the account. Selections
@@ -19,13 +21,11 @@ pub fn PreferencesSheet(open: Signal<bool>) -> Element {
     let authed = use_authed(Screen::Profile(ProfileScreen::Preferences));
 
     let save = move |picked: ThemeConfig| {
-        let request = HttpUpdatePreferences {
-            theme: Some(picked.name),
-            dark_mode: Some(picked.is_dark),
-            exclude_universes_beyond: None,
-            universes_beyond_exceptions: None,
-            pip_style: None,
+        let change = PreferenceChange::Theme {
+            theme: picked.name,
+            dark_mode: picked.is_dark,
         };
+        let request = HttpUpdatePreferences::from(change.clone());
         spawn(async move {
             if let Some(prefs) = authed
                 .run("update_preferences", |c, s| async move {
@@ -36,10 +36,7 @@ pub fn PreferencesSheet(open: Signal<bool>) -> Element {
                 let theme = components::theme_from_preferences(&prefs);
                 app_icon::follow(&theme);
                 theme_config.set(theme);
-                toast.success(
-                    "Theme saved".to_string(),
-                    ToastOptions::default().duration(TOAST_QUICK),
-                );
+                ui_toast::raise(toast, change.saved_toast(&prefs));
             }
         });
     };
@@ -49,12 +46,7 @@ pub fn PreferencesSheet(open: Signal<bool>) -> Element {
             open,
             theme: theme_config,
             on_save: save,
-            on_unchanged: move |()| {
-                toast.info(
-                    "Theme unchanged".to_string(),
-                    ToastOptions::default().duration(TOAST_QUICK),
-                );
-            },
+            on_unchanged: move |()| ui_toast::raise(toast, preferences::theme_unchanged()),
         }
     }
 }

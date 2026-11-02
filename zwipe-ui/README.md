@@ -12,10 +12,12 @@ Anything that decides what a screen shows or does and that two or more clients n
 - Activity's heatmap, totals, rate charts and `year_line`; Playstyle's identities, reasons, profile and staples filters; home's figures, scope and flavor card expiry.
 - The deck list's Group by and Show, the create gate (`deck::create_gate`), the deck form's values and rules (Create's request, Edit's sparse update, the knock-on clears, which slots show), the command zone's labels, group headers, row art and slot update (`deck::command_zone`), the deck view's sections, total price, share link, clone name and toasts (`deck::view`), export text, the import toast, warning fixes and buy links.
 - The commander maybeboard's pip filter, Quick add gate, highlight and copy, and swipe select's key and re-deal (`commander`).
-- The card filter: sections, fields, pickers, the Apply decision, Add's deck context and the draft the sheet edits (`filter::draft`).
+- The card filter: sections, fields, pickers, chip rows (`filter::chips`), the Apply decision, Add's deck context and the draft the sheet edits (`filter::draft`).
 - The stores the card screens share: per-deck filters, parked add stacks, the undo log, adds in flight and the catalog with its 24 hour freshness.
 - The swipe stack and its actions, Add's search rules, the deck cards view's pass and quantity bursts, and the land and budget crossings.
-- The changelog's filing and filter, a card's faces as text, the session freshness rule, the version gate and the problem report link.
+- The changelog's filing and filter, a card's faces as text and info lines (`card::info`), the session freshness rule, the version gate and the problem report link.
+- The oracle tag dictionary's buckets, letter rail and rows (`dictionary`).
+- Config's preference changes, sparse update, toggle settle, exception chips and toasts (`preferences`).
 - The account forms: every field check and its words, the Log in gate, the Resend and Delete account labels; Home's greeting.
 - Hint copy as typed spans: every `?` topic and every one-time hint (`hint`).
 - Toasts as values (`toast`), behavior timings and search limits (`timing`), and the generation ticket for replies that arrive out of order.
@@ -40,4 +42,4 @@ One session owns the shared crates: zwipe-ui, zwipe-core, zwipe-client and compo
 
 ## Not yet
 
-Screen models (a state, actions and effects per screen) come next, starting with zwiper-web's waves B to D. zwiper-tui has switched to everything here; zwiper-web still uses its own copies until it switches over, and the app has switched `filter::fields::same_set`, the account checks and labels, the Log in gate, Home's greeting, the command zone (`deck::command_zone`), the deck form's values, requests, knock-on clears and slot visibility (`deck::form`), the create gate, the deck view (`deck::view`) and the commander maybeboard and swipe select rules (`commander`) so far.
+Screen models (a state, actions and effects per screen) come next, starting with zwiper-web's waves B to D. zwiper-tui has switched to everything here; zwiper-web still uses its own copies until it switches over, and the app has switched `filter::fields::same_set`, the account checks and labels, the Log in gate, Home's greeting, the command zone (`deck::command_zone`), the deck form's values, requests, knock-on clears and slot visibility (`deck::form`), the create gate, the deck view (`deck::view`), the commander maybeboard and swipe select rules (`commander`), the oracle tag dictionary (`dictionary`), Config (`preferences`), the filter's chip rows without a mode chip (`filter::chips`) and the card info lines (`card::info`) so far.
