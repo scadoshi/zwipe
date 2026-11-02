@@ -1,17 +1,18 @@
 //! The view deck screen's Buy and More bottom sheets.
 
-use components::{AlertDialog, BottomSheet, Button, DialogAction, TOAST_QUICK};
+use components::{AlertDialog, BottomSheet, Button, DialogAction};
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
+use dioxus_primitives::toast::use_toast;
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::site::WEB_BASE;
+use zwipe_ui::deck::view::{self, Done};
 
 use crate::inbound::components::auth::authed::use_authed;
 use crate::inbound::components::telemetry::flush_loop;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen, component};
+use crate::inbound::components::ui_toast;
 use crate::inbound::router::Router;
 
 #[component]
@@ -40,16 +41,13 @@ pub(crate) fn MoreButtons(
     // Copies a shared-deck link to the clipboard and toasts. The token is a
     // UUID, so it needs no escaping, but we serialize for safety anyway.
     let copy_link = move |token: Uuid| {
-        let url = format!("{WEB_BASE}/deck/{token}");
+        let url = view::share_link(token);
         let js = format!(
             "navigator.clipboard.writeText({})",
             serde_json::to_string(&url).unwrap_or_default()
         );
         document::eval(&js);
-        toast.info(
-            "Share link copied".to_string(),
-            ToastOptions::default().duration(TOAST_QUICK),
-        );
+        ui_toast::raise(toast, Done::LinkCopied.toast());
     };
 
     let share_deck = use_callback(move |()| {
@@ -85,10 +83,7 @@ pub(crate) fn MoreButtons(
                 .is_some()
             {
                 share_token.set(None);
-                toast.info(
-                    "Link disabled".to_string(),
-                    ToastOptions::default().duration(TOAST_QUICK),
-                );
+                ui_toast::raise(toast, Done::LinkDisabled.toast());
             }
         });
     });
@@ -108,10 +103,7 @@ pub(crate) fn MoreButtons(
                 .await
                 .is_some()
             {
-                toast.info(
-                    "Skips cleared".to_string(),
-                    ToastOptions::default().duration(TOAST_QUICK),
-                );
+                ui_toast::raise(toast, Done::SkipsCleared.toast());
             }
         });
     });

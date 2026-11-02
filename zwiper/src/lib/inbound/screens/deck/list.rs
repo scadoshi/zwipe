@@ -12,10 +12,10 @@ use std::collections::HashSet;
 
 use components::{
     ActionBar, BottomSheet, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintDialog,
-    HintKey, TOAST_LONG,
+    HintKey,
 };
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
+use dioxus_primitives::toast::use_toast;
 use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::scryfall_data::colors::Color;
@@ -26,9 +26,9 @@ use zwipe_core::domain::user::models::hints::HINT_DECK_LIST;
 use zwipe_ui::deck::command_zone;
 
 use crate::inbound::components::auth::authed::use_authed;
-use crate::inbound::components::hint_dialog;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen};
+use crate::inbound::components::{hint_dialog, ui_toast};
 use crate::inbound::router::Router;
 use crate::inbound::screens::deck::components::skeletons::{ChipRowSkeleton, DeckListSkeleton};
 
@@ -668,21 +668,19 @@ pub fn DeckList() -> Element {
                     onclick: move |_| {
                         // Proactive guard: unverified users are limited to 1 deck.
                         // The backend enforces this too, but we surface it here first.
-                        let at_limit = session().is_some_and(|s| {
-                            s.user.email_verified_at.is_none()
-                                && deck_profiles_resource
-                                    .read()
-                                    .as_ref()
-                                    .and_then(|r| r.as_ref().ok())
-                                    .is_some_and(|p| !p.is_empty())
+                        let gate = session().map_or(Ok(()), |s| {
+                            let deck_count = deck_profiles_resource
+                                .read()
+                                .as_ref()
+                                .and_then(|r| r.as_ref().ok())
+                                .map_or(0, Vec::len);
+                            zwipe_ui::deck::create_gate(s.user.email_verified_at.is_some(), deck_count)
                         });
-                        if at_limit {
-                            toast.warning(
-                                "Verify your email to create more than 1 deck".to_string(),
-                                ToastOptions::default().duration(TOAST_LONG),
-                            );
-                        } else {
-                            navigator.push(Router::CreateDeck);
+                        match gate {
+                            Ok(()) => {
+                                navigator.push(Router::CreateDeck);
+                            }
+                            Err(warning) => ui_toast::raise(toast, warning),
                         }
                     },
                     "Create"

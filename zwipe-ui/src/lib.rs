@@ -15,6 +15,7 @@ pub mod buy;
 pub mod card;
 pub mod changelog;
 pub mod color_map;
+pub mod commander;
 pub mod deck;
 pub mod deck_cards;
 pub mod deck_signals;
