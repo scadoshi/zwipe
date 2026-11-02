@@ -28,7 +28,7 @@ use std::collections::BTreeMap;
 use components::{
     ActionBar, AlertDialog, Bar, BarChart, BarOrientation, BottomSheet, Button, ButtonVariant,
     CardRoleChips, Chip, ColorMap, ColorMapCounts, DialogAction, HintBullet, HintBullets,
-    HintDialog, HintKey, HintLine, OtagDef, RoleTags, TOAST_LONG, TOAST_QUICK,
+    HintDialog, HintKey, HintLine, OtagDef, RoleTags, TOAST_QUICK,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -61,6 +61,7 @@ use crate::inbound::components::home_play_style::ColorMapEmpty;
 use crate::inbound::components::info_button::InfoButton;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{Screen, screen};
+use crate::inbound::components::ui_toast;
 use crate::inbound::router::Router;
 use crate::inbound::screens::deck::card::components::card_row::{
     CardRow, OtagDescribe, OtagExamplesOpen, ShowRowArt,
@@ -1215,28 +1216,24 @@ pub fn SuggestedCommanders() -> Element {
                 .await
         });
 
-    let at_deck_limit = move || {
-        session().is_some_and(|s| {
-            s.user.email_verified_at.is_none()
-                && deck_profiles_resource
-                    .read()
-                    .as_ref()
-                    .and_then(|o| o.as_ref())
-                    .is_some_and(|p| !p.is_empty())
+    let gate = move || {
+        session().map_or(Ok(()), |s| {
+            let deck_count = deck_profiles_resource
+                .read()
+                .as_ref()
+                .and_then(|o| o.as_ref())
+                .map_or(0, Vec::len);
+            zwipe_ui::deck::create_gate(s.user.email_verified_at.is_some(), deck_count)
         })
     };
 
-    let create_with = move |card: Card| {
-        if at_deck_limit() {
-            toast.warning(
-                "Verify your email to create more than 1 deck".to_string(),
-                ToastOptions::default().duration(TOAST_LONG),
-            );
-        } else {
+    let create_with = move |card: Card| match gate() {
+        Ok(()) => {
             let mut slot = seed.0;
             slot.set(Some(card));
             navigator.push(Router::CreateDeck);
         }
+        Err(warning) => ui_toast::raise(toast, warning),
     };
 
     let on_start = move |card: Card| create_with(card);

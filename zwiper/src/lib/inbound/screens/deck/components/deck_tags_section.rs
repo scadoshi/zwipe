@@ -10,20 +10,6 @@ use zwipe_core::domain::deck::deck_profile::DeckProfile;
 use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::info_button::InfoButton;
 
-/// Whether the deck has any tag worth showing the Tags section for.
-pub(crate) fn has_any_tags(p: &DeckProfile) -> bool {
-    !p.tags.is_empty() || !p.oracle_tags.is_empty() || !p.other_tags.is_empty()
-}
-
-/// Total tag count across all three axes (for the collapsed-section badge).
-pub(crate) fn total_tag_count(p: &DeckProfile) -> usize {
-    // A display count; three in-memory lists never reach the cap.
-    p.tags
-        .len()
-        .saturating_add(p.oracle_tags.len())
-        .saturating_add(p.other_tags.len())
-}
-
 /// The tag rows (deck tags, oracle tags, other tags), each shown only when
 /// non-empty. Mirrors `DeckStats`' plain flex-column layout for a collapsible body.
 #[component]

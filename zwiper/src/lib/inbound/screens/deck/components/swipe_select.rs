@@ -14,8 +14,8 @@
 //! opens. There a left swipe dismisses the commander for a week and the eyeball
 //! sheet carries the reasons it was suggested. Its Filter opens a sheet holding
 //! the host's `suggested_filter` chips; when they change the pile mid-session,
-//! the stack re-deals through [`redeal`], keeping what was already swiped
-//! behind the top card so undo still walks back through it.
+//! the stack re-deals through [`swipe_select::redeal`], keeping what was
+//! already swiped behind the top card so undo still walks back through it.
 
 use std::collections::HashSet;
 use std::time::Duration;
@@ -35,6 +35,7 @@ use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilde
 use zwipe_core::domain::deck::format::Format;
 use zwipe_core::domain::user::models::hints::HINT_SWIPE_SELECT;
 use zwipe_core::http::contracts::suggestions::HttpCommanderSuggestion;
+use zwipe_ui::commander::swipe_select;
 
 use crate::inbound::components::generation::use_generation;
 use crate::inbound::components::guide_link;
@@ -74,35 +75,6 @@ pub(crate) struct SuggestedPile {
     /// The color identity the host's Show chip narrows `suggestions` to;
     /// `None` is All.
     pub identity: Option<Vec<Color>>,
-}
-
-/// A suggested card's identity across printings: its oracle id, else its
-/// scryfall id.
-fn card_key(card: &Card) -> Uuid {
-    card.scryfall_data
-        .oracle_id
-        .unwrap_or(card.scryfall_data.id)
-}
-
-/// The pile re-dealt from a new ranking mid-session. The first `swiped` of
-/// `dealt` stay in front, so the top card's index and the undo history still
-/// line up with them; then every item of `fresh` whose key is not among them,
-/// in `fresh`'s order.
-pub(crate) fn redeal<T: Clone, K: PartialEq>(
-    dealt: &[T],
-    swiped: usize,
-    fresh: &[T],
-    key: impl Fn(&T) -> K,
-) -> Vec<T> {
-    let mut pile: Vec<T> = dealt.iter().take(swiped).cloned().collect();
-    let kept: Vec<K> = pile.iter().map(&key).collect();
-    pile.extend(
-        fresh
-            .iter()
-            .filter(|item| !kept.contains(&key(item)))
-            .cloned(),
-    );
-    pile
 }
 
 /// Which command-zone slot a [`SwipeSelect`] is filling. Decides the always-on
@@ -446,7 +418,12 @@ pub(crate) fn SwipeSelect(
             return;
         }
         let fresh: Vec<Card> = pile.suggestions.iter().map(|s| s.card.clone()).collect();
-        let dealt = redeal(&cards.peek(), *current_index.peek(), &fresh, card_key);
+        let dealt = swipe_select::redeal(
+            &cards.peek(),
+            *current_index.peek(),
+            &fresh,
+            swipe_select::card_key,
+        );
         cards.set(dealt);
         // Keep the reasons of the cards behind the top for undo, and add the
         // new pile's.
@@ -871,55 +848,5 @@ pub(crate) fn SwipeSelect(
                 }
             }
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn key(name: &&'static str) -> &'static str {
-        name
-    }
-
-    #[test]
-    fn redeal_keeps_the_swiped_in_front_then_the_new_pile_without_them() {
-        let dealt = ["Krenko", "Narset", "Zada", "Ghired"];
-        let fresh = ["Zada", "Krenko", "Talrand"];
-        assert_eq!(
-            redeal(&dealt, 2, &fresh, key),
-            vec!["Krenko", "Narset", "Zada", "Talrand"],
-            "Krenko was swiped, so the new pile deals Zada then Talrand after the two"
-        );
-    }
-
-    #[test]
-    fn redeal_with_nothing_swiped_starts_at_the_top_of_the_new_pile() {
-        let dealt = ["Krenko", "Narset"];
-        let fresh = ["Talrand", "Narset"];
-        assert_eq!(redeal(&dealt, 0, &fresh, key), vec!["Talrand", "Narset"]);
-    }
-
-    #[test]
-    fn redeal_to_an_empty_pile_keeps_only_the_swiped() {
-        let dealt = ["Krenko", "Narset", "Zada"];
-        assert_eq!(redeal(&dealt, 1, &[], key), vec!["Krenko"]);
-        assert_eq!(
-            redeal(&dealt, 9, &["Talrand"], key),
-            vec!["Krenko", "Narset", "Zada", "Talrand"],
-            "a swiped count past the pile keeps the whole pile"
-        );
-    }
-
-    #[test]
-    fn redeal_after_an_undo_can_deal_the_undone_card_again() {
-        // Three swiped and one undone puts the index back at 2, so the third
-        // is no longer swiped and the new pile deals it.
-        let dealt = ["Krenko", "Narset", "Zada"];
-        let fresh = ["Zada", "Talrand"];
-        assert_eq!(
-            redeal(&dealt, 2, &fresh, key),
-            vec!["Krenko", "Narset", "Zada", "Talrand"]
-        );
     }
 }
