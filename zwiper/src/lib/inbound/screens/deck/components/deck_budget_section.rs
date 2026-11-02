@@ -1,57 +1,29 @@
-//! Budget rows for the deck view's collapsible "Budget" section: the price
-//! target and the deck's running total / average card price. Split out of the profile
-//! card (mirrors the Tags section) so the profile stays compact. The USD/EUR/TIX
-//! chips live in the section header and drive the running-price rows; the price
-//! *target* keeps its own stored currency (Scryfall gives each card a native
-//! price per currency, so switching reads a different pre-summed field, never a
-//! conversion). Rendered inside a
+//! Budget rows for the deck view's collapsible "Budget" section: the deck's
+//! running total, against the price target when it has one, and the average
+//! card price. The USD/EUR/TIX chips in the section header pick the currency
+//! the deck view's model reads the rows in; the target keeps its own stored
+//! currency. Rendered inside a
 //! [`CollapsibleSection`](super::collapsible_section::CollapsibleSection).
 
 use dioxus::prelude::*;
-use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
-use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
-use zwipe_core::domain::deck::deck_profile::DeckProfile;
-use zwipe_ui::deck::view;
+use zwipe_ui::screens::deck_view;
 
-/// Budget rows: price target, running total, and average card price.
+/// Budget rows: the running total and the average card price, each shown
+/// when the model has a value for it.
 #[component]
-pub(crate) fn DeckBudgetSection(
-    deck_profile: DeckProfile,
-    metrics: Option<DeckMetrics>,
-    /// Currency selected via the header chips; drives the running-price rows.
-    selected_currency: Signal<&'static str>,
-) -> Element {
-    let currency = PriceCurrency::from_key(selected_currency()).unwrap_or_default();
-    let (total, avg) = match (&metrics, currency) {
-        (Some(m), PriceCurrency::Eur) => (m.total_price_eur, m.avg_price_eur),
-        (Some(m), PriceCurrency::Tix) => (m.total_price_tix, m.avg_price_tix),
-        (Some(m), PriceCurrency::Usd) => (m.total_price_usd, m.avg_price_usd),
-        (None, _) => (None, None),
-    };
-    let fmt = |val: Option<f64>| match val {
-        Some(v) => currency.format_amount(v),
-        None => "N/A".to_string(),
-    };
-
+pub(crate) fn DeckBudgetSection(total: Option<String>, average: Option<String>) -> Element {
     rsx! {
         div { style: "display:flex;flex-direction:column;",
-            // Total price: running total, shown as `total / target` when a price
-            // target is set. The target keeps its own stored currency.
-            if view::has_budget(&deck_profile, metrics.is_some()) {
-                {
-                    let value = view::total_price_line(&deck_profile, total, currency);
-                    rsx! {
-                        div { class: "settings-row",
-                            span { class: "settings-row-label", "Total price" }
-                            span { class: "info-row-value", "{value}" }
-                        }
-                    }
+            if let Some(value) = total {
+                div { class: "settings-row",
+                    span { class: "settings-row-label", {deck_view::TOTAL_PRICE} }
+                    span { class: "info-row-value", "{value}" }
                 }
             }
-            if metrics.is_some() {
+            if let Some(value) = average {
                 div { class: "settings-row",
-                    span { class: "settings-row-label", "Average card price" }
-                    span { class: "info-row-value", "{fmt(avg)}" }
+                    span { class: "settings-row-label", {deck_view::AVERAGE_CARD_PRICE} }
+                    span { class: "info-row-value", "{value}" }
                 }
             }
         }

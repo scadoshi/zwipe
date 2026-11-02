@@ -2,10 +2,9 @@
 //!
 //! What the form knows and does is `zwipe_ui::screens::deck_form`; this file draws its state, opens the swipe pickers and performs its effects.
 
-use components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL, ToastOptions};
+use components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL, ToastOptions, Toasts, use_toast};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
-use dioxus_primitives::toast::{Toasts, use_toast};
 use tokio::time;
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
