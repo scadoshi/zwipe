@@ -14,3 +14,4 @@ pub mod deck_view;
 pub mod home;
 pub mod oracle_tag_dictionary;
 pub mod oracle_tag_examples;
+pub mod swipe_select;
