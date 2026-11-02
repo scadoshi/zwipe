@@ -111,6 +111,11 @@ Every fetch takes a `Ticket` from the model's own `Generation` inside `update`, 
 - An overlay a host keeps mounted takes everything it needs in `Open { .. }` each time it opens; the model decides whether to keep the pile or deal afresh.
 - A right swipe that hands a card to the host is `Effect::Pick`; Back on an overlay is `Navigate(Previous)`, which the host maps to its close.
 - Paged searches and fire-and-forget requests share one generation and waiting list; a fresh deal drops only the pile's searches.
+- A screen with a sheet-edited filter keeps the applied filter in the model (`Filter` on each counter bump); views whose sections read the live draft take it as a parameter (`display(&live)`).
+- Optimistic edits ask the client to bump its filter counter with `Effect::Refilter`, so the sheet's sections reset as before.
+- A per-item debounce (the deck cards view's quantity bursts) shares the screen's generation with the search debounce; `Debounced` looks up the burst by ticket first.
+- Writes carry an `Op`, which the client maps to its telemetry name and reporting.
+- A screen with a live undo log takes the popped entry on the action (`Undo(entry)`).
 
 ## Wiring it in Dioxus (the app and zwiper-web)
 
