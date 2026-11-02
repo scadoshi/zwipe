@@ -11,3 +11,5 @@ pub mod deck_import;
 pub mod deck_list;
 pub mod deck_view;
 pub mod home;
+pub mod oracle_tag_dictionary;
+pub mod oracle_tag_examples;

@@ -79,6 +79,9 @@ Every fetch takes a `Ticket` from the model's own `Generation` inside `update`, 
 - A screen with no fetch opens with `Open(id)` instead of `Load` (Import).
 - Input that lives in the client (a text area) comes in on the submit action, and `can_submit(input)` takes it for the disabled check.
 - A model that holds a zwipe-core type without `PartialEq` drops `PartialEq` from `State` and `Action`.
+- A screen that reads an app-wide cache it doesn't own takes the cache's state into its views by reference (`Catalog<'_>` into `body`) and holds no copy; the client reports a failure as an action (`CatalogFailed`).
+- A hand-off to the host can be an effect with no `Navigate` when the overlay stays up (the dictionary's `AdoptTag`).
+- A swipe browse's enter animation is an effect (`Enter(Direction)`): the model owns the cards and the cursor, the client the animation.
 
 ## Wiring it in Dioxus (the app and zwiper-web)
 
