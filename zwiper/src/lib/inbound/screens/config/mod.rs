@@ -18,11 +18,13 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use preferences::PreferencesSheet;
 use universes_beyond::UniversesBeyondExceptionsSheet;
 use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::card::scryfall_data::universe;
 use zwipe_core::domain::user;
 use zwipe_core::domain::user::models::hints::HINT_CONFIG;
 use zwipe_core::domain::user::preferences::PipStyle;
 use zwipe_core::http::contracts::user::HttpUpdatePreferences;
+use zwipe_ui::generation::Generation;
+// `preferences` is this screen's theme sheet module.
+use zwipe_ui::preferences::{self as ui_preferences, PreferenceChange};
 
 use crate::inbound::components::auth::authed::use_authed;
 use crate::inbound::components::hint_dialog::use_one_time_hint;
@@ -30,33 +32,9 @@ use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::info_button::InfoButton;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{ProfileScreen, Screen};
+use crate::inbound::components::ui_toast;
 use crate::outbound::app_icon;
 use crate::outbound::session::Persist;
-
-/// Numbers one toggle's requests so a reply can tell whether a newer tap
-/// has gone out since.
-#[derive(Debug, Default, Clone, Copy)]
-struct RequestSeq {
-    latest: u64,
-}
-
-impl RequestSeq {
-    /// Numbers a new request; it is now the latest.
-    fn begin(&mut self) -> u64 {
-        self.latest = self.latest.wrapping_add(1);
-        self.latest
-    }
-}
-
-/// What a toggle shows once request `mine` answers: the server's value, or
-/// `prev` (the value from before that tap) on failure. `None` leaves the
-/// screen alone, since a newer tap's request owns it.
-fn settle<T>(seq: RequestSeq, mine: u64, reply: Option<T>, prev: T) -> Option<T> {
-    if seq.latest != mine {
-        return None;
-    }
-    Some(reply.unwrap_or(prev))
-}
 
 /// Config screen: the account's appearance and card preferences. Theme, pips
 /// and Universes Beyond save through the preferences API; the app icon is a
@@ -69,17 +47,6 @@ pub fn Config() -> Element {
     let authed = use_authed(Screen::Profile(ProfileScreen::Preferences));
     let toast = use_toast();
     let navigator = use_navigator();
-
-    // Every toggle on this screen says what it did, in one voice: a setting
-    // that changes something you cannot see from here (which cards get
-    // served) is otherwise a button that looks like it did nothing. Sheets
-    // raise their own on Save, since they carry the value that was committed.
-    let said = use_callback(move |what: &'static str| {
-        toast.success(
-            what.to_string(),
-            ToastOptions::default().duration(TOAST_NORMAL),
-        );
-    });
 
     let mut preferences_open = use_signal(|| false);
     let mut app_icon_open = use_signal(|| false);
@@ -145,19 +112,14 @@ pub fn Config() -> Element {
 
     // Show/Hide toggle for Universes Beyond: flips optimistically and persists
     // immediately, reverting on failure. Same shape as the dark-mode toggle.
-    let mut ub_seq = use_signal(RequestSeq::default);
+    let mut ub_seq = use_signal(Generation::default);
     let mut toggle_universes_beyond = move || {
         let prev = *ub_hide.peek();
         let next = !prev;
         ub_hide.set(next);
-        let mine = ub_seq.write().begin();
-        let request = HttpUpdatePreferences {
-            theme: None,
-            dark_mode: None,
-            exclude_universes_beyond: Some(next),
-            universes_beyond_exceptions: None,
-            pip_style: None,
-        };
+        let mine = ub_seq.write().next_ticket();
+        let change = PreferenceChange::HideUniversesBeyond(next);
+        let request = HttpUpdatePreferences::from(change.clone());
         spawn(async move {
             // try_run: the facade reports and toasts; the Err back here only
             // drives the optimistic revert.
@@ -167,17 +129,13 @@ pub fn Config() -> Element {
                 })
                 .await
                 .ok();
-            let saved = reply.map(|prefs| prefs.exclude_universes_beyond);
-            let Some(shown) = settle(*ub_seq.peek(), mine, saved, prev) else {
+            let saved = reply.as_ref().map(|prefs| prefs.exclude_universes_beyond);
+            let Some(shown) = ui_preferences::settle(*ub_seq.peek(), mine, saved, prev) else {
                 return;
             };
             ub_hide.set(shown);
-            if saved.is_some() {
-                said.call(if shown {
-                    "Universes Beyond hidden"
-                } else {
-                    "Universes Beyond shown"
-                });
+            if let Some(prefs) = reply {
+                ui_toast::raise(toast, change.saved_toast(&prefs));
             }
         });
     };
@@ -185,19 +143,14 @@ pub fn Config() -> Element {
     // Theme/Natural toggle for pips: recolors every pip at once, persists
     // immediately and reverts on failure. The stored session keeps the
     // saved style so the next launch opens with it.
-    let mut pip_seq = use_signal(RequestSeq::default);
+    let mut pip_seq = use_signal(Generation::default);
     let mut toggle_pip_style = move || {
         let prev = *pip_style.peek();
         let next = prev.toggled();
         pip_style.set(next);
-        let mine = pip_seq.write().begin();
-        let request = HttpUpdatePreferences {
-            theme: None,
-            dark_mode: None,
-            exclude_universes_beyond: None,
-            universes_beyond_exceptions: None,
-            pip_style: Some(next),
-        };
+        let mine = pip_seq.write().next_ticket();
+        let change = PreferenceChange::Pips(next);
+        let request = HttpUpdatePreferences::from(change.clone());
         spawn(async move {
             // try_run: the facade reports and toasts; the Err back here only
             // drives the optimistic revert.
@@ -207,29 +160,26 @@ pub fn Config() -> Element {
                 })
                 .await
                 .ok();
-            let saved = reply.map(|prefs| prefs.pip_style);
-            let Some(shown) = settle(*pip_seq.peek(), mine, saved, prev) else {
+            let saved = reply.as_ref().map(|prefs| prefs.pip_style);
+            let Some(shown) = ui_preferences::settle(*pip_seq.peek(), mine, saved, prev) else {
                 return;
             };
             pip_style.set(shown);
-            if saved.is_some() {
+            if let Some(prefs) = reply {
                 let current = session.peek().clone();
                 if let Some(mut current) = current {
                     current.preferences.pip_style = shown;
                     current.infallible_save();
                     session.set(Some(current));
                 }
-                said.call(match shown {
-                    PipStyle::Theme => "Pips in theme colors",
-                    PipStyle::Natural => "Pips in natural colors",
-                });
+                ui_toast::raise(toast, change.saved_toast(&prefs));
             }
         });
     };
 
     // Dark-mode toggle in the Theme row: flips the theme live and persists it
     // immediately, reverting the UI if the save fails.
-    let mut dark_seq = use_signal(RequestSeq::default);
+    let mut dark_seq = use_signal(Generation::default);
     let mut toggle_dark_mode = move || {
         let prev = theme_config.peek().clone();
         let next = ThemeConfig {
@@ -237,14 +187,12 @@ pub fn Config() -> Element {
             is_dark: !prev.is_dark,
         };
         theme_config.set(next.clone());
-        let mine = dark_seq.write().begin();
-        let request = HttpUpdatePreferences {
-            theme: Some(next.name.clone()),
-            dark_mode: Some(next.is_dark),
-            exclude_universes_beyond: None,
-            universes_beyond_exceptions: None,
-            pip_style: None,
+        let mine = dark_seq.write().next_ticket();
+        let change = PreferenceChange::DarkMode {
+            theme: next.name.clone(),
+            dark_mode: next.is_dark,
         };
+        let request = HttpUpdatePreferences::from(change.clone());
         spawn(async move {
             // try_run: reporting and toasts live in the facade; Err drives
             // the optimistic revert.
@@ -254,22 +202,17 @@ pub fn Config() -> Element {
                 })
                 .await
                 .ok();
-            let saved_dark = reply.as_ref().map(|prefs| prefs.dark_mode);
-            let saved = reply.map(|prefs| components::theme_from_preferences(&prefs));
-            let Some(theme) = settle(*dark_seq.peek(), mine, saved, prev) else {
+            let saved = reply.as_ref().map(components::theme_from_preferences);
+            let Some(theme) = ui_preferences::settle(*dark_seq.peek(), mine, saved, prev) else {
                 return;
             };
-            if saved_dark.is_some() {
+            if reply.is_some() {
                 app_icon::follow(&theme);
                 app_icon_theme.set(app_icon::current());
             }
             theme_config.set(theme);
-            if let Some(dark_mode) = saved_dark {
-                said.call(if dark_mode {
-                    "Dark mode on"
-                } else {
-                    "Dark mode off"
-                });
+            if let Some(prefs) = reply {
+                ui_toast::raise(toast, change.saved_toast(&prefs));
             }
         });
     };
@@ -408,12 +351,7 @@ pub fn Config() -> Element {
                                 if !ub_exceptions().is_empty() {
                                     div { class: "ub-exception-chips",
                                         {
-                                            let mut names: Vec<&str> = ub_exceptions()
-                                                .iter()
-                                                .filter_map(|s| universe::franchise_by_slug(s))
-                                                .map(|f| f.name)
-                                                .collect();
-                                            names.sort_unstable();
+                                            let names = ui_preferences::exception_names(&ub_exceptions());
                                             rsx! {
                                                 // Each chip eases in a beat after the one before it.
                                                 for (i, name) in names.into_iter().enumerate() {
@@ -453,43 +391,5 @@ pub fn Config() -> Element {
                     hint_open: ub_hint_open,
                 }
             }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn a_reply_overtaken_by_a_newer_tap_changes_nothing() {
-        let mut seq = RequestSeq::default();
-        // Hide, then show again before the first reply.
-        let first = seq.begin();
-        let second = seq.begin();
-
-        assert_eq!(
-            settle(seq, second, Some(false), true),
-            Some(false),
-            "the newest reply lands"
-        );
-        assert_eq!(
-            settle(seq, first, Some(true), false),
-            None,
-            "a late older reply is dropped"
-        );
-        assert_eq!(
-            settle(seq, first, None, false),
-            None,
-            "and so is a late older failure"
-        );
-    }
-
-    #[test]
-    fn the_latest_failure_rolls_back_to_the_value_before_its_tap() {
-        let mut seq = RequestSeq::default();
-        let _first = seq.begin();
-        let second = seq.begin();
-        // The second tap flipped true back to false; its failure restores true.
-        assert_eq!(settle(seq, second, None, true), Some(true));
     }
 }

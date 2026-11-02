@@ -3,19 +3,20 @@
 //! toggle itself lives on the Config screen; this sheet edits only
 //! the whitelist. The server applies both at serve time.
 
-use components::{BottomSheet, Button, ButtonVariant, HintDialog, HintLine, TOAST_QUICK};
+use components::{BottomSheet, Button, ButtonVariant, HintDialog, HintLine};
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
+use dioxus_primitives::toast::use_toast;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::user::models::hints::HINT_UNIVERSES_BEYOND_EXCEPTIONS;
 use zwipe_core::http::contracts::user::HttpUpdatePreferences;
 use zwipe_ui::filter::fields;
+use zwipe_ui::preferences::{self, PreferenceChange};
 
 use crate::inbound::components::auth::authed::use_authed;
 use crate::inbound::components::catalog_cache::CatalogCache;
-use crate::inbound::components::hint_dialog;
 use crate::inbound::components::telemetry::vocabulary::{ProfileScreen, Screen};
+use crate::inbound::components::{hint_dialog, ui_toast};
 
 /// Bottom sheet editing the exceptions whitelist. `exceptions` is the parent's
 /// saved list: the sheet copies it into a draft on open and writes it back on
@@ -67,23 +68,14 @@ pub fn UniversesBeyondExceptionsSheet(
 
     let discard = use_callback(move |()| {
         if !fields::same_set(&draft.peek(), &exceptions.peek()) {
-            toast.info(
-                "Exceptions unchanged".to_string(),
-                ToastOptions::default().duration(TOAST_QUICK),
-            );
+            ui_toast::raise(toast, preferences::exceptions_unchanged());
         }
         open.set(false);
     });
 
     let mut save = move || {
-        let list = draft();
-        let request = HttpUpdatePreferences {
-            theme: None,
-            dark_mode: None,
-            exclude_universes_beyond: None,
-            universes_beyond_exceptions: Some(list),
-            pip_style: None,
-        };
+        let change = PreferenceChange::Exceptions(draft());
+        let request = HttpUpdatePreferences::from(change.clone());
         open.set(false);
         spawn(async move {
             if let Some(prefs) = authed
@@ -92,11 +84,9 @@ pub fn UniversesBeyondExceptionsSheet(
                 })
                 .await
             {
+                let saved = change.saved_toast(&prefs);
                 exceptions.set(prefs.universes_beyond_exceptions);
-                toast.success(
-                    "Exceptions saved".to_string(),
-                    ToastOptions::default().duration(TOAST_QUICK),
-                );
+                ui_toast::raise(toast, saved);
             }
         });
     };
@@ -158,15 +148,7 @@ pub fn UniversesBeyondExceptionsSheet(
                                 rsx! {
                                     div {
                                         class: if is_selected { "chip selected" } else { "chip" },
-                                        onclick: move |_| {
-                                            let mut list = draft();
-                                            if let Some(i) = list.iter().position(|s| *s == franchise.slug) {
-                                                list.remove(i);
-                                            } else {
-                                                list.push(franchise.slug.clone());
-                                            }
-                                            draft.set(list);
-                                        },
+                                        onclick: move |_| draft.set(fields::toggled(draft(), &franchise.slug)),
                                         { franchise.name }
                                     }
                                 }

@@ -23,6 +23,7 @@ pub mod generation;
 pub mod hint;
 pub mod home;
 pub mod playstyle;
+pub mod preferences;
 pub mod session;
 pub mod stack;
 pub mod stores;
