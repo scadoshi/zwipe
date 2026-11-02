@@ -22,7 +22,8 @@ impl From<MetricsError> for ApiError {
     }
 }
 
-/// Increments lifetime and daily counters for the caller by the batch values.
+/// Increments lifetime and daily counters for the caller by the batch values,
+/// and the day's totals for the platform on the caller's access token.
 ///
 /// Swipes over the per-account cap (see [`SwipeCap`]) are dropped before
 /// recording, and the request still succeeds.
@@ -53,7 +54,7 @@ pub async fn record_usage(
 
     state
         .metrics_service
-        .apply_usage(user.id, &batch)
+        .apply_usage(user.id, user.platform, &batch)
         .await
         .map_err(ApiError::from)?;
 

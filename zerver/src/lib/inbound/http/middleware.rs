@@ -19,6 +19,7 @@ use tower_governor::key_extractor::KeyExtractor;
 use uuid::Uuid;
 use zwipe_core::domain::Email;
 use zwipe_core::domain::auth::models::access_token::{Jwt, UserClaims};
+use zwipe_core::domain::auth::models::platform::ClientPlatform;
 use zwipe_core::domain::user::username::Username;
 
 use crate::domain::auth::models::access_token::{JwtSecret, JwtValidate};
@@ -42,6 +43,8 @@ pub struct AuthenticatedUser {
     pub username: Username,
     /// Email from JWT claims.
     pub email: Email,
+    /// Client platform from JWT claims, `None` for a token minted without one.
+    pub platform: Option<ClientPlatform>,
 }
 
 /// Rate-limit key extractor that keys by authenticated user ID from the JWT.
@@ -166,6 +169,7 @@ impl From<UserClaims> for AuthenticatedUser {
             id: value.user_id,
             username: value.username,
             email: value.email,
+            platform: value.platform,
         }
     }
 }
