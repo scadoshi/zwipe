@@ -1,8 +1,31 @@
-//! The problem report email every client's Help & feedback dialog opens.
+//! Help & feedback: the dialog's words, and the problem report email it opens.
+//!
+//! The dialog has no model: it holds nothing and decides nothing. Each client opens it its own way (the app's `!` in the screen header, the terminal's `!` and F1) and opens its links its own way.
 
 use std::fmt::Write;
 
 use zwipe_core::domain::site::SUPPORT_EMAIL;
+
+/// The dialog's title.
+pub const TITLE: &str = "Help & feedback";
+
+/// The dialog's body.
+pub const BODY: &str = "Reach the team or join the community.";
+
+/// The glyph on the button that opens the dialog, mirroring the `?` hint button.
+pub const GLYPH: &str = "!";
+
+/// The accessible name of the button that opens the dialog.
+pub const BUTTON_LABEL: &str = "Help and feedback";
+
+/// The button that closes the dialog.
+pub const CLOSE: &str = "Close";
+
+/// The button that opens the problem report email from [`report_mailto`].
+pub const REPORT: &str = "Report a problem \u{2197}";
+
+/// The button that opens the Discord invite.
+pub const DISCORD: &str = "Join the Discord \u{2197}";
 
 /// The report email's subject.
 const SUBJECT: &str = "Zwipe problem report";
@@ -37,6 +60,17 @@ pub fn urlencode(input: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_copy_matches_the_app() {
+        assert_eq!(TITLE, "Help & feedback");
+        assert_eq!(BODY, "Reach the team or join the community.");
+        assert_eq!(GLYPH, "!");
+        assert_eq!(BUTTON_LABEL, "Help and feedback");
+        assert_eq!(CLOSE, "Close");
+        assert_eq!(REPORT, "Report a problem ↗");
+        assert_eq!(DISCORD, "Join the Discord ↗");
+    }
 
     #[test]
     fn the_report_link_encodes_everything_but_the_unreserved_characters() {

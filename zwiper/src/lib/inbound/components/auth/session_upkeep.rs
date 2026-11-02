@@ -14,9 +14,9 @@ use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::user::preferences::PipStyle;
-use zwipe_core::http::contracts::changelog::HttpChangelog;
 use zwipe_core::http::contracts::metrics::AnonymousEventKind;
 use zwipe_core::version;
+pub use zwipe_ui::changelog::ChangelogCache;
 
 use crate::config::Config;
 use crate::inbound::components::auth::ensure_session::EnsureFresh;
@@ -95,23 +95,6 @@ fn next_hour(now: DateTime<Utc>) -> DateTime<Utc> {
         .checked_sub(&into_hour)
         .and_then(|gap| now.checked_add_signed(gap))
         .unwrap_or(DateTime::<Utc>::MAX_UTC)
-}
-
-/// App-wide changelog cache, populated by a background fetch at startup.
-///
-/// Fetched once per launch and held for the session (see [`spawn_upkeeper`]) so
-/// opening the Changelog screen is instant after the first launch. The screen
-/// reads this: `Loading` shows a skeleton, `Loaded` renders the fetched copy,
-/// and `Failed` says so. No compiled fallback: zwiper renders served data
-/// only (`context/plans/server-driven-catalogs-2/overview.md`).
-#[derive(Debug, Clone, PartialEq)]
-pub enum ChangelogCache {
-    /// Startup fetch still in flight.
-    Loading,
-    /// Fetched successfully from the server.
-    Loaded(HttpChangelog),
-    /// Fetch finished but failed; the screen shows a note.
-    Failed,
 }
 
 /// Min-version gate state: true when this build is below the server minimum.
