@@ -21,9 +21,9 @@ Plus [`CLAUDE.md`](CLAUDE.md), the authoritative rules for AI assistants.
 
 The running log, newest first. Update this when something ships; [`progress/todo.md`](progress/todo.md) holds what is still open.
 
-## 2026-11-01: 1.17.0 cut and built
+## 2026-11-01: 1.17.0 submitted
 
-iOS build 112 is in Transporter and Android vc74 is signed and verified at `zwipe-1.17.0.aab`, both built on scotland-laptop, the first with Xcode 27.2. Notes are at [`operations/store-submissions/1.17.0/whats_new.md`](operations/store-submissions/1.17.0/whats_new.md). Links open in the in-app browser (Safari sheet on iOS, Custom Tab on Android), a screen's main hint offers See guide to its zwipe.net guide, Activity's empty sections say what fills them, Card roles with no Oracle tags show as grey chips, and Android stays portrait. The changelog dates 1.17.0 to 2026-11-01; move it if it goes live on another day.
+1.17.0 is cut and submitted to both stores, iOS build 112 and Android vc74, both built on scotland-laptop, the first with Xcode 27.2. Notes are at [`operations/store-submissions/1.17.0/whats_new.md`](operations/store-submissions/1.17.0/whats_new.md). Links open in the in-app browser (Safari sheet on iOS, Custom Tab on Android), a screen's main hint offers See guide to its zwipe.net guide, Activity's empty sections say what fills them, Card roles with no Oracle tags show as grey chips, and Android stays portrait. The changelog dates 1.17.0 to 2026-11-01, the day it was submitted.
 
 ## 2026-10-31: zerver deploys take 5 minutes
 
