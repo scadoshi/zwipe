@@ -5,6 +5,8 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
+use zwipe_ui::filter::chips;
+use zwipe_ui::filter::sections::{ChipSet, Modes};
 
 /// Price filter sub-component: USD/EUR/TIX chips + min/max bounds.
 #[component]
@@ -61,7 +63,6 @@ pub(crate) fn PriceFilter() -> Element {
         }
     };
 
-    let selected_currency = filter_builder().price_currency().unwrap_or_default();
     let price_is_active =
         filter_builder().price_min().is_some() || filter_builder().price_max().is_some();
 
@@ -90,9 +91,22 @@ pub(crate) fn PriceFilter() -> Element {
             div { class: "chip-row", style: "margin-bottom: 0.5rem; justify-content: center;",
                 for currency in PriceCurrency::all().iter().copied() {
                     div {
-                        class: if selected_currency == currency { "chip selected" } else { "chip" },
+                        class: if chips::is_selected(
+                            ChipSet::Currency,
+                            &filter_builder(),
+                            currency.label(),
+                        ) {
+                            "chip selected"
+                        } else {
+                            "chip"
+                        },
                         onclick: move |_| {
-                            filter_builder.write().set_price_currency(currency);
+                            chips::tap(
+                                ChipSet::Currency,
+                                &mut filter_builder.write(),
+                                &Modes::default(),
+                                currency.label(),
+                            );
                         },
                         "{currency.label()}"
                     }

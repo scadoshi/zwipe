@@ -2,18 +2,10 @@
 
 use dioxus::prelude::*;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
+use zwipe_ui::filter::chips;
+use zwipe_ui::filter::sections::{ChipSet, Modes};
 
 use super::super::match_mode::MatchMode;
-
-/// Mana symbols for the produced mana filter (WUBRG + colorless).
-const MANA_SYMBOLS: &[(&str, &str)] = &[
-    ("W", "White"),
-    ("U", "Blue"),
-    ("B", "Black"),
-    ("R", "Red"),
-    ("G", "Green"),
-    ("C", "Colorless"),
-];
 
 fn read_produced_mana(fb: &CardQueryBuilder, mode: MatchMode) -> Vec<String> {
     match mode {
@@ -99,7 +91,7 @@ pub(crate) fn ProducedManaFilter() -> Element {
         }
 
         div { class: "flex flex-wrap gap-1 mb-1 flex-center",
-            for &(code, label) in MANA_SYMBOLS.iter() {
+            for (code, label) in chips::PRODUCED {
                 div {
                     class: if selected.contains(&code.to_string()) { "chip selected" } else { "chip" },
                     onclick: move |_| {
@@ -134,18 +126,24 @@ pub(crate) fn ProducedManaFilter() -> Element {
         }
 
         div { class: "flex flex-wrap gap-1 mb-1 flex-center",
-            for &(code, label) in MANA_SYMBOLS.iter() {
+            for (code, label) in chips::PRODUCED {
                 div {
-                    class: if excluded.contains(&code.to_string()) { "chip selected" } else { "chip" },
+                    class: if chips::is_selected(
+                        ChipSet::ProducedExcludes,
+                        &filter_builder(),
+                        code,
+                    ) {
+                        "chip selected"
+                    } else {
+                        "chip"
+                    },
                     onclick: move |_| {
-                        let mut exc = read_excluded(&filter_builder());
-                        let code_str = code.to_string();
-                        if exc.contains(&code_str) {
-                            exc.retain(|c| c != &code_str);
-                        } else {
-                            exc.push(code_str);
-                        }
-                        write_excluded(&mut filter_builder.write(), exc);
+                        chips::tap(
+                            ChipSet::ProducedExcludes,
+                            &mut filter_builder.write(),
+                            &Modes::default(),
+                            code,
+                        );
                     },
                     title: "{label}",
                     i { class: "ms ms-{code.to_lowercase()} ms-cost" }
