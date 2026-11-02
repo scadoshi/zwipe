@@ -1,8 +1,7 @@
 //! The clone deck dialog: a new name, then the clone.
 
-use components::{ActionButton, AlertDialog, DialogAction};
+use components::{ActionButton, AlertDialog, DialogAction, use_toast};
 use dioxus::prelude::*;
-use dioxus_primitives::toast::use_toast;
 use uuid::Uuid;
 use zwipe_core::http::contracts::deck::HttpCloneDeck;
 use zwipe_ui::deck::view::Done;

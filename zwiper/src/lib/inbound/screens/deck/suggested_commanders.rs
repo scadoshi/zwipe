@@ -28,10 +28,9 @@ use std::collections::BTreeMap;
 use components::{
     ActionBar, AlertDialog, Bar, BarChart, BarOrientation, BottomSheet, Button, ButtonVariant,
     CardRoleChips, Chip, ColorMap, ColorMapCounts, DialogAction, HintBullet, HintBullets,
-    HintDialog, HintKey, HintLine, OtagDef, RoleTags, TOAST_QUICK,
+    HintDialog, HintKey, HintLine, OtagDef, RoleTags, TOAST_QUICK, ToastOptions, use_toast,
 };
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
@@ -371,7 +370,7 @@ pub(crate) fn role_bars(roles: &[HttpProfileRole], tags: &[HttpProfileTag]) -> V
         |r, pct| Bar {
             key: r.role.clone(),
             label: card_role::role_short_label(&r.role),
-            count: decks_usize(r.decks),
+            count: u64::from(r.decks),
             pct,
             revealable: tags
                 .iter()
@@ -1948,7 +1947,7 @@ mod tests {
         }
     }
 
-    fn bar(key: &str, label: &str, count: usize, pct: u32) -> Bar {
+    fn bar(key: &str, label: &str, count: u64, pct: u32) -> Bar {
         Bar {
             key: key.to_string(),
             label: label.to_string(),

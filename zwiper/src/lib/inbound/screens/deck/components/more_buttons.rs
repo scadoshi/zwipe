@@ -1,8 +1,7 @@
 //! The view deck screen's Buy and More bottom sheets.
 
-use components::{AlertDialog, BottomSheet, Button, DialogAction};
+use components::{AlertDialog, BottomSheet, Button, DialogAction, use_toast};
 use dioxus::prelude::*;
-use dioxus_primitives::toast::use_toast;
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;

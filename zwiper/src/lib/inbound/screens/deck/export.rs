@@ -2,10 +2,9 @@
 
 use components::{
     ActionBar, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintDialog, HintKey,
-    TOAST_QUICK,
+    TOAST_QUICK, ToastOptions, use_toast,
 };
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
 use zwipe_client::ClientError;
 use zwipe_core::domain::deck::Deck;

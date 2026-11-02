@@ -29,19 +29,6 @@ const LEFT: f64 = 24.0;
 /// Room above the grid for the month labels.
 const TOP: f64 = 14.0;
 
-/// zwipe-ui's chart bars as the kit's chart draws them.
-fn chart_bars(bars: Vec<activity::Bar>) -> Vec<components::Bar> {
-    bars.into_iter()
-        .map(|bar| components::Bar {
-            key: bar.key,
-            label: bar.label,
-            count: usize::try_from(bar.count).unwrap_or(usize::MAX),
-            pct: bar.pct,
-            revealable: bar.revealable,
-        })
-        .collect()
-}
-
 /// The year as a heatmap: weekday labels down the left, month labels over
 /// the top, a cell per day shaded by its swipes and searches in orangui's
 /// [`HeatGrid`]. Wider than a phone, it scrolls sideways and opens on the
@@ -177,7 +164,7 @@ pub(crate) fn ActivitySections(
     let year_tags = state.year_tags().to_vec();
     let year_line = state.year_line();
     let shows_totals = state.shows_totals();
-    let totals = chart_bars(state.totals());
+    let totals = state.totals();
     let rate = state.rate();
     let role_rates = state.role_rates();
     let tag_rates = state.tag_rates();
@@ -216,7 +203,7 @@ pub(crate) fn ActivitySections(
                         // has a dealt card, but Removed needs an added one.
                         if let Rates::Charted(bars) = &rates {
                             BarChart {
-                                bars: chart_bars(bars.clone()),
+                                bars: bars.clone(),
                                 orientation: BarOrientation::Horizontal,
                                 on_bar: toggle_role,
                                 selected: selected_role.clone(),
@@ -242,7 +229,7 @@ pub(crate) fn ActivitySections(
                     div { key: "{label}",
                         if let Rates::Charted(bars) = &rates {
                             BarChart {
-                                bars: chart_bars(bars.clone()),
+                                bars: bars.clone(),
                                 orientation: BarOrientation::Horizontal,
                                 // Tag slugs read as written, as they do everywhere else.
                                 label_case: LabelCase::AsIs,
