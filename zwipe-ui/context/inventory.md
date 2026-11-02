@@ -115,7 +115,7 @@ Effort is the work to build the shared model from the TUI's version and test it 
 | Remove cards | load, board filter, cycling stack, swipe outcomes, undo, crossings, toasts | gestures | M |
 | Printing sheet | list, pick, toasts | layout | S |
 | Image preview | which image and face | all of it is drawing | none |
-| Account | both lists, the three change forms, verification with resend cooldown, delete countdown, More, dialogs | inputs, dialogs as drawn | M |
+| Account | both lists, the three change forms, verification with resend cooldown, delete countdown, More, dialogs | inputs, dialogs as drawn | M, built: `screens::account`; the app switched, web and TUI to switch; the clock stays in the client (`Wait`/`Tick`) |
 | Config | theme pick and preview, dark mode, pips, Universes Beyond and its exceptions, toasts | the app icon picker (app only), theme drawing | M, built: `screens::config`; the app switched, web and TUI to switch; theme and pips stay the client's, the app icon stays in the app |
 | Privacy policy | nothing beyond the source text already in core | rendering; the TUI's parser stays in the TUI | none |
 | Changelog | filing and the filter | web anchors | S |

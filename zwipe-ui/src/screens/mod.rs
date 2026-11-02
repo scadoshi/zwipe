@@ -2,6 +2,7 @@
 //!
 //! Each model is a `State` the client keeps for one visit, an `Action` for every tap, key or reply, and the `Effect`s [`deck_list::State::update`] and its siblings return. The model never fetches, spawns or navigates; the client performs each effect and feeds replies back in as actions. `context/screen-models.md` describes the pattern.
 
+pub mod account;
 pub mod activity;
 pub mod commander_maybeboard;
 pub mod config;
