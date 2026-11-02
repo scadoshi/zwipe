@@ -37,7 +37,7 @@ use crate::inbound::components::info_button::InfoButton;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen, component, screen};
-use crate::inbound::components::ui_toast;
+use crate::inbound::components::{guide_link, ui_toast};
 use crate::inbound::router::Router;
 use crate::inbound::screens::oracle_tag_examples::OracleTagExamples;
 use crate::outbound::buy_links;
@@ -557,6 +557,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
 
             HintDialog {
                 open: first_deck_hint_open,
+                actions: guide_link::one_time(HINT_FIRST_DECK),
                 title: "Welcome to your deck",
                 HintBullets {
                     HintBullet { HintKey { "Cards" } " browses, adds and removes cards" }

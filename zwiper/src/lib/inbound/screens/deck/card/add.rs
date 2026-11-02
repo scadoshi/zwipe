@@ -27,6 +27,7 @@ use super::components::printing_sheet::PrintingSheet;
 use crate::inbound::components::auth::authed::use_authed;
 use crate::inbound::components::auth::ensure_session::EnsureFresh;
 use crate::inbound::components::generation::use_generation;
+use crate::inbound::components::guide_link;
 use crate::inbound::components::hint_dialog::{HintColored, use_one_time_hint};
 use crate::inbound::components::interactions::swipe::SwipeStack;
 use crate::inbound::components::interactions::swipe::config::SwipeConfig;
@@ -1664,6 +1665,7 @@ pub fn Add(deck_id: Uuid) -> Element {
 
             HintDialog {
                 open: swipe_hint_open,
+                actions: guide_link::one_time(HINT_ADD_DECK_CARDS),
                 title: "Swipe to build",
                 HintBullets {
                     HintBullet { "Swipe " HintColored { color: "--color-success", "right" } " adds the card" }

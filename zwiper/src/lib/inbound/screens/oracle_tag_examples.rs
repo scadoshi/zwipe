@@ -24,6 +24,7 @@ use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortK
 use zwipe_core::domain::user::models::hints::HINT_OTAG_EXAMPLES;
 
 use crate::inbound::components::auth::authed::use_authed;
+use crate::inbound::components::guide_link;
 use crate::inbound::components::hint_dialog::{HintColored, use_one_time_hint};
 use crate::inbound::components::interactions::swipe::SwipeStack;
 use crate::inbound::components::interactions::swipe::config::SwipeConfig;
@@ -198,6 +199,7 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
 
             HintDialog {
                 open: examples_hint_open,
+                actions: guide_link::one_time(HINT_OTAG_EXAMPLES),
                 title: "Example cards",
                 HintBullets {
                     HintBullet { "Swipe " HintColored { color: "--color-success", "left" } " for the next card" }

@@ -35,20 +35,22 @@ pub struct Release {
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[Release {
-    version: "1.17.0",
-    date: None,
-    entries: &[
-        "Card roles with no Oracle tags to open show as grey chips",
-        "Activity's Card roles, Oracle tags and Most skipped say what fills them while they're empty",
-        "Activity's role and tag charts say why they're empty for the pick under Show",
-        "Activity's hints say share instead of rate",
-        "Links open inside Zwipe instead of switching to the browser",
-    ],
-}];
+pub const UPCOMING: &[Release] = &[];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
+    Release {
+        version: "1.17.0",
+        date: NaiveDate::from_ymd_opt(2026, 11, 1),
+        entries: &[
+            "Card roles with no Oracle tags to open show as grey chips",
+            "Activity's Card roles, Oracle tags and Most skipped say what fills them while they're empty",
+            "Activity's role and tag charts say why they're empty for the pick under Show",
+            "Activity's hints say share instead of rate",
+            "Links open inside Zwipe instead of switching to the browser",
+            "Hints with a guide on zwipe.net link to it",
+        ],
+    },
     Release {
         version: "1.16.2",
         date: NaiveDate::from_ymd_opt(2026, 10, 29),

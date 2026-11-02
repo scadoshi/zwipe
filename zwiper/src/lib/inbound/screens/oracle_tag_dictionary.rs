@@ -21,6 +21,7 @@ use zwipe_core::domain::card::oracle_tag::{self, OracleTag};
 use zwipe_core::domain::user::models::hints::HINT_ORACLE_TAG_DICTIONARY;
 
 use crate::inbound::components::catalog_cache::{CatalogCache, CatalogCell};
+use crate::inbound::components::guide_link;
 use crate::inbound::components::hint_dialog::{HintColored, use_one_time_hint};
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::screens::oracle_tag_examples::OracleTagExamples;
@@ -217,7 +218,7 @@ pub fn OracleTagDictionary(mut open: Signal<bool>, on_use: EventHandler<String>)
                 }
             }
 
-            HintDialog { open: hint, title: "Oracle tags",
+            HintDialog { open: hint, actions: guide_link::one_time(HINT_ORACLE_TAG_DICTIONARY), title: "Oracle tags",
             HintBullets {
                 HintBullet { "Tap a " HintKey { color: "--palette-1", "letter" } " to browse, or " HintColored { color: "--accent-secondary", "search" } " by name or description" }
                 HintBullet { HintKey { "Examples" } " shows real cards with that tag" }

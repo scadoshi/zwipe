@@ -37,6 +37,7 @@ use super::components::undo_log::{
 };
 use crate::inbound::components::auth::authed::use_authed;
 use crate::inbound::components::catalog_cache::CatalogCache;
+use crate::inbound::components::guide_link;
 use crate::inbound::components::hint_dialog::{self, HintColored};
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
@@ -1720,6 +1721,7 @@ pub fn View(deck_id: Uuid) -> Element {
 
             HintDialog {
                 open: deck_cards_hint_open,
+                actions: guide_link::one_time(HINT_DECK_CARDS),
                 title: "Browsing your deck",
                 HintLine { "Tap a row for details, quantity and printings" }
                 HintBullets {
