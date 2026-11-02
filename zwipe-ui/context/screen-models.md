@@ -97,6 +97,9 @@ Every fetch takes a `Ticket` from the model's own `Generation` inside `update`, 
 - A model that needs a client-owned store's answer emits a request effect (`TakeUndo`) the client answers at once with an action (`Taken`), and writes back with `RecordUndo`.
 - The client's request runner may hold animation state, such as clearing the entrance on a failed session refresh.
 - A client-owned counter other widgets watch can keep driving the model with `Filter(builder)`.
+- Shared chip rows take the value shown plus `on_pick(Option<T>)` (`None` is All), and the model decides the toggle.
+- Client filter state that resets when its panel unmounts becomes a model rule keyed on a view (Playstyle's `shows_staples`).
+- A reveal whose content comes from model data goes to a child component as a `Callback` reading the model (`role_tags`).
 
 ## Wiring it in Dioxus (the app and zwiper-web)
 

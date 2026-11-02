@@ -17,5 +17,6 @@ pub mod home;
 pub mod login;
 pub mod oracle_tag_dictionary;
 pub mod oracle_tag_examples;
+pub mod playstyle;
 pub mod register;
 pub mod remove_cards;
