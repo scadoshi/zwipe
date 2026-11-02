@@ -76,6 +76,9 @@ Every fetch takes a `Ticket` from the model's own `Generation` inside `update`, 
 - Text forms can live in the model (Account keeps one per sheet), with the client sending each keystroke as `Edit`. Do this when another client duplicates the touched and attempted rules; otherwise the text stays in the client and comes in on submit.
 - Passwords travel as the model's `Password`, whose `Debug` is redacted.
 - A shared component with an inline confirm takes a callback (`LogoutDialog { on_confirm }`) so the confirm goes through the model.
+- A screen with no fetch opens with `Open(id)` instead of `Load` (Import).
+- Input that lives in the client (a text area) comes in on the submit action, and `can_submit(input)` takes it for the disabled check.
+- A model that holds a zwipe-core type without `PartialEq` drops `PartialEq` from `State` and `Action`.
 
 ## Wiring it in Dioxus (the app and zwiper-web)
 
