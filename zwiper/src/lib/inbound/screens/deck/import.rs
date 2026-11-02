@@ -1,120 +1,164 @@
 //! Import cards screen: plain-text decklist or an Archidekt URL, in add or
 //! replace mode. Both sources import into the selected board of this deck and
 //! share the same result shape.
+//!
+//! What the screen knows and does is `zwipe_ui::screens::deck_import`; this
+//! file holds the text being typed, draws the model's state and performs its
+//! effects.
 
 use components::{
-    ActionBar, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintDialog, HintKey,
-    TOAST_NORMAL, TOAST_QUICK, ToastOptions, use_toast,
+    ActionBar, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintDialog, HintKey, Toasts,
+    use_toast,
 };
 use dioxus::prelude::*;
+use dioxus::router::Navigator;
 use uuid::Uuid;
-use zwipe_core::domain::deck::ImportMode;
-use zwipe_core::domain::deck::requests::import_deck_cards::ImportDeckCardsResult;
+use zwipe_client::ZwipeClient;
+use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::user::models::hints::HINT_IMPORT;
+use zwipe_ui::screens::deck_import::{
+    self, Action, Board, Destination, Effect, MODES, Source, State, mode_label,
+};
 
-use crate::inbound::components::auth::authed::use_authed;
-use crate::inbound::components::guide_link;
-use crate::inbound::components::hint_dialog::use_one_time_hint;
+use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen};
+use crate::inbound::components::{guide_link, hint_dialog, ui_toast};
 use crate::inbound::router::Router;
 use crate::inbound::screens::deck::card::components::undo_log::UndoStore;
 
-/// Which import source is active.
-#[derive(Debug, Clone, Copy, PartialEq)]
-enum ImportSource {
-    /// Paste a plain-text decklist.
-    Text,
-    /// Paste an Archidekt deck URL.
-    Archidekt,
+/// Import's model with the handles that perform its effects. Copy, so every
+/// handler and task holds its own.
+#[derive(Clone, Copy)]
+struct Driver {
+    model: Signal<State>,
+    navigator: Navigator,
+    toast: Toasts,
+    authed: Authed,
+    undo_store: UndoStore,
+    session: Signal<Option<Session>>,
+    client: Signal<ZwipeClient>,
+    hint_open: Signal<bool>,
+}
+
+impl Driver {
+    /// Applies `action` to the model and performs what it returns.
+    fn dispatch(self, action: Action) {
+        let mut model = self.model;
+        let effects = model.write().update(action);
+        for effect in effects {
+            self.perform(effect);
+        }
+    }
+
+    /// Performs one effect, feeding any reply back through [`Self::dispatch`].
+    fn perform(self, effect: Effect) {
+        let Self {
+            navigator,
+            toast,
+            authed,
+            mut undo_store,
+            session,
+            client,
+            hint_open,
+            ..
+        } = self;
+        match effect {
+            Effect::OfferHint(hint) => {
+                hint_dialog::open_and_record_hint(hint.key(), session, client, hint_open);
+            }
+            Effect::ImportDeckCards {
+                ticket,
+                deck_id,
+                text,
+                board,
+                mode,
+            } => {
+                spawn(async move {
+                    // try_run reports a failure and raises its error toast.
+                    let reply = authed
+                        .try_run("import_cards", |c, s| async move {
+                            c.import_deck_cards(deck_id, &text, board, mode, &s).await
+                        })
+                        .await;
+                    self.dispatch(match reply {
+                        Ok(result) => Action::Imported { ticket, result },
+                        Err(_) => Action::Failed { ticket },
+                    });
+                });
+            }
+            Effect::ImportArchidektDeck {
+                ticket,
+                deck_id,
+                url,
+                board,
+                mode,
+            } => {
+                spawn(async move {
+                    // try_run reports a failure and raises its error toast.
+                    let reply = authed
+                        .try_run("import_cards", |c, s| async move {
+                            c.import_archidekt_deck(deck_id, &url, board, mode, &s)
+                                .await
+                        })
+                        .await;
+                    self.dispatch(match reply {
+                        Ok(result) => Action::Imported { ticket, result },
+                        Err(_) => Action::Failed { ticket },
+                    });
+                });
+            }
+            Effect::ClearUndo(deck_id) => undo_store.clear(deck_id),
+            Effect::Toast(raised) => ui_toast::raise(toast, raised),
+            Effect::Navigate(Destination::Deck(deck_id)) => {
+                navigator.push(Router::ViewDeck { deck_id });
+            }
+        }
+    }
 }
 
 #[component]
 pub fn ImportDeck(deck_id: Uuid) -> Element {
-    let navigator = use_navigator();
+    let driver = Driver {
+        model: use_signal(State::new),
+        navigator: use_navigator(),
+        toast: use_toast(),
+        authed: use_authed(Screen::Deck(DeckScreen::Import)),
+        // An import overwrites the deck, so entries recorded before it are
+        // semantically void; the whole undo stack clears on success
+        // (disclosed in the hint below).
+        undo_store: use_context(),
+        session: use_context(),
+        client: use_context(),
+        hint_open: use_signal(|| false),
+    };
+    // Import hint: auto-opens on first visit; the header "?" reopens it.
+    let import_hint = driver.hint_open;
+    // Offers the hint once per mount, while the screen first draws, so it
+    // opens with the screen.
+    use_hook(move || driver.dispatch(Action::Open(deck_id)));
 
-    let mut source = use_signal(|| ImportSource::Text);
-    let mut mode = use_signal(|| ImportMode::Add);
+    // The decklist and the link keep their own values when From switches.
     let mut text = use_signal(String::new);
     let mut url = use_signal(String::new);
-    let mut loading = use_signal(|| false);
-    let mut result: Signal<Option<ImportDeckCardsResult>> = use_signal(|| None);
-    let mut board_selection: Signal<Option<&'static str>> = use_signal(|| None);
 
-    // Import hint: auto-opens on first visit; the header "?" reopens it.
-    let import_hint = use_one_time_hint(HINT_IMPORT);
-    let toast = use_toast();
-    // An import overwrites the deck, so entries recorded before it are
-    // semantically void; the whole undo stack clears on success (disclosed
-    // in the hint below).
-    let mut undo_store: UndoStore = use_context();
-    let authed = use_authed(Screen::Deck(DeckScreen::Import));
-
-    let board_word = board_selection.read().unwrap_or("mainboard");
-
-    let mut do_import = move || {
-        let board = *board_selection.peek();
-        let mode = *mode.peek();
-        let source = *source.peek();
-        result.set(None);
-        loading.set(true);
-
-        spawn(async move {
-            match authed
-                .try_run("import_cards", |c, s| async move {
-                    match source {
-                        ImportSource::Text => {
-                            c.import_deck_cards(deck_id, &text(), board, mode, &s).await
-                        }
-                        ImportSource::Archidekt => {
-                            c.import_archidekt_deck(deck_id, &url(), board, mode, &s)
-                                .await
-                        }
-                    }
-                })
-                .await
-            {
-                Ok(r) => {
-                    result.set(Some(r.clone()));
-                    let imported = r.imported.len();
-                    let unresolved = r.unresolved.len();
-                    if imported > 0 {
-                        undo_store.clear(deck_id);
-                    }
-                    let opts = ToastOptions::default().duration(TOAST_QUICK);
-                    match (imported, unresolved) {
-                        (0, 0) => toast.info("No cards found".to_string(), opts),
-                        (0, _) => toast.error(
-                            format!(
-                                "{unresolved} card{} unresolved",
-                                if unresolved == 1 { "" } else { "s" }
-                            ),
-                            ToastOptions::default().duration(TOAST_NORMAL),
-                        ),
-                        (_, 0) => toast.success(
-                            format!(
-                                "Imported {imported} card{}",
-                                if imported == 1 { "" } else { "s" }
-                            ),
-                            opts,
-                        ),
-                        _ => toast.info(
-                            format!("Imported {imported}, {unresolved} unresolved"),
-                            opts,
-                        ),
-                    }
-                    loading.set(false);
-                }
-                Err(_) => {
-                    loading.set(false);
-                }
-            }
-        });
+    let model = driver.model.read();
+    let source = model.source();
+    let mode = model.mode();
+    let board = model.board();
+    let input = match source {
+        Source::Text => text(),
+        Source::Archidekt => url(),
     };
+    let disabled = !model.can_submit(&input);
+    let submit_label = model.submit_label();
+    let explainer = model.explainer();
+    let result = model.result().cloned();
+    drop(model);
 
     rsx! {
             div { class: "screen",
-                ScreenHeader { title: "Import", hint: import_hint }
+                ScreenHeader { title: deck_import::TITLE, hint: import_hint }
 
                 HintDialog {
                     open: import_hint,
@@ -134,57 +178,51 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                     // entries slide under the console (dictionary pattern).
                     div { class: "import-controls",
                         div { class: "chip-row",
-                            span { class: "stat-chip stat-chip-p1 chip-row-label", "From" }
-                            for (label, value) in [("Text", ImportSource::Text), ("Archidekt", ImportSource::Archidekt)] {
+                            span { class: "stat-chip stat-chip-p1 chip-row-label", "{deck_import::FROM}" }
+                            for value in Source::ALL {
                                 Chip {
-                                    selected: *source.read() == value,
-                                    onclick: move |_| source.set(value),
-                                    "{label}"
+                                    selected: source == value,
+                                    onclick: move |_| driver.dispatch(Action::PickSource(value)),
+                                    "{value.label()}"
                                 }
                             }
                         }
                         div { class: "chip-row",
-                            span { class: "stat-chip stat-chip-p1 chip-row-label", "Mode" }
-                            for (label, value) in [("Add", ImportMode::Add), ("Replace", ImportMode::Replace)] {
+                            span { class: "stat-chip stat-chip-p1 chip-row-label", "{deck_import::MODE}" }
+                            for value in MODES {
                                 Chip {
-                                    selected: *mode.read() == value,
-                                    onclick: move |_| mode.set(value),
-                                    "{label}"
+                                    selected: mode == value,
+                                    onclick: move |_| driver.dispatch(Action::PickMode(value)),
+                                    "{mode_label(value)}"
                                 }
                             }
                         }
                         div { class: "chip-row",
-                            span { class: "stat-chip stat-chip-p1 chip-row-label", "Board" }
-                            for (label, value) in [("Main", None), ("Maybe", Some("maybeboard")), ("Side", Some("sideboard"))] {
+                            span { class: "stat-chip stat-chip-p1 chip-row-label", "{deck_import::BOARD}" }
+                            for value in Board::ALL {
                                 Chip {
-                                    selected: *board_selection.read() == value,
-                                    onclick: move |_| board_selection.set(value),
-                                    "{label}"
+                                    selected: board == value,
+                                    onclick: move |_| driver.dispatch(Action::PickBoard(value)),
+                                    "{value.label()}"
                                 }
                             }
                         }
                         p { class: "text-muted text-sm import-hint",
-                            if mode().is_replace() {
-                                "Removes all existing cards in the "
-                                span { class: "hl-key", "{board_word}" }
-                                ", replacing with imported cards."
-                            } else {
-                                "Adds imported cards into the "
-                                span { class: "hl-key", "{board_word}" }
-                                ". Existing cards stay but take new quantities if applicable."
-                            }
+                            "{explainer.before}"
+                            span { class: "hl-key", "{explainer.board}" }
+                            "{explainer.after}"
                         }
                     }
 
                     div { class: "import-scroll",
                         div { class: "container-sm",
-                        if source() == ImportSource::Text {
-                            label { class: "label", r#for: "import-text", "Paste decklist" }
+                        if source == Source::Text {
+                            label { class: "label", r#for: "import-text", "{deck_import::TEXT_LABEL}" }
                             textarea {
                                 id: "import-text",
                                 class: "input",
                                 style: "width:100%;min-height:12rem;resize:vertical;",
-                                placeholder: "1 Krenko, Mob Boss\n1 Urza, Lord High Artificer\n1 Sol Ring",
+                                placeholder: deck_import::TEXT_PLACEHOLDER,
                                 value: "{text}",
                                 autocapitalize: "none",
                                 autocorrect: "off",
@@ -192,13 +230,13 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                                 oninput: move |e| text.set(e.value()),
                             }
                         } else {
-                            label { class: "label", r#for: "import-url", "Paste an Archidekt deck URL" }
+                            label { class: "label", r#for: "import-url", "{deck_import::URL_LABEL}" }
                             input {
                                 id: "import-url",
                                 class: "input",
                                 style: "width:100%;",
                                 r#type: "url",
-                                placeholder: "https://archidekt.com/decks/...",
+                                placeholder: deck_import::URL_PLACEHOLDER,
                                 value: "{url}",
                                 autocapitalize: "none",
                                 autocorrect: "off",
@@ -207,9 +245,9 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                             }
                         }
 
-                        if let Some(r) = result() {
+                        if let Some(r) = result {
                             if !r.imported.is_empty() {
-                                label { class: "label mt-2", "Imported" }
+                                label { class: "label mt-2", "{deck_import::IMPORTED}" }
                                 for card in r.imported.iter() {
                                     div { class: "chip-bubble",
                                         span { class: "font-light", "{card.name}" }
@@ -218,7 +256,7 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                                 }
                             }
                             if !r.unresolved.is_empty() {
-                                label { class: "label mt-2", "Unresolved" }
+                                label { class: "label mt-2", "{deck_import::UNRESOLVED}" }
                                 for card in r.unresolved.iter() {
                                     div { class: "chip-bubble-error",
                                         span { class: "font-light", "{card.name}" }
@@ -234,25 +272,21 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                 ActionBar {
                     Button {
                         variant: ButtonVariant::Action,
-                        onclick: move |_| {
-                            navigator.push(Router::ViewDeck { deck_id });
-                        },
-                        "Back"
+                        onclick: move |_| driver.dispatch(Action::Back),
+                        "{deck_import::BACK}"
                     }
                     Button {
                         variant: ButtonVariant::Action,
-                        disabled: loading() || match source() {
-                            ImportSource::Text => text().trim().is_empty(),
-                            ImportSource::Archidekt => url().trim().is_empty(),
+                        disabled,
+                        onclick: move |_| {
+                            let source = driver.model.peek().source();
+                            let input = match source {
+                                Source::Text => text.peek().clone(),
+                                Source::Archidekt => url.peek().clone(),
+                            };
+                            driver.dispatch(Action::Submit { input });
                         },
-                        onclick: move |_| do_import(),
-                        if loading() {
-                            "Importing..."
-                        } else if mode().is_replace() {
-                            "Replace"
-                        } else {
-                            "Import"
-                        }
+                        "{submit_label}"
                     }
                 }
             }
