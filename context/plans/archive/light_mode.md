@@ -6,7 +6,7 @@
 
 Dark mode looks finished, so every fix here must leave it byte-identical. Two levers make that safe:
 
-- Theme classes ride on the `.app-shell` element as `theme-{name}-light` / `theme-{name}-dark` (see `zwiper/src/bin/zwipe.rs` `ThemeWrapper`). So a light-only override is just `.app-shell[class$="-light"] { … }` — dark classes end in `-dark` and never match.
+- Theme classes ride on the `.app-shell` element as `theme-{name}-light` / `theme-{name}-dark` (see `zwiper/src/bin/zwiper.rs` `ThemeWrapper`). So a light-only override is just `.app-shell[class$="-light"] { … }` — dark classes end in `-dark` and never match.
 - Prefer theme variables (`themes.css`) over literals. Muddiness usually comes from mixing an off-palette literal (e.g. pure `#000`) into a light base; mixing the theme's own `--text-primary` / `--bg-primary` instead stays harmonious.
 
 ## Items

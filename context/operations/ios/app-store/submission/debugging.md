@@ -365,7 +365,7 @@ Built a minimal Swift binary with `xcrun -sdk iphoneos swiftc` and compared Mach
 ```bash
 # Build the TestApp from Test 1, then:
 otool -l TestApp > /tmp/xcode-binary.txt
-otool -l ~/Developer/zwipe/target/dx/zwipe/release/ios/Zwipe.app/zwipe > /tmp/rust-binary.txt
+otool -l ~/Developer/zwipe/target/dx/zwiper/release/ios/Zwiper.app/zwiper > /tmp/rust-binary.txt
 diff /tmp/xcode-binary.txt /tmp/rust-binary.txt
 ```
 
@@ -375,7 +375,7 @@ diff /tmp/xcode-binary.txt /tmp/rust-binary.txt
 # After archiving TestApp in Xcode:
 # Find the .app in ~/Library/Developer/Xcode/Archives/
 plutil -p /path/to/TestApp.app/Info.plist > /tmp/xcode-plist.txt
-plutil -p ~/Developer/zwipe/target/dx/zwipe/release/ios/Zwipe.app/Info.plist > /tmp/rust-plist.txt
+plutil -p ~/Developer/zwipe/target/dx/zwiper/release/ios/Zwiper.app/Info.plist > /tmp/rust-plist.txt
 diff /tmp/xcode-plist.txt /tmp/rust-plist.txt
 ```
 

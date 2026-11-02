@@ -19,7 +19,7 @@ After updating Xcode, also wipe the cargo iOS device cache so the binary actuall
 
 ```bash
 rm -rf ~/Developer/zwipe/target/aarch64-apple-ios
-rm -rf ~/Developer/zwipe/target/dx/zwipe/release/ios
+rm -rf ~/Developer/zwipe/target/dx/zwiper/release/ios
 ```
 
 If you don't have the matching iOS simulator runtime installed, `actool` will fail to produce `Assets.car`. Install it once:
@@ -42,7 +42,7 @@ From the workspace root instead, add `--package zwiper`; `dx` refuses to guess w
 ## 2. Patch Info.plist (Dioxus doesn't generate these correctly)
 
 ```bash
-APP=~/Developer/zwipe/target/dx/zwipe/release/ios/Zwipe.app
+APP=~/Developer/zwipe/target/dx/zwiper/release/ios/Zwiper.app
 
 # Remove iPadOS from supported platforms (Apple requires exactly one)
 /usr/libexec/PlistBuddy \
@@ -121,7 +121,7 @@ codesign --force --sign "<HASH-OR-NAME>" \
 cd ~/Developer/zwipe
 rm -f Zwipe.ipa
 mkdir -p Payload
-cp -r target/dx/zwipe/release/ios/Zwipe.app Payload/
+cp -r target/dx/zwiper/release/ios/Zwiper.app Payload/
 zip -r Zwipe.ipa Payload
 rm -rf Payload
 ```

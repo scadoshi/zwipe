@@ -139,7 +139,7 @@ adb shell dumpsys package com.scadoshi.zwipe | grep -E 'versionName|versionCode'
 
 ## 5. View the "Update required" gate screen
 
-The min-version gate only renders when the build is below the server minimum. To force it for visual work, temporarily flip `zwiper/src/bin/zwipe.rs`:
+The min-version gate only renders when the build is below the server minimum. To force it for visual work, temporarily flip `zwiper/src/bin/zwiper.rs`:
 
 ```rust
 // if upgrade_required.required() {

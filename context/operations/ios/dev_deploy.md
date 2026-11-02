@@ -26,10 +26,10 @@ No backup step, unlike cairn: every deck lives on the server, so a reinstall has
 Paste as a **single line**. Multi-line `\` continuations get mangled on paste into zsh.
 
 ```bash
-cd ~/Developer/zwipe/zwiper && BACKEND_URL=https://api.zwipe.net dx build --platform ios --device true && ios-deploy --bundle ~/Developer/zwipe/target/dx/zwipe/debug/ios/Zwipe.app
+cd ~/Developer/zwipe/zwiper && BACKEND_URL=https://api.zwipe.net dx build --platform ios --device true && ios-deploy --bundle ~/Developer/zwipe/target/dx/zwiper/debug/ios/Zwiper.app
 ```
 
-The bundle path has to match the profile: `--release` writes to `target/dx/zwipe/release/ios/`, debug to `target/dx/zwipe/debug/ios/`. Build one and install the other and the build succeeds, the install succeeds, and the phone runs whatever was last built the other way (or fails with `Error 0xe8008014: The executable contains an invalid signature`). That reads exactly like a build that ignored your changes, and it is why the scripts exist.
+The bundle path has to match the profile: `--release` writes to `target/dx/zwiper/release/ios/`, debug to `target/dx/zwiper/debug/ios/`. Build one and install the other and the build succeeds, the install succeeds, and the phone runs whatever was last built the other way (or fails with `Error 0xe8008014: The executable contains an invalid signature`). That reads exactly like a build that ignored your changes, and it is why the scripts exist.
 
 Bare `ios-deploy` with no `--id` picks a phone on its own when two are attached, which is how a build lands on the wrong one.
 
@@ -49,7 +49,7 @@ Reason: wrong platform to load into process
 
 If something seems off, check the platform metadata:
 ```bash
-vtool -show ~/Developer/zwipe/target/dx/zwipe/debug/ios/Zwipe.app/zwipe
+vtool -show ~/Developer/zwipe/target/dx/zwiper/debug/ios/Zwiper.app/zwiper
 # Should show: LC_VERSION_MIN_IPHONEOS
 # NOT: LC_BUILD_VERSION platform 7 (simulator) or MACOS
 ```

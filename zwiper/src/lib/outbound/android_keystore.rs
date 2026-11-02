@@ -6,7 +6,7 @@
 //! opening work with the screen locked. A reinstall drops the key, so a blob
 //! written by an earlier install does not open.
 
-use jni::objects::{JByteArray, JObject, JString, JValue};
+use jni::objects::{JByteArray, JObject, JString, JValue, JValueGen};
 use jni::{AttachGuard, JavaVM};
 
 /// Keystore alias of the session key. Changing it orphans every sealed file.
@@ -25,6 +25,11 @@ const DECRYPT_MODE: i32 = 2;
 const TRANSFORMATION: &str = "AES/GCM/NoPadding";
 
 /// Encrypts `plain` and returns `iv || ciphertext || tag`.
+///
+/// # Errors
+///
+/// Fails if the JVM can't be attached, the key can't be created or loaded,
+/// or a cipher call throws.
 pub fn seal(plain: &[u8]) -> anyhow::Result<Vec<u8>> {
     with_env(|env| {
         let key = session_key(env)?;
@@ -52,8 +57,11 @@ pub fn seal(plain: &[u8]) -> anyhow::Result<Vec<u8>> {
     })
 }
 
-/// Decrypts a blob written by [`seal`]. Fails if the key is gone, the blob is
-/// truncated, or the tag does not verify.
+/// Decrypts a blob written by [`seal`].
+///
+/// # Errors
+///
+/// Fails if the key is gone, the blob is truncated, or the tag does not verify.
 pub fn open(blob: &[u8]) -> anyhow::Result<Vec<u8>> {
     anyhow::ensure!(
         blob.len() > IV_LEN,
@@ -129,7 +137,7 @@ fn describe_exception(env: &mut jni::JNIEnv<'_>) -> String {
     };
     let _ = env.exception_clear();
     env.call_method(&throwable, "toString", "()Ljava/lang/String;", &[])
-        .and_then(|v| v.l())
+        .and_then(JValueGen::l)
         .and_then(|s| env.get_string(&JString::from(s)).map(String::from))
         .unwrap_or_else(|_| "unknown java exception".into())
 }

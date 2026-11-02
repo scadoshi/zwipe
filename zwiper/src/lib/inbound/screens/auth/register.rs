@@ -4,13 +4,10 @@ use components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL, TextInput};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
-use zwipe_core::domain::Email;
-use zwipe_core::domain::auth::password;
-use zwipe_core::domain::user::username::Username;
 use zwipe_core::http::contracts::auth::HttpRegisterUser;
 use zwipe_core::http::contracts::metrics::AnonymousEventKind;
+use zwipe_ui::account;
 
-use crate::domain::error::UserFacing;
 use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::home_hero::HomeHero;
 use crate::inbound::components::info_button;
@@ -44,33 +41,19 @@ pub fn Register() -> Element {
     let mut password_error: Signal<Option<String>> = use_signal(|| None);
 
     let mut validate_username = move || {
-        if let Err(e) = Username::new(username()) {
-            username_error.set(Some(e.to_string()));
-        } else {
-            username_error.set(None);
-        }
+        username_error.set(account::username_error(&username()));
     };
 
     let mut validate_email = move || {
-        if let Err(e) = Email::new(email().trim()) {
-            email_error.set(Some(e.to_user_facing_string()));
-        } else {
-            email_error.set(None);
-        }
+        email_error.set(account::email_error(email().trim()));
     };
 
     let mut validate_password = move || {
-        if let Err(e) = password::validate(&password()) {
-            password_error.set(Some(e.to_string()));
-        } else if password().as_str() != confirm_password().as_str()
-            // Mid-typing the confirmation can't match yet; judge it once it
-            // is as long as the password, or on submit.
-            && (submit_attempted() || confirm_password().chars().count() >= password().chars().count())
-        {
-            password_error.set(Some("Passwords do not match".to_string()));
-        } else {
-            password_error.set(None);
-        }
+        password_error.set(account::password_error(
+            &password(),
+            &confirm_password(),
+            submit_attempted(),
+        ));
     };
 
     let mut inputs_are_valid = move || {

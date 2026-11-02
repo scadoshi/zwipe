@@ -25,7 +25,8 @@
 //!
 //! These components deliberately depend only on base `dioxus` (no platform
 //! features), orangui and `zwipe-core`, so any Dioxus target can consume them.
-//! The `toast` feature enables orangui's.
+//! The `toast` feature enables orangui's, and `links` its in-app browser
+//! (`open_url`, `use_in_app_links`).
 
 mod architecture;
 mod card_details;
@@ -66,6 +67,8 @@ pub use orangui::{
     use_overlay_back, use_overlay_back_action, use_overlay_back_stack, use_persisted_theme,
     use_theme_follow, use_theme_wipe, with_separators,
 };
+#[cfg(feature = "links")]
+pub use orangui::{OpenUrlError, open_url, use_in_app_links};
 #[cfg(feature = "toast")]
 pub use orangui::{TOAST_CSS, ToastStack};
 pub use role_tags::{OtagDef, RoleTags};

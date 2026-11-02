@@ -24,3 +24,5 @@ orangui = { git = "https://github.com/scadoshi/orangui", branch = "main" }
 [features]
 # ToastStack and TOAST_CSS, for the apps.
 toast = ["orangui/toast"]
+# open_url and use_in_app_links, for the apps: links open in the in-app browser.
+links = ["orangui/links"]
