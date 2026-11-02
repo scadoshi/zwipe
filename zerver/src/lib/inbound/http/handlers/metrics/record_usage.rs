@@ -1,5 +1,7 @@
 //! Accepts a batched usage update from the client.
 
+use std::time::Instant;
+
 use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
@@ -21,6 +23,11 @@ impl From<MetricsError> for ApiError {
 
 /// Increments lifetime and daily counters for the caller by the batch values.
 ///
+/// Swipes over the per-account cap (see [`SwipeCap`]) are dropped before
+/// recording, and the request still succeeds.
+///
+/// [`SwipeCap`]: crate::inbound::http::swipe_cap::SwipeCap
+///
 /// # Errors
 ///
 /// Returns 404 when the user has no metrics row, and 500 on a database failure.
@@ -29,6 +36,20 @@ pub async fn record_usage(
     State(state): State<AppState>,
     Json(batch): Json<HttpUsageBatch>,
 ) -> Result<StatusCode, ApiError> {
+    let admitted = state.swipe_cap.admit(user.id, &batch, Instant::now());
+    if let Some(overage) = admitted.warning {
+        tracing::warn!(
+            event = "usage_swipes_capped",
+            user_id = %user.id,
+            swipes_sent = overage.sent,
+            swipes_kept = overage.kept,
+            decisions_sent = overage.decisions_sent,
+            decisions_kept = overage.decisions_kept,
+            "usage flush over the swipe cap; swipes past it are dropped"
+        );
+    }
+    let batch = admitted.batch;
+
     state
         .metrics_service
         .apply_usage(user.id, &batch)
@@ -61,8 +82,7 @@ pub async fn record_usage(
 
 /// Whether the batch carries any swipe, in any direction.
 ///
-/// The batch is not clamped yet, so the counts are not summed: four large
-/// ones would overflow.
+/// The counts are not summed, so four large ones cannot overflow.
 fn has_swipes(batch: &HttpUsageBatch) -> bool {
     [
         batch.swipes_right,

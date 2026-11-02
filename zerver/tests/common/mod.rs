@@ -161,6 +161,7 @@ impl TestApp {
             featured_flavor: Arc::new(zwipe::inbound::http::cache::TtlSlot::new()),
             min_client_version: Arc::from("0.0.0"),
             web_base_url: Arc::from("http://localhost"),
+            swipe_cap: Arc::new(zwipe::inbound::http::swipe_cap::SwipeCap::new()),
         };
 
         let router = build_router(state, jwt_secret, vec![]);
