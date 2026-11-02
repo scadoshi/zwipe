@@ -9,7 +9,6 @@ pub(crate) mod card_info;
 /// Expandable card row component.
 pub(crate) mod card_row;
 /// Contained swipe-stack state (cards, cursor, history, enter animation).
-pub(crate) mod card_stack;
 /// Per-(screen, deck) filter memory.
 pub(crate) mod filter_store;
 /// Card image with built-in flip control for double-faced cards.

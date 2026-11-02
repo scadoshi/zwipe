@@ -14,7 +14,8 @@ use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_core::domain::user::{User, Username};
 
 use self::form::Form;
-pub use self::form::{Field, Password, SAVE, SAVING, Sheet};
+pub use self::form::{Field, SAVE, SAVING, Sheet, Typed};
+pub use crate::account::Password;
 use crate::generation::{Generation, Ticket};
 use crate::toast::{Toast, ToastKind};
 use crate::{account, timing};
@@ -275,7 +276,7 @@ pub enum Action {
         /// The field.
         field: Field,
         /// The field's whole text.
-        value: String,
+        value: Typed,
     },
     /// Presses a sheet's Save. Every field is judged; Change username and Change email send when all pass, and Change password asks [`Dialog::ConfirmPassword`] first.
     Save(Sheet),
@@ -545,7 +546,7 @@ impl State {
                 value,
             } => {
                 if sheet.fields().contains(&field) {
-                    self.forms.get_mut(sheet).edit(field, value);
+                    self.forms.get_mut(sheet).edit(field, value.into_string());
                 }
                 Vec::new()
             }

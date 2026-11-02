@@ -59,7 +59,7 @@ fn edit(state: &mut State, sheet: Sheet, field: Field, value: &str) {
     let effects = state.update(Action::Edit {
         sheet,
         field,
-        value: value.to_owned(),
+        value: Typed::new(value),
     });
     assert_eq!(effects, none(), "typing asks for nothing");
 }
@@ -826,4 +826,16 @@ fn the_waits_are_the_app_s() {
     assert_eq!(TICK, Duration::from_secs(1));
     assert_eq!(timing::RESEND_COOLDOWN, Duration::from_secs(60));
     assert_eq!(timing::DELETE_COUNTDOWN, Duration::from_secs(5));
+}
+
+#[test]
+fn an_edit_keeps_what_was_typed_out_of_debug() {
+    let action = Action::Edit {
+        sheet: Sheet::Password,
+        field: Field::NewPassword,
+        value: Typed::new("New!pass22"),
+    };
+    let printed = format!("{action:?}");
+    assert!(!printed.contains("New!pass22"), "{printed}");
+    assert!(printed.contains("Typed(10 chars)"), "{printed}");
 }
