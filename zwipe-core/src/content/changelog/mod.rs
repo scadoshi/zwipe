@@ -50,6 +50,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Main menu, behind the hamburger in every screen's header",
         "Help & feedback moved from the header into the main menu",
         "Back is an arrow at the top left of every screen",
+        "The header slides away as you scroll down and comes back as you scroll up",
     ],
 }];
 
