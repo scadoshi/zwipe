@@ -97,6 +97,123 @@ button {
 }
 
 /* ==================
+  header and main menu
+ ==================== */
+
+/* The kit's NavBar as the app's header. A phone is always under the kit's
+   60rem fold, so the bar shows the Z mark, the title and the hamburger, and
+   the links wait in the menu. 44pt tall, the iOS navigation bar height. */
+.app-nav .nav-wrapper {
+    margin-bottom: 0;
+    box-shadow: none;
+    border-bottom: 1px solid var(--border-secondary);
+}
+
+/* Both outer columns are the Z mark's width (34 columns of the mark at its
+   font size come to 6rem), so the title centers on the screen, not between
+   a wide mark and a narrow toggle. */
+.app-nav .nav-wrapper nav {
+    grid-template-columns: 6rem minmax(0, 1fr) 6rem;
+    padding: 0.25rem 0.75rem;
+    position: relative;
+}
+
+/* The Z mark as zite and the web draw it: seven lines at 0.9 line height,
+   in the logo color. */
+.app-nav-logo {
+    font-family: "JetBrains Mono", monospace;
+    font-size: calc(1.85rem / 6.3);
+    line-height: 0.9;
+    white-space: pre;
+    display: block;
+    letter-spacing: 0;
+    color: var(--logo);
+}
+
+.app-nav-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+}
+
+.app-nav-title-text {
+    font-size: 1rem;
+    font-weight: 400;
+    letter-spacing: 0.1em;
+    margin: 0;
+    color: var(--accent-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* The open menu drops over the screen instead of pushing it down. It leaves
+   the grid, whose area would otherwise be its containing block and inset it by
+   the bar's padding, so it runs edge to edge. */
+.app-nav .nav-panel {
+    grid-column: auto;
+    grid-row: auto;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-left: 0;
+    margin-right: 0;
+    background-color: var(--bg-sink);
+    border-bottom: 1px solid transparent;
+}
+
+/* The grid backdrop under the menu, as under a bottom sheet: the panel's own
+   still copy (from MenuFooter), pinned to the panel and under its rows. */
+.app-nav .nav-panel .grid-cells {
+    position: absolute;
+    z-index: 0;
+}
+
+.app-nav .nav-panel .nav-panel-inner > :not(.grid-cells) {
+    position: relative;
+    z-index: 1;
+}
+
+.app-nav .nav-panel-open {
+    margin-top: 0;
+    padding-bottom: 0;
+    border-bottom-color: var(--border-secondary);
+}
+
+/* Every entry shows. The kit caps the links at three and a half rows for
+   zite, whose menu carries more. */
+.app-nav .nav-panel .nav-links {
+    max-height: none;
+    overflow: visible;
+}
+
+/* The menu's footer, a sheet's action bar made slim: a full-bleed bar under
+   a rule, flush with the menu's bottom edge, the ! at one end and Log out at
+   the other. */
+.app-nav-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 0 -0.75rem;
+    padding: 0.6rem 0.75rem;
+    border-top: 1px solid var(--border-secondary);
+    background-color: var(--bg-primary);
+}
+
+.app-nav-support,
+.app-nav-logout {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 1.7rem;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.85rem;
+    opacity: 0.7;
+}
+
+/* ==================
   utilities - layout
  ==================== */
 
