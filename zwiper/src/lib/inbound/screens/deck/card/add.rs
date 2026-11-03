@@ -5,8 +5,7 @@
 //! card's entrance, image easing and the sheets.
 
 use components::{
-    ActionBar, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintDialog, HintKey, HintLine,
-    ToastOptions, Toasts, use_toast,
+    Chip, HintBullet, HintBullets, HintDialog, HintKey, HintLine, ToastOptions, Toasts, use_toast,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -25,8 +24,9 @@ use zwipe_ui::screens::add_cards::{
 use zwipe_ui::stack;
 use zwipe_ui::stores::parked;
 
-use super::components::card_info::{CardDetailsSheet, CardInfoDisplay, CardSkeleton, RulesButton};
+use super::components::card_info::{CardDetailsSheet, CardInfoDisplay, CardSkeleton};
 use super::components::printing_sheet::PrintingSheet;
+use crate::inbound::components::action_dock::{self, DockFilter, DockIcon, EyeIcon};
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::auth::ensure_session::EnsureFresh;
 use crate::inbound::components::hint_dialog::{self, HintColored};
@@ -651,6 +651,7 @@ pub fn Add(deck_id: Uuid) -> Element {
         }
     };
 
+    let no_card = current.is_none();
     rsx! {
             div { class: "screen",
                 ScreenHeader { title: add_cards::TITLE, hint: driver.hint_open, back: move |()| driver.dispatch(Action::Back) }
@@ -766,22 +767,31 @@ pub fn Add(deck_id: Uuid) -> Element {
                 }
             }
 
-            ActionBar {
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| filters_overlay_open.set(true),
-                    "{add_cards::FILTER}"
-                    if shows_dot {
-                        span { class: "filter-dot" }
+            // Filter, refresh and card details as the action dock.
+            div { class: "app-float app-float-right",
+                div { class: "icon-pill",
+                    DockFilter {
+                        label: add_cards::FILTER,
+                        dot: shows_dot,
+                        onclick: move |()| filters_overlay_open.set(true),
                     }
-                }
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| driver.dispatch(Action::Refresh),
-                    "{add_cards::REFRESH}"
-                }
-                if current.is_some() {
-                    RulesButton { open: show_details }
+                    button {
+                        class: "icon-pill-btn",
+                        "aria-label": add_cards::REFRESH,
+                        onclick: move |_| driver.dispatch(Action::Refresh),
+                        DockIcon { path: action_dock::REFRESH }
+                    }
+                    span { class: "icon-pill-divider" }
+                    button {
+                        class: "icon-pill-btn",
+                        "aria-label": "Card details",
+                        disabled: no_card,
+                        onclick: move |_| {
+                            let mut open = show_details;
+                            open.toggle();
+                        },
+                        EyeIcon {}
+                    }
                 }
             }
 

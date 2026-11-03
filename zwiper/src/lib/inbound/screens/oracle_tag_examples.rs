@@ -5,17 +5,15 @@
 //! Read-only: there is no deck to collect into, so the gesture grammar is
 //! reduced to navigation: swipe **left** for the next card, **down** to go back
 //! one. Right/up are not allowed by the `SwipeConfig`, so those gestures return
-//! the card to center instead of committing. The ActionBar carries the same
-//! eyeball `RulesButton` as the other swipe screens for full card details.
+//! the card to center instead of committing. The action dock carries the same
+//! eye as the other swipe screens for full card details.
 //!
 //! Cards come from the plain (deck-agnostic) `search_cards` route with a single
 //! `oracle_tags_contains_any` criterion. What the browse knows and does (the
 //! cards, the cursor, paging) is `zwipe_ui::screens::oracle_tag_examples`; this
 //! file draws it through the same `SwipeStack` as the add screen.
 
-use components::{
-    ActionBar, HintBullet, HintBullets, HintDialog, Toasts, use_overlay_back, use_toast,
-};
+use components::{HintBullet, HintBullets, HintDialog, Toasts, use_overlay_back, use_toast};
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
@@ -26,6 +24,7 @@ use zwipe_ui::screens::oracle_tag_examples::{
 };
 use zwipe_ui::stack;
 
+use crate::inbound::components::action_dock::EyeIcon;
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::hint_dialog::{self, HintColored};
 use crate::inbound::components::interactions::swipe::SwipeStack;
@@ -35,7 +34,7 @@ use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{OracleTagScreen, Screen, screen};
 use crate::inbound::components::{guide_link, ui_toast};
 use crate::inbound::screens::deck::card::components::card_info::{
-    CardDetailsSheet, CardInfoDisplay, CardSkeleton, RulesButton,
+    CardDetailsSheet, CardInfoDisplay, CardSkeleton,
 };
 use crate::inbound::screens::deck::card::components::printing_sheet::PrintingSheet;
 
@@ -168,6 +167,7 @@ pub fn OracleTagExamples(open: Signal<bool>, slug: String) -> Element {
 
     let go_back = move || driver.dispatch(Action::BackOne);
 
+    let no_card = current.is_none();
     rsx! {
         div { class: "screen examples-overlay",
             // An overlay screen paints its own backdrop, since .screen is clear
@@ -258,9 +258,19 @@ pub fn OracleTagExamples(open: Signal<bool>, slug: String) -> Element {
                 }
             }
 
-            ActionBar {
-                if current.is_some() {
-                    RulesButton { open: show_details }
+            // Card details as the action dock.
+            div { class: "app-float app-float-right",
+                div { class: "icon-pill",
+                    button {
+                        class: "icon-pill-btn",
+                        "aria-label": "Card details",
+                        disabled: no_card,
+                        onclick: move |_| {
+                            let mut open = show_details;
+                            open.toggle();
+                        },
+                        EyeIcon {}
+                    }
                 }
             }
 

@@ -28,6 +28,7 @@ use super::components::image_preview::ImagePreview;
 use super::components::printing_sheet::PrintingSheet;
 use super::components::quick_add::QuickAdd;
 use super::components::undo_log::{UndoAction, UndoLog, UndoStore, take_newest_in};
+use crate::inbound::components::action_dock::{self, DockFilter, DockIcon};
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::catalog_cache::CatalogCache;
 use crate::inbound::components::hint_dialog::{self, HintColored};
@@ -1063,33 +1064,22 @@ pub fn View(deck_id: Uuid) -> Element {
                         class: "icon-pill-btn",
                         "aria-label": deck_cards::ADD,
                         onclick: move |_| driver.dispatch(Action::OpenAdd),
-                        PillIcon { path: "M12 5v14M5 12h14" }
+                        DockIcon { path: action_dock::PLUS }
                     }
                     button {
                         class: "icon-pill-btn",
                         "aria-label": deck_cards::REMOVE,
                         onclick: move |_| driver.dispatch(Action::OpenRemove),
-                        PillIcon { path: "M5 12h14" }
+                        DockIcon { path: action_dock::MINUS }
                     }
                     span { class: "icon-pill-divider" }
-                    div { class: "icon-pill-filter",
-                        button {
-                            class: "icon-pill-btn",
-                            "aria-label": deck_cards::FILTER,
-                            onclick: move |_| filters_overlay_open.set(true),
-                            PillIcon { path: "M4 5h16l-6 7.5V19l-4 1v-7.5z" }
-                            if filter::shows_dot(&filter) {
-                                span { class: "filter-dot" }
-                            }
-                        }
-                        if !filter.is_empty() {
-                            button {
-                                class: "icon-pill-reset",
-                                "aria-label": deck_cards::RESET_FILTER,
-                                onclick: move |_| driver.dispatch(Action::ResetFilter),
-                                "\u{d7}"
-                            }
-                        }
+                    DockFilter {
+                        label: deck_cards::FILTER,
+                        dot: filter::shows_dot(&filter),
+                        active: !filter.is_empty(),
+                        onclick: move |()| filters_overlay_open.set(true),
+                        on_reset: move |()| driver.dispatch(Action::ResetFilter),
+                        reset_label: deck_cards::RESET_FILTER,
                     }
                     // Walks the undo log newest-first; disabled while there is
                     // nothing to undo, so the pill keeps its width.
@@ -1104,7 +1094,7 @@ pub fn View(deck_id: Uuid) -> Element {
                                 driver.dispatch(Action::Undo(Box::new(to_shared_undo(action))));
                             }
                         },
-                        PillIcon { path: "M9 14L4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3" }
+                        DockIcon { path: action_dock::UNDO }
                     }
                 }
             }
@@ -1174,19 +1164,5 @@ mod tests {
             moved,
             UndoAction::MovedBoard { card_id: c, from: Board::Sideboard, .. } if c == card_id
         ));
-    }
-}
-
-/// One stroke icon for the action pill, drawn from a single SVG path.
-#[component]
-fn PillIcon(path: &'static str) -> Element {
-    rsx! {
-        svg {
-            class: "icon-pill-icon",
-            view_box: "0 0 24 24",
-            xmlns: "http://www.w3.org/2000/svg",
-            "aria-hidden": "true",
-            path { d: path }
-        }
     }
 }

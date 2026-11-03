@@ -461,19 +461,16 @@ pub fn swipe_select(mode: SwipeSelectMode) -> HintContent {
                 "Best fit first, 100 deep. The eye shows why each one was suggested",
             )]));
             if has_filter {
-                blocks.push(line(vec![
-                    key("Filter"),
-                    text(" narrows the stack to one color identity"),
-                ]));
+                blocks.push(line(vec![text(
+                    "The funnel narrows the stack to one color identity",
+                )]));
             }
             "Suggested commanders"
         }
         SwipeSelectMode::Picking(_) => {
-            blocks.push(line(vec![
-                text("Most-played first. "),
-                key("Filter"),
-                text(" narrows by color or anything else"),
-            ]));
+            blocks.push(line(vec![text(
+                "Most-played first. The funnel narrows by color or anything else",
+            )]));
             "Swipe select"
         }
     };

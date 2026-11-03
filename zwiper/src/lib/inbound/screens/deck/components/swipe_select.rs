@@ -23,8 +23,8 @@
 use std::collections::HashSet;
 
 use components::{
-    ActionBar, BottomSheet, Button, ButtonVariant, HintBullet, HintBullets, HintDialog, HintKey,
-    HintLine, ToastOptions, Toasts, use_overlay_back, use_toast,
+    BottomSheet, Button, ButtonVariant, HintBullet, HintBullets, HintDialog, HintLine,
+    ToastOptions, Toasts, use_overlay_back, use_toast,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -39,6 +39,7 @@ use zwipe_ui::screens::swipe_select::{self as model, Action, Destination, Effect
 pub(crate) use zwipe_ui::screens::swipe_select::{Mode as SwipeMode, SuggestedPile};
 use zwipe_ui::stack;
 
+use crate::inbound::components::action_dock::{self, DockFilter, DockIcon, EyeIcon};
 use crate::inbound::components::hint_dialog::{self, HintColored};
 use crate::inbound::components::interactions::swipe::SwipeStack;
 use crate::inbound::components::interactions::swipe::config::SwipeConfig;
@@ -48,7 +49,7 @@ use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::component;
 use crate::inbound::components::{guide_link, ui_toast};
 use crate::inbound::screens::deck::card::components::card_info::{
-    CardDetailsSheet, CardInfoDisplay, CardSkeleton, RulesButton, use_describe_tag,
+    CardDetailsSheet, CardInfoDisplay, CardSkeleton, use_describe_tag,
 };
 use crate::inbound::screens::deck::card::components::card_row::OtagExamplesOpen;
 use crate::inbound::screens::deck::card::components::printing_sheet::PrintingSheet;
@@ -451,37 +452,44 @@ pub(crate) fn SwipeSelect(
                     }
                 }
 
-                ActionBar {
-                    // The suggested ranking filters by the host's Show chips
-                    // alone; a chosen identity lights the dot.
-                    if has_suggested_filter {
-                        Button {
-                            variant: ButtonVariant::Action,
-                            onclick: move |_| suggested_filter_open.set(true),
-                            {model::FILTER}
-                            if has_suggested_identity {
-                                span { class: "filter-dot" }
+                // Filter, refresh and card details as the action dock. The
+                // suggested ranking filters by the host's Show chips alone; a
+                // chosen identity lights the dot.
+                div { class: "app-float app-float-right",
+                    div { class: "icon-pill",
+                        if has_suggested_filter {
+                            DockFilter {
+                                label: model::FILTER,
+                                dot: has_suggested_identity,
+                                onclick: move |()| suggested_filter_open.set(true),
+                            }
+                        } else if !suggested {
+                            // Popularity order is this screen's default (no
+                            // sort), so any user filter or explicit sort lights
+                            // the dot.
+                            DockFilter {
+                                label: model::FILTER,
+                                dot: model::filter_lit(&filter_builder.read()),
+                                onclick: move |()| filters_overlay_open.set(true),
                             }
                         }
-                    } else if !suggested {
-                        Button {
-                            variant: ButtonVariant::Action,
-                            onclick: move |_| filters_overlay_open.set(true),
-                            {model::FILTER}
-                            // Popularity order is this screen's default (no sort),
-                            // so any user filter or any explicit sort lights the dot.
-                            if model::filter_lit(&filter_builder.read()) {
-                                span { class: "filter-dot" }
-                            }
+                        button {
+                            class: "icon-pill-btn",
+                            "aria-label": model::REFRESH,
+                            onclick: move |_| refresh(),
+                            DockIcon { path: action_dock::REFRESH }
                         }
-                    }
-                    Button {
-                        variant: ButtonVariant::Action,
-                        onclick: move |_| refresh(),
-                        {model::REFRESH}
-                    }
-                    if has_cards {
-                        RulesButton { open: show_details }
+                        span { class: "icon-pill-divider" }
+                        button {
+                            class: "icon-pill-btn",
+                            "aria-label": "Card details",
+                            disabled: !has_cards,
+                            onclick: move |_| {
+                                let mut open = show_details;
+                                open.toggle();
+                            },
+                            EyeIcon {}
+                        }
                     }
                 }
 
@@ -560,10 +568,10 @@ pub(crate) fn SwipeSelect(
                     if suggested {
                         HintLine { "Best fit first, 100 deep. The eye shows why each one was suggested" }
                         if has_suggested_filter {
-                            HintLine { HintKey { "Filter" } " narrows the stack to one color identity" }
+                            HintLine { "The funnel narrows the stack to one color identity" }
                         }
                     } else {
-                        HintLine { "Most-played first. " HintKey { "Filter" } " narrows by color or anything else" }
+                        HintLine { "Most-played first. The funnel narrows by color or anything else" }
                     }
                 }
             }

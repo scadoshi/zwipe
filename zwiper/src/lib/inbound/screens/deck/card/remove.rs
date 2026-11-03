@@ -5,8 +5,7 @@
 //! card's entrance and the sheets.
 
 use components::{
-    ActionBar, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintDialog, HintLine,
-    ToastOptions, Toasts, use_toast,
+    Chip, HintBullet, HintBullets, HintDialog, HintLine, ToastOptions, Toasts, use_toast,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -25,9 +24,10 @@ use zwipe_ui::screens::remove_cards::{
 use zwipe_ui::stack;
 use zwipe_ui::stores::undo as shared_undo;
 
-use super::components::card_info::{CardDetailsSheet, CardInfoDisplay, CardSkeleton, RulesButton};
+use super::components::card_info::{CardDetailsSheet, CardInfoDisplay, CardSkeleton};
 use super::components::filter_store::{FilterScope, FilterStore};
 use super::components::printing_sheet::PrintingSheet;
+use crate::inbound::components::action_dock::{self, DockFilter, DockIcon, EyeIcon};
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::auth::ensure_session::EnsureFresh;
 use crate::inbound::components::hint_dialog::{self, HintColored};
@@ -490,6 +490,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
     let board_filter = state.board();
     drop(state);
 
+    let no_card = current.is_none();
     rsx! {
             div { class: "screen",
                 ScreenHeader { title: remove_cards::TITLE, hint: swipe_hint_open, back: move |()| driver.dispatch(Action::Back) }
@@ -549,29 +550,38 @@ pub fn Remove(deck_id: Uuid) -> Element {
                 }
             }
 
-            ActionBar {
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| filters_overlay_open.set(true),
-                    {remove_cards::FILTER}
-                    if !filter_builder.read().is_empty() || filter_builder.read().sort().is_some() {
-                        span { class: "filter-dot" }
+            // Filter, refresh and card details as the action dock.
+            div { class: "app-float app-float-right",
+                div { class: "icon-pill",
+                    DockFilter {
+                        label: remove_cards::FILTER,
+                        dot: !filter_builder.read().is_empty() || filter_builder.read().sort().is_some(),
+                        onclick: move |()| filters_overlay_open.set(true),
                     }
-                }
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| {
-                        // Refresh rewinds the stack, which ends any entrance.
-                        entering.set(None);
-                        driver.dispatch(Action::Refresh);
-                        if filter_builder.peek().sort() == Some(CardSortKey::Random) {
-                            driver.bump_filter();
-                        }
-                    },
-                    {remove_cards::REFRESH}
-                }
-                if current.is_some() {
-                    RulesButton { open: show_details }
+                    button {
+                        class: "icon-pill-btn",
+                        "aria-label": remove_cards::REFRESH,
+                        onclick: move |_| {
+                            // Refresh rewinds the stack, which ends any entrance.
+                            entering.set(None);
+                            driver.dispatch(Action::Refresh);
+                            if filter_builder.peek().sort() == Some(CardSortKey::Random) {
+                                driver.bump_filter();
+                            }
+                        },
+                        DockIcon { path: action_dock::REFRESH }
+                    }
+                    span { class: "icon-pill-divider" }
+                    button {
+                        class: "icon-pill-btn",
+                        "aria-label": "Card details",
+                        disabled: no_card,
+                        onclick: move |_| {
+                            let mut open = show_details;
+                            open.toggle();
+                        },
+                        EyeIcon {}
+                    }
                 }
             }
 
