@@ -8,7 +8,7 @@
 //! The screen still owns its `HintDialog` (with screen-specific content);
 //! passing its `open` signal as `hint` wires up the `?`.
 
-use components::{InfoButton, NavBar};
+use components::{InfoButton, NavBar, use_overlay_back};
 use dioxus::prelude::*;
 use zwipe_core::domain::logo;
 
@@ -28,6 +28,9 @@ pub fn ScreenHeader(
 ) -> Element {
     let route: Router = use_route();
     let mut open = use_signal(|| false);
+    // While the menu is open, Android back and the iOS edge swipe close it
+    // instead of leaving the screen.
+    use_overlay_back(open);
 
     // A new route closes the menu.
     use_effect(use_reactive!(|route| {
