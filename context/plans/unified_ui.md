@@ -134,12 +134,12 @@ The review is of the app: each screen got what it shows, where its actions go an
 
 ## Home
 
-Reviewed 2026-11-03. Home keeps its three panels and changes only by the global rules: the new header replaces "!" and the centered title, and the footer's Decks, Account and Config go, since the menu has them.
+Reviewed 2026-11-03. Home keeps its three panels, gains a Decks panel, and otherwise changes only by the global rules: the new header replaces "!" and the centered title, and the footer's Decks, Account and Config go, since the menu has them.
 
 - Hero: the ASCII logo stays, with the three stats, the Live and Everybody chips and the Activity button under it. Activity stays as a shortcut even though the menu lists it.
 - Color map: unchanged, with its `?`, the color chips and the Playstyle button, also kept as a shortcut.
 - Featured flavor: unchanged. Each client keeps its own Buy: the app's Buy sheet, the web's TCGplayer and Card Kingdom links.
-- Nothing is added; no recent decks and no continue-swiping shortcut.
+- Decks (owner, 2026-11-03): a new panel between the hero and the Color map, in the Color map's panel style, with the deck count as one of the hero's stat tiles beside an Open decks button into the deck list. The count comes from the playstyle summary Home already fetches, so the panel ghosts with the Color map and shows a muted line when that fetch fails with nothing held. No recent decks and no continue-swiping shortcut.
 
 ## Deck view
 

@@ -41,6 +41,7 @@ pub const UPCOMING: &[Release] = &[Release {
     version: Version::new(1, 17, 1),
     date: None,
     entries: &[
+        "Home shows a Decks panel with your deck count and a button into Decks",
         "A one-card deck shows 1 card in the deck list",
         "The land target stops at 0",
         "Config is now called Settings",
