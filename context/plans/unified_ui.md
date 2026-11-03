@@ -34,6 +34,14 @@ These were settled with the owner before the per-screen review. A screen breaks 
 - Overlays (bottom sheets and pickers: format, deck tags, oracle tags, card filter, printings, app icon, Universes Beyond) keep their own footer, made slimmer: the same compact buttons with less padding. Their Back becomes a close button or a swipe down.
 - Swipe screens (Add, Remove, Swipe select) float their actions as icons (Filter, Refresh, the eye) in the bottom-right corner just above the bottom edge. Undo stays the swipe down.
 
+### Where overlays open
+
+- Each overlay opens from where its trigger is, and its direction says what it is for.
+- From the top: leaving the screen. The main menu drops from the header.
+- From the bottom: working on this screen. Pickers, filters, card details, printings, the theme and app icon sheets rise as bottom sheets.
+- In the middle: a question to answer. Confirmations (Log out, Delete) are centered dialogs.
+- A navigation list never rises from the bottom, and a screen's own controls never drop from the top.
+
 ### Hints
 
 - Every hint that names a footer button or More is rewritten for where the action now sits. The deck view's welcome hint ("More imports, exports, clones, shares or deletes the deck") is the first; the build pass checks every hint in `zwipe-ui/src/hint/`.
