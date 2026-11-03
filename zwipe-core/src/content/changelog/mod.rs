@@ -74,6 +74,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Log in, Create profile and Send a reset link sit at the bottom right",
         "Light themes keep disabled chips, empty heatmap days and empty notes readable",
         "A screen's header is shown on arrival even when the last screen was scrolled",
+        "The menu lists the deck screens; Home, Account, Settings and About are icons in its footer",
     ],
 }];
 
