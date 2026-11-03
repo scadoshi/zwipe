@@ -4,7 +4,7 @@ zwiper-tui covers every app screen and has passed the parity audit, live checks,
 
 ## Where things stand
 
-- Branch `feat/tui`, 640 tests, every gate green.
+- Branch `feat/tui`, 647 tests, every gate green.
 - Every screen drives its zwipe-ui screen model (switched 2026-11-03; the recipe is in `ARCHITECTURE.md`). The visual review continues on top of that.
 - Login is reviewed, and the button grammar below is built across every screen that had boxed buttons or button pills. Every owner-approved item is built.
 - Next screen: Register, then the rest in screen order (Reset password, Home, Activity, Playstyle, Decks, the deck view and its sheets, Add, Remove, Deck cards, Account, Config, Privacy, Changelog).
