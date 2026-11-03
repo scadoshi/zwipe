@@ -35,7 +35,7 @@ use crate::timing;
 use crate::toast::{Toast, ToastKind};
 
 /// The screen's title.
-pub const TITLE: &str = "Add deck cards";
+pub const TITLE: &str = "Add";
 
 /// The hint's title.
 pub const HINT_TITLE: &str = "Swipe to build";

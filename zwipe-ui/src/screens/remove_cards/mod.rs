@@ -24,7 +24,7 @@ use crate::stores::undo::{self, UndoAction};
 use crate::toast::{Toast, ToastKind};
 
 /// The screen's title.
-pub const TITLE: &str = "Remove deck cards";
+pub const TITLE: &str = "Remove";
 
 /// The hint's title.
 pub const HINT_TITLE: &str = "Swipe to trim";

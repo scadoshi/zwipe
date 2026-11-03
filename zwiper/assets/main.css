@@ -1290,14 +1290,26 @@ button {
   specific - skeleton
  ============================= */
 
+/* The loading swipe card: laid out as the real one is, a stack slot that
+   fills the height with the card centered in it, then the price line. */
 .skeleton-card {
     display: flex;
     flex-direction: column;
-    width: calc(100vw - 2rem);
+    width: 100%;
     flex: 1;
     min-height: 0;
-    margin: 1rem auto 0.75rem auto;
     animation: skeleton-enter 250ms ease;
+}
+
+/* The stack's slot: .swipe-stack-card's padding and centering. */
+.skeleton-stack {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem 1rem;
+    box-sizing: border-box;
 }
 
 @keyframes skeleton-enter {
@@ -1309,11 +1321,14 @@ button {
     }
 }
 
+/* The card's ghost in a Magic card's shape, bound as the swipe card's image
+   is: .card-image's calc(100% - 2rem) width, and its min(55vh, 100%) height
+   carried into the width through the card's shape. */
 .skeleton-image {
-    flex: 1;
-    min-height: 0;
+    width: min(calc(100% - 2rem), calc(55vh * 63 / 88));
+    aspect-ratio: 63 / 88;
+    max-height: 100%;
     border-radius: 1rem;
-    margin: 1rem 1rem 0.75rem 1rem;
     background-color: var(--border-muted);
     display: flex;
     align-items: center;

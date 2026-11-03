@@ -33,7 +33,7 @@ use crate::timing;
 use crate::toast::{Toast, ToastKind};
 
 /// The screen's title.
-pub const TITLE: &str = "Deck cards";
+pub const TITLE: &str = "Cards";
 
 /// The hint's title.
 pub const HINT_TITLE: &str = "Browsing your deck";

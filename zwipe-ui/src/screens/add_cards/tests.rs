@@ -1036,7 +1036,7 @@ fn a_late_deck_reply_is_ignored() {
 
 #[test]
 fn the_copy_matches_the_app() {
-    assert_eq!(TITLE, "Add deck cards");
+    assert_eq!(TITLE, "Add");
     assert_eq!(HINT_TITLE, "Swipe to build");
     assert_eq!(FROM, "From");
     assert_eq!(SYNERGY, "Synergy");

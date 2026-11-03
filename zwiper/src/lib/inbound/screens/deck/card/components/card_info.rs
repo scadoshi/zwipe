@@ -167,7 +167,11 @@ pub(crate) fn PrintingSheetSkeleton() -> Element {
 pub(crate) fn CardSkeleton() -> Element {
     rsx! {
         div { class: "skeleton-card",
-            div { class: "skeleton-image" }
+            // The stack's slot, the card's ghost centered in it as the real
+            // card is.
+            div { class: "skeleton-stack",
+                div { class: "skeleton-image" }
+            }
             // The price line's ghost: two chip-sized pills, centered.
             div { class: "card-prices",
                 div { class: "skeleton-bar skeleton-price-chip" }

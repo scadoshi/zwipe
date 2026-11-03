@@ -113,7 +113,7 @@ fn undo_with(state: &mut State, taken: Option<UndoAction>) -> Vec<Effect> {
 
 #[test]
 fn the_copy_matches_the_app() {
-    assert_eq!(TITLE, "Remove deck cards");
+    assert_eq!(TITLE, "Remove");
     assert_eq!(HINT_TITLE, "Swipe to trim");
     assert_eq!(BOARDS, "Boards");
     assert_eq!([BACK, FILTER, REFRESH], ["Back", "Filter", "Refresh"]);

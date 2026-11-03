@@ -1093,7 +1093,7 @@ fn copies_count_quantities() {
 
 #[test]
 fn the_copy_matches_the_app() {
-    assert_eq!(TITLE, "Deck cards");
+    assert_eq!(TITLE, "Cards");
     assert_eq!(HINT_TITLE, "Browsing your deck");
     assert_eq!(QUICK_ADD, "Quick add");
     assert_eq!(QUICK_ADD_PLACEHOLDER, "Search a card to add");
