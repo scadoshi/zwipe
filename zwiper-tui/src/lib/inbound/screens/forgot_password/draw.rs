@@ -42,7 +42,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &ForgotForm) {
         vec![Button::new(SEND)]
     };
     let focused = (form.focus == Some(ForgotField::SendResetLink)).then_some(0);
-    let keys = action_bar::line(palette, &keys(form)).centered();
+    let keys = action_bar::line(palette, &keys(form));
     let areas = login::draw::frame(
         f,
         shared,

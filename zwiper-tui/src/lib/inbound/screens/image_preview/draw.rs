@@ -47,5 +47,8 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &ImagePreview) {
     if view.faces() > 1 {
         hints.push(("f", "flip"));
     }
-    f.render_widget(action_bar::line(palette, &hints), keys);
+    f.render_widget(
+        action_bar::wrap(action_bar::line(palette, &hints), keys.width),
+        keys,
+    );
 }

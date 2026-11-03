@@ -1159,3 +1159,19 @@ fn the_panel_titles_take_the_text_field_label_style() {
         }
     }
 }
+
+#[test]
+fn homes_key_bar_is_centered() {
+    let harness = settled_home();
+    for (width, height) in [(120, 36), (80, 24), (60, 20)] {
+        let rows = crate::test_support::rows(&harness.app, width, height);
+        let bar = rows.last().unwrap();
+        assert!(bar.contains("d Decks"), "the key bar at {width}x{height}");
+        let left = bar.len() - bar.trim_start().len();
+        let right = bar.len() - bar.trim_end().len();
+        assert!(
+            left > 1 && left.abs_diff(right) <= 1,
+            "{bar:?} centers at {width}x{height}"
+        );
+    }
+}

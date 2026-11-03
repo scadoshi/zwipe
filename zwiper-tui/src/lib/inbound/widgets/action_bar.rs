@@ -1,4 +1,4 @@
-//! The app's bottom row of key hints, each key in bold and its action muted. Buttons live in [`crate::inbound::widgets::button`].
+//! The app's bottom row of key hints, each key in bold and its action muted, centered on every screen. Buttons live in [`crate::inbound::widgets::button`].
 
 use std::mem;
 
@@ -52,15 +52,11 @@ impl Hint {
     }
 }
 
-/// `bar` with the F1 Help & feedback hint, every screen's in the same spot: just before the run of Esc and `q` hints nearest the end, or last when the bar has no such run past its first hint.
+/// `bar` with the F1 Help & feedback hint, every screen's in the same spot: just before the run of Esc and `q` hints nearest the end, or last when the bar has no such run past its first hint. The bar comes back centered, as every screen's key bar is, with no gap after its last hint.
 ///
 /// The screen's hint key, when it has one, goes just before `F1 help` as `? hint` (or `H hint`). Any hint the bar names itself is dropped first, so it shows once under one label.
 pub(crate) fn with_help(palette: &Palette, bar: Line<'static>, hint: Hint) -> Line<'static> {
-    let Line {
-        style,
-        alignment,
-        spans,
-    } = bar;
+    let Line { style, spans, .. } = bar;
     let names_hint = |group: &Vec<Span<'static>>| {
         group
             .get(1)
@@ -105,11 +101,12 @@ pub(crate) fn with_help(palette: &Palette, bar: Line<'static>, hint: Hint) -> Li
             ],
         );
     }
-    let line = Line::from(groups.into_iter().flatten().collect::<Vec<_>>()).style(style);
-    match alignment {
-        Some(alignment) => line.alignment(alignment),
-        None => line,
+    let mut spans: Vec<Span<'static>> = groups.into_iter().flatten().collect();
+    // The last hint's gap would push the centered bar off its middle.
+    if let Some(last) = spans.last_mut() {
+        last.content = last.content.trim_end().to_owned().into();
     }
+    Line::from(spans).style(style).centered()
 }
 
 /// What the bar calls the hint `?` opens.
@@ -118,13 +115,9 @@ const HINT_ACTION: &str = "hint";
 /// The gap that closes each key hint in a [`line`](fn@line) or [`styled_line`], and where [`wrap`] may break a row.
 const GAP: &str = "  ";
 
-/// `bar` broken into rows no wider than `width`, each break falling after a hint's closing gap so a key never parts from its action. A bar that fits stays one row, every row keeps the bar's alignment and style, and no row ends in a gap. A single hint wider than `width` takes a row of its own and is cut there.
+/// `bar` broken into rows no wider than `width`, each break falling after a hint's closing gap so a key never parts from its action. A bar that fits stays one row, every row is centered and keeps the bar's style, and no row ends in a gap. A single hint wider than `width` takes a row of its own and is cut there.
 pub(crate) fn wrap(bar: Line<'static>, width: u16) -> Text<'static> {
-    let Line {
-        style,
-        alignment,
-        spans,
-    } = bar;
+    let Line { style, spans, .. } = bar;
     let width = usize::from(width);
     let mut rows: Vec<Line<'static>> = Vec::new();
     let mut row: Vec<Span<'static>> = Vec::new();
@@ -152,11 +145,7 @@ pub(crate) fn wrap(bar: Line<'static>, width: u16) -> Text<'static> {
             if let Some(last) = row.spans.last_mut() {
                 last.content = last.content.trim_end().to_owned().into();
             }
-            let row = row.style(style);
-            match alignment {
-                Some(alignment) => row.alignment(alignment),
-                None => row,
-            }
+            row.style(style).centered()
         })
         .collect();
     Text::from(rows)
@@ -226,6 +215,7 @@ pub(crate) fn swipes<'keys>(
 
 #[cfg(test)]
 mod tests {
+    use ratatui::layout::Alignment;
     use ratatui::style::Modifier;
 
     use super::*;
@@ -248,7 +238,7 @@ mod tests {
     }
 
     #[test]
-    fn a_long_bar_wraps_between_hints_and_keeps_its_alignment() {
+    fn a_long_bar_wraps_between_hints_into_centered_rows() {
         let palette = Palette::terminal();
         let bar = line(
             &palette,
@@ -259,8 +249,7 @@ mod tests {
                 ("?", "hint"),
                 ("Esc", "back"),
             ],
-        )
-        .centered();
+        );
         let rows = wrap(bar.clone(), 24);
         let text: Vec<String> = rows.lines.iter().map(Line::to_string).collect();
         assert_eq!(
@@ -268,7 +257,11 @@ mod tests {
             ["l add  h skip", "m maybeboard  ? hint", "Esc back"],
             "no key parts from its action"
         );
-        assert!(rows.lines.iter().all(|row| row.alignment == bar.alignment));
+        assert!(
+            rows.lines
+                .iter()
+                .all(|row| row.alignment == Some(Alignment::Center))
+        );
         assert_eq!(height(&bar, 24), 3);
     }
 
@@ -322,25 +315,21 @@ mod tests {
         };
         assert_eq!(
             shown(&[("c", "Create"), ("Esc", "Back"), ("q", "quit")]),
-            "c Create  F1 help  Esc Back  q quit  "
+            "c Create  F1 help  Esc Back  q quit"
         );
         assert_eq!(
             shown(&[("Tab", "next"), ("Esc", "Back"), ("F2", "Save")]),
-            "Tab next  F1 help  Esc Back  F2 Save  ",
+            "Tab next  F1 help  Esc Back  F2 Save",
             "a hint after Esc stays after it"
         );
         assert_eq!(
             shown(&[("Esc", "Back"), ("Tab", "next")]),
-            "Esc Back  Tab next  F1 help  ",
+            "Esc Back  Tab next  F1 help",
             "a bar that opens with Esc takes help last"
         );
-        let centered = with_help(
-            &palette,
-            line(&palette, &[("q", "quit")]).centered(),
-            Hint::Absent,
-        );
-        assert_eq!(centered.to_string(), "q quit  F1 help  ");
-        assert_eq!(centered.alignment, Some(ratatui::layout::Alignment::Center));
+        let centered = with_help(&palette, line(&palette, &[("q", "quit")]), Hint::Absent);
+        assert_eq!(centered.to_string(), "q quit  F1 help");
+        assert_eq!(centered.alignment, Some(Alignment::Center));
     }
 
     #[test]
@@ -350,7 +339,7 @@ mod tests {
         bar.spans.push(Span::raw("F2 "));
         bar.spans.push(Span::raw("Import"));
         let bar = with_help(&palette, bar, Hint::Absent);
-        assert_eq!(bar.to_string(), "Tab next  F2 Import  F1 help  ");
+        assert_eq!(bar.to_string(), "Tab next  F2 Import  F1 help");
         let text: Vec<String> = wrap(bar, 20).lines.iter().map(Line::to_string).collect();
         assert_eq!(text, ["Tab next  F2 Import", "F1 help"]);
     }
@@ -363,26 +352,26 @@ mod tests {
         };
         assert_eq!(
             shown(&[("c", "Create"), ("Esc", "Back")], Hint::Question),
-            "c Create  ? hint  F1 help  Esc Back  "
+            "c Create  ? hint  F1 help  Esc Back"
         );
         assert_eq!(
             shown(
                 &[("?", "Hint"), ("c", "Create"), ("Esc", "Back")],
                 Hint::Question
             ),
-            "c Create  ? hint  F1 help  Esc Back  ",
+            "c Create  ? hint  F1 help  Esc Back",
             "a hint the bar lists itself moves to its spot"
         );
         assert_eq!(
             shown(&[("Esc", "Back"), ("?", "hint")], Hint::Question),
-            "Esc Back  ? hint  F1 help  "
+            "Esc Back  ? hint  F1 help"
         );
         assert_eq!(
             shown(
                 &[("?", "About"), ("H", "Hint"), ("Esc", "Back")],
                 Hint::ShiftH
             ),
-            "? About  H hint  F1 help  Esc Back  ",
+            "? About  H hint  F1 help  Esc Back",
             "a ? that opens something else keeps its own name"
         );
         assert_eq!(
@@ -390,9 +379,36 @@ mod tests {
                 &[("c", "Create"), ("?", "hint"), ("Esc", "Back")],
                 Hint::Absent
             ),
-            "c Create  F1 help  Esc Back  ",
+            "c Create  F1 help  Esc Back",
             "no hint while a field takes the letters"
         );
+    }
+
+    #[test]
+    fn a_key_bar_draws_centered_whichever_way_it_is_shown() {
+        use ratatui::Terminal;
+        use ratatui::backend::TestBackend;
+
+        let palette = Palette::terminal();
+        let bar = || line(&palette, &[("d", "Decks"), ("q", "quit")]);
+        let mut terminal = Terminal::new(TestBackend::new(40, 2)).unwrap();
+        terminal
+            .draw(|f| {
+                let [helped, wrapped] =
+                    ratatui::layout::Layout::vertical([ratatui::layout::Constraint::Length(1); 2])
+                        .areas(f.area());
+                f.render_widget(with_help(&palette, bar(), Hint::Absent), helped);
+                f.render_widget(wrap(bar(), 40), wrapped);
+            })
+            .unwrap();
+        let buffer = terminal.backend().buffer();
+        for y in 0..2 {
+            let row: String = (0..40).map(|x| buffer[(x, y)].symbol()).collect();
+            let left = row.len() - row.trim_start().len();
+            let right = row.len() - row.trim_end().len();
+            assert!(left.abs_diff(right) <= 1, "{row:?} is centered");
+            assert!(left > 5, "{row:?} is not left-aligned");
+        }
     }
 
     #[test]

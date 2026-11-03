@@ -121,8 +121,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &PrivacyView) {
             palette,
             action_bar::line(palette, &[("j/k", "scroll"), ("Esc", "back")]),
             action_bar::Hint::Absent,
-        )
-        .centered(),
+        ),
         keys,
     );
 }

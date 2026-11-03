@@ -55,7 +55,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &RegisterForm) {
         AuthScreen {
             body_height,
             placement: Placement::Top,
-            keys: action_bar::line(palette, &keys(form)).centered(),
+            keys: action_bar::line(palette, &keys(form)),
             buttons: &row,
             focused: focus.and_then(RegisterField::button),
             min_gap: 0,

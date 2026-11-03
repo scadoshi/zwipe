@@ -34,5 +34,8 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared) {
     ])
     .areas(inner);
     f.render_widget(body, body_area);
-    f.render_widget(action_bar::line(palette, &[("q", "quit")]), keys);
+    f.render_widget(
+        action_bar::wrap(action_bar::line(palette, &[("q", "quit")]), keys.width),
+        keys,
+    );
 }

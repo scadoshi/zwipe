@@ -203,7 +203,7 @@ pub(crate) fn keys(form: &LoginForm) -> Vec<(&'static str, &'static str)> {
 
 pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &LoginForm) {
     let palette = &shared.palette;
-    let keys = action_bar::line(palette, &keys(form)).centered();
+    let keys = action_bar::line(palette, &keys(form));
     let row = [Button::new(form.model.submit_label()).disabled(form.model.is_loading())];
     let areas = frame(
         f,

@@ -54,7 +54,10 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &PrintingsView) {
     if view.model.can_save(view.selected) {
         hints.push(("Enter", "Save"));
     }
-    f.render_widget(action_bar::line(palette, &hints), keys);
+    f.render_widget(
+        action_bar::wrap(action_bar::line(palette, &hints), keys.width),
+        keys,
+    );
 }
 
 /// One printing: set name, set code and collector number, price, and a mark on the one the card is on.

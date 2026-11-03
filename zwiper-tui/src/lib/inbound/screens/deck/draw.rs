@@ -3,7 +3,7 @@
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Margin, Rect};
 use ratatui::style::{Style, Stylize};
-use ratatui::text::{Line, Span, Text};
+use ratatui::text::{Line, Span};
 use ratatui::widgets::{Paragraph, Wrap};
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
@@ -77,7 +77,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &DeckView) {
     let keys_text = if one_row {
         let mut spans = pane_line.spans;
         spans.extend(screen_line.spans);
-        Text::from(Line::from(spans))
+        action_bar::wrap(Line::from(spans), area.width)
     } else {
         let mut text = action_bar::wrap(pane_line, area.width);
         text.lines
