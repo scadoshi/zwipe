@@ -5,11 +5,16 @@ use chrono::NaiveDate;
 use crossterm::event::KeyCode;
 use reqwest::Url;
 use zwipe_client::ZwipeClient;
-use zwipe_core::domain::user::models::hints::HINT_OTAG_EXAMPLES;
+use zwipe_core::domain::user::models::hints::{HINT_ACTIVITY, HINT_OTAG_EXAMPLES};
 use zwipe_core::http::contracts::suggestions::{
     HttpActivityDay, HttpHardPass, HttpRoleRates, HttpSwipeOutcomes, HttpTagRates,
 };
-use zwipe_ui::activity::{role_rate_bars, tag_rate_bars, year_tags};
+use zwipe_ui::activity::{
+    NONE_REMOVED, PASSES_EMPTY, ROLES_EMPTY, RateKind, TAGS_EMPTY, role_rate_bars, tag_rate_bars,
+    year_tags,
+};
+use zwipe_ui::generation::Generation;
+use zwipe_ui::screens::activity::{LOAD_FAILED, NOTHING_YET, Status};
 
 use super::*;
 use crate::inbound::event_loop::harness::Harness;
@@ -114,9 +119,34 @@ fn on_activity() -> Harness {
 /// [`on_activity`] with [`sample`] landed.
 fn loaded() -> Harness {
     let mut harness = on_activity();
-    harness.apply(Update::Loaded(Box::new(sample())));
+    land(&mut harness, sample());
     view_mut(&mut harness).heat_opened = Instant::now().checked_sub(Duration::from_secs(5));
     harness
+}
+
+/// The ticket the model's first `Load` takes, which every fetch here answers.
+fn first_ticket() -> Ticket {
+    Generation::default().next_ticket()
+}
+
+/// The payload landing as `activity` on the visit on screen.
+fn land(harness: &mut Harness, activity: HttpActivity) {
+    let update = Update::Loaded {
+        visit: view(harness).visit,
+        ticket: first_ticket(),
+        activity: Box::new(activity),
+    };
+    harness.apply(update);
+}
+
+/// The fetch failing with `message` on the visit on screen.
+fn fail(harness: &mut Harness, message: &str) {
+    let update = Update::Failed {
+        visit: view(harness).visit,
+        ticket: first_ticket(),
+        message: message.to_owned(),
+    };
+    harness.apply(update);
 }
 
 fn view(harness: &Harness) -> &ActivityView {
@@ -145,15 +175,15 @@ fn v_on_home_opens_activity_and_asks_for_everything_once() {
     harness.app.shared.user = Some(user(true));
     harness.press(KeyCode::Char('v'));
     assert!(matches!(harness.screen(), Screen::Activity(_)));
-    assert_eq!(
+    assert!(matches!(
         harness.pending(),
         [
-            Request::Load.into(),
-            home::Request::MyMetrics.into(),
-            oracle_tags::Request::Catalog.into(),
-            screens::Request::MarkHintShown(HINT_ACTIVITY.to_owned()),
-        ]
-    );
+            screens::Request::MarkHintShown(hint),
+            screens::Request::Activity(Request::Load { .. }),
+            screens::Request::Home(home::Request::MyMetrics),
+            screens::Request::OracleTags(oracle_tags::Request::Catalog),
+        ] if hint == HINT_ACTIVITY
+    ));
     let hint = harness.app.shared.hint.as_ref().unwrap();
     assert_eq!(hint.content.title, "Activity");
     assert_eq!(
@@ -190,7 +220,7 @@ fn the_counters_roll_until_the_payload_lands() {
     });
     assert_eq!(view(&harness).figures(&harness.app.shared), None);
     assert!(!screen_text(&harness.app).contains("Live"));
-    harness.apply(Update::Failed("down".to_owned()));
+    fail(&mut harness, "down");
     assert!(view(&harness).figures(&harness.app.shared).is_some());
     assert!(view(&harness).figures_arrived.get().is_some());
     assert!(screen_text(&harness.app).contains(" Live   Only me "));
@@ -199,8 +229,8 @@ fn the_counters_roll_until_the_payload_lands() {
 #[test]
 fn a_failure_toasts_and_says_so() {
     let mut harness = on_activity();
-    harness.apply(Update::Failed("The server is down".to_owned()));
-    assert!(matches!(view(&harness).load, Load::Failed));
+    fail(&mut harness, "The server is down");
+    assert_eq!(view(&harness).model.status(), Status::Failed);
     let text = screen_text(&harness.app);
     assert!(text.contains(LOAD_FAILED));
     assert!(text.contains("The server is down"));
@@ -211,14 +241,18 @@ async fn a_rejected_session_ends_it() {
     let client = ZwipeClient::new(Url::parse("http://127.0.0.1:9").unwrap());
     let file = SessionFile::at(std::env::temp_dir().join("zwiper-tui-tests-no-session.json"));
     let account = Arc::new(Account::new(client, file));
-    let update = perform(&account, Request::Load).await;
+    let request = Request::Load {
+        visit: Visit::next(),
+        ticket: first_ticket(),
+    };
+    let update = perform(&account, request).await;
     assert!(matches!(update, Some(screens::Update::SessionEnded)));
 }
 
 #[test]
 fn nothing_swiped_says_so() {
     let mut harness = on_activity();
-    harness.apply(Update::Loaded(Box::new(empty())));
+    land(&mut harness, empty());
     assert!(screen_text(&harness.app).contains(NOTHING_YET));
     harness.press(KeyCode::Char('j'));
     harness.press(KeyCode::Enter);
@@ -333,7 +367,7 @@ fn the_show_chips_switch_both_charts() {
     let activity = sample();
     let v = view(&harness);
     assert_eq!(v.focus, Focus::Chips(Section::Roles));
-    assert_eq!(v.rate, RateKind::Skipped);
+    assert_eq!(v.model.rate(), RateKind::Skipped);
     assert_eq!(
         v.bars(Section::Roles),
         role_rate_bars(RateKind::Skipped, &activity.roles, &activity.tags)
@@ -349,13 +383,17 @@ fn the_show_chips_switch_both_charts() {
     assert!(text.contains(" mana-rock "), "{text}");
     view_mut(&mut harness).focus = Focus::Chips(Section::Tags);
     press(&mut harness, &[KeyCode::Char('l'), KeyCode::Char('l')]);
-    assert_eq!(view(&harness).rate, RateKind::Removed, "the end stays put");
+    assert_eq!(
+        view(&harness).model.rate(),
+        RateKind::Removed,
+        "the end stays put"
+    );
     assert!(
-        screen_text(&harness.app).contains(activity::NONE_REMOVED),
+        screen_text(&harness.app).contains(NONE_REMOVED),
         "no tag has a removal, so the tag chart says so"
     );
     press(&mut harness, &[KeyCode::Char('h')]);
-    assert_eq!(view(&harness).rate, RateKind::Maybed);
+    assert_eq!(view(&harness).model.rate(), RateKind::Maybed);
 }
 
 #[test]
@@ -368,10 +406,14 @@ fn a_role_reveals_its_tags_and_a_tag_its_definition() {
     );
     assert_eq!(view(&harness).focus, Focus::Bar(Section::Roles, 0));
     press(&mut harness, &[KeyCode::Enter]);
-    assert_eq!(view(&harness).open_role, None, "removal has no tags");
+    assert_eq!(
+        view(&harness).model.revealed_role(),
+        None,
+        "removal has no tags"
+    );
     press(&mut harness, &[KeyCode::Char('j'), KeyCode::Enter]);
     let v = view(&harness);
-    assert_eq!(v.open_role.as_deref(), Some("ramp"));
+    assert_eq!(v.model.revealed_role(), Some("ramp"));
     assert_eq!(v.role_tags.tags(), ["mana-rock", "generic"]);
     let text = screen_text(&harness.app);
     assert!(text.contains(" RAMP "), "{text}");
@@ -396,7 +438,7 @@ fn a_role_reveals_its_tags_and_a_tag_its_definition() {
             KeyCode::Enter,
         ],
     );
-    assert_eq!(view(&harness).open_tag.as_deref(), Some("mana-rock"));
+    assert_eq!(view(&harness).model.revealed_tag(), Some("mana-rock"));
     assert!(screen_text(&harness.app).contains("x Examples"));
     press(&mut harness, &[KeyCode::Char('x')]);
     assert!(matches!(harness.screen(), Screen::OtagExamples(_)));
@@ -406,7 +448,7 @@ fn a_role_reveals_its_tags_and_a_tag_its_definition() {
 fn question_mark_shows_the_open_sections_topic_and_h_the_hint() {
     let mut harness = loaded();
     harness.press(KeyCode::Char('?'));
-    assert_eq!(view(&harness).overlay, Some(Section::Activity.topic()));
+    assert_eq!(view(&harness).overlay, Some(topic(Section::Activity)));
     assert!(screen_text(&harness.app).contains("A lit square is one of your biggest days"));
     harness.press(KeyCode::Esc);
     assert_eq!(view(&harness).overlay, None);
@@ -521,7 +563,7 @@ fn tiny_terminals_do_not_panic() {
     for (w, h) in [(8, 3), (1, 1)] {
         render(&harness.app, w, h);
     }
-    harness.apply(Update::Loaded(Box::new(sample())));
+    land(&mut harness, sample());
     harness.press(KeyCode::Char('?'));
     for (w, h) in [(8, 3), (1, 1), (20, 6)] {
         render(&harness.app, w, h);
@@ -543,7 +585,7 @@ fn empty_sections_stay_with_a_line_saying_what_fills_them() {
         swipes: 4,
         searches: 0,
     });
-    harness.apply(Update::Loaded(Box::new(only_days)));
+    land(&mut harness, only_days);
     let v = view(&harness);
     assert_eq!(
         v.sections,
@@ -552,11 +594,11 @@ fn empty_sections_stay_with_a_line_saying_what_fills_them() {
     let text = screen_text(&harness.app);
     assert!(text.contains("▸ Card roles"), "{text}");
     assert!(text.contains("▸ Oracle tags"), "{text}");
-    assert!(text.contains(activity::PASSES_EMPTY), "{text}");
+    assert!(text.contains(PASSES_EMPTY), "{text}");
 
     view_mut(&mut harness).focus = Focus::Header(Section::Roles);
     harness.press(KeyCode::Enter);
-    assert!(screen_text(&harness.app).contains(activity::ROLES_EMPTY));
+    assert!(screen_text(&harness.app).contains(ROLES_EMPTY));
     harness.press(KeyCode::Char('j'));
     assert_eq!(
         view(&harness).focus,
@@ -564,7 +606,7 @@ fn empty_sections_stay_with_a_line_saying_what_fills_them() {
         "no Show chips without roles"
     );
     press(&mut harness, &[KeyCode::Enter, KeyCode::Char('j')]);
-    assert!(screen_text(&harness.app).contains(activity::TAGS_EMPTY));
+    assert!(screen_text(&harness.app).contains(TAGS_EMPTY));
     assert_eq!(view(&harness).focus, Focus::Passes);
     press(&mut harness, &[KeyCode::Enter, KeyCode::Char('j')]);
     assert!(matches!(harness.screen(), Screen::Activity(_)));
@@ -596,7 +638,7 @@ fn a_role_with_no_tags_is_a_grey_chip() {
         "grey"
     );
     assert_eq!(
-        Section::Roles.topic().bullets[1],
+        topic(Section::Roles).bullets[1],
         "Tap a role to see the tags you swiped under it. A grey role has none yet"
     );
 }
@@ -605,7 +647,7 @@ fn a_role_with_no_tags_is_a_grey_chip() {
 fn activity_keeps_every_key_on_a_narrow_terminal() {
     let mut harness = on_activity();
     crate::test_support::assert_key_bar_fits(&harness.app, "Esc Back");
-    harness.apply(Update::Loaded(Box::new(sample())));
+    land(&mut harness, sample());
     crate::test_support::assert_key_bar_fits(&harness.app, "Esc Back");
     view_mut(&mut harness).focus = Focus::Passes;
     crate::test_support::assert_key_bar_fits(&harness.app, "Esc Back");
@@ -630,4 +672,22 @@ fn section_about_markers_are_buttons_and_the_focused_sections_lights() {
         let context = format!("{width}x{height}");
         crate::test_support::assert_about_marker(buffer, &palette, (x + 9, y), true, &context);
     }
+}
+
+#[test]
+fn a_reply_to_an_earlier_visit_changes_nothing() {
+    let mut harness = on_activity();
+    let earlier = view(&harness).visit;
+    harness.press(KeyCode::Esc);
+    harness.press(KeyCode::Char('v'));
+    harness.app.shared.hint = None;
+    assert_ne!(view(&harness).visit, earlier);
+    harness.apply(Update::Loaded {
+        visit: earlier,
+        ticket: first_ticket(),
+        activity: Box::new(sample()),
+    });
+    assert_eq!(view(&harness).model.status(), Status::Loading);
+    land(&mut harness, sample());
+    assert_eq!(view(&harness).model.status(), Status::Loaded);
 }
