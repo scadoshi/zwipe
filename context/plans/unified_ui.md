@@ -56,6 +56,19 @@ These were settled with the owner before the per-screen review. A screen breaks 
 
 - Below 900px the web matches the app: no panels, bottom sheets for pickers, the theme and filters, and the same header with the hamburger. Wide windows keep zite's centered page and panels.
 
+## Web follow-ups
+
+What zwiper-web and zite change to match, kept as the app changes. Items marked kit land in orangui, so zite, zwiper-web, cairn and the portfolio site take them together.
+
+- Kit: the gentle hamburger and back arrow (2.1 by 1.7rem, 0.4rem corners, 0.55 opacity, 2px bars) in `NavBar`, so every site's folded nav matches the app.
+- Kit: a tap outside an open menu closes it everywhere, and nothing that transforms the bar may trap its backdrop.
+- Kit: the theme picker opens as a bottom sheet below the 60rem fold (phone width) and stays the drop-down on wide windows (owner, 2026-11-03).
+- Kit: bottom sheets lose their footers: a close button in the title bar, drag down to close, Apply or Save as a dock checkmark.
+- zwiper-web narrow view: no Z mark, a back arrow on screens below a section, the same menu (Home first, Help & feedback and Log out in its footer), no page footers, and the action docks, floating Cards, Data and Danger zone panels, Settings and About as in the app.
+- zwiper-web narrow view: the swipe screens' layout (pile chips on the bottom row beside the dock, only prices under the card, Synergy as the dock's link icon, the From toggle chip).
+- zwiper-web: Config's route becomes `/settings`; screen titles come from zwipe-ui, so Add, Remove, Cards and Settings arrive with the next merge of main.
+- zite: keeps its Z mark and marketing nav; it takes only the kit items above.
+
 ## At release
 
 zwipe.net's guides and the privacy policy describe the shipped app, so they change on the day the release that carries this goes live, not before. Lines that name the old layout (2026-11-03):
