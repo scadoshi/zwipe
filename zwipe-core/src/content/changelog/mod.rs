@@ -51,6 +51,8 @@ pub const UPCOMING: &[Release] = &[Release {
         "Help & feedback moved from the header into the main menu",
         "Back is an arrow at the top left of every screen",
         "The header slides away as you scroll down and comes back as you scroll up",
+        "Create floats over the deck list",
+        "Decks drops its More menu; Commander maybeboard and Playstyle are in the main menu",
     ],
 }];
 
