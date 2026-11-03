@@ -44,6 +44,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "A one-card deck shows 1 card in the deck list",
         "The land target stops at 0",
         "Config is now called Settings",
+        "About, a new screen in the main menu with the version, links, credits and the changelog",
         "The Natural setting for mana symbols is now called Classic",
         "Change username and Change email refuse your current username or email",
         "Main menu, behind the hamburger in every screen's header",
