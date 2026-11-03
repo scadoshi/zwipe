@@ -20,7 +20,6 @@ use zwipe_ui::screens::activity::{
 };
 use zwipe_ui::timing;
 
-use super::visit::Visit;
 use super::{Screen, home};
 use crate::domain::theme::Palette;
 use crate::inbound::app::{Context, Shared};
@@ -109,7 +108,6 @@ pub(crate) struct Loaded<'view> {
 #[derive(Debug)]
 pub(crate) struct ActivityView {
     pub(crate) model: State,
-    pub(crate) visit: Visit,
     /// The model's heatmap, laid out once as the payload lands.
     pub(crate) heat: Option<HeatLayout>,
     /// When the screen opened, which drives the loading ghosts and the counters' roll.
@@ -138,7 +136,6 @@ impl ActivityView {
     pub(crate) fn loading() -> Self {
         Self {
             model: State::new(),
-            visit: Visit::next(),
             heat: None,
             opened: Instant::now(),
             figures_arrived: Cell::new(None),
@@ -448,13 +445,7 @@ pub(crate) fn dispatch(view: &mut ActivityView, action: Action, cx: &mut Context
             Effect::OfferHint(offer) => {
                 hint::once(cx, offer.key());
             }
-            Effect::FetchActivity(ticket) => cx.request(
-                Request::Load {
-                    visit: view.visit,
-                    ticket,
-                }
-                .into(),
-            ),
+            Effect::FetchActivity(ticket) => cx.request(Request::Load { ticket }.into()),
             Effect::Navigate(Destination::Previous) => cx.back(),
         }
     }
@@ -483,8 +474,8 @@ pub(crate) fn pass_row<'pass>(palette: &Palette, pass: &'pass HttpHardPass) -> C
 /// The screen's work.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Request {
-    /// The payload, for the visit that asked.
-    Load { visit: Visit, ticket: Ticket },
+    /// The payload.
+    Load { ticket: Ticket },
 }
 
 impl Request {
@@ -496,16 +487,14 @@ impl Request {
     }
 }
 
-/// The screen's results, each carrying its request's visit and ticket back.
+/// The screen's results, each carrying its request's ticket back.
 #[derive(Debug)]
 pub(crate) enum Update {
     Loaded {
-        visit: Visit,
         ticket: Ticket,
         activity: Box<HttpActivity>,
     },
     Failed {
-        visit: Visit,
         ticket: Ticket,
         message: String,
     },
@@ -552,48 +541,32 @@ pub(crate) fn reopen_hint(cx: &mut Context<'_>) {
 }
 
 pub(crate) async fn perform(account: &Account, request: Request) -> Option<screens::Update> {
-    let Request::Load { visit, ticket } = request;
+    let Request::Load { ticket } = request;
     let client = &account.client;
     match async { client.activity(&account.fresh().await?).await }.await {
         Ok(found) => Some(
             Update::Loaded {
-                visit,
                 ticket,
                 activity: Box::new(found),
             }
             .into(),
         ),
         Err(e) => Some(screens::failure(&e, |message| {
-            Update::Failed {
-                visit,
-                ticket,
-                message,
-            }
-            .into()
+            Update::Failed { ticket, message }.into()
         })),
     }
 }
 
-/// Hands a reply to the model when its visit is still up. A failure raises its toast even when the screen has closed.
+/// Hands a reply to the open screen's model, which drops one whose ticket it did not issue. A failure raises its toast even when the screen has closed.
 pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
-    let (visit, action) = match update {
-        Update::Loaded {
-            visit,
-            ticket,
-            activity,
-        } => (visit, Action::Loaded { ticket, activity }),
-        Update::Failed {
-            visit,
-            ticket,
-            message,
-        } => {
+    let action = match update {
+        Update::Loaded { ticket, activity } => Action::Loaded { ticket, activity },
+        Update::Failed { ticket, message } => {
             cx.toast(ToastKind::Error, message);
-            (visit, Action::Failed { ticket })
+            Action::Failed { ticket }
         }
     };
-    if let Some(view) = nav.find_mut(pick)
-        && view.visit == visit
-    {
+    if let Some(view) = nav.find_mut(pick) {
         dispatch(view, action, cx);
     }
 }

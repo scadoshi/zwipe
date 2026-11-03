@@ -209,7 +209,7 @@ pub fn OracleTagExamples(open: Signal<bool>, slug: String) -> Element {
                             }
                         },
                         Status::Loading => rsx! {
-                            CardSkeleton { is_loading: true }
+                            CardSkeleton {}
                         },
                         // Cursor past the last card. Still keep it down-swipeable
                         // so "back" leads into the pile from the end panel.

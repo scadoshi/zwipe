@@ -7,8 +7,9 @@ use reqwest::Url;
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::Card;
-use zwipe_core::domain::deck::Format;
+use zwipe_core::domain::deck::{Deck, Format};
 use zwipe_core::http::contracts::deck::HttpDeckCardSearch;
+use zwipe_ui::generation::Ticket;
 
 use super::{EventLoop, Flow};
 use crate::domain::theme::Palette;
@@ -24,6 +25,8 @@ use crate::test_support::{self, deck_profile};
 pub(crate) struct Harness {
     pub(crate) event_loop: EventLoop,
     pub(crate) app: App,
+    /// The requests [`Harness::clear`] has cleared, oldest first.
+    cleared: Vec<Request>,
 }
 
 impl Harness {
@@ -34,6 +37,7 @@ impl Harness {
         Self {
             event_loop: EventLoop::new(Arc::new(Account::new(client, file)), Arc::new(theme_file)),
             app: App::new(Palette::terminal()),
+            cleared: Vec::new(),
         }
     }
 
@@ -90,7 +94,12 @@ impl Harness {
     }
 
     pub(crate) fn clear(&mut self) {
-        self.event_loop.pending.clear();
+        self.cleared.append(&mut self.event_loop.pending);
+    }
+
+    /// Every request queued since the harness began, cleared or not, oldest first.
+    pub(crate) fn sent(&self) -> impl DoubleEndedIterator<Item = &Request> {
+        self.cleared.iter().chain(&self.event_loop.pending)
     }
 
     pub(crate) fn screen(&self) -> &Screen {
@@ -115,28 +124,54 @@ impl Harness {
             decks: vec![profile.clone()],
         });
         harness.press(KeyCode::Enter);
-        deck::serve(&mut harness, test_support::deck(profile, Vec::new()));
+        let pile = test_support::deck(profile, Vec::new());
+        deck::serve(&mut harness, pile.clone());
         harness.press(KeyCode::Char('s'));
+        harness.serve_deck(pile);
         harness.serve(cards);
         harness.clear();
         (harness, deck_id)
     }
 
-    /// Answers the swipe screen's open search with `cards`, synergy applied.
+    /// The ticket of the newest swipe screen request `pick` accepts, or a panic naming what is queued.
+    pub(crate) fn swipe_ticket(&self, pick: impl Fn(&swipe::Request) -> Option<Ticket>) -> Ticket {
+        self.pending()
+            .iter()
+            .rev()
+            .find_map(|r| match r {
+                Request::Swipe(r) => pick(r),
+                _ => None,
+            })
+            .unwrap_or_else(|| panic!("no such swipe request in {:?}", self.pending()))
+    }
+
+    /// Answers the swipe screen's deck fetch with `deck`.
+    pub(crate) fn serve_deck(&mut self, deck: Deck) {
+        let ticket = self.swipe_ticket(|r| match r {
+            swipe::Request::Deck { ticket, .. }
+            | swipe::Request::ReloadMaybeboard { ticket, .. } => Some(*ticket),
+            _ => None,
+        });
+        self.apply(swipe::Update::DeckLoaded {
+            ticket,
+            deck: Box::new(deck),
+        });
+    }
+
+    /// Answers the swipe screen's newest search from the top with `cards`, synergy applied.
     pub(crate) fn serve(&mut self, cards: Vec<Card>) {
-        let view = self.swipe_view();
-        let update = swipe::Update::Searched {
-            deck_id: view.deck.id,
-            generation: view.generation.current(),
-            filter: Box::new(view.filter.clone()),
-            page: swipe::Page::First,
-            result: Ok(HttpDeckCardSearch {
+        let ticket = self.swipe_ticket(|r| match r {
+            swipe::Request::Search { ticket, .. } => Some(*ticket),
+            _ => None,
+        });
+        self.apply(swipe::Update::Searched {
+            ticket,
+            page: HttpDeckCardSearch {
                 cards,
                 synergy_applied: true,
                 related_from: None,
-            }),
-        };
-        self.apply(update);
+            },
+        });
     }
 
     /// The swipe screen's state, or a panic naming the screen on top.

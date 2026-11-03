@@ -168,11 +168,11 @@ fn the_servers_line_cap_and_body_limit_toast_as_the_app_words_them() {
     let cases = [
         (
             ClientError::UnprocessableEntity("too many card lines, the limit is 1000".to_owned()),
-            "too many card lines, the limit is 1000",
+            "Too many card lines, the limit is 1000",
         ),
         (
             ClientError::PayloadTooLarge("length limit exceeded".to_owned()),
-            "request too large, try importing fewer cards",
+            "Request too large, try importing fewer cards",
         ),
     ];
     for (error, message) in cases {

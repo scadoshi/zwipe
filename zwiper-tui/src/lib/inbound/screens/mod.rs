@@ -28,7 +28,6 @@ pub(crate) mod register;
 pub(crate) mod remove_cards;
 pub(crate) mod swipe;
 pub(crate) mod update_required;
-pub(crate) mod visit;
 
 use std::time::Instant;
 
@@ -287,8 +286,6 @@ pub(crate) enum Update {
     /// The server no longer accepts the session.
     SessionEnded,
     SignedOut,
-    /// A message for the status line.
-    Status(String),
     /// A toast for a result that has no screen to show it on, up for the app's default time.
     Toast(ToastKind, String),
     /// The user as the server keeps it after marking a hint shown.
@@ -494,7 +491,6 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
             home::counts_arrived(nav, cx);
         }
         Update::SignedOut => login::signed_out(cx, None),
-        Update::Status(status) => cx.shared.status = status,
         Update::Toast(kind, message) => cx.toast(kind, message),
         Update::HintMarked(user) => {
             cx.shared.username = Some(user.username.to_string());
@@ -572,6 +568,11 @@ mod tests {
         assert_eq!(fix.action(), "load_oracle_tags");
     }
 
+    /// A failure's message as an error toast.
+    fn toast(message: String) -> Update {
+        Update::Toast(ToastKind::Error, message)
+    }
+
     #[tokio::test]
     async fn a_shown_failure_is_reported_under_its_request() {
         let usage = UsageBuffer::default();
@@ -582,8 +583,8 @@ mod tests {
         };
         ORIGIN
             .scope(origin, async {
-                failure(&ClientError::NotFound("gone".to_owned()), Update::Status);
-                failure(&ClientError::Unauthorized("x".to_owned()), Update::Status);
+                failure(&ClientError::NotFound("gone".to_owned()), toast);
+                failure(&ClientError::Unauthorized("x".to_owned()), toast);
             })
             .await;
         let batch = usage.snapshot_and_zero().expect("one report");
@@ -602,12 +603,12 @@ mod tests {
     #[test]
     fn a_failed_request_ends_the_session_only_on_unauthorized() {
         assert!(matches!(
-            failure(&ClientError::Unauthorized("x".to_owned()), Update::Status),
+            failure(&ClientError::Unauthorized("x".to_owned()), toast),
             Update::SessionEnded
         ));
         assert!(matches!(
-            failure(&ClientError::NotFound("gone".to_owned()), Update::Status),
-            Update::Status(m) if m == "gone"
+            failure(&ClientError::NotFound("gone".to_owned()), toast),
+            Update::Toast(ToastKind::Error, m) if m == "Gone"
         ));
     }
 

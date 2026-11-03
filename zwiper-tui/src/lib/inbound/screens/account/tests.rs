@@ -28,13 +28,13 @@ fn view(harness: &Harness) -> &AccountView {
     }
 }
 
-/// The account jobs waiting, in order.
-fn jobs(harness: &Harness) -> Vec<Job> {
+/// The account requests waiting, in order.
+fn jobs(harness: &Harness) -> Vec<Request> {
     harness
         .pending()
         .iter()
         .filter_map(|request| match request {
-            screens::Request::Account(request) => Some(request.job.clone()),
+            screens::Request::Account(request) => Some(request.clone()),
             _ => None,
         })
         .collect()
@@ -44,21 +44,13 @@ fn jobs(harness: &Harness) -> Vec<Job> {
 fn last_ticket(harness: &Harness) -> Ticket {
     match jobs(harness).last() {
         Some(
-            Job::FetchUser { ticket }
-            | Job::CheckVerification { ticket }
-            | Job::Resend { ticket }
-            | Job::Wait { ticket }
-            | Job::Change { ticket, .. },
+            Request::FetchUser { ticket }
+            | Request::CheckVerification { ticket }
+            | Request::Resend { ticket }
+            | Request::Wait { ticket }
+            | Request::Change { ticket, .. },
         ) => *ticket,
         None => panic!("no account job went out"),
-    }
-}
-
-/// `reply` for the visit on screen.
-fn reply(harness: &Harness, reply: Reply) -> Update {
-    Update {
-        visit: view(harness).visit,
-        reply,
     }
 }
 
@@ -100,7 +92,7 @@ fn opening_fetches_the_user_and_shows_the_profile_hint_the_first_time() {
         harness.pending(),
         [
             screens::Request::MarkHintShown(hint),
-            screens::Request::Account(Request { job: Job::FetchUser { .. }, .. }),
+            screens::Request::Account(Request::FetchUser { .. }),
         ] if hint == HINT_PROFILE
     ));
     assert!(screen_text(&harness.app).contains("Your account"));
@@ -138,22 +130,16 @@ fn a_fresh_user_lands_once_and_a_late_one_changes_nothing() {
     harness.app.shared.user = Some(user(false));
     harness.open(open);
     let ticket = last_ticket(&harness);
-    let fresh = reply(
-        &harness,
-        Reply::UserLoaded {
-            ticket,
-            user: Box::new(user(true)),
-        },
-    );
+    let fresh = Update::UserLoaded {
+        ticket,
+        user: Box::new(user(true)),
+    };
     harness.apply(fresh);
     assert!(view(&harness).model.is_verified());
-    let stale = reply(
-        &harness,
-        Reply::UserLoaded {
-            ticket,
-            user: Box::new(user(false)),
-        },
-    );
+    let stale = Update::UserLoaded {
+        ticket,
+        user: Box::new(user(false)),
+    };
     harness.apply(stale);
     assert!(
         view(&harness).model.is_verified(),
@@ -165,25 +151,25 @@ fn a_fresh_user_lands_once_and_a_late_one_changes_nothing() {
 #[test]
 fn a_reply_to_an_earlier_visit_never_lands_in_a_later_one() {
     let mut harness = on_account(false);
+    let earlier = harness
+        .sent()
+        .rev()
+        .find_map(|r| match r {
+            screens::Request::Account(Request::FetchUser { ticket }) => Some(*ticket),
+            _ => None,
+        })
+        .unwrap();
     harness.press(KeyCode::Esc);
-    harness.clear();
     harness.press(KeyCode::Char('a'));
-    let ticket = last_ticket(&harness);
-    let earlier = view(&harness).visit;
-    harness.press(KeyCode::Esc);
-    harness.press(KeyCode::Char('a'));
-    assert_ne!(view(&harness).visit, earlier);
-    assert_eq!(
+    assert!(matches!(harness.screen(), Screen::Account(_)));
+    assert_ne!(
         last_ticket(&harness),
-        ticket,
-        "both visits' fetches hold the same ticket"
+        earlier,
+        "each visit's fetch holds its own ticket"
     );
-    harness.apply(Update {
-        visit: earlier,
-        reply: Reply::UserLoaded {
-            ticket,
-            user: Box::new(user(true)),
-        },
+    harness.apply(Update::UserLoaded {
+        ticket: earlier,
+        user: Box::new(user(true)),
     });
     assert!(!view(&harness).model.is_verified());
 }
@@ -198,7 +184,7 @@ fn a_bad_username_shows_live_and_a_good_one_is_sent_as_typed() {
     };
     assert_eq!(
         form.inputs[0].error(),
-        Some("must be at least 3 characters long")
+        Some("Must be at least 3 characters long")
     );
     harness.type_text("cdef");
     harness.press(KeyCode::Enter);
@@ -208,7 +194,7 @@ fn a_bad_username_shows_live_and_a_good_one_is_sent_as_typed() {
     harness.press(KeyCode::Enter);
     assert!(matches!(
         jobs(&harness).as_slice(),
-        [Job::Change {
+        [Request::Change {
             change: Change::Username { username, password },
             ..
         }] if username == "abcdef" && password.read() == "hunter2"
@@ -229,13 +215,10 @@ fn a_change_closes_the_sheet_and_toasts_for_its_band_once() {
     let ticket = last_ticket(&harness);
     let mut renamed = user(true);
     renamed.username = Username::new("abcdef").unwrap();
-    let changed = reply(
-        &harness,
-        Reply::UsernameChanged {
-            ticket,
-            user: Box::new(renamed.clone()),
-        },
-    );
+    let changed = Update::UsernameChanged {
+        ticket,
+        user: Box::new(renamed.clone()),
+    };
     harness.apply(changed);
     assert!(view(&harness).overlay.is_none());
     assert_eq!(
@@ -246,13 +229,10 @@ fn a_change_closes_the_sheet_and_toasts_for_its_band_once() {
     let up = &harness.app.shared.toasts.items()[0];
     assert_eq!(up.message, "Username changed to abcdef");
     assert_eq!(up.expires_at.duration_since(up.shown_at), toast::QUICK);
-    let repeated = reply(
-        &harness,
-        Reply::UsernameChanged {
-            ticket,
-            user: Box::new(renamed),
-        },
-    );
+    let repeated = Update::UsernameChanged {
+        ticket,
+        user: Box::new(renamed),
+    };
     harness.apply(repeated);
     assert_eq!(toasts(&harness).len(), 1, "a repeated reply toasted again");
 }
@@ -263,13 +243,10 @@ fn a_failed_change_toasts_and_keeps_the_sheet() {
     fill(&mut harness, &["abcdef", "hunter2"]);
     harness.press(KeyCode::Enter);
     let ticket = last_ticket(&harness);
-    let failed = reply(
-        &harness,
-        Reply::Failed {
-            ticket,
-            error: "wrong password".to_owned(),
-        },
-    );
+    let failed = Update::Failed {
+        ticket,
+        error: "wrong password".to_owned(),
+    };
     harness.apply(failed);
     assert!(matches!(&view(&harness).overlay, Some(Overlay::Form(_))));
     assert!(!view(&harness).model.is_saving(Sheet::Username));
@@ -303,7 +280,7 @@ fn a_password_change_asks_first_and_checks_against_the_current_one() {
     harness.press(KeyCode::Char('y'));
     assert!(matches!(
         jobs(&harness).as_slice(),
-        [Job::Change {
+        [Request::Change {
             change: Change::Password { current, new },
             ..
         }] if current.read() == "Old!pass1" && new.read() == "New!pass22"
@@ -320,7 +297,7 @@ fn resend_counts_down_a_minute_after_it_lands_unless_it_failed() {
     harness.press(KeyCode::Enter);
     assert_eq!(jobs(&harness).len(), 1, "once while sending");
     let ticket = last_ticket(&harness);
-    let resent = reply(&harness, Reply::Resent { ticket });
+    let resent = Update::Resent { ticket };
     harness.apply(resent);
     assert_eq!(view(&harness).model.resend_label(), "Resend in 60s");
     assert_eq!(
@@ -328,10 +305,10 @@ fn resend_counts_down_a_minute_after_it_lands_unless_it_failed() {
         [(ToastKind::Success, "Verification email sent".to_owned())]
     );
     let wait = last_ticket(&harness);
-    let tick = reply(&harness, Reply::Tick { ticket: wait });
+    let tick = Update::Tick { ticket: wait };
     harness.apply(tick);
     assert_eq!(view(&harness).model.resend_label(), "Resend in 59s");
-    assert!(matches!(jobs(&harness).last(), Some(Job::Wait { .. })));
+    assert!(matches!(jobs(&harness).last(), Some(Request::Wait { .. })));
 }
 
 #[test]
@@ -340,13 +317,10 @@ fn a_failed_resend_toasts_long_and_frees_the_button() {
     focus(&mut harness, Stop::Resend);
     harness.press(KeyCode::Enter);
     let ticket = last_ticket(&harness);
-    let failed = reply(
-        &harness,
-        Reply::ResendFailed {
-            ticket,
-            error: "offline".to_owned(),
-        },
-    );
+    let failed = Update::ResendFailed {
+        ticket,
+        error: "offline".to_owned(),
+    };
     harness.apply(failed);
     assert_eq!(view(&harness).model.resend_label(), "Resend");
     let up = &harness.app.shared.toasts.items()[0];
@@ -360,13 +334,10 @@ fn checking_verification_toasts_either_way() {
     harness.press(KeyCode::Enter);
     assert!(view(&harness).model.is_checking());
     let ticket = last_ticket(&harness);
-    let checked = reply(
-        &harness,
-        Reply::UserLoaded {
-            ticket,
-            user: Box::new(user(true)),
-        },
-    );
+    let checked = Update::UserLoaded {
+        ticket,
+        user: Box::new(user(true)),
+    };
     harness.apply(checked);
     assert!(view(&harness).model.is_verified() && !view(&harness).model.is_checking());
     assert_eq!(
@@ -400,12 +371,12 @@ fn more_opens_delete_which_counts_down_before_it_sends() {
     harness.type_text("pw");
     harness.press(KeyCode::Enter);
     assert!(
-        matches!(jobs(&harness).as_slice(), [Job::Wait { .. }]),
+        matches!(jobs(&harness).as_slice(), [Request::Wait { .. }]),
         "still counting down"
     );
     for _ in 0..5 {
         let wait = last_ticket(&harness);
-        let tick = reply(&harness, Reply::Tick { ticket: wait });
+        let tick = Update::Tick { ticket: wait };
         harness.apply(tick);
     }
     assert!(screen_text(&harness.app).contains("Delete "));
@@ -413,26 +384,23 @@ fn more_opens_delete_which_counts_down_before_it_sends() {
     harness.press(KeyCode::Enter);
     assert!(matches!(
         jobs(&harness).as_slice(),
-        [Job::Change {
+        [Request::Change {
             change: Change::Delete { password },
             ..
         }] if password.read() == "pw"
     ));
     assert!(screen_text(&harness.app).contains("Deleting..."));
     let ticket = last_ticket(&harness);
-    let failed = reply(
-        &harness,
-        Reply::Failed {
-            ticket,
-            error: "wrong password".to_owned(),
-        },
-    );
+    let failed = Update::Failed {
+        ticket,
+        error: "wrong password".to_owned(),
+    };
     harness.apply(failed);
     assert!(!view(&harness).model.is_deleting());
     harness.clear();
     harness.press(KeyCode::Enter);
     let ticket = last_ticket(&harness);
-    let deleted = reply(&harness, Reply::Deleted { ticket });
+    let deleted = Update::Deleted { ticket };
     harness.clear();
     harness.apply(deleted);
     assert_eq!(harness.pending(), [screens::Request::SignOut]);
@@ -446,7 +414,7 @@ fn esc_on_delete_stops_its_countdown() {
     let wait = last_ticket(&harness);
     harness.press(KeyCode::Esc);
     assert!(matches!(view(&harness).overlay, Some(Overlay::More(None))));
-    let tick = reply(&harness, Reply::Tick { ticket: wait });
+    let tick = Update::Tick { ticket: wait };
     harness.clear();
     harness.apply(tick);
     assert_eq!(

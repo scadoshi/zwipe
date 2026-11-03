@@ -72,7 +72,7 @@ fn jobs(harness: &Harness) -> Vec<Job> {
         .pending()
         .iter()
         .filter_map(|request| match request {
-            screens::Request::Home(Request::Visit { job, .. }) => Some(job.clone()),
+            screens::Request::Home(Request::Job(job)) => Some(job.clone()),
             _ => None,
         })
         .collect()
@@ -115,31 +115,20 @@ fn my_counts_ticket(job: &Job) -> Option<Ticket> {
     }
 }
 
-/// `reply` for the home on screen.
-fn reply(harness: &Harness, reply: Reply) -> Update {
-    Update::Visit {
-        visit: home(harness).visit,
-        reply,
-    }
-}
-
 /// The user fetch landing with `user`.
 fn land_user(harness: &mut Harness, user: zwipe_core::domain::user::User) {
     let ticket = ticket(harness, user_ticket);
-    let update = reply(
-        harness,
-        Reply::User {
-            ticket,
-            user: Box::new(user),
-        },
-    );
+    let update = Update::Reply(Reply::User {
+        ticket,
+        user: Box::new(user),
+    });
     harness.apply(update);
 }
 
 /// The user fetch failing.
 fn fail_user(harness: &mut Harness) {
     let ticket = ticket(harness, user_ticket);
-    let update = reply(harness, Reply::UserFailed { ticket });
+    let update = Update::Reply(Reply::UserFailed { ticket });
     harness.apply(update);
 }
 
@@ -147,27 +136,21 @@ fn fail_user(harness: &mut Harness) {
 fn land_play_style(harness: &mut Harness, summary: HttpPlayStyleSummary) {
     let ticket = ticket(harness, play_style_ticket);
     let user_id = me(harness);
-    let update = reply(
-        harness,
-        Reply::PlayStyle {
-            ticket,
-            user_id,
-            summary: Box::new(summary),
-        },
-    );
+    let update = Update::Reply(Reply::PlayStyle {
+        ticket,
+        user_id,
+        summary: Box::new(summary),
+    });
     harness.apply(update);
 }
 
 /// The featured card landing as `card`.
 fn land_flavor(harness: &mut Harness, card: Card) {
     let ticket = ticket(harness, flavor_ticket);
-    let update = reply(
-        harness,
-        Reply::Flavor {
-            ticket,
-            flavor: Box::new(FlavorCard::fetched(card, Utc::now())),
-        },
-    );
+    let update = Update::Reply(Reply::Flavor {
+        ticket,
+        flavor: Box::new(FlavorCard::fetched(card, Utc::now())),
+    });
     harness.apply(update);
 }
 
@@ -263,14 +246,11 @@ fn s_switches_to_my_counters_saves_the_scope_and_fetches_them() {
     );
     let ticket = ticket(&harness, my_counts_ticket);
     let user_id = me(&harness);
-    let landed = reply(
-        &harness,
-        Reply::MyMetrics {
-            ticket,
-            user_id,
-            figures: figures(7),
-        },
-    );
+    let landed = Update::Reply(Reply::MyMetrics {
+        ticket,
+        user_id,
+        figures: figures(7),
+    });
     harness.apply(landed);
     assert_eq!(home(&harness).figures(), Some(figures(7)));
     assert!(home(&harness).model.live());
@@ -289,23 +269,17 @@ fn another_users_counts_and_map_never_show() {
     harness.press(KeyCode::Char('s'));
     let counts_ticket = ticket(&harness, my_counts_ticket);
     let map_ticket = ticket(&harness, play_style_ticket);
-    let theirs = reply(
-        &harness,
-        Reply::MyMetrics {
-            ticket: counts_ticket,
-            user_id: Uuid::new_v4(),
-            figures: figures(7),
-        },
-    );
+    let theirs = Update::Reply(Reply::MyMetrics {
+        ticket: counts_ticket,
+        user_id: Uuid::new_v4(),
+        figures: figures(7),
+    });
     harness.apply(theirs);
-    let their_map = reply(
-        &harness,
-        Reply::PlayStyle {
-            ticket: map_ticket,
-            user_id: Uuid::new_v4(),
-            summary: Box::new(summary(2)),
-        },
-    );
+    let their_map = Update::Reply(Reply::PlayStyle {
+        ticket: map_ticket,
+        user_id: Uuid::new_v4(),
+        summary: Box::new(summary(2)),
+    });
     harness.apply(their_map);
     assert!(home(&harness).figures().is_none());
     assert_eq!(home(&harness).model.play_style(), PlayStyle::Loading);
@@ -343,7 +317,7 @@ fn a_reply_to_an_earlier_mount_changes_nothing() {
             flavor: Box::new(FlavorCard::fetched(flavored("Elves"), Utc::now())),
         },
     ] {
-        let update = reply(&harness, late);
+        let update = Update::Reply(late);
         harness.apply(update);
     }
     let view = home(&harness);
@@ -534,7 +508,7 @@ fn a_failed_map_says_so_and_loading_panels_ghost() {
     assert!(!loading.contains("Featured flavor"));
     assert!(home(&harness).animating());
     let ticket = ticket(&harness, play_style_ticket);
-    let failed = reply(&harness, Reply::PlayStyleFailed { ticket });
+    let failed = Update::Reply(Reply::PlayStyleFailed { ticket });
     harness.apply(failed);
     assert!(screen_text(&harness.app).contains("Could not load your playstyle"));
 }
@@ -883,13 +857,10 @@ fn the_featured_image_loads_only_where_the_terminal_draws_real_images() {
     let mut bare = flavored("Blank Card");
     bare.scryfall_data.image_uris = None;
     // The cache takes a reply whatever its ticket; any ticket will do.
-    let update = reply(
-        &harness,
-        Reply::Flavor {
-            ticket: Generation::default().next_ticket(),
-            flavor: Box::new(FlavorCard::fetched(bare, Utc::now())),
-        },
-    );
+    let update = Update::Reply(Reply::Flavor {
+        ticket: Generation::default().next_ticket(),
+        flavor: Box::new(FlavorCard::fetched(bare, Utc::now())),
+    });
     harness.apply(update);
     assert!(
         harness.app.shared.caches.flavor_image.is_none(),
@@ -1050,7 +1021,7 @@ fn a_session_refresh_fetches_an_expired_featured_card_once() {
     }
     harness.press(KeyCode::Char('r'));
     let ticket = ticket(&harness, flavor_ticket);
-    let failed = reply(&harness, Reply::FlavorFailed { ticket });
+    let failed = Update::Reply(Reply::FlavorFailed { ticket });
     harness.apply(failed);
     harness.clear();
     harness.apply(upkept());

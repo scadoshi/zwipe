@@ -1,10 +1,10 @@
 //! Playstyle, the app's suggested commanders screen: what the user builds, read from every deck they own, over their top 10 suggested commanders and the staples across their decks. Reached from home's `p`.
 //!
-//! The ranking is fetched 100 deep on every open and the list shows the first 10 that pass the Show row. Above the list, one accordion of the Color map (open on entry, drawn at home's seed), Summary, Card roles and Oracle tags sections sums up the profile the ranking reads. An expanded suggestion offers Create deck, Maybeboard and Remove; a row that leaves fills from the held list, and the screen refetches only when fewer than ten remain or a load is still out. Below the list, the staples show the first 10 that match their own Type and Color rows.
+//! What the screen knows and decides (the held ranking and its loads, the profile's sections and charts, the Show and Staples chips, the create gate, the edits and their toasts) is zwipe-ui's [`State`]; this view adds the accordion over the model's sections, the focus and chip cursors, the revealed role and tag, the card rows, the More sheet and Clear dialog, and the `?` topics.
 //!
-//! Each load takes a ticket and only the newest one's reply lands, so a refetch started by a dropped row or by Clear skips replaces a reply still in flight. A refetch with rows on screen is silent; only the first load shows the skeleton.
+//! The app's "Art" chip toggles row thumbnails; the terminal's card rows draw none, so the Show row leaves it out. The app's Swipe is an overlay whose right swipe goes through this model's create gate; here it is the commander swipe screen, which takes its own [`DeckLimit`], so the view keeps the deck count the model reads too.
 //!
-//! The app's "Art" chip toggles row thumbnails; the terminal's card rows draw none, so the Show row leaves it out.
+//! The app's staple rows offer a printing the model never swaps in (its `PickPrinting` reaches only suggestions), so the view keeps the printings picked on staple rows itself, until the next load lands.
 
 pub(crate) mod draw;
 pub(crate) mod keys;
@@ -16,17 +16,18 @@ use std::time::Instant;
 use uuid::Uuid;
 use zwipe_client::ClientError;
 use zwipe_core::domain::card::Card;
-use zwipe_core::domain::card::scryfall_data::colors;
 use zwipe_core::domain::card::scryfall_data::colors::Color;
-use zwipe_core::domain::card::search_card::card_type::CardType;
 use zwipe_core::domain::user::User;
 use zwipe_core::domain::user::models::hints::HINT_SUGGESTED_COMMANDERS;
 use zwipe_core::http::contracts::suggestions::{
-    HttpBuilderProfile, HttpCommanderSuggestion, HttpCommanderSuggestions, HttpStaple,
+    HttpCommanderSuggestion, HttpCommanderSuggestions, HttpStaple,
 };
-use zwipe_ui::activity::Bar;
-use zwipe_ui::generation::{Generation, Ticket};
-use zwipe_ui::playstyle::{self, HELD_SIZE, LIST_SIZE, StapleColor, TagRow, of_identity};
+use zwipe_ui::deck::VERIFY_TO_CREATE;
+use zwipe_ui::generation::Ticket;
+use zwipe_ui::screens::playstyle::{
+    Action, CARDS_COLUMN, DECKS_COLUMN, Destination, Effect, HELD_SIZE, IMPACT_COLUMN, LIST_TITLE,
+    ROLES_TITLE, STAPLES_TITLE, Section, State, Status, TAGS_TITLE,
+};
 
 use super::{Screen, deck_form, home, oracle_tags};
 use crate::inbound::app::Context;
@@ -43,85 +44,19 @@ use crate::inbound::widgets::sheet::Sheet;
 use crate::inbound::widgets::toast::{self, ToastKind};
 use crate::outbound::account::Account;
 
-/// Said when the first load failed.
-pub(crate) const LOAD_FAILED: &str = "Could not load your suggestions";
-
-/// Said when the user has no deck to read from, and in the Color map section when the map has nothing on it.
-pub(crate) const COLD_START: &str = "Build a deck to see your playstyle";
-
-/// Said when the server suggested nothing.
-pub(crate) const NO_SUGGESTIONS: &str = "No suggestions right now";
-
-/// Said when the Staples rows match nothing.
-pub(crate) const NO_STAPLES: &str = "No staples match";
-
-/// The list's group header.
-pub(crate) const LIST_TITLE: &str = "Suggested commanders";
-
-/// The Staples panel's group header.
-pub(crate) const STAPLES_TITLE: &str = "Staples";
-
-/// The chip that folds a suggestion's reasons.
-pub(crate) const WHY: &str = "Why this commander?";
-
-/// The lead-in of the shared tags bullet.
-pub(crate) const SHARES_TAGS: &str = "Shares oracle tags with your decks";
-
-/// The More sheet's title.
-pub(crate) const MORE_TITLE: &str = "More actions";
-
-/// The More sheet's one action, and its dialog's title.
-pub(crate) const CLEAR_SKIPS: &str = "Clear skips";
-
-/// The Clear skips dialog's body.
-pub(crate) const CLEAR_BODY: &str =
-    "Commanders you skipped will be suggested again. This can't be undone.";
-
-/// The toast after a suggestion is saved to the maybeboard.
-pub(crate) const ADDED: &str = "Added to your commander maybeboard";
-
-/// The toast after a suggestion is removed.
-pub(crate) const SKIPPED_FOR_A_WEEK: &str = "Skipped for a week";
-
-/// The toast after Clear skips.
-pub(crate) const SKIPS_CLEARED: &str = "Skips cleared";
-
-/// The warning when an unverified account already has its one deck.
-pub(crate) const VERIFY_TO_CREATE: &str = "Verify your email to create more than 1 deck";
-
-/// One of the profile's sections, in the accordion's order.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum Section {
-    ColorMap,
-    Summary,
-    Roles,
-    Tags,
-}
-
-impl Section {
-    pub(crate) fn title(self) -> &'static str {
-        match self {
-            Self::ColorMap => "Color map",
-            Self::Summary => "Summary",
-            Self::Roles => "Card roles",
-            Self::Tags => "Oracle tags",
-        }
-    }
-
-    /// The section's "?" topic; Summary has none.
-    pub(crate) fn topic(self) -> Option<InfoPopup> {
-        match self {
-            Self::ColorMap => Some(home::keys::color_map_topic()),
-            Self::Summary => None,
-            Self::Roles => Some(InfoPopup::new(
-                "Card roles",
-                &["How many of your decks have a tag in each role. Tap a role for its tags"],
-            )),
-            Self::Tags => Some(InfoPopup::new(
-                "Oracle tags",
-                &["Your 10 most impactful tags, highest first. Tap a tag to see what it means"],
-            )),
-        }
+/// A section's "?" topic; Summary has none.
+pub(crate) fn topic(section: Section) -> Option<InfoPopup> {
+    match section {
+        Section::ColorMap => Some(home::keys::color_map_topic()),
+        Section::Summary => None,
+        Section::Roles => Some(InfoPopup::new(
+            ROLES_TITLE,
+            &["How many of your decks have a tag in each role. Tap a role for its tags"],
+        )),
+        Section::Tags => Some(InfoPopup::new(
+            TAGS_TITLE,
+            &["Your 10 most impactful tags, highest first. Tap a tag to see what it means"],
+        )),
     }
 }
 
@@ -139,9 +74,9 @@ impl Column {
 
     pub(crate) fn label(self) -> &'static str {
         match self {
-            Self::Decks => "Decks",
-            Self::Cards => "Cards",
-            Self::Impact => "Impact",
+            Self::Decks => DECKS_COLUMN,
+            Self::Cards => CARDS_COLUMN,
+            Self::Impact => IMPACT_COLUMN,
         }
     }
 
@@ -238,7 +173,7 @@ impl DeckLimit {
     }
 }
 
-/// Starts a deck with `card` as its commander, the app's `create_with`, shared by Playstyle's Create deck, a right swipe in the commander swipe, and the Commander maybeboard.
+/// Starts a deck with `card` as its commander, the app's `create_with`, for a right swipe in the commander swipe.
 ///
 /// At the deck limit it warns, as the app does, for the long toast. Otherwise it opens Create seeded with `card` as the commander in the Commander format, the app's `CreateDeckCommanderSeed` and `Router::CreateDeck`. The printing on screen is the one the deck gets.
 pub(crate) fn create_deck_with(cx: &mut Context<'_>, card: &Card, limit: DeckLimit) {
@@ -256,34 +191,31 @@ pub(crate) fn suggestion_colors(suggestion: &HttpCommanderSuggestion) -> &[Color
     &suggestion.card.scryfall_data.color_identity
 }
 
-/// The Playstyle screen's state.
+/// Whether the signed-in user's email is verified; with no user only the server can refuse, as the app passes for no session.
+fn verified(cx: &Context<'_>) -> bool {
+    cx.shared
+        .user
+        .as_ref()
+        .is_none_or(|u| u.email_verified_at.is_some())
+}
+
+/// The Playstyle screen's state: the model plus what only the terminal keeps.
 #[derive(Debug)]
 pub(crate) struct PlaystyleView {
+    pub(crate) model: State,
     /// When the screen opened, which drives the loading ghosts.
     pub(crate) opened: Instant,
-    /// Until the first reply lands.
-    pub(crate) is_loading: bool,
-    /// The last load failed with nothing held.
-    pub(crate) load_failed: bool,
-    /// The held ranking, best fit first, 100 deep.
-    pub(crate) entries: Vec<HttpCommanderSuggestion>,
-    pub(crate) deck_count: u32,
-    pub(crate) profile: Option<HttpBuilderProfile>,
-    /// The load generation; only the newest ticket's reply lands.
-    pub(crate) ticket: Generation,
-    /// Whether the newest load is still out.
-    pub(crate) load_out: bool,
-    /// How many decks the user owns, once fetched, for the create gate.
+    /// How many decks the user owns, once fetched, for the commander swipe's create gate. The model holds the same count for its own Create deck but does not show it.
     pub(crate) decks: Option<usize>,
-    /// The Show chip in effect; `None` is All.
-    pub(crate) identity: Option<Vec<Color>>,
+    /// The newest ranking load sent, so a landed reply drops the staple printings.
+    load: Option<Ticket>,
+    /// Printings picked on staple rows, each in place of the staple sharing its oracle id.
+    pub(crate) staple_printings: Vec<Card>,
     /// The Show chip under the cursor: 0 is All, then each identity.
     pub(crate) show_cursor: usize,
-    pub(crate) staple_type: Option<CardType>,
     pub(crate) type_cursor: usize,
-    pub(crate) staple_color: Option<StapleColor>,
     pub(crate) color_cursor: usize,
-    /// The sections present, in order, with which one is open.
+    /// The model's sections as last laid out, with which one is open.
     pub(crate) accordion: Accordion,
     pub(crate) sections: Vec<Section>,
     pub(crate) focus: Focus,
@@ -303,24 +235,17 @@ pub(crate) struct PlaystyleView {
     pub(crate) overlay: Option<Overlay>,
 }
 
-impl PlaystyleView {
+impl Default for PlaystyleView {
     /// A view waiting on its first load.
-    pub(crate) fn loading() -> Self {
+    fn default() -> Self {
         Self {
+            model: State::new(),
             opened: Instant::now(),
-            is_loading: true,
-            load_failed: false,
-            entries: Vec::new(),
-            deck_count: 0,
-            profile: None,
-            ticket: Generation::default(),
-            load_out: false,
             decks: None,
-            identity: None,
+            load: None,
+            staple_printings: Vec::new(),
             show_cursor: 0,
-            staple_type: None,
             type_cursor: 0,
-            staple_color: None,
             color_cursor: 0,
             accordion: Accordion::new(&[]),
             sections: Vec::new(),
@@ -336,59 +261,31 @@ impl PlaystyleView {
             overlay: None,
         }
     }
+}
 
-    /// No deck to read from: the screen is one line and has no Swipe.
-    pub(crate) fn cold_start(&self) -> bool {
-        self.deck_count == 0
-    }
-
+impl PlaystyleView {
     /// Whether the column of sections, list and staples shows.
     pub(crate) fn ready(&self) -> bool {
-        !self.is_loading && !self.load_failed && !self.cold_start()
+        self.model.status() == Status::Loaded
     }
 
-    /// Takes a reply: the counts, the profile and the held list, keeping the open section and opening Color map the first time.
-    pub(crate) fn land(&mut self, found: HttpCommanderSuggestions) {
-        let first = self.is_loading;
-        self.deck_count = found.deck_count;
-        self.profile = found.profile;
-        self.entries = found.suggestions;
-        self.load_failed = false;
-        self.is_loading = false;
-        self.load_out = false;
-        self.rebuild_sections(first);
-        if first {
-            self.map_opened = Some(Instant::now());
-            self.focus = match self.sections.first() {
-                Some(&section) => Focus::Header(section),
-                None => Focus::Show,
-            };
-        }
-        self.settle_focus();
-    }
-
-    /// The sections the profile has, keeping whichever was open, or Color map on the first reply.
+    /// Lays the accordion out again when the model's sections changed, keeping whichever was open, or opening the one that opens on entry when `first`.
     fn rebuild_sections(&mut self, first: bool) {
-        let open = self
-            .accordion
-            .open()
-            .and_then(|i| self.sections.get(i))
-            .copied();
-        let mut sections = Vec::new();
-        if let Some(profile) = &self.profile {
-            sections.push(Section::ColorMap);
-            sections.push(Section::Summary);
-            if !playstyle::role_bars(&profile.roles, &profile.tags).is_empty() {
-                sections.push(Section::Roles);
-            }
-            if !playstyle::tag_rows(&profile.tags).is_empty() {
-                sections.push(Section::Tags);
-            }
+        let sections = self.model.sections();
+        if !first && sections == self.sections {
+            return;
         }
+        let open = if first {
+            sections.iter().copied().find(|s| s.opens_on_entry())
+        } else {
+            self.accordion
+                .open()
+                .and_then(|i| self.sections.get(i))
+                .copied()
+        };
         let titles: Vec<&str> = sections.iter().map(|s| s.title()).collect();
         let mut accordion = Accordion::new(&titles);
-        let keep = if first { Some(Section::ColorMap) } else { open };
-        if let Some(i) = keep.and_then(|k| sections.iter().position(|&s| s == k))
+        if let Some(i) = open.and_then(|k| sections.iter().position(|&s| s == k))
             && let Some(section) = accordion.sections.get_mut(i)
         {
             section.open = true;
@@ -414,61 +311,20 @@ impl PlaystyleView {
         self.accordion.toggle_focused();
     }
 
-    /// The identities among the held list plus the chosen one, so a chip stays after its last commander goes.
-    pub(crate) fn identities(&self) -> Vec<Vec<Color>> {
-        colors::identities_present(
-            self.entries
-                .iter()
-                .map(suggestion_colors)
-                .chain(self.identity.as_deref()),
-        )
-    }
-
-    /// The held list narrowed by the Show chip, in held order.
-    pub(crate) fn filtered(&self) -> Vec<HttpCommanderSuggestion> {
-        of_identity(&self.entries, suggestion_colors, self.identity.as_deref())
-    }
-
-    /// The rows the list shows: the first ten filtered.
-    pub(crate) fn shown(&self) -> Vec<HttpCommanderSuggestion> {
-        playstyle::shown(&self.filtered())
-    }
-
-    pub(crate) fn staples(&self) -> &[HttpStaple] {
-        self.profile.as_ref().map_or(&[], |p| p.staples.as_slice())
-    }
-
-    pub(crate) fn staple_types(&self) -> Vec<CardType> {
-        playstyle::staple_types_present(self.staples(), playstyle::staple_type_line)
-    }
-
-    pub(crate) fn staple_colors(&self) -> Vec<StapleColor> {
-        playstyle::staple_colors_present(self.staples(), playstyle::staple_identity)
-    }
-
-    /// The staples the Type and Color rows let through, the first ten.
+    /// The staples the Type and Color rows let through, each in the printing picked on its row.
     pub(crate) fn matching_staples(&self) -> Vec<HttpStaple> {
-        playstyle::matching_staples(
-            self.staples(),
-            playstyle::staple_type_line,
-            playstyle::staple_identity,
-            self.staple_type,
-            self.staple_color,
-        )
-    }
-
-    pub(crate) fn role_bars(&self) -> Vec<Bar> {
-        self.profile
-            .as_ref()
-            .map(|p| playstyle::role_bars(&p.roles, &p.tags))
-            .unwrap_or_default()
-    }
-
-    pub(crate) fn tag_rows(&self) -> Vec<TagRow> {
-        self.profile
-            .as_ref()
-            .map(|p| playstyle::tag_rows(&p.tags))
-            .unwrap_or_default()
+        let mut staples = self.model.matching_staples();
+        for staple in &mut staples {
+            let oracle_id = staple.card.scryfall_data.oracle_id;
+            if let Some(printing) = self
+                .staple_printings
+                .iter()
+                .find(|p| oracle_id.is_some() && p.scryfall_data.oracle_id == oracle_id)
+            {
+                staple.card = printing.clone();
+            }
+        }
+        staples
     }
 
     /// Everything the focus can land on, top to bottom.
@@ -483,22 +339,24 @@ impl PlaystyleView {
                 continue;
             }
             match section {
-                Section::Roles => stops.extend((0..self.role_bars().len()).map(Focus::Role)),
+                Section::Roles => {
+                    stops.extend((0..self.model.role_bars().len()).map(Focus::Role));
+                }
                 Section::Tags => {
                     stops.push(Focus::TagHead);
-                    stops.extend((0..self.tag_rows().len()).map(Focus::Tag));
+                    stops.extend((0..self.model.tag_rows().len()).map(Focus::Tag));
                 }
                 Section::ColorMap | Section::Summary => {}
             }
         }
         stops.push(Focus::Show);
-        if !self.shown().is_empty() {
+        if !self.model.rows().is_empty() {
             stops.push(Focus::List);
         }
-        if !self.staples().is_empty() {
+        if self.model.shows_staples() {
             stops.push(Focus::Types);
             stops.push(Focus::Colors);
-            if !self.matching_staples().is_empty() {
+            if !self.model.matching_staples().is_empty() {
                 stops.push(Focus::Staples);
             }
         }
@@ -519,12 +377,12 @@ impl PlaystyleView {
         };
         match focus {
             Focus::List => {
-                let last = self.shown().len().saturating_sub(1);
+                let last = self.model.rows().len().saturating_sub(1);
                 self.rows
                     .set_focused(if toward == Toward::Next { 0 } else { last });
             }
             Focus::Staples => {
-                let last = self.matching_staples().len().saturating_sub(1);
+                let last = self.model.matching_staples().len().saturating_sub(1);
                 self.staple_rows
                     .set_focused(if toward == Toward::Next { 0 } else { last });
             }
@@ -565,10 +423,10 @@ impl PlaystyleView {
     /// The "?" topic for what has the focus, if it has one.
     pub(crate) fn topic(&self) -> Option<InfoPopup> {
         match self.focus {
-            Focus::Header(section) => self.is_open(section).then(|| section.topic()).flatten(),
-            Focus::Role(_) => Section::Roles.topic(),
+            Focus::Header(section) => self.is_open(section).then(|| topic(section)).flatten(),
+            Focus::Role(_) => topic(Section::Roles),
             Focus::TagHead => Some(self.column.topic()),
-            Focus::Tag(_) => Section::Tags.topic(),
+            Focus::Tag(_) => topic(Section::Tags),
             Focus::List => Some(list_topic()),
             Focus::Staples => Some(staples_topic()),
             Focus::Show | Focus::Types | Focus::Colors => None,
@@ -597,13 +455,8 @@ impl PlaystyleView {
             self.role_tags = RoleTags::default();
             return;
         }
-        let tags = self
-            .profile
-            .as_ref()
-            .map(|p| playstyle::role_tags(&p.tags, role))
-            .unwrap_or_default();
         self.open_role = Some(role.to_owned());
-        self.role_tags = RoleTags::new(tags);
+        self.role_tags = RoleTags::new(self.model.role_tags(role));
     }
 
     /// Reveals a table tag's definition, or hides it when it shows.
@@ -615,76 +468,7 @@ impl PlaystyleView {
         }
     }
 
-    /// Picks the Show chip at `index` (0 is All); picking the selected identity again returns to All.
-    pub(crate) fn pick_identity(&mut self, index: usize) {
-        let Some(chosen) = index.checked_sub(1) else {
-            self.identity = None;
-            self.show_cursor = 0;
-            self.settle_focus();
-            return;
-        };
-        let Some(identity) = self.identities().into_iter().nth(chosen) else {
-            return;
-        };
-        if self.identity.as_ref() == Some(&identity) {
-            self.identity = None;
-            self.show_cursor = 0;
-        } else {
-            self.identity = Some(identity);
-        }
-        self.settle_focus();
-    }
-
-    /// Picks the Type chip at `index` (0 is All); the selected type again is All.
-    pub(crate) fn pick_type(&mut self, index: usize) {
-        let picked = index
-            .checked_sub(1)
-            .and_then(|i| self.staple_types().into_iter().nth(i));
-        self.staple_type = if picked == self.staple_type {
-            None
-        } else {
-            picked
-        };
-        if self.staple_type.is_none() {
-            self.type_cursor = 0;
-        }
-        self.settle_focus();
-    }
-
-    /// Picks the Color chip at `index` (0 is All); the selected color again is All.
-    pub(crate) fn pick_color(&mut self, index: usize) {
-        let picked = index
-            .checked_sub(1)
-            .and_then(|i| self.staple_colors().into_iter().nth(i));
-        self.staple_color = if picked == self.staple_color {
-            None
-        } else {
-            picked
-        };
-        if self.staple_color.is_none() {
-            self.color_cursor = 0;
-        }
-        self.settle_focus();
-    }
-
-    /// Starts a new load whose reply replaces any still out.
-    pub(crate) fn refetch(&mut self, cx: &mut Context<'_>) {
-        let ticket = self.ticket.next_ticket();
-        self.load_out = true;
-        cx.request(Request::Load { ticket }.into());
-    }
-
-    /// Drops the row with `oracle_id`; the next held suggestion of that identity moves up, and the server is asked again only when the filtered list runs short of ten or a load that predates the drop is still out.
-    pub(crate) fn drop_row(&mut self, oracle_id: Uuid, cx: &mut Context<'_>) {
-        self.entries
-            .retain(|s| s.card.scryfall_data.oracle_id != Some(oracle_id));
-        if self.filtered().len() < LIST_SIZE || self.load_out {
-            self.refetch(cx);
-        }
-        self.settle_focus();
-    }
-
-    /// The create gate for the signed-in user.
+    /// The create gate the commander swipe takes for the signed-in user.
     pub(crate) fn deck_limit(&self, cx: &Context<'_>) -> DeckLimit {
         DeckLimit::of(cx.shared.user.as_ref(), self.decks)
     }
@@ -692,21 +476,43 @@ impl PlaystyleView {
     /// Refetches when the commander swipe closed, taking the identity its Filter left picked, and swaps in a printing picked from a row: into the staples when a staple is open, else into the held list.
     pub(crate) fn on_return(&mut self, cx: &mut Context<'_>) {
         if let Some(closed) = cx.shared.caches.handoff.commander_swipe.take() {
-            if closed.identity != self.identity {
+            if closed.identity.as_deref() != self.model.identity() {
                 self.show_cursor = 0;
+                let pick = closed
+                    .identity
+                    .map_or(Action::ShowAll, Action::ToggleIdentity);
+                dispatch(self, pick, cx);
             }
-            self.identity = closed.identity;
-            self.refetch(cx);
-            self.settle_focus();
+            dispatch(self, Action::SwipeClosed, cx);
         }
+        let Some(printing) = cx.shared.caches.handoff.printing.take() else {
+            return;
+        };
+        let id = printing.scryfall_data.id;
         if self.staple_rows.expanded().is_some() {
-            if let Some(profile) = &mut self.profile {
-                self.staple_rows
-                    .take_printing(cx, &mut profile.staples, |s| &mut s.card);
+            let oracle_id = printing.scryfall_data.oracle_id;
+            if oracle_id.is_some()
+                && self
+                    .model
+                    .staples()
+                    .iter()
+                    .any(|s| s.card.scryfall_data.oracle_id == oracle_id)
+            {
+                self.staple_printings
+                    .retain(|p| p.scryfall_data.oracle_id != oracle_id);
+                self.staple_printings.push(printing);
+                self.staple_rows.expand(id);
             }
         } else {
-            self.rows
-                .take_printing(cx, &mut self.entries, |s| &mut s.card);
+            dispatch(self, Action::PickPrinting(Box::new(printing)), cx);
+            if self
+                .model
+                .entries()
+                .iter()
+                .any(|s| s.card.scryfall_data.id == id)
+            {
+                self.rows.expand(id);
+            }
         }
     }
 
@@ -716,23 +522,79 @@ impl PlaystyleView {
             && self
                 .map_opened
                 .is_some_and(|t| t.elapsed() < crate::inbound::widgets::color_map::entrance());
-        self.is_loading || sweeping
+        self.model.status() == Status::Loading || sweeping
     }
 }
 
-/// The screen's work.
+/// Applies `action` to the model, performs the effects it returns in order, lays the sections out again and keeps the focus on a stop that still exists. The first load to land opens the section that opens on entry, starts the map's sweep and puts the focus on the first header.
+pub(crate) fn dispatch(view: &mut PlaystyleView, action: Action, cx: &mut Context<'_>) {
+    let was_loading = view.model.status() == Status::Loading;
+    let mut seed = None;
+    for effect in view.model.update(action) {
+        match effect {
+            Effect::OfferHint(offer) => {
+                hint::once(cx, offer.key());
+            }
+            Effect::FetchSuggestions(ticket) => {
+                view.load = Some(ticket);
+                cx.request(Request::Load { ticket }.into());
+            }
+            Effect::FetchDeckProfiles => cx.request(Request::DeckProfiles.into()),
+            Effect::AddToMaybeboard { ticket, oracle_id } => {
+                cx.request(Request::Maybeboard { ticket, oracle_id }.into());
+            }
+            Effect::DismissCommander { ticket, oracle_id } => {
+                cx.request(Request::Dismiss { ticket, oracle_id }.into());
+            }
+            Effect::ClearDismissals(ticket) => cx.request(Request::ClearSkips { ticket }.into()),
+            Effect::SeedCommander(card) => seed = Some(*card),
+            Effect::Navigate(Destination::Previous) => cx.back(),
+            Effect::Navigate(Destination::CreateDeck) => {
+                if let Some(card) = seed.take() {
+                    deck_form::open_create_with_commander(cx, card);
+                }
+            }
+            Effect::Toast(toast) => cx.show(toast),
+        }
+    }
+    let first = was_loading && view.model.status() != Status::Loading;
+    view.rebuild_sections(first);
+    if first && view.model.status() == Status::Loaded {
+        view.map_opened = Some(Instant::now());
+        view.focus = view
+            .sections
+            .first()
+            .map_or(Focus::Show, |&section| Focus::Header(section));
+    }
+    view.settle_focus();
+}
+
+/// Starts a deck with `card` through the model's create gate, for a row's Create deck.
+pub(crate) fn create(view: &mut PlaystyleView, card: &Card, cx: &mut Context<'_>) {
+    let verified = verified(cx);
+    dispatch(
+        view,
+        Action::Create {
+            card: Box::new(card.clone()),
+            verified,
+        },
+        cx,
+    );
+}
+
+/// The screen's work, each request but the deck count carrying its ticket.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum Request {
-    /// The ranking and profile, under a ticket.
+    /// The ranking and profile.
     Load { ticket: Ticket },
     /// The user's decks, for the create gate.
     DeckProfiles,
     /// Saves a suggestion to the commander maybeboard by oracle id.
-    Maybeboard(Uuid),
+    Maybeboard { ticket: Ticket, oracle_id: Uuid },
     /// Hides a suggestion for a week by oracle id.
-    Dismiss(Uuid),
+    Dismiss { ticket: Ticket, oracle_id: Uuid },
     /// Lifts every dismissal.
-    ClearSkips,
+    ClearSkips { ticket: Ticket },
 }
 
 impl Request {
@@ -741,31 +603,36 @@ impl Request {
         match self {
             Self::Load { .. } => "load",
             Self::DeckProfiles => "deck_profiles",
-            Self::Maybeboard(..) => "maybeboard",
-            Self::Dismiss(..) => "dismiss",
-            Self::ClearSkips => "clear_skips",
+            Self::Maybeboard { .. } => "maybeboard",
+            Self::Dismiss { .. } => "dismiss",
+            Self::ClearSkips { .. } => "clear_skips",
         }
     }
 }
 
-/// The screen's results.
+/// The screen's results, each carrying its request's ticket back to the model.
 #[derive(Debug)]
 pub(crate) enum Update {
     Loaded {
         ticket: Ticket,
         found: Box<HttpCommanderSuggestions>,
     },
-    LoadFailed {
+    /// How many decks the user owns.
+    DeckProfiles(usize),
+    Saved {
+        ticket: Ticket,
+    },
+    Dismissed {
+        ticket: Ticket,
+    },
+    Cleared {
+        ticket: Ticket,
+    },
+    /// A request failed; `message` is the error toast's text.
+    Failed {
         ticket: Ticket,
         message: String,
     },
-    /// How many decks the user owns.
-    DeckProfiles(usize),
-    Maybeboarded(Uuid),
-    Dismissed(Uuid),
-    SkipsCleared,
-    /// A row action or Clear skips failed with this message.
-    ActionFailed(String),
 }
 
 impl From<Request> for screens::Request {
@@ -787,15 +654,13 @@ fn pick(screen: &mut Screen) -> Option<&mut PlaystyleView> {
     }
 }
 
-/// Opens Playstyle: fetches the ranking, the user's decks and the tag catalog, and shows the hint the first time.
+/// Opens Playstyle: the model offers the hint and fetches the ranking and the user's decks, and the tag catalog warms for the rows.
 pub(crate) fn open(cx: &mut Context<'_>) {
     cx.shared.caches.handoff.commander_swipe = None;
-    let mut view = PlaystyleView::loading();
-    view.refetch(cx);
-    cx.push(Screen::Playstyle(Box::new(view)));
-    cx.request(Request::DeckProfiles.into());
+    let mut view = PlaystyleView::default();
+    dispatch(&mut view, Action::Load, cx);
     oracle_tags::ensure_catalog(cx);
-    hint::once(cx, HINT_SUGGESTED_COMMANDERS);
+    cx.push(Screen::Playstyle(Box::new(view)));
 }
 
 /// Shows the hint again, for `H`.
@@ -803,15 +668,16 @@ pub(crate) fn reopen_hint(cx: &mut Context<'_>) {
     hint::reopen(cx, HINT_SUGGESTED_COMMANDERS);
 }
 
-/// Runs `call` for an action, its success as `done` and its failure as a message.
-async fn act<T>(
+/// Runs the ranking edit `call`, its success as `done` and its failure with the message to toast.
+async fn edit<T>(
+    ticket: Ticket,
     call: impl Future<Output = Result<T, ClientError>>,
     done: Update,
 ) -> Option<screens::Update> {
     match call.await {
         Ok(_) => Some(done.into()),
         Err(e) => Some(screens::failure(&e, |message| {
-            Update::ActionFailed(message).into()
+            Update::Failed { ticket, message }.into()
         })),
     }
 }
@@ -835,7 +701,7 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
                     .into(),
                 ),
                 Err(e) => Some(screens::failure(&e, |message| {
-                    Update::LoadFailed { ticket, message }.into()
+                    Update::Failed { ticket, message }.into()
                 })),
             }
         }
@@ -847,94 +713,95 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
                 Err(_) => None,
             }
         }
-        Request::Maybeboard(oracle_id) => {
-            act(
+        Request::Maybeboard { ticket, oracle_id } => {
+            edit(
+                ticket,
                 async {
                     client
                         .add_commander_maybeboard_card(oracle_id, &account.fresh().await?)
                         .await
                 },
-                Update::Maybeboarded(oracle_id),
+                Update::Saved { ticket },
             )
             .await
         }
-        Request::Dismiss(oracle_id) => {
-            act(
+        Request::Dismiss { ticket, oracle_id } => {
+            edit(
+                ticket,
                 async {
                     client
                         .dismiss_commander(oracle_id, &account.fresh().await?)
                         .await
                 },
-                Update::Dismissed(oracle_id),
+                Update::Dismissed { ticket },
             )
             .await
         }
-        Request::ClearSkips => {
-            act(
+        Request::ClearSkips { ticket } => {
+            edit(
+                ticket,
                 async {
                     client
                         .clear_commander_dismissals(&account.fresh().await?)
                         .await
                 },
-                Update::SkipsCleared,
+                Update::Cleared { ticket },
             )
             .await
         }
     }
 }
 
+/// Hands a reply to the model. A failure's error toast goes up even when the screen has closed.
 pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
-    let view = nav.find_mut(pick);
-    match update {
+    if let Update::Failed { message, .. } = &update {
+        cx.shared
+            .toasts
+            .push_for(ToastKind::Error, message.clone(), toast::NORMAL);
+    }
+    let Some(view) = nav.find_mut(pick) else {
+        return;
+    };
+    let action = match update {
         Update::Loaded { ticket, found } => {
-            if let Some(view) = view.filter(|v| v.ticket.is_current(ticket)) {
-                view.land(*found);
+            if view.load == Some(ticket) {
+                view.load = None;
+                view.staple_printings.clear();
             }
-        }
-        Update::LoadFailed { ticket, message } => {
-            cx.shared
-                .toasts
-                .push_for(ToastKind::Error, message, toast::NORMAL);
-            if let Some(view) = view.filter(|v| v.ticket.is_current(ticket)) {
-                view.load_failed = view.entries.is_empty();
-                view.is_loading = false;
-                view.load_out = false;
-                view.settle_focus();
-            }
+            Action::Loaded { ticket, found }
         }
         Update::DeckProfiles(count) => {
-            if let Some(view) = view {
-                view.decks = Some(count);
-            }
+            view.decks = Some(count);
+            Action::DeckProfilesLoaded { count }
         }
-        Update::Maybeboarded(oracle_id) => {
-            if let Some(view) = view {
-                view.drop_row(oracle_id, cx);
-            }
-            cx.shared
-                .toasts
-                .push_for(ToastKind::Success, ADDED.to_owned(), toast::QUICK);
-        }
-        Update::Dismissed(oracle_id) => {
-            if let Some(view) = view {
-                view.drop_row(oracle_id, cx);
-            }
-            cx.shared
-                .toasts
-                .push_for(ToastKind::Info, SKIPPED_FOR_A_WEEK.to_owned(), toast::QUICK);
-        }
-        Update::SkipsCleared => {
-            cx.shared
-                .toasts
-                .push_for(ToastKind::Info, SKIPS_CLEARED.to_owned(), toast::QUICK);
-            if let Some(view) = view {
-                view.refetch(cx);
-            }
-        }
-        Update::ActionFailed(message) => {
-            cx.shared
-                .toasts
-                .push_for(ToastKind::Error, message, toast::NORMAL);
-        }
-    }
+        Update::Saved { ticket } => Action::Saved { ticket },
+        Update::Dismissed { ticket } => Action::Dismissed { ticket },
+        Update::Cleared { ticket } => Action::Cleared { ticket },
+        Update::Failed { ticket, .. } => Action::Failed { ticket },
+    };
+    dispatch(view, action, cx);
+}
+
+/// The newest ticket among Playstyle's requests in `sent` that `pick` takes.
+#[cfg(test)]
+pub(crate) fn sent_ticket<'a>(
+    sent: impl IntoIterator<Item = &'a screens::Request>,
+    pick: impl Fn(&Request) -> Option<Ticket>,
+) -> Ticket {
+    sent.into_iter()
+        .filter_map(|r| match r {
+            screens::Request::Playstyle(r) => pick(r),
+            _ => None,
+        })
+        .last()
+        .unwrap_or_else(|| panic!("Playstyle sent no such request"))
+}
+
+/// The ticket the newest Playstyle load in `sent` went out with.
+#[cfg(test)]
+pub(crate) fn load_ticket<'a>(sent: impl IntoIterator<Item = &'a screens::Request>) -> Ticket {
+    sent_ticket(sent, |r| match r {
+        Request::Load { ticket } => Some(*ticket),
+        _ => None,
+    })
 }

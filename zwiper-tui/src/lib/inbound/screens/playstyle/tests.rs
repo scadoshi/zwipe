@@ -7,21 +7,24 @@ use reqwest::Url;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::colors::Color;
+use zwipe_core::domain::card::search_card::card_type::CardType;
 use zwipe_core::domain::user::models::hints::HINT_OTAG_EXAMPLES;
 use zwipe_core::http::contracts::suggestions::{
     HttpBuilderProfile, HttpColorAffinity, HttpColorCards, HttpColorIdentityCount, HttpColorMap,
     HttpCommanderSuggestion, HttpCommanderSuggestions, HttpProfileRole, HttpProfileTag,
     HttpSharedTag, HttpStaple, HttpSuggestionReasons,
 };
-use zwipe_ui::playstyle;
+use zwipe_ui::generation::Generation;
+use zwipe_ui::playstyle::{self, StapleColor};
+use zwipe_ui::screens::playstyle::{
+    ADDED, COLD_START, LOAD_FAILED, NO_STAPLES, NO_SUGGESTIONS, SHARES_TAGS, SKIPPED, SKIPS_CLEARED,
+};
 
 use super::*;
 use crate::inbound::event_loop::harness::Harness;
 use crate::inbound::widgets::toast::Toast;
 use crate::outbound::account::SessionFile;
-use crate::test_support::{
-    card, create_opened_with, generation_at, render, screen_text, ticket, user,
-};
+use crate::test_support::{card, create_opened_with, render, screen_text, user};
 
 /// The app's copy for this hint, as it reads.
 const HINT: &str = "Your colors, card roles and top oracle tags, read from every deck you own in any format\n• Create deck begins a deck with that commander\n• Maybeboard saves it to your commander maybeboard\n• Remove hides it for a week and pulls the next one up\n• Swipe deals the same ranking: right starts a deck, up saves, left skips it\n• Show narrows the list to one color identity\nBelow them, your top 10 commanders ranked against all your decks, best fit first. Swipe keeps going down the same ranking";
@@ -156,11 +159,26 @@ fn on_playstyle(verified: bool) -> Harness {
 fn loaded() -> Harness {
     let mut harness = on_playstyle(true);
     harness.apply(Update::Loaded {
-        ticket: ticket(1),
+        ticket: load(&harness),
         found: found(held()),
     });
     view_mut(&mut harness).map_opened = Instant::now().checked_sub(Duration::from_secs(5));
     harness
+}
+
+/// The newest load's ticket, cleared or not.
+fn load(harness: &Harness) -> Ticket {
+    load_ticket(harness.sent())
+}
+
+/// The newest maybeboard, dismiss or clear's ticket, cleared or not.
+fn edit(harness: &Harness) -> Ticket {
+    sent_ticket(harness.sent(), |r| match r {
+        Request::Maybeboard { ticket, .. }
+        | Request::Dismiss { ticket, .. }
+        | Request::ClearSkips { ticket } => Some(*ticket),
+        _ => None,
+    })
 }
 
 fn view(harness: &Harness) -> &PlaystyleView {
@@ -177,6 +195,16 @@ fn view_mut(harness: &mut Harness) -> &mut PlaystyleView {
     }
 }
 
+/// Sends `action` through Playstyle's dispatch, as a key or a closing screen would.
+fn act(harness: &mut Harness, action: Action) {
+    harness.on_top(|screen, cx| {
+        let Screen::Playstyle(view) = screen else {
+            panic!("not Playstyle");
+        };
+        dispatch(view, action, cx);
+    });
+}
+
 fn press(harness: &mut Harness, codes: &[KeyCode]) {
     for &code in codes {
         harness.press(code);
@@ -185,7 +213,8 @@ fn press(harness: &mut Harness, codes: &[KeyCode]) {
 
 fn names(harness: &Harness) -> Vec<String> {
     view(harness)
-        .shown()
+        .model
+        .rows()
         .iter()
         .map(|s| s.card.scryfall_data.name.clone())
         .collect()
@@ -214,7 +243,7 @@ fn expand_first(harness: &mut Harness) {
 }
 
 fn oracle_of(harness: &Harness, index: usize) -> Uuid {
-    view(harness).shown()[index]
+    view(harness).model.rows()[index]
         .card
         .scryfall_data
         .oracle_id
@@ -230,10 +259,13 @@ fn p_on_home_opens_playstyle_and_asks_for_everything_once() {
     assert_eq!(
         harness.pending(),
         [
-            Request::Load { ticket: ticket(1) }.into(),
+            screens::Request::MarkHintShown(HINT_SUGGESTED_COMMANDERS.to_owned()),
+            Request::Load {
+                ticket: load(&harness)
+            }
+            .into(),
             Request::DeckProfiles.into(),
             oracle_tags::Request::Catalog.into(),
-            screens::Request::MarkHintShown(HINT_SUGGESTED_COMMANDERS.to_owned()),
         ]
     );
     let hint = harness.app.shared.hint.as_ref().unwrap();
@@ -335,30 +367,38 @@ fn summary_shows_decks_and_the_top_colors() {
 }
 
 #[test]
-fn an_old_ticket_never_lands() {
+fn a_stale_or_repeated_load_changes_nothing() {
     let mut harness = loaded();
-    view_mut(&mut harness).ticket = generation_at(2);
+    let first = load(&harness);
+    act(&mut harness, Action::SwipeClosed);
+    let second = load(&harness);
+    assert_ne!(first, second, "closing the swipe loads again");
+    assert_eq!(harness.pending(), [Request::Load { ticket: second }.into()]);
     harness.apply(Update::Loaded {
-        ticket: ticket(1),
+        ticket: first,
         found: found(vec![suggestion("Stale", &[Green])]),
     });
     assert_ne!(names(&harness), ["Stale"], "the older reply is dropped");
     harness.apply(Update::Loaded {
-        ticket: ticket(2),
+        ticket: second,
         found: found(vec![suggestion("Fresh", &[Green])]),
     });
     assert_eq!(names(&harness), ["Fresh"]);
-    assert!(!view(&harness).load_out);
+    harness.apply(Update::Loaded {
+        ticket: second,
+        found: found(vec![suggestion("Again", &[Green])]),
+    });
+    assert_eq!(names(&harness), ["Fresh"], "a repeated reply is dropped");
 }
 
 #[test]
 fn a_failed_first_load_says_so_and_a_failed_refetch_keeps_the_rows() {
     let mut harness = on_playstyle(true);
-    harness.apply(Update::LoadFailed {
-        ticket: ticket(1),
+    harness.apply(Update::Failed {
+        ticket: load(&harness),
         message: "The server is down".to_owned(),
     });
-    assert!(view(&harness).load_failed);
+    assert_eq!(view(&harness).model.status(), Status::Failed);
     let text = screen_text(&harness.app);
     assert!(text.contains(LOAD_FAILED));
     assert!(text.contains("The server is down"));
@@ -370,12 +410,16 @@ fn a_failed_first_load_says_so_and_a_failed_refetch_keeps_the_rows() {
     );
 
     let mut harness = loaded();
-    view_mut(&mut harness).ticket = generation_at(2);
-    harness.apply(Update::LoadFailed {
-        ticket: ticket(2),
+    act(&mut harness, Action::SwipeClosed);
+    harness.apply(Update::Failed {
+        ticket: load(&harness),
         message: "Offline".to_owned(),
     });
-    assert!(!view(&harness).load_failed, "rows on screen stay");
+    assert_eq!(
+        view(&harness).model.status(),
+        Status::Loaded,
+        "rows on screen stay"
+    );
     assert_eq!(names(&harness).len(), 10);
 }
 
@@ -383,7 +427,7 @@ fn a_failed_first_load_says_so_and_a_failed_refetch_keeps_the_rows() {
 fn no_decks_is_a_cold_start() {
     let mut harness = on_playstyle(true);
     harness.apply(Update::Loaded {
-        ticket: ticket(1),
+        ticket: load(&harness),
         found: Box::new(HttpCommanderSuggestions {
             suggestions: Vec::new(),
             deck_count: 0,
@@ -401,7 +445,7 @@ fn no_decks_is_a_cold_start() {
 fn nothing_suggested_says_so() {
     let mut harness = on_playstyle(true);
     harness.apply(Update::Loaded {
-        ticket: ticket(1),
+        ticket: load(&harness),
         found: found(Vec::new()),
     });
     assert!(render_text(&harness, 110, 90).contains(NO_SUGGESTIONS));
@@ -412,11 +456,11 @@ fn the_show_row_narrows_the_list_and_its_picked_chip_returns_to_all() {
     let mut harness = loaded();
     view_mut(&mut harness).focus = Focus::Show;
     press(&mut harness, &[KeyCode::Char('l'), KeyCode::Enter]);
-    assert_eq!(view(&harness).identity, Some(vec![Blue]));
+    assert_eq!(view(&harness).model.identity(), Some(&[Blue][..]));
     assert_eq!(names(&harness), ["Talrand"]);
     press(&mut harness, &[KeyCode::Enter]);
     assert_eq!(
-        view(&harness).identity,
+        view(&harness).model.identity(),
         None,
         "the picked chip again is All"
     );
@@ -424,9 +468,12 @@ fn the_show_row_narrows_the_list_and_its_picked_chip_returns_to_all() {
     assert_eq!(names(&harness).len(), 10);
     press(&mut harness, &[KeyCode::Char('l'), KeyCode::Enter]);
     let talrand = oracle_of(&harness, 0);
-    harness.apply(Update::Dismissed(talrand));
+    act(&mut harness, Action::Dismiss(talrand));
+    harness.apply(Update::Dismissed {
+        ticket: edit(&harness),
+    });
     assert_eq!(
-        view(&harness).identities()[0],
+        view(&harness).model.identities()[0],
         vec![Blue],
         "the chosen chip stays after its last commander goes"
     );
@@ -445,9 +492,17 @@ fn maybeboard_and_remove_send_their_calls_and_drop_the_row() {
     let first = oracle_of(&harness, 0);
     harness.clear();
     harness.press(KeyCode::Char('m'));
-    assert_eq!(harness.pending(), [Request::Maybeboard(first).into()]);
+    assert_eq!(
+        harness.pending(),
+        [Request::Maybeboard {
+            ticket: edit(&harness),
+            oracle_id: first
+        }
+        .into()]
+    );
+    let save = edit(&harness);
     harness.clear();
-    harness.apply(Update::Maybeboarded(first));
+    harness.apply(Update::Saved { ticket: save });
     assert!(!names(&harness).contains(&"Red 00".to_owned()));
     assert_eq!(names(&harness).len(), 10, "the next held one moves up");
     assert_eq!(
@@ -464,43 +519,81 @@ fn maybeboard_and_remove_send_their_calls_and_drop_the_row() {
     expand_first(&mut harness);
     let second = oracle_of(&harness, 0);
     harness.press(KeyCode::Char('r'));
-    assert_eq!(harness.pending(), [Request::Dismiss(second).into()]);
+    assert_eq!(
+        harness.pending(),
+        [Request::Dismiss {
+            ticket: edit(&harness),
+            oracle_id: second
+        }
+        .into()]
+    );
+    let dismiss = edit(&harness);
     harness.clear();
-    harness.apply(Update::Dismissed(second));
+    harness.apply(Update::Dismissed { ticket: dismiss });
     assert_eq!(
         toasts(&harness).last(),
-        Some(&(ToastKind::Info, SKIPPED_FOR_A_WEEK.to_owned()))
+        Some(&(ToastKind::Info, SKIPPED.to_owned()))
     );
     assert_eq!(names(&harness).len(), 10);
-    assert_eq!(view(&harness).entries.len(), 12);
+    assert_eq!(view(&harness).model.entries().len(), 12);
+    let shown = names(&harness);
+    let count = toasts(&harness).len();
+    harness.apply(Update::Dismissed { ticket: dismiss });
+    harness.apply(Update::Saved { ticket: save });
+    assert_eq!(names(&harness), shown, "a repeated reply drops nothing");
+    assert_eq!(toasts(&harness).len(), count, "and raises nothing");
 }
 
 #[test]
 fn a_drop_refetches_when_the_list_runs_short_or_a_load_is_out() {
     let mut harness = loaded();
-    view_mut(&mut harness).load_out = true;
+    act(&mut harness, Action::SwipeClosed);
+    let out = load(&harness);
     let first = oracle_of(&harness, 0);
-    harness.apply(Update::Dismissed(first));
-    assert_eq!(
-        harness.pending(),
-        [Request::Load { ticket: ticket(2) }.into()],
+    act(&mut harness, Action::Dismiss(first));
+    harness.clear();
+    harness.apply(Update::Dismissed {
+        ticket: edit(&harness),
+    });
+    let again = load(&harness);
+    assert_ne!(
+        again, out,
         "a load from before the drop would bring the row back"
     );
+    assert_eq!(harness.pending(), [Request::Load { ticket: again }.into()]);
     harness.clear();
-    view_mut(&mut harness).load_out = false;
-    view_mut(&mut harness).identity = Some(vec![Red]);
+    harness.apply(Update::Loaded {
+        ticket: again,
+        found: found(held()[1..].to_vec()),
+    });
+    act(&mut harness, Action::ToggleIdentity(vec![Red]));
     let red = oracle_of(&harness, 0);
-    harness.apply(Update::Maybeboarded(red));
+    act(&mut harness, Action::Maybeboard(red));
+    harness.clear();
+    harness.apply(Update::Saved {
+        ticket: edit(&harness),
+    });
     assert_eq!(harness.pending(), [], "ten red left is a full list");
     let red = oracle_of(&harness, 0);
-    harness.apply(Update::Maybeboarded(red));
+    act(&mut harness, Action::Maybeboard(red));
+    harness.clear();
+    harness.apply(Update::Saved {
+        ticket: edit(&harness),
+    });
     assert_eq!(
         harness.pending(),
-        [Request::Load { ticket: ticket(3) }.into()],
+        [Request::Load {
+            ticket: load(&harness)
+        }
+        .into()],
         "nine red left is short"
     );
     harness.clear();
-    harness.apply(Update::ActionFailed("Nope".to_owned()));
+    act(&mut harness, Action::Maybeboard(red));
+    harness.apply(Update::Failed {
+        ticket: edit(&harness),
+        message: "Nope".to_owned(),
+    });
     assert_eq!(
         toasts(&harness).last(),
         Some(&(ToastKind::Error, "Nope".to_owned()))
@@ -516,7 +609,7 @@ fn create_deck_opens_with_the_card_or_warns_at_the_deck_limit() {
 
     let mut harness = on_playstyle(false);
     harness.apply(Update::Loaded {
-        ticket: ticket(1),
+        ticket: load(&harness),
         found: found(held()),
     });
     harness.apply(Update::DeckProfiles(1));
@@ -563,7 +656,7 @@ fn the_staples_type_and_color_rows_combine() {
     let mut harness = loaded();
     view_mut(&mut harness).focus = Focus::Types;
     press(&mut harness, &[KeyCode::Char('l'), KeyCode::Enter]);
-    assert_eq!(view(&harness).staple_type, Some(CardType::Creature));
+    assert_eq!(view(&harness).model.staple_type(), Some(CardType::Creature));
     let staples: Vec<String> = view(&harness)
         .matching_staples()
         .iter()
@@ -575,11 +668,14 @@ fn the_staples_type_and_color_rows_combine() {
         &[KeyCode::Char('j'), KeyCode::Char('l'), KeyCode::Char('l')],
     );
     press(&mut harness, &[KeyCode::Enter]);
-    assert_eq!(view(&harness).staple_color, Some(StapleColor::Colorless));
+    assert_eq!(
+        view(&harness).model.staple_color(),
+        Some(StapleColor::Colorless)
+    );
     assert_eq!(view(&harness).matching_staples(), Vec::<HttpStaple>::new());
     assert!(render_text(&harness, 110, 90).contains(NO_STAPLES));
     press(&mut harness, &[KeyCode::Enter]);
-    assert_eq!(view(&harness).staple_color, None, "again is All");
+    assert_eq!(view(&harness).model.staple_color(), None, "again is All");
     assert_eq!(view(&harness).color_cursor, 0);
     press(&mut harness, &[KeyCode::Char('j'), KeyCode::Enter]);
     assert_eq!(view(&harness).focus, Focus::Staples);
@@ -608,16 +704,27 @@ fn clear_skips_asks_first_then_clears_and_refetches() {
     assert_eq!(harness.pending(), []);
     press(&mut harness, &[KeyCode::Char('c'), KeyCode::Char('y')]);
     assert_eq!(view(&harness).overlay, None, "the sheet closes too");
-    assert_eq!(harness.pending(), [Request::ClearSkips.into()]);
+    assert_eq!(
+        harness.pending(),
+        [Request::ClearSkips {
+            ticket: edit(&harness)
+        }
+        .into()]
+    );
     harness.clear();
-    harness.apply(Update::SkipsCleared);
+    harness.apply(Update::Cleared {
+        ticket: edit(&harness),
+    });
     assert_eq!(
         toasts(&harness).last(),
         Some(&(ToastKind::Info, SKIPS_CLEARED.to_owned()))
     );
     assert_eq!(
         harness.pending(),
-        [Request::Load { ticket: ticket(2) }.into()]
+        [Request::Load {
+            ticket: load(&harness)
+        }
+        .into()]
     );
     harness.press(KeyCode::Char('M'));
     harness.press(KeyCode::Esc);
@@ -638,7 +745,7 @@ fn question_mark_shows_each_topic_and_h_the_hint() {
     press(&mut harness, &[KeyCode::Enter, KeyCode::Char('?')]);
     assert_eq!(
         view(&harness).overlay,
-        Some(Overlay::Info(Section::Tags.topic().unwrap()))
+        Some(Overlay::Info(topic(Section::Tags).unwrap()))
     );
     harness.press(KeyCode::Esc);
     press(
@@ -729,8 +836,35 @@ fn a_picked_printing_swaps_into_its_row() {
     harness.app.shared.caches.handoff.printing = Some(printing.clone());
     harness.press(KeyCode::Esc);
     let v = view(&harness);
-    assert_eq!(v.entries[0].card, printing);
+    assert_eq!(v.model.entries()[0].card, printing);
     assert_eq!(v.rows.expanded(), Some(printing.scryfall_data.id));
+}
+
+#[test]
+fn a_printing_picked_on_a_staple_swaps_into_it_until_the_next_load() {
+    let mut harness = loaded();
+    view_mut(&mut harness).focus = Focus::Staples;
+    view_mut(&mut harness).staple_rows.set_focused(0);
+    harness.press(KeyCode::Enter);
+    let staple = view(&harness).matching_staples()[0].card.clone();
+    let mut printing = card("Sol Ring");
+    printing.scryfall_data.oracle_id = staple.scryfall_data.oracle_id;
+    harness.app.shared.caches.handoff.printing = Some(printing.clone());
+    harness.on_top(Screen::on_return);
+    let v = view(&harness);
+    assert_eq!(v.matching_staples()[0].card, printing);
+    assert_eq!(v.staple_rows.expanded(), Some(printing.scryfall_data.id));
+    let same = Box::new(HttpCommanderSuggestions {
+        suggestions: held(),
+        deck_count: 4,
+        profile: v.model.profile().cloned(),
+    });
+    act(&mut harness, Action::SwipeClosed);
+    harness.apply(Update::Loaded {
+        ticket: load(&harness),
+        found: same,
+    });
+    assert_eq!(view(&harness).matching_staples()[0].card, staple);
 }
 
 #[test]
@@ -778,9 +912,13 @@ async fn a_rejected_session_ends_it() {
     let file = SessionFile::at(std::env::temp_dir().join("zwiper-tui-tests-no-session.json"));
     let account = Arc::new(Account::new(client, file));
     for request in [
-        Request::Load { ticket: ticket(1) },
+        Request::Load {
+            ticket: Generation::default().next_ticket(),
+        },
         Request::DeckProfiles,
-        Request::ClearSkips,
+        Request::ClearSkips {
+            ticket: Generation::default().next_ticket(),
+        },
     ] {
         let update = perform(&account, request).await;
         assert!(matches!(update, Some(screens::Update::SessionEnded)));
@@ -812,7 +950,7 @@ fn tiny_terminals_do_not_panic() {
         render(&harness.app, w, h);
     }
     harness.apply(Update::Loaded {
-        ticket: ticket(1),
+        ticket: load(&harness),
         found: found(held()),
     });
     for (w, h) in [(8, 3), (1, 1), (20, 6)] {
@@ -868,7 +1006,7 @@ fn a_short_terminal_shrinks_the_map_so_every_show_chip_is_in_view() {
         .map(|(i, colors)| suggestion(&format!("Commander {i:02}"), colors))
         .collect();
     harness.apply(Update::Loaded {
-        ticket: ticket(1),
+        ticket: load(&harness),
         found: found(suggestions),
     });
     view_mut(&mut harness).map_opened = Instant::now().checked_sub(Duration::from_secs(5));
@@ -885,14 +1023,9 @@ fn a_short_terminal_shrinks_the_map_so_every_show_chip_is_in_view() {
 
 #[test]
 fn the_tag_tables_column_markers_are_buttons_and_the_picked_one_lights() {
-    let mut harness = loaded();
-    let palette = crate::domain::theme::Palette::for_account("gruvbox", true);
-    harness.app.shared.palette = palette;
-    view_mut(&mut harness).focus = Focus::Header(Section::Tags);
-    press(&mut harness, &[KeyCode::Enter, KeyCode::Char('j')]);
-    assert_eq!(view(&harness).focus, Focus::TagHead);
-    view_mut(&mut harness).column = super::Column::Cards;
-    if let Some(profile) = view_mut(&mut harness).profile.as_mut() {
+    let mut harness = on_playstyle(true);
+    let mut reply = found(held());
+    if let Some(profile) = reply.profile.as_mut() {
         profile.tags.push(HttpProfileTag {
             slug: "repeatable-creature-tokens".to_owned(),
             role: None,
@@ -901,6 +1034,17 @@ fn the_tag_tables_column_markers_are_buttons_and_the_picked_one_lights() {
             score: 0.5,
         });
     }
+    harness.apply(Update::Loaded {
+        ticket: load(&harness),
+        found: reply,
+    });
+    view_mut(&mut harness).map_opened = Instant::now().checked_sub(Duration::from_secs(5));
+    let palette = crate::domain::theme::Palette::for_account("gruvbox", true);
+    harness.app.shared.palette = palette;
+    view_mut(&mut harness).focus = Focus::Header(Section::Tags);
+    press(&mut harness, &[KeyCode::Enter, KeyCode::Char('j')]);
+    assert_eq!(view(&harness).focus, Focus::TagHead);
+    view_mut(&mut harness).column = super::Column::Cards;
     for (width, height) in crate::test_support::BUTTON_SIZES {
         let rows = crate::test_support::rows(&harness.app, width, height);
         let bare = crate::test_support::bare_about_markers(&rows);
@@ -913,7 +1057,23 @@ fn the_tag_tables_column_markers_are_buttons_and_the_picked_one_lights() {
             let &(x, y) = found
                 .first()
                 .unwrap_or_else(|| panic!("no {context}:\n{}", rows.join("\n")));
-            let at = x + u16::try_from(label.len()).unwrap() + 1;
+            let width = u16::try_from(label.len()).unwrap();
+            for c in x..x + width {
+                let cell = &buffer[(c, y)];
+                assert!(
+                    !cell.modifier.contains(ratatui::style::Modifier::REVERSED),
+                    "{context}: the label is never filled"
+                );
+                assert_eq!(
+                    cell.modifier.contains(ratatui::style::Modifier::BOLD),
+                    lit,
+                    "{context}: bold only while picked"
+                );
+                if lit {
+                    assert_eq!(Some(cell.fg), palette.accent.fg, "{context}: accent");
+                }
+            }
+            let at = x + width + 1;
             crate::test_support::assert_about_marker(buffer, &palette, (at, y), lit, &context);
         }
         let at = rows.iter().position(|r| r.contains("Decks [?]")).unwrap();

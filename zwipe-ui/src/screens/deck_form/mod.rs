@@ -19,6 +19,7 @@ use zwipe_core::domain::deck::{
 };
 use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_core::http::contracts::deck::{HttpCreateDeckProfile, HttpUpdateDeckProfile};
+use zwipe_core::text::sentence_case;
 
 use crate::deck::form::{self, Cascade, FormValues, Slot, Step};
 use crate::deck::pickers::{self, Draft, PartnerAutofill, Picker, TagPicker, Tapped};
@@ -1087,7 +1088,7 @@ impl State {
         if self.name_touched {
             self.name_error = DeckName::new(self.values.name.as_str())
                 .err()
-                .map(|e| e.to_string());
+                .map(|e| sentence_case(&e.to_string()));
         }
     }
 
@@ -1190,7 +1191,7 @@ impl State {
             return Vec::new();
         }
         if let Err(e) = DeckName::new(self.values.name.as_str()) {
-            self.name_error = Some(e.to_string());
+            self.name_error = Some(sentence_case(&e.to_string()));
             return Vec::new();
         }
         self.saving = true;

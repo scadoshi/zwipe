@@ -23,7 +23,7 @@
 //!
 //! - Keeps a [`CardRows`] in its state and builds a [`CardRow`] for each card, borrowing it, whenever it draws or handles a key.
 //! - Calls `oracle_tags::ensure_catalog` when it opens, so tag definitions have descriptions.
-//! - In its arm of `Screen::on_return`, calls [`CardRows::take_printing`] with its own list, which swaps a printing picked with `p` into place (matched by oracle id) and keeps the row expanded under its new scryfall id. Nothing goes to the server.
+//! - In its arm of `Screen::on_return`, takes a printing picked with `p` from `cx.shared.caches.handoff.printing`, swaps it into its own list (through its model's printing action when it has one) and keeps the row expanded under its new scryfall id with [`CardRows::expand`]. Nothing goes to the server.
 
 use crossterm::event::KeyCode;
 use ratatui::style::Stylize;
@@ -246,34 +246,6 @@ impl CardRows {
             _ => return false,
         }
         !rows.is_empty()
-    }
-
-    /// Takes a printing picked with `p` and swaps it into `items` in place of the card with the same oracle id, keeping that row expanded under the printing's scryfall id. `card_of` reaches the card inside one of the host's items. Returns whether a card was swapped.
-    ///
-    /// A host calls this from its arm of `Screen::on_return`. The handoff is emptied either way, so a printing never lands twice.
-    pub(crate) fn take_printing<T>(
-        &mut self,
-        cx: &mut Context<'_>,
-        items: &mut [T],
-        mut card_of: impl FnMut(&mut T) -> &mut Card,
-    ) -> bool {
-        let Some(printing) = cx.shared.caches.handoff.printing.take() else {
-            return false;
-        };
-        let Some(oracle_id) = printing.scryfall_data.oracle_id else {
-            return false;
-        };
-        let id = printing.scryfall_data.id;
-        let Some(slot) = items
-            .iter_mut()
-            .map(&mut card_of)
-            .find(|c| c.scryfall_data.oracle_id == Some(oracle_id))
-        else {
-            return false;
-        };
-        *slot = printing;
-        self.expanded = Some(id);
-        true
     }
 
     /// One row's lines: the compact line, and the detail under it when it is the expanded one.
@@ -591,38 +563,5 @@ mod tests {
             [false],
             "a key the rows do not use is the host's"
         );
-    }
-
-    #[test]
-    fn a_picked_printing_swaps_in_and_stays_open() {
-        let mut items = vec![(1, card("Sol Ring")), (2, card("Llanowar Elves"))];
-        let mut printing = card("Llanowar Elves");
-        printing.scryfall_data.oracle_id = items[1].1.scryfall_data.oracle_id;
-        let mut state = CardRows::default();
-        state.expand(items[1].1.scryfall_data.id);
-        let mut harness = Harness::on(Screen::Home(Box::default()));
-        harness.app.shared.caches.handoff.printing = Some(printing.clone());
-        let mut swapped = Vec::new();
-        harness.open(|cx| {
-            swapped.push(state.take_printing(cx, &mut items, |item| &mut item.1));
-            swapped.push(state.take_printing(cx, &mut items, |item| &mut item.1));
-        });
-        assert_eq!(swapped, [true, false], "a printing lands once");
-        assert_eq!(items[1].1, printing);
-        assert_eq!(state.expanded(), Some(printing.scryfall_data.id));
-        assert!(harness.app.shared.caches.handoff.printing.is_none());
-    }
-
-    #[test]
-    fn a_printing_for_a_card_not_in_the_list_is_dropped() {
-        let mut items = vec![card("Sol Ring")];
-        let mut state = CardRows::default();
-        let mut harness = Harness::on(Screen::Home(Box::default()));
-        harness.app.shared.caches.handoff.printing = Some(card("Stray"));
-        let mut swapped = true;
-        harness.open(|cx| swapped = state.take_printing(cx, &mut items, |c| c));
-        assert!(!swapped);
-        assert_eq!(state.expanded(), None);
-        assert!(harness.app.shared.caches.handoff.printing.is_none());
     }
 }

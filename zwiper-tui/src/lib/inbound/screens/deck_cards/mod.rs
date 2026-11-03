@@ -101,8 +101,6 @@ pub(crate) struct DeckCardsView {
     pub(crate) printing: Option<PrintingSheet>,
     /// The image preview: a card and its face.
     pub(crate) preview: Option<(Box<Card>, usize)>,
-    /// The deck as it last loaded, which Add opens on.
-    deck: Option<Deck>,
     /// Whether Add or Remove opened over the view, so their return loads the deck again.
     reload_on_return: bool,
 }
@@ -502,14 +500,14 @@ fn perform_effect(
                 PrintingSheet::open(cx, card, /* read_only */ false, PRINTING_SAVED)
             });
         }
-        Effect::Navigate(to) => return navigate(view, to, cx),
+        Effect::Navigate(to) => return Some(navigate(view, to, cx)),
         Effect::Toast(toast) => cx.show(toast),
     }
     None
 }
 
 /// Goes where the model sends the user. Leaving the view, or opening Add or Remove over it, writes every waiting burst through `Leave`.
-fn navigate(view: &mut DeckCardsView, to: Destination, cx: &mut Context<'_>) -> Option<Action> {
+fn navigate(view: &mut DeckCardsView, to: Destination, cx: &mut Context<'_>) -> Action {
     match to {
         Destination::Previous => {
             if let Some(deck_id) = view.model.deck_id() {
@@ -520,17 +518,16 @@ fn navigate(view: &mut DeckCardsView, to: Destination, cx: &mut Context<'_>) -> 
             }
             cx.back();
         }
-        Destination::AddCards(_) => {
-            let deck = view.deck.clone()?;
+        Destination::AddCards(deck_id) => {
             view.reload_on_return = true;
-            swipe::open(cx, &deck);
+            swipe::open(cx, deck_id);
         }
         Destination::RemoveCards(deck_id) => {
             view.reload_on_return = true;
             remove_cards::open(cx, deck_id);
         }
     }
-    Some(Action::Leave)
+    Action::Leave
 }
 
 /// The view's work, each of the model's requests carrying its ticket.
@@ -884,16 +881,8 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
                 return;
             };
             let profile = profile.unwrap_or_else(|| Box::new(deck.deck_profile.clone()));
-            let was_loaded = view.model.is_loaded();
-            let snapshot = Deck {
-                deck_profile: (*profile).clone(),
-                ..(*deck).clone()
-            };
             dispatch(view, Action::ProfileLoaded { ticket, profile }, cx);
             dispatch(view, Action::Loaded { ticket, deck, zone }, cx);
-            if !was_loaded && view.model.is_loaded() {
-                view.deck = Some(snapshot);
-            }
             return;
         }
         Update::TokensLoaded { ticket, tokens } => Action::TokensLoaded { ticket, tokens },

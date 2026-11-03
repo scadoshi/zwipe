@@ -8,6 +8,7 @@ use zwipe_core::domain::user::models::hints::HINT_SUGGESTED_COMMANDERS;
 use zwipe_core::http::contracts::suggestions::{
     HttpColorAffinity, HttpCommanderSuggestions, HttpSharedTag, HttpSuggestionReasons,
 };
+use zwipe_ui::screens::playstyle::Action::ToggleIdentity;
 use zwipe_ui::screens::swipe_select::{
     CANT_SAVE, NOTHING_TO_UNDO, SAVED, SKIPPED, STACK_REFRESHED, SUGGESTED_TITLE, TITLE,
     UNDID_SKIP, UNSAVED,
@@ -19,7 +20,7 @@ use crate::inbound::event_loop::harness::Harness;
 use crate::inbound::screens::playstyle::{self, PlaystyleView};
 use crate::inbound::widgets::hint;
 use crate::inbound::widgets::toast::Toast;
-use crate::test_support::{card, create_opened_with, render, screen_text, ticket, user};
+use crate::test_support::{card, create_opened_with, render, screen_text, user};
 
 /// The pick toast.
 const SELECTED: &str = "Commander selected";
@@ -74,7 +75,7 @@ fn swiping_with(held: Vec<HttpCommanderSuggestion>) -> Harness {
     harness.app.shared.user = Some(seen_user());
     harness.open(playstyle::open);
     harness.apply(playstyle::Update::Loaded {
-        ticket: ticket(1),
+        ticket: playstyle::load_ticket(harness.sent()),
         found: Box::new(HttpCommanderSuggestions {
             suggestions: held,
             deck_count: 4,
@@ -175,7 +176,7 @@ fn s_deals_the_held_list_under_the_show_rows_identity() {
     harness.open(playstyle::open);
     harness.app.shared.hint = None;
     harness.apply(playstyle::Update::Loaded {
-        ticket: ticket(1),
+        ticket: playstyle::load_ticket(harness.sent()),
         found: Box::new(HttpCommanderSuggestions {
             suggestions: held(),
             deck_count: 4,
@@ -183,10 +184,12 @@ fn s_deals_the_held_list_under_the_show_rows_identity() {
         }),
     });
     harness.clear();
-    match harness.screen_mut() {
-        Screen::Playstyle(v) => v.identity = Some(vec![Red]),
-        _ => panic!("not Playstyle"),
-    }
+    harness.on_top(|screen, cx| {
+        let Screen::Playstyle(v) = screen else {
+            panic!("not Playstyle");
+        };
+        playstyle::dispatch(v, ToggleIdentity(vec![Red]), cx);
+    });
     harness.press(KeyCode::Char('s'));
     assert_eq!(dealt(&harness), ["Krenko", "Zada"]);
     assert_eq!(
@@ -241,9 +244,12 @@ fn right_selects_closes_and_starts_a_deck_and_the_host_refetches() {
             .any(|t| t.kind == ToastKind::Success && t.message == SELECTED)
     );
     assert!(
-        harness
-            .pending()
-            .contains(&playstyle::Request::Load { ticket: ticket(2) }.into()),
+        harness.pending().contains(
+            &playstyle::Request::Load {
+                ticket: playstyle::load_ticket(harness.sent())
+            }
+            .into()
+        ),
         "closing the swipe refetches the list"
     );
 }
@@ -333,6 +339,16 @@ fn left_in_suggested_dismisses_quietly_and_undo_lifts_it() {
 }
 
 #[test]
+fn swiping_past_the_last_card_toasts_that_none_are_left() {
+    let mut harness = swiping_with(vec![suggestion("Krenko", &[Red])]);
+    harness.press(KeyCode::Left);
+    assert_eq!(
+        (last_toast(&harness).kind, last_toast(&harness).message),
+        (ToastKind::Info, "No more commanders".to_owned())
+    );
+}
+
+#[test]
 fn the_filter_redeals_behind_the_swiped_cards_and_the_host_takes_it() {
     let mut harness = swiping();
     harness.press(KeyCode::Left);
@@ -368,10 +384,17 @@ fn the_filter_redeals_behind_the_swiped_cards_and_the_host_takes_it() {
     harness.clear();
     harness.press(KeyCode::Esc);
     let host = playstyle_view(&harness);
-    assert_eq!(host.identity, Some(vec![Red]), "one identity across both");
+    assert_eq!(
+        host.model.identity(),
+        Some(&[Red][..]),
+        "one identity across both"
+    );
     assert_eq!(
         harness.pending(),
-        [playstyle::Request::Load { ticket: ticket(2) }.into()]
+        [playstyle::Request::Load {
+            ticket: playstyle::load_ticket(harness.sent())
+        }
+        .into()]
     );
 }
 

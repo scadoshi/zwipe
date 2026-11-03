@@ -125,10 +125,10 @@ fn s_on_a_loaded_deck_starts_swiping_and_fetches_the_first_page() {
     serve(&mut harness, deck(profile.clone(), Vec::new()));
     harness.clear();
     harness.press(KeyCode::Char('s'));
-    assert!(harness.swipe_view().loading_cards);
+    assert!(screen_text(&harness.app).contains('░'), "the pile ghosts");
     assert!(matches!(
         harness.pending(),
-        [screens::Request::Swipe(screens::swipe::Request::Search { deck_id, .. })] if *deck_id == profile.id
+        [.., screens::Request::Swipe(screens::swipe::Request::Deck { deck_id, .. })] if *deck_id == profile.id
     ));
 }
 
@@ -758,7 +758,7 @@ fn add_cards_on_the_below_minimum_warning_opens_add_on_this_deck() {
     harness.press(KeyCode::Enter);
     assert!(view(&harness).zoomed, "Enter zooms first");
     harness.press(KeyCode::Enter);
-    assert_eq!(harness.swipe_view().deck.id, deck_id);
+    assert_eq!(harness.swipe_view().model.deck_id(), Some(deck_id));
 }
 
 /// Elves with a ramp role carrying a tag, an oracle tag on the profile, a price target, and a copy-limit warning: every section shows.

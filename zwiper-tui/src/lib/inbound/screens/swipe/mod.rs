@@ -1,6 +1,8 @@
 //! Add deck cards: swipe search results or the maybeboard into a deck, with the filter sheet, Synergy, undo that reconciles with the deck's undo log, and the land and budget signals.
 //!
-//! Search results come from the server a page at a time; the maybeboard is filtered in memory. Leaving parks the filter per source and the search stack per deck, so coming back resumes.
+//! What the screen knows and decides (the deck as Add sees it, both stacks and their cursors, paging, the adds in flight, every undo and its reconciling with the undo log, the land and budget crossings, and every toast but a request's failure) is zwipe-ui's [`State`]; this view adds the client's card filter the sheet edits, the filter, details and printings sheets, the face shown, the images, and the card motion with each pile's entrance mark.
+//!
+//! Add opens on the deck's id and fetches the deck quietly, as the app does. Leaving parks the filter per source and the search stack per deck, so coming back resumes.
 
 pub(crate) mod draw;
 pub(crate) mod keys;
@@ -8,7 +10,7 @@ pub(crate) mod keys;
 mod tests;
 
 use std::cell::RefCell;
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, VecDeque};
 use std::fmt;
 use std::time::Instant;
 
@@ -20,25 +22,15 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ImageSize;
 use zwipe_core::domain::card::search_card::card_filter::CardQuery;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
-use zwipe_core::domain::card::search_card::cards::Cards;
-use zwipe_core::domain::deck::{Board, Deck, DeckCard, DeckEntry};
+use zwipe_core::domain::deck::{Board, Deck, DeckCard};
 use zwipe_core::domain::user::hints::HINT_ADD_DECK_CARDS;
 use zwipe_core::http::contracts::deck::HttpDeckCardSearch;
-use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpPatchDeckCard};
-use zwipe_ui::add::{self, AddDeck};
-use zwipe_ui::deck_signals::{self, Crossing, Level};
 use zwipe_ui::filter::draft::{ResetRule, SheetConfig};
 use zwipe_ui::filter::picker::Sources;
-use zwipe_ui::generation::{Generation, Ticket};
-use zwipe_ui::stack::{
-    AddAction, CARDS_WARNING_THRESHOLD, CardStack, Direction, MAX_CARDS_IN_STACK, MaybeboardAction,
-    STACK_WARNING_EVERY, StackAction,
-};
+use zwipe_ui::generation::Ticket;
+use zwipe_ui::screens::add_cards::{self, Action, Destination, Effect, Source, State};
+use zwipe_ui::stack::Direction;
 use zwipe_ui::stores::filters::FilterScope;
-use zwipe_ui::stores::in_flight::AddOutcome;
-use zwipe_ui::stores::parked::ParkedStack;
-use zwipe_ui::stores::undo::UndoAction;
-use zwipe_ui::timing;
 
 use super::Screen;
 use super::card_sheets::details::DetailsSheet;
@@ -49,56 +41,52 @@ use crate::inbound::nav::Nav;
 use crate::inbound::screens;
 use crate::inbound::widgets::card_motion::{CardMotion, Snapshot};
 use crate::inbound::widgets::hint;
-use crate::inbound::widgets::toast::{self, ToastKind};
+use crate::inbound::widgets::toast::ToastKind;
 use crate::outbound::account::Account;
 use crate::outbound::images;
 
 /// Images fetched ahead of the card on screen.
 const IMAGES_AHEAD: usize = 3;
 
-/// Where the cards come from.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub(crate) enum Source {
-    #[default]
-    Search,
-    Maybeboard,
+/// The filter store's scope for a source.
+fn scope(source: Source) -> FilterScope {
+    match source {
+        Source::Search => FilterScope::AddSearch,
+        Source::Maybeboard => FilterScope::AddMaybeboard,
+    }
 }
 
-impl Source {
-    fn scope(self) -> FilterScope {
-        match self {
-            Self::Search => FilterScope::AddSearch,
-            Self::Maybeboard => FilterScope::AddMaybeboard,
+/// The side each pile's top card is coming back from after an undo, the app's two entrance signals. The model sets them with `Enter` and clears them with `StopEnter`; any key clears them too.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct Entering {
+    pub(crate) search: Option<Direction>,
+    pub(crate) maybeboard: Option<Direction>,
+}
+
+impl Entering {
+    /// The mark on `pile`.
+    pub(crate) fn of(self, pile: Source) -> Option<Direction> {
+        match pile {
+            Source::Search => self.search,
+            Source::Maybeboard => self.maybeboard,
+        }
+    }
+
+    fn set(&mut self, pile: Source, side: Option<Direction>) {
+        match pile {
+            Source::Search => self.search = side,
+            Source::Maybeboard => self.maybeboard = side,
         }
     }
 }
 
-/// The Add screen.
-#[expect(
-    clippy::struct_excessive_bools,
-    reason = "independent states the app keeps as separate signals"
-)]
+/// The Add screen: the model plus what only the terminal keeps.
 #[derive(Debug)]
 pub(crate) struct SwipeView {
-    pub(crate) deck: AddDeck,
+    pub(crate) model: State,
+    /// The client's card filter: the sheet edits it, the model writes it with `SetFilter` and reads it back on every rerun.
     pub(crate) filter: CardQueryBuilder,
-    pub(crate) source: Source,
-    /// The search stack: linear, swiped cards stay behind the cursor.
-    pub(crate) stack: CardStack<AddAction>,
-    /// The maybeboard stack: cycling.
-    pub(crate) mb_stack: CardStack<MaybeboardAction>,
-    /// The filter that produced the search stack.
-    pub(crate) last_search_filter: Option<CardQueryBuilder>,
-    /// The search generation: every fresh search takes a new ticket, so answers for an older stack are dropped. A next page continues it.
-    pub(crate) generation: Generation,
-    pub(crate) loading_cards: bool,
-    pub(crate) loading_more: bool,
-    /// Paging ran dry.
-    pub(crate) exhausted: bool,
-    pub(crate) synergy_warming: bool,
-    /// Printing IDs of cards served as like the deck rather than synergy picks.
-    pub(crate) related_ids: HashSet<Uuid>,
-    pub(crate) related_announced: bool,
+    pub(crate) entering: Entering,
     pub(crate) sheet: Option<FilterSheet>,
     pub(crate) details: Option<DetailsSheet>,
     pub(crate) printing: Option<PrintingSheet>,
@@ -133,6 +121,24 @@ impl fmt::Debug for CardImage {
     }
 }
 
+impl Default for SwipeView {
+    /// A view before [`Action::Load`]: no deck, no card, Search picked.
+    fn default() -> Self {
+        Self {
+            model: State::new(),
+            filter: CardQueryBuilder::default(),
+            entering: Entering::default(),
+            sheet: None,
+            details: None,
+            printing: None,
+            face: 0,
+            images: HashMap::new(),
+            show_image: false,
+            motion: None,
+        }
+    }
+}
+
 impl SwipeView {
     /// Whether a card is in motion, so the loop redraws.
     pub(crate) fn animating(&self) -> bool {
@@ -143,14 +149,27 @@ impl SwipeView {
 
     /// The card under the top one, which a card coming back after an undo covers.
     pub(crate) fn under(&self) -> Option<&Card> {
-        match self.source {
-            Source::Search => self.stack.next(),
-            Source::Maybeboard => self.mb_stack.next_wrapping(),
-        }
+        self.model.window().get(1)
     }
 
-    /// Sends the top card off by `direction`, keeping it and its face to draw it leaving. Replaces any motion still running.
-    fn exit(&mut self, direction: Direction, card: Card) {
+    /// The mark on the live pile.
+    pub(crate) fn entering(&self) -> Option<Direction> {
+        self.entering.of(self.model.source())
+    }
+
+    /// Whether the Filter key shows its dot.
+    pub(crate) fn filter_dot(&self) -> bool {
+        self.model.shows_dot(&self.filter)
+    }
+
+    /// Sends the top card off by `direction`, keeping it and its face to draw it leaving. Replaces any motion still running. A maybeboard card swiped up stays, since it is already there.
+    pub(crate) fn exit(&mut self, direction: Direction) {
+        if self.model.source() == Source::Maybeboard && direction == Direction::Up {
+            return;
+        }
+        let Some(card) = self.model.current().cloned() else {
+            return;
+        };
         let snapshot = Snapshot {
             card,
             face: self.face,
@@ -158,528 +177,16 @@ impl SwipeView {
         self.motion = Some(CardMotion::exit(direction, snapshot, Instant::now()));
     }
 
-    /// The card on top: the search cursor's, or the maybeboard's, wrapping.
-    pub(crate) fn current(&self) -> Option<&Card> {
-        match self.source {
-            Source::Search => self.stack.current(),
-            Source::Maybeboard => self.mb_stack.current_wrapping(),
-        }
-    }
-
-    /// Whether the Filter key shows its dot.
-    pub(crate) fn filter_dot(&self) -> bool {
-        self.deck.context().shows_dot(&self.filter)
-    }
-
-    /// Whether the Synergy chip shows: on Search, for a deck with a commander.
-    pub(crate) fn synergy_shown(&self) -> bool {
-        self.source == Source::Search && self.deck.has_commander
-    }
-
-    /// Runs the filter: a fresh server search on Search, an in-memory pass on the maybeboard.
-    pub(crate) fn rerun(&mut self, cx: &mut Context<'_>) {
-        match self.source {
-            Source::Search => self.search(cx),
-            Source::Maybeboard => self.refilter(),
-        }
-        self.face = 0;
-        self.sync_images(cx);
-    }
-
-    /// A fresh search: drops the stack, then fetches the first page if the filter is enough to serve.
-    pub(crate) fn search(&mut self, cx: &mut Context<'_>) {
-        self.generation.next_ticket();
-        self.loading_cards = false;
-        self.loading_more = false;
-        self.stack.reset();
-        self.last_search_filter = None;
-        self.exhausted = false;
-        if !self.deck.context().serves(&self.filter) {
-            cx.toast(
-                ToastKind::Warning,
-                "Try a filter to start swiping".to_owned(),
-            );
-            return;
-        }
-        let Ok(query) = add::normalized(&self.filter).build() else {
-            return;
-        };
-        self.loading_cards = true;
-        cx.request(
-            Request::Search {
-                deck_id: self.deck.id,
-                generation: self.generation.current(),
-                query: Box::new(query),
-                filter: Box::new(self.filter.clone()),
-                page: Page::First,
-            }
-            .into(),
-        );
-    }
-
-    /// Refresh: refetches the search without the gate, or reloads the maybeboard.
-    pub(crate) fn refresh(&mut self, cx: &mut Context<'_>) {
-        match self.source {
-            Source::Maybeboard => {
-                cx.request(
-                    Request::ReloadMaybeboard {
-                        deck_id: self.deck.id,
-                    }
-                    .into(),
-                );
-                cx.toast_for(
-                    ToastKind::Info,
-                    "Maybeboard refreshed".to_owned(),
-                    toast::QUICK,
-                );
-            }
-            Source::Search => {
-                let Ok(query) = add::normalized(&self.filter).build() else {
-                    cx.toast_for(
-                        ToastKind::Warning,
-                        "Filter is empty".to_owned(),
-                        toast::QUICK,
-                    );
-                    return;
-                };
-                self.generation.next_ticket();
-                self.stack.reset();
-                self.last_search_filter = None;
-                self.exhausted = false;
-                self.loading_more = false;
-                self.loading_cards = true;
-                cx.request(
-                    Request::Search {
-                        deck_id: self.deck.id,
-                        generation: self.generation.current(),
-                        query: Box::new(query),
-                        filter: Box::new(self.filter.clone()),
-                        page: Page::Refresh,
-                    }
-                    .into(),
-                );
-                cx.toast_for(ToastKind::Info, "Stack refreshed".to_owned(), toast::QUICK);
-            }
-        }
-    }
-
-    /// The maybeboard filtered and sorted in memory, the cursor back at the first card.
-    pub(crate) fn refilter(&mut self) {
-        let cards: Vec<Card> = self
-            .deck
-            .maybeboard
-            .iter()
-            .map(|e| e.card.clone())
-            .collect();
-        let mut cards = Cards::from(cards);
-        if !self.filter.is_empty()
-            && let Ok(criteria) = self.filter.build_criteria()
-        {
-            cards = cards.matching(&criteria);
-        }
-        let cards = cards.sorted(self.filter.sort(), self.filter.direction());
-        self.mb_stack.replace(cards.into());
-    }
-
-    /// Fetches the next page when the stack runs low, unless one is out or the cap is reached.
-    fn load_more(&mut self, cx: &mut Context<'_>) {
-        if self.stack.len() >= MAX_CARDS_IN_STACK {
-            cx.toast(
-                ToastKind::Warning,
-                "Card stack limit reached, please refresh your search to continue".to_owned(),
-            );
-            return;
-        }
-        if self.loading_more {
-            return;
-        }
-        let Ok(query) = add::normalized(&self.filter).build() else {
-            return;
-        };
-        self.loading_more = true;
-        cx.request(
-            Request::Search {
-                deck_id: self.deck.id,
-                generation: self.generation.current(),
-                query: Box::new(query),
-                filter: Box::new(self.filter.clone()),
-                page: Page::More,
-            }
-            .into(),
-        );
-    }
-
-    /// Moves past a committed swipe: warns near the cap, says when results end, and fetches more when low.
-    fn advance_after_commit(&mut self, cx: &mut Context<'_>) {
-        let total = self.stack.len();
-        if !self.stack.advance() {
-            return;
-        }
-        if (CARDS_WARNING_THRESHOLD..MAX_CARDS_IN_STACK).contains(&total)
-            && total.is_multiple_of(STACK_WARNING_EVERY)
-        {
-            cx.toast_for(
-                ToastKind::Info,
-                "Approaching the card stack limit, refresh your search to continue".to_owned(),
-                toast::QUICK,
-            );
-        }
-        let index = self.stack.index();
-        if index >= total && self.exhausted {
-            cx.toast(ToastKind::Warning, "End of results".to_owned());
-        } else if total > 0 && index.saturating_add(1) >= total.saturating_sub(timing::LOAD_MORE_AT)
-        {
-            self.load_more(cx);
-        }
-    }
-
-    /// Says once per fresh stack when the top card is the first one served as like the deck.
-    fn announce_related(&mut self, cx: &mut Context<'_>) {
-        if self.source != Source::Search || self.related_announced {
-            return;
-        }
-        if self
-            .stack
-            .current()
-            .is_some_and(|c| self.related_ids.contains(&c.card_profile.scryfall_data_id))
-        {
-            self.related_announced = true;
-            cx.toast(
-                ToastKind::Info,
-                "That's every synergy pick. Showing cards like your deck".to_owned(),
-            );
-        }
-    }
-
-    /// Tracks whether synergy is still warming, saying so when it turns cold.
-    fn set_warming(&mut self, warming: bool, cx: &mut Context<'_>) {
-        if warming && !self.synergy_warming {
-            cx.toast(
-                ToastKind::Info,
-                "Synergy warming up; showing all cards for now".to_owned(),
-            );
-        }
-        self.synergy_warming = warming;
-    }
-
-    /// Swipes the top card right: adds it to the deck.
-    pub(crate) fn swipe_right(&mut self, cx: &mut Context<'_>) {
-        match self.source {
-            Source::Search => {
-                let Some(card) = self.stack.current().cloned() else {
-                    return;
-                };
-                self.stack.record(AddAction::Add);
-                self.exit(Direction::Right, card.clone());
-                self.create(cx, &card, Board::Deck);
-                cx.toast_for(ToastKind::Success, "Added to deck".to_owned(), toast::QUICK);
-                if card.scryfall_data.is_land() {
-                    let before = self.deck.land_count;
-                    self.deck.land_count = before.saturating_add(1);
-                    signal(
-                        cx,
-                        deck_signals::land_crossing(
-                            self.deck.land_target,
-                            before,
-                            self.deck.land_count,
-                            Crossing::Up,
-                        ),
-                    );
-                }
-                if self.deck.budget.is_some_and(|b| b > 0.0) {
-                    let before = self.deck.total_price;
-                    self.deck.total_price += deck_signals::price_of(&card, self.deck.currency);
-                    signal(
-                        cx,
-                        deck_signals::budget_crossing(
-                            self.deck.budget,
-                            self.deck.currency,
-                            before,
-                            self.deck.total_price,
-                        ),
-                    );
-                }
-                self.advance_after_commit(cx);
-            }
-            Source::Maybeboard => {
-                let Some(card) = self.mb_stack.current_wrapping().cloned() else {
-                    return;
-                };
-                self.mb_stack.record(MaybeboardAction::Promote {
-                    card: Box::new(card.clone()),
-                });
-                self.exit(Direction::Right, card.clone());
-                let id = card.scryfall_data.id;
-                self.deck
-                    .maybeboard
-                    .retain(|e| e.card.scryfall_data.id != id);
-                self.mb_stack.remove_current();
-                self.deck.in_deck.extend(card.scryfall_data.oracle_id);
-                cx.request(
-                    Request::Promote {
-                        deck_id: self.deck.id,
-                        card: Box::new(card),
-                    }
-                    .into(),
-                );
-                cx.toast_for(ToastKind::Success, "Moved to deck".to_owned(), toast::QUICK);
-            }
-        }
-        self.after_swipe(cx);
-    }
-
-    /// Swipes the top card left: skips it for a week on Search, cycles past on the maybeboard.
-    pub(crate) fn swipe_left(&mut self, cx: &mut Context<'_>) {
-        match self.source {
-            Source::Search => {
-                let Some(card) = self.stack.current().cloned() else {
-                    return;
-                };
-                if let Some(oracle_id) = card.scryfall_data.oracle_id {
-                    cx.request(
-                        Request::Skip {
-                            deck_id: self.deck.id,
-                            oracle_id,
-                        }
-                        .into(),
-                    );
-                }
-                self.stack.record(AddAction::Skip);
-                self.exit(Direction::Left, card);
-                cx.toast_for(ToastKind::Info, "Skipped".to_owned(), toast::QUICK);
-                self.advance_after_commit(cx);
-            }
-            Source::Maybeboard => {
-                let Some(card) = self.mb_stack.current_wrapping().cloned() else {
-                    return;
-                };
-                self.mb_stack.record(MaybeboardAction::Skip);
-                self.exit(Direction::Left, card);
-                cx.toast_for(ToastKind::Info, "Skipped".to_owned(), toast::QUICK);
-                self.mb_stack.advance_wrapping();
-            }
-        }
-        self.after_swipe(cx);
-    }
-
-    /// Swipes the top card up: to the maybeboard on Search; on the maybeboard it is already there.
-    pub(crate) fn swipe_up(&mut self, cx: &mut Context<'_>) {
-        match self.source {
-            Source::Search => {
-                let Some(card) = self.stack.current().cloned() else {
-                    return;
-                };
-                self.stack.record(AddAction::Maybe);
-                self.exit(Direction::Up, card.clone());
-                self.create(cx, &card, Board::Maybeboard);
-                cx.toast_for(
-                    ToastKind::Info,
-                    "Added to maybeboard".to_owned(),
-                    toast::QUICK,
-                );
-                self.advance_after_commit(cx);
-            }
-            Source::Maybeboard => {
-                if self.mb_stack.current_wrapping().is_some() {
-                    cx.toast_for(
-                        ToastKind::Info,
-                        "Already on maybeboard".to_owned(),
-                        toast::QUICK,
-                    );
-                }
-            }
-        }
-        self.after_swipe(cx);
-    }
-
-    /// Sends a create for one copy, marking it in flight so an early undo waits for it.
-    fn create(&mut self, cx: &mut Context<'_>, card: &Card, board: Board) {
-        cx.shared.cards.in_flight.begin(card.scryfall_data.id);
-        cx.request(
-            Request::Create {
-                deck_id: self.deck.id,
-                card: Box::new(card.clone()),
-                board,
-            }
-            .into(),
-        );
-    }
-
-    /// Undoes the last swipe of the source in use.
-    pub(crate) fn undo(&mut self, cx: &mut Context<'_>) {
-        let entering = match self.source {
-            Source::Search => {
-                self.undo_search(cx);
-                self.stack.entering()
-            }
-            Source::Maybeboard => {
-                self.undo_maybeboard(cx);
-                self.mb_stack.entering()
-            }
-        };
-        if let Some(direction) = entering {
-            self.motion = Some(CardMotion::enter(direction, Instant::now()));
-        }
-        self.after_swipe(cx);
-    }
-
-    fn undo_search(&mut self, cx: &mut Context<'_>) {
-        let Some(action) = self.stack.pop_action() else {
-            cx.toast(ToastKind::Info, "Nothing to undo".to_owned());
-            return;
-        };
-        if !self.stack.step_back(&action) {
-            cx.toast(ToastKind::Warning, "No previous card".to_owned());
-            self.stack.record(action);
-            return;
-        }
-        let Some(card) = self.stack.current().cloned() else {
-            self.stack.unwind_undo(action);
-            return;
-        };
-        let deck_id = self.deck.id;
-        match action {
-            AddAction::Skip => {
-                if let Some(oracle_id) = card.scryfall_data.oracle_id {
-                    cx.request(Request::Unskip { deck_id, oracle_id }.into());
-                }
-                cx.toast_for(ToastKind::Info, "Undid skip".to_owned(), toast::QUICK);
-            }
-            AddAction::Add | AddAction::Maybe => {
-                let board = if action == AddAction::Add {
-                    Board::Deck
-                } else {
-                    Board::Maybeboard
-                };
-                let toast = undone_message(board);
-                let card_id = card.scryfall_data.id;
-                if cx.shared.cards.in_flight.undo(card_id) {
-                    if board == Board::Deck {
-                        self.rewind_counts(&card);
-                    }
-                    cx.toast_for(ToastKind::Success, toast.to_owned(), toast::QUICK);
-                    return;
-                }
-                let taken = cx.shared.cards.undo.take_newest(
-                    deck_id,
-                    |a| matches!(a, UndoAction::Added { card_id: id, .. } if *id == card_id),
-                );
-                if taken.is_none() && !self.deck.holds(&card) {
-                    cx.toast_for(ToastKind::Success, toast.to_owned(), toast::QUICK);
-                    return;
-                }
-                cx.request(
-                    Request::UndoAdd {
-                        deck_id,
-                        card: Box::new(card),
-                        board,
-                        taken: taken.map(Box::new),
-                    }
-                    .into(),
-                );
-            }
-        }
-    }
-
-    fn undo_maybeboard(&mut self, cx: &mut Context<'_>) {
-        let Some(action) = self.mb_stack.pop_action() else {
-            cx.toast(ToastKind::Info, "Nothing to undo".to_owned());
-            return;
-        };
-        self.mb_stack.prime_entering(action.exited());
-        match action {
-            MaybeboardAction::Skip => {
-                if !self.mb_stack.retreat_wrapping() {
-                    self.mb_stack.cancel_entering();
-                    return;
-                }
-                cx.toast_for(ToastKind::Info, "Undid skip".to_owned(), toast::QUICK);
-            }
-            MaybeboardAction::Promote { card } => {
-                let deck_id = self.deck.id;
-                let card_id = card.scryfall_data.id;
-                let taken = cx.shared.cards.undo.take_newest(deck_id, |a| {
-                    matches!(a, UndoAction::MovedBoard { card_id: id, from: Board::Maybeboard, .. } if *id == card_id)
-                });
-                let already_back = self
-                    .deck
-                    .maybeboard
-                    .iter()
-                    .any(|e| e.card.scryfall_data.id == card_id);
-                if taken.is_none() && already_back {
-                    self.mb_stack.cancel_entering();
-                    cx.toast_for(ToastKind::Info, "Already changed".to_owned(), toast::QUICK);
-                    return;
-                }
-                self.mb_stack.insert_current((*card).clone());
-                cx.request(
-                    Request::Demote {
-                        deck_id,
-                        card,
-                        taken: taken.map(Box::new),
-                    }
-                    .into(),
-                );
-            }
-        }
-    }
-
-    /// Takes back an undone add's land and price.
-    fn rewind_counts(&mut self, card: &Card) {
-        if card.scryfall_data.is_land() {
-            self.deck.land_count = self.deck.land_count.saturating_sub(1).max(0);
-        }
-        let price = deck_signals::price_of(card, self.deck.currency);
-        self.deck.total_price = (self.deck.total_price - price).max(0.0);
-    }
-
-    /// After any swipe or undo: shows the new top card's front and fetches the images around it.
-    fn after_swipe(&mut self, cx: &mut Context<'_>) {
-        self.face = 0;
-        self.announce_related(cx);
-        self.sync_images(cx);
-    }
-
-    /// Switches between Search and Maybeboard, each keeping its own filter.
-    pub(crate) fn switch_source(&mut self, cx: &mut Context<'_>, to: Source) {
-        if self.source == to {
-            return;
-        }
-        let stores = &mut cx.shared.cards.filters;
-        stores.park(self.source.scope(), self.deck.id, self.filter.clone());
-        self.filter = match to {
-            Source::Maybeboard => stores
-                .restore(FilterScope::AddMaybeboard, self.deck.id)
-                .unwrap_or_default(),
-            Source::Search => stores
-                .restore(FilterScope::AddSearch, self.deck.id)
-                .unwrap_or_else(|| self.deck.context().fresh_search()),
-        };
-        self.source = to;
-        self.motion = None;
-        self.mb_stack.rewind();
-        self.rerun(cx);
-    }
-
-    /// Flips Synergy and searches again at once.
-    pub(crate) fn toggle_synergy(&mut self, cx: &mut Context<'_>) {
-        if !self.synergy_shown() {
-            return;
-        }
-        let on = self.filter.synergy();
-        self.filter.set_synergy(!on);
-        self.rerun(cx);
-    }
-
     /// Opens the filter sheet for the source in use.
     pub(crate) fn open_filter(&mut self, cx: &mut Context<'_>) {
-        let reset = match self.source {
-            Source::Search => ResetRule::AddSearch(self.deck.context()),
+        let source = self.model.source();
+        let reset = match source {
+            Source::Search => ResetRule::AddSearch(self.model.context()),
             Source::Maybeboard => ResetRule::AddMaybeboard,
         };
         let config = SheetConfig {
             show_format: true,
-            validate: self.source == Source::Search,
+            validate: self.model.validates_apply(),
             reset,
             sources: Sources::Catalog,
         };
@@ -688,56 +195,44 @@ impl SwipeView {
 
     /// Opens the details sheet over the top card, with Printings on Search.
     pub(crate) fn open_details(&mut self) {
-        if let Some(card) = self.current().cloned() {
-            self.details = Some(DetailsSheet::new(card, self.source == Source::Search));
+        if let Some(card) = self.model.current().cloned() {
+            self.details = Some(DetailsSheet::new(
+                card,
+                self.model.source() == Source::Search,
+            ));
         }
-    }
-
-    /// Leaves: parks the filter and the search stack, then goes back.
-    pub(crate) fn leave(&mut self, cx: &mut Context<'_>) {
-        self.park(cx);
-        cx.back();
     }
 
     /// Parks the filter under its source and the search stack under the deck.
     pub(crate) fn park(&self, cx: &mut Context<'_>) {
+        let Some(deck_id) = self.model.deck_id() else {
+            return;
+        };
         let stores = &mut cx.shared.cards;
         stores
             .filters
-            .park(self.source.scope(), self.deck.id, self.filter.clone());
-        if let Some(filter) = &self.last_search_filter
-            && !self.stack.is_empty()
-        {
-            let (cards, index, history) = self.stack.park_state();
-            stores.stacks.park(
-                self.deck.id,
-                ParkedStack {
-                    cards,
-                    index,
-                    history,
-                    filter: filter.clone(),
-                    exhausted: self.exhausted,
-                },
-            );
+            .park(scope(self.model.source()), deck_id, self.filter.clone());
+        if let Some(parked) = self.model.parked() {
+            stores.stacks.park(deck_id, parked);
         }
     }
 
-    /// The images to have: the top card's face and the next few cards' fronts. Does nothing when card images are off.
+    /// The images to have: the top card's face and the next few Search cards' fronts. Does nothing when card images are off.
     pub(crate) fn sync_images(&mut self, cx: &mut Context<'_>) {
         if cx.shared.images.is_none() {
             return;
         }
         let mut wanted: Vec<String> = Vec::new();
-        if let Some(card) = self.current()
+        if let Some(card) = self.model.current()
             && let Some(url) = card
                 .scryfall_data
                 .face_image_url(self.face, ImageSize::Normal)
         {
             wanted.push(url.to_owned());
         }
-        let ahead: Vec<&Card> = match self.source {
+        let ahead: Vec<&Card> = match self.model.source() {
             Source::Search => self
-                .stack
+                .model
                 .window()
                 .iter()
                 .skip(1)
@@ -761,35 +256,154 @@ impl SwipeView {
     }
 }
 
-/// The toast for an undone add on `board`.
-fn undone_message(board: Board) -> &'static str {
-    if board == Board::Deck {
-        "Undid add"
-    } else {
-        "Undid maybeboard"
+/// Applies `action` to the model and performs the effects it returns in order, then the actions those answer at once (`Taken` for `TakeUndo`, `Filter` for `Rerun`). A new card on top shows its front, and the images follow the pile.
+pub(crate) fn dispatch(view: &mut SwipeView, action: Action, cx: &mut Context<'_>) {
+    let top = |view: &SwipeView| view.model.current().map(|c| c.scryfall_data.id);
+    let before = top(view);
+    let mut queue = VecDeque::from([action]);
+    while let Some(action) = queue.pop_front() {
+        for effect in view.model.update(action) {
+            if let Some(answer) = perform_effect(view, effect, cx) {
+                queue.push_back(answer);
+            }
+        }
     }
+    if top(view) != before {
+        view.face = 0;
+    }
+    view.sync_images(cx);
 }
 
-/// Raises a land or budget signal as a toast.
-pub(crate) fn signal(cx: &mut Context<'_>, signal: Option<(Level, String)>) {
-    if let Some((level, message)) = signal {
-        let kind = match level {
-            Level::Info => ToastKind::Info,
-            Level::Warning => ToastKind::Warning,
-        };
-        cx.toast(kind, message);
+/// Performs one effect, returning the action that answers it at once, if any.
+#[expect(
+    clippy::too_many_lines,
+    reason = "one arm per effect of the model, in one match as the recipe has it"
+)]
+fn perform_effect(view: &mut SwipeView, effect: Effect, cx: &mut Context<'_>) -> Option<Action> {
+    match effect {
+        Effect::OfferHint(offer) => {
+            hint::once(cx, offer.key());
+        }
+        Effect::FetchDeck { ticket, deck_id } => {
+            cx.request(Request::Deck { ticket, deck_id }.into());
+        }
+        Effect::RefreshMaybeboard { ticket, deck_id } => {
+            cx.request(Request::ReloadMaybeboard { ticket, deck_id }.into());
+        }
+        // The terminal's usage batch carries no search counts, so nothing is recorded or flushed first.
+        Effect::Search {
+            ticket,
+            deck_id,
+            query,
+        } => cx.request(
+            Request::Search {
+                ticket,
+                deck_id,
+                query: Box::new(query),
+            }
+            .into(),
+        ),
+        Effect::LoadMore {
+            ticket,
+            deck_id,
+            query,
+        } => cx.request(
+            Request::LoadMore {
+                ticket,
+                deck_id,
+                query: Box::new(query),
+            }
+            .into(),
+        ),
+        Effect::SkipCard { deck_id, oracle_id } => {
+            cx.request(Request::Skip { deck_id, oracle_id }.into());
+        }
+        Effect::UnskipCard { deck_id, oracle_id } => {
+            cx.request(Request::Unskip { deck_id, oracle_id }.into());
+        }
+        Effect::AddCard {
+            ticket,
+            deck_id,
+            card,
+            board,
+        } => cx.request(
+            Request::Create {
+                ticket,
+                deck_id,
+                card,
+                board,
+            }
+            .into(),
+        ),
+        Effect::DeleteUndoneAdd { deck_id, card_id } => {
+            cx.request(Request::DeleteUndone { deck_id, card_id }.into());
+        }
+        Effect::PromoteCard {
+            ticket,
+            deck_id,
+            card_id,
+        } => cx.request(
+            Request::Promote {
+                ticket,
+                deck_id,
+                card_id,
+            }
+            .into(),
+        ),
+        Effect::TakeUndo {
+            ticket,
+            deck_id,
+            claim,
+        } => {
+            let taken = cx
+                .shared
+                .cards
+                .undo
+                .take_newest(deck_id, |a| claim.matches(a));
+            return Some(Action::Taken { ticket, taken });
+        }
+        Effect::UndoAdd {
+            ticket,
+            deck_id,
+            card_id,
+            board,
+        } => cx.request(
+            Request::UndoAdd {
+                ticket,
+                deck_id,
+                card_id,
+                board,
+            }
+            .into(),
+        ),
+        Effect::UndoPromote {
+            ticket,
+            deck_id,
+            card_id,
+        } => cx.request(
+            Request::Demote {
+                ticket,
+                deck_id,
+                card_id,
+            }
+            .into(),
+        ),
+        Effect::RecordUndo { deck_id, action } => cx.shared.cards.undo.push(deck_id, action),
+        Effect::Enter { pile, from } => view.entering.set(pile, Some(from)),
+        Effect::StopEnter(pile) => view.entering.set(pile, None),
+        Effect::SetFilter(filter) => view.filter = filter,
+        Effect::Rerun => return Some(Action::Filter(view.filter.clone())),
+        Effect::ParkFilter { source, filter } => {
+            if let Some(deck_id) = view.model.deck_id() {
+                cx.shared.cards.filters.park(scope(source), deck_id, filter);
+            }
+        }
+        // The terminal draws an image whole as soon as it arrives, so there is no ease to reset, and its usage batch carries only error reports, so pile ends go unrecorded.
+        Effect::EaseImages | Effect::PileEnd { .. } => {}
+        Effect::Navigate(Destination::Previous) => cx.back(),
+        Effect::Toast(toast) => cx.show(toast),
     }
-}
-
-/// Which page a search fetches.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum Page {
-    /// A fresh stack, which says when nothing matched.
-    First,
-    /// Refresh: a fresh stack without the empty-results toast.
-    Refresh,
-    /// The next page for the same stack.
-    More,
+    None
 }
 
 /// How an undo's reversing call failed.
@@ -801,19 +415,34 @@ pub(crate) enum UndoFailure {
     Call(String),
 }
 
-/// The Add screen's work.
+/// The Add screen's work, each request with a reply carrying its ticket.
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum Request {
-    Search {
+    /// The deck, quietly, for the deck context.
+    Deck {
+        ticket: Ticket,
         deck_id: Uuid,
-        generation: Ticket,
+    },
+    /// The deck again, for Refresh on the maybeboard.
+    ReloadMaybeboard {
+        ticket: Ticket,
+        deck_id: Uuid,
+    },
+    /// A search from the top.
+    Search {
+        ticket: Ticket,
+        deck_id: Uuid,
         query: Box<CardQuery>,
-        /// The filter that built `query`, kept as the stack's filter when it lands.
-        filter: Box<CardQueryBuilder>,
-        page: Page,
+    },
+    /// The next page of the stack.
+    LoadMore {
+        ticket: Ticket,
+        deck_id: Uuid,
+        query: Box<CardQuery>,
     },
     /// Adds one copy to `board`.
     Create {
+        ticket: Ticket,
         deck_id: Uuid,
         card: Box<Card>,
         board: Board,
@@ -833,24 +462,22 @@ pub(crate) enum Request {
     },
     /// Undoes an add or a maybeboard add by deleting the card.
     UndoAdd {
+        ticket: Ticket,
         deck_id: Uuid,
-        card: Box<Card>,
+        card_id: Uuid,
         board: Board,
-        taken: Option<Box<UndoAction>>,
     },
     /// Moves a maybeboard card to the deck.
     Promote {
+        ticket: Ticket,
         deck_id: Uuid,
-        card: Box<Card>,
+        card_id: Uuid,
     },
     /// Moves a promoted card back to the maybeboard.
     Demote {
+        ticket: Ticket,
         deck_id: Uuid,
-        card: Box<Card>,
-        taken: Option<Box<UndoAction>>,
-    },
-    ReloadMaybeboard {
-        deck_id: Uuid,
+        card_id: Uuid,
     },
     /// Downloads one image.
     Image {
@@ -862,7 +489,10 @@ impl Request {
     /// The action an error from this request is reported under, fixed so a renamed variant keeps its reports.
     pub(crate) fn action(&self) -> &'static str {
         match self {
+            Self::Deck { .. } => "deck",
+            Self::ReloadMaybeboard { .. } => "reload_maybeboard",
             Self::Search { .. } => "search",
+            Self::LoadMore { .. } => "load_more",
             Self::Create { .. } => "create",
             Self::DeleteUndone { .. } => "delete_undone",
             Self::Skip { .. } => "skip",
@@ -870,46 +500,39 @@ impl Request {
             Self::UndoAdd { .. } => "undo_add",
             Self::Promote { .. } => "promote",
             Self::Demote { .. } => "demote",
-            Self::ReloadMaybeboard { .. } => "reload_maybeboard",
             Self::Image { .. } => "image",
         }
     }
 }
 
-/// The Add screen's results.
+/// The Add screen's results, each carrying its request's ticket back to the model.
 #[derive(Debug)]
 pub(crate) enum Update {
+    DeckLoaded {
+        ticket: Ticket,
+        deck: Box<Deck>,
+    },
     Searched {
-        deck_id: Uuid,
-        generation: Ticket,
-        filter: Box<CardQueryBuilder>,
-        page: Page,
-        result: Result<HttpDeckCardSearch, String>,
+        ticket: Ticket,
+        page: HttpDeckCardSearch,
     },
-    Created {
-        deck_id: Uuid,
-        card: Box<Card>,
-        board: Board,
-        result: Result<Box<DeckCard>, String>,
+    Added {
+        ticket: Ticket,
+        deck_card: Box<DeckCard>,
     },
-    UndidAdd {
-        deck_id: Uuid,
-        card: Box<Card>,
-        board: Board,
-        taken: Option<Box<UndoAction>>,
-        result: Result<(), UndoFailure>,
+    /// A promote or an undo went through.
+    Landed {
+        ticket: Ticket,
     },
-    /// A promote landed, which the undo log records.
-    Promoted { deck_id: Uuid, card: Box<Card> },
-    Demoted {
-        deck_id: Uuid,
-        card: Box<Card>,
-        taken: Option<Box<UndoAction>>,
-        result: Result<Box<DeckCard>, UndoFailure>,
+    /// An undo never went out because the session could not refresh; `message` is the error toast's text.
+    NotSent {
+        ticket: Ticket,
+        message: String,
     },
-    MaybeboardReloaded {
-        deck_id: Uuid,
-        entries: Vec<DeckEntry>,
+    /// A request failed; `message` is the error toast's text, `None` for the quiet deck fetch.
+    Failed {
+        ticket: Ticket,
+        message: Option<String>,
     },
     Image {
         url: String,
@@ -936,103 +559,133 @@ fn pick(screen: &mut Screen) -> Option<&mut SwipeView> {
     }
 }
 
-/// Opens Add over the current screen for `deck`: restores the deck's remembered filter or seeds one from the deck, resumes a parked stack made with the same filter, else searches.
-pub(crate) fn open(cx: &mut Context<'_>, deck: &Deck) {
-    let add_deck = AddDeck::from_deck(deck);
-    let deck_id = add_deck.id;
-    let remembered = cx
+/// Opens Add over the current screen for the deck with `deck_id`: the model offers the hint, fetches the deck, and resumes the stack parked with the remembered filter, else searches.
+pub(crate) fn open(cx: &mut Context<'_>, deck_id: Uuid) {
+    let filter = cx
         .shared
         .cards
         .filters
         .restore(FilterScope::AddSearch, deck_id);
-    let had_remembered = remembered.is_some();
-    let mut filter = remembered.unwrap_or_default();
-    add_deck.seed(&mut filter, had_remembered);
+    let parked = cx.shared.cards.stacks.take(deck_id).map(Box::new);
     let mut view = SwipeView {
-        deck: add_deck,
-        filter,
-        source: Source::Search,
-        stack: CardStack::default(),
-        mb_stack: CardStack::default(),
-        last_search_filter: None,
-        generation: Generation::default(),
-        loading_cards: false,
-        loading_more: false,
-        exhausted: false,
-        synergy_warming: false,
-        related_ids: HashSet::new(),
-        related_announced: false,
-        sheet: None,
-        details: None,
-        printing: None,
-        face: 0,
-        images: HashMap::new(),
-        show_image: false,
-        motion: None,
+        filter: filter.clone().unwrap_or_default(),
+        ..SwipeView::default()
     };
-    let parked = cx.shared.cards.stacks.take(deck_id);
-    match parked {
-        Some(parked)
-            if !parked.cards.is_empty()
-                && add::normalized(&parked.filter) == add::normalized(&view.filter) =>
-        {
-            view.exhausted = parked.exhausted;
-            view.last_search_filter = Some(parked.filter);
-            view.stack
-                .restore(parked.cards, parked.index, parked.history);
-            view.sync_images(cx);
-        }
-        _ => view.search(cx),
-    }
-    hint::once(cx, HINT_ADD_DECK_CARDS);
+    dispatch(
+        &mut view,
+        Action::Load {
+            deck_id,
+            filter,
+            parked,
+        },
+        cx,
+    );
     cx.shared.status.clear();
     cx.push(Screen::Swipe(Box::new(view)));
 }
 
-/// A client error as its toast words it.
-fn message(error: &ClientError) -> String {
-    crate::inbound::screens::shown(error)
+/// Shows the hint again, for `?`.
+pub(crate) fn reopen_hint(cx: &mut Context<'_>) {
+    hint::reopen(cx, HINT_ADD_DECK_CARDS);
 }
 
+/// A failed request's update, its message the error toast's text.
+fn failed(ticket: Ticket, error: &ClientError) -> screens::Update {
+    screens::failure(error, |message| {
+        Update::Failed {
+            ticket,
+            message: Some(message),
+        }
+        .into()
+    })
+}
+
+/// A failed fire-and-forget request's update: its toast.
+fn toasted(error: &ClientError) -> screens::Update {
+    screens::Update::Toast(ToastKind::Error, screens::shown(error))
+}
+
+#[expect(
+    clippy::too_many_lines,
+    reason = "one arm per request, as every screen's perform has it"
+)]
 pub(crate) async fn perform(account: &Account, request: Request) -> Option<screens::Update> {
     let client = &account.client;
     let update = match request {
+        Request::Deck { ticket, deck_id } => {
+            match async { client.fetch_deck(deck_id, &account.fresh().await?).await }.await {
+                Ok(deck) => Update::DeckLoaded {
+                    ticket,
+                    deck: Box::new(deck),
+                },
+                // Quiet, as the app's `run_quiet`: the screen works without the deck context.
+                Err(e) => {
+                    return Some(screens::failure(&e, |_| {
+                        Update::Failed {
+                            ticket,
+                            message: None,
+                        }
+                        .into()
+                    }));
+                }
+            }
+        }
+        Request::ReloadMaybeboard { ticket, deck_id } => {
+            match async { client.fetch_deck(deck_id, &account.fresh().await?).await }.await {
+                Ok(deck) => Update::DeckLoaded {
+                    ticket,
+                    deck: Box::new(deck),
+                },
+                Err(e) => return Some(failed(ticket, &e)),
+            }
+        }
         Request::Search {
+            ticket,
             deck_id,
-            generation,
             query,
-            filter,
-            page,
+        }
+        | Request::LoadMore {
+            ticket,
+            deck_id,
+            query,
         } => {
-            let result = async {
+            let reply = async {
                 let session = account.fresh().await?;
                 client.search_deck_cards(deck_id, &query, &session).await
             }
             .await;
-            return Some(searched_update(deck_id, generation, filter, page, result));
+            match reply {
+                Ok(page) => Update::Searched { ticket, page },
+                Err(e) => return Some(failed(ticket, &e)),
+            }
         }
         Request::Create {
+            ticket,
             deck_id,
             card,
             board,
         } => {
-            let result = create(account, deck_id, &card, board).await;
-            Update::Created {
-                deck_id,
-                card,
-                board,
-                result,
+            let request = add_cards::add_request(&card, board);
+            let reply = async {
+                let session = account.fresh().await?;
+                client.create_deck_card(deck_id, &request, &session).await
+            }
+            .await;
+            match reply {
+                Ok(deck_card) => Update::Added {
+                    ticket,
+                    deck_card: Box::new(deck_card),
+                },
+                Err(e) => return Some(failed(ticket, &e)),
             }
         }
         Request::DeleteUndone { deck_id, card_id } => {
-            let result = async {
+            let reply = async {
                 let session = account.fresh().await?;
                 client.delete_deck_card(deck_id, card_id, &session).await
             }
             .await;
-            return result
-                .err()
-                .map(|e| screens::Update::Toast(ToastKind::Error, message(&e)));
+            return reply.err().map(|e| toasted(&e));
         }
         Request::Skip { deck_id, oracle_id } => {
             // Quiet, as in the app: a failed skip only means the card may come back.
@@ -1045,45 +698,64 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
             return None;
         }
         Request::Unskip { deck_id, oracle_id } => {
-            let result = async {
+            let reply = async {
                 let session = account.fresh().await?;
                 client.unskip_deck_card(deck_id, oracle_id, &session).await
             }
             .await;
-            return result
-                .err()
-                .map(|e| screens::Update::Toast(ToastKind::Error, message(&e)));
+            return reply.err().map(|e| toasted(&e));
+        }
+        Request::Promote {
+            ticket,
+            deck_id,
+            card_id,
+        } => {
+            let request = add_cards::board_request(Board::Deck);
+            let reply = async {
+                let session = account.fresh().await?;
+                client
+                    .update_deck_card(deck_id, card_id, &request, &session)
+                    .await
+            }
+            .await;
+            match reply {
+                Ok(_) => Update::Landed { ticket },
+                Err(e) => return Some(failed(ticket, &e)),
+            }
         }
         Request::UndoAdd {
+            ticket,
             deck_id,
-            card,
-            board,
-            taken,
+            card_id,
+            ..
         } => {
-            let result = undo_add(account, deck_id, &card).await;
-            Update::UndidAdd {
-                deck_id,
-                card,
-                board,
-                taken,
-                result,
+            let session = match account.fresh().await {
+                Ok(session) => session,
+                Err(e) => return Some(not_sent(ticket, &e)),
+            };
+            match client.delete_deck_card(deck_id, card_id, &session).await {
+                Ok(()) => Update::Landed { ticket },
+                Err(e) => undo_failed(ticket, &e),
             }
         }
-        Request::Promote { deck_id, card } => return promote(account, deck_id, card).await,
         Request::Demote {
+            ticket,
             deck_id,
-            card,
-            taken,
+            card_id,
         } => {
-            let result = demote(account, deck_id, &card).await;
-            Update::Demoted {
-                deck_id,
-                card,
-                taken,
-                result,
+            let session = match account.fresh().await {
+                Ok(session) => session,
+                Err(e) => return Some(not_sent(ticket, &e)),
+            };
+            let request = add_cards::board_request(Board::Maybeboard);
+            match client
+                .update_deck_card(deck_id, card_id, &request, &session)
+                .await
+            {
+                Ok(_) => Update::Landed { ticket },
+                Err(e) => undo_failed(ticket, &e),
             }
         }
-        Request::ReloadMaybeboard { deck_id } => return reload_maybeboard(account, deck_id).await,
         Request::Image { url } => Update::Image {
             image: images::fetch(&client.client, &url).await.ok().map(Box::new),
             url,
@@ -1092,208 +764,43 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
     Some(update.into())
 }
 
-/// A search answer as its update: a signed-out session ends it, anything else lands on the stack.
-fn searched_update(
-    deck_id: Uuid,
-    generation: Ticket,
-    filter: Box<CardQueryBuilder>,
-    page: Page,
-    result: Result<HttpDeckCardSearch, ClientError>,
-) -> screens::Update {
-    if let Err(e @ ClientError::Unauthorized(_)) = &result {
-        return screens::failure(e, screens::Update::Status);
-    }
-    Update::Searched {
-        deck_id,
-        generation,
-        filter,
-        page,
-        result: result.map_err(|e| message(&e)),
+/// An undo whose session could not refresh, so its call never went out.
+fn not_sent(ticket: Ticket, error: &ClientError) -> screens::Update {
+    Update::NotSent {
+        ticket,
+        message: screens::shown(error),
     }
     .into()
 }
 
-/// Adds one copy of `card` to `board`.
-async fn create(
-    account: &Account,
-    deck_id: Uuid,
-    card: &Card,
-    board: Board,
-) -> Result<Box<DeckCard>, String> {
-    let request = HttpCreateDeckCard::new(
-        &card.scryfall_data,
-        1,
-        zwipe_ui::stores::undo::create_board_field(board),
-    );
-    let result = async {
-        let session = account.fresh().await?;
-        account
-            .client
-            .create_deck_card(deck_id, &request, &session)
-            .await
-    }
-    .await;
-    result.map(Box::new).map_err(|e| message(&e))
-}
-
-/// Moves a maybeboard `card` to the deck, or toasts the failure.
-async fn promote(account: &Account, deck_id: Uuid, card: Box<Card>) -> Option<screens::Update> {
-    let patch = HttpPatchDeckCard::new(None, Some("deck".to_owned()));
-    let result = async {
-        let session = account.fresh().await?;
-        account
-            .client
-            .update_deck_card(deck_id, card.scryfall_data.id, &patch, &session)
-            .await
-    }
-    .await;
-    if let Err(e) = &result {
-        return Some(screens::Update::Toast(ToastKind::Error, message(e)));
-    }
-    Some(Update::Promoted { deck_id, card }.into())
-}
-
-/// Deletes `card` from the deck, undoing its add.
-async fn undo_add(account: &Account, deck_id: Uuid, card: &Card) -> Result<(), UndoFailure> {
-    let session = account
-        .fresh()
-        .await
-        .map_err(|e| UndoFailure::Session(message(&e)))?;
-    account
-        .client
-        .delete_deck_card(deck_id, card.scryfall_data.id, &session)
-        .await
-        .map_err(|e| UndoFailure::Call(e.to_string()))
-}
-
-/// Moves a promoted `card` back to the maybeboard.
-async fn demote(
-    account: &Account,
-    deck_id: Uuid,
-    card: &Card,
-) -> Result<Box<DeckCard>, UndoFailure> {
-    let patch = HttpPatchDeckCard::new(None, Some("maybeboard".to_owned()));
-    let session = account
-        .fresh()
-        .await
-        .map_err(|e| UndoFailure::Session(message(&e)))?;
-    account
-        .client
-        .update_deck_card(deck_id, card.scryfall_data.id, &patch, &session)
-        .await
-        .map(Box::new)
-        .map_err(|e| UndoFailure::Call(e.to_string()))
-}
-
-/// Fetches the deck again and keeps its maybeboard, or toasts the failure.
-async fn reload_maybeboard(account: &Account, deck_id: Uuid) -> Option<screens::Update> {
-    let result = async {
-        let session = account.fresh().await?;
-        account.client.fetch_deck(deck_id, &session).await
-    }
-    .await;
-    match result {
-        Ok(deck) => Some(
-            Update::MaybeboardReloaded {
-                deck_id,
-                entries: deck
-                    .entries
-                    .into_iter()
-                    .filter(|e| e.deck_card.board.is_maybeboard())
-                    .collect(),
-            }
-            .into(),
-        ),
-        Err(e) => Some(screens::Update::Toast(ToastKind::Error, message(&e))),
+/// An undo whose call failed, worded as the undo's own failure.
+fn undo_failed(ticket: Ticket, error: &ClientError) -> Update {
+    Update::Failed {
+        ticket,
+        message: Some(format!("Failed to undo: {error}")),
     }
 }
 
+/// Hands a reply to the model. A failure's error toast goes up even when the screen has closed; a reply with no screen to take it does nothing, as the app's task dies with its screen.
 pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
-    // Adds and promotes settle in the shared stores whether or not the screen is still open.
-    let update = match update {
-        Update::Created {
-            deck_id,
-            card,
-            board,
-            result,
-        } => {
-            created(nav, cx, deck_id, &card, board, result);
-            return;
-        }
-        Update::Promoted { deck_id, card } => {
-            cx.shared.cards.undo.push(
-                deck_id,
-                UndoAction::MovedBoard {
-                    card_id: card.scryfall_data.id,
-                    card_name: card.scryfall_data.name.clone(),
-                    from: Board::Maybeboard,
-                },
-            );
-            return;
-        }
-        other => other,
-    };
+    match &update {
+        Update::NotSent { message, .. }
+        | Update::Failed {
+            message: Some(message),
+            ..
+        } => cx.toast(ToastKind::Error, message.clone()),
+        _ => {}
+    }
     let Some(view) = nav.find_mut(pick) else {
-        if let Update::UndidAdd {
-            deck_id,
-            taken: Some(taken),
-            result: Err(_),
-            ..
-        }
-        | Update::Demoted {
-            deck_id,
-            taken: Some(taken),
-            result: Err(_),
-            ..
-        } = update
-        {
-            cx.shared.cards.undo.push(deck_id, *taken);
-        }
         return;
     };
-    match update {
-        Update::Searched {
-            deck_id,
-            generation,
-            filter,
-            page,
-            result,
-        } => {
-            if deck_id != view.deck.id || !view.generation.is_current(generation) {
-                return;
-            }
-            searched(view, cx, *filter, page, result);
-        }
-        Update::Created { .. } | Update::Promoted { .. } => {}
-        Update::UndidAdd {
-            deck_id,
-            card,
-            board,
-            taken,
-            result,
-        } => {
-            if deck_id != view.deck.id {
-                return;
-            }
-            undid_add(view, cx, deck_id, &card, board, taken, result);
-        }
-        Update::Demoted {
-            deck_id,
-            card,
-            taken,
-            result,
-        } => demoted(view, cx, deck_id, *card, taken, result),
-        Update::MaybeboardReloaded { deck_id, entries } => {
-            if deck_id != view.deck.id {
-                return;
-            }
-            view.deck.maybeboard = entries;
-            view.mb_stack.rewind();
-            if view.source == Source::Maybeboard {
-                view.refilter();
-                view.sync_images(cx);
-            }
-        }
+    let action = match update {
+        Update::DeckLoaded { ticket, deck } => Action::DeckLoaded { ticket, deck },
+        Update::Searched { ticket, page } => Action::Searched { ticket, page },
+        Update::Added { ticket, deck_card } => Action::Added { ticket, deck_card },
+        Update::Landed { ticket } => Action::Landed { ticket },
+        Update::NotSent { ticket, .. } => Action::NotSent { ticket },
+        Update::Failed { ticket, .. } => Action::Failed { ticket },
         Update::Image { url, image } => {
             if let Some(picker) = &cx.shared.images
                 && let Some(slot @ CardImage::Loading) = view.images.get_mut(&url)
@@ -1305,201 +812,8 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
                     None => CardImage::Failed,
                 };
             }
-        }
-    }
-}
-
-/// Settles an undone add on the open screen: the card leaves the deck, or the failure toasts and the log gets its entry back.
-fn undid_add(
-    view: &mut SwipeView,
-    cx: &mut Context<'_>,
-    deck_id: Uuid,
-    card: &Card,
-    board: Board,
-    taken: Option<Box<UndoAction>>,
-    result: Result<(), UndoFailure>,
-) {
-    match result {
-        Ok(()) => {
-            if let Some(oracle_id) = card.scryfall_data.oracle_id {
-                view.deck.in_deck.remove(&oracle_id);
-            }
-            if board == Board::Deck {
-                view.rewind_counts(card);
-            } else {
-                let id = card.scryfall_data.id;
-                view.deck
-                    .maybeboard
-                    .retain(|e| e.card.scryfall_data.id != id);
-            }
-            cx.toast_for(
-                ToastKind::Success,
-                undone_message(board).to_owned(),
-                toast::QUICK,
-            );
-        }
-        Err(failure) => {
-            if let UndoFailure::Session(m) = &failure {
-                cx.toast(ToastKind::Error, m.clone());
-                let action = if board == Board::Deck {
-                    AddAction::Add
-                } else {
-                    AddAction::Maybe
-                };
-                view.stack.unwind_undo(action);
-            }
-            if let UndoFailure::Call(e) = &failure {
-                cx.toast(ToastKind::Error, format!("Failed to undo: {e}"));
-            }
-            if let Some(taken) = taken {
-                cx.shared.cards.undo.push(deck_id, *taken);
-            }
-        }
-    }
-}
-
-/// Settles a demote on the open screen: the card rejoins the maybeboard, or the failure toasts and the log gets its entry back.
-fn demoted(
-    view: &mut SwipeView,
-    cx: &mut Context<'_>,
-    deck_id: Uuid,
-    card: Card,
-    taken: Option<Box<UndoAction>>,
-    result: Result<Box<DeckCard>, UndoFailure>,
-) {
-    match result {
-        Ok(deck_card) => {
-            if let Some(oracle_id) = card.scryfall_data.oracle_id {
-                view.deck.in_deck.remove(&oracle_id);
-            }
-            let mut deck_card = *deck_card;
-            deck_card.board = Board::Maybeboard;
-            deck_card.mvp_at = None;
-            view.deck.maybeboard.push(DeckEntry { card, deck_card });
-            cx.toast_for(
-                ToastKind::Success,
-                "Undid move to deck".to_owned(),
-                toast::QUICK,
-            );
-        }
-        Err(failure) => {
-            match failure {
-                UndoFailure::Session(m) => {
-                    cx.toast(ToastKind::Error, m);
-                    view.mb_stack.cancel_entering();
-                }
-                UndoFailure::Call(e) => {
-                    cx.toast(ToastKind::Error, format!("Failed to undo: {e}"));
-                }
-            }
-            if let Some(taken) = taken {
-                cx.shared.cards.undo.push(deck_id, *taken);
-            }
-        }
-    }
-}
-
-/// A search answer for the current stack.
-fn searched(
-    view: &mut SwipeView,
-    cx: &mut Context<'_>,
-    filter: CardQueryBuilder,
-    page: Page,
-    result: Result<HttpDeckCardSearch, String>,
-) {
-    let search = match result {
-        Ok(search) => search,
-        Err(message) => {
-            view.loading_cards = false;
-            view.loading_more = false;
-            cx.toast(ToastKind::Error, message);
             return;
         }
     };
-    view.set_warming(!search.synergy_applied, cx);
-    let related = add::related_ids(&search);
-    match page {
-        Page::First | Page::Refresh => {
-            view.related_ids = related;
-            view.related_announced = false;
-            let served: Vec<Card> = search
-                .cards
-                .into_iter()
-                .filter(|c| !view.deck.holds(c))
-                .collect();
-            if served.is_empty() && page == Page::First {
-                cx.toast(
-                    ToastKind::Warning,
-                    add::no_results_message(filter.synergy(), view.synergy_warming),
-                );
-            }
-            view.stack.replace(served);
-            view.last_search_filter = Some(filter);
-            view.loading_cards = false;
-        }
-        Page::More => {
-            view.related_ids.extend(related);
-            let held: HashSet<Uuid> = view
-                .stack
-                .cards()
-                .iter()
-                .map(|c| c.card_profile.scryfall_data_id)
-                .collect();
-            let fresh: Vec<Card> = search
-                .cards
-                .into_iter()
-                .filter(|c| !held.contains(&c.card_profile.scryfall_data_id) && !view.deck.holds(c))
-                .collect();
-            if fresh.is_empty() {
-                view.exhausted = true;
-            } else {
-                view.stack.append(fresh);
-            }
-            view.loading_more = false;
-        }
-    }
-    view.announce_related(cx);
-    view.sync_images(cx);
-}
-
-/// An add's answer: deletes it if it was undone in flight, else records it in the undo log and the open screen.
-fn created(
-    nav: &mut Nav,
-    cx: &mut Context<'_>,
-    deck_id: Uuid,
-    card: &Card,
-    board: Board,
-    result: Result<Box<DeckCard>, String>,
-) {
-    let card_id = card.scryfall_data.id;
-    let outcome = cx.shared.cards.in_flight.finish(card_id);
-    let deck_card = match result {
-        Ok(deck_card) => deck_card,
-        Err(message) => {
-            cx.toast(ToastKind::Error, message);
-            return;
-        }
-    };
-    if outcome == AddOutcome::Undo {
-        cx.request(Request::DeleteUndone { deck_id, card_id }.into());
-        return;
-    }
-    cx.shared.cards.undo.push(
-        deck_id,
-        UndoAction::Added {
-            card_id,
-            card_name: card.scryfall_data.name.clone(),
-        },
-    );
-    if let Some(view) = nav.find_mut(pick)
-        && view.deck.id == deck_id
-    {
-        view.deck.in_deck.extend(card.scryfall_data.oracle_id);
-        if board == Board::Maybeboard {
-            view.deck.maybeboard.push(DeckEntry {
-                card: card.clone(),
-                deck_card: *deck_card,
-            });
-        }
-    }
+    dispatch(view, action, cx);
 }

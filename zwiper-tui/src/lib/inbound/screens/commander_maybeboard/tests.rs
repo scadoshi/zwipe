@@ -11,7 +11,7 @@ use super::*;
 use crate::inbound::event_loop::harness::Harness;
 use crate::inbound::screens::commander_swipe;
 use crate::inbound::widgets::toast::Toast;
-use crate::test_support::{card, create_opened_with, render, screen_text, ticket, user};
+use crate::test_support::{card, create_opened_with, render, screen_text, user};
 
 /// The app's copy for this hint, as it reads.
 const HINT: &str = "Commanders you save land here\n• Swipe up while picking a commander saves it here\n• Swipe deals commanders: right starts a deck, up saves one\n• Quick add searches by name\n• Create deck starts a deck with that commander\n• Remove takes it off the list";
@@ -50,10 +50,48 @@ fn on_maybeboard(verified: bool) -> Harness {
 fn loaded() -> Harness {
     let mut harness = on_maybeboard(true);
     harness.apply(Update::Loaded {
-        ticket: ticket(1),
+        ticket: load_ticket(&harness),
         cards: saved(),
     });
     harness
+}
+
+/// The newest ticket among the maybeboard's requests since the harness began, cleared or not, that `pick` takes.
+fn sent(harness: &Harness, pick: impl Fn(&Request) -> Option<Ticket>) -> Ticket {
+    harness
+        .sent()
+        .filter_map(|r| match r {
+            screens::Request::CommanderMaybeboard(r) => pick(r),
+            _ => None,
+        })
+        .next_back()
+        .unwrap_or_else(|| panic!("no such request: {:?}", harness.sent().collect::<Vec<_>>()))
+}
+
+/// The newest load's ticket.
+fn load_ticket(harness: &Harness) -> Ticket {
+    sent(harness, |r| match r {
+        Request::Load { ticket } => Some(*ticket),
+        _ => None,
+    })
+}
+
+/// The newest Quick add debounce's ticket.
+fn debounce_ticket(harness: &Harness) -> Ticket {
+    sent(harness, |r| match r {
+        Request::Debounce { ticket, .. } => Some(*ticket),
+        _ => None,
+    })
+}
+
+/// The newest add, remove or clear's ticket.
+fn edit_ticket(harness: &Harness) -> Ticket {
+    sent(harness, |r| match r {
+        Request::Add { ticket, .. }
+        | Request::Remove { ticket, .. }
+        | Request::Clear { ticket } => Some(*ticket),
+        _ => None,
+    })
 }
 
 fn view(harness: &Harness) -> &MaybeboardView {
@@ -115,7 +153,10 @@ fn the_maybeboard_opens_asking_for_everything_once() {
         harness.pending(),
         [
             screens::Request::MarkHintShown(HINT_COMMANDER_MAYBEBOARD.to_owned()),
-            Request::Load { ticket: ticket(1) }.into(),
+            Request::Load {
+                ticket: load_ticket(&harness)
+            }
+            .into(),
             Request::DeckProfiles.into(),
             oracle_tags::Request::Catalog.into(),
         ]
@@ -186,7 +227,7 @@ fn the_loaded_screen_draws_quick_add_show_and_the_rows() {
 fn an_empty_maybeboard_says_so() {
     let mut harness = on_maybeboard(true);
     harness.apply(Update::Loaded {
-        ticket: ticket(1),
+        ticket: load_ticket(&harness),
         cards: Vec::new(),
     });
     let text = screen_text(&harness.app);
@@ -199,7 +240,7 @@ fn an_empty_maybeboard_says_so() {
 fn a_failed_first_load_says_so_and_toasts() {
     let mut harness = on_maybeboard(true);
     harness.apply(Update::Failed {
-        ticket: ticket(1),
+        ticket: load_ticket(&harness),
         message: Some("Server down".to_owned()),
     });
     assert_eq!(view(&harness).model.status(), Status::Failed);
@@ -214,13 +255,14 @@ fn a_failed_first_load_says_so_and_toasts() {
 #[test]
 fn a_failed_refetch_keeps_the_rows() {
     let mut harness = loaded();
-    let mut cx = Context::new(&mut harness.app.shared);
-    let Screen::CommanderMaybeboard(open) = harness.app.nav.top_mut() else {
-        panic!("not the maybeboard");
-    };
-    dispatch(open, Action::SwipeClosed, &mut cx);
+    harness.on_top(|screen, cx| {
+        let Screen::CommanderMaybeboard(open) = screen else {
+            panic!("not the maybeboard");
+        };
+        dispatch(open, Action::SwipeClosed, cx);
+    });
     harness.apply(Update::Failed {
-        ticket: ticket(2),
+        ticket: load_ticket(&harness),
         message: Some("Server down".to_owned()),
     });
     assert_eq!(view(&harness).model.status(), Status::Loaded);
@@ -230,20 +272,23 @@ fn a_failed_refetch_keeps_the_rows() {
 #[test]
 fn only_the_newest_load_lands() {
     let mut harness = loaded();
+    let first = load_ticket(&harness);
     harness.press(KeyCode::Char('s'));
     harness.press(KeyCode::Esc);
+    let second = load_ticket(&harness);
+    assert_ne!(first, second, "closing the swipe loads again");
     assert!(
         harness
             .pending()
-            .contains(&Request::Load { ticket: ticket(2) }.into())
+            .contains(&Request::Load { ticket: second }.into())
     );
     harness.apply(Update::Loaded {
-        ticket: ticket(1),
+        ticket: first,
         cards: vec![colored("Old", &[])],
     });
     assert_eq!(shown(&harness).len(), 4, "a stale reply landed");
     harness.apply(Update::Loaded {
-        ticket: ticket(2),
+        ticket: second,
         cards: vec![colored("Fresh", &[])],
     });
     assert_eq!(shown(&harness), ["Fresh"]);
@@ -254,18 +299,22 @@ fn a_load_sent_before_a_remove_does_not_bring_the_row_back() {
     let mut harness = loaded();
     harness.press(KeyCode::Char('s'));
     harness.press(KeyCode::Esc);
+    let out = load_ticket(&harness);
     let before = view(&harness).model.entries().to_vec();
     expand_first(&mut harness);
     harness.press(KeyCode::Char('r'));
     harness.clear();
-    harness.apply(Update::Removed { ticket: ticket(3) });
-    assert_eq!(
-        harness.pending(),
-        [Request::Load { ticket: ticket(4) }.into()],
+    harness.apply(Update::Removed {
+        ticket: edit_ticket(&harness),
+    });
+    let again = load_ticket(&harness);
+    assert_ne!(
+        again, out,
         "the load that predates the remove is not started again"
     );
+    assert_eq!(harness.pending(), [Request::Load { ticket: again }.into()]);
     harness.apply(Update::Loaded {
-        ticket: ticket(2),
+        ticket: out,
         cards: before,
     });
     assert_eq!(shown(&harness), ["Krenko", "Talrand", "Brago"]);
@@ -277,7 +326,9 @@ fn a_remove_with_no_load_out_fetches_nothing() {
     expand_first(&mut harness);
     harness.press(KeyCode::Char('r'));
     harness.clear();
-    harness.apply(Update::Removed { ticket: ticket(2) });
+    harness.apply(Update::Removed {
+        ticket: edit_ticket(&harness),
+    });
     assert_eq!(harness.pending(), []);
     let toast = last_toast(&harness);
     assert_eq!(
@@ -302,12 +353,14 @@ fn r_on_an_expanded_row_removes_it() {
     assert_eq!(
         harness.pending(),
         [Request::Remove {
-            ticket: ticket(2),
+            ticket: edit_ticket(&harness),
             oracle_id: atraxa
         }
         .into()]
     );
-    harness.apply(Update::Removed { ticket: ticket(2) });
+    harness.apply(Update::Removed {
+        ticket: edit_ticket(&harness),
+    });
     assert_eq!(shown(&harness), ["Krenko", "Talrand", "Brago"]);
     assert_eq!(last_toast(&harness).message, "Removed");
 }
@@ -321,7 +374,7 @@ fn c_on_an_expanded_row_starts_a_deck_behind_the_gate() {
 
     let mut harness = on_maybeboard(false);
     harness.apply(Update::Loaded {
-        ticket: ticket(1),
+        ticket: load_ticket(&harness),
         cards: saved(),
     });
     harness.apply(Update::DeckProfiles(1));
@@ -373,33 +426,36 @@ fn quick_add_waits_out_the_debounce_and_only_the_newest_query_searches() {
     assert!(harness.pending().is_empty(), "one character never searches");
     assert_eq!(view(&harness).model.quick_add(), None);
     harness.type_text("t");
+    let older = debounce_ticket(&harness);
     assert_eq!(
         harness.pending(),
         [Request::Debounce {
-            ticket: ticket(3),
+            ticket: older,
             wait: timing::QUICK_ADD_DEBOUNCE
         }
         .into()]
     );
     assert!(screen_text(&harness.app).contains(SEARCHING));
     harness.type_text("r");
+    let newer = debounce_ticket(&harness);
+    assert_ne!(older, newer);
     harness.clear();
-    harness.apply(Update::Debounced { ticket: ticket(3) });
+    harness.apply(Update::Debounced { ticket: older });
     assert!(
         harness.pending().is_empty(),
         "an older debounce searched after a newer edit"
     );
-    harness.apply(Update::Debounced { ticket: ticket(4) });
+    harness.apply(Update::Debounced { ticket: newer });
     assert_eq!(
         harness.pending(),
         [Request::Search {
-            ticket: ticket(4),
+            ticket: newer,
             query: Box::new(search_query("atr").build().unwrap()),
         }
         .into()]
     );
     harness.apply(Update::Searched {
-        ticket: ticket(3),
+        ticket: older,
         cards: vec![colored("Stale", &[])],
     });
     assert_eq!(
@@ -408,7 +464,7 @@ fn quick_add_waits_out_the_debounce_and_only_the_newest_query_searches() {
         "a stale result landed"
     );
     harness.apply(Update::Searched {
-        ticket: ticket(4),
+        ticket: newer,
         cards: vec![
             colored("Atraxa, Grand Unifier", &[]),
             colored("Atarka", &[]),
@@ -456,12 +512,12 @@ fn a_failed_search_keeps_the_old_results() {
     let mut harness = loaded();
     type_query(&mut harness, "at");
     harness.apply(Update::Searched {
-        ticket: ticket(3),
+        ticket: debounce_ticket(&harness),
         cards: vec![colored("Atarka", &[])],
     });
     harness.type_text("a");
     harness.apply(Update::Failed {
-        ticket: ticket(4),
+        ticket: debounce_ticket(&harness),
         message: None,
     });
     assert!(
@@ -477,7 +533,7 @@ fn saved_commanders_never_show_as_results() {
     let krenko = saved_card(&harness, 1);
     type_query(&mut harness, "kr");
     harness.apply(Update::Searched {
-        ticket: ticket(3),
+        ticket: debounce_ticket(&harness),
         cards: vec![krenko],
     });
     assert_eq!(names(&view(&harness).results()), [""; 0]);
@@ -490,7 +546,7 @@ fn picking_a_result_drops_its_chip_adds_it_on_top_and_refetches() {
     type_query(&mut harness, "at");
     let atarka = colored("Atarka", &[Red, Green]);
     harness.apply(Update::Searched {
-        ticket: ticket(3),
+        ticket: debounce_ticket(&harness),
         cards: vec![colored("Arcades", &[]), atarka.clone()],
     });
     // Enter hands the keys to the chips; l moves to the second.
@@ -501,18 +557,22 @@ fn picking_a_result_drops_its_chip_adds_it_on_top_and_refetches() {
     assert_eq!(
         harness.pending(),
         [Request::Add {
-            ticket: ticket(4),
+            ticket: edit_ticket(&harness),
             oracle_id: oracle(&atarka)
         }
         .into()]
     );
+    let add = edit_ticket(&harness);
     assert_eq!(names(&view(&harness).results()), ["Arcades"]);
     harness.clear();
-    harness.apply(Update::Added { ticket: ticket(4) });
+    harness.apply(Update::Added { ticket: add });
     assert_eq!(shown(&harness).first().unwrap(), "Atarka");
     assert_eq!(
         harness.pending(),
-        [Request::Load { ticket: ticket(5) }.into()]
+        [Request::Load {
+            ticket: load_ticket(&harness)
+        }
+        .into()]
     );
     let toast = last_toast(&harness);
     assert_eq!(
@@ -520,7 +580,7 @@ fn picking_a_result_drops_its_chip_adds_it_on_top_and_refetches() {
         (ToastKind::Info, "Added Atarka")
     );
     // A second confirmation never duplicates the row.
-    harness.apply(Update::Added { ticket: ticket(4) });
+    harness.apply(Update::Added { ticket: add });
     assert_eq!(shown(&harness).len(), 5);
 }
 
@@ -544,9 +604,14 @@ fn clear_asks_first_then_empties_the_list() {
     assert!(view(&harness).overlay.is_none());
     assert_eq!(
         harness.pending(),
-        [Request::Clear { ticket: ticket(2) }.into()]
+        [Request::Clear {
+            ticket: edit_ticket(&harness)
+        }
+        .into()]
     );
-    harness.apply(Update::Cleared { ticket: ticket(2) });
+    harness.apply(Update::Cleared {
+        ticket: edit_ticket(&harness),
+    });
     assert_eq!(view(&harness).model.entries(), []);
     assert_eq!(last_toast(&harness).message, "Maybeboard cleared");
     assert!(screen_text(&harness.app).contains(NO_COMMANDERS));
@@ -598,7 +663,10 @@ fn swipe_deals_commanders_without_the_saved_ones_and_refetches_on_close() {
     assert!(matches!(harness.screen(), Screen::CommanderMaybeboard(_)));
     assert_eq!(
         harness.pending(),
-        [Request::Load { ticket: ticket(2) }.into()]
+        [Request::Load {
+            ticket: load_ticket(&harness)
+        }
+        .into()]
     );
     assert!(harness.app.shared.caches.handoff.commander_swipe.is_none());
 }
@@ -707,7 +775,7 @@ fn tiny_terminals_do_not_panic() {
         render(&harness.app, w, h);
     }
     harness.apply(Update::Loaded {
-        ticket: ticket(1),
+        ticket: load_ticket(&harness),
         cards: saved(),
     });
     for (w, h) in [(8, 3), (1, 1), (20, 6)] {
@@ -715,7 +783,7 @@ fn tiny_terminals_do_not_panic() {
     }
     type_query(&mut harness, "at");
     harness.apply(Update::Searched {
-        ticket: ticket(3),
+        ticket: debounce_ticket(&harness),
         cards: vec![colored("Atarka", &[])],
     });
     for (w, h) in [(8, 3), (1, 1), (20, 6)] {
@@ -741,7 +809,7 @@ fn a_failed_remove_toasts_and_a_repeated_reply_changes_nothing() {
     expand_first(&mut harness);
     harness.press(KeyCode::Char('r'));
     harness.apply(Update::Failed {
-        ticket: ticket(2),
+        ticket: edit_ticket(&harness),
         message: Some("Server down".to_owned()),
     });
     let toast = last_toast(&harness);
@@ -749,7 +817,9 @@ fn a_failed_remove_toasts_and_a_repeated_reply_changes_nothing() {
         (toast.kind, toast.message.as_str()),
         (ToastKind::Error, "Server down")
     );
-    harness.apply(Update::Removed { ticket: ticket(2) });
+    harness.apply(Update::Removed {
+        ticket: edit_ticket(&harness),
+    });
     assert_eq!(shown(&harness).len(), 4, "a failed remove never lands");
     assert_eq!(harness.app.shared.toasts.items().len(), 1);
 }

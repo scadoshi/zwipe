@@ -28,7 +28,6 @@ use zwipe_ui::screens::home::{
 
 use self::cache::{CachedMyCounts, CachedPlayStyle, FlavorImage};
 use super::Screen;
-use super::visit::Visit;
 use crate::domain::decode;
 use crate::inbound::app::{Context, Shared};
 use crate::inbound::nav::Nav;
@@ -54,7 +53,6 @@ pub(crate) enum Overlay {
 #[derive(Debug)]
 pub(crate) struct HomeView {
     pub(crate) model: State,
-    pub(crate) visit: Visit,
     /// The ticket of the everybody's counts this visit asked for, which the app-wide fetch answers.
     pub(crate) counts_ticket: Option<Ticket>,
     /// When the logo started decoding in. `None` draws it settled.
@@ -80,7 +78,6 @@ impl Default for HomeView {
             .unwrap_or_else(Instant::now);
         Self {
             model: State::new(),
-            visit: Visit::next(),
             counts_ticket: None,
             logo_started: None,
             figures_opened: long_ago,
@@ -163,17 +160,6 @@ impl HomeView {
         self.enter();
         mount(self, cx);
     }
-
-    /// Queues `job` under this visit.
-    fn request(&self, cx: &mut Context<'_>, job: Job) {
-        cx.request(
-            Request::Visit {
-                visit: self.visit,
-                job,
-            }
-            .into(),
-        );
-    }
 }
 
 /// The signed-in user's id.
@@ -241,15 +227,17 @@ pub(crate) fn dispatch(view: &mut HomeView, action: Action, cx: &mut Context<'_>
 
 fn perform_effect(view: &mut HomeView, effect: Effect, cx: &mut Context<'_>) {
     match effect {
-        Effect::FetchUser(ticket) => view.request(cx, Job::User { ticket }),
+        Effect::FetchUser(ticket) => cx.request(Request::Job(Job::User { ticket }).into()),
         Effect::FetchPreferences => cx.request(Request::Preferences.into()),
         Effect::FetchCounts(ticket) => {
             view.counts_ticket = Some(ticket);
             cx.request(screens::Request::FetchCounts);
         }
-        Effect::FetchMyCounts(ticket) => view.request(cx, Job::MyMetrics { ticket }),
-        Effect::FetchPlayStyle(ticket) => view.request(cx, Job::PlayStyle { ticket }),
-        Effect::FetchFlavor(ticket) => view.request(cx, Job::Flavor { ticket }),
+        Effect::FetchMyCounts(ticket) => cx.request(Request::Job(Job::MyMetrics { ticket }).into()),
+        Effect::FetchPlayStyle(ticket) => {
+            cx.request(Request::Job(Job::PlayStyle { ticket }).into());
+        }
+        Effect::FetchFlavor(ticket) => cx.request(Request::Job(Job::Flavor { ticket }).into()),
         Effect::OfferHint(offer) => {
             hint::once(cx, offer.key());
         }
@@ -284,8 +272,8 @@ pub(crate) enum Request {
     MyMetrics,
     /// The featured card's image from Scryfall's image CDN.
     FlavorImage { url: String },
-    /// Home's own fetches, stamped with the visit that asked for them.
-    Visit { visit: Visit, job: Job },
+    /// Home's own fetches.
+    Job(Job),
 }
 
 /// One of home's fetches, each carrying its ticket back to the model.
@@ -308,24 +296,11 @@ impl Request {
             Self::Restore => "restore",
             Self::SaveScope(..) => "save_scope",
             Self::Preferences => "preferences",
-            Self::MyMetrics
-            | Self::Visit {
-                job: Job::MyMetrics { .. },
-                ..
-            } => "my_metrics",
+            Self::MyMetrics | Self::Job(Job::MyMetrics { .. }) => "my_metrics",
             Self::FlavorImage { .. } => "flavor_image",
-            Self::Visit {
-                job: Job::User { .. },
-                ..
-            } => "user",
-            Self::Visit {
-                job: Job::PlayStyle { .. },
-                ..
-            } => "play_style",
-            Self::Visit {
-                job: Job::Flavor { .. },
-                ..
-            } => "flavor",
+            Self::Job(Job::User { .. }) => "user",
+            Self::Job(Job::PlayStyle { .. }) => "play_style",
+            Self::Job(Job::Flavor { .. }) => "flavor",
         }
     }
 }
@@ -344,11 +319,8 @@ pub(crate) enum Update {
         url: String,
         image: Option<Box<DynamicImage>>,
     },
-    /// A reply to one of home's fetches, stamped with the visit that asked.
-    Visit {
-        visit: Visit,
-        reply: Reply,
-    },
+    /// A reply to one of home's fetches.
+    Reply(Reply),
 }
 
 /// A reply to one of home's fetches.
@@ -451,26 +423,19 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
             image: images::fetch(&client.client, &url).await.ok().map(Box::new),
             url,
         },
-        Request::Visit { visit, job } => {
-            let reply = match fetch(account, visit, job).await {
-                Ok(Some(reply)) => reply,
-                Ok(None) => return None,
-                Err(update) => return Some(update),
-            };
-            Update::Visit { visit, reply }
-        }
+        Request::Job(job) => match fetch(account, job).await {
+            Ok(Some(reply)) => Update::Reply(reply),
+            Ok(None) => return None,
+            Err(update) => return Some(update),
+        },
     };
     Some(update.into())
 }
 
 /// Runs one of home's fetches. `Ok(None)` when a failure says nothing, `Err` when the session ended.
-async fn fetch(
-    account: &Account,
-    visit: Visit,
-    job: Job,
-) -> Result<Option<Reply>, screens::Update> {
+async fn fetch(account: &Account, job: Job) -> Result<Option<Reply>, screens::Update> {
     let client = &account.client;
-    let ended = |reply: Reply| move |_| Update::Visit { visit, reply }.into();
+    let ended = |reply: Reply| move |_| Update::Reply(reply).into();
     Ok(Some(match job {
         Job::User { ticket } => {
             match async { client.fetch_user(&account.fresh().await?).await }.await {
@@ -569,7 +534,7 @@ fn sync_flavor_image(cx: &mut Context<'_>) {
     }
 }
 
-/// Writes a reply to the caches and turns it into the model's action. The caches take it whichever visit asked; counters or a map fetched for another user than the one signed in now reach neither.
+/// Writes a reply to the caches and turns it into the model's action, which the model drops when it did not issue the ticket. The caches take it whichever visit asked; counters or a map fetched for another user than the one signed in now reach neither.
 fn take(reply: Reply, cx: &mut Context<'_>) -> Option<Action> {
     let greeted = cx.shared.caches.greeted;
     let signed_in = user_id(cx.shared);
@@ -666,10 +631,9 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
                 };
             }
         }
-        Update::Visit { visit, reply } => {
+        Update::Reply(reply) => {
             if let Some(action) = take(reply, cx)
                 && let Some(view) = nav.find_mut(pick)
-                && view.visit == visit
             {
                 dispatch(view, action, cx);
             }

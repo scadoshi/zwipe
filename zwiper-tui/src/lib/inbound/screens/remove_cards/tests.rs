@@ -195,7 +195,20 @@ fn boards_filter_refresh_and_details() {
     harness.press(KeyCode::Char('2'));
     assert_eq!(current(&harness), "M");
     harness.press(KeyCode::Char('m'));
-    assert_eq!(last_toast(&harness), "Moved to main");
+    assert!(
+        harness
+            .app
+            .shared
+            .toasts
+            .items()
+            .iter()
+            .any(|t| t.message == "Moved to main")
+    );
+    assert_eq!(
+        last_toast(&harness),
+        "No more cards",
+        "the emptied pile says so"
+    );
     harness.press(KeyCode::Char('4'));
     assert_eq!(view(&harness).model.cards().len(), 3);
     harness.press(KeyCode::Char('h'));
