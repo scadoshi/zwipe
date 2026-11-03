@@ -23,8 +23,8 @@
 use std::collections::HashSet;
 
 use components::{
-    BottomSheet, Button, ButtonVariant, HintBullet, HintBullets, HintDialog, HintLine,
-    ToastOptions, Toasts, use_overlay_back, use_toast,
+    BottomSheet, HintBullet, HintBullets, HintDialog, HintLine, ToastOptions, Toasts,
+    use_overlay_back, use_toast,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -534,18 +534,12 @@ pub(crate) fn SwipeSelect(
                 }
 
                 // A chip applies as it is tapped and the stack re-deals behind
-                // the sheet, so Back is its one button.
+                // the sheet, so the sheet only closes.
                 if let (true, Some(chips)) = (suggested, suggested_filter) {
                     BottomSheet {
                         open: suggested_filter_open,
                         title: "Filter",
-                        footer: rsx! {
-                            Button {
-                                variant: ButtonVariant::Action,
-                                onclick: move |_| suggested_filter_open.set(false),
-                                "Back"
-                            }
-                        },
+                        closable: true,
                         {chips}
                     }
                 }

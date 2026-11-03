@@ -2,7 +2,7 @@
 
 use components::{AlertDialog, BottomSheet, Button, ButtonVariant, DialogAction, TextInput};
 use dioxus::prelude::*;
-use zwipe_ui::screens::account::{Action, BACK, CANCEL, Dialog, Field, Sheet};
+use zwipe_ui::screens::account::{Action, CANCEL, Dialog, Field, Sheet};
 
 use super::driver::{Driver, use_field_sync};
 use crate::inbound::components::hint_host::HintTopic;
@@ -11,7 +11,7 @@ use crate::inbound::components::info_button;
 /// Bottom sheet for updating the user's password. The current password is
 /// never judged here, so one that predates the policy can still be changed.
 #[component]
-pub fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
+pub fn ChangePasswordSheet(open: Signal<bool>) -> Element {
     let driver: Driver = use_context();
     let sheet = Sheet::Password;
     for field in sheet.fields() {
@@ -30,13 +30,8 @@ pub fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
         BottomSheet {
             open,
             title: sheet.title().to_string(),
+            closable: true,
             footer: rsx! {
-                Button {
-                    variant: ButtonVariant::Action,
-                    disabled: is_loading,
-                    onclick: move |_| open.set(false),
-                    {BACK}
-                }
                 Button {
                     variant: ButtonVariant::Action,
                     disabled: is_loading,

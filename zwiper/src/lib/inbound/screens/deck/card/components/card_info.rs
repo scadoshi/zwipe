@@ -66,16 +66,17 @@ pub(crate) fn use_describe_tag() -> Callback<String, Option<String>> {
 /// [`RulesButton`] via the shared `open` signal. The body is the shared
 /// [`CardDetails`], opening on the shown face's mana cost since the sheet's
 /// title holds only text. The details and the host's `footer` share one
-/// panel, so nothing lies straight on the sheet's grid. The sheet's own
-/// footer holds Back, then Flip for a multi-faced card (it leaves the sheet
-/// open) and an optional Printings.
+/// panel, so nothing lies straight on the sheet's grid. The sheet closes
+/// from its title bar's × or a drag down; its own footer, present only when
+/// there is something to hold, has Flip for a multi-faced card (it leaves
+/// the sheet open) and an optional Printings.
 ///
 /// Printings leaves this sheet open: the host's printing sheet draws over it,
 /// and the host closes this one too when a printing is saved. Mount it at the
 /// screen root, beside the printing sheet, so the sheet covers the action bar.
 #[component]
 pub(crate) fn CardDetailsSheet(
-    mut open: Signal<bool>,
+    open: Signal<bool>,
     card: Card,
     /// Opens the printings sheet. When set, a "Printings" button shows in the
     /// sheet footer (mirrors the deck-view expand-row → Printing button).
@@ -91,32 +92,31 @@ pub(crate) fn CardDetailsSheet(
     let face_count = components::card_face_count(&card);
     let mut face = use_signal(|| 0usize);
     let describe_tag = use_describe_tag();
-
-    rsx! {
-        BottomSheet {
-            open,
-            title: name,
-            footer: rsx! {
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| open.set(false),
-                    "Back"
-                }
-                if face_count > 1 {
+    let actions = (face_count > 1 || on_printings.is_some()).then(|| {
+        rsx! {
+            if face_count > 1 {
                     Button {
                         variant: ButtonVariant::Action,
                         onclick: move |_| face.set((face() + 1) % face_count),
                         "Flip"
                     }
                 }
-                if let Some(handler) = on_printings {
-                    Button {
-                        variant: ButtonVariant::Action,
-                        onclick: move |_| handler.call(()),
-                        "Printings"
-                    }
+            if let Some(handler) = on_printings {
+                Button {
+                    variant: ButtonVariant::Action,
+                    onclick: move |_| handler.call(()),
+                    "Printings"
                 }
-            },
+            }
+        }
+    });
+
+    rsx! {
+        BottomSheet {
+            open,
+            title: name,
+            closable: true,
+            footer: actions,
             // The sheet's content is the scroll container; `card-rules` only
             // styles the text. Each panel is the card-group surface, so the
             // sheet reads like the list behind it.

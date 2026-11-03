@@ -2,13 +2,13 @@
 
 use components::{BottomSheet, Button, ButtonVariant, TextInput};
 use dioxus::prelude::*;
-use zwipe_ui::screens::account::{Action, BACK, Field, Sheet};
+use zwipe_ui::screens::account::{Action, Field, Sheet};
 
 use super::driver::{Driver, use_field_sync};
 
 /// Bottom sheet for updating the user's email address.
 #[component]
-pub fn ChangeEmailSheet(mut open: Signal<bool>) -> Element {
+pub fn ChangeEmailSheet(open: Signal<bool>) -> Element {
     let driver: Driver = use_context();
     let sheet = Sheet::Email;
     use_field_sync(&driver, sheet, Field::NewEmail);
@@ -25,13 +25,8 @@ pub fn ChangeEmailSheet(mut open: Signal<bool>) -> Element {
         BottomSheet {
             open,
             title: sheet.title().to_string(),
+            closable: true,
             footer: rsx! {
-                Button {
-                    variant: ButtonVariant::Action,
-                    disabled: is_loading,
-                    onclick: move |_| open.set(false),
-                    {BACK}
-                }
                 Button {
                     variant: ButtonVariant::Action,
                     disabled: is_loading,
