@@ -1,29 +1,31 @@
 //! The Account screen: the user's details and verification, the About rows, the sheets that change the username, email and password, the More sheet with Delete account, and the Log out confirm.
+//!
+//! What the screen knows and decides is zwipe-ui's [`State`]; this view adds the focus, the text boxes and which sheet or dialog is up. The model counts its two countdowns in whole seconds through [`Job::Wait`], so nothing here reads the clock.
 
 pub(crate) mod draw;
 pub(crate) mod keys;
 #[cfg(test)]
 mod tests;
 
-use std::time::{Duration, Instant};
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use zwipe_client::ClientError;
 use zwipe_core::domain::auth::models::secret::Secret;
 use zwipe_core::domain::user::User;
-use zwipe_core::domain::user::hints::HINT_PROFILE;
 use zwipe_core::http::contracts::auth::{
     HttpChangeEmail, HttpChangePassword, HttpChangeUsername, HttpDeleteUser,
 };
-use zwipe_ui::account::{
-    self, change_password_error, email_error, password_required, username_error,
+use zwipe_ui::generation::Ticket;
+use zwipe_ui::screens::account::{
+    Action, CANCEL, Destination, Dialog, Effect, Field, Password, Row, Sheet, State, TICK,
 };
-use zwipe_ui::timing;
 
-use super::{Password, Screen, login};
+use super::{Screen, changelog, login, privacy};
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;
 use crate::inbound::widgets::alert::AlertDialog;
+use crate::inbound::widgets::browser;
 use crate::inbound::widgets::hint::{self, HintTopic};
 use crate::inbound::widgets::text_input::{Label, TextInput};
 use crate::inbound::widgets::toast::{self, ToastKind};
@@ -55,52 +57,78 @@ impl Stop {
             _ => None,
         }
     }
+
+    /// The buttons on `row`, left to right.
+    fn on(row: Row) -> &'static [Self] {
+        match row {
+            Row::Username => &[Self::ChangeUsername],
+            Row::Email => &[Self::ChangeEmail],
+            Row::Pending => &[],
+            Row::Verification => &[Self::Resend, Self::Check],
+            Row::Password => &[Self::ChangePassword],
+            Row::Website => &[Self::Website],
+            Row::PrivacyPolicy => &[Self::Privacy],
+            Row::Version => &[Self::Changelog],
+        }
+    }
+
+    /// What pressing the button asks of the model.
+    fn action(self) -> Action {
+        match self {
+            Self::ChangeUsername => Action::OpenSheet(Sheet::Username),
+            Self::ChangeEmail => Action::OpenSheet(Sheet::Email),
+            Self::Resend => Action::Resend,
+            Self::Check => Action::CheckVerification,
+            Self::ChangePassword => Action::OpenSheet(Sheet::Password),
+            Self::Website => Action::Website,
+            Self::Privacy => Action::PrivacyPolicy,
+            Self::Changelog => Action::Changelog,
+        }
+    }
 }
 
-/// The Account screen's state.
+/// One opening of Account. Every request carries it out and every reply back, so a reply to an earlier visit never lands in a later visit's model, whose tickets start over.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct Visit(u64);
+
+/// The number the next [`Visit`] takes.
+static VISITS: AtomicU64 = AtomicU64::new(0);
+
+impl Visit {
+    /// A visit no earlier one shares.
+    fn next() -> Self {
+        Self(VISITS.fetch_add(1, Ordering::Relaxed))
+    }
+}
+
+/// The Account screen's state: the model plus what only the terminal keeps.
 #[derive(Debug)]
 pub(crate) struct AccountView {
-    pub(crate) user: User,
+    pub(crate) model: State,
+    pub(crate) visit: Visit,
     /// The focused button, an index into [`AccountView::stops`].
     pub(crate) focus: usize,
     pub(crate) overlay: Option<Overlay>,
-    /// When the verification email can be sent again.
-    pub(crate) resend_ready_at: Option<Instant>,
-    /// Set while a verification email is on its way.
-    pub(crate) sending: bool,
-    /// Set while the verification check is out.
-    pub(crate) checking: bool,
 }
 
 impl AccountView {
-    pub(crate) fn new(user: User) -> Self {
+    /// A view on a fresh model, before [`Action::Load`].
+    pub(crate) fn new() -> Self {
         Self {
-            user,
+            model: State::new(),
+            visit: Visit::next(),
             focus: 0,
             overlay: None,
-            resend_ready_at: None,
-            sending: false,
-            checking: false,
         }
     }
 
-    pub(crate) fn verified(&self) -> bool {
-        self.user.email_verified_at.is_some()
-    }
-
-    /// The buttons that apply to this user, in focus order.
+    /// The buttons on the model's rows, in focus order.
     pub(crate) fn stops(&self) -> Vec<Stop> {
-        let mut stops = vec![Stop::ChangeUsername, Stop::ChangeEmail];
-        if !self.verified() {
-            stops.extend([Stop::Resend, Stop::Check]);
-        }
-        stops.extend([
-            Stop::ChangePassword,
-            Stop::Website,
-            Stop::Privacy,
-            Stop::Changelog,
-        ]);
-        stops
+        self.model
+            .rows()
+            .into_iter()
+            .flat_map(|row| Stop::on(row).iter().copied())
+            .collect()
     }
 
     pub(crate) fn focused(&self) -> Option<Stop> {
@@ -118,46 +146,31 @@ impl AccountView {
         self.focus = self.focus.saturating_sub(1);
     }
 
-    /// Takes a fresh copy of the user, keeping the focus in range.
-    pub(crate) fn set_user(&mut self, user: User) {
-        self.user = user;
+    /// Brings the focus and the open sheet's error lines in line with the model.
+    fn sync(&mut self) {
         self.focus = self.focus.min(self.stops().len().saturating_sub(1));
-    }
-
-    /// Seconds until the verification email can be sent again, `None` when it can be now.
-    pub(crate) fn resend_wait(&self) -> Option<u64> {
-        let left = self
-            .resend_ready_at?
-            .saturating_duration_since(Instant::now());
-        (!left.is_zero()).then(|| left.as_secs().saturating_add(1))
-    }
-
-    /// The Resend button's label: `Sending...`, `Resend in {n}s`, or `Resend`.
-    pub(crate) fn resend_label(&self) -> String {
-        if self.sending {
-            return "Sending...".to_owned();
+        if let Some(Overlay::Form(form) | Overlay::ConfirmPassword { form, .. }) = &mut self.overlay
+        {
+            for (input, field) in form.inputs.iter_mut().zip(form.sheet.fields()) {
+                input.set_error(self.model.error(form.sheet, *field));
+            }
         }
-        self.resend_wait()
-            .map_or_else(|| "Resend".to_owned(), |n| format!("Resend in {n}s"))
     }
 
-    /// Whether Resend can be pressed: not while sending or cooling down.
-    pub(crate) fn can_resend(&self) -> bool {
-        !self.sending && self.resend_wait().is_none()
+    /// Queues `change` under this visit.
+    fn change(&self, cx: &mut Context<'_>, ticket: Ticket, change: Change) {
+        self.request(cx, Job::Change { ticket, change });
     }
 
-    /// Whether a countdown is on screen: the wait to resend, or the delete button's.
-    pub(crate) fn animating(&self) -> bool {
-        self.resend_wait().is_some()
-            || matches!(
-                &self.overlay,
-                Some(Overlay::More(Some(delete))) if delete.wait().is_some()
-            )
-    }
-
-    /// Starts the wait between verification emails.
-    pub(crate) fn start_resend_cooldown(&mut self) {
-        self.resend_ready_at = Instant::now().checked_add(timing::RESEND_COOLDOWN);
+    /// Queues `job` under this visit.
+    fn request(&self, cx: &mut Context<'_>, job: Job) {
+        cx.request(
+            Request {
+                visit: self.visit,
+                job,
+            }
+            .into(),
+        );
     }
 }
 
@@ -176,82 +189,42 @@ pub(crate) enum Overlay {
     More(Option<DeleteDialog>),
 }
 
-/// The alert before a password change.
-pub(crate) fn confirm_password_alert() -> AlertDialog {
-    AlertDialog::new(
-        "Change password",
-        "Changing your password will log you out on all other devices.",
-    )
-    .with_button("Cancel", Some('n'))
-    .with_button("Confirm", Some('y'))
-    .with_focus(1)
+/// An alert for `dialog` with Cancel and its confirm, the confirm focused.
+fn alert(dialog: Dialog) -> AlertDialog {
+    let alert = AlertDialog::new(dialog.title(), dialog.body()).with_button(CANCEL, Some('n'));
+    let alert = if dialog == Dialog::LogOut {
+        alert.with_danger_button(dialog.confirm(), Some('y'))
+    } else {
+        alert.with_button(dialog.confirm(), Some('y'))
+    };
+    alert.with_focus(1)
 }
 
-/// The alert before logging out.
-pub(crate) fn log_out_alert() -> AlertDialog {
-    AlertDialog::new("Log out", "Are you sure you want to log out?")
-        .with_button("Cancel", Some('n'))
-        .with_danger_button("Log out", Some('y'))
-        .with_focus(1)
-}
-
-/// Which Change sheet is open.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum FormKind {
-    Username,
-    Email,
-    Password,
-}
-
-impl FormKind {
-    pub(crate) fn title(self) -> &'static str {
-        match self {
-            Self::Username => "Change username",
-            Self::Email => "Change email",
-            Self::Password => "Change password",
-        }
-    }
-
-    /// Each field's label, and whether it hides what is typed.
-    pub(crate) fn fields(self) -> &'static [(Label<'static>, bool)] {
-        match self {
-            Self::Username => &[
-                (Label::Plain("New username"), false),
-                (Label::Plain("Password"), true),
-            ],
-            Self::Email => &[
-                (Label::Plain("New email"), false),
-                (Label::Plain("Password"), true),
-            ],
-            Self::Password => &[
-                (Label::Plain("Current password"), true),
-                (Label::About("New password"), true),
-                (Label::Plain("Confirm password"), true),
-            ],
-        }
+/// The label over `field`'s box: New password's carries the `[?]` its `F2` opens.
+pub(crate) fn label(field: Field) -> Label<'static> {
+    if field == Field::NewPassword {
+        Label::About(field.label())
+    } else {
+        Label::Plain(field.label())
     }
 }
 
-/// An open Change sheet: its fields, which has the cursor, which have held something, and whether a save was tried.
+/// An open Change sheet: a box per field and which has the cursor. What is typed and the lines under the boxes are the model's.
 #[derive(Debug)]
 pub(crate) struct Form {
-    pub(crate) kind: FormKind,
+    pub(crate) sheet: Sheet,
     pub(crate) inputs: Vec<TextInput>,
     pub(crate) focus: usize,
-    pub(crate) touched: Vec<bool>,
-    pub(crate) attempted: bool,
-    /// Set while the change is out; the sheet takes no keys meanwhile.
-    pub(crate) busy: bool,
 }
 
 impl Form {
-    /// A sheet with every field empty, as each open is.
-    pub(crate) fn new(kind: FormKind) -> Self {
-        let inputs: Vec<TextInput> = kind
+    /// A sheet with every box empty, as each open is.
+    pub(crate) fn new(sheet: Sheet) -> Self {
+        let inputs: Vec<TextInput> = sheet
             .fields()
             .iter()
-            .map(|&(_, masked)| {
-                if masked {
+            .map(|field| {
+                if field.is_masked() {
                     TextInput::masked()
                 } else {
                     TextInput::default()
@@ -259,25 +232,15 @@ impl Form {
             })
             .collect();
         Self {
-            kind,
-            touched: vec![false; inputs.len()],
+            sheet,
             inputs,
             focus: 0,
-            attempted: false,
-            busy: false,
         }
     }
 
-    pub(crate) fn value(&self, field: usize) -> &str {
-        self.inputs.get(field).map_or("", TextInput::value)
-    }
-
-    /// Fills the fields in order, for tests.
-    #[cfg(test)]
-    pub(crate) fn fill(&mut self, values: &[&str]) {
-        for (input, value) in self.inputs.iter_mut().zip(values) {
-            input.set_value(value);
-        }
+    /// The field whose box has the cursor.
+    pub(crate) fn field(&self) -> Option<Field> {
+        self.sheet.fields().get(self.focus).copied()
     }
 
     pub(crate) fn next_field(&mut self) {
@@ -298,78 +261,6 @@ impl Form {
     pub(crate) fn on_last_field(&self) -> bool {
         self.focus.saturating_add(1) >= self.inputs.len()
     }
-
-    fn checks(&self, field: usize) -> bool {
-        self.attempted || self.touched.get(field).copied().unwrap_or(false)
-    }
-
-    /// Each field's error, the app's way: live once the field has held something, or after a save.
-    fn errors(&self) -> Vec<Option<String>> {
-        match self.kind {
-            FormKind::Username => vec![
-                self.checks(0)
-                    .then(|| username_error(self.value(0)))
-                    .flatten(),
-                self.checks(1)
-                    .then(|| password_required(self.value(1)))
-                    .flatten(),
-            ],
-            FormKind::Email => vec![
-                self.checks(0).then(|| email_error(self.value(0))).flatten(),
-                self.checks(1)
-                    .then(|| password_required(self.value(1)))
-                    .flatten(),
-            ],
-            FormKind::Password => vec![
-                None,
-                (self.checks(1) || self.checks(2))
-                    .then(|| {
-                        change_password_error(
-                            self.value(0),
-                            self.value(1),
-                            self.value(2),
-                            self.attempted,
-                        )
-                    })
-                    .flatten(),
-                None,
-            ],
-        }
-    }
-
-    /// Puts each field's error under it.
-    pub(crate) fn validate(&mut self) {
-        let errors = self.errors();
-        for (input, error) in self.inputs.iter_mut().zip(errors) {
-            input.set_error(error);
-        }
-    }
-
-    /// Marks a save tried and checks every field; whether all pass.
-    pub(crate) fn attempt(&mut self) -> bool {
-        self.attempted = true;
-        self.validate();
-        self.inputs.iter().all(|i| i.error().is_none())
-    }
-
-    /// The change this sheet asks for, the values sent as typed.
-    pub(crate) fn change(&self) -> AccountChange {
-        let password = |field: usize| Password(self.value(field).to_owned());
-        match self.kind {
-            FormKind::Username => AccountChange::Username {
-                username: self.value(0).to_owned(),
-                password: password(1),
-            },
-            FormKind::Email => AccountChange::Email {
-                email: self.value(0).to_owned(),
-                password: password(1),
-            },
-            FormKind::Password => AccountChange::Password {
-                current: password(0),
-                new: password(1),
-            },
-        }
-    }
 }
 
 /// Where the Delete account dialog's focus is.
@@ -381,73 +272,126 @@ pub(crate) enum DeleteFocus {
     Delete,
 }
 
-/// The Delete account dialog: its password, when it opened for the countdown, and whether the delete is out.
+/// The Delete account dialog: its password box and its focus. The countdown and whether the delete is out are the model's.
 #[derive(Debug)]
 pub(crate) struct DeleteDialog {
     pub(crate) password: TextInput,
-    pub(crate) opened_at: Instant,
     pub(crate) focus: DeleteFocus,
-    pub(crate) busy: bool,
 }
 
 impl DeleteDialog {
-    /// A dialog with an empty password, its countdown starting now.
+    /// A dialog with an empty password.
     pub(crate) fn new() -> Self {
         Self {
             password: TextInput::masked(),
-            opened_at: Instant::now(),
             focus: DeleteFocus::Password,
-            busy: false,
         }
-    }
-
-    /// Seconds left before Delete can be pressed, `None` once it can.
-    pub(crate) fn wait(&self) -> Option<u64> {
-        let left = timing::DELETE_COUNTDOWN.saturating_sub(self.opened_at.elapsed());
-        (!left.is_zero()).then(|| left.as_secs().saturating_add(1))
-    }
-
-    /// The Delete button's label: `Deleting...`, `Delete ({n})`, or `Delete`.
-    pub(crate) fn label(&self) -> String {
-        if self.busy {
-            return "Deleting...".to_owned();
-        }
-        self.wait()
-            .map_or_else(|| "Delete".to_owned(), |n| format!("Delete ({n})"))
     }
 }
 
-/// The note under a pending email change, for `user`.
-pub(crate) fn pending_note(user: &User) -> Option<String> {
-    user.pending_email_expires_at
-        .map(|at| account::pending_note(at, chrono::Utc::now()))
+/// Applies `action` to the model, brings the view in line with it, and performs the effects it returns, in order.
+pub(crate) fn dispatch(view: &mut AccountView, action: Action, cx: &mut Context<'_>) {
+    let effects = view.model.update(action);
+    view.sync();
+    for effect in effects {
+        perform_effect(view, effect, cx);
+    }
+    view.sync();
 }
 
-/// The Account screen's work.
+fn perform_effect(view: &mut AccountView, effect: Effect, cx: &mut Context<'_>) {
+    match effect {
+        Effect::OfferHint(offer) => {
+            hint::once(cx, offer.key());
+        }
+        Effect::FetchUser(ticket) => view.request(cx, Job::FetchUser { ticket }),
+        Effect::CheckVerification(ticket) => view.request(cx, Job::CheckVerification { ticket }),
+        Effect::ResendVerification(ticket) => view.request(cx, Job::Resend { ticket }),
+        Effect::Wait(ticket) => view.request(cx, Job::Wait { ticket }),
+        Effect::OpenSheet(sheet) => view.overlay = Some(Overlay::Form(Form::new(sheet))),
+        Effect::CloseSheet(sheet) => {
+            if let Some(Overlay::Form(form) | Overlay::ConfirmPassword { form, .. }) = &view.overlay
+                && form.sheet == sheet
+            {
+                view.overlay = None;
+            }
+        }
+        Effect::ChangeUsername {
+            ticket,
+            username,
+            password,
+        } => view.change(cx, ticket, Change::Username { username, password }),
+        Effect::ChangeEmail {
+            ticket,
+            email,
+            password,
+        } => view.change(cx, ticket, Change::Email { email, password }),
+        Effect::ChangePassword {
+            ticket,
+            current,
+            new,
+        } => view.change(cx, ticket, Change::Password { current, new }),
+        Effect::DeleteAccount { ticket, password } => {
+            view.change(cx, ticket, Change::Delete { password });
+        }
+        Effect::OpenDialog(Dialog::ConfirmPassword) => {
+            view.overlay = match view.overlay.take() {
+                Some(Overlay::Form(form)) => Some(Overlay::ConfirmPassword {
+                    form,
+                    alert: alert(Dialog::ConfirmPassword),
+                }),
+                other => other,
+            };
+        }
+        Effect::OpenDialog(Dialog::LogOut) => {
+            view.overlay = Some(Overlay::LogOut(alert(Dialog::LogOut)));
+        }
+        Effect::OpenDialog(Dialog::DeleteAccount) => {
+            view.overlay = Some(Overlay::More(Some(DeleteDialog::new())));
+        }
+        Effect::LogOut => cx.request(screens::Request::SignOut),
+        Effect::OpenUrl(url) => browser::open(cx, &url),
+        Effect::Navigate(Destination::Previous) => cx.back(),
+        Effect::Navigate(Destination::PrivacyPolicy) => privacy::open(cx),
+        Effect::Navigate(Destination::Changelog) => changelog::open(cx),
+        Effect::Toast(toast) => cx.show(toast),
+    }
+}
+
+/// The Account screen's work, stamped with the visit that asked for it.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) enum Request {
-    /// Fetches the user with the session as it is, on every open.
-    LoadUser,
-    Resend,
-    CheckVerification,
-    Change(AccountChange),
+pub(crate) struct Request {
+    pub(crate) visit: Visit,
+    pub(crate) job: Job,
 }
 
-impl Request {
-    /// The action an error from this request is reported under, fixed so a renamed variant keeps its reports.
-    pub(crate) fn action(&self) -> &'static str {
-        match self {
-            Self::LoadUser => "load_user",
-            Self::Resend => "resend",
-            Self::CheckVerification => "check_verification",
-            Self::Change(..) => "change",
-        }
-    }
-}
-
-/// A change to the account, with the password the server checks it against.
+/// One piece of Account's work, each carrying its ticket back to the model.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) enum AccountChange {
+pub(crate) enum Job {
+    /// Fetches the user with the session as it is, on every open. A failure says nothing.
+    FetchUser {
+        ticket: Ticket,
+    },
+    CheckVerification {
+        ticket: Ticket,
+    },
+    Resend {
+        ticket: Ticket,
+    },
+    /// Waits one [`TICK`] for a countdown.
+    Wait {
+        ticket: Ticket,
+    },
+    /// A change to the account, with the password the server checks it against.
+    Change {
+        ticket: Ticket,
+        change: Change,
+    },
+}
+
+/// A change to the account, the values as typed.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum Change {
     Username {
         username: String,
         password: Password,
@@ -465,28 +409,73 @@ pub(crate) enum AccountChange {
     },
 }
 
-/// The Account screen's results.
+impl Request {
+    /// The action an error from this request is reported under, fixed so a renamed variant keeps its reports.
+    pub(crate) fn action(&self) -> &'static str {
+        match self.job {
+            Job::FetchUser { .. } => "load_user",
+            Job::CheckVerification { .. } => "check_verification",
+            Job::Resend { .. } => "resend",
+            Job::Wait { .. } => "wait",
+            Job::Change { .. } => "change",
+        }
+    }
+}
+
+/// The Account screen's results, stamped with the visit that asked.
 #[derive(Debug)]
-pub(crate) enum Update {
-    /// A fresh copy of the user, and the toast that answers a verification check.
-    User {
+pub(crate) struct Update {
+    pub(crate) visit: Visit,
+    pub(crate) reply: Reply,
+}
+
+/// One reply, carrying its request's ticket back to the model.
+#[derive(Debug)]
+pub(crate) enum Reply {
+    /// A fresh copy of the user, from the open's fetch or the verification check.
+    UserLoaded {
+        ticket: Ticket,
         user: Box<User>,
-        toast: Option<(ToastKind, &'static str)>,
     },
-    CheckFailed(String),
-    /// A change went through: the user when the server sent one back, and the success toast for its time.
-    Changed {
-        user: Option<Box<User>>,
-        message: String,
-        duration: Duration,
+    /// The open's fetch failed, which says nothing.
+    Quiet {
+        ticket: Ticket,
     },
-    ChangeFailed(String),
-    Deleted,
-    DeleteFailed(String),
-    Resent,
+    /// A request failed with this message for an error toast.
+    Failed {
+        ticket: Ticket,
+        error: String,
+    },
+    /// The verification email failed with this message for a long error toast.
+    ResendFailed {
+        ticket: Ticket,
+        error: String,
+    },
+    Resent {
+        ticket: Ticket,
+    },
     /// The server asked to wait before another verification email.
-    ResendLimited,
-    ResendFailed(String),
+    ResendLimited {
+        ticket: Ticket,
+    },
+    Tick {
+        ticket: Ticket,
+    },
+    UsernameChanged {
+        ticket: Ticket,
+        user: Box<User>,
+    },
+    EmailChanged {
+        ticket: Ticket,
+        user: Box<User>,
+    },
+    PasswordChanged {
+        ticket: Ticket,
+    },
+    /// The account is gone and the session with it.
+    Deleted {
+        ticket: Ticket,
+    },
 }
 
 impl From<Request> for screens::Request {
@@ -508,212 +497,203 @@ fn pick(screen: &mut Screen) -> Option<&mut AccountView> {
     }
 }
 
-/// Opens Account over the current screen on the user as last known, fetches a fresh copy, and shows the `profile` hint the first time.
+/// Opens Account over the current screen on the user as last known; the model fetches a fresh copy and offers the `profile` hint.
 pub(crate) fn open(cx: &mut Context<'_>) {
     let Some(user) = cx.shared.user.clone() else {
         return;
     };
-    cx.push(Screen::Account(Box::new(AccountView::new(user))));
-    cx.request(Request::LoadUser.into());
-    hint::once(cx, HINT_PROFILE);
+    let mut view = AccountView::new();
+    dispatch(&mut view, Action::Load(Some(Box::new(user))), cx);
+    cx.push(Screen::Account(Box::new(view)));
 }
 
 pub(crate) async fn perform(account: &Account, request: Request) -> Option<screens::Update> {
-    let client = &account.client;
-    let update = match request {
-        Request::LoadUser => {
-            // The app fetches with the session as it stands and says nothing when that fails.
-            let session = account.session().await?;
-            let user = client.fetch_user(&session).await.ok()?;
-            Update::User {
-                user: Box::new(user),
-                toast: None,
-            }
+    let Request { visit, job } = request;
+    let reply = match job {
+        Job::Wait { ticket } => {
+            tokio::time::sleep(TICK).await;
+            Reply::Tick { ticket }
         }
-        Request::CheckVerification => {
-            match async { client.fetch_user(&account.fresh().await?).await }.await {
-                Ok(user) => {
+        Job::FetchUser { ticket } => {
+            // The app fetches with the session as it stands and says nothing when that fails.
+            let fetched = match account.session().await {
+                Some(session) => account.client.fetch_user(&session).await.ok(),
+                None => None,
+            };
+            match fetched {
+                Some(user) => {
                     account.set_user(user.clone()).await;
-                    let toast = if user.email_verified_at.is_some() {
-                        (ToastKind::Success, "Email verified")
-                    } else {
-                        (ToastKind::Info, "Not verified yet. Check your inbox")
-                    };
-                    Update::User {
+                    Reply::UserLoaded {
+                        ticket,
                         user: Box::new(user),
-                        toast: Some(toast),
                     }
                 }
-                Err(e) => return Some(screens::failure(&e, |m| Update::CheckFailed(m).into())),
+                None => Reply::Quiet { ticket },
             }
         }
-        Request::Resend => {
-            let failed = |m| Update::ResendFailed(m).into();
+        Job::CheckVerification { ticket } => {
+            match async { account.client.fetch_user(&account.fresh().await?).await }.await {
+                Ok(user) => {
+                    account.set_user(user.clone()).await;
+                    Reply::UserLoaded {
+                        ticket,
+                        user: Box::new(user),
+                    }
+                }
+                Err(e) => return Some(failure(visit, &e, |error| Reply::Failed { ticket, error })),
+            }
+        }
+        Job::Resend { ticket } => {
+            let failed = |error| Reply::ResendFailed { ticket, error };
             let session = match account.fresh().await {
                 Ok(session) => session,
-                Err(e) => return Some(screens::failure(&e, failed)),
+                Err(e) => return Some(failure(visit, &e, failed)),
             };
-            match client.resend_verification(&session).await {
-                Ok(()) => Update::Resent,
-                Err(ClientError::TooManyRequests(_)) => Update::ResendLimited,
-                Err(e) => return Some(screens::failure(&e, failed)),
+            match account.client.resend_verification(&session).await {
+                Ok(()) => Reply::Resent { ticket },
+                Err(ClientError::TooManyRequests(_)) => Reply::ResendLimited { ticket },
+                Err(e) => return Some(failure(visit, &e, failed)),
             }
         }
-        Request::Change(change) => return Some(change_account(account, change).await),
+        Job::Change { ticket, change } => {
+            return Some(change_account(account, visit, ticket, change).await);
+        }
     };
-    Some(update.into())
+    Some(Update { visit, reply }.into())
+}
+
+/// The update for a failed request: the session ending when the server rejects it, else `reply` with the message to show.
+fn failure(
+    visit: Visit,
+    error: &ClientError,
+    reply: impl FnOnce(String) -> Reply,
+) -> screens::Update {
+    screens::failure(error, |error| {
+        Update {
+            visit,
+            reply: reply(error),
+        }
+        .into()
+    })
 }
 
 /// Sends an account change. A wrong password is the server's to judge, so its refusal is a toast rather than a sign-out.
-async fn change_account(account: &Account, change: AccountChange) -> screens::Update {
+async fn change_account(
+    account: &Account,
+    visit: Visit,
+    ticket: Ticket,
+    change: Change,
+) -> screens::Update {
     let client = &account.client;
     let session = match account.fresh().await {
         Ok(session) => session,
-        Err(e) => return screens::failure(&e, |m| Update::ChangeFailed(m).into()),
+        Err(e) => return failure(visit, &e, |error| Reply::Failed { ticket, error }),
     };
-    let result = match change {
-        AccountChange::Username { username, password } => client
-            .change_username(HttpChangeUsername::new(&username, &password.0), &session)
+    let failed = |e: &ClientError| Reply::Failed {
+        ticket,
+        error: screens::shown(e),
+    };
+    let reply = match change {
+        Change::Username { username, password } => match client
+            .change_username(
+                HttpChangeUsername::new(&username, password.read()),
+                &session,
+            )
             .await
-            .map(|user| {
-                let message = format!("Username changed to {}", user.username);
-                (Some(user), message, toast::QUICK)
-            }),
-        AccountChange::Email { email, password } => client
-            .change_email(HttpChangeEmail::new(&email, &password.0), &session)
+        {
+            Ok(user) => {
+                account.set_user(user.clone()).await;
+                Reply::UsernameChanged {
+                    ticket,
+                    user: Box::new(user),
+                }
+            }
+            Err(e) => failed(&e),
+        },
+        Change::Email { email, password } => match client
+            .change_email(HttpChangeEmail::new(&email, password.read()), &session)
             .await
-            .map(|user| {
-                let message = format!("Check {email} for a link to confirm the change");
-                (Some(user), message, toast::NORMAL)
-            }),
-        AccountChange::Password { current, new } => client
-            .change_password(HttpChangePassword::new(&current.0, &new.0), &session)
+        {
+            Ok(user) => {
+                account.set_user(user.clone()).await;
+                Reply::EmailChanged {
+                    ticket,
+                    user: Box::new(user),
+                }
+            }
+            Err(e) => failed(&e),
+        },
+        Change::Password { current, new } => match client
+            .change_password(
+                HttpChangePassword::new(current.read(), new.read()),
+                &session,
+            )
             .await
-            .map(|()| (None, "Password change successful".to_owned(), toast::QUICK)),
-        AccountChange::Delete { password } => {
+        {
+            Ok(()) => Reply::PasswordChanged { ticket },
+            Err(e) => failed(&e),
+        },
+        Change::Delete { password } => {
             let request = HttpDeleteUser {
-                password: Secret::new(&password.0),
+                password: Secret::new(password.read()),
             };
-            return match client.delete_user(request, &session).await {
+            match client.delete_user(request, &session).await {
                 Ok(()) => {
                     account.sign_out().await;
-                    Update::Deleted
+                    Reply::Deleted { ticket }
                 }
-                Err(e) => Update::DeleteFailed(crate::inbound::screens::shown(&e)),
+                Err(e) => failed(&e),
             }
-            .into();
         }
     };
-    match result {
-        Ok((user, message, duration)) => {
-            if let Some(user) = &user {
-                account.set_user(user.clone()).await;
-            }
-            Update::Changed {
-                user: user.map(Box::new),
-                message,
-                duration,
-            }
-        }
-        Err(e) => Update::ChangeFailed(crate::inbound::screens::shown(&e)),
-    }
-    .into()
+    Update { visit, reply }.into()
 }
 
+/// Hands a reply to the model when its visit is still up. Toasts and the user's fresh copy land even when it has closed.
 pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
-    let mut view = nav.find_mut(pick);
-    match update {
-        Update::User { user, toast } => {
-            if let Some(view) = view.as_deref_mut() {
-                view.checking = false;
-            }
-            take_user(view, cx, *user);
-            if let Some((kind, message)) = toast {
-                cx.toast(kind, message.to_owned());
-            }
+    let Update { visit, reply } = update;
+    let deleted = matches!(reply, Reply::Deleted { .. });
+    let action = match reply {
+        Reply::UserLoaded { ticket, user } => {
+            take_user(cx, &user);
+            Action::UserLoaded { ticket, user }
         }
-        Update::CheckFailed(error) => {
-            if let Some(view) = view {
-                view.checking = false;
-            }
+        Reply::Quiet { ticket } => Action::Failed { ticket },
+        Reply::Failed { ticket, error } => {
             cx.toast(ToastKind::Error, error);
+            Action::Failed { ticket }
         }
-        Update::Changed {
-            user,
-            message,
-            duration,
-        } => {
-            if let Some(view) = view.as_deref_mut()
-                && matches!(
-                    view.overlay,
-                    Some(Overlay::Form(_) | Overlay::ConfirmPassword { .. })
-                )
-            {
-                view.overlay = None;
-            }
-            if let Some(user) = user {
-                take_user(view, cx, *user);
-            }
-            cx.toast_for(ToastKind::Success, message, duration);
-        }
-        Update::ChangeFailed(error) => {
-            if let Some(view) = view {
-                view.change_failed();
-            }
-            cx.toast(ToastKind::Error, error);
-        }
-        Update::Deleted => login::signed_out(cx, None),
-        Update::DeleteFailed(error) => {
-            if let Some(view) = view
-                && let Some(Overlay::More(Some(delete))) = &mut view.overlay
-            {
-                delete.busy = false;
-            }
-            cx.toast(ToastKind::Error, error);
-        }
-        Update::Resent | Update::ResendLimited => {
-            if let Some(view) = view {
-                view.sending = false;
-                view.start_resend_cooldown();
-            }
-            if matches!(update, Update::Resent) {
-                cx.toast(ToastKind::Success, "Verification email sent".to_owned());
-            } else {
-                cx.toast(ToastKind::Info, "Please wait a moment".to_owned());
-            }
-        }
-        Update::ResendFailed(error) => {
-            if let Some(view) = view {
-                view.sending = false;
-                view.resend_ready_at = None;
-            }
+        Reply::ResendFailed { ticket, error } => {
             cx.toast_for(ToastKind::Error, error, toast::LONG);
+            Action::Failed { ticket }
         }
-    }
-}
-
-/// Takes a fresh copy of the user everywhere it shows.
-fn take_user(view: Option<&mut AccountView>, cx: &mut Context<'_>, user: User) {
-    cx.shared.username = Some(user.username.to_string());
-    if let Some(view) = view {
-        view.set_user(user.clone());
-    }
-    cx.shared.user = Some(user);
-}
-
-impl AccountView {
-    /// Puts the open sheet back, ready to try again with what was typed.
-    fn change_failed(&mut self) {
-        let form = match self.overlay.take() {
-            Some(Overlay::Form(form) | Overlay::ConfirmPassword { form, .. }) => Some(form),
-            other => {
-                self.overlay = other;
-                None
+        Reply::Resent { ticket } => Action::Resent { ticket },
+        Reply::ResendLimited { ticket } => Action::ResendLimited { ticket },
+        Reply::Tick { ticket } => Action::Tick { ticket },
+        Reply::UsernameChanged { ticket, user } => {
+            take_user(cx, &user);
+            Action::UsernameChanged {
+                ticket,
+                username: user.username,
             }
-        };
-        if let Some(mut form) = form {
-            form.busy = false;
-            self.overlay = Some(Overlay::Form(form));
         }
+        Reply::EmailChanged { ticket, user } => {
+            take_user(cx, &user);
+            Action::EmailChanged { ticket, user }
+        }
+        Reply::PasswordChanged { ticket } => Action::PasswordChanged { ticket },
+        Reply::Deleted { ticket } => Action::Deleted { ticket },
+    };
+    match nav.find_mut(pick) {
+        Some(view) if view.visit == visit => dispatch(view, action, cx),
+        // The session is already gone; with no model to log out, go to sign-in here.
+        _ if deleted => login::signed_out(cx, None),
+        _ => {}
     }
+}
+
+/// Takes a fresh copy of the user for the rest of the app.
+fn take_user(cx: &mut Context<'_>, user: &User) {
+    cx.shared.username = Some(user.username.to_string());
+    cx.shared.user = Some(user.clone());
 }

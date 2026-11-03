@@ -29,7 +29,6 @@ pub(crate) mod remove_cards;
 pub(crate) mod swipe;
 pub(crate) mod update_required;
 
-use std::fmt;
 use std::time::Instant;
 
 use crossterm::event::KeyCode;
@@ -168,7 +167,6 @@ impl Screen {
     pub(crate) fn animating(&self) -> bool {
         match self {
             Self::Home(view) => view.animating(),
-            Self::Account(view) => view.animating(),
             Self::Login(form) => form.hero.animating(Instant::now()),
             Self::Changelog(view) => widgets::entrance::animating(view.filtered_at.elapsed()),
             Self::Swipe(view) => view.animating(),
@@ -546,16 +544,6 @@ pub(crate) fn shown(error: &ClientError) -> String {
 pub(crate) fn sign_out(cx: &mut Context<'_>, message: &str) {
     message.clone_into(&mut cx.shared.status);
     cx.request(Request::SignOut);
-}
-
-/// A password on its way to the server from a screen not yet on its zwipe-ui model, never shown in `Debug` output.
-#[derive(Clone, PartialEq, Eq)]
-pub(crate) struct Password(pub(crate) String);
-
-impl fmt::Debug for Password {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str("Password(<redacted>)")
-    }
 }
 
 #[cfg(test)]
