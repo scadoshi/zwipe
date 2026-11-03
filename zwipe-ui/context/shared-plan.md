@@ -72,9 +72,22 @@ Part 2 finished on 2026-11-02: a model for every screen, the app switched to eac
 - The app's `undo_log.rs` still duplicates `zwipe_ui::stores::undo`, so `remove.rs` (`into_shared`, `from_shared`) and the deck cards view (`to_app_undo`, `to_shared_undo`) convert between them. Switching the app to the shared log deletes all four.
 - `components`' changelog still has its own `chip_rows`; switch it to `screens::changelog` (K5).
 - Card filter switched the sheet-level flow; its fifteen section bodies still edit the host's signal directly.
-- Retire `deck_cards::Bursts` once web and the TUI use the deck cards model.
+- Retire `deck_cards::Bursts` once web uses the deck cards model; the TUI no longer uses it.
 - The Create and Edit model routes actions to `field`, `tag` and `command_zone` helpers that end in `_ =>`.
 - Create and Edit and Add cards are the largest app rewrites; look at both on a device.
+
+zwiper-tui switched on 2026-11-03: every screen with a model drives it, on `feat/tui` (the recipe is in `zwiper-tui/context/ARCHITECTURE.md`). It found that a model's tickets restarted with each new `State`, which let a reply to a closed screen land in a reopened one where requests outlive their screen; tickets are now unique across the process (#149). Model gaps it worked around or noted, none blocking:
+
+- `commander_maybeboard` has no deck count view, so the TUI keeps the count beside the model for the commander swipe's deck limit. Add `deck_count()` or a create-allowed view.
+- `oracle_tag_examples`' `Loaded` checks only that the ticket is current, not that a page is out, so a repeated reply would append its cards twice.
+- `printing_sheet` lists nothing for a card with no oracle id (the app too), and a client can't add the opening card. Check reversible cards.
+- `oracle_tag_dictionary`'s `AdoptTag` doc says the dictionary stays up; a host that adopts on return (the TUI) closes it. Doc wording.
+- `register`: a success that lands after the user left Register says nothing (the app too), so a created account gets no word.
+- `deck_view`'s `Load(id)` can't start from a profile the client already holds, so the Profile card shows ghost rows on open.
+- `add_cards` has no view of its deck state (`in_deck`, `maybeboard`, `lands_at_target`) or of the maybeboard's wrapping next card; `remove_cards` has no wrapping next card either. The TUI computes the card under an entering one itself.
+- `playstyle`'s `PickPrinting` reaches suggestions only, so a printing picked on a staple row does nothing in the app; the TUI keeps those picks on its view.
+- `home` has no action to set the scope, so the TUI restores a saved scope with `ToggleScope`.
+- `account` reuses a wait's ticket for the next wait, and `config` lands a success after a failure on the same ticket. Neither happens in normal use.
 
 Branches 2 to 11 are independent of each other once 1 lands, so they can merge in any order; the order above is value and risk.
 
