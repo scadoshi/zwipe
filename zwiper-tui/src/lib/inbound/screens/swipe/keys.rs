@@ -1,53 +1,81 @@
 //! The Add screen's keys. An open sheet takes every key; otherwise l, h, m and u (or the arrows) swipe right, left, up and undo, and the rest open sheets, switch the source, flip Synergy and refresh.
 
-use crossterm::event::KeyCode;
-use zwipe_core::domain::user::hints::HINT_ADD_DECK_CARDS;
+use std::time::Instant;
 
-use super::{Source, SwipeView};
+use crossterm::event::KeyCode;
+use zwipe_ui::screens::add_cards::{Action, PRINTING_SWAPPED, Source};
+use zwipe_ui::stack::Direction;
+
+use super::{Entering, SwipeView, dispatch, reopen_hint, scope};
 use crate::inbound::app::Context;
 use crate::inbound::screens::card_sheets::details::DetailsOutcome;
 use crate::inbound::screens::card_sheets::filter::{self, SheetOutcome};
 use crate::inbound::screens::card_sheets::printing::{PrintingOutcome, PrintingSheet};
-use crate::inbound::widgets::{help, hint};
+use crate::inbound::widgets::card_motion::CardMotion;
+use crate::inbound::widgets::help;
 
 pub(crate) fn handle(view: &mut SwipeView, code: KeyCode, cx: &mut Context<'_>) {
     if sheet_key(view, code, cx) {
         return;
     }
-    view.stack.cancel_entering();
-    view.mb_stack.cancel_entering();
+    view.entering = Entering::default();
     match code {
-        KeyCode::Esc => view.leave(cx),
+        KeyCode::Esc => {
+            view.park(cx);
+            dispatch(view, Action::Back, cx);
+        }
         KeyCode::Char('!') => help::open(cx),
         KeyCode::Char('q') => {
             view.park(cx);
             cx.quit();
         }
-        KeyCode::Right | KeyCode::Char('l') => view.swipe_right(cx),
-        KeyCode::Left | KeyCode::Char('h') => view.swipe_left(cx),
-        KeyCode::Up | KeyCode::Char('m') => view.swipe_up(cx),
-        KeyCode::Down | KeyCode::Char('u') | KeyCode::Backspace => view.undo(cx),
+        KeyCode::Right | KeyCode::Char('l') => swipe(view, Direction::Right, cx),
+        KeyCode::Left | KeyCode::Char('h') => swipe(view, Direction::Left, cx),
+        KeyCode::Up | KeyCode::Char('m') => swipe(view, Direction::Up, cx),
+        KeyCode::Down | KeyCode::Char('u') | KeyCode::Backspace => undo(view, cx),
         KeyCode::Char('f') => view.open_filter(cx),
-        KeyCode::Char('r') => view.refresh(cx),
+        KeyCode::Char('r') => dispatch(view, Action::Refresh, cx),
         KeyCode::Char('e') => view.open_details(),
-        KeyCode::Char('y') => view.toggle_synergy(cx),
-        KeyCode::Tab => {
-            let to = match view.source {
-                Source::Search => Source::Maybeboard,
-                Source::Maybeboard => Source::Search,
-            };
-            view.switch_source(cx, to);
+        KeyCode::Char('y') if view.model.shows_synergy() => {
+            dispatch(view, Action::ToggleSynergy, cx);
         }
+        KeyCode::Tab => switch_source(view, cx),
         KeyCode::Char('t') => {
             view.face = view.face.saturating_add(1);
             view.sync_images(cx);
         }
         KeyCode::Char('i') => view.show_image = !view.show_image,
-        KeyCode::Char('?') => {
-            hint::reopen(cx, HINT_ADD_DECK_CARDS);
-        }
+        KeyCode::Char('?') => reopen_hint(cx),
         _ => {}
     }
+}
+
+/// Commits the top card's exit to `direction`, starting its motion while it is still on top.
+fn swipe(view: &mut SwipeView, direction: Direction, cx: &mut Context<'_>) {
+    view.exit(direction);
+    dispatch(view, Action::Swipe(direction), cx);
+}
+
+/// Undoes the newest swipe, bringing its card back from the side it left by.
+fn undo(view: &mut SwipeView, cx: &mut Context<'_>) {
+    dispatch(view, Action::Undo, cx);
+    if let Some(side) = view.entering() {
+        view.motion = Some(CardMotion::enter(side, Instant::now()));
+    }
+}
+
+/// Switches between Search and Maybeboard, each keeping its own filter.
+fn switch_source(view: &mut SwipeView, cx: &mut Context<'_>) {
+    let Some(deck_id) = view.model.deck_id() else {
+        return;
+    };
+    let source = match view.model.source() {
+        Source::Search => Source::Maybeboard,
+        Source::Maybeboard => Source::Search,
+    };
+    let remembered = cx.shared.cards.filters.restore(scope(source), deck_id);
+    view.motion = None;
+    dispatch(view, Action::PickSource { source, remembered }, cx);
 }
 
 /// Hands the key to the sheet on top, if any. Returns whether one took it.
@@ -59,7 +87,7 @@ fn sheet_key(view: &mut SwipeView, code: KeyCode, cx: &mut Context<'_>) -> bool 
             SheetOutcome::Applied(filter) => {
                 view.sheet = None;
                 view.filter = *filter;
-                view.rerun(cx);
+                dispatch(view, Action::Filter(view.filter.clone()), cx);
             }
         }
         return true;
@@ -71,9 +99,7 @@ fn sheet_key(view: &mut SwipeView, code: KeyCode, cx: &mut Context<'_>) -> bool 
             PrintingOutcome::Saved(card) => {
                 view.printing = None;
                 view.details = None;
-                view.stack.replace_current(*card);
-                view.face = 0;
-                view.sync_images(cx);
+                dispatch(view, Action::SwapPrinting(card), cx);
             }
         }
         return true;
@@ -88,7 +114,7 @@ fn sheet_key(view: &mut SwipeView, code: KeyCode, cx: &mut Context<'_>) -> bool 
                     cx,
                     card,
                     /* read_only */ false,
-                    "Printing swapped",
+                    PRINTING_SWAPPED,
                 ));
             }
         }

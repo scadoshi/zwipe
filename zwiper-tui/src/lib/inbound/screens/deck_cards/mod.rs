@@ -755,9 +755,9 @@ impl DeckCardsView {
 
     /// Opens Add over the view.
     pub(crate) fn open_add(&mut self, cx: &mut Context<'_>) {
-        if let Some(deck) = self.deck() {
+        if self.deck().is_some() {
             self.flush_all(cx);
-            swipe::open(cx, &deck);
+            swipe::open(cx, self.deck_id);
         }
     }
 

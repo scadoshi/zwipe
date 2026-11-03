@@ -553,9 +553,9 @@ fn perform_effects(view: &mut DeckView, action: Action, cx: &mut Context<'_>, on
             Effect::Navigate(Destination::DeckList) => cx.back(),
             Effect::Navigate(Destination::EditDeck(id)) => screens::deck_form::open_edit(cx, id),
             Effect::Navigate(Destination::DeckCards(id)) => screens::deck_cards::open(cx, id),
-            Effect::Navigate(Destination::AddCards(_)) => {
-                if let Some(deck) = view.model.deck() {
-                    screens::swipe::open(cx, deck);
+            Effect::Navigate(Destination::AddCards(id)) => {
+                if view.model.deck().is_some() {
+                    screens::swipe::open(cx, id);
                 }
             }
             Effect::Navigate(Destination::ImportDeck(id)) => screens::deck_import::open(cx, id),

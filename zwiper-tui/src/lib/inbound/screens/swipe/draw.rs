@@ -1,4 +1,4 @@
-//! The Add screen: the title, the From and Synergy chips, the card with its info block under it, the keys, and any sheet over them.
+//! The Add screen: the From and Synergy chips, the card with its info block under it, the keys, and any sheet over them.
 
 use std::time::Instant;
 
@@ -11,8 +11,9 @@ use ratatui_image::StatefulImage;
 use ratatui_image::picker::ProtocolType;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ImageSize;
+use zwipe_ui::screens::add_cards::{FROM, Pile, SYNERGY, Source};
 
-use super::{CardImage, Motion, Source, SwipeView};
+use super::{CardImage, Motion, SwipeView};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::screens::card_sheets::filter;
@@ -48,7 +49,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &SwipeView) {
 
     let now = Instant::now();
     let motion = view.motion.as_ref().filter(|m| m.running(now));
-    match view.current() {
+    match view.model.current() {
         Some(card) => draw_card(f, shared, view, card, motion, body),
         None => draw_empty(f, palette, view, body),
     }
@@ -79,15 +80,16 @@ fn source_line(palette: &Palette, view: &SwipeView) -> Line<'static> {
         };
         Span::styled(format!(" {label} "), style)
     };
-    let mut spans = vec![
-        Span::styled("From ", palette.muted.bold()),
-        chip("Search", view.source == Source::Search),
-        Span::raw(" "),
-        chip("Maybeboard", view.source == Source::Maybeboard),
-    ];
-    if view.synergy_shown() {
+    let mut spans = vec![Span::styled(format!("{FROM} "), palette.muted.bold())];
+    for (i, source) in Source::ALL.into_iter().enumerate() {
+        if i > 0 {
+            spans.push(Span::raw(" "));
+        }
+        spans.push(chip(source.label(), view.model.source() == source));
+    }
+    if view.model.shows_synergy() {
         spans.push(Span::raw("   "));
-        spans.push(chip("Synergy", view.filter.synergy()));
+        spans.push(chip(SYNERGY, view.filter.synergy()));
     }
     Line::from(spans)
 }
@@ -107,11 +109,11 @@ fn key_line(palette: &Palette, view: &SwipeView) -> Line<'static> {
         ("u", "undo"),
     );
     let mut rest = vec![("f", filter), ("r", "refresh")];
-    if view.current().is_some() {
+    if view.model.current().is_some() {
         rest.push(("e", "details"));
     }
     rest.push(("Tab", "from"));
-    if view.synergy_shown() {
+    if view.model.shows_synergy() {
         rest.push(("y", "synergy"));
     }
     rest.push(("Esc", "back"));
@@ -119,21 +121,16 @@ fn key_line(palette: &Palette, view: &SwipeView) -> Line<'static> {
     action_bar::styled_line(&keys)
 }
 
-/// No card on top: loading, the end of results, or nothing.
+/// No card on top: loading (a fetch on its way, or the deck not in yet), the end of results, or nothing.
 fn draw_empty(f: &mut Frame<'_>, palette: &Palette, view: &SwipeView, area: Rect) {
     let width = area.width.min(CARD_WIDTH);
-    let loading = match view.source {
-        Source::Search => {
-            (view.stack.is_empty() && view.loading_cards)
-                || (!view.stack.is_empty() && view.loading_more)
-        }
-        Source::Maybeboard => false,
-    };
+    let pile = view.model.pile();
+    let loading = pile == Pile::Loading || (pile == Pile::Empty && !view.model.is_deck_loaded());
     let lines = if loading {
         skeleton::rows(palette, 5, usize::from(width))
     } else {
         let mut lines = vec![Line::from("No cards").style(palette.muted).centered()];
-        if view.source == Source::Search && !view.stack.is_empty() {
+        if pile == Pile::End {
             lines.push(
                 Line::from("u steps back into the pile")
                     .style(palette.muted)
@@ -153,11 +150,8 @@ fn draw_empty(f: &mut Frame<'_>, palette: &Palette, view: &SwipeView, area: Rect
 
 /// The border color of a card coming back after an undo: the side it left by.
 fn entering_style(palette: &Palette, view: &SwipeView) -> Style {
-    let entering = match view.source {
-        Source::Search => view.stack.entering(),
-        Source::Maybeboard => view.mb_stack.entering(),
-    };
-    entering.map_or(palette.accent, |d| card_motion::side_style(palette, d))
+    view.entering()
+        .map_or(palette.accent, |d| card_motion::side_style(palette, d))
 }
 
 /// Splits the body into the card's area and the info block's.
@@ -312,7 +306,7 @@ fn draw_motion(
             card_motion::side_style(palette, motion.direction()),
         ),
         Phase::Enter => {
-            let Some(card) = view.current() else {
+            let Some(card) = view.model.current() else {
                 return;
             };
             (card, view.face, entering_style(palette, view))
