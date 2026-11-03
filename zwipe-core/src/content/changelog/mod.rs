@@ -57,6 +57,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Account ends with a Danger zone panel for Log out and Delete account",
         "Commander maybeboard and Playstyle float Swipe and Filter at the bottom right, and Clear sits in a Danger zone panel",
         "The deck's card list has a floating bar of icons for add, remove, filter and undo; an x on the filter resets it",
+        "Add, Remove, swipe select and Oracle tag examples float their filter, refresh and card details as icons at the bottom right",
     ],
 }];
 
