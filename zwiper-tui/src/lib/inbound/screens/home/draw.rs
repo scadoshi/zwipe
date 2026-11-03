@@ -26,9 +26,6 @@ use crate::inbound::widgets::{
     action_bar, color_map, entrance, figures, logo, measure, skeleton, stagger,
 };
 
-/// Rows kept for the panels under the hero before the logo may take room.
-const PANEL_ROOM: u16 = 12;
-
 /// The figures sit in tiles from this terminal height; a shorter one keeps the plain strip so the panels keep their rows.
 const TILES_FROM_ROWS: u16 = 22;
 
@@ -48,35 +45,21 @@ pub(crate) fn button(palette: &Palette, key: &str, label: &str) -> Vec<Span<'sta
 pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &HomeView) {
     let palette = &shared.palette;
     let area = f.area().inner(Margin::new(1, 0));
-    let logo_text = pick_logo(area);
-    let logo_height = logo_text.map_or(0, |l| measure::height_of(l.lines().count()));
     let strip_height = if area.height >= TILES_FROM_ROWS {
         figures::TILE_HEIGHT
     } else {
         figures::HEIGHT
     };
-    let hero_height = logo_height
-        .saturating_add(u16::from(logo_height > 0))
-        .saturating_add(strip_height)
-        .saturating_add(1);
-
     let [content, status, keys] = Layout::vertical([
         Constraint::Fill(1),
         Constraint::Length(1),
         Constraint::Length(1),
     ])
     .areas(area);
-    let room = content.height.saturating_sub(hero_height);
     let map = map_heights(palette, view, content.width);
     let flavor = flavor_heights(shared, view, content.width);
-    let rows = PanelRows::fit(map, flavor, room);
-    // A free row over the logo, so it never sits on the screen's top edge, while the panels lose nothing to it.
-    let top = u16::from(
-        logo_text.is_some()
-            && room
-                .checked_sub(1)
-                .is_some_and(|less| PanelRows::fit(map, flavor, less) == rows),
-    );
+    let (logo_text, top, hero_height, rows) =
+        place_hero(area, content.height, strip_height, map, flavor);
     let [_, hero, map_area, flavor_area, _] = Layout::vertical([
         Constraint::Length(top),
         Constraint::Length(hero_height),
@@ -286,12 +269,41 @@ fn flavor_image_ready(shared: &Shared) -> bool {
             .is_some_and(|slot| matches!(slot.image, CardImage::Ready(_)))
 }
 
-/// The full logo when it fits with room for the panels, the compact Z when only that fits, else none.
-fn pick_logo(area: Rect) -> Option<&'static str> {
-    logo::fitting(
-        area.width.saturating_sub(2),
-        area.height.saturating_sub(PANEL_ROOM).saturating_sub(9),
-    )
+/// The hero's rows above the panels: `top` free row(s), the logo, a gap, the figures and the chips row.
+fn hero_rows(logo_text: Option<&str>, strip_height: u16) -> u16 {
+    let logo_height = logo_text.map_or(0, |l| measure::height_of(l.lines().count()));
+    logo_height
+        .saturating_add(u16::from(logo_height > 0))
+        .saturating_add(strip_height)
+        .saturating_add(1)
+}
+
+/// Picks the logo and lays the hero over the panels. A drawn logo always has a free row above it, so it never sits on the screen's top edge. The flavor text always shows whole; within that, the first of these that fits wins: the full logo over a full-scale map, the compact Z over a full-scale map, the full logo over a half-scale map, the Z over a half-scale map. When none fits, no logo. Returns the logo, the free rows on top, the hero's height and the panels' rows.
+fn place_hero(
+    area: Rect,
+    content_height: u16,
+    strip_height: u16,
+    map: MapHeights,
+    flavor: FlavorHeights,
+) -> (Option<&'static str>, u16, u16, PanelRows) {
+    let width = area.width.saturating_sub(2);
+    let arts = [zwipe_core::domain::logo::ZWIPE, zwipe_core::domain::logo::Z];
+    for map_rows in [map.full, map.half] {
+        for art in arts {
+            if logo::size(art).0 > width {
+                continue;
+            }
+            let hero = hero_rows(Some(art), strip_height);
+            let room = content_height.saturating_sub(hero).saturating_sub(1);
+            let rows = PanelRows::fit(map, flavor, room);
+            if rows.map >= map_rows && rows.flavor >= flavor.text {
+                return (Some(art), 1, hero, rows);
+            }
+        }
+    }
+    let hero = hero_rows(None, strip_height);
+    let rows = PanelRows::fit(map, flavor, content_height.saturating_sub(hero));
+    (None, 0, hero, rows)
 }
 
 fn draw_hero(
