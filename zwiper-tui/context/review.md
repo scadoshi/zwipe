@@ -4,10 +4,13 @@ zwiper-tui covers every app screen and has passed the parity audit, live checks,
 
 ## Where things stand
 
-- Branch `feat/tui`, 647 tests, every gate green.
-- Every screen drives its zwipe-ui screen model (switched 2026-11-03; the recipe is in `ARCHITECTURE.md`). The visual review continues on top of that.
-- Login is reviewed, and the button grammar below is built across every screen that had boxed buttons or button pills. Every owner-approved item is built.
-- Next screen: Register, then the rest in screen order (Reset password, Home, Activity, Playstyle, Decks, the deck view and its sheets, Add, Remove, Deck cards, Account, Config, Privacy, Changelog).
+On hold since 2026-11-03: the main app's visual grammar is changing, and those changes will guide the TUI's. Resume by reading what changed in the app, then carry it into the decided rules below before reviewing more screens.
+
+- Branch `feat/tui`, 647 tests, every gate green, pushed.
+- Every screen drives its zwipe-ui screen model (switched 2026-11-03; the recipe is in `ARCHITECTURE.md`).
+- Reviewed with the owner: Login, Register, Reset password, Home. Every owner-approved item is built.
+- Next screen when it resumes: Activity, then Playstyle, Decks, the deck view and its sheets, Add, Remove, Deck cards, Account, Config, Privacy, Changelog.
+- Open outside the TUI: Scryfall's `*italic*` markers in flavor text show as literal asterisks in the TUI and likely the app; a shared zwipe-ui helper would fix every client.
 
 ## Decided (owner-approved; keep these)
 
