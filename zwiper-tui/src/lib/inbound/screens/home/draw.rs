@@ -1,4 +1,4 @@
-//! Home: the hero (logo, figures and chips), the color map panel and the featured flavor panel, then the action bar.
+//! Home: the hero (logo, figures and chips), the color map panel with the featured flavor panel under it, each only as tall as what it holds, then the action bar.
 
 use std::time::Duration;
 
@@ -21,12 +21,10 @@ use crate::inbound::app::Shared;
 use crate::inbound::screens::swipe::CardImage;
 use crate::inbound::widgets;
 use crate::inbound::widgets::color_map::Scale;
+use crate::inbound::widgets::measure::BORDERS;
 use crate::inbound::widgets::{
     action_bar, color_map, entrance, figures, logo, measure, skeleton, stagger,
 };
-
-/// The two lower panels sit side by side from this width, in cells.
-const SIDE_BY_SIDE: u16 = 90;
 
 /// Rows kept for the panels under the hero before the logo may take room.
 const PANEL_ROOM: u16 = 12;
@@ -62,13 +60,31 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &HomeView) {
         .saturating_add(strip_height)
         .saturating_add(1);
 
-    let [hero, panels, status, keys] = Layout::vertical([
-        Constraint::Length(hero_height),
+    let [content, status, keys] = Layout::vertical([
         Constraint::Fill(1),
         Constraint::Length(1),
         Constraint::Length(1),
     ])
     .areas(area);
+    let room = content.height.saturating_sub(hero_height);
+    let map = map_heights(palette, view, content.width);
+    let flavor = flavor_heights(shared, view, content.width);
+    let rows = PanelRows::fit(map, flavor, room);
+    // A free row over the logo, so it never sits on the screen's top edge, while the panels lose nothing to it.
+    let top = u16::from(
+        logo_text.is_some()
+            && room
+                .checked_sub(1)
+                .is_some_and(|less| PanelRows::fit(map, flavor, less) == rows),
+    );
+    let [_, hero, map_area, flavor_area, _] = Layout::vertical([
+        Constraint::Length(top),
+        Constraint::Length(hero_height),
+        Constraint::Length(rows.map),
+        Constraint::Length(rows.flavor),
+        Constraint::Fill(1),
+    ])
+    .areas(content);
 
     let since = view.opened.elapsed();
     if let Some(hero) = stagger::area(hero, since, Duration::ZERO).map(|r| r.intersection(f.area()))
@@ -76,10 +92,12 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &HomeView) {
         draw_hero(f, shared, view, logo_text, strip_height, hero);
         stagger::fade(f, hero, since, Duration::ZERO, entrance::DURATION);
     }
-    if let Some(panels) =
-        stagger::area(panels, since, stagger::DELAY).map(|r| r.intersection(f.area()))
-    {
-        draw_panels(f, shared, view, panels);
+    let rising =
+        |panel: Rect| stagger::area(panel, since, stagger::DELAY).map(|r| r.intersection(content));
+    if let (Some(map_area), Some(flavor_area)) = (rising(map_area), rising(flavor_area)) {
+        draw_color_map(f, shared, view, map_area);
+        draw_flavor(f, shared, view, flavor_area);
+        let panels = map_area.union(flavor_area);
         stagger::fade(f, panels, since, stagger::DELAY, entrance::DURATION);
     }
     f.render_widget(Line::styled(shared.status.clone(), palette.muted), status);
@@ -101,6 +119,171 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &HomeView) {
         Some(Overlay::Buy(dialog)) => dialog.draw(f, palette),
         None => {}
     }
+}
+
+/// The color map panel's rows at full scale and at half scale, each with its rule and key.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct MapHeights {
+    full: u16,
+    half: u16,
+}
+
+/// The featured flavor panel's rows with its text alone, and with the card's image when the terminal draws one and the panel's width has room for it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct FlavorHeights {
+    text: u16,
+    image: Option<u16>,
+}
+
+/// The rows the two panels take, the color map over the featured flavor.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct PanelRows {
+    map: u16,
+    flavor: u16,
+}
+
+impl PanelRows {
+    /// Each panel's rows in `room` rows: the first of these that fits, each panel only as tall as what it holds, is the full map over the image, the half-scale map over the image, the full map over the text, the half-scale map over the text. When none fits, the map keeps at least three fifths of the room, as much as the text leaves it, and the flavor panel the rest.
+    fn fit(map: MapHeights, flavor: FlavorHeights, room: u16) -> Self {
+        let mut tries = Vec::with_capacity(4);
+        if let Some(image) = flavor.image {
+            tries.extend([(map.full, image), (map.half, image)]);
+        }
+        tries.extend([(map.full, flavor.text), (map.half, flavor.text)]);
+        if let Some((map, flavor)) = tries
+            .into_iter()
+            .find(|(map, flavor)| map.saturating_add(*flavor) <= room)
+        {
+            return Self { map, flavor };
+        }
+        let at_least = room.saturating_mul(3) / 5;
+        let map_rows = map.full.min(room.saturating_sub(flavor.text).max(at_least));
+        Self {
+            map: map_rows,
+            flavor: room.saturating_sub(map_rows).min(flavor.text),
+        }
+    }
+}
+
+/// The color map panel's rows at `width` cells wide.
+fn map_heights(palette: &Palette, view: &HomeView, width: u16) -> MapHeights {
+    let inner = width.saturating_sub(BORDERS);
+    let framed = |map_rows: u16, under: u16| map_rows.saturating_add(under).saturating_add(BORDERS);
+    let scaled = |model: &ColorMapModel, under: u16| {
+        let full = if model.columns.saturating_mul(2) <= i32::from(inner) {
+            Scale::Full
+        } else {
+            Scale::Half
+        };
+        MapHeights {
+            full: framed(full.rows(model), under),
+            half: framed(Scale::Half.rows(model), under),
+        }
+    };
+    match view.model.play_style() {
+        PlayStyle::Map(counts) => {
+            let model = ColorMapModel::new(&counts, view.model.seed());
+            let key = color_map::key(palette, &counts, Some(("p", PLAYSTYLE)));
+            // The rule, then the key.
+            scaled(&model, 1_u16.saturating_add(key_height(key, inner)))
+        }
+        // The blank row and the ghost key.
+        PlayStyle::Loading => scaled(&zwipe_ui::color_map::ghost_model(), 2),
+        PlayStyle::Empty | PlayStyle::Failed => {
+            let notice = Paragraph::new(notice_lines(palette, &view.model.play_style()))
+                .wrap(Wrap { trim: true });
+            let rows = framed(measure::height_of(notice.line_count(inner)), 0);
+            MapHeights {
+                full: rows,
+                half: rows,
+            }
+        }
+    }
+}
+
+/// The rows `key` takes wrapped at `width`.
+fn key_height(key: Line<'static>, width: u16) -> u16 {
+    measure::height_of(
+        Paragraph::new(key)
+            .wrap(Wrap { trim: true })
+            .line_count(width),
+    )
+}
+
+/// What the color map panel says when it has no map: no decks yet or a failed load, then the Playstyle key.
+fn notice_lines(palette: &Palette, panel: &PlayStyle) -> Vec<Line<'static>> {
+    let notice = match panel {
+        PlayStyle::Failed => PLAY_STYLE_FAILED,
+        PlayStyle::Empty | PlayStyle::Loading | PlayStyle::Map(_) => NO_PLAY_STYLE,
+    };
+    vec![
+        Line::styled(notice, palette.muted),
+        Line::default(),
+        Line::from(button(palette, "p", PLAYSTYLE)),
+    ]
+}
+
+/// The featured flavor panel's rows at `width` cells wide.
+fn flavor_heights(shared: &Shared, view: &HomeView, width: u16) -> FlavorHeights {
+    let inner = width.saturating_sub(BORDERS);
+    match view.model.flavor() {
+        Flavor::Quote(quote) => {
+            let (quote, buy) = flavor_text(&shared.palette, &quote);
+            let text_rows = |width: u16| flavor_text_rows(&quote, &buy, width);
+            let image = flavor_image_ready(shared)
+                .then(|| flavor_image_rows(inner, text_rows))
+                .flatten();
+            FlavorHeights {
+                text: text_rows(inner).saturating_add(BORDERS),
+                image: image.map(|rows| rows.saturating_add(BORDERS)),
+            }
+        }
+        Flavor::Blank => FlavorHeights {
+            text: 0,
+            image: None,
+        },
+        Flavor::Loading => FlavorHeights {
+            text: FLAVOR_GHOST_ROWS.saturating_add(BORDERS),
+            image: None,
+        },
+    }
+}
+
+/// The loading ghost's rows: a title bar, three skeleton rows and the ghost card line.
+const FLAVOR_GHOST_ROWS: u16 = 5;
+
+/// The inside rows the featured card takes with its image at `inner` cells wide: beside the text at the image's least height when the width has room for both, else above the text, or `None` when the image does not fit at all. `text_rows` gives the text's height at a width.
+fn flavor_image_rows(inner: u16, text_rows: impl Fn(u16) -> u16) -> Option<u16> {
+    let image_width = flavor_image_width(FLAVOR_IMAGE_MIN_ROWS);
+    let beside = inner
+        .checked_sub(image_width.saturating_add(FLAVOR_GAP))
+        .filter(|text_width| *text_width >= FLAVOR_TEXT_MIN_WIDTH)
+        .map(|text_width| FLAVOR_IMAGE_MIN_ROWS.max(text_rows(text_width)))
+        .filter(|rows| {
+            inner
+                >= flavor_image_width(*rows)
+                    .saturating_add(FLAVOR_GAP)
+                    .saturating_add(FLAVOR_TEXT_MIN_WIDTH)
+        });
+    if beside.is_some() {
+        return beside;
+    }
+    let widest = inner.saturating_mul(10) / FLAVOR_IMAGE_WIDTH_PER_ROW_TENTHS;
+    (widest >= FLAVOR_IMAGE_MIN_ROWS).then(|| {
+        FLAVOR_IMAGE_MIN_ROWS
+            .saturating_add(1)
+            .saturating_add(text_rows(inner))
+    })
+}
+
+/// Whether the featured card's image is loaded and the terminal draws real images.
+fn flavor_image_ready(shared: &Shared) -> bool {
+    super::draws_images(shared)
+        && shared
+            .caches
+            .flavor_image
+            .as_ref()
+            .is_some_and(|slot| matches!(slot.image, CardImage::Ready(_)))
 }
 
 /// The full logo when it fits with room for the panels, the compact Z when only that fits, else none.
@@ -161,16 +344,6 @@ fn draw_hero(
     f.render_widget(Line::from(spans).centered(), chips);
 }
 
-fn draw_panels(f: &mut Frame<'_>, shared: &Shared, view: &HomeView, area: Rect) {
-    let [map_area, flavor_area] = if area.width >= SIDE_BY_SIDE {
-        Layout::horizontal([Constraint::Percentage(55), Constraint::Percentage(45)]).areas(area)
-    } else {
-        Layout::vertical([Constraint::Fill(3), Constraint::Fill(2)]).areas(area)
-    };
-    draw_color_map(f, shared, view, map_area);
-    draw_flavor(f, shared, view, flavor_area);
-}
-
 fn draw_color_map(f: &mut Frame<'_>, shared: &Shared, view: &HomeView, area: Rect) {
     let palette = &shared.palette;
     let panel = view.model.play_style();
@@ -187,16 +360,11 @@ fn draw_color_map(f: &mut Frame<'_>, shared: &Shared, view: &HomeView, area: Rec
     f.render_widget(block, area);
     let width = inner.width;
 
-    let playstyle = Line::from(button(palette, "p", PLAYSTYLE));
     let lines: Vec<Line<'static>> = match panel {
         PlayStyle::Map(counts) => {
             let model = ColorMapModel::new(&counts, view.model.seed());
             let key = color_map::key(palette, &counts, Some(("p", PLAYSTYLE)));
-            let key_height = measure::height_of(
-                Paragraph::new(key.clone())
-                    .wrap(Wrap { trim: true })
-                    .line_count(width),
-            );
+            let key_height = key_height(key.clone(), width);
             // The rule gives way when the map, even at half scale, needs its row.
             let room = inner.height.saturating_sub(key_height);
             let beside_rule = room.saturating_sub(1);
@@ -209,16 +377,7 @@ fn draw_color_map(f: &mut Frame<'_>, shared: &Shared, view: &HomeView, area: Rec
             lines.push(key);
             lines
         }
-        PlayStyle::Empty => vec![
-            Line::styled(NO_PLAY_STYLE, palette.muted),
-            Line::default(),
-            playstyle,
-        ],
-        PlayStyle::Failed => vec![
-            Line::styled(PLAY_STYLE_FAILED, palette.muted),
-            Line::default(),
-            playstyle,
-        ],
+        PlayStyle::Empty | PlayStyle::Failed => notice_lines(palette, &panel),
         PlayStyle::Loading => {
             let elapsed = view.opened.elapsed();
             let mut lines = color_map::ghost_lines(

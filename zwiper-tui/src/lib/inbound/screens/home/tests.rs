@@ -955,10 +955,10 @@ fn the_featured_card_shows_its_image_beside_or_above_the_quote_when_there_is_roo
         );
     }
 
-    // Tall and narrow: the image on top, the quote under it.
-    assert!(image_drawn(&harness, 60, 100));
-    let (_, y) = quote_at(&harness, 60, 100).expect("the quote stays");
-    let top = crate::test_support::rows(&harness.app, 60, 100)
+    // Too narrow for the image beside the text: the image on top, the quote under it.
+    assert!(image_drawn(&harness, 46, 100));
+    let (_, y) = quote_at(&harness, 46, 100).expect("the quote stays");
+    let top = crate::test_support::rows(&harness.app, 46, 100)
         .iter()
         .position(|r| r.contains("Featured flavor"))
         .unwrap();
@@ -966,9 +966,8 @@ fn the_featured_card_shows_its_image_beside_or_above_the_quote_when_there_is_roo
 
     // Half blocks keep the text alone, and a sixel image waits under a popup.
     harness.app.shared.images = Some(picker(ProtocolType::Halfblocks));
-    assert!(
-        quote_at(&harness, 200, 50).is_some_and(|(x, _)| x < panel_left(&harness, 200, 50) + 30)
-    );
+    assert!(!image_drawn(&harness, 200, 50), "half blocks draw no image");
+    assert!(quote_at(&harness, 200, 50).is_some(), "the text stays");
     harness.app.shared.images = Some(picker(ProtocolType::Sixel));
     harness.press(KeyCode::Char('?'));
     assert!(
@@ -1029,4 +1028,63 @@ fn a_session_refresh_fetches_an_expired_featured_card_once() {
     harness.clear();
     harness.apply(upkept());
     assert_eq!(names(&harness), Vec::<&str>::new(), "one fetch at a time");
+}
+
+#[test]
+fn homes_logo_keeps_a_free_row_over_it() {
+    let harness = settled_home();
+    for (width, height) in [(200, 50), (120, 36)] {
+        let rows = crate::test_support::rows(&harness.app, width, height);
+        let text = rows.join("\n");
+        assert!(
+            rows[0].trim().is_empty(),
+            "the top row is free at {width}x{height}:\n{text}"
+        );
+        assert!(
+            rows[1].contains('█'),
+            "the logo starts on the second row at {width}x{height}:\n{text}"
+        );
+    }
+    let rows = crate::test_support::rows(&harness.app, 80, 24);
+    assert!(
+        rows[0].contains('┌'),
+        "with no logo the figures start at the top:\n{}",
+        rows.join("\n")
+    );
+}
+
+#[test]
+fn the_featured_flavor_panel_sits_right_under_the_color_map() {
+    let harness = settled_home();
+    for (width, height) in [(120, 36), (200, 50)] {
+        let rows = crate::test_support::rows(&harness.app, width, height);
+        let text = rows.join("\n");
+        let context = format!("{width}x{height}:\n{text}");
+        let map_top = rows.iter().position(|r| r.contains("Color map")).unwrap();
+        let flavor_top = rows
+            .iter()
+            .position(|r| r.contains("Featured flavor"))
+            .unwrap();
+        let map_bottom = map_top
+            + rows[map_top..]
+                .iter()
+                .position(|r| r.contains('└'))
+                .unwrap();
+        assert_eq!(flavor_top, map_bottom + 1, "stacked at {context}");
+        let left = |row: &str| row.find('┌').map(|x| row[..x].chars().count());
+        assert_eq!(
+            left(&rows[map_top]),
+            left(&rows[flavor_top]),
+            "one column at {context}"
+        );
+        let buy = rows.iter().position(|r| r.contains("b Buy")).unwrap();
+        assert!(
+            rows[buy + 1].contains('└'),
+            "the flavor panel ends under its card line at {context}"
+        );
+        assert!(
+            rows[map_bottom - 1].contains("p Playstyle"),
+            "the map panel ends under its key at {context}"
+        );
+    }
 }
