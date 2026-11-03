@@ -7,8 +7,6 @@ pub(crate) mod keys;
 #[cfg(test)]
 mod tests;
 
-use std::sync::atomic::{AtomicU64, Ordering};
-
 use zwipe_client::ClientError;
 use zwipe_core::domain::auth::models::secret::Secret;
 use zwipe_core::domain::user::User;
@@ -20,6 +18,7 @@ use zwipe_ui::screens::account::{
     Action, CANCEL, Destination, Dialog, Effect, Field, Password, Row, Sheet, State, TICK,
 };
 
+use super::visit::Visit;
 use super::{Screen, changelog, login, privacy};
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
@@ -84,20 +83,6 @@ impl Stop {
             Self::Privacy => Action::PrivacyPolicy,
             Self::Changelog => Action::Changelog,
         }
-    }
-}
-
-/// One opening of Account. Every request carries it out and every reply back, so a reply to an earlier visit never lands in a later visit's model, whose tickets start over.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct Visit(u64);
-
-/// The number the next [`Visit`] takes.
-static VISITS: AtomicU64 = AtomicU64::new(0);
-
-impl Visit {
-    /// A visit no earlier one shares.
-    fn next() -> Self {
-        Self(VISITS.fetch_add(1, Ordering::Relaxed))
     }
 }
 

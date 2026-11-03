@@ -1,190 +1,124 @@
-//! Config's keys: the row buttons, the Themes sheet that previews as it moves, and the Exceptions sheet of franchise chips.
+//! Config's keys: the row buttons, the Themes sheet that previews as it moves, and the Exceptions sheet of franchise chips. Presses the model has an action for go through [`dispatch`]; moving the focus and the theme preview stay here.
 
 use crossterm::event::KeyCode;
-use zwipe_core::domain::user::hints::{HINT_CONFIG, HINT_UNIVERSES_BEYOND_EXCEPTIONS};
-use zwipe_core::domain::user::preferences::PipColor;
+use zwipe_core::domain::user::hints::OneTimeHint;
+use zwipe_ui::screens::config::Action;
 
-use super::{
-    ConfigView, ExceptionsSheet, PreferenceChange, Request, Sheet, Stop, ThemeSheet, same_set,
-    show, topic,
-};
+use super::{ConfigView, Sheet, Stop, dispatch, show, topic};
 use crate::inbound::app::Context;
 use crate::inbound::toward::Toward;
-use crate::inbound::widgets::toast::{self, ToastKind};
 use crate::inbound::widgets::{help, hint};
 
 pub(crate) fn handle(view: &mut ConfigView, code: KeyCode, cx: &mut Context<'_>) {
-    match view.sheet.take() {
-        Some(Sheet::Themes(sheet)) => {
-            view.sheet = handle_themes(view, sheet, code, cx).map(Sheet::Themes);
-        }
-        Some(Sheet::Exceptions(sheet)) => {
-            view.sheet = handle_exceptions(view, sheet, code, cx).map(Sheet::Exceptions);
-        }
+    match &view.sheet {
+        Some(Sheet::Themes(_)) => handle_themes(view, code, cx),
+        Some(Sheet::Exceptions { .. }) => handle_exceptions(view, code, cx),
         None => handle_screen(view, code, cx),
     }
 }
 
 fn handle_screen(view: &mut ConfigView, code: KeyCode, cx: &mut Context<'_>) {
+    let exceptions = OneTimeHint::UniversesBeyondExceptions.key();
     match code {
         KeyCode::Char('q') => cx.quit(),
-        KeyCode::Esc => cx.back(),
+        KeyCode::Esc => dispatch(view, Action::Back, cx),
         KeyCode::Down | KeyCode::Char('j') | KeyCode::Tab => view.next(),
         KeyCode::Up | KeyCode::Char('k') | KeyCode::BackTab => view.previous(),
         KeyCode::Enter | KeyCode::Char(' ') => activate(view, cx),
         KeyCode::Char('i') => match topic(view.focused()) {
             Some(topic) => hint::topic(cx, topic),
-            None => hint::reopen(cx, HINT_UNIVERSES_BEYOND_EXCEPTIONS),
+            None => hint::reopen(cx, exceptions),
         },
-        KeyCode::Char('?') => hint::reopen(cx, HINT_CONFIG),
+        KeyCode::Char('?') => hint::reopen(cx, OneTimeHint::Config.key()),
         KeyCode::Char('!') => help::open(cx),
         _ => {}
     }
 }
 
+/// Presses the focused button. The model ignores the two Universes Beyond buttons until the preferences load.
 fn activate(view: &mut ConfigView, cx: &mut Context<'_>) {
-    let stop = view.focused();
-    if !view.enabled(stop) {
-        return;
-    }
-    let shown = &view.shown;
-    let change = match stop {
-        Stop::Theme => {
-            view.sheet = Some(Sheet::Themes(ThemeSheet::opening(&shown.theme)));
-            return;
-        }
-        Stop::Exceptions => {
-            view.sheet = Some(Sheet::Exceptions(ExceptionsSheet {
-                draft: shown.universes_beyond_exceptions.clone(),
-                chip: 0,
-            }));
-            if !view.exceptions_opened {
-                view.exceptions_opened = true;
-                hint::once(cx, HINT_UNIVERSES_BEYOND_EXCEPTIONS);
-            }
-            return;
-        }
-        Stop::Mode => PreferenceChange::DarkMode {
-            theme: shown.theme.clone(),
-            dark_mode: !shown.dark_mode,
+    let action = match view.focused() {
+        Stop::Mode => Action::ToggleDarkMode {
+            shown: view.theme(),
         },
-        Stop::Pips => PreferenceChange::Pips(match shown.pip_style {
-            PipColor::Theme => PipColor::Classic,
-            PipColor::Classic => PipColor::Theme,
-        }),
-        Stop::UniversesBeyond => {
-            PreferenceChange::HideUniversesBeyond(!shown.exclude_universes_beyond)
-        }
+        Stop::Theme => Action::OpenThemes,
+        Stop::Pips => Action::TogglePips {
+            shown: view.shown.pip_style,
+        },
+        Stop::UniversesBeyond => Action::ToggleUniversesBeyond,
+        Stop::Exceptions => Action::OpenExceptions,
     };
-    send(view, change, cx);
+    dispatch(view, action, cx);
 }
 
-/// Sends `change`, showing a toggle at once with the value it replaces kept to put back.
-fn send(view: &mut ConfigView, change: PreferenceChange, cx: &mut Context<'_>) {
-    let undo = change.undo(&view.shown);
-    let seq = view.begin(&change);
-    if matches!(
-        change,
-        PreferenceChange::DarkMode { .. } | PreferenceChange::Pips(_)
-    ) {
-        let shown = view.shown.clone();
-        show(cx, &shown);
-    }
-    cx.request(Request::Save { seq, change, undo }.into());
-}
-
-/// Keys in the Themes sheet: moving previews, Enter saves a new pick, Esc puts the original back. Returns the sheet while it stays open.
-fn handle_themes(
-    view: &mut ConfigView,
-    mut sheet: ThemeSheet,
-    code: KeyCode,
-    cx: &mut Context<'_>,
-) -> Option<ThemeSheet> {
-    let mut preview = view.shown.clone();
+/// Keys in the Themes sheet: moving previews, Enter keeps a new pick, Esc puts the original back.
+fn handle_themes(view: &mut ConfigView, code: KeyCode, cx: &mut Context<'_>) {
+    let Some(Sheet::Themes(sheet)) = &mut view.sheet else {
+        return;
+    };
     match code {
         KeyCode::Down | KeyCode::Char('j') => sheet.step(Toward::Next),
         KeyCode::Up | KeyCode::Char('k') => sheet.step(Toward::Previous),
         KeyCode::Enter => {
-            let Some(theme) = sheet.theme().filter(|_| sheet.picked()) else {
-                return Some(sheet);
+            let Some(name) = sheet.theme().filter(|_| sheet.picked()) else {
+                return;
             };
-            // Saved after the sheet closes; a failure keeps the preview, as the app does.
-            let change = PreferenceChange::Theme {
-                theme: theme.to_owned(),
-                dark_mode: view.shown.dark_mode,
-            };
-            send(view, change, cx);
-            return None;
+            // The pick stays on screen; a failed save keeps it, as the app does.
+            view.sheet = None;
+            name.clone_into(&mut view.shown.theme);
+            let theme = view.theme();
+            dispatch(view, Action::KeepTheme(theme), cx);
+            return;
         }
         KeyCode::Esc | KeyCode::Char('q') => {
-            if sheet.picked() {
-                show(cx, &preview);
-                cx.toast_for(ToastKind::Info, "Theme unchanged".to_owned(), toast::QUICK);
-            }
-            return None;
+            let picked = sheet.picked();
+            view.sheet = None;
+            show(cx, &view.shown);
+            dispatch(view, Action::DiscardTheme { picked }, cx);
+            return;
         }
-        _ => return Some(sheet),
+        _ => return,
     }
-    if let Some(theme) = sheet.theme() {
-        theme.clone_into(&mut preview.theme);
-        show(cx, &preview);
-    }
-    Some(sheet)
+    preview(view, cx);
 }
 
-/// Keys in the Exceptions sheet: arrows across the chips, Space picks, x clears, Enter saves a changed draft, Esc discards. Returns the sheet while it stays open.
-fn handle_exceptions(
-    view: &mut ConfigView,
-    mut sheet: ExceptionsSheet,
-    code: KeyCode,
-    cx: &mut Context<'_>,
-) -> Option<ExceptionsSheet> {
+/// Draws the app in the Themes sheet's selection, in the mode shown now.
+fn preview(view: &ConfigView, cx: &mut Context<'_>) {
+    let Some(Sheet::Themes(sheet)) = &view.sheet else {
+        return;
+    };
+    if let Some(name) = sheet.theme() {
+        let mut preview = view.shown.clone();
+        name.clone_into(&mut preview.theme);
+        show(cx, &preview);
+    }
+}
+
+/// Keys in the Exceptions sheet: arrows across the chips, Space picks, x clears, Enter saves a changed draft, Esc discards.
+fn handle_exceptions(view: &mut ConfigView, code: KeyCode, cx: &mut Context<'_>) {
+    let Some(Sheet::Exceptions { chip }) = &mut view.sheet else {
+        return;
+    };
     let count = view.franchises.len();
     match code {
         KeyCode::Right | KeyCode::Down | KeyCode::Char('l' | 'j') => {
-            sheet.chip = sheet.chip.saturating_add(1).min(count.saturating_sub(1));
+            *chip = chip.saturating_add(1).min(count.saturating_sub(1));
         }
         KeyCode::Left | KeyCode::Up | KeyCode::Char('h' | 'k') => {
-            sheet.chip = sheet.chip.saturating_sub(1);
+            *chip = chip.saturating_sub(1);
         }
         KeyCode::Char(' ') => {
-            if let Some(slug) = view.franchises.get(sheet.chip).map(|f| f.slug.clone()) {
-                if let Some(at) = sheet.draft.iter().position(|s| *s == slug) {
-                    sheet.draft.remove(at);
-                } else {
-                    sheet.draft.push(slug);
-                }
+            if let Some(slug) = view.franchises.get(*chip).map(|f| f.slug.clone()) {
+                dispatch(view, Action::ToggleException(slug), cx);
             }
         }
-        KeyCode::Char('x') => sheet.draft.clear(),
-        KeyCode::Char('?') => hint::reopen(cx, HINT_UNIVERSES_BEYOND_EXCEPTIONS),
-        KeyCode::Enter => {
-            if same_set(&sheet.draft, &view.shown.universes_beyond_exceptions) {
-                return Some(sheet);
-            }
-            let change = PreferenceChange::Exceptions(sheet.draft);
-            let undo = change.undo(&view.shown);
-            cx.request(
-                Request::Save {
-                    seq: None,
-                    change,
-                    undo,
-                }
-                .into(),
-            );
-            return None;
+        KeyCode::Char('x') => dispatch(view, Action::ClearExceptions, cx),
+        KeyCode::Char('?') => hint::reopen(cx, OneTimeHint::UniversesBeyondExceptions.key()),
+        // Save is off while the draft picks the saved set.
+        KeyCode::Enter if !view.model.draft_unchanged() => {
+            dispatch(view, Action::SaveExceptions, cx);
         }
-        KeyCode::Esc | KeyCode::Char('q') => {
-            if !same_set(&sheet.draft, &view.shown.universes_beyond_exceptions) {
-                cx.toast_for(
-                    ToastKind::Info,
-                    "Exceptions unchanged".to_owned(),
-                    toast::QUICK,
-                );
-            }
-            return None;
-        }
+        KeyCode::Esc | KeyCode::Char('q') => dispatch(view, Action::DiscardExceptions, cx),
         _ => {}
     }
-    Some(sheet)
 }

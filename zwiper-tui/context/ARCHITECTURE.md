@@ -17,7 +17,8 @@ src/lib/inbound/
 │   ├── oracle_tags/  otag_examples/  printings/  image_preview/
 │   ├── decks/  deck/  deck_form/  deck_import/  deck_export/
 │   ├── swipe/  deck_cards/  remove_cards/  card_sheets/
-│   └── account/  config/  privacy/  changelog/
+│   ├── account/  config/  privacy/  changelog/
+│   └── visit.rs    Visit, which keeps a reply to one opening of a screen out of the next
 └── widgets/        shared drawing pieces, each with its own tests
 ```
 
@@ -64,7 +65,7 @@ Every screen with a model in `zwipe_ui::screens` drives it instead of keeping it
 - Delete what the model now owns: the TUI's error strings and copy consts, `touched`/`attempted` flags, validation and gate functions, `sending: bool` or `Option<Instant>` used as a loading flag, and any `Generation` the view kept. Spinner clocks stay as a plain `Instant` set when the request effect is performed.
 - Tests: delete the ones that only checked a rule the model now tests (which message, which gate); keep every key, focus, drawing and key bar test, reading state through `view.model`. Requests in `pending()` now carry tickets, so take them from the queue (`last_ticket(&harness)`) after a real submit, never set the view's loading by hand; `Ticket` has no public constructor, and `Generation::default().next_ticket()` gives one only where any ticket will do (a `Debug` test). Add one end-to-end wiring test per fetch that a stale or repeated reply changes nothing.
 - A model's `Effect::Wait(ticket)` is a request like any other: `perform` sleeps the model's tick (`account::TICK`) and answers with an update carrying the ticket, which `apply` hands back as `Action::Tick`. Every reply redraws, so a countdown needs no arm in `Screen::animating`.
-- A model's tickets start over each time its screen opens, and the TUI's tasks outlive the screen (the app's die with it). A screen that can close and open again while its replies are out stamps each request and update with the visit that sent it (Account's `Visit`, from a process-wide counter) and lets `apply` dispatch only into the view of the same visit; toasts and the shared user still land from any visit.
+- A model's tickets start over each time its screen opens, and the TUI's tasks outlive the screen (the app's die with it). A screen that can close and open again while its replies are out stamps each request and update with the visit that sent it (`screens::visit::Visit`, from a process-wide counter; Account and Config use it) and lets `apply` dispatch only into the view of the same visit; toasts and the shared user still land from any visit.
 - Pitfalls: `TextInput::handle_key` clears the box's error on every edit, so `dispatch` must set it back from the model after each action, not only on submit. Replies reach a view through `nav.find_mut(pick)`, so a toast that must outlive the screen goes up before that lookup; a success that lands after the screen closed has no model to tell it what to do and does nothing, which is also what the app does, since its task dies with the screen. A text field's edit action takes the box's whole value, never the key, so cursor moves (Left, Home) are sent too; the model treats a repeat as a no-op.
 
 ## Crashes and error reports
