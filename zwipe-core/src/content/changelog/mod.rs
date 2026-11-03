@@ -69,6 +69,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "The header stays hidden while a screen bounces at its bottom",
         "Sheets close from an x in their corner or a drag down",
         "The filter and printing sheets apply from a checkmark at the bottom right",
+        "Log in, Create profile and Send a reset link sit at the bottom right",
     ],
 }];
 

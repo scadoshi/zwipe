@@ -355,14 +355,6 @@ button {
   form submit
  ==================== */
 
-/* A form's own button, right after its last field (Login, Register, Forgot
-   password). */
-.form-submit {
-    display: flex;
-    justify-content: center;
-    margin-top: 1rem;
-}
-
 /* ==================
   danger zone
  ==================== */

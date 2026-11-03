@@ -1,6 +1,6 @@
 //! New user registration screen.
 
-use components::{Button, ButtonVariant, TOAST_NORMAL, TextInput, ToastOptions, Toasts, use_toast};
+use components::{TOAST_NORMAL, TextInput, ToastOptions, Toasts, use_toast};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use zwipe_client::ZwipeClient;
@@ -9,6 +9,7 @@ use zwipe_core::http::contracts::metrics::AnonymousEventKind;
 use zwipe_ui::account::Password;
 use zwipe_ui::screens::register::{self, Action, Destination, Effect, Field, State};
 
+use crate::inbound::components::action_dock::{self, DockIcon};
 use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::home_hero::HomeHero;
 use crate::inbound::components::screen_header::ScreenHeader;
@@ -165,16 +166,20 @@ pub fn Register() -> Element {
                         input_type: "password",
                     }
                 }
-                div { class: "form-submit",
-                    Button {
-                        variant: ButtonVariant::Action,
+            }
+        }
+            // Create profile floats at the bottom right.
+            div { class: "app-float app-float-right",
+                div { class: "icon-pill",
+                    button {
+                        class: "icon-pill-btn",
+                        "aria-label": submit_label,
                         disabled: is_loading,
                         onclick: move |_| driver.dispatch(Action::Submit),
-                        {submit_label}
+                        DockIcon { path: action_dock::ARROW }
                     }
                 }
             }
-        }
     }
     }
 }
