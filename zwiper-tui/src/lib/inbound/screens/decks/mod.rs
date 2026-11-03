@@ -1,17 +1,20 @@
 //! The deck list: Group by, the Show filter with its tag fold, the decks in collapsible groups, Create and the More sheet.
+//!
+//! What the screen knows and decides is zwipe-ui's [`State`]; this view adds the focus in each chip row and the list, and whether the More sheet is up.
 
 pub(crate) mod draw;
 pub(crate) mod keys;
 #[cfg(test)]
 mod tests;
 
-use std::collections::BTreeSet;
-
-use zwipe_client::ClientError;
-use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::deck::DeckProfile;
 use zwipe_core::domain::user::User;
-use zwipe_ui::deck::list::{self, DeckGroup, GroupBy, Show};
+use zwipe_core::domain::user::hints::OneTimeHint;
+use zwipe_ui::deck::list::{DeckGroup, GroupBy};
+use zwipe_ui::generation::Ticket;
+use zwipe_ui::screens::deck_list::{
+    Action, Destination, Effect, MoreItem, ShowChip, State, Status,
+};
 
 use super::Screen;
 use crate::inbound::app::Context;
@@ -20,11 +23,8 @@ use crate::inbound::screens;
 use crate::inbound::toward::Toward;
 use crate::inbound::widgets::hint;
 use crate::inbound::widgets::menu::{Menu, MenuItem};
-use crate::inbound::widgets::toast::{self, ToastKind};
+use crate::inbound::widgets::toast::ToastKind;
 use crate::outbound::account::Account;
-
-/// The key the server stores the deck list's hint under.
-pub(crate) const HINT_KEY: &str = "deck_list";
 
 /// The part of the screen that takes the arrow keys.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
@@ -37,20 +37,6 @@ pub(crate) enum Focus {
     List,
 }
 
-/// A chip in the Show row.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) enum ShowChip {
-    All,
-    Color(Color),
-    /// The fold that opens the tag row.
-    Tags,
-    /// A picked tag kept in view while the tag row is folded.
-    Picked {
-        key: String,
-        label: String,
-    },
-}
-
 /// A line in the list: a group's header or a deck.
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum Row {
@@ -58,19 +44,10 @@ pub(crate) enum Row {
     Deck(Box<DeckProfile>),
 }
 
-/// The user's decks and how they are folded and narrowed. Group by, Show, the tag fold and the collapsed groups last for one visit.
-#[derive(Debug, Default)]
+/// The deck list's state: the model plus what only the terminal keeps.
+#[derive(Debug)]
 pub(crate) struct DeckList {
-    pub(crate) decks: Vec<DeckProfile>,
-    pub(crate) loading: bool,
-    /// Why the last load failed.
-    pub(crate) error: Option<String>,
-    pub(crate) group_by: GroupBy,
-    pub(crate) show: Show,
-    /// Whether the tag row is open.
-    pub(crate) tags_open: bool,
-    /// Keys of the collapsed groups.
-    pub(crate) collapsed: BTreeSet<String>,
+    pub(crate) model: State,
     pub(crate) focus: Focus,
     /// The focused chip in the Group by, Show and tag rows.
     pub(crate) group_focus: usize,
@@ -80,75 +57,34 @@ pub(crate) struct DeckList {
     pub(crate) selected: usize,
     /// The More sheet, while open.
     pub(crate) more: Option<Menu>,
-    /// Whether the hint has had its one try this visit.
-    pub(crate) hint_tried: bool,
+    /// Whether a list with a deck has placed the selection yet; the first one selects its first deck rather than its group's header.
+    pub(crate) placed: bool,
+}
+
+impl Default for DeckList {
+    fn default() -> Self {
+        Self {
+            model: State::new(),
+            focus: Focus::default(),
+            group_focus: 0,
+            show_focus: 0,
+            tag_focus: 0,
+            selected: 0,
+            more: None,
+            placed: false,
+        }
+    }
 }
 
 impl DeckList {
-    pub(crate) fn loading() -> Self {
-        Self {
-            loading: true,
-            ..Self::default()
-        }
-    }
-
-    /// Takes the loaded decks, keeping the focus in range. The first load selects the first deck rather than its group's header.
-    pub(crate) fn set_decks(&mut self, decks: Vec<DeckProfile>) {
-        self.decks = decks;
-        self.loading = false;
-        self.error = None;
-        if !self.hint_tried {
-            self.selected = self
-                .rows()
-                .iter()
-                .position(|r| matches!(r, Row::Deck(_)))
-                .unwrap_or(0);
-        }
-        self.clamp();
-    }
-
-    /// Whether the chip rows show: only once a non-empty list has loaded.
-    pub(crate) fn chips_shown(&self) -> bool {
-        !self.loading && self.error.is_none() && !self.decks.is_empty()
-    }
-
-    /// Every distinct tag across the decks, as a key and a label.
-    pub(crate) fn tags(&self) -> Vec<(String, String)> {
-        list::all_tags(&self.decks)
-    }
-
-    /// The Show row: All, the five colors, the Tags fold when any deck has a tag, then the picked tags while it is folded.
-    pub(crate) fn show_chips(&self) -> Vec<ShowChip> {
-        let mut chips = vec![ShowChip::All];
-        chips.extend(Color::all().map(ShowChip::Color));
-        let tags = self.tags();
-        if !tags.is_empty() {
-            chips.push(ShowChip::Tags);
-            if !self.tags_open {
-                chips.extend(
-                    tags.into_iter()
-                        .filter(|(key, _)| self.show.tags.contains(key))
-                        .map(|(key, label)| ShowChip::Picked { key, label }),
-                );
-            }
-        }
-        chips
-    }
-
-    /// The decks that pass Show, in their groups.
-    pub(crate) fn groups(&self) -> Vec<DeckGroup> {
-        let shown = list::shown(&self.decks, &self.show);
-        if shown.is_empty() {
+    /// The list's rows: each group's header, then its decks unless it is collapsed. None while a message stands in for the list.
+    pub(crate) fn rows(&self) -> Vec<Row> {
+        if self.model.message().is_some() {
             return Vec::new();
         }
-        list::group(&shown, self.group_by)
-    }
-
-    /// The list's rows: each group's header, then its decks unless it is collapsed.
-    pub(crate) fn rows(&self) -> Vec<Row> {
         let mut rows = Vec::new();
-        for group in self.groups() {
-            let collapsed = self.collapsed.contains(&group.key());
+        for group in self.model.groups() {
+            let collapsed = self.model.is_collapsed(&group.key());
             let decks = group.decks.clone();
             rows.push(Row::Header { group, collapsed });
             if !collapsed {
@@ -160,11 +96,11 @@ impl DeckList {
 
     /// The areas the focus can move through, top to bottom.
     fn areas(&self) -> Vec<Focus> {
-        if !self.chips_shown() {
+        if !self.model.chips_shown() {
             return vec![Focus::List];
         }
         let mut areas = vec![Focus::GroupBy, Focus::Show];
-        if self.tags_open && !self.tags().is_empty() {
+        if self.model.tags_open() && !self.model.tags().is_empty() {
             areas.push(Focus::Tags);
         }
         areas.push(Focus::List);
@@ -188,106 +124,129 @@ impl DeckList {
         }
         self.show_focus = self
             .show_focus
-            .min(self.show_chips().len().saturating_sub(1));
-        self.tag_focus = self.tag_focus.min(self.tags().len().saturating_sub(1));
+            .min(self.model.show_chips().len().saturating_sub(1));
+        self.tag_focus = self
+            .tag_focus
+            .min(self.model.tags().len().saturating_sub(1));
         self.selected = self.selected.min(self.rows().len().saturating_sub(1));
     }
 
-    /// Presses the focused Show chip.
-    pub(crate) fn press_show(&mut self) {
-        match self.show_chips().get(self.show_focus).cloned() {
-            Some(ShowChip::All) => self.show.clear(),
-            Some(ShowChip::Color(color)) => self.show.toggle_color(color),
-            Some(ShowChip::Tags) => self.tags_open = !self.tags_open,
-            Some(ShowChip::Picked { key, .. }) => self.show.toggle_tag(&key),
-            None => {}
-        }
-        self.clamp();
+    /// The action the focused Show chip takes.
+    pub(crate) fn show_action(&self) -> Option<Action> {
+        self.model
+            .show_chips()
+            .get(self.show_focus)
+            .map(ShowChip::action)
     }
 
-    /// Toggles the focused tag in the tag row.
-    pub(crate) fn press_tag(&mut self) {
-        if let Some((key, _)) = self.tags().get(self.tag_focus) {
-            self.show.toggle_tag(key);
-        }
-        self.clamp();
+    /// The action the focused tag in the tag row takes.
+    pub(crate) fn tag_action(&self) -> Option<Action> {
+        self.model
+            .tags()
+            .into_iter()
+            .nth(self.tag_focus)
+            .map(|(key, _)| Action::ToggleTag(key))
     }
 
-    /// Picks the Group by mode at `index`, opening every group.
-    pub(crate) fn pick_group_by(&mut self, index: usize) {
-        if let Some(by) = GroupBy::ALL.get(index) {
-            self.group_by = *by;
-            self.collapsed.clear();
-            self.clamp();
-        }
-    }
-
-    /// Fetches the decks again, keeping how they are folded and narrowed.
-    pub(crate) fn reload(&mut self, cx: &mut Context<'_>) {
-        cx.shared.status.clear();
-        self.loading = true;
-        self.error = None;
-        cx.request(Request::Load.into());
+    /// The action the Group by chip at `index` takes.
+    pub(crate) fn group_by_action(index: usize) -> Option<Action> {
+        GroupBy::ALL.get(index).copied().map(Action::PickGroupBy)
     }
 }
 
 /// Shows the hint again, whether or not it has been seen.
 pub(crate) fn reopen_hint(cx: &mut Context<'_>) {
-    hint::reopen(cx, HINT_KEY);
+    hint::reopen(cx, OneTimeHint::DeckList.key());
 }
 
-/// The More sheet.
+/// The More sheet, its items the model's.
 pub(crate) fn more_menu() -> Menu {
     Menu::new(
-        "More actions",
-        vec![
-            MenuItem::new("Commander maybeboard"),
-            MenuItem::new("Playstyle"),
-        ],
+        zwipe_ui::screens::deck_list::MORE_TITLE,
+        MoreItem::ALL
+            .iter()
+            .map(|item| MenuItem::new(item.label()))
+            .collect(),
     )
 }
 
-/// Create, guarded the way the app guards it: an unverified user with a deck already gets a warning instead.
-pub(crate) fn create(list: &DeckList, cx: &mut Context<'_>) {
-    let unverified = cx
-        .shared
+/// Whether the session's user may pass the Create check: a verified email, or no user to ask, so only the server can refuse.
+pub(crate) fn verified(cx: &Context<'_>) -> bool {
+    cx.shared
         .user
         .as_ref()
-        .is_some_and(|u| u.email_verified_at.is_none());
-    if unverified && !list.decks.is_empty() {
-        cx.toast_for(
-            ToastKind::Warning,
-            "Verify your email to create more than 1 deck".to_owned(),
-            toast::LONG,
-        );
-        return;
+        .is_none_or(|u| u.email_verified_at.is_some())
+}
+
+/// Applies `action` to the model, brings the focus in line with it, and performs the effects it returns, in order.
+pub(crate) fn dispatch(list: &mut DeckList, action: Action, cx: &mut Context<'_>) {
+    let effects = list.model.update(action);
+    if !list.placed && list.model.status() == Status::Loaded {
+        list.placed = true;
+        list.selected = list
+            .rows()
+            .iter()
+            .position(|r| matches!(r, Row::Deck(_)))
+            .unwrap_or(0);
     }
-    screens::deck_form::open_create(cx);
+    // A reload keeps the focus where it was, for the list that comes back.
+    if list.model.status() != Status::Loading {
+        list.clamp();
+    }
+    for effect in effects {
+        match effect {
+            Effect::RefreshUser => cx.request(Request::RefreshUser.into()),
+            Effect::FetchDecks(ticket) => {
+                cx.shared.status.clear();
+                cx.request(Request::Fetch { ticket }.into());
+            }
+            Effect::OfferHint(offer) => {
+                hint::once(cx, offer.key());
+            }
+            Effect::Navigate(Destination::Home) => cx.back(),
+            Effect::Navigate(Destination::Deck(id)) => screens::deck::open(cx, id),
+            Effect::Navigate(Destination::CreateDeck) => screens::deck_form::open_create(cx),
+            Effect::Navigate(Destination::CommanderMaybeboard) => {
+                screens::commander_maybeboard::open(cx);
+            }
+            Effect::Navigate(Destination::Playstyle) => screens::playstyle::open(cx),
+            Effect::Toast(toast) => cx.show(toast),
+        }
+    }
 }
 
 /// The deck list's work.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Request {
-    /// Refreshes the user, so the Create guard sees a fresh verification, then fetches the decks.
-    Load,
+    /// Refreshes the user, so the Create check reads a current verification. A failure only logs.
+    RefreshUser,
+    /// Fetches the decks for the load holding `ticket`.
+    Fetch { ticket: Ticket },
 }
 
 impl Request {
     /// The action an error from this request is reported under, fixed so a renamed variant keeps its reports.
     pub(crate) fn action(self) -> &'static str {
         match self {
-            Self::Load => "load",
+            Self::RefreshUser => "refresh_user",
+            Self::Fetch { .. } => "load",
         }
     }
 }
 
-/// The deck list's results.
+/// The deck list's results, each fetch's carrying its ticket back to the model.
 #[derive(Debug)]
 pub(crate) enum Update {
-    Loaded(Vec<DeckProfile>),
-    /// The decks, with the user as the server has it now.
-    LoadedWithUser(Vec<DeckProfile>, Box<User>),
-    Failed(String),
+    /// The user as the server has it now.
+    User(Box<User>),
+    Loaded {
+        ticket: Ticket,
+        decks: Vec<DeckProfile>,
+    },
+    Failed {
+        ticket: Ticket,
+        error: String,
+    },
 }
 
 impl From<Request> for screens::Request {
@@ -311,57 +270,62 @@ fn pick(screen: &mut Screen) -> Option<&mut DeckList> {
 
 /// Opens the deck list over the current screen, fetches the decks and refreshes the user.
 pub(crate) fn open(cx: &mut Context<'_>) {
-    cx.shared.status.clear();
-    cx.push(Screen::Decks(Box::new(DeckList::loading())));
-    cx.request(Request::Load.into());
+    let mut list = DeckList::default();
+    dispatch(&mut list, Action::Load, cx);
+    cx.push(Screen::Decks(Box::new(list)));
+}
+
+/// Fetches the decks again, keeping how they are folded and narrowed.
+pub(crate) fn reload(list: &mut DeckList, cx: &mut Context<'_>) {
+    dispatch(list, Action::Load, cx);
 }
 
 pub(crate) async fn perform(account: &Account, request: Request) -> Option<screens::Update> {
     let client = &account.client;
     match request {
-        Request::Load => Some(
-            match async {
-                let session = account.fresh().await?;
-                // A failed refresh only leaves the user as it was.
-                let user = client.fetch_user(&session).await.ok();
-                let decks = client.fetch_deck_profiles(&session).await?;
-                Ok::<_, ClientError>((decks, user))
+        Request::RefreshUser => {
+            match async { client.fetch_user(&account.fresh().await?).await }.await {
+                Ok(user) => Some(Update::User(Box::new(user)).into()),
+                Err(_) => None,
             }
-            .await
-            {
-                Ok((decks, Some(user))) => Update::LoadedWithUser(decks, Box::new(user)).into(),
-                Ok((decks, None)) => Update::Loaded(decks).into(),
-                Err(e) => screens::failure(&e, |m| Update::Failed(m).into()),
+        }
+        Request::Fetch { ticket } => Some(
+            match async { client.fetch_deck_profiles(&account.fresh().await?).await }.await {
+                Ok(decks) => Update::Loaded { ticket, decks }.into(),
+                Err(e) => screens::failure(&e, |error| Update::Failed { ticket, error }.into()),
             },
         ),
     }
 }
 
+/// Hands a reply to the model. A fresh user lands in the session whether or not the list is still up, and a failure raises its toast even when the screen has closed.
 pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
-    let update = match update {
-        Update::LoadedWithUser(decks, user) => {
+    let action = match update {
+        Update::User(user) => {
             cx.shared.username = Some(user.username.to_string());
             cx.shared.user = Some(*user);
-            Update::Loaded(decks)
+            return;
         }
-        other => other,
-    };
-    let Some(list) = nav.find_mut(pick) else {
-        return;
-    };
-    match update {
-        Update::Loaded(decks) | Update::LoadedWithUser(decks, _) => {
-            list.set_decks(decks);
-            if !list.decks.is_empty() && !list.hint_tried {
-                list.hint_tried = true;
-                hint::once(cx, HINT_KEY);
-            }
-        }
-        Update::Failed(error) => {
-            list.loading = false;
-            list.error = Some(error.clone());
-            list.clamp();
+        Update::Loaded { ticket, decks } => Action::Loaded { ticket, decks },
+        Update::Failed { ticket, error } => {
             cx.toast(ToastKind::Error, error);
+            Action::Failed { ticket }
         }
+    };
+    if let Some(list) = nav.find_mut(pick) {
+        dispatch(list, action, cx);
     }
+}
+
+/// The ticket the latest deck fetch went out with.
+#[cfg(test)]
+pub(crate) fn last_ticket(pending: &[screens::Request]) -> Ticket {
+    pending
+        .iter()
+        .rev()
+        .find_map(|r| match r {
+            screens::Request::Decks(Request::Fetch { ticket }) => Some(*ticket),
+            _ => None,
+        })
+        .unwrap_or_else(|| panic!("no deck fetch went out: {pending:?}"))
 }

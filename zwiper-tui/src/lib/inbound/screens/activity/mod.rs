@@ -1,6 +1,6 @@
 //! Activity: how the user picks, read from their swipes. The user's own counters, then one accordion of the Activity (the year's heatmap and Totals), Card roles and Oracle tags sections, then the Most skipped card rows. Reached from home's `v`.
 //!
-//! The payload is fetched on every open and never cached; the counters share home's cache and its 60 second rule, and keep rolling until the payload lands so they resolve with the rest of the screen.
+//! What the screen knows and decides is zwipe-ui's activity model (imported `as model`, since `zwipe_ui::activity` is the math): where the fetch stands, which sections draw, the picked rate and each chart, the revealed role and tag, and the passes. This view adds the accordion, the focus, the day cursor and the sweeps. The payload is fetched on every open and never cached; the counters share home's cache and its 60 second rule, and keep rolling until the fetch settles so they resolve with the rest of the screen.
 
 pub(crate) mod draw;
 pub(crate) mod keys;
@@ -11,12 +11,16 @@ use std::cell::Cell;
 use std::time::{Duration, Instant};
 
 use ratatui::text::{Line, Span};
-use zwipe_core::domain::user::models::hints::HINT_ACTIVITY;
 use zwipe_core::http::contracts::suggestions::{HttpActivity, HttpHardPass};
-use zwipe_ui::activity::{self, Bar, HeatLayout, RateKind};
+use zwipe_ui::activity::{Bar, DAYS_PER_WEEK, HeatLayout};
+use zwipe_ui::generation::Ticket;
 use zwipe_ui::home::Figures;
+use zwipe_ui::screens::activity::{
+    self as model, Action, Destination, Effect, Rates, Section, State,
+};
 use zwipe_ui::timing;
 
+use super::visit::Visit;
 use super::{Screen, home};
 use crate::domain::theme::Palette;
 use crate::inbound::app::{Context, Shared};
@@ -31,80 +35,46 @@ use crate::inbound::widgets::toast::ToastKind;
 use crate::inbound::widgets::{entrance, figures, hint};
 use crate::outbound::account::Account;
 
-/// The screen's title and its hint's.
-pub(crate) const TITLE: &str = "Activity";
-
-/// Said when the payload failed to load.
-pub(crate) const LOAD_FAILED: &str = "Could not load your activity";
-
-/// Said when there is nothing to show yet.
-pub(crate) const NOTHING_YET: &str = "Swipe some cards to see your activity";
-
-/// The Most skipped group's header.
-pub(crate) const PASSES_TITLE: &str = "Most skipped";
-
-/// The label over a pass's commanders.
-pub(crate) const SKIPPED_UNDER: &str = "Skipped under";
-
 /// Each heatmap column waits this much longer than the one before it to sweep in.
 pub(crate) const SWEEP_STEP: Duration = Duration::from_millis(12);
 
 /// One cell's sweep, as `heat-sweep`.
 pub(crate) const SWEEP: Duration = Duration::from_millis(400);
 
-/// One of the accordion's sections.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum Section {
-    /// The heatmap and Totals.
-    Activity,
-    Roles,
-    Tags,
-}
-
-impl Section {
-    pub(crate) fn title(self) -> &'static str {
-        match self {
-            Self::Activity => TITLE,
-            Self::Roles => "Card roles",
-            Self::Tags => "Oracle tags",
-        }
-    }
-
-    /// The section's "?" topic.
-    pub(crate) fn topic(self) -> InfoPopup {
-        match self {
-            Self::Activity => InfoPopup::new(
-                "Activity",
-                &[
-                    "Your swipes and searches each day over the last year, a darker square for a busier day",
-                    "A lit square is one of your biggest days. Tap a square to see its counts",
-                    "Totals is what the cards dealt to your decks came to: Added and Maybeboard you kept, Skipped you passed on, and Removed you later took out",
-                ],
-            ),
-            Self::Roles => InfoPopup::new(
-                "Card roles",
-                &[
-                    "Your share for each card role. Pick one under Show: Added, Skipped and Maybeboard are shares of the cards dealt to you, and Removed is the share of added cards you later took out",
-                    "Tap a role to see the tags you swiped under it. A grey role has none yet",
-                    "From your decks with a commander",
-                ],
-            ),
-            Self::Tags => InfoPopup::new(
-                "Oracle tags",
-                &[
-                    "The tags where your share stands out most from other players', with your own share",
-                    "A tag everyone passes on shows only after a lot of skips. Tap a tag to see what it means",
-                    "From your decks with a commander, for tags dealt at least 10 times",
-                ],
-            ),
-        }
+/// A section's "?" topic.
+pub(crate) fn topic(section: Section) -> InfoPopup {
+    match section {
+        Section::Activity => InfoPopup::new(
+            "Activity",
+            &[
+                "Your swipes and searches each day over the last year, a darker square for a busier day",
+                "A lit square is one of your biggest days. Tap a square to see its counts",
+                "Totals is what the cards dealt to your decks came to: Added and Maybeboard you kept, Skipped you passed on, and Removed you later took out",
+            ],
+        ),
+        Section::Roles => InfoPopup::new(
+            "Card roles",
+            &[
+                "Your share for each card role. Pick one under Show: Added, Skipped and Maybeboard are shares of the cards dealt to you, and Removed is the share of added cards you later took out",
+                "Tap a role to see the tags you swiped under it. A grey role has none yet",
+                "From your decks with a commander",
+            ],
+        ),
+        Section::Tags => InfoPopup::new(
+            "Oracle tags",
+            &[
+                "The tags where your share stands out most from other players', with your own share",
+                "A tag everyone passes on shows only after a lot of skips. Tap a tag to see what it means",
+                "From your decks with a commander, for tags dealt at least 10 times",
+            ],
+        ),
     }
 }
 
 /// The Most skipped group's "?" topic.
 pub(crate) fn passes_topic() -> InfoPopup {
     InfoPopup::new(
-        PASSES_TITLE,
+        model::PASSES_TITLE,
         &[
             "Cards you skip and never add or save, when other players usually keep them",
             "A card everyone passes on shows only after a lot of skips. The tag counts yours, and an open row names the commanders you skipped it under",
@@ -128,98 +98,86 @@ pub(crate) enum Focus {
     Passes,
 }
 
-/// The payload and the heatmap laid out from it.
-#[derive(Debug)]
-pub(crate) struct Loaded {
-    pub(crate) activity: HttpActivity,
-    pub(crate) heat: HeatLayout,
+/// The payload as the model holds it, with the heatmap laid out from it.
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct Loaded<'view> {
+    pub(crate) activity: &'view HttpActivity,
+    pub(crate) heat: &'view HeatLayout,
 }
 
-/// Where the payload is.
-#[derive(Debug)]
-pub(crate) enum Load {
-    Loading,
-    Failed,
-    Loaded(Box<Loaded>),
-}
-
-/// The Activity screen's state.
+/// The Activity screen's state: the model plus what only the terminal keeps.
 #[derive(Debug)]
 pub(crate) struct ActivityView {
-    pub(crate) load: Load,
+    pub(crate) model: State,
+    pub(crate) visit: Visit,
+    /// The model's heatmap, laid out once as the payload lands.
+    pub(crate) heat: Option<HeatLayout>,
     /// When the screen opened, which drives the loading ghosts and the counters' roll.
     pub(crate) opened: Instant,
-    /// When the payload's fetch finished, either way; the counters land from then.
-    pub(crate) ready_at: Option<Instant>,
-    /// When the counters began landing: the later of the fetch finishing and the counters arriving. Set while drawing, the first time both hold.
+    /// When the counters began landing: the later of the fetch settling and the counters arriving. Set while drawing, the first time both hold.
     pub(crate) figures_arrived: Cell<Option<Instant>>,
-    /// The sections present, in order, with which one is open.
+    /// The model's sections, in order, with which one is open.
     pub(crate) accordion: Accordion,
     pub(crate) sections: Vec<Section>,
     pub(crate) focus: Focus,
-    /// The Show chips' pick, shared by both rate charts.
-    pub(crate) rate: RateKind,
     /// When the Activity section last opened, which replays the heatmap's sweep.
     pub(crate) heat_opened: Option<Instant>,
     /// The day under the cursor, an index into the heatmap's cells.
     pub(crate) cursor: usize,
     /// When a day was last picked; its readout shows for [`timing::HEAT_PICK`].
     pub(crate) picked_at: Option<Instant>,
-    /// The role whose tags are revealed, and those tags.
-    pub(crate) open_role: Option<String>,
+    /// The revealed role's tags, with the one whose definition is open.
     pub(crate) role_tags: RoleTags,
-    /// The tag whose definition is revealed.
-    pub(crate) open_tag: Option<String>,
     pub(crate) rows: CardRows,
     /// A section's "?" topic.
     pub(crate) overlay: Option<InfoPopup>,
 }
 
 impl ActivityView {
-    /// A view waiting on its payload.
+    /// A view waiting on its payload, before [`Action::Load`].
     pub(crate) fn loading() -> Self {
         Self {
-            load: Load::Loading,
+            model: State::new(),
+            visit: Visit::next(),
+            heat: None,
             opened: Instant::now(),
-            ready_at: None,
             figures_arrived: Cell::new(None),
             accordion: Accordion::new(&[]),
             sections: Vec::new(),
             focus: Focus::Header(Section::Activity),
-            rate: RateKind::default(),
             heat_opened: None,
             cursor: 0,
             picked_at: None,
-            open_role: None,
             role_tags: RoleTags::default(),
-            open_tag: None,
             rows: CardRows::default(),
             overlay: None,
         }
     }
 
-    /// The payload, once loaded.
-    pub(crate) fn loaded(&self) -> Option<&Loaded> {
-        match &self.load {
-            Load::Loaded(loaded) => Some(loaded),
-            _ => None,
-        }
+    /// The payload, once it has something to draw.
+    pub(crate) fn loaded(&self) -> Option<Loaded<'_>> {
+        Some(Loaded {
+            activity: self.model.activity()?,
+            heat: self.heat.as_ref()?,
+        })
     }
 
-    /// Takes the payload: lays out the heatmap, opens Activity when it has something to show and leaves it out otherwise, and keeps Card roles and Oracle tags either way, as they say what fills them.
-    pub(crate) fn land(&mut self, activity: HttpActivity) {
-        let heat = activity::heat_layout(activity.through, &activity.days);
+    /// Lays out the payload the model just took: the heatmap with the cursor on its last day, and the model's sections with the one that opens on entry open and focused first.
+    fn land(&mut self) {
+        let Some(heat) = self
+            .model
+            .activity()
+            .map(|a| zwipe_ui::activity::heat_layout(a.through, &a.days))
+        else {
+            return;
+        };
         self.cursor = heat.cells.len().saturating_sub(1);
-        let mut sections = Vec::new();
-        if !activity.days.is_empty() || activity::has_outcomes(&activity.outcomes) {
-            sections.push(Section::Activity);
-        }
-        sections.push(Section::Roles);
-        sections.push(Section::Tags);
+        self.heat = Some(heat);
+        let sections = self.model.sections();
         let titles: Vec<&str> = sections.iter().map(|s| s.title()).collect();
         self.accordion = Accordion::new(&titles);
         if let Some(first) = self.accordion.sections.first_mut()
-            && sections.first() == Some(&Section::Activity)
+            && sections.first().is_some_and(|s| s.opens_on_entry())
         {
             first.open = true;
             self.heat_opened = Some(Instant::now());
@@ -229,7 +187,6 @@ impl ActivityView {
             None => Focus::Passes,
         };
         self.sections = sections;
-        self.load = Load::Loaded(Box::new(Loaded { activity, heat }));
     }
 
     pub(crate) fn is_open(&self, section: Section) -> bool {
@@ -253,32 +210,31 @@ impl ActivityView {
         }
     }
 
-    /// The bars of a rate section's chart at the picked rate.
-    pub(crate) fn bars(&self, section: Section) -> Vec<Bar> {
-        let Some(loaded) = self.loaded() else {
-            return Vec::new();
-        };
-        let a = &loaded.activity;
+    /// What a rate section draws at the picked rate. The Activity section is no rate section and charts nothing.
+    pub(crate) fn rates(&self, section: Section) -> Rates {
         match section {
-            Section::Roles => activity::role_rate_bars(self.rate, &a.roles, &a.tags),
-            Section::Tags => activity::tag_rate_bars(self.rate, &a.tags),
-            Section::Activity => Vec::new(),
+            Section::Roles => self.model.role_rates(),
+            Section::Tags => self.model.tag_rates(),
+            Section::Activity => Rates::Charted(Vec::new()),
         }
     }
 
-    /// Whether a rate section has any roles or tags to chart at some share; without any it shows only a line saying what fills it.
-    pub(crate) fn has_rates(&self, section: Section) -> bool {
-        self.loaded().is_some_and(|l| match section {
-            Section::Roles => !l.activity.roles.is_empty(),
-            Section::Tags => !l.activity.tags.is_empty(),
-            Section::Activity => false,
-        })
+    /// The bars of a rate section's chart at the picked rate.
+    pub(crate) fn bars(&self, section: Section) -> Vec<Bar> {
+        match self.rates(section) {
+            Rates::Charted(bars) => bars,
+            Rates::Unrated(_) | Rates::Uncharted(_) => Vec::new(),
+        }
     }
 
-    /// Whether the heatmap shows: the section is open and there are days.
+    /// Whether a rate section has roles or tags to chart at some share, so it shows its Show chips; without any it shows only a line saying what fills it.
+    pub(crate) fn has_rates(&self, section: Section) -> bool {
+        section != Section::Activity && !matches!(self.rates(section), Rates::Unrated(_))
+    }
+
+    /// Whether the heatmap shows: the section is open and the model has a heatmap.
     fn heat_shows(&self) -> bool {
-        self.is_open(Section::Activity)
-            && self.loaded().is_some_and(|l| !l.activity.days.is_empty())
+        self.is_open(Section::Activity) && self.model.shows_heatmap()
     }
 
     /// Everything the focus can land on, top to bottom.
@@ -360,42 +316,12 @@ impl ActivityView {
         }
     }
 
-    /// Picks the rate, which both charts show.
-    pub(crate) fn pick_rate(&mut self, rate: RateKind) {
-        self.rate = rate;
-        self.settle_focus();
-    }
-
-    /// Reveals the tags under `role`, or hides them when they show.
-    pub(crate) fn toggle_role(&mut self, role: &str) {
-        if self.open_role.as_deref() == Some(role) {
-            self.open_role = None;
-            self.role_tags = RoleTags::default();
-            return;
-        }
-        let tags = self
-            .loaded()
-            .map(|l| activity::tags_under(role, &l.activity.tags))
-            .unwrap_or_default();
-        self.open_role = Some(role.to_owned());
-        self.role_tags = RoleTags::new(tags);
-    }
-
-    /// Reveals `slug`'s definition, or hides it when it shows.
-    pub(crate) fn toggle_tag(&mut self, slug: &str) {
-        if self.open_tag.as_deref() == Some(slug) {
-            self.open_tag = None;
-        } else {
-            self.open_tag = Some(slug.to_owned());
-        }
-    }
-
     /// Moves the day cursor by `columns` and `rows`. Returns whether a day is there; the cursor stays put when none is.
     pub(crate) fn move_cursor(&mut self, columns: isize, rows: isize) -> bool {
-        let Some(loaded) = self.loaded() else {
+        let Some(heat) = &self.heat else {
             return false;
         };
-        let Some(cell) = loaded.heat.cells.get(self.cursor) else {
+        let Some(cell) = heat.cells.get(self.cursor) else {
             return false;
         };
         let (Some(column), Some(row)) = (
@@ -404,10 +330,10 @@ impl ActivityView {
         ) else {
             return false;
         };
-        if row >= activity::DAYS_PER_WEEK {
+        if row >= DAYS_PER_WEEK {
             return false;
         }
-        let Some(index) = loaded.heat.index_at(column, row) else {
+        let Some(index) = heat.index_at(column, row) else {
             return false;
         };
         self.cursor = index;
@@ -415,18 +341,15 @@ impl ActivityView {
         true
     }
 
-    /// The readout's tags at this moment: the picked day's for [`timing::HEAT_PICK`], else the year's.
+    /// The readout's tags at this moment: the picked day's for [`timing::HEAT_PICK`], else the model's year.
     pub(crate) fn readout(&self) -> [String; 3] {
-        let Some(loaded) = self.loaded() else {
-            return Default::default();
-        };
         let picked = self
             .picked_at
             .filter(|at| at.elapsed() < timing::HEAT_PICK)
-            .and_then(|_| loaded.heat.cells.get(self.cursor));
+            .and_then(|_| self.heat.as_ref()?.cells.get(self.cursor));
         match picked {
-            Some(cell) => activity::day_tags(cell),
-            None => activity::year_tags(&loaded.activity.days),
+            Some(cell) => zwipe_ui::activity::day_tags(cell),
+            None => self.model.year_tags(),
         }
     }
 
@@ -457,23 +380,25 @@ impl ActivityView {
             .figures_arrived
             .get()
             .is_none_or(|t| t.elapsed() < figures::ROLL);
-        let sweeping = self.loaded().is_some_and(|l| {
+        let sweeping = self.heat.as_ref().is_some_and(|heat| {
             self.is_open(Section::Activity)
-                && self.sweep_elapsed() < Self::sweep_length(l.heat.columns)
+                && self.sweep_elapsed() < Self::sweep_length(heat.columns)
         });
         let reading = self
             .picked_at
             .is_some_and(|t| t.elapsed() < timing::HEAT_PICK.saturating_add(entrance::DURATION));
         rolling
-            || matches!(self.load, Load::Loading)
+            || self.model.status() == model::Status::Loading
             || sweeping
             || reading
             || self.readout_age() < entrance::DURATION
     }
 
-    /// The counters to show: none until the payload's fetch finishes, then the user's own if cached.
+    /// The counters to show: none until the model says they may stop rolling, then the user's own if cached.
     pub(crate) fn figures(&self, shared: &Shared) -> Option<Figures> {
-        self.ready_at?;
+        if !self.model.counts_ready() {
+            return None;
+        }
         let figures = shared.caches.my_figures(home::user_id(shared))?;
         if self.figures_arrived.get().is_none() {
             self.figures_arrived.set(Some(Instant::now()));
@@ -481,11 +406,56 @@ impl ActivityView {
         Some(figures)
     }
 
-    /// Swaps in a printing picked from a pass's row.
+    /// Swaps in a printing picked from a pass's row, and keeps that row open.
     pub(crate) fn on_return(&mut self, cx: &mut Context<'_>) {
-        if let Load::Loaded(loaded) = &mut self.load {
-            self.rows
-                .take_printing(cx, &mut loaded.activity.passes, |p| &mut p.card);
+        let Some(printing) = cx.shared.caches.handoff.printing.take() else {
+            return;
+        };
+        let id = printing.scryfall_data.id;
+        let oracle = printing.scryfall_data.oracle_id;
+        let held = oracle.is_some()
+            && self
+                .model
+                .passes()
+                .iter()
+                .any(|p| p.card.scryfall_data.oracle_id == oracle);
+        dispatch(self, Action::PickPrinting(Box::new(printing)), cx);
+        if held {
+            self.rows.expand(id);
+        }
+    }
+}
+
+/// Applies `action` to the model, brings the view in line with it, and performs the effects it returns, in order.
+pub(crate) fn dispatch(view: &mut ActivityView, action: Action, cx: &mut Context<'_>) {
+    let landing = matches!(action, Action::Loaded { .. });
+    let role = view.model.revealed_role().map(str::to_owned);
+    let effects = view.model.update(action);
+    if landing && view.heat.is_none() {
+        view.land();
+    }
+    let revealed = view.model.revealed_role().map(str::to_owned);
+    if revealed != role {
+        view.role_tags = RoleTags::new(
+            revealed
+                .map(|r| view.model.tags_under(&r))
+                .unwrap_or_default(),
+        );
+    }
+    view.settle_focus();
+    for effect in effects {
+        match effect {
+            Effect::OfferHint(offer) => {
+                hint::once(cx, offer.key());
+            }
+            Effect::FetchActivity(ticket) => cx.request(
+                Request::Load {
+                    visit: view.visit,
+                    ticket,
+                }
+                .into(),
+            ),
+            Effect::Navigate(Destination::Previous) => cx.back(),
         }
     }
 }
@@ -494,7 +464,7 @@ impl ActivityView {
 pub(crate) fn pass_row<'pass>(palette: &Palette, pass: &'pass HttpHardPass) -> CardRow<'pass> {
     let mut footer = Vec::new();
     if !pass.commanders.is_empty() {
-        footer.push(Line::styled(SKIPPED_UNDER, palette.muted));
+        footer.push(Line::styled(model::SKIPPED_UNDER, palette.muted));
         let mut chips = Vec::new();
         for (i, name) in pass.commanders.iter().enumerate() {
             if i > 0 {
@@ -506,31 +476,39 @@ pub(crate) fn pass_row<'pass>(palette: &Palette, pass: &'pass HttpHardPass) -> C
     }
     CardRow::new(&pass.card)
         .with_qty(pass.skipped)
-        .with_qty_tags(vec![activity::counted(pass.skipped, "skip", "skips")])
+        .with_qty_tags(vec![model::skips(pass)])
         .with_footer(footer)
 }
 
 /// The screen's work.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Request {
-    /// The payload.
-    Load,
+    /// The payload, for the visit that asked.
+    Load { visit: Visit, ticket: Ticket },
 }
 
 impl Request {
     /// The action an error from this request is reported under, fixed so a renamed variant keeps its reports.
     pub(crate) fn action(self) -> &'static str {
         match self {
-            Self::Load => "load",
+            Self::Load { .. } => "load",
         }
     }
 }
 
-/// The screen's results.
+/// The screen's results, each carrying its request's visit and ticket back.
 #[derive(Debug)]
 pub(crate) enum Update {
-    Loaded(Box<HttpActivity>),
-    Failed(String),
+    Loaded {
+        visit: Visit,
+        ticket: Ticket,
+        activity: Box<HttpActivity>,
+    },
+    Failed {
+        visit: Visit,
+        ticket: Ticket,
+        message: String,
+    },
 }
 
 impl From<Request> for screens::Request {
@@ -552,45 +530,70 @@ fn pick(screen: &mut Screen) -> Option<&mut ActivityView> {
     }
 }
 
-/// Opens Activity: fetches the payload, the counters when stale, and the tag catalog, and shows the hint the first time.
+/// Opens Activity: the model fetches the payload and offers the hint, and the counters when stale and the tag catalog load beside it.
 pub(crate) fn open(cx: &mut Context<'_>) {
-    cx.push(Screen::Activity(Box::new(ActivityView::loading())));
-    cx.request(Request::Load.into());
+    let mut view = ActivityView::loading();
+    dispatch(&mut view, Action::Load, cx);
     if let Some(user) = home::user_id(cx.shared)
         && cx.shared.caches.my_counts_stale(user, Instant::now())
     {
         cx.request(home::Request::MyMetrics.into());
     }
     oracle_tags::ensure_catalog(cx);
-    hint::once(cx, HINT_ACTIVITY);
+    cx.push(Screen::Activity(Box::new(view)));
 }
 
 /// Shows the hint again, for the key bar's `H hint`.
 pub(crate) fn reopen_hint(cx: &mut Context<'_>) {
-    hint::reopen(cx, HINT_ACTIVITY);
+    hint::reopen(
+        cx,
+        zwipe_core::domain::user::hints::OneTimeHint::Activity.key(),
+    );
 }
 
 pub(crate) async fn perform(account: &Account, request: Request) -> Option<screens::Update> {
-    let Request::Load = request;
+    let Request::Load { visit, ticket } = request;
     let client = &account.client;
     match async { client.activity(&account.fresh().await?).await }.await {
-        Ok(found) => Some(Update::Loaded(Box::new(found)).into()),
+        Ok(found) => Some(
+            Update::Loaded {
+                visit,
+                ticket,
+                activity: Box::new(found),
+            }
+            .into(),
+        ),
         Err(e) => Some(screens::failure(&e, |message| {
-            Update::Failed(message).into()
+            Update::Failed {
+                visit,
+                ticket,
+                message,
+            }
+            .into()
         })),
     }
 }
 
+/// Hands a reply to the model when its visit is still up. A failure raises its toast even when the screen has closed.
 pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
-    let Some(view) = nav.find_mut(pick) else {
-        return;
-    };
-    view.ready_at = Some(Instant::now());
-    match update {
-        Update::Loaded(found) => view.land(*found),
-        Update::Failed(message) => {
-            view.load = Load::Failed;
+    let (visit, action) = match update {
+        Update::Loaded {
+            visit,
+            ticket,
+            activity,
+        } => (visit, Action::Loaded { ticket, activity }),
+        Update::Failed {
+            visit,
+            ticket,
+            message,
+        } => {
             cx.toast(ToastKind::Error, message);
+            (visit, Action::Failed { ticket })
         }
+    };
+    if let Some(view) = nav.find_mut(pick)
+        && view.visit == visit
+    {
+        dispatch(view, action, cx);
     }
 }

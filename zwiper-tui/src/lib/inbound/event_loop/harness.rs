@@ -52,6 +52,15 @@ impl Harness {
         self.event_loop.settle(&mut self.app, effects);
     }
 
+    /// Runs `act` on the screen on top with a handler's [`Context`], such as a dispatch no key reaches, and settles what it asked for.
+    pub(crate) fn on_top(&mut self, act: impl FnOnce(&mut Screen, &mut Context<'_>)) {
+        let App { nav, shared, .. } = &mut self.app;
+        let mut cx = Context::new(shared);
+        act(nav.top_mut(), &mut cx);
+        let effects = cx.into_effects();
+        self.event_loop.settle(&mut self.app, effects);
+    }
+
     pub(crate) fn press(&mut self, code: KeyCode) -> Flow {
         self.event_loop
             .handle_key(&mut self.app, KeyEvent::new(code, KeyModifiers::NONE))
@@ -100,12 +109,13 @@ impl Harness {
         profile.format = Some(Format::Commander);
         let deck_id = profile.id;
         harness.open(decks::open);
-        harness.apply(decks::Update::Loaded(vec![profile.clone()]));
+        let ticket = decks::last_ticket(harness.pending());
+        harness.apply(decks::Update::Loaded {
+            ticket,
+            decks: vec![profile.clone()],
+        });
         harness.press(KeyCode::Enter);
-        harness.apply(deck::Update::Loaded(Box::new(test_support::deck(
-            profile,
-            Vec::new(),
-        ))));
+        deck::serve(&mut harness, test_support::deck(profile, Vec::new()));
         harness.press(KeyCode::Char('s'));
         harness.serve(cards);
         harness.clear();

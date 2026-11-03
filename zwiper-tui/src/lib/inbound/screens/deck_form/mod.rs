@@ -23,7 +23,7 @@ use zwipe_ui::deck::form::Slot;
 use zwipe_ui::deck::pickers::TagPicker;
 use zwipe_ui::generation::Ticket;
 use zwipe_ui::hint::HintTopic;
-use zwipe_ui::screens::deck_form::{Action, Destination, Effect, Open, Results, State};
+use zwipe_ui::screens::deck_form::{Action, Destination, Effect, Mode, Open, Results, State};
 
 use self::pickers::{FormatPicker, TagGrid};
 use self::swipe_pick::SwipePicker;
@@ -151,8 +151,6 @@ pub(crate) struct DeckForm {
     pub(crate) deck_tag_catalog: Vec<DeckTagView>,
     /// The oracle tag catalog, `None` until it loads.
     pub(crate) oracle_catalog: Option<Vec<OracleTag>>,
-    /// The deck Create's save just made, which the deck view opens on.
-    pub(crate) created: Option<DeckProfile>,
     pub(crate) overlay: Option<Overlay>,
 }
 
@@ -170,7 +168,6 @@ impl Default for DeckForm {
             other_focus: 0,
             deck_tag_catalog: Vec::new(),
             oracle_catalog: None,
-            created: None,
             overlay: None,
         }
     }
@@ -320,9 +317,9 @@ fn run(form: &mut DeckForm, action: Action, cx: &mut Context<'_>, on_top: bool) 
             Effect::Navigate(_) if !on_top => {}
             Effect::Navigate(Destination::Previous) => cx.back(),
             // Edit opens over the deck view, so going to the deck is going back; Create's new deck takes the form's place.
-            Effect::Navigate(Destination::Deck(_)) => match form.created.take() {
-                Some(profile) => screens::deck::replace_with(cx, profile),
-                None => cx.back(),
+            Effect::Navigate(Destination::Deck(deck_id)) => match form.model.mode() {
+                Mode::Create => screens::deck::replace_with(cx, deck_id),
+                Mode::Edit(_) => cx.back(),
             },
             Effect::Toast(toast) => cx.show(toast),
         }
@@ -719,11 +716,10 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
             profile: Box::new(deck.deck_profile),
         },
         Update::CardLoaded { ticket, card } => Action::CardLoaded { ticket, card },
-        Update::Created { ticket, profile } => {
-            let deck_id = profile.id;
-            form.created = Some(*profile);
-            Action::Created { ticket, deck_id }
-        }
+        Update::Created { ticket, profile } => Action::Created {
+            ticket,
+            deck_id: profile.id,
+        },
         Update::Updated { ticket } => Action::Updated { ticket },
         Update::Failed { ticket, .. } => Action::Failed { ticket },
         Update::SwipePage { generation, cards } => {

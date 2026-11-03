@@ -106,6 +106,7 @@ impl TextInput {
         self.cursor
     }
 
+    #[cfg(test)]
     pub(crate) fn error(&self) -> Option<&str> {
         self.error.as_deref()
     }

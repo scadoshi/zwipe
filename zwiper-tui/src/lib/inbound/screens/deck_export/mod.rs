@@ -1,4 +1,6 @@
 //! Export: the deck as a decklist that Import reads back, with toggles for the boards it includes and a Copy action.
+//!
+//! What the screen knows and decides is zwipe-ui's [`State`]; this view adds the focused board chip and how far the list is scrolled.
 
 pub(crate) mod draw;
 pub(crate) mod keys;
@@ -7,7 +9,9 @@ mod tests;
 
 use uuid::Uuid;
 use zwipe_core::domain::deck::Deck;
-use zwipe_ui::deck::export::{self, Boards};
+use zwipe_core::domain::user::hints::OneTimeHint;
+use zwipe_ui::generation::Ticket;
+use zwipe_ui::screens::deck_export::{Action, Destination, Effect, State};
 
 use super::Screen;
 use crate::inbound::app::Context;
@@ -17,80 +21,66 @@ use crate::inbound::widgets::hint;
 use crate::inbound::widgets::toast::ToastKind;
 use crate::outbound::account::Account;
 
-/// The key the server stores the export hint under.
-pub(crate) const HINT_KEY: &str = "export";
-
-/// The Export screen: the deck once loaded, the boards it includes, the focused board chip, and how far the list is scrolled.
+/// The Export screen's state: the model plus the focused board chip and how far the list is scrolled.
 #[derive(Debug)]
 pub(crate) struct ExportView {
-    pub(crate) deck_id: Uuid,
-    pub(crate) deck: Option<Deck>,
-    pub(crate) failed: bool,
-    pub(crate) boards: Boards,
-    /// The focused chip: 0 Deck, 1 Maybe, 2 Side.
+    pub(crate) model: State,
+    /// The focused chip, an index into [`zwipe_ui::screens::deck_export::Board::ALL`].
     pub(crate) focus: usize,
     pub(crate) scroll: u16,
 }
 
-impl ExportView {
-    pub(crate) fn opening(deck_id: Uuid) -> Self {
+impl Default for ExportView {
+    fn default() -> Self {
         Self {
-            deck_id,
-            deck: None,
-            failed: false,
-            boards: Boards::default(),
+            model: State::new(),
             focus: 0,
             scroll: 0,
-        }
-    }
-
-    /// The decklist, once the deck has loaded.
-    pub(crate) fn text(&self) -> Option<String> {
-        self.deck.as_ref().map(|d| export::text(d, self.boards))
-    }
-
-    /// Toggles the focused board chip under the at-least-one rule.
-    pub(crate) fn toggle(&mut self) {
-        match self.focus {
-            0 => self.boards.toggle_deck(),
-            1 => self.boards.toggle_maybe(),
-            _ => self.boards.toggle_side(),
-        }
-    }
-
-    /// Copies the decklist, or does nothing before it loads.
-    pub(crate) fn copy(&self, cx: &mut Context<'_>) {
-        if let Some(text) = self.text() {
-            screens::deck::copy(cx, &text, "Copied to clipboard");
         }
     }
 }
 
 /// Shows the export hint again.
 pub(crate) fn reopen_hint(cx: &mut Context<'_>) {
-    hint::reopen(cx, HINT_KEY);
+    hint::reopen(cx, OneTimeHint::Export.key());
+}
+
+/// Applies `action` to the model and performs the effects it returns, in order.
+pub(crate) fn dispatch(view: &mut ExportView, action: Action, cx: &mut Context<'_>) {
+    for effect in view.model.update(action) {
+        match effect {
+            Effect::OfferHint(offer) => {
+                hint::once(cx, offer.key());
+            }
+            Effect::FetchDeck { ticket, deck_id } => {
+                cx.request(Request::Load { ticket, deck_id }.into());
+            }
+            Effect::Copy { text, done } => screens::deck::copy(cx, &text, done),
+            Effect::Navigate(Destination::Deck(_)) => cx.back(),
+        }
+    }
 }
 
 /// The Export screen's work.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Request {
-    Load(Uuid),
+    Load { ticket: Ticket, deck_id: Uuid },
 }
 
 impl Request {
     /// The action an error from this request is reported under, fixed so a renamed variant keeps its reports.
     pub(crate) fn action(&self) -> &'static str {
         match self {
-            Self::Load(..) => "load",
+            Self::Load { .. } => "load",
         }
     }
 }
 
-/// The Export screen's results.
+/// The Export screen's results, each carrying its request's ticket back to the model.
 #[derive(Debug)]
 pub(crate) enum Update {
-    Loaded(Box<Deck>),
-    Failed(String),
+    Loaded { ticket: Ticket, deck: Box<Deck> },
+    Failed { ticket: Ticket, error: String },
 }
 
 impl From<Request> for screens::Request {
@@ -114,36 +104,36 @@ fn pick(screen: &mut Screen) -> Option<&mut ExportView> {
 
 /// Opens Export for `deck_id`, fetches the deck, and shows the hint once.
 pub(crate) fn open(cx: &mut Context<'_>, deck_id: Uuid) {
-    cx.push(Screen::DeckExport(Box::new(ExportView::opening(deck_id))));
-    cx.request(Request::Load(deck_id).into());
-    hint::once(cx, HINT_KEY);
+    let mut view = ExportView::default();
+    dispatch(&mut view, Action::Load(deck_id), cx);
+    cx.push(Screen::DeckExport(Box::new(view)));
 }
 
 pub(crate) async fn perform(account: &Account, request: Request) -> Option<screens::Update> {
     let client = &account.client;
-    match request {
-        Request::Load(deck_id) => Some(
-            match async { client.fetch_deck(deck_id, &account.fresh().await?).await }.await {
-                Ok(deck) => Update::Loaded(Box::new(deck)).into(),
-                Err(e) => screens::failure(&e, |m| Update::Failed(m).into()),
-            },
-        ),
-    }
+    let Request::Load { ticket, deck_id } = request;
+    Some(
+        match async { client.fetch_deck(deck_id, &account.fresh().await?).await }.await {
+            Ok(deck) => Update::Loaded {
+                ticket,
+                deck: Box::new(deck),
+            }
+            .into(),
+            Err(e) => screens::failure(&e, |error| Update::Failed { ticket, error }.into()),
+        },
+    )
 }
 
+/// Hands a reply to the model. A failure raises its toast even when the screen has closed.
 pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
-    let Some(view) = nav.find_mut(pick) else {
-        return;
+    let action = match update {
+        Update::Loaded { ticket, deck } => Action::Loaded { ticket, deck },
+        Update::Failed { ticket, error } => {
+            cx.toast(ToastKind::Error, error);
+            Action::Failed { ticket }
+        }
     };
-    match update {
-        Update::Loaded(deck) => {
-            if deck.deck_profile.id == view.deck_id {
-                view.deck = Some(*deck);
-            }
-        }
-        Update::Failed(message) => {
-            view.failed = true;
-            cx.toast(ToastKind::Error, message);
-        }
+    if let Some(view) = nav.find_mut(pick) {
+        dispatch(view, action, cx);
     }
 }

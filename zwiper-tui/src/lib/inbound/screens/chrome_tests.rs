@@ -56,7 +56,7 @@ fn cases() -> Vec<Case> {
         case(
             "Deck",
             Some("?"),
-            on(Box::new(|cx| deck::open(cx, deck_profile("Pile")))),
+            on(Box::new(|cx| deck::open(cx, deck_profile("Pile").id))),
         ),
         case(
             "Export",

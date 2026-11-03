@@ -115,10 +115,13 @@ mod tests {
     #[test]
     fn find_looks_down_from_the_top() {
         let mut nav = Nav::new(Screen::Decks(Box::default()));
-        nav.push(Screen::Decks(Box::new(DeckList::loading())));
+        nav.push(Screen::Decks(Box::new(DeckList {
+            selected: 3,
+            ..DeckList::default()
+        })));
         nav.push(Screen::Login(Box::default()));
-        let found = nav.find_mut(decks).map(|list| list.loading);
-        assert_eq!(found, Some(true), "the upper deck list");
+        let found = nav.find_mut(decks).map(|list| list.selected);
+        assert_eq!(found, Some(3), "the upper deck list");
         nav.reset(Screen::Login(Box::default()));
         assert!(nav.find_mut(decks).is_none());
     }

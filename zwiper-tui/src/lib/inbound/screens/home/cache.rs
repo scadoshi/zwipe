@@ -2,12 +2,12 @@
 
 use std::time::{Duration, Instant};
 
-use chrono::{DateTime, Utc};
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::oracle_tag::OracleTag;
 use zwipe_core::http::contracts::suggestions::HttpPlayStyleSummary;
 use zwipe_ui::home::{Figures, Scope};
+use zwipe_ui::screens::home::FlavorCard;
 use zwipe_ui::timing::COUNTS_FRESH;
 
 use crate::inbound::screens::swipe::CardImage;
@@ -35,13 +35,6 @@ pub(crate) struct CachedMyCounts {
 pub(crate) struct CachedPlayStyle {
     pub(crate) user_id: Uuid,
     pub(crate) summary: HttpPlayStyleSummary,
-}
-
-/// The featured card and the top of the UTC hour it stops being featured.
-#[derive(Debug, Clone, PartialEq)]
-pub(crate) struct FlavorCard {
-    pub(crate) card: Card,
-    pub(crate) expires_at: DateTime<Utc>,
 }
 
 /// The oracle tag catalog as it loads.
@@ -129,11 +122,6 @@ impl Caches {
             .as_ref()
             .filter(|c| Some(c.user_id) == user)
             .map(|c| &c.summary)
-    }
-
-    /// The featured card while it is still this hour's at `now`.
-    pub(crate) fn flavor_expired(&self, now: DateTime<Utc>) -> bool {
-        self.flavor.as_ref().is_none_or(|f| now >= f.expires_at)
     }
 
     /// Whether the catalog should be fetched at `now`: never asked, failed, or loaded more than [`CATALOG_FRESH`] ago and not already refetching.

@@ -5,11 +5,12 @@ use ratatui::layout::{Constraint, Layout};
 use ratatui::style::{Style, Stylize};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::Paragraph;
-use zwipe_core::domain::card::scryfall_data::universe;
 use zwipe_core::domain::user::preferences;
-use zwipe_core::domain::user::preferences::PipColor;
+use zwipe_ui::screens::config::{
+    self, APPEARANCE, CARDS, CHANGE, EXCEPTIONS, PIPS, THEME, UNIVERSES_BEYOND,
+};
 
-use super::{ConfigView, ExceptionsSheet, Sheet, Stop, ThemeSheet};
+use super::{ConfigView, Sheet, Stop, ThemeSheet};
 use crate::domain::theme::{self, Palette, PickerRow};
 use crate::inbound::app::Shared;
 use crate::inbound::widgets::button::{self, Button};
@@ -49,9 +50,9 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &ConfigView) {
         Some(Sheet::Themes(themes)) => {
             themes_sheet(palette, view, themes).draw(f, palette, f.area());
         }
-        Some(Sheet::Exceptions(exceptions)) => {
+        Some(Sheet::Exceptions { chip }) => {
             let width = usize::from(f.area().width.saturating_sub(4));
-            exceptions_sheet(palette, view, exceptions, width).draw(f, palette, f.area());
+            exceptions_sheet(palette, view, *chip, width).draw(f, palette, f.area());
         }
         None => {}
     }
@@ -106,65 +107,61 @@ fn lines(palette: &Palette, view: &ConfigView, width: usize) -> Vec<Line<'static
     } else {
         "☀ Light"
     };
-    let pips = match shown.pip_style {
-        PipColor::Theme => "Theme",
-        PipColor::Classic => "Classic",
-    };
-    let hidden = shown.exclude_universes_beyond;
+    let model = &view.model;
     let mut exceptions = row(
         width,
-        "Exceptions",
+        EXCEPTIONS,
         about(palette, view, &[Stop::Exceptions]),
         "",
-        button(palette, view, Stop::Exceptions, "Change"),
+        button(palette, view, Stop::Exceptions, CHANGE),
     );
-    if !hidden {
+    if model.exceptions_muted() {
         exceptions = exceptions.style(Style::new().dim());
     }
     let mut lines = vec![
-        section("Appearance"),
+        section(APPEARANCE),
         row(
             width,
-            "Theme",
+            THEME,
             about(palette, view, &[Stop::Mode, Stop::Theme]),
             &preferences::display_theme_name(&shown.theme),
             [
                 button(palette, view, Stop::Mode, mode),
                 vec![Span::raw(" ")],
-                button(palette, view, Stop::Theme, "Change"),
+                button(palette, view, Stop::Theme, CHANGE),
             ]
             .concat(),
         ),
         row(
             width,
-            "Pips",
+            PIPS,
             about(palette, view, &[Stop::Pips]),
             "",
-            button(palette, view, Stop::Pips, pips),
+            button(
+                palette,
+                view,
+                Stop::Pips,
+                config::pips_label(shown.pip_style),
+            ),
         ),
         Line::default(),
-        section("Cards"),
+        section(CARDS),
         row(
             width,
-            "Universes Beyond",
+            UNIVERSES_BEYOND,
             about(palette, view, &[Stop::UniversesBeyond]),
             "",
             button(
                 palette,
                 view,
                 Stop::UniversesBeyond,
-                if hidden { "Hide" } else { "Show" },
+                model.universes_beyond_label(),
             ),
         ),
         exceptions,
     ];
-    let mut names: Vec<&str> = shown
-        .universes_beyond_exceptions
-        .iter()
-        .filter_map(|slug| universe::franchise_by_slug(slug).map(|f| f.name))
-        .collect();
-    names.sort_unstable();
-    if !names.is_empty() {
+    let names = model.exception_names();
+    if model.shows_exception_chips() {
         lines.extend(wrap_chips(
             names
                 .iter()
@@ -236,14 +233,15 @@ fn themes_sheet(palette: &Palette, view: &ConfigView, themes: &ThemeSheet) -> sh
 fn exceptions_sheet(
     palette: &Palette,
     view: &ConfigView,
-    exceptions: &ExceptionsSheet,
+    chip: usize,
     width: usize,
 ) -> sheet::Sheet {
+    let draft = view.model.draft();
     let mut lines = Vec::new();
-    if !exceptions.draft.is_empty() {
+    if !draft.is_empty() {
         lines.push(
             Line::from(vec![
-                Span::raw(format!("{} selected  ", exceptions.draft.len())),
+                Span::raw(format!("{}  ", config::selected_line(draft.len()))),
                 Span::styled("\u{d7}", palette.error).bold(),
             ])
             .centered(),
@@ -254,25 +252,19 @@ fn exceptions_sheet(
         .iter()
         .enumerate()
         .map(|(i, franchise)| {
-            let style = if exceptions.draft.contains(&franchise.slug) {
+            let style = if view.model.is_drafted(&franchise.slug) {
                 palette.accent.reversed().bold()
             } else {
                 palette.muted
             };
-            let style = if i == exceptions.chip {
-                style.underlined()
-            } else {
-                style
-            };
+            let style = if i == chip { style.underlined() } else { style };
             Span::styled(format!(" {} ", franchise.name), style)
         })
         .collect();
     let chip_lines = wrap_chips(chips, width);
-    let focus = lines
-        .len()
-        .saturating_add(focus_line(view, exceptions.chip, width));
+    let focus = lines.len().saturating_add(focus_line(view, chip, width));
     lines.extend(chip_lines);
-    sheet::Sheet::new("Exceptions", lines)
+    sheet::Sheet::new(EXCEPTIONS, lines)
         .with_hint()
         .with_focus(focus)
         .with_footer("Space", "pick")

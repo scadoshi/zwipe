@@ -1,4 +1,5 @@
 use crossterm::event::KeyCode;
+use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::deck::{DeckOtherTag, Format};
 
 use super::*;
@@ -13,11 +14,20 @@ fn colored(name: &str, identity: &[&str]) -> DeckProfile {
     profile
 }
 
+/// The deck list opened over Home for a verified user, its fetch out and nothing else queued.
+fn opening() -> (Harness, Ticket) {
+    let mut harness = Harness::on(Screen::Home(Box::default()));
+    harness.app.shared.user = Some(user(true));
+    harness.open(open);
+    let ticket = last_ticket(harness.pending());
+    harness.clear();
+    (harness, ticket)
+}
+
 /// The deck list loaded with `decks` for a verified user, the hint closed and nothing queued.
 fn loaded(decks: Vec<DeckProfile>) -> Harness {
-    let mut harness = Harness::on(Screen::Decks(Box::new(DeckList::loading())));
-    harness.app.shared.user = Some(user(true));
-    harness.apply(Update::Loaded(decks));
+    let (mut harness, ticket) = opening();
+    harness.apply(Update::Loaded { ticket, decks });
     harness.app.shared.hint = None;
     harness.clear();
     harness
@@ -36,31 +46,46 @@ fn the_first_load_selects_the_first_deck_and_enter_opens_it() {
     let mut harness = loaded(vec![second.clone(), first]);
     harness.press(KeyCode::Char('j'));
     harness.press(KeyCode::Enter);
-    assert!(matches!(harness.screen(), Screen::Deck(view) if view.profile.id == second.id));
-    assert_eq!(
-        harness.pending(),
-        [
-            screens::Request::Deck(deck::Request::Load(second.id)),
-            screens::Request::Deck(deck::Request::LoadOracleTags),
-            screens::Request::MarkHintShown(deck::HINT_KEY.to_owned()),
-        ]
+    assert!(matches!(harness.screen(), Screen::Deck(view) if view.deck_id() == Some(second.id)));
+    assert!(
+        matches!(
+            harness.pending(),
+            [
+                screens::Request::Deck(deck::Request::FetchProfile { deck_id: profile, .. }),
+                screens::Request::Deck(deck::Request::FetchDeck { deck_id: full, .. }),
+                screens::Request::MarkHintShown(_),
+                screens::Request::Deck(deck::Request::LoadOracleTags),
+            ] if *profile == second.id && *full == second.id
+        ),
+        "{:?}",
+        harness.pending()
     );
 }
 
 #[test]
 fn a_loaded_list_shows_its_hint_once_per_visit() {
-    let mut harness = Harness::on(Screen::Decks(Box::new(DeckList::loading())));
-    harness.app.shared.user = Some(user(true));
-    harness.apply(Update::Loaded(Vec::new()));
+    let (mut harness, ticket) = opening();
+    harness.apply(Update::Loaded {
+        ticket,
+        decks: Vec::new(),
+    });
     assert!(
         harness.app.shared.hint.is_none(),
         "an empty list has no hint"
     );
-    harness.apply(Update::Loaded(vec![deck_profile("A")]));
+    harness.press(KeyCode::Char('r'));
+    let ticket = last_ticket(harness.pending());
+    harness.clear();
+    harness.apply(Update::Loaded {
+        ticket,
+        decks: vec![deck_profile("A")],
+    });
     assert!(screen_text(&harness.app).contains("Your decks"));
     assert_eq!(
         harness.pending(),
-        [screens::Request::MarkHintShown(HINT_KEY.to_owned())]
+        [screens::Request::MarkHintShown(
+            OneTimeHint::DeckList.key().to_owned()
+        )]
     );
     harness.press(KeyCode::Esc);
     harness.press(KeyCode::Char('?'));
@@ -72,15 +97,26 @@ fn reloading_keeps_the_selection_and_refreshes_the_user_with_the_decks() {
     let mut harness = loaded(vec![deck_profile("A"), deck_profile("B")]);
     harness.press(KeyCode::Char('j'));
     harness.press(KeyCode::Char('r'));
-    assert!(matches!(harness.screen(), Screen::Decks(list) if list.loading && list.selected == 2));
-    assert_eq!(harness.pending(), [screens::Request::Decks(Request::Load)]);
+    assert!(
+        matches!(harness.screen(), Screen::Decks(list) if list.model.status() == Status::Loading && list.selected == 2)
+    );
+    let ticket = last_ticket(harness.pending());
+    assert_eq!(
+        harness.pending(),
+        [
+            screens::Request::Decks(Request::RefreshUser),
+            screens::Request::Decks(Request::Fetch { ticket }),
+        ]
+    );
     let mut unverified = user(false);
     unverified.username = zwipe_core::domain::user::Username::new("fresh").unwrap();
-    harness.apply(Update::LoadedWithUser(
-        vec![deck_profile("A")],
-        Box::new(unverified),
-    ));
+    harness.apply(Update::User(Box::new(unverified)));
     assert_eq!(harness.app.shared.username.as_deref(), Some("fresh"));
+    harness.apply(Update::Loaded {
+        ticket,
+        decks: vec![deck_profile("A"), deck_profile("B")],
+    });
+    assert_eq!(list(&harness).selected, 2, "the selection stays");
 }
 
 #[test]
@@ -95,7 +131,7 @@ fn group_by_folds_the_list_and_headers_collapse() {
     assert_eq!(list(&harness).focus, Focus::GroupBy);
     harness.press(KeyCode::Char('l'));
     harness.press(KeyCode::Enter);
-    assert_eq!(list(&harness).group_by, GroupBy::Format);
+    assert_eq!(list(&harness).model.group_by(), GroupBy::Format);
     let screen = screen_text(&harness.app);
     assert!(screen.contains("Modern (1)"));
     assert!(screen.contains("No format (1)"));
@@ -105,7 +141,7 @@ fn group_by_folds_the_list_and_headers_collapse() {
     assert_eq!(list(&harness).selected, 1, "still on the first deck");
     harness.press(KeyCode::Char('j'));
     harness.press(KeyCode::Enter);
-    assert!(list(&harness).collapsed.contains("No format"));
+    assert!(list(&harness).model.is_collapsed("No format"));
     assert_eq!(
         list(&harness).rows().len(),
         3,
@@ -125,26 +161,29 @@ fn show_filters_by_color_and_tag_and_all_clears() {
         harness.press(KeyCode::Char('l'));
     }
     harness.press(KeyCode::Enter);
-    assert!(list(&harness).show.colors.contains(&Color::Red));
-    assert_eq!(list(&harness).groups()[0].decks.len(), 1);
+    assert!(list(&harness).model.show().colors.contains(&Color::Red));
+    assert_eq!(list(&harness).model.groups()[0].decks.len(), 1);
     harness.press(KeyCode::Char('l'));
     harness.press(KeyCode::Enter);
-    assert!(list(&harness).show.colors.contains(&Color::Green));
+    assert!(list(&harness).model.show().colors.contains(&Color::Green));
     assert!(screen_text(&harness.app).contains("No decks match"));
 
     harness.press(KeyCode::Char('l'));
     harness.press(KeyCode::Enter);
-    assert!(list(&harness).tags_open, "the Tags chip opens the tag row");
+    assert!(
+        list(&harness).model.tags_open(),
+        "the Tags chip opens the tag row"
+    );
     harness.press(KeyCode::Char('j'));
     assert_eq!(list(&harness).focus, Focus::Tags);
     harness.press(KeyCode::Enter);
-    assert!(list(&harness).show.tags.contains("Budget"));
+    assert!(list(&harness).model.show().tags.contains("Budget"));
     harness.press(KeyCode::Char('k'));
     for _ in 0..10 {
         harness.press(KeyCode::Char('h'));
     }
     harness.press(KeyCode::Enter);
-    assert!(list(&harness).show.is_all());
+    assert!(list(&harness).model.show().is_all());
 }
 
 #[test]
@@ -153,13 +192,16 @@ fn picked_tags_stay_in_the_show_row_while_folded() {
     tokens.tags = vec!["tokens".to_owned()];
     let mut harness = loaded(vec![tokens]);
     harness.press(KeyCode::BackTab);
-    {
-        let Screen::Decks(list) = harness.screen_mut() else {
-            panic!("not on the list");
-        };
-        list.show.toggle_tag("tokens");
+    for _ in 0..6 {
+        harness.press(KeyCode::Char('l'));
     }
-    let chips = list(&harness).show_chips();
+    harness.press(KeyCode::Enter);
+    harness.press(KeyCode::Char('j'));
+    harness.press(KeyCode::Enter);
+    harness.press(KeyCode::Char('k'));
+    harness.press(KeyCode::Enter);
+    assert!(!list(&harness).model.tags_open());
+    let chips = list(&harness).model.show_chips();
     assert!(chips.contains(&ShowChip::Picked {
         key: "tokens".to_owned(),
         label: "Tokens".to_owned()
@@ -238,7 +280,12 @@ fn list_under(harness: &mut Harness) -> Option<&DeckList> {
 fn states_read_as_the_app_words_them() {
     let mut harness = loaded(Vec::new());
     assert!(screen_text(&harness.app).contains("No decks"));
-    harness.apply(Update::Failed("offline".to_owned()));
+    harness.press(KeyCode::Char('r'));
+    let ticket = last_ticket(harness.pending());
+    harness.apply(Update::Failed {
+        ticket,
+        error: "offline".to_owned(),
+    });
     assert_eq!(harness.app.shared.toasts.items()[0].message, "offline");
     harness.app.shared.toasts = Toasts::default();
     assert!(screen_text(&harness.app).contains("Could not load decks"));
@@ -275,11 +322,7 @@ fn the_deck_list_fits_a_tiny_terminal() {
     let harness = loaded(vec![deck_profile("A")]);
     render(&harness.app, 12, 5);
     render(&harness.app, 1, 1);
-    render(
-        &Harness::on(Screen::Decks(Box::new(DeckList::loading()))).app,
-        12,
-        5,
-    );
+    render(&opening().0.app, 12, 5);
 }
 
 #[test]
@@ -327,5 +370,40 @@ fn the_deck_list_keeps_every_key_on_a_narrow_terminal() {
             .any(|row| row.contains("Isshin, Two Heavens") && row.contains("…   0 cards")),
         "a long name ends in an ellipsis and keeps its count on the row:\n{}",
         narrow.join("\n")
+    );
+}
+
+#[test]
+fn a_reply_a_reload_replaced_changes_nothing() {
+    let (mut harness, first) = opening();
+    harness.press(KeyCode::Char('r'));
+    let second = last_ticket(harness.pending());
+    harness.clear();
+    harness.apply(Update::Loaded {
+        ticket: first,
+        decks: vec![deck_profile("Stale")],
+    });
+    assert_eq!(
+        list(&harness).model.status(),
+        Status::Loading,
+        "a reply the reload replaced is dropped"
+    );
+    harness.apply(Update::Loaded {
+        ticket: second,
+        decks: vec![deck_profile("Fresh")],
+    });
+    harness.app.shared.hint = None;
+    harness.clear();
+    harness.apply(Update::Failed {
+        ticket: first,
+        error: "offline".to_owned(),
+    });
+    let shown = list(&harness).model.decks();
+    assert_eq!(shown.len(), 1);
+    assert_eq!(shown[0].name.to_string(), "Fresh");
+    assert_eq!(
+        list(&harness).model.status(),
+        Status::Loaded,
+        "a stale failure leaves the list"
     );
 }

@@ -1,69 +1,64 @@
-//! Account's keys: the row buttons, the action bar's letters, and the sheets and dialogs over the screen.
+//! Account's keys: the row buttons, the action bar's letters, and the sheets and dialogs over the screen. Presses the model has an action for go through [`dispatch`]; moving the focus and opening the More sheet stay here.
 
 use crossterm::event::KeyCode;
-use zwipe_core::domain::site::WEB_BASE;
-use zwipe_core::domain::user::hints::HINT_PROFILE;
+use zwipe_core::domain::user::hints::OneTimeHint;
+use zwipe_ui::screens::account::{Action, Field, MoreItem, Password, Typed};
 
-use super::{
-    AccountChange, AccountView, DeleteDialog, DeleteFocus, Form, FormKind, Overlay, Request, Stop,
-    confirm_password_alert, log_out_alert,
-};
+use super::{AccountView, DeleteFocus, Overlay, Stop, dispatch};
 use crate::inbound::app::Context;
-use crate::inbound::screens::{Password, Request as AppRequest, changelog, privacy};
 use crate::inbound::widgets::alert::AlertChoice;
+use crate::inbound::widgets::help;
 use crate::inbound::widgets::hint::{self, HintTopic};
-use crate::inbound::widgets::{browser, help};
 
 pub(crate) fn handle(view: &mut AccountView, code: KeyCode, cx: &mut Context<'_>) {
-    match view.overlay.take() {
-        Some(Overlay::Form(form)) => view.overlay = handle_form(form, code, cx),
-        Some(Overlay::ConfirmPassword {
-            mut form,
-            mut alert,
-        }) => {
-            view.overlay = match alert.handle_key(code) {
-                Some(AlertChoice::Pressed(1)) => {
-                    if form.attempt() {
-                        form.busy = true;
-                        cx.request(Request::Change(form.change()).into());
-                    }
-                    Some(Overlay::Form(form))
-                }
-                Some(AlertChoice::Pressed(_) | AlertChoice::Dismissed) => Some(Overlay::Form(form)),
-                None => Some(Overlay::ConfirmPassword { form, alert }),
-            };
-        }
-        Some(Overlay::LogOut(mut alert)) => match alert.handle_key(code) {
-            Some(AlertChoice::Pressed(1)) => cx.request(AppRequest::SignOut),
-            Some(AlertChoice::Pressed(_) | AlertChoice::Dismissed) => {}
-            None => view.overlay = Some(Overlay::LogOut(alert)),
+    match &mut view.overlay {
+        Some(Overlay::Form(_)) => handle_form(view, code, cx),
+        Some(Overlay::ConfirmPassword { alert, .. }) => match alert.handle_key(code) {
+            Some(AlertChoice::Pressed(1)) => {
+                back_to_sheet(view);
+                dispatch(view, Action::ConfirmPassword, cx);
+            }
+            Some(AlertChoice::Pressed(_) | AlertChoice::Dismissed) => back_to_sheet(view),
+            None => {}
         },
-        Some(Overlay::More(Some(delete))) => {
-            view.overlay = Some(Overlay::More(handle_delete(delete, code, cx)));
-        }
-        Some(Overlay::More(None)) => {
-            view.overlay = match code {
-                KeyCode::Esc | KeyCode::Char('q') => None,
-                KeyCode::Enter | KeyCode::Char('d') => {
-                    Some(Overlay::More(Some(DeleteDialog::new())))
-                }
-                _ => Some(Overlay::More(None)),
-            };
-        }
+        Some(Overlay::LogOut(alert)) => match alert.handle_key(code) {
+            Some(AlertChoice::Pressed(1)) => {
+                view.overlay = None;
+                dispatch(view, Action::ConfirmLogOut, cx);
+            }
+            Some(AlertChoice::Pressed(_) | AlertChoice::Dismissed) => view.overlay = None,
+            None => {}
+        },
+        Some(Overlay::More(Some(_))) => handle_delete(view, code, cx),
+        Some(Overlay::More(None)) => match code {
+            KeyCode::Esc | KeyCode::Char('q') => view.overlay = None,
+            KeyCode::Enter | KeyCode::Char('d') => {
+                dispatch(view, Action::More(MoreItem::DeleteAccount), cx);
+            }
+            _ => {}
+        },
         None => handle_screen(view, code, cx),
     }
+}
+
+/// Closes the password confirm, leaving its sheet open under it.
+fn back_to_sheet(view: &mut AccountView) {
+    view.overlay = match view.overlay.take() {
+        Some(Overlay::ConfirmPassword { form, .. }) => Some(Overlay::Form(form)),
+        other => other,
+    };
 }
 
 /// Keys on the screen itself.
 fn handle_screen(view: &mut AccountView, code: KeyCode, cx: &mut Context<'_>) {
     match code {
         KeyCode::Char('q') => cx.quit(),
-        KeyCode::Esc => cx.back(),
+        KeyCode::Esc => dispatch(view, Action::Back, cx),
         KeyCode::Down | KeyCode::Char('j') | KeyCode::Tab => view.next(),
         KeyCode::Up | KeyCode::Char('k') | KeyCode::BackTab => view.previous(),
         KeyCode::Enter => {
             if let Some(stop) = view.focused() {
-                activate(view, stop, cx);
+                dispatch(view, stop.action(), cx);
             }
         }
         KeyCode::Char('i') => {
@@ -71,88 +66,60 @@ fn handle_screen(view: &mut AccountView, code: KeyCode, cx: &mut Context<'_>) {
                 hint::topic(cx, topic);
             }
         }
-        KeyCode::Char('?') => hint::reopen(cx, HINT_PROFILE),
+        KeyCode::Char('?') => hint::reopen(cx, OneTimeHint::Profile.key()),
         KeyCode::Char('!') => help::open(cx),
-        KeyCode::Char('L') => view.overlay = Some(Overlay::LogOut(log_out_alert())),
+        KeyCode::Char('L') => dispatch(view, Action::LogOut, cx),
         KeyCode::Char('m') => view.overlay = Some(Overlay::More(None)),
         _ => {}
     }
 }
 
-fn activate(view: &mut AccountView, stop: Stop, cx: &mut Context<'_>) {
-    match stop {
-        Stop::ChangeUsername => view.overlay = Some(Overlay::Form(Form::new(FormKind::Username))),
-        Stop::ChangeEmail => view.overlay = Some(Overlay::Form(Form::new(FormKind::Email))),
-        Stop::ChangePassword => view.overlay = Some(Overlay::Form(Form::new(FormKind::Password))),
-        Stop::Resend => {
-            if view.can_resend() {
-                view.sending = true;
-                cx.request(Request::Resend.into());
-            }
-        }
-        Stop::Check => {
-            if !view.checking {
-                view.checking = true;
-                cx.request(Request::CheckVerification.into());
-            }
-        }
-        Stop::Website => browser::open(cx, WEB_BASE),
-        Stop::Privacy => privacy::open(cx),
-        Stop::Changelog => changelog::open(cx),
-    }
-}
-
-/// Keys in a Change sheet. Returns what stays open: the sheet, its password confirm, or nothing.
-fn handle_form(mut form: Form, code: KeyCode, cx: &mut Context<'_>) -> Option<Overlay> {
-    if form.busy {
-        return Some(Overlay::Form(form));
+/// Keys in a Change sheet. It takes none while its change is out.
+fn handle_form(view: &mut AccountView, code: KeyCode, cx: &mut Context<'_>) {
+    let Some(Overlay::Form(form)) = &mut view.overlay else {
+        return;
+    };
+    let sheet = form.sheet;
+    if view.model.is_saving(sheet) {
+        return;
     }
     match code {
-        KeyCode::Esc => return None,
+        KeyCode::Esc => view.overlay = None,
         KeyCode::Tab | KeyCode::Down => form.next_field(),
         KeyCode::BackTab | KeyCode::Up => form.previous_field(),
-        KeyCode::F(2) if form.kind == FormKind::Password && form.focus == 1 => {
+        KeyCode::F(2) if form.field() == Some(Field::NewPassword) => {
             hint::topic(cx, HintTopic::Password);
         }
         KeyCode::Enter if !form.on_last_field() => form.next_field(),
-        KeyCode::Enter => {
-            if !form.attempt() {
-                return Some(Overlay::Form(form));
-            }
-            if form.kind == FormKind::Password {
-                return Some(Overlay::ConfirmPassword {
-                    form,
-                    alert: confirm_password_alert(),
-                });
-            }
-            form.busy = true;
-            cx.request(Request::Change(form.change()).into());
-        }
+        KeyCode::Enter => dispatch(view, Action::Save(sheet), cx),
         other => {
-            let at = form.focus;
-            if let Some(input) = form.inputs.get_mut(at)
+            let field = form.field();
+            if let Some(input) = form.inputs.get_mut(form.focus)
                 && input.handle_key(other)
+                && let Some(field) = field
             {
-                if !input.is_empty()
-                    && let Some(touched) = form.touched.get_mut(at)
-                {
-                    *touched = true;
-                }
-                form.validate();
+                let value = Typed::new(input.value());
+                dispatch(
+                    view,
+                    Action::Edit {
+                        sheet,
+                        field,
+                        value,
+                    },
+                    cx,
+                );
             }
         }
     }
-    Some(Overlay::Form(form))
 }
 
-/// Keys in the Delete account dialog. Returns it while it stays open over the More sheet.
-fn handle_delete(
-    mut delete: DeleteDialog,
-    code: KeyCode,
-    cx: &mut Context<'_>,
-) -> Option<DeleteDialog> {
-    if delete.busy {
-        return Some(delete);
+/// Keys in the Delete account dialog. It takes none while the delete is out.
+fn handle_delete(view: &mut AccountView, code: KeyCode, cx: &mut Context<'_>) {
+    let Some(Overlay::More(Some(delete))) = &mut view.overlay else {
+        return;
+    };
+    if view.model.is_deleting() {
+        return;
     }
     let order = [
         DeleteFocus::Password,
@@ -162,7 +129,7 @@ fn handle_delete(
     ];
     let at = order.iter().position(|f| *f == delete.focus).unwrap_or(0);
     match code {
-        KeyCode::Esc => return None,
+        KeyCode::Esc => close_delete(view, cx),
         KeyCode::Tab | KeyCode::Down => {
             delete.focus = order
                 .get(at.saturating_add(1).checked_rem(order.len()).unwrap_or(0))
@@ -176,22 +143,15 @@ fn handle_delete(
             delete.focus = order.get(back).copied().unwrap_or(DeleteFocus::Password);
         }
         KeyCode::Enter => match delete.focus {
-            DeleteFocus::Cancel => return None,
+            DeleteFocus::Cancel => close_delete(view, cx),
             DeleteFocus::ShowPassword => {
                 let masked = delete.password.is_masked();
                 delete.password.set_masked(!masked);
             }
             DeleteFocus::Password | DeleteFocus::Delete => {
-                // The countdown alone gates it; an empty password is the server's to refuse.
-                if delete.wait().is_none() {
-                    delete.busy = true;
-                    cx.request(
-                        Request::Change(AccountChange::Delete {
-                            password: Password(delete.password.value().to_owned()),
-                        })
-                        .into(),
-                    );
-                }
+                // The model's countdown alone gates it; an empty password is the server's to refuse.
+                let password = Password::new(delete.password.value());
+                dispatch(view, Action::Delete { password }, cx);
             }
         },
         other if delete.focus == DeleteFocus::Password => {
@@ -199,5 +159,10 @@ fn handle_delete(
         }
         _ => {}
     }
-    Some(delete)
+}
+
+/// Closes the Delete account dialog back to the More sheet, stopping its countdown.
+fn close_delete(view: &mut AccountView, cx: &mut Context<'_>) {
+    view.overlay = Some(Overlay::More(None));
+    dispatch(view, Action::CancelDelete, cx);
 }

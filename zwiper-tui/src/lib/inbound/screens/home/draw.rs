@@ -9,13 +9,13 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Paragraph, Wrap};
 use ratatui_image::StatefulImage;
 use ratatui_image::picker::ProtocolType;
-use zwipe_core::domain::card::Card;
-use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
-use zwipe_core::domain::deck::deck_metrics;
-use zwipe_ui::color_map::{ColorMapCounts, ColorMapModel};
-use zwipe_ui::playstyle;
+use zwipe_ui::color_map::ColorMapModel;
+use zwipe_ui::screens::home::{
+    ACTIVITY, BUY, COLOR_MAP, FEATURED_FLAVOR, Flavor, IMAGE, LIVE, NO_PLAY_STYLE,
+    PLAY_STYLE_FAILED, PLAYSTYLE, PlayStyle, Quote,
+};
 
-use super::{HomeView, Overlay, keys};
+use super::{HomeView, Overlay};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::screens::swipe::CardImage;
@@ -141,7 +141,7 @@ fn draw_hero(
         f,
         palette,
         strip,
-        super::figures_for(shared),
+        view.figures(),
         super::since_open(view),
         view.since_arrival(),
     );
@@ -150,14 +150,14 @@ fn draw_hero(
         .is_some_and(|t| stagger::entering(t.elapsed(), Duration::ZERO, stagger::SCOPE_IN));
     let scope_in = |style: Style| if settling { style.dim() } else { style };
     let mut spans = Vec::new();
-    if super::live(shared) {
-        spans.push(chip("Live", scope_in(palette.add)));
+    if view.model.live() {
+        spans.push(chip(LIVE, scope_in(palette.add)));
         spans.push(Span::raw(" "));
     }
     spans.push(Span::raw("s ").bold());
-    spans.push(chip(shared.caches.scope.label(), scope_in(palette.accent)));
+    spans.push(chip(view.model.scope().label(), scope_in(palette.accent)));
     spans.push(Span::raw("  "));
-    spans.extend(button(palette, "v", "Activity"));
+    spans.extend(button(palette, "v", ACTIVITY));
     f.render_widget(Line::from(spans).centered(), chips);
 }
 
@@ -173,30 +173,25 @@ fn draw_panels(f: &mut Frame<'_>, shared: &Shared, view: &HomeView, area: Rect) 
 
 fn draw_color_map(f: &mut Frame<'_>, shared: &Shared, view: &HomeView, area: Rect) {
     let palette = &shared.palette;
-    let summary = super::play_style_for(shared);
-    let ghost = summary.is_none() && !view.play_style_failed;
+    let panel = view.model.play_style();
+    let ghost = panel == PlayStyle::Loading;
     let mut block = crate::inbound::widgets::panel::bordered(palette).border_style(palette.border);
     if ghost {
         block = block.title(Line::styled(" ░░░░░░░░ ", palette.muted).centered());
     } else {
         block = block
-            .title(Line::from(" Color map ").bold().centered())
+            .title(Line::from(format!(" {COLOR_MAP} ")).bold().centered())
             .title(Line::from(widgets::button::about_corner(palette)).right_aligned());
     }
     let inner = block.inner(area);
     f.render_widget(block, area);
     let width = inner.width;
 
-    let counts = summary
-        .filter(|s| s.deck_count > 0)
-        .and_then(|s| s.color_map.as_ref())
-        .map(ColorMapCounts::from)
-        .filter(playstyle::color_map_has_data);
-    let playstyle = Line::from(button(palette, "p", "Playstyle"));
-    let lines: Vec<Line<'static>> = match (summary, counts) {
-        (_, Some(counts)) => {
-            let model = ColorMapModel::new(&counts, super::seed(shared));
-            let key = color_map::key(palette, &counts, Some(("p", "Playstyle")));
+    let playstyle = Line::from(button(palette, "p", PLAYSTYLE));
+    let lines: Vec<Line<'static>> = match panel {
+        PlayStyle::Map(counts) => {
+            let model = ColorMapModel::new(&counts, view.model.seed());
+            let key = color_map::key(palette, &counts, Some(("p", PLAYSTYLE)));
             let key_height = measure::height_of(
                 Paragraph::new(key.clone())
                     .wrap(Wrap { trim: true })
@@ -214,17 +209,17 @@ fn draw_color_map(f: &mut Frame<'_>, shared: &Shared, view: &HomeView, area: Rec
             lines.push(key);
             lines
         }
-        (Some(_), None) => vec![
-            Line::styled("Build a deck to see your playstyle", palette.muted),
+        PlayStyle::Empty => vec![
+            Line::styled(NO_PLAY_STYLE, palette.muted),
             Line::default(),
             playstyle,
         ],
-        (None, None) if view.play_style_failed => vec![
-            Line::styled("Could not load your playstyle", palette.muted),
+        PlayStyle::Failed => vec![
+            Line::styled(PLAY_STYLE_FAILED, palette.muted),
             Line::default(),
             playstyle,
         ],
-        (None, None) => {
+        PlayStyle::Loading => {
             let elapsed = view.opened.elapsed();
             let mut lines = color_map::ghost_lines(
                 palette,
@@ -250,11 +245,10 @@ fn draw_color_map(f: &mut Frame<'_>, shared: &Shared, view: &HomeView, area: Rec
 
 fn draw_flavor(f: &mut Frame<'_>, shared: &Shared, view: &HomeView, area: Rect) {
     let palette = &shared.palette;
-    let card = shared.caches.flavor.as_ref().map(|c| &c.card);
-    match card {
-        Some(card) if keys::has_flavor(card) => draw_flavor_card(f, shared, view, card, area),
-        Some(_) => {}
-        None => {
+    match view.model.flavor() {
+        Flavor::Quote(quote) => draw_flavor_card(f, shared, view, &quote, area),
+        Flavor::Blank => {}
+        Flavor::Loading => {
             let block =
                 crate::inbound::widgets::panel::bordered(palette).border_style(palette.border);
             let inner = block.inner(area);
@@ -271,14 +265,20 @@ fn draw_flavor(f: &mut Frame<'_>, shared: &Shared, view: &HomeView, area: Rect) 
 }
 
 /// The featured card's panel: its image beside or above the quote, name, price and keys when the terminal draws real images and the panel has room, else those alone.
-fn draw_flavor_card(f: &mut Frame<'_>, shared: &Shared, view: &HomeView, card: &Card, area: Rect) {
+fn draw_flavor_card(
+    f: &mut Frame<'_>,
+    shared: &Shared,
+    view: &HomeView,
+    quote: &Quote,
+    area: Rect,
+) {
     let palette = &shared.palette;
     let block = crate::inbound::widgets::panel::bordered(palette)
-        .title(Line::from(" Featured flavor ").bold().centered())
+        .title(Line::from(format!(" {FEATURED_FLAVOR} ")).bold().centered())
         .border_style(palette.border);
     let inner = block.inner(area);
     f.render_widget(block, area);
-    let (quote, buy) = flavor_text(palette, card);
+    let (quote, buy) = flavor_text(palette, quote);
     let ready = shared
         .caches
         .flavor_image
@@ -388,22 +388,17 @@ fn flavor_image_held(shared: &Shared, view: &HomeView) -> bool {
 }
 
 /// The quote and the name, price, Image and Buy row, as paragraphs that wrap.
-fn flavor_text(palette: &Palette, card: &Card) -> (Paragraph<'static>, Paragraph<'static>) {
-    let data = &card.scryfall_data;
-    let quote = format!("{} ", data.flavor_text.as_deref().unwrap_or_default());
-    let price = deck_metrics::card_price(data, PriceCurrency::Usd);
-    let mut buy_row = vec![Span::raw(data.name.clone()).bold()];
-    if let Some(price) = price {
-        buy_row.push(Span::styled(
-            format!("  {}", PriceCurrency::Usd.format_amount(price)),
-            palette.muted,
-        ));
+fn flavor_text(palette: &Palette, shown: &Quote) -> (Paragraph<'static>, Paragraph<'static>) {
+    let quote = format!("{} ", shown.text);
+    let mut buy_row = vec![Span::raw(shown.name.clone()).bold()];
+    if let Some(price) = &shown.price {
+        buy_row.push(Span::styled(format!("  {price}"), palette.muted));
     }
     buy_row.push(Span::raw("  "));
-    buy_row.extend(button(palette, "i", "Image"));
-    if price.is_some() {
+    buy_row.extend(button(palette, "i", IMAGE));
+    if shown.price.is_some() {
         buy_row.push(Span::raw("  "));
-        buy_row.extend(button(palette, "b", "Buy"));
+        buy_row.extend(button(palette, "b", BUY));
     }
     let lines: Vec<Line<'static>> = quote
         .lines()

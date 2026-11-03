@@ -1,4 +1,6 @@
 //! Import: a pasted decklist or an Archidekt link into one board of the deck, adding to it or replacing it, with what came in and what did not.
+//!
+//! What the screen knows and decides is zwipe-ui's [`State`]; this view adds the text area and the link box, which keep their own values when From switches, and the focus.
 
 pub(crate) mod draw;
 pub(crate) mod keys;
@@ -10,8 +12,9 @@ use zwipe_client::ClientError;
 use zwipe_core::domain::deck::ImportMode;
 use zwipe_core::domain::deck::requests::import_deck_cards::ImportDeckCardsResult;
 use zwipe_core::domain::user::hints::OneTimeHint;
-use zwipe_ui::deck::form::{self, ImportTone};
+use zwipe_ui::generation::Ticket;
 use zwipe_ui::hint::{Block, HintContent, Span, one_time};
+use zwipe_ui::screens::deck_import::{Action, Destination, Effect, Source, State};
 
 use super::Screen;
 use crate::inbound::app::Context;
@@ -21,58 +24,8 @@ use crate::inbound::toward::Toward;
 use crate::inbound::widgets::hint;
 use crate::inbound::widgets::text_area::TextArea;
 use crate::inbound::widgets::text_input::TextInput;
-use crate::inbound::widgets::toast::{self, ToastKind};
+use crate::inbound::widgets::toast::ToastKind;
 use crate::outbound::account::Account;
-
-/// The key the server stores the import hint under.
-pub(crate) const HINT_KEY: &str = "import";
-
-/// Where the cards come from.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum Source {
-    #[default]
-    Text,
-    Archidekt,
-}
-
-/// The board the cards go to. Main sends no board, so a pasted list's section headers still apply.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum Target {
-    #[default]
-    Main,
-    Maybe,
-    Side,
-}
-
-impl Target {
-    pub(crate) const ALL: [Self; 3] = [Self::Main, Self::Maybe, Self::Side];
-
-    pub(crate) fn label(self) -> &'static str {
-        match self {
-            Self::Main => "Main",
-            Self::Maybe => "Maybe",
-            Self::Side => "Side",
-        }
-    }
-
-    /// The board sent to the server: none for Main.
-    pub(crate) fn wire(self) -> Option<&'static str> {
-        match self {
-            Self::Main => None,
-            Self::Maybe => Some("maybeboard"),
-            Self::Side => Some("sideboard"),
-        }
-    }
-
-    /// The board's name in the explainer line.
-    pub(crate) fn word(self) -> &'static str {
-        match self {
-            Self::Main => "mainboard",
-            Self::Maybe => "maybeboard",
-            Self::Side => "sideboard",
-        }
-    }
-}
 
 /// The control the keys go to.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
@@ -95,96 +48,96 @@ impl Focus {
     }
 }
 
-/// The Import screen. The text and the link keep their own values when From switches.
+/// The Import screen's state: the model plus the two inputs and the focus.
 #[derive(Debug)]
 pub(crate) struct ImportView {
-    pub(crate) deck_id: Uuid,
-    pub(crate) source: Source,
-    pub(crate) mode: ImportMode,
-    pub(crate) target: Target,
+    pub(crate) model: State,
     pub(crate) text: TextArea,
     pub(crate) url: TextInput,
     pub(crate) focus: Focus,
-    pub(crate) loading: bool,
-    /// The last import's result, cleared when another starts.
-    pub(crate) result: Option<ImportDeckCardsResult>,
 }
 
-impl ImportView {
-    pub(crate) fn opening(deck_id: Uuid) -> Self {
+impl Default for ImportView {
+    fn default() -> Self {
         Self {
-            deck_id,
-            source: Source::Text,
-            mode: ImportMode::Add,
-            target: Target::Main,
+            model: State::new(),
             text: TextArea::default(),
             url: TextInput::default(),
             focus: Focus::Input,
-            loading: false,
-            result: None,
+        }
+    }
+}
+
+impl ImportView {
+    /// The active input as typed: the decklist for Text, the link for Archidekt.
+    pub(crate) fn input(&self) -> String {
+        match self.model.source() {
+            Source::Text => self.text.text(),
+            Source::Archidekt => self.url.value().to_owned(),
         }
     }
 
-    /// Whether the active input is blank once trimmed.
-    pub(crate) fn blank(&self) -> bool {
-        match self.source {
-            Source::Text => self.text.is_blank(),
-            Source::Archidekt => self.url.value().trim().is_empty(),
-        }
-    }
-
-    /// The submit button's label.
-    pub(crate) fn submit_label(&self) -> &'static str {
-        if self.loading {
-            "Importing..."
-        } else if self.mode.is_replace() {
-            "Replace"
-        } else {
-            "Import"
-        }
+    /// Whether the submit key takes a press now.
+    pub(crate) fn can_submit(&self) -> bool {
+        self.model.can_submit(&self.input())
     }
 
     pub(crate) fn step_focus(&mut self, toward: Toward) {
         self.focus = self.focus.step(toward);
     }
+}
 
-    /// The explainer line's two parts around the board word.
-    pub(crate) fn explainer(&self) -> (&'static str, &'static str) {
-        if self.mode.is_replace() {
-            (
-                "Removes all existing cards in the ",
-                ", replacing with imported cards.",
-            )
-        } else {
-            (
-                "Adds imported cards into the ",
-                ". Existing cards stay but take new quantities if applicable.",
-            )
-        }
-    }
+/// Sends the active input to the model's submit, which refuses while an import is out or the input is blank.
+pub(crate) fn submit(view: &mut ImportView, cx: &mut Context<'_>) {
+    let input = view.input();
+    dispatch(view, Action::Submit { input }, cx);
+}
 
-    /// Sends the import unless one is under way or the input is blank.
-    pub(crate) fn submit(&mut self, cx: &mut Context<'_>) {
-        if self.loading || self.blank() {
-            return;
+/// Applies `action` to the model and performs the effects it returns, in order.
+pub(crate) fn dispatch(view: &mut ImportView, action: Action, cx: &mut Context<'_>) {
+    for effect in view.model.update(action) {
+        match effect {
+            Effect::OfferHint(offer) => {
+                if let Some(content) = hint_content() {
+                    hint::once_with(cx, offer.key(), content);
+                }
+            }
+            Effect::ImportDeckCards {
+                ticket,
+                deck_id,
+                text,
+                board,
+                mode,
+            } => cx.request(
+                Request::Text {
+                    ticket,
+                    deck_id,
+                    text,
+                    board,
+                    mode,
+                }
+                .into(),
+            ),
+            Effect::ImportArchidektDeck {
+                ticket,
+                deck_id,
+                url,
+                board,
+                mode,
+            } => cx.request(
+                Request::Archidekt {
+                    ticket,
+                    deck_id,
+                    url,
+                    board,
+                    mode,
+                }
+                .into(),
+            ),
+            Effect::ClearUndo(deck_id) => cx.shared.cards.undo.clear(deck_id),
+            Effect::Toast(toast) => cx.show(toast),
+            Effect::Navigate(Destination::Deck(_)) => cx.back(),
         }
-        self.loading = true;
-        self.result = None;
-        let request = match self.source {
-            Source::Text => Request::Text {
-                deck_id: self.deck_id,
-                text: self.text.text(),
-                target: self.target,
-                mode: self.mode,
-            },
-            Source::Archidekt => Request::Archidekt {
-                deck_id: self.deck_id,
-                url: self.url.value().to_owned(),
-                target: self.target,
-                mode: self.mode,
-            },
-        };
-        cx.request(request.into());
     }
 }
 
@@ -220,15 +173,19 @@ pub(crate) fn reopen_hint(cx: &mut Context<'_>) {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum Request {
     Text {
+        ticket: Ticket,
         deck_id: Uuid,
         text: String,
-        target: Target,
+        /// The board sent, none for Main.
+        board: Option<&'static str>,
         mode: ImportMode,
     },
     Archidekt {
+        ticket: Ticket,
         deck_id: Uuid,
         url: String,
-        target: Target,
+        /// The board sent, none for Main.
+        board: Option<&'static str>,
         mode: ImportMode,
     },
 }
@@ -241,13 +198,26 @@ impl Request {
             Self::Archidekt { .. } => "archidekt",
         }
     }
+
+    /// The ticket the request went out with.
+    fn ticket(&self) -> Ticket {
+        match self {
+            Self::Text { ticket, .. } | Self::Archidekt { ticket, .. } => *ticket,
+        }
+    }
 }
 
-/// Import's results.
+/// Import's results, each carrying its request's ticket back to the model.
 #[derive(Debug)]
 pub(crate) enum Update {
-    Imported(ImportDeckCardsResult),
-    Failed(String),
+    Imported {
+        ticket: Ticket,
+        result: ImportDeckCardsResult,
+    },
+    Failed {
+        ticket: Ticket,
+        error: String,
+    },
 }
 
 impl From<Request> for screens::Request {
@@ -271,72 +241,63 @@ fn pick(screen: &mut Screen) -> Option<&mut ImportView> {
 
 /// Opens Import for `deck_id` and shows its hint once.
 pub(crate) fn open(cx: &mut Context<'_>, deck_id: Uuid) {
-    cx.push(Screen::DeckImport(Box::new(ImportView::opening(deck_id))));
-    if let Some(content) = hint_content() {
-        hint::once_with(cx, HINT_KEY, content);
-    }
+    let mut view = ImportView::default();
+    dispatch(&mut view, Action::Open(deck_id), cx);
+    cx.push(Screen::DeckImport(Box::new(view)));
 }
 
 pub(crate) async fn perform(account: &Account, request: Request) -> Option<screens::Update> {
     let client = &account.client;
+    let ticket = request.ticket();
     let result = async {
         let session = account.fresh().await?;
         match request {
             Request::Text {
                 deck_id,
                 text,
-                target,
+                board,
                 mode,
+                ..
             } => {
                 client
-                    .import_deck_cards(deck_id, &text, target.wire(), mode, &session)
+                    .import_deck_cards(deck_id, &text, board, mode, &session)
                     .await
             }
             Request::Archidekt {
                 deck_id,
                 url,
-                target,
+                board,
                 mode,
+                ..
             } => {
                 client
-                    .import_archidekt_deck(deck_id, &url, target.wire(), mode, &session)
+                    .import_archidekt_deck(deck_id, &url, board, mode, &session)
                     .await
             }
         }
     }
     .await;
-    Some(outcome(result))
+    Some(outcome(ticket, result))
 }
 
 /// What an import's answer means for the screen. A list over the server's line cap (422) or body limit (413) comes back as the client's user message, which Import toasts as an error, as the app does.
-fn outcome(result: Result<ImportDeckCardsResult, ClientError>) -> screens::Update {
+fn outcome(ticket: Ticket, result: Result<ImportDeckCardsResult, ClientError>) -> screens::Update {
     match result {
-        Ok(result) => Update::Imported(result).into(),
-        Err(e) => screens::failure(&e, |m| Update::Failed(m).into()),
+        Ok(result) => Update::Imported { ticket, result }.into(),
+        Err(e) => screens::failure(&e, |error| Update::Failed { ticket, error }.into()),
     }
 }
 
+/// Hands a reply to the model. A failure raises its toast even when the screen has closed.
 pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
-    let Some(view) = nav.find_mut(pick) else {
-        return;
-    };
-    view.loading = false;
-    match update {
-        Update::Imported(result) => {
-            let (tone, message) =
-                form::import_outcome(result.imported.len(), result.unresolved.len());
-            // Unresolved lines are worth reading; the rest are routine.
-            let (kind, band) = match tone {
-                ImportTone::Info => (ToastKind::Info, toast::QUICK),
-                ImportTone::Error => (ToastKind::Error, toast::NORMAL),
-                ImportTone::Success => (ToastKind::Success, toast::QUICK),
-            };
-            cx.toast_for(kind, message, band);
-            if !result.imported.is_empty() {
-                cx.shared.cards.undo.clear(view.deck_id);
-            }
-            view.result = Some(result);
+    let action = match update {
+        Update::Imported { ticket, result } => Action::Imported { ticket, result },
+        Update::Failed { ticket, error } => {
+            cx.toast(ToastKind::Error, error);
+            Action::Failed { ticket }
         }
-        Update::Failed(message) => cx.toast(ToastKind::Error, message),
+    };
+    if let Some(view) = nav.find_mut(pick) {
+        dispatch(view, action, cx);
     }
 }

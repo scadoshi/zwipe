@@ -30,6 +30,7 @@ Forms and keys:
 - A filled block is always a tag (Everybody, Live, deck tags, chips) and never focusable.
 - Every About `?` marker on screen is a bracketed `[?]` button (no inner spaces): brackets and `?` in the muted text color at rest at every site, bold accent brackets and `?` while it is the marker the About key opens. It sits one space after its label. Key bar hints like `? hint` stay bare keys.
 - The deck form's fields each carry a `[?]` About marker after their label. On a field that takes no typing, `i` opens its explainer and its marker lights; the text boxes (Deck name, Price, the command-zone fields) keep theirs at rest, since letters type there. The form has no F6 key; the pickers keep F6 for their own hint.
+- The deck view's sections carry their explainer's `[?]` on the shown tab of each panel, the chip's padding the space before it; it lights while that panel has the focus, since `i` opens it then. Profile has none.
 - Account, Config, Privacy and Changelog have no Back button; `Esc back` in the key bar does it. Account keeps Log out and More.
 - Account's Change sheets (username, email, password) have no Back button either: Save changes is their one button, and `Esc back` in the key bar goes back.
 - Register sits a row down from the top when there is room, so its logo never touches the screen's top edge.
@@ -41,7 +42,6 @@ Earlier rules that still hold: swipe labels are only add, remove, skip, undo and
 Paused on 2026-11-01 to save agent usage.
 
 Approved by the owner, not built yet (build these first on resume, in one pass):
-- The deck view's sections get `[?]` markers for their explainers.
 - Playstyle's picked Oracle tags column shows its label in bold accent with its lit `[?]`, not a reversed (filled) label.
 
 Still open:
