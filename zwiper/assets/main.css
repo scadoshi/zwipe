@@ -400,20 +400,7 @@ button {
     right: 0;
     margin-left: 0;
     margin-right: 0;
-    background-color: var(--bg-sink);
     border-bottom: 1px solid transparent;
-}
-
-/* The grid backdrop under the menu, as under a bottom sheet: the panel's own
-   still copy (from MenuFooter), pinned to the panel and under its rows. */
-.app-nav .nav-panel .grid-cells {
-    position: absolute;
-    z-index: 0;
-}
-
-.app-nav .nav-panel .nav-panel-inner > :not(.grid-cells) {
-    position: relative;
-    z-index: 1;
 }
 
 .app-nav .nav-panel-open {

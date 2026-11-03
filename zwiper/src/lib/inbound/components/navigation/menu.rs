@@ -155,8 +155,6 @@ fn SectionLink(section: Section, current: Option<Section>, mut open: Signal<bool
 
 /// The menu's footer, for the nav's `trailing` slot: the `!` for Help and
 /// feedback and, signed in, a small Log out that asks first.
-/// It also carries the panel's still copy of the grid backdrop, which sits
-/// under the whole menu as the bottom sheet's does.
 #[component]
 pub fn MenuFooter(open: Signal<bool>) -> Element {
     let session: Signal<Option<Session>> = use_context();
@@ -164,7 +162,6 @@ pub fn MenuFooter(open: Signal<bool>) -> Element {
     let mut confirm = use_signal(|| false);
     let signed_in = session.read().is_some();
     rsx! {
-        components::GridCells { still: true }
         div { class: "app-nav-footer",
             SupportButton {}
             if signed_in {
