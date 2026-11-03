@@ -39,7 +39,7 @@ pub(crate) fn PendingEmail(email: String, note: Option<String>) -> Element {
         div { style: "display:flex;flex-direction:column;align-items:flex-end;gap:0.25rem;",
             span { "{email}" }
             if let Some(note) = note {
-                span { class: "text-muted text-sm", "{note}" }
+                span { class: "badge-expiry", "{note}" }
             }
         }
     }

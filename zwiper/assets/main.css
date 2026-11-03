@@ -3203,6 +3203,18 @@ button {
     flex-shrink: 0;
 }
 
+.badge-expiry {
+    display: inline-block;
+    padding: 0.15rem 0.4rem;
+    border: 1px solid color-mix(in srgb, var(--text-muted) 35%, transparent);
+    background-color: color-mix(in srgb, var(--text-muted) 12%, transparent);
+    border-radius: 0.4rem;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
 /* =========================
   specific - preferences
 =========================== */
