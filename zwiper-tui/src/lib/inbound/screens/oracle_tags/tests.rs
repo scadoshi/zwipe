@@ -1,6 +1,7 @@
 use std::time::{Duration, Instant};
 
 use crossterm::event::KeyCode;
+use zwipe_ui::dictionary::OTHER;
 
 use super::*;
 use crate::inbound::event_loop::harness::Harness;
@@ -86,8 +87,8 @@ fn opening_fetches_the_catalog_once_and_shows_the_hint_the_first_time() {
     assert_eq!(
         harness.pending(),
         [
-            Request::Catalog.into(),
             screens::Request::MarkHintShown(HINT_ORACLE_TAG_DICTIONARY.to_owned()),
+            Request::Catalog.into(),
         ]
     );
     let hint = harness.app.shared.hint.as_ref().unwrap();
@@ -137,15 +138,15 @@ fn the_catalog_lands_in_the_cache_with_the_dictionary_closed() {
 }
 
 #[test]
-fn a_failed_catalog_says_so_and_toasts_once() {
+fn a_failed_catalog_says_so_and_toasts_each_time_it_fails() {
     let mut harness = on_dictionary();
     harness.apply(Update::CatalogFailed);
     harness.apply(Update::CatalogFailed);
     assert_eq!(
         toasts(&harness),
-        ["Couldn't load the oracle-tag dictionary"]
+        [model::LOAD_FAILED_TOAST, model::LOAD_FAILED_TOAST]
     );
-    assert!(screen_text(&harness.app).contains(FAILED));
+    assert!(screen_text(&harness.app).contains(model::LOAD_FAILED));
     harness.press(KeyCode::Esc);
     assert!(matches!(harness.screen(), Screen::Home(_)));
 }
@@ -155,24 +156,15 @@ fn browsing_shows_a_letter_by_slug_and_the_rail_moves() {
     let mut harness = loaded();
     assert_eq!(shown_slugs(&harness), ["anthem", "artifact-ramp"]);
     harness.press(KeyCode::Left);
-    assert_eq!(view(&harness).letter, 'a', "the rail stops at A");
+    assert_eq!(view(&harness).model.letter(), 'a', "the rail stops at A");
     harness.press(KeyCode::Right);
-    assert_eq!(view(&harness).letter, 'b');
+    assert_eq!(view(&harness).model.letter(), 'b');
     assert!(screen_text(&harness.app).contains("No tags start with B."));
     for _ in 0..30 {
         harness.press(KeyCode::Char('l'));
     }
-    assert_eq!(view(&harness).letter, OTHER, "# ends the rail");
+    assert_eq!(view(&harness).model.letter(), OTHER, "# ends the rail");
     assert_eq!(shown_slugs(&harness), ["40k-model"]);
-}
-
-#[test]
-fn the_rail_has_no_hash_without_a_slug_for_it() {
-    let tags = vec![tag("ramp", None, &[])];
-    assert_eq!(letters(&tags).len(), 26);
-    assert_eq!(letters(&catalog()).last(), Some(&OTHER));
-    assert_eq!(bucket_of("Ramp"), 'r');
-    assert_eq!(bucket_of("5c-good"), OTHER);
 }
 
 #[test]
@@ -186,7 +178,7 @@ fn searching_ranks_matches_and_esc_clears_it() {
     assert_eq!(view(&harness).selected, 1);
     harness.press(KeyCode::Esc);
     assert!(!view(&harness).typing);
-    assert_eq!(view(&harness).query(), "");
+    assert_eq!(view(&harness).model.query(), "");
     assert!(
         matches!(harness.screen(), Screen::OracleTags(_)),
         "Esc in the box leaves the screen open"
@@ -210,8 +202,20 @@ fn a_letter_clears_the_search() {
     harness.type_text("rem");
     harness.press(KeyCode::Enter);
     harness.press(KeyCode::Right);
-    assert_eq!(view(&harness).query(), "");
-    assert_eq!(view(&harness).letter, 'b');
+    assert_eq!(view(&harness).model.query(), "");
+    assert_eq!(view(&harness).model.letter(), 'b');
+}
+
+#[test]
+fn a_catalog_landing_again_keeps_the_search_and_the_selection() {
+    let mut harness = loaded();
+    harness.press(KeyCode::Char('/'));
+    harness.type_text("ramp");
+    harness.press(KeyCode::Down);
+    harness.apply(Update::Catalog(catalog()));
+    assert_eq!(view(&harness).model.query(), "ramp");
+    assert_eq!(view(&harness).selected, 1);
+    assert_eq!(shown_slugs(&harness), ["ramp", "artifact-ramp"]);
 }
 
 #[test]

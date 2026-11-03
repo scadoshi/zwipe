@@ -5,8 +5,9 @@ use ratatui::layout::{Constraint, Layout, Margin, Rect};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::Paragraph;
 use zwipe_core::domain::card::oracle_tag::OracleTag;
+use zwipe_ui::screens::oracle_tag_dictionary::{self as model, Body, List};
 
-use super::{FAILED, OTHER, OracleTagsView, letters};
+use super::{OracleTagsView, catalog};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::screens::home::cache::Catalog;
@@ -51,13 +52,13 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &OracleTagsView) {
     let bar_height = action_bar::height(&bar, area.width);
     let [body, keys] =
         Layout::vertical([Constraint::Fill(1), Constraint::Length(bar_height)]).areas(area);
-    match &shared.caches.oracle_tags {
-        Catalog::Loaded { tags, .. } => draw_loaded(f, palette, view, tags, body),
-        Catalog::Failed => f.render_widget(
-            Paragraph::new(Line::styled(FAILED, palette.muted)).centered(),
+    match view.model.body(catalog(&shared.caches.oracle_tags)) {
+        Body::Browse { rail, list } => draw_loaded(f, palette, view, &rail, list, body),
+        Body::Failed(line) => f.render_widget(
+            Paragraph::new(Line::styled(line, palette.muted)).centered(),
             body.centered_vertically(Constraint::Length(1)),
         ),
-        Catalog::Idle | Catalog::Loading => draw_skeleton(f, palette, body),
+        Body::Loading => draw_skeleton(f, palette, body),
     }
     f.render_widget(action_bar::wrap(bar, keys.width), keys);
 }
@@ -66,7 +67,8 @@ fn draw_loaded(
     f: &mut Frame<'_>,
     palette: &Palette,
     view: &OracleTagsView,
-    tags: &[OracleTag],
+    rail_letters: &[model::RailLetter],
+    list_body: List,
     area: Rect,
 ) {
     let [search, rail, _, list] = Layout::vertical([
@@ -80,19 +82,15 @@ fn draw_loaded(
     if view.typing && search.height >= BOX_HEIGHT {
         f.set_cursor_position(view.search.cursor_position(search));
     }
-    let query = view.query();
-    draw_rail(f, palette, view, tags, query.is_empty(), rail);
+    draw_rail(f, palette, view, rail_letters, rail);
 
-    let rows = view.rows(tags);
-    if rows.is_empty() {
-        let empty = if query.is_empty() {
-            format!("No tags start with {}.", view.letter.to_ascii_uppercase())
-        } else {
-            format!("No tags match \u{201c}{query}\u{201d}.")
-        };
-        f.render_widget(Line::styled(empty, palette.muted), list);
-        return;
-    }
+    let rows = match list_body {
+        List::Rows(rows) => rows,
+        List::Empty(line) => {
+            f.render_widget(Line::styled(line, palette.muted), list);
+            return;
+        }
+    };
     let selected = view.selected.min(rows.len().saturating_sub(1));
     let rule_width = usize::from(list.width.saturating_sub(2));
     let items: Vec<Vec<Line<'static>>> = rows
@@ -118,7 +116,7 @@ fn row(
     let mut lines = vec![Line::styled(tag.slug.clone(), slug_style)];
     lines.push(match &tag.description {
         Some(description) => Line::from(description.clone()),
-        None => Line::styled("No description yet", palette.muted),
+        None => Line::styled(model::NO_DESCRIPTION, palette.muted),
     });
     if !tag.parent_slugs.is_empty() {
         let mut parents = Vec::new();
@@ -140,32 +138,28 @@ fn row(
     lines
 }
 
-/// The rail of letters, the browsed one picked out while not searching, scrolled so it stays in view.
+/// The rail of letters, the picked one standing out, scrolled so the browsed letter stays in view.
 fn draw_rail(
     f: &mut Frame<'_>,
     palette: &Palette,
     view: &OracleTagsView,
-    tags: &[OracleTag],
-    browsing: bool,
+    letters: &[model::RailLetter],
     area: Rect,
 ) {
-    let letters = letters(tags);
     let mut spans = Vec::new();
-    for &letter in &letters {
-        let label = if letter == OTHER {
-            OTHER.to_string()
-        } else {
-            letter.to_ascii_uppercase().to_string()
-        };
-        let style = if browsing && letter == view.letter {
+    for chip in letters {
+        let style = if chip.picked {
             palette.accent.bold().reversed()
         } else {
             palette.muted
         };
         spans.push(Span::raw(" "));
-        spans.push(Span::styled(label, style));
+        spans.push(Span::styled(chip.label.clone(), style));
     }
-    let at = letters.iter().position(|&l| l == view.letter).unwrap_or(0);
+    let at = letters
+        .iter()
+        .position(|chip| chip.letter == view.model.letter())
+        .unwrap_or(0);
     let end = u16::try_from(at.saturating_add(1))
         .unwrap_or(u16::MAX)
         .saturating_mul(LETTER_CELLS);

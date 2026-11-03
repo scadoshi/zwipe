@@ -6,7 +6,7 @@
 //!
 //! # The dictionary
 //!
-//! A search box, a letter rail A to Z (plus `#` when some slug starts with something else), and the tags under the letter or matching the search, each with its description and parents. Each tag offers Examples (the cards that carry it) and Use.
+//! A search box, a letter rail A to Z (plus `#` when some slug starts with something else), and the tags under the letter or matching the search, each with its description and parents. Each tag offers Examples (the cards that carry it) and Use. What the dictionary knows and decides (the search, the letter, the rows and the lines in place of them, where Examples and Use lead) is zwipe-ui's [`State`]; this view adds the search box, typing and the selected row.
 //!
 //! # Use, and what a host does
 //!
@@ -27,91 +27,67 @@ mod tests;
 
 use std::time::Instant;
 
-use zwipe_core::domain::card::oracle_tag::{self, OracleTag};
+use zwipe_core::domain::card::oracle_tag::OracleTag;
 use zwipe_core::domain::user::models::hints::HINT_ORACLE_TAG_DICTIONARY;
-use zwipe_ui::timing;
+use zwipe_ui::screens::oracle_tag_dictionary::{self as model, Action, Destination, Effect, State};
 
 use super::Screen;
 use super::home::cache::Catalog;
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;
+use crate::inbound::screens::otag_examples;
 use crate::inbound::widgets::hint;
 use crate::inbound::widgets::text_input::TextInput;
-use crate::inbound::widgets::toast::ToastKind;
 use crate::outbound::account::Account;
 
-/// What the dictionary says when the catalog failed with nothing cached.
-pub(crate) const FAILED: &str = "Couldn't load the dictionary. Pull back and try again.";
-
-/// The toast raised once when the catalog fails while the dictionary is open.
-pub(crate) const FAILED_TOAST: &str = "Couldn't load the oracle-tag dictionary";
-
-/// The bucket for slugs that start with anything but a letter.
-pub(crate) const OTHER: char = '#';
-
-/// The dictionary's state. The tags live in the catalog, so this holds only the search, the letter and the selected row.
+/// The dictionary's state: the model, which holds the search and the letter, plus what only the terminal keeps.
 #[derive(Debug)]
 pub(crate) struct OracleTagsView {
+    pub(crate) model: State,
+    /// The box the search is typed in. Its value follows each keystroke into the model.
     pub(crate) search: TextInput,
     /// Keys go to the search box rather than the list.
     pub(crate) typing: bool,
-    /// The letter browsed while not searching, lowercase, or [`OTHER`].
-    pub(crate) letter: char,
     /// The selected row in the list on screen.
     pub(crate) selected: usize,
-    /// The failure toast has been raised for this visit.
-    pub(crate) failure_shown: bool,
 }
 
 impl Default for OracleTagsView {
     /// Browsing A with an empty search.
     fn default() -> Self {
         Self {
+            model: State::new(),
             search: TextInput::default(),
             typing: false,
-            letter: 'a',
             selected: 0,
-            failure_shown: false,
         }
     }
 }
 
 impl OracleTagsView {
-    /// The search as it matches: trimmed and lowercased. Empty means browsing by letter.
-    pub(crate) fn query(&self) -> String {
-        self.search.value().trim().to_lowercase()
-    }
-
-    /// The tags on screen: the search's ranked matches up to [`timing::DICTIONARY_RESULT_CAP`], or the letter's tags by slug.
+    /// The tags on screen, empty when the model draws a line in place of them.
     pub(crate) fn rows(&self, tags: &[OracleTag]) -> Vec<OracleTag> {
-        let query = self.query();
-        if query.is_empty() {
-            let mut rows: Vec<OracleTag> = tags
-                .iter()
-                .filter(|t| bucket_of(&t.slug) == self.letter)
-                .cloned()
-                .collect();
-            rows.sort_by(|a, b| a.slug.cmp(&b.slug));
-            rows
-        } else {
-            let mut rows = oracle_tag::search_oracle_tags(tags, &query);
-            rows.truncate(timing::DICTIONARY_RESULT_CAP);
-            rows
+        match self.model.list(tags) {
+            model::List::Rows(rows) => rows,
+            model::List::Empty(_) => Vec::new(),
         }
     }
 
-    /// Clears the search and browses the letter `step` places along the rail, stopping at either end.
-    pub(crate) fn step_letter(&mut self, tags: &[OracleTag], step: Step) {
-        let letters = letters(tags);
-        let at = letters.iter().position(|&l| l == self.letter).unwrap_or(0);
+    /// Browses the letter `step` places along `rail` from the one browsed, stopping at either end. The model clears the search, and the box follows.
+    pub(crate) fn step_letter(&mut self, rail: &[char], step: Step, cx: &mut Context<'_>) {
+        let at = rail
+            .iter()
+            .position(|&letter| letter == self.model.letter())
+            .unwrap_or(0);
         let to = match step {
             Step::Back => at.saturating_sub(1),
-            Step::Forward => at.saturating_add(1).min(letters.len().saturating_sub(1)),
+            Step::Forward => at.saturating_add(1).min(rail.len().saturating_sub(1)),
         };
-        self.letter = letters.get(to).copied().unwrap_or('a');
+        let letter = rail.get(to).copied().unwrap_or('a');
         self.search.set_value("");
         self.selected = 0;
+        dispatch(self, Action::PickLetter(letter), cx);
     }
 
     /// Moves the selection one row, staying within `count` rows.
@@ -130,18 +106,34 @@ pub(crate) enum Step {
     Forward,
 }
 
-/// The letter a slug is browsed under: its first character lowercased when it is a letter, else [`OTHER`].
-pub(crate) fn bucket_of(slug: &str) -> char {
-    match slug.chars().next() {
-        Some(c) if c.is_ascii_alphabetic() => c.to_ascii_lowercase(),
-        _ => OTHER,
+/// What the app-wide catalog holds, as the model reads it.
+pub(crate) fn catalog(cache: &Catalog) -> model::Catalog<'_> {
+    match cache {
+        Catalog::Idle | Catalog::Loading => model::Catalog::Loading,
+        Catalog::Failed => model::Catalog::Failed,
+        Catalog::Loaded { tags, .. } => model::Catalog::Loaded(tags),
     }
 }
 
-/// The rail: a to z, then [`OTHER`] only when some slug needs it.
-pub(crate) fn letters(tags: &[OracleTag]) -> Vec<char> {
-    let other = tags.iter().any(|t| bucket_of(&t.slug) == OTHER);
-    ('a'..='z').chain(other.then_some(OTHER)).collect()
+/// Applies `action` to the model and performs the effects it returns, in order.
+///
+/// Use leaves the slug in the handoff and goes back, so the host adopts it in its `Screen::on_return`; the app keeps the dictionary up instead, since its host adopts through a callback.
+pub(crate) fn dispatch(view: &mut OracleTagsView, action: Action, cx: &mut Context<'_>) {
+    for effect in view.model.update(action) {
+        match effect {
+            Effect::OfferHint(offer) => {
+                hint::once(cx, offer.key());
+            }
+            Effect::EnsureCatalog => ensure_catalog(cx),
+            Effect::AdoptTag(slug) => {
+                cx.shared.caches.handoff.oracle_tag = Some(slug);
+                cx.back();
+            }
+            Effect::Navigate(Destination::Previous) => cx.back(),
+            Effect::Navigate(Destination::Examples(slug)) => otag_examples::open(cx, &slug),
+            Effect::Toast(toast) => cx.show(toast),
+        }
+    }
 }
 
 /// The catalog's work.
@@ -202,9 +194,9 @@ pub(crate) fn ensure_catalog(cx: &mut Context<'_>) {
 /// Opens the dictionary over the screen that wants a tag, clearing any tag left from an earlier Use. See the module doc for how the host takes the tag.
 pub(crate) fn open(cx: &mut Context<'_>) {
     cx.shared.caches.handoff.oracle_tag = None;
-    ensure_catalog(cx);
-    cx.push(Screen::OracleTags(Box::default()));
-    hint::once(cx, HINT_ORACLE_TAG_DICTIONARY);
+    let mut view = OracleTagsView::default();
+    dispatch(&mut view, Action::Load, cx);
+    cx.push(Screen::OracleTags(Box::new(view)));
 }
 
 /// Shows the dictionary's hint again, for its "?".
@@ -240,10 +232,8 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
             let failed = matches!(catalog, Catalog::Failed);
             if let Some(view) = nav.find_mut(pick)
                 && failed
-                && !view.failure_shown
             {
-                view.failure_shown = true;
-                cx.toast(ToastKind::Error, FAILED_TOAST.to_owned());
+                dispatch(view, Action::CatalogFailed, cx);
             }
         }
     }
