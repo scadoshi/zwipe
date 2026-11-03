@@ -12,6 +12,12 @@ What might get built next. The app has been live since June 2026, so nothing her
 
 ---
 
+## Meld button on meld cards (noted 2026-11-02)
+
+Meld cards (Bruna, the Fading Light and Gisela, the Broken Blade into Brisela, Voice of Nightmares, for example) should get a Meld button where Flip sits on the card image, showing the melded card the way Flip shows a back face. A meld card has no `card_faces`, so it never shows Flip and the slot is free. The melded card is a separate card on Scryfall with its own image, linked only through `all_parts`: 21 cards in `latest_cards` have `layout = 'meld'`, and each lists its two halves as `meld_part` and its result as `meld_result` (checked 2026-11-02 on Bruna and Brisela; `commander_eligibility.rs` already reads them). What's left is fetching the result card's image and the button in `FlippableCardImage` and the card details sheet. Not started; parked behind current work.
+
+---
+
 ## Playstyle player comparisons (noted 2026-10-27, after the Activity sections)
 
 Playstyle's Activity sections describe one player. The next step compares them with everyone else, in remarks like "You've skipped this card more than any other player" or "You keep ramp twice as often as most players". The data is mostly there already: `commander_card_signal` pools every player's added, skipped and saved counts per card with no user ids, and hard passes already weigh a player's skips against it (lift, `PASS_MIN_SCORE`). What's missing is volume: with about 40 active players, a "more than anyone" line is usually true by accident, so wait until the pooled counts are deep enough that a comparison means something. When it's built, keep it to concrete numbers about the player's own swipes, not personality labels, and check every remark against a minimum number of other players so one heavy user can't set the baseline. It pairs with the shareable Playstyle page on the roadmap.
