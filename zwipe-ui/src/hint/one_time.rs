@@ -86,7 +86,10 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
                     key_in("?", Role::Palette6),
                     text(" for what it does"),
                 ]),
-                bullet(vec![key("More"), text(" deletes your account")]),
+                bullet(vec![
+                    key("Danger zone"),
+                    text(" at the bottom logs you out or deletes your account"),
+                ]),
             ],
         ),
         OneTimeHint::Config => content(
@@ -124,17 +127,20 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
             vec![
                 bullet(vec![key("Cards"), text(" browses, adds and removes cards")]),
                 bullet(vec![
-                    key("Edit"),
+                    text("The pencil by "),
+                    key("Profile"),
                     text(" changes the name, format, command zone, tags and targets"),
                 ]),
-                bullet(vec![
-                    key("More"),
-                    text(" imports, exports, clones, shares or deletes the deck"),
-                ]),
+                bullet(vec![text(
+                    "Beside it, the two squares clone the deck and the box with the arrow shares a link to it",
+                )]),
+                bullet(vec![text(
+                    "Import, export and delete are at the bottom of the page",
+                )]),
                 bullet(vec![
                     text("Skipped and removed cards stay out of the add stack. "),
-                    key("More"),
-                    text(" then Clear skips brings them back"),
+                    key("Clear skips"),
+                    text(" at the bottom brings them back"),
                 ]),
                 bullet(vec![text(
                     "Stats fill in as the deck grows. Tap a section to expand it",

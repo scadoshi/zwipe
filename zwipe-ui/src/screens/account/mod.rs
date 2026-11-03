@@ -56,6 +56,12 @@ pub const BACK: &str = "Back";
 /// The action bar's button that asks to log out.
 pub const LOG_OUT: &str = "Log out";
 
+/// The title of the panel at the foot of the screen that holds Log out and Delete account.
+pub const DANGER_ZONE: &str = "Danger zone";
+
+/// The Delete account row's button.
+pub const DELETE: &str = "Delete";
+
 /// The action bar's button that opens the More sheet.
 pub const MORE: &str = "More";
 

@@ -17,9 +17,7 @@ mod components;
 /// The model with the handles that perform its effects.
 mod driver;
 
-use ::components::{
-    ActionBar, BottomSheet, Button, ButtonVariant, HintBullet, HintBullets, HintDialog, HintKey,
-};
+use ::components::{Button, ButtonVariant, HintBullet, HintBullets, HintDialog, HintKey};
 use change_email::ChangeEmailSheet;
 use change_password::ChangePasswordSheet;
 use change_username::ChangeUsernameSheet;
@@ -52,7 +50,6 @@ pub fn Account() -> Element {
         driver.dispatch(Action::Load(user));
     });
     let account_hint_open = driver.overlays.hint;
-    let mut show_more_sheet = driver.overlays.more;
 
     let state = driver.model.read();
     let user = state.user().cloned();
@@ -153,29 +150,34 @@ pub fn Account() -> Element {
                                 }
                             }
 
+                            div { class: "settings-list danger-zone",
+                                div { class: "settings-list-header",
+                                    span { class: "settings-list-title danger-zone-title", {model::DANGER_ZONE} }
+                                }
+                                div { class: "settings-row",
+                                    span { class: "settings-row-label", {model::LOG_OUT} }
+                                    div { class: "settings-row-value",
+                                        Button {
+                                            variant: ButtonVariant::Action,
+                                            danger: true,
+                                            onclick: move |_| driver.dispatch(Action::LogOut),
+                                            {model::LOG_OUT}
+                                        }
+                                    }
+                                }
+                                div { class: "settings-row",
+                                    span { class: "settings-row-label", {MoreItem::DeleteAccount.label()} }
+                                    div { class: "settings-row-value",
+                                        Button {
+                                            variant: ButtonVariant::Action,
+                                            danger: true,
+                                            onclick: move |_| driver.dispatch(Action::More(MoreItem::DeleteAccount)),
+                                            {model::DELETE}
+                                        }
+                                    }
+                                }
+                            }
                         }
-                    }
-                }
-
-                ActionBar {
-                    Button {
-                        variant: ButtonVariant::Action,
-                        danger: true,
-                        onclick: move |_| driver.dispatch(Action::LogOut),
-                        {model::LOG_OUT}
-                    }
-                    Button {
-                        variant: ButtonVariant::Action,
-                        onclick: move |_| show_more_sheet.set(true),
-                        {model::MORE}
-                    }
-                }
-
-                BottomSheet { open: show_more_sheet, title: model::MORE_TITLE.to_string(),
-                    Button {
-                        danger: true,
-                        onclick: move |_| driver.dispatch(Action::More(MoreItem::DeleteAccount)),
-                        {MoreItem::DeleteAccount.label()}
                     }
                 }
 

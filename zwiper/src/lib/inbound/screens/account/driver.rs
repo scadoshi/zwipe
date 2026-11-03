@@ -36,7 +36,6 @@ struct Runners {
 #[derive(Clone, Copy)]
 pub(crate) struct Overlays {
     pub(crate) hint: Signal<bool>,
-    pub(crate) more: Signal<bool>,
     pub(crate) log_out: Signal<bool>,
     pub(crate) delete: Signal<bool>,
     pub(crate) confirm_password: Signal<bool>,
@@ -110,7 +109,6 @@ pub(crate) fn use_driver() -> Driver {
         model: use_signal(State::new),
         overlays: Overlays {
             hint: use_signal(|| false),
-            more: use_signal(|| false),
             log_out: use_signal(|| false),
             delete: use_signal(|| false),
             confirm_password: use_signal(|| false),

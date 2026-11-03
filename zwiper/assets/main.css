@@ -140,6 +140,12 @@ button {
     box-shadow: var(--shadow-sm);
 }
 
+/* Floating at the bottom right instead of centered. */
+.app-float.app-float-right {
+    justify-content: flex-end;
+    padding-right: 1.25rem;
+}
+
 .screen:has(> .app-float) > .screen-content {
     padding-bottom: 5rem;
 }
@@ -221,6 +227,16 @@ button {
     justify-content: center;
     flex-wrap: wrap;
     gap: 0.5rem;
+}
+
+/* ==================
+  danger zone
+ ==================== */
+
+/* Account's last panel: Log out and Delete account, under a title in the
+   danger color. Compound selector so it outranks orangui's title color. */
+.settings-list-title.danger-zone-title {
+    color: var(--color-error);
 }
 
 /* ==================

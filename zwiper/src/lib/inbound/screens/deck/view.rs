@@ -701,8 +701,8 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                     }
                 }
 
-            // Cards, the screen's main action, floats over the page.
-            div { class: "app-float content-enter-delayed",
+            // Cards, the screen's main action, floats at the bottom right.
+            div { class: "app-float app-float-right content-enter-delayed",
                 Button {
                     variant: ButtonVariant::Action,
                     onclick: move |_| driver.dispatch(Action::Cards),
