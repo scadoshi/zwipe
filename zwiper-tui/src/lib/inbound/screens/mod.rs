@@ -203,8 +203,8 @@ impl Screen {
         match self {
             Self::Home(view) => view.refresh(cx),
             Self::Login(form) => login::on_return(form, cx),
-            Self::Decks(list) => list.reload(cx),
-            Self::Deck(view) => view.reload(cx),
+            Self::Decks(list) => decks::reload(list, cx),
+            Self::Deck(view) => deck::reload(view, cx),
             Self::DeckCards(view) => {
                 if !returned_from_dictionary(view.sheet.as_mut(), cx) {
                     view.reload(cx);
@@ -567,7 +567,10 @@ mod tests {
 
     #[test]
     fn a_request_names_its_screen_and_action_without_its_fields() {
-        let request = Request::Deck(deck::Request::Load(uuid::Uuid::nil()));
+        let request = Request::Deck(deck::Request::FetchDeck {
+            ticket: zwipe_ui::generation::Generation::default().next_ticket(),
+            deck_id: uuid::Uuid::nil(),
+        });
         assert_eq!(request.origin(), ("deck", "load"));
         assert_eq!(Request::FetchCounts.origin(), ("app", "fetch_counts"));
         let fix = deck::Request::LoadOracleTags;

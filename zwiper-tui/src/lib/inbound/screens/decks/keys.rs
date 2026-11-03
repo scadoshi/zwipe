@@ -2,10 +2,11 @@
 
 use crossterm::event::KeyCode;
 use zwipe_ui::deck::list::GroupBy;
+use zwipe_ui::screens::deck_list::{Action, MoreItem};
 
-use super::{DeckList, Focus, Row, create, more_menu, reopen_hint};
+use super::{DeckList, Focus, Row, dispatch, more_menu, reload, reopen_hint, verified};
 use crate::inbound::app::Context;
-use crate::inbound::screens::{self, deck};
+use crate::inbound::screens;
 use crate::inbound::toward::Toward;
 use crate::inbound::widgets::help;
 use crate::inbound::widgets::menu::MenuKey;
@@ -17,10 +18,8 @@ pub(crate) fn handle(list: &mut DeckList, code: KeyCode, cx: &mut Context<'_>) {
             MenuKey::Close => list.more = None,
             MenuKey::Pressed(index) => {
                 list.more = None;
-                if index == 0 {
-                    screens::commander_maybeboard::open(cx);
-                } else {
-                    screens::playstyle::open(cx);
+                if let Some(item) = MoreItem::ALL.get(index) {
+                    dispatch(list, Action::More(*item), cx);
                 }
             }
         }
@@ -29,17 +28,20 @@ pub(crate) fn handle(list: &mut DeckList, code: KeyCode, cx: &mut Context<'_>) {
     match code {
         KeyCode::Char('!') => help::open(cx),
         KeyCode::Char('q') => cx.quit(),
-        KeyCode::Esc => cx.back(),
-        KeyCode::Char('r') => list.reload(cx),
+        KeyCode::Esc => dispatch(list, Action::Back, cx),
+        KeyCode::Char('r') => reload(list, cx),
         KeyCode::Char('O') => screens::sign_out(cx, "Signing out..."),
-        KeyCode::Char('c') => create(list, cx),
+        KeyCode::Char('c') => {
+            let verified = verified(cx);
+            dispatch(list, Action::Create { verified }, cx);
+        }
         KeyCode::Char('m') => list.more = Some(more_menu()),
         KeyCode::Char('?') => reopen_hint(cx),
         KeyCode::Tab => list.step_area(Toward::Next),
         KeyCode::BackTab => list.step_area(Toward::Previous),
         other => match list.focus {
             Focus::List => handle_list(list, other, cx),
-            Focus::GroupBy | Focus::Show | Focus::Tags => handle_chips(list, other),
+            Focus::GroupBy | Focus::Show | Focus::Tags => handle_chips(list, other, cx),
         },
     }
 }
@@ -57,25 +59,19 @@ fn handle_list(list: &mut DeckList, code: KeyCode, cx: &mut Context<'_>) {
             None => list.step_area(Toward::Previous),
         },
         KeyCode::Enter | KeyCode::Char(' ') => match list.rows().get(list.selected).cloned() {
-            Some(Row::Header { group, .. }) => {
-                let key = group.key();
-                if !list.collapsed.remove(&key) {
-                    list.collapsed.insert(key);
-                }
-                list.clamp();
-            }
-            Some(Row::Deck(profile)) => deck::open(cx, *profile),
+            Some(Row::Header { group, .. }) => dispatch(list, Action::ToggleGroup(group.key()), cx),
+            Some(Row::Deck(profile)) => dispatch(list, Action::OpenDeck(profile.id), cx),
             None => {}
         },
         _ => {}
     }
 }
 
-fn handle_chips(list: &mut DeckList, code: KeyCode) {
+fn handle_chips(list: &mut DeckList, code: KeyCode, cx: &mut Context<'_>) {
     let count = match list.focus {
         Focus::GroupBy => GroupBy::ALL.len(),
-        Focus::Show => list.show_chips().len(),
-        Focus::Tags => list.tags().len(),
+        Focus::Show => list.model.show_chips().len(),
+        Focus::Tags => list.model.tags().len(),
         Focus::List => return,
     };
     let focus = match list.focus {
@@ -90,12 +86,17 @@ fn handle_chips(list: &mut DeckList, code: KeyCode) {
         }
         KeyCode::Down | KeyCode::Char('j') => list.step_area(Toward::Next),
         KeyCode::Up | KeyCode::Char('k') => list.step_area(Toward::Previous),
-        KeyCode::Enter | KeyCode::Char(' ') => match list.focus {
-            Focus::GroupBy => list.pick_group_by(list.group_focus),
-            Focus::Show => list.press_show(),
-            Focus::Tags => list.press_tag(),
-            Focus::List => {}
-        },
+        KeyCode::Enter | KeyCode::Char(' ') => {
+            let action = match list.focus {
+                Focus::GroupBy => DeckList::group_by_action(list.group_focus),
+                Focus::Show => list.show_action(),
+                Focus::Tags => list.tag_action(),
+                Focus::List => None,
+            };
+            if let Some(action) = action {
+                dispatch(list, action, cx);
+            }
+        }
         _ => {}
     }
 }

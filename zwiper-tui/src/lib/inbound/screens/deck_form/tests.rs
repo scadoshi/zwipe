@@ -143,7 +143,7 @@ fn saving_create_checks_the_name_then_sends_the_deck() {
     let created = deck_profile("Tokens");
     let id = created.id;
     harness.apply(Update::Created(Box::new(created)));
-    assert!(matches!(harness.screen(), Screen::Deck(view) if view.profile.id == id));
+    assert!(matches!(harness.screen(), Screen::Deck(view) if view.deck_id() == Some(id)));
     assert_eq!(harness.app.nav.depth(), 2, "the deck replaces the form");
 }
 

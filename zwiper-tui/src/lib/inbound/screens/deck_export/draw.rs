@@ -4,6 +4,7 @@ use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout};
 use ratatui::text::Line;
 use ratatui::widgets::{Paragraph, Wrap};
+use zwipe_ui::screens::deck_export::{BOARDS, Board, DECKLIST, LOAD_FAILED, Status};
 
 use super::ExportView;
 use crate::inbound::app::Shared;
@@ -37,35 +38,25 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &ExportView) {
     .areas(f.area());
 
     let block = crate::inbound::widgets::panel::bordered(palette)
-        .title(" Decklist ")
+        .title(format!(" {DECKLIST} "))
         .border_style(palette.border);
-    if view.failed {
+    if view.model.status() == Status::Failed {
         f.render_widget(
-            Paragraph::new(Line::from("Could not load deck").style(palette.muted)).block(block),
+            Paragraph::new(Line::from(LOAD_FAILED).style(palette.muted)).block(block),
             body,
         );
-    } else if let Some(text) = view.text() {
-        let boards = view.boards;
-        let mut row = vec![pill::label(palette, "Export")];
-        row.extend(
-            [
-                ("Deck", boards.deck),
-                ("Maybe", boards.maybe),
-                ("Side", boards.side),
-            ]
-            .iter()
-            .enumerate()
-            .map(|(i, (label, on))| {
-                pill::pill(
-                    label,
-                    palette.muted,
-                    PillState {
-                        picked: *on,
-                        focused: i == view.focus,
-                    },
-                )
-            }),
-        );
+    } else if let Some(text) = view.model.text() {
+        let mut row = vec![pill::label(palette, BOARDS)];
+        row.extend(Board::ALL.iter().enumerate().map(|(i, board)| {
+            pill::pill(
+                board.label(),
+                palette.muted,
+                PillState {
+                    picked: view.model.is_on(*board),
+                    focused: i == view.focus,
+                },
+            )
+        }));
         f.render_widget(pill::row(row), chips);
         f.render_widget(
             Paragraph::new(text)

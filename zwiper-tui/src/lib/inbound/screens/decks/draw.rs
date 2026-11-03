@@ -5,11 +5,13 @@ use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::style::Stylize;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Paragraph, Wrap};
+use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::deck::{DeckProfile, deck_tag};
 use zwipe_ui::deck;
 use zwipe_ui::deck::list::{DeckGroup, GroupBy};
+use zwipe_ui::screens::deck_list::{GROUP_BY, SHOW, SHOW_ALL, ShowChip, Status, TAGS};
 
-use super::{DeckList, Focus, Row, ShowChip};
+use super::{DeckList, Focus, Row};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::widgets::action_bar::{self, Hint};
@@ -21,10 +23,11 @@ const SKELETON_ROWS: usize = 8;
 
 pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, list: &DeckList) {
     let palette = &shared.palette;
-    let chips = if list.chips_shown() {
+    let loading = list.model.status() == Status::Loading;
+    let chips = if list.model.chips_shown() {
         let width = usize::from(f.area().width.saturating_sub(2));
         u16::try_from(chip_rows(&shared.palette, list, width).len()).unwrap_or(u16::MAX)
-    } else if list.loading {
+    } else if loading {
         2
     } else {
         0
@@ -51,12 +54,12 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, list: &DeckList) {
     .horizontal_margin(1)
     .areas(f.area());
 
-    if list.chips_shown() {
+    if list.model.chips_shown() {
         f.render_widget(
             Paragraph::new(chip_rows(palette, list, usize::from(chips_area.width))),
             chips_area,
         );
-    } else if list.loading {
+    } else if loading {
         let width = usize::from(chips_area.width) / 2;
         f.render_widget(
             Paragraph::new(skeleton::rows(palette, 2, width)),
@@ -81,61 +84,49 @@ fn chip_rows(palette: &Palette, list: &DeckList, width: usize) -> Vec<Line<'stat
         picked,
         focused: list.focus == focus && index == at,
     };
-    let mut group_by = vec![pill::label(palette, "Group by")];
+    let mut group_by = vec![pill::label(palette, GROUP_BY)];
     group_by.extend(GroupBy::ALL.iter().enumerate().map(|(i, by)| {
         pill::pill(
             by.label(),
             palette.muted,
-            state(*by == list.group_by, Focus::GroupBy, i, list.group_focus),
+            state(
+                *by == list.model.group_by(),
+                Focus::GroupBy,
+                i,
+                list.group_focus,
+            ),
         )
     }));
 
-    let mut show = vec![pill::label(palette, "Show")];
+    let mut show = vec![pill::label(palette, SHOW)];
     show.extend(
-        list.show_chips()
+        list.model
+            .show_chips()
             .into_iter()
             .enumerate()
-            .map(|(i, chip)| match chip {
-                ShowChip::All => pill::pill(
-                    "All",
-                    palette.muted,
-                    state(list.show.is_all(), Focus::Show, i, list.show_focus),
-                ),
-                ShowChip::Color(color) => {
-                    let place = zwipe_core::domain::card::scryfall_data::colors::Color::all()
-                        .iter()
-                        .position(|c| *c == color)
-                        .unwrap_or(0);
-                    pill::pill(
-                        &color.to_short_name(),
-                        mana::style(palette, place),
-                        state(
-                            list.show.colors.contains(&color),
-                            Focus::Show,
-                            i,
-                            list.show_focus,
-                        ),
-                    )
+            .map(|(i, chip)| {
+                // The fold's arrow says whether it is open, so the chip itself is never drawn picked.
+                let picked = chip != ShowChip::TagFold && list.model.is_picked(&chip);
+                let state = state(picked, Focus::Show, i, list.show_focus);
+                match chip {
+                    ShowChip::All => pill::pill(SHOW_ALL, palette.muted, state),
+                    ShowChip::Color(color) => {
+                        let place = Color::all().iter().position(|c| *c == color).unwrap_or(0);
+                        pill::pill(&color.to_short_name(), mana::style(palette, place), state)
+                    }
+                    ShowChip::TagFold => {
+                        let arrow = if list.model.tags_open() { "▾" } else { "▸" };
+                        pill::pill(&format!("{TAGS} {arrow}"), palette.muted, state)
+                    }
+                    ShowChip::Picked { label, .. } => pill::pill(&label, palette.muted, state),
                 }
-                ShowChip::Tags => {
-                    let arrow = if list.tags_open { "▾" } else { "▸" };
-                    pill::pill(
-                        &format!("Tags {arrow}"),
-                        palette.muted,
-                        state(/* picked */ false, Focus::Show, i, list.show_focus),
-                    )
-                }
-                ShowChip::Picked { label, .. } => pill::pill(
-                    &label,
-                    palette.muted,
-                    state(/* picked */ true, Focus::Show, i, list.show_focus),
-                ),
             }),
     );
 
     let mut lines = vec![pill::row(group_by), pill::row(show)];
-    if list.tags_open {
+    if list.model.tags_open() {
         let tags: Vec<Span<'static>> = list
+            .model
             .tags()
             .into_iter()
             .enumerate()
@@ -144,7 +135,7 @@ fn chip_rows(palette: &Palette, list: &DeckList, width: usize) -> Vec<Line<'stat
                     &label,
                     palette.muted,
                     state(
-                        list.show.tags.contains(&key),
+                        list.model.show().tags.contains(&key),
                         Focus::Tags,
                         i,
                         list.tag_focus,
@@ -161,23 +152,15 @@ fn chip_rows(palette: &Palette, list: &DeckList, width: usize) -> Vec<Line<'stat
 
 fn draw_list(f: &mut Frame<'_>, palette: &Palette, list: &DeckList, area: Rect) {
     let block = crate::inbound::widgets::panel::bordered(palette).border_style(palette.border);
-    let message = if list.loading {
+    if list.model.status() == Status::Loading {
         let width = usize::from(area.width.saturating_sub(4));
         f.render_widget(
             Paragraph::new(skeleton::rows(palette, SKELETON_ROWS, width)).block(block),
             area,
         );
         return;
-    } else if list.error.is_some() {
-        Some("Could not load decks")
-    } else if list.decks.is_empty() {
-        Some("No decks")
-    } else if list.groups().is_empty() {
-        Some("No decks match")
-    } else {
-        None
-    };
-    if let Some(message) = message {
+    }
+    if let Some(message) = list.model.message() {
         f.render_widget(
             Paragraph::new(Line::from(message).style(palette.muted)).block(block),
             area,
@@ -241,10 +224,7 @@ fn header_line(
     match &group.pips {
         Some(pips) if !pips.is_empty() => {
             spans.extend(pips.iter().map(|color| {
-                let place = zwipe_core::domain::card::scryfall_data::colors::Color::all()
-                    .iter()
-                    .position(|c| c == color)
-                    .unwrap_or(0);
+                let place = Color::all().iter().position(|c| c == color).unwrap_or(0);
                 mana::pip(palette, place)
             }));
             spans.push(Span::styled(format!(" ({count})"), palette.muted));

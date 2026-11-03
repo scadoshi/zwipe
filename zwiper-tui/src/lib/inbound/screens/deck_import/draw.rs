@@ -4,26 +4,32 @@ use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Paragraph, Wrap};
-use zwipe_core::domain::deck::ImportMode;
+use zwipe_ui::screens::deck_import::{
+    BOARD, Board, FROM, IMPORTED, MODE, MODES, Source, TEXT_LABEL, UNRESOLVED, URL_LABEL,
+    mode_label,
+};
 
-use super::{Focus, ImportView, Source, Target};
+use super::{Focus, ImportView};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::widgets::action_bar;
 use crate::inbound::widgets::pill::{self, PillState};
 use crate::inbound::widgets::text_input::BOX_HEIGHT;
 
+/// The chip rows' labels pad to this width, so the chips line up.
+const LABEL_WIDTH: usize = 5;
+
 /// The result list is at most this tall, border included.
 const RESULT_HEIGHT: u16 = 10;
 
 pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &ImportView) {
     let palette = &shared.palette;
-    let result_height = if view.result.is_some() {
+    let result_height = if view.model.result().is_some() {
         RESULT_HEIGHT
     } else {
         0
     };
-    let input_height = match view.source {
+    let input_height = match view.model.source() {
         Source::Text => Constraint::Fill(1),
         Source::Archidekt => Constraint::Length(BOX_HEIGHT),
     };
@@ -47,18 +53,20 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &ImportView) {
         Line::from(shared.status.clone()).style(palette.muted),
         status,
     );
-    let submit_style = if view.loading || view.blank() {
-        palette.muted
-    } else {
+    let submit_style = if view.can_submit() {
         palette.text().bold()
+    } else {
+        palette.muted
     };
     let mut bar = action_bar::line(
         palette,
         &[("Tab", "next"), ("h/l", "pick"), ("Esc", "Back")],
     );
     bar.spans.push(Span::styled("F2 ", submit_style));
-    bar.spans
-        .push(Span::styled(view.submit_label().to_owned(), palette.muted));
+    bar.spans.push(Span::styled(
+        view.model.submit_label().to_owned(),
+        palette.muted,
+    ));
     let hint = if view.focus == Focus::Input {
         action_bar::Hint::Absent
     } else {
@@ -85,27 +93,27 @@ fn chip_lines(palette: &Palette, view: &ImportView) -> Vec<Line<'static>> {
     };
     vec![
         row(
-            "From ",
+            &format!("{FROM:<LABEL_WIDTH$}"),
             Focus::From,
-            vec![
-                ("Text", view.source == Source::Text),
-                ("Archidekt", view.source == Source::Archidekt),
-            ],
-        ),
-        row(
-            "Mode ",
-            Focus::Mode,
-            vec![
-                ("Add", view.mode == ImportMode::Add),
-                ("Replace", view.mode == ImportMode::Replace),
-            ],
-        ),
-        row(
-            "Board",
-            Focus::Board,
-            Target::ALL
+            Source::ALL
                 .iter()
-                .map(|t| (t.label(), *t == view.target))
+                .map(|s| (s.label(), *s == view.model.source()))
+                .collect(),
+        ),
+        row(
+            &format!("{MODE:<LABEL_WIDTH$}"),
+            Focus::Mode,
+            MODES
+                .iter()
+                .map(|m| (mode_label(*m), *m == view.model.mode()))
+                .collect(),
+        ),
+        row(
+            &format!("{BOARD:<LABEL_WIDTH$}"),
+            Focus::Board,
+            Board::ALL
+                .iter()
+                .map(|b| (b.label(), *b == view.model.board()))
                 .collect(),
         ),
     ]
@@ -113,17 +121,17 @@ fn chip_lines(palette: &Palette, view: &ImportView) -> Vec<Line<'static>> {
 
 /// The line saying what the import does to which board.
 fn draw_explainer(f: &mut Frame<'_>, palette: &Palette, view: &ImportView, area: Rect) {
-    let (before, after) = view.explainer();
-    let board_style = if view.mode.is_replace() {
+    let explainer = view.model.explainer();
+    let board_style = if view.model.mode().is_replace() {
         palette.warning.bold()
     } else {
         palette.accent.bold()
     };
     f.render_widget(
         Paragraph::new(Line::from(vec![
-            Span::styled(before, palette.muted),
-            Span::styled(view.target.word(), board_style),
-            Span::styled(after, palette.muted),
+            Span::styled(explainer.before, palette.muted),
+            Span::styled(explainer.board, board_style),
+            Span::styled(explainer.after, palette.muted),
         ]))
         .wrap(Wrap { trim: true }),
         area,
@@ -132,17 +140,16 @@ fn draw_explainer(f: &mut Frame<'_>, palette: &Palette, view: &ImportView, area:
 
 /// The decklist or URL input, with the cursor when it has focus.
 fn draw_input(f: &mut Frame<'_>, palette: &Palette, view: &ImportView, area: Rect) {
-    let focused = view.focus == Focus::Input && !view.loading;
-    match view.source {
+    let focused = view.focus == Focus::Input && !view.model.importing();
+    match view.model.source() {
         Source::Text => {
-            view.text.draw(f, palette, area, "Paste decklist", focused);
+            view.text.draw(f, palette, area, TEXT_LABEL, focused);
             if focused {
                 f.set_cursor_position(view.text.cursor_position(area));
             }
         }
         Source::Archidekt => {
-            view.url
-                .draw(f, palette, area, "Paste an Archidekt deck URL", focused);
+            view.url.draw(f, palette, area, URL_LABEL, focused);
             if focused {
                 f.set_cursor_position(view.url.cursor_position(area));
             }
@@ -152,12 +159,12 @@ fn draw_input(f: &mut Frame<'_>, palette: &Palette, view: &ImportView, area: Rec
 
 /// The last import's imported and unresolved cards, when there is one.
 fn draw_result(f: &mut Frame<'_>, palette: &Palette, view: &ImportView, area: Rect) {
-    let Some(result) = &view.result else {
+    let Some(result) = view.model.result() else {
         return;
     };
     let mut lines = Vec::new();
     if !result.imported.is_empty() {
-        lines.push(Line::from(Span::styled("Imported", palette.muted)));
+        lines.push(Line::from(Span::styled(IMPORTED, palette.muted)));
         lines.extend(result.imported.iter().map(|c| {
             Line::from(vec![
                 Span::raw(format!("  {}", c.name)),
@@ -166,7 +173,7 @@ fn draw_result(f: &mut Frame<'_>, palette: &Palette, view: &ImportView, area: Re
         }));
     }
     if !result.unresolved.is_empty() {
-        lines.push(Line::from(Span::styled("Unresolved", palette.muted)));
+        lines.push(Line::from(Span::styled(UNRESOLVED, palette.muted)));
         lines.extend(result.unresolved.iter().map(|c| {
             Line::from(vec![
                 Span::styled(format!("  {}", c.name), palette.error),
