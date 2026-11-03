@@ -66,7 +66,7 @@ use self::swipe::SwipeView;
 use super::app::{Context, Shared, session};
 use super::nav::Nav;
 use super::widgets;
-use super::widgets::hero::{self, Counts, Hero};
+use super::widgets::hero::{Counts, Hero};
 use super::widgets::toast::ToastKind;
 use crate::outbound::account::Account;
 use crate::outbound::theme_file::{RememberedTheme, ThemeFile};
@@ -202,7 +202,7 @@ impl Screen {
     pub(crate) fn on_return(&mut self, cx: &mut Context<'_>) {
         match self {
             Self::Home(view) => view.refresh(cx),
-            Self::Login(form) => form.hero = hero::mount(cx),
+            Self::Login(form) => login::on_return(form, cx),
             Self::Decks(list) => list.reload(cx),
             Self::Deck(view) => view.reload(cx),
             Self::DeckCards(view) => {

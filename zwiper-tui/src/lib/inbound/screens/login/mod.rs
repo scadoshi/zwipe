@@ -190,10 +190,11 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
     }
 }
 
-/// Puts `username` in the identifier field and clears the password, as Register does on its way back.
-pub(crate) fn prefill(nav: &mut Nav, username: &str) {
-    if let Some(form) = nav.find_mut(pick) {
-        form.identifier.set_value(username);
+/// Login comes back into view: the hero mounts again, and a username Register left in the handoff fills the identifier, empties the password and puts the focus on it.
+pub(crate) fn on_return(form: &mut LoginForm, cx: &mut Context<'_>) {
+    form.hero = hero::mount(cx);
+    if let Some(username) = cx.shared.caches.handoff.login_prefill.take() {
+        form.identifier.set_value(&username);
         form.password.set_value("");
         form.focus = Some(LoginField::Password);
     }
