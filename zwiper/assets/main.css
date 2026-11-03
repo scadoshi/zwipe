@@ -63,12 +63,19 @@ button {
     position: fixed;
     inset: 0;
     padding-top: env(safe-area-inset-top, 0px);
-    padding-bottom: env(safe-area-inset-bottom, 0px);
     display: flex;
     flex-direction: column;
     width: 100%;
     /* No fill: orangui's GridCells layer under the screen is the backdrop. */
     color: var(--text-primary);
+}
+
+/* The scroll area runs to the window's bottom edge, under the home
+   indicator, so the last row scrolls up clear of it instead of the area
+   stopping short. The indicator's inset is the content's own trailing
+   padding, on top of the room a screen asks for in --content-pad-bottom. */
+.screen > .screen-content {
+    padding-bottom: calc(var(--content-pad-bottom, 0px) + env(safe-area-inset-bottom, 0px));
 }
 
 /* Scrollbars hidden everywhere. On the iOS WebView the bar is a non-interactive
@@ -124,7 +131,7 @@ button {
 /* The kit's .action-dock is the floating bar; the screen's content ends
    with room to scroll its last row clear of it. */
 .screen:has(> .action-dock, > .swipe-bottom-row) > .screen-content {
-    padding-bottom: 5rem;
+    --content-pad-bottom: 5rem;
 }
 
 /* A text Button floating in a dock (Swipe, Filter, Cards): the bar is its
@@ -2857,7 +2864,7 @@ button {
    column would push its top out of reach. No panel shrinks to make room. */
 .home-content {
     /* Room under the last panel once the column scrolls, matching the top. */
-    padding-bottom: 1rem;
+    --content-pad-bottom: 1rem;
 }
 
 .home-content > * {
