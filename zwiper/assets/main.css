@@ -121,13 +121,15 @@ button {
 /* A screen's one or two main actions, floating just above the bottom edge
    with no bar behind them; the content scrolls underneath. Each button keeps
    the page background so it reads over whatever passes under it, and the
-   screen's content ends with room to scroll its last row clear of them. */
+   screen's content ends with room to scroll its last row clear of them.
+   --keyboard-inset, set by keyboard_inset.js, lifts them over the keyboard. */
 .app-float {
     position: fixed;
     left: 0;
     right: 0;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 0.75rem);
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 0.4rem + var(--keyboard-inset, 0px));
     z-index: 50;
+    transition: bottom 0.25s ease;
     display: flex;
     justify-content: center;
     gap: 0.5rem;
@@ -143,7 +145,7 @@ button {
 /* Floating at the bottom right instead of centered. */
 .app-float.app-float-right {
     justify-content: flex-end;
-    padding-right: 1.25rem;
+    padding-right: 0.6rem;
 }
 
 /* A swipe screen's bottom row: its pile chips on the left, compact, and the
