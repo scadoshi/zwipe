@@ -56,6 +56,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "The deck view's actions sit on the page: Edit, Clone and Share as icons by the profile, the store links in Budget, and Import, Export, Clear skips and Delete in Data and Danger zone panels at the bottom",
         "Account ends with a Danger zone panel for Log out and Delete account",
         "Commander maybeboard and Playstyle float Swipe and Filter at the bottom right, and Clear sits in a Danger zone panel",
+        "The deck's card list has a floating bar of icons for add, remove, filter and undo; an x on the filter resets it",
     ],
 }];
 
