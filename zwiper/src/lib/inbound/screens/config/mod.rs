@@ -24,6 +24,7 @@ use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_core::domain::user::models::hints::HINT_CONFIG;
 use zwipe_core::domain::user::preferences::PipColor;
 use zwipe_core::http::contracts::user::HttpUpdatePreferences;
+use zwipe_core::text::sentence_case;
 use zwipe_ui::screens::config::{self as model, Action, Destination, Effect, Sheet, State, Theme};
 
 use crate::inbound::components::auth::authed::{Authed, use_authed};
@@ -233,7 +234,7 @@ pub fn Config() -> Element {
             }
             Err(e) => {
                 tracing::error!("failed to set app icon: {e}");
-                toast.error(e.to_string(), ToastOptions::default());
+                toast.error(sentence_case(&e.to_string()), ToastOptions::default());
             }
         }
     };

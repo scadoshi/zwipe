@@ -361,7 +361,7 @@ fn the_username_sheet_judges_each_field_once_it_has_held_something() {
     edit(&mut state, Sheet::Username, Field::NewUsername, "ab");
     assert_eq!(
         state.error(Sheet::Username, Field::NewUsername).as_deref(),
-        Some("must be at least 3 characters long")
+        Some("Must be at least 3 characters long")
     );
     assert_eq!(
         state.error(Sheet::Username, Field::Password),
@@ -383,7 +383,7 @@ fn save_with_a_bad_field_shows_every_line_and_sends_nothing() {
     assert_eq!(state.update(Action::Save(Sheet::Email)), none());
     assert_eq!(
         state.error(Sheet::Email, Field::NewEmail).as_deref(),
-        Some("missing @ symbol")
+        Some("Missing @ symbol")
     );
     assert_eq!(
         state.error(Sheet::Email, Field::Password).as_deref(),

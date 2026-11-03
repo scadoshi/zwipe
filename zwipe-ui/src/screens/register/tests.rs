@@ -52,18 +52,18 @@ fn a_field_shows_its_line_once_it_has_held_something() {
     type_in(&mut state, Field::Username, "ab");
     assert_eq!(
         state.error(Field::Username).as_deref(),
-        Some("must be at least 3 characters long")
+        Some("Must be at least 3 characters long")
     );
     assert_eq!(state.error(Field::Email), None, "untouched");
     type_in(&mut state, Field::Email, "me.zwipe.net");
     assert_eq!(
         state.error(Field::Email).as_deref(),
-        Some("missing @ symbol")
+        Some("Missing @ symbol")
     );
     type_in(&mut state, Field::Username, "");
     assert_eq!(
         state.error(Field::Username).as_deref(),
-        Some("must be at least 3 characters long"),
+        Some("Must be at least 3 characters long"),
         "an emptied field stays judged"
     );
 }
@@ -81,7 +81,7 @@ fn typing_in_the_confirmation_judges_the_password() {
     type_in(&mut state, Field::ConfirmPassword, "x");
     assert_eq!(
         state.error(Field::Password).as_deref(),
-        Some("must be at least 8 characters long")
+        Some("Must be at least 8 characters long")
     );
     assert_eq!(
         state.error(Field::ConfirmPassword),
@@ -117,9 +117,9 @@ fn a_submit_with_a_failing_field_judges_every_field_and_sends_nothing() {
     assert_eq!(
         errors(&state),
         [
-            Some("must be at least 3 characters long".to_owned()),
-            Some("missing @ symbol".to_owned()),
-            Some("must be at least 8 characters long".to_owned()),
+            Some("Must be at least 3 characters long".to_owned()),
+            Some("Missing @ symbol".to_owned()),
+            Some("Must be at least 8 characters long".to_owned()),
             None,
         ]
     );
