@@ -1,8 +1,9 @@
 //! The main menu behind the header's hamburger.
 //!
-//! Signed in, it lists the sections, then a footer with the `!` for Help and
-//! feedback and Log out. Signed out, it lists the auth screens. The entry
-//! for the screen on view, or the section it sits under, is lit.
+//! Signed in, it lists the deck sections, then a footer with the `!` for
+//! Help and feedback, the icons for Home, Account, Settings and About, and
+//! Log out. Signed out, it lists the auth screens. The entry for the screen
+//! on view, or the section it sits under, is lit.
 //!
 //! The open state is app-wide, provided at the root as
 //! [`MenuOpen`](crate::inbound::components::navigation::menu::MenuOpen), so a
@@ -14,6 +15,7 @@ use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_ui::screens::account::LOG_OUT;
 
+use crate::inbound::components::action_dock::{COG, DockIcon, HOUSE, INFO, PERSON};
 use crate::inbound::components::auth::signal_logout::SignalLogout;
 use crate::inbound::components::logout_dialog::LogoutDialog;
 use crate::inbound::components::support::SupportButton;
@@ -41,17 +43,28 @@ pub enum Section {
 }
 
 impl Section {
-    /// Every section, in menu order: Home, the deck screens, then the user's own.
+    /// Every section, in menu order: the listed ones, then the footer's.
     pub const ALL: [Self; 8] = [
-        Self::Home,
         Self::Decks,
         Self::Playstyle,
         Self::Maybeboard,
         Self::Activity,
+        Self::Home,
         Self::Account,
         Self::Config,
         Self::About,
     ];
+
+    /// The deck screens, the menu's list, in order.
+    pub const LISTED: [Self; 4] = [
+        Self::Decks,
+        Self::Playstyle,
+        Self::Maybeboard,
+        Self::Activity,
+    ];
+
+    /// The sections the footer holds as icons, left to right.
+    pub const FOOTER: [Self; 4] = [Self::Home, Self::Account, Self::Config, Self::About];
 
     /// The entry's label, the title of the screen it opens.
     #[must_use]
@@ -65,6 +78,18 @@ impl Section {
             Self::Account => "Account",
             Self::Config => "Settings",
             Self::About => "About",
+        }
+    }
+
+    /// The footer icon's path, for the sections in [`Self::FOOTER`].
+    #[must_use]
+    pub const fn icon(self) -> &'static str {
+        match self {
+            Self::Home => HOUSE,
+            Self::Account => PERSON,
+            Self::Config => COG,
+            Self::About => INFO,
+            Self::Decks | Self::Playstyle | Self::Maybeboard | Self::Activity => "",
         }
     }
 
@@ -138,7 +163,7 @@ pub fn MenuLinks(open: Signal<bool>, route: Router) -> Element {
     }
     let current = Section::of(&route);
     rsx! {
-        for section in Section::ALL {
+        for section in Section::LISTED {
             li { key: "{section.label()}",
                 MenuEntry {
                     label: section.label(),
@@ -172,17 +197,49 @@ fn MenuEntry(label: &'static str, to: Router, current: bool, mut open: Signal<bo
     }
 }
 
+/// One footer section's icon button, lit when it is `current`. A tap pushes
+/// the section's route; on the screen it opens, it closes the menu instead.
+#[component]
+fn MenuIcon(section: Section, current: bool, mut open: Signal<bool>) -> Element {
+    let route: Router = use_route();
+    let nav = use_navigator();
+    rsx! {
+        button {
+            class: if current { "btn-action app-nav-icon nav-link active" } else { "btn-action app-nav-icon nav-link" },
+            "aria-label": section.label(),
+            onclick: move |_| {
+                if section.route() == route {
+                    open.set(false);
+                } else {
+                    nav.push(section.route());
+                }
+            },
+            DockIcon { path: section.icon() }
+        }
+    }
+}
+
 /// The menu's footer, for the nav's `trailing` slot: the `!` for Help and
-/// feedback and, signed in, a small Log out that asks first.
+/// feedback and, signed in, the icons for Home, Account, Settings and About
+/// beside it and a small Log out on the right that asks first.
 #[component]
 pub fn MenuFooter(open: Signal<bool>) -> Element {
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
+    let route: Router = use_route();
     let mut confirm = use_signal(|| false);
     let signed_in = session.read().is_some();
+    let current = Section::of(&route);
     rsx! {
         div { class: "app-nav-footer",
-            SupportButton {}
+            div { class: "app-nav-footer-group",
+                SupportButton {}
+                if signed_in {
+                    for section in Section::FOOTER {
+                        MenuIcon { key: "{section.label()}", section, current: current == Some(section), open }
+                    }
+                }
+            }
             if signed_in {
                 button {
                     class: "btn-action app-nav-logout",
@@ -240,6 +297,18 @@ mod tests {
             Router::ForgotPassword {},
         ] {
             assert_eq!(Section::of(&route), None, "{route:?}");
+        }
+    }
+
+    #[test]
+    fn the_listed_and_footer_sections_partition_all() {
+        let mut split: Vec<Section> = Section::LISTED.into_iter().chain(Section::FOOTER).collect();
+        let mut all: Vec<Section> = Section::ALL.to_vec();
+        split.sort_by_key(|section| section.label());
+        all.sort_by_key(|section| section.label());
+        assert_eq!(split, all);
+        for section in Section::FOOTER {
+            assert!(!section.icon().is_empty(), "{section:?} has no icon");
         }
     }
 

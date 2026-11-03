@@ -443,8 +443,17 @@ button {
     padding-bottom: 0.6rem;
 }
 
+/* The ! and, signed in, the Home, Account, Settings and About icons, one
+   group at the footer's left end. */
+.app-nav-footer-group {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
 .app-nav-support,
-.app-nav-logout {
+.app-nav-logout,
+.app-nav-icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -452,6 +461,25 @@ button {
     padding: 0.2rem 0.6rem;
     font-size: 0.85rem;
     opacity: 0.7;
+}
+
+/* An icon button is as wide as the !, and the one for the screen on view
+   is lit the way the list's entry is. The kit's lit nav-link style reaches
+   only the list, so the footer carries its own. */
+.app-nav-icon {
+    width: 2.1rem;
+    padding: 0;
+}
+
+.app-nav-icon .action-dock-icon {
+    width: 1.1em;
+    height: 1.1em;
+}
+
+.app-nav-icon.active {
+    opacity: 1;
+    color: var(--accent-primary);
+    border-color: var(--accent-primary);
 }
 
 /* ==================

@@ -66,11 +66,13 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
                 ]),
                 bullet(vec![
                     key("Account"),
-                    text(" has your email, password and log out"),
+                    text(
+                        ", the person icon in the menu's footer, has your email, password and log out",
+                    ),
                 ]),
                 bullet(vec![
                     key("Settings"),
-                    text(" sets your theme and which cards show"),
+                    text(", the cog beside it, sets your theme and which cards show"),
                 ]),
                 bullet(vec![
                     emph("Verify your email", Role::Warning),
