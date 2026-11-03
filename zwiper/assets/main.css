@@ -118,6 +118,37 @@ button {
   header and main menu
  ==================== */
 
+/* The header sits over the top of the screen, under the status bar strip,
+   and header_hide.js slides it up behind that strip as the content scrolls
+   down. Its height is fixed (the bar's 0.25rem padding around the 2.25rem
+   toggle, and its 1px rule), so each screen's scroll area opens with a spacer
+   that tall and nothing moves at rest. */
+.screen {
+    --app-nav-h: calc(2.75rem + 1px);
+}
+
+.screen > .app-nav {
+    position: absolute;
+    top: env(safe-area-inset-top, 0px);
+    left: 0;
+    right: 0;
+    z-index: 101;
+    will-change: transform;
+}
+
+.screen > .app-nav ~ .screen-content::before {
+    content: "";
+    display: block;
+    flex: 0 0 var(--app-nav-h);
+    width: 100%;
+}
+
+/* The status bar strip (orangui's .screen::before) stays over the header as it
+   slides under. */
+.screen::before {
+    z-index: 102;
+}
+
 /* The kit's NavBar as the app's header. A phone is always under the kit's
    60rem fold, so the bar shows the Z mark, the title and the hamburger, and
    the links wait in the menu. 44pt tall, the iOS navigation bar height. */

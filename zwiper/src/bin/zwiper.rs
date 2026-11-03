@@ -14,6 +14,8 @@ use zwiper::inbound::router::Router;
 const FAVICON: Asset = asset!("/assets/favicon/favicon.ico");
 const MAIN_CSS: Asset = asset!("/assets/main.css");
 const ACCORDION_CSS: Asset = asset!("/assets/accordion.css");
+/// Slides each screen's header away as its content scrolls down and back as it scrolls up.
+const HEADER_HIDE_JS: &str = include_str!("../../assets/header_hide.js");
 
 // Self-hosted JetBrains Mono. Registered via asset!() (not a CSS url(), which
 // manganis does not bundle) so the woff2 files ship in the app bundle. The full
@@ -125,6 +127,7 @@ fn App() -> Element {
         // Drives the edge fades on sideways scrollers where CSS scroll
         // timelines are missing (the dictionary's letter rail).
         document::Script { {components::SCROLL_FADE_JS} }
+        document::Script { {HEADER_HIDE_JS} }
         document::Meta {
             name: "viewport",
             content: "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
