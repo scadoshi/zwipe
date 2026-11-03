@@ -356,7 +356,10 @@ fn a_deck_without_a_commander_or_filter_is_refused() {
         harness.pending()
     );
     harness.clear();
-    assert!(screen_text(&harness.app).contains("No cards"));
+    assert!(
+        !screen_text(&harness.app).contains("No cards"),
+        "an empty pile draws the card's ghost, with no text"
+    );
 }
 
 #[test]

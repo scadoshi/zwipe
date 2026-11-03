@@ -15,7 +15,7 @@ use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::screens::card_sheets;
 use crate::inbound::widgets::card_motion::{self, Phase};
-use crate::inbound::widgets::{action_bar, card_info};
+use crate::inbound::widgets::{action_bar, card_info, skeleton};
 
 /// The card is at most this wide, in cells.
 const CARD_WIDTH: u16 = 64;
@@ -68,9 +68,10 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &RemoveView) {
                 info.centered_horizontally(Constraint::Length(width)),
             );
         }
+        // An empty pile draws the card's ghost, as the app's skeleton; the model's toast says the pile ran out.
         None => f.render_widget(
-            Line::from("No cards").style(palette.muted).centered(),
-            body.centered(Constraint::Length(width), Constraint::Length(1)),
+            Paragraph::new(skeleton::rows(palette, 5, usize::from(width))),
+            body.centered(Constraint::Length(width), Constraint::Length(5)),
         ),
     }
     if let Some(motion) = motion {

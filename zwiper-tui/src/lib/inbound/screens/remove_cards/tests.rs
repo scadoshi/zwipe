@@ -87,7 +87,10 @@ fn opening_loads_the_deck_and_shows_the_main_board() {
         requests(&harness)[..],
         [Request::FetchDeck { deck_id: id, .. }] if *id == deck_id
     ));
-    assert!(screen_text(&harness.app).contains("No cards"));
+    assert!(
+        !screen_text(&harness.app).contains("No cards"),
+        "a loading pile draws the card's ghost, with no text"
+    );
     let (harness, _, _) = loaded();
     assert_eq!(view(&harness).model.cards().len(), 2);
     let screen = screen_text(&harness.app);
@@ -170,6 +173,32 @@ fn remove_deletes_every_copy_and_undo_recreates_them() {
 }
 
 #[test]
+fn a_reply_to_an_earlier_visit_never_lands_in_a_later_one() {
+    let (mut harness, deck_id, _) = loaded();
+    harness.press(KeyCode::Esc);
+    harness.open(|cx| open(cx, deck_id));
+    let earlier = last_ticket(&harness);
+    harness.press(KeyCode::Esc);
+    harness.clear();
+    harness.open(|cx| open(cx, deck_id));
+    let later = last_ticket(&harness);
+    assert_ne!(earlier, later);
+    harness.apply(Update::Loaded {
+        ticket: earlier,
+        deck: Box::new(deck(deck_profile("Old"), vec![card("Stale")])),
+    });
+    assert_eq!(view(&harness).model.status(), remove_cards::Status::Loading);
+    assert!(!screen_text(&harness.app).contains("Stale"));
+    let mut fresh = deck(deck_profile("Trim"), vec![card("Fresh")]);
+    fresh.deck_profile.id = deck_id;
+    harness.apply(Update::Loaded {
+        ticket: later,
+        deck: Box::new(fresh),
+    });
+    assert_eq!(current(&harness), "Fresh");
+}
+
+#[test]
 fn a_failed_undo_gives_the_entry_back() {
     let (mut harness, deck_id, _) = loaded();
     harness.press(KeyCode::Char('m'));
@@ -209,6 +238,7 @@ fn boards_filter_refresh_and_details() {
         "No more cards",
         "the emptied pile says so"
     );
+    assert!(!screen_text(&harness.app).contains("No cards"));
     harness.press(KeyCode::Char('4'));
     assert_eq!(view(&harness).model.cards().len(), 3);
     harness.press(KeyCode::Char('h'));

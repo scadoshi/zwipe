@@ -121,24 +121,18 @@ fn key_line(palette: &Palette, view: &SwipeView) -> Line<'static> {
     action_bar::styled_line(&keys)
 }
 
-/// No card on top: loading (a fetch on its way, or the deck not in yet), the end of results, or nothing.
+/// No card on top: the card's ghost, as the app's skeleton, whether a fetch is on its way, the results ended or there is nothing. The model's toasts say which; at the end of results a line names the key that steps back.
 fn draw_empty(f: &mut Frame<'_>, palette: &Palette, view: &SwipeView, area: Rect) {
     let width = area.width.min(CARD_WIDTH);
     let pile = view.model.pile();
-    let loading = pile == Pile::Loading || (pile == Pile::Empty && !view.model.is_deck_loaded());
-    let lines = if loading {
-        skeleton::rows(palette, 5, usize::from(width))
-    } else {
-        let mut lines = vec![Line::from("No cards").style(palette.muted).centered()];
-        if pile == Pile::End {
-            lines.push(
-                Line::from("u steps back into the pile")
-                    .style(palette.muted)
-                    .centered(),
-            );
-        }
-        lines
-    };
+    let mut lines = skeleton::rows(palette, 5, usize::from(width));
+    if pile == Pile::End {
+        lines.push(
+            Line::from("u steps back into the pile")
+                .style(palette.muted)
+                .centered(),
+        );
+    }
     let height = u16::try_from(lines.len())
         .unwrap_or(u16::MAX)
         .min(area.height);
