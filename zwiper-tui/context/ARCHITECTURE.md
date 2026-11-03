@@ -42,13 +42,26 @@ A sheet that opens a screen over its host, as the filter sheet's Dictionary does
 
 ## How a key or a result flows
 
-A key goes to `Screen::handle_key` on the screen at the top of the stack, which calls that screen's `keys::handle(view, code, cx)`. The handler changes its own state directly. Anything else it asks for through the `Context`: `cx.request(..)` queues background work, `cx.push`, `cx.back`, `cx.replace` and `cx.reset` queue navigation, `cx.quit()` ends the app, `cx.toast(..)` shows a toast, and `cx.shared` holds the theme, the user, the status line and the card-image picker. Handlers never touch the network or the stack themselves.
+A key goes to `Screen::handle_key` on the screen at the top of the stack, which calls that screen's `keys::handle(view, code, cx)`. The handler changes its own state directly, or, on a screen switched to its zwipe-ui model, hands an action to the screen's `dispatch` (see below). Anything else it asks for through the `Context`: `cx.request(..)` queues background work, `cx.push`, `cx.back`, `cx.replace` and `cx.reset` queue navigation, `cx.quit()` ends the app, `cx.toast(..)` shows a toast, and `cx.shared` holds the theme, the user, the status line and the card-image picker. Handlers never touch the network or the stack themselves.
 
 When the handler returns, `EventLoop::settle` applies the navigation in order. Going back pops the top screen and calls `Screen::on_return` on the one uncovered, which is how the deck view reloads after swiping and the deck list reloads after a deck closes. Back from the bottom screen quits.
 
 Each queued `Request` runs on a tokio task through `screens::perform`, which hands a screen's own requests to that screen's `perform(account, request)`. The answer comes back as an `Update`. `screens::apply` routes a screen's update to its `apply(nav, update, cx)`, which finds its own screen anywhere in the stack with `nav.find_mut(pick)`, so a result still lands when another screen is open over it. A screen decides for itself what an update means when its screen is closed; config's preferences, for one, still set the theme.
 
 The app's own work sits in the same enums as plain variants: `CheckVersion`, `SignOut`, `RememberTheme`, `MarkHintShown`, and the `Upkept`, `SessionEnded`, `SignedOut`, `Status`, `Toast` and `HintMarked` updates.
+
+## Switching a screen to its zwipe-ui model
+
+Every screen with a model in `zwipe_ui::screens` drives it instead of keeping its own rules. `forgot_password`, `register` and `login` are the worked examples; read `zwipe-ui/context/screen-models.md` first.
+
+- The view holds `pub(crate) model: State` (imported as `use zwipe_ui::screens::<screen>::{Action, Destination, Effect, State}`) plus only what the terminal alone keeps: the `TextInput` boxes, the focus, the hero, and the `Instant`s animations run from. Its `Default` starts the model with `State::new()`.
+- One function in `mod.rs`, `dispatch(view, action, cx)`, is the only caller of `model.update`. It applies the action, copies the model's views into the widgets that store them (`email.set_error(model.error())`, a box the model rewrites, the focus when the model ends the form), then performs each `Effect` in order in one `match`: a request effect becomes `cx.request(Request::.. { ticket, .. }.into())` and starts its spinner clock, `Navigate(to)` maps every `Destination` to `cx.back`, `cx.push`, `cx.reset` or an `open` in one arm each, `Toast(toast)` is `cx.show(toast)`, and a hint is `hint::once(cx, key)`.
+- Keys turn into actions and go through `dispatch`. A text box still takes its own keystroke first (`view.email.handle_key(code)`), then its whole value goes to the model as the field's edit action. Keys the model has no action for (focus, Tab, `q`, `!`, Esc that only ends typing) stay in `keys.rs` as before.
+- A ticket rides out on the screen's `Request` variant and back on its `Update` (`Request::Send { ticket, email }`, `Update::Sent { ticket }`, `Update::Failed { ticket, error }`). `apply` turns the update into the model's reply action and, when the screen is still in the stack, dispatches it; a failure's error toast goes up through `cx.toast` before that, so it shows even when the screen has closed, as the app's request runner does.
+- Draw reads the model's accessors (`is_loading()`, `is_sent()`, `error()`) and its copy consts (`EMAIL`, `SEND`, `SENT_TITLE`) and never decides anything. `Screen::animating` asks the model whether to spin (`view.model.is_loading()`).
+- Delete what the model now owns: the TUI's error strings and copy consts, `touched`/`attempted` flags, validation and gate functions, `sending: bool` or `Option<Instant>` used as a loading flag, and any `Generation` the view kept. Spinner clocks stay as a plain `Instant` set when the request effect is performed.
+- Tests: delete the ones that only checked a rule the model now tests (which message, which gate); keep every key, focus, drawing and key bar test, reading state through `view.model`. Requests in `pending()` now carry tickets, so take them from the queue (`last_ticket(&harness)`) rather than building one; `Ticket` has no public constructor. Add one end-to-end wiring test per fetch that a stale or repeated reply changes nothing.
+- Pitfalls: `TextInput::handle_key` clears the box's error on every edit, so `dispatch` must set it back from the model after each action, not only on submit. Replies reach a view through `nav.find_mut(pick)`, so a toast that must outlive the screen goes up before that lookup.
 
 ## Crashes and error reports
 

@@ -177,7 +177,9 @@ impl Screen {
                 matches!(&form.overlay, Some(deck_form::Overlay::Swipe(picker)) if picker.animating())
             }
             Self::Register(form) => form.hero.animating(Instant::now()),
-            Self::ForgotPassword(form) => form.sending() || form.hero.animating(Instant::now()),
+            Self::ForgotPassword(form) => {
+                form.model.is_loading() || form.hero.animating(Instant::now())
+            }
             Self::Activity(view) => view.animating(),
             Self::Playstyle(view) => view.animating(),
             Self::CommanderSwipe(view) => view.animating(),

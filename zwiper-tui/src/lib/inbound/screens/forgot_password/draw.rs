@@ -6,8 +6,9 @@ use ratatui::Frame;
 use ratatui::style::Stylize;
 use ratatui::text::Line;
 use ratatui::widgets::{Paragraph, Wrap};
+use zwipe_ui::screens::forgot_password::{EMAIL, SEND, SENT_BODY, SENT_TITLE};
 
-use super::{ForgotField, ForgotForm, SENT_BODY, SENT_TITLE};
+use super::{ForgotField, ForgotForm};
 use crate::inbound::app::Shared;
 use crate::inbound::screens::login;
 use crate::inbound::screens::login::draw::{AuthScreen, Placement};
@@ -34,11 +35,12 @@ pub(crate) fn keys(form: &ForgotForm) -> Vec<(&'static str, &'static str)> {
 
 pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &ForgotForm) {
     let palette = &shared.palette;
-    let body_height = if form.sent { 4 } else { form.email.height() };
-    let row = if form.sent {
+    let sent = form.model.is_sent();
+    let body_height = if sent { 4 } else { form.email.height() };
+    let row = if sent {
         Vec::new()
     } else {
-        vec![Button::new("Send reset link")]
+        vec![Button::new(SEND)]
     };
     let focused = (form.focus == Some(ForgotField::SendResetLink)).then_some(0);
     let keys = action_bar::line(palette, &keys(form)).centered();
@@ -55,7 +57,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &ForgotForm) {
             min_gap: 1,
         },
     );
-    if form.sent {
+    if sent {
         let block = crate::inbound::widgets::panel::bordered(palette)
             .border_style(palette.border)
             .title(Line::from(SENT_TITLE).bold().centered());
@@ -71,12 +73,12 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &ForgotForm) {
             palette,
             areas.body,
             &form.email,
-            "Email",
+            EMAIL,
             form.focus == Some(ForgotField::Email),
         );
-        if let Some(since) = form.sending_since {
+        if form.model.is_loading() {
             f.render_widget(
-                Line::from(spinner::frame(since, Instant::now()))
+                Line::from(spinner::frame(form.spin_since, Instant::now()))
                     .style(palette.accent)
                     .centered(),
                 areas.gap,
