@@ -52,12 +52,19 @@ fn esc_steps_back_from_swipe_to_deck_to_decks_to_home() {
     let (mut harness, deck_id) = Harness::swiping(vec![card("A")]);
     harness.press(KeyCode::Esc);
     assert!(
-        matches!(harness.screen(), Screen::Deck(view) if view.profile.id == deck_id && view.deck.is_none())
+        matches!(harness.screen(), Screen::Deck(view) if view.deck_id() == Some(deck_id) && view.model.deck().is_some()),
+        "the deck stays up while it reloads"
     );
-    assert_eq!(
-        harness.pending(),
-        [Request::Deck(deck::Request::Load(deck_id))],
-        "the deck reloads with the new cards"
+    assert!(
+        matches!(
+            harness.pending(),
+            [
+                Request::Deck(deck::Request::FetchProfile { deck_id: profile, .. }),
+                Request::Deck(deck::Request::FetchDeck { deck_id: full, .. }),
+            ] if *profile == deck_id && *full == deck_id
+        ),
+        "the deck reloads with the new cards: {:?}",
+        harness.pending()
     );
 
     harness.clear();

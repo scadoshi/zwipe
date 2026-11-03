@@ -3,8 +3,7 @@
 //! The app shows its sections as an accordion because a phone fits one at a time. The terminal shows as many as fit, and every pane stays reachable at every size through the tabs.
 
 use ratatui::layout::{Constraint, Layout, Rect};
-
-use super::Section;
+use zwipe_ui::screens::deck_view::Section;
 
 /// One thing the deck screen shows in a panel.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

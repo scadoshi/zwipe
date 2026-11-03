@@ -1116,7 +1116,7 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
         Update::Created(profile) => {
             form.saving = false;
             if on_top {
-                screens::deck::replace_with(cx, *profile);
+                screens::deck::replace_with(cx, profile.id);
             }
         }
         Update::Updated => {

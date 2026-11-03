@@ -1,6 +1,8 @@
 use crossterm::event::KeyCode;
 use ratatui::buffer::Cell;
+use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::{DeckWarning, Format, WarningAction};
+use zwipe_core::domain::site::WEB_BASE;
 
 use super::layout::Pane;
 use super::*;
@@ -20,6 +22,20 @@ fn view_mut(harness: &mut Harness) -> &mut DeckView {
         Screen::Deck(view) => view,
         other => panic!("not on the deck screen: {other:?}"),
     }
+}
+
+/// The deck the view is on.
+fn deck_id(harness: &Harness) -> Uuid {
+    view(harness).deck_id().unwrap()
+}
+
+/// The ticket the latest deck request went out with.
+fn last_ticket(harness: &Harness) -> Ticket {
+    let ticket = harness.pending().iter().rev().find_map(|r| match r {
+        screens::Request::Deck(request) => request.ticket(),
+        _ => None,
+    });
+    ticket.unwrap_or_else(|| panic!("no deck request went out: {:?}", harness.pending()))
 }
 
 /// Every cell's symbol of the app drawn at `width` by `height`, row after row.
@@ -63,10 +79,10 @@ fn elves() -> Deck {
 fn loaded(deck: Deck) -> Harness {
     let mut harness = Harness::on(Screen::Decks(Box::default()));
     harness.app.shared.user = Some(user(true));
-    let profile = deck.deck_profile.clone();
-    harness.open(|cx| open(cx, profile));
+    let deck_id = deck.deck_profile.id;
+    harness.open(|cx| open(cx, deck_id));
     harness.app.shared.hint = None;
-    harness.apply(Update::Loaded(Box::new(deck)));
+    serve(&mut harness, deck);
     harness.clear();
     harness
 }
@@ -75,17 +91,21 @@ fn loaded(deck: Deck) -> Harness {
 fn opening_loads_the_deck_and_the_tag_catalog_and_shows_the_first_deck_hint() {
     let mut harness = Harness::on(Screen::Home(Box::default()));
     harness.app.shared.user = Some(user(true));
-    let profile = deck_profile("Pile");
-    let id = profile.id;
-    harness.open(|cx| open(cx, profile));
-    assert_eq!(
-        harness.pending(),
-        [
-            screens::Request::Deck(Request::Load(id)),
-            screens::Request::Deck(Request::LoadOracleTags),
-            screens::Request::MarkHintShown(HINT_KEY.to_owned()),
-        ]
-    );
+    let deck_id = Uuid::new_v4();
+    harness.open(|cx| open(cx, deck_id));
+    let [
+        screens::Request::Deck(Request::FetchProfile {
+            deck_id: profile, ..
+        }),
+        screens::Request::Deck(Request::FetchDeck { deck_id: full, .. }),
+        screens::Request::MarkHintShown(hint),
+        screens::Request::Deck(Request::LoadOracleTags),
+    ] = harness.pending()
+    else {
+        panic!("unexpected requests: {:?}", harness.pending());
+    };
+    assert_eq!((*profile, *full), (deck_id, deck_id));
+    assert_eq!(hint, OneTimeHint::FirstDeck.key());
     assert!(screen_text(&harness.app).contains("Welcome to your deck"));
 }
 
@@ -94,14 +114,17 @@ fn s_on_a_loaded_deck_starts_swiping_and_fetches_the_first_page() {
     let mut profile = deck_profile("Pile");
     profile.commander_id = Some(uuid::Uuid::new_v4());
     profile.format = Some(zwipe_core::domain::deck::Format::Commander);
-    let mut harness = Harness::on(Screen::Deck(Box::new(DeckView::opening(profile.clone()))));
+    let mut harness = Harness::on(Screen::Home(Box::default()));
+    harness.open(|cx| open(cx, profile.id));
+    harness.app.shared.hint = None;
     harness.press(KeyCode::Char('s'));
     assert!(
         matches!(harness.screen(), Screen::Deck(_)),
         "nothing to swipe before the deck loads"
     );
 
-    harness.apply(Update::Loaded(Box::new(deck(profile.clone(), Vec::new()))));
+    serve(&mut harness, deck(profile.clone(), Vec::new()));
+    harness.clear();
     harness.press(KeyCode::Char('s'));
     assert!(harness.swipe_view().loading_cards);
     assert!(matches!(
@@ -148,16 +171,16 @@ fn budget_switches_currency_and_draw_odds_steps_the_turn() {
     let mut harness = loaded(elves());
     harness.press(KeyCode::Char('l'));
     assert_eq!(
-        view(&harness).currency,
+        view(&harness).model.currency(),
         PriceCurrency::Usd,
         "only the focused Budget takes the currency keys"
     );
     harness.press(KeyCode::Tab);
     harness.press(KeyCode::Char('l'));
-    assert_eq!(view(&harness).currency, PriceCurrency::Eur);
+    assert_eq!(view(&harness).model.currency(), PriceCurrency::Eur);
     harness.press(KeyCode::Char('h'));
     harness.press(KeyCode::Char('h'));
-    assert_eq!(view(&harness).currency, PriceCurrency::Tix);
+    assert_eq!(view(&harness).model.currency(), PriceCurrency::Tix);
     harness.press(KeyCode::Char('+'));
     assert_eq!(view(&harness).turn, 0, "the turn keys wait for Draw odds");
     view_mut(&mut harness).focus_on(Pane::Section(Section::DrawOdds));
@@ -226,7 +249,7 @@ fn a_role_with_no_tags_is_a_grey_chip_the_focus_skips() {
     let built = deck(deck_profile("Ramp"), vec![ramp]);
     let mut harness = loaded(built);
     view_mut(&mut harness).focus_on(Pane::Section(Section::Distributions));
-    let metrics = view(&harness).metrics.clone().unwrap();
+    let metrics = view(&harness).model.metrics().cloned().unwrap();
     let bars = metrics.card_role_bars().unwrap();
     let untagged: Vec<&str> = bars
         .iter()
@@ -247,8 +270,8 @@ fn a_role_with_no_tags_is_a_grey_chip_the_focus_skips() {
     );
 }
 
-#[test]
-fn warnings_offer_their_fixes_and_run_them() {
+/// Elves with four warnings: below the minimum, a copy limit, a banned card and an invalid commander, all on its first card. Returns the card too.
+fn warned() -> (Deck, Uuid) {
     let mut built = elves();
     let sol_ring = built.entries[0].card.scryfall_data.id;
     built.warnings = vec![
@@ -265,6 +288,12 @@ fn warnings_offer_their_fixes_and_run_them() {
             WarningAction::ClearCommander,
         ),
     ];
+    (built, sol_ring)
+}
+
+#[test]
+fn warnings_offer_their_fixes_and_run_them() {
+    let (built, sol_ring) = warned();
     let mut harness = loaded(built);
     view_mut(&mut harness).focus_on(Pane::Section(Section::Warnings));
     let screen = screen_text(&harness.app);
@@ -278,7 +307,7 @@ fn warnings_offer_their_fixes_and_run_them() {
     ] {
         assert!(screen.contains(expected), "missing {expected}");
     }
-    let deck_id = view(&harness).profile.id;
+    let deck_id = deck_id(&harness);
     let items = view(&harness).items();
     let at = |item: Item| items.iter().position(|t| *t == item).unwrap();
 
@@ -297,42 +326,64 @@ fn warnings_offer_their_fixes_and_run_them() {
         button: 0,
     });
     harness.press(KeyCode::Char(' '));
+    let [
+        screens::Request::Deck(Request::SetQuantity {
+            deck_id: quantity_deck,
+            card: quantity_card,
+            quantity: 1,
+            ..
+        }),
+        screens::Request::Deck(Request::RemoveCard {
+            deck_id: removed_deck,
+            card: removed_card,
+            ..
+        }),
+        screens::Request::Deck(Request::ClearCommander {
+            deck_id: cleared_deck,
+            ..
+        }),
+    ] = harness.pending()
+    else {
+        panic!("unexpected requests: {:?}", harness.pending());
+    };
     assert_eq!(
-        harness.pending(),
-        [
-            screens::Request::Deck(Request::FixQuantity {
-                deck_id,
-                card: sol_ring,
-                quantity: 1
-            }),
-            screens::Request::Deck(Request::RemoveCard {
-                deck_id,
-                card: sol_ring
-            }),
-            screens::Request::Deck(Request::ClearCommander {
-                deck_id,
-                oathbreaker: false
-            }),
-        ]
+        (*quantity_deck, *removed_deck, *cleared_deck),
+        (deck_id, deck_id, deck_id)
     );
+    assert_eq!((*quantity_card, *removed_card), (sol_ring, sol_ring));
+}
 
+#[test]
+fn a_fix_that_lands_toasts_reloads_and_the_next_fix_runs() {
+    let (built, _) = warned();
+    let mut harness = loaded(built);
+    let deck_id = deck_id(&harness);
+    view_mut(&mut harness).focus_on(Pane::Section(Section::Warnings));
+    view_mut(&mut harness).item = 2;
+    harness.press(KeyCode::Char(' '));
+    let ticket = last_ticket(&harness);
     harness.clear();
-    harness.apply(Update::Fixed {
-        deck_id,
-        message: "Quantity set to 1".to_owned(),
-    });
+    harness.apply(Update::QuantitySet { ticket });
     let fixed = &harness.app.shared.toasts.items()[0];
     assert_eq!(fixed.message, "Quantity set to 1");
     assert_eq!(
         fixed.expires_at.duration_since(fixed.shown_at),
         crate::inbound::widgets::toast::QUICK
     );
-    assert_eq!(
-        harness.pending(),
-        [screens::Request::Deck(Request::Load(deck_id))]
+    assert!(
+        matches!(
+            harness.pending(),
+            [screens::Request::Deck(Request::FetchDeck { deck_id: id, .. })] if *id == deck_id
+        ),
+        "the deck reloads: {:?}",
+        harness.pending()
     );
 
-    view_mut(&mut harness).load(elves_with_short_warning());
+    let reload = last_ticket(&harness);
+    harness.apply(Update::DeckLoaded {
+        ticket: reload,
+        deck: Box::new(elves_with_short_warning()),
+    });
     harness.press(KeyCode::Char('j'));
     assert_eq!(
         view(&harness).focused_item(),
@@ -356,7 +407,7 @@ fn elves_with_short_warning() -> Deck {
 #[test]
 fn edit_and_more_open_their_screens() {
     let mut harness = loaded(elves());
-    let deck_id = view(&harness).profile.id;
+    let deck_id = deck_id(&harness);
     harness.press(KeyCode::Char('e'));
     assert!(
         matches!(harness.screen(), Screen::DeckForm(form) if form.mode == deck_form::Mode::Edit { deck_id })
@@ -364,8 +415,8 @@ fn edit_and_more_open_their_screens() {
     harness.app.shared.hint = None;
     harness.press(KeyCode::Esc);
     let mut reloaded = elves();
-    reloaded.deck_profile = view(&harness).profile.clone();
-    harness.apply(Update::Loaded(Box::new(reloaded)));
+    reloaded.deck_profile = view(&harness).model.profile().cloned().unwrap();
+    serve(&mut harness, reloaded);
     harness.press(KeyCode::Char('m'));
     let screen = screen_text(&harness.app);
     for expected in [
@@ -426,7 +477,7 @@ fn export_and_buy_wait_for_cards() {
 #[test]
 fn clone_prefills_the_name_and_waits_on_the_server() {
     let mut harness = loaded(elves());
-    let deck_id = view(&harness).profile.id;
+    let deck_id = deck_id(&harness);
     harness.press(KeyCode::Char('m'));
     for _ in 0..3 {
         harness.press(KeyCode::Char('j'));
@@ -436,38 +487,43 @@ fn clone_prefills_the_name_and_waits_on_the_server() {
     assert!(screen_text(&harness.app).contains("Elves (clone)"));
     harness.press(KeyCode::Backspace);
     harness.press(KeyCode::Enter);
+    let ticket = last_ticket(&harness);
     assert_eq!(
         harness.pending(),
         [screens::Request::Deck(Request::Clone {
+            ticket,
             deck_id,
             name: "Elves (clone".to_owned()
         })]
     );
     assert!(screen_text(&harness.app).contains("Cloning..."));
-    harness.apply(Update::CloneFailed(
-        "a deck with that name already exists".to_owned(),
-    ));
+    harness.apply(Update::CloneFailed {
+        ticket,
+        error: "a deck with that name already exists".to_owned(),
+    });
     assert!(matches!(&view(&harness).dialog, Some(Dialog::Clone(c)) if !c.busy));
 
-    let mut copy = deck_profile("Elves (clone");
-    copy.format = Some(Format::Modern);
-    let copy_id = copy.id;
+    harness.clear();
+    harness.press(KeyCode::Enter);
+    let ticket = last_ticket(&harness);
+    let copy_id = Uuid::new_v4();
     harness.clear();
     harness.apply(Update::Cloned {
-        profile: Box::new(copy),
+        ticket,
+        deck_id: copy_id,
     });
     assert_eq!(
         harness.app.shared.toasts.items().last().unwrap().message,
         "Cloned as \"Elves (clone\""
     );
-    assert_eq!(view(&harness).profile.id, copy_id);
+    assert_eq!(view(&harness).deck_id(), Some(copy_id));
     assert_eq!(harness.app.nav.depth(), 2, "the copy replaces the original");
 }
 
 #[test]
 fn share_creates_copies_and_stops_the_link() {
     let mut harness = loaded(elves());
-    let deck_id = view(&harness).profile.id;
+    let deck_id = deck_id(&harness);
     harness.press(KeyCode::Char('m'));
     for _ in 0..4 {
         harness.press(KeyCode::Char('j'));
@@ -478,19 +534,20 @@ fn share_creates_copies_and_stops_the_link() {
     harness.press(KeyCode::Right);
     harness.press(KeyCode::Enter);
     assert!(view(&harness).more.is_none());
+    let ticket = last_ticket(&harness);
     assert_eq!(
         harness.pending(),
-        [screens::Request::Deck(Request::Share(deck_id))]
+        [screens::Request::Deck(Request::Share { ticket, deck_id })]
     );
     let token = Uuid::new_v4();
-    harness.apply(Update::Shared { deck_id, token });
-    assert_eq!(view(&harness).share_token, Some(token));
+    harness.apply(Update::Shared { ticket, token });
+    assert_eq!(view(&harness).model.share_token(), Some(token));
     assert_eq!(
         harness.app.shared.toasts.items()[0].message,
         "Share link copied"
     );
     assert_eq!(
-        view(&harness).share_link().unwrap(),
+        zwipe_ui::deck::view::share_link(token),
         format!("{WEB_BASE}/deck/{token}")
     );
 
@@ -504,18 +561,19 @@ fn share_creates_copies_and_stops_the_link() {
     harness.press(KeyCode::Right);
     harness.press(KeyCode::Right);
     harness.press(KeyCode::Enter);
+    let ticket = last_ticket(&harness);
     assert_eq!(
         harness.pending(),
-        [screens::Request::Deck(Request::Unshare(deck_id))]
+        [screens::Request::Deck(Request::Unshare { ticket, deck_id })]
     );
-    harness.apply(Update::Unshared(deck_id));
-    assert_eq!(view(&harness).share_token, None);
+    harness.apply(Update::Unshared { ticket });
+    assert_eq!(view(&harness).model.share_token(), None);
 }
 
 #[test]
 fn clear_skips_and_delete_confirm_first_and_cancel_keeps_the_sheet() {
     let mut harness = loaded(elves());
-    let deck_id = view(&harness).profile.id;
+    let deck_id = deck_id(&harness);
     harness.press(KeyCode::Char('m'));
     for _ in 0..5 {
         harness.press(KeyCode::Char('j'));
@@ -531,11 +589,15 @@ fn clear_skips_and_delete_confirm_first_and_cancel_keeps_the_sheet() {
     harness.press(KeyCode::Enter);
     harness.press(KeyCode::Right);
     harness.press(KeyCode::Enter);
+    let ticket = last_ticket(&harness);
     assert_eq!(
         harness.pending(),
-        [screens::Request::Deck(Request::ClearSkips(deck_id))]
+        [screens::Request::Deck(Request::ClearSkips {
+            ticket,
+            deck_id
+        })]
     );
-    harness.apply(Update::SkipsCleared);
+    harness.apply(Update::SkipsCleared { ticket });
     assert_eq!(
         harness.app.shared.toasts.items()[0].message,
         "Skips cleared"
@@ -550,12 +612,13 @@ fn clear_skips_and_delete_confirm_first_and_cancel_keeps_the_sheet() {
     assert!(screen_text(&harness.app).contains("Are you sure you want to delete this deck?"));
     harness.press(KeyCode::Right);
     harness.press(KeyCode::Enter);
+    let ticket = last_ticket(&harness);
     assert_eq!(
         harness.pending(),
-        [screens::Request::Deck(Request::Delete(deck_id))]
+        [screens::Request::Deck(Request::Delete { ticket, deck_id })]
     );
     harness.clear();
-    harness.apply(Update::Deleted(deck_id));
+    harness.apply(Update::Deleted { ticket });
     assert!(matches!(harness.screen(), Screen::Decks(_)));
 }
 
@@ -566,23 +629,79 @@ fn buy_offers_both_retailers_once_loaded() {
     let labels: Vec<&str> = dialog.buttons.iter().map(|b| b.label.as_str()).collect();
     assert_eq!(labels, ["Close", "TCGplayer ↗", "Card Kingdom ↗"]);
     assert_eq!(dialog.body, "Buy this deck's cards from a retailer.");
-    let (tcg, ck) = view(&harness).buy_links().unwrap();
+    let (tcg, ck) = view(&harness).model.buy_links().unwrap();
     assert!(tcg.starts_with("https://www.tcgplayer.com/massentry?c=1+A||"));
     assert!(ck.starts_with("https://www.cardkingdom.com/builder?c=1+A%0A"));
 }
 
 #[test]
-fn a_deck_result_for_another_deck_is_ignored_and_a_failure_says_so() {
-    let mut harness = Harness::on(Screen::Deck(Box::new(DeckView::opening(deck_profile(
-        "Open",
-    )))));
-    harness.apply(Update::Loaded(Box::new(deck(
-        deck_profile("Other"),
-        Vec::new(),
-    ))));
-    assert!(view(&harness).deck.is_none());
-    harness.apply(Update::Failed("deck not found".to_owned()));
+fn a_failed_profile_says_so() {
+    let mut harness = Harness::on(Screen::Home(Box::default()));
+    harness.open(|cx| open(cx, Uuid::new_v4()));
+    harness.app.shared.hint = None;
+    let profile = match harness.pending().first() {
+        Some(screens::Request::Deck(request)) => request.ticket().unwrap(),
+        other => panic!("no profile fetch: {other:?}"),
+    };
+    harness.apply(Update::Failed {
+        ticket: profile,
+        error: "deck not found".to_owned(),
+    });
+    assert_eq!(
+        harness.app.shared.toasts.items()[0].message,
+        "deck not found"
+    );
+    harness.app.shared.toasts = crate::inbound::widgets::toast::Toasts::default();
     assert!(screen_text(&harness.app).contains("Could not load deck"));
+}
+
+#[test]
+fn replies_a_reload_replaced_change_nothing() {
+    let mut harness = loaded(elves());
+    harness.press(KeyCode::Char('r'));
+    let stale = harness.pending().to_vec();
+    harness.clear();
+    harness.press(KeyCode::Char('r'));
+    let mut other = deck(deck_profile("Other"), Vec::new());
+    other.deck_profile.id = deck_id(&harness);
+    for request in &stale {
+        match request {
+            screens::Request::Deck(Request::FetchProfile { ticket, .. }) => {
+                harness.apply(Update::ProfileLoaded {
+                    ticket: *ticket,
+                    profile: Box::new(other.deck_profile.clone()),
+                });
+            }
+            screens::Request::Deck(Request::FetchDeck { ticket, .. }) => {
+                harness.apply(Update::DeckLoaded {
+                    ticket: *ticket,
+                    deck: Box::new(other.clone()),
+                });
+            }
+            _ => {}
+        }
+    }
+    let model = &view(&harness).model;
+    assert_eq!(
+        model.profile().map(|p| p.name.to_string()).as_deref(),
+        Some("Elves")
+    );
+    assert_eq!(model.card_count(), 3, "the stale empty deck never landed");
+
+    harness.press(KeyCode::Char('m'));
+    for _ in 0..6 {
+        harness.press(KeyCode::Char('j'));
+    }
+    harness.press(KeyCode::Enter);
+    harness.press(KeyCode::Right);
+    harness.press(KeyCode::Enter);
+    let delete = last_ticket(&harness);
+    harness.press(KeyCode::Char('r'));
+    harness.apply(Update::Deleted { ticket: delete });
+    assert!(
+        matches!(harness.screen(), Screen::Deck(_)),
+        "a delete a reload overtook moves nothing"
+    );
 }
 
 #[test]
@@ -591,7 +710,7 @@ fn the_profile_card_names_the_oathbreaker() {
     profile.format = Some(Format::Oathbreaker);
     profile.commander_name = Some("Wrenn and Six".to_owned());
     profile.signature_spell_name = Some("Crop Rotation".to_owned());
-    let harness = Harness::on(Screen::Deck(Box::new(DeckView::opening(profile))));
+    let harness = loaded(deck(profile, Vec::new()));
     let screen = screen_text(&harness.app);
     for expected in ["Profile", "Oathbreaker", "Wrenn and Six", "Signature spell"] {
         assert!(screen.contains(expected), "missing {expected}");
@@ -612,7 +731,7 @@ fn the_deck_screen_fits_a_tiny_terminal() {
 #[test]
 fn c_opens_the_deck_cards_view_on_this_deck() {
     let mut harness = loaded(elves());
-    let deck_id = view(&harness).profile.id;
+    let deck_id = deck_id(&harness);
     harness.press(KeyCode::Char('c'));
     let Screen::DeckCards(cards) = harness.screen() else {
         panic!("not on the deck cards view: {:?}", harness.screen());
@@ -626,7 +745,7 @@ fn c_opens_the_deck_cards_view_on_this_deck() {
 #[test]
 fn add_cards_on_the_below_minimum_warning_opens_add_on_this_deck() {
     let mut harness = loaded(elves_with_short_warning());
-    let deck_id = view(&harness).profile.id;
+    let deck_id = deck_id(&harness);
     view_mut(&mut harness).focus_on(Pane::Section(Section::Warnings));
     assert_eq!(
         view(&harness).focused_item(),
@@ -763,7 +882,11 @@ fn every_sections_keys_work_in_every_layout() {
 
         harness.press(KeyCode::Tab);
         harness.press(KeyCode::Char('l'));
-        assert_eq!(view(&harness).currency, PriceCurrency::Eur, "{size}");
+        assert_eq!(
+            view(&harness).model.currency(),
+            PriceCurrency::Eur,
+            "{size}"
+        );
         assert!(text_at(&harness, width, height).contains('€'), "{size}");
 
         harness.press(KeyCode::Tab);
@@ -839,7 +962,7 @@ fn every_sections_keys_work_in_every_layout() {
         assert!(
             matches!(
                 harness.pending(),
-                [screens::Request::Deck(Request::FixQuantity {
+                [screens::Request::Deck(Request::SetQuantity {
                     quantity: 1,
                     ..
                 })]
@@ -879,18 +1002,43 @@ fn enter_zooms_the_focused_pane_and_esc_unzooms_before_going_back() {
 }
 
 #[test]
-fn a_reload_keeps_the_focus_on_the_stats_through_the_skeleton() {
+fn a_reload_keeps_the_stats_and_the_focus_until_it_lands() {
     let mut harness = loaded(everything());
     view_mut(&mut harness).focus_on(Pane::Section(Section::DrawOdds));
     harness.press(KeyCode::Char('r'));
-    assert_eq!(view(&harness).focused(), Pane::Loading);
+    assert_eq!(view(&harness).focused(), Pane::Section(Section::DrawOdds));
+    for (width, height) in SIZES {
+        assert!(
+            text_at(&harness, width, height).contains("Odds of ≥1"),
+            "{width}x{height}"
+        );
+    }
+    let mut reloaded = everything();
+    reloaded.deck_profile = view(&harness).model.profile().cloned().unwrap();
+    serve(&mut harness, reloaded);
+    assert_eq!(view(&harness).focused(), Pane::Section(Section::DrawOdds));
+}
+
+#[test]
+fn a_loading_deck_puts_the_skeleton_where_the_stats_go() {
+    let mut harness = Harness::on(Screen::Home(Box::default()));
+    let built = everything();
+    harness.open(|cx| open(cx, built.deck_profile.id));
+    harness.app.shared.hint = None;
+    let profile = match harness.pending().first() {
+        Some(screens::Request::Deck(request)) => request.ticket().unwrap(),
+        other => panic!("no profile fetch: {other:?}"),
+    };
+    let mut no_lands = built.deck_profile.clone();
+    no_lands.land_target = None;
+    harness.apply(Update::ProfileLoaded {
+        ticket: profile,
+        profile: Box::new(no_lands),
+    });
+    assert!(view(&harness).panes().contains(&Pane::Loading));
     for (width, height) in SIZES {
         assert!(text_at(&harness, width, height).contains('░'));
     }
-    let mut reloaded = everything();
-    reloaded.deck_profile = view(&harness).profile.clone();
-    harness.apply(Update::Loaded(Box::new(reloaded)));
-    assert_eq!(view(&harness).focused(), Pane::Section(Section::DrawOdds));
 }
 
 #[test]
@@ -921,4 +1069,35 @@ fn the_deck_screen_keeps_every_key_on_a_narrow_terminal() {
     crate::test_support::assert_key_bar_fits(&harness.app, "q quit");
     harness.press(KeyCode::Char('m'));
     crate::test_support::assert_key_bar_fits(&harness.app, "Esc");
+}
+
+#[test]
+fn the_shown_sections_carry_about_markers_and_the_focused_ones_lights() {
+    let mut harness = loaded(everything());
+    let palette = crate::domain::theme::Palette::for_account("gruvbox", true);
+    harness.app.shared.palette = palette;
+    harness.press(KeyCode::Tab);
+    assert_eq!(view(&harness).focused(), Pane::Section(Section::Budget));
+    for (width, height) in crate::test_support::BUTTON_SIZES {
+        let rows = crate::test_support::rows(&harness.app, width, height);
+        let bare = crate::test_support::bare_about_markers(&rows);
+        assert!(bare.is_empty(), "bare ? at {bare:?}:\n{}", rows.join("\n"));
+        let terminal = render(&harness.app, width, height);
+        let buffer = terminal.backend().buffer();
+        let context = format!("{width}x{height}");
+        let found = crate::test_support::find_all(buffer, "Budget [?]");
+        let &(x, y) = found
+            .first()
+            .unwrap_or_else(|| panic!("{context}:\n{}", rows.join("\n")));
+        crate::test_support::assert_about_marker(buffer, &palette, (x + 7, y), true, &context);
+    }
+    let terminal = render(&harness.app, 200, 50);
+    let buffer = terminal.backend().buffer();
+    let found = crate::test_support::find_all(buffer, "Mana [?]");
+    let &(x, y) = found.first().expect("the wide layout shows Mana's panel");
+    crate::test_support::assert_about_marker(buffer, &palette, (x + 5, y), false, "200x50");
+    assert!(
+        crate::test_support::find_all(buffer, "Profile [?]").is_empty(),
+        "Profile has no explainer"
+    );
 }

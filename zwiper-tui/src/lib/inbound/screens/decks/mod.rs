@@ -7,7 +7,6 @@ pub(crate) mod keys;
 #[cfg(test)]
 mod tests;
 
-use uuid::Uuid;
 use zwipe_core::domain::deck::DeckProfile;
 use zwipe_core::domain::user::User;
 use zwipe_core::domain::user::hints::OneTimeHint;
@@ -153,11 +152,6 @@ impl DeckList {
     pub(crate) fn group_by_action(index: usize) -> Option<Action> {
         GroupBy::ALL.get(index).copied().map(Action::PickGroupBy)
     }
-
-    /// The deck with this id, as the list holds it.
-    fn profile(&self, id: Uuid) -> Option<DeckProfile> {
-        self.model.decks().iter().find(|d| d.id == id).cloned()
-    }
 }
 
 /// Shows the hint again, whether or not it has been seen.
@@ -210,11 +204,7 @@ pub(crate) fn dispatch(list: &mut DeckList, action: Action, cx: &mut Context<'_>
                 hint::once(cx, offer.key());
             }
             Effect::Navigate(Destination::Home) => cx.back(),
-            Effect::Navigate(Destination::Deck(id)) => {
-                if let Some(profile) = list.profile(id) {
-                    screens::deck::open(cx, profile);
-                }
-            }
+            Effect::Navigate(Destination::Deck(id)) => screens::deck::open(cx, id),
             Effect::Navigate(Destination::CreateDeck) => screens::deck_form::open_create(cx),
             Effect::Navigate(Destination::CommanderMaybeboard) => {
                 screens::commander_maybeboard::open(cx);

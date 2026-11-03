@@ -115,10 +115,7 @@ impl Harness {
             decks: vec![profile.clone()],
         });
         harness.press(KeyCode::Enter);
-        harness.apply(deck::Update::Loaded(Box::new(test_support::deck(
-            profile,
-            Vec::new(),
-        ))));
+        deck::serve(&mut harness, test_support::deck(profile, Vec::new()));
         harness.press(KeyCode::Char('s'));
         harness.serve(cards);
         harness.clear();

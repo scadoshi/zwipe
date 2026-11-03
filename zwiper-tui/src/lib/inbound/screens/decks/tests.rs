@@ -46,14 +46,19 @@ fn the_first_load_selects_the_first_deck_and_enter_opens_it() {
     let mut harness = loaded(vec![second.clone(), first]);
     harness.press(KeyCode::Char('j'));
     harness.press(KeyCode::Enter);
-    assert!(matches!(harness.screen(), Screen::Deck(view) if view.profile.id == second.id));
-    assert_eq!(
-        harness.pending(),
-        [
-            screens::Request::Deck(deck::Request::Load(second.id)),
-            screens::Request::Deck(deck::Request::LoadOracleTags),
-            screens::Request::MarkHintShown(deck::HINT_KEY.to_owned()),
-        ]
+    assert!(matches!(harness.screen(), Screen::Deck(view) if view.deck_id() == Some(second.id)));
+    assert!(
+        matches!(
+            harness.pending(),
+            [
+                screens::Request::Deck(deck::Request::FetchProfile { deck_id: profile, .. }),
+                screens::Request::Deck(deck::Request::FetchDeck { deck_id: full, .. }),
+                screens::Request::MarkHintShown(_),
+                screens::Request::Deck(deck::Request::LoadOracleTags),
+            ] if *profile == second.id && *full == second.id
+        ),
+        "{:?}",
+        harness.pending()
     );
 }
 
