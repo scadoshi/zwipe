@@ -416,17 +416,13 @@ button {
     overflow: visible;
 }
 
-/* The menu's footer, a sheet's action bar made slim: a full-bleed bar under
-   a rule, flush with the menu's bottom edge, the ! at one end and Log out at
-   the other. */
+/* The menu's footer row inside the kit's solid trailing band: the ! at one
+   end and Log out at the other. */
 .app-nav-footer {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin: 0 -0.75rem;
-    padding: 0.6rem 0.75rem;
-    border-top: 1px solid var(--border-secondary);
-    background-color: var(--bg-primary);
+    padding-bottom: 0.6rem;
 }
 
 .app-nav-support,
