@@ -3,6 +3,7 @@ use zwipe_core::http::contracts::changelog::{HttpChangelog, HttpRelease};
 
 use super::*;
 use crate::inbound::event_loop::harness::Harness;
+use crate::inbound::screens;
 use crate::test_support::{render, screen_text};
 
 fn release(version: &str, date: &str, day: &str) -> HttpRelease {
@@ -40,11 +41,12 @@ fn view(harness: &Harness) -> &ChangelogView {
 }
 
 use zwipe_ui::changelog::{ChangelogCache, Filter};
+use zwipe_ui::screens::changelog::FAILED;
 
 #[test]
 fn it_starts_on_latest_with_the_newest_release_tagged() {
     let harness = loaded();
-    assert_eq!(view(&harness).filter, Filter::Latest);
+    assert_eq!(*view(&harness).model.filter(), Filter::Latest);
     let screen = screen_text(&harness.app);
     assert!(screen.contains("1.15.1") && screen.contains("Latest"));
     assert!(screen.contains("Entry for 1.15.1"));
@@ -57,23 +59,30 @@ fn chips_narrow_to_a_year_month_and_minor_and_the_deepest_goes_up() {
     let mut harness = loaded();
     harness.press(KeyCode::Char('l'));
     harness.press(KeyCode::Enter);
-    assert_eq!(view(&harness).filter, Filter::Year("2026".to_owned()));
+    assert_eq!(
+        *view(&harness).model.filter(),
+        Filter::Year("2026".to_owned())
+    );
     assert!(screen_text(&harness.app).contains("1.14.0"));
     harness.press(KeyCode::Tab);
     harness.press(KeyCode::Enter);
-    assert!(matches!(&view(&harness).filter, Filter::Month { month, .. } if month == "2026-10"));
+    assert!(
+        matches!(view(&harness).model.filter(), Filter::Month { month, .. } if month == "2026-10")
+    );
     harness.press(KeyCode::Tab);
     harness.press(KeyCode::Enter);
-    assert!(matches!(&view(&harness).filter, Filter::Minor { minor, .. } if minor == "1.15"));
+    assert!(
+        matches!(view(&harness).model.filter(), Filter::Minor { minor, .. } if minor == "1.15")
+    );
     harness.press(KeyCode::Enter);
     assert!(
-        matches!(&view(&harness).filter, Filter::Month { .. }),
+        matches!(view(&harness).model.filter(), Filter::Month { .. }),
         "the deepest lit chip goes up a level"
     );
     harness.press(KeyCode::BackTab);
     harness.press(KeyCode::BackTab);
     harness.press(KeyCode::Enter);
-    assert_eq!(view(&harness).filter, Filter::Latest);
+    assert_eq!(*view(&harness).model.filter(), Filter::Latest);
 }
 
 #[test]
@@ -83,6 +92,23 @@ fn loading_shows_a_skeleton_and_a_failure_the_note() {
     assert!(screen.contains('▒') && !screen.contains("Latest"));
     let failed = on_changelog(ChangelogCache::Failed);
     assert!(screen_text(&failed.app).contains(FAILED));
+}
+
+#[test]
+fn the_launch_fetch_landing_fills_an_open_changelog() {
+    let mut harness = on_changelog(ChangelogCache::Loading);
+    harness.apply(screens::Update::Changelog(Some(Box::new(HttpChangelog {
+        upcoming: Vec::new(),
+        releases: vec![release("1.15.1", "Oct 27, 2026", "2026-10-27")],
+    }))));
+    let screen = screen_text(&harness.app);
+    assert!(screen.contains("Entry for 1.15.1"), "{screen}");
+    harness.press(KeyCode::Enter);
+    assert_eq!(
+        *view(&harness).model.filter(),
+        Filter::Latest,
+        "Latest stays lit"
+    );
 }
 
 #[test]

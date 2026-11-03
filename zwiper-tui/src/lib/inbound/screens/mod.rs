@@ -474,6 +474,7 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
         Update::Changelog(changelog) => {
             cx.shared.changelog =
                 changelog.map_or(ChangelogCache::Failed, |c| ChangelogCache::Loaded(*c));
+            changelog::reload(nav, cx);
         }
         Update::SessionEnded => session::session_ended(cx),
         Update::Counts(metrics) => {
