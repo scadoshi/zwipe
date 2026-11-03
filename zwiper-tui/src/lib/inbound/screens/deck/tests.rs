@@ -735,9 +735,11 @@ fn c_opens_the_deck_cards_view_on_this_deck() {
     let Screen::DeckCards(cards) = harness.screen() else {
         panic!("not on the deck cards view: {:?}", harness.screen());
     };
-    assert_eq!(cards.deck_id, deck_id);
-    assert!(harness.pending().contains(&screens::Request::DeckCards(
-        screens::deck_cards::Request::Load { deck_id }
+    assert_eq!(cards.model.deck_id(), Some(deck_id));
+    assert!(harness.pending().iter().any(|r| matches!(
+        r,
+        screens::Request::DeckCards(screens::deck_cards::Request::FetchDeck { deck_id: id, .. })
+            if *id == deck_id
     )));
 }
 

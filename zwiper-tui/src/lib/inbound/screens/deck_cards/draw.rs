@@ -9,9 +9,10 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::card::search_card::group_cards::GroupByOption;
 use zwipe_core::domain::deck::{Board, deck_metrics, deck_tag};
-use zwipe_ui::{deck_cards, filter};
+use zwipe_ui::filter;
+use zwipe_ui::screens::deck_cards::{self, QuickAddResults};
 
-use super::{DeckCardsView, Dropdown, Item, Kind};
+use super::{DeckCardsView, Item, Kind};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::screens::card_sheets;
@@ -29,7 +30,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &DeckCardsView) {
     let bar_height = action_bar::height(&bar, area.width.saturating_sub(2));
     let [header, controls, list, keys] = Layout::vertical([
         Constraint::Length(3),
-        Constraint::Length(if view.loaded { 6 } else { 4 }),
+        Constraint::Length(if view.model.is_loaded() { 6 } else { 4 }),
         Constraint::Fill(1),
         Constraint::Length(bar_height),
     ])
@@ -37,7 +38,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &DeckCardsView) {
     .areas(area);
 
     f.render_widget(Paragraph::new(header_lines(palette, view)), header);
-    if view.loaded {
+    if view.model.is_loaded() {
         f.render_widget(Paragraph::new(control_lines(palette, view)), controls);
         draw_list(f, shared, view, list);
     } else {
@@ -70,7 +71,7 @@ fn chip(text: &str, style: Style) -> Span<'static> {
 
 /// The deck's name and chips, then the featured strip; ghosts until loaded.
 fn header_lines(palette: &Palette, view: &DeckCardsView) -> Vec<Line<'static>> {
-    let Some(profile) = &view.profile else {
+    let Some(profile) = view.model.profile() else {
         return skeleton::rows(palette, 2, 30);
     };
     let mut chips = Vec::new();
@@ -91,8 +92,8 @@ fn header_lines(palette: &Palette, view: &DeckCardsView) -> Vec<Line<'static>> {
         chips.push(Span::raw(" "));
     }
     let mut featured = Vec::new();
-    for (card, role) in deck_cards::featured(&view.zone, &view.entries, view.is_oathbreaker()) {
-        let style = if role == "MVP" {
+    for (card, role) in view.model.featured() {
+        let style = if role == deck_cards::MVP {
             palette.warning
         } else {
             palette.accent
@@ -111,11 +112,14 @@ fn header_lines(palette: &Palette, view: &DeckCardsView) -> Vec<Line<'static>> {
 fn control_lines(palette: &Palette, view: &DeckCardsView) -> Vec<Line<'static>> {
     let quick = &view.quick;
     let mut input = vec![
-        Span::styled("Quick add ", palette.muted.bold()),
+        Span::styled(format!("{} ", deck_cards::QUICK_ADD), palette.muted.bold()),
         Span::styled("[", palette.border),
     ];
     if quick.input.is_empty() {
-        input.push(Span::styled("Search a card to add", palette.muted.italic()));
+        input.push(Span::styled(
+            deck_cards::QUICK_ADD_PLACEHOLDER,
+            palette.muted.italic(),
+        ));
     } else {
         input.push(Span::raw(quick.input.value().to_owned()));
     }
@@ -126,13 +130,11 @@ fn control_lines(palette: &Palette, view: &DeckCardsView) -> Vec<Line<'static>> 
     if !quick.input.is_empty() {
         input.push(Span::styled(" ×", palette.muted));
     }
-    let dropdown = match &quick.results {
-        Dropdown::Closed => Line::default(),
-        Dropdown::Searching => Line::from("Searching...").style(palette.muted),
-        Dropdown::Results(results) if results.is_empty() => {
-            Line::from("No results").style(palette.muted)
-        }
-        Dropdown::Results(results) => Line::from(
+    let dropdown = match view.model.quick_add() {
+        None => Line::default(),
+        Some(QuickAddResults::Searching) => Line::from(deck_cards::SEARCHING).style(palette.muted),
+        Some(QuickAddResults::Empty) => Line::from(deck_cards::NO_RESULTS).style(palette.muted),
+        Some(QuickAddResults::Found(results)) => Line::from(
             results
                 .iter()
                 .enumerate()
@@ -157,43 +159,53 @@ fn control_lines(palette: &Palette, view: &DeckCardsView) -> Vec<Line<'static>> 
             palette.muted
         }
     };
-    let group_by: Vec<Span<'static>> =
-        std::iter::once(Span::styled("Group by ", palette.muted.bold()))
-            .chain(GroupByOption::all().into_iter().flat_map(|o| {
-                [
-                    Span::styled(format!(" {o} "), on(o == view.group_by)),
-                    Span::raw(" "),
-                ]
-            }))
-            .collect();
-    let has = |board: Board| view.entries.iter().any(|e| e.deck_card.board == board);
-    let board_chip = |label: &str, active: bool, enabled: bool| {
-        let style = if !enabled && !active {
+    let group_by: Vec<Span<'static>> = std::iter::once(Span::styled(
+        format!("{} ", deck_cards::GROUP_BY),
+        palette.muted.bold(),
+    ))
+    .chain(GroupByOption::all().into_iter().flat_map(|o| {
+        [
+            Span::styled(format!(" {o} "), on(o == view.model.group_by())),
+            Span::raw(" "),
+        ]
+    }))
+    .collect();
+    let board_chip = |board: Board| {
+        let active = view.model.board_on(board);
+        let style = if !view.model.board_enabled(board) && !active {
             palette.border
         } else {
             on(active)
         };
-        Span::styled(format!(" {label} "), style)
+        Span::styled(format!(" {} ", deck_cards::board_label(board)), style)
     };
-    let boards = Line::from(vec![
-        Span::styled("Boards ", palette.muted.bold()),
-        board_chip("Main", view.boards.main, /* enabled */ true),
-        Span::raw(" "),
-        board_chip("Maybe", view.boards.maybe, has(Board::Maybeboard)),
-        Span::raw(" "),
-        board_chip("Side", view.boards.side, has(Board::Sideboard)),
-    ]);
+    let mut boards = vec![Span::styled(
+        format!("{} ", deck_cards::BOARDS),
+        palette.muted.bold(),
+    )];
+    for (i, board) in deck_cards::BOARD_CHIPS.into_iter().enumerate() {
+        if i > 0 {
+            boards.push(Span::raw(" "));
+        }
+        boards.push(board_chip(board));
+    }
     let show = Line::from(vec![
-        Span::styled("Show ", palette.muted.bold()),
-        Span::styled(" Tokens ", on(view.show_tokens)),
+        Span::styled(format!("{} ", deck_cards::SHOW), palette.muted.bold()),
+        Span::styled(
+            format!(" {} ", deck_cards::TOKENS),
+            on(view.model.show_tokens()),
+        ),
         Span::raw(" "),
-        Span::styled(" Command zone ", on(view.show_zone)),
+        Span::styled(
+            format!(" {} ", deck_cards::COMMAND_ZONE),
+            on(view.model.show_command_zone()),
+        ),
     ]);
     vec![
         Line::from(input),
         dropdown,
         Line::from(group_by),
-        boards,
+        Line::from(boards),
         show,
         Line::default(),
     ]
@@ -216,7 +228,7 @@ fn draw_list(f: &mut Frame<'_>, shared: &Shared, view: &DeckCardsView, area: Rec
             Item::Header {
                 key, title, pips, ..
             } => {
-                let open = !view.collapsed.contains(key);
+                let open = !view.model.is_collapsed(key);
                 let mut spans = vec![
                     pointer(palette, selected),
                     Span::styled(if open { "▾ " } else { "▸ " }, palette.muted),
@@ -284,8 +296,8 @@ fn draw_list(f: &mut Frame<'_>, shared: &Shared, view: &DeckCardsView, area: Rec
             }
         }
     }
-    if view.boards.main && view.display.groups.is_empty() && view.display.lands.is_empty() {
-        lines.push(Line::from("No cards").style(palette.muted));
+    if view.model.no_cards(&view.display) {
+        lines.push(Line::from(deck_cards::NO_CARDS).style(palette.muted));
     }
     let shown = in_view(lines, cursor_line, open_actions, usize::from(area.height));
     f.render_widget(Paragraph::new(shown), area);
@@ -345,10 +357,9 @@ fn row_line(
 ) -> Line<'static> {
     let data = &card.scryfall_data;
     let open = view.expanded == Some(data.id);
-    let entry = view.entry(data.id);
-    let mvp = entry.is_some_and(|e| e.deck_card.mvp_at.is_some()) && kind == Kind::Main;
+    let mvp = view.model.row(data.id).is_some_and(|r| r.mvp) && kind == Kind::Main;
     let quantity = match kind {
-        Kind::Main | Kind::Board(_) => view.quantity(data.id),
+        Kind::Main | Kind::Board(_) => view.model.quantity(data.id),
         Kind::Zone(_) | Kind::Token => 1,
     };
     let mut spans = vec![
@@ -374,7 +385,7 @@ fn row_line(
     if let Some(stats) = stats {
         spans.push(Span::styled(format!("  {stats}"), palette.muted));
     }
-    let currency = view.currency();
+    let currency = view.model.currency();
     if let Some(price) = deck_metrics::card_price(data, currency) {
         spans.push(Span::styled(
             format!("  {}", currency.format_amount(price)),
@@ -405,16 +416,14 @@ fn actions_line(palette: &Palette, view: &DeckCardsView, card: &Card, kind: Kind
     if !card_info::oracle_tags(card).is_empty() {
         keys.push(("Tab", "tags".to_owned()));
     }
-    let board = view
-        .entry(id)
-        .map(|e| e.deck_card.board)
-        .unwrap_or_default();
+    let row = view.model.row(id);
+    let board = row.map(|r| r.board).unwrap_or_default();
     match kind {
         Kind::Main | Kind::Board(_) => {
-            keys.push(("-/+", format!("×{}", view.quantity(id))));
+            keys.push(("-/+", format!("×{}", view.model.quantity(id))));
             keys.push(("p", "printing".to_owned()));
             if kind == Kind::Main {
-                let star = if view.entry(id).is_some_and(|e| e.deck_card.mvp_at.is_some()) {
+                let star = if row.is_some_and(|r| r.mvp) {
                     "unstar"
                 } else {
                     "star"
@@ -450,7 +459,11 @@ fn key_line(palette: &Palette, view: &DeckCardsView, shared: &Shared) -> Line<'s
         ("r", "remove"),
         ("f", filter_label),
     ];
-    if !shared.cards.undo.is_empty(view.deck_id) {
+    if view
+        .model
+        .deck_id()
+        .is_some_and(|id| !shared.cards.undo.is_empty(id))
+    {
         keys.push(("u", "undo"));
     }
     if !view.filter.is_empty() {

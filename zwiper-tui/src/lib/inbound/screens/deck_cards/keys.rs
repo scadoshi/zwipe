@@ -1,13 +1,15 @@
 //! The deck cards view's keys.
 //!
-//! j and k (or the arrows) move through the list; Enter opens a group or a row. On an open row: - and + change the quantity, p changes the printing, s stars, d, m and b move to the main board, maybeboard or sideboard, t flips and i previews; Tab and `BackTab` walk its oracle tags, and while one is open `x` opens its example cards. / types in quick add. g steps Group by, 1 2 3 toggle the boards, T C A toggle tokens, the command zone and art. f filters, x resets the filter, u undoes, a adds, r removes, ? shows the hint, Esc goes back.
+//! j and k (or the arrows) move through the list; Enter opens a group or a row. On an open row: - and + change the quantity, p changes the printing, s stars, d, m and b move to the main board, maybeboard or sideboard, t flips and i previews; Tab and `BackTab` walk its oracle tags, and while one is open `x` opens its example cards. / types in quick add. g steps Group by, 1 2 3 toggle the boards, T C toggle tokens and the command zone. f filters, x resets the filter, u undoes, a adds, r removes, ? shows the hint, Esc goes back.
 
+use chrono::Utc;
 use crossterm::event::KeyCode;
 use zwipe_core::domain::card::search_card::group_cards::GroupByOption;
 use zwipe_core::domain::deck::Board;
 use zwipe_core::domain::user::hints::HINT_DECK_CARDS;
+use zwipe_ui::screens::deck_cards::{Action, QuickAddResults};
 
-use super::{DeckCardsView, Item, Kind, PrintingTarget, Request};
+use super::{DeckCardsView, Item, Kind, dispatch};
 use crate::inbound::app::Context;
 use crate::inbound::screens::card_sheets::filter::SheetOutcome;
 use crate::inbound::screens::card_sheets::printing::PrintingOutcome;
@@ -26,10 +28,10 @@ pub(crate) fn handle(view: &mut DeckCardsView, code: KeyCode, cx: &mut Context<'
         return;
     }
     match code {
-        KeyCode::Esc => view.leave(cx),
+        KeyCode::Esc => dispatch(view, Action::Back, cx),
         KeyCode::Char('!') => help::open(cx),
         KeyCode::Char('q') => {
-            view.flush_all(cx);
+            dispatch(view, Action::Leave, cx);
             cx.quit();
         }
         KeyCode::Down | KeyCode::Char('j') => {
@@ -37,65 +39,50 @@ pub(crate) fn handle(view: &mut DeckCardsView, code: KeyCode, cx: &mut Context<'
             view.cursor = view.cursor.saturating_add(1).min(last);
         }
         KeyCode::Up | KeyCode::Char('k') => view.cursor = view.cursor.saturating_sub(1),
-        KeyCode::Enter | KeyCode::Char(' ') => toggle(view),
-        KeyCode::Char('/') if view.loaded => view.quick.focused = true,
-        KeyCode::Char('g') if view.loaded => {
+        KeyCode::Enter | KeyCode::Char(' ') => toggle(view, cx),
+        KeyCode::Char('/') if view.model.is_loaded() => view.quick.focused = true,
+        KeyCode::Char('g') if view.model.is_loaded() => {
             let options = GroupByOption::all();
             let at = options
                 .iter()
-                .position(|o| *o == view.group_by)
+                .position(|o| *o == view.model.group_by())
                 .unwrap_or_default();
             if let Some(next) =
                 options.get(at.saturating_add(1).checked_rem(options.len()).unwrap_or(0))
             {
-                view.group_by = *next;
+                dispatch(view, Action::PickGroupBy(*next), cx);
             }
-            view.rerun_collapsed();
         }
-        KeyCode::Char('1') => toggle_board(view, Board::Deck),
-        KeyCode::Char('2') => toggle_board(view, Board::Maybeboard),
-        KeyCode::Char('3') => toggle_board(view, Board::Sideboard),
-        KeyCode::Char('T') => view.show_tokens = !view.show_tokens,
-        KeyCode::Char('C') => view.show_zone = !view.show_zone,
-        KeyCode::Char('f') if view.loaded => view.open_filter(cx),
-        KeyCode::Char('x') if !view.filter.is_empty() => view.reset_filter(cx),
+        KeyCode::Char('1') => toggle_board(view, Board::Deck, cx),
+        KeyCode::Char('2') => toggle_board(view, Board::Maybeboard, cx),
+        KeyCode::Char('3') => toggle_board(view, Board::Sideboard, cx),
+        KeyCode::Char('T') => dispatch(view, Action::ToggleTokens, cx),
+        KeyCode::Char('C') => dispatch(view, Action::ToggleCommandZone, cx),
+        KeyCode::Char('f') if view.model.is_loaded() => view.open_filter(cx),
+        KeyCode::Char('x') if !view.filter.is_empty() => dispatch(view, Action::ResetFilter, cx),
         KeyCode::Char('u') => view.undo(cx),
-        KeyCode::Char('a') => view.open_add(cx),
-        KeyCode::Char('r') => view.open_remove(cx),
+        KeyCode::Char('a') if view.model.is_loaded() => dispatch(view, Action::OpenAdd, cx),
+        KeyCode::Char('r') if view.model.is_loaded() => dispatch(view, Action::OpenRemove, cx),
         KeyCode::Char('?') => hint::reopen(cx, HINT_DECK_CARDS),
         _ => row_key(view, code, cx),
     }
 }
 
-/// Whether Maybe or Side can be turned on: only with cards on that board, unless already on.
-fn board_enabled(view: &DeckCardsView, board: Board) -> bool {
-    let on = match board {
-        Board::Deck => return true,
-        Board::Maybeboard => view.boards.maybe,
-        Board::Sideboard => view.boards.side,
-    };
-    on || view.entries.iter().any(|e| e.deck_card.board == board)
-}
-
-fn toggle_board(view: &mut DeckCardsView, board: Board) {
-    if board_enabled(view, board) {
-        view.boards.toggle(board);
-        view.rerun_collapsed();
+/// Turns a Boards chip on or off while the model lets it be tapped.
+fn toggle_board(view: &mut DeckCardsView, board: Board, cx: &mut Context<'_>) {
+    if view.model.board_enabled(board) {
+        dispatch(view, Action::ToggleBoard(board), cx);
     }
 }
 
 /// Enter on a group header collapses it; on a card row it opens or closes the row.
-fn toggle(view: &mut DeckCardsView) {
+fn toggle(view: &mut DeckCardsView, cx: &mut Context<'_>) {
     match view.selected() {
         Some(Item::Header {
             key,
             collapsible: true,
             ..
-        }) => {
-            if !view.collapsed.remove(&key) {
-                view.collapsed.insert(key);
-            }
-        }
+        }) => dispatch(view, Action::ToggleSection(key), cx),
         Some(Item::Card { card, .. }) => {
             let id = card.scryfall_data.id;
             view.expanded = if view.expanded == Some(id) {
@@ -142,7 +129,7 @@ fn row_key(view: &mut DeckCardsView, code: KeyCode, cx: &mut Context<'_>) {
         return;
     };
     let id = card.scryfall_data.id;
-    let board = view.entry(id).map(|e| e.deck_card.board);
+    let board = view.board(id);
     match (code, kind) {
         (KeyCode::Char('t'), _) if card_info::face_count(&card) > 1 => {
             view.face = view
@@ -153,18 +140,37 @@ fn row_key(view: &mut DeckCardsView, code: KeyCode, cx: &mut Context<'_>) {
         }
         (KeyCode::Char('i'), _) => view.preview = Some((Box::new(card), view.face)),
         (KeyCode::Char('-'), Kind::Main | Kind::Board(_)) => {
-            view.change_quantity(cx, id, -1, /* record */ true);
+            dispatch(
+                view,
+                Action::ChangeQuantity {
+                    card_id: id,
+                    delta: -1,
+                },
+                cx,
+            );
         }
         (KeyCode::Char('+' | '='), Kind::Main | Kind::Board(_)) => {
-            view.change_quantity(cx, id, 1, /* record */ true);
+            dispatch(
+                view,
+                Action::ChangeQuantity {
+                    card_id: id,
+                    delta: 1,
+                },
+                cx,
+            );
         }
-        (KeyCode::Char('p'), Kind::Main | Kind::Board(_)) => {
-            view.open_printing(cx, card, PrintingTarget::Deck);
+        (KeyCode::Char('p'), Kind::Main | Kind::Board(_) | Kind::Zone(_)) => {
+            let slot = match kind {
+                Kind::Zone(slot) => Some(slot),
+                Kind::Main | Kind::Board(_) | Kind::Token => None,
+            };
+            let card = Box::new(card);
+            dispatch(view, Action::OpenPrintings { card, slot }, cx);
         }
-        (KeyCode::Char('p'), Kind::Zone(slot)) => {
-            view.open_printing(cx, card, PrintingTarget::Zone(slot));
+        (KeyCode::Char('s'), Kind::Main) => {
+            let now = Utc::now();
+            dispatch(view, Action::ToggleMvp { card_id: id, now }, cx);
         }
-        (KeyCode::Char('s'), Kind::Main) => view.toggle_mvp(cx, id),
         (KeyCode::Char(c @ ('d' | 'm' | 'b')), Kind::Main | Kind::Board(_)) => {
             let target = match c {
                 'd' => Board::Deck,
@@ -172,7 +178,14 @@ fn row_key(view: &mut DeckCardsView, code: KeyCode, cx: &mut Context<'_>) {
                 _ => Board::Sideboard,
             };
             if board.is_some_and(|b| b != target) {
-                view.move_to_board(cx, id, target, /* record */ true);
+                dispatch(
+                    view,
+                    Action::MoveTo {
+                        card_id: id,
+                        board: target,
+                    },
+                    cx,
+                );
             }
         }
         _ => {}
@@ -181,8 +194,8 @@ fn row_key(view: &mut DeckCardsView, code: KeyCode, cx: &mut Context<'_>) {
 
 /// A key in quick add.
 fn quick_key(view: &mut DeckCardsView, code: KeyCode, cx: &mut Context<'_>) {
-    let count = match &view.quick.results {
-        super::Dropdown::Results(results) => results.len(),
+    let count = match view.model.quick_add() {
+        Some(QuickAddResults::Found(results)) => results.len(),
         _ => 0,
     };
     match code {
@@ -198,13 +211,14 @@ fn quick_key(view: &mut DeckCardsView, code: KeyCode, cx: &mut Context<'_>) {
         KeyCode::Enter => view.quick_pick(cx),
         KeyCode::Delete if !view.quick.input.is_empty() => {
             view.quick.input.set_value("");
-            view.quick_edit(cx);
+            dispatch(view, Action::ClearQuickAdd, cx);
         }
         _ => {
             let before = view.quick.input.value().to_owned();
             view.quick.input.handle_key(code);
-            if view.quick.input.value() != before {
-                view.quick_edit(cx);
+            let query = view.quick.input.value().to_owned();
+            if query != before {
+                dispatch(view, Action::Type(query), cx);
             }
         }
     }
@@ -218,8 +232,7 @@ fn overlay_key(view: &mut DeckCardsView, code: KeyCode, cx: &mut Context<'_>) ->
             SheetOutcome::Closed => view.sheet = None,
             SheetOutcome::Applied(filter) => {
                 view.sheet = None;
-                view.filter = *filter;
-                view.rerun_collapsed();
+                view.apply_filter(*filter, cx);
             }
         }
         return true;
@@ -229,22 +242,8 @@ fn overlay_key(view: &mut DeckCardsView, code: KeyCode, cx: &mut Context<'_>) ->
             PrintingOutcome::Open => {}
             PrintingOutcome::Closed => view.printing = None,
             PrintingOutcome::Saved(new_card) => {
-                let old_card = Box::new(printing.card.clone());
                 view.printing = None;
-                let request = match view.printing_target {
-                    PrintingTarget::Deck => Request::Printing {
-                        deck_id: view.deck_id,
-                        old_card,
-                        new_card,
-                    },
-                    PrintingTarget::Zone(slot) => Request::ZonePrinting {
-                        deck_id: view.deck_id,
-                        slot,
-                        new_card,
-                        old_card: Some(old_card),
-                    },
-                };
-                cx.request(request.into());
+                dispatch(view, Action::PickPrinting(new_card), cx);
             }
         }
         return true;

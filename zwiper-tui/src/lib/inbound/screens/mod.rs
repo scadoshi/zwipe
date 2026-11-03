@@ -206,7 +206,7 @@ impl Screen {
             Self::Deck(view) => deck::reload(view, cx),
             Self::DeckCards(view) => {
                 if !returned_from_dictionary(view.sheet.as_mut(), cx) {
-                    view.reload(cx);
+                    view.on_return(cx);
                 }
             }
             Self::DeckForm(form) => form.on_return(cx),

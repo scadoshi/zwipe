@@ -1,5 +1,6 @@
 use crossterm::event::KeyCode;
-use zwipe_core::domain::deck::Format;
+use zwipe_core::domain::card::search_card::group_cards::GroupByOption;
+use zwipe_core::domain::deck::{Format, Quantity};
 
 use super::*;
 use crate::inbound::event_loop::harness::Harness;
@@ -11,14 +12,15 @@ fn typed(name: &str, type_line: &str) -> Card {
     c
 }
 
-/// The view over a commander deck holding a creature, a land and a maybeboard card, loaded.
-fn loaded() -> (Harness, Uuid, Vec<Card>) {
+/// The view over a commander deck holding a creature, a land and a maybeboard card, loaded, after `edit` has had the cards.
+fn loaded_with(edit: impl FnOnce(&mut [Card])) -> (Harness, Uuid, Vec<Card>) {
     let commander = typed("Boss", "Legendary Creature — Goblin");
-    let cards = vec![
+    let mut cards = vec![
         typed("Elf", "Creature — Elf"),
         typed("Forest", "Basic Land — Forest"),
         typed("Maybe", "Instant"),
     ];
+    edit(&mut cards);
     let mut profile = deck_profile("Gobbos");
     profile.format = Some(Format::Commander);
     profile.commander_id = Some(commander.scryfall_data.id);
@@ -29,19 +31,31 @@ fn loaded() -> (Harness, Uuid, Vec<Card>) {
     d.command_zone_cards = vec![commander.clone()];
     let mut harness = Harness::on(Screen::Home(Box::default()));
     harness.open(|cx| open(cx, deck_id));
-    harness.apply(Update::Loaded {
-        deck_id,
-        loaded: Box::new(Loaded {
-            deck: d,
-            profile: None,
-            zone: Zone {
-                commander: Some(commander),
-                ..Zone::default()
-            },
-        }),
-    });
+    serve(
+        &mut harness,
+        d,
+        Zone {
+            commander: Some(commander),
+            ..Zone::default()
+        },
+    );
     harness.clear();
     (harness, deck_id, cards)
+}
+
+fn loaded() -> (Harness, Uuid, Vec<Card>) {
+    loaded_with(|_| {})
+}
+
+/// Answers the newest deck fetch with `deck` and `zone`.
+fn serve(harness: &mut Harness, deck: Deck, zone: Zone) {
+    let ticket = fetch_ticket(harness);
+    harness.apply(Update::Loaded {
+        ticket,
+        profile: None,
+        deck: Box::new(deck),
+        zone: Box::new(zone),
+    });
 }
 
 fn view(harness: &Harness) -> &DeckCardsView {
@@ -58,16 +72,19 @@ fn view_mut(harness: &mut Harness) -> &mut DeckCardsView {
     }
 }
 
-fn last_toast(harness: &Harness) -> String {
+fn toasts(harness: &Harness) -> Vec<String> {
     harness
         .app
         .shared
         .toasts
         .items()
-        .last()
-        .unwrap()
-        .message
-        .clone()
+        .iter()
+        .map(|t| t.message.clone())
+        .collect()
+}
+
+fn last_toast(harness: &Harness) -> String {
+    toasts(harness).last().cloned().unwrap()
 }
 
 fn requests(harness: &Harness) -> Vec<&Request> {
@@ -79,6 +96,55 @@ fn requests(harness: &Harness) -> Vec<&Request> {
             _ => None,
         })
         .collect()
+}
+
+/// The newest deck fetch's ticket.
+fn fetch_ticket(harness: &Harness) -> Ticket {
+    requests(harness)
+        .into_iter()
+        .rev()
+        .find_map(|r| match r {
+            Request::FetchDeck { ticket, .. } => Some(*ticket),
+            _ => None,
+        })
+        .unwrap_or_else(|| panic!("no deck fetch went out: {:?}", harness.pending()))
+}
+
+/// The tickets of the waits that went out, oldest first.
+fn debounces(harness: &Harness) -> Vec<Ticket> {
+    requests(harness)
+        .into_iter()
+        .filter_map(|r| match r {
+            Request::Debounce { ticket, .. } => Some(*ticket),
+            _ => None,
+        })
+        .collect()
+}
+
+/// The ticket of the one request queued, which must be a write or a search.
+fn only_ticket(harness: &Harness) -> Ticket {
+    match requests(harness)[..] {
+        [
+            Request::SearchCards { ticket, .. }
+            | Request::CreateCard { ticket, .. }
+            | Request::PatchCard { ticket, .. }
+            | Request::DeleteCard { ticket, .. }
+            | Request::PatchProfile { ticket, .. },
+        ] => *ticket,
+        ref other => panic!("not one request: {other:?}"),
+    }
+}
+
+/// A deck card the server holds for `card`.
+fn deck_card(deck_id: Uuid, card: &Card, quantity: i32) -> DeckCard {
+    DeckCard {
+        deck_id,
+        scryfall_data_id: card.scryfall_data.id,
+        oracle_id: card.scryfall_data.oracle_id.unwrap(),
+        quantity: Quantity::new(quantity).unwrap(),
+        board: Board::Deck,
+        mvp_at: None,
+    }
 }
 
 /// Moves the cursor onto the row for `name` and opens it.
@@ -98,10 +164,13 @@ fn opening_loads_the_deck_and_tokens() {
     let mut harness = Harness::on(Screen::Home(Box::default()));
     let deck_id = Uuid::new_v4();
     harness.open(|cx| open(cx, deck_id));
-    assert_eq!(
-        requests(&harness),
-        [&Request::Load { deck_id }, &Request::Tokens { deck_id }]
-    );
+    assert!(matches!(
+        requests(&harness)[..],
+        [
+            Request::FetchDeck { deck_id: a, .. },
+            Request::FetchTokens { deck_id: b, .. },
+        ] if *a == deck_id && *b == deck_id
+    ));
     assert!(screen_text(&harness.app).contains("? hint"));
 }
 
@@ -155,24 +224,18 @@ fn a_remembered_filter_says_it_is_active_and_the_hint_shows_once() {
         CardQueryBuilder::with_name_contains("zzz"),
     );
     harness.open(|cx| open(cx, deck_id));
-    harness.apply(Update::Loaded {
-        deck_id,
-        loaded: Box::new(Loaded {
-            deck: d,
-            profile: None,
-            zone: Zone::default(),
-        }),
-    });
+    serve(&mut harness, d, Zone::default());
     assert_eq!(last_toast(&harness), "Filter is active");
     assert_eq!(
         harness.app.shared.hint.as_ref().unwrap().content.title,
         "Browsing your deck"
     );
-    assert!(screen_text(&harness.app).contains("No cards") || harness.app.shared.hint.is_some());
     harness.press(KeyCode::Enter);
+    assert!(screen_text(&harness.app).contains("No cards"));
     harness.press(KeyCode::Char('x'));
     assert_eq!(last_toast(&harness), "Filter reset");
     assert!(view(&harness).filter.is_empty());
+    assert!(!screen_text(&harness.app).contains("No cards"));
 }
 
 #[test]
@@ -182,47 +245,31 @@ fn quantity_taps_gather_into_one_write_and_record_once_written() {
     let id = cards[0].scryfall_data.id;
     harness.press(KeyCode::Char('+'));
     harness.press(KeyCode::Char('+'));
-    assert_eq!(view(&harness).quantity(id), 3, "applied at once");
-    let timers: Vec<u64> = requests(&harness)
-        .iter()
-        .filter_map(|r| match r {
-            Request::FlushTimer { generation, .. } => Some(*generation),
-            _ => None,
-        })
-        .collect();
-    assert_eq!(timers, [1, 2]);
+    assert_eq!(view(&harness).model.quantity(id), 3, "applied at once");
+    let [first, second] = debounces(&harness)[..] else {
+        panic!("one wait per tap");
+    };
     harness.clear();
-    harness.apply(Update::FlushDue {
-        deck_id,
-        card_id: id,
-        generation: 1,
-    });
-    assert_eq!(
-        requests(&harness).len(),
-        0,
-        "an older tap's timer does nothing"
+    harness.apply(Update::Debounced { ticket: first });
+    assert!(
+        requests(&harness).is_empty(),
+        "an older tap's wait does nothing"
     );
-    harness.apply(Update::FlushDue {
-        deck_id,
-        card_id: id,
-        generation: 2,
-    });
-    let [Request::WriteQuantity { burst, .. }] = requests(&harness)[..] else {
+    harness.apply(Update::Debounced { ticket: second });
+    let [Request::PatchCard { body, .. }] = requests(&harness)[..] else {
         panic!("one write");
     };
-    assert_eq!(burst.write(), Write::Set(3));
-    let burst = *burst;
-    harness.apply(Update::QuantityWritten {
-        deck_id,
-        card_id: id,
-        card_name: "Elf".to_owned(),
-        burst,
+    assert_eq!(*body, Body(Box::new(HttpPatchDeckCard::new(Some(3), None))));
+    let ticket = only_ticket(&harness);
+    harness.apply(Update::Patched {
+        ticket,
+        deck_card: Box::new(deck_card(deck_id, &cards[0], 3)),
     });
     assert_eq!(harness.app.shared.cards.undo.log(deck_id).len(), 1);
 
     harness.press(KeyCode::Char('u'));
     assert_eq!(last_toast(&harness), "Elf back to ×1");
-    assert_eq!(view(&harness).quantity(id), 1);
+    assert_eq!(view(&harness).model.quantity(id), 1);
 }
 
 #[test]
@@ -231,37 +278,27 @@ fn minus_at_one_removes_the_row_and_a_failed_delete_puts_it_back() {
     open_row(&mut harness, "Forest");
     let id = cards[1].scryfall_data.id;
     harness.press(KeyCode::Char('-'));
-    let messages: Vec<String> = harness
-        .app
-        .shared
-        .toasts
-        .items()
-        .iter()
-        .map(|t| t.message.clone())
-        .collect();
+    let messages = toasts(&harness);
     assert!(messages.contains(&"Card removed".to_owned()));
     assert!(messages.contains(&"Below land target (1)".to_owned()));
-    assert!(view(&harness).entry(id).is_none());
-    harness.clear();
-    harness.apply(Update::FlushDue {
-        deck_id,
-        card_id: id,
-        generation: 1,
-    });
-    let [Request::WriteQuantity { burst, removed, .. }] = requests(&harness)[..] else {
-        panic!("one write");
+    assert!(view(&harness).model.row(id).is_none());
+    let [wait] = debounces(&harness)[..] else {
+        panic!("one wait");
     };
-    let (burst, removed) = (*burst, removed.clone());
-    assert_eq!(burst.write(), Write::Delete);
-    harness.apply(Update::QuantityFailed {
-        deck_id,
-        card_id: id,
-        burst,
-        removed,
-        message: "offline".to_owned(),
+    harness.clear();
+    harness.apply(Update::Debounced { ticket: wait });
+    assert!(matches!(
+        requests(&harness)[..],
+        [Request::DeleteCard { card_id, .. }] if *card_id == id
+    ));
+    let ticket = only_ticket(&harness);
+    harness.apply(Update::Failed {
+        ticket,
+        message: Some("offline".to_owned()),
     });
     assert_eq!(last_toast(&harness), "offline");
-    assert_eq!(view(&harness).quantity(id), 1, "the row is back");
+    assert_eq!(view(&harness).model.quantity(id), 1, "the row is back");
+    assert!(view(&harness).model.row(id).is_some());
     assert!(
         harness.app.shared.cards.undo.is_empty(deck_id),
         "its undo entry is dropped"
@@ -274,24 +311,18 @@ fn moves_stars_and_undo_reverse_in_order() {
     open_row(&mut harness, "Elf");
     let id = cards[0].scryfall_data.id;
     harness.press(KeyCode::Char('s'));
-    assert!(view(&harness).entry(id).unwrap().deck_card.mvp_at.is_some());
+    assert!(view(&harness).model.row(id).unwrap().mvp);
     assert!(screen_text(&harness.app).contains("MVP"));
+    harness.clear();
     harness.press(KeyCode::Char('b'));
     assert_eq!(last_toast(&harness), "Moved to sideboard");
-    assert_eq!(
-        view(&harness).entry(id).unwrap().deck_card.board,
-        Board::Sideboard
-    );
-    harness.apply(Update::MoveFailed {
-        deck_id,
-        card_id: id,
-        from: Board::Deck,
-        message: "nope".to_owned(),
+    assert_eq!(view(&harness).board(id), Some(Board::Sideboard));
+    let ticket = only_ticket(&harness);
+    harness.apply(Update::Failed {
+        ticket,
+        message: Some("nope".to_owned()),
     });
-    assert_eq!(
-        view(&harness).entry(id).unwrap().deck_card.board,
-        Board::Deck
-    );
+    assert_eq!(view(&harness).board(id), Some(Board::Deck));
     harness.press(KeyCode::Char('u'));
     assert_eq!(last_toast(&harness), "Elf back to deck");
     harness.press(KeyCode::Char('u'));
@@ -317,47 +348,39 @@ fn quick_add_waits_searches_and_adds() {
     let (mut harness, deck_id, _) = loaded();
     harness.press(KeyCode::Char('/'));
     harness.type_text("g");
-    assert_eq!(
-        view(&harness).quick.results,
-        Dropdown::Closed,
-        "one letter waits"
-    );
+    assert_eq!(view(&harness).model.quick_add(), None, "one letter waits");
     harness.type_text("o");
-    assert_eq!(view(&harness).quick.results, Dropdown::Searching);
-    let generation = view(&harness).quick.generation.current();
+    assert_eq!(
+        view(&harness).model.quick_add(),
+        Some(QuickAddResults::Searching)
+    );
+    let [wait] = debounces(&harness)[..] else {
+        panic!("one wait");
+    };
     harness.clear();
-    harness.apply(Update::QuickDue {
-        deck_id,
-        generation,
-    });
+    harness.apply(Update::Debounced { ticket: wait });
     assert!(matches!(
         requests(&harness)[..],
-        [Request::QuickSearch { .. }]
+        [Request::SearchCards { .. }]
     ));
     let goblin = card("Goblin Guide");
-    harness.apply(Update::QuickResults {
-        deck_id,
-        generation,
-        cards: Some(vec![goblin.clone()]),
+    harness.apply(Update::Searched {
+        ticket: only_ticket(&harness),
+        cards: vec![goblin.clone()],
     });
     assert!(screen_text(&harness.app).contains("Goblin Guide"));
     harness.clear();
     harness.press(KeyCode::Enter);
-    assert!(matches!(requests(&harness)[..], [Request::QuickAdd { .. }]));
-    let deck_card = DeckCard {
-        deck_id,
-        scryfall_data_id: goblin.scryfall_data.id,
-        oracle_id: goblin.scryfall_data.oracle_id.unwrap(),
-        quantity: Quantity::new(1).unwrap(),
-        board: Board::Deck,
-        mvp_at: None,
-    };
-    harness.apply(Update::QuickAdded {
-        deck_id,
-        entry: Box::new(DeckEntry {
-            card: goblin,
-            deck_card,
-        }),
+    assert!(matches!(
+        requests(&harness)[..],
+        [Request::CreateCard {
+            op: Op::QuickAddCard,
+            ..
+        }]
+    ));
+    harness.apply(Update::Created {
+        ticket: only_ticket(&harness),
+        deck_card: Box::new(deck_card(deck_id, &goblin, 1)),
     });
     assert_eq!(last_toast(&harness), "Added Goblin Guide");
     harness.press(KeyCode::Esc);
@@ -366,25 +389,125 @@ fn quick_add_waits_searches_and_adds() {
 }
 
 #[test]
+fn a_late_or_repeated_quick_add_reply_changes_nothing() {
+    let (mut harness, _, _) = loaded();
+    harness.press(KeyCode::Char('/'));
+    harness.type_text("go");
+    let [first] = debounces(&harness)[..] else {
+        panic!("one wait");
+    };
+    harness.clear();
+    harness.apply(Update::Debounced { ticket: first });
+    let search = only_ticket(&harness);
+    harness.clear();
+    harness.type_text("b");
+    harness.apply(Update::Searched {
+        ticket: search,
+        cards: vec![card("Goblin Guide")],
+    });
+    assert_eq!(
+        view(&harness).model.quick_add(),
+        Some(QuickAddResults::Searching),
+        "a search for an older query does not land"
+    );
+    harness.apply(Update::Debounced { ticket: first });
+    assert!(
+        requests(&harness)
+            .iter()
+            .all(|r| !matches!(r, Request::SearchCards { .. })),
+        "an older pause sends no search"
+    );
+}
+
+#[test]
+fn a_late_or_repeated_deck_reply_changes_nothing() {
+    let gobbos = deck(deck_profile("Gobbos"), vec![card("Elf")]);
+    let deck_id = gobbos.deck_profile.id;
+    let mut stranger = deck(deck_profile("Other"), vec![card("Stranger")]);
+    stranger.deck_profile.id = deck_id;
+    let mut harness = Harness::on(Screen::Home(Box::default()));
+    harness.open(|cx| open(cx, deck_id));
+    let first = fetch_ticket(&harness);
+    serve(&mut harness, gobbos, Zone::default());
+    let reply = |ticket| Update::Loaded {
+        ticket,
+        profile: None,
+        deck: Box::new(stranger.clone()),
+        zone: Box::new(Zone::default()),
+    };
+    harness.apply(reply(first));
+    assert!(
+        !screen_text(&harness.app).contains("Stranger"),
+        "a repeated reply changes nothing"
+    );
+
+    harness.press(KeyCode::Char('r'));
+    harness.press(KeyCode::Esc);
+    assert!(matches!(harness.screen(), Screen::DeckCards(_)));
+    let second = fetch_ticket(&harness);
+    assert_ne!(first, second);
+    harness.apply(reply(first));
+    assert!(
+        !view(&harness).model.is_loaded(),
+        "a reply to the load before the return does not land"
+    );
+    let mut fresh = deck(deck_profile("Gobbos"), vec![card("Elf"), card("Orc")]);
+    fresh.deck_profile.id = deck_id;
+    serve(&mut harness, fresh, Zone::default());
+    let text = screen_text(&harness.app);
+    assert!(text.contains("Orc") && !text.contains("Stranger"), "{text}");
+}
+
+#[test]
+fn add_writes_waiting_taps_and_its_return_loads_the_deck_again() {
+    let (mut harness, _, cards) = loaded();
+    open_row(&mut harness, "Elf");
+    harness.press(KeyCode::Char('+'));
+    harness.clear();
+    harness.press(KeyCode::Char('a'));
+    assert!(matches!(harness.screen(), Screen::Swipe(_)));
+    assert!(requests(&harness).iter().any(|r| matches!(
+        r,
+        Request::Flush { card_id, write: Write::Set(2), .. } if *card_id == cards[0].scryfall_data.id
+    )));
+    harness.clear();
+    harness.press(KeyCode::Esc);
+    assert!(matches!(harness.screen(), Screen::DeckCards(_)));
+    assert!(
+        requests(&harness)
+            .iter()
+            .any(|r| matches!(r, Request::FetchDeck { .. })),
+        "Add's return loads the deck again"
+    );
+}
+
+#[test]
 fn group_by_boards_and_show_toggle() {
     let (mut harness, _, _) = loaded();
     harness.press(KeyCode::Char('g'));
-    assert_eq!(view(&harness).group_by, GroupByOption::Cmc);
+    assert_eq!(view(&harness).model.group_by(), GroupByOption::Cmc);
     harness.press(KeyCode::Char('3'));
-    assert!(!view(&harness).boards.side, "no sideboard cards to show");
+    assert!(
+        !view(&harness).model.board_on(Board::Sideboard),
+        "no sideboard cards to show"
+    );
     harness.press(KeyCode::Char('2'));
     assert!(screen_text(&harness.app).contains("Maybeboard (1)"));
     harness.press(KeyCode::Char('1'));
     harness.press(KeyCode::Char('2'));
     assert!(
-        view(&harness).boards.main,
+        view(&harness).model.board_on(Board::Deck),
         "the last board snaps back to Main"
     );
     harness.press(KeyCode::Char('C'));
     assert!(!screen_text(&harness.app).contains("Commander ("));
     view_mut(&mut harness).cursor = 0;
     harness.press(KeyCode::Enter);
-    assert!(!view(&harness).collapsed.is_empty() || view(&harness).expanded.is_some());
+    let first = view(&harness).items().into_iter().next();
+    assert!(
+        matches!(&first, Some(Item::Header { key, .. }) if view(&harness).model.is_collapsed(key))
+            || view(&harness).expanded.is_some()
+    );
 }
 
 #[test]
@@ -407,13 +530,23 @@ fn the_filter_and_printing_sheets_open_and_esc_leaves() {
     harness.press(KeyCode::Char('l'));
     harness.press(KeyCode::Char('s'));
     assert_eq!(last_toast(&harness), "Printing saved");
-    assert!(matches!(requests(&harness)[..], [Request::Printing { .. }]));
-    harness.apply(Update::PrintingSaved {
-        deck_id,
-        old_card: Box::new(cards[0].clone()),
-        new_card: Box::new(other.clone()),
+    assert!(matches!(
+        requests(&harness)[..],
+        [Request::PatchCard {
+            op: Op::ChangePrinting,
+            ..
+        }]
+    ));
+    harness.apply(Update::Patched {
+        ticket: only_ticket(&harness),
+        deck_card: Box::new(deck_card(deck_id, &other, 1)),
     });
-    assert!(view(&harness).entry(other.scryfall_data.id).is_some());
+    assert!(view(&harness).model.row(other.scryfall_data.id).is_some());
+    assert_eq!(
+        view(&harness).expanded,
+        Some(other.scryfall_data.id),
+        "the open row stays open on its new printing"
+    );
     harness.press(KeyCode::Char('u'));
     assert_eq!(last_toast(&harness), "Elf printing restored");
     harness.press(KeyCode::Esc);
@@ -453,18 +586,12 @@ fn the_filter_sheets_dictionary_returns_to_the_sheet_without_a_reload() {
 
 #[test]
 fn an_open_rows_tags_reveal_with_tab_and_x_opens_their_examples() {
-    let (mut harness, _, _) = loaded();
-    if let Some(entry) = view_mut(&mut harness)
-        .entries
-        .iter_mut()
-        .find(|e| e.card.scryfall_data.name == "Elf")
-    {
-        let profile = &mut entry.card.card_profile;
+    let (mut harness, _, _) = loaded_with(|cards| {
+        let profile = &mut cards[0].card_profile;
         profile.card_roles.clear();
         profile.oracle_tags_by_role.clear();
         profile.other_oracle_tags = vec!["mana-dork".to_owned()];
-    }
-    view_mut(&mut harness).rerun_collapsed();
+    });
     open_row(&mut harness, "Elf");
     assert!(screen_text(&harness.app).contains("Tab tags"));
     harness.press(KeyCode::Tab);
@@ -472,6 +599,12 @@ fn an_open_rows_tags_reveal_with_tab_and_x_opens_their_examples() {
     assert!(screen_text(&harness.app).contains("No description yet"));
     harness.press(KeyCode::Char('x'));
     assert!(matches!(harness.screen(), Screen::OtagExamples(v) if v.model.slug() == "mana-dork"));
+    harness.clear();
+    harness.press(KeyCode::Esc);
+    assert!(
+        requests(&harness).is_empty(),
+        "the examples' return keeps the view as it was"
+    );
 }
 
 #[test]
