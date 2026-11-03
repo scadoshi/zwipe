@@ -10,7 +10,7 @@ These were settled with the owner before the per-screen review. A screen breaks 
 
 ### Navigation
 
-- The app gets the web's folded nav, the same `NavBar` from the kit: the screen's title with its `?` in the middle and the hamburger at the top right. No Z mark (owner, 2026-11-03): Home is the menu's first entry and Home's hero carries the logo, so the left corner is empty on Home and the auth screens and holds the back arrow everywhere else. zwiper-web's narrow view drops its Z mark the same way; zite keeps its own. Tapping the hamburger drops down the list of sections as buttons, exactly as the web does below 900px.
+- The app gets the web's folded nav, the same `NavBar` from the kit: the screen's title with its `?` in the middle and the hamburger at the top right. No Z mark (owner, 2026-11-03): Home is the menu's first entry and Home's hero carries the logo, so the left corner is empty on Home and the auth screens and holds the back arrow everywhere else. zwiper-web's and zite's narrow views drop their Z mark the same way; zite keeps it on wide windows. Tapping the hamburger drops down the list of sections as buttons, exactly as the web does below 900px.
 - The menu lists, signed in: Home, Decks, Playstyle, Commander maybeboard, Activity, Account, Settings and About, one list with no rule. Under them a small bottom row holds a `!` for Help & feedback and a small Log out, not full menu items.
 - Account and Settings (today's Config) stay two screens. Log out is also in Account's danger zone.
 - The menu looks exactly like the web's folded nav: a full-width panel dropping from the header, items stacked, the current one lit.
@@ -67,7 +67,7 @@ What zwiper-web and zite change to match, kept as the app changes. Items marked 
 - zwiper-web narrow view: no Z mark, a back arrow on screens below a section, the same menu (Home first, Help & feedback and Log out in its footer), no page footers, and the action docks, floating Cards, Data and Danger zone panels, Settings and About as in the app.
 - zwiper-web narrow view: the swipe screens' layout (pile chips on the bottom row beside the dock, only prices under the card, Synergy as the dock's link icon, the From toggle chip).
 - zwiper-web: Config's route becomes `/settings`; screen titles come from zwipe-ui, so Add, Remove, Cards and Settings arrive with the next merge of main.
-- zite: keeps its Z mark and marketing nav; it takes only the kit items above.
+- zite: at phone width its nav drops the Z mark, as the app's does (owner, 2026-11-03); wide windows keep it as the marketing site's brand. Otherwise it takes the kit items above.
 
 ## At release
 
