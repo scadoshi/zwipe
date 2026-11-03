@@ -54,6 +54,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Create floats over the deck list",
         "Decks drops its More menu; Commander maybeboard and Playstyle are in the main menu",
         "The deck view's actions sit on the page: Edit, Clone and Share as icons by the profile, the store links in Budget, and Import, Export, Clear skips and Delete at the bottom",
+        "Account ends with a Danger zone panel for Log out and Delete account",
     ],
 }];
 
