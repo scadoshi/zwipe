@@ -62,6 +62,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Card details from the eye include the release date and artist",
         "Synergy on Add is a link icon beside the filter",
         "Add switches between Search and Maybe with one chip after From",
+        "Add deck cards, Remove deck cards and Deck cards are titled Add, Remove and Cards",
         "Create and Edit deck save from a checkmark at the bottom right",
     ],
 }];
