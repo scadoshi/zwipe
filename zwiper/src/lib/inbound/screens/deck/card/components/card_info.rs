@@ -169,19 +169,12 @@ pub(crate) fn PrintingSheetSkeleton() -> Element {
     }
 }
 
-/// Skeleton placeholder for when no card is loaded.
+/// Skeleton placeholder for when no card is loaded. It carries no text: an empty pile is said with a toast.
 #[component]
-pub(crate) fn CardSkeleton(#[props(default = false)] is_loading: bool) -> Element {
+pub(crate) fn CardSkeleton() -> Element {
     rsx! {
         div { class: "skeleton-card",
-            // While a search is in flight the image area stays a plain ghost
-            // block (no spinner); "No cards" only when a finished search is
-            // genuinely empty.
-            div { class: "skeleton-image",
-                if !is_loading {
-                    "No cards"
-                }
-            }
+            div { class: "skeleton-image" }
             div { class: "skeleton-info",
                 div { class: "skeleton-bar skeleton-bar-name" }
                 div { class: "skeleton-bar skeleton-bar-price" }

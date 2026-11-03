@@ -4,8 +4,6 @@
 //! file draws its state, performs its effects and keeps the gestures, the
 //! card's entrance, image easing and the sheets.
 
-use std::cell::Cell;
-
 use components::{
     ActionBar, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintDialog, HintKey, HintLine,
     ToastOptions, Toasts, use_toast,
@@ -35,6 +33,7 @@ use crate::inbound::components::hint_dialog::{self, HintColored};
 use crate::inbound::components::interactions::swipe::SwipeStack;
 use crate::inbound::components::interactions::swipe::config::SwipeConfig;
 use crate::inbound::components::interactions::swipe::direction::Direction;
+use crate::inbound::components::on_bump::use_on_bump;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::flush_loop;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
@@ -586,12 +585,7 @@ pub fn Add(deck_id: Uuid) -> Element {
 
     // Every bump after the first render is an applied filter or a rerun the
     // model asked for: hand the filter to the model.
-    let first_run = use_hook(|| Cell::new(true));
-    use_effect(move || {
-        let _ = filter_reset_counter();
-        if first_run.replace(false) {
-            return;
-        }
+    use_on_bump(filter_reset_counter, move || {
         let filter = filter_builder.peek().clone();
         driver.dispatch(Action::Filter(filter));
     });
@@ -745,8 +739,6 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 },
                                 CardSkeleton {}
                             }
-                        } else if pile == Pile::Loading {
-                            CardSkeleton { is_loading: true }
                         } else {
                             CardSkeleton {}
                         }

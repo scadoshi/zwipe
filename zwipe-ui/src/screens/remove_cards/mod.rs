@@ -71,6 +71,15 @@ pub const ALREADY_CHANGED: &str = "Already changed";
 /// The toast for Refresh.
 pub const STACK_REFRESHED: &str = "Stack refreshed";
 
+/// The toast when the last card is swiped.
+pub const NO_MORE_CARDS: &str = "No more cards";
+
+/// The toast when the picked boards hold no cards.
+pub const NO_CARDS_ON_BOARDS: &str = "No cards on these boards";
+
+/// The toast when the filter matches no card on the picked boards.
+pub const NO_MATCHES: &str = "No cards match your filters";
+
 /// Where an action sends the user. The client maps each to its own route.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Destination {
@@ -398,11 +407,28 @@ impl State {
         Self::default()
     }
 
-    /// Applies `action` and returns what the client must do, in order.
+    /// Applies `action` and returns what the client must do, in order. When the pile turns empty it says so with a toast.
     ///
     /// A reply whose request is no longer waiting changes nothing.
     #[must_use = "the client performs the effects"]
     pub fn update(&mut self, action: Action) -> Vec<Effect> {
+        let swiped = matches!(action, Action::Keep | Action::Remove | Action::Move);
+        let before = self.status();
+        let mut effects = self.apply(action);
+        if before != Status::Empty && self.status() == Status::Empty {
+            let line = if swiped {
+                NO_MORE_CARDS
+            } else if self.filter.is_empty() {
+                NO_CARDS_ON_BOARDS
+            } else {
+                NO_MATCHES
+            };
+            effects.push(Effect::Toast(Toast::quick(ToastKind::Info, line)));
+        }
+        effects
+    }
+
+    fn apply(&mut self, action: Action) -> Vec<Effect> {
         match action {
             Action::Load { deck_id, filter } => self.load(deck_id, filter),
             Action::Loaded { ticket, deck } => {

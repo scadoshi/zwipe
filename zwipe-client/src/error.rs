@@ -18,6 +18,7 @@ use std::sync::Arc;
 
 use reqwest::StatusCode;
 use thiserror::Error;
+use zwipe_core::text::sentence_case;
 
 /// Errors surfaced by API client calls.
 #[derive(Debug, Error, Clone)]
@@ -82,21 +83,21 @@ impl ClientError {
         }
     }
 
-    /// Returns a safe, user-facing message: never leaks internal details like URLs or stack traces.
+    /// Returns a safe, user-facing message in sentence case: never leaks internal details like URLs or stack traces. The server's own lowercase message gets its first letter capitalized.
     pub fn to_user_message(&self) -> String {
         match self {
             ClientError::Network(_) => {
-                "connection error, check your network and try again".to_string()
+                "Connection error, check your network and try again".to_string()
             }
             ClientError::BadRequest(_)
             | ClientError::Decode(_)
             | ClientError::InternalServerError(_) => {
-                "something went wrong, please try again".to_string()
+                "Something went wrong, please try again".to_string()
             }
             ClientError::PayloadTooLarge(_) => {
-                "request too large, try importing fewer cards".to_string()
+                "Request too large, try importing fewer cards".to_string()
             }
-            other => other.to_string(),
+            other => sentence_case(&other.to_string()),
         }
     }
 }
@@ -188,14 +189,17 @@ mod tests {
         ));
         assert_eq!(
             error.to_user_message(),
-            "request too large, try importing fewer cards"
+            "Request too large, try importing fewer cards"
         );
     }
 
     #[test]
-    fn wire_messages_pass_through_verbatim() {
+    fn wire_messages_pass_through_in_sentence_case() {
         let error = ClientError::from((StatusCode::NOT_FOUND, "Deck Not Found".to_string()));
         assert_eq!(error.to_user_message(), "Deck Not Found");
+        let error =
+            ClientError::from((StatusCode::CONFLICT, "username already in use".to_string()));
+        assert_eq!(error.to_user_message(), "Username already in use");
     }
 
     /// Internal detail, transport noise, and decode noise all collapse to
@@ -205,7 +209,7 @@ mod tests {
         let internal = ClientError::InternalServerError("pg pool timeout".into());
         assert_eq!(
             internal.to_user_message(),
-            "something went wrong, please try again"
+            "Something went wrong, please try again"
         );
 
         let network = ClientError::from(
@@ -216,14 +220,14 @@ mod tests {
         );
         assert_eq!(
             network.to_user_message(),
-            "connection error, check your network and try again"
+            "Connection error, check your network and try again"
         );
 
         let decode =
             ClientError::from(serde_json::from_str::<u32>("\"missing field\"").unwrap_err());
         assert_eq!(
             decode.to_user_message(),
-            "something went wrong, please try again"
+            "Something went wrong, please try again"
         );
 
         let bad_request = ClientError::BadRequest(
@@ -231,11 +235,11 @@ mod tests {
         );
         assert_eq!(
             bad_request.to_user_message(),
-            "something went wrong, please try again"
+            "Something went wrong, please try again"
         );
 
         let four_xx = ClientError::UnprocessableEntity("deck name cannot be empty".into());
-        assert_eq!(four_xx.to_user_message(), "deck name cannot be empty");
+        assert_eq!(four_xx.to_user_message(), "Deck name cannot be empty");
     }
 
     /// Every status variant reports the status it was built from, so a

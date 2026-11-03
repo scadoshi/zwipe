@@ -442,8 +442,6 @@ pub(crate) fn SwipeSelect(
                         if let Some(card) = current_card.clone() {
                             CardInfoDisplay { card }
                         }
-                    } else if status == Status::Loading {
-                        CardSkeleton { is_loading: true }
                     } else if let Some(line) = empty_line {
                         div { class: "message-empty",
                             span { class: "chip-note", "{line}" }

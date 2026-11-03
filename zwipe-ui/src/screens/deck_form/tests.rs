@@ -255,7 +255,7 @@ fn the_name_error_shows_once_the_name_held_text() {
     let _ = state.update(Action::SetName(String::new()));
     assert_eq!(
         state.name_error(),
-        Some("deck name minimum length is 1 character")
+        Some("Deck name minimum length is 1 character")
     );
 }
 
@@ -265,7 +265,7 @@ fn save_refuses_a_bad_name_inline() {
     assert!(state.update(Action::Save).is_empty());
     assert_eq!(
         state.name_error(),
-        Some("deck name minimum length is 1 character")
+        Some("Deck name minimum length is 1 character")
     );
     assert!(!state.is_saving());
 }

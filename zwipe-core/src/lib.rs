@@ -6,6 +6,7 @@ pub mod domain;
 pub mod http;
 pub mod legal;
 pub mod serde_helpers;
+pub mod text;
 pub mod version;
 
 #[cfg(test)]

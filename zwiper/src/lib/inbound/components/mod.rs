@@ -30,6 +30,8 @@ pub mod interactions;
 pub mod logout_dialog;
 /// Navigation plumbing (OS back-intent bridge).
 pub mod navigation;
+/// Runs a closure on each counter bump after mount.
+pub mod on_bump;
 /// Shared screen header (centered title + optional "?" hint trigger).
 pub mod screen_header;
 /// Global floating help/support button + bottom sheet.
