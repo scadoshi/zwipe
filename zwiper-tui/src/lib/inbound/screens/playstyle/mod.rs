@@ -781,3 +781,27 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
     };
     dispatch(view, action, cx);
 }
+
+/// The newest ticket among Playstyle's requests in `sent` that `pick` takes.
+#[cfg(test)]
+pub(crate) fn sent_ticket<'a>(
+    sent: impl IntoIterator<Item = &'a screens::Request>,
+    pick: impl Fn(&Request) -> Option<Ticket>,
+) -> Ticket {
+    sent.into_iter()
+        .filter_map(|r| match r {
+            screens::Request::Playstyle(r) => pick(r),
+            _ => None,
+        })
+        .last()
+        .unwrap_or_else(|| panic!("Playstyle sent no such request"))
+}
+
+/// The ticket the newest Playstyle load in `sent` went out with.
+#[cfg(test)]
+pub(crate) fn load_ticket<'a>(sent: impl IntoIterator<Item = &'a screens::Request>) -> Ticket {
+    sent_ticket(sent, |r| match r {
+        Request::Load { ticket } => Some(*ticket),
+        _ => None,
+    })
+}

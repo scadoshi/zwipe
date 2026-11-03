@@ -78,19 +78,19 @@ fn fields_validate_live_once_they_have_held_something() {
     harness.type_text("ab");
     assert_eq!(
         form(&harness).username.error(),
-        Some("must be at least 3 characters long")
+        Some("Must be at least 3 characters long")
     );
     harness.type_text("c");
     assert_eq!(form(&harness).username.error(), None);
     harness.press(KeyCode::Tab);
     assert_eq!(form(&harness).email.error(), None, "untouched");
     harness.type_text("me");
-    assert_eq!(form(&harness).email.error(), Some("missing @ symbol"));
+    assert_eq!(form(&harness).email.error(), Some("Missing @ symbol"));
     harness.press(KeyCode::Tab);
     harness.type_text("short");
     assert_eq!(
         form(&harness).password.error(),
-        Some("must be at least 8 characters long")
+        Some("Must be at least 8 characters long")
     );
 }
 
@@ -291,7 +291,7 @@ fn the_screen_shows_its_fields_and_buttons_and_fits_a_tiny_terminal() {
         "Email",
         "Password [?]",
         "Confirm password",
-        "must be at least 3 characters long",
+        "Must be at least 3 characters long",
     ] {
         assert!(screen.contains(text), "{text}");
     }

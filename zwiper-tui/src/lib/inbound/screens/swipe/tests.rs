@@ -563,6 +563,17 @@ fn the_filter_sheet_opens_applies_and_refetches() {
 }
 
 #[test]
+fn refresh_reruns_the_search() {
+    let (mut harness, _) = Harness::swiping(vec![card("A")]);
+    harness.press(KeyCode::Char('r'));
+    assert!(
+        matches!(requests(&harness)[..], [Request::Search { .. }]),
+        "{:?}",
+        harness.pending()
+    );
+}
+
+#[test]
 fn details_open_printings_and_a_saved_printing_replaces_the_card() {
     let a = card("A");
     let (mut harness, _) = Harness::swiping(vec![a.clone()]);

@@ -609,7 +609,7 @@ mod tests {
         ));
         assert!(matches!(
             failure(&ClientError::NotFound("gone".to_owned()), toast),
-            Update::Toast(ToastKind::Error, m) if m == "gone"
+            Update::Toast(ToastKind::Error, m) if m == "Gone"
         ));
     }
 

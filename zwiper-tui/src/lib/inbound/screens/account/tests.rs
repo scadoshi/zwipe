@@ -173,10 +173,10 @@ fn a_reply_to_an_earlier_visit_never_lands_in_a_later_one() {
     harness.press(KeyCode::Esc);
     harness.press(KeyCode::Char('a'));
     assert_ne!(view(&harness).visit, earlier);
-    assert_eq!(
+    assert_ne!(
         last_ticket(&harness),
         ticket,
-        "both visits' fetches hold the same ticket"
+        "each visit's fetch holds its own ticket"
     );
     harness.apply(Update {
         visit: earlier,
@@ -198,7 +198,7 @@ fn a_bad_username_shows_live_and_a_good_one_is_sent_as_typed() {
     };
     assert_eq!(
         form.inputs[0].error(),
-        Some("must be at least 3 characters long")
+        Some("Must be at least 3 characters long")
     );
     harness.type_text("cdef");
     harness.press(KeyCode::Enter);

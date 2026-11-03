@@ -20,7 +20,7 @@ use crate::inbound::event_loop::harness::Harness;
 use crate::inbound::screens::playstyle::{self, PlaystyleView};
 use crate::inbound::widgets::hint;
 use crate::inbound::widgets::toast::Toast;
-use crate::test_support::{card, create_opened_with, render, screen_text, ticket, user};
+use crate::test_support::{card, create_opened_with, render, screen_text, user};
 
 /// The pick toast.
 const SELECTED: &str = "Commander selected";
@@ -75,7 +75,7 @@ fn swiping_with(held: Vec<HttpCommanderSuggestion>) -> Harness {
     harness.app.shared.user = Some(seen_user());
     harness.open(playstyle::open);
     harness.apply(playstyle::Update::Loaded {
-        ticket: ticket(1),
+        ticket: playstyle::load_ticket(harness.sent()),
         found: Box::new(HttpCommanderSuggestions {
             suggestions: held,
             deck_count: 4,
@@ -176,7 +176,7 @@ fn s_deals_the_held_list_under_the_show_rows_identity() {
     harness.open(playstyle::open);
     harness.app.shared.hint = None;
     harness.apply(playstyle::Update::Loaded {
-        ticket: ticket(1),
+        ticket: playstyle::load_ticket(harness.sent()),
         found: Box::new(HttpCommanderSuggestions {
             suggestions: held(),
             deck_count: 4,
@@ -244,9 +244,12 @@ fn right_selects_closes_and_starts_a_deck_and_the_host_refetches() {
             .any(|t| t.kind == ToastKind::Success && t.message == SELECTED)
     );
     assert!(
-        harness
-            .pending()
-            .contains(&playstyle::Request::Load { ticket: ticket(2) }.into()),
+        harness.pending().contains(
+            &playstyle::Request::Load {
+                ticket: playstyle::load_ticket(harness.sent())
+            }
+            .into()
+        ),
         "closing the swipe refetches the list"
     );
 }
@@ -336,6 +339,16 @@ fn left_in_suggested_dismisses_quietly_and_undo_lifts_it() {
 }
 
 #[test]
+fn swiping_past_the_last_card_toasts_that_none_are_left() {
+    let mut harness = swiping_with(vec![suggestion("Krenko", &[Red])]);
+    harness.press(KeyCode::Left);
+    assert_eq!(
+        (last_toast(&harness).kind, last_toast(&harness).message),
+        (ToastKind::Info, "No more commanders".to_owned())
+    );
+}
+
+#[test]
 fn the_filter_redeals_behind_the_swiped_cards_and_the_host_takes_it() {
     let mut harness = swiping();
     harness.press(KeyCode::Left);
@@ -378,7 +391,10 @@ fn the_filter_redeals_behind_the_swiped_cards_and_the_host_takes_it() {
     );
     assert_eq!(
         harness.pending(),
-        [playstyle::Request::Load { ticket: ticket(2) }.into()]
+        [playstyle::Request::Load {
+            ticket: playstyle::load_ticket(harness.sent())
+        }
+        .into()]
     );
 }
 

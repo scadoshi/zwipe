@@ -123,16 +123,23 @@ fn loaded() -> Harness {
     harness
 }
 
-/// The ticket the model's first `Load` takes, which every fetch here answers.
-fn first_ticket() -> Ticket {
-    Generation::default().next_ticket()
+/// The ticket of the newest load, cleared or not.
+fn load_ticket(harness: &Harness) -> Ticket {
+    harness
+        .sent()
+        .filter_map(|r| match r {
+            screens::Request::Activity(Request::Load { ticket, .. }) => Some(*ticket),
+            _ => None,
+        })
+        .last()
+        .unwrap()
 }
 
 /// The payload landing as `activity` on the visit on screen.
 fn land(harness: &mut Harness, activity: HttpActivity) {
     let update = Update::Loaded {
         visit: view(harness).visit,
-        ticket: first_ticket(),
+        ticket: load_ticket(harness),
         activity: Box::new(activity),
     };
     harness.apply(update);
@@ -142,7 +149,7 @@ fn land(harness: &mut Harness, activity: HttpActivity) {
 fn fail(harness: &mut Harness, message: &str) {
     let update = Update::Failed {
         visit: view(harness).visit,
-        ticket: first_ticket(),
+        ticket: load_ticket(harness),
         message: message.to_owned(),
     };
     harness.apply(update);
@@ -242,7 +249,7 @@ async fn a_rejected_session_ends_it() {
     let account = Arc::new(Account::new(client, file));
     let request = Request::Load {
         visit: Visit::next(),
-        ticket: first_ticket(),
+        ticket: Generation::default().next_ticket(),
     };
     let update = perform(&account, request).await;
     assert!(matches!(update, Some(screens::Update::SessionEnded)));
@@ -677,13 +684,14 @@ fn section_about_markers_are_buttons_and_the_focused_sections_lights() {
 fn a_reply_to_an_earlier_visit_changes_nothing() {
     let mut harness = on_activity();
     let earlier = view(&harness).visit;
+    let ticket = load_ticket(&harness);
     harness.press(KeyCode::Esc);
     harness.press(KeyCode::Char('v'));
     harness.app.shared.hint = None;
     assert_ne!(view(&harness).visit, earlier);
     harness.apply(Update::Loaded {
         visit: earlier,
-        ticket: first_ticket(),
+        ticket,
         activity: Box::new(sample()),
     });
     assert_eq!(view(&harness).model.status(), Status::Loading);

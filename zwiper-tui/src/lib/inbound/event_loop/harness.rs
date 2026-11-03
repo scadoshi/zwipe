@@ -25,6 +25,8 @@ use crate::test_support::{self, deck_profile};
 pub(crate) struct Harness {
     pub(crate) event_loop: EventLoop,
     pub(crate) app: App,
+    /// The requests [`Harness::clear`] has cleared, oldest first.
+    cleared: Vec<Request>,
 }
 
 impl Harness {
@@ -35,6 +37,7 @@ impl Harness {
         Self {
             event_loop: EventLoop::new(Arc::new(Account::new(client, file)), Arc::new(theme_file)),
             app: App::new(Palette::terminal()),
+            cleared: Vec::new(),
         }
     }
 
@@ -91,7 +94,12 @@ impl Harness {
     }
 
     pub(crate) fn clear(&mut self) {
-        self.event_loop.pending.clear();
+        self.cleared.append(&mut self.event_loop.pending);
+    }
+
+    /// Every request queued since the harness began, cleared or not, oldest first.
+    pub(crate) fn sent(&self) -> impl Iterator<Item = &Request> {
+        self.cleared.iter().chain(&self.event_loop.pending)
     }
 
     pub(crate) fn screen(&self) -> &Screen {

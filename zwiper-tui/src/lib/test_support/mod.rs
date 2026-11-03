@@ -7,7 +7,6 @@ use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::deck::{Board, Deck, DeckCard, DeckEntry, DeckProfile, Quantity};
 use zwipe_core::domain::user::User;
-use zwipe_ui::generation::{Generation, Ticket};
 
 use crate::inbound::app::App;
 
@@ -249,20 +248,6 @@ pub(crate) fn assert_key_bar_fits(app: &App, last: &str) {
             rows.join("\n")
         );
     }
-}
-
-/// A generation that has handed out `n` tickets, as a screen has after `n` searches.
-pub(crate) fn generation_at(n: u64) -> Generation {
-    let mut generation = Generation::default();
-    for _ in 0..n {
-        generation.next_ticket();
-    }
-    generation
-}
-
-/// The `n`th ticket a generation hands out; `ticket(0)` is the one before any.
-pub(crate) fn ticket(n: u64) -> Ticket {
-    generation_at(n).current()
 }
 
 /// Asserts that a bullet in `rows` wraps, and that no wrapped bullet's next row carries its sentence on left of its text, two columns right of the `•`; prints the rows when one does.

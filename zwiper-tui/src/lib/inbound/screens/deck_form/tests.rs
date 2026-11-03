@@ -3,14 +3,14 @@ use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCur
 use zwipe_core::domain::deck::deck_tag::deck_tag_label;
 use zwipe_core::domain::deck::{DeckOtherTag, Format, MAX_DECK_ORACLE_TAGS};
 use zwipe_core::http::helpers::Patch;
+use zwipe_ui::generation::Generation;
 use zwipe_ui::screens::deck_form::Mode;
 
 use super::*;
 use crate::inbound::event_loop::harness::Harness;
 use crate::inbound::widgets::toast::Toasts;
 use crate::test_support::{
-    assert_about_marker, card, deck, deck_profile, find_all, render, screen_text, ticket, user,
-    word_colors,
+    assert_about_marker, card, deck, deck_profile, find_all, render, screen_text, user, word_colors,
 };
 
 /// Create over the deck list, with its hint closed and nothing queued.
@@ -136,12 +136,12 @@ fn the_name_is_checked_once_it_has_held_text() {
     harness.press(KeyCode::Backspace);
     assert_eq!(
         form(&harness).name.error(),
-        Some("deck name minimum length is 1 character")
+        Some("Deck name minimum length is 1 character")
     );
     harness.type_text(&"x".repeat(65));
     assert_eq!(
         form(&harness).name.error(),
-        Some("deck name maximum length is 64 characters")
+        Some("Deck name maximum length is 64 characters")
     );
 }
 
@@ -276,7 +276,9 @@ fn the_commander_search_waits_for_three_letters_and_the_pause() {
     );
     let first = debounce_ticket(&harness);
     harness.clear();
-    harness.apply(Update::Debounced { ticket: ticket(0) });
+    harness.apply(Update::Debounced {
+        ticket: Generation::default().next_ticket(),
+    });
     assert_eq!(harness.pending(), [], "a stale pause is dropped");
     harness.apply(Update::Debounced { ticket: first });
     assert!(matches!(
@@ -692,11 +694,18 @@ fn edit_fills_the_form_and_saves_only_what_changed() {
 #[test]
 fn a_late_deck_load_changes_nothing() {
     let (mut harness, _) = edit();
+    let loaded = harness
+        .sent()
+        .find_map(|r| match r {
+            screens::Request::DeckForm(Request::LoadDeck { ticket, .. }) => Some(*ticket),
+            _ => None,
+        })
+        .unwrap();
     harness.type_text("s");
     let mut profile = deck_profile("Elsewhere");
     profile.format = Some(Format::Modern);
     harness.apply(Update::Loaded {
-        ticket: ticket(1),
+        ticket: loaded,
         deck: Box::new(deck(profile, Vec::new())),
     });
     assert_eq!(
