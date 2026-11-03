@@ -6,6 +6,16 @@
 //! screen asks [`Generation::is_current`] and drops the reply if a newer
 //! request has taken a ticket since. The app wraps this in a Dioxus hook;
 //! other clients keep it in their screen state.
+//!
+//! Tickets come from one counter for the whole process, so a ticket is never
+//! handed out twice. A reply to a screen that has since closed and opened
+//! again can't match the new screen's ticket, even though the new screen's
+//! [`Generation`] started over.
+
+use std::sync::atomic::{AtomicU64, Ordering};
+
+/// The last ticket handed out by any [`Generation`] in this process.
+static LAST_TICKET: AtomicU64 = AtomicU64::new(0);
 
 /// One request's place in its [`Generation`]. Compare it after the reply
 /// arrives; it says nothing on its own.
@@ -18,10 +28,10 @@ pub struct Generation(u64);
 
 impl Generation {
     /// Starts a new generation and returns its ticket. Every ticket handed
-    /// out before this one stops being current. The counter wraps instead
-    /// of overflowing.
+    /// out before this one stops being current, in this generation and in
+    /// any other. The process-wide counter wraps instead of overflowing.
     pub fn next_ticket(&mut self) -> Ticket {
-        self.0 = self.0.wrapping_add(1);
+        self.0 = LAST_TICKET.fetch_add(1, Ordering::Relaxed).wrapping_add(1);
         Ticket(self.0)
     }
 
@@ -79,10 +89,19 @@ mod tests {
     }
 
     #[test]
-    fn the_counter_wraps_instead_of_overflowing() {
-        let mut generation = Generation(u64::MAX);
-        let ticket = generation.next_ticket();
-        assert_eq!(ticket, Ticket(0));
-        assert!(generation.is_current(ticket));
+    fn a_new_generation_never_reissues_an_old_ticket() {
+        let mut first_visit = Generation::default();
+        let old = first_visit.next_ticket();
+        let mut second_visit = Generation::default();
+        let new = second_visit.next_ticket();
+        assert_ne!(
+            old, new,
+            "a reopened screen handed out a closed one's ticket"
+        );
+        assert!(
+            !second_visit.is_current(old),
+            "a closed screen's reply lands"
+        );
+        assert!(second_visit.is_current(new));
     }
 }
