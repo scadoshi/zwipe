@@ -27,8 +27,10 @@
             const bottom = area.scrollHeight - area.clientHeight;
             const previous = lastTop.has(area) ? lastTop.get(area) : top;
             lastTop.set(area, top);
-            // The bounce past the bottom edge is not a scroll down.
-            if (top > bottom) return;
+            // The bounce past the bottom edge, and its spring back, are not
+            // scrolling: at the bottom the header may only go, never come back.
+            if (top > bottom || previous > bottom) return;
+            if (top < previous && top >= bottom - 2) return;
 
             const height = nav.offsetHeight;
             let pushed = (offset.get(nav) || 0) + (top - previous);

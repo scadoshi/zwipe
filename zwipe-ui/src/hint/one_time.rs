@@ -284,10 +284,9 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
             "Exporting your deck",
             vec![
                 bullet(vec![key("Export"), text(" picks which boards to include")]),
-                bullet(vec![
-                    key("Copy"),
-                    text(" puts the decklist on your clipboard"),
-                ]),
+                bullet(vec![text(
+                    "The two sheets at the bottom right put the decklist on your clipboard",
+                )]),
             ],
         ),
         OneTimeHint::OracleTagDictionary => content(

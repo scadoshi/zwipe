@@ -1,8 +1,7 @@
 //! User login screen.
 
 use components::{
-    ActionBar, Button, ButtonVariant, TOAST_NORMAL, TextInput, ThemeConfig, ToastOptions, Toasts,
-    use_toast,
+    Button, ButtonVariant, TOAST_NORMAL, TextInput, ThemeConfig, ToastOptions, Toasts, use_toast,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -11,9 +10,7 @@ use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::user::preferences::PipColor;
 use zwipe_core::http::contracts::auth::HttpAuthenticateUser;
 use zwipe_ui::account::Password;
-use zwipe_ui::screens::login::{
-    self, Action, CREATE_PROFILE, Destination, Effect, FORGOT_PASSWORD, Field, State,
-};
+use zwipe_ui::screens::login::{self, Action, Destination, Effect, Field, State};
 
 use crate::inbound::components::home_hero::HomeHero;
 use crate::inbound::components::screen_header::ScreenHeader;
@@ -174,26 +171,14 @@ pub fn Login() -> Element {
                         input_type: "password",
                     }
                 }
-            }
-        }
-        ActionBar {
-            Button {
-                variant: ButtonVariant::Action,
-                disabled: is_loading,
-                onclick: move |_| driver.dispatch(Action::Submit),
-                {submit_label}
-            },
-            Button {
-                variant: ButtonVariant::Action,
-                disabled: is_loading,
-                onclick: move |_| driver.dispatch(Action::CreateProfile),
-                {CREATE_PROFILE}
-            }
-            Button {
-                variant: ButtonVariant::Action,
-                disabled: is_loading,
-                onclick: move |_| driver.dispatch(Action::ForgotPassword),
-                {FORGOT_PASSWORD}
+                div { class: "form-submit",
+                    Button {
+                        variant: ButtonVariant::Action,
+                        disabled: is_loading,
+                        onclick: move |_| driver.dispatch(Action::Submit),
+                        {submit_label}
+                    }
+                }
             }
         }
     }

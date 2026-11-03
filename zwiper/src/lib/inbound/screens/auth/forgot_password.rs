@@ -1,15 +1,14 @@
 //! Forgot password screen.
 
 use components::{
-    ActionBar, Button, ButtonVariant, Panel, TOAST_NORMAL, TextInput, ToastOptions, Toasts,
-    use_toast,
+    Button, ButtonVariant, Panel, TOAST_NORMAL, TextInput, ToastOptions, Toasts, use_toast,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use zwipe_client::ZwipeClient;
 use zwipe_core::http::contracts::auth::HttpRequestPasswordReset;
 use zwipe_ui::screens::forgot_password::{
-    self, Action, BACK, Destination, EMAIL, Effect, SEND, SENT_BODY, SENT_TITLE, State,
+    self, Action, Destination, EMAIL, Effect, SEND, SENT_BODY, SENT_TITLE, State,
 };
 
 use crate::inbound::components::home_hero::HomeHero;
@@ -108,20 +107,15 @@ pub fn ForgotPassword() -> Element {
                                 div { class: "spinner" }
                             }
                         }
-                    }
-                }
-            }
-            ActionBar {
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| driver.dispatch(Action::Back),
-                    {BACK}
-                }
-                if !is_sent {
-                    Button {
-                        variant: ButtonVariant::Action,
-                        onclick: move |_| driver.dispatch(Action::Submit),
-                        {SEND}
+                        if !is_sent {
+                            div { class: "form-submit",
+                                Button {
+                                    variant: ButtonVariant::Action,
+                                    onclick: move |_| driver.dispatch(Action::Submit),
+                                    {SEND}
+                                }
+                            }
+                        }
                     }
                 }
             }

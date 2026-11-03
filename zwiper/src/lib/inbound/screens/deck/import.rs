@@ -6,10 +6,7 @@
 //! file holds the text being typed, draws the model's state and performs its
 //! effects.
 
-use components::{
-    ActionBar, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintDialog, HintKey, Toasts,
-    use_toast,
-};
+use components::{Chip, HintBullet, HintBullets, HintDialog, HintKey, Toasts, use_toast};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use uuid::Uuid;
@@ -20,6 +17,7 @@ use zwipe_ui::screens::deck_import::{
     self, Action, Board, Destination, Effect, MODES, Source, State, mode_label,
 };
 
+use crate::inbound::components::action_dock::{self, DockIcon};
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen};
@@ -269,19 +267,24 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                     }
                 }
 
-                ActionBar {
-                    Button {
-                        variant: ButtonVariant::Action,
-                        disabled,
-                        onclick: move |_| {
-                            let source = driver.model.peek().source();
-                            let input = match source {
-                                Source::Text => text.peek().clone(),
-                                Source::Archidekt => url.peek().clone(),
-                            };
-                            driver.dispatch(Action::Submit { input });
-                        },
-                        "{submit_label}"
+                // Import (or Replace) as the action dock's checkmark, pinned
+                // bottom right.
+                div { class: "app-float app-float-right",
+                    div { class: "icon-pill",
+                        button {
+                            class: "icon-pill-btn",
+                            "aria-label": "{submit_label}",
+                            disabled,
+                            onclick: move |_| {
+                                let source = driver.model.peek().source();
+                                let input = match source {
+                                    Source::Text => text.peek().clone(),
+                                    Source::Archidekt => url.peek().clone(),
+                                };
+                                driver.dispatch(Action::Submit { input });
+                            },
+                            DockIcon { path: action_dock::CHECK }
+                        }
                     }
                 }
             }

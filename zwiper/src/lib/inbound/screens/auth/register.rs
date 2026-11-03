@@ -1,15 +1,13 @@
 //! New user registration screen.
 
-use components::{
-    ActionBar, Button, ButtonVariant, TOAST_NORMAL, TextInput, ToastOptions, Toasts, use_toast,
-};
+use components::{Button, ButtonVariant, TOAST_NORMAL, TextInput, ToastOptions, Toasts, use_toast};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use zwipe_client::ZwipeClient;
 use zwipe_core::http::contracts::auth::HttpRegisterUser;
 use zwipe_core::http::contracts::metrics::AnonymousEventKind;
 use zwipe_ui::account::Password;
-use zwipe_ui::screens::register::{self, Action, BACK, Destination, Effect, Field, State};
+use zwipe_ui::screens::register::{self, Action, Destination, Effect, Field, State};
 
 use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::home_hero::HomeHero;
@@ -167,20 +165,14 @@ pub fn Register() -> Element {
                         input_type: "password",
                     }
                 }
-            }
-        }
-        ActionBar {
-            Button {
-                variant: ButtonVariant::Action,
-                disabled: is_loading,
-                onclick: move |_| driver.dispatch(Action::Back),
-                {BACK}
-            }
-            Button {
-                variant: ButtonVariant::Action,
-                disabled: is_loading,
-                onclick : move |_| driver.dispatch(Action::Submit),
-                {submit_label}
+                div { class: "form-submit",
+                    Button {
+                        variant: ButtonVariant::Action,
+                        disabled: is_loading,
+                        onclick: move |_| driver.dispatch(Action::Submit),
+                        {submit_label}
+                    }
+                }
             }
         }
     }

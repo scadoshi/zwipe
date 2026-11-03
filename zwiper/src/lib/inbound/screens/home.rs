@@ -9,8 +9,8 @@ use std::time::Instant;
 
 use chrono::Utc;
 use components::{
-    ActionBar, AlertDialog, Button, ButtonVariant, DialogAction, HintBullet, HintBullets,
-    HintDialog, HintKey, ThemeConfig, Toasts, use_toast,
+    AlertDialog, DialogAction, HintBullet, HintBullets, HintDialog, HintKey, ThemeConfig, Toasts,
+    use_toast,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -533,20 +533,6 @@ pub fn Home() -> Element {
 
             ImagePreview { card: preview_card, dismissing: preview_dismissing }
 
-            ActionBar {
-                Button { variant: ButtonVariant::Action,
-                    onclick: move |_| driver.dispatch(Action::Decks),
-                    {home::DECKS}
-                }
-                Button { variant: ButtonVariant::Action,
-                    onclick: move |_| driver.dispatch(Action::Account),
-                    {home::ACCOUNT}
-                }
-                Button { variant: ButtonVariant::Action,
-                    onclick: move |_| driver.dispatch(Action::Config),
-                    {home::CONFIG}
-                }
-            }
 
             AlertDialog {
                 open: show_buy_sheet,

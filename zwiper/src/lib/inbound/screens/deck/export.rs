@@ -3,10 +3,7 @@
 //! What the screen knows and does is `zwipe_ui::screens::deck_export`; this
 //! file draws its state and performs its effects.
 
-use components::{
-    ActionBar, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintDialog, HintKey, Toasts,
-    use_toast,
-};
+use components::{Chip, HintBullet, HintBullets, HintDialog, HintKey, Toasts, use_toast};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use uuid::Uuid;
@@ -15,6 +12,7 @@ use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::user::models::hints::HINT_EXPORT;
 use zwipe_ui::screens::deck_export::{self, Action, Board, Destination, Effect, State, Status};
 
+use crate::inbound::components::action_dock::{self, DockIcon};
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen};
@@ -125,7 +123,7 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                     title: "Exporting your deck",
                     HintBullets {
                         HintBullet { HintKey { "Export" } " picks which boards to include" }
-                        HintBullet { HintKey { "Copy" } " puts the decklist on your clipboard" }
+                        HintBullet { "The two sheets at the bottom right put the decklist on your clipboard" }
                     }
                 }
 
@@ -181,11 +179,15 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                     }
                 }
 
-                ActionBar {
-                    Button {
-                        variant: ButtonVariant::Action,
-                        onclick: move |_| driver.dispatch(Action::Copy),
-                        "{deck_export::COPY}"
+                // Copy as the action dock's icon, pinned bottom right.
+                div { class: "app-float app-float-right",
+                    div { class: "icon-pill",
+                        button {
+                            class: "icon-pill-btn",
+                            "aria-label": deck_export::COPY,
+                            onclick: move |_| driver.dispatch(Action::Copy),
+                            DockIcon { path: action_dock::COPY }
+                        }
                     }
                 }
             }
