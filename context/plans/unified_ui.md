@@ -11,11 +11,11 @@ These were settled with the owner before the per-screen review. A screen breaks 
 ### Navigation
 
 - The app gets the web's folded nav, the same `NavBar` from the kit: the Z mark at the left, the screen's title with its `?` in the middle, and the hamburger at the top right. Tapping the hamburger drops down the list of sections as buttons, exactly as the web does below 900px.
-- The menu lists, signed in, in two groups split by a thin rule: Decks, Playstyle, Commander maybeboard and Activity; then Account, Settings and About. Under them a small bottom row holds a `!` for Help & feedback and a small Log out, not full menu items.
+- The menu lists, signed in: Home, Decks, Playstyle, Commander maybeboard, Activity, Account, Settings and About, one list with no rule. Under them a small bottom row holds a `!` for Help & feedback and a small Log out, not full menu items.
 - Account and Settings (today's Config) stay two screens. The Z mark goes Home. Log out is also in Account's danger zone.
 - The menu looks exactly like the web's folded nav: a full-width panel dropping from the header, items stacked, the current one lit.
 - The app's "!" support button leaves the header for the menu's bottom row.
-- On a screen below a top-level section (deck view, Add, Edit, Import, the dictionary and so on), the Z mark's spot becomes a back arrow. Android's system back keeps working as it does now.
+- Every screen but Home and the auth screens shows a back arrow where the Z mark sits, boxed like the hamburger, calling the screen's own Back (the previous screen, or its fixed parent where it has one). The Z mark shows on Home and the auth screens, and Home is always the menu's first entry. Android's system back keeps working as it does now. (Decided 2026-11-03 while building; the review had the menu screens keep the Z mark.)
 
 ### Header
 
