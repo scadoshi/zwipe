@@ -17,7 +17,6 @@ use zwipe_ui::playstyle;
 
 use super::*;
 use crate::inbound::event_loop::harness::Harness;
-use crate::inbound::screens::printings::Mode;
 use crate::inbound::widgets::toast::Toast;
 use crate::outbound::account::SessionFile;
 use crate::test_support::{
@@ -724,7 +723,7 @@ fn a_picked_printing_swaps_into_its_row() {
     let Screen::Printings(printings) = harness.screen() else {
         panic!("no printings");
     };
-    assert_eq!(printings.mode, Mode::Pick);
+    assert!(printings.model.shows_save(), "pick mode");
     let mut printing = colored("Red 00", &[Red]);
     printing.scryfall_data.oracle_id = Some(oracle_id);
     harness.app.shared.caches.handoff.printing = Some(printing.clone());

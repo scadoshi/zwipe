@@ -1,4 +1,6 @@
 use crossterm::event::KeyCode;
+use zwipe_ui::generation::Generation;
+use zwipe_ui::screens::printing_sheet::Status;
 
 use super::*;
 use crate::inbound::event_loop::harness::Harness;
@@ -31,17 +33,26 @@ fn on_printings(mode: Mode) -> (Harness, Vec<Card>) {
     let mut harness = Harness::on(Screen::Home(Box::default()));
     let opened_on = printings[1].clone();
     harness.open(|cx| open(cx, opened_on, mode));
+    let ticket = last_ticket(&harness);
     assert_eq!(
         harness.pending(),
-        [Request::Fetch { oracle_id }.into()],
+        [Request::Fetch { ticket, oracle_id }.into()],
         "opening fetches by oracle id"
     );
     harness.clear();
     harness.apply(Update::Loaded {
-        oracle_id,
+        ticket,
         printings: printings.clone(),
     });
     (harness, printings)
+}
+
+/// The ticket on the last fetch queued.
+fn last_ticket(harness: &Harness) -> Ticket {
+    match harness.pending().last() {
+        Some(screens::Request::Printings(Request::Fetch { ticket, .. })) => *ticket,
+        other => panic!("no fetch went out: {other:?}"),
+    }
 }
 
 fn view(harness: &Harness) -> &PrintingsView {
@@ -66,7 +77,7 @@ fn toasts(harness: &Harness) -> Vec<String> {
 fn the_list_opens_on_the_cards_own_printing() {
     let (harness, _) = on_printings(Mode::Pick);
     assert_eq!(view(&harness).selected, 1);
-    assert!(!view(&harness).changed());
+    assert!(!view(&harness).model.has_changed(1));
     let screen = screen_text(&harness.app);
     for expected in [
         "Printings",
@@ -137,33 +148,47 @@ fn i_shows_the_selected_printing() {
 }
 
 #[test]
-fn a_failed_fetch_toasts_and_a_late_one_for_another_card_is_ignored() {
+fn a_failed_fetch_toasts_and_a_reply_on_another_ticket_is_ignored() {
     let mut harness = Harness::on(Screen::Home(Box::default()));
     let elves = card("Llanowar Elves");
-    let oracle_id = elves.scryfall_data.oracle_id.unwrap();
     harness.open(|cx| open(cx, elves, Mode::Pick));
+    let ticket = last_ticket(&harness);
+    let mut other = Generation::default();
+    other.next_ticket();
+    let stale = other.next_ticket();
+    assert_ne!(stale, ticket);
     harness.apply(Update::Loaded {
-        oracle_id: Uuid::new_v4(),
-        printings: Vec::new(),
+        ticket: stale,
+        printings: printings_of(Uuid::new_v4()),
     });
-    assert!(view(&harness).loading);
+    assert_eq!(view(&harness).model.status(), Status::Loading);
     assert!(screen_text(&harness.app).contains('░'));
     harness.apply(Update::Failed {
-        oracle_id,
+        ticket,
         message: "Server unavailable".to_owned(),
     });
-    assert!(!view(&harness).loading);
+    assert_eq!(view(&harness).model.status(), Status::Empty);
     assert_eq!(toasts(&harness), ["Server unavailable"]);
+    harness.apply(Update::Loaded {
+        ticket,
+        printings: printings_of(Uuid::new_v4()),
+    });
+    assert!(
+        view(&harness).model.printings().is_empty(),
+        "a reply after the failure settled changes nothing"
+    );
 }
 
 #[test]
-fn a_card_without_an_oracle_id_shows_only_itself() {
+fn a_card_without_an_oracle_id_lists_nothing() {
     let mut harness = Harness::on(Screen::Home(Box::default()));
     let mut token = card("Soldier");
     token.scryfall_data.oracle_id = None;
     harness.open(|cx| open(cx, token, Mode::Pick));
     assert!(harness.pending().is_empty(), "nothing to fetch by");
-    assert_eq!(view(&harness).printings.len(), 1);
+    assert_eq!(view(&harness).model.status(), Status::Empty);
+    harness.press(KeyCode::Enter);
+    assert!(matches!(harness.screen(), Screen::Printings(_)));
 }
 
 #[test]

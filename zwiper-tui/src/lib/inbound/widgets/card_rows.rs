@@ -584,7 +584,7 @@ mod tests {
         let Screen::Printings(view) = harness.screen() else {
             panic!("no printings");
         };
-        assert_eq!(view.mode, Mode::Pick);
+        assert!(view.model.shows_save(), "pick mode");
         assert_eq!(view.card.scryfall_data.id, elves.scryfall_data.id);
         assert_eq!(
             press(&mut harness, &mut state, &rows, &[KeyCode::Char('?')]),

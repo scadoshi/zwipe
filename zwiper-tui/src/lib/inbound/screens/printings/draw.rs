@@ -8,8 +8,9 @@ use ratatui::widgets::Paragraph;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::deck_metrics;
+use zwipe_ui::screens::printing_sheet::{Status, TITLE};
 
-use super::{Mode, PrintingsView, TITLE};
+use super::PrintingsView;
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::widgets::{action_bar, item_list, skeleton};
@@ -34,7 +35,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &PrintingsView) {
             .centered(),
         name,
     );
-    if view.loading {
+    if view.model.status() == Status::Loading {
         f.render_widget(
             Paragraph::new(skeleton::rows(palette, GHOST_ROWS, usize::from(body.width))),
             body,
@@ -42,14 +43,15 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &PrintingsView) {
     } else {
         let current = view.card.scryfall_data.id;
         let items: Vec<Vec<Line<'static>>> = view
-            .printings
+            .model
+            .printings()
             .iter()
             .map(|p| vec![row(palette, p, p.scryfall_data.id == current)])
             .collect();
         item_list::draw(f, palette, body, &items, view.selected);
     }
     let mut hints = vec![("Esc", "Back"), ("j/k", "Move"), ("i", "Image")];
-    if view.mode == Mode::Pick && view.changed() {
+    if view.model.can_save(view.selected) {
         hints.push(("Enter", "Save"));
     }
     f.render_widget(action_bar::line(palette, &hints), keys);

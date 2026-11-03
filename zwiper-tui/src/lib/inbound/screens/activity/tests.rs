@@ -14,7 +14,6 @@ use zwipe_ui::activity::{role_rate_bars, tag_rate_bars, year_tags};
 use super::*;
 use crate::inbound::event_loop::harness::Harness;
 use crate::inbound::screens::home::cache::CachedMyCounts;
-use crate::inbound::screens::printings::Mode;
 use crate::outbound::account::SessionFile;
 use crate::test_support::{card, render, screen_text, user};
 
@@ -451,7 +450,7 @@ fn a_pass_row_expands_and_takes_a_picked_printing() {
     let Screen::Printings(printings) = harness.screen() else {
         panic!("no printings");
     };
-    assert_eq!(printings.mode, Mode::Pick);
+    assert!(printings.model.shows_save(), "pick mode");
     let mut printing = card("Sol Ring");
     printing.scryfall_data.oracle_id = oracle_id;
     harness.app.shared.caches.handoff.printing = Some(printing.clone());

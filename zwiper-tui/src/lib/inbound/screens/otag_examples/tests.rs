@@ -4,7 +4,7 @@ use zwipe_ui::screens::oracle_tag_examples::{Status, query_for};
 
 use super::*;
 use crate::inbound::event_loop::harness::Harness;
-use crate::inbound::screens::printings::{self, PrintingsView};
+use crate::inbound::screens::printings::PrintingsView;
 use crate::test_support::{card, render, screen_text, user};
 
 const SLUG: &str = "mana-dork";
@@ -200,7 +200,7 @@ fn d_opens_details_and_p_browses_printings_read_only() {
         panic!("no printings");
     };
     let printings: &PrintingsView = printings;
-    assert_eq!(printings.mode, printings::Mode::ReadOnly);
+    assert!(!printings.model.shows_save(), "read only");
     harness.press(KeyCode::Esc);
     assert!(view(&harness).details.is_some(), "the sheet stays under");
     harness.press(KeyCode::Esc);
