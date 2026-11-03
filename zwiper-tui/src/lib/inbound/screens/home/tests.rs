@@ -1135,3 +1135,27 @@ fn the_featured_quote_centers_like_the_card_line_under_it() {
         );
     }
 }
+
+#[test]
+fn the_panel_titles_take_the_text_field_label_style() {
+    let mut harness = settled_home();
+    let palette = crate::domain::theme::Palette::for_account("gruvbox", true);
+    harness.app.shared.palette = palette;
+    let terminal = render(&harness.app, 100, 40);
+    let buffer = terminal.backend().buffer();
+    let label = crate::inbound::widgets::panel::label_style(&palette);
+    assert_eq!(label, palette.tertiary, "a text field's label style");
+    for title in ["Color map", "Featured flavor"] {
+        let &(x, y) = crate::test_support::find_all(buffer, &format!(" {title} "))
+            .first()
+            .unwrap_or_else(|| panic!("no {title:?} title"));
+        for dx in 1..=u16::try_from(title.len()).unwrap() {
+            let cell = &buffer[(x + dx, y)];
+            assert_eq!(cell.fg, palette.tertiary.fg.unwrap(), "{title:?} color");
+            assert!(
+                !cell.modifier.contains(ratatui::style::Modifier::BOLD),
+                "{title:?} is not bold, as a field label is not"
+            );
+        }
+    }
+}

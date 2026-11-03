@@ -3,7 +3,6 @@
 use crossterm::event::KeyCode;
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Rect};
-use ratatui::style::Stylize;
 use ratatui::text::Line;
 use ratatui::widgets::{Clear, Padding, Paragraph};
 
@@ -174,12 +173,7 @@ pub(crate) fn frame(
     let [_, sheet] =
         Layout::vertical([Constraint::Fill(1), Constraint::Length(height)]).areas(area);
     let mut block = crate::inbound::widgets::panel::bordered(palette)
-        .title(
-            Line::from(format!(" {title} "))
-                .style(palette.tertiary)
-                .bold()
-                .centered(),
-        )
+        .title(crate::inbound::widgets::panel::title(palette, title).centered())
         .title_bottom(action_bar::line(palette, footer))
         .border_style(palette.accent)
         .padding(Padding::horizontal(1));

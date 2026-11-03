@@ -222,7 +222,7 @@ fn tab_label(view: &DeckView, pane: Pane) -> String {
     }
 }
 
-/// The tab strip for a panel's title, or its one title. The shown tab is bold, and a chip while its panel has the focus; a shown section takes its `[?]` a space after it, lit while its panel has the focus, since `i` opens it then. When the tabs outgrow `room`, the strip keeps the shown tab and as many neighbors as fit, with ‹ and › where tabs are cut.
+/// The tab strip for a panel's title, or its one title. The shown tab takes the label style of every box title, and is a bold chip while its panel has the focus; a shown section takes its `[?]` a space after it, lit while its panel has the focus, since `i` opens it then. When the tabs outgrow `room`, the strip keeps the shown tab and as many neighbors as fit, with ‹ and › where tabs are cut.
 fn tabs(
     palette: &Palette,
     view: &DeckView,
@@ -252,8 +252,12 @@ fn tabs(
         spans.push(Span::styled("‹", palette.muted));
     }
     for (i, (pane, label)) in panes.iter().zip(&labels).enumerate().take(end).skip(start) {
-        let style = if *pane == Pane::Loading || i != at {
+        let picked = i == at && has_focus && panes.len() > 1;
+        // The shown tab reads as the panel's title, a chip only while its panel has the focus.
+        let style = if i != at {
             palette.muted
+        } else if !picked {
+            panel::label_style(palette)
         } else if *pane == Pane::Section(Section::Warnings) {
             palette.warning.bold()
         } else {
@@ -263,7 +267,7 @@ fn tabs(
             label,
             style,
             PillState {
-                picked: i == at && has_focus && panes.len() > 1,
+                picked,
                 focused: false,
             },
         ));

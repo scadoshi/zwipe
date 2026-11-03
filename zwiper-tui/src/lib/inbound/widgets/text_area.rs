@@ -169,11 +169,7 @@ impl TextArea {
         f.render_widget(
             Paragraph::new(lines).block(
                 crate::inbound::widgets::panel::bordered(palette)
-                    .title(
-                        Line::from(format!(" {title} "))
-                            .style(palette.tertiary)
-                            .centered(),
-                    )
+                    .title(crate::inbound::widgets::panel::title(palette, title).centered())
                     .border_style(border),
             ),
             area,

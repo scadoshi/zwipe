@@ -2,7 +2,7 @@
 
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Rect};
-use ratatui::style::{Style, Stylize};
+use ratatui::style::Style;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Clear as ClearWidget, Padding, Paragraph};
 use zwipe_ui::filter::picker::PickerField;
@@ -40,7 +40,10 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, sheet: &FilterSheet, area
         .spans
         .extend(action_bar::line(palette, &[("r", "reset"), ("x", "clear"), ("?", "hint")]).spans);
     let block = crate::inbound::widgets::panel::bordered(palette)
-        .title(Line::from(format!(" {} ", card_filter::TITLE)).bold())
+        .title(crate::inbound::widgets::panel::title(
+            palette,
+            card_filter::TITLE,
+        ))
         .title_bottom(footer)
         .border_style(palette.accent)
         .padding(Padding::horizontal(1));

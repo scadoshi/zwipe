@@ -3,7 +3,6 @@
 use std::time::Instant;
 
 use ratatui::Frame;
-use ratatui::style::Stylize;
 use ratatui::text::Line;
 use ratatui::widgets::{Paragraph, Wrap};
 use zwipe_ui::screens::forgot_password::{EMAIL, SEND, SENT_BODY, SENT_TITLE};
@@ -60,7 +59,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &ForgotForm) {
     if sent {
         let block = crate::inbound::widgets::panel::bordered(palette)
             .border_style(palette.border)
-            .title(Line::from(SENT_TITLE).bold().centered());
+            .title(crate::inbound::widgets::panel::title(palette, SENT_TITLE).centered());
         f.render_widget(
             Paragraph::new(Line::from(SENT_BODY).centered())
                 .wrap(Wrap { trim: true })

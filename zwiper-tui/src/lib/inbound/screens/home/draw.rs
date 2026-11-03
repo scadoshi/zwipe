@@ -350,10 +350,10 @@ fn draw_color_map(f: &mut Frame<'_>, shared: &Shared, view: &HomeView, area: Rec
     let ghost = panel == PlayStyle::Loading;
     let mut block = crate::inbound::widgets::panel::bordered(palette).border_style(palette.border);
     if ghost {
-        block = block.title(Line::styled(" ░░░░░░░░ ", palette.muted).centered());
+        block = block.title(widgets::panel::title(palette, "░░░░░░░░").centered());
     } else {
         block = block
-            .title(Line::from(format!(" {COLOR_MAP} ")).bold().centered())
+            .title(widgets::panel::title(palette, COLOR_MAP).centered())
             .title(Line::from(widgets::button::about_corner(palette)).right_aligned());
     }
     let inner = block.inner(area);
@@ -433,7 +433,7 @@ fn draw_flavor_card(
 ) {
     let palette = &shared.palette;
     let block = crate::inbound::widgets::panel::bordered(palette)
-        .title(Line::from(format!(" {FEATURED_FLAVOR} ")).bold().centered())
+        .title(widgets::panel::title(palette, FEATURED_FLAVOR).centered())
         .border_style(palette.border);
     let inner = block.inner(area);
     f.render_widget(block, area);

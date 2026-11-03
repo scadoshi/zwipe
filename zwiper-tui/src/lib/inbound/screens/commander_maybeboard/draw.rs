@@ -56,7 +56,10 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &MaybeboardView) {
     if view.is_loading() {
         f.render_widget(
             crate::inbound::widgets::panel::bordered(palette)
-                .title(Span::styled(GHOST.repeat(QUICK_ADD.len()), palette.accent))
+                .title(
+                    crate::inbound::widgets::panel::title(palette, &GHOST.repeat(QUICK_ADD.len()))
+                        .centered(),
+                )
                 .border_style(palette.muted),
             input,
         );

@@ -38,7 +38,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &ExportView) {
     .areas(f.area());
 
     let block = crate::inbound::widgets::panel::bordered(palette)
-        .title(format!(" {DECKLIST} "))
+        .title(crate::inbound::widgets::panel::title(palette, DECKLIST))
         .border_style(palette.border);
     if view.model.status() == Status::Failed {
         f.render_widget(

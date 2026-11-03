@@ -3,7 +3,6 @@
 use crossterm::event::KeyCode;
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Rect};
-use ratatui::style::Stylize;
 use ratatui::text::Line;
 use ratatui::widgets::{Clear, Padding, Paragraph, Wrap};
 use uuid::Uuid;
@@ -173,7 +172,7 @@ impl PrintingSheet {
         f.render_widget(
             Paragraph::new(body).wrap(Wrap { trim: true }).block(
                 crate::inbound::widgets::panel::bordered(palette)
-                    .title(Line::from(" Printings ").bold())
+                    .title(crate::inbound::widgets::panel::title(palette, "Printings"))
                     .title_bottom(footer)
                     .border_style(palette.accent)
                     .padding(Padding::horizontal(1)),

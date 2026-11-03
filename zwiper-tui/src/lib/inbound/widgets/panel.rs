@@ -1,10 +1,11 @@
-//! The frame every box in the app draws with, a centered dialog, and the full-bleed rules that divide a box.
+//! The frame every box in the app draws with, the label on its top border, a centered dialog, and the full-bleed rules that divide a box.
 //!
 //! Every box, on the grid or over other content, is `bordered`: square corners and the theme's background filled to its outer edge, border cells included, so it sits on the grid or over a screen as one solid rectangle. A terminal cell holds one background, so a rounded corner glyph could never fill cleanly to the box's corner.
 
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Rect};
-use ratatui::text::Line;
+use ratatui::style::Style;
+use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, BorderType, Clear, Padding};
 
 use super::measure::BORDERS;
@@ -15,6 +16,21 @@ pub(crate) fn bordered(palette: &Palette) -> Block<'static> {
     Block::bordered()
         .border_type(BorderType::Plain)
         .style(palette.base)
+}
+
+/// The style of every label on a box's top border: panel, section, sheet and chart titles and text field labels alike, in the third accent as the app's form labels.
+pub(crate) fn label_style(palette: &Palette) -> Style {
+    palette.tertiary
+}
+
+/// `text` as a label for a box's top border, a space each side, in [`label_style`].
+pub(crate) fn title_span(palette: &Palette, text: &str) -> Span<'static> {
+    Span::styled(format!(" {text} "), label_style(palette))
+}
+
+/// `text` as a box's title on its top border, a space each side, in [`label_style`]; the caller aligns it.
+pub(crate) fn title(palette: &Palette, text: &str) -> Line<'static> {
+    Line::from(title_span(palette, text))
 }
 
 /// The area of a centered panel whose inside is `width` by `height`, with room for its border and padding.
@@ -78,6 +94,28 @@ mod tests {
     use ratatui::layout::{Constraint, Layout};
 
     use super::*;
+
+    #[test]
+    fn a_box_title_matches_a_text_field_label() {
+        use crate::inbound::widgets::text_input::TextInput;
+
+        let palette = Palette::for_account("gruvbox", true);
+        let mut terminal = Terminal::new(TestBackend::new(30, 6)).unwrap();
+        terminal
+            .draw(|f| {
+                let [field, boxed] = Layout::vertical([Constraint::Length(3); 2]).areas(f.area());
+                TextInput::default().draw(f, &palette, field, "Email", false);
+                f.render_widget(bordered(&palette).title(title(&palette, "Decklist")), boxed);
+            })
+            .unwrap();
+        let buffer = terminal.backend().buffer();
+        let style_of = |text: &str| {
+            let (x, y) = crate::test_support::find_all(buffer, text)[0];
+            let cell = &buffer[(x, y)];
+            (cell.fg, cell.bg, cell.modifier)
+        };
+        assert_eq!(style_of("Decklist"), style_of("Email"));
+    }
 
     #[test]
     fn a_rule_meets_the_border_on_both_sides() {

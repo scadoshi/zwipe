@@ -6,8 +6,8 @@ use ratatui::layout::{Position, Rect};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::Paragraph;
 
-use super::button;
 use super::measure::BORDERS;
+use super::{button, panel};
 use crate::domain::theme::Palette;
 
 /// Stands in for each typed character in a masked box.
@@ -35,9 +35,9 @@ impl Label<'_> {
     fn line(self, palette: &Palette, focused: bool) -> Option<Line<'static>> {
         match self {
             Self::Plain("") => None,
-            Self::Plain(text) => Some(Line::from(format!(" {text} ")).style(palette.tertiary)),
+            Self::Plain(text) => Some(panel::title(palette, text)),
             Self::About(text) => {
-                let mut spans = vec![Span::styled(format!(" {text} "), palette.tertiary)];
+                let mut spans = vec![panel::title_span(palette, text)];
                 spans.extend(button::about(palette, focused));
                 spans.push(Span::raw(" "));
                 Some(Line::from(spans))
