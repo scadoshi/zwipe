@@ -1,4 +1,4 @@
-//! What every screen draws around its content: no title row, a key bar that names Help & feedback and the hint key once, and the grid backdrop showing up to loose content and under the boxes on it while overlays stay solid.
+//! What every screen draws around its content: no title row, a key bar that names Help & feedback and the hint key once, and the grid backdrop showing up to loose content while every box stays solid to its outer edge.
 
 use crossterm::event::KeyCode;
 use ratatui::style::Color;
@@ -227,7 +227,7 @@ fn backgrounds(app: &mut App, width: u16, height: u16) -> (Vec<Vec<Color>>, Colo
 }
 
 #[test]
-fn the_grid_shows_around_loose_content_and_under_boxes() {
+fn the_grid_shows_around_loose_content_and_boxes_stay_solid() {
     for (width, height) in BUTTON_SIZES {
         // Account's first rows are loose text: a section title over its rows.
         let mut harness = Harness::on(Screen::Home(Box::default()));
@@ -239,7 +239,7 @@ fn the_grid_shows_around_loose_content_and_under_boxes() {
             rows[0].iter().all(|&bg| bg != base),
             "every cell of Account's first row carries a tile at {width}x{height}"
         );
-        // The deck list sits in a panel with no fill, so its inside shows the tiles.
+        // The deck list sits in a panel filled to its outer edge, border included.
         let mut harness = Harness::on(Screen::Home(Box::default()));
         harness.app.shared.user = Some(user(true));
         harness.open(decks::open);
@@ -251,21 +251,16 @@ fn the_grid_shows_around_loose_content_and_under_boxes() {
         let buffer = terminal.backend().buffer();
         let corner = (0..height)
             .flat_map(|y| (0..width).map(move |x| (x, y)))
-            .find(|&(x, y)| buffer[(x, y)].symbol() == "╭" && y < height / 2)
+            .find(|&(x, y)| buffer[(x, y)].symbol() == "┌" && y < height / 2)
             .unwrap_or_else(|| panic!("the deck list's panel at {width}x{height}"));
-        let tiles = grid::shades(&harness.app.shared.palette, buffer.area, None);
-        let (x, y) = (corner.0 + 2, corner.1 + 1);
-        let tile = tiles[usize::from(y) * usize::from(width) + usize::from(x)].unwrap_or(base);
         assert_eq!(
-            buffer[(x, y)].bg,
-            tile,
-            "a panel's inside shows its tile at {width}x{height}"
+            buffer[(corner.0 + 2, corner.1 + 1)].bg,
+            base,
+            "a panel's inside is solid at {width}x{height}"
         );
         assert_eq!(
-            buffer[corner].bg,
-            tiles[usize::from(corner.1) * usize::from(width) + usize::from(corner.0)]
-                .unwrap_or(base),
-            "a panel's corner shows its tile at {width}x{height}"
+            buffer[corner].bg, base,
+            "a panel's corner is solid at {width}x{height}"
         );
         assert_ne!(
             buffer[(0, 0)].bg,
@@ -276,7 +271,7 @@ fn the_grid_shows_around_loose_content_and_under_boxes() {
 }
 
 #[test]
-fn an_overlay_over_a_box_on_the_grid_stays_solid() {
+fn an_overlay_over_a_box_stays_solid() {
     for (width, height) in BUTTON_SIZES {
         let mut harness = Harness::on(Screen::Home(Box::default()));
         harness.app.shared.user = Some(user(true));
@@ -295,7 +290,7 @@ fn an_overlay_over_a_box_on_the_grid_stays_solid() {
             .unwrap_or_else(|| panic!("Help's rule at {width}x{height}"));
         let corner = (0..y)
             .rev()
-            .find(|&row| buffer[(x, row)].symbol() == "╭")
+            .find(|&row| buffer[(x, row)].symbol() == "┌")
             .unwrap_or_else(|| panic!("Help's corner at {width}x{height}"));
         for (cx, cy) in [(x + 1, y + 1), (x + 2, corner + 1), (x + 1, y - 1)] {
             assert_eq!(
@@ -361,53 +356,6 @@ fn the_terminals_own_colors_draw_no_tiles_on_a_screen() {
             .all(|cell| cell.bg == Color::Reset),
         "the terminal palette leaves every background as the terminal's"
     );
-}
-
-#[test]
-fn no_box_keeps_a_plain_band_between_its_border_and_the_grid() {
-    const GLYPHS: [&str; 8] = ["╭", "╮", "╰", "╯", "│", "─", "├", "┤"];
-    let palette = Palette::for_account("gruvbox", true);
-    for Case { title, harness, .. } in cases() {
-        let mut harness = harness;
-        harness.app.shared.palette = palette;
-        let (width, height) = (120, 40);
-        let terminal = render(&harness.app, width, height);
-        let buffer = terminal.backend().buffer();
-        let tiles = grid::shades(&palette, buffer.area, None);
-        let base = palette.base.bg.unwrap();
-        let shows = |x: i32, y: i32| {
-            let (Ok(x), Ok(y)) = (u16::try_from(x), u16::try_from(y)) else {
-                return false;
-            };
-            if x >= width || y >= height || GLYPHS.contains(&buffer[(x, y)].symbol()) {
-                return false;
-            }
-            let tile = tiles[usize::from(y) * usize::from(width) + usize::from(x)];
-            tile.is_some_and(|t| t != base && buffer[(x, y)].bg == t)
-        };
-        for y in 0..height {
-            for x in 0..width {
-                let cell = &buffer[(x, y)];
-                let own = tiles[usize::from(y) * usize::from(width) + usize::from(x)];
-                if !GLYPHS.contains(&cell.symbol())
-                    || own.is_none_or(|t| t == base)
-                    || cell.bg != base
-                    || cell.modifier.contains(ratatui::style::Modifier::REVERSED)
-                {
-                    continue;
-                }
-                let (cx, cy) = (i32::from(x), i32::from(y));
-                let beside = [(cx - 1, cy), (cx + 1, cy), (cx, cy - 1), (cx, cy + 1)]
-                    .into_iter()
-                    .any(|(nx, ny)| shows(nx, ny));
-                assert!(
-                    !beside,
-                    "{title}: the border at {x},{y} keeps a plain band beside the grid:\n{}",
-                    rows(&harness.app, width, height).join("\n")
-                );
-            }
-        }
-    }
 }
 
 #[test]

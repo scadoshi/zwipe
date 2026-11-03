@@ -369,8 +369,8 @@ fn the_hero_boxes_each_counter_in_a_tile_under_the_logo() {
         let text = rows.join("\n");
         let tiles = rows
             .iter()
-            .find(|r| r.contains('╭'))
-            .map(|r| r.matches('╭').count());
+            .find(|r| r.contains('┌'))
+            .map(|r| r.matches('┌').count());
         assert_eq!(tiles, Some(3), "tiles at {width}x{height}:\n{text}");
         for (number, label) in [
             ("2,220", "Decks created"),
@@ -498,7 +498,7 @@ fn empty_fields_show_no_placeholder_and_labels_sit_centered_at_every_size() {
 }
 
 #[test]
-fn the_grid_shows_under_the_counter_tiles_and_the_fields() {
+fn the_counter_tiles_and_the_fields_are_solid_on_the_grid() {
     let mut harness = Harness::new();
     let palette = crate::domain::theme::Palette::for_account("gruvbox", true);
     harness.app.shared.palette = palette;
@@ -520,7 +520,7 @@ fn the_grid_shows_under_the_counter_tiles_and_the_fields() {
     };
     let field_left = (0..x)
         .rev()
-        .find(|&c| buffer[(c, y_field)].symbol() == "╭")
+        .find(|&c| buffer[(c, y_field)].symbol() == "┌")
         .unwrap();
     for (what, (bx, by)) in [
         ("counter tile", (tile_left, y)),
@@ -532,20 +532,15 @@ fn the_grid_shows_under_the_counter_tiles_and_the_fields() {
             tile(bx - 1, by),
             "the cell beside the {what}"
         );
-        assert_eq!(buffer[(bx, by)].bg, tile(bx, by), "the {what}'s own border");
-        assert_eq!(
-            buffer[(bx + 1, by)].bg,
-            tile(bx + 1, by),
-            "inside the {what} shows its tile"
-        );
+        assert_eq!(buffer[(bx, by)].bg, base, "the {what}'s own border");
+        assert_eq!(buffer[(bx + 1, by)].bg, base, "inside the {what}");
     }
     let [(x, y)] = crate::test_support::find_all(buffer, "Decks created")[..] else {
         panic!("the counters:\n{rows}");
     };
-    assert_ne!(tile(x, y), base, "a tile that shows under the label");
     assert_eq!(
         buffer[(x, y)].bg,
-        tile(x, y),
-        "the counter tile's label sits on its tile"
+        base,
+        "the counter tile's label sits on its fill"
     );
 }

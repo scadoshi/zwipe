@@ -26,7 +26,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared) {
     ])
     .wrap(Wrap { trim: true });
     let body_height = u16::try_from(body.line_count(WIDTH)).unwrap_or(u16::MAX);
-    let inner = panel::centered(f, palette, f.area(), WIDTH, body_height.saturating_add(2));
+    let inner = panel::dialog(f, palette, f.area(), WIDTH, body_height.saturating_add(2));
     let [body_area, _, keys] = Layout::vertical([
         Constraint::Length(body_height),
         Constraint::Length(1),

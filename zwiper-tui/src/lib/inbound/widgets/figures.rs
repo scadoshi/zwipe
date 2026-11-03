@@ -9,7 +9,7 @@ use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::style::Stylize;
 use ratatui::text::{Line, Text};
-use ratatui::widgets::{BorderType, Paragraph};
+use ratatui::widgets::Paragraph;
 use zwipe_ui::home::Figures;
 
 use super::count_up as count_up_widget;
@@ -92,7 +92,7 @@ pub(crate) const TILE_HEIGHT: u16 = 4;
 /// The narrowest a row of tiles draws, in cells: three tiles that each hold the longest label inside their borders, with a cell between them.
 pub(crate) const TILES_MIN_WIDTH: u16 = 47;
 
-/// Draws `numbers` over their labels across `area`, each figure in its own rounded tile as the app's `StatsStrip` draws a `.stat`: the number bold in `--palette-5`, the label muted under it. An area shorter than [`TILE_HEIGHT`] or narrower than [`TILES_MIN_WIDTH`] gets the plain strip in its middle rows instead.
+/// Draws `numbers` over their labels across `area`, each figure in its own solid square-cornered tile as the app's `StatsStrip` draws a `.stat`: the number bold in `--palette-5`, the label muted under it. An area shorter than [`TILE_HEIGHT`] or narrower than [`TILES_MIN_WIDTH`] gets the plain strip in its middle rows instead.
 pub(crate) fn tiles(f: &mut Frame<'_>, palette: &Palette, area: Rect, numbers: [String; 3]) {
     if area.height < TILE_HEIGHT || area.width < TILES_MIN_WIDTH {
         let top = area.height.saturating_sub(HEIGHT) / 2;
@@ -113,9 +113,7 @@ pub(crate) fn tiles(f: &mut Frame<'_>, palette: &Palette, area: Rect, numbers: [
         .spacing(1)
         .split(row);
     for ((number, label), column) in numbers.into_iter().zip(Figures::LABELS).zip(columns.iter()) {
-        let block = crate::inbound::widgets::panel::bordered(palette)
-            .border_type(BorderType::Rounded)
-            .border_style(palette.border);
+        let block = crate::inbound::widgets::panel::bordered(palette).border_style(palette.border);
         let inner = block.inner(*column);
         f.render_widget(block, *column);
         let text = Text::from(vec![

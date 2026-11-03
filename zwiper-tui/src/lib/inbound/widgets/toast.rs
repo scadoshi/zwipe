@@ -237,7 +237,7 @@ fn render(
     f.render_widget(Clear, rect);
     f.render_widget(
         paragraph.block(
-            crate::inbound::widgets::panel::overlay(palette)
+            crate::inbound::widgets::panel::bordered(palette)
                 .border_style(border(toast.kind, palette))
                 .style(base)
                 .padding(Padding::horizontal(1)),
@@ -318,13 +318,13 @@ mod tests {
         }
         let screen = rows(&toasts, 40, 12, Instant::now());
         assert!(screen[1].contains("third"), "the newest on top: {screen:?}");
-        assert!(screen[0].starts_with(" ╭"), "one cell in from the left");
+        assert!(screen[0].starts_with(" ┌"), "one cell in from the left");
         assert!(
             !screen.concat().contains("second"),
             "older ones show only an edge"
         );
         assert!(
-            screen[3].contains('╰') && screen[4].contains('╰'),
+            screen[3].contains('└') && screen[4].contains('└'),
             "{screen:?}"
         );
     }

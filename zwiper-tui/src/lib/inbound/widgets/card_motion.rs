@@ -672,7 +672,7 @@ mod tests {
             .map(|x| buf.cell((x, 0)).unwrap().symbol().to_owned())
             .collect();
         assert!(
-            top.starts_with("╭─╭──────╮─"),
+            top.starts_with("┌─┌──────┐─"),
             "the outline crosses the lines under it: {top:?}"
         );
         let mut blank = Buffer::empty(bounds);
@@ -711,10 +711,10 @@ mod tests {
             .map(|x| buf.cell((x, 1)).unwrap().symbol().to_owned())
             .collect();
         assert!(
-            row.starts_with("  ") && row.contains('╭') && row.contains('╮'),
+            row.starts_with("  ") && row.contains('┌') && row.contains('┐'),
             "both corners survive the narrowing: {row:?}"
         );
-        let corner = row.find('╭').unwrap();
+        let corner = row.find('┌').unwrap();
         assert!(corner > 2, "the card has moved right of its rest: {row:?}");
         let dimmed = buf.cell((u16::try_from(corner).unwrap(), 1)).unwrap();
         assert_eq!(dimmed.modifier.contains(Modifier::DIM), placement.dim);

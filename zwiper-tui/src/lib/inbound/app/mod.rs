@@ -183,7 +183,6 @@ impl App {
             help.draw(f, palette);
         }
         self.shared.toasts.draw(f, palette, f.area());
-        grid::reach_edges(f, palette, f.area());
         if let Some(splash) = &self.shared.splash {
             splash.draw(f, palette, now);
         }

@@ -2,14 +2,14 @@
 //!
 //! The app draws it settled behind every screen, right over the theme's background, and the splash draws it raining in: each tile lands at `row * 18 ms` plus up to 160 ms of seeded scatter, falling three tiles over 350 ms with an ease-out.
 //!
-//! A tile fills four cells by two rows, about square since a cell is about twice as tall as it is wide, and the tiles meet with no gap, a mosaic of shades. Only the background changes, so text drawn over a tile stays as it is. Boxes on the grid (panels, fields, tiles) and loose text draw with no background of their own, so the tiles show under their letters; overlays (sheets, dialogs, toasts, popups) fill with the theme's background so what lies under them never shows through. A palette with no colors of its own draws no tiles.
+//! A tile fills four cells by two rows, about square since a cell is about twice as tall as it is wide, and the tiles meet with no gap, a mosaic of shades. Only the background changes, so text drawn over a tile stays as it is. Every box, on the grid or over it, fills to its outer edge with the theme's background and sits on the tiles as a solid rectangle; loose text draws with no background of its own, so the tiles show up to its letters. A palette with no colors of its own draws no tiles.
 
 use std::time::Duration;
 
 use orangui_core::grid_rain;
 use ratatui::Frame;
 use ratatui::layout::Rect;
-use ratatui::style::{Color, Modifier};
+use ratatui::style::Color;
 
 use crate::domain::theme::Palette;
 
@@ -152,59 +152,6 @@ pub(crate) fn shades(
     cells
 }
 
-/// Lays the settled tiles back under the cells along the outside of every overlay in `area`, its border and any label on it, so the grid reaches each overlay's line.
-///
-/// An overlay (a dialog, sheet, toast or popup) fills its border cells with the theme's background, and a border glyph sits in the middle of its cell, so this gives the outer half of each border cell back to the grid. A cell counts as an overlay's edge when it holds the plain background and a neighbor beside, above or below shows its tile; only those cells change, so the inside of an overlay stays solid and an overlay drawn over another keeps its border on it. Reversed cells keep their fill. A box on the grid has no fill, so its cells already show their tiles and this leaves them be.
-pub(crate) fn reach_edges(f: &mut Frame<'_>, palette: &Palette, area: Rect) {
-    let Some(base) = palette.base.bg else {
-        return;
-    };
-    let tiles = shades(palette, area, None);
-    if tiles.is_empty() {
-        return;
-    }
-    let width = usize::from(area.width);
-    let at = |x: u16, y: u16| {
-        usize::from(y.saturating_sub(area.y))
-            .saturating_mul(width)
-            .saturating_add(usize::from(x.saturating_sub(area.x)))
-    };
-    let buffer = f.buffer_mut();
-    // Which cells show their tile, read before any edge changes.
-    let shows: Vec<bool> = (area.y..area.bottom())
-        .flat_map(|y| (area.x..area.right()).map(move |x| (x, y)))
-        .map(|(x, y)| {
-            let tile = tiles.get(at(x, y)).copied().flatten();
-            buffer
-                .cell((x, y))
-                .is_some_and(|cell| tile.is_some_and(|t| t != base && cell.bg == t))
-        })
-        .collect();
-    let showing = |x: Option<u16>, y: Option<u16>| match (x, y) {
-        (Some(x), Some(y)) if area.contains((x, y).into()) => {
-            shows.get(at(x, y)).copied().unwrap_or(false)
-        }
-        _ => false,
-    };
-    for y in area.y..area.bottom() {
-        for x in area.x..area.right() {
-            let Some(cell) = buffer.cell_mut((x, y)) else {
-                continue;
-            };
-            if cell.bg != base || cell.modifier.contains(Modifier::REVERSED) {
-                continue;
-            }
-            let edge = showing(x.checked_sub(1), Some(y))
-                || showing(x.checked_add(1), Some(y))
-                || showing(Some(x), y.checked_sub(1))
-                || showing(Some(x), y.checked_add(1));
-            if edge && let Some(tile) = tiles.get(at(x, y)).copied().flatten() {
-                cell.set_bg(tile);
-            }
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use ratatui::Terminal;
@@ -309,37 +256,9 @@ mod tests {
     }
 
     #[test]
-    fn the_edges_of_an_overlay_take_their_tiles_and_its_inside_stays_solid() {
+    fn a_box_on_the_grid_is_solid_and_square_while_loose_text_sits_on_its_tile() {
         let palette = Palette::for_account("gruvbox", true);
         let base = palette.base.bg.unwrap();
-        let mut terminal = Terminal::new(TestBackend::new(40, 12)).unwrap();
-        terminal
-            .draw(|f| {
-                f.render_widget(ratatui::widgets::Block::new().style(palette.base), f.area());
-                draw(f, &palette, f.area(), None);
-                let outer = Rect::new(4, 1, 20, 8);
-                f.render_widget(super::super::panel::overlay(&palette), outer);
-                f.render_widget(
-                    super::super::panel::overlay(&palette),
-                    Rect::new(8, 3, 8, 4),
-                );
-                reach_edges(f, &palette, f.area());
-            })
-            .unwrap();
-        let buffer = terminal.backend().buffer();
-        let tiles = shades(&palette, buffer.area, None);
-        let tile = |x: u16, y: u16| tiles[usize::from(y) * 40 + usize::from(x)].unwrap();
-        for (x, y) in [(4, 1), (10, 1), (4, 5), (23, 5), (10, 8)] {
-            assert_eq!(buffer[(x, y)].bg, tile(x, y), "the outer border at {x},{y}");
-        }
-        for (x, y) in [(5, 2), (12, 2), (8, 3), (10, 4)] {
-            assert_eq!(buffer[(x, y)].bg, base, "{x},{y} inside stays solid");
-        }
-    }
-
-    #[test]
-    fn a_box_on_the_grid_shows_its_tiles_inside_and_on_its_border() {
-        let palette = Palette::for_account("gruvbox", true);
         let mut terminal = Terminal::new(TestBackend::new(40, 12)).unwrap();
         terminal
             .draw(|f| {
@@ -351,14 +270,23 @@ mod tests {
                     ),
                     Rect::new(4, 1, 20, 6),
                 );
+                f.render_widget(
+                    ratatui::text::Line::styled("Loose", palette.text()),
+                    Rect::new(26, 2, 5, 1),
+                );
             })
             .unwrap();
         let buffer = terminal.backend().buffer();
-        let tiles = shades(&palette, buffer.area, None);
-        let tile = |x: u16, y: u16| tiles[usize::from(y) * 40 + usize::from(x)].unwrap();
-        assert_eq!(buffer[(4, 1)].symbol(), "╭", "a rounded corner");
-        for (x, y) in [(4, 1), (23, 6), (5, 2), (12, 4), (22, 5)] {
-            assert_eq!(buffer[(x, y)].bg, tile(x, y), "{x},{y} shows its tile");
+        let corners = [(4, 1, "┌"), (23, 1, "┐"), (4, 6, "└"), (23, 6, "┘")];
+        for (x, y, glyph) in corners {
+            assert_eq!(buffer[(x, y)].symbol(), glyph, "a square corner at {x},{y}");
+        }
+        for (x, y) in [(4, 1), (10, 1), (4, 4), (23, 6), (5, 2), (12, 4), (22, 5)] {
+            assert_eq!(
+                buffer[(x, y)].bg,
+                base,
+                "{x},{y} holds the plain background"
+            );
         }
         assert_eq!(buffer[(5, 2)].symbol(), "D");
         assert_eq!(
@@ -366,5 +294,10 @@ mod tests {
             palette.base.fg.unwrap(),
             "text in the text color"
         );
+        let tiles = shades(&palette, buffer.area, None);
+        let tile = tiles[2 * 40 + 26].unwrap();
+        assert_ne!(tile, base, "a tile shows beside the box");
+        assert_eq!(buffer[(26, 2)].symbol(), "L");
+        assert_eq!(buffer[(26, 2)].bg, tile, "loose text sits on its tile");
     }
 }

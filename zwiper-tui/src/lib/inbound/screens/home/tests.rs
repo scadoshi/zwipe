@@ -700,8 +700,8 @@ fn each_figure_sits_in_its_own_tile_until_the_terminal_is_short() {
         }
         let tiles = rows
             .iter()
-            .find(|r| r.matches('╭').count() >= 3)
-            .map(|r| r.matches('╭').count());
+            .find(|r| r.matches('┌').count() >= 3)
+            .map(|r| r.matches('┌').count());
         let want = if height >= 22 { Some(3) } else { None };
         assert_eq!(tiles, want, "tiles at {width}x{height}:\n{text}");
         assert!(text.contains("Everybody") && text.contains("v Activity"));
@@ -923,7 +923,7 @@ fn the_featured_card_shows_its_image_beside_or_above_the_quote_when_there_is_roo
         rows.iter()
             .find_map(|row| row.find("Featured flavor").map(|_| row))
             .and_then(|row| {
-                row.rfind('╭')
+                row.rfind('┌')
                     .map(|x| row.get(..x).unwrap().chars().count())
             })
             .unwrap()
@@ -993,7 +993,7 @@ fn the_color_maps_about_marker_is_a_button_in_its_corner() {
             .unwrap_or_else(|| panic!("no corner [?] at {width}x{height}"));
         let context = format!("{width}x{height}");
         assert!(
-            matches!(buffer[(x + 5, y)].symbol(), "╮" | "─"),
+            matches!(buffer[(x + 5, y)].symbol(), "┐" | "─"),
             "{context}: on the panel's top border"
         );
         crate::test_support::assert_about_marker(buffer, &palette, (x + 1, y), false, &context);

@@ -267,7 +267,7 @@ mod tests {
             .map(ratatui::buffer::Cell::symbol)
             .collect();
         let top: String = text.chars().take(20).collect();
-        assert_eq!(top, "╭───── Paste ──────╮", "the label sits centered");
+        assert_eq!(top, "┌───── Paste ──────┐", "the label sits centered");
         let inside: String = text.chars().skip(21).take(18).collect();
         assert_eq!(inside.trim(), "", "nothing inside an empty box");
     }

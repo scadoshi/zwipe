@@ -1,6 +1,6 @@
-//! The frames every box in the app draws with, a centered panel on the grid or over the screen, and the full-bleed rules that divide one.
+//! The frame every box in the app draws with, a centered dialog, and the full-bleed rules that divide a box.
 //!
-//! A box that sits on the grid backdrop is `bordered`: border and title in their colors and no fill, so the tiles show through under its text. A box drawn over other content (a dialog, sheet, toast or popup) is an `overlay`: filled with the theme's background, so nothing under it shows through its text.
+//! Every box, on the grid or over other content, is `bordered`: square corners and the theme's background filled to its outer edge, border cells included, so it sits on the grid or over a screen as one solid rectangle. A terminal cell holds one background, so a rounded corner glyph could never fill cleanly to the box's corner.
 
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Rect};
@@ -10,17 +10,10 @@ use ratatui::widgets::{Block, BorderType, Clear, Padding};
 use super::measure::BORDERS;
 use crate::domain::theme::Palette;
 
-/// A box on the grid: a border on every side with rounded corners and no background, so the grid's tiles show under its text. Its text draws in the theme's text color unless a span says otherwise.
+/// The frame of every box: a border on every side with square corners, filled with the theme's background through its border cells. Its text draws in the theme's text color unless a span says otherwise. A box drawn over other content clears its area first with a `Clear`.
 pub(crate) fn bordered(palette: &Palette) -> Block<'static> {
     Block::bordered()
-        .border_type(BorderType::Rounded)
-        .style(palette.text())
-}
-
-/// A box drawn over other content, a dialog, sheet, toast or popup: [`bordered`]'s frame filled with the theme's background, so what lies under it never shows through its text. The caller clears the area first with a `Clear`.
-pub(crate) fn overlay(palette: &Palette) -> Block<'static> {
-    Block::bordered()
-        .border_type(BorderType::Rounded)
+        .border_type(BorderType::Plain)
         .style(palette.base)
 }
 
@@ -39,22 +32,7 @@ fn panel_block(block: Block<'static>, palette: &Palette) -> Block<'static> {
         .padding(Padding::horizontal(1))
 }
 
-/// Frames a centered panel of the given inner size on the grid, with no fill, and returns the area inside its border and padding.
-pub(crate) fn centered(
-    f: &mut Frame<'_>,
-    palette: &Palette,
-    area: Rect,
-    width: u16,
-    height: u16,
-) -> Rect {
-    let outer = centered_area(area, width, height);
-    let block = panel_block(bordered(palette), palette);
-    let inner = block.inner(outer);
-    f.render_widget(block, outer);
-    inner
-}
-
-/// Clears and frames a centered dialog of the given inner size over whatever is under it, filled as an [`overlay`], and returns the area inside its border and padding.
+/// Clears and frames a centered dialog of the given inner size over whatever is under it, the grid or a screen, and returns the area inside its border and padding.
 pub(crate) fn dialog(
     f: &mut Frame<'_>,
     palette: &Palette,
@@ -63,7 +41,7 @@ pub(crate) fn dialog(
     height: u16,
 ) -> Rect {
     let outer = centered_area(area, width, height);
-    let block = panel_block(overlay(palette), palette);
+    let block = panel_block(bordered(palette), palette);
     let inner = block.inner(outer);
     f.render_widget(Clear, outer);
     f.render_widget(block, outer);
