@@ -17,11 +17,25 @@ fn loaded() -> (Harness, Uuid, Vec<Card>) {
     let mut harness = Harness::on(Screen::Home(Box::default()));
     harness.open(|cx| open(cx, deck_id));
     harness.apply(Update::Loaded {
-        deck_id,
+        ticket: last_ticket(&harness),
         deck: Box::new(d),
     });
     harness.clear();
     (harness, deck_id, cards)
+}
+
+/// The ticket of the newest request queued.
+fn last_ticket(harness: &Harness) -> Ticket {
+    match requests(harness).last() {
+        Some(
+            Request::FetchDeck { ticket, .. }
+            | Request::DeleteDeckCard { ticket, .. }
+            | Request::MoveDeckCard { ticket, .. }
+            | Request::RestoreDeckCard { ticket, .. }
+            | Request::RestoreBoard { ticket, .. },
+        ) => *ticket,
+        None => panic!("no request went out: {:?}", harness.pending()),
+    }
 }
 
 fn view(harness: &Harness) -> &RemoveView {
@@ -55,7 +69,13 @@ fn requests(harness: &Harness) -> Vec<&Request> {
 }
 
 fn current(harness: &Harness) -> String {
-    view(harness).current().unwrap().scryfall_data.name.clone()
+    view(harness)
+        .model
+        .current()
+        .unwrap()
+        .scryfall_data
+        .name
+        .clone()
 }
 
 #[test]
@@ -63,10 +83,13 @@ fn opening_loads_the_deck_and_shows_the_main_board() {
     let mut harness = Harness::on(Screen::Home(Box::default()));
     let deck_id = Uuid::new_v4();
     harness.open(|cx| open(cx, deck_id));
-    assert_eq!(requests(&harness), [&Request::Load { deck_id }]);
+    assert!(matches!(
+        requests(&harness)[..],
+        [Request::FetchDeck { deck_id: id, .. }] if *id == deck_id
+    ));
     assert!(screen_text(&harness.app).contains("No cards"));
     let (harness, _, _) = loaded();
-    assert_eq!(view(&harness).stack.len(), 2);
+    assert_eq!(view(&harness).model.cards().len(), 2);
     let screen = screen_text(&harness.app);
     for expected in ["Boards", "Main", "All", "A", "skip"] {
         assert!(screen.contains(expected), "missing {expected}");
@@ -92,24 +115,24 @@ fn remove_deletes_every_copy_and_undo_recreates_them() {
     harness.press(KeyCode::Char('l'));
     assert_eq!(last_toast(&harness), "Removed from deck");
     assert_eq!(current(&harness), "B");
-    let [Request::Remove { entry, .. }] = requests(&harness)[..] else {
-        panic!("one remove");
-    };
-    let entry = entry.clone();
-    harness.apply(Update::Removed { deck_id, entry });
+    assert!(matches!(
+        requests(&harness)[..],
+        [Request::DeleteDeckCard { card_id, .. }] if *card_id == cards[0].scryfall_data.id
+    ));
+    harness.apply(Update::Landed {
+        ticket: last_ticket(&harness),
+    });
     assert_eq!(harness.app.shared.cards.undo.log(deck_id).len(), 1);
     harness.clear();
     harness.press(KeyCode::Char('u'));
-    let [
-        Request::UndoRemove {
-            quantity, taken, ..
-        },
-    ] = requests(&harness)[..]
-    else {
+    let [Request::RestoreDeckCard { quantity, .. }] = requests(&harness)[..] else {
         panic!("one undo");
     };
     assert_eq!(*quantity, 3);
-    assert!(taken.is_some());
+    assert!(
+        harness.app.shared.cards.undo.is_empty(deck_id),
+        "the undo took the log's entry"
+    );
     assert_eq!(current(&harness), "A", "the card is back on top");
     let deck_card = DeckCard {
         deck_id,
@@ -119,49 +142,48 @@ fn remove_deletes_every_copy_and_undo_recreates_them() {
         board: Board::Deck,
         mvp_at: None,
     };
-    harness.apply(Update::UndidRemove {
-        deck_id,
-        card: Box::new(cards[0].clone()),
-        taken: None,
-        result: Ok(Box::new(deck_card)),
+    let ticket = last_ticket(&harness);
+    harness.apply(Update::Restored {
+        ticket,
+        deck_card: Box::new(deck_card.clone()),
     });
     assert_eq!(last_toast(&harness), "Undid remove");
-}
-
-#[test]
-fn an_undo_the_deck_view_already_did_says_already_changed() {
-    let (mut harness, deck_id, cards) = loaded();
-    harness.press(KeyCode::Char('m'));
-    assert_eq!(last_toast(&harness), "Moved to maybeboard");
-    if let Screen::RemoveCards(view) = harness.screen_mut() {
-        let id = cards[0].scryfall_data.id;
-        for entry in &mut view.entries {
-            if entry.deck_card.scryfall_data_id == id {
-                entry.deck_card.board = Board::Deck;
-            }
-        }
-    }
-    harness.clear();
-    harness.press(KeyCode::Char('u'));
-    assert_eq!(last_toast(&harness), "Already changed");
-    assert_eq!(requests(&harness).len(), 0);
-    assert!(harness.app.shared.cards.undo.is_empty(deck_id));
+    let count = harness.app.shared.toasts.items().len();
+    harness.apply(Update::Restored {
+        ticket,
+        deck_card: Box::new(deck_card),
+    });
+    assert_eq!(
+        harness.app.shared.toasts.items().len(),
+        count,
+        "a repeated reply changes nothing"
+    );
+    assert_eq!(
+        view(&harness)
+            .model
+            .entries()
+            .iter()
+            .filter(|e| e.card.scryfall_data.id == cards[0].scryfall_data.id)
+            .count(),
+        1
+    );
 }
 
 #[test]
 fn a_failed_undo_gives_the_entry_back() {
-    let (mut harness, deck_id, cards) = loaded();
-    let taken = UndoAction::MovedBoard {
-        card_id: cards[0].scryfall_data.id,
-        card_name: "A".to_owned(),
-        from: Board::Deck,
-    };
-    harness.apply(Update::UndidMove {
-        deck_id,
-        card: Box::new(cards[0].clone()),
-        from: Board::Deck,
-        taken: Some(Box::new(taken)),
-        result: Err(UndoFailure::Call("offline".to_owned())),
+    let (mut harness, deck_id, _) = loaded();
+    harness.press(KeyCode::Char('m'));
+    assert_eq!(last_toast(&harness), "Moved to maybeboard");
+    harness.apply(Update::Landed {
+        ticket: last_ticket(&harness),
+    });
+    assert_eq!(harness.app.shared.cards.undo.log(deck_id).len(), 1);
+    harness.clear();
+    harness.press(KeyCode::Char('u'));
+    assert!(harness.app.shared.cards.undo.is_empty(deck_id));
+    harness.apply(Update::UndoFailed {
+        ticket: last_ticket(&harness),
+        failure: UndoFailure::Call("offline".to_owned()),
     });
     assert_eq!(last_toast(&harness), "Failed to undo: offline");
     assert_eq!(harness.app.shared.cards.undo.log(deck_id).len(), 1);
@@ -175,11 +197,11 @@ fn boards_filter_refresh_and_details() {
     harness.press(KeyCode::Char('m'));
     assert_eq!(last_toast(&harness), "Moved to main");
     harness.press(KeyCode::Char('4'));
-    assert_eq!(view(&harness).stack.len(), 3);
+    assert_eq!(view(&harness).model.cards().len(), 3);
     harness.press(KeyCode::Char('h'));
     harness.press(KeyCode::Char('r'));
     assert_eq!(last_toast(&harness), "Stack refreshed");
-    assert_eq!(view(&harness).stack.index(), 0);
+    assert_eq!(view(&harness).model.index(), 0);
     harness.press(KeyCode::Char('f'));
     assert!(view(&harness).sheet.is_some());
     harness.press(KeyCode::Esc);

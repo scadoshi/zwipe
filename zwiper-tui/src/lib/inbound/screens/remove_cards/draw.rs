@@ -8,8 +8,9 @@ use ratatui::style::Style;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Paragraph, Widget};
 use zwipe_ui::filter;
+use zwipe_ui::screens::remove_cards::{self, BoardFilter};
 
-use super::{BoardFilter, RemoveView};
+use super::RemoveView;
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::screens::card_sheets;
@@ -32,9 +33,12 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &RemoveView) {
     ])
     .horizontal_margin(1)
     .areas(area);
-    let mut chips = vec![Span::styled("Boards ", palette.muted.bold())];
+    let mut chips = vec![Span::styled(
+        format!("{} ", remove_cards::BOARDS),
+        palette.muted.bold(),
+    )];
     for board in BoardFilter::ALL {
-        let style = if board == view.board {
+        let style = if board == view.model.board() {
             palette.accent.bold().reversed()
         } else {
             palette.muted
@@ -47,11 +51,11 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &RemoveView) {
     let width = body.width.min(CARD_WIDTH);
     let now = Instant::now();
     let motion = view.motion.as_ref().filter(|m| m.running(now));
-    match view.current() {
+    match view.model.current() {
         Some(card) => {
             // While a card comes back after an undo, the card it covers rests under it.
             let resting = match motion.map(card_motion::CardMotion::phase) {
-                Some(Phase::Enter) => view.stack.next_wrapping().map(|c| (c, 0, palette.accent)),
+                Some(Phase::Enter) => view.next().map(|c| (c, 0, palette.accent)),
                 _ => Some((card, view.face, entering_style(palette, view))),
             };
             if let Some((card, face, border)) = resting {
@@ -88,7 +92,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &RemoveView) {
 
 /// The keys: the swipes in their colors, then the boards, the filter with a dot when one is on, and the rest.
 fn key_line(palette: &Palette, view: &RemoveView) -> Line<'static> {
-    let filter_label = if filter::shows_dot(&view.filter) {
+    let filter_label = if filter::shows_dot(view.model.filter()) {
         "filter •"
     } else {
         "filter"
@@ -101,7 +105,7 @@ fn key_line(palette: &Palette, view: &RemoveView) -> Line<'static> {
         ("u", "undo"),
     );
     let mut rest = vec![("1-4", "boards"), ("f", filter_label), ("r", "refresh")];
-    if view.current().is_some() {
+    if view.model.current().is_some() {
         rest.push(("e", "details"));
     }
     rest.push(("Esc", "back"));
@@ -111,8 +115,7 @@ fn key_line(palette: &Palette, view: &RemoveView) -> Line<'static> {
 
 /// The border of the top card: the side it came back from after an undo, else the accent.
 fn entering_style(palette: &Palette, view: &RemoveView) -> Style {
-    view.stack
-        .entering()
+    view.entering
         .map_or(palette.accent, |d| card_motion::side_style(palette, d))
 }
 
@@ -132,7 +135,7 @@ fn draw_motion(
             card_motion::side_style(palette, motion.direction()),
         ),
         Phase::Enter => {
-            let Some(card) = view.current() else {
+            let Some(card) = view.model.current() else {
                 return;
             };
             (card, view.face, entering_style(palette, view))

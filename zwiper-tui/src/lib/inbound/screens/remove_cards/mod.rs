@@ -1,131 +1,53 @@
 //! Remove deck cards: swipe a deck's cards to keep them, remove every copy, or move them between the main board and the maybeboard, with undo that reconciles with the deck's undo log.
+//!
+//! The view drives zwipe-ui's `screens::remove_cards` model, which owns the deck, the filter, the board, the pile and every write; the view keeps the sheets, the face shown and the card motion.
 
 pub(crate) mod draw;
 pub(crate) mod keys;
 #[cfg(test)]
 mod tests;
 
+use std::collections::VecDeque;
 use std::time::Instant;
 
 use uuid::Uuid;
-use zwipe_client::{ClientError, ZwipeClient};
-use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
-use zwipe_core::domain::card::search_card::card_filter::CardSortKey;
-use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
-use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
-use zwipe_core::domain::card::search_card::cards::Cards;
-use zwipe_core::domain::deck::{Board, Deck, DeckCard, DeckEntry, DeckProfile, deck_metrics};
-use zwipe_core::domain::user::hints::HINT_REMOVE_DECK_CARDS;
-use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpPatchDeckCard};
-use zwipe_ui::deck_signals::{self, Crossing};
+use zwipe_core::domain::deck::{Board, Deck, DeckCard};
 use zwipe_ui::filter::draft::SheetConfig;
 use zwipe_ui::filter::picker::Sources;
-use zwipe_ui::stack::{CardStack, Direction, RemoveAction, StackAction};
+use zwipe_ui::generation::Ticket;
+use zwipe_ui::screens::remove_cards::{self, Action, Destination, Effect, State};
+use zwipe_ui::stack::Direction;
 use zwipe_ui::stores::filters::FilterScope;
-use zwipe_ui::stores::undo::{self, UndoAction};
 
 use super::Screen;
 use super::card_sheets::details::DetailsSheet;
 use super::card_sheets::filter::FilterSheet;
-use super::swipe::{self, UndoFailure};
+use super::swipe::UndoFailure;
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;
 use crate::inbound::screens::card_sheets::printing::PrintingSheet;
 use crate::inbound::widgets::card_motion::{CardMotion, Snapshot};
 use crate::inbound::widgets::hint;
-use crate::inbound::widgets::toast::{self, ToastKind};
+use crate::inbound::widgets::toast::ToastKind;
 use crate::outbound::account::Account;
 
-/// Which board is being trimmed.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub(crate) enum BoardFilter {
-    #[default]
-    Main,
-    Maybe,
-    Side,
-    All,
-}
-
-impl BoardFilter {
-    pub(crate) const ALL: [Self; 4] = [Self::Main, Self::Maybe, Self::Side, Self::All];
-
-    pub(crate) fn label(self) -> &'static str {
-        match self {
-            Self::Main => "Main",
-            Self::Maybe => "Maybe",
-            Self::Side => "Side",
-            Self::All => "All",
-        }
-    }
-
-    fn keeps(self, board: Board) -> bool {
-        match self {
-            Self::Main => board.is_active(),
-            Self::Maybe => board.is_maybeboard(),
-            Self::Side => board.is_sideboard(),
-            Self::All => true,
-        }
-    }
-}
-
 /// The Remove screen.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub(crate) struct RemoveView {
-    pub(crate) deck_id: Uuid,
-    pub(crate) loaded: bool,
-    pub(crate) profile: Option<DeckProfile>,
-    pub(crate) entries: Vec<DeckEntry>,
-    pub(crate) command_zone_cards: Vec<Card>,
-    pub(crate) filter: CardQueryBuilder,
-    pub(crate) board: BoardFilter,
-    pub(crate) stack: CardStack<RemoveAction>,
+    pub(crate) model: State,
     pub(crate) sheet: Option<FilterSheet>,
     pub(crate) details: Option<DetailsSheet>,
     pub(crate) printing: Option<PrintingSheet>,
     pub(crate) face: usize,
     /// The swiped card flying off, or the undone one coming back.
     pub(crate) motion: Option<CardMotion<Snapshot>>,
+    /// The side the top card came back from after an undo, which colors its border until the next key.
+    pub(crate) entering: Option<Direction>,
 }
 
 impl RemoveView {
-    fn currency(&self) -> PriceCurrency {
-        self.profile
-            .as_ref()
-            .and_then(|p| p.price_target_currency)
-            .unwrap_or(PriceCurrency::Usd)
-    }
-
-    fn price(&self) -> f64 {
-        deck_metrics::deck_price(&self.entries, &self.command_zone_cards, self.currency())
-    }
-
-    /// The board, the filter and the sort, into a fresh stack; history stays.
-    pub(crate) fn rerun(&mut self) {
-        self.motion = None;
-        let board = self.board;
-        let cards: Vec<Card> = self
-            .entries
-            .iter()
-            .filter(|e| board.keeps(e.deck_card.board))
-            .map(|e| e.card.clone())
-            .collect();
-        let mut cards = Cards::from(cards);
-        if !self.filter.is_empty()
-            && let Ok(criteria) = self.filter.build_criteria()
-        {
-            cards = cards.matching(&criteria);
-        }
-        let cards = cards.sorted(self.filter.sort(), self.filter.direction());
-        self.stack.replace(cards.into());
-        self.face = 0;
-    }
-
-    pub(crate) fn current(&self) -> Option<&Card> {
-        self.stack.current_wrapping()
-    }
-
     /// Whether a card is in motion, so the loop redraws.
     pub(crate) fn animating(&self) -> bool {
         self.motion
@@ -133,249 +55,49 @@ impl RemoveView {
             .is_some_and(|m| m.running(Instant::now()))
     }
 
-    /// Sends `card` off by `direction` with the face it showed. Replaces any motion still running.
-    fn exit(&mut self, direction: Direction, card: Card) {
-        let snapshot = Snapshot {
-            card,
-            face: self.face,
-        };
-        self.motion = Some(CardMotion::exit(direction, snapshot, Instant::now()));
-    }
-
-    fn entry(&self, card_id: Uuid) -> Option<&DeckEntry> {
-        self.entries
-            .iter()
-            .find(|e| e.deck_card.scryfall_data_id == card_id)
-    }
-
-    /// Left: keep it and cycle on; the card stays in the deck. The key reads "skip"; the toast is the app's "Kept".
-    pub(crate) fn keep(&mut self, cx: &mut Context<'_>) {
-        let Some(card) = self.current().cloned() else {
-            return;
-        };
-        self.stack.record(RemoveAction::Keep);
-        self.exit(Direction::Left, card);
-        cx.toast_for(ToastKind::Info, "Kept".to_owned(), toast::QUICK);
-        self.stack.advance_wrapping();
-        self.face = 0;
-    }
-
-    /// Right: remove every copy.
-    pub(crate) fn remove(&mut self, cx: &mut Context<'_>) {
-        let Some(card) = self.current().cloned() else {
-            return;
-        };
-        let id = card.scryfall_data.id;
-        let entry = self.entry(id).cloned();
-        let (board, quantity) = entry.as_ref().map_or((Board::Deck, 1), |e| {
-            (e.deck_card.board, *e.deck_card.quantity)
-        });
-        self.exit(Direction::Right, card.clone());
-        self.stack.record(RemoveAction::Remove {
-            card: Box::new(card),
-            board,
-            quantity,
-        });
-        if let Some(entry) = entry {
-            cx.request(
-                Request::Remove {
-                    deck_id: self.deck_id,
-                    entry: Box::new(entry),
-                }
-                .into(),
-            );
-        }
-        cx.toast_for(
-            ToastKind::Success,
-            "Removed from deck".to_owned(),
-            toast::QUICK,
-        );
-        let (lands, price) = (deck_signals::land_count(&self.entries), self.price());
-        self.entries.retain(|e| e.deck_card.scryfall_data_id != id);
-        self.stack.remove_current();
-        self.signals(cx, lands, price);
-        self.face = 0;
-    }
-
-    /// Up: between the main board and the maybeboard; the sideboard goes to the maybeboard.
-    pub(crate) fn move_board(&mut self, cx: &mut Context<'_>) {
-        let Some(card) = self.current().cloned() else {
-            return;
-        };
-        let id = card.scryfall_data.id;
-        let from = self.entry(id).map_or(Board::Deck, |e| e.deck_card.board);
-        let to = if from.is_maybeboard() {
-            Board::Deck
-        } else {
-            Board::Maybeboard
-        };
-        self.exit(Direction::Up, card.clone());
-        self.stack.record(RemoveAction::MoveBoard {
-            card: Box::new(card.clone()),
-            from,
-            to,
-        });
-        cx.request(
-            Request::Move {
-                deck_id: self.deck_id,
-                card: Box::new(card),
-                from,
-                to,
-            }
-            .into(),
-        );
-        let message = if to == Board::Deck {
-            "Moved to main"
-        } else {
-            "Moved to maybeboard"
-        };
-        cx.toast_for(ToastKind::Info, message.to_owned(), toast::QUICK);
-        let (lands, price) = (deck_signals::land_count(&self.entries), self.price());
-        if let Some(entry) = self
-            .entries
-            .iter_mut()
-            .find(|e| e.deck_card.scryfall_data_id == id)
-        {
-            entry.deck_card.board = to;
-        }
-        self.stack.remove_current();
-        self.signals(cx, lands, price);
-        self.face = 0;
-    }
-
-    fn signals(&self, cx: &mut Context<'_>, lands: i32, price: f64) {
-        let profile = self.profile.as_ref();
-        swipe::signal(
-            cx,
-            deck_signals::land_crossing(
-                profile.and_then(|p| p.land_target),
-                lands,
-                deck_signals::land_count(&self.entries),
-                Crossing::Down,
-            ),
-        );
-        swipe::signal(
-            cx,
-            deck_signals::budget_crossing(
-                profile.and_then(|p| p.price_target),
-                self.currency(),
-                price,
-                self.price(),
-            ),
-        );
-    }
-
-    /// Down: undoes the last swipe, bringing its card back from the side it left.
-    pub(crate) fn undo(&mut self, cx: &mut Context<'_>) {
-        self.undo_action(cx);
-        if let Some(direction) = self.stack.entering() {
-            self.motion = Some(CardMotion::enter(direction, Instant::now()));
-        }
-    }
-
-    /// Undoes the last swipe, skipping the server when the deck cards Undo already did it.
-    fn undo_action(&mut self, cx: &mut Context<'_>) {
-        let Some(action) = self.stack.pop_action() else {
-            cx.toast(ToastKind::Info, "Nothing to undo".to_owned());
-            return;
-        };
-        self.stack.prime_entering(action.exited());
-        self.face = 0;
-        let deck_id = self.deck_id;
-        match action {
-            RemoveAction::Keep => {
-                if !self.stack.retreat_wrapping() {
-                    self.stack.cancel_entering();
-                }
-                cx.toast_for(ToastKind::Info, "Undid keep".to_owned(), toast::QUICK);
-            }
-            RemoveAction::Remove {
+    /// Sends the top card off by `direction` with the face it shows, before the model moves on. Replaces any motion still running.
+    pub(crate) fn exit(&mut self, direction: Direction) {
+        if let Some(card) = self.model.current().cloned() {
+            let snapshot = Snapshot {
                 card,
-                board,
-                quantity,
-            } => {
-                let id = card.scryfall_data.id;
-                let taken = cx.shared.cards.undo.take_newest(deck_id, |a| {
-                    matches!(a, UndoAction::Removed { entry, .. } if entry.deck_card.scryfall_data_id == id)
-                });
-                if taken.is_none() && self.entry(id).is_some() {
-                    self.stack.cancel_entering();
-                    cx.toast_for(ToastKind::Info, "Already changed".to_owned(), toast::QUICK);
-                    return;
-                }
-                self.stack.insert_current((*card).clone());
-                cx.request(
-                    Request::UndoRemove {
-                        deck_id,
-                        card,
-                        board,
-                        quantity,
-                        taken: taken.map(Box::new),
-                    }
-                    .into(),
-                );
-            }
-            RemoveAction::MoveBoard { card, from, .. } => {
-                let id = card.scryfall_data.id;
-                let taken = cx.shared.cards.undo.take_newest(deck_id, |a| {
-                    matches!(a, UndoAction::MovedBoard { card_id, from: f, .. } if *card_id == id && *f == from)
-                });
-                let already_back = self.entry(id).is_some_and(|e| e.deck_card.board == from);
-                if taken.is_none() && already_back {
-                    self.stack.cancel_entering();
-                    cx.toast_for(ToastKind::Info, "Already changed".to_owned(), toast::QUICK);
-                    return;
-                }
-                self.stack.insert_current((*card).clone());
-                cx.request(
-                    Request::UndoMove {
-                        deck_id,
-                        card,
-                        from,
-                        taken: taken.map(Box::new),
-                    }
-                    .into(),
-                );
-            }
+                face: self.face,
+            };
+            self.motion = Some(CardMotion::exit(direction, snapshot, Instant::now()));
         }
     }
 
-    /// Refresh: back to the first card with no history; a Random sort reshuffles.
-    pub(crate) fn refresh(&mut self, cx: &mut Context<'_>) {
-        self.stack.rewind();
-        if self.filter.sort() == Some(CardSortKey::Random) {
-            self.rerun();
+    /// The card under the top one, wrapping around; `None` with fewer than two cards.
+    pub(crate) fn next(&self) -> Option<&Card> {
+        let cards = self.model.cards();
+        if cards.len() < 2 {
+            return None;
         }
-        self.face = 0;
-        cx.toast_for(ToastKind::Info, "Stack refreshed".to_owned(), toast::QUICK);
+        let at = self
+            .model
+            .index()
+            .checked_add(1)?
+            .checked_rem(cards.len())?;
+        cards.get(at)
     }
 
-    pub(crate) fn set_board(&mut self, board: BoardFilter) {
-        self.board = board;
-        self.rerun();
-    }
-
+    /// Opens the filter sheet over the deck's cards.
     pub(crate) fn open_filter(&mut self, cx: &mut Context<'_>) {
-        let cards: Vec<Card> = self.entries.iter().map(|e| e.card.clone()).collect();
+        let cards: Vec<Card> = self
+            .model
+            .entries()
+            .iter()
+            .map(|e| e.card.clone())
+            .collect();
         let config = SheetConfig {
             show_format: true,
             sources: Sources::deck(&cards),
             ..SheetConfig::default()
         };
-        self.sheet = Some(FilterSheet::open(cx, &self.filter, config));
-    }
-
-    /// Leaves, parking the filter.
-    pub(crate) fn leave(&mut self, cx: &mut Context<'_>) {
-        cx.shared
-            .cards
-            .filters
-            .park(FilterScope::Remove, self.deck_id, self.filter.clone());
-        cx.back();
+        self.sheet = Some(FilterSheet::open(cx, self.model.filter(), config));
     }
 }
 
-/// Opens Remove for `deck_id` over the current screen and loads the deck.
+/// Opens Remove for `deck_id` over the current screen under the filter remembered for it, and loads the deck.
 pub(crate) fn open(cx: &mut Context<'_>, deck_id: Uuid) {
     let filter = cx
         .shared
@@ -383,101 +105,198 @@ pub(crate) fn open(cx: &mut Context<'_>, deck_id: Uuid) {
         .filters
         .restore(FilterScope::Remove, deck_id)
         .unwrap_or_default();
-    let view = RemoveView {
-        deck_id,
-        loaded: false,
-        profile: None,
-        entries: Vec::new(),
-        command_zone_cards: Vec::new(),
-        filter,
-        board: BoardFilter::Main,
-        stack: CardStack::default(),
-        sheet: None,
-        details: None,
-        printing: None,
-        face: 0,
-        motion: None,
-    };
-    hint::once(cx, HINT_REMOVE_DECK_CARDS);
-    cx.request(Request::Load { deck_id }.into());
+    let mut view = RemoveView::default();
+    dispatch(&mut view, Action::Load { deck_id, filter }, cx);
     cx.push(Screen::RemoveCards(Box::new(view)));
 }
 
-/// Remove's work.
-#[derive(Debug, Clone, PartialEq)]
-pub(crate) enum Request {
-    Load {
-        deck_id: Uuid,
-    },
-    /// Deletes every copy.
-    Remove {
-        deck_id: Uuid,
-        entry: Box<DeckEntry>,
-    },
-    Move {
-        deck_id: Uuid,
-        card: Box<Card>,
-        from: Board,
-        to: Board,
-    },
-    UndoRemove {
-        deck_id: Uuid,
-        card: Box<Card>,
-        board: Board,
-        quantity: i32,
-        taken: Option<Box<UndoAction>>,
-    },
-    UndoMove {
-        deck_id: Uuid,
-        card: Box<Card>,
-        from: Board,
-        taken: Option<Box<UndoAction>>,
-    },
-}
-
-impl Request {
-    /// The action an error from this request is reported under, fixed so a renamed variant keeps its reports.
-    pub(crate) fn action(&self) -> &'static str {
-        match self {
-            Self::Load { .. } => "load",
-            Self::Remove { .. } => "remove",
-            Self::Move { .. } => "move",
-            Self::UndoRemove { .. } => "undo_remove",
-            Self::UndoMove { .. } => "undo_move",
+/// Applies `action` to the model and performs the effects it returns, in order. `TakeUndo` is answered at once: its `Taken` goes to the model after the batch. The face goes back to the front whenever the top card changes.
+pub(crate) fn dispatch(view: &mut RemoveView, action: Action, cx: &mut Context<'_>) {
+    let mut queue = VecDeque::from([action]);
+    while let Some(action) = queue.pop_front() {
+        let top = view.model.current().map(|c| c.scryfall_data.id);
+        for effect in view.model.update(action) {
+            if let Some(next) = perform_effect(view, effect, cx) {
+                queue.push_back(next);
+            }
+        }
+        if view.model.current().map(|c| c.scryfall_data.id) != top {
+            view.face = 0;
         }
     }
 }
 
-/// Remove's results.
+/// Performs one effect, returning the action that answers it at once, if any.
+fn perform_effect(view: &mut RemoveView, effect: Effect, cx: &mut Context<'_>) -> Option<Action> {
+    match effect {
+        Effect::OfferHint(offer) => {
+            hint::once(cx, offer.key());
+        }
+        Effect::FetchDeck { ticket, deck_id } => {
+            cx.request(Request::FetchDeck { ticket, deck_id }.into());
+        }
+        Effect::DeleteDeckCard {
+            ticket,
+            deck_id,
+            card_id,
+        } => cx.request(
+            Request::DeleteDeckCard {
+                ticket,
+                deck_id,
+                card_id,
+            }
+            .into(),
+        ),
+        Effect::MoveDeckCard {
+            ticket,
+            deck_id,
+            card_id,
+            to,
+        } => cx.request(
+            Request::MoveDeckCard {
+                ticket,
+                deck_id,
+                card_id,
+                to,
+            }
+            .into(),
+        ),
+        Effect::TakeUndo {
+            ticket,
+            deck_id,
+            claim,
+        } => {
+            let taken = cx
+                .shared
+                .cards
+                .undo
+                .take_newest(deck_id, |a| claim.matches(a));
+            return Some(Action::Taken { ticket, taken });
+        }
+        Effect::RestoreDeckCard {
+            ticket,
+            deck_id,
+            card,
+            board,
+            quantity,
+        } => cx.request(
+            Request::RestoreDeckCard {
+                ticket,
+                deck_id,
+                card,
+                board,
+                quantity,
+            }
+            .into(),
+        ),
+        Effect::RestoreBoard {
+            ticket,
+            deck_id,
+            card_id,
+            board,
+        } => cx.request(
+            Request::RestoreBoard {
+                ticket,
+                deck_id,
+                card_id,
+                board,
+            }
+            .into(),
+        ),
+        Effect::RecordUndo { deck_id, action } => cx.shared.cards.undo.push(deck_id, action),
+        Effect::Enter(side) => {
+            view.entering = Some(side);
+            view.motion = Some(CardMotion::enter(side, Instant::now()));
+        }
+        Effect::Navigate(Destination::Previous) => {
+            if let Some(deck_id) = view.model.deck_id() {
+                cx.shared.cards.filters.park(
+                    FilterScope::Remove,
+                    deck_id,
+                    view.model.filter().clone(),
+                );
+            }
+            cx.back();
+        }
+        Effect::Toast(toast) => cx.show(toast),
+    }
+    None
+}
+
+/// Remove's work, each of the model's requests carrying its ticket.
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) enum Request {
+    FetchDeck {
+        ticket: Ticket,
+        deck_id: Uuid,
+    },
+    /// Deletes every copy.
+    DeleteDeckCard {
+        ticket: Ticket,
+        deck_id: Uuid,
+        card_id: Uuid,
+    },
+    MoveDeckCard {
+        ticket: Ticket,
+        deck_id: Uuid,
+        card_id: Uuid,
+        to: Board,
+    },
+    /// Undoes a remove: creates the card again on its board.
+    RestoreDeckCard {
+        ticket: Ticket,
+        deck_id: Uuid,
+        card: Box<Card>,
+        board: Board,
+        quantity: i32,
+    },
+    /// Undoes a move: sends the card back to the board it left.
+    RestoreBoard {
+        ticket: Ticket,
+        deck_id: Uuid,
+        card_id: Uuid,
+        board: Board,
+    },
+}
+
+impl Request {
+    /// The action an error from this request is reported under, fixed so a renamed variant keeps its reports: the app's names.
+    pub(crate) fn action(&self) -> &'static str {
+        match self {
+            Self::FetchDeck { .. } => "load_deck",
+            Self::DeleteDeckCard { .. } => "remove_card",
+            Self::MoveDeckCard { .. } => "move_card",
+            Self::RestoreDeckCard { .. } => "undo_remove",
+            Self::RestoreBoard { .. } => "undo_move",
+        }
+    }
+}
+
+/// Remove's results, each carrying the ticket of the request it answers.
 #[derive(Debug)]
 pub(crate) enum Update {
     Loaded {
-        deck_id: Uuid,
+        ticket: Ticket,
         deck: Box<Deck>,
     },
-    /// A remove landed, which the undo log records.
-    Removed {
-        deck_id: Uuid,
-        entry: Box<DeckEntry>,
+    /// A remove, a move or an undone move went through.
+    Landed {
+        ticket: Ticket,
     },
-    /// A move landed, which the undo log records.
-    Moved {
-        deck_id: Uuid,
-        card: Box<Card>,
-        from: Board,
+    /// An undone remove went through, with the deck card the server made.
+    Restored {
+        ticket: Ticket,
+        deck_card: Box<DeckCard>,
     },
-    UndidRemove {
-        deck_id: Uuid,
-        card: Box<Card>,
-        taken: Option<Box<UndoAction>>,
-        result: Result<Box<DeckCard>, UndoFailure>,
+    /// A load, remove or move failed, with its error toast's message.
+    Failed {
+        ticket: Ticket,
+        message: String,
     },
-    UndidMove {
-        deck_id: Uuid,
-        card: Box<Card>,
-        from: Board,
-        taken: Option<Box<UndoAction>>,
-        result: Result<(), UndoFailure>,
+    /// An undo's call failed: a session that could not refresh stops the entrance, a failed call says it could not undo.
+    UndoFailed {
+        ticket: Ticket,
+        failure: UndoFailure,
     },
 }
 
@@ -500,276 +319,153 @@ fn pick(screen: &mut Screen) -> Option<&mut RemoveView> {
     }
 }
 
-fn toast(message: String) -> screens::Update {
-    screens::Update::Toast(ToastKind::Error, message)
+/// The update a request's answer comes back as: `ok`'s on success, else the failure carrying `ticket` and its toast, or the end of the session.
+fn reply<T>(
+    ticket: Ticket,
+    result: Result<T, zwipe_client::ClientError>,
+    ok: impl FnOnce(T) -> Update,
+) -> screens::Update {
+    match result {
+        Ok(value) => ok(value).into(),
+        Err(e) => screens::failure(&e, |message| Update::Failed { ticket, message }.into()),
+    }
+}
+
+/// The update an undo's answer comes back as: `ok`'s on success, else the failure carrying `ticket`.
+fn undo_reply<T>(
+    ticket: Ticket,
+    result: Result<T, UndoFailure>,
+    ok: impl FnOnce(T) -> Update,
+) -> screens::Update {
+    match result {
+        Ok(value) => ok(value),
+        Err(failure) => Update::UndoFailed { ticket, failure },
+    }
+    .into()
 }
 
 pub(crate) async fn perform(account: &Account, request: Request) -> Option<screens::Update> {
     let client = &account.client;
-    let session = account.fresh().await;
-    let update = match request {
-        Request::Load { deck_id } => {
-            let session = match session {
-                Ok(s) => s,
-                Err(e) => {
-                    return Some(screens::failure(&e, |m| {
-                        screens::Update::Toast(ToastKind::Error, m)
-                    }));
-                }
-            };
-            match client.fetch_deck(deck_id, &session).await {
-                Ok(deck) => Update::Loaded {
-                    deck_id,
-                    deck: Box::new(deck),
-                },
-                Err(e) => return Some(toast(crate::inbound::screens::shown(&e))),
-            }
-        }
-        Request::Remove { deck_id, entry } => {
-            let result = match session {
-                Ok(s) => {
-                    client
-                        .delete_deck_card(deck_id, entry.deck_card.scryfall_data_id, &s)
-                        .await
-                }
-                Err(e) => Err(e),
-            };
-            match result {
-                Ok(()) => Update::Removed { deck_id, entry },
-                Err(e) => return Some(toast(crate::inbound::screens::shown(&e))),
-            }
-        }
-        Request::Move {
+    Some(match request {
+        Request::FetchDeck { ticket, deck_id } => reply(
+            ticket,
+            async { client.fetch_deck(deck_id, &account.fresh().await?).await }.await,
+            |deck| Update::Loaded {
+                ticket,
+                deck: Box::new(deck),
+            },
+        ),
+        Request::DeleteDeckCard {
+            ticket,
             deck_id,
-            card,
-            from,
-            to,
-        } => {
-            let patch = HttpPatchDeckCard::new(None, Some(to.display_name().to_owned()));
-            let result = match session {
-                Ok(s) => client
-                    .update_deck_card(deck_id, card.scryfall_data.id, &patch, &s)
+            card_id,
+        } => reply(
+            ticket,
+            async {
+                client
+                    .delete_deck_card(deck_id, card_id, &account.fresh().await?)
                     .await
-                    .map(drop),
-                Err(e) => Err(e),
-            };
-            match result {
-                Ok(()) => Update::Moved {
-                    deck_id,
-                    card,
-                    from,
-                },
-                Err(e) => return Some(toast(crate::inbound::screens::shown(&e))),
             }
-        }
-        Request::UndoRemove {
+            .await,
+            |()| Update::Landed { ticket },
+        ),
+        Request::MoveDeckCard {
+            ticket,
+            deck_id,
+            card_id,
+            to,
+        } => reply(
+            ticket,
+            async {
+                let request = remove_cards::board_request(to);
+                client
+                    .update_deck_card(deck_id, card_id, &request, &account.fresh().await?)
+                    .await
+            }
+            .await,
+            |_| Update::Landed { ticket },
+        ),
+        Request::RestoreDeckCard {
+            ticket,
             deck_id,
             card,
             board,
             quantity,
-            taken,
         } => {
-            let result = undo_remove(client, session, deck_id, &card, board, quantity).await;
-            Update::UndidRemove {
-                deck_id,
-                card,
-                taken,
-                result,
-            }
+            let request = remove_cards::restore_request(&card, board, quantity);
+            let result = match undo_session(account).await {
+                Ok(session) => client
+                    .create_deck_card(deck_id, &request, &session)
+                    .await
+                    .map_err(|e| UndoFailure::Call(e.to_string())),
+                Err(failure) => Err(failure),
+            };
+            undo_reply(ticket, result, |deck_card| Update::Restored {
+                ticket,
+                deck_card: Box::new(deck_card),
+            })
         }
-        Request::UndoMove {
+        Request::RestoreBoard {
+            ticket,
             deck_id,
-            card,
-            from,
-            taken,
+            card_id,
+            board,
         } => {
-            let result = undo_move(client, session, deck_id, &card, from).await;
-            Update::UndidMove {
-                deck_id,
-                card,
-                from,
-                taken,
-                result,
-            }
+            let request = remove_cards::board_request(board);
+            let result = match undo_session(account).await {
+                Ok(session) => client
+                    .update_deck_card(deck_id, card_id, &request, &session)
+                    .await
+                    .map(drop)
+                    .map_err(|e| UndoFailure::Call(e.to_string())),
+                Err(failure) => Err(failure),
+            };
+            undo_reply(ticket, result, |()| Update::Landed { ticket })
         }
-    };
-    Some(update.into())
+    })
 }
 
-/// Adds `quantity` copies of `card` back to `board`, undoing a remove.
-async fn undo_remove(
-    client: &ZwipeClient,
-    session: Result<Session, ClientError>,
-    deck_id: Uuid,
-    card: &Card,
-    board: Board,
-    quantity: i32,
-) -> Result<Box<DeckCard>, UndoFailure> {
-    let s = session.map_err(|e| UndoFailure::Session(crate::inbound::screens::shown(&e)))?;
-    let request = HttpCreateDeckCard::new(
-        &card.scryfall_data,
-        quantity,
-        undo::create_board_field(board),
-    );
-    client
-        .create_deck_card(deck_id, &request, &s)
+/// A fresh session for an undo's call, or the failure that stops the undo.
+async fn undo_session(
+    account: &Account,
+) -> Result<zwipe_core::domain::auth::models::session::Session, UndoFailure> {
+    account
+        .fresh()
         .await
-        .map(Box::new)
-        .map_err(|e| UndoFailure::Call(e.to_string()))
+        .map_err(|e| UndoFailure::Session(screens::shown(&e)))
 }
 
-/// Moves `card` back to the board it came `from`, undoing a move.
-async fn undo_move(
-    client: &ZwipeClient,
-    session: Result<Session, ClientError>,
-    deck_id: Uuid,
-    card: &Card,
-    from: Board,
-) -> Result<(), UndoFailure> {
-    let s = session.map_err(|e| UndoFailure::Session(crate::inbound::screens::shown(&e)))?;
-    let patch = HttpPatchDeckCard::new(None, Some(from.display_name().to_owned()));
-    client
-        .update_deck_card(deck_id, card.scryfall_data.id, &patch, &s)
-        .await
-        .map(drop)
-        .map_err(|e| UndoFailure::Call(e.to_string()))
-}
-
+/// Hands a reply to the model. A failure raises its toast even when the screen has closed.
 pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
-    // Landed swipes record in the undo log, and failed undos give their entry back, whether or not the screen is open.
-    match &update {
-        Update::Removed { deck_id, entry } => {
-            let baseline = *entry.deck_card.quantity;
-            cx.shared.cards.undo.push(
-                *deck_id,
-                UndoAction::Removed {
-                    entry: entry.clone(),
-                    baseline,
-                },
-            );
-            return;
+    let action = match update {
+        Update::Loaded { ticket, deck } => {
+            if let Some(view) = nav.find_mut(pick) {
+                view.motion = None;
+            }
+            Action::Loaded { ticket, deck }
         }
-        Update::Moved {
-            deck_id,
-            card,
-            from,
-        } => {
-            cx.shared.cards.undo.push(
-                *deck_id,
-                UndoAction::MovedBoard {
-                    card_id: card.scryfall_data.id,
-                    card_name: card.scryfall_data.name.clone(),
-                    from: *from,
-                },
-            );
-            return;
+        Update::Landed { ticket } => Action::Landed { ticket },
+        Update::Restored { ticket, deck_card } => Action::Restored { ticket, deck_card },
+        Update::Failed { ticket, message } => {
+            cx.toast(ToastKind::Error, message);
+            Action::Failed { ticket }
         }
-        Update::UndidRemove {
-            deck_id,
-            taken,
-            result: Err(failure),
-            ..
-        }
-        | Update::UndidMove {
-            deck_id,
-            taken,
-            result: Err(failure),
-            ..
-        } => {
+        Update::UndoFailed { ticket, failure } => {
             let message = match failure {
-                UndoFailure::Session(m) => m.clone(),
+                UndoFailure::Session(message) => {
+                    if let Some(view) = nav.find_mut(pick) {
+                        view.entering = None;
+                        view.motion = None;
+                    }
+                    message
+                }
                 UndoFailure::Call(e) => format!("Failed to undo: {e}"),
             };
             cx.toast(ToastKind::Error, message);
-            if let Some(taken) = taken {
-                cx.shared.cards.undo.push(*deck_id, (**taken).clone());
-            }
+            Action::Failed { ticket }
         }
-        _ => {}
-    }
-    let Some(view) = nav.find_mut(pick) else {
-        return;
     };
-    match update {
-        Update::Loaded { deck_id, deck } => {
-            if deck_id != view.deck_id {
-                return;
-            }
-            let deck = *deck;
-            view.entries = deck.entries;
-            view.command_zone_cards = deck.command_zone_cards;
-            view.profile = Some(deck.deck_profile);
-            view.loaded = true;
-            view.rerun();
-        }
-        Update::Removed { .. } | Update::Moved { .. } => {}
-        Update::UndidRemove {
-            deck_id,
-            card,
-            result,
-            ..
-        } => {
-            if deck_id != view.deck_id {
-                return;
-            }
-            undid_remove(view, cx, *card, result);
-        }
-        Update::UndidMove {
-            deck_id,
-            card,
-            from,
-            result,
-            ..
-        } => {
-            if deck_id != view.deck_id {
-                return;
-            }
-            undid_move(view, cx, &card, from, &result);
-        }
-    }
-}
-
-/// Settles an undone remove on the open screen: the card returns, or the stack steps back.
-fn undid_remove(
-    view: &mut RemoveView,
-    cx: &mut Context<'_>,
-    card: Card,
-    result: Result<Box<DeckCard>, UndoFailure>,
-) {
-    match result {
-        Ok(deck_card) => {
-            view.entries.push(DeckEntry {
-                card,
-                deck_card: *deck_card,
-            });
-            cx.toast_for(ToastKind::Success, "Undid remove".to_owned(), toast::QUICK);
-        }
-        Err(UndoFailure::Session(_)) => view.stack.cancel_entering(),
-        Err(UndoFailure::Call(_)) => {}
-    }
-}
-
-/// Settles an undone move on the open screen: the card goes back to `from`, or the stack steps back.
-fn undid_move(
-    view: &mut RemoveView,
-    cx: &mut Context<'_>,
-    card: &Card,
-    from: Board,
-    result: &Result<(), UndoFailure>,
-) {
-    match result {
-        Ok(()) => {
-            let id = card.scryfall_data.id;
-            if let Some(entry) = view
-                .entries
-                .iter_mut()
-                .find(|e| e.deck_card.scryfall_data_id == id)
-            {
-                entry.deck_card.board = from;
-            }
-            cx.toast_for(ToastKind::Success, "Undid move".to_owned(), toast::QUICK);
-        }
-        Err(UndoFailure::Session(_)) => view.stack.cancel_entering(),
-        Err(UndoFailure::Call(_)) => {}
+    if let Some(view) = nav.find_mut(pick) {
+        dispatch(view, action, cx);
     }
 }
