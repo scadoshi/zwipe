@@ -469,6 +469,9 @@ where
     // == update ==
     async fn change_username(&self, request: &ChangeUsername) -> Result<User, ChangeUsernameError> {
         let old_username = self.verify_password(&request.into()).await?.username;
+        if old_username == request.new_username {
+            return Err(ChangeUsernameError::Unchanged);
+        }
         let user = self.auth_repo.change_username(request).await?;
 
         let html = include_str!("email_templates/username_changed.html")
@@ -509,6 +512,9 @@ where
     // == delete ==
     async fn request_email_change(&self, request: &ChangeEmail) -> Result<User, ChangeEmailError> {
         let mut user = self.verify_password(&request.into()).await?;
+        if user.email.as_ref() == request.email.as_ref() {
+            return Err(ChangeEmailError::Unchanged);
+        }
 
         let (raw, hash) = generate_hex_token();
         let expires_at =

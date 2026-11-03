@@ -701,7 +701,7 @@ impl State {
         }
         let form = self.forms.get_mut(sheet);
         form.attempt();
-        if !form.passes(sheet) {
+        if !form.passes(sheet, self.user.as_ref()) {
             return Vec::new();
         }
         let password = Password::new(form.value(Field::Password));
@@ -734,7 +734,7 @@ impl State {
         }
         let form = self.forms.get_mut(Sheet::Password);
         form.attempt();
-        if !form.passes(Sheet::Password) {
+        if !form.passes(Sheet::Password, self.user.as_ref()) {
             return Vec::new();
         }
         let current = Password::new(form.value(Field::CurrentPassword));
@@ -882,7 +882,9 @@ impl State {
     /// The line under `field` on `sheet`, if any: shown once the field has held something or Save was pressed.
     #[must_use]
     pub fn error(&self, sheet: Sheet, field: Field) -> Option<String> {
-        self.forms.get(sheet).error(sheet, field)
+        self.forms
+            .get(sheet)
+            .error(sheet, field, self.user.as_ref())
     }
 
     /// Whether `sheet`'s change is out. Its Back and Save are off meanwhile.

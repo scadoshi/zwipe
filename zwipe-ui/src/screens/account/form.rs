@@ -3,6 +3,8 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::{self, Debug, Formatter};
 
+use zwipe_core::domain::user::User;
+
 use crate::account;
 
 /// The Save button's label while a change is out.
@@ -151,16 +153,25 @@ impl Form {
         self.attempted = true;
     }
 
-    /// The line under `field` on `sheet`, once the field has held something or a save was tried. Change password's one line sits under the new password and covers the confirmation.
-    pub(super) fn error(&self, sheet: Sheet, field: Field) -> Option<String> {
+    /// The line under `field` on `sheet`, once the field has held something or a save was tried. Change password's one line sits under the new password and covers the confirmation. `current` is the signed-in user, whose username and email a change may not repeat.
+    pub(super) fn error(
+        &self,
+        sheet: Sheet,
+        field: Field,
+        current: Option<&User>,
+    ) -> Option<String> {
         let judged = |f: Field| self.attempted || self.touched.contains(&f);
         match (sheet, field) {
-            (Sheet::Username, Field::NewUsername) if judged(field) => {
-                account::username_error(self.value(field))
-            }
-            (Sheet::Email, Field::NewEmail) if judged(field) => {
-                account::email_error(self.value(field))
-            }
+            (Sheet::Username, Field::NewUsername) if judged(field) => match current {
+                Some(user) => {
+                    account::change_username_error(user.username.as_ref(), self.value(field))
+                }
+                None => account::username_error(self.value(field)),
+            },
+            (Sheet::Email, Field::NewEmail) if judged(field) => match current {
+                Some(user) => account::change_email_error(user.email.as_ref(), self.value(field)),
+                None => account::email_error(self.value(field)),
+            },
             (Sheet::Username | Sheet::Email, Field::Password) if judged(field) => {
                 account::password_required(self.value(field))
             }
@@ -179,11 +190,11 @@ impl Form {
     }
 
     /// Whether no field on `sheet` has a line under it.
-    pub(super) fn passes(&self, sheet: Sheet) -> bool {
+    pub(super) fn passes(&self, sheet: Sheet, current: Option<&User>) -> bool {
         sheet
             .fields()
             .iter()
-            .all(|field| self.error(sheet, *field).is_none())
+            .all(|field| self.error(sheet, *field, current).is_none())
     }
 }
 

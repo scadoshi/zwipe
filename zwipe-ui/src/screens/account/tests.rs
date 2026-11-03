@@ -532,6 +532,48 @@ fn a_password_that_repeats_the_current_one_is_refused() {
 }
 
 #[test]
+fn a_username_or_email_that_repeats_the_current_one_is_refused() {
+    let mut state = opened();
+    let _ = state.update(Action::OpenSheet(Sheet::Username));
+    edit(&mut state, Sheet::Username, Field::NewUsername, "scotty");
+    edit(&mut state, Sheet::Username, Field::Password, "hunter22");
+    assert_eq!(state.update(Action::Save(Sheet::Username)), none());
+    assert_eq!(
+        state.error(Sheet::Username, Field::NewUsername).as_deref(),
+        Some(account::USERNAME_UNCHANGED)
+    );
+
+    let _ = state.update(Action::OpenSheet(Sheet::Email));
+    edit(
+        &mut state,
+        Sheet::Email,
+        Field::NewEmail,
+        "scotty@zwipe.net",
+    );
+    edit(&mut state, Sheet::Email, Field::Password, "hunter22");
+    assert_eq!(state.update(Action::Save(Sheet::Email)), none());
+    assert_eq!(
+        state.error(Sheet::Email, Field::NewEmail).as_deref(),
+        Some(account::EMAIL_UNCHANGED)
+    );
+}
+
+#[test]
+fn a_username_that_only_changes_case_is_sent() {
+    let mut state = opened();
+    let _ = state.update(Action::OpenSheet(Sheet::Username));
+    edit(&mut state, Sheet::Username, Field::NewUsername, "Scotty");
+    edit(&mut state, Sheet::Username, Field::Password, "hunter22");
+    assert_eq!(state.error(Sheet::Username, Field::NewUsername), None);
+    assert!(
+        state
+            .update(Action::Save(Sheet::Username))
+            .iter()
+            .any(|effect| matches!(effect, Effect::ChangeUsername { .. }))
+    );
+}
+
+#[test]
 fn a_failed_change_keeps_the_sheet_as_typed() {
     let mut state = opened();
     let _ = state.update(Action::OpenSheet(Sheet::Username));

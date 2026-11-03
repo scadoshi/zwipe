@@ -23,6 +23,12 @@ pub const PASSWORD_REQUIRED: &str = "Password is required";
 /// The line under a new password that repeats the current one.
 pub const PASSWORD_UNCHANGED: &str = "New password must be different from your current password";
 
+/// The line under a new username that repeats the current one.
+pub const USERNAME_UNCHANGED: &str = "New username must be different from your current username";
+
+/// The line under a new email address that repeats the current one.
+pub const EMAIL_UNCHANGED: &str = "New email must be different from your current email";
+
 /// A password as typed, carried by an action, a request or a screen's state. Its `Debug` hides it; [`read`](Self::read) is the way to the text.
 #[derive(Default, Clone, PartialEq, Eq)]
 pub struct Password(String);
@@ -125,6 +131,18 @@ pub fn username_error(raw: &str) -> Option<String> {
 #[must_use]
 pub fn email_error(raw: &str) -> Option<String> {
     Email::new(raw).err().map(|e| email_message(&e).to_owned())
+}
+
+/// What is wrong with a new username on Change username: [`username_error`], then [`USERNAME_UNCHANGED`] when it is exactly the current one. Usernames are unique by exact text, so a change of case is a change.
+#[must_use]
+pub fn change_username_error(current: &str, raw: &str) -> Option<String> {
+    username_error(raw).or_else(|| (raw == current).then(|| USERNAME_UNCHANGED.to_owned()))
+}
+
+/// What is wrong with a new address on Change email: [`email_error`], then [`EMAIL_UNCHANGED`] when it is exactly the current one.
+#[must_use]
+pub fn change_email_error(current: &str, raw: &str) -> Option<String> {
+    email_error(raw).or_else(|| (raw == current).then(|| EMAIL_UNCHANGED.to_owned()))
 }
 
 /// The app's wording for each way an email address can be wrong.
@@ -331,6 +349,34 @@ mod tests {
             PASSWORD_UNCHANGED,
             "New password must be different from your current password"
         );
+        assert_eq!(
+            USERNAME_UNCHANGED,
+            "New username must be different from your current username"
+        );
+        assert_eq!(
+            EMAIL_UNCHANGED,
+            "New email must be different from your current email"
+        );
+    }
+
+    #[test]
+    fn an_unchanged_username_or_email_is_refused_and_a_case_change_is_not() {
+        assert_eq!(
+            change_username_error("scadoshi", "scadoshi"),
+            Some(USERNAME_UNCHANGED.to_owned())
+        );
+        assert_eq!(change_username_error("scadoshi", "Scadoshi"), None);
+        assert_eq!(change_username_error("scadoshi", "someone"), None);
+        assert_eq!(
+            change_email_error("a@example.com", "a@example.com"),
+            Some(EMAIL_UNCHANGED.to_owned())
+        );
+        assert_eq!(change_email_error("a@example.com", "b@example.com"), None);
+    }
+
+    #[test]
+    fn a_malformed_username_shows_its_format_error_before_unchanged() {
+        assert_eq!(change_username_error("a", "a"), username_error("a"));
     }
 
     #[test]

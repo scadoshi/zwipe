@@ -66,6 +66,36 @@ async fn change_username_wrong_password_rejected(pool: sqlx::PgPool) {
 }
 
 #[sqlx::test]
+async fn change_username_to_the_current_one_is_refused(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool);
+    let (token, _) = app.register("samename").await;
+
+    let (status, body) = app
+        .patch(
+            CHANGE_USERNAME_ROUTE,
+            json!({ "new_username": "samename", "password": "TestPass123!" }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "unchanged: {body}"
+    );
+
+    // A change of case is a different username.
+    let (status, updated) = app
+        .patch(
+            CHANGE_USERNAME_ROUTE,
+            json!({ "new_username": "SameName", "password": "TestPass123!" }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "case change: {updated}");
+    assert_eq!(updated["username"], "SameName");
+}
+
+#[sqlx::test]
 async fn change_password_then_login_with_new(pool: sqlx::PgPool) {
     let app = TestApp::new(pool);
     let (token, _) = app.register("pwuser").await;
@@ -152,6 +182,22 @@ async fn change_email_answers_the_same_for_a_taken_address(pool: sqlx::PgPool) {
     };
     assert_eq!(keys(&taken), keys(&free), "same user JSON shape");
     assert_eq!(taken["email_verified_at"], free["email_verified_at"]);
+}
+
+#[sqlx::test]
+async fn change_email_to_the_current_one_is_refused(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool);
+    let (token, _) = app.register("sameemail").await;
+
+    let (status, body) = request_change(&app, &token, "sameemail@test.local").await;
+    assert_eq!(
+        status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "unchanged: {body}"
+    );
+
+    let (_, me) = app.get(GET_USER_ROUTE, Some(&token)).await;
+    assert!(me["pending_email"].is_null(), "nothing pending: {me}");
 }
 
 /// 1.13.x still sends the retired `confirm_first` flag; it is ignored.
