@@ -19,7 +19,8 @@ These were settled with the owner before the per-screen review. A screen breaks 
 
 ### Header
 
-- The header bar is 44pt tall, the standard iOS navigation bar height, down from 58pt today (orangui's `.page-header` pads 1rem above and below a 1.7rem button; 0.5rem fits the same buttons). The safe area above it stays, since the Dynamic Island sits in it.
+- The header bar is about 46pt tall, down from 58pt: 0.5rem of padding around one 1.85rem row, the Z mark's height, so every screen is the same height. The safe area above it stays, since the Dynamic Island sits in it.
+- The hamburger and the back arrow are gentle: small soft boxes (2.1 by 1.7rem, 0.4rem corners) at 0.55 opacity like the old `?` and `!` corner buttons, full strength while pressed or open, the hamburger's bars short and 2px thick. The portfolio site and zite take the same look when their navs are next touched.
 - The header follows the scroll, as in X: scrolling down slides it up behind the status bar point for point until only the safe area shows, and any scroll up slides it back the same way. It never snaps on a threshold. The safe area strip keeps the page background, so content doesn't run under the clock and the island.
 - The back arrow, the title and the hamburger go with it; they come back together.
 - Swipe screens don't scroll, and a swipe down there is undo, so their header is always shown.
