@@ -1041,7 +1041,7 @@ fn the_copy_matches_the_app() {
     assert_eq!(FROM, "From");
     assert_eq!(SYNERGY, "Synergy");
     assert_eq!([BACK, FILTER, REFRESH], ["Back", "Filter", "Refresh"]);
-    assert_eq!(Source::ALL.map(Source::label), ["Search", "Maybeboard"]);
+    assert_eq!(Source::ALL.map(Source::label), ["Search", "Maybe"]);
     assert_eq!(PRINTING_SWAPPED, "Printing swapped");
     assert_eq!(
         [
@@ -1104,4 +1104,10 @@ fn the_copy_matches_the_app() {
         "That's every synergy pick. Showing cards like your deck"
     );
     assert_eq!((QUICK, NORMAL), (crate::toast::QUICK, crate::toast::NORMAL));
+}
+
+#[test]
+fn the_source_toggle_flips_between_the_two() {
+    assert_eq!(Source::Search.toggled(), Source::Maybeboard);
+    assert_eq!(Source::Maybeboard.toggled(), Source::Search);
 }

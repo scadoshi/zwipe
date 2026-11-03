@@ -155,7 +155,16 @@ impl Source {
     pub fn label(self) -> &'static str {
         match self {
             Self::Search => "Search",
-            Self::Maybeboard => "Maybeboard",
+            Self::Maybeboard => "Maybe",
+        }
+    }
+
+    /// The other source: what a tap on the one-chip source toggle switches to.
+    #[must_use]
+    pub fn toggled(self) -> Self {
+        match self {
+            Self::Search => Self::Maybeboard,
+            Self::Maybeboard => Self::Search,
         }
     }
 }

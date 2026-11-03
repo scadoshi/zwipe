@@ -168,12 +168,10 @@ pub(crate) fn CardSkeleton() -> Element {
     rsx! {
         div { class: "skeleton-card",
             div { class: "skeleton-image" }
-            div { class: "skeleton-info",
-                div { class: "skeleton-bar skeleton-bar-name" }
-                div { class: "skeleton-bar skeleton-bar-price" }
-                div { class: "skeleton-bar skeleton-bar-set" }
-                div { class: "skeleton-bar skeleton-bar-date" }
-                div { class: "skeleton-bar skeleton-bar-artist" }
+            // The price line's ghost: two chip-sized pills, centered.
+            div { class: "card-prices",
+                div { class: "skeleton-bar skeleton-price-chip" }
+                div { class: "skeleton-bar skeleton-price-chip" }
             }
         }
     }

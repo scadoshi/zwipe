@@ -740,16 +740,18 @@ pub fn Add(deck_id: Uuid) -> Element {
             // The bottom row: the source chips on the left, the action dock
             // (synergy, filter, refresh, card details) on the right.
             div { class: "app-float swipe-bottom-row",
+                // From, then one chip naming the current source; a tap switches
+                // to the other.
                 div { class: "swipe-bottom-chips",
-                    for variant in Source::ALL {
-                        Chip {
-                            selected: source == variant,
-                            onclick: move |_| {
-                                let remembered = filter_store.restore(scope(variant), deck_id);
-                                driver.dispatch(Action::PickSource { source: variant, remembered });
-                            },
-                            "{variant.label()}"
-                        }
+                    span { class: "stat-chip stat-chip-p1 chip-row-label", "{add_cards::FROM}" }
+                    Chip {
+                        selected: true,
+                        onclick: move |_| {
+                            let next = source.toggled();
+                            let remembered = filter_store.restore(scope(next), deck_id);
+                            driver.dispatch(Action::PickSource { source: next, remembered });
+                        },
+                        "{source.label()}"
                     }
                 }
                 div { class: "icon-pill",
@@ -829,7 +831,8 @@ pub fn Add(deck_id: Uuid) -> Element {
                     HintBullet { "Swipe " HintColored { color: "--color-error", "left" } " skips it for a week" }
                     HintBullet { "Swipe " HintColored { color: "--color-warning", "up" } " sends it to the maybeboard" }
                     HintBullet { "Swipe " HintColored { color: "--accent-tertiary", "down" } " undoes the last swipe" }
-                    HintBullet { HintKey { "Synergy" } " on starts with cards that work with your commander, then cards like your deck. Off shows every legal card" }
+                    HintBullet { "The chip after " HintKey { "From" } " switches between Search and your Maybe pile" }
+                    HintBullet { "The link icon is " HintKey { "Synergy" } ": on starts with cards that work with your commander, then cards like your deck. Off shows every legal card" }
                 }
                 HintLine { "Sort only reorders. It never hides cards" }
             }
