@@ -213,28 +213,12 @@ button {
     white-space: nowrap;
 }
 
-/* The less used actions at the foot of the page, the destructive pair last. */
-.deck-page-actions {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 0 1rem;
-}
-
-.deck-page-actions-row {
-    display: flex;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-}
-
 /* ==================
   danger zone
  ==================== */
 
-/* Account's last panel: Log out and Delete account, under a title in the
-   danger color. Compound selector so it outranks orangui's title color. */
+/* The Danger zone panels, Account's and the deck view's, under a title in
+   the danger color. Compound selector so it outranks orangui's title color. */
 .settings-list-title.danger-zone-title {
     color: var(--color-error);
 }

@@ -675,16 +675,19 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                     }
                                 }
 
-                                // The less used actions, then the destructive two.
-                                div { class: "deck-page-actions",
-                                    div { class: "deck-page-actions-row",
-                                        MoreItemButton { item: MoreItem::ImportCards, enabled: more_enabled.clone(), driver }
-                                        MoreItemButton { item: MoreItem::ExportCards, enabled: more_enabled.clone(), driver }
-                                    }
-                                    div { class: "deck-page-actions-row",
-                                        MoreItemButton { item: MoreItem::ClearSkips, enabled: more_enabled.clone(), driver }
-                                        MoreItemButton { item: MoreItem::DeleteDeck, enabled: more_enabled, driver }
-                                    }
+                                ActionPanel {
+                                    title: deck_view::DATA,
+                                    danger: false,
+                                    items: vec![MoreItem::ImportCards, MoreItem::ExportCards],
+                                    enabled: more_enabled.clone(),
+                                    driver,
+                                }
+                                ActionPanel {
+                                    title: deck_view::DANGER_ZONE,
+                                    danger: true,
+                                    items: vec![MoreItem::ClearSkips, MoreItem::DeleteDeck],
+                                    enabled: more_enabled,
+                                    driver,
                                 }
 
                             }
@@ -797,17 +800,39 @@ mod tests {
     }
 }
 
-/// One of the deck's actions as a button: its label, the danger color for
-/// Clear skips and Delete, disabled while the model says it can't run.
+/// A panel of the deck's actions, one row each: the action's name, then its
+/// button, disabled while the model says it can't run. `danger` titles the
+/// panel in the danger color, as Account's Danger zone is.
 #[component]
-fn MoreItemButton(item: MoreItem, enabled: Vec<MoreItem>, driver: Driver) -> Element {
+fn ActionPanel(
+    title: &'static str,
+    danger: bool,
+    items: Vec<MoreItem>,
+    enabled: Vec<MoreItem>,
+    driver: Driver,
+) -> Element {
     rsx! {
-        Button {
-            variant: ButtonVariant::Action,
-            disabled: !enabled.contains(&item),
-            danger: item.is_danger(),
-            onclick: move |_| driver.dispatch(Action::More(item)),
-            {item.short_label()}
+        div { class: "settings-list",
+            div { class: "settings-list-header",
+                span {
+                    class: if danger { "settings-list-title danger-zone-title" } else { "settings-list-title" },
+                    {title}
+                }
+            }
+            for item in items {
+                div { key: "{item.label()}", class: "settings-row",
+                    span { class: "settings-row-label", {item.label()} }
+                    div { class: "settings-row-value",
+                        Button {
+                            variant: ButtonVariant::Action,
+                            disabled: !enabled.contains(&item),
+                            danger: item.is_danger(),
+                            onclick: move |_| driver.dispatch(Action::More(item)),
+                            {item.short_label()}
+                        }
+                    }
+                }
+            }
         }
     }
 }

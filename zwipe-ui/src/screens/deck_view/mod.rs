@@ -39,6 +39,12 @@ pub const MORE: &str = "More";
 /// The More sheet's title.
 pub const MORE_TITLE: &str = "More actions";
 
+/// The title of the panel near the foot of the page that holds Import and Export.
+pub const DATA: &str = "Data";
+
+/// The title of the last panel, which holds Clear skips and Delete.
+pub const DANGER_ZONE: &str = "Danger zone";
+
 /// The Budget section's running total row.
 pub const TOTAL_PRICE: &str = "Total price";
 
@@ -231,7 +237,7 @@ impl MoreItem {
             Self::BuyDeck => "Buy",
             Self::CloneDeck => "Clone",
             Self::ShareDeck => "Share",
-            Self::ClearSkips => "Clear skips",
+            Self::ClearSkips => "Clear",
             Self::DeleteDeck => "Delete",
         }
     }
