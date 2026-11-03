@@ -47,6 +47,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Change username and Change email refuse your current username or email",
         "Main menu, behind the hamburger in every screen's header",
         "Help & feedback moved from the header into the main menu",
+        "Back is an arrow at the top left of every screen",
     ],
 }];
 
