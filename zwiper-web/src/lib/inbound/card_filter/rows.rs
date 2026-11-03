@@ -5,6 +5,7 @@
 use components::Chip;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::use_toast;
+use zwipe_ui::filter::chips as filter_chips;
 use zwipe_ui::filter::draft::FilterDraft;
 use zwipe_ui::filter::fields::{End, Stat};
 use zwipe_ui::filter::picker::{PickerField, Sources};
@@ -12,7 +13,6 @@ use zwipe_ui::filter::sections::{
     self, ChipSet, Clear, ModeChip, NumberField, Row, Section, StepRow,
 };
 
-use crate::domain::filter_chips;
 use crate::inbound::catalog::CatalogCache;
 use crate::inbound::chrome::toast::raise;
 

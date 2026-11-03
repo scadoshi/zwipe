@@ -61,7 +61,7 @@ The crate, the router with a route per screen at the app's paths (unbuilt screen
 - Deck cards view with the detail pane, quick add, Group by, Boards, Show, quantities, moves (buttons and drag), printings, MVP, Undo, Reset filter.
 - Remove cards.
 - The filter on the commander maybeboard and in Swipe select's search modes, the deck view's `Cards` and the warning's `Add cards`, and an import clearing the deck's undo log.
-- zwiper-web takes the stores, the stack and its actions, Add's deck context and search rules, the filter's draft, sections, fields and pickers, the deck cards pass and bursts, the undo entries and the land and budget signals from zwipe-ui. The filter's chip rows (`domain::filter_chips`) are marked `// Belongs in zwipe-ui`.
+- zwiper-web takes the stores, the stack and its actions, Add's deck context and search rules, the filter's draft, sections, fields and pickers, the deck cards pass and bursts, the undo entries and the land and budget signals from zwipe-ui. The filter's chip rows come from zwipe-ui's `filter::chips`.
 
 ## Integration and live audit, branch `feat/web-int` (done)
 

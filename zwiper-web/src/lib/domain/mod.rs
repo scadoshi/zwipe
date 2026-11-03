@@ -4,7 +4,6 @@
 pub mod commander_maybeboard;
 pub mod counts;
 pub mod deck;
-pub mod filter_chips;
 pub mod preferences;
 pub mod privacy;
 pub mod swipe_select;
