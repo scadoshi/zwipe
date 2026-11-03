@@ -4,6 +4,8 @@
 pub(crate) mod clone_deck_dialog;
 /// Collapsible titled card wrapper for deck-view sections.
 pub(crate) mod collapsible_section;
+/// A one-action Danger zone panel for the foot of a list screen.
+pub(crate) mod danger_zone;
 /// Collapsible "Budget" section (land target, price target) for the view.
 pub(crate) mod deck_budget_section;
 /// Deck chart visualizations for the view screen.

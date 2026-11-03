@@ -21,8 +21,8 @@
 use std::collections::HashSet;
 
 use components::{
-    ActionBar, AlertDialog, BottomSheet, Button, ButtonVariant, Chip, DialogAction, HintBullet,
-    HintBullets, HintDialog, HintKey, HintLine, Toasts, use_toast,
+    AlertDialog, Button, ButtonVariant, Chip, DialogAction, HintBullet, HintBullets, HintDialog,
+    HintKey, HintLine, Toasts, use_toast,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -41,6 +41,7 @@ use zwipe_ui::screens::commander_maybeboard::{
     self as model, Action, Destination, Effect, QuickAddResults, State, Status,
 };
 
+use super::components::danger_zone::DangerZoneAction;
 use super::components::skeletons::{ChipRowSkeleton, QuickAddSkeleton};
 use super::components::swipe_select::{SwipeMode, SwipeSelect};
 use crate::inbound::components::auth::authed::{Authed, use_authed};
@@ -336,7 +337,6 @@ pub fn CommanderMaybeboard() -> Element {
     let filter_reset_counter = use_signal(|| 0u32);
     use_context_provider(|| filter_reset_counter);
     let mut filters_overlay_open = use_signal(|| false);
-    let mut show_more_sheet = use_signal(|| false);
     let mut show_clear_dialog = use_signal(|| false);
 
     // Tells the model when the Swipe overlay closes: its up-swipes saved
@@ -354,7 +354,6 @@ pub fn CommanderMaybeboard() -> Element {
     let on_create = move |card: Card| driver.create(card);
 
     let clear_maybeboard = use_callback(move |()| {
-        show_more_sheet.set(false);
         driver.dispatch(Action::Clear);
     });
 
@@ -529,11 +528,17 @@ pub fn CommanderMaybeboard() -> Element {
                                 }
                             }
                         }
+                        DangerZoneAction {
+                            label: model::CLEAR_MAYBEBOARD,
+                            button: model::CLEAR,
+                            onclick: move |()| show_clear_dialog.set(true),
+                        }
                     }
                 }
             }
 
-            ActionBar {
+            // Filter and Swipe, the list's main actions, float at the bottom right.
+            div { class: "app-float app-float-right",
                 Button {
                     variant: ButtonVariant::Action,
                     onclick: move |_| filters_overlay_open.set(true),
@@ -546,21 +551,6 @@ pub fn CommanderMaybeboard() -> Element {
                     variant: ButtonVariant::Action,
                     onclick: move |_| swipe_open.set(true),
                     {model::SWIPE}
-                }
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| show_more_sheet.set(true),
-                    {model::MORE}
-                }
-            }
-
-            BottomSheet { open: show_more_sheet, title: model::MORE_TITLE,
-                Button {
-                    danger: true,
-                    onclick: move |_| {
-                        show_clear_dialog.set(true);
-                    },
-                    {model::CLEAR_MAYBEBOARD}
                 }
             }
 
