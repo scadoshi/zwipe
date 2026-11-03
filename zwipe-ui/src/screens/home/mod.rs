@@ -1,4 +1,4 @@
-//! Home: the hero's counters and their scope, the Color map panel, the featured flavor card, the greeting and the first-login hint.
+//! Home: the hero's counters and their scope, the Decks panel, the Color map panel, the featured flavor card, the greeting and the first-login hint.
 //!
 //! Home's data outlives a visit: the client keeps the counters, the playstyle summary, the flavor card and the scope above its screens, so a return to Home draws them at once. The client hands what it holds to [`Action::Load`] as [`Cached`], the model asks for what is missing or old, and the client writes each reply to its own copy as well as handing it back. The figures come from [`crate::home`], the color map test from [`crate::playstyle::color_map_has_data`] and the retailer links from [`crate::buy`].
 
@@ -18,7 +18,7 @@ use crate::color_map::{self, ColorMapCounts};
 use crate::generation::{Generation, Ticket};
 use crate::home::{self, Figures, Scope, UserSource};
 use crate::toast::Toast;
-use crate::{buy, playstyle};
+use crate::{buy, deck, playstyle};
 
 /// The screen's title.
 pub const TITLE: &str = "Home";
@@ -28,6 +28,12 @@ pub const LIVE: &str = "Live";
 
 /// The hero's button that opens Activity.
 pub const ACTIVITY: &str = "Activity";
+
+/// The Decks panel's button that opens the deck list.
+pub const OPEN_DECKS: &str = "Open decks";
+
+/// The Decks panel's line when the summary failed to load and none is held.
+pub const DECKS_FAILED: &str = "Could not load your decks";
 
 /// The Color map panel's title.
 pub const COLOR_MAP: &str = "Color map";
@@ -65,7 +71,7 @@ pub const TCGPLAYER: &str = "TCGplayer \u{2197}";
 /// The Buy dialog's link to `Card Kingdom`.
 pub const CARD_KINGDOM: &str = "Card Kingdom \u{2197}";
 
-/// The action bar's button that opens the deck list.
+/// The Decks panel's title, and the action bar's button that opens the deck list.
 pub const DECKS: &str = "Decks";
 
 /// The action bar's button that opens Account.
@@ -77,7 +83,7 @@ pub const CONFIG: &str = "Settings";
 /// Where an action sends the user. The client maps each to its own route.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Destination {
-    /// The deck list, from the action bar.
+    /// The deck list, from the Decks panel or the action bar.
     Decks,
     /// Account, from the action bar.
     Account,
@@ -225,7 +231,7 @@ pub enum Action {
         /// Whether the client holds the user's own counters from under [`COUNTS_FRESH`](crate::timing::COUNTS_FRESH) ago, so switching to them asks for none.
         mine_fresh: bool,
     },
-    /// Opens the deck list.
+    /// Opens the deck list, from the Decks panel's button or the action bar.
     Decks,
     /// Opens Account.
     Account,
@@ -262,6 +268,28 @@ pub enum Effect {
     Navigate(Destination),
     /// Raises this toast.
     Toast(Toast),
+}
+
+/// What the Decks panel draws: the user's deck count as a tile over the Open decks button.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Decks {
+    /// The summary is out and none is held: the tile ghosts.
+    Loading,
+    /// The fetch failed and none is held: [`DECKS_FAILED`] over the Open decks button.
+    Failed,
+    /// This many decks, over [`deck::deck_unit`] for the count.
+    Count(u32),
+}
+
+impl Decks {
+    /// The count in words, `1 deck` or `4 decks`; `None` while nothing is held.
+    #[must_use]
+    pub fn label(self) -> Option<String> {
+        match self {
+            Self::Count(count) => Some(deck::decks_label(count)),
+            Self::Loading | Self::Failed => None,
+        }
+    }
 }
 
 /// What the Color map panel draws.
@@ -506,6 +534,16 @@ impl State {
     pub fn seed(&self) -> u64 {
         self.user
             .map_or(0, |id| color_map::seed_from_id(id.as_u128()))
+    }
+
+    /// What the Decks panel draws, from the deck count the playstyle summary carries. A summary held shows even after a failed refetch.
+    #[must_use]
+    pub fn decks(&self) -> Decks {
+        match &self.play_style {
+            Some(summary) => Decks::Count(summary.deck_count),
+            None if self.play_style_failed => Decks::Failed,
+            None => Decks::Loading,
+        }
     }
 
     /// What the Color map panel draws. A summary held shows even after a failed refetch.

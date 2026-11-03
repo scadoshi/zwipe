@@ -139,6 +139,7 @@ fn a_new_state_ghosts_every_panel() {
     assert_eq!(state.figures(), Figures::default());
     assert!(!state.live());
     assert_eq!(state.play_style(), PlayStyle::Loading);
+    assert_eq!(state.decks(), Decks::Loading);
     assert_eq!(state.flavor(), Flavor::Loading);
     assert_eq!(state.flavor_card(), None);
     assert_eq!(state.buy_links(), []);
@@ -333,6 +334,34 @@ fn the_color_map_draws_only_with_decks_and_cards() {
         });
         assert_eq!(state.play_style(), want, "{summary:?}");
     }
+}
+
+#[test]
+fn the_decks_panel_counts_the_summarys_decks() {
+    let (mut state, effects) = load(cold());
+    assert_eq!(state.decks(), Decks::Loading);
+    assert_eq!(state.decks().label(), None);
+    let ticket = ticket_of(&effects, play_style_ticket);
+    let _ = state.update(Action::PlayStyleLoaded {
+        ticket,
+        summary: summary(1, [0; 5], 0),
+    });
+    assert_eq!(state.decks(), Decks::Count(1));
+    assert_eq!(state.decks().label().as_deref(), Some("1 deck"));
+
+    let (mut state, effects) = load(cold());
+    let ticket = ticket_of(&effects, play_style_ticket);
+    let _ = state.update(Action::PlayStyleFailed { ticket });
+    assert_eq!(state.decks(), Decks::Failed);
+    assert_eq!(state.decks().label(), None);
+
+    let (state, _) = load(warm());
+    assert_eq!(
+        state.decks(),
+        Decks::Count(2),
+        "held before the refetch lands"
+    );
+    assert_eq!(state.decks().label().as_deref(), Some("2 decks"));
 }
 
 #[test]
@@ -650,6 +679,10 @@ fn the_copy_matches_the_app() {
     assert_eq!(
         [TITLE, LIVE, ACTIVITY, DECKS, ACCOUNT, CONFIG],
         ["Home", "Live", "Activity", "Decks", "Account", "Settings"]
+    );
+    assert_eq!(
+        [OPEN_DECKS, DECKS_FAILED],
+        ["Open decks", "Could not load your decks"]
     );
     assert_eq!(
         [COLOR_MAP, PLAYSTYLE, NO_PLAY_STYLE, PLAY_STYLE_FAILED],
