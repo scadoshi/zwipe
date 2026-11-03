@@ -4,8 +4,9 @@ zwiper-tui covers every app screen and has passed the parity audit, live checks,
 
 ## Where things stand
 
-- Branch `feat/tui`, 615 tests, every gate green.
-- Login is reviewed, and the button grammar below is built across every screen that had boxed buttons or button pills.
+- Branch `feat/tui`, 640 tests, every gate green.
+- Every screen drives its zwipe-ui screen model (switched 2026-11-03; the recipe is in `ARCHITECTURE.md`). The visual review continues on top of that.
+- Login is reviewed, and the button grammar below is built across every screen that had boxed buttons or button pills. Every owner-approved item is built.
 - Next screen: Register, then the rest in screen order (Reset password, Home, Activity, Playstyle, Decks, the deck view and its sheets, Add, Remove, Deck cards, Account, Config, Privacy, Changelog).
 
 ## Decided (owner-approved; keep these)
@@ -45,6 +46,10 @@ Paused on 2026-11-01 to save agent usage.
 Approved by the owner, not built yet: none.
 
 Still open:
+
+- The deck form's text boxes (Deck name, Price, Commander, Partner, Background, Signature spell) show a `[?]` marker but no key opens it, since letters type there and F6 is gone. `i` opens the explainer on fields that take no typing. Pick a key for the typing fields, or accept it.
+- At Add's end of results the TUI shows "u steps back into the pile" under the empty card; the app shows nothing there. Keep or drop?
+- The deck form's own swipe picker (`deck_form/swipe_pick.rs`, the command-zone slots) still runs its own pile; it could move onto `swipe_select`.
 
 - Two kinds of hint text stayed after placeholders went: the filter sheet's `[Name contains]` row labels and the deck form's `Not set` readouts. Keep or drop?
 - With the title row gone, some screens no longer say where you are: the deck form and its pickers (they look alike), Changelog, Add and Remove cards, Deck cards, Oracle tags and Examples, Activity, Playstyle, Commander maybeboard, the commander swipe, Create profile and Reset password. Decide per screen during the review.
