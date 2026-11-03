@@ -1,6 +1,6 @@
 //! The Reset password screen: the hero over an email field with `Send reset link` under it, then `Check your email` once the request is in. The reset itself happens on the website, from the link in the email.
 //!
-//! Esc ends typing, and Esc again with no field active goes back to Login; Tab or Shift+Tab goes back into the form.
+//! What the screen knows and decides is zwipe-ui's [`State`]; this view adds the text box, the focus and the spinner's clock. Esc ends typing, and Esc again with no field active goes back to Login; Tab or Shift+Tab goes back into the form.
 
 pub(crate) mod draw;
 pub(crate) mod keys;
@@ -9,8 +9,9 @@ mod tests;
 
 use std::time::Instant;
 
-use zwipe_core::domain::user::Email;
 use zwipe_core::http::contracts::auth::HttpRequestPasswordReset;
+use zwipe_ui::generation::Ticket;
+use zwipe_ui::screens::forgot_password::{Action, Destination, Effect, State};
 
 use super::Screen;
 use crate::inbound::app::Context;
@@ -22,13 +23,6 @@ use crate::inbound::widgets::text_input::TextInput;
 use crate::inbound::widgets::toast::ToastKind;
 use crate::outbound::account::Account;
 
-/// The error under the email, whatever is wrong with it.
-pub(crate) const INVALID_EMAIL: &str = "Please enter a valid email address";
-
-/// The success panel's title and body.
-pub(crate) const SENT_TITLE: &str = "Check your email";
-pub(crate) const SENT_BODY: &str = "If that email is registered, a reset link is on its way.";
-
 /// A stop the focus can rest on: the email field or the `Send reset link` button under it.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum ForgotField {
@@ -37,31 +31,26 @@ pub(crate) enum ForgotField {
     SendResetLink,
 }
 
-/// The Reset password screen's state.
+/// The Reset password screen's state: the model plus what only the terminal keeps.
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) struct ForgotForm {
+    pub(crate) model: State,
+    /// The box the email is typed in. Its value follows each keystroke into the model, and its error line is the model's.
     pub(crate) email: TextInput,
     /// The stop with the focus, or `None` once Esc ends typing or the request is in.
     pub(crate) focus: Option<ForgotField>,
-    /// Whether the email has held something.
-    pub(crate) touched: bool,
-    pub(crate) attempted: bool,
-    /// When the request went out, while it is out; the spinner turns from here.
-    pub(crate) sending_since: Option<Instant>,
-    /// The request went in: the form gives way to the success panel.
-    pub(crate) sent: bool,
+    /// When the latest request went out; the spinner turns from here while the model is loading.
+    pub(crate) spin_since: Instant,
     pub(crate) hero: Hero,
 }
 
 impl Default for ForgotForm {
     fn default() -> Self {
         Self {
+            model: State::new(),
             email: TextInput::default(),
             focus: Some(ForgotField::default()),
-            touched: false,
-            attempted: false,
-            sending_since: None,
-            sent: false,
+            spin_since: Instant::now(),
             hero: Hero::default(),
         }
     }
@@ -70,7 +59,7 @@ impl Default for ForgotForm {
 impl ForgotForm {
     /// The stops in Tab order: the field and its button, or none once sent.
     pub(crate) fn stops(&self) -> &'static [ForgotField] {
-        if self.sent {
+        if self.model.is_sent() {
             &[]
         } else {
             &[ForgotField::Email, ForgotField::SendResetLink]
@@ -87,18 +76,23 @@ impl ForgotForm {
         };
         self.focus = stops.get(next).copied();
     }
+}
 
-    /// The fixed error once the email has held something or a send was tried, checked untrimmed.
-    pub(crate) fn validate(&mut self) {
-        let invalid = Email::new(self.email.value()).is_err();
-        let shows = (self.touched || self.attempted) && invalid;
-        self.email
-            .set_error(shows.then(|| INVALID_EMAIL.to_owned()));
+/// Applies `action` to the model, brings the box and the focus in line with it, and performs the effects it returns, in order.
+pub(crate) fn dispatch(form: &mut ForgotForm, action: Action, cx: &mut Context<'_>) {
+    let effects = form.model.update(action);
+    form.email.set_error(form.model.error());
+    if form.model.is_sent() {
+        form.focus = None;
     }
-
-    /// Whether the spinner turns.
-    pub(crate) fn sending(&self) -> bool {
-        self.sending_since.is_some()
+    for effect in effects {
+        match effect {
+            Effect::RequestReset { ticket, email } => {
+                form.spin_since = Instant::now();
+                cx.request(Request::Send { ticket, email }.into());
+            }
+            Effect::Navigate(Destination::Previous) => cx.back(),
+        }
     }
 }
 
@@ -106,23 +100,23 @@ impl ForgotForm {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum Request {
     /// Asks for a reset link for this email, as typed.
-    Send(String),
+    Send { ticket: Ticket, email: String },
 }
 
 impl Request {
     /// The action an error from this request is reported under, fixed so a renamed variant keeps its reports.
     pub(crate) fn action(&self) -> &'static str {
         match self {
-            Self::Send(..) => "send",
+            Self::Send { .. } => "send",
         }
     }
 }
 
-/// The Reset password screen's results.
+/// The Reset password screen's results, each carrying its request's ticket back to the model.
 #[derive(Debug)]
 pub(crate) enum Update {
-    Sent,
-    Failed(String),
+    Sent { ticket: Ticket },
+    Failed { ticket: Ticket, error: String },
 }
 
 impl From<Request> for screens::Request {
@@ -154,35 +148,33 @@ pub(crate) fn open(cx: &mut Context<'_>) {
 }
 
 pub(crate) async fn perform(account: &Account, request: Request) -> Option<screens::Update> {
-    let Request::Send(email) = request;
+    let Request::Send { ticket, email } = request;
     let result = account
         .client
         .request_password_reset(HttpRequestPasswordReset::new(&email))
         .await;
     Some(
         match result {
-            Ok(()) => Update::Sent,
-            Err(e) => Update::Failed(crate::inbound::screens::shown(&e)),
+            Ok(()) => Update::Sent { ticket },
+            Err(e) => Update::Failed {
+                ticket,
+                error: screens::shown(&e),
+            },
         }
         .into(),
     )
 }
 
+/// Hands a reply to the model. A failure raises its toast even when the screen has closed.
 pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
-    let form = nav.find_mut(pick);
-    match update {
-        Update::Sent => {
-            if let Some(form) = form {
-                form.sending_since = None;
-                form.sent = true;
-                form.focus = None;
-            }
-        }
-        Update::Failed(error) => {
-            if let Some(form) = form {
-                form.sending_since = None;
-            }
+    let action = match update {
+        Update::Sent { ticket } => Action::Sent { ticket },
+        Update::Failed { ticket, error } => {
             cx.toast(ToastKind::Error, error);
+            Action::Failed { ticket }
         }
+    };
+    if let Some(form) = nav.find_mut(pick) {
+        dispatch(form, action, cx);
     }
 }

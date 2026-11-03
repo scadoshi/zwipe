@@ -1,9 +1,11 @@
 use crossterm::event::KeyCode;
+use zwipe_ui::screens::register::{CHECK_INBOX, CREATE_PROFILE, CREATING};
 
 use super::*;
 use crate::inbound::event_loop::Flow;
 use crate::inbound::event_loop::harness::Harness;
 use crate::inbound::screens::login::LoginField;
+use crate::inbound::widgets::toast::ToastKind;
 use crate::test_support::{render, screen_text};
 
 /// Login with Create profile open over it, nothing queued.
@@ -31,6 +33,29 @@ fn fill(harness: &mut Harness, username: &str, email: &str, password: &str, conf
     harness.press(KeyCode::Tab);
     harness.press(KeyCode::Tab);
     harness.type_text(confirm);
+}
+
+/// The ticket the latest registration went out with.
+fn last_ticket(harness: &Harness) -> Ticket {
+    match harness.pending().last() {
+        Some(screens::Request::Register(Request::Register { ticket, .. })) => *ticket,
+        other => panic!("no registration went out: {other:?}"),
+    }
+}
+
+/// Create profile with a good form filled in and sent.
+fn sending() -> (Harness, Ticket) {
+    let mut harness = registering();
+    fill(
+        &mut harness,
+        "scotty",
+        "me@zwipe.net",
+        "Str0ng!pass",
+        "Str0ng!pass",
+    );
+    harness.press(KeyCode::Enter);
+    let ticket = last_ticket(&harness);
+    (harness, ticket)
 }
 
 #[test]
@@ -70,21 +95,6 @@ fn fields_validate_live_once_they_have_held_something() {
 }
 
 #[test]
-fn the_mismatch_shows_under_password_once_the_confirmation_is_as_long() {
-    let mut harness = registering();
-    fill(
-        &mut harness,
-        "scotty",
-        "me@zwipe.net",
-        "Str0ng!pass",
-        "Str0ng",
-    );
-    assert_eq!(form(&harness).password.error(), None, "still typing");
-    harness.type_text("!pasx");
-    assert_eq!(form(&harness).password.error(), Some(MISMATCH));
-}
-
-#[test]
 fn a_submit_shows_every_error_and_sends_nothing_until_they_pass() {
     let mut harness = registering();
     if let Screen::Register(form) = harness.screen_mut() {
@@ -92,7 +102,6 @@ fn a_submit_shows_every_error_and_sends_nothing_until_they_pass() {
     }
     harness.press(KeyCode::Enter);
     let form = form(&harness);
-    assert!(form.attempted);
     assert!(form.username.error().is_some() && form.email.error().is_some());
     assert!(form.password.error().is_some());
     assert_eq!(harness.pending(), []);
@@ -109,15 +118,17 @@ fn a_good_form_records_the_submit_and_sends_the_username_raw_and_the_email_trimm
         "Str0ng!pass",
     );
     harness.press(KeyCode::Enter);
-    assert!(form(&harness).busy);
+    assert!(form(&harness).model.is_loading());
+    let ticket = last_ticket(&harness);
     assert_eq!(
         harness.pending(),
         [
             screens::Request::Record(AnonymousEventKind::RegisterSubmitted),
             screens::Request::Register(Request::Register {
+                ticket,
                 username: "scotty".to_owned(),
                 email: "me@zwipe.net".to_owned(),
-                password: Password("Str0ng!pass".to_owned()),
+                password: Password::new("Str0ng!pass"),
             }),
         ]
     );
@@ -128,10 +139,8 @@ fn a_good_form_records_the_submit_and_sends_the_username_raw_and_the_email_trimm
 
 #[test]
 fn success_goes_back_to_login_with_the_username_and_the_apps_toast() {
-    let mut harness = registering();
-    harness.apply(Update::Registered {
-        username: "scotty".to_owned(),
-    });
+    let (mut harness, ticket) = sending();
+    harness.apply(Update::Registered { ticket });
     let Screen::Login(login) = harness.screen() else {
         panic!("not back on Login");
     };
@@ -141,17 +150,45 @@ fn success_goes_back_to_login_with_the_username_and_the_apps_toast() {
     let toasts = harness.app.shared.toasts.items();
     assert_eq!(toasts[0].message, CHECK_INBOX);
     assert_eq!(toasts[0].kind, ToastKind::Info);
+    assert_eq!(
+        harness.app.shared.caches.handoff.login_prefill, None,
+        "Login took the username"
+    );
 }
 
 #[test]
 fn a_failure_toasts_and_stays() {
-    let mut harness = registering();
-    harness.apply(Update::Failed("username taken".to_owned()));
+    let (mut harness, ticket) = sending();
+    harness.apply(Update::Failed {
+        ticket,
+        error: "username taken".to_owned(),
+    });
     assert!(matches!(harness.screen(), Screen::Register(_)));
+    assert!(!form(&harness).model.is_loading());
     assert_eq!(
         harness.app.shared.toasts.items()[0].message,
         "username taken"
     );
+}
+
+#[test]
+fn a_reply_to_an_earlier_registration_changes_nothing() {
+    let (mut harness, first) = sending();
+    harness.apply(Update::Failed {
+        ticket: first,
+        error: "connection error".to_owned(),
+    });
+    harness.press(KeyCode::Enter);
+    let second = last_ticket(&harness);
+    assert_ne!(second, first);
+    harness.apply(Update::Registered { ticket: first });
+    assert!(
+        matches!(harness.screen(), Screen::Register(_)),
+        "still here"
+    );
+    assert!(form(&harness).model.is_loading(), "the second still spins");
+    harness.apply(Update::Registered { ticket: second });
+    assert!(matches!(harness.screen(), Screen::Login(_)));
 }
 
 #[test]
@@ -249,7 +286,7 @@ fn the_screen_shows_its_fields_and_buttons_and_fits_a_tiny_terminal() {
     fill(&mut harness, "ab", "x", "y", "z");
     let screen = screen_text(&harness.app);
     for text in [
-        "Create profile",
+        CREATE_PROFILE,
         "Username",
         "Email",
         "Password [?]",
@@ -258,10 +295,8 @@ fn the_screen_shows_its_fields_and_buttons_and_fits_a_tiny_terminal() {
     ] {
         assert!(screen.contains(text), "{text}");
     }
-    if let Screen::Register(form) = harness.screen_mut() {
-        form.busy = true;
-    }
-    assert!(screen_text(&harness.app).contains("Creating..."));
+    let (sending, _) = sending();
+    assert!(screen_text(&sending.app).contains(CREATING));
     for (width, height) in [(12, 5), (1, 1), (50, 14)] {
         render(&harness.app, width, height);
     }

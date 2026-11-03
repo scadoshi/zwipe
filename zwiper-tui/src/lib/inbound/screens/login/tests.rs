@@ -1,9 +1,12 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::style::Modifier;
+use zwipe_ui::account::MISSING_INPUTS;
+use zwipe_ui::screens::login::LOGGING_IN;
 
 use super::*;
 use crate::inbound::event_loop::Flow;
 use crate::inbound::event_loop::harness::Harness;
+use crate::inbound::widgets::toast::ToastKind;
 use crate::test_support::{render, screen_text, session, user};
 
 fn form(harness: &Harness) -> &LoginForm {
@@ -20,6 +23,25 @@ fn focused(focus: Option<LoginField>) -> Harness {
         form.focus = focus;
     }
     harness
+}
+
+/// The ticket the latest sign-in went out with.
+fn last_ticket(harness: &Harness) -> Ticket {
+    match harness.pending().last() {
+        Some(screens::Request::Login(Request::SignIn { ticket, .. })) => *ticket,
+        other => panic!("no sign-in went out: {other:?}"),
+    }
+}
+
+/// Login with both fields filled and the sign-in sent.
+fn signing_in() -> (Harness, Ticket) {
+    let mut harness = Harness::new();
+    harness.type_text("scotty");
+    harness.press(KeyCode::Enter);
+    harness.type_text("hunter2");
+    harness.press(KeyCode::Enter);
+    let ticket = last_ticket(&harness);
+    (harness, ticket)
 }
 
 /// The key bar at 120 by 40, its hints one space apart.
@@ -63,12 +85,13 @@ fn the_form_moves_to_the_password_then_signs_in_with_the_identifier_untrimmed() 
     harness.type_text("hunter2");
     harness.press(KeyCode::Enter);
 
-    assert!(form(&harness).busy);
+    assert!(form(&harness).model.is_loading());
     assert_eq!(
         harness.pending(),
         [screens::Request::Login(Request::SignIn {
+            ticket: last_ticket(&harness),
             identifier: " scotty ".to_owned(),
-            password: Password("hunter2".to_owned()),
+            password: Password::new("hunter2"),
         })]
     );
     harness.clear();
@@ -86,20 +109,19 @@ fn an_empty_form_is_refused_with_the_apps_toast() {
     assert_eq!(harness.pending(), []);
     let toasts = harness.app.shared.toasts.items();
     assert_eq!(toasts.len(), 1);
-    assert_eq!(toasts[0].message, EMPTY_FORM);
+    assert_eq!(toasts[0].message, MISSING_INPUTS);
     assert_eq!(toasts[0].kind, ToastKind::Error);
 }
 
 #[test]
 fn a_failed_sign_in_toasts_why_and_keeps_the_fields() {
-    let mut harness = Harness::new();
-    harness.type_text("scotty");
-    if let Screen::Login(form) = harness.screen_mut() {
-        form.busy = true;
-    }
-    harness.apply(Update::Failed("invalid credentials".to_owned()));
+    let (mut harness, ticket) = signing_in();
+    harness.apply(Update::Failed {
+        ticket,
+        error: "invalid credentials".to_owned(),
+    });
     let form = form(&harness);
-    assert!(!form.busy);
+    assert!(!form.model.is_loading());
     assert_eq!(form.identifier.value(), "scotty");
     assert_eq!(
         harness.app.shared.toasts.items()[0].message,
@@ -109,20 +131,60 @@ fn a_failed_sign_in_toasts_why_and_keeps_the_fields() {
 
 #[test]
 fn signing_in_opens_home_in_the_accounts_theme_with_no_toast() {
-    let mut harness = Harness::new();
+    let (mut harness, ticket) = signing_in();
     let preferences = zwipe_core::domain::user::UserPreferences {
         theme: "nord".to_owned(),
         dark_mode: false,
         ..Default::default()
     };
     let session = session(&user(true), &preferences);
-    harness.apply(Update::SignedIn(Box::new(session)));
+    harness.apply(Update::SignedIn {
+        ticket,
+        session: Box::new(session),
+    });
     assert!(matches!(harness.screen(), Screen::Home(_)));
     assert!(harness.app.shared.toasts.is_empty());
     assert_eq!(
         harness.app.shared.palette,
         crate::domain::theme::Palette::for_account("nord", false)
     );
+}
+
+#[test]
+fn a_reply_to_an_earlier_sign_in_changes_nothing() {
+    let (mut harness, first) = signing_in();
+    harness.apply(Update::Failed {
+        ticket: first,
+        error: "connection error".to_owned(),
+    });
+    harness.press(KeyCode::Enter);
+    let second = last_ticket(&harness);
+    assert_ne!(second, first);
+    let session = session(
+        &user(true),
+        &zwipe_core::domain::user::UserPreferences::default(),
+    );
+    harness.apply(Update::SignedIn {
+        ticket: first,
+        session: Box::new(session.clone()),
+    });
+    assert!(matches!(harness.screen(), Screen::Login(_)), "still here");
+    assert!(form(&harness).model.is_loading(), "the second still spins");
+    assert!(harness.app.shared.user.is_none(), "nobody signed in");
+    harness.apply(Update::SignedIn {
+        ticket: second,
+        session: Box::new(session),
+    });
+    assert!(matches!(harness.screen(), Screen::Home(_)));
+}
+
+#[test]
+fn c_and_f_wait_while_a_sign_in_is_out() {
+    let (mut harness, _) = signing_in();
+    harness.press(KeyCode::Esc);
+    harness.press(KeyCode::Char('c'));
+    harness.press(KeyCode::Char('f'));
+    assert!(matches!(harness.screen(), Screen::Login(_)));
 }
 
 #[test]
@@ -272,10 +334,8 @@ fn the_login_screen_shows_the_hero_fields_and_buttons_and_masks_the_password() {
         assert!(screen.contains(text), "{text}");
     }
     assert!(!screen.contains("hunter2"));
-    if let Screen::Login(form) = harness.screen_mut() {
-        form.busy = true;
-    }
-    assert!(screen_text(&harness.app).contains("Logging in..."));
+    let (sending, _) = signing_in();
+    assert!(screen_text(&sending.app).contains(LOGGING_IN));
 }
 
 #[test]

@@ -1,18 +1,17 @@
-//! Create profile's keys: typing with live validation, Tab and the arrows across the form, Enter on whatever has the focus, F2 for the password rules, and Esc to end typing. With no field active, Esc goes back to Login, `q` quits and `!` opens Help.
+//! Create profile's keys: typing, each keystroke handed to the model, Tab and the arrows across the form, Enter on whatever has the focus, F2 for the password rules, and Esc to end typing. With no field active, Esc goes back to Login, `q` quits and `!` opens Help.
 
 use crossterm::event::KeyCode;
-use zwipe_core::http::contracts::metrics::AnonymousEventKind;
+use zwipe_ui::screens::register::Action;
 
-use super::{RegisterField, RegisterForm, Request};
+use super::{RegisterField, RegisterForm, dispatch, edit};
 use crate::inbound::app::Context;
-use crate::inbound::screens::{self, Password};
 use crate::inbound::widgets::help;
 use crate::inbound::widgets::hint::{self, HintTopic};
 
 pub(crate) fn handle(form: &mut RegisterForm, code: KeyCode, cx: &mut Context<'_>) {
     let Some(focus) = form.focus else {
         match code {
-            KeyCode::Esc => cx.back(),
+            KeyCode::Esc => dispatch(form, Action::Back, cx),
             KeyCode::Tab | KeyCode::Down => form.focus = Some(RegisterField::Username),
             KeyCode::BackTab | KeyCode::Up => form.focus = Some(RegisterField::Confirm),
             other => command(other, cx),
@@ -28,17 +27,14 @@ pub(crate) fn handle(form: &mut RegisterForm, code: KeyCode, cx: &mut Context<'_
         }
         KeyCode::Enter => press(form, focus, cx),
         other => {
-            let Some((field, index)) = form.focused_mut() else {
+            let Some((input, field)) = form.focused_mut() else {
                 command(other, cx);
                 return;
             };
-            if field.handle_key(other)
-                && !field.is_empty()
-                && let Some(touched) = form.touched.get_mut(index)
-            {
-                *touched = true;
+            if input.handle_key(other) {
+                let value = input.value().to_owned();
+                dispatch(form, edit(field, value), cx);
             }
-            form.validate();
         }
     }
 }
@@ -66,30 +62,8 @@ fn press(form: &mut RegisterForm, focus: RegisterField, cx: &mut Context<'_>) {
             let masked = form.confirm.is_masked();
             form.confirm.set_masked(!masked);
         }
-        RegisterField::Confirm | RegisterField::CreateProfile => submit(form, cx),
-    }
-}
-
-/// Checks every field; when all pass, tells the server a registration was submitted and sends it.
-fn submit(form: &mut RegisterForm, cx: &mut Context<'_>) {
-    if form.busy {
-        return;
-    }
-    form.attempted = true;
-    form.validate();
-    if !form.valid() {
-        return;
-    }
-    form.busy = true;
-    cx.request(screens::Request::Record(
-        AnonymousEventKind::RegisterSubmitted,
-    ));
-    cx.request(
-        Request::Register {
-            username: form.username.value().to_owned(),
-            email: form.email.value().trim().to_owned(),
-            password: Password(form.password.value().to_owned()),
+        RegisterField::Confirm | RegisterField::CreateProfile => {
+            dispatch(form, Action::Submit, cx);
         }
-        .into(),
-    );
+    }
 }

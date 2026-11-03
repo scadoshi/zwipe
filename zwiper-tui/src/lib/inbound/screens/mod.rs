@@ -66,7 +66,7 @@ use self::swipe::SwipeView;
 use super::app::{Context, Shared, session};
 use super::nav::Nav;
 use super::widgets;
-use super::widgets::hero::{self, Counts, Hero};
+use super::widgets::hero::{Counts, Hero};
 use super::widgets::toast::ToastKind;
 use crate::outbound::account::Account;
 use crate::outbound::theme_file::{RememberedTheme, ThemeFile};
@@ -177,7 +177,9 @@ impl Screen {
                 matches!(&form.overlay, Some(deck_form::Overlay::Swipe(picker)) if picker.animating())
             }
             Self::Register(form) => form.hero.animating(Instant::now()),
-            Self::ForgotPassword(form) => form.sending() || form.hero.animating(Instant::now()),
+            Self::ForgotPassword(form) => {
+                form.model.is_loading() || form.hero.animating(Instant::now())
+            }
             Self::Activity(view) => view.animating(),
             Self::Playstyle(view) => view.animating(),
             Self::CommanderSwipe(view) => view.animating(),
@@ -200,7 +202,7 @@ impl Screen {
     pub(crate) fn on_return(&mut self, cx: &mut Context<'_>) {
         match self {
             Self::Home(view) => view.refresh(cx),
-            Self::Login(form) => form.hero = hero::mount(cx),
+            Self::Login(form) => login::on_return(form, cx),
             Self::Decks(list) => list.reload(cx),
             Self::Deck(view) => view.reload(cx),
             Self::DeckCards(view) => {
@@ -546,7 +548,7 @@ pub(crate) fn sign_out(cx: &mut Context<'_>, message: &str) {
     cx.request(Request::SignOut);
 }
 
-/// A password on its way to the server, never shown in `Debug` output.
+/// A password on its way to the server from a screen not yet on its zwipe-ui model, never shown in `Debug` output.
 #[derive(Clone, PartialEq, Eq)]
 pub(crate) struct Password(pub(crate) String);
 
@@ -629,8 +631,9 @@ mod tests {
     #[test]
     fn the_password_never_shows_in_debug_output() {
         let request = Request::Login(login::Request::SignIn {
+            ticket: zwipe_ui::generation::Generation::default().next_ticket(),
             identifier: "scotty".to_owned(),
-            password: Password("hunter2".to_owned()),
+            password: zwipe_ui::account::Password::new("hunter2"),
         });
         assert!(!format!("{request:?}").contains("hunter2"));
     }

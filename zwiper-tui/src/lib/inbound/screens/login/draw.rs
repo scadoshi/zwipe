@@ -5,6 +5,7 @@ use std::time::Instant;
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::text::Line;
+use zwipe_ui::screens::login::{CREATE_PROFILE, FORGOT_PASSWORD, Field};
 
 use super::{LoginField, LoginForm};
 use crate::domain::theme::Palette;
@@ -179,7 +180,7 @@ pub(crate) fn show_button(
 
 /// Login's key hints: the form's keys while the focus is in it, with Enter named for what it does from the focused stop and the screen's letters once no field takes them; the way back into the form and the letters once Esc has ended typing.
 pub(crate) fn keys(form: &LoginForm) -> Vec<(&'static str, &'static str)> {
-    let letters = [("c", "Create profile"), ("f", "Forgot password")];
+    let letters = [("c", CREATE_PROFILE), ("f", FORGOT_PASSWORD)];
     let Some(focus) = form.focus else {
         let mut keys = vec![("Tab", "fields")];
         keys.extend(letters);
@@ -203,8 +204,7 @@ pub(crate) fn keys(form: &LoginForm) -> Vec<(&'static str, &'static str)> {
 pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &LoginForm) {
     let palette = &shared.palette;
     let keys = action_bar::line(palette, &keys(form)).centered();
-    let log_in = if form.busy { "Logging in..." } else { "Log in" };
-    let row = [Button::new(log_in).disabled(form.busy)];
+    let row = [Button::new(form.model.submit_label()).disabled(form.model.is_loading())];
     let areas = frame(
         f,
         shared,
@@ -225,7 +225,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &LoginForm) {
         palette,
         identifier,
         &form.identifier,
-        "Username or email",
+        Field::Identifier.label(),
         form.focus == Some(LoginField::Identifier),
     );
     field(
@@ -233,7 +233,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &LoginForm) {
         palette,
         password,
         &form.password,
-        "Password",
+        Field::Password.label(),
         form.focus == Some(LoginField::Password),
     );
     show_button(

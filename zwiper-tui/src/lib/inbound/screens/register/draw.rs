@@ -2,6 +2,7 @@
 
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout};
+use zwipe_ui::screens::register::Field;
 
 use super::{RegisterField, RegisterForm};
 use crate::inbound::app::Shared;
@@ -46,12 +47,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &RegisterForm) {
     ];
     let body_height = heights.iter().fold(0_u16, |sum, h| sum.saturating_add(*h));
     let focus = form.focus;
-    let create = if form.busy {
-        "Creating..."
-    } else {
-        "Create profile"
-    };
-    let row = [Button::new(create).disabled(form.busy)];
+    let row = [Button::new(form.model.submit_label()).disabled(form.model.is_loading())];
     let areas = login::draw::frame(
         f,
         shared,
@@ -72,7 +68,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &RegisterForm) {
         palette,
         username,
         &form.username,
-        "Username",
+        Field::Username.label(),
         focus == Some(RegisterField::Username),
     );
     login::draw::field(
@@ -80,7 +76,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &RegisterForm) {
         palette,
         email,
         &form.email,
-        "Email",
+        Field::Email.label(),
         focus == Some(RegisterField::Email),
     );
     login::draw::field(
@@ -88,7 +84,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &RegisterForm) {
         palette,
         password,
         &form.password,
-        Label::About("Password"),
+        Label::About(Field::Password.label()),
         focus == Some(RegisterField::Password),
     );
     login::draw::show_button(
@@ -103,7 +99,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, form: &RegisterForm) {
         palette,
         confirm,
         &form.confirm,
-        "Confirm password",
+        Field::ConfirmPassword.label(),
         focus == Some(RegisterField::Confirm),
     );
     login::draw::show_button(

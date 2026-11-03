@@ -1,20 +1,21 @@
 //! The Create profile screen: the hero over username, email, password and confirm fields that validate as they are typed, with `Create profile` under them.
 //!
-//! Esc ends typing, and Esc again with no field active goes back to Login; Tab or Shift+Tab goes back into the form.
+//! What the screen knows and decides is zwipe-ui's [`State`]: the checks, when each field shows its line, the one registration out and what a good one does. This view adds the text boxes, the focus and the Show and Hide toggles. Esc ends typing, and Esc again with no field active goes back to Login; Tab or Shift+Tab goes back into the form.
 //!
-//! A field starts showing its error once it has held something, or after a submit; from then on it checks again on every change. A good registration goes back to Login with the username filled in.
+//! A good registration leaves the username in `cx.shared.caches.handoff.login_prefill` and goes back; Login takes it in its arm of `Screen::on_return`.
 
 pub(crate) mod draw;
 pub(crate) mod keys;
 #[cfg(test)]
 mod tests;
 
-use zwipe_core::domain::auth::models::password;
 use zwipe_core::http::contracts::auth::HttpRegisterUser;
 use zwipe_core::http::contracts::metrics::AnonymousEventKind;
-use zwipe_ui::account::{email_error, username_error};
+use zwipe_ui::account::Password;
+use zwipe_ui::generation::Ticket;
+use zwipe_ui::screens::register::{Action, Destination, Effect, Field, State};
 
-use super::{Password, Screen, login};
+use super::Screen;
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;
@@ -22,12 +23,6 @@ use crate::inbound::widgets::hero::{self, Hero};
 use crate::inbound::widgets::text_input::TextInput;
 use crate::inbound::widgets::toast::ToastKind;
 use crate::outbound::account::Account;
-
-/// The success toast, sent before going back to Login.
-pub(crate) const CHECK_INBOX: &str = "Check your inbox to verify your email, then log in";
-
-/// The mismatch error, shown under Password.
-pub(crate) const MISMATCH: &str = "Passwords do not match";
 
 /// A stop the focus can rest on: a field, a password's Show/Hide, or the `Create profile` button.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
@@ -81,91 +76,88 @@ impl RegisterField {
     }
 }
 
-/// The Create profile screen's state.
+/// The Create profile screen's state: the model plus what only the terminal keeps.
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) struct RegisterForm {
+    pub(crate) model: State,
+    /// The boxes the fields are typed in. Each value follows every keystroke into the model, and each error line is the model's.
     pub(crate) username: TextInput,
     pub(crate) email: TextInput,
     pub(crate) password: TextInput,
     pub(crate) confirm: TextInput,
     /// The stop with the focus, or `None` once Esc ends typing.
     pub(crate) focus: Option<RegisterField>,
-    /// Which of username, email, password and confirm have held something.
-    pub(crate) touched: [bool; 4],
-    /// Set by the first submit, after which every field shows its error.
-    pub(crate) attempted: bool,
-    /// Set while the registration is out; the button is disabled meanwhile.
-    pub(crate) busy: bool,
     pub(crate) hero: Hero,
 }
 
 impl Default for RegisterForm {
     fn default() -> Self {
         Self {
+            model: State::new(),
             username: TextInput::default(),
             email: TextInput::default(),
             password: TextInput::masked(),
             confirm: TextInput::masked(),
             focus: Some(RegisterField::default()),
-            touched: [false; 4],
-            attempted: false,
-            busy: false,
             hero: Hero::default(),
         }
     }
 }
 
 impl RegisterForm {
-    /// The text field with the cursor and its place in `touched`, if the focus is on one.
-    pub(crate) fn focused_mut(&mut self) -> Option<(&mut TextInput, usize)> {
+    /// The text box with the cursor and the model's field it fills, if the focus is on one.
+    pub(crate) fn focused_mut(&mut self) -> Option<(&mut TextInput, Field)> {
         match self.focus {
-            Some(RegisterField::Username) => Some((&mut self.username, 0)),
-            Some(RegisterField::Email) => Some((&mut self.email, 1)),
-            Some(RegisterField::Password) => Some((&mut self.password, 2)),
-            Some(RegisterField::Confirm) => Some((&mut self.confirm, 3)),
+            Some(RegisterField::Username) => Some((&mut self.username, Field::Username)),
+            Some(RegisterField::Email) => Some((&mut self.email, Field::Email)),
+            Some(RegisterField::Password) => Some((&mut self.password, Field::Password)),
+            Some(RegisterField::Confirm) => Some((&mut self.confirm, Field::ConfirmPassword)),
             _ => None,
         }
     }
+}
 
-    /// Whether a field's errors show: once it has held something, or after a submit.
-    fn checks(&self, field: usize) -> bool {
-        self.attempted || self.touched.get(field).copied().unwrap_or(false)
+/// The model's edit action for `field` holding `value`.
+pub(crate) fn edit(field: Field, value: String) -> Action {
+    match field {
+        Field::Username => Action::EditUsername(value),
+        Field::Email => Action::EditEmail(value),
+        Field::Password => Action::EditPassword(Password::new(value)),
+        Field::ConfirmPassword => Action::EditConfirm(Password::new(value)),
     }
+}
 
-    /// What is wrong with the password, in the app's order: the policy, then a mismatch with the confirmation once a submit was tried or the confirmation is as long as the password.
-    pub(crate) fn password_error(&self) -> Option<String> {
-        let password = self.password.value();
-        if let Err(e) = password::validate(password) {
-            return Some(e.to_string());
+/// Applies `action` to the model, puts its error lines under the boxes, and performs the effects it returns, in order.
+pub(crate) fn dispatch(form: &mut RegisterForm, action: Action, cx: &mut Context<'_>) {
+    let effects = form.model.update(action);
+    form.username.set_error(form.model.error(Field::Username));
+    form.email.set_error(form.model.error(Field::Email));
+    form.password.set_error(form.model.error(Field::Password));
+    for effect in effects {
+        match effect {
+            Effect::Register {
+                ticket,
+                username,
+                email,
+                password,
+            } => {
+                cx.request(screens::Request::Record(
+                    AnonymousEventKind::RegisterSubmitted,
+                ));
+                cx.request(
+                    Request::Register {
+                        ticket,
+                        username,
+                        email,
+                        password,
+                    }
+                    .into(),
+                );
+            }
+            Effect::Prefill(username) => cx.shared.caches.handoff.login_prefill = Some(username),
+            Effect::Navigate(Destination::Previous) => cx.back(),
+            Effect::Toast(toast) => cx.show(toast),
         }
-        let confirm = self.confirm.value();
-        let long_enough = confirm.chars().count() >= password.chars().count();
-        (confirm != password && (self.attempted || long_enough)).then(|| MISMATCH.to_owned())
-    }
-
-    /// Checks every field the app's way and puts each error under its field.
-    pub(crate) fn validate(&mut self) {
-        let username = self
-            .checks(0)
-            .then(|| username_error(self.username.value()))
-            .flatten();
-        let email = self
-            .checks(1)
-            .then(|| email_error(self.email.value().trim()))
-            .flatten();
-        let password = (self.checks(2) || self.checks(3))
-            .then(|| self.password_error())
-            .flatten();
-        self.username.set_error(username);
-        self.email.set_error(email);
-        self.password.set_error(password);
-    }
-
-    /// Whether every field passes, checked as a submit checks them.
-    pub(crate) fn valid(&self) -> bool {
-        username_error(self.username.value()).is_none()
-            && email_error(self.email.value().trim()).is_none()
-            && self.password_error().is_none()
     }
 }
 
@@ -174,6 +166,7 @@ impl RegisterForm {
 pub(crate) enum Request {
     /// Registers the account: the username as typed, the email trimmed.
     Register {
+        ticket: Ticket,
         username: String,
         email: String,
         password: Password,
@@ -189,14 +182,17 @@ impl Request {
     }
 }
 
-/// The Create profile screen's results.
+/// The Create profile screen's results, each carrying its request's ticket back to the model.
 #[derive(Debug)]
 pub(crate) enum Update {
-    /// The server sent the verification email; the username goes back to Login.
+    /// The server sent the verification email.
     Registered {
-        username: String,
+        ticket: Ticket,
     },
-    Failed(String),
+    Failed {
+        ticket: Ticket,
+        error: String,
+    },
 }
 
 impl From<Request> for screens::Request {
@@ -230,36 +226,37 @@ pub(crate) fn open(cx: &mut Context<'_>) {
 
 pub(crate) async fn perform(account: &Account, request: Request) -> Option<screens::Update> {
     let Request::Register {
+        ticket,
         username,
         email,
         password,
     } = request;
     let result = account
         .client
-        .register(HttpRegisterUser::new(&username, &email, &password.0))
+        .register(HttpRegisterUser::new(&username, &email, password.read()))
         .await;
     Some(
         match result {
-            Ok(_) => Update::Registered { username },
-            Err(e) => Update::Failed(crate::inbound::screens::shown(&e)),
+            Ok(_) => Update::Registered { ticket },
+            Err(e) => Update::Failed {
+                ticket,
+                error: screens::shown(&e),
+            },
         }
         .into(),
     )
 }
 
+/// Hands a reply to the model. A failure raises its toast even when the screen has closed; a success after it closed has no model to land on, as in the app.
 pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
-    let open = matches!(nav.top(), Screen::Register(_));
-    if let Some(form) = nav.find_mut(pick) {
-        form.busy = false;
-    }
-    match update {
-        Update::Registered { username } => {
-            login::prefill(nav, &username);
-            cx.toast(ToastKind::Info, CHECK_INBOX.to_owned());
-            if open {
-                cx.back();
-            }
+    let action = match update {
+        Update::Registered { ticket } => Action::Registered { ticket },
+        Update::Failed { ticket, error } => {
+            cx.toast(ToastKind::Error, error);
+            Action::Failed { ticket }
         }
-        Update::Failed(error) => cx.toast(ToastKind::Error, error),
+    };
+    if let Some(form) = nav.find_mut(pick) {
+        dispatch(form, action, cx);
     }
 }

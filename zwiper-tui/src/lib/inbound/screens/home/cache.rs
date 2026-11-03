@@ -87,6 +87,8 @@ pub(crate) struct Handoff {
     pub(crate) oracle_tag: Option<String>,
     /// Left by the commander swipe when it closes, so its host refetches and takes the identity its Filter picked.
     pub(crate) commander_swipe: Option<crate::inbound::screens::commander_swipe::Closed>,
+    /// The username a good registration hands to Login to fill in.
+    pub(crate) login_prefill: Option<String>,
 }
 
 /// Everything kept above the screens.
