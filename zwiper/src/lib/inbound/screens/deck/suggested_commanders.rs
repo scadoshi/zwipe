@@ -998,9 +998,20 @@ pub fn SuggestedCommanders() -> Element {
                                 }
                             } else {
                                 div { class: "maybeboard-list card-group row-enter",
+                                    // Swipe sits in the list's header, so it
+                                    // says what gets swiped.
                                     div { class: "card-group-header card-group-header-with-hint",
                                         span { {model::LIST_TITLE} }
-                                        InfoButton { topic: HintTopic::SuggestionList }
+                                        div { class: "card-group-header-actions",
+                                            if shows_swipe {
+                                                Button {
+                                                    variant: ButtonVariant::Action,
+                                                    onclick: move |_| swipe_open.set(true),
+                                                    {model::SWIPE}
+                                                }
+                                            }
+                                            InfoButton { topic: HintTopic::SuggestionList }
+                                        }
                                     }
                                     for suggestion in rows {
                                         SuggestionRow {
@@ -1048,17 +1059,6 @@ pub fn SuggestedCommanders() -> Element {
                                 onclick: move |()| show_clear_dialog.set(true),
                             }
                         }
-                    }
-                }
-            }
-
-            // Swipe, the list's main action, floats at the bottom right.
-            if shows_swipe {
-                div { class: "action-dock action-dock-right",
-                    Button {
-                        variant: ButtonVariant::Action,
-                        onclick: move |_| swipe_open.set(true),
-                        {model::SWIPE}
                     }
                 }
             }

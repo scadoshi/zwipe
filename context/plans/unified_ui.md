@@ -28,7 +28,7 @@ These were settled with the owner before the per-screen review. A screen breaks 
 ### Actions
 
 - The app's bottom footer goes away. A screen's actions (Edit, Clone, Share, Delete and the like) sit inline in the content, like the web's panel footers.
-- A screen's one or two main actions can float instead: compact buttons just above the bottom edge, always on screen, with no bar behind them and the content scrolling underneath. Decks' Create and the commander lists' Swipe and Filter float.
+- A screen's one or two main actions can float instead: compact buttons just above the bottom edge, always on screen, with no bar behind them and the content scrolling underneath. Decks' Create and the maybeboard's Filter float. A list's own action (the commander lists' Swipe) sits in that list's header, beside its `?`, so it says what it acts on (owner, 2026-11-03).
 - The action dock is a screen's icon actions in one floating squircle bar at the bottom right (Cards first). It has no minimize button: it covers only a corner and each screen keeps room to scroll clear of it. If it ever crowds content, it shrinks with the header on scroll instead.
 - Icons stand in for words only where the symbol is standard (+, −, a funnel, undo, refresh, the eye). Each icon has an accessible label, and the screen's hint names each one once.
 - A form's primary button (Log in, Import) sits at the end of the form, right after the last field, and scrolls with the content. The deck form is the exception, since it runs about three screens: its Save (Edit) floats from the moment something changes, and its Create (Create deck) floats once the form is valid.
@@ -91,8 +91,8 @@ Every footer in the app on 2026-11-03 and where its actions go. Where an action 
 | Export | Back, Copy | Copy inline |
 | Add, Remove, Swipe select | Back, Filter, Refresh, the eye | Filter, Refresh and the eye float as icons in the bottom-right corner |
 | Cards (today's Deck cards) | Back, Add, Remove, Filter, Undo, Reset filter | the action dock, floating at the bottom right: + and −, a full-height divider, the filter funnel and undo; reset is a small squircle × on the funnel, shown only while a filter is on |
-| Commander maybeboard | Back, Filter, Swipe, More (Clear maybeboard) | Swipe and Filter float; Clear maybeboard inline |
-| Suggested commanders, Playstyle | Back, Swipe, More (Clear skips) | Swipe floats; Clear skips inline |
+| Commander maybeboard | Back, Filter, Swipe, More (Clear maybeboard) | Filter floats; Swipe in the list's header; Clear maybeboard inline |
+| Suggested commanders, Playstyle | Back, Swipe, More (Clear skips) | Swipe in the list's header; Clear skips inline |
 | Activity, Settings, Privacy policy, dictionary, examples | Back | the back arrow, nothing else |
 | Import | Back, Import | Import at the end of the form |
 | Create and Edit deck | Back, and Save or Create once there is something to save | Save and Create float |

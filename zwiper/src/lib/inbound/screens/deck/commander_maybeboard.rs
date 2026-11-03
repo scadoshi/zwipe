@@ -510,7 +510,16 @@ pub fn CommanderMaybeboard() -> Element {
                             // Same bordered container the deck cards list wraps
                             // its rows in.
                             div { class: "maybeboard-list card-group row-enter",
-                                div { class: "card-group-header", {model::LIST_TITLE} }
+                                // Swipe sits in the list's header, so it says
+                                // what gets swiped.
+                                div { class: "card-group-header card-group-header-with-hint",
+                                    span { {model::LIST_TITLE} }
+                                    Button {
+                                        variant: ButtonVariant::Action,
+                                        onclick: move |_| swipe_open.set(true),
+                                        {model::SWIPE}
+                                    }
+                                }
                                 for card in filtered {
                                     MaybeboardRow {
                                         key: "{card.scryfall_data.id}",
@@ -537,7 +546,7 @@ pub fn CommanderMaybeboard() -> Element {
                 }
             }
 
-            // Filter and Swipe, the list's main actions, float at the bottom right.
+            // Filter, the screen's action, floats at the bottom right.
             div { class: "action-dock action-dock-right",
                 Button {
                     variant: ButtonVariant::Action,
@@ -546,11 +555,6 @@ pub fn CommanderMaybeboard() -> Element {
                     if !filter_builder.read().is_empty() || filter_builder.read().sort().is_some() {
                         span { class: "filter-dot" }
                     }
-                }
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| swipe_open.set(true),
-                    {model::SWIPE}
                 }
             }
 
