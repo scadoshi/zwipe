@@ -7,6 +7,7 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Clear as ClearWidget, Padding, Paragraph};
 use zwipe_ui::filter::picker::PickerField;
 use zwipe_ui::filter::sections::{self, ChipSet, Row, Section, StepRow};
+use zwipe_ui::screens::card_filter;
 
 use super::{FilterSheet, Target};
 use crate::domain::theme::Palette;
@@ -39,7 +40,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, sheet: &FilterSheet, area
         .spans
         .extend(action_bar::line(palette, &[("r", "reset"), ("x", "clear"), ("?", "hint")]).spans);
     let block = crate::inbound::widgets::panel::bordered(palette)
-        .title(Line::from(" Filter ").bold())
+        .title(Line::from(format!(" {} ", card_filter::TITLE)).bold())
         .title_bottom(footer)
         .border_style(palette.accent)
         .padding(Padding::horizontal(1));
@@ -64,6 +65,7 @@ pub(crate) fn lines(
 ) -> (Vec<Line<'static>>, usize) {
     let palette = &shared.palette;
     let focused = sheet.focused();
+    let active = sheet.model.active_sections();
     let mut lines = Vec::new();
     let mut focus_line = 0;
     for section in sheet.sections() {
@@ -81,7 +83,7 @@ pub(crate) fn lines(
             spans.push(Span::raw(" "));
             spans.extend(button::about(palette, super::keys::in_oracle_tags(sheet)));
         }
-        if section.is_active(&sheet.filter.draft) {
+        if active.contains(&section) {
             spans.push(Span::styled("  ×", palette.warning));
         }
         lines.push(Line::from(spans));
@@ -162,7 +164,7 @@ fn row_lines(
                 spans.push(Span::raw(" "));
                 spans.push(chip(
                     palette,
-                    sheet.filter.modes.label(&sheet.filter.draft, chip_kind),
+                    sheet.modes().label(sheet.draft(), chip_kind),
                     false,
                     focused,
                     Some(palette.accent),
@@ -251,13 +253,13 @@ fn stepper_line(
         StepRow::Exact(stat) => {
             spans.push(Span::styled("- ", palette.muted));
             spans.push(Span::styled(
-                value(stat.exact(&sheet.filter.draft)),
+                value(stat.exact(sheet.draft())),
                 palette.text().bold(),
             ));
             spans.push(Span::styled(" +", palette.muted));
         }
         StepRow::Range(stat) => {
-            let (min, max) = stat.range(&sheet.filter.draft).unwrap_or((0, 0));
+            let (min, max) = stat.range(sheet.draft()).unwrap_or((0, 0));
             let end = |v: i32, on: bool| {
                 let style = if focused && on {
                     palette.accent.bold().underlined()
@@ -288,7 +290,7 @@ fn picker_lines(
 ) -> Vec<Line<'static>> {
     let palette = &shared.palette;
     let mut lines = Vec::new();
-    let pills = field.picked(&sheet.filter.draft);
+    let pills = field.picked(sheet.draft());
     if !pills.is_empty() {
         let mut spans = vec![Span::raw("    ")];
         for value in &pills {
@@ -312,9 +314,9 @@ fn picker_lines(
         focused,
     ));
     let results = field.results(
-        &sheet.filter.draft,
+        sheet.draft(),
         &query,
-        &sheet.filter.config.sources,
+        sheet.sources(),
         &shared.cards.catalog,
     );
     if !results.is_empty() {

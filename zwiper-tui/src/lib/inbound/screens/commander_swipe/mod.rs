@@ -230,7 +230,7 @@ impl CommanderSwipeView {
                 show_format: false,
                 ..SheetConfig::default()
             };
-            self.sheet = Some(FilterSheet::open(cx, &self.card_filter, config));
+            self.sheet = Some(FilterSheet::open_quiet(cx, &self.card_filter, config));
         }
     }
 

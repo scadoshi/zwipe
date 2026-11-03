@@ -611,7 +611,9 @@ fn the_swipe_pickers_filter_opens_the_filter_sheet_and_narrows_the_pile() {
     if let Some(Overlay::Swipe(open)) = &mut form_mut(&mut harness).overlay
         && let Some(sheet) = &mut open.sheet
     {
-        sheet.filter.draft.set_name_contains("elf");
+        sheet.edit_draft(|d| {
+            d.set_name_contains("elf");
+        });
     }
     harness.clear();
     harness.press(KeyCode::Char('a'));

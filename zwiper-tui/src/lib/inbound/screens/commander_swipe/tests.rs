@@ -583,7 +583,9 @@ fn commander_modes_filter_is_the_card_filter_and_apply_deals_again() {
     match harness.screen_mut() {
         Screen::CommanderSwipe(view) => {
             if let Some(sheet) = &mut view.sheet {
-                sheet.filter.draft.set_name_contains("elf");
+                sheet.edit_draft(|d| {
+                    d.set_name_contains("elf");
+                });
             }
         }
         _ => panic!("not the commander swipe"),

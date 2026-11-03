@@ -1,6 +1,6 @@
 //! The sheets the Add, deck cards and Remove screens share: the card filter sheet, the card details sheet, and the printing sheet, with the lists and printings they fetch.
 //!
-//! These are not screens. A host holds one in its state, hands it keys while it is open, and draws it over itself. Their fetched lists land in the shared stores, so an answer is kept even when the host has closed.
+//! These are not screens. A host holds one in its state, hands it keys while it is open, and draws it over itself. Their fetched lists land in the shared stores, so an answer is kept even when the host has closed; a list that fails while a filter sheet is open on top tells that sheet, which warns once per opening.
 
 pub(crate) mod details;
 pub(crate) mod filter;
@@ -17,7 +17,7 @@ use zwipe_core::domain::card::scryfall_data::universe::UbFranchiseView;
 use zwipe_core::domain::deck::DeckTagView;
 use zwipe_ui::stores::catalog::Kind;
 
-use super::Screen;
+use super::{Screen, deck_form};
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;
@@ -106,6 +106,7 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
 pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
     let catalog = &mut cx.shared.cards.catalog;
     let now = Utc::now();
+    let list = !matches!(update, Update::Printings { .. });
     match update {
         Update::Words(kind, words) => match kind {
             Kind::Keywords => catalog.keywords.settle(words, now),
@@ -141,6 +142,28 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
                 }
             }
         },
+    }
+    if list
+        && cx.shared.cards.catalog.any_public_failed()
+        && let Some(sheet) = open_filter_sheet(nav.top_mut())
+    {
+        sheet.lists_failed(cx);
+    }
+}
+
+/// The filter sheet open on the screen on top, if any.
+fn open_filter_sheet(screen: &mut Screen) -> Option<&mut filter::FilterSheet> {
+    match screen {
+        Screen::Swipe(view) => view.sheet.as_mut(),
+        Screen::DeckCards(view) => view.sheet.as_mut(),
+        Screen::RemoveCards(view) => view.sheet.as_mut(),
+        Screen::CommanderSwipe(view) => view.sheet.as_mut(),
+        Screen::CommanderMaybeboard(view) => view.sheet.as_mut(),
+        Screen::DeckForm(form) => match &mut form.overlay {
+            Some(deck_form::Overlay::Swipe(picker)) => picker.sheet.as_mut(),
+            _ => None,
+        },
+        _ => None,
     }
 }
 

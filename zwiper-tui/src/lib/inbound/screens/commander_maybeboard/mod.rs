@@ -282,7 +282,7 @@ pub(crate) fn open_filter(view: &mut MaybeboardView, cx: &mut Context<'_>) {
         show_format: false,
         ..SheetConfig::default()
     };
-    view.sheet = Some(FilterSheet::open(cx, &view.filter, config));
+    view.sheet = Some(FilterSheet::open_quiet(cx, &view.filter, config));
 }
 
 /// Keys while the filter sheet is open: Apply narrows the list and puts the focus back at its top.

@@ -554,15 +554,70 @@ fn the_filter_sheet_opens_applies_and_refetches() {
         .sheet
         .as_mut()
         .unwrap()
-        .filter
-        .draft
-        .set_name_contains("elf");
+        .edit_draft(|d| {
+            d.set_name_contains("elf");
+        });
     harness.clear();
     harness.press(KeyCode::Char('a'));
     assert!(view(&harness).sheet.is_none());
     assert_eq!(view(&harness).filter.name_contains(), Some("elf"));
     assert!(view(&harness).filter_dot());
     assert!(matches!(requests(&harness)[..], [Request::Search { .. }]));
+}
+
+#[test]
+fn the_sheets_reset_goes_through_the_model_into_the_draft_alone() {
+    let (mut harness, _) = Harness::swiping(vec![card("A")]);
+    let applied = view(&harness).filter.clone();
+    harness.press(KeyCode::Char('f'));
+    harness.app.shared.hint = None;
+    view_mut(&mut harness)
+        .sheet
+        .as_mut()
+        .unwrap()
+        .edit_draft(|d| {
+            d.set_name_contains("elf");
+        });
+    harness.press(KeyCode::Char('r'));
+    let sheet = view(&harness)
+        .sheet
+        .as_ref()
+        .expect("Reset keeps the sheet open");
+    assert_eq!(
+        sheet.draft().name_contains(),
+        None,
+        "the draft is back at default"
+    );
+    assert_eq!(
+        view(&harness).filter,
+        applied,
+        "the applied filter waits for Apply"
+    );
+    assert_eq!(
+        harness
+            .app
+            .shared
+            .toasts
+            .items()
+            .last()
+            .map(|t| t.message.clone()),
+        Some(add_cards::FILTER_RESET.to_owned())
+    );
+
+    harness.press(KeyCode::Char('r'));
+    assert_eq!(
+        harness
+            .app
+            .shared
+            .toasts
+            .items()
+            .last()
+            .map(|t| t.message.clone()),
+        Some(add_cards::FILTER_AT_DEFAULT.to_owned())
+    );
+    harness.press(KeyCode::Esc);
+    assert!(view(&harness).sheet.is_none());
+    assert_eq!(view(&harness).filter, applied);
 }
 
 #[test]
