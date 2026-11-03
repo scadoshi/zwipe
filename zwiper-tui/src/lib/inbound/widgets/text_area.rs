@@ -33,11 +33,6 @@ impl TextArea {
         self.lines.join("\n")
     }
 
-    /// Whether the text is blank once trimmed.
-    pub(crate) fn is_blank(&self) -> bool {
-        self.lines.iter().all(|l| l.trim().is_empty())
-    }
-
     /// The cursor as a line and a character within it.
     #[cfg(test)]
     pub(crate) fn cursor(&self) -> (usize, usize) {
@@ -259,9 +254,6 @@ mod tests {
     #[test]
     fn blank_text_draws_an_empty_box() {
         let area = TextArea::default();
-        assert!(area.is_blank());
-        assert!(!typed("x").is_blank());
-        assert!(typed("  \n ").is_blank());
         let mut terminal =
             ratatui::Terminal::new(ratatui::backend::TestBackend::new(20, 4)).unwrap();
         terminal
