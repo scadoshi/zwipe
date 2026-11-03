@@ -368,11 +368,11 @@ button {
 
 /* The header sits over the top of the screen, under the status bar strip,
    and header_hide.js slides it up behind that strip as the content scrolls
-   down. Its height is fixed (the bar's 0.5rem padding around a 1.85rem row,
-   the Z mark's height, and its 1px rule), so each screen's scroll area opens
-   with a spacer that tall and nothing moves at rest. */
+   down. Its height is fixed (the bar's 0.5rem padding around a 1.7rem row,
+   the corner buttons' height, and its 1px rule), so each screen's scroll area
+   opens with a spacer that tall and nothing moves at rest. */
 .screen {
-    --app-nav-h: calc(2.85rem + 1px);
+    --app-nav-h: calc(2.7rem + 1px);
 }
 
 .screen > .app-nav {
@@ -410,22 +410,22 @@ button {
 }
 
 /* The kit's NavBar as the app's header. A phone is always under the kit's
-   60rem fold, so the bar shows the Z mark, the title and the hamburger, and
-   the links wait in the menu. 44pt tall, the iOS navigation bar height. */
+   60rem fold, so the bar shows the back arrow (or nothing, on Home and the
+   auth screens), the title and the hamburger, and the links wait in the
+   menu. */
 .app-nav .nav-wrapper {
     margin-bottom: 0;
     box-shadow: none;
     border-bottom: 1px solid var(--border-secondary);
 }
 
-/* Both outer columns are the Z mark's width (34 columns of the mark at its
-   font size come to 6rem), so the title centers on the screen, not between
-   a wide mark and a narrow toggle. */
+/* Both outer columns are one width, so the title centers on the screen
+   whatever sits in the corners. */
 .app-nav .nav-wrapper nav {
-    grid-template-columns: 6rem minmax(0, 1fr) 6rem;
-    /* One fixed row, the Z mark's height, so every screen's bar is the same
-       height whatever sits in its corners. */
-    grid-template-rows: 1.85rem;
+    grid-template-columns: 2.6rem minmax(0, 1fr) 2.6rem;
+    /* One fixed row, the corner buttons' height, so every screen's bar is
+       the same height, an empty corner included. */
+    grid-template-rows: 1.7rem;
     padding: 0.5rem 0.75rem;
     position: relative;
 }
@@ -468,7 +468,7 @@ button {
     transform: translateY(calc(-0.22rem - 2px)) rotate(-45deg);
 }
 
-/* The back arrow in the Z mark's corner, on a screen below a section, as
+/* The back arrow in the left corner, on a screen below a section, as
    gentle as the hamburger it mirrors. */
 .app-nav-back {
     display: flex;
@@ -506,18 +506,6 @@ button {
 .app-nav .nav-persistent {
     grid-column: 2;
     grid-row: 1;
-}
-
-/* The Z mark as zite and the web draw it: seven lines at 0.9 line height,
-   in the logo color. */
-.app-nav-logo {
-    font-family: "JetBrains Mono", monospace;
-    font-size: calc(1.85rem / 6.3);
-    line-height: 0.9;
-    white-space: pre;
-    display: block;
-    letter-spacing: 0;
-    color: var(--logo);
 }
 
 .app-nav-title {

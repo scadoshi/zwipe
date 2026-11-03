@@ -1,8 +1,8 @@
 //! Shared screen header.
 //!
 //! Every screen opens with the same bar, the kit's `NavBar` folded behind
-//! its hamburger: the Z mark on the left goes Home (a back arrow instead on a
-//! screen below a section), the screen's title and,
+//! its hamburger: a back arrow on the left on every screen but Home and the
+//! auth screens, whose left corner is empty, the screen's title and,
 //! on screens with a hint dialog, its `?` sit in the middle, and the hamburger
 //! on the right opens the [main menu](crate::inbound::components::navigation::menu).
 //! The screen still owns its `HintDialog` (with screen-specific content);
@@ -10,7 +10,6 @@
 
 use components::{InfoButton, NavBar, use_overlay_back};
 use dioxus::prelude::*;
-use zwipe_core::domain::logo;
 
 use crate::inbound::components::navigation::menu::{MenuFooter, MenuLinks};
 use crate::inbound::router::Router;
@@ -19,7 +18,7 @@ use crate::inbound::router::Router;
 ///
 /// Omit `hint` for screens without a hint dialog (the `?` isn't rendered).
 /// Pass `back` on a screen below a section: the left corner then shows a back
-/// arrow that calls it, where the Z mark sits elsewhere.
+/// arrow that calls it; without it the corner is empty.
 #[component]
 pub fn ScreenHeader(
     title: String,
@@ -52,14 +51,6 @@ pub fn ScreenHeader(
                                 back.call(());
                             },
                             BackArrow {}
-                        }
-                    } else {
-                        Link {
-                            to: Router::Home {},
-                            class: "nav-brand",
-                            "aria-label": "Home",
-                            onclick: move |_| open.set(false),
-                            span { class: "nav-logo app-nav-logo", "{logo::Z}" }
                         }
                     }
                 },

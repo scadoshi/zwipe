@@ -10,16 +10,16 @@ These were settled with the owner before the per-screen review. A screen breaks 
 
 ### Navigation
 
-- The app gets the web's folded nav, the same `NavBar` from the kit: the Z mark at the left, the screen's title with its `?` in the middle, and the hamburger at the top right. Tapping the hamburger drops down the list of sections as buttons, exactly as the web does below 900px.
+- The app gets the web's folded nav, the same `NavBar` from the kit: the screen's title with its `?` in the middle and the hamburger at the top right. No Z mark (owner, 2026-11-03): Home is the menu's first entry and Home's hero carries the logo, so the left corner is empty on Home and the auth screens and holds the back arrow everywhere else. zwiper-web's narrow view drops its Z mark the same way; zite keeps its own. Tapping the hamburger drops down the list of sections as buttons, exactly as the web does below 900px.
 - The menu lists, signed in: Home, Decks, Playstyle, Commander maybeboard, Activity, Account, Settings and About, one list with no rule. Under them a small bottom row holds a `!` for Help & feedback and a small Log out, not full menu items.
-- Account and Settings (today's Config) stay two screens. The Z mark goes Home. Log out is also in Account's danger zone.
+- Account and Settings (today's Config) stay two screens. Log out is also in Account's danger zone.
 - The menu looks exactly like the web's folded nav: a full-width panel dropping from the header, items stacked, the current one lit.
 - The app's "!" support button leaves the header for the menu's bottom row.
-- Every screen but Home and the auth screens shows a back arrow where the Z mark sits, boxed like the hamburger, calling the screen's own Back (the previous screen, or its fixed parent where it has one). The Z mark shows on Home and the auth screens, and Home is always the menu's first entry. Android's system back keeps working as it does now. (Decided 2026-11-03 while building; the review had the menu screens keep the Z mark.)
+- Every screen but Home and the auth screens shows a back arrow in the left corner, boxed like the hamburger, calling the screen's own Back (the previous screen, or its fixed parent where it has one). Home is always the menu's first entry. Android's system back keeps working as it does now. (Decided 2026-11-03 while building)
 
 ### Header
 
-- The header bar is about 46pt tall, down from 58pt: 0.5rem of padding around one 1.85rem row, the Z mark's height, so every screen is the same height. The safe area above it stays, since the Dynamic Island sits in it.
+- The header bar is about 43pt tall, down from 58pt: 0.5rem of padding around one 1.7rem row, the corner buttons' height, so every screen is the same height. The safe area above it stays, since the Dynamic Island sits in it.
 - The hamburger and the back arrow are gentle: small soft boxes (2.1 by 1.7rem, 0.4rem corners) at 0.55 opacity like the old `?` and `!` corner buttons, full strength while pressed or open, the hamburger's bars short and 2px thick. The portfolio site and zite take the same look when their navs are next touched.
 - The header follows the scroll, as in X: scrolling down slides it up behind the status bar point for point until only the safe area shows, and any scroll up slides it back the same way. It never snaps on a threshold. The safe area strip keeps the page background, so content doesn't run under the clock and the island.
 - The back arrow, the title and the hamburger go with it; they come back together.
