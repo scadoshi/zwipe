@@ -6,26 +6,18 @@ use zwipe_ui::card::info;
 
 use crate::inbound::components::catalog_cache::CatalogCache;
 
-/// Holds a missing info line's place so the block keeps its height.
-const BLANK_LINE: &str = "\u{00a0}";
-
-/// Displays card metadata: prices, set, release date, artist. The card's oracle
-/// text and stats live in [`CardDetailsSheet`], opened from the header eyeball.
+/// The swipe card's prices as money chips on one line under the card: USD,
+/// EUR then TIX, whichever it has. The line keeps its height with none, so the
+/// card never jumps. Everything else (set, release date, artist, rules) is in
+/// [`CardDetailsSheet`], opened from the dock's eye.
 #[component]
 pub(crate) fn CardInfoDisplay(card: Card) -> Element {
-    let data = &card.scryfall_data;
-    let price_text = info::price_line(data).unwrap_or_else(|| BLANK_LINE.to_owned());
-    let set_text = info::set_line(data);
-    let released_text = info::released_line(data);
-    let artist_text = info::artist_line(data).unwrap_or_else(|| BLANK_LINE.to_owned());
-
+    let prices = info::prices(&card.scryfall_data);
     rsx! {
-        div { class: "card-info",
-            span { class: "card-info-name", "{card.scryfall_data.name}" }
-            span { "{price_text}" }
-            span { "{set_text}" }
-            span { "{released_text}" }
-            span { "{artist_text}" }
+        div { class: "card-prices",
+            for price in prices {
+                span { key: "{price}", class: "card-row-price card-price-chip", "{price}" }
+            }
         }
     }
 }
@@ -135,6 +127,7 @@ pub(crate) fn CardDetailsSheet(
                         show_name: false,
                         show_cost: true,
                         show_classification: true,
+                        show_printing: true,
                         show_flip: false,
                         face: Some(face),
                         describe_tag: Some(describe_tag),

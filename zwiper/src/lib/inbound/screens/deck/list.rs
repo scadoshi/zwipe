@@ -11,7 +11,7 @@
 //! What the screen knows and does is `zwipe_ui::screens::deck_list`; this
 //! file draws its state and performs its effects.
 
-use components::{Button, ButtonVariant, Chip, HintBullet, HintBullets, HintDialog, HintKey};
+use components::{Chip, HintBullet, HintBullets, HintDialog, HintKey};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use dioxus_primitives::toast::{Toasts, use_toast};
@@ -25,6 +25,7 @@ use zwipe_ui::deck::command_zone;
 use zwipe_ui::deck::list::{self, GroupBy};
 use zwipe_ui::screens::deck_list::{self, Action, Destination, Effect, State, Status};
 
+use crate::inbound::components::action_dock::{self, DockIcon};
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen};
@@ -292,7 +293,7 @@ pub fn DeckList() -> Element {
                     HintBullets {
                         HintBullet { "Tap a deck to open it" }
                         HintBullet { HintKey { "Group by" } " folds the list into sections, " HintKey { "Show" } " narrows it by color or tag" }
-                        HintBullet { HintKey { "Create" } " starts a new deck" }
+                        HintBullet { "The " HintKey { "+" } " at the bottom right starts a new deck" }
                     }
                 }
 
@@ -419,10 +420,12 @@ pub fn DeckList() -> Element {
                 }
             }
 
-            // Create, the screen's main action, floats over the list.
-            div { class: "app-float",
-                Button {
-                    variant: ButtonVariant::Action,
+            // Create as the action dock's +, pinned bottom right.
+            div { class: "app-float app-float-right",
+                div { class: "icon-pill",
+                button {
+                    class: "icon-pill-btn",
+                    "aria-label": deck_list::CREATE,
                     onclick: move |_| {
                         // Unverified users are limited to 1 deck. The backend
                         // enforces this too, but the model surfaces it first.
@@ -433,7 +436,8 @@ pub fn DeckList() -> Element {
                             .is_none_or(|s| s.user.email_verified_at.is_some());
                         driver.dispatch(Action::Create { verified });
                     },
-                    {deck_list::CREATE}
+                    DockIcon { path: action_dock::PLUS }
+                }
                 }
             }
             }

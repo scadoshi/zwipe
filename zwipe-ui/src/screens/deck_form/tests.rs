@@ -321,7 +321,7 @@ fn edit_sends_only_what_changed_and_returns_to_the_deck() {
     let deck_id = profile.id;
     let mut state = edit_loaded(profile, &[]);
     let _ = state.update(Action::SetName("Burn 2".to_owned()));
-    assert_eq!(state.save_label(), Some("Save changes"));
+    assert_eq!(state.save_label(), Some("Save"));
     let effects = state.update(Action::Save);
     let [
         Effect::UpdateDeck {
@@ -853,22 +853,13 @@ fn the_plain_fields_follow_their_chips_and_buttons() {
 #[test]
 fn the_copy_matches_the_app() {
     assert_eq!(
-        [
-            CREATE_TITLE,
-            EDIT_TITLE,
-            LOAD_FAILED,
-            BACK,
-            SAVE,
-            SAVE_CHANGES,
-            SAVING
-        ],
+        [CREATE_TITLE, EDIT_TITLE, LOAD_FAILED, BACK, SAVE, SAVING],
         [
             "Create deck",
             "Edit deck",
             "Could not load deck",
             "Back",
             "Save",
-            "Save changes",
             "Saving..."
         ]
     );

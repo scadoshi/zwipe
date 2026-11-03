@@ -158,7 +158,7 @@ impl FormValues {
             .build()
     }
 
-    /// Edit's request: each field that differs from `saved`, set to its new value or cleared, with the rest left off the wire. `None` when nothing differs, which hides "Save changes".
+    /// Edit's request: each field that differs from `saved`, set to its new value or cleared, with the rest left off the wire. `None` when nothing differs, which hides Save.
     ///
     /// Tags compare in order and the command zone compares whole cards. The budget compares as parsed, so `50` and `50.0` are the same and emptying the box sends a clear. A changed currency always sends its value.
     #[must_use]

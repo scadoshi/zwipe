@@ -658,36 +658,6 @@ pub fn Add(deck_id: Uuid) -> Element {
 
                 div { class: "screen-content card-swipe content-enter",
 
-                // Source selector chips
-                div { style: "max-width: 40rem; width: 100%; padding: 0 1rem;",
-                    div { class: "chip-row",
-                        span { class: "stat-chip stat-chip-p1 chip-row-label", "{add_cards::FROM}" }
-                        for variant in Source::ALL {
-                            Chip {
-                                selected: source == variant,
-                                onclick: move |_| {
-                                    let remembered = filter_store.restore(scope(variant), deck_id);
-                                    driver.dispatch(Action::PickSource { source: variant, remembered });
-                                },
-                                "{variant.label()}"
-                            }
-                        }
-                        // Synergy ON/OFF: constrains the stack to the commander's
-                        // synergy pool, then sorts within it. Pinned right
-                        // (margin-left:auto) so it reads as its own control, not
-                        // part of the "From" source group.
-                        if shows_synergy {
-                            div { style: "margin-left: auto;",
-                                Chip {
-                                    selected: filter_builder.read().synergy(),
-                                    onclick: move |_| driver.dispatch(Action::ToggleSynergy),
-                                    "{add_cards::SYNERGY}"
-                                }
-                            }
-                        }
-                    }
-                }
-
                 div { class : "form-container",
                     if source == Source::Search {
                         if pile == Pile::Cards {
@@ -767,9 +737,33 @@ pub fn Add(deck_id: Uuid) -> Element {
                 }
             }
 
-            // Filter, refresh and card details as the action dock.
-            div { class: "app-float app-float-right",
+            // The bottom row: the source chips on the left, the action dock
+            // (synergy, filter, refresh, card details) on the right.
+            div { class: "app-float swipe-bottom-row",
+                div { class: "swipe-bottom-chips",
+                    for variant in Source::ALL {
+                        Chip {
+                            selected: source == variant,
+                            onclick: move |_| {
+                                let remembered = filter_store.restore(scope(variant), deck_id);
+                                driver.dispatch(Action::PickSource { source: variant, remembered });
+                            },
+                            "{variant.label()}"
+                        }
+                    }
+                }
                 div { class: "icon-pill",
+                    // Synergy on or off: constrains the stack to the commander's
+                    // synergy pool, then sorts within it. Lit while on.
+                    if shows_synergy {
+                        button {
+                            class: if filter_builder.read().synergy() { "icon-pill-btn icon-pill-on" } else { "icon-pill-btn" },
+                            "aria-label": add_cards::SYNERGY,
+                            "aria-pressed": "{filter_builder.read().synergy()}",
+                            onclick: move |_| driver.dispatch(Action::ToggleSynergy),
+                            DockIcon { path: action_dock::LINK }
+                        }
+                    }
                     DockFilter {
                         label: add_cards::FILTER,
                         dot: shows_dot,

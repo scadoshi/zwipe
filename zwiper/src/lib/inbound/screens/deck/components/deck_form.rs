@@ -2,7 +2,7 @@
 //!
 //! What the form knows and does is `zwipe_ui::screens::deck_form`; this file draws its state, opens the swipe pickers and performs its effects.
 
-use components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL, ToastOptions, Toasts, use_toast};
+use components::{TOAST_NORMAL, ToastOptions, Toasts, use_toast};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use tokio::time;
@@ -356,13 +356,17 @@ pub(crate) fn DeckForm(open: Open) -> Element {
                 }
             }
 
+            // Save (Create on a new deck) as the action dock's one word, pinned
+            // bottom right, while there is something to save.
             if let Some(label) = save_label {
-                ActionBar {
-                    Button {
-                        variant: ButtonVariant::Action,
-                        disabled: saving,
-                        onclick: move |_| driver.dispatch(Action::Save),
-                        {label}
+                div { class: "app-float app-float-right",
+                    div { class: "icon-pill",
+                        button {
+                            class: "icon-pill-btn icon-pill-word",
+                            disabled: saving,
+                            onclick: move |_| driver.dispatch(Action::Save),
+                            {label}
+                        }
                     }
                 }
             }

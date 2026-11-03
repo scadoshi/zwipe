@@ -39,11 +39,8 @@ pub const LOAD_FAILED: &str = "Could not load deck";
 /// The action bar's Back button.
 pub const BACK: &str = "Back";
 
-/// Create's save button.
+/// The save button, Create's and Edit's; Edit shows it only while something changed.
 pub const SAVE: &str = "Save";
-
-/// Edit's save button, shown only while something changed.
-pub const SAVE_CHANGES: &str = "Save changes";
 
 /// The save button while the save is out.
 pub const SAVING: &str = "Saving...";
@@ -741,10 +738,7 @@ impl State {
         } else if self.saving {
             Some(SAVING)
         } else {
-            match self.mode {
-                Mode::Create => Some(SAVE),
-                Mode::Edit(_) => Some(SAVE_CHANGES),
-            }
+            Some(SAVE)
         }
     }
 

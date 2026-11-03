@@ -125,6 +125,11 @@ pub fn CardDetails(
     /// keywords. Off by default so read-only embeds (e.g. the portfolio) opt in.
     #[props(default)]
     show_classification: bool,
+    /// Add the printing's release date and artist to the type, rarity and set
+    /// chips. Off by default; the app's swipe details sheet turns it on, since
+    /// its swipe screens no longer show them under the card.
+    #[props(default)]
+    show_printing: bool,
     /// Image action: renders a default bar button when the card has art and a
     /// handler is supplied; what "view image" means is the host's business.
     on_image: Option<EventHandler<()>>,
@@ -166,6 +171,8 @@ pub fn CardDetails(
     let name = sd.name.clone();
     let rarity_name = sd.rarity.to_long_name();
     let set_name = sd.set_name.clone();
+    let released_at = sd.released_at.to_string();
+    let artist = sd.artist.clone().filter(|a| !a.is_empty());
     let keywords = sd.keywords.clone().unwrap_or_default();
     let has_image = sd.primary_image_url(ImageSize::Large).is_some();
 
@@ -220,6 +227,12 @@ pub fn CardDetails(
                     }
                     span { class: "detail-chip detail-chip-rarity", "{rarity_name}" }
                     span { class: "detail-chip detail-chip-set", "{set_name}" }
+                    if show_printing {
+                        span { class: "detail-chip detail-chip-date", "{released_at}" }
+                        if let Some(artist) = artist {
+                            span { class: "detail-chip detail-chip-artist", "{artist}" }
+                        }
+                    }
                 }
                 if !face.oracle.is_empty() {
                     OracleText { text: face.oracle, class: "card-detail-oracle".to_string() }

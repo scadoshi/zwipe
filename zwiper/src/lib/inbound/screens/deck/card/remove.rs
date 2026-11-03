@@ -497,23 +497,6 @@ pub fn Remove(deck_id: Uuid) -> Element {
 
                 div { class: "screen-content card-swipe content-enter",
 
-                // Board filter chips
-                div { style: "max-width: 40rem; width: 100%; padding: 0 1rem;",
-                    div { class: "chip-row",
-                        span { class: "stat-chip stat-chip-p1 chip-row-label", {remove_cards::BOARDS} }
-                        for variant in BoardFilter::ALL {
-                            Chip {
-                                selected: board_filter == variant,
-                                onclick: move |_| {
-                                    driver.dispatch(Action::PickBoard(variant));
-                                    driver.bump_filter();
-                                },
-                                "{variant.label()}"
-                            }
-                        }
-                    }
-                }
-
                 div { class: "form-container",
                     if !stack_empty {
                         SwipeStack {
@@ -550,8 +533,21 @@ pub fn Remove(deck_id: Uuid) -> Element {
                 }
             }
 
-            // Filter, refresh and card details as the action dock.
-            div { class: "app-float app-float-right",
+            // The bottom row: the board chips on the left, the action dock
+            // (filter, refresh, card details) on the right.
+            div { class: "app-float swipe-bottom-row",
+                div { class: "swipe-bottom-chips",
+                    for variant in BoardFilter::ALL {
+                        Chip {
+                            selected: board_filter == variant,
+                            onclick: move |_| {
+                                driver.dispatch(Action::PickBoard(variant));
+                                driver.bump_filter();
+                            },
+                            "{variant.label()}"
+                        }
+                    }
+                }
                 div { class: "icon-pill",
                     DockFilter {
                         label: remove_cards::FILTER,
