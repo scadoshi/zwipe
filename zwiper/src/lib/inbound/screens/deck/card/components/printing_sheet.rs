@@ -232,15 +232,13 @@ pub(crate) fn PrintingSheet(
                 // possible at all, grayed until the carousel has moved off the
                 // printing it opened on.
                 if shows_save {
-                    div { class: "app-float app-float-right",
-                        div { class: "icon-pill",
-                            button {
-                                class: "icon-pill-btn",
-                                "aria-label": model::SAVE,
-                                disabled: !can_save,
-                                onclick: move |_| driver.dispatch(Action::Save { at: current_idx }),
-                                DockIcon { path: action_dock::CHECK }
-                            }
+                    div { class: "action-dock action-dock-right sheet-dock",
+                        button {
+                            class: "action-dock-btn",
+                            "aria-label": model::SAVE,
+                            disabled: !can_save,
+                            onclick: move |_| driver.dispatch(Action::Save { at: current_idx }),
+                            DockIcon { path: action_dock::CHECK }
                         }
                     }
                 }

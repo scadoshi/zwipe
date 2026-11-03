@@ -739,7 +739,7 @@ pub fn Add(deck_id: Uuid) -> Element {
 
             // The bottom row: the source chips on the left, the action dock
             // (synergy, filter, refresh, card details) on the right.
-            div { class: "app-float swipe-bottom-row",
+            div { class: "swipe-bottom-row",
                 // From, then one chip naming the current source; a tap switches
                 // to the other.
                 div { class: "swipe-bottom-chips",
@@ -754,12 +754,12 @@ pub fn Add(deck_id: Uuid) -> Element {
                         "{source.label()}"
                     }
                 }
-                div { class: "icon-pill",
+                div { class: "action-dock",
                     // Synergy on or off: constrains the stack to the commander's
                     // synergy pool, then sorts within it. Lit while on.
                     if shows_synergy {
                         button {
-                            class: if filter_builder.read().synergy() { "icon-pill-btn icon-pill-on" } else { "icon-pill-btn" },
+                            class: if filter_builder.read().synergy() { "action-dock-btn action-dock-on" } else { "action-dock-btn" },
                             "aria-label": add_cards::SYNERGY,
                             "aria-pressed": "{filter_builder.read().synergy()}",
                             onclick: move |_| driver.dispatch(Action::ToggleSynergy),
@@ -772,14 +772,14 @@ pub fn Add(deck_id: Uuid) -> Element {
                         onclick: move |()| filters_overlay_open.set(true),
                     }
                     button {
-                        class: "icon-pill-btn",
+                        class: "action-dock-btn",
                         "aria-label": add_cards::REFRESH,
                         onclick: move |_| driver.dispatch(Action::Refresh),
                         DockIcon { path: action_dock::REFRESH }
                     }
-                    span { class: "icon-pill-divider" }
+                    span { class: "action-dock-divider" }
                     button {
-                        class: "icon-pill-btn",
+                        class: "action-dock-btn",
                         "aria-label": "Card details",
                         disabled: no_card,
                         onclick: move |_| {

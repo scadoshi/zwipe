@@ -169,15 +169,13 @@ pub fn Register() -> Element {
             }
         }
             // Create profile floats at the bottom right.
-            div { class: "app-float app-float-right",
-                div { class: "icon-pill",
-                    button {
-                        class: "icon-pill-btn",
-                        "aria-label": submit_label,
-                        disabled: is_loading,
-                        onclick: move |_| driver.dispatch(Action::Submit),
-                        DockIcon { path: action_dock::ARROW }
-                    }
+            div { class: "action-dock action-dock-right",
+                button {
+                    class: "action-dock-btn",
+                    "aria-label": submit_label,
+                    disabled: is_loading,
+                    onclick: move |_| driver.dispatch(Action::Submit),
+                    DockIcon { path: action_dock::ARROW }
                 }
             }
     }

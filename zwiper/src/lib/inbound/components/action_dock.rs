@@ -1,5 +1,5 @@
 //! The action dock: a screen's icon actions in one floating squircle bar at
-//! the bottom right. Styled by the "action dock" block of `main.css`.
+//! the bottom right, on the kit's `.action-dock` styles.
 
 use dioxus::prelude::*;
 
@@ -30,7 +30,7 @@ pub const LINK: &str = "M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1M14 
 pub fn DockIcon(path: &'static str) -> Element {
     rsx! {
         svg {
-            class: "icon-pill-icon",
+            class: "action-dock-icon",
             view_box: "0 0 24 24",
             xmlns: "http://www.w3.org/2000/svg",
             "aria-hidden": "true",
@@ -44,7 +44,7 @@ pub fn DockIcon(path: &'static str) -> Element {
 pub fn EyeIcon() -> Element {
     rsx! {
         svg {
-            class: "icon-pill-icon",
+            class: "action-dock-icon",
             view_box: "0 0 24 24",
             xmlns: "http://www.w3.org/2000/svg",
             "aria-hidden": "true",
@@ -66,9 +66,9 @@ pub fn DockFilter(
     #[props(default)] reset_label: &'static str,
 ) -> Element {
     rsx! {
-        div { class: "icon-pill-filter",
+        div { class: "action-dock-group",
             button {
-                class: "icon-pill-btn",
+                class: "action-dock-btn",
                 "aria-label": label,
                 onclick: move |_| onclick.call(()),
                 DockIcon { path: FUNNEL }
@@ -78,7 +78,7 @@ pub fn DockFilter(
             }
             if let (true, Some(on_reset)) = (active, on_reset) {
                 button {
-                    class: "icon-pill-reset",
+                    class: "action-dock-reset",
                     "aria-label": reset_label,
                     onclick: move |_| on_reset.call(()),
                     "\u{d7}"

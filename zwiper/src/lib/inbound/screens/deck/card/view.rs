@@ -1058,44 +1058,42 @@ pub fn View(deck_id: Uuid) -> Element {
             // The screen's actions as one floating icon bar at the bottom right:
             // add and remove, then the filter (with its reset while a filter is
             // on) and undo.
-            div { class: "app-float app-float-right",
-                div { class: "icon-pill",
-                    button {
-                        class: "icon-pill-btn",
-                        "aria-label": deck_cards::ADD,
-                        onclick: move |_| driver.dispatch(Action::OpenAdd),
-                        DockIcon { path: action_dock::PLUS }
-                    }
-                    button {
-                        class: "icon-pill-btn",
-                        "aria-label": deck_cards::REMOVE,
-                        onclick: move |_| driver.dispatch(Action::OpenRemove),
-                        DockIcon { path: action_dock::MINUS }
-                    }
-                    span { class: "icon-pill-divider" }
-                    DockFilter {
-                        label: deck_cards::FILTER,
-                        dot: filter::shows_dot(&filter),
-                        active: !filter.is_empty(),
-                        onclick: move |()| filters_overlay_open.set(true),
-                        on_reset: move |()| driver.dispatch(Action::ResetFilter),
-                        reset_label: deck_cards::RESET_FILTER,
-                    }
-                    // Walks the undo log newest-first; disabled while there is
-                    // nothing to undo, so the pill keeps its width.
-                    button {
-                        class: "icon-pill-btn",
-                        "aria-label": deck_cards::UNDO,
-                        disabled: undo_log.0.read().is_empty(),
-                        onclick: move |_| {
-                            let mut log = undo_log.0;
-                            let popped = log.write().pop();
-                            if let Some(action) = popped {
-                                driver.dispatch(Action::Undo(Box::new(to_shared_undo(action))));
-                            }
-                        },
-                        DockIcon { path: action_dock::UNDO }
-                    }
+            div { class: "action-dock action-dock-right",
+                button {
+                    class: "action-dock-btn",
+                    "aria-label": deck_cards::ADD,
+                    onclick: move |_| driver.dispatch(Action::OpenAdd),
+                    DockIcon { path: action_dock::PLUS }
+                }
+                button {
+                    class: "action-dock-btn",
+                    "aria-label": deck_cards::REMOVE,
+                    onclick: move |_| driver.dispatch(Action::OpenRemove),
+                    DockIcon { path: action_dock::MINUS }
+                }
+                span { class: "action-dock-divider" }
+                DockFilter {
+                    label: deck_cards::FILTER,
+                    dot: filter::shows_dot(&filter),
+                    active: !filter.is_empty(),
+                    onclick: move |()| filters_overlay_open.set(true),
+                    on_reset: move |()| driver.dispatch(Action::ResetFilter),
+                    reset_label: deck_cards::RESET_FILTER,
+                }
+                // Walks the undo log newest-first; disabled while there is
+                // nothing to undo, so the pill keeps its width.
+                button {
+                    class: "action-dock-btn",
+                    "aria-label": deck_cards::UNDO,
+                    disabled: undo_log.0.read().is_empty(),
+                    onclick: move |_| {
+                        let mut log = undo_log.0;
+                        let popped = log.write().pop();
+                        if let Some(action) = popped {
+                            driver.dispatch(Action::Undo(Box::new(to_shared_undo(action))));
+                        }
+                    },
+                    DockIcon { path: action_dock::UNDO }
                 }
             }
 

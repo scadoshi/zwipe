@@ -535,7 +535,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
 
             // The bottom row: the board chips on the left, the action dock
             // (filter, refresh, card details) on the right.
-            div { class: "app-float swipe-bottom-row",
+            div { class: "swipe-bottom-row",
                 div { class: "swipe-bottom-chips",
                     for variant in BoardFilter::ALL {
                         Chip {
@@ -548,14 +548,14 @@ pub fn Remove(deck_id: Uuid) -> Element {
                         }
                     }
                 }
-                div { class: "icon-pill",
+                div { class: "action-dock",
                     DockFilter {
                         label: remove_cards::FILTER,
                         dot: !filter_builder.read().is_empty() || filter_builder.read().sort().is_some(),
                         onclick: move |()| filters_overlay_open.set(true),
                     }
                     button {
-                        class: "icon-pill-btn",
+                        class: "action-dock-btn",
                         "aria-label": remove_cards::REFRESH,
                         onclick: move |_| {
                             // Refresh rewinds the stack, which ends any entrance.
@@ -567,9 +567,9 @@ pub fn Remove(deck_id: Uuid) -> Element {
                         },
                         DockIcon { path: action_dock::REFRESH }
                     }
-                    span { class: "icon-pill-divider" }
+                    span { class: "action-dock-divider" }
                     button {
-                        class: "icon-pill-btn",
+                        class: "action-dock-btn",
                         "aria-label": "Card details",
                         disabled: no_card,
                         onclick: move |_| {

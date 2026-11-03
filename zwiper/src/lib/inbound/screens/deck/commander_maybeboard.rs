@@ -538,7 +538,7 @@ pub fn CommanderMaybeboard() -> Element {
             }
 
             // Filter and Swipe, the list's main actions, float at the bottom right.
-            div { class: "app-float app-float-right",
+            div { class: "action-dock action-dock-right",
                 Button {
                     variant: ButtonVariant::Action,
                     onclick: move |_| filters_overlay_open.set(true),

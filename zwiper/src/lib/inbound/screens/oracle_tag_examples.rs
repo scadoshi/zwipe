@@ -259,18 +259,16 @@ pub fn OracleTagExamples(open: Signal<bool>, slug: String) -> Element {
             }
 
             // Card details as the action dock.
-            div { class: "app-float app-float-right",
-                div { class: "icon-pill",
-                    button {
-                        class: "icon-pill-btn",
-                        "aria-label": "Card details",
-                        disabled: no_card,
-                        onclick: move |_| {
-                            let mut open = show_details;
-                            open.toggle();
-                        },
-                        EyeIcon {}
-                    }
+            div { class: "action-dock action-dock-right",
+                button {
+                    class: "action-dock-btn",
+                    "aria-label": "Card details",
+                    disabled: no_card,
+                    onclick: move |_| {
+                        let mut open = show_details;
+                        open.toggle();
+                    },
+                    EyeIcon {}
                 }
             }
 

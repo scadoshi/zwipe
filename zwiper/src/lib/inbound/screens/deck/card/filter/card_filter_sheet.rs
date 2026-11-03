@@ -570,28 +570,26 @@ pub(crate) fn CardFilterSheet(
                 }
 
             // Reset and Apply float at the sheet's bottom right.
-            div { class: "app-float app-float-right",
-                div { class: "icon-pill",
-                    button {
-                        class: "icon-pill-btn",
-                        "aria-label": card_filter::RESET,
-                        onclick: move |_| {
-                            // Stages the default; Apply commits it, closing undoes it.
-                            if let Some(handler) = &on_clear {
-                                handler.call(());
-                            } else {
-                                driver.dispatch(Action::Reset);
-                            }
-                        },
-                        DockIcon { path: action_dock::UNDO }
-                    }
-                    button {
-                        class: "icon-pill-btn",
-                        "aria-label": card_filter::APPLY,
-                        disabled: unchanged,
-                        onclick: move |_| driver.dispatch(Action::Apply),
-                        DockIcon { path: action_dock::CHECK }
-                    }
+            div { class: "action-dock action-dock-right sheet-dock",
+                button {
+                    class: "action-dock-btn",
+                    "aria-label": card_filter::RESET,
+                    onclick: move |_| {
+                        // Stages the default; Apply commits it, closing undoes it.
+                        if let Some(handler) = &on_clear {
+                            handler.call(());
+                        } else {
+                            driver.dispatch(Action::Reset);
+                        }
+                    },
+                    DockIcon { path: action_dock::UNDO }
+                }
+                button {
+                    class: "action-dock-btn",
+                    "aria-label": card_filter::APPLY,
+                    disabled: unchanged,
+                    onclick: move |_| driver.dispatch(Action::Apply),
+                    DockIcon { path: action_dock::CHECK }
                 }
             }
         }

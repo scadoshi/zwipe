@@ -455,41 +455,39 @@ pub(crate) fn SwipeSelect(
                 // Filter, refresh and card details as the action dock. The
                 // suggested ranking filters by the host's Show chips alone; a
                 // chosen identity lights the dot.
-                div { class: "app-float app-float-right",
-                    div { class: "icon-pill",
-                        if has_suggested_filter {
-                            DockFilter {
-                                label: model::FILTER,
-                                dot: has_suggested_identity,
-                                onclick: move |()| suggested_filter_open.set(true),
-                            }
-                        } else if !suggested {
-                            // Popularity order is this screen's default (no
-                            // sort), so any user filter or explicit sort lights
-                            // the dot.
-                            DockFilter {
-                                label: model::FILTER,
-                                dot: model::filter_lit(&filter_builder.read()),
-                                onclick: move |()| filters_overlay_open.set(true),
-                            }
+                div { class: "action-dock action-dock-right",
+                    if has_suggested_filter {
+                        DockFilter {
+                            label: model::FILTER,
+                            dot: has_suggested_identity,
+                            onclick: move |()| suggested_filter_open.set(true),
                         }
-                        button {
-                            class: "icon-pill-btn",
-                            "aria-label": model::REFRESH,
-                            onclick: move |_| refresh(),
-                            DockIcon { path: action_dock::REFRESH }
+                    } else if !suggested {
+                        // Popularity order is this screen's default (no
+                        // sort), so any user filter or explicit sort lights
+                        // the dot.
+                        DockFilter {
+                            label: model::FILTER,
+                            dot: model::filter_lit(&filter_builder.read()),
+                            onclick: move |()| filters_overlay_open.set(true),
                         }
-                        span { class: "icon-pill-divider" }
-                        button {
-                            class: "icon-pill-btn",
-                            "aria-label": "Card details",
-                            disabled: !has_cards,
-                            onclick: move |_| {
-                                let mut open = show_details;
-                                open.toggle();
-                            },
-                            EyeIcon {}
-                        }
+                    }
+                    button {
+                        class: "action-dock-btn",
+                        "aria-label": model::REFRESH,
+                        onclick: move |_| refresh(),
+                        DockIcon { path: action_dock::REFRESH }
+                    }
+                    span { class: "action-dock-divider" }
+                    button {
+                        class: "action-dock-btn",
+                        "aria-label": "Card details",
+                        disabled: !has_cards,
+                        onclick: move |_| {
+                            let mut open = show_details;
+                            open.toggle();
+                        },
+                        EyeIcon {}
                     }
                 }
 

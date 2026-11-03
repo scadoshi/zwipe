@@ -360,15 +360,13 @@ pub(crate) fn DeckForm(open: Open) -> Element {
             // Save as the action dock's checkmark, pinned bottom right, while
             // there is something to save; dimmed while the save is out.
             if let Some(label) = save_label {
-                div { class: "app-float app-float-right",
-                    div { class: "icon-pill",
-                        button {
-                            class: "icon-pill-btn",
-                            "aria-label": label,
-                            disabled: saving,
-                            onclick: move |_| driver.dispatch(Action::Save),
-                            DockIcon { path: action_dock::CHECK }
-                        }
+                div { class: "action-dock action-dock-right",
+                    button {
+                        class: "action-dock-btn",
+                        "aria-label": label,
+                        disabled: saving,
+                        onclick: move |_| driver.dispatch(Action::Save),
+                        DockIcon { path: action_dock::CHECK }
                     }
                 }
             }

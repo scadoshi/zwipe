@@ -269,22 +269,20 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
 
                 // Import (or Replace) as the action dock's checkmark, pinned
                 // bottom right.
-                div { class: "app-float app-float-right",
-                    div { class: "icon-pill",
-                        button {
-                            class: "icon-pill-btn",
-                            "aria-label": "{submit_label}",
-                            disabled,
-                            onclick: move |_| {
-                                let source = driver.model.peek().source();
-                                let input = match source {
-                                    Source::Text => text.peek().clone(),
-                                    Source::Archidekt => url.peek().clone(),
-                                };
-                                driver.dispatch(Action::Submit { input });
-                            },
-                            DockIcon { path: action_dock::CHECK }
-                        }
+                div { class: "action-dock action-dock-right",
+                    button {
+                        class: "action-dock-btn",
+                        "aria-label": "{submit_label}",
+                        disabled,
+                        onclick: move |_| {
+                            let source = driver.model.peek().source();
+                            let input = match source {
+                                Source::Text => text.peek().clone(),
+                                Source::Archidekt => url.peek().clone(),
+                            };
+                            driver.dispatch(Action::Submit { input });
+                        },
+                        DockIcon { path: action_dock::CHECK }
                     }
                 }
             }

@@ -421,10 +421,9 @@ pub fn DeckList() -> Element {
             }
 
             // Create as the action dock's +, pinned bottom right.
-            div { class: "app-float app-float-right",
-                div { class: "icon-pill",
+            div { class: "action-dock action-dock-right",
                 button {
-                    class: "icon-pill-btn",
+                    class: "action-dock-btn",
                     "aria-label": deck_list::CREATE,
                     onclick: move |_| {
                         // Unverified users are limited to 1 deck. The backend
@@ -437,7 +436,6 @@ pub fn DeckList() -> Element {
                         driver.dispatch(Action::Create { verified });
                     },
                     DockIcon { path: action_dock::PLUS }
-                }
                 }
             }
             }

@@ -111,14 +111,12 @@ pub fn ForgotPassword() -> Element {
             }
             // Send floats at the bottom right until the link is sent.
             if !is_sent {
-                div { class: "app-float app-float-right",
-                    div { class: "icon-pill",
-                        button {
-                            class: "icon-pill-btn",
-                            "aria-label": SEND,
-                            onclick: move |_| driver.dispatch(Action::Submit),
-                            DockIcon { path: action_dock::SEND }
-                        }
+                div { class: "action-dock action-dock-right",
+                    button {
+                        class: "action-dock-btn",
+                        "aria-label": SEND,
+                        onclick: move |_| driver.dispatch(Action::Submit),
+                        DockIcon { path: action_dock::SEND }
                     }
                 }
             }

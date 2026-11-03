@@ -1054,7 +1054,7 @@ pub fn SuggestedCommanders() -> Element {
 
             // Swipe, the list's main action, floats at the bottom right.
             if shows_swipe {
-                div { class: "app-float app-float-right",
+                div { class: "action-dock action-dock-right",
                     Button {
                         variant: ButtonVariant::Action,
                         onclick: move |_| swipe_open.set(true),

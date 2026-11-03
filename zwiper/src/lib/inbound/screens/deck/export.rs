@@ -180,14 +180,12 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                 }
 
                 // Copy as the action dock's icon, pinned bottom right.
-                div { class: "app-float app-float-right",
-                    div { class: "icon-pill",
-                        button {
-                            class: "icon-pill-btn",
-                            "aria-label": deck_export::COPY,
-                            onclick: move |_| driver.dispatch(Action::Copy),
-                            DockIcon { path: action_dock::COPY }
-                        }
+                div { class: "action-dock action-dock-right",
+                    button {
+                        class: "action-dock-btn",
+                        "aria-label": deck_export::COPY,
+                        onclick: move |_| driver.dispatch(Action::Copy),
+                        DockIcon { path: action_dock::COPY }
                     }
                 }
             }

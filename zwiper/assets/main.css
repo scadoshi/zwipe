@@ -118,15 +118,29 @@ button {
 }
 
 /* ==================
-  floating actions
+  action dock
  ==================== */
 
-/* A screen's one or two main actions, floating just above the bottom edge
-   with no bar behind them; the content scrolls underneath. Each button keeps
-   the page background so it reads over whatever passes under it, and the
-   screen's content ends with room to scroll its last row clear of them.
-   --keyboard-inset, set by keyboard_inset.js, lifts them over the keyboard. */
-.app-float {
+/* The kit's .action-dock is the floating bar; the screen's content ends
+   with room to scroll its last row clear of it. */
+.screen:has(> .action-dock, > .swipe-bottom-row) > .screen-content {
+    padding-bottom: 5rem;
+}
+
+/* A text Button floating in a dock (Swipe, Filter, Cards): the bar is its
+   chrome. */
+.action-dock > .btn-action {
+    min-height: 2.4rem;
+    margin: 0.3rem 0;
+    border: none;
+    box-shadow: none;
+    background: transparent;
+}
+
+/* A swipe screen's bottom row: its pile chips on the left, compact, and the
+   action dock on the right, so no chip row costs the card height up top. The
+   row floats where a dock would and lifts over the keyboard the same way. */
+.swipe-bottom-row {
     position: fixed;
     left: 0;
     right: 0;
@@ -134,36 +148,21 @@ button {
     z-index: 50;
     transition: bottom 0.25s ease;
     display: flex;
-    justify-content: center;
-    gap: 0.5rem;
-    pointer-events: none;
-}
-
-.app-float > * {
-    pointer-events: auto;
-    background-color: var(--bg-primary);
-    box-shadow: var(--shadow-sm);
-}
-
-/* Floating at the bottom right instead of centered. */
-.app-float.app-float-right {
-    justify-content: flex-end;
-    padding-right: 0.6rem;
-}
-
-/* A swipe screen's bottom row: its pile chips on the left, compact, and the
-   action dock on the right, so no chip row costs the card height up top. */
-.app-float.swipe-bottom-row {
     justify-content: space-between;
     align-items: center;
     gap: 0.5rem;
     padding: 0 1rem;
     box-sizing: border-box;
+    pointer-events: none;
 }
 
-.app-float > .swipe-bottom-chips {
-    background: none;
-    box-shadow: none;
+.swipe-bottom-row > * {
+    pointer-events: auto;
+}
+
+.swipe-bottom-row > .action-dock {
+    position: static;
+    margin: 0;
 }
 
 .swipe-bottom-chips {
@@ -172,8 +171,6 @@ button {
     align-items: center;
     gap: 0.35rem;
     min-width: 0;
-    background: none;
-    box-shadow: none;
 }
 
 .swipe-bottom-chips > .chip {
@@ -181,113 +178,8 @@ button {
     white-space: nowrap;
 }
 
-.screen:has(> .app-float) > .screen-content {
-    padding-bottom: 5rem;
-}
-
-/* ==================
-  action dock
- ==================== */
-
-/* The action dock: a screen's icon actions as one floating squircle bar
-   (Cards): icons only,
-   a thin divider between groups that runs the bar's full height. */
-.icon-pill {
-    display: flex;
-    align-items: stretch;
-    gap: 0.25rem;
-    padding: 0 0.4rem;
-    border: 1px solid var(--border-primary);
-    border-radius: 0.9rem;
-}
-
-.icon-pill-btn {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 2.4rem;
-    height: 2.4rem;
-    margin: 0.3rem 0;
-    padding: 0;
-    border: none;
-    border-radius: 0.6rem;
-    background: transparent;
-    color: var(--text-primary);
-    cursor: pointer;
-}
-
-.icon-pill-btn:active {
-    background-color: var(--bg-secondary);
-}
-
-/* A dock toggle while it is on (Synergy): the icon in the accent color. */
-.icon-pill-btn.icon-pill-on {
-    color: var(--accent-primary);
-}
-
-.icon-pill-btn:disabled {
-    opacity: 0.35;
-    cursor: default;
-}
-
-.icon-pill-icon {
-    width: 1.3rem;
-    height: 1.3rem;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 2;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-}
-
-.icon-pill-divider {
-    flex: 0 0 1px;
-    align-self: stretch;
-    margin: 0 0.25rem;
-    background-color: var(--border-primary);
-}
-
-.icon-pill-filter {
-    position: relative;
-    display: flex;
-    align-items: center;
-}
-
-/* The filter's reset: a small x on the funnel's corner, shown while a filter
-   is on. */
-.icon-pill-reset {
-    position: absolute;
-    top: -0.35rem;
-    right: -0.35rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 1.2rem;
-    height: 1.2rem;
-    padding: 0;
-    border: 1px solid var(--border-primary);
-    border-radius: 0.35rem;
-    background-color: var(--bg-primary);
-    color: var(--text-primary);
-    font-size: 0.8rem;
-    line-height: 1;
-    cursor: pointer;
-}
-
-/* A sheet's dock: the sheet's transform is the dock's containing block, so
-   it floats at the sheet's bottom right over the content, which ends with
-   room to scroll its last row clear of it. */
-.bottom-sheet .app-float {
-    z-index: 2;
-}
-
-.bottom-sheet:has(.app-float) > .sheet-content {
-    padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
-}
-
 /* The filter dot sits on the funnel's top left, clear of the reset. */
-.icon-pill-btn .filter-dot {
+.action-dock-btn .filter-dot {
     position: absolute;
     top: 0.35rem;
     left: 0.45rem;
@@ -454,7 +346,7 @@ button {
     border-radius: 0.4rem;
     color: var(--text-primary);
     cursor: pointer;
-    opacity: 0.55;
+    opacity: var(--fade-corner);
 }
 
 .app-nav-back:active {
@@ -2568,15 +2460,6 @@ button {
 .message-empty .chip-note {
     border-color: var(--border-primary);
     color: var(--text-subtle);
-}
-
-/* On a light theme a disabled chip keeps its edge and dims through its text
-   color alone: the kit's opacity takes a cream chip to nothing against a
-   cream page. */
-[class*="theme-"][class*="-light"] .chip.disabled {
-    opacity: 1;
-    color: var(--text-subtle);
-    border-color: var(--border-muted);
 }
 
 /* An empty heatmap day on a light theme: the kit's --border-secondary is
