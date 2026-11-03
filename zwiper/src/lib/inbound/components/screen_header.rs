@@ -11,7 +11,7 @@
 use components::{InfoButton, NavBar, use_overlay_back};
 use dioxus::prelude::*;
 
-use crate::inbound::components::navigation::menu::{MenuFooter, MenuLinks};
+use crate::inbound::components::navigation::menu::{MenuFooter, MenuLinks, MenuOpen};
 use crate::inbound::router::Router;
 
 /// The header bar with the main menu, titled `title`.
@@ -26,12 +26,14 @@ pub fn ScreenHeader(
     back: Option<Callback<()>>,
 ) -> Element {
     let route: Router = use_route();
-    let mut open = use_signal(|| false);
+    let mut open = use_context::<MenuOpen>().0;
     // While the menu is open, Android back and the iOS edge swipe close it
     // instead of leaving the screen.
     use_overlay_back(open);
 
-    // A new route closes the menu.
+    // A new route closes the menu. The menu's open state is app-wide, so
+    // this header mounts with the panel open and the kit's close transition
+    // plays over the new screen.
     use_effect(use_reactive!(|route| {
         let _ = route;
         open.set(false);

@@ -8,6 +8,7 @@ use zwipe_core::domain::user::preferences::PipColor;
 use zwiper::config::Config;
 use zwiper::inbound::components::auth::session_upkeep;
 use zwiper::inbound::components::hint_host::HintHost;
+use zwiper::inbound::components::navigation::menu::MenuOpen;
 use zwiper::inbound::components::update_required::UpdateRequired;
 use zwiper::inbound::router::Router;
 
@@ -116,6 +117,9 @@ fn App() -> Element {
     use_context_provider(|| dialogs);
     // Closed until the splash starts to fade; the entrances wait on it.
     use_context_provider(|| components::SplashGate(Signal::new(false)));
+    // The main menu's open state, above the router so it carries across
+    // screens.
+    use_context_provider(|| MenuOpen(Signal::new(false)));
     rsx! {
         document::Link { rel: "icon", href: FAVICON }
         document::Style {

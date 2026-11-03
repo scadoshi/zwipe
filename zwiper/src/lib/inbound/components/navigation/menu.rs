@@ -4,14 +4,12 @@
 //! feedback and Log out. Signed out, it lists the auth screens. The entry
 //! for the screen on view, or the section it sits under, is lit.
 //!
-//! A tap on an entry closes the menu first and navigates once the panel's
-//! close transition has played, so the menu folds shut over the old screen
-//! instead of vanishing with it.
-
-use std::time::Duration;
+//! The open state is app-wide, provided at the root as
+//! [`MenuOpen`](crate::inbound::components::navigation::menu::MenuOpen), so a
+//! tap on an entry only navigates: the new screen's header mounts with the
+//! panel still open and folds it shut over its own content.
 
 use dioxus::prelude::*;
-use tokio::time;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_ui::screens::account::LOG_OUT;
@@ -118,13 +116,14 @@ const SIGNED_OUT: [(&str, Router); 3] = [
     ("Forgot password", Router::ForgotPassword {}),
 ];
 
-/// How long the kit's folded nav panel takes to close: the longest of the
-/// `.nav-panel` transitions in orangui's `assets/components.css`
-/// (`grid-template-rows 0.25s`, and `visibility` flips at the same delay).
-const PANEL_CLOSE: Duration = Duration::from_millis(250);
+/// Whether the main menu is open, shared by every screen's header. Provided
+/// once at the app root so the panel outlives the screen it was opened on
+/// and its close transition plays over the next one.
+#[derive(Debug, Clone, Copy)]
+pub struct MenuOpen(pub Signal<bool>);
 
-/// The menu's link rows, for the nav's `links` slot. Each closes the menu,
-/// then navigates once the panel has closed.
+/// The menu's link rows, for the nav's `links` slot. Each navigates and
+/// leaves the menu to the next screen's header to close.
 #[component]
 pub fn MenuLinks(open: Signal<bool>, route: Router) -> Element {
     let session: Signal<Option<Session>> = use_context();
@@ -152,9 +151,8 @@ pub fn MenuLinks(open: Signal<bool>, route: Router) -> Element {
     }
 }
 
-/// One entry's button, lit when it is `current`. A tap closes the menu and,
-/// after [`PANEL_CLOSE`], pushes `to`; on the screen it opens, it only closes
-/// the menu.
+/// One entry's button, lit when it is `current`. A tap pushes `to`; on the
+/// screen it opens, it closes the menu instead.
 #[component]
 fn MenuEntry(label: &'static str, to: Router, current: bool, mut open: Signal<bool>) -> Element {
     let route: Router = use_route();
@@ -163,15 +161,11 @@ fn MenuEntry(label: &'static str, to: Router, current: bool, mut open: Signal<bo
         button {
             class: if current { "nav-link active" } else { "nav-link" },
             onclick: move |_| {
-                open.set(false);
                 if to == route {
-                    return;
+                    open.set(false);
+                } else {
+                    nav.push(to.clone());
                 }
-                let to = to.clone();
-                spawn(async move {
-                    time::sleep(PANEL_CLOSE).await;
-                    nav.push(to);
-                });
             },
             "{label}"
         }
