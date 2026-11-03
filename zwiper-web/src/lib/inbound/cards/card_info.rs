@@ -4,6 +4,7 @@
 use components::{BottomSheet, Button, ButtonVariant, CardDetails};
 use dioxus::prelude::*;
 use zwipe_core::domain::card::Card;
+use zwipe_ui::card::info;
 
 use crate::inbound::cards::otag::use_describe_tag;
 
@@ -11,32 +12,18 @@ use crate::inbound::cards::otag::use_describe_tag;
 /// under a swipe card.
 #[component]
 pub fn CardInfoDisplay(card: Card) -> Element {
-    let prices = &card.scryfall_data.prices;
-    let shown: Vec<String> = [
-        prices.usd.as_ref().map(|usd| format!(" ${usd}")),
-        prices.eur.as_ref().map(|eur| format!(" \u{20ac}{eur}")),
-        prices.tix.as_ref().map(|tix| format!(" {tix} TIX")),
-    ]
-    .into_iter()
-    .flatten()
-    .collect();
-    let price_text = if shown.is_empty() {
-        "\u{a0}".to_string()
-    } else {
-        format!("Prices:{}", shown.join(" |"))
-    };
-    let artist_text = card
-        .scryfall_data
-        .artist
-        .clone()
-        .filter(|a| !a.is_empty())
-        .map_or_else(|| "\u{a0}".to_string(), |a| format!("Artist: {a}"));
+    let data = &card.scryfall_data;
+    let blank = || "\u{a0}".to_string();
+    let price_text = info::price_line(data).unwrap_or_else(blank);
+    let set_text = info::set_line(data);
+    let released_text = info::released_line(data);
+    let artist_text = info::artist_line(data).unwrap_or_else(blank);
     rsx! {
         div { class: "card-info",
             span { class: "card-info-name", "{card.scryfall_data.name}" }
             span { "{price_text}" }
-            span { "Set: {card.scryfall_data.set_name}" }
-            span { "Released: {card.scryfall_data.released_at}" }
+            span { "{set_text}" }
+            span { "{released_text}" }
             span { "{artist_text}" }
         }
     }
