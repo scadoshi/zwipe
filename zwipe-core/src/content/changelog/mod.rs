@@ -67,6 +67,8 @@ pub const UPCOMING: &[Release] = &[Release {
         "The format, deck tag and oracle tag pickers save from a checkmark at the bottom right",
         "No screen has a bottom bar: Home's Decks, Account and Settings are in the main menu, Export copies and Import imports from icons at the bottom right, and the sign-in forms keep their button under the fields",
         "The header stays hidden while a screen bounces at its bottom",
+        "Sheets close from an x in their corner or a drag down",
+        "The filter and printing sheets apply from a checkmark at the bottom right",
     ],
 }];
 
