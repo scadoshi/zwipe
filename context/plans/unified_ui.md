@@ -20,7 +20,7 @@ These were settled with the owner before the per-screen review. A screen breaks 
 ### Header
 
 - The header bar is 44pt tall, the standard iOS navigation bar height, down from 58pt today (orangui's `.page-header` pads 1rem above and below a 1.7rem button; 0.5rem fits the same buttons). The safe area above it stays, since the Dynamic Island sits in it.
-- The header hides on scroll down, leaving only the safe area (the notch), and comes back on any scroll up, as in Safari.
+- The header follows the scroll, as in X: scrolling down slides it up behind the status bar point for point until only the safe area shows, and any scroll up slides it back the same way. It never snaps on a threshold. The safe area strip keeps the page background, so content doesn't run under the clock and the island.
 - The back arrow, the title and the hamburger go with it; they come back together.
 - Swipe screens don't scroll, and a swipe down there is undo, so their header is always shown.
 
