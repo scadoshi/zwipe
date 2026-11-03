@@ -7,6 +7,7 @@ use zwipe_core::domain::user::models::hints::HINT_SUGGESTED_COMMANDERS;
 use zwipe_core::http::contracts::suggestions::{
     HttpColorAffinity, HttpCommanderSuggestions, HttpSharedTag, HttpSuggestionReasons,
 };
+use zwipe_ui::screens::playstyle::Action::ToggleIdentity;
 
 use super::*;
 use crate::inbound::event_loop::harness::Harness;
@@ -146,10 +147,12 @@ fn s_deals_the_held_list_under_the_show_rows_identity() {
         }),
     });
     harness.clear();
-    match harness.screen_mut() {
-        Screen::Playstyle(v) => v.identity = Some(vec![Red]),
-        _ => panic!("not Playstyle"),
-    }
+    harness.on_top(|screen, cx| {
+        let Screen::Playstyle(v) = screen else {
+            panic!("not Playstyle");
+        };
+        playstyle::dispatch(v, ToggleIdentity(vec![Red]), cx);
+    });
     harness.press(KeyCode::Char('s'));
     let names: Vec<&str> = view(&harness)
         .cards
@@ -324,7 +327,11 @@ fn the_filter_redeals_behind_the_swiped_cards_and_the_host_takes_it() {
     assert!(screen_text(&harness.app).contains("f Filter •"));
     harness.press(KeyCode::Esc);
     let host = playstyle_view(&harness);
-    assert_eq!(host.identity, Some(vec![Red]), "one identity across both");
+    assert_eq!(
+        host.model.identity(),
+        Some(&[Red][..]),
+        "one identity across both"
+    );
     assert_eq!(
         harness.pending(),
         [playstyle::Request::Load { ticket: ticket(2) }.into()]

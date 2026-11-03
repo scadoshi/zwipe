@@ -16,13 +16,14 @@ use zwipe_core::http::contracts::suggestions::{
     HttpCommanderSuggestion, HttpStaple, HttpSuggestionReasons,
 };
 use zwipe_ui::activity::Bar;
-use zwipe_ui::color_map::{ColorMapCounts, ColorMapModel};
+use zwipe_ui::color_map::ColorMapModel;
 use zwipe_ui::playstyle;
-
-use super::{
-    COLD_START, Focus, LIST_TITLE, LOAD_FAILED, NO_STAPLES, NO_SUGGESTIONS, Overlay, PlaystyleView,
-    SHARES_TAGS, STAPLES_TITLE, Section, WHY,
+use zwipe_ui::screens::playstyle::{
+    self as model, ALL, COLOR, LIST_TITLE, SHARES_TAGS, SHOW, STAPLES_TITLE, SUMMARY_DECKS,
+    SUMMARY_TOP_COLOR, SUMMARY_TOP_COLORS, Section, Status, TAG_COLUMN, TYPE, WHY,
 };
+
+use super::{Focus, Overlay, PlaystyleView};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::screens::activity::draw as activity_draw;
@@ -78,20 +79,22 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &PlaystyleView) {
     let bar_height = action_bar::height(&bar, area.width);
     let [body, keys] =
         Layout::vertical([Constraint::Fill(1), Constraint::Length(bar_height)]).areas(area);
-    if view.is_loading {
-        activity_draw::draw_lines(
+    match view.model.status() {
+        Status::Loading => activity_draw::draw_lines(
             f,
             skeleton(palette, view, body.width, map_rows(body.height)),
             (0, 0),
             body,
-        );
-    } else if view.load_failed {
-        activity_draw::draw_note(f, palette, LOAD_FAILED, body);
-    } else if view.cold_start() {
-        activity_draw::draw_note(f, palette, COLD_START, body);
-    } else {
-        let body_lines = loaded_lines(shared, view, body.width, map_rows(body.height));
-        activity_draw::draw_lines(f, body_lines.lines, body_lines.focus, body);
+        ),
+        Status::Failed | Status::ColdStart => {
+            if let Some(message) = view.model.message() {
+                activity_draw::draw_note(f, palette, message, body);
+            }
+        }
+        Status::Loaded => {
+            let body_lines = loaded_lines(shared, view, body.width, map_rows(body.height));
+            activity_draw::draw_lines(f, body_lines.lines, body_lines.focus, body);
+        }
     }
     f.render_widget(action_bar::wrap(bar, keys.width), keys);
     match &view.overlay {
@@ -121,6 +124,7 @@ fn key_hints(view: &PlaystyleView) -> Vec<(&'static str, &'static str)> {
             }
             Focus::Role(index) => {
                 if view
+                    .model
                     .role_bars()
                     .get(index)
                     .is_some_and(|bar| bar.revealable)
@@ -151,7 +155,7 @@ fn key_hints(view: &PlaystyleView) -> Vec<(&'static str, &'static str)> {
             keys.push(("?", "About"));
         }
     }
-    if !view.cold_start() {
+    if view.model.shows_swipe() {
         keys.push(("s", "Swipe"));
     }
     keys.push(("M", "More"));
@@ -236,12 +240,12 @@ pub(crate) fn show_line(
     cursor: usize,
     focused: bool,
 ) -> Line<'static> {
-    let mut chips = vec![ChipContent::text("All", picked.is_none())];
+    let mut chips = vec![ChipContent::text(ALL, picked.is_none())];
     chips.extend(identities.iter().map(|identity| ChipContent {
         spans: identity_spans(palette, identity),
         picked: picked == Some(identity.as_slice()),
     }));
-    chip_line(palette, "Show", chips, cursor, focused)
+    chip_line(palette, SHOW, chips, cursor, focused)
 }
 
 /// `line` broken into lines at most `width` cells wide, only at the plain one-space gaps between chips, so no chip splits.
@@ -282,7 +286,7 @@ fn loaded_lines(shared: &Shared, view: &PlaystyleView, width: u16, map_rows: u16
         };
         let focused = view.focus == Focus::Header(section);
         let mut header = collapsible.header(palette, focused);
-        if collapsible.open && section.topic().is_some() {
+        if collapsible.open && super::topic(section).is_some() {
             header.spans.push(Span::raw(" "));
             header.spans.extend(button::about(
                 palette,
@@ -307,8 +311,8 @@ fn loaded_lines(shared: &Shared, view: &PlaystyleView, width: u16, map_rows: u16
         wrap_at_gaps(
             show_line(
                 palette,
-                &view.identities(),
-                view.identity.as_deref(),
+                &view.model.identities(),
+                view.model.identity(),
                 view.show_cursor,
                 view.focus == Focus::Show,
             ),
@@ -318,7 +322,7 @@ fn loaded_lines(shared: &Shared, view: &PlaystyleView, width: u16, map_rows: u16
     );
     body.line(Line::default());
     list_body(&mut body, shared, view);
-    if !view.staples().is_empty() {
+    if view.model.shows_staples() {
         body.line(Line::default());
         staples_body(&mut body, shared, view);
     }
@@ -342,15 +346,9 @@ fn color_map_body(
     map_rows: u16,
 ) {
     let palette = &shared.palette;
-    let counts = view
-        .profile
-        .as_ref()
-        .and_then(|p| p.color_map.as_ref())
-        .map(ColorMapCounts::from)
-        .filter(playstyle::color_map_has_data);
-    let Some(counts) = counts else {
+    let Some(counts) = view.model.color_map() else {
         body.line(activity_draw::indented(Line::styled(
-            COLD_START,
+            model::COLD_START,
             palette.muted,
         )));
         return;
@@ -382,12 +380,11 @@ fn summary_row(label: &str, value: Vec<Span<'static>>, width: usize) -> Line<'st
 
 /// The Summary section: Decks, then Top colors and Top color when the profile has them.
 fn summary_body(body: &mut Body, palette: &Palette, view: &PlaystyleView, width: usize) {
-    let Some(profile) = &view.profile else {
+    let Some(summary) = view.model.summary() else {
         return;
     };
-    let summary = playstyle::profile_summary(profile);
     body.line(activity_draw::indented(summary_row(
-        "Decks",
+        SUMMARY_DECKS,
         vec![Span::raw(summary.decks)],
         width,
     )));
@@ -395,7 +392,7 @@ fn summary_body(body: &mut Body, palette: &Palette, view: &PlaystyleView, width:
         let mut spans = identity_spans(palette, &value.pips);
         spans.push(Span::raw(format!(" {}", value.count)));
         body.line(activity_draw::indented(summary_row(
-            "Top colors",
+            SUMMARY_TOP_COLORS,
             spans,
             width,
         )));
@@ -408,7 +405,7 @@ fn summary_body(body: &mut Body, palette: &Palette, view: &PlaystyleView, width:
         spans.extend(identity_spans(palette, &value.pips));
         spans.push(Span::raw(format!(" {}", value.count)));
         body.line(activity_draw::indented(summary_row(
-            "Top color",
+            SUMMARY_TOP_COLOR,
             spans,
             width,
         )));
@@ -418,7 +415,7 @@ fn summary_body(body: &mut Body, palette: &Palette, view: &PlaystyleView, width:
 /// The Card roles chart: a row per role with its deck count, a revealed role's tags under it.
 fn roles_body(body: &mut Body, shared: &Shared, view: &PlaystyleView, width: usize) {
     let palette = &shared.palette;
-    let bars = view.role_bars();
+    let bars = view.model.role_bars();
     let label_width = bars
         .iter()
         .map(|b| b.label.chars().count().saturating_add(2))
@@ -491,7 +488,7 @@ fn stat_cell(value: Option<u32>, style: Style) -> Vec<Span<'static>> {
 /// The Oracle tags table: its header with each number column's `[?]`, then a row per tag, an open tag's definition under its row.
 fn tags_body(body: &mut Body, shared: &Shared, view: &PlaystyleView, width: usize) {
     let palette = &shared.palette;
-    let rows = view.tag_rows();
+    let rows = view.model.tag_rows();
     let tag_width = rows
         .iter()
         .map(|r| r.slug.chars().count().saturating_add(3))
@@ -502,13 +499,13 @@ fn tags_body(body: &mut Body, shared: &Shared, view: &PlaystyleView, width: usiz
         .min(width.saturating_sub(COLUMN_WIDTH.saturating_mul(super::Column::ALL.len())));
     let head_focused = view.focus == Focus::TagHead;
     let mut header = vec![Span::styled(
-        format!("{:<tag_width$}", "Tag"),
+        format!("{TAG_COLUMN:<tag_width$}"),
         palette.muted,
     )];
     for column in super::Column::ALL {
         let picked = head_focused && column == view.column;
         let style = if picked {
-            palette.accent.bold().reversed()
+            palette.accent.bold()
         } else {
             palette.muted
         };
@@ -558,23 +555,15 @@ fn group_header(palette: &Palette, title: &str, focused: bool) -> Line<'static> 
 /// The suggestions: the group of rows, or the line saying why there are none.
 fn list_body(body: &mut Body, shared: &Shared, view: &PlaystyleView) {
     let palette = &shared.palette;
-    if view.entries.is_empty() {
-        body.line(Line::styled(NO_SUGGESTIONS, palette.muted));
+    if let Some(message) = view.model.list_message() {
+        body.line(Line::styled(message, palette.muted));
         return;
     }
-    let shown = view.shown();
-    if shown.is_empty() {
-        let identity = view.identity.clone().unwrap_or_default();
-        body.line(Line::styled(
-            playstyle::empty_identity_line(&identity),
-            palette.muted,
-        ));
-        return;
-    }
+    let shown = view.model.rows();
     body.line(group_header(palette, LIST_TITLE, view.focus == Focus::List));
     let rows: Vec<CardRow<'_>> = shown
         .iter()
-        .map(|s| suggestion_row(palette, s, view.deck_count, view.why_open))
+        .map(|s| suggestion_row(palette, s, view.model.deck_count(), view.why_open))
         .collect();
     let lines = view.rows.lines(palette, &shared.caches.oracle_tags, &rows);
     let focused_row = view.rows.focused().min(rows.len().saturating_sub(1));
@@ -586,31 +575,34 @@ fn list_body(body: &mut Body, shared: &Shared, view: &PlaystyleView) {
 /// The Staples panel: the Type and Color rows, then the group of rows or the line saying none match.
 fn staples_body(body: &mut Body, shared: &Shared, view: &PlaystyleView) {
     let palette = &shared.palette;
-    let mut types = vec![ChipContent::text("All", view.staple_type.is_none())];
+    let picked_type = view.model.staple_type();
+    let mut types = vec![ChipContent::text(ALL, picked_type.is_none())];
     types.extend(
-        view.staple_types()
+        view.model
+            .staple_types()
             .into_iter()
-            .map(|t| ChipContent::text(&t.to_string(), view.staple_type == Some(t))),
+            .map(|t| ChipContent::text(&t.to_string(), picked_type == Some(t))),
     );
     body.item(
         vec![chip_line(
             palette,
-            "Type",
+            TYPE,
             types,
             view.type_cursor,
             view.focus == Focus::Types,
         )],
         view.focus == Focus::Types,
     );
-    let mut colors = vec![ChipContent::text("All", view.staple_color.is_none())];
-    colors.extend(view.staple_colors().into_iter().map(|c| ChipContent {
+    let picked_color = view.model.staple_color();
+    let mut colors = vec![ChipContent::text(ALL, picked_color.is_none())];
+    colors.extend(view.model.staple_colors().into_iter().map(|c| ChipContent {
         spans: identity_spans(palette, &c.pips()),
-        picked: view.staple_color == Some(c),
+        picked: picked_color == Some(c),
     }));
     body.item(
         vec![chip_line(
             palette,
-            "Color",
+            COLOR,
             colors,
             view.color_cursor,
             view.focus == Focus::Colors,
@@ -618,11 +610,11 @@ fn staples_body(body: &mut Body, shared: &Shared, view: &PlaystyleView) {
         view.focus == Focus::Colors,
     );
     body.line(Line::default());
-    let staples = view.matching_staples();
-    if staples.is_empty() {
-        body.line(Line::styled(NO_STAPLES, palette.muted));
+    if let Some(message) = view.model.staples_message() {
+        body.line(Line::styled(message, palette.muted));
         return;
     }
+    let staples = view.matching_staples();
     body.line(group_header(
         palette,
         STAPLES_TITLE,
@@ -630,7 +622,7 @@ fn staples_body(body: &mut Body, shared: &Shared, view: &PlaystyleView) {
     ));
     let rows: Vec<CardRow<'_>> = staples
         .iter()
-        .map(|s| staple_row(palette, s, view.deck_count))
+        .map(|s| staple_row(palette, s, view.model.deck_count()))
         .collect();
     let lines = view
         .staple_rows
@@ -698,10 +690,9 @@ pub(crate) fn reasons_lines(
     deck_count: u32,
     fold: Reasons,
 ) -> Vec<Line<'static>> {
-    let colors = playstyle::color_lines(&reasons.colors, deck_count);
-    if reasons.tags.is_empty() && colors.is_empty() {
+    let Some(model::Reasons { tags, colors }) = model::reasons(reasons, deck_count) else {
         return Vec::new();
-    }
+    };
     let mut lines = vec![match fold {
         Reasons::Folded => Line::from(vec![
             Span::raw("w ").bold(),
@@ -716,9 +707,8 @@ pub(crate) fn reasons_lines(
     if fold == Reasons::Folded {
         return lines;
     }
-    if !reasons.tags.is_empty() {
+    if let Some(grouped) = tags {
         lines.push(Line::from(format!("• {SHARES_TAGS}")));
-        let grouped = playstyle::group_shared_tags(&reasons.tags);
         let mut groups: Vec<(String, &[String])> = grouped
             .roles
             .iter()

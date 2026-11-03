@@ -5,11 +5,11 @@
 use crossterm::event::KeyCode;
 use ratatui::style::Stylize;
 use ratatui::text::{Line, Span};
-
-use super::{
-    CLEAR_BODY, CLEAR_SKIPS, Focus, MORE_TITLE, Overlay, PlaystyleView, Request, Section,
-    create_deck_with, draw, reopen_hint,
+use zwipe_ui::screens::playstyle::{
+    Action, CANCEL, CLEAR, CLEAR_BODY, CLEAR_SKIPS, MORE_TITLE, Section,
 };
+
+use super::{Focus, Overlay, PlaystyleView, create, dispatch, draw, reopen_hint};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Context;
 use crate::inbound::screens::commander_swipe::{self, Deal, SuggestedPile};
@@ -26,10 +26,10 @@ pub(crate) fn handle(view: &mut PlaystyleView, code: KeyCode, cx: &mut Context<'
         return;
     }
     match code {
-        KeyCode::Esc => return cx.back(),
+        KeyCode::Esc => return dispatch(view, Action::Back, cx),
         KeyCode::Char('!') => return help::open(cx),
         KeyCode::Char('H') => return reopen_hint(cx),
-        KeyCode::Char('s') if !view.cold_start() => return swipe(view, cx),
+        KeyCode::Char('s') if view.model.shows_swipe() => return swipe(view, cx),
         KeyCode::Char('M') => {
             view.overlay = Some(Overlay::More(more_sheet(&cx.shared.palette)));
             return;
@@ -45,10 +45,10 @@ pub(crate) fn handle(view: &mut PlaystyleView, code: KeyCode, cx: &mut Context<'
         Focus::Role(index) => on_role(view, index, code, cx),
         Focus::TagHead => on_tag_head(view, code),
         Focus::Tag(index) => on_tag(view, index, code, cx),
-        Focus::Show => on_show(view, code),
+        Focus::Show => on_show(view, code, cx),
         Focus::List => on_list(view, code, cx),
-        Focus::Types => on_types(view, code),
-        Focus::Colors => on_colors(view, code),
+        Focus::Types => on_types(view, code, cx),
+        Focus::Colors => on_colors(view, code, cx),
         Focus::Staples => on_staples(view, code, cx),
     }
 }
@@ -56,9 +56,9 @@ pub(crate) fn handle(view: &mut PlaystyleView, code: KeyCode, cx: &mut Context<'
 /// Opens the commander swipe on the held ranking, narrowed by the Show row's identity.
 fn swipe(view: &PlaystyleView, cx: &mut Context<'_>) {
     let pile = SuggestedPile {
-        held: view.entries.clone(),
-        deck_count: view.deck_count,
-        identity: view.identity.clone(),
+        held: view.model.entries().to_vec(),
+        deck_count: view.model.deck_count(),
+        identity: view.model.identity().map(<[_]>::to_vec),
     };
     let limit = view.deck_limit(cx);
     commander_swipe::open(cx, Deal::Suggested(pile), limit);
@@ -76,8 +76,8 @@ pub(crate) fn more_sheet(palette: &Palette) -> Sheet {
 /// The Clear skips dialog: Cancel, then the danger Clear.
 pub(crate) fn clear_dialog() -> AlertDialog {
     AlertDialog::new(CLEAR_SKIPS, CLEAR_BODY)
-        .with_button("Cancel", Some('n'))
-        .with_danger_button("Clear", Some('y'))
+        .with_button(CANCEL, Some('n'))
+        .with_danger_button(CLEAR, Some('y'))
 }
 
 fn on_overlay(view: &mut PlaystyleView, code: KeyCode, cx: &mut Context<'_>) {
@@ -100,7 +100,7 @@ fn on_overlay(view: &mut PlaystyleView, code: KeyCode, cx: &mut Context<'_>) {
         Overlay::Clear(dialog) => match dialog.handle_key(code) {
             Some(AlertChoice::Pressed(1)) => {
                 view.overlay = None;
-                cx.request(Request::ClearSkips.into());
+                dispatch(view, Action::ClearSkips, cx);
             }
             Some(AlertChoice::Pressed(_) | AlertChoice::Dismissed) => {
                 view.overlay = Some(Overlay::More(more_sheet(&cx.shared.palette)));
@@ -136,7 +136,7 @@ fn on_header(view: &mut PlaystyleView, section: Section, code: KeyCode) {
 fn on_role(view: &mut PlaystyleView, index: usize, code: KeyCode, cx: &mut Context<'_>) {
     match code {
         KeyCode::Enter | KeyCode::Char(' ') => {
-            if let Some(bar) = view.role_bars().into_iter().nth(index)
+            if let Some(bar) = view.model.role_bars().into_iter().nth(index)
                 && bar.revealable
             {
                 view.toggle_role(&bar.key);
@@ -170,7 +170,7 @@ fn on_tag_head(view: &mut PlaystyleView, code: KeyCode) {
 fn on_tag(view: &mut PlaystyleView, index: usize, code: KeyCode, cx: &mut Context<'_>) {
     match code {
         KeyCode::Enter | KeyCode::Char(' ') => {
-            if let Some(row) = view.tag_rows().into_iter().nth(index) {
+            if let Some(row) = view.model.tag_rows().into_iter().nth(index) {
                 view.toggle_tag(&row.slug);
             }
         }
@@ -205,41 +205,71 @@ fn is_chip_key(code: KeyCode) -> bool {
     )
 }
 
-fn on_show(view: &mut PlaystyleView, code: KeyCode) {
+fn on_show(view: &mut PlaystyleView, code: KeyCode, cx: &mut Context<'_>) {
     if !is_chip_key(code) {
         step(view, code);
         return;
     }
-    let count = view.identities().len().saturating_add(1);
-    if let Some(index) = on_chips(&mut view.show_cursor, count, code) {
-        view.pick_identity(index);
+    let identities = view.model.identities();
+    let count = identities.len().saturating_add(1);
+    let Some(index) = on_chips(&mut view.show_cursor, count, code) else {
+        return;
+    };
+    let action = match index.checked_sub(1) {
+        None => Action::ShowAll,
+        Some(i) => match identities.into_iter().nth(i) {
+            Some(identity) => Action::ToggleIdentity(identity),
+            None => return,
+        },
+    };
+    dispatch(view, action, cx);
+    if view.model.identity().is_none() {
+        view.show_cursor = 0;
     }
 }
 
-fn on_types(view: &mut PlaystyleView, code: KeyCode) {
+fn on_types(view: &mut PlaystyleView, code: KeyCode, cx: &mut Context<'_>) {
     if !is_chip_key(code) {
         step(view, code);
         return;
     }
-    let count = view.staple_types().len().saturating_add(1);
-    if let Some(index) = on_chips(&mut view.type_cursor, count, code) {
-        view.pick_type(index);
+    let types = view.model.staple_types();
+    let count = types.len().saturating_add(1);
+    let Some(index) = on_chips(&mut view.type_cursor, count, code) else {
+        return;
+    };
+    let action = index
+        .checked_sub(1)
+        .and_then(|i| types.into_iter().nth(i))
+        .map_or(Action::TypeAll, Action::ToggleType);
+    dispatch(view, action, cx);
+    if view.model.staple_type().is_none() {
+        view.type_cursor = 0;
     }
 }
 
-fn on_colors(view: &mut PlaystyleView, code: KeyCode) {
+fn on_colors(view: &mut PlaystyleView, code: KeyCode, cx: &mut Context<'_>) {
     if !is_chip_key(code) {
         step(view, code);
         return;
     }
-    let count = view.staple_colors().len().saturating_add(1);
-    if let Some(index) = on_chips(&mut view.color_cursor, count, code) {
-        view.pick_color(index);
+    let colors = view.model.staple_colors();
+    let count = colors.len().saturating_add(1);
+    let Some(index) = on_chips(&mut view.color_cursor, count, code) else {
+        return;
+    };
+    let action = index
+        .checked_sub(1)
+        .and_then(|i| colors.into_iter().nth(i))
+        .map_or(Action::ColorAll, Action::ToggleColor);
+    dispatch(view, action, cx);
+    if view.model.staple_color().is_none() {
+        view.color_cursor = 0;
     }
 }
 
 fn on_list(view: &mut PlaystyleView, code: KeyCode, cx: &mut Context<'_>) {
-    let shown = view.shown();
+    let shown = view.model.rows();
     let last = shown.len().saturating_sub(1);
     if leaves_rows(view.rows.focused(), last, code) {
         step(view, code);
@@ -248,7 +278,7 @@ fn on_list(view: &mut PlaystyleView, code: KeyCode, cx: &mut Context<'_>) {
     let palette = cx.shared.palette;
     let rows: Vec<CardRow<'_>> = shown
         .iter()
-        .map(|s| draw::suggestion_row(&palette, s, view.deck_count, view.why_open))
+        .map(|s| draw::suggestion_row(&palette, s, view.model.deck_count(), view.why_open))
         .collect();
     let was = view.rows.expanded();
     if view.rows.handle_key(&rows, code, cx) {
@@ -264,21 +294,18 @@ fn on_list(view: &mut PlaystyleView, code: KeyCode, cx: &mut Context<'_>) {
     else {
         return;
     };
-    let card = &suggestion.card;
+    let card = suggestion.card.clone();
     let oracle_id = card.scryfall_data.oracle_id;
     match code {
-        KeyCode::Char('c') => {
-            let limit = view.deck_limit(cx);
-            create_deck_with(cx, card, limit);
-        }
+        KeyCode::Char('c') => create(view, &card, cx),
         KeyCode::Char('m') => {
             if let Some(oracle_id) = oracle_id {
-                cx.request(Request::Maybeboard(oracle_id).into());
+                dispatch(view, Action::Maybeboard(oracle_id), cx);
             }
         }
         KeyCode::Char('r') => {
             if let Some(oracle_id) = oracle_id {
-                cx.request(Request::Dismiss(oracle_id).into());
+                dispatch(view, Action::Dismiss(oracle_id), cx);
             }
         }
         KeyCode::Char('w') => {
@@ -303,7 +330,7 @@ fn on_staples(view: &mut PlaystyleView, code: KeyCode, cx: &mut Context<'_>) {
     let palette = cx.shared.palette;
     let rows: Vec<CardRow<'_>> = staples
         .iter()
-        .map(|s| draw::staple_row(&palette, s, view.deck_count))
+        .map(|s| draw::staple_row(&palette, s, view.model.deck_count()))
         .collect();
     let was = view.staple_rows.expanded();
     if view.staple_rows.handle_key(&rows, code, cx)
