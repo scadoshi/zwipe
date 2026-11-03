@@ -484,7 +484,11 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
 
     rsx! {
             div { class: "screen",
-                ScreenHeader { title: deck_view::TITLE, hint: first_deck_hint_open }
+                ScreenHeader {
+                    title: deck_view::TITLE,
+                    hint: first_deck_hint_open,
+                    back: move |()| driver.dispatch(Action::Back),
+                }
 
                 div { class: "screen-content",
                     match profile {
@@ -646,11 +650,6 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                 }
 
             ActionBar { class: "content-enter-delayed",
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| driver.dispatch(Action::Back),
-                    {deck_view::BACK}
-                }
                 Button {
                     variant: ButtonVariant::Action,
                     onclick: move |_| driver.dispatch(Action::Edit),

@@ -130,6 +130,37 @@ button {
     color: var(--logo);
 }
 
+/* The back arrow in the Z mark's corner, on a screen below a section, boxed
+   like the hamburger it mirrors: the kit's .nav-toggle size, border and
+   corners. */
+.app-nav-back {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: 2.25rem;
+    height: 2.25rem;
+    padding: 0;
+    margin: 0;
+    background: transparent;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.35rem;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: border-color 0.15s;
+}
+
+.app-nav-back-icon {
+    display: block;
+    width: 1.25rem;
+    height: 1.25rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
 .app-nav-title {
     display: flex;
     align-items: center;

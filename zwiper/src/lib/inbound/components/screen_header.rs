@@ -1,7 +1,8 @@
 //! Shared screen header.
 //!
 //! Every screen opens with the same bar, the kit's `NavBar` folded behind
-//! its hamburger: the Z mark on the left goes Home, the screen's title and,
+//! its hamburger: the Z mark on the left goes Home (a back arrow instead on a
+//! screen below a section), the screen's title and,
 //! on screens with a hint dialog, its `?` sit in the middle, and the hamburger
 //! on the right opens the [main menu](crate::inbound::components::navigation::menu).
 //! The screen still owns its `HintDialog` (with screen-specific content);
@@ -17,8 +18,14 @@ use crate::inbound::router::Router;
 /// The header bar with the main menu, titled `title`.
 ///
 /// Omit `hint` for screens without a hint dialog (the `?` isn't rendered).
+/// Pass `back` on a screen below a section: the left corner then shows a back
+/// arrow that calls it, where the Z mark sits elsewhere.
 #[component]
-pub fn ScreenHeader(title: String, hint: Option<Signal<bool>>) -> Element {
+pub fn ScreenHeader(
+    title: String,
+    hint: Option<Signal<bool>>,
+    back: Option<Callback<()>>,
+) -> Element {
     let route: Router = use_route();
     let mut open = use_signal(|| false);
 
@@ -33,12 +40,24 @@ pub fn ScreenHeader(title: String, hint: Option<Signal<bool>>) -> Element {
             NavBar {
                 open,
                 brand: rsx! {
-                    Link {
-                        to: Router::Home {},
-                        class: "nav-brand",
-                        "aria-label": "Home",
-                        onclick: move |_| open.set(false),
-                        span { class: "nav-logo app-nav-logo", "{logo::Z}" }
+                    if let Some(back) = back {
+                        button {
+                            class: "nav-brand app-nav-back",
+                            "aria-label": "Back",
+                            onclick: move |_| {
+                                open.set(false);
+                                back.call(());
+                            },
+                            BackArrow {}
+                        }
+                    } else {
+                        Link {
+                            to: Router::Home {},
+                            class: "nav-brand",
+                            "aria-label": "Home",
+                            onclick: move |_| open.set(false),
+                            span { class: "nav-logo app-nav-logo", "{logo::Z}" }
+                        }
                     }
                 },
                 persistent: rsx! {
@@ -56,6 +75,20 @@ pub fn ScreenHeader(title: String, hint: Option<Signal<bool>>) -> Element {
                     MenuFooter { open }
                 },
             }
+        }
+    }
+}
+
+/// The back arrow: a left chevron drawn in the text color.
+#[component]
+fn BackArrow() -> Element {
+    rsx! {
+        svg {
+            class: "app-nav-back-icon",
+            view_box: "0 0 24 24",
+            xmlns: "http://www.w3.org/2000/svg",
+            "aria-hidden": "true",
+            path { d: "M15 5 8 12l7 7" }
         }
     }
 }
