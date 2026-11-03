@@ -115,6 +115,36 @@ button {
 }
 
 /* ==================
+  floating actions
+ ==================== */
+
+/* A screen's one or two main actions, floating just above the bottom edge
+   with no bar behind them; the content scrolls underneath. Each button keeps
+   the page background so it reads over whatever passes under it, and the
+   screen's content ends with room to scroll its last row clear of them. */
+.app-float {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 0.75rem);
+    z-index: 50;
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    pointer-events: none;
+}
+
+.app-float > * {
+    pointer-events: auto;
+    background-color: var(--bg-primary);
+    box-shadow: var(--shadow-sm);
+}
+
+.screen:has(> .app-float) > .screen-content {
+    padding-bottom: 5rem;
+}
+
+/* ==================
   header and main menu
  ==================== */
 

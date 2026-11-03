@@ -11,10 +11,7 @@
 //! What the screen knows and does is `zwipe_ui::screens::deck_list`; this
 //! file draws its state and performs its effects.
 
-use components::{
-    ActionBar, BottomSheet, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintDialog,
-    HintKey,
-};
+use components::{Button, ButtonVariant, Chip, HintBullet, HintBullets, HintDialog, HintKey};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use dioxus_primitives::toast::{Toasts, use_toast};
@@ -26,7 +23,7 @@ use zwipe_core::domain::deck::deck_profile::DeckProfile;
 use zwipe_core::domain::user::models::hints::HINT_DECK_LIST;
 use zwipe_ui::deck::command_zone;
 use zwipe_ui::deck::list::{self, GroupBy};
-use zwipe_ui::screens::deck_list::{self, Action, Destination, Effect, MoreItem, State, Status};
+use zwipe_ui::screens::deck_list::{self, Action, Destination, Effect, State, Status};
 
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::screen_header::ScreenHeader;
@@ -256,7 +253,6 @@ pub fn DeckList() -> Element {
     };
     let decks_hint_open = driver.hint_open;
     let session = driver.session;
-    let mut show_more_sheet = use_signal(|| false);
 
     // Refreshes the user, so email_verified_at is current without re-login,
     // and fetches the decks, once per mount.
@@ -423,7 +419,8 @@ pub fn DeckList() -> Element {
                 }
             }
 
-            ActionBar {
+            // Create, the screen's main action, floats over the list.
+            div { class: "app-float",
                 Button {
                     variant: ButtonVariant::Action,
                     onclick: move |_| {
@@ -437,29 +434,6 @@ pub fn DeckList() -> Element {
                         driver.dispatch(Action::Create { verified });
                     },
                     {deck_list::CREATE}
-                }
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| show_more_sheet.set(true),
-                    {deck_list::MORE}
-                }
-            }
-
-            // Side features live here rather than crowding the action bar.
-            BottomSheet { open: show_more_sheet, title: deck_list::MORE_TITLE,
-                Button {
-                    onclick: move |_| {
-                        show_more_sheet.set(false);
-                        driver.dispatch(Action::More(MoreItem::CommanderMaybeboard));
-                    },
-                    {MoreItem::CommanderMaybeboard.label()}
-                }
-                Button {
-                    onclick: move |_| {
-                        show_more_sheet.set(false);
-                        driver.dispatch(Action::More(MoreItem::Playstyle));
-                    },
-                    {MoreItem::Playstyle.label()}
                 }
             }
             }
