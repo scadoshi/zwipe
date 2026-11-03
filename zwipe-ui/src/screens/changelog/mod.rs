@@ -1,4 +1,4 @@
-//! Changelog: the release history from the launch's fetch, under chip rows that narrow it from `Latest` to a year, a month and a minor version. Reached from Account.
+//! Changelog: the release history from the launch's fetch, under chip rows that narrow it from `Latest` to a year, a month and a minor version. Shown on the About screen.
 //!
 //! Where each release files is [`crate::changelog`]; this model adds what the screen does with it: which branch draws while the launch fetch is out or after it failed, the chip rows a filter opens and what each chip selects, and Back. The history comes in on [`Action::Load`] from the client's [`ChangelogCache`], with no retry and no compiled fallback. The web's anchors and every scroll stay in the client.
 

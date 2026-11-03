@@ -91,6 +91,24 @@ button {
     text-align: left;
 }
 
+/* About's credits under its panel: small and quiet, the links underlined. */
+.about-credits {
+    margin: 1rem 0 1.5rem;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    color: var(--text-secondary);
+    text-align: center;
+}
+
+.about-credits p {
+    margin: 0 0 0.5rem;
+}
+
+.about-credits a {
+    color: inherit;
+    text-decoration: underline;
+}
+
 .screen-content.card-swipe {
     overflow-y: hidden;
     justify-content: flex-start;

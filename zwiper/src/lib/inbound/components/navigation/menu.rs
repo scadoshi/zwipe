@@ -27,12 +27,12 @@ pub enum Section {
     Maybeboard,
     /// Activity.
     Activity,
-    /// Account, and the privacy policy it links to.
+    /// Account.
     Account,
     /// Settings (the `config` screen).
     Config,
-    /// The changelog.
-    Changelog,
+    /// About, and the privacy policy it links to.
+    About,
 }
 
 impl Section {
@@ -45,7 +45,7 @@ impl Section {
         Self::Activity,
         Self::Account,
         Self::Config,
-        Self::Changelog,
+        Self::About,
     ];
 
     /// The entry's label, the title of the screen it opens.
@@ -59,7 +59,7 @@ impl Section {
             Self::Activity => "Activity",
             Self::Account => "Account",
             Self::Config => "Settings",
-            Self::Changelog => "Changelog",
+            Self::About => "About",
         }
     }
 
@@ -74,7 +74,7 @@ impl Section {
             Self::Activity => Router::Activity {},
             Self::Account => Router::Account {},
             Self::Config => Router::Config {},
-            Self::Changelog => Router::Changelog {},
+            Self::About => Router::About {},
         }
     }
 
@@ -96,9 +96,9 @@ impl Section {
             Router::SuggestedCommanders {} => Some(Self::Playstyle),
             Router::CommanderMaybeboard {} => Some(Self::Maybeboard),
             Router::Activity {} => Some(Self::Activity),
-            Router::Account {} | Router::PrivacyPolicy {} => Some(Self::Account),
+            Router::Account {} => Some(Self::Account),
             Router::Config {} => Some(Self::Config),
-            Router::Changelog {} => Some(Self::Changelog),
+            Router::About {} | Router::PrivacyPolicy {} => Some(Self::About),
             Router::Login {} | Router::Register {} | Router::ForgotPassword {} => None,
         }
     }
@@ -228,10 +228,7 @@ mod tests {
     }
 
     #[test]
-    fn the_privacy_policy_sits_under_account() {
-        assert_eq!(
-            Section::of(&Router::PrivacyPolicy {}),
-            Some(Section::Account)
-        );
+    fn the_privacy_policy_sits_under_about() {
+        assert_eq!(Section::of(&Router::PrivacyPolicy {}), Some(Section::About));
     }
 }

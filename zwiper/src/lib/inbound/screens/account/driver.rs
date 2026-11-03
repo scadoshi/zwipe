@@ -274,7 +274,7 @@ impl Driver {
                 self.navigator.push(Router::PrivacyPolicy {});
             }
             Effect::Navigate(Destination::Changelog) => {
-                self.navigator.push(Router::Changelog {});
+                self.navigator.push(Router::About {});
             }
             Effect::Toast(toast) => ui_toast::raise(self.toast, toast),
         }

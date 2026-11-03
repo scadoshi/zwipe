@@ -2,14 +2,14 @@
 //!
 //! Each module represents a major section of the application with its own routing.
 
+/// About: version, links, credits and the release history.
+pub mod about;
 /// Account screen and its sheets (username, email, password, delete).
 pub mod account;
 /// How the user picks: the heatmap, swipe outcomes, rates and hard passes.
 pub mod activity;
 /// Authentication screens (login, register).
 pub mod auth;
-/// Release history screen (shared changelog).
-pub mod changelog;
 /// Appearance and card settings (theme, app icon, Universes Beyond).
 pub mod config;
 /// Deck builder and card management screens.

@@ -1,7 +1,7 @@
 //! Account screen and its edit sheets.
 //!
 //! Shows username, email and password with bottom sheets to change them,
-//! plus the About rows, logging out and deleting the account.
+//! plus logging out and deleting the account.
 //!
 //! What the screen knows and does is `zwipe_ui::screens::account`; these
 //! files draw its state and perform its effects.
@@ -37,10 +37,6 @@ use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::info_button::InfoButton;
 use crate::inbound::components::logout_dialog::LogoutDialog;
 use crate::inbound::components::screen_header::ScreenHeader;
-
-/// Client version baked in at compile time, shown at the bottom of the screen
-/// so users can report which build they're on.
-const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Account screen showing account details and management options.
 #[component]
@@ -157,55 +153,6 @@ pub fn Account() -> Element {
                                 }
                             }
 
-                            div { class: "settings-list",
-
-                                div { class: "settings-list-header",
-                                    span { class: "settings-list-title", {model::ABOUT} }
-                                }
-
-                                div {
-                                    class: "settings-row",
-                                    span { style: "display:flex;align-items:center;",
-                                        span { class: "settings-row-label", {Row::Website.label()} }
-                                        InfoButton { topic: HintTopic::Website }
-                                    }
-                                    div { class: "settings-row-value",
-                                        Button {
-                                            variant: ButtonVariant::Action,
-                                            onclick: move |_| driver.dispatch(Action::Website),
-                                            {model::WEBSITE_LINK}
-                                        }
-                                    }
-                                }
-
-                                div {
-                                    class: "settings-row",
-                                    span { class: "settings-row-label", {Row::PrivacyPolicy.label()} }
-                                    div { class: "settings-row-value",
-                                        Button {
-                                            variant: ButtonVariant::Action,
-                                            onclick: move |_| driver.dispatch(Action::PrivacyPolicy),
-                                            {model::VIEW}
-                                        }
-                                    }
-                                }
-
-                                div {
-                                    class: "settings-row",
-                                    span { style: "display:flex;align-items:center;",
-                                        span { class: "settings-row-label", {Row::Version.label()} }
-                                        InfoButton { topic: HintTopic::Version }
-                                    }
-                                    div { class: "settings-row-value",
-                                        span { {model::version_label(APP_VERSION)} }
-                                        Button {
-                                            variant: ButtonVariant::Action,
-                                            onclick: move |_| driver.dispatch(Action::Changelog),
-                                            {model::CHANGELOG}
-                                        }
-                                    }
-                                }
-                            }
                         }
                     }
                 }

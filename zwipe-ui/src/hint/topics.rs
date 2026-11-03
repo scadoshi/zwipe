@@ -250,11 +250,9 @@ impl HintTopic {
             Self::Website => vec![line(vec![text(
                 "Guides, the changelog and news, in your browser",
             )])],
-            Self::Version => vec![line(vec![
-                text("The build you are on. "),
-                key("Changelog"),
-                text(" lists what changed in each release"),
-            ])],
+            Self::Version => vec![line(vec![text(
+                "The build you are on. What changed in each release is listed below",
+            )])],
             Self::OracleTags => vec![
                 bullet(vec![
                     text("The "),
@@ -497,11 +495,9 @@ mod tests {
         assert_eq!(last.plain(), format!("Up to {MAX_DECK_TAGS}"));
         assert_eq!(
             HintTopic::Version.blocks()[0],
-            line(vec![
-                text("The build you are on. "),
-                key("Changelog"),
-                text(" lists what changed in each release"),
-            ])
+            line(vec![text(
+                "The build you are on. What changed in each release is listed below",
+            )])
         );
     }
 

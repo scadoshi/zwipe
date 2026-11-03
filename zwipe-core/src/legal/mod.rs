@@ -11,6 +11,14 @@
 //! `mailto:` anchor silently fails inside the mobile webview, so each app renders
 //! its own contact line. Inline `https://` links work in both apps for free.
 
+/// The card data credit, as an HTML fragment: Scryfall supplies the card data
+/// and images. Shown on the app's About screen and in zite's footer.
+pub const SCRYFALL_CREDIT_HTML: &str = r#"Card data and images from <a href="https://scryfall.com" target="_blank" rel="noopener noreferrer">Scryfall</a>."#;
+
+/// The Fan Content notice Wizards' policy asks for, as an HTML fragment. The
+/// privacy policy ends with the same sentence.
+pub const FAN_CONTENT_HTML: &str = r#"Zwipe is unofficial Fan Content permitted under the <a href="https://company.wizards.com/en/legal/fancontentpolicy" target="_blank" rel="noopener noreferrer">Fan Content Policy</a>. Not approved/endorsed by Wizards. Portions of the materials used are property of Wizards of the Coast. ©Wizards of the Coast LLC."#;
+
 /// When the privacy policy was last revised, shown as a chip in each app's
 /// first panel.
 pub const PRIVACY_LAST_UPDATED: &str = "October 2026";
@@ -65,3 +73,13 @@ pub const PRIVACY_POLICY_HTML: &str = r#"<h2>Data we collect</h2>
 
 <h2>Fan content</h2>
 <p>Zwipe is unofficial Fan Content permitted under the <a href="https://company.wizards.com/en/legal/fancontentpolicy" target="_blank" rel="noopener noreferrer">Fan Content Policy</a>. Not approved/endorsed by Wizards. Portions of the materials used are property of Wizards of the Coast. ©Wizards of the Coast LLC.</p>"#;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_privacy_policy_carries_the_fan_content_notice() {
+        assert!(PRIVACY_POLICY_HTML.contains(FAN_CONTENT_HTML));
+    }
+}
