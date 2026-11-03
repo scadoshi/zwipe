@@ -68,6 +68,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "No screen has a bottom bar: Home's Decks, Account and Settings are in the main menu, Export copies and Import imports from icons at the bottom right, and the sign-in forms keep their button under the fields",
         "The header stays hidden while a screen bounces at its bottom",
         "Sheets close from an x in their corner or a drag down",
+        "Floating buttons rise above the keyboard",
         "The filter and printing sheets apply from a checkmark at the bottom right",
         "Log in, Create profile and Send a reset link sit at the bottom right",
     ],
