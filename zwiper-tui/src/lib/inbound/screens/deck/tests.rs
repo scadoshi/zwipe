@@ -5,7 +5,6 @@ use zwipe_core::domain::deck::{DeckWarning, Format, WarningAction};
 use super::layout::Pane;
 use super::*;
 use crate::inbound::event_loop::harness::Harness;
-use crate::inbound::screens::deck_form;
 use crate::test_support::{card, deck, deck_profile, render, screen_text, user};
 
 fn view(harness: &Harness) -> &DeckView {
@@ -359,7 +358,7 @@ fn edit_and_more_open_their_screens() {
     let deck_id = view(&harness).profile.id;
     harness.press(KeyCode::Char('e'));
     assert!(
-        matches!(harness.screen(), Screen::DeckForm(form) if form.mode == deck_form::Mode::Edit { deck_id })
+        matches!(harness.screen(), Screen::DeckForm(form) if form.model.mode() == zwipe_ui::screens::deck_form::Mode::Edit(deck_id))
     );
     harness.app.shared.hint = None;
     harness.press(KeyCode::Esc);

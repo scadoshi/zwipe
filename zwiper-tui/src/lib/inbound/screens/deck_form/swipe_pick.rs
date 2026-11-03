@@ -10,17 +10,17 @@ use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_ui::deck::form::{self, Slot};
 use zwipe_ui::filter::draft::SheetConfig;
 use zwipe_ui::generation::{Generation, Ticket};
-use zwipe_ui::hint::{Block, HintContent, SwipeSelectMode, one_time};
+use zwipe_ui::hint::{HintContent, SwipeSelectMode, one_time};
+use zwipe_ui::screens::deck_form::Action;
 use zwipe_ui::stack::Direction;
 use zwipe_ui::{filter, timing};
 
-use super::{DeckForm, Overlay, Request};
+use super::{DeckForm, Overlay, Request, dispatch};
 use crate::inbound::app::Context;
 use crate::inbound::screens::card_sheets;
 use crate::inbound::screens::card_sheets::filter::{FilterSheet, SheetOutcome};
 use crate::inbound::widgets::card_motion::CardMotion;
 use crate::inbound::widgets::hint;
-use crate::inbound::widgets::info::InfoPopup;
 use crate::inbound::widgets::toast::{self, ToastKind};
 
 /// What a swipe did, so down can undo it.
@@ -62,8 +62,8 @@ impl SwipePicker {
     pub(crate) fn new(form: &DeckForm, slot: Slot) -> Self {
         Self {
             slot,
-            format: form.format,
-            commander: form.commander().cloned(),
+            format: form.model.values().format,
+            commander: form.model.values().commander.clone(),
             cards: Vec::new(),
             index: 0,
             history: Vec::new(),
@@ -71,7 +71,7 @@ impl SwipePicker {
             loading: false,
             exhausted: false,
             generation: Generation::default(),
-            filter: form.card(slot).swipe_filter.clone(),
+            filter: form.inputs.get(slot).swipe_filter.clone(),
             sheet: None,
             motion: None,
         }
@@ -224,7 +224,7 @@ pub(crate) fn handle(
             SheetOutcome::Closed => picker.sheet = None,
             SheetOutcome::Applied(filter) => {
                 picker.sheet = None;
-                form.card_mut(picker.slot).swipe_filter = (*filter).clone();
+                form.inputs.get_mut(picker.slot).swipe_filter = (*filter).clone();
                 picker.filter = *filter;
                 picker.refresh(cx);
             }
@@ -233,11 +233,7 @@ pub(crate) fn handle(
     }
     match code {
         KeyCode::Esc => return None,
-        KeyCode::F(6) => {
-            let lines: Vec<String> = picker.hint().blocks.iter().map(Block::plain).collect();
-            let lines: Vec<&str> = lines.iter().map(String::as_str).collect();
-            return Some(Overlay::Info(InfoPopup::new("Swipe select", &lines)));
-        }
+        KeyCode::F(6) => hint::open(cx, picker.hint()),
         KeyCode::F(5) => {
             picker.refresh(cx);
             cx.toast_for(ToastKind::Info, "Stack refreshed".to_owned(), toast::QUICK);
@@ -250,7 +246,15 @@ pub(crate) fn handle(
                     format!("{} selected", capitalized(picker.noun())),
                     toast::QUICK,
                 );
-                form.pick_card(picker.slot, card, cx);
+                let slot = picker.slot;
+                dispatch(
+                    form,
+                    Action::PickSwiped {
+                        slot,
+                        card: Box::new(card),
+                    },
+                    cx,
+                );
                 return None;
             }
         }

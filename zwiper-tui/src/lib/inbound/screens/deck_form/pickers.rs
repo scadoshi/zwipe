@@ -1,138 +1,86 @@
-//! The format, deck tag and oracle tag pickers: a search box, a definition bar, a grid of chips, Back to revert and Save to keep.
+//! The format, deck tag and oracle tag pickers: a search box, a definition bar, a grid of chips, Back to put back what the picker opened on and Save to keep the pick. The model holds the pick and its draft; a picker here keeps only its search box, the focused chip and the chip its bar defines.
 
 use crossterm::event::KeyCode;
-use zwipe_core::domain::card::Card;
-use zwipe_core::domain::card::oracle_tag::{self, OracleTag};
-use zwipe_core::domain::deck::{DeckTagView, Format, MAX_DECK_ORACLE_TAGS, MAX_DECK_TAGS};
-use zwipe_ui::deck::form::{self, Slot};
-use zwipe_ui::timing;
+use zwipe_core::domain::card::oracle_tag::OracleTag;
+use zwipe_core::domain::deck::{DeckTagView, Format};
+use zwipe_ui::deck::form;
+use zwipe_ui::deck::pickers::{self, Picker, TagPicker};
+use zwipe_ui::screens::deck_form::Action;
 
-use super::{DeckForm, Overlay};
+use super::{DeckForm, Overlay, dispatch};
 use crate::inbound::app::Context;
 use crate::inbound::screens::oracle_tags;
-use crate::inbound::widgets::info::InfoPopup;
+use crate::inbound::widgets::hint;
 use crate::inbound::widgets::text_input::TextInput;
-use crate::inbound::widgets::toast::{self, ToastKind};
 
 /// The chips a key moves past with Page Up and Page Down.
 const PAGE: usize = 10;
 
-/// What the format picker reverts to on Back.
-#[derive(Debug, Clone, PartialEq)]
-pub(crate) struct FormatSnapshot {
-    pub(crate) format: Option<Format>,
-    pub(crate) commander: Option<Card>,
-    pub(crate) signature_spell: Option<Card>,
-}
-
-/// The format list over the form: a search box, the focused row, and the details of the format last tapped.
-#[derive(Debug, Clone, PartialEq)]
+/// The format list over the form: a search box, the focused chip, and the format last tapped, whose details fill the bar.
+#[derive(Debug, Clone, Default, PartialEq)]
 pub(crate) struct FormatPicker {
     pub(crate) search: TextInput,
     pub(crate) focus: usize,
-    /// The format whose details fill the bar, once one is tapped.
     pub(crate) detail: Option<Format>,
-    pub(crate) snapshot: FormatSnapshot,
 }
 
 impl FormatPicker {
-    pub(crate) fn open(form: &DeckForm) -> Self {
-        Self {
-            search: TextInput::default(),
-            focus: 0,
-            detail: None,
-            snapshot: FormatSnapshot {
-                format: form.format,
-                commander: form.card(Slot::Commander).card.clone(),
-                signature_spell: form.card(Slot::SignatureSpell).card.clone(),
-            },
-        }
-    }
-
     /// The formats matching the search, in the app's order.
     pub(crate) fn formats(&self) -> Vec<Format> {
-        let query = self.search.value().to_lowercase();
-        Format::all()
-            .iter()
-            .copied()
-            .filter(|f| f.display_name().to_lowercase().contains(&query))
-            .collect()
+        pickers::formats_matching(self.search.value())
     }
 }
 
-/// The deck tag picker.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct TagPicker {
+/// A tag picker's search box, the focused chip, and the tag last tapped, whose definition fills the bar.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub(crate) struct TagGrid {
     pub(crate) search: TextInput,
     pub(crate) focus: usize,
-    /// The tag whose description fills the bar, once one is tapped.
     pub(crate) detail: Option<String>,
-    pub(crate) snapshot: Vec<String>,
 }
 
-impl TagPicker {
-    pub(crate) fn open(form: &DeckForm) -> Self {
-        Self {
-            search: TextInput::default(),
-            focus: 0,
-            detail: None,
-            snapshot: form.tags.clone(),
-        }
-    }
-
-    /// The catalog's tags whose names match the search, in served order.
-    pub(crate) fn tags<'catalog>(
+impl TagGrid {
+    /// The deck tags whose names match the search, in served order.
+    pub(crate) fn deck_tags<'catalog>(
         &self,
         catalog: &'catalog [DeckTagView],
     ) -> Vec<&'catalog DeckTagView> {
-        let query = self.search.value().to_lowercase();
-        catalog
-            .iter()
-            .filter(|t| t.display_name.to_lowercase().contains(&query))
-            .collect()
-    }
-}
-
-/// The oracle tag picker.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct OraclePicker {
-    pub(crate) search: TextInput,
-    pub(crate) focus: usize,
-    pub(crate) detail: Option<String>,
-    pub(crate) snapshot: Vec<String>,
-}
-
-impl OraclePicker {
-    pub(crate) fn open(form: &DeckForm) -> Self {
-        Self {
-            search: TextInput::default(),
-            focus: 0,
-            detail: None,
-            snapshot: form.oracle_tags.clone(),
-        }
+        pickers::deck_tags_matching(catalog, self.search.value())
     }
 
-    /// The grid: with no search, every curated tag plus every picked one, by slug; with one, the ranked hits, at most 40.
-    pub(crate) fn slugs(&self, catalog: &[OracleTag], picked: &[String]) -> Vec<String> {
-        let query = self.search.value();
-        if query.is_empty() {
-            let mut slugs: Vec<String> = catalog
-                .iter()
-                .filter(|t| t.curated)
-                .map(|t| t.slug.clone())
-                .chain(picked.iter().cloned())
-                .collect();
-            slugs.sort();
-            slugs.dedup();
-            slugs
-        } else {
-            oracle_tag::search_oracle_tags(catalog, query)
+    /// The oracle tag grid: with no search, every curated tag plus every picked one; with one, the ranked matches.
+    pub(crate) fn oracle_tags(&self, catalog: &[OracleTag], picked: &[String]) -> Vec<OracleTag> {
+        pickers::oracle_tag_results(catalog, picked, self.search.value())
+    }
+
+    /// The slugs `which` lists, in grid order.
+    fn slugs(&self, form: &DeckForm, which: TagPicker) -> Vec<String> {
+        match which {
+            TagPicker::DeckTags => self
+                .deck_tags(&form.deck_tag_catalog)
                 .into_iter()
-                .take(timing::ORACLE_TAG_PICKER_LIMIT)
+                .map(|t| t.slug.clone())
+                .collect(),
+            TagPicker::OracleTags => self
+                .oracle_tags(
+                    form.oracle_catalog.as_deref().unwrap_or_default(),
+                    form.model.tags(TagPicker::OracleTags),
+                )
+                .into_iter()
                 .map(|t| t.slug)
-                .collect()
+                .collect(),
         }
     }
+}
+
+/// Opens `picker` on the form's value.
+pub(crate) fn open(form: &mut DeckForm, picker: Picker, cx: &mut Context<'_>) {
+    dispatch(form, Action::OpenPicker(picker), cx);
+    form.overlay = Some(match picker {
+        Picker::Format => Overlay::Format(FormatPicker::default()),
+        Picker::DeckTags => Overlay::Tags(TagPicker::DeckTags, TagGrid::default()),
+        Picker::OracleTags => Overlay::Tags(TagPicker::OracleTags, TagGrid::default()),
+    });
 }
 
 /// Moves a grid focus with the arrows and Page keys. Returns whether the key was one of them.
@@ -150,244 +98,102 @@ fn move_focus(focus: &mut usize, count: usize, code: KeyCode) -> bool {
     true
 }
 
-/// The hint each picker shows on F6.
-fn hint(overlay: &str) -> InfoPopup {
-    match overlay {
-        "format" => InfoPopup::new(
-            "Format",
-            &[
-                "Tap the picked format again to clear it",
-                "Changing the format clears the commander and signature spell",
-            ],
-        ),
-        "deck tags" => InfoPopup::new(
-            "Deck tags",
-            &[
-                "The archetypes the deck is built around, like Aristocrats or Voltron",
-                "Picking one pre-selects the oracle tags that define it",
-                "Up to 5",
-                "Tap a tag to add or remove it. The bar up top shows what it means",
-            ],
-        ),
-        _ => InfoPopup::new(
-            "Oracle tags",
-            &[
-                "The specific things the deck does, like spot removal, ramp or reanimation",
-                "They shape which cards we suggest",
-                "Your deck tags pre-pick a starter set from about 4,500. Fine to leave as is",
-            ],
-        ),
+/// Esc, F2 and F6, which every picker shares: Back, Save while the pick moved, and the picker's hint. Returns `None` once the picker closes, or `Some(handled)`.
+fn shared_key(
+    form: &mut DeckForm,
+    picker: Picker,
+    code: KeyCode,
+    cx: &mut Context<'_>,
+) -> Option<bool> {
+    match code {
+        KeyCode::Esc => {
+            dispatch(form, Action::BackPicker, cx);
+            None
+        }
+        KeyCode::F(2) if !form.model.picker_unchanged() => {
+            dispatch(form, Action::SavePicker, cx);
+            None
+        }
+        KeyCode::F(2) => Some(true),
+        KeyCode::F(6) => {
+            hint::open(cx, picker.hint());
+            Some(true)
+        }
+        _ => Some(false),
     }
 }
 
-/// Keys in the format picker. Returns the picker while it stays open, or the popup it opens.
+/// Keys in the format picker. Returns the picker while it stays open.
 pub(crate) fn handle_format(
     form: &mut DeckForm,
-    mut picker: Box<FormatPicker>,
+    mut picker: FormatPicker,
     code: KeyCode,
     cx: &mut Context<'_>,
 ) -> Option<Overlay> {
-    match code {
-        KeyCode::Esc => {
-            let changed = form.format != picker.snapshot.format
-                || form.card(Slot::Commander).card != picker.snapshot.commander
-                || form.card(Slot::SignatureSpell).card != picker.snapshot.signature_spell;
-            if changed {
-                let snapshot = picker.snapshot.clone();
-                form.set_format(snapshot.format);
-                form.set_card(Slot::Commander, snapshot.commander);
-                form.set_card(Slot::SignatureSpell, snapshot.signature_spell);
-                cx.toast_for(ToastKind::Info, "Format unchanged".to_owned(), toast::QUICK);
-            }
-            return None;
+    if shared_key(form, Picker::Format, code, cx)? {
+        return Some(Overlay::Format(picker));
+    }
+    if code == KeyCode::Enter {
+        if let Some(format) = picker.formats().get(picker.focus).copied() {
+            picker.detail = Some(format);
+            dispatch(form, Action::TapFormat(format), cx);
         }
-        KeyCode::F(2) => {
-            if form.format != picker.snapshot.format {
-                return None;
-            }
-        }
-        KeyCode::F(6) => return Some(Overlay::Info(hint("format"))),
-        KeyCode::Enter => {
-            if let Some(format) = picker.formats().get(picker.focus).copied() {
-                picker.detail = Some(format);
-                if form.format == Some(format) {
-                    form.set_format(None);
-                } else {
-                    form.set_format(Some(format));
-                }
-            }
-        }
-        other => {
-            let count = picker.formats().len();
-            if !move_focus(&mut picker.focus, count, other) && picker.search.handle_key(other) {
-                picker.focus = 0;
-            }
+    } else {
+        let count = picker.formats().len();
+        if !move_focus(&mut picker.focus, count, code) && picker.search.handle_key(code) {
+            picker.focus = 0;
         }
     }
     Some(Overlay::Format(picker))
 }
 
-/// Keys in the deck tag picker.
+/// Keys in a tag picker. F8 empties the pick and, in the oracle tag picker, F3 opens the dictionary. Returns the picker while it stays open.
 pub(crate) fn handle_tags(
     form: &mut DeckForm,
-    mut picker: TagPicker,
+    which: TagPicker,
+    mut grid: TagGrid,
     code: KeyCode,
     cx: &mut Context<'_>,
 ) -> Option<Overlay> {
-    match code {
-        KeyCode::Esc => {
-            if !same_set(&form.tags, &picker.snapshot) {
-                form.tags = picker.snapshot;
-                cx.toast_for(
-                    ToastKind::Info,
-                    "Deck tags unchanged".to_owned(),
-                    toast::QUICK,
-                );
-            }
-            form.reseed(cx);
-            return None;
-        }
-        KeyCode::F(2) => {
-            if !same_set(&form.tags, &picker.snapshot) {
-                form.reseed(cx);
-                return None;
-            }
-        }
-        KeyCode::F(6) => return Some(Overlay::Info(hint("deck tags"))),
-        KeyCode::F(8) => {
-            form.tags.clear();
-            picker.detail = None;
-        }
-        KeyCode::Enter => {
-            let slug = picker
-                .tags(&form.deck_tag_catalog)
-                .get(picker.focus)
-                .map(|t| t.slug.clone());
-            if let Some(slug) = slug {
-                picker.detail = Some(slug.clone());
-                picker.search.set_value("");
-                picker.focus = form
-                    .deck_tag_catalog
-                    .iter()
-                    .position(|t| t.slug == slug)
-                    .unwrap_or(0);
-                if let Some(at) = form.tags.iter().position(|t| *t == slug) {
-                    form.tags.remove(at);
-                } else if form.tags.len() >= MAX_DECK_TAGS {
-                    cx.toast_for(
-                        ToastKind::Warning,
-                        "You may only choose up to 5 tags".to_owned(),
-                        toast::QUICK,
-                    );
-                } else {
-                    form.tags.push(slug);
-                }
-            }
-        }
-        other => {
-            let count = picker.tags(&form.deck_tag_catalog).len();
-            if !move_focus(&mut picker.focus, count, other) && picker.search.handle_key(other) {
-                picker.focus = 0;
-            }
-        }
+    if shared_key(form, which.into(), code, cx)? {
+        return Some(Overlay::Tags(which, grid));
     }
-    Some(Overlay::DeckTags(picker))
-}
-
-/// Keys in the oracle tag picker.
-pub(crate) fn handle_oracle(
-    form: &mut DeckForm,
-    mut picker: OraclePicker,
-    code: KeyCode,
-    cx: &mut Context<'_>,
-) -> Option<Overlay> {
     match code {
-        KeyCode::Esc => {
-            if !same_set(&form.oracle_tags, &picker.snapshot) {
-                form.oracle_tags = picker.snapshot;
-                cx.toast_for(
-                    ToastKind::Info,
-                    "Oracle tags unchanged".to_owned(),
-                    toast::QUICK,
-                );
-            }
-            return None;
-        }
-        KeyCode::F(2) => {
-            if !same_set(&form.oracle_tags, &picker.snapshot) {
-                return None;
-            }
-        }
-        KeyCode::F(6) => return Some(Overlay::Info(hint("oracle tags"))),
-        KeyCode::F(3) => oracle_tags::open(cx),
         KeyCode::F(8) => {
-            form.oracle_tags.clear();
-            picker.detail = None;
+            dispatch(form, Action::ClearTags(which), cx);
+            grid.detail = None;
         }
+        KeyCode::F(3) if which == TagPicker::OracleTags => oracle_tags::open(cx),
         KeyCode::Enter => {
-            let catalog = form.oracle_catalog.clone().unwrap_or_default();
-            let slug = picker
-                .slugs(&catalog, &form.oracle_tags)
-                .get(picker.focus)
-                .cloned();
-            if let Some(slug) = slug {
-                picker.detail = Some(slug.clone());
-                picker.search.set_value("");
-                if let Some(at) = form.oracle_tags.iter().position(|t| *t == slug) {
-                    form.oracle_tags.remove(at);
-                } else if form.oracle_tags.len() >= MAX_DECK_ORACLE_TAGS {
-                    cx.toast_for(
-                        ToastKind::Warning,
-                        "You may only choose up to 30 oracle tags".to_owned(),
-                        toast::QUICK,
-                    );
-                } else {
-                    form.oracle_tags.push(slug.clone());
-                }
-                picker.focus = picker
-                    .slugs(&catalog, &form.oracle_tags)
+            if let Some(slug) = grid.slugs(form, which).get(grid.focus).cloned() {
+                grid.detail = Some(slug.clone());
+                grid.search.set_value("");
+                dispatch(
+                    form,
+                    Action::ToggleTag {
+                        picker: which,
+                        slug: slug.clone(),
+                    },
+                    cx,
+                );
+                grid.focus = grid
+                    .slugs(form, which)
                     .iter()
                     .position(|s| *s == slug)
                     .unwrap_or(0);
             }
         }
         other => {
-            let catalog = form.oracle_catalog.as_deref().unwrap_or_default();
-            let count = picker.slugs(catalog, &form.oracle_tags).len();
-            if !move_focus(&mut picker.focus, count, other) && picker.search.handle_key(other) {
-                picker.focus = 0;
+            let count = grid.slugs(form, which).len();
+            if !move_focus(&mut grid.focus, count, other) && grid.search.handle_key(other) {
+                grid.focus = 0;
             }
         }
     }
-    Some(Overlay::OracleTags(picker))
+    Some(Overlay::Tags(which, grid))
 }
 
-/// Adds the tag the dictionary's Use left, as spec 3 section 2.7 words it: a tag already on the deck, one more, or one past the cap. The picker stays open.
-pub(crate) fn adopt_dictionary_tag(form: &mut DeckForm, slug: String, cx: &mut Context<'_>) {
-    let (kind, message) = if form.oracle_tags.contains(&slug) {
-        (ToastKind::Info, "Tag already added")
-    } else if form.oracle_tags.len() >= MAX_DECK_ORACLE_TAGS {
-        (
-            ToastKind::Warning,
-            "You may only choose up to 30 oracle tags",
-        )
-    } else {
-        form.oracle_tags.push(slug);
-        (ToastKind::Success, "Tag added to deck")
-    };
-    cx.toast_for(kind, message.to_owned(), toast::QUICK);
-}
-
-/// Whether two tag lists hold the same tags, ignoring order.
-fn same_set(a: &[String], b: &[String]) -> bool {
-    let mut a = a.to_vec();
-    let mut b = b.to_vec();
-    a.sort();
-    b.sort();
-    a == b
-}
-
-/// The lines the format picker's bar shows for `detail`.
+/// The format picker's bar for `detail`: the format's details once one is tapped, else the hint.
 pub(crate) fn format_bar(detail: Option<Format>) -> (String, Vec<String>) {
     match detail {
         Some(format) => (
@@ -395,8 +201,8 @@ pub(crate) fn format_bar(detail: Option<Format>) -> (String, Vec<String>) {
             form::format_details(format),
         ),
         None => (
-            "Hint".to_owned(),
-            vec!["Tap a format to see its details here.".to_owned()],
+            pickers::PICKER_BAR_HINT.to_owned(),
+            vec![Picker::Format.bar_empty().to_owned()],
         ),
     }
 }
@@ -404,24 +210,6 @@ pub(crate) fn format_bar(detail: Option<Format>) -> (String, Vec<String>) {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn the_format_search_ignores_case() {
-        let mut picker = FormatPicker::open(&DeckForm::new(super::super::Mode::Create));
-        assert_eq!(picker.formats().len(), Format::all().len());
-        picker.search.set_value("BRAWL");
-        let formats = picker.formats();
-        let names: Vec<&str> = formats.iter().map(Format::display_name).collect();
-        assert!(names.contains(&"Brawl"));
-        assert!(names.iter().all(|n| n.to_lowercase().contains("brawl")));
-    }
-
-    #[test]
-    fn tag_sets_compare_without_order() {
-        let tags = |v: &[&str]| v.iter().map(|&s| s.to_owned()).collect::<Vec<_>>();
-        assert!(same_set(&tags(&["a", "b"]), &tags(&["b", "a"])));
-        assert!(!same_set(&tags(&["a"]), &tags(&["a", "b"])));
-    }
 
     #[test]
     fn the_format_bar_starts_with_a_hint() {
