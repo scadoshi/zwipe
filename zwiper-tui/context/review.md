@@ -41,6 +41,7 @@ Forms and keys:
 Home:
 - Home's logo keeps a free row over it when there is room, as Register's does, so it never touches the screen's top edge. Where the logo does not show, the figures start on the first row.
 - Home stacks its panels at every size: the Color map on top, the Featured flavor right under it. Each is only as tall as what it holds, and the flavor panel grows to hold the featured card's image where the terminal draws one. A screen too short for both at full height keeps the small-terminal fallbacks: the map draws at half scale so the image keeps its room, then the image gives way to the text alone, and the map crops around its middle only when even half scale does not fit.
+- The Featured flavor quote centers on its words at every size, like the card line under it: each line is trimmed, so no stray space shifts it.
 
 Earlier rules that still hold: swipe labels are only add, remove, skip, undo and maybeboard; toasts and hint prose use the app's text verbatim; the deck view uses responsive panels; telemetry stays; the color map matches the app.
 

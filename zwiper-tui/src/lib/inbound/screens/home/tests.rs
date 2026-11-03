@@ -1088,3 +1088,50 @@ fn the_featured_flavor_panel_sits_right_under_the_color_map() {
         );
     }
 }
+
+#[test]
+fn the_featured_quote_centers_like_the_card_line_under_it() {
+    let mut harness = on_home();
+    land_play_style(&mut harness, summary(2));
+    let mut card = card("Elves");
+    card.scryfall_data.flavor_text = Some(
+        "Odd one.  The second sentence wraps  over a narrow panel. \n  -An attribution ".to_owned(),
+    );
+    land_flavor(&mut harness, card);
+    settle_entrance(&mut harness);
+    for (width, height) in [(120, 36), (81, 30), (80, 24), (41, 30), (40, 30)] {
+        let rows = crate::test_support::rows(&harness.app, width, height);
+        let text = rows.join("\n");
+        let top = rows
+            .iter()
+            .position(|r| r.contains("Featured flavor"))
+            .unwrap();
+        let mut centered = 0;
+        for row in rows[top + 1..].iter().take_while(|r| !r.contains('└')) {
+            let inside: Vec<char> = row
+                .chars()
+                .skip_while(|c| *c != '│')
+                .skip(1)
+                .take_while(|c| *c != '│')
+                .collect();
+            let words: String = inside.iter().collect();
+            if words.trim().is_empty() {
+                continue;
+            }
+            let left = inside.iter().take_while(|c| **c == ' ').count();
+            let shown = words.trim().chars().count();
+            // Ratatui centers a line at half the width less half the line.
+            assert_eq!(
+                left,
+                inside.len() / 2 - shown / 2,
+                "{:?} centers at {width}x{height}:\n{text}",
+                words.trim()
+            );
+            centered += 1;
+        }
+        assert!(
+            centered >= 3,
+            "the quote and the card line at {width}x{height}:\n{text}"
+        );
+    }
+}

@@ -548,7 +548,6 @@ fn flavor_image_held(shared: &Shared, view: &HomeView) -> bool {
 
 /// The quote and the name, price, Image and Buy row, as paragraphs that wrap.
 fn flavor_text(palette: &Palette, shown: &Quote) -> (Paragraph<'static>, Paragraph<'static>) {
-    let quote = format!("{} ", shown.text);
     let mut buy_row = vec![Span::raw(shown.name.clone()).bold()];
     if let Some(price) = &shown.price {
         buy_row.push(Span::styled(format!("  {price}"), palette.muted));
@@ -559,11 +558,13 @@ fn flavor_text(palette: &Palette, shown: &Quote) -> (Paragraph<'static>, Paragra
         buy_row.push(Span::raw("  "));
         buy_row.extend(button(palette, "b", BUY));
     }
-    let lines: Vec<Line<'static>> = quote
+    // Trimmed so every row centers on its words alone, as the card line does.
+    let lines: Vec<Line<'static>> = shown
+        .text
         .lines()
-        .map(|l| Line::from(l.to_owned()).italic())
+        .map(|l| Line::from(l.trim().to_owned()).italic())
         .collect();
-    let quote = Paragraph::new(lines).centered().wrap(Wrap { trim: false });
+    let quote = Paragraph::new(lines).centered().wrap(Wrap { trim: true });
     let buy = Paragraph::new(Line::from(buy_row))
         .centered()
         .wrap(Wrap { trim: false });
