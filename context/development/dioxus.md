@@ -157,6 +157,26 @@ fn Counter() -> Element {
 }
 ```
 
+## Runtime Borrows (local note, not upstream)
+
+Signals check borrows at runtime, and the compiler only sees conflicts on a single binding. `Signal` is `Copy`, so once a write goes through another copy of the handle (a helper function, a struct holding handles, a dispatch driver), a read guard still alive at that moment makes `.write()` and `.set()` panic with `AlreadyBorrowed`.
+
+The easy one to miss: a `.peek()` or `.read()` inside a call's arguments is a temporary, and temporaries live until the end of the statement, so the guard is still held while the call runs. Read into a local first, or use the call syntax, which clones out and drops its guard:
+
+```rust
+// Panics if `dispatch` sets `setting`: the peek guard outlives the argument.
+driver.dispatch(Action::Toggle { shown: *setting.peek() });
+
+// Fine: the guard drops at the semicolon.
+let shown = *setting.peek();
+driver.dispatch(Action::Toggle { shown });
+
+// Fine: `setting()` clones the value and drops its guard inside the call.
+driver.dispatch(Action::Toggle { shown: setting() });
+```
+
+Clippy does not catch this, and neither does the `await_holding_refcell_ref` lint, which only covers guards held across `.await`. Reported upstream as [DioxusLabs/dioxus#6058](https://github.com/DioxusLabs/dioxus/issues/6058).
+
 ## Context API
 
 The Context API allows you to share state down the component tree. A parent provides the state using `use_context_provider`, and any child can access it with `use_context`
