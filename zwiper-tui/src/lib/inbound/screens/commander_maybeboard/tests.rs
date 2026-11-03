@@ -64,7 +64,7 @@ fn sent(harness: &Harness, pick: impl Fn(&Request) -> Option<Ticket>) -> Ticket 
             screens::Request::CommanderMaybeboard(r) => pick(r),
             _ => None,
         })
-        .last()
+        .next_back()
         .unwrap_or_else(|| panic!("no such request: {:?}", harness.sent().collect::<Vec<_>>()))
 }
 

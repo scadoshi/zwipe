@@ -128,27 +128,25 @@ fn load_ticket(harness: &Harness) -> Ticket {
     harness
         .sent()
         .filter_map(|r| match r {
-            screens::Request::Activity(Request::Load { ticket, .. }) => Some(*ticket),
+            screens::Request::Activity(Request::Load { ticket }) => Some(*ticket),
             _ => None,
         })
-        .last()
+        .next_back()
         .unwrap()
 }
 
-/// The payload landing as `activity` on the visit on screen.
+/// The payload landing as `activity` on the newest load.
 fn land(harness: &mut Harness, activity: HttpActivity) {
     let update = Update::Loaded {
-        visit: view(harness).visit,
         ticket: load_ticket(harness),
         activity: Box::new(activity),
     };
     harness.apply(update);
 }
 
-/// The fetch failing with `message` on the visit on screen.
+/// The newest load failing with `message`.
 fn fail(harness: &mut Harness, message: &str) {
     let update = Update::Failed {
-        visit: view(harness).visit,
         ticket: load_ticket(harness),
         message: message.to_owned(),
     };
@@ -248,7 +246,6 @@ async fn a_rejected_session_ends_it() {
     let file = SessionFile::at(std::env::temp_dir().join("zwiper-tui-tests-no-session.json"));
     let account = Arc::new(Account::new(client, file));
     let request = Request::Load {
-        visit: Visit::next(),
         ticket: Generation::default().next_ticket(),
     };
     let update = perform(&account, request).await;
@@ -683,15 +680,14 @@ fn section_about_markers_are_buttons_and_the_focused_sections_lights() {
 #[test]
 fn a_reply_to_an_earlier_visit_changes_nothing() {
     let mut harness = on_activity();
-    let earlier = view(&harness).visit;
-    let ticket = load_ticket(&harness);
+    let earlier = load_ticket(&harness);
     harness.press(KeyCode::Esc);
     harness.press(KeyCode::Char('v'));
     harness.app.shared.hint = None;
-    assert_ne!(view(&harness).visit, earlier);
+    assert!(matches!(harness.screen(), Screen::Activity(_)));
+    assert_ne!(load_ticket(&harness), earlier, "the new visit loads again");
     harness.apply(Update::Loaded {
-        visit: earlier,
-        ticket,
+        ticket: earlier,
         activity: Box::new(sample()),
     });
     assert_eq!(view(&harness).model.status(), Status::Loading);

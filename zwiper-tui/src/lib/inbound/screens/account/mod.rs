@@ -1,6 +1,6 @@
 //! The Account screen: the user's details and verification, the About rows, the sheets that change the username, email and password, the More sheet with Delete account, and the Log out confirm.
 //!
-//! What the screen knows and decides is zwipe-ui's [`State`]; this view adds the focus, the text boxes and which sheet or dialog is up. The model counts its two countdowns in whole seconds through [`Job::Wait`], so nothing here reads the clock.
+//! What the screen knows and decides is zwipe-ui's [`State`]; this view adds the focus, the text boxes and which sheet or dialog is up. The model counts its two countdowns in whole seconds through [`Request::Wait`], so nothing here reads the clock.
 
 pub(crate) mod draw;
 pub(crate) mod keys;
@@ -18,7 +18,6 @@ use zwipe_ui::screens::account::{
     Action, CANCEL, Destination, Dialog, Effect, Field, Password, Row, Sheet, State, TICK,
 };
 
-use super::visit::Visit;
 use super::{Screen, changelog, login, privacy};
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
@@ -90,7 +89,6 @@ impl Stop {
 #[derive(Debug)]
 pub(crate) struct AccountView {
     pub(crate) model: State,
-    pub(crate) visit: Visit,
     /// The focused button, an index into [`AccountView::stops`].
     pub(crate) focus: usize,
     pub(crate) overlay: Option<Overlay>,
@@ -101,7 +99,6 @@ impl AccountView {
     pub(crate) fn new() -> Self {
         Self {
             model: State::new(),
-            visit: Visit::next(),
             focus: 0,
             overlay: None,
         }
@@ -140,22 +137,6 @@ impl AccountView {
                 input.set_error(self.model.error(form.sheet, *field));
             }
         }
-    }
-
-    /// Queues `change` under this visit.
-    fn change(&self, cx: &mut Context<'_>, ticket: Ticket, change: Change) {
-        self.request(cx, Job::Change { ticket, change });
-    }
-
-    /// Queues `job` under this visit.
-    fn request(&self, cx: &mut Context<'_>, job: Job) {
-        cx.request(
-            Request {
-                visit: self.visit,
-                job,
-            }
-            .into(),
-        );
     }
 }
 
@@ -284,15 +265,22 @@ pub(crate) fn dispatch(view: &mut AccountView, action: Action, cx: &mut Context<
     view.sync();
 }
 
+/// Queues `change` to the account under `ticket`.
+fn request_change(cx: &mut Context<'_>, ticket: Ticket, change: Change) {
+    cx.request(Request::Change { ticket, change }.into());
+}
+
 fn perform_effect(view: &mut AccountView, effect: Effect, cx: &mut Context<'_>) {
     match effect {
         Effect::OfferHint(offer) => {
             hint::once(cx, offer.key());
         }
-        Effect::FetchUser(ticket) => view.request(cx, Job::FetchUser { ticket }),
-        Effect::CheckVerification(ticket) => view.request(cx, Job::CheckVerification { ticket }),
-        Effect::ResendVerification(ticket) => view.request(cx, Job::Resend { ticket }),
-        Effect::Wait(ticket) => view.request(cx, Job::Wait { ticket }),
+        Effect::FetchUser(ticket) => cx.request(Request::FetchUser { ticket }.into()),
+        Effect::CheckVerification(ticket) => {
+            cx.request(Request::CheckVerification { ticket }.into());
+        }
+        Effect::ResendVerification(ticket) => cx.request(Request::Resend { ticket }.into()),
+        Effect::Wait(ticket) => cx.request(Request::Wait { ticket }.into()),
         Effect::OpenSheet(sheet) => view.overlay = Some(Overlay::Form(Form::new(sheet))),
         Effect::CloseSheet(sheet) => {
             if let Some(Overlay::Form(form) | Overlay::ConfirmPassword { form, .. }) = &view.overlay
@@ -305,19 +293,19 @@ fn perform_effect(view: &mut AccountView, effect: Effect, cx: &mut Context<'_>) 
             ticket,
             username,
             password,
-        } => view.change(cx, ticket, Change::Username { username, password }),
+        } => request_change(cx, ticket, Change::Username { username, password }),
         Effect::ChangeEmail {
             ticket,
             email,
             password,
-        } => view.change(cx, ticket, Change::Email { email, password }),
+        } => request_change(cx, ticket, Change::Email { email, password }),
         Effect::ChangePassword {
             ticket,
             current,
             new,
-        } => view.change(cx, ticket, Change::Password { current, new }),
+        } => request_change(cx, ticket, Change::Password { current, new }),
         Effect::DeleteAccount { ticket, password } => {
-            view.change(cx, ticket, Change::Delete { password });
+            request_change(cx, ticket, Change::Delete { password });
         }
         Effect::OpenDialog(Dialog::ConfirmPassword) => {
             view.overlay = match view.overlay.take() {
@@ -343,16 +331,9 @@ fn perform_effect(view: &mut AccountView, effect: Effect, cx: &mut Context<'_>) 
     }
 }
 
-/// The Account screen's work, stamped with the visit that asked for it.
+/// The Account screen's work, each carrying its ticket back to the model.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct Request {
-    pub(crate) visit: Visit,
-    pub(crate) job: Job,
-}
-
-/// One piece of Account's work, each carrying its ticket back to the model.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) enum Job {
+pub(crate) enum Request {
     /// Fetches the user with the session as it is, on every open. A failure says nothing.
     FetchUser {
         ticket: Ticket,
@@ -397,26 +378,19 @@ pub(crate) enum Change {
 impl Request {
     /// The action an error from this request is reported under, fixed so a renamed variant keeps its reports.
     pub(crate) fn action(&self) -> &'static str {
-        match self.job {
-            Job::FetchUser { .. } => "load_user",
-            Job::CheckVerification { .. } => "check_verification",
-            Job::Resend { .. } => "resend",
-            Job::Wait { .. } => "wait",
-            Job::Change { .. } => "change",
+        match self {
+            Request::FetchUser { .. } => "load_user",
+            Request::CheckVerification { .. } => "check_verification",
+            Request::Resend { .. } => "resend",
+            Request::Wait { .. } => "wait",
+            Request::Change { .. } => "change",
         }
     }
 }
 
-/// The Account screen's results, stamped with the visit that asked.
-#[derive(Debug)]
-pub(crate) struct Update {
-    pub(crate) visit: Visit,
-    pub(crate) reply: Reply,
-}
-
 /// One reply, carrying its request's ticket back to the model.
 #[derive(Debug)]
-pub(crate) enum Reply {
+pub(crate) enum Update {
     /// A fresh copy of the user, from the open's fetch or the verification check.
     UserLoaded {
         ticket: Ticket,
@@ -493,13 +467,12 @@ pub(crate) fn open(cx: &mut Context<'_>) {
 }
 
 pub(crate) async fn perform(account: &Account, request: Request) -> Option<screens::Update> {
-    let Request { visit, job } = request;
-    let reply = match job {
-        Job::Wait { ticket } => {
+    let update = match request {
+        Request::Wait { ticket } => {
             tokio::time::sleep(TICK).await;
-            Reply::Tick { ticket }
+            Update::Tick { ticket }
         }
-        Job::FetchUser { ticket } => {
+        Request::FetchUser { ticket } => {
             // The app fetches with the session as it stands and says nothing when that fails.
             let fetched = match account.session().await {
                 Some(session) => account.client.fetch_user(&session).await.ok(),
@@ -508,77 +481,62 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
             match fetched {
                 Some(user) => {
                     account.set_user(user.clone()).await;
-                    Reply::UserLoaded {
+                    Update::UserLoaded {
                         ticket,
                         user: Box::new(user),
                     }
                 }
-                None => Reply::Quiet { ticket },
+                None => Update::Quiet { ticket },
             }
         }
-        Job::CheckVerification { ticket } => {
+        Request::CheckVerification { ticket } => {
             match async { account.client.fetch_user(&account.fresh().await?).await }.await {
                 Ok(user) => {
                     account.set_user(user.clone()).await;
-                    Reply::UserLoaded {
+                    Update::UserLoaded {
                         ticket,
                         user: Box::new(user),
                     }
                 }
-                Err(e) => return Some(failure(visit, &e, |error| Reply::Failed { ticket, error })),
+                Err(e) => return Some(failure(&e, |error| Update::Failed { ticket, error })),
             }
         }
-        Job::Resend { ticket } => {
-            let failed = |error| Reply::ResendFailed { ticket, error };
+        Request::Resend { ticket } => {
+            let failed = |error| Update::ResendFailed { ticket, error };
             let session = match account.fresh().await {
                 Ok(session) => session,
-                Err(e) => return Some(failure(visit, &e, failed)),
+                Err(e) => return Some(failure(&e, failed)),
             };
             match account.client.resend_verification(&session).await {
-                Ok(()) => Reply::Resent { ticket },
-                Err(ClientError::TooManyRequests(_)) => Reply::ResendLimited { ticket },
-                Err(e) => return Some(failure(visit, &e, failed)),
+                Ok(()) => Update::Resent { ticket },
+                Err(ClientError::TooManyRequests(_)) => Update::ResendLimited { ticket },
+                Err(e) => return Some(failure(&e, failed)),
             }
         }
-        Job::Change { ticket, change } => {
-            return Some(change_account(account, visit, ticket, change).await);
+        Request::Change { ticket, change } => {
+            return Some(change_account(account, ticket, change).await);
         }
     };
-    Some(Update { visit, reply }.into())
+    Some(update.into())
 }
 
 /// The update for a failed request: the session ending when the server rejects it, else `reply` with the message to show.
-fn failure(
-    visit: Visit,
-    error: &ClientError,
-    reply: impl FnOnce(String) -> Reply,
-) -> screens::Update {
-    screens::failure(error, |error| {
-        Update {
-            visit,
-            reply: reply(error),
-        }
-        .into()
-    })
+fn failure(error: &ClientError, update: impl FnOnce(String) -> Update) -> screens::Update {
+    screens::failure(error, |error| update(error).into())
 }
 
 /// Sends an account change. A wrong password is the server's to judge, so its refusal is a toast rather than a sign-out.
-async fn change_account(
-    account: &Account,
-    visit: Visit,
-    ticket: Ticket,
-    change: Change,
-) -> screens::Update {
+async fn change_account(account: &Account, ticket: Ticket, change: Change) -> screens::Update {
     let client = &account.client;
     let session = match account.fresh().await {
         Ok(session) => session,
-        Err(e) => return failure(visit, &e, |error| Reply::Failed { ticket, error }),
+        Err(e) => return failure(&e, |error| Update::Failed { ticket, error }),
     };
-    let failed = |e: &ClientError| Reply::Failed {
+    let failed = |e: &ClientError| Update::Failed {
         ticket,
         error: screens::shown(e),
     };
-    let reply = match change {
+    let update = match change {
         Change::Username { username, password } => match client
             .change_username(
                 HttpChangeUsername::new(&username, password.read()),
@@ -588,7 +546,7 @@ async fn change_account(
         {
             Ok(user) => {
                 account.set_user(user.clone()).await;
-                Reply::UsernameChanged {
+                Update::UsernameChanged {
                     ticket,
                     user: Box::new(user),
                 }
@@ -601,7 +559,7 @@ async fn change_account(
         {
             Ok(user) => {
                 account.set_user(user.clone()).await;
-                Reply::EmailChanged {
+                Update::EmailChanged {
                     ticket,
                     user: Box::new(user),
                 }
@@ -615,7 +573,7 @@ async fn change_account(
             )
             .await
         {
-            Ok(()) => Reply::PasswordChanged { ticket },
+            Ok(()) => Update::PasswordChanged { ticket },
             Err(e) => failed(&e),
         },
         Change::Delete { password } => {
@@ -625,52 +583,51 @@ async fn change_account(
             match client.delete_user(request, &session).await {
                 Ok(()) => {
                     account.sign_out().await;
-                    Reply::Deleted { ticket }
+                    Update::Deleted { ticket }
                 }
                 Err(e) => failed(&e),
             }
         }
     };
-    Update { visit, reply }.into()
+    update.into()
 }
 
-/// Hands a reply to the model when its visit is still up. Toasts and the user's fresh copy land even when it has closed.
+/// Hands a reply to the open screen's model, which drops one whose ticket it did not issue. Toasts and the user's fresh copy land even when it has closed.
 pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
-    let Update { visit, reply } = update;
-    let deleted = matches!(reply, Reply::Deleted { .. });
-    let action = match reply {
-        Reply::UserLoaded { ticket, user } => {
+    let deleted = matches!(update, Update::Deleted { .. });
+    let action = match update {
+        Update::UserLoaded { ticket, user } => {
             take_user(cx, &user);
             Action::UserLoaded { ticket, user }
         }
-        Reply::Quiet { ticket } => Action::Failed { ticket },
-        Reply::Failed { ticket, error } => {
+        Update::Quiet { ticket } => Action::Failed { ticket },
+        Update::Failed { ticket, error } => {
             cx.toast(ToastKind::Error, error);
             Action::Failed { ticket }
         }
-        Reply::ResendFailed { ticket, error } => {
+        Update::ResendFailed { ticket, error } => {
             cx.toast_for(ToastKind::Error, error, toast::LONG);
             Action::Failed { ticket }
         }
-        Reply::Resent { ticket } => Action::Resent { ticket },
-        Reply::ResendLimited { ticket } => Action::ResendLimited { ticket },
-        Reply::Tick { ticket } => Action::Tick { ticket },
-        Reply::UsernameChanged { ticket, user } => {
+        Update::Resent { ticket } => Action::Resent { ticket },
+        Update::ResendLimited { ticket } => Action::ResendLimited { ticket },
+        Update::Tick { ticket } => Action::Tick { ticket },
+        Update::UsernameChanged { ticket, user } => {
             take_user(cx, &user);
             Action::UsernameChanged {
                 ticket,
                 username: user.username,
             }
         }
-        Reply::EmailChanged { ticket, user } => {
+        Update::EmailChanged { ticket, user } => {
             take_user(cx, &user);
             Action::EmailChanged { ticket, user }
         }
-        Reply::PasswordChanged { ticket } => Action::PasswordChanged { ticket },
-        Reply::Deleted { ticket } => Action::Deleted { ticket },
+        Update::PasswordChanged { ticket } => Action::PasswordChanged { ticket },
+        Update::Deleted { ticket } => Action::Deleted { ticket },
     };
     match nav.find_mut(pick) {
-        Some(view) if view.visit == visit => dispatch(view, action, cx),
+        Some(view) => dispatch(view, action, cx),
         // The session is already gone; with no model to log out, go to sign-in here.
         _ if deleted => login::signed_out(cx, None),
         _ => {}

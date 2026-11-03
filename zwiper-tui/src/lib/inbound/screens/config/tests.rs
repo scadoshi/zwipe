@@ -17,7 +17,7 @@ fn jobs(harness: &Harness) -> Vec<Job> {
         .pending()
         .iter()
         .filter_map(|request| match request {
-            screens::Request::Config(Request::Visit { job, .. }) => Some(job.clone()),
+            screens::Request::Config(Request::Job(job)) => Some(job.clone()),
             _ => None,
         })
         .collect()
@@ -34,14 +34,6 @@ fn saves(harness: &Harness) -> Vec<SaveTicket> {
         .collect()
 }
 
-/// `reply` for the visit on screen.
-fn reply(harness: &Harness, reply: Reply) -> Update {
-    Update::Visit {
-        visit: view(harness).visit,
-        reply,
-    }
-}
-
 /// Home, then Config over it with `preferences` loaded and two franchises, the hints already seen, nothing left queued.
 fn on_config_with(preferences: UserPreferences) -> Harness {
     let mut harness = Harness::new();
@@ -55,21 +47,15 @@ fn on_config_with(preferences: UserPreferences) -> Harness {
     let Some(Job::LoadPreferences { ticket }) = jobs(&harness).first().cloned() else {
         panic!("no preferences fetch");
     };
-    let loaded = reply(
-        &harness,
-        Reply::Preferences {
-            ticket,
-            preferences: Box::new(preferences),
-        },
-    );
+    let loaded = Update::Reply(Reply::Preferences {
+        ticket,
+        preferences: Box::new(preferences),
+    });
     harness.apply(loaded);
-    let franchises = reply(
-        &harness,
-        Reply::Franchises(vec![
-            franchise("doctor_who", "Doctor Who"),
-            franchise("warhammer_40k", "Warhammer 40,000"),
-        ]),
-    );
+    let franchises = Update::Reply(Reply::Franchises(vec![
+        franchise("doctor_who", "Doctor Who"),
+        franchise("warhammer_40k", "Warhammer 40,000"),
+    ]));
     harness.apply(franchises);
     harness.clear();
     harness
@@ -120,8 +106,8 @@ fn opening_fetches_preferences_and_franchises_and_shows_the_config_hint() {
         harness.pending(),
         [
             screens::Request::MarkHintShown(hint),
-            screens::Request::Config(Request::Visit { job: Job::LoadPreferences { .. }, .. }),
-            screens::Request::Config(Request::Visit { job: Job::LoadFranchises, .. }),
+            screens::Request::Config(Request::Job(Job::LoadPreferences { .. })),
+            screens::Request::Config(Request::Job(Job::LoadFranchises)),
         ] if hint == HINT_CONFIG
     ));
     assert!(
@@ -135,7 +121,7 @@ fn opening_fetches_preferences_and_franchises_and_shows_the_config_hint() {
     let Some(Job::LoadPreferences { ticket }) = jobs(&harness).first().cloned() else {
         panic!("no preferences fetch");
     };
-    let failed = reply(&harness, Reply::PreferencesUnavailable { ticket });
+    let failed = Update::Reply(Reply::PreferencesUnavailable { ticket });
     harness.apply(failed);
     assert_eq!(
         view(&harness).model.status(),
@@ -147,19 +133,26 @@ fn opening_fetches_preferences_and_franchises_and_shows_the_config_hint() {
 #[test]
 fn a_late_preferences_reply_changes_nothing() {
     let mut harness = on_config();
-    let earlier = view(&harness).visit;
+    let earlier = harness
+        .sent()
+        .rev()
+        .find_map(|r| match r {
+            screens::Request::Config(Request::Job(Job::LoadPreferences { ticket })) => {
+                Some(*ticket)
+            }
+            _ => None,
+        })
+        .unwrap();
     harness.press(KeyCode::Esc);
     harness.press(KeyCode::Char('c'));
     let Some(Job::LoadPreferences { ticket }) = jobs(&harness).first().cloned() else {
         panic!("no preferences fetch");
     };
-    harness.apply(Update::Visit {
-        visit: earlier,
-        reply: Reply::Preferences {
-            ticket,
-            preferences: Box::default(),
-        },
-    });
+    assert_ne!(ticket, earlier, "the new visit loads again");
+    harness.apply(Update::Reply(Reply::Preferences {
+        ticket: earlier,
+        preferences: Box::default(),
+    }));
     assert!(
         !view(&harness).enabled(Stop::UniversesBeyond),
         "an earlier visit's reply landed"
@@ -198,13 +191,10 @@ fn a_toggle_shows_at_once_and_toasts_the_servers_answer_once() {
         pip_style: PipColor::Classic,
         ..UserPreferences::default()
     };
-    let landed = reply(
-        &harness,
-        Reply::Saved {
-            ticket,
-            preferences: Box::new(saved()),
-        },
-    );
+    let landed = Update::Reply(Reply::Saved {
+        ticket,
+        preferences: Box::new(saved()),
+    });
     harness.apply(landed);
     assert_eq!(
         last_toast(&harness).as_deref(),
@@ -215,13 +205,10 @@ fn a_toggle_shows_at_once_and_toasts_the_servers_answer_once() {
         Some(PipColor::Classic),
         "kept for the next launch"
     );
-    let repeated = reply(
-        &harness,
-        Reply::Saved {
-            ticket,
-            preferences: Box::new(saved()),
-        },
-    );
+    let repeated = Update::Reply(Reply::Saved {
+        ticket,
+        preferences: Box::new(saved()),
+    });
     harness.apply(repeated);
     assert_eq!(harness.app.shared.toasts.items().len(), 1);
 }
@@ -235,22 +222,19 @@ fn a_failed_toggle_puts_back_the_value_from_before_that_tap_and_stale_answers_ar
     let tickets = saves(&harness);
     assert_eq!(tickets.len(), 2);
     assert!(!view(&harness).model.hides_universes_beyond(), "two taps");
-    let failed = |harness: &Harness, ticket| {
-        reply(
-            harness,
-            Reply::SaveFailed {
-                ticket,
-                message: "offline".to_owned(),
-            },
-        )
+    let failed = |ticket| {
+        Update::Reply(Reply::SaveFailed {
+            ticket,
+            message: "offline".to_owned(),
+        })
     };
-    let older = failed(&harness, tickets[0]);
+    let older = failed(tickets[0]);
     harness.apply(older);
     assert!(
         !view(&harness).model.hides_universes_beyond(),
         "the older failure is ignored"
     );
-    let newer = failed(&harness, tickets[1]);
+    let newer = failed(tickets[1]);
     harness.apply(newer);
     assert!(
         view(&harness).model.hides_universes_beyond(),
@@ -269,13 +253,10 @@ fn a_failed_mode_tap_draws_the_mode_from_before_it() {
     let [ticket] = saves(&harness)[..] else {
         panic!("no save");
     };
-    let failed = reply(
-        &harness,
-        Reply::SaveFailed {
-            ticket,
-            message: "offline".to_owned(),
-        },
-    );
+    let failed = Update::Reply(Reply::SaveFailed {
+        ticket,
+        message: "offline".to_owned(),
+    });
     harness.apply(failed);
     assert!(view(&harness).shown.dark_mode);
     assert_eq!(harness.app.shared.palette, before);

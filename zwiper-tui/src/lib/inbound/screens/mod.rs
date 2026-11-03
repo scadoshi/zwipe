@@ -28,7 +28,6 @@ pub(crate) mod register;
 pub(crate) mod remove_cards;
 pub(crate) mod swipe;
 pub(crate) mod update_required;
-pub(crate) mod visit;
 
 use std::time::Instant;
 

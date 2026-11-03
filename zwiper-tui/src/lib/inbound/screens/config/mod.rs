@@ -18,7 +18,6 @@ use zwipe_ui::screens::config::{
 };
 
 use super::Screen;
-use super::visit::Visit;
 use crate::domain::theme::{self, Palette, PickerRow};
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
@@ -114,7 +113,6 @@ pub(crate) enum Sheet {
 #[derive(Debug)]
 pub(crate) struct ConfigView {
     pub(crate) model: State,
-    pub(crate) visit: Visit,
     /// The theme, mode and pips the app draws in now: the preferences as last applied, with any preview or optimistic toggle over them. Universes Beyond is the model's, so its fields here are never read.
     pub(crate) shown: UserPreferences,
     pub(crate) focus: usize,
@@ -128,7 +126,6 @@ impl ConfigView {
     pub(crate) fn new(shown: UserPreferences) -> Self {
         Self {
             model: State::new(),
-            visit: Visit::next(),
             shown,
             focus: 0,
             sheet: None,
@@ -167,17 +164,6 @@ impl ConfigView {
             dark_mode: self.shown.dark_mode,
         }
     }
-
-    /// Queues `job` under this visit.
-    fn request(&self, cx: &mut Context<'_>, job: Job) {
-        cx.request(
-            Request::Visit {
-                visit: self.visit,
-                job,
-            }
-            .into(),
-        );
-    }
 }
 
 /// Applies `action` to the model and performs the effects it returns, in order.
@@ -192,8 +178,12 @@ fn perform_effect(view: &mut ConfigView, effect: Effect, cx: &mut Context<'_>) {
         Effect::OfferHint(offer) => {
             hint::once(cx, offer.key());
         }
-        Effect::FetchPreferences(ticket) => view.request(cx, Job::LoadPreferences { ticket }),
-        Effect::Save { ticket, change } => view.request(cx, Job::Save { ticket, change }),
+        Effect::FetchPreferences(ticket) => {
+            cx.request(Request::Job(Job::LoadPreferences { ticket }).into());
+        }
+        Effect::Save { ticket, change } => {
+            cx.request(Request::Job(Job::Save { ticket, change }).into());
+        }
         Effect::ShowTheme(theme) => {
             set_theme(view, theme);
             show(cx, &view.shown);
@@ -256,8 +246,8 @@ fn keep(cx: &mut Context<'_>, shown: &UserPreferences) {
 pub(crate) enum Request {
     /// Fetches the preferences at sign-in, to draw in the account's theme.
     AdoptPreferences,
-    /// The screen's own work, stamped with the visit that asked for it.
-    Visit { visit: Visit, job: Job },
+    /// The screen's own work.
+    Job(Job),
 }
 
 /// One piece of Config's work.
@@ -278,19 +268,9 @@ impl Request {
     /// The action an error from this request is reported under, fixed so a renamed variant keeps its reports.
     pub(crate) fn action(&self) -> &'static str {
         match self {
-            Self::AdoptPreferences
-            | Self::Visit {
-                job: Job::LoadPreferences { .. },
-                ..
-            } => "load_preferences",
-            Self::Visit {
-                job: Job::Save { .. },
-                ..
-            } => "save",
-            Self::Visit {
-                job: Job::LoadFranchises,
-                ..
-            } => "load_franchises",
+            Self::AdoptPreferences | Self::Job(Job::LoadPreferences { .. }) => "load_preferences",
+            Self::Job(Job::Save { .. }) => "save",
+            Self::Job(Job::LoadFranchises) => "load_franchises",
         }
     }
 }
@@ -300,8 +280,8 @@ impl Request {
 pub(crate) enum Update {
     /// The account's preferences fetched at sign-in.
     Adopt(Box<UserPreferences>),
-    /// A reply to the screen, stamped with the visit that asked.
-    Visit { visit: Visit, reply: Reply },
+    /// A reply to the screen's own work.
+    Reply(Reply),
 }
 
 /// One reply, carrying its request's ticket back to the model.
@@ -349,7 +329,7 @@ pub(crate) fn open(cx: &mut Context<'_>) {
     let shown = cx.shared.preferences.clone().unwrap_or_default();
     let mut view = ConfigView::new(shown);
     dispatch(&mut view, Action::Load, cx);
-    view.request(cx, Job::LoadFranchises);
+    cx.request(Request::Job(Job::LoadFranchises).into());
     cx.push(Screen::Config(Box::new(view)));
 }
 
@@ -365,7 +345,7 @@ pub(crate) fn topic(stop: Stop) -> Option<HintTopic> {
 
 pub(crate) async fn perform(account: &Account, request: Request) -> Option<screens::Update> {
     let client = &account.client;
-    let (visit, job) = match request {
+    let job = match request {
         Request::AdoptPreferences => {
             let preferences = async { client.fetch_preferences(&account.fresh().await?).await };
             return match preferences.await {
@@ -381,7 +361,7 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
                 }
             };
         }
-        Request::Visit { visit, job } => (visit, job),
+        Request::Job(job) => job,
     };
     let reply = match job {
         Job::LoadPreferences { ticket } => {
@@ -395,11 +375,7 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
                 }
                 Err(e) => {
                     return Some(screens::failure(&e, |_| {
-                        Update::Visit {
-                            visit,
-                            reply: Reply::PreferencesUnavailable { ticket },
-                        }
-                        .into()
+                        Update::Reply(Reply::PreferencesUnavailable { ticket }).into()
                     }));
                 }
             }
@@ -422,30 +398,26 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
                 }
                 Err(e) => {
                     return Some(screens::failure(&e, |message| {
-                        Update::Visit {
-                            visit,
-                            reply: Reply::SaveFailed { ticket, message },
-                        }
-                        .into()
+                        Update::Reply(Reply::SaveFailed { ticket, message }).into()
                     }));
                 }
             }
         }
         Job::LoadFranchises => Reply::Franchises(client.fetch_ub_franchises().await.ok()?),
     };
-    Some(Update::Visit { visit, reply }.into())
+    Some(Update::Reply(reply).into())
 }
 
-/// Hands a reply to the model when its visit is still up. With Config closed, fetched or saved preferences become the app's, and a failure's toast still shows.
+/// Hands a reply to the open screen's model, which drops one whose ticket it did not issue. With Config closed, fetched or saved preferences become the app's, and a failure's toast still shows.
 pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
-    let (visit, reply) = match update {
+    let reply = match update {
         Update::Adopt(preferences) => {
             cx.use_preferences(&preferences);
             return;
         }
-        Update::Visit { visit, reply } => (visit, reply),
+        Update::Reply(reply) => reply,
     };
-    let view = nav.find_mut(pick).filter(|view| view.visit == visit);
+    let view = nav.find_mut(pick);
     let action = match reply {
         Reply::Preferences {
             ticket,

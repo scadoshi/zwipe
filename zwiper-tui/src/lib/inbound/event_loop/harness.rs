@@ -98,7 +98,7 @@ impl Harness {
     }
 
     /// Every request queued since the harness began, cleared or not, oldest first.
-    pub(crate) fn sent(&self) -> impl Iterator<Item = &Request> {
+    pub(crate) fn sent(&self) -> impl DoubleEndedIterator<Item = &Request> {
         self.cleared.iter().chain(&self.event_loop.pending)
     }
 
