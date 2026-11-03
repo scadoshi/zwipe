@@ -1,112 +1,414 @@
 //! The view deck screen: a deck's profile, sections and charts.
+//!
+//! What the screen knows and does is `zwipe_ui::screens::deck_view`; this
+//! file draws its state and performs its effects.
 
 use components::{
     ActionBar, AlertDialog, Button, ButtonVariant, DialogAction, HintBullet, HintBullets,
-    HintDialog, HintKey, TOAST_NORMAL, TOAST_QUICK,
+    HintDialog, HintKey, TOAST_NORMAL, ToastOptions, Toasts, use_toast,
 };
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
+use dioxus::router::Navigator;
 use uuid::Uuid;
 use zwipe_client::{ClientError, ZwipeClient};
-use zwipe_core::domain::card::Card;
-use zwipe_core::domain::deck::DeckEntry;
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
-use zwipe_core::domain::deck::deck_profile::DeckProfile;
-use zwipe_core::domain::deck::deck_warning::DeckWarning;
 use zwipe_core::domain::user::models::hints::HINT_FIRST_DECK;
+use zwipe_core::http::contracts::deck::HttpCloneDeck;
 use zwipe_core::http::contracts::deck_card::HttpPatchDeckCard;
 use zwipe_ui::deck::command_zone::Slot;
+use zwipe_ui::generation::Ticket;
+use zwipe_ui::screens::deck_view::{
+    self, Action, Destination, Dialog, Effect, MoreItem, Section, State,
+};
 
 use super::components::clone_deck_dialog::CloneDeckDialog;
 use super::components::collapsible_section::CollapsibleSection;
-use super::components::deck_budget_section::{self, DeckBudgetSection};
+use super::components::deck_budget_section::DeckBudgetSection;
 use super::components::deck_charts::{
     ColorChart, DeckCharts, DrawOdds, ManaBalanceRow, ManaCurve, ManaFulfillment,
 };
 use super::components::deck_profile::DeckProfileSection;
-use super::components::deck_tags_section::{self, DeckTagsSection};
+use super::components::deck_tags_section::DeckTagsSection;
 use super::components::deck_warnings::DeckWarnings;
-use super::components::more_buttons::MoreButtons;
+use super::components::more_buttons::{DeckDialogs, MoreButtons, use_deck_dialogs};
 use super::components::skeletons::{DeckProfileSkeleton, DeckStatsSkeleton};
-use crate::inbound::components::auth::authed::use_authed;
+use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::catalog_cache::CatalogCache;
-use crate::inbound::components::hint_dialog::use_one_time_hint;
 use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::info_button::InfoButton;
 use crate::inbound::components::screen_header::ScreenHeader;
+use crate::inbound::components::telemetry::flush_loop;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen, component, screen};
+use crate::inbound::components::{guide_link, hint_dialog, ui_toast};
 use crate::inbound::router::Router;
 use crate::inbound::screens::oracle_tag_examples::OracleTagExamples;
-use crate::outbound::buy_links;
 
-type DeckResult = Result<(Vec<DeckEntry>, Vec<DeckWarning>, Vec<Card>), ClientError>;
+/// The deck view's model with the handles that perform its effects. Copy,
+/// so every handler and task holds its own.
+#[derive(Clone, Copy)]
+pub(crate) struct Driver {
+    model: Signal<State>,
+    navigator: Navigator,
+    toast: Toasts,
+    authed: Authed,
+    usage_buffer: Signal<UsageBuffer>,
+    session: Signal<Option<Session>>,
+    client: Signal<ZwipeClient>,
+    hint_open: Signal<bool>,
+    dialogs: DeckDialogs,
+}
 
-#[component]
-pub fn ViewDeck(deck_id: Uuid) -> Element {
-    // config
-    let navigator = use_navigator();
-    let client: Signal<ZwipeClient> = use_context();
+// By hand: the handles have no `PartialEq`. One model is one driver.
+impl PartialEq for Driver {
+    fn eq(&self, other: &Self) -> bool {
+        self.model == other.model
+    }
+}
 
-    // original deck information
-    let mut commander: Signal<Option<Card>> = use_signal(|| None);
-    let toast = use_toast();
-    let usage_buffer: Signal<UsageBuffer> = use_context();
-    let authed = use_authed(Screen::Deck(DeckScreen::View));
+impl Driver {
+    /// Applies `action` to the model and performs what it returns.
+    pub(crate) fn dispatch(self, action: Action) {
+        let mut model = self.model;
+        let effects = model.write().update(action);
+        for effect in effects {
+            self.perform(effect);
+        }
+    }
 
-    // `use_reactive!` ties these resources to `deck_id` so they re-fetch when the
-    // route param changes without a remount, e.g. cloning navigates ViewDeck →
-    // ViewDeck, and a plain `move ||` closure would keep serving the old deck.
-    let mut deck_profile_resource: Resource<Result<DeckProfile, ClientError>> =
-        use_resource(use_reactive!(|deck_id| async move {
-            // try_run keeps the Result the downstream Ok/Err matches expect;
-            // reporting and the error toast live in the facade.
-            authed
+    /// Clones the deck under `name` and waits for the reply, for the Clone
+    /// dialog's busy Save. Returns whether the clone went through.
+    pub(crate) async fn clone_deck(self, name: String) -> bool {
+        let mut model = self.model;
+        let effects = model.write().update(Action::Clone { name });
+        let mut cloned = false;
+        for effect in effects {
+            if let Effect::CloneDeck {
+                ticket,
+                deck_id,
+                name,
+            } = effect
+            {
+                cloned = self.run_clone(ticket, deck_id, name).await;
+            } else {
+                self.perform(effect);
+            }
+        }
+        cloned
+    }
+
+    /// Sends the clone and feeds its reply back. Returns whether it went
+    /// through.
+    async fn run_clone(self, ticket: Ticket, deck_id: Uuid, name: String) -> bool {
+        let body = HttpCloneDeck { new_name: name };
+        let reply = self
+            .authed
+            .run_at(
+                component::CLONE_DECK_DIALOG,
+                "clone_deck",
+                |c, s| async move { c.clone_deck(deck_id, &body, &s).await },
+            )
+            .await;
+        let cloned = reply.is_some();
+        self.settle(ticket, reply, |cloned| Action::Cloned {
+            ticket,
+            deck_id: cloned.deck_id,
+        });
+        cloned
+    }
+
+    /// Performs one effect, feeding any reply back through [`Self::dispatch`].
+    fn perform(self, effect: Effect) {
+        match effect {
+            Effect::FetchProfile { ticket, deck_id } => self.fetch_profile(ticket, deck_id),
+            Effect::FetchDeck { ticket, deck_id } => self.fetch_deck(ticket, deck_id),
+            Effect::FetchCommander { ticket, card } => self.fetch_commander(ticket, card),
+            Effect::OfferHint(hint) => {
+                hint_dialog::open_and_record_hint(
+                    hint.key(),
+                    self.session,
+                    self.client,
+                    self.hint_open,
+                );
+            }
+            Effect::SetQuantity {
+                ticket,
+                deck_id,
+                card,
+                quantity,
+            } => self.set_quantity(ticket, deck_id, card, quantity),
+            Effect::ClearCommander { ticket, deck_id } => self.clear_commander(ticket, deck_id),
+            Effect::RemoveCard {
+                ticket,
+                deck_id,
+                card,
+            } => self.remove_card(ticket, deck_id, card),
+            Effect::CloneDeck {
+                ticket,
+                deck_id,
+                name,
+            } => {
+                spawn(async move {
+                    self.run_clone(ticket, deck_id, name).await;
+                });
+            }
+            Effect::ShareDeck { ticket, deck_id } => self.share(ticket, deck_id),
+            Effect::UnshareDeck { ticket, deck_id } => self.unshare(ticket, deck_id),
+            Effect::ClearSkips { ticket, deck_id } => self.clear_skips(ticket, deck_id),
+            Effect::DeleteDeck { ticket, deck_id } => self.delete(ticket, deck_id),
+            Effect::Copy { text, done } => {
+                // The link holds only a UUID, but it is serialized anyway.
+                let js = format!(
+                    "navigator.clipboard.writeText({})",
+                    serde_json::to_string(&text).unwrap_or_default()
+                );
+                document::eval(&js);
+                ui_toast::raise(self.toast, done);
+            }
+            Effect::OpenDialog(dialog) => self.dialogs.open(dialog),
+            Effect::Navigate(destination) => {
+                self.navigator.push(route(destination));
+            }
+            Effect::Toast(raised) => ui_toast::raise(self.toast, raised),
+        }
+    }
+
+    /// Feeds `reply` back as `landed`, or as a failure of `ticket` when it is
+    /// `None`. The request runner has already reported a failure and raised
+    /// its toast.
+    fn settle<T>(self, ticket: Ticket, reply: Option<T>, landed: impl FnOnce(T) -> Action) {
+        self.dispatch(reply.map_or(Action::Failed { ticket }, landed));
+    }
+
+    fn fetch_profile(self, ticket: Ticket, deck_id: Uuid) {
+        spawn(async move {
+            // try_run reports a failure and raises its error toast.
+            let reply = self
+                .authed
                 .try_run("load_deck", |c, s| async move {
                     c.fetch_deck_profile(deck_id, &s).await
                 })
-                .await
-        }));
-    let commander_resource: Resource<Result<Option<Card>, ClientError>> =
-        use_resource(move || async move {
-            let Some(Ok(DeckProfile {
-                commander_id: Some(original_commander_id),
-                ..
-            })) = deck_profile_resource()
-            else {
-                return Ok(None);
-            };
-            client().fetch_card(original_commander_id).await.map(Some)
+                .await;
+            self.settle(ticket, reply.ok(), |profile| Action::ProfileLoaded {
+                ticket,
+                profile: Box::new(profile),
+            });
         });
-    let mut deck_resource: Resource<DeckResult> =
-        use_resource(use_reactive!(|deck_id| async move {
-            authed
-                .try_run("load_deck", |c, s| async move {
-                    c.fetch_deck(deck_id, &s)
-                        .await
-                        .map(|d| (d.entries, d.warnings, d.command_zone_cards))
-                })
-                .await
-        }));
+    }
 
-    use_effect(move || match commander_resource() {
-        Some(Ok(Some(original_commander))) => {
-            commander.set(Some(original_commander));
-        }
-        Some(Err(e)) => {
-            usage_buffer.peek().report_error(
-                screen::DECK_VIEW,
-                component::NONE,
-                "load_commander",
-                &e,
-            );
-            toast.error(
-                e.to_user_message(),
-                ToastOptions::default().duration(TOAST_NORMAL),
-            );
-        }
-        Some(Ok(None)) | None => (),
-    });
+    fn fetch_deck(self, ticket: Ticket, deck_id: Uuid) {
+        spawn(async move {
+            let reply = self
+                .authed
+                .try_run("load_deck", |c, s| async move {
+                    c.fetch_deck(deck_id, &s).await
+                })
+                .await;
+            self.settle(ticket, reply.ok(), |deck| Action::DeckLoaded {
+                ticket,
+                deck: Box::new(deck),
+            });
+        });
+    }
+
+    fn fetch_commander(self, ticket: Ticket, card: Uuid) {
+        let Self {
+            toast,
+            usage_buffer,
+            client,
+            ..
+        } = self;
+        spawn(async move {
+            let reply = match client().fetch_card(card).await {
+                Ok(card) => Some(card),
+                Err(e) => {
+                    usage_buffer.peek().report_error(
+                        screen::DECK_VIEW,
+                        component::NONE,
+                        "load_commander",
+                        &e,
+                    );
+                    toast.error(
+                        e.to_user_message(),
+                        ToastOptions::default().duration(TOAST_NORMAL),
+                    );
+                    None
+                }
+            };
+            self.settle(ticket, reply, |card| Action::CommanderLoaded {
+                ticket,
+                card: Box::new(card),
+            });
+        });
+    }
+
+    fn set_quantity(self, ticket: Ticket, deck_id: Uuid, card: Uuid, quantity: i32) {
+        // PATCH sets the absolute target, not a delta from a possibly stale
+        // quantity.
+        let request = HttpPatchDeckCard::new(Some(quantity), None);
+        spawn(async move {
+            let reply = self
+                .authed
+                .run("update_card_quantity", |c, s| async move {
+                    c.update_deck_card(deck_id, card, &request, &s).await
+                })
+                .await;
+            self.settle(ticket, reply, |_| Action::QuantitySet { ticket });
+        });
+    }
+
+    fn clear_commander(self, ticket: Ticket, deck_id: Uuid) {
+        let request = Slot::Commander.update_request(None);
+        spawn(async move {
+            let reply = self
+                .authed
+                .run("remove_commander", |c, s| async move {
+                    c.update_deck_profile(deck_id, &request, &s).await
+                })
+                .await;
+            self.settle(ticket, reply, |_| Action::CommanderCleared { ticket });
+        });
+    }
+
+    /// Goes straight to the client, so a missing session reads `Session
+    /// expired`, and reports a failure itself.
+    fn remove_card(self, ticket: Ticket, deck_id: Uuid, card: Uuid) {
+        let Self {
+            toast,
+            usage_buffer,
+            session,
+            client,
+            ..
+        } = self;
+        spawn(async move {
+            let result: Result<(), ClientError> = async {
+                let session = session()
+                    .ok_or_else(|| ClientError::Unauthorized("Session expired".to_string()))?;
+                client().delete_deck_card(deck_id, card, &session).await
+            }
+            .await;
+            let reply = match result {
+                Ok(()) => Some(()),
+                Err(e) => {
+                    usage_buffer.peek().report_error(
+                        screen::DECK_VIEW,
+                        component::DECK_WARNINGS,
+                        "remove_flagged_card",
+                        &e,
+                    );
+                    toast.error(
+                        e.to_user_message(),
+                        ToastOptions::default().duration(TOAST_NORMAL),
+                    );
+                    None
+                }
+            };
+            self.settle(ticket, reply, |()| Action::CardRemoved { ticket });
+        });
+    }
+
+    fn share(self, ticket: Ticket, deck_id: Uuid) {
+        spawn(async move {
+            let reply = self
+                .authed
+                .run_at(component::MORE_BUTTONS, "share_deck", |c, s| async move {
+                    c.share_deck(deck_id, &s).await
+                })
+                .await;
+            self.settle(ticket, reply, |shared| Action::Shared {
+                ticket,
+                token: shared.share_token,
+            });
+        });
+    }
+
+    fn unshare(self, ticket: Ticket, deck_id: Uuid) {
+        spawn(async move {
+            let reply = self
+                .authed
+                .run_at(component::MORE_BUTTONS, "unshare_deck", |c, s| async move {
+                    c.unshare_deck(deck_id, &s).await
+                })
+                .await;
+            self.settle(ticket, reply, |()| Action::Unshared { ticket });
+        });
+    }
+
+    fn clear_skips(self, ticket: Ticket, deck_id: Uuid) {
+        let Self {
+            usage_buffer,
+            session,
+            client,
+            ..
+        } = self;
+        spawn(async move {
+            // Flush pending skips first so this window's not-yet-sent skips
+            // are wiped too, not re-suppressed by the next flush.
+            flush_loop::flush_once(&usage_buffer(), &client, &session).await;
+            let reply = self
+                .authed
+                .run_at(
+                    component::MORE_BUTTONS,
+                    "clear_suppressions",
+                    |c, s| async move { c.clear_deck_suppressions(deck_id, &s).await },
+                )
+                .await;
+            self.settle(ticket, reply, |_| Action::SkipsCleared { ticket });
+        });
+    }
+
+    fn delete(self, ticket: Ticket, deck_id: Uuid) {
+        spawn(async move {
+            let reply = self
+                .authed
+                .run("delete_deck", |c, s| async move {
+                    c.delete_deck(deck_id, &s).await
+                })
+                .await;
+            self.settle(ticket, reply, |()| Action::Deleted { ticket });
+        });
+    }
+}
+
+/// The app's route for a place the deck view sends the user.
+fn route(destination: Destination) -> Router {
+    match destination {
+        Destination::DeckList => Router::DeckList {},
+        Destination::EditDeck(deck_id) => Router::EditDeck { deck_id },
+        Destination::DeckCards(deck_id) => Router::ViewDeckCard { deck_id },
+        Destination::AddCards(deck_id) => Router::AddDeckCard { deck_id },
+        Destination::ImportDeck(deck_id) => Router::ImportDeck { deck_id },
+        Destination::ExportDeck(deck_id) => Router::ExportDeck { deck_id },
+        Destination::Deck(deck_id) => Router::ViewDeck { deck_id },
+    }
+}
+
+#[component]
+pub fn ViewDeck(deck_id: Uuid) -> Element {
+    let client: Signal<ZwipeClient> = use_context();
+    let driver = Driver {
+        model: use_signal(State::new),
+        navigator: use_navigator(),
+        toast: use_toast(),
+        authed: use_authed(Screen::Deck(DeckScreen::View)),
+        usage_buffer: use_context(),
+        session: use_context(),
+        client,
+        hint_open: use_signal(|| false),
+        dialogs: use_deck_dialogs(),
+    };
+    let mut show_more_sheet = driver.dialogs.sheet;
+    // First-deck tour: opens once per account when the model offers it on
+    // the first Load; the header "?" reopens it on demand.
+    let first_deck_hint_open = driver.hint_open;
+
+    // Fetches the deck on mount and again when the route's deck id changes
+    // without a remount, as cloning does (ViewDeck to ViewDeck).
+    use_effect(use_reactive!(
+        |deck_id| driver.dispatch(Action::Load(deck_id))
+    ));
 
     // The Roles chart's tags: a description lookup from the
     // shared catalog cache and an examples-browse opener, as on the deck
@@ -129,166 +431,86 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
         otag_examples_open.set(true);
     });
 
-    // First-deck tour: auto-opens once per account on first opening any
-    // deck profile; the header "?" reopens it on demand.
-    let first_deck_hint_open = use_one_time_hint(HINT_FIRST_DECK);
-
-    let show_buy_dialog = use_signal(|| false);
     // Accordion state for the deck-view sections, holds the title of the one
-    // open section. Stats is auto-expanded on load.
-    let open_section: Signal<Option<String>> = use_signal(|| Some("Budget".to_string()));
-    // Currency selected in the Budget header chips, shared with the price rows.
-    let mut selected_currency: Signal<&'static str> = use_signal(|| "usd");
-    // Seed the chip once from the deck's price-target currency so the price
-    // fraction (total / target) reads in one currency by default; the user can
-    // still switch chips afterward without it snapping back.
-    let mut currency_seeded = use_signal(|| false);
-    use_effect(move || {
-        if !currency_seeded()
-            && let Some(Ok(p)) = &*deck_profile_resource.read()
-        {
-            if let Some(c) = p.price_target_currency {
-                selected_currency.set(c.json_key());
-            }
-            currency_seeded.set(true);
-        }
-    });
-    let mut show_more_sheet = use_signal(|| false);
-    let show_delete_dialog = use_signal(|| false);
-    let show_clone_dialog = use_signal(|| false);
-    // Live share-link state, seeded from the loaded profile and driven by the
-    // More sheet's Share / Stop-sharing actions so the buttons reflect reality
-    // without a round-trip re-fetch.
-    let mut share_token = use_signal(|| None::<Uuid>);
-    use_effect(move || {
-        if let Some(Ok(p)) = &*deck_profile_resource.read() {
-            share_token.set(p.share_token);
-        }
-    });
-    let attempt_delete = use_callback(move |()| {
-        spawn(async move {
-            if authed
-                .run("delete_deck", |c, s| async move {
-                    c.delete_deck(deck_id, &s).await
-                })
-                .await
-                .is_some()
-            {
-                navigator.push(Router::DeckList {});
-            }
-        });
-    });
+    // open section. Budget is open on load.
+    let open_section: Signal<Option<String>> =
+        use_signal(|| Some(Section::Budget.title().to_string()));
+    let attempt_delete = use_callback(move |()| driver.dispatch(Action::Delete));
 
-    // pre-compute metrics and chart data before rsx!
-    // True only while the deck fetch is in flight. The stats skeleton must
-    // key off this, not off metrics being absent: a loaded deck with a
-    // commander but no cards never produces metrics, and an absence-keyed
-    // skeleton pulses forever on exactly that deck.
-    let deck_loading = deck_resource().is_none();
-    let deck_data = deck_resource().and_then(Result::ok);
-    let warnings: Vec<DeckWarning> = deck_data
-        .as_ref()
-        .map(|(_, w, _)| w.clone())
-        .unwrap_or_default();
-    // Metrics fold the command zone (commander, partner, background, signature
-    // spell) into card count + prices; present when there is a mainboard card or
-    // a command-zone card. Distributions/charts stay mainboard-only.
-    let metrics = deck_data
-        .as_ref()
-        .filter(|(entries, _, command_zone)| !entries.is_empty() || !command_zone.is_empty())
-        .map(|(entries, _, command_zone)| {
-            DeckMetrics::from_entries_and_command_zone(entries, command_zone)
-        });
-    // Chart data reflects the mainboard only, so suppress it for a deck that so
-    // far holds only its command zone (no mainboard cards to distribute).
-    let chart_metrics = metrics
-        .as_ref()
-        .filter(|m| m.land_count > 0 || m.nonland_count > 0);
-
-    let command_zone_names: Vec<String> = deck_profile_resource()
-        .and_then(Result::ok)
-        .map(|p| {
-            [
-                p.commander_name.as_deref(),
-                p.partner_commander_name.as_deref(),
-                p.background_name.as_deref(),
-                p.signature_spell_name.as_deref(),
-            ]
-            .into_iter()
-            .flatten()
-            .map(str::to_string)
-            .collect()
-        })
-        .unwrap_or_default();
-    let cz_refs: Vec<&str> = command_zone_names.iter().map(String::as_str).collect();
-
-    let tcg_url = deck_data.as_ref().map(|(entries, _, _)| {
-        let active: Vec<_> = entries
-            .iter()
-            .filter(|e| e.deck_card.board.is_active() || e.deck_card.board.is_sideboard())
-            .cloned()
-            .collect();
-        buy_links::tcgplayer_url(&active, &cz_refs)
-    });
-    let ck_url = deck_data.as_ref().map(|(entries, _, _)| {
-        let active: Vec<_> = entries
-            .iter()
-            .filter(|e| e.deck_card.board.is_active() || e.deck_card.board.is_sideboard())
-            .cloned()
-            .collect();
-        buy_links::cardkingdom_url(&active, &cz_refs)
-    });
+    // Snapshot the model once per render.
+    let state = driver.model.read();
+    let failed = state.status() == deck_view::Status::Failed;
+    let profile = state.profile().cloned();
+    let commander = state.commander().cloned();
+    let card_count = state.card_count();
+    let chart_metrics = state.charted().cloned();
+    let sections = state.sections();
+    let stats_loading = state.stats_loading();
+    let warnings = state.warnings().to_vec();
+    let currency = state.currency();
+    let currency_chips = state.currency_chips_shown();
+    let total_line = state.total_price_line();
+    let average_line = state.average_price_line();
+    let pt_line = state.average_pt_line();
+    let lands_line = state.lands_line();
+    let mana_value_line = state.average_mana_value_line();
+    let tags_badge = state.badge(Section::Tags).unwrap_or_default();
+    let warnings_badge = state.badge(Section::Warnings).unwrap_or_default();
+    let more_enabled: Vec<MoreItem> = MoreItem::ALL
+        .into_iter()
+        .filter(|item| state.is_enabled(*item))
+        .collect();
+    let buy_links = state.buy_links();
+    let buy_body = state.buy_body();
+    let shared = state.share_token().is_some();
+    let share_body = state.share_body();
+    let clone_name = state.clone_name();
+    drop(state);
 
     let mana_curve_bars: Option<[(usize, u32); 7]> =
-        chart_metrics.map(DeckMetrics::mana_curve_bars);
-    let type_bars: Option<Vec<(&str, usize, u32)>> = chart_metrics.map(DeckMetrics::type_bars);
-    let color_bars: Option<Vec<(&str, usize, u32)>> = chart_metrics.map(DeckMetrics::color_bars);
+        chart_metrics.as_ref().map(DeckMetrics::mana_curve_bars);
+    let type_bars: Option<Vec<(&str, usize, u32)>> =
+        chart_metrics.as_ref().map(DeckMetrics::type_bars);
+    let color_bars: Option<Vec<(&str, usize, u32)>> =
+        chart_metrics.as_ref().map(DeckMetrics::color_bars);
     let category_bars: Option<Vec<(&str, usize, u32)>> =
-        chart_metrics.and_then(DeckMetrics::card_role_bars);
-    let role_tags = chart_metrics.map(|m| m.card_role_tags.clone());
+        chart_metrics.as_ref().and_then(DeckMetrics::card_role_bars);
+    let role_tags = chart_metrics.as_ref().map(|m| m.card_role_tags.clone());
 
     let draw_odds_data: Option<(u32, Vec<(&'static str, u32)>)> =
-        chart_metrics.map(DeckMetrics::draw_odds_buckets);
+        chart_metrics.as_ref().map(DeckMetrics::draw_odds_buckets);
     let mana_balance_rows: Option<Vec<ManaBalanceRow>> =
-        chart_metrics.map(DeckMetrics::mana_balance_rows);
+        chart_metrics.as_ref().map(DeckMetrics::mana_balance_rows);
 
     rsx! {
             div { class: "screen",
-                ScreenHeader { title: "Deck", hint: first_deck_hint_open }
+                ScreenHeader { title: deck_view::TITLE, hint: first_deck_hint_open }
 
                 div { class: "screen-content",
-                    match deck_profile_resource() {
-                        Some(Ok(deck_profile)) => {
-                            let metrics_possible = deck_profile.card_count > 0
-                                || deck_profile.commander_id.is_some()
-                                || deck_profile.partner_commander_id.is_some()
-                                || deck_profile.background_id.is_some()
-                                || deck_profile.signature_spell_id.is_some();
-                            // Copied out before the rsx! moves deck_profile into
-                            // the Tags section; the Lands row (below, in Mana) needs it.
-                            let land_target = deck_profile.land_target;
+                    match profile {
+                        Some(deck_profile) => {
                             rsx! {
                             div { class: "content-enter",
                                   style: "width: calc(100% - 4rem); display: flex; flex-direction: column; gap: var(--panel-gap); padding: 1rem 0;",
                                 DeckProfileSection {
                                     deck_profile: deck_profile.clone(),
-                                    commander: commander(),
-                                    card_count: metrics.as_ref().map_or_else(|| usize::try_from(deck_profile.card_count).unwrap_or(0), |m| m.total_cards),
+                                    commander: commander,
+                                    card_count: card_count,
                                 }
 
-                                if deck_budget_section::has_budget(&deck_profile, metrics.is_some()) {
+                                if sections.contains(&Section::Budget) {
                                     CollapsibleSection {
-                                        title: "Budget",
+                                        title: Section::Budget.title().to_string(),
                                         open_section: open_section,
                                         header_accessory: {
-                                            if metrics.is_some() {
+                                            if currency_chips {
                                                 rsx! {
                                                     div { class: "chip-row", style: "margin-bottom:0;",
-                                                        for (label, key) in [("USD", "usd"), ("EUR", "eur"), ("TIX", "tix")] {
+                                                        for option in PriceCurrency::all().iter().copied() {
                                                             div {
-                                                                class: if selected_currency() == key { "chip selected" } else { "chip" },
-                                                                onclick: move |_| selected_currency.set(key),
-                                                                "{label}"
+                                                                class: if currency == option { "chip selected" } else { "chip" },
+                                                                onclick: move |_| driver.dispatch(Action::PickCurrency(option)),
+                                                                "{option.label()}"
                                                             }
                                                         }
                                                     }
@@ -298,194 +520,121 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                             }
                                         },
                                         DeckBudgetSection {
-                                            deck_profile: deck_profile.clone(),
-                                            metrics: metrics.clone(),
-                                            selected_currency: selected_currency,
+                                            total: total_line,
+                                            average: average_line,
                                         }
                                     }
                                 }
 
-                                if deck_tags_section::has_any_tags(&deck_profile) {
+                                if sections.contains(&Section::Tags) {
                                     CollapsibleSection {
-                                        title: "Tags",
-                                        badge: format!("{}", deck_tags_section::total_tag_count(&deck_profile)),
+                                        title: Section::Tags.title().to_string(),
+                                        badge: tags_badge,
                                         open_section: open_section,
                                         DeckTagsSection { deck_profile }
                                     }
                                 }
 
-                                {
-                                    // Lands presence is its own reason to show the Mana
-                                    // section: a curve (mainboard cards) OR just a land
-                                    // target set, so the Lands goal-vs-actual stays
-                                    // visible even on an otherwise-empty deck.
-                                    let land_count = metrics.as_ref().map_or(0, |m| m.land_count);
-                                    rsx! {
-                                        if mana_curve_bars.is_some() || land_target.is_some() {
-                                          // Nested column: keep its gap equal to the outer
-                                          // sections column so Distributions/Mana/Draw odds
-                                          // space like every other section pair.
-                                          div { class: "content-enter",
-                                                style: "display: flex; flex-direction: column; gap: var(--panel-gap);",
-                                            // Distributions stays mainboard-only (its bars
-                                            // are None without mainboard cards).
-                                            if mana_curve_bars.is_some() {
-                                                CollapsibleSection {
-                                                    title: "Distributions",
-                                                    open_section: open_section,
-                                                    if let Some(m) = metrics.as_ref() {
-                                                        if m.avg_power.is_some() || m.avg_toughness.is_some() {
-                                                            {
-                                                                let fmt = |v: Option<f64>| v.map_or_else(|| "-".to_string(), |v| format!("{v:.1}"));
-                                                                let value = format!("{} / {}", fmt(m.avg_power), fmt(m.avg_toughness));
-                                                                rsx! {
-                                                                    div { class: "settings-row",
-                                                                        span { class: "settings-row-label", "Average P/T" }
-                                                                        span { class: "info-row-value", style: "white-space:nowrap;", "{value}" }
-                                                                    }
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                    DeckCharts {
-                                                        type_bars: type_bars.clone(),
-                                                        category_bars: category_bars.clone(),
-                                                        role_tags: role_tags.clone(),
-                                                        describe_tag,
-                                                        on_examples: open_examples,
-                                                        type_hint: rsx! { InfoButton { topic: HintTopic::TypeChart } },
-                                                        role_hint: rsx! { InfoButton { topic: HintTopic::RoleChart } },
-                                                    }
+                                // Mana shows for a curve (mainboard cards) or just a
+                                // land target, so the Lands goal-vs-actual stays
+                                // visible even on an otherwise-empty deck.
+                                if sections.contains(&Section::Mana) {
+                                  // Nested column: keep its gap equal to the outer
+                                  // sections column so Distributions/Mana/Draw odds
+                                  // space like every other section pair.
+                                  div { class: "content-enter",
+                                        style: "display: flex; flex-direction: column; gap: var(--panel-gap);",
+                                    // Distributions stays mainboard-only.
+                                    if sections.contains(&Section::Distributions) {
+                                        CollapsibleSection {
+                                            title: Section::Distributions.title().to_string(),
+                                            open_section: open_section,
+                                            if let Some(value) = pt_line {
+                                                div { class: "settings-row",
+                                                    span { class: "settings-row-label", {deck_view::AVERAGE_PT} }
+                                                    span { class: "info-row-value", style: "white-space:nowrap;", "{value}" }
                                                 }
                                             }
-
-                                            CollapsibleSection {
-                                                title: "Mana",
-                                                open_section: open_section,
-                                                // Lands: actual count, shown as `actual / target`
-                                                // when a land target is set.
-                                                {
-                                                    let value = match land_target {
-                                                        Some(target) => format!("{land_count} / {target}"),
-                                                        None => land_count.to_string(),
-                                                    };
-                                                    rsx! {
-                                                        div { class: "settings-row",
-                                                            span { class: "settings-row-label", "Lands" }
-                                                            span { class: "info-row-value", "{value}" }
-                                                        }
-                                                    }
-                                                }
-                                                if let Some(m) = metrics.as_ref() {
-                                                    if mana_curve_bars.is_some() {
-                                                        div { class: "settings-row",
-                                                            span { class: "settings-row-label", "Average mana value" }
-                                                            span { class: "info-row-value", "{m.avg_cmc:.1}" }
-                                                        }
-                                                    }
-                                                }
-                                                if let Some(mana_curve_bars) = mana_curve_bars.as_ref() {
-                                                    ManaCurve {
-                                                        mana_curve_bars: *mana_curve_bars,
-                                                        hint: rsx! { InfoButton { topic: HintTopic::ManaCurve } },
-                                                    }
-                                                }
-                                                if let Some(color_bars) = color_bars.clone() {
-                                                    ColorChart {
-                                                        color_bars,
-                                                        hint: rsx! { InfoButton { topic: HintTopic::ColorChart } },
-                                                    }
-                                                }
-                                                if let Some(rows) = mana_balance_rows {
-                                                    ManaFulfillment {
-                                                        rows: rows,
-                                                        hint: rsx! { InfoButton { topic: HintTopic::ManaFulfillment } },
-                                                    }
-                                                }
+                                            DeckCharts {
+                                                type_bars: type_bars.clone(),
+                                                category_bars: category_bars.clone(),
+                                                role_tags: role_tags.clone(),
+                                                describe_tag,
+                                                on_examples: open_examples,
+                                                type_hint: rsx! { InfoButton { topic: HintTopic::TypeChart } },
+                                                role_hint: rsx! { InfoButton { topic: HintTopic::RoleChart } },
                                             }
-
-                                            if let Some((deck_size, buckets)) = draw_odds_data.clone() {
-                                                CollapsibleSection {
-                                                    title: "Draw odds",
-                                                    open_section: open_section,
-                                                    header_accessory: rsx! { InfoButton { topic: HintTopic::DrawOdds } },
-                                                    DrawOdds {
-                                                        deck_size: deck_size,
-                                                        buckets: buckets,
-                                                    }
-                                                }
-                                            }
-                                          }
-                                        } else if metrics_possible && deck_loading {
-                                            DeckStatsSkeleton {}
                                         }
                                     }
+
+                                    CollapsibleSection {
+                                        title: Section::Mana.title().to_string(),
+                                        open_section: open_section,
+                                        // Lands: actual count, shown as `actual / target`
+                                        // when a land target is set.
+                                        div { class: "settings-row",
+                                            span { class: "settings-row-label", {deck_view::LANDS} }
+                                            span { class: "info-row-value", "{lands_line}" }
+                                        }
+                                        if let Some(value) = mana_value_line {
+                                            div { class: "settings-row",
+                                                span { class: "settings-row-label", {deck_view::AVERAGE_MANA_VALUE} }
+                                                span { class: "info-row-value", "{value}" }
+                                            }
+                                        }
+                                        if let Some(mana_curve_bars) = mana_curve_bars.as_ref() {
+                                            ManaCurve {
+                                                mana_curve_bars: *mana_curve_bars,
+                                                hint: rsx! { InfoButton { topic: HintTopic::ManaCurve } },
+                                            }
+                                        }
+                                        if let Some(color_bars) = color_bars.clone() {
+                                            ColorChart {
+                                                color_bars,
+                                                hint: rsx! { InfoButton { topic: HintTopic::ColorChart } },
+                                            }
+                                        }
+                                        if let Some(rows) = mana_balance_rows {
+                                            ManaFulfillment {
+                                                rows: rows,
+                                                hint: rsx! { InfoButton { topic: HintTopic::ManaFulfillment } },
+                                            }
+                                        }
+                                    }
+
+                                    if let Some((deck_size, buckets)) = draw_odds_data.clone() {
+                                        CollapsibleSection {
+                                            title: Section::DrawOdds.title().to_string(),
+                                            open_section: open_section,
+                                            header_accessory: rsx! { InfoButton { topic: HintTopic::DrawOdds } },
+                                            DrawOdds {
+                                                deck_size: deck_size,
+                                                buckets: buckets,
+                                            }
+                                        }
+                                    }
+                                  }
+                                } else if stats_loading {
+                                    DeckStatsSkeleton {}
                                 }
 
-                                if !warnings.is_empty() {
+                                if sections.contains(&Section::Warnings) {
                                     CollapsibleSection {
-                                        title: "Warnings",
+                                        title: Section::Warnings.title().to_string(),
                                         warn: true,
                                         open_section: open_section,
-                                        badge: warnings.len().to_string(),
-                                    DeckWarnings {
-                                        warnings: warnings,
-                                        deck_id: deck_id,
-                                        on_remove: move |()| {
-                                            deck_resource.restart();
-                                        },
-                                        on_fix_quantity: move |(card_id, target_qty): (Uuid, i32)| {
-                                            // PATCH sets the absolute target directly: no more
-                                            // deriving a delta from a possibly-stale current qty.
-                                            let request = HttpPatchDeckCard::new(Some(target_qty), None);
-
-                                            spawn(async move {
-                                                if authed
-                                                    .run("update_card_quantity", |c, s| async move {
-                                                        c.update_deck_card(deck_id, card_id, &request, &s).await
-                                                    })
-                                                    .await
-                                                    .is_some()
-                                                {
-                                                    toast.info(
-                                                        format!("Quantity set to {target_qty}"),
-                                                        ToastOptions::default().duration(TOAST_QUICK),
-                                                    );
-                                                    deck_resource.restart();
-                                                }
-                                            });
-                                        },
-                                        on_clear_commander: move |()| {
-                                            let request = Slot::Commander.update_request(None);
-
-                                            spawn(async move {
-                                                if authed
-                                                    .run("remove_commander", |c, s| async move {
-                                                        c.update_deck_profile(deck_id, &request, &s).await
-                                                    })
-                                                    .await
-                                                    .is_some()
-                                                {
-                                                        let format = deck_profile_resource().and_then(Result::ok).and_then(|p| p.format);
-                                                        let label = Slot::Commander.label(format);
-                                                        toast.info(
-                                                            format!("{label} cleared"),
-                                                            ToastOptions::default().duration(TOAST_QUICK),
-                                                        );
-                                                        commander.set(None);
-                                                        deck_profile_resource.restart();
-                                                        deck_resource.restart();
-                                                    }
-                                            });
-                                        },
-                                    }
+                                        badge: warnings_badge,
+                                        DeckWarnings {
+                                            warnings: warnings,
+                                            ondispatch: move |action| driver.dispatch(action),
+                                        }
                                     }
                                 }
 
                             }
                             }
                         },
-                        Some(Err(_)) => rsx! { p { class: "text-muted", "Could not load deck" } },
+                        None if failed => rsx! { p { class: "text-muted", {deck_view::LOAD_FAILED} } },
                         None => rsx! {
                             div { class: "content-enter",
                                   style: "width: calc(100% - 4rem); display: flex; flex-direction: column; gap: var(--panel-gap); padding: 1rem 0;",
@@ -499,65 +648,54 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
             ActionBar { class: "content-enter-delayed",
                 Button {
                     variant: ButtonVariant::Action,
-                    onclick: move |_| {
-                        navigator.push(Router::DeckList {});
-                    },
-                    "Back"
+                    onclick: move |_| driver.dispatch(Action::Back),
+                    {deck_view::BACK}
                 }
                 Button {
                     variant: ButtonVariant::Action,
-                    onclick: move |_| {
-                        navigator.push(Router::EditDeck { deck_id });
-                    },
-                    "Edit"
+                    onclick: move |_| driver.dispatch(Action::Edit),
+                    {deck_view::EDIT}
                 }
                 Button {
                     variant: ButtonVariant::Action,
-                    onclick: move |_| {
-                        navigator.push(Router::ViewDeckCard { deck_id });
-                    },
-                    "Cards"
+                    onclick: move |_| driver.dispatch(Action::Cards),
+                    {deck_view::CARDS}
                 }
                 Button {
                     variant: ButtonVariant::Action,
                     onclick: move |_| show_more_sheet.set(true),
-                    "More"
+                    {deck_view::MORE}
                 }
             }
 
             AlertDialog {
-                open: show_delete_dialog,
-                title: "Delete deck",
+                open: driver.dialogs.delete,
+                title: Dialog::Delete.title().to_string(),
                 actions: vec![
-                    DialogAction::Dismiss("Cancel".into()),
+                    DialogAction::Dismiss(deck_view::CANCEL.into()),
                     DialogAction::Confirm {
-                        label: "Delete".into(),
+                        label: deck_view::DELETE.into(),
                         danger: true,
                         on_confirm: attempt_delete,
                     },
                 ],
-                "Are you sure you want to delete this deck?"
+                {deck_view::DELETE_BODY}
             }
 
             MoreButtons {
-                deck_id: deck_id,
-                show_buy_dialog: show_buy_dialog,
-                show_more_sheet: show_more_sheet,
-                show_delete_dialog: show_delete_dialog,
-                show_clone_dialog: show_clone_dialog,
-                share_token: share_token,
-                has_cards: metrics.is_some(),
-                tcg_url: tcg_url,
-                ck_url: ck_url,
+                dialogs: driver.dialogs,
+                enabled: more_enabled,
+                buy_links: buy_links,
+                buy_body: buy_body,
+                shared: shared,
+                share_body: share_body,
+                ondispatch: move |action| driver.dispatch(action),
             }
 
             CloneDeckDialog {
-                source_deck_id: deck_id,
-                default_name: deck_profile_resource()
-                    .and_then(Result::ok)
-                    .map(|p| format!("{} (clone)", p.name))
-                    .unwrap_or_default(),
-                open: show_clone_dialog,
+                driver: driver,
+                default_name: clone_name,
+                open: driver.dialogs.clone,
             }
 
             if otag_examples_open() {
@@ -566,6 +704,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
 
             HintDialog {
                 open: first_deck_hint_open,
+                actions: guide_link::one_time(HINT_FIRST_DECK),
                 title: "Welcome to your deck",
                 HintBullets {
                     HintBullet { HintKey { "Cards" } " browses, adds and removes cards" }
@@ -578,5 +717,40 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
             }
 
             }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn every_destination_has_the_app_route() {
+        let deck_id = Uuid::new_v4();
+        assert_eq!(route(Destination::DeckList), Router::DeckList {});
+        assert_eq!(
+            route(Destination::EditDeck(deck_id)),
+            Router::EditDeck { deck_id }
+        );
+        assert_eq!(
+            route(Destination::DeckCards(deck_id)),
+            Router::ViewDeckCard { deck_id }
+        );
+        assert_eq!(
+            route(Destination::AddCards(deck_id)),
+            Router::AddDeckCard { deck_id }
+        );
+        assert_eq!(
+            route(Destination::ImportDeck(deck_id)),
+            Router::ImportDeck { deck_id }
+        );
+        assert_eq!(
+            route(Destination::ExportDeck(deck_id)),
+            Router::ExportDeck { deck_id }
+        );
+        assert_eq!(
+            route(Destination::Deck(deck_id)),
+            Router::ViewDeck { deck_id }
+        );
     }
 }

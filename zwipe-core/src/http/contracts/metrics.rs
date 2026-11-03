@@ -50,7 +50,7 @@ pub struct HttpAnonymousEvent {
 /// The client buffers counts in memory and flushes periodically (every ~30s
 /// and on screen-exit / app backgrounding). All fields are additive; the
 /// server increments the corresponding lifetime and daily counters.
-#[derive(Debug, Clone, Default, Deserialize, Serialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize)]
 pub struct HttpUsageBatch {
     /// Right swipes (add card to deck).
     pub swipes_right: u32,
@@ -124,7 +124,7 @@ pub struct PileEndReport {
 /// (toast/dialog) on the client. Deduped client-side within a flush window
 /// (`count`), aggregate-only, no user identity beyond the authed usage batch
 /// it rides in.
-#[derive(Debug, Clone, Default, Deserialize, Serialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize)]
 pub struct ClientErrorReport {
     /// Host screen, flattened module path (`"deck_edit"`, `"auth_login"`), a
     /// closed vocabulary from client-side consts. The aggregation axis;
@@ -237,7 +237,7 @@ fn truncated_chars(s: &str, max: usize) -> String {
 /// Every client at or above the 1.7.0 version floor sends `deck_id`. A
 /// payload carrying a `commander_oracle_id` field instead deserializes fine
 /// (serde ignores unknown fields).
-#[derive(Debug, Clone, Default, Deserialize, Serialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize)]
 pub struct CardSignalDelta {
     /// Card oracle id.
     pub card_oracle_id: Uuid,
@@ -266,7 +266,7 @@ pub struct CardSignalDelta {
 /// deck's commander. `shown` is the impression denominator; the client
 /// sends `selected + skipped` (down-swipe undo is not a decision and is
 /// excluded).
-#[derive(Debug, Clone, Default, Deserialize, Serialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize)]
 pub struct CommanderSelectDelta {
     /// Oracle id of the command-zone candidate that was swiped.
     pub commander_oracle_id: Uuid,
@@ -287,7 +287,7 @@ pub struct CommanderSelectDelta {
 /// deck's suppression set (`source = 'skip'`) after verifying ownership;
 /// removal suppressions never ride this contract; the server records them
 /// directly on the delete-card endpoint.
-#[derive(Debug, Clone, Default, Deserialize, Serialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize)]
 pub struct DeckSkipDelta {
     /// Deck the skips belong to (ownership is verified at ingest).
     pub deck_id: Uuid,
@@ -312,6 +312,20 @@ impl HttpUsageBatch {
     /// most; the pooled signal ranks cards for everyone, so one client's say
     /// per card per flush stops here.
     pub const MAX_SIGNAL_TALLY: u32 = 200;
+
+    /// Most swipes counted from one flush: 4 swipes a second, the fastest a
+    /// person swipes for long, over the client's 30 s flush interval.
+    ///
+    /// Applies to the direction counters and, as a separate budget, to the
+    /// swipe decisions in the card and commander-select signals. The server
+    /// keeps swipes up to this limit and drops the rest.
+    pub const MAX_SWIPES_PER_FLUSH: u32 = 120;
+
+    /// Most swipes counted per account per minute across every flush: 4
+    /// swipes a second over 60 s, so two timed flushes at the full
+    /// [`Self::MAX_SWIPES_PER_FLUSH`] fill it. A flush sent when the app goes
+    /// to the background draws on the same budget.
+    pub const MAX_SWIPES_PER_MINUTE: u32 = 240;
 
     /// Maximum accepted number of distinct `(commander, card)` signal deltas per
     /// flush. A legitimate ~30s window touches a few dozen cards at most; this
@@ -563,10 +577,10 @@ mod tests {
         let json =
             r#"{"swipes_right":2,"swipes_left":1,"swipes_up":0,"swipes_down":0,"searches":3}"#;
         let batch: HttpUsageBatch = serde_json::from_str(json).unwrap();
-        assert!(batch.signals.is_empty());
-        assert!(batch.deck_skips.is_empty());
-        assert!(batch.select_signals.is_empty());
-        assert!(batch.client_errors.is_empty());
+        assert_eq!(batch.signals, Vec::new());
+        assert_eq!(batch.deck_skips, Vec::new());
+        assert_eq!(batch.select_signals, Vec::new());
+        assert_eq!(batch.client_errors, Vec::new());
         assert_eq!(batch.swipes_right, 2);
     }
 

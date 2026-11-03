@@ -1,14 +1,16 @@
 use components::{
-    ActionBar, Button, ButtonVariant, HintBullet, HintBullets, HintDialog, HintKey, TOAST_NORMAL,
-    TOAST_QUICK, use_overlay_back,
+    ActionBar, Button, ButtonVariant, HintBullet, HintBullets, HintDialog, HintKey, Toasts,
+    use_overlay_back, use_toast,
 };
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
-use zwipe_core::domain::card::search_card::card_filter::error::InvalidCardCriteria;
 use zwipe_core::domain::user::models::hints::HINT_FILTER;
+use zwipe_ui::filter::draft::SheetConfig;
+use zwipe_ui::filter::picker::PickerField;
+use zwipe_ui::filter::sections::Section;
+use zwipe_ui::screens::card_filter::{self, Action, Destination, Effect, ResetNotice, State};
 
 use crate::inbound::components::accordion::{
     Accordion, AccordionContent, AccordionItem, AccordionTrigger,
@@ -17,6 +19,7 @@ use crate::inbound::components::catalog_cache::CatalogCache;
 use crate::inbound::components::hint_dialog::{self, HintColored};
 use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::info_button::InfoButton;
+use crate::inbound::components::{guide_link, ui_toast};
 use crate::inbound::screens::deck::card::filter::artist::Artist;
 use crate::inbound::screens::deck::card::filter::card_role::CardRole;
 use crate::inbound::screens::deck::card::filter::combat::Combat;
@@ -24,9 +27,8 @@ use crate::inbound::screens::deck::card::filter::config::Config;
 use crate::inbound::screens::deck::card::filter::flavor_text::FlavorText;
 use crate::inbound::screens::deck::card::filter::format::FormatFilter;
 use crate::inbound::screens::deck::card::filter::mana::Mana;
-use crate::inbound::screens::deck::card::filter::match_mode::MatchMode;
 use crate::inbound::screens::deck::card::filter::name::Name;
-use crate::inbound::screens::deck::card::filter::oracle_tags::{self, OracleTags};
+use crate::inbound::screens::deck::card::filter::oracle_tags::OracleTags;
 use crate::inbound::screens::deck::card::filter::oracle_text::OracleText;
 use crate::inbound::screens::deck::card::filter::price::PriceFilter;
 use crate::inbound::screens::deck::card::filter::rarity::Rarity;
@@ -41,57 +43,94 @@ use crate::inbound::screens::oracle_tag_dictionary::OracleTagDictionary;
 #[derive(Clone, Copy)]
 pub(crate) struct CollapseExpanded(pub(crate) Signal<bool>);
 
-/// What pressing Apply should do.
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub(crate) enum ApplyAction {
-    /// Commit the draft. `cleared` distinguishes emptying an applied filter
-    /// from applying one, which is only a difference in wording.
-    Commit { cleared: bool },
-    /// Refuse: the draft filters nothing and neither did what it replaces.
-    RefuseEmpty,
-    /// The draft matches what was already applied. Close without refetching,
-    /// so opening the sheet and changing nothing leaves the card stack where
-    /// the user had it.
-    NoChange,
-}
-
-/// Whether a filter narrows the catalog or searches all of it.
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub(crate) enum FilterState {
-    Empty,
-    Set,
-}
-
-impl FilterState {
-    /// `Set` when the filter has search intent.
-    fn of(has_intent: bool) -> Self {
-        if has_intent { Self::Set } else { Self::Empty }
-    }
-}
-
-/// Decides Apply from the transition between the filter that was on when
-/// the sheet opened (`from`) and the draft (`to`).
+/// The sheet's model with the handles that perform its effects. Copy, so
+/// every handler moves it in.
 ///
-/// An empty filter searches the whole catalog, so the add screen's search
-/// source refuses one (`validate_before_apply`). Judging `to` alone would
-/// also refuse a deliberate clear, leaving no way back out of a filter once
-/// one is on, so the decision reads the transition instead.
-pub(crate) fn apply_action(
-    validate_before_apply: bool,
-    from: FilterState,
-    to: FilterState,
-    unchanged: bool,
-) -> ApplyAction {
-    // The refusal is checked first: it explains why an empty filter served
-    // nothing, which is more use than silently closing.
-    if validate_before_apply && from == FilterState::Empty && to == FilterState::Empty {
-        return ApplyAction::RefuseEmpty;
+/// The sections edit the host's filter from context in place, so that
+/// signal is the draft while the sheet is open. Each dispatch hands the model
+/// the draft as it stands first, and writes back any change the model made.
+#[derive(Clone, Copy)]
+struct Driver {
+    model: Signal<State>,
+    filter: Signal<CardQueryBuilder>,
+    counter: Signal<u32>,
+    collapse: Option<CollapseExpanded>,
+    open: Signal<bool>,
+    toast: Toasts,
+    session: Signal<Option<Session>>,
+    client: Signal<ZwipeClient>,
+    hint_open: Signal<bool>,
+    dictionary_open: Signal<bool>,
+}
+
+impl Driver {
+    /// Runs `action` against the draft as the sections left it, writes back
+    /// what it changed in the draft, and performs its effects.
+    fn dispatch(self, action: Action) {
+        let mut model = self.model;
+        let mut filter = self.filter;
+        let draft = Box::new(filter.peek().clone());
+        let effects = {
+            let mut state = model.write();
+            let mut effects = state.update(Action::Edit(draft));
+            effects.extend(state.update(action));
+            effects
+        };
+        let written = {
+            let state = model.peek();
+            state
+                .draft()
+                .filter(|draft| state.is_open() && **draft != *filter.peek())
+                .cloned()
+        };
+        if let Some(draft) = written {
+            filter.set(draft);
+        }
+        for effect in effects {
+            self.perform(effect);
+        }
     }
-    if unchanged {
-        return ApplyAction::NoChange;
-    }
-    ApplyAction::Commit {
-        cleared: from == FilterState::Set && to == FilterState::Empty,
+
+    fn perform(self, effect: Effect) {
+        let Self {
+            mut filter,
+            mut counter,
+            collapse,
+            mut open,
+            toast,
+            session,
+            client,
+            hint_open,
+            mut dictionary_open,
+            ..
+        } = self;
+        match effect {
+            Effect::OfferHint(hint) => {
+                hint_dialog::open_and_record_hint(hint.key(), session, client, hint_open);
+            }
+            // Each section ensures its own list as it mounts, and reads the
+            // deck's cards where the host provides them.
+            Effect::EnsureLists(_) => {}
+            Effect::Apply(applied) => {
+                if *filter.peek() != *applied {
+                    filter.set(*applied);
+                }
+                // The counter bump is the host's refetch; the expanded card
+                // collapses with it.
+                if let Some(CollapseExpanded(mut collapse)) = collapse {
+                    collapse.set(true);
+                }
+                counter.set(counter().wrapping_add(1));
+            }
+            Effect::Restore(applied) => filter.set(*applied),
+            Effect::Close => {
+                if *open.peek() {
+                    open.set(false);
+                }
+            }
+            Effect::Navigate(Destination::OracleTagDictionary) => dictionary_open.set(true),
+            Effect::Toast(t) => ui_toast::raise(toast, t),
+        }
     }
 }
 
@@ -108,206 +147,81 @@ pub(crate) fn CardFilterSheet(
 ) -> Element {
     // OS back gesture closes this overlay before touching the router.
     use_overlay_back(open);
-    let mut filter_builder: Signal<CardQueryBuilder> = use_context();
-    let mut filter_reset_counter: Signal<u32> = use_context();
+    let filter_builder: Signal<CardQueryBuilder> = use_context();
+    let filter_reset_counter: Signal<u32> = use_context();
     let should_collapse: Option<CollapseExpanded> = try_use_context::<CollapseExpanded>();
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
     let toast = use_toast();
+    let catalogs: CatalogCache = use_context();
 
-    // Filter explainer: the "?" reopens it; it also auto-opens once per account
-    // the first time the sheet is opened (gated, since this component stays
-    // mounted while the sheet is closed; a plain mount-time hint would misfire).
     let mut hint_open = use_signal(|| false);
-    let mut hint_fired = use_signal(|| false);
+    // Oracle-tag dictionary overlay. Owned here (not in the `OracleTags` section)
+    // so it renders as a sibling of the bottom sheet, outside the sheet's
+    // `transform`; a `position: fixed` overlay nested inside that transform would
+    // be trapped to the sheet's box instead of the viewport.
+    let otag_dict_open = use_signal(|| false);
+    let driver = Driver {
+        model: use_signal(State::new),
+        filter: filter_builder,
+        counter: filter_reset_counter,
+        collapse: should_collapse,
+        open,
+        toast,
+        session,
+        client,
+        hint_open,
+        dictionary_open: otag_dict_open,
+    };
+
+    // Opening takes the applied filter as the draft's start; any close but
+    // Apply puts it back. The sheet stays mounted while closed, so this
+    // follows `open` rather than the mount.
     use_effect(move || {
-        if open() && !*hint_fired.peek() {
-            hint_fired.set(true);
-            hint_dialog::open_and_record_hint(HINT_FILTER, session, client, hint_open);
+        if open() {
+            let filter = Box::new(filter_builder.peek().clone());
+            driver.dispatch(Action::Open {
+                filter,
+                config: Box::new(SheetConfig {
+                    show_format: show_format_filter,
+                    validate: validate_before_apply,
+                    ..SheetConfig::default()
+                }),
+                notice: ResetNotice::Toast,
+            });
+        } else {
+            driver.dispatch(Action::Back);
         }
     });
 
     // A failed catalog prefetch leaves every picker empty, which reads as "no
-    // matches" rather than "didn't load". Say so once per opening. No retry
-    // button: each picker's own effect calls its `ensure_*` on mount, and that
-    // refetches a failed cell, so opening the sheet IS the retry.
-    let catalogs: CatalogCache = use_context();
-    let mut catalog_warned = use_signal(|| false);
+    // matches" rather than "didn't load". The model says so once per opening.
+    // No retry button: each picker's own effect calls its `ensure_*` on mount,
+    // and that refetches a failed cell.
     use_effect(move || {
-        if !open() {
-            catalog_warned.set(false);
-            return;
-        }
-        if !*catalog_warned.peek() && catalogs.any_public_failed() {
-            catalog_warned.set(true);
-            toast.warning(
-                "Filter lists didn't load, trying again".to_string(),
-                ToastOptions::default().duration(TOAST_NORMAL),
-            );
+        if open() && catalogs.any_public_failed() {
+            driver.dispatch(Action::ListsFailed);
         }
     });
 
-    // Current/staged split: the builder in context is the staged draft the
-    // sections edit; Apply commits it via the counter bump. Snapshot the
-    // applied state when the sheet opens so Cancel, the backdrop, or the OS
-    // back gesture restores it on close, Apply drops the snapshot first so a
-    // commit sticks.
-    let mut applied_snapshot: Signal<Option<CardQueryBuilder>> = use_signal(|| None);
-    use_effect(move || {
-        if open() {
-            applied_snapshot.set(Some(filter_builder.peek().clone()));
-        } else if let Some(previous) = applied_snapshot.take() {
-            // Only toast when there was actually a draft to throw away.
-            if *filter_builder.peek() != previous {
-                filter_builder.set(previous);
-                toast.info(
-                    "Filter unchanged".to_string(),
-                    ToastOptions::default().duration(TOAST_QUICK),
-                );
-            }
-        }
-    });
-
-    // Bump the filter counter and signal that the expanded card should collapse.
-    let mut bump_filter = move || {
-        if let Some(CollapseExpanded(mut collapse)) = should_collapse {
-            collapse.set(true);
-        }
-        filter_reset_counter.set(filter_reset_counter().wrapping_add(1));
-    };
-
-    // Oracle-tag dictionary overlay. Owned here (not in the `OracleTags` section)
-    // so it renders as a sibling of the bottom sheet, outside the sheet's
-    // `transform`; a `position: fixed` overlay nested inside that transform would
-    // be trapped to the sheet's box instead of the viewport. The include/exclude
-    // "Dictionary" buttons flip `otag_dict_open`, recording via `otag_dict_exclude`
-    // which list the Use button feeds.
-    let otag_dict_open = use_signal(|| false);
-    let otag_dict_exclude = use_signal(|| false);
-    let adopt_otag = move |slug: String| {
-        // The current include bucket mirrors what the builder holds (Any unless
-        // it's explicitly the All list), matching the section's own derivation.
-        let mode = if filter_builder().oracle_tags_contains_all().is_some() {
-            MatchMode::All
+    // Active indicators and Apply read the live draft, so they match the
+    // sections on the render that changed it.
+    let (active, unchanged) = {
+        let model = driver.model.read();
+        let draft = filter_builder.read();
+        let active: Vec<Section> = if show_active_indicators {
+            Section::ALL
+                .into_iter()
+                .filter(|section| section.is_active(&draft))
+                .collect()
         } else {
-            MatchMode::Any
+            Vec::new()
         };
-        let already = if otag_dict_exclude() {
-            oracle_tags::read_excluded(&filter_builder()).contains(&slug)
-        } else {
-            oracle_tags::read_selected(&filter_builder(), mode).contains(&slug)
-        };
-        if already {
-            toast.info(
-                "Already in filter".to_string(),
-                ToastOptions::default().duration(TOAST_QUICK),
-            );
-            return;
-        }
-        if otag_dict_exclude() {
-            let mut current = oracle_tags::read_excluded(&filter_builder());
-            current.push(slug);
-            oracle_tags::write_excluded(&mut filter_builder.write(), current);
-        } else {
-            let mut current = oracle_tags::read_selected(&filter_builder(), mode);
-            current.push(slug);
-            oracle_tags::write_selected(&mut filter_builder.write(), mode, current);
-        }
-        toast.success(
-            "Added to filter".to_string(),
-            ToastOptions::default().duration(TOAST_QUICK),
-        );
-    };
-
-    // Active indicator booleans (only computed when needed)
-    let (
-        name_active,
-        oracle_active,
-        types_active,
-        mana_active,
-        combat_active,
-        flavor_active,
-        artist_active,
-        rarity_active,
-        card_role_active,
-        oracle_tags_active,
-        set_active,
-        sort_active,
-        config_active,
-        format_active,
-        price_active,
-    ) = if show_active_indicators {
-        let fb = filter_builder();
-        let def = CardQueryBuilder::default();
         (
-            fb.name_contains().is_some() || fb.name_not_contains().is_some(),
-            fb.oracle_text_contains().is_some()
-                || fb.oracle_text_contains_any().is_some()
-                || fb.oracle_text_contains_all().is_some()
-                || fb.keywords_contains_any().is_some()
-                || fb.keywords_contains_all().is_some()
-                || fb.oracle_text_not_contains().is_some()
-                || fb.oracle_text_excludes_any().is_some()
-                || fb.keywords_excludes().is_some(),
-            fb.type_line_contains().is_some()
-                || fb.type_line_contains_any().is_some()
-                || fb.type_line_contains_all().is_some()
-                || fb.card_type_contains_any().is_some()
-                || fb.card_type_contains_all().is_some()
-                || fb.type_line_not_contains().is_some()
-                || fb.type_line_excludes_any().is_some()
-                || fb.card_type_excludes_any().is_some(),
-            fb.cmc_equals().is_some()
-                || fb.cmc_range().is_some()
-                || fb.color_identity_equals().is_some()
-                || fb.color_identity_within().is_some()
-                || fb.produced_mana_contains_any().is_some()
-                || fb.produced_mana_contains_all().is_some()
-                || fb.produced_mana_excludes().is_some(),
-            fb.power_equals().is_some()
-                || fb.power_range().is_some()
-                || fb.toughness_equals().is_some()
-                || fb.toughness_range().is_some(),
-            fb.flavor_text_contains().is_some()
-                || fb.has_flavor_text().is_some()
-                || fb.flavor_text_not_contains().is_some(),
-            fb.artist_equals_any().is_some() || fb.artist_excludes_any().is_some(),
-            fb.rarity_equals_any().is_some() || fb.rarity_excludes_any().is_some(),
-            fb.card_roles_contains_any().is_some()
-                || fb.card_roles_contains_all().is_some()
-                || fb.card_roles_excludes().is_some(),
-            fb.oracle_tags_contains_any().is_some()
-                || fb.oracle_tags_contains_all().is_some()
-                || fb.oracle_tags_excludes().is_some(),
-            fb.set_equals_any().is_some() || fb.set_excludes_any().is_some(),
-            fb.sort().is_some(),
-            fb.is_playable() != def.is_playable()
-                || fb.digital() != def.digital()
-                || fb.oversized() != def.oversized()
-                || fb.promo() != def.promo()
-                || fb.content_warning() != def.content_warning(),
-            fb.legalities_contains_any().is_some()
-                || fb.is_commander_in_format().is_some()
-                || fb.is_partner().is_some()
-                || fb.is_background().is_some()
-                || fb.is_signature_spell().is_some(),
-            fb.price_min().is_some() || fb.price_max().is_some(),
-        )
-    } else {
-        (
-            false, false, false, false, false, false, false, false, false, false, false, false,
-            false, false, false,
+            active,
+            model.applied().is_some_and(|applied| *applied == *draft),
         )
     };
-
-    // Nothing edited since the sheet opened: Apply has nothing to do, so it
-    // grays out rather than closing silently. The same check is repeated
-    // inside Apply, which still has to hold for a tap that lands before this
-    // render catches up.
-    let unchanged = applied_snapshot
-        .read()
-        .as_ref()
-        .is_some_and(|previous| *previous == *filter_builder.read());
 
     // Track accordion item index: shifts when format filter is included
     let mut idx = 0usize;
@@ -335,7 +249,7 @@ pub(crate) fn CardFilterSheet(
             // built by hand on the same classes.
             ::components::GridCells { still: true }
             div { class: "sheet-header", style: "position: relative;",
-                span { style: "font-size: 1rem; color: var(--accent-primary);", "Filter" }
+                span { style: "font-size: 1rem; color: var(--accent-primary);", {card_filter::TITLE} }
                 Button {
                     variant: ButtonVariant::Action,
                     style: "position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); opacity: 0.55; padding: 0.2rem 0.6rem;",
@@ -360,15 +274,13 @@ pub(crate) fn CardFilterSheet(
                             if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(1)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
                         },
                         AccordionTrigger {
-                            "Name"
-                            if name_active {
+                            {Section::Name.title()}
+                            if active.contains(&Section::Name) {
                                 button {
                                     class: "clear-btn",
                                     onclick: move |evt| {
                                         evt.stop_propagation();
-                                        let fb = &mut *filter_builder.write();
-                                        fb.unset_name_contains();
-                                        fb.unset_name_not_contains();
+                                        driver.dispatch(Action::ClearSection(Section::Name));
                                     },
                                     "\u{00d7}"
                                 }
@@ -382,21 +294,13 @@ pub(crate) fn CardFilterSheet(
                             if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(2)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
                         },
                         AccordionTrigger {
-                            "Oracle text"
-                            if oracle_active {
+                            {Section::OracleText.title()}
+                            if active.contains(&Section::OracleText) {
                                 button {
                                     class: "clear-btn",
                                     onclick: move |evt| {
                                         evt.stop_propagation();
-                                        let fb = &mut *filter_builder.write();
-                                        fb.unset_oracle_text_contains();
-                                        fb.unset_oracle_text_contains_any();
-                                        fb.unset_oracle_text_contains_all();
-                                        fb.unset_keywords_contains_any();
-                                        fb.unset_keywords_contains_all();
-                                        fb.unset_oracle_text_not_contains();
-                                        fb.unset_oracle_text_excludes_any();
-                                        fb.unset_keywords_excludes();
+                                        driver.dispatch(Action::ClearSection(Section::OracleText));
                                     },
                                     "\u{00d7}"
                                 }
@@ -410,21 +314,13 @@ pub(crate) fn CardFilterSheet(
                             if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(3)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
                         },
                         AccordionTrigger {
-                            "Types"
-                            if types_active {
+                            {Section::Types.title()}
+                            if active.contains(&Section::Types) {
                                 button {
                                     class: "clear-btn",
                                     onclick: move |evt| {
                                         evt.stop_propagation();
-                                        let fb = &mut *filter_builder.write();
-                                        fb.unset_type_line_contains();
-                                        fb.unset_type_line_contains_any();
-                                        fb.unset_type_line_contains_all();
-                                        fb.unset_card_type_contains_any();
-                                        fb.unset_card_type_contains_all();
-                                        fb.unset_type_line_not_contains();
-                                        fb.unset_type_line_excludes_any();
-                                        fb.unset_card_type_excludes_any();
+                                        driver.dispatch(Action::ClearSection(Section::Types));
                                     },
                                     "\u{00d7}"
                                 }
@@ -438,20 +334,13 @@ pub(crate) fn CardFilterSheet(
                             if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(4)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
                         },
                         AccordionTrigger {
-                            "Mana"
-                            if mana_active {
+                            {Section::Mana.title()}
+                            if active.contains(&Section::Mana) {
                                 button {
                                     class: "clear-btn",
                                     onclick: move |evt| {
                                         evt.stop_propagation();
-                                        let fb = &mut *filter_builder.write();
-                                        fb.unset_cmc_equals();
-                                        fb.unset_cmc_range();
-                                        fb.unset_color_identity_equals();
-                                        fb.unset_color_identity_within();
-                                        fb.unset_produced_mana_contains_any();
-                                        fb.unset_produced_mana_contains_all();
-                                        fb.unset_produced_mana_excludes();
+                                        driver.dispatch(Action::ClearSection(Section::Mana));
                                     },
                                     "\u{00d7}"
                                 }
@@ -465,17 +354,13 @@ pub(crate) fn CardFilterSheet(
                             if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(5)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
                         },
                         AccordionTrigger {
-                            "Combat"
-                            if combat_active {
+                            {Section::Combat.title()}
+                            if active.contains(&Section::Combat) {
                                 button {
                                     class: "clear-btn",
                                     onclick: move |evt| {
                                         evt.stop_propagation();
-                                        let fb = &mut *filter_builder.write();
-                                        fb.unset_power_equals();
-                                        fb.unset_power_range();
-                                        fb.unset_toughness_equals();
-                                        fb.unset_toughness_range();
+                                        driver.dispatch(Action::ClearSection(Section::Combat));
                                     },
                                     "\u{00d7}"
                                 }
@@ -489,16 +374,13 @@ pub(crate) fn CardFilterSheet(
                             if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(6)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
                         },
                         AccordionTrigger {
-                            "Flavor text"
-                            if flavor_active {
+                            {Section::FlavorText.title()}
+                            if active.contains(&Section::FlavorText) {
                                 button {
                                     class: "clear-btn",
                                     onclick: move |evt| {
                                         evt.stop_propagation();
-                                        let fb = &mut *filter_builder.write();
-                                        fb.unset_flavor_text_contains();
-                                        fb.unset_flavor_text_not_contains();
-                                        fb.unset_has_flavor_text();
+                                        driver.dispatch(Action::ClearSection(Section::FlavorText));
                                     },
                                     "\u{00d7}"
                                 }
@@ -512,15 +394,13 @@ pub(crate) fn CardFilterSheet(
                             if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(7)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
                         },
                         AccordionTrigger {
-                            "Artist"
-                            if artist_active {
+                            {Section::Artist.title()}
+                            if active.contains(&Section::Artist) {
                                 button {
                                     class: "clear-btn",
                                     onclick: move |evt| {
                                         evt.stop_propagation();
-                                        let fb = &mut *filter_builder.write();
-                                        fb.unset_artist_equals_any();
-                                        fb.unset_artist_excludes_any();
+                                        driver.dispatch(Action::ClearSection(Section::Artist));
                                     },
                                     "\u{00d7}"
                                 }
@@ -534,15 +414,13 @@ pub(crate) fn CardFilterSheet(
                             if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(8)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
                         },
                         AccordionTrigger {
-                            "Rarity"
-                            if rarity_active {
+                            {Section::Rarity.title()}
+                            if active.contains(&Section::Rarity) {
                                 button {
                                     class: "clear-btn",
                                     onclick: move |evt| {
                                         evt.stop_propagation();
-                                        let fb = &mut *filter_builder.write();
-                                        fb.unset_rarity_equals_any();
-                                        fb.unset_rarity_excludes_any();
+                                        driver.dispatch(Action::ClearSection(Section::Rarity));
                                     },
                                     "\u{00d7}"
                                 }
@@ -556,16 +434,13 @@ pub(crate) fn CardFilterSheet(
                             if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(9)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
                         },
                         AccordionTrigger {
-                            "Card roles"
-                            if card_role_active {
+                            {Section::CardRoles.title()}
+                            if active.contains(&Section::CardRoles) {
                                 button {
                                     class: "clear-btn",
                                     onclick: move |evt| {
                                         evt.stop_propagation();
-                                        let fb = &mut *filter_builder.write();
-                                        fb.unset_card_roles_contains_any();
-                                        fb.unset_card_roles_contains_all();
-                                        fb.unset_card_roles_excludes();
+                                        driver.dispatch(Action::ClearSection(Section::CardRoles));
                                     },
                                     "\u{00d7}"
                                 }
@@ -579,24 +454,25 @@ pub(crate) fn CardFilterSheet(
                             if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(9)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
                         },
                         AccordionTrigger {
-                            "Oracle tags"
+                            {Section::OracleTags.title()}
                             InfoButton { topic: HintTopic::OracleTags }
-                            if oracle_tags_active {
+                            if active.contains(&Section::OracleTags) {
                                 button {
                                     class: "clear-btn",
                                     onclick: move |evt| {
                                         evt.stop_propagation();
-                                        let fb = &mut *filter_builder.write();
-                                        fb.unset_oracle_tags_contains_any();
-                                        fb.unset_oracle_tags_contains_all();
-                                        fb.unset_oracle_tags_excludes();
+                                        driver.dispatch(Action::ClearSection(Section::OracleTags));
                                     },
                                     "\u{00d7}"
                                 }
                             }
                         }
                         AccordionContent {
-                            OracleTags { dict_open: otag_dict_open, dict_exclude: otag_dict_exclude }
+                            OracleTags {
+                                on_dictionary: move |field: PickerField| {
+                                    driver.dispatch(Action::OpenDictionary(field));
+                                },
+                            }
                         }
                     }
 
@@ -605,15 +481,13 @@ pub(crate) fn CardFilterSheet(
                             if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(9)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
                         },
                         AccordionTrigger {
-                            "Set"
-                            if set_active {
+                            {Section::Set.title()}
+                            if active.contains(&Section::Set) {
                                 button {
                                     class: "clear-btn",
                                     onclick: move |evt| {
                                         evt.stop_propagation();
-                                        let fb = &mut *filter_builder.write();
-                                        fb.unset_set_equals_any();
-                                        fb.unset_set_excludes_any();
+                                        driver.dispatch(Action::ClearSection(Section::Set));
                                     },
                                     "\u{00d7}"
                                 }
@@ -628,18 +502,13 @@ pub(crate) fn CardFilterSheet(
                                 if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(10)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
                             },
                             AccordionTrigger {
-                                "Format"
-                                if format_active {
+                                {Section::Format.title()}
+                                if active.contains(&Section::Format) {
                                     button {
                                         class: "clear-btn",
                                         onclick: move |evt| {
                                             evt.stop_propagation();
-                                            let fb = &mut *filter_builder.write();
-                                            fb.unset_legalities_contains_any();
-                                            fb.unset_is_commander_in_format();
-                                            fb.unset_is_partner();
-                                            fb.unset_is_background();
-                                            fb.unset_is_signature_spell();
+                                            driver.dispatch(Action::ClearSection(Section::Format));
                                         },
                                         "\u{00d7}"
                                     }
@@ -657,15 +526,13 @@ pub(crate) fn CardFilterSheet(
                             ); }
                         },
                         AccordionTrigger {
-                            "Price"
-                            if price_active {
+                            {Section::Price.title()}
+                            if active.contains(&Section::Price) {
                                 button {
                                     class: "clear-btn",
                                     onclick: move |evt| {
                                         evt.stop_propagation();
-                                        let fb = &mut *filter_builder.write();
-                                        fb.unset_price_min();
-                                        fb.unset_price_max();
+                                        driver.dispatch(Action::ClearSection(Section::Price));
                                     },
                                     "\u{00d7}"
                                 }
@@ -682,13 +549,13 @@ pub(crate) fn CardFilterSheet(
                             ); }
                         },
                         AccordionTrigger {
-                            "Sort"
-                            if sort_active {
+                            {Section::Sort.title()}
+                            if active.contains(&Section::Sort) {
                                 button {
                                     class: "clear-btn",
                                     onclick: move |evt| {
                                         evt.stop_propagation();
-                                        filter_builder.write().unset_sort();
+                                        driver.dispatch(Action::ClearSection(Section::Sort));
                                     },
                                     "\u{00d7}"
                                 }
@@ -705,18 +572,13 @@ pub(crate) fn CardFilterSheet(
                             ); }
                         },
                         AccordionTrigger {
-                            "Config"
-                            if config_active {
+                            {Section::Config.title()}
+                            if active.contains(&Section::Config) {
                                 button {
                                     class: "clear-btn",
                                     onclick: move |evt| {
                                         evt.stop_propagation();
-                                        let fb = &mut *filter_builder.write();
-                                        fb.set_is_playable(true);
-                                        fb.set_digital(false);
-                                        fb.set_oversized(false);
-                                        fb.set_promo(false);
-                                        fb.set_content_warning(false);
+                                        driver.dispatch(Action::ClearSection(Section::Config));
                                     },
                                     "\u{00d7}"
                                 }
@@ -732,105 +594,34 @@ pub(crate) fn CardFilterSheet(
                 Button {
                     variant: ButtonVariant::Action,
                     // Close without applying: the same escape as the backdrop.
-                    // Closing restores the open-snapshot, discarding draft edits,
-                    // and the close effect says so.
+                    // The close effect puts the applied filter back and says so.
                     onclick: move |_| open.set(false),
-                    "Back"
+                    {card_filter::BACK}
                 }
                 Button {
                     variant: ButtonVariant::Action,
                     disabled: unchanged,
-                    onclick: move |_| {
-                        // Block contradictory filters (a value/term both included
-                        // and excluded matches zero cards). Keep the sheet open so
-                        // the user can fix the offending field.
-                        if let Err(InvalidCardCriteria::Contradiction { field, .. }) =
-                            filter_builder.read().build()
-                        {
-                            toast.warning(
-                                format!("Filter can't both include and exclude {field}"),
-                                ToastOptions::default().duration(TOAST_NORMAL),
-                            );
-                            return;
-                        }
-                        // An empty filter searches the whole catalog, so the
-                        // add screen refuses one. Clearing a filter that IS
-                        // applied is a reset, not that: judge the transition,
-                        // not the draft alone, or there is no way back out of
-                        // a filter once one is on.
-                        let to = FilterState::of(filter_builder.read().has_search_intent());
-                        let from = FilterState::of(
-                            applied_snapshot
-                                .read()
-                                .as_ref()
-                                .is_some_and(CardQueryBuilder::has_search_intent),
-                        );
-                        // Nothing edited since the sheet opened: closing must
-                        // not refetch, or a look at the filters throws away the
-                        // user's place in the card stack.
-                        let unchanged = applied_snapshot
-                            .read()
-                            .as_ref()
-                            .is_some_and(|previous| *previous == *filter_builder.read());
-                        let cleared = match apply_action(validate_before_apply, from, to, unchanged) {
-                            ApplyAction::RefuseEmpty => {
-                                toast.warning(
-                                    "Filter is already empty".to_string(),
-                                    ToastOptions::default().duration(TOAST_QUICK),
-                                );
-                                // Return before closing. Closing with the
-                                // snapshot still armed is what made a refusal
-                                // ALSO revert the draft and raise a second
-                                // toast.
-                                return;
-                            }
-                            ApplyAction::NoChange => {
-                                // Silent: the sheet closing is the feedback,
-                                // and Refresh is there if they want new cards.
-                                open.set(false);
-                                return;
-                            }
-                            ApplyAction::Commit { cleared } => cleared,
-                        };
-                        bump_filter();
-                        // Drop the snapshot so closing keeps the committed
-                        // draft; a rejected apply restores like Cancel.
-                        applied_snapshot.set(None);
-                        toast.success(
-                            if cleared {
-                                "Filter cleared".to_string()
-                            } else {
-                                "Filter applied".to_string()
-                            },
-                            ToastOptions::default().duration(TOAST_QUICK),
-                        );
-                        // The sheet closing collapses the accordion (see the
-                        // open/close effect above), so it reopens tidy.
-                        open.set(false);
-                    },
-                    "Apply"
+                    onclick: move |_| driver.dispatch(Action::Apply),
+                    {card_filter::APPLY}
                 }
                 Button {
                     variant: ButtonVariant::Action,
                     onclick: move |_| {
-                        // Stages the default; Apply commits it, Cancel undoes it.
+                        // Stages the default; Apply commits it, Back undoes it.
                         if let Some(handler) = &on_clear {
                             handler.call(());
                         } else {
-                            filter_builder.write().clear();
-                            toast.info(
-                                "Filter reset".to_string(),
-                                ToastOptions::default().duration(TOAST_QUICK),
-                            );
+                            driver.dispatch(Action::Reset);
                         }
                     },
-                    "Reset"
+                    {card_filter::RESET}
                 }
             }
         }
 
         HintDialog {
             open: hint_open,
+            actions: guide_link::one_time(HINT_FILTER),
             title: "Filters",
             HintBullets {
                 HintBullet { "Picks which cards show: the ones served to " HintColored { color: "--accent-primary", "swipe" } ", or which of the deck's cards list" }
@@ -843,70 +634,10 @@ pub(crate) fn CardFilterSheet(
         // Rendered outside the bottom sheet (see `otag_dict_open` note) so its
         // full-screen fixed overlay isn't trapped by the sheet's transform.
         if otag_dict_open() {
-            OracleTagDictionary { open: otag_dict_open, on_use: adopt_otag }
+            OracleTagDictionary {
+                open: otag_dict_open,
+                on_use: move |slug: String| driver.dispatch(Action::UseTag(slug)),
+            }
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::FilterState::{Empty, Set};
-    use super::{ApplyAction, apply_action};
-
-    /// The four states Apply can be pressed in, all with an edited draft. The
-    /// third line is the case this function exists for: judging the draft
-    /// alone refuses a deliberate clear, so a filter can never be turned off.
-    /// The second keeps an apply over an existing filter from reading as a
-    /// clear.
-    #[test]
-    fn apply_reads_the_transition_not_just_the_draft() {
-        assert_eq!(
-            apply_action(true, Set, Set, false),
-            ApplyAction::Commit { cleared: false }
-        );
-        assert_eq!(
-            apply_action(true, Empty, Set, false),
-            ApplyAction::Commit { cleared: false }
-        );
-        assert_eq!(
-            apply_action(true, Set, Empty, false),
-            ApplyAction::Commit { cleared: true }
-        );
-        assert_eq!(
-            apply_action(true, Empty, Empty, false),
-            ApplyAction::RefuseEmpty
-        );
-    }
-
-    /// Opening the sheet and applying without editing must not refetch: that
-    /// would throw away the user's place in the card stack for nothing.
-    #[test]
-    fn an_unedited_apply_changes_nothing() {
-        assert_eq!(apply_action(true, Set, Set, true), ApplyAction::NoChange);
-        assert_eq!(apply_action(false, Set, Set, true), ApplyAction::NoChange);
-    }
-
-    /// The refusal still wins over the no-change shortcut: an empty filter that
-    /// served nothing is worth explaining, and silently closing would not.
-    #[test]
-    fn refusing_an_empty_filter_beats_the_no_change_shortcut() {
-        assert_eq!(
-            apply_action(true, Empty, Empty, true),
-            ApplyAction::RefuseEmpty
-        );
-    }
-
-    /// Screens without the guard (remove, deck cards) always commit an edit,
-    /// including emptying the filter entirely.
-    #[test]
-    fn without_validation_every_edit_commits() {
-        assert_eq!(
-            apply_action(false, Empty, Empty, false),
-            ApplyAction::Commit { cleared: false }
-        );
-        assert_eq!(
-            apply_action(false, Set, Empty, false),
-            ApplyAction::Commit { cleared: true }
-        );
     }
 }

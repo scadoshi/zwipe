@@ -50,7 +50,7 @@ jobs:
       # nextest runs every test from every binary in one parallel queue, where
       # cargo test runs the 39 binaries one after another. Each #[sqlx::test]
       # gets its own database, so they are safe side by side.
-      - uses: taiki-e/install-action@1e29709c0ec63babbe8f266397a465f29a825f91 # v2
+      - uses: taiki-e/install-action@68a389c788b2cd04016ce8c80ee23b80d2ab3d68 # v2
         with:
           tool: cargo-nextest
       - name: Test
@@ -174,7 +174,7 @@ jobs:
         # Keep this matched to the workspace dioxus version (and the build
         # Macs' `dx --version`) — a mismatch is a warning today but dx treats
         # it as incompatible.
-        uses: taiki-e/install-action@1e29709c0ec63babbe8f266397a465f29a825f91 # v2
+        uses: taiki-e/install-action@68a389c788b2cd04016ce8c80ee23b80d2ab3d68 # v2
         with:
           tool: dioxus-cli@0.7.10
 

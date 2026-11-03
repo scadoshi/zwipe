@@ -5,6 +5,7 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use zwipe_core::http::contracts::metrics::HttpLifetimeCounters;
 
+use crate::domain::metrics::ports::MetricsService;
 use crate::inbound::http::middleware::AuthenticatedUser;
 use crate::inbound::http::{ApiError, AppState};
 

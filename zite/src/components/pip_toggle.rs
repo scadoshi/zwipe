@@ -3,28 +3,28 @@
 //! that style standing in for the mode icon.
 
 use dioxus::prelude::*;
-use zwipe_core::domain::user::preferences::PipStyle;
+use zwipe_core::domain::user::preferences::PipColor;
 
 /// Flips the site's pip style between the theme's colors and the classic
 /// ones. It names the style in use; the tooltip names the one a click
 /// switches to.
 #[component]
-pub fn PipToggle(style: Signal<PipStyle>) -> Element {
+pub fn PipToggle(style: Signal<PipColor>) -> Element {
     let mut style = style;
     let current = style();
     rsx! {
         button {
             class: "mode-toggle pip-toggle",
             title: match current {
-                PipStyle::Theme => "Switch to natural pips",
-                PipStyle::Natural => "Switch to theme pips",
+                PipColor::Theme => "Switch to classic pips",
+                PipColor::Classic => "Switch to theme pips",
             },
             onclick: move |_| style.set(current.toggled()),
             span { class: "mode-label",
                 i { class: "ms ms-r ms-cost", "aria-hidden": "true" }
                 match current {
-                    PipStyle::Theme => "Theme",
-                    PipStyle::Natural => "Natural",
+                    PipColor::Theme => "Theme",
+                    PipColor::Classic => "Classic",
                 }
             }
         }

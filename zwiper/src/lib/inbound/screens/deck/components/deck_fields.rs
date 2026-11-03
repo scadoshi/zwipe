@@ -1,950 +1,91 @@
-//! The deck fields the create and edit screens share: name, format and the command-zone searches.
+//! The deck fields the create and edit screens share: name, format, the command zone, power level, budget and tags, drawn from the screen model.
 
-use std::time::Duration;
-
-use components::{HintBullet, HintBullets, HintDialog, HintKey, TOAST_NORMAL, TextInput};
+use components::{HintBullet, HintBullets, HintDialog, HintKey, TextInput};
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, Toasts, use_toast};
-use tokio::time;
-use uuid::Uuid;
-use zwipe_client::ZwipeClient;
-use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::card::Card;
-use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
-use zwipe_core::domain::card::search_card::card_filter::error::InvalidCardCriteria;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
-use zwipe_core::domain::card::search_card::commander_eligibility::{self, PartnerKind};
-use zwipe_core::domain::deck::format::Format;
 use zwipe_core::domain::deck::{
-    self, DeckName, DeckOtherTag, MAX_DECK_ORACLE_TAGS, MAX_DECK_TAGS, PowerLevel,
+    self, DeckOtherTag, MAX_DECK_ORACLE_TAGS, MAX_DECK_TAGS, PowerLevel,
 };
-use zwipe_ui::deck::command_zone::Slot;
+use zwipe_ui::deck::form::{Slot, Step};
+use zwipe_ui::deck::pickers::{Picker, TagPicker};
+use zwipe_ui::screens::deck_form::{self as model, Action, Results, State};
 
-use crate::inbound::components::generation::use_generation;
+use crate::inbound::components::guide_link;
 use crate::inbound::components::hint_dialog::HintColored;
 use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::info_button::{self, InfoButton};
-use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 
-/// Upper bound for the land-target stepper: no deck runs more lands than this.
-const MAX_LAND_TARGET: i32 = 100;
-
-/// Pause after the last keystroke before a command-zone search fires.
-const SEARCH_DEBOUNCE_MS: u64 = 800;
-
-/// Characters the commander and signature spell searches wait for. Partner and
-/// background search from one character, their pools being small.
-const MIN_NAME_QUERY_LEN: usize = 3;
-
-/// Results fetched by a by-name lookup: the commander and signature spell
-/// searches and the named partner autofill.
-const NAME_RESULT_LIMIT: u32 = 5;
-
-/// Results fetched by the partner and background searches.
-const POOL_RESULT_LIMIT: u32 = 10;
-
-/// "Partner with [Name]" names exactly one legal partner, so a commander pick
-/// fills the partner slot automatically: fetch the named mate and set it, with
-/// a toast so the user knows something automatic happened. Generic Partner /
-/// Friends forever / Doctor's companion pair freely and are untouched.
-///
-/// Call this only from explicit commander selections (typeahead click, Zwipe
-/// select): never from the commander-change effect, which also fires on
-/// edit-screen load and would toast on every open of a partner deck. The
-/// commander-change clear effect runs before this fetch returns, so the fill
-/// lands on a freshly cleared slot; the completion guard bails if the user
-/// changed commander again (or somehow set a partner) in the meantime.
-pub(crate) fn autofill_named_partner(
-    selected: &Card,
-    client: Signal<ZwipeClient>,
-    session: Signal<Option<Session>>,
-    commander: Signal<Option<Card>>,
-    mut partner_commander: Signal<Option<Card>>,
-    mut partner_commander_display: Signal<String>,
-    toast: Toasts,
-) {
-    let Some(PartnerKind::Named(mate)) = commander_eligibility::partner_kind(selected) else {
-        return;
-    };
-    let selected_id = selected.scryfall_data.id;
-    spawn(async move {
-        let Some(session) = session.peek().clone() else {
-            return;
-        };
-        let mut builder = CardQueryBuilder::with_name_contains(&mate);
-        builder.set_limit(NAME_RESULT_LIMIT);
-        let Ok(filter) = builder.build() else {
-            return;
-        };
-        match client().search_cards(&filter, &session).await {
-            Ok(cards) => {
-                // Exact full-name match first: the front-face tier is only a
-                // fallback for mates that exist solely as a DFC, and must not
-                // pick a reversible `A // A` printing over the real card.
-                let exact = cards
-                    .iter()
-                    .position(|c| c.scryfall_data.name.eq_ignore_ascii_case(&mate));
-                let front_face = || {
-                    cards.iter().position(|c| {
-                        c.scryfall_data
-                            .name
-                            .split(" // ")
-                            .next()
-                            .is_some_and(|front| front.trim().eq_ignore_ascii_case(&mate))
-                    })
-                };
-                let Some(found) = exact
-                    .or_else(front_face)
-                    .and_then(|i| cards.into_iter().nth(i))
-                else {
-                    tracing::warn!("partner autofill: no exact match for {mate}");
-                    return;
-                };
-                let commander_unchanged = commander
-                    .peek()
-                    .as_ref()
-                    .is_some_and(|c| c.scryfall_data.id == selected_id);
-                if !commander_unchanged || partner_commander.peek().is_some() {
-                    return;
-                }
-                let name = found.scryfall_data.name.clone();
-                partner_commander_display.set(name.clone());
-                partner_commander.set(Some(found));
-                toast.info(
-                    format!("Partner found and selected: {name}"),
-                    ToastOptions::default().duration(TOAST_NORMAL),
-                );
-            }
-            Err(e) => tracing::warn!("partner autofill search failed: {e}"),
-        }
-    });
-}
-
-/// Format chip selector and card search inputs with debounced dropdowns.
-///
-/// Shows/hides commander, partner, background, and signature spell fields
-/// based on the selected format and commander's abilities.
-///
-/// Reads `Signal<Option<Session>>` and `Signal<ZwipeClient>` from context.
+/// The form's fields, drawn from `model`. Every tap goes out through `on_action`; a field's Swipe chip asks the screen to open that slot's swipe picker through `on_swipe`. `name` is the name input's text, which the screen keeps in step with the model.
 #[component]
 pub(crate) fn DeckFields(
-    mut deck_name: Signal<String>,
-    mut selected_format: Signal<Option<Format>>,
-    mut selected_tags: Signal<Vec<String>>,
-    mut commander: Signal<Option<Card>>,
-    mut commander_display: Signal<String>,
-    mut partner_commander: Signal<Option<Card>>,
-    mut partner_commander_display: Signal<String>,
-    mut background: Signal<Option<Card>>,
-    mut background_display: Signal<String>,
-    mut signature_spell: Signal<Option<Card>>,
-    mut signature_spell_display: Signal<String>,
-    // Each toggles its field's Zwipe-select overlay. Owned by the parent screen
-    // (it replaces its own content with the picker), set true by these chips.
-    mut show_commander_swipe: Signal<bool>,
-    mut show_partner_swipe: Signal<bool>,
-    mut show_background_swipe: Signal<bool>,
-    mut show_signature_spell_swipe: Signal<bool>,
-    mut show_tags_select: Signal<bool>,
-    mut show_format_select: Signal<bool>,
-    mut deck_name_error: Signal<Option<String>>,
-    // Land target. `None` = Not set, which falls back to the format heuristic.
-    // A stepper edits it; the × in the label row returns it to None.
-    mut land_target: Signal<Option<i32>>,
-    // Price target (budget) as amount text ("" = no budget) + currency chips.
-    mut price_target: Signal<String>,
-    mut price_target_currency: Signal<PriceCurrency>,
-    // Power level (WotC bracket). `None` = Not set. Single-select chips.
-    mut power_level: Signal<Option<PowerLevel>>,
-    // Other tags (non-gameplay labels). Multi-select chips.
-    mut other_tags: Signal<Vec<DeckOtherTag>>,
-    // Oracle tags (granular strategy slugs). Opens a fetched-catalog picker;
-    // seeded from the selected deck tags by the parent screen.
-    mut oracle_tags: Signal<Vec<String>>,
-    mut show_oracle_tags_select: Signal<bool>,
+    model: ReadSignal<State>,
+    name: Signal<String>,
+    on_action: EventHandler<Action>,
+    on_swipe: EventHandler<Slot>,
 ) -> Element {
-    let session: Signal<Option<Session>> = use_context();
-    let client: Signal<ZwipeClient> = use_context();
-    let usage_buffer: Signal<UsageBuffer> = use_context();
-    let toast = use_toast();
-
-    // Deck name inline validation: mirrors the auth/profile per-field pattern:
-    // show the error under the field as the user types (after first input), so a
-    // bad name surfaces here instead of as a toast on save.
-    let mut deck_name_touched = use_signal(|| false);
-    use_effect(move || {
-        let value = deck_name();
-        if !value.is_empty() && !deck_name_touched() {
-            deck_name_touched.set(true);
-        }
-        if deck_name_touched() {
-            match DeckName::new(value) {
-                Ok(_) => deck_name_error.set(None),
-                Err(e) => deck_name_error.set(Some(e.to_string())),
-            }
-        }
-    });
-
-    // Command-zone search state. Each field's searches take tickets from its
-    // own generation, so a reply for an older query never lands over a newer
-    // one.
-
-    // Commander search state
-    let mut cmd_search_query = use_signal(String::new);
-    let mut cmd_search_results = use_signal(Vec::<Card>::new);
-    let mut cmd_is_searching = use_signal(|| false);
-    let mut cmd_show_dropdown = use_signal(|| false);
-    let mut cmd_filter_on = use_signal(|| true);
-    let mut cmd_searches = use_generation();
-
-    // Partner search state
-    let mut partner_search_query = use_signal(String::new);
-    let mut partner_search_results = use_signal(Vec::<Card>::new);
-    let mut partner_is_searching = use_signal(|| false);
-    let mut partner_show_dropdown = use_signal(|| false);
-    let mut partner_filter_on = use_signal(|| true);
-    let mut partner_searches = use_generation();
-
-    // Background search state
-    let mut bg_search_query = use_signal(String::new);
-    let mut bg_search_results = use_signal(Vec::<Card>::new);
-    let mut bg_is_searching = use_signal(|| false);
-    let mut bg_show_dropdown = use_signal(|| false);
-    let mut bg_filter_on = use_signal(|| true);
-    let mut bg_searches = use_generation();
-
-    // Signature spell search state
-    let mut spell_search_query = use_signal(String::new);
-    let mut spell_search_results = use_signal(Vec::<Card>::new);
-    let mut spell_is_searching = use_signal(|| false);
-    let mut spell_show_dropdown = use_signal(|| false);
-    let mut spell_filter_on = use_signal(|| true);
-    let mut spell_searches = use_generation();
-
-    // Visibility memos
-    let show_commander = use_memo(move || selected_format().is_some_and(|f| f.has_commander()));
-
-    let show_partner = use_memo(move || {
-        show_commander()
-            && commander().is_some_and(|c| commander_eligibility::partner_kind(&c).is_some())
-    });
-
-    let show_background = use_memo(move || {
-        show_commander()
-            && commander().is_some_and(|c| commander_eligibility::has_choose_a_background(&c))
-    });
-
-    let show_signature_spell =
-        use_memo(move || selected_format().is_some_and(|f| f.has_signature_spell()));
-
-    let commander_label = use_memo(move || Slot::Commander.label(selected_format()));
-
-    // Format-derived land heuristic. The stepper seeds from it on the first tick
-    // so an empty field starts at the sensible count rather than zero.
-    let land_heuristic = use_memo(move || selected_format().and_then(|f| f.default_land_target()));
-
-    // Cascading clear effects
-
-    // Format change → reset all filter toggles
-    use_effect(move || {
-        let _ = selected_format();
-        cmd_filter_on.set(true);
-        partner_filter_on.set(true);
-        bg_filter_on.set(true);
-        spell_filter_on.set(true);
-    });
-
-    // Commander change → clear partner and background (they depend on the
-    // commander's abilities). Guarded by the previous commander's id: the edit
-    // screen loads commander and partner through independent racing resources,
-    // so the None → Some transition of the initial load must NOT clear, if
-    // the partner resolved first, the commander's arrival would wipe it (the
-    // field showed empty + a phantom "Save changes" on every edit open of a
-    // partner deck). A genuine change is Some → Some(other) or Some → None;
-    // re-setting the same commander also keeps the partner.
-    let mut prev_commander_id = use_signal(|| Option::<Uuid>::None);
-    use_effect(move || {
-        let current = commander().map(|c| c.scryfall_data.id);
-        let previous = *prev_commander_id.peek();
-        prev_commander_id.set(current);
-        if previous.is_none() || previous == current {
-            return;
-        }
-        partner_commander.set(None);
-        partner_commander_display.set(String::new());
-        partner_search_query.set(String::new());
-        partner_show_dropdown.set(false);
-        background.set(None);
-        background_display.set(String::new());
-        bg_search_query.set(String::new());
-        bg_show_dropdown.set(false);
-    });
-
-    // Commander debounced search
-    use_effect(move || {
-        let query = cmd_search_query();
-        let ticket = cmd_searches.next_ticket();
-
-        if query.len() < MIN_NAME_QUERY_LEN {
-            cmd_show_dropdown.set(false);
-            cmd_is_searching.set(false);
-            return;
-        }
-
-        cmd_is_searching.set(true);
-        // Reveal the dropdown immediately so the "Searching..." indicator shows
-        // during the debounce; otherwise the field looks empty for ~1s and a
-        // slow reveal reads as "card missing."
-        cmd_show_dropdown.set(true);
-
-        spawn(async move {
-            time::sleep(Duration::from_millis(SEARCH_DEBOUNCE_MS)).await;
-
-            if !cmd_searches.is_current(ticket) {
-                return;
-            }
-
-            if let Some(session) = session() {
-                let mut builder = CardQueryBuilder::with_name_contains(&query);
-                if cmd_filter_on()
-                    && let Some(fmt) = selected_format()
-                {
-                    builder.set_is_commander_in_format(fmt);
-                }
-                builder.set_limit(NAME_RESULT_LIMIT);
-                let Ok(card_filter) = builder.build() else {
-                    tracing::error!("{}", InvalidCardCriteria::Empty.to_string());
-                    return;
-                };
-                usage_buffer().record_search();
-                let reply = client().search_cards(&card_filter, &session).await;
-                if !cmd_searches.is_current(ticket) {
-                    return;
-                }
-                match reply {
-                    Ok(cards) => {
-                        cmd_search_results.set(cards);
-                        cmd_is_searching.set(false);
-                        cmd_show_dropdown.set(true);
-                    }
-                    Err(e) => {
-                        tracing::error!("search error: {}", e);
-                        cmd_is_searching.set(false);
-                        cmd_show_dropdown.set(false);
-                    }
-                }
-            }
-        });
-    });
-
-    // Partner debounced search (1 char minimum: small card pool)
-    use_effect(move || {
-        let query = partner_search_query();
-        let ticket = partner_searches.next_ticket();
-
-        if query.is_empty() {
-            partner_show_dropdown.set(false);
-            partner_is_searching.set(false);
-            return;
-        }
-
-        partner_is_searching.set(true);
-        partner_show_dropdown.set(true);
-
-        spawn(async move {
-            time::sleep(Duration::from_millis(SEARCH_DEBOUNCE_MS)).await;
-
-            if !partner_searches.is_current(ticket) {
-                return;
-            }
-
-            if let Some(session) = session() {
-                let mut builder = CardQueryBuilder::new();
-                if !query.is_empty() {
-                    builder.set_name_contains(&query);
-                }
-                if partner_filter_on() {
-                    builder.set_is_partner(true);
-                }
-                builder.set_limit(POOL_RESULT_LIMIT);
-                let Ok(card_filter) = builder.build() else {
-                    return;
-                };
-                usage_buffer().record_search();
-                let reply = client().search_cards(&card_filter, &session).await;
-                if !partner_searches.is_current(ticket) {
-                    return;
-                }
-                match reply {
-                    Ok(cards) => {
-                        partner_search_results.set(cards);
-                        partner_is_searching.set(false);
-                        partner_show_dropdown.set(true);
-                    }
-                    Err(e) => {
-                        tracing::error!("search error: {}", e);
-                        partner_is_searching.set(false);
-                        partner_show_dropdown.set(false);
-                    }
-                }
-            }
-        });
-    });
-
-    // Background debounced search (1 char minimum, small card pool)
-    use_effect(move || {
-        let query = bg_search_query();
-        let ticket = bg_searches.next_ticket();
-
-        if query.is_empty() {
-            bg_show_dropdown.set(false);
-            bg_is_searching.set(false);
-            return;
-        }
-
-        bg_is_searching.set(true);
-        bg_show_dropdown.set(true);
-
-        spawn(async move {
-            time::sleep(Duration::from_millis(SEARCH_DEBOUNCE_MS)).await;
-
-            if !bg_searches.is_current(ticket) {
-                return;
-            }
-
-            if let Some(session) = session() {
-                let mut builder = CardQueryBuilder::new();
-                if !query.is_empty() {
-                    builder.set_name_contains(&query);
-                }
-                if bg_filter_on() {
-                    builder.set_is_background(true);
-                }
-                builder.set_limit(POOL_RESULT_LIMIT);
-                let Ok(card_filter) = builder.build() else {
-                    return;
-                };
-                usage_buffer().record_search();
-                let reply = client().search_cards(&card_filter, &session).await;
-                if !bg_searches.is_current(ticket) {
-                    return;
-                }
-                match reply {
-                    Ok(cards) => {
-                        bg_search_results.set(cards);
-                        bg_is_searching.set(false);
-                        bg_show_dropdown.set(true);
-                    }
-                    Err(e) => {
-                        tracing::error!("search error: {}", e);
-                        bg_is_searching.set(false);
-                        bg_show_dropdown.set(false);
-                    }
-                }
-            }
-        });
-    });
-
-    // Signature spell debounced search
-    use_effect(move || {
-        let query = spell_search_query();
-        let ticket = spell_searches.next_ticket();
-
-        if query.len() < MIN_NAME_QUERY_LEN {
-            spell_show_dropdown.set(false);
-            spell_is_searching.set(false);
-            return;
-        }
-
-        spell_is_searching.set(true);
-        spell_show_dropdown.set(true);
-
-        spawn(async move {
-            time::sleep(Duration::from_millis(SEARCH_DEBOUNCE_MS)).await;
-
-            if !spell_searches.is_current(ticket) {
-                return;
-            }
-
-            if let Some(session) = session() {
-                let mut builder = CardQueryBuilder::with_name_contains(&query);
-                if spell_filter_on() {
-                    builder.set_is_signature_spell(true);
-                    // Also restrict to oathbreaker's color identity
-                    if let Some(ob) = commander() {
-                        builder.set_color_identity_within(ob.scryfall_data.color_identity);
-                    }
-                }
-                builder.set_limit(NAME_RESULT_LIMIT);
-                let Ok(card_filter) = builder.build() else {
-                    return;
-                };
-                usage_buffer().record_search();
-                let reply = client().search_cards(&card_filter, &session).await;
-                if !spell_searches.is_current(ticket) {
-                    return;
-                }
-                match reply {
-                    Ok(cards) => {
-                        spell_search_results.set(cards);
-                        spell_is_searching.set(false);
-                        spell_show_dropdown.set(true);
-                    }
-                    Err(e) => {
-                        tracing::error!("search error: {}", e);
-                        spell_is_searching.set(false);
-                        spell_show_dropdown.set(false);
-                    }
-                }
-            }
-        });
-    });
+    let state = model.read();
+    let values = state.values();
+    let name_error = state.name_error().map(str::to_owned);
+    let format = values.format;
+    let power_level = values.power_level;
+    let land_target = values.land_target;
+    let price_text = values.price_text.clone();
+    let currency_picked = values.currency;
+    let other_tags = values.other_tags.clone();
+    let deck_tags = values.tags.clone();
+    let oracle_tags = values.oracle_tags.clone();
+    drop(state);
 
     rsx! {
         // Profile: name, format, command zone, power level.
         div { style: "margin-bottom: 0.5rem;",
-            span { class: "settings-list-title", "Profile" }
+            span { class: "settings-list-title", {model::PROFILE} }
         }
 
         // Deck name
         TextInput {
-            label: "Deck name",
+            label: model::DECK_NAME,
             on_info: info_button::open_topic(HintTopic::DeckName),
-            value: deck_name,
+            value: name,
             id: "deck_name",
-            placeholder: "Not set",
-            error: deck_name_error(),
+            placeholder: model::NOT_SET,
+            error: name_error,
         }
 
         // Format (open the full-screen picker to choose)
         div {
             div { class: "label-row",
-                label { class: "label", "Format" }
+                label { class: "label", {model::FORMAT} }
                 InfoButton { topic: HintTopic::Format }
-                if selected_format().is_some() {
+                if format.is_some() {
                     button {
                         class: "clear-btn",
-                        onclick: move |_| {
-                            selected_format.set(None);
-                            commander.set(None);
-                            commander_display.set(String::new());
-                            signature_spell.set(None);
-                            signature_spell_display.set(String::new());
-                        },
+                        onclick: move |_| on_action.call(Action::ClearFormat),
                         "\u{00d7}"
                     }
                 }
             }
 
-            if let Some(fmt) = selected_format() {
-                div { class: "input input-tappable", onclick: move |_| show_format_select.set(true), "{fmt.display_name()}" }
+            if let Some(fmt) = format {
+                div { class: "input input-tappable", onclick: move |_| on_action.call(Action::OpenPicker(Picker::Format)), "{fmt.display_name()}" }
             } else {
-                div { class: "input input-placeholder input-tappable", onclick: move |_| show_format_select.set(true), "Not set" }
+                div { class: "input input-placeholder input-tappable", onclick: move |_| on_action.call(Action::OpenPicker(Picker::Format)), {model::NOT_SET} }
             }
         }
 
-        // Commander selector
-        Collapsible { show: show_commander(),
-            div {
-                div { class: "label-row",
-                    label { class: "label", "{commander_label}" }
-                InfoButton { topic: HintTopic::Commander }
-                    div {
-                        class: if cmd_filter_on() { "chip-xs selected" } else { "chip-xs" },
-                        onclick: move |_| {
-                            cmd_filter_on.set(!cmd_filter_on());
-                        },
-                        "Filter"
-                    }
-                    if commander().is_some() {
-                        button {
-                            class: "clear-btn",
-                            onclick: move |_| {
-                                commander.set(None);
-                                commander_display.set(String::new());
-                                cmd_search_query.set(String::new());
-                                cmd_show_dropdown.set(false);
-                            },
-                            "\u{00d7}"
-                        }
-                    }
-                    div {
-                        class: "chip-xs chip-primary",
-                        onclick: move |_| show_commander_swipe.set(true),
-                        "Swipe"
-                    }
-                }
-
-                if cmd_show_dropdown() {
-                    div { class: "search-float-anchor",
-                        if cmd_is_searching() {
-                            div { class: "search-float-results",
-                                div { class: "chip-unselected search-float-chip", "Searching..." }
-                            }
-                        } else if cmd_search_results().is_empty() {
-                            div { class: "search-float-results",
-                                div { class: "chip-unselected search-float-chip", "No results" }
-                            }
-                        } else {
-                            div { class: "search-float-results",
-                                for (i, card) in cmd_search_results().iter().cloned().enumerate() {
-                                    div {
-                                        class: "chip-unselected search-float-chip",
-                                        style: "animation-delay: {i * 40}ms, {250 + i * 40}ms;",
-                                        onclick: move |_| {
-                                            commander.set(Some(card.clone()));
-                                            commander_display.set(card.scryfall_data.name.clone());
-                                            cmd_show_dropdown.set(false);
-                                            autofill_named_partner(
-                                                &card,
-                                                client,
-                                                session,
-                                                commander,
-                                                partner_commander,
-                                                partner_commander_display,
-                                                toast,
-                                            );
-                                        },
-                                        { card.scryfall_data.name.clone() }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                div { class: "flex items-center gap-05",
-                    input { class: "input",
-                        style: "flex: 1;",
-                        id: "commander",
-                        r#type: "text",
-                        placeholder: "Not set",
-                        value: "{commander_display}",
-                        autocapitalize: "none",
-                        autocorrect: "off",
-                        spellcheck: "false",
-                        onclick: move |_| {
-                            cmd_search_query.set(String::new());
-                            commander_display.set(String::new());
-                            commander.set(None);
-                        },
-                        oninput: move |event| {
-                            cmd_search_query.set(event.value());
-                            commander_display.set(event.value());
-                        }
-                    }
-                    if !cmd_search_query().is_empty() {
-                        button {
-                            class: "clear-btn",
-                            onclick: move |_| {
-                                cmd_search_query.set(String::new());
-                                commander_display.set(String::new());
-                                cmd_show_dropdown.set(false);
-                            },
-                            "\u{00d7}"
-                        }
-                    }
-                }
-            }
-        }
-
-        // Partner commander selector
-        Collapsible { show: show_partner(),
-            div {
-                div { class: "label-row",
-                    label { class: "label", {Slot::Partner.label(selected_format())} }
-                InfoButton { topic: HintTopic::Partner }
-                    div {
-                        class: if partner_filter_on() { "chip-xs selected" } else { "chip-xs" },
-                        onclick: move |_| {
-                            partner_filter_on.set(!partner_filter_on());
-                        },
-                        "Filter"
-                    }
-                    if partner_commander().is_some() {
-                        button {
-                            class: "clear-btn",
-                            onclick: move |_| {
-                                partner_commander.set(None);
-                                partner_commander_display.set(String::new());
-                                partner_search_query.set(String::new());
-                                partner_show_dropdown.set(false);
-                            },
-                            "\u{00d7}"
-                        }
-                    }
-                    div {
-                        class: "chip-xs chip-primary",
-                        onclick: move |_| show_partner_swipe.set(true),
-                        "Swipe"
-                    }
-                }
-
-                if partner_show_dropdown() {
-                    div { class: "search-float-anchor",
-                        if partner_is_searching() {
-                            div { class: "search-float-results",
-                                div { class: "chip-unselected search-float-chip", "Searching..." }
-                            }
-                        } else if partner_search_results().is_empty() {
-                            div { class: "search-float-results",
-                                div { class: "chip-unselected search-float-chip", "No results" }
-                            }
-                        } else {
-                            div { class: "search-float-results",
-                                for (i, card) in partner_search_results().iter().cloned().enumerate() {
-                                    div {
-                                        class: "chip-unselected search-float-chip",
-                                        style: "animation-delay: {i * 40}ms, {250 + i * 40}ms;",
-                                        onclick: move |_| {
-                                            partner_commander.set(Some(card.clone()));
-                                            partner_commander_display.set(card.scryfall_data.name.clone());
-                                            partner_show_dropdown.set(false);
-                                        },
-                                        { card.scryfall_data.name.clone() }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                div { class: "flex items-center gap-05",
-                    input { class: "input",
-                        style: "flex: 1;",
-                        id: "partner_commander",
-                        r#type: "text",
-                        placeholder: "Not set",
-                        value: "{partner_commander_display}",
-                        autocapitalize: "none",
-                        autocorrect: "off",
-                        spellcheck: "false",
-                        onclick: move |_| {
-                            partner_search_query.set(String::new());
-                            partner_commander_display.set(String::new());
-                            partner_commander.set(None);
-                        },
-                        oninput: move |event| {
-                            partner_search_query.set(event.value());
-                            partner_commander_display.set(event.value());
-                        }
-                    }
-                    if !partner_search_query().is_empty() {
-                        button {
-                            class: "clear-btn",
-                            onclick: move |_| {
-                                partner_search_query.set(String::new());
-                                partner_commander_display.set(String::new());
-                                partner_show_dropdown.set(false);
-                            },
-                            "\u{00d7}"
-                        }
-                    }
-                }
-            }
-        }
-
-        // Background selector
-        Collapsible { show: show_background(),
-            div {
-                div { class: "label-row",
-                    label { class: "label", {Slot::Background.label(selected_format())} }
-                InfoButton { topic: HintTopic::Background }
-                    div {
-                        class: if bg_filter_on() { "chip-xs selected" } else { "chip-xs" },
-                        onclick: move |_| {
-                            bg_filter_on.set(!bg_filter_on());
-                        },
-                        "Filter"
-                    }
-                    if background().is_some() {
-                        button {
-                            class: "clear-btn",
-                            onclick: move |_| {
-                                background.set(None);
-                                background_display.set(String::new());
-                                bg_search_query.set(String::new());
-                                bg_show_dropdown.set(false);
-                            },
-                            "\u{00d7}"
-                        }
-                    }
-                    div {
-                        class: "chip-xs chip-primary",
-                        onclick: move |_| show_background_swipe.set(true),
-                        "Swipe"
-                    }
-                }
-
-                if bg_show_dropdown() {
-                    div { class: "search-float-anchor",
-                        if bg_is_searching() {
-                            div { class: "search-float-results",
-                                div { class: "chip-unselected search-float-chip", "Searching..." }
-                            }
-                        } else if bg_search_results().is_empty() {
-                            div { class: "search-float-results",
-                                div { class: "chip-unselected search-float-chip", "No results" }
-                            }
-                        } else {
-                            div { class: "search-float-results",
-                                for (i, card) in bg_search_results().iter().cloned().enumerate() {
-                                    div {
-                                        class: "chip-unselected search-float-chip",
-                                        style: "animation-delay: {i * 40}ms, {250 + i * 40}ms;",
-                                        onclick: move |_| {
-                                            background.set(Some(card.clone()));
-                                            background_display.set(card.scryfall_data.name.clone());
-                                            bg_show_dropdown.set(false);
-                                        },
-                                        { card.scryfall_data.name.clone() }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                div { class: "flex items-center gap-05",
-                    input { class: "input",
-                        style: "flex: 1;",
-                        id: "background",
-                        r#type: "text",
-                        placeholder: "Not set",
-                        value: "{background_display}",
-                        autocapitalize: "none",
-                        autocorrect: "off",
-                        spellcheck: "false",
-                        onclick: move |_| {
-                            bg_search_query.set(String::new());
-                            background_display.set(String::new());
-                            background.set(None);
-                        },
-                        oninput: move |event| {
-                            bg_search_query.set(event.value());
-                            background_display.set(event.value());
-                        }
-                    }
-                    if !bg_search_query().is_empty() {
-                        button {
-                            class: "clear-btn",
-                            onclick: move |_| {
-                                bg_search_query.set(String::new());
-                                background_display.set(String::new());
-                                bg_show_dropdown.set(false);
-                            },
-                            "\u{00d7}"
-                        }
-                    }
-                }
-            }
-        }
-
-        // Signature spell selector
-        Collapsible { show: show_signature_spell(),
-            div {
-                div { class: "label-row",
-                    label { class: "label", {Slot::SignatureSpell.label(selected_format())} }
-                InfoButton { topic: HintTopic::SignatureSpell }
-                    div {
-                        class: if spell_filter_on() { "chip-xs selected" } else { "chip-xs" },
-                        onclick: move |_| {
-                            spell_filter_on.set(!spell_filter_on());
-                        },
-                        "Filter"
-                    }
-                    if signature_spell().is_some() {
-                        button {
-                            class: "clear-btn",
-                            onclick: move |_| {
-                                signature_spell.set(None);
-                                signature_spell_display.set(String::new());
-                                spell_search_query.set(String::new());
-                                spell_show_dropdown.set(false);
-                            },
-                            "\u{00d7}"
-                        }
-                    }
-                    div {
-                        class: "chip-xs chip-primary",
-                        onclick: move |_| show_signature_spell_swipe.set(true),
-                        "Swipe"
-                    }
-                }
-
-                if spell_show_dropdown() {
-                    div { class: "search-float-anchor",
-                        if spell_is_searching() {
-                            div { class: "search-float-results",
-                                div { class: "chip-unselected search-float-chip", "Searching..." }
-                            }
-                        } else if spell_search_results().is_empty() {
-                            div { class: "search-float-results",
-                                div { class: "chip-unselected search-float-chip", "No results" }
-                            }
-                        } else {
-                            div { class: "search-float-results",
-                                for (i, card) in spell_search_results().iter().cloned().enumerate() {
-                                    div {
-                                        class: "chip-unselected search-float-chip",
-                                        style: "animation-delay: {i * 40}ms, {250 + i * 40}ms;",
-                                        onclick: move |_| {
-                                            signature_spell.set(Some(card.clone()));
-                                            signature_spell_display.set(card.scryfall_data.name.clone());
-                                            spell_show_dropdown.set(false);
-                                        },
-                                        { card.scryfall_data.name.clone() }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                div { class: "flex items-center gap-05",
-                    input { class: "input",
-                        style: "flex: 1;",
-                        id: "signature_spell",
-                        r#type: "text",
-                        placeholder: "Not set",
-                        value: "{signature_spell_display}",
-                        autocapitalize: "none",
-                        autocorrect: "off",
-                        spellcheck: "false",
-                        onclick: move |_| {
-                            spell_search_query.set(String::new());
-                            signature_spell_display.set(String::new());
-                            signature_spell.set(None);
-                        },
-                        oninput: move |event| {
-                            spell_search_query.set(event.value());
-                            signature_spell_display.set(event.value());
-                        }
-                    }
-                    if !spell_search_query().is_empty() {
-                        button {
-                            class: "clear-btn",
-                            onclick: move |_| {
-                                spell_search_query.set(String::new());
-                                signature_spell_display.set(String::new());
-                                spell_show_dropdown.set(false);
-                            },
-                            "\u{00d7}"
-                        }
-                    }
-                }
-            }
+        for slot in Slot::ALL {
+            SlotField { key: "{slot:?}", slot, model, on_action, on_swipe }
         }
 
         // Power level (single-select WotC bracket; Not set = none)
         div { style: "margin-top: 1rem;",
             div { class: "label-row",
-                label { class: "label", "Power level" }
+                label { class: "label", {model::POWER_LEVEL} }
                 InfoButton { topic: HintTopic::PowerLevel }
-                if power_level().is_some() {
+                if power_level.is_some() {
                     button {
                         class: "clear-btn",
-                        onclick: move |_| power_level.set(None),
+                        onclick: move |_| on_action.call(Action::ClearPowerLevel),
                         "\u{00d7}"
                     }
                 }
@@ -953,14 +94,8 @@ pub(crate) fn DeckFields(
                 for pl in PowerLevel::all().iter().copied() {
                     div {
                         key: "{pl}",
-                        class: if power_level() == Some(pl) { "chip selected" } else { "chip" },
-                        onclick: move |_| {
-                            if power_level() == Some(pl) {
-                                power_level.set(None);
-                            } else {
-                                power_level.set(Some(pl));
-                            }
-                        },
+                        class: if power_level == Some(pl) { "chip selected" } else { "chip" },
+                        onclick: move |_| on_action.call(Action::TogglePowerLevel(pl)),
                         "{pl.display_name()}"
                     }
                 }
@@ -969,18 +104,18 @@ pub(crate) fn DeckFields(
 
         // Budget: land target + price target.
         div { style: "margin-top: 1.5rem;",
-            span { class: "settings-list-title", "Budget" }
+            span { class: "settings-list-title", {model::BUDGET} }
         }
 
         // Land target (Not set = use the format heuristic)
         div { style: "margin-top: 1rem;",
             div { class: "label-row",
-                label { class: "label", "Land target" }
+                label { class: "label", {model::LAND_TARGET} }
                 InfoButton { topic: HintTopic::LandTarget }
-                if land_target().is_some() {
+                if land_target.is_some() {
                     button {
                         class: "clear-btn",
-                        onclick: move |_| land_target.set(None),
+                        onclick: move |_| on_action.call(Action::ClearLand),
                         "\u{00d7}"
                     }
                 }
@@ -990,28 +125,16 @@ pub(crate) fn DeckFields(
                 button {
                     class: "stepper-btn",
                     r#type: "button",
-                    onclick: move |_| {
-                        let next = match land_target() {
-                            None => land_heuristic().unwrap_or(0),
-                            Some(v) => v.saturating_sub(1),
-                        };
-                        land_target.set(Some(next));
-                    },
+                    onclick: move |_| on_action.call(Action::StepLand(Step::Down)),
                     "-"
                 }
                 span { class: "stepper-value", style: "width: auto; min-width: 4rem;",
-                    if let Some(v) = land_target() { "{v}" } else { "Not set" }
+                    if let Some(v) = land_target { "{v}" } else { {model::NOT_SET} }
                 }
                 button {
                     class: "stepper-btn",
                     r#type: "button",
-                    onclick: move |_| {
-                        let next = match land_target() {
-                            None => land_heuristic().unwrap_or(0),
-                            Some(v) => (v + 1).min(MAX_LAND_TARGET),
-                        };
-                        land_target.set(Some(next));
-                    },
+                    onclick: move |_| on_action.call(Action::StepLand(Step::Up)),
                     "+"
                 }
             }
@@ -1020,12 +143,12 @@ pub(crate) fn DeckFields(
         // Price target (budget; empty = no budget)
         div { style: "margin-top: 1rem;",
             div { class: "label-row",
-                label { class: "label", "Price target" }
+                label { class: "label", {model::PRICE_TARGET} }
                 InfoButton { topic: HintTopic::PriceTarget }
-                if !price_target().is_empty() {
+                if !price_text.is_empty() {
                     button {
                         class: "clear-btn",
-                        onclick: move |_| price_target.set(String::new()),
+                        onclick: move |_| on_action.call(Action::ClearPrice),
                         "\u{00d7}"
                     }
                 }
@@ -1034,8 +157,8 @@ pub(crate) fn DeckFields(
             div { class: "chip-row", style: "margin-bottom: 0.5rem; justify-content: center;",
                 for currency in PriceCurrency::all().iter().copied() {
                     div {
-                        class: if price_target_currency() == currency { "chip selected" } else { "chip" },
-                        onclick: move |_| price_target_currency.set(currency),
+                        class: if currency_picked == currency { "chip selected" } else { "chip" },
+                        onclick: move |_| on_action.call(Action::PickCurrency(currency)),
                         "{currency.label()}"
                     }
                 }
@@ -1045,45 +168,41 @@ pub(crate) fn DeckFields(
                 id: "price_target",
                 r#type: "text",
                 inputmode: "decimal",
-                placeholder: "Not set",
-                value: "{price_target}",
+                placeholder: model::NOT_SET,
+                value: "{price_text}",
                 autocapitalize: "none",
                 autocorrect: "off",
                 spellcheck: "false",
-                oninput: move |event| {
-                    // Digits and a single decimal point only.
-                    let filtered: String = event.value().chars().filter(|c| c.is_ascii_digit() || *c == '.').collect();
-                    price_target.set(filtered);
-                }
+                oninput: move |event| on_action.call(Action::TypePrice(event.value())),
             }
         }
 
         // Tags: deck tags, oracle tags, other tags. Grouped at the bottom
         // (under a "Tags" heading) to mirror the deck view's Tags section.
         div { style: "margin-top: 1.5rem;",
-            span { class: "settings-list-title", "Tags" }
+            span { class: "settings-list-title", {model::TAGS} }
         }
 
         // Deck tags (open the full-screen picker to choose)
         div { style: "margin-top: 1rem;",
             div { class: "label-row",
-                label { class: "label", "Deck tags" }
+                label { class: "label", {model::DECK_TAGS} }
                 InfoButton { topic: HintTopic::DeckTags }
-                span { class: "field-count", "{selected_tags().len()}/{MAX_DECK_TAGS}" }
-                if !selected_tags().is_empty() {
+                span { class: "field-count", "{deck_tags.len()}/{MAX_DECK_TAGS}" }
+                if !deck_tags.is_empty() {
                     button {
                         class: "clear-btn",
-                        onclick: move |_| selected_tags.set(Vec::new()),
+                        onclick: move |_| on_action.call(Action::ClearTags(TagPicker::DeckTags)),
                         "\u{00d7}"
                     }
                 }
             }
 
-            if selected_tags().is_empty() {
-                div { class: "input input-placeholder input-tappable", onclick: move |_| show_tags_select.set(true), "Not set" }
+            if deck_tags.is_empty() {
+                div { class: "input input-placeholder input-tappable", onclick: move |_| on_action.call(Action::OpenPicker(Picker::DeckTags)), {model::NOT_SET} }
             } else {
-                div { class: "chip-box input-tappable", onclick: move |_| show_tags_select.set(true),
-                    for tag in selected_tags().iter().cloned() {
+                div { class: "chip-box input-tappable", onclick: move |_| on_action.call(Action::OpenPicker(Picker::DeckTags)),
+                    for tag in deck_tags {
                         div {
                             key: "{tag}",
                             class: "chip selected flex items-center gap-05",
@@ -1094,8 +213,10 @@ pub(crate) fn DeckFields(
                                 class: "chip-remove",
                                 onclick: move |evt| {
                                     evt.stop_propagation();
-                                    let slug = tag.clone();
-                                    selected_tags.write().retain(|t| *t != slug);
+                                    on_action.call(Action::RemoveTag {
+                                        picker: TagPicker::DeckTags,
+                                        slug: tag.clone(),
+                                    });
                                 },
                                 "\u{00d7}"
                             }
@@ -1108,27 +229,27 @@ pub(crate) fn DeckFields(
         // Oracle tags (granular strategy; deck tags seed these)
         div { style: "margin-top: 1rem;",
             div { class: "label-row",
-                label { class: "label", "Oracle tags" }
+                label { class: "label", {model::ORACLE_TAGS} }
                 InfoButton { topic: HintTopic::OracleTags }
-                span { class: "field-count", "{oracle_tags().len()}/{MAX_DECK_ORACLE_TAGS}" }
-                if !oracle_tags().is_empty() {
+                span { class: "field-count", "{oracle_tags.len()}/{MAX_DECK_ORACLE_TAGS}" }
+                if !oracle_tags.is_empty() {
                     button {
                         class: "clear-btn",
-                        onclick: move |_| oracle_tags.set(Vec::new()),
+                        onclick: move |_| on_action.call(Action::ClearTags(TagPicker::OracleTags)),
                         "\u{00d7}"
                     }
                 }
             }
 
-            if oracle_tags().is_empty() {
+            if oracle_tags.is_empty() {
                 div {
                     class: "input input-placeholder input-tappable",
-                    onclick: move |_| show_oracle_tags_select.set(true),
-                    "Not set"
+                    onclick: move |_| on_action.call(Action::OpenPicker(Picker::OracleTags)),
+                    {model::NOT_SET}
                 }
             } else {
-                div { class: "chip-box input-tappable", onclick: move |_| show_oracle_tags_select.set(true),
-                    for slug in oracle_tags().iter().cloned() {
+                div { class: "chip-box input-tappable", onclick: move |_| on_action.call(Action::OpenPicker(Picker::OracleTags)),
+                    for slug in oracle_tags {
                         div {
                             key: "{slug}",
                             class: "chip selected flex items-center gap-05",
@@ -1137,7 +258,10 @@ pub(crate) fn DeckFields(
                                 class: "chip-remove",
                                 onclick: move |evt| {
                                     evt.stop_propagation();
-                                    oracle_tags.write().retain(|s| s != &slug);
+                                    on_action.call(Action::RemoveTag {
+                                        picker: TagPicker::OracleTags,
+                                        slug: slug.clone(),
+                                    });
                                 },
                                 "\u{00d7}"
                             }
@@ -1150,12 +274,12 @@ pub(crate) fn DeckFields(
         // Other tags (non-gameplay labels; multi-select)
         div { style: "margin-top: 1rem;",
             div { class: "label-row",
-                label { class: "label", "Other tags" }
+                label { class: "label", {model::OTHER_TAGS} }
                 InfoButton { topic: HintTopic::OtherTags }
-                if !other_tags().is_empty() {
+                if !other_tags.is_empty() {
                     button {
                         class: "clear-btn",
-                        onclick: move |_| other_tags.set(Vec::new()),
+                        onclick: move |_| on_action.call(Action::ClearOtherTags),
                         "\u{00d7}"
                     }
                 }
@@ -1164,17 +288,121 @@ pub(crate) fn DeckFields(
                 for tag in DeckOtherTag::all().iter().copied() {
                     div {
                         key: "{tag}",
-                        class: if other_tags().contains(&tag) { "chip selected" } else { "chip" },
-                        onclick: move |_| {
-                            let mut v = other_tags();
-                            if let Some(pos) = v.iter().position(|t| *t == tag) {
-                                v.remove(pos);
-                            } else {
-                                v.push(tag);
-                            }
-                            other_tags.set(v);
-                        },
+                        class: if other_tags.contains(&tag) { "chip selected" } else { "chip" },
+                        onclick: move |_| on_action.call(Action::ToggleOtherTag(tag)),
                         "{tag.display_name()}"
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// One command-zone field: its label row with Filter, clear and Swipe, the results floating over it, and its input. Always rendered, eased open and shut by [`Collapsible`].
+#[component]
+fn SlotField(
+    slot: Slot,
+    model: ReadSignal<State>,
+    on_action: EventHandler<Action>,
+    on_swipe: EventHandler<Slot>,
+) -> Element {
+    let state = model.read();
+    let show = state.shows(slot);
+    let label = state.label(slot);
+    let filter_on = state.filter_on(slot);
+    let has_card = state.values().slot(slot).is_some();
+    let results = state.results(slot);
+    let display = state.display(slot).to_owned();
+    let has_query = state.has_query(slot);
+    drop(state);
+    let (topic, id) = match slot {
+        Slot::Commander => (HintTopic::Commander, "commander"),
+        Slot::Partner => (HintTopic::Partner, "partner_commander"),
+        Slot::Background => (HintTopic::Background, "background"),
+        Slot::SignatureSpell => (HintTopic::SignatureSpell, "signature_spell"),
+    };
+
+    rsx! {
+        Collapsible { show,
+            div {
+                div { class: "label-row",
+                    label { class: "label", {label} }
+                    InfoButton { topic }
+                    div {
+                        class: if filter_on { "chip-xs selected" } else { "chip-xs" },
+                        onclick: move |_| on_action.call(Action::ToggleFilter(slot)),
+                        {model::FILTER}
+                    }
+                    if has_card {
+                        button {
+                            class: "clear-btn",
+                            onclick: move |_| on_action.call(Action::ClearSlot(slot)),
+                            "\u{00d7}"
+                        }
+                    }
+                    div {
+                        class: "chip-xs chip-primary",
+                        onclick: move |_| on_swipe.call(slot),
+                        {model::SWIPE}
+                    }
+                }
+
+                if let Some(results) = results {
+                    div { class: "search-float-anchor",
+                        match results {
+                            Results::Searching => rsx! {
+                                div { class: "search-float-results",
+                                    div { class: "chip-unselected search-float-chip", {model::SEARCHING} }
+                                }
+                            },
+                            Results::Empty => rsx! {
+                                div { class: "search-float-results",
+                                    div { class: "chip-unselected search-float-chip", {model::NO_RESULTS} }
+                                }
+                            },
+                            Results::Found(cards) => rsx! {
+                                div { class: "search-float-results",
+                                    for (i, card) in cards.into_iter().enumerate() {
+                                        {
+                                            let name = card.scryfall_data.name.clone();
+                                            rsx! {
+                                                div {
+                                                    class: "chip-unselected search-float-chip",
+                                                    style: "animation-delay: {i * 40}ms, {250 + i * 40}ms;",
+                                                    onclick: move |_| on_action.call(Action::PickResult {
+                                                        slot,
+                                                        card: Box::new(card.clone()),
+                                                    }),
+                                                    { name }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                        }
+                    }
+                }
+
+                div { class: "flex items-center gap-05",
+                    input { class: "input",
+                        style: "flex: 1;",
+                        id,
+                        r#type: "text",
+                        placeholder: model::NOT_SET,
+                        value: "{display}",
+                        autocapitalize: "none",
+                        autocorrect: "off",
+                        spellcheck: "false",
+                        onclick: move |_| on_action.call(Action::TapInput(slot)),
+                        oninput: move |event| on_action.call(Action::Type { slot, text: event.value() }),
+                    }
+                    if has_query {
+                        button {
+                            class: "clear-btn",
+                            onclick: move |_| on_action.call(Action::ClearSearch(slot)),
+                            "\u{00d7}"
+                        }
                     }
                 }
             }
@@ -1184,12 +412,14 @@ pub(crate) fn DeckFields(
 
 /// Explainer dialog for the deck create/edit form. Shared by both screens so
 /// the command-zone behavior is described in one place. `open` is owned by the
-/// screen (a one-time hint plus a "?" button).
+/// screen (a one-time hint plus a "?" button); `hint_key` is the one-time
+/// hint it is recorded under, which picks its guide link.
 #[component]
-pub(crate) fn DeckFieldsHint(open: Signal<bool>) -> Element {
+pub(crate) fn DeckFieldsHint(open: Signal<bool>, hint_key: &'static str) -> Element {
     rsx! {
         HintDialog {
             open,
+            actions: guide_link::one_time(hint_key),
             title: "Building a deck",
             HintBullets {
                 HintBullet { HintColored { color: "--accent-primary", "Profile" } " is what the deck is, " HintColored { color: "--accent-secondary", "Budget" } " what it may cost, " HintColored { color: "--accent-tertiary", "Tags" } " what it does" }

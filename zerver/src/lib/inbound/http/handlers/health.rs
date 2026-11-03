@@ -6,6 +6,7 @@ use chrono::Utc;
 use serde::Serialize;
 use serde_json::{Value, json};
 
+use crate::domain::health::ports::HealthService;
 use crate::inbound::http::AppState;
 
 // == root ==

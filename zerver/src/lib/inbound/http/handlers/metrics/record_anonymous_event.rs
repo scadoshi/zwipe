@@ -5,6 +5,7 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use zwipe_core::http::contracts::metrics::HttpAnonymousEvent;
 
+use crate::domain::metrics::ports::MetricsService;
 use crate::inbound::http::{ApiError, AppState};
 
 /// Records one pre-auth funnel event (no auth: there is no user yet).

@@ -12,6 +12,8 @@
 
 use chrono::NaiveDate;
 
+use crate::version::Version;
+
 /// How a release date reads on every surface, e.g. `"Oct 9, 2026"`. Also the
 /// format of the wire's `date` string, which apps up to 1.13.0 show as is.
 pub const DISPLAY_DATE_FORMAT: &str = "%b %-d, %Y";
@@ -23,8 +25,8 @@ pub const DISPLAY_DATE_FORMAT: &str = "%b %-d, %Y";
 /// machine can check.
 #[derive(Debug)]
 pub struct Release {
-    /// Semantic version string, e.g. `"1.6.0"`.
-    pub version: &'static str,
+    /// The release number.
+    pub version: Version,
     /// The day it shipped. `None` only for [`UPCOMING`], which has not.
     /// `NaiveDate::from_ymd_opt` keeps this const; a test checks every
     /// shipped release got a valid date.
@@ -36,21 +38,32 @@ pub struct Release {
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
 pub const UPCOMING: &[Release] = &[Release {
-    version: "1.17.0",
+    version: Version::new(1, 17, 1),
     date: None,
     entries: &[
-        "Card roles with no Oracle tags to open show as grey chips",
-        "Activity's Card roles, Oracle tags and Most skipped say what fills them while they're empty",
-        "Activity's role and tag charts say why they're empty for the pick under Show",
-        "Activity's hints say share instead of rate",
-        "Links open inside Zwipe instead of switching to the browser",
+        "A one-card deck shows 1 card in the deck list",
+        "The land target stops at 0",
+        "Config's Natural setting for mana symbols is now called Classic",
+        "Change username and Change email refuse your current username or email",
     ],
 }];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
     Release {
-        version: "1.16.2",
+        version: Version::new(1, 17, 0),
+        date: NaiveDate::from_ymd_opt(2026, 11, 1),
+        entries: &[
+            "Card roles with no Oracle tags to open show as grey chips",
+            "Activity's Card roles, Oracle tags and Most skipped say what fills them while they're empty",
+            "Activity's role and tag charts say why they're empty for the pick under Show",
+            "Activity's hints say share instead of rate",
+            "Links open inside Zwipe instead of switching to the browser",
+            "Hints with a guide on zwipe.net link to it",
+        ],
+    },
+    Release {
+        version: Version::new(1, 16, 2),
         date: NaiveDate::from_ymd_opt(2026, 10, 29),
         entries: &[
             "Activity's Oracle tags chart lists its tags highest share first",
@@ -59,7 +72,7 @@ pub const RELEASES: &[Release] = &[
         ],
     },
     Release {
-        version: "1.16.1",
+        version: Version::new(1, 16, 1),
         date: NaiveDate::from_ymd_opt(2026, 10, 28),
         entries: &[
             "The color map's key sits under a rule, the way a panel's buttons do",
@@ -70,7 +83,7 @@ pub const RELEASES: &[Release] = &[
         ],
     },
     Release {
-        version: "1.16.0",
+        version: Version::new(1, 16, 0),
         date: NaiveDate::from_ymd_opt(2026, 10, 27),
         entries: &[
             "An Activity screen, opened from Home's counters, maps your swipes and searches over the last year",
@@ -84,7 +97,7 @@ pub const RELEASES: &[Release] = &[
         ],
     },
     Release {
-        version: "1.15.0",
+        version: Version::new(1, 15, 0),
         date: NaiveDate::from_ymd_opt(2026, 10, 27),
         entries: &[
             "Skipped cards return to a deck's swipe pile after a week, removed cards after a month",
@@ -104,7 +117,7 @@ pub const RELEASES: &[Release] = &[
         ],
     },
     Release {
-        version: "1.14.0",
+        version: Version::new(1, 14, 0),
         date: NaiveDate::from_ymd_opt(2026, 10, 23),
         entries: &[
             "Profile's Pending row shows when the confirmation link expires",
@@ -114,7 +127,7 @@ pub const RELEASES: &[Release] = &[
         ],
     },
     Release {
-        version: "1.13.0",
+        version: Version::new(1, 13, 0),
         date: NaiveDate::from_ymd_opt(2026, 10, 22),
         entries: &[
             "Registering sends a verification email and takes you to log in",
@@ -123,7 +136,7 @@ pub const RELEASES: &[Release] = &[
         ],
     },
     Release {
-        version: "1.12.2",
+        version: Version::new(1, 12, 2),
         date: NaiveDate::from_ymd_opt(2026, 10, 21),
         entries: &[
             "Flexoki theme replaces Visual Studio, whose users move to VS Code",
@@ -131,7 +144,7 @@ pub const RELEASES: &[Release] = &[
         ],
     },
     Release {
-        version: "1.12.1",
+        version: Version::new(1, 12, 1),
         date: NaiveDate::from_ymd_opt(2026, 10, 20),
         entries: &[
             "Decks shows the Tags chip while loading instead of a row of placeholder tags",
@@ -142,7 +155,7 @@ pub const RELEASES: &[Release] = &[
         ],
     },
     Release {
-        version: "1.12.0",
+        version: Version::new(1, 12, 0),
         date: NaiveDate::from_ymd_opt(2026, 10, 19),
         entries: &[
             "Four Monokai Pro themes: Pro, Machine, Octagon and Spectrum, in dark and light",
@@ -160,7 +173,7 @@ pub const RELEASES: &[Release] = &[
         ],
     },
     Release {
-        version: "1.11.6",
+        version: Version::new(1, 11, 6),
         date: NaiveDate::from_ymd_opt(2026, 10, 18),
         entries: &[
             "Hint text no longer fades out at the edges when it all fits",
@@ -168,7 +181,7 @@ pub const RELEASES: &[Release] = &[
         ],
     },
     Release {
-        version: "1.11.5",
+        version: Version::new(1, 11, 5),
         date: NaiveDate::from_ymd_opt(2026, 10, 16),
         entries: &[
             "Reset password shows its outcome in a panel",
@@ -177,14 +190,14 @@ pub const RELEASES: &[Release] = &[
         ],
     },
     Release {
-        version: "1.11.4",
+        version: Version::new(1, 11, 4),
         date: NaiveDate::from_ymd_opt(2026, 10, 11),
         entries: &[
             "Switching dark mode sweeps the new theme across the screen again instead of cutting to it",
         ],
     },
     Release {
-        version: "1.11.3",
+        version: Version::new(1, 11, 3),
         date: NaiveDate::from_ymd_opt(2026, 10, 11),
         entries: &[
             "Home counters show the last numbers fetched when there is no connection",
@@ -198,7 +211,7 @@ pub const RELEASES: &[Release] = &[
         ],
     },
     Release {
-        version: "1.11.2",
+        version: Version::new(1, 11, 2),
         date: NaiveDate::from_ymd_opt(2026, 10, 9),
         entries: &[
             "Sessions renew a couple of minutes before they expire",
@@ -206,12 +219,12 @@ pub const RELEASES: &[Release] = &[
         ],
     },
     Release {
-        version: "1.11.1",
+        version: Version::new(1, 11, 1),
         date: NaiveDate::from_ymd_opt(2026, 10, 9),
         entries: &["The light and dark switch moves into the Theme row on Profile"],
     },
     Release {
-        version: "1.11.0",
+        version: Version::new(1, 11, 0),
         date: NaiveDate::from_ymd_opt(2026, 10, 9),
         entries: &[
             "A ? beside the new password field lists the password rules",
@@ -226,7 +239,7 @@ pub const RELEASES: &[Release] = &[
         ],
     },
     Release {
-        version: "1.10.7",
+        version: Version::new(1, 10, 7),
         date: NaiveDate::from_ymd_opt(2026, 10, 6),
         entries: &[
             "iOS: buttons respond while a list is still scrolling",
@@ -234,12 +247,12 @@ pub const RELEASES: &[Release] = &[
         ],
     },
     Release {
-        version: "1.10.6",
+        version: Version::new(1, 10, 6),
         date: NaiveDate::from_ymd_opt(2026, 10, 5),
         entries: &["Changing the theme wipes the new one across the screen"],
     },
     Release {
-        version: "1.10.5",
+        version: Version::new(1, 10, 5),
         date: NaiveDate::from_ymd_opt(2026, 10, 3),
         entries: &[
             "The logo resolves in place, without the letters drawing together first",
@@ -252,7 +265,7 @@ pub const RELEASES: &[Release] = &[
         ],
     },
     Release {
-        version: "1.10.4",
+        version: Version::new(1, 10, 4),
         date: NaiveDate::from_ymd_opt(2026, 10, 2),
         entries: &[
             "Deck cards: the commander and MVP row waits for every card image, then opens and deals the cards in",
@@ -261,7 +274,7 @@ pub const RELEASES: &[Release] = &[
         ],
     },
     Release {
-        version: "1.10.3",
+        version: Version::new(1, 10, 3),
         date: NaiveDate::from_ymd_opt(2026, 9, 30),
         entries: &[
             "Messages appear at the top left, over the title bar, clear of the buttons",
@@ -277,7 +290,7 @@ pub const RELEASES: &[Release] = &[
         ],
     },
     Release {
-        version: "1.10.2",
+        version: Version::new(1, 10, 2),
         date: NaiveDate::from_ymd_opt(2026, 9, 22),
         entries: &[
             "Clearing a filter on the add screen works; Apply used to refuse an empty filter",
@@ -289,7 +302,7 @@ pub const RELEASES: &[Release] = &[
         ],
     },
     Release {
-        version: "1.10.1",
+        version: Version::new(1, 10, 1),
         date: NaiveDate::from_ymd_opt(2026, 9, 6),
         entries: &[
             "Every failure while talking to the server says so, with the same brief message on every screen",
@@ -299,7 +312,7 @@ pub const RELEASES: &[Release] = &[
         ],
     },
     Release {
-        version: "1.10.0",
+        version: Version::new(1, 10, 0),
         date: NaiveDate::from_ymd_opt(2026, 9, 1),
         entries: &[
             "A Universes Beyond setting in Profile hides crossover cards from searches and commander picks, with per-franchise exceptions",
@@ -309,7 +322,7 @@ pub const RELEASES: &[Release] = &[
         ],
     },
     Release {
-        version: "1.9.3",
+        version: Version::new(1, 9, 3),
         date: NaiveDate::from_ymd_opt(2026, 8, 20),
         entries: &[
             "Cards sharing a role with your deck's MVPs come up sooner while you swipe",
@@ -322,7 +335,7 @@ pub const RELEASES: &[Release] = &[
         ],
     },
     Release {
-        version: "1.9.2",
+        version: Version::new(1, 9, 2),
         date: NaiveDate::from_ymd_opt(2026, 8, 18),
         entries: &[
             "Decks show their command zone's art on the Decks screen",
@@ -338,7 +351,7 @@ pub const RELEASES: &[Release] = &[
         ],
     },
     Release {
-        version: "1.9.1",
+        version: Version::new(1, 9, 1),
         date: NaiveDate::from_ymd_opt(2026, 8, 14),
         entries: &[
             "Keyword reminders for the newest sets explain the mechanic instead of pointing at the card",
@@ -348,7 +361,7 @@ pub const RELEASES: &[Release] = &[
         ],
     },
     Release {
-        version: "1.9.0",
+        version: Version::new(1, 9, 0),
         date: NaiveDate::from_ymd_opt(2026, 8, 13),
         entries: &[
             "Swipe up while picking a commander to save it to your commander maybeboard",
@@ -360,7 +373,7 @@ pub const RELEASES: &[Release] = &[
         ],
     },
     Release {
-        version: "1.8.1",
+        version: Version::new(1, 8, 1),
         date: NaiveDate::from_ymd_opt(2026, 8, 12),
         entries: &[
             "Tap a group header on your deck's card list to collapse it",
@@ -371,7 +384,7 @@ pub const RELEASES: &[Release] = &[
         ],
     },
     Release {
-        version: "1.8.0",
+        version: Version::new(1, 8, 0),
         date: NaiveDate::from_ymd_opt(2026, 8, 12),
         entries: &[
             "The deck list has Group by and Show rows",
@@ -381,7 +394,7 @@ pub const RELEASES: &[Release] = &[
         ],
     },
     Release {
-        version: "1.7.6",
+        version: Version::new(1, 7, 6),
         date: NaiveDate::from_ymd_opt(2026, 8, 10),
         entries: &[
             "Featured flavor is the same card for everyone, picked fresh every hour, on the app and zwipe.net",
@@ -396,7 +409,7 @@ pub const RELEASES: &[Release] = &[
         ],
     },
     Release {
-        version: "1.7.5",
+        version: Version::new(1, 7, 5),
         date: NaiveDate::from_ymd_opt(2026, 8, 4),
         entries: &[
             "Undo on your deck's card list, one change at a time",
@@ -414,7 +427,7 @@ pub const RELEASES: &[Release] = &[
         ],
     },
     Release {
-        version: "1.7.4",
+        version: Version::new(1, 7, 4),
         date: NaiveDate::from_ymd_opt(2026, 7, 30),
         entries: &[
             "Fixed a crash when saving a card image to your photos from a long press",
@@ -422,7 +435,7 @@ pub const RELEASES: &[Release] = &[
         ],
     },
     Release {
-        version: "1.7.3",
+        version: Version::new(1, 7, 3),
         date: NaiveDate::from_ymd_opt(2026, 7, 24),
         entries: &[
             "Filter edits wait for Apply; Reset, Cancel and tapping outside each say what they did",
@@ -433,7 +446,7 @@ pub const RELEASES: &[Release] = &[
         ],
     },
     Release {
-        version: "1.7.2",
+        version: Version::new(1, 7, 2),
         date: NaiveDate::from_ymd_opt(2026, 7, 20),
         entries: &[
             "Long oracle and deck tags no longer overlap their labels in the deck's Tags section",
@@ -447,7 +460,7 @@ pub const RELEASES: &[Release] = &[
         ],
     },
     Release {
-        version: "1.7.1",
+        version: Version::new(1, 7, 1),
         date: NaiveDate::from_ymd_opt(2026, 7, 17),
         entries: &[
             "Cards without a printed image show as a text card",
@@ -461,7 +474,7 @@ pub const RELEASES: &[Release] = &[
         ],
     },
     Release {
-        version: "1.7.0",
+        version: Version::new(1, 7, 0),
         date: NaiveDate::from_ymd_opt(2026, 7, 14),
         entries: &[
             "Oracle-tag dictionary, opened from the oracle-tag picker",
@@ -473,7 +486,7 @@ pub const RELEASES: &[Release] = &[
         ],
     },
     Release {
-        version: "1.6.0",
+        version: Version::new(1, 6, 0),
         date: NaiveDate::from_ymd_opt(2026, 7, 12),
         entries: &[
             "In-app changelog, from your Profile",
@@ -498,7 +511,7 @@ pub const RELEASES: &[Release] = &[
         ],
     },
     Release {
-        version: "1.5.0",
+        version: Version::new(1, 5, 0),
         date: NaiveDate::from_ymd_opt(2026, 7, 10),
         entries: &[
             "Swipe back from the left edge to return to the previous page",
@@ -508,7 +521,7 @@ pub const RELEASES: &[Release] = &[
         ],
     },
     Release {
-        version: "1.4.0",
+        version: Version::new(1, 4, 0),
         date: NaiveDate::from_ymd_opt(2026, 7, 8),
         entries: &[
             "The commander picker leads with the community's most-built commanders, in a fresh order each day",
@@ -518,7 +531,7 @@ pub const RELEASES: &[Release] = &[
         ],
     },
     Release {
-        version: "1.3.1",
+        version: Version::new(1, 3, 1),
         date: NaiveDate::from_ymd_opt(2026, 7, 3),
         entries: &[
             "Anonymous diagnostics, with no account or gameplay data involved",
@@ -526,7 +539,7 @@ pub const RELEASES: &[Release] = &[
         ],
     },
     Release {
-        version: "1.3.0",
+        version: Version::new(1, 3, 0),
         date: NaiveDate::from_ymd_opt(2026, 7, 2),
         entries: &[
             "Zwipe remembers your skips per deck",
@@ -541,7 +554,7 @@ pub const RELEASES: &[Release] = &[
         ],
     },
     Release {
-        version: "1.2.1",
+        version: Version::new(1, 2, 1),
         date: NaiveDate::from_ymd_opt(2026, 7, 1),
         entries: &[
             "Tap the eye button while swiping to read a card's full rules and stats",
@@ -549,7 +562,7 @@ pub const RELEASES: &[Release] = &[
         ],
     },
     Release {
-        version: "1.2.0",
+        version: Version::new(1, 2, 0),
         date: NaiveDate::from_ymd_opt(2026, 6, 30),
         entries: &[
             "Draw-odds view: your chance of drawing a land, ramp, removal and more, by any turn",
@@ -561,7 +574,7 @@ pub const RELEASES: &[Release] = &[
         ],
     },
     Release {
-        version: "1.1.4",
+        version: Version::new(1, 1, 4),
         date: NaiveDate::from_ymd_opt(2026, 6, 29),
         entries: &[
             "Set a land target, your own or the format default, with a heads-up if you drop below it",
@@ -572,7 +585,7 @@ pub const RELEASES: &[Release] = &[
         ],
     },
     Release {
-        version: "1.1.3",
+        version: Version::new(1, 1, 3),
         date: NaiveDate::from_ymd_opt(2026, 6, 28),
         entries: &[
             "Card names show while you swipe, including alternate art and non-English printings",
@@ -583,12 +596,12 @@ pub const RELEASES: &[Release] = &[
         ],
     },
     Release {
-        version: "1.1.2",
+        version: Version::new(1, 1, 2),
         date: NaiveDate::from_ymd_opt(2026, 6, 27),
         entries: &["Filter controls match across the card-swipe screens"],
     },
     Release {
-        version: "1.1.1",
+        version: Version::new(1, 1, 1),
         date: NaiveDate::from_ymd_opt(2026, 6, 26),
         entries: &[
             "Every screen has a Help button to report a problem or open our Discord",
@@ -597,7 +610,7 @@ pub const RELEASES: &[Release] = &[
         ],
     },
     Release {
-        version: "1.1.0",
+        version: Version::new(1, 1, 0),
         date: NaiveDate::from_ymd_opt(2026, 6, 24),
         entries: &[
             "Add up to 5 strategy tags, shown on the deck list and deck page",
@@ -608,7 +621,7 @@ pub const RELEASES: &[Release] = &[
         ],
     },
     Release {
-        version: "1.0.10",
+        version: Version::new(1, 0, 10),
         date: NaiveDate::from_ymd_opt(2026, 6, 23),
         entries: &[
             "Commander search shows a Searching hint while results load",
@@ -618,7 +631,7 @@ pub const RELEASES: &[Release] = &[
         ],
     },
     Release {
-        version: "1.0.9",
+        version: Version::new(1, 0, 9),
         date: NaiveDate::from_ymd_opt(2026, 6, 15),
         entries: &[
             "A new app icon",
@@ -631,7 +644,7 @@ pub const RELEASES: &[Release] = &[
         ],
     },
     Release {
-        version: "1.0.7",
+        version: Version::new(1, 0, 7),
         date: NaiveDate::from_ymd_opt(2026, 6, 12),
         entries: &[
             "A subtle background grid and layered panels across every screen",
@@ -644,7 +657,7 @@ pub const RELEASES: &[Release] = &[
         ],
     },
     Release {
-        version: "1.0.6",
+        version: Version::new(1, 0, 6),
         date: NaiveDate::from_ymd_opt(2026, 6, 11),
         entries: &[
             "Card suggestions order the add stack by fit with your deck's leader",
@@ -660,7 +673,7 @@ pub const RELEASES: &[Release] = &[
         ],
     },
     Release {
-        version: "1.0.2",
+        version: Version::new(1, 0, 2),
         date: NaiveDate::from_ymd_opt(2026, 6, 8),
         entries: &[
             "Faster catalog searches, especially on cellular",
@@ -673,13 +686,13 @@ pub const RELEASES: &[Release] = &[
         ],
     },
     Release {
-        version: "1.0.1",
+        version: Version::new(1, 0, 1),
         date: NaiveDate::from_ymd_opt(2026, 6, 7),
         // Placeholder until the original release notes turn up.
         entries: &["Various performance improvements"],
     },
     Release {
-        version: "1.0.0",
+        version: Version::new(1, 0, 0),
         date: NaiveDate::from_ymd_opt(2026, 6, 6),
         entries: &["Initial release"],
     },
@@ -687,10 +700,16 @@ pub const RELEASES: &[Release] = &[
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashSet;
+
     use super::*;
 
-    fn every_entry() -> impl Iterator<Item = (&'static str, &'static str)> {
-        UPCOMING.iter().chain(RELEASES).flat_map(|release| {
+    fn every_release() -> impl Iterator<Item = &'static Release> {
+        UPCOMING.iter().chain(RELEASES)
+    }
+
+    fn every_entry() -> impl Iterator<Item = (Version, &'static str)> {
+        every_release().flat_map(|release| {
             release
                 .entries
                 .iter()
@@ -747,6 +766,61 @@ mod tests {
         assert!(out_of_order.is_empty(), "{out_of_order:#?}");
     }
 
+    /// RELEASES is strictly newest first by version.
+    #[test]
+    fn releases_are_newest_first_by_version() {
+        let out_of_order: Vec<_> = RELEASES
+            .windows(2)
+            .filter_map(|pair| match pair {
+                [newer, older] if newer.version <= older.version => {
+                    Some((newer.version, older.version))
+                }
+                _ => None,
+            })
+            .collect();
+        assert!(out_of_order.is_empty(), "{out_of_order:#?}");
+    }
+
+    /// Every upcoming version is newer than the latest shipped one.
+    #[test]
+    fn upcoming_is_newer_than_the_latest_release() {
+        let latest = RELEASES.first().map(|release| release.version);
+        let stale: Vec<_> = UPCOMING
+            .iter()
+            .map(|release| release.version)
+            .filter(|version| Some(*version) <= latest)
+            .collect();
+        assert!(stale.is_empty(), "{stale:#?}");
+    }
+
+    /// The workspace version is the latest release or an upcoming one, so a
+    /// cut that misses the `Cargo.toml` bump or the changelog move fails.
+    #[test]
+    fn workspace_version_is_latest_or_upcoming() {
+        let workspace: Version = env!("CARGO_PKG_VERSION")
+            .parse()
+            .expect("the workspace version parses");
+        let known: Vec<_> = UPCOMING
+            .iter()
+            .chain(RELEASES.first())
+            .map(|release| release.version)
+            .collect();
+        assert!(known.contains(&workspace), "{workspace} not in {known:?}");
+    }
+
+    /// No version appears twice across upcoming and shipped releases.
+    #[test]
+    fn all_versions_are_distinct() {
+        let mut seen = HashSet::new();
+        let mut repeats: Vec<_> = every_release()
+            .map(|release| release.version)
+            .filter(|version| !seen.insert(*version))
+            .collect();
+        repeats.sort_unstable();
+        assert!(repeats.is_empty(), "{repeats:#?}");
+    }
+
+    /// An entry has words and no em dash.
     #[test]
     fn no_entry_is_empty_or_uses_an_em_dash() {
         let offenders: Vec<_> = every_entry()

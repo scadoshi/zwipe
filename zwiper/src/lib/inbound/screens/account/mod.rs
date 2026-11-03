@@ -2,6 +2,9 @@
 //!
 //! Shows username, email and password with bottom sheets to change them,
 //! plus the About rows, logging out and deleting the account.
+//!
+//! What the screen knows and does is `zwipe_ui::screens::account`; these
+//! files draw its state and perform its effects.
 
 /// Change email bottom sheet.
 pub mod change_email;
@@ -11,6 +14,8 @@ pub mod change_password;
 pub mod change_username;
 /// Extracted components for the Account screen.
 mod components;
+/// The model with the handles that perform its effects.
+mod driver;
 
 use ::components::{
     ActionBar, BottomSheet, Button, ButtonVariant, HintBullet, HintBullets, HintDialog, HintKey,
@@ -18,21 +23,20 @@ use ::components::{
 use change_email::ChangeEmailSheet;
 use change_password::ChangePasswordSheet;
 use change_username::ChangeUsernameSheet;
+use chrono::Utc;
 use components::delete_account_dialog::DeleteAccountDialog;
 use components::email_verification::{EmailVerification, PendingEmail, VerificationActions};
 use dioxus::prelude::*;
-use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::site::WEB_BASE;
 use zwipe_core::domain::user::models::hints::HINT_PROFILE;
+use zwipe_ui::screens::account::{self as model, Action, MoreItem, Row, Sheet};
 
-use crate::inbound::components::hint_dialog::use_one_time_hint;
+use self::driver::{Driver, use_driver};
+use crate::inbound::components::guide_link;
 use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::info_button::InfoButton;
 use crate::inbound::components::logout_dialog::LogoutDialog;
 use crate::inbound::components::screen_header::ScreenHeader;
-use crate::inbound::router::Router;
-use crate::outbound::open_url;
 
 /// Client version baked in at compile time, shown at the bottom of the screen
 /// so users can report which build they're on.
@@ -41,48 +45,33 @@ const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 /// Account screen showing account details and management options.
 #[component]
 pub fn Account() -> Element {
-    let mut session: Signal<Option<Session>> = use_context();
-    let client: Signal<ZwipeClient> = use_context();
-    let mut show_logout_dialog = use_signal(|| false);
-    let mut show_delete_dialog = use_signal(|| false);
-    let mut show_more_sheet = use_signal(|| false);
-    let mut change_username_open = use_signal(|| false);
-    let mut change_email_open = use_signal(|| false);
-    let mut change_password_open = use_signal(|| false);
-
-    // Account management hint: auto-opens on this user's first visit, the
-    // grayed "?" in the header reopens it on demand.
-    let account_hint_open = use_one_time_hint(HINT_PROFILE);
-
-    // Refresh user on every open so email_verified_at is current without re-login.
-    use_effect(move || {
-        let Some(s) = session.peek().clone() else {
-            return;
-        };
-        spawn(async move {
-            match client().fetch_user(&s).await {
-                Ok(fresh_user) => {
-                    let current = session.peek().clone();
-                    if let Some(mut current) = current {
-                        current.user = fresh_user;
-                        session.set(Some(current));
-                    }
-                }
-                Err(e) => {
-                    tracing::warn!("account user fetch failed: {e}");
-                }
-            }
-        });
+    let driver: Driver = use_driver();
+    use_context_provider(|| driver);
+    let session: Signal<Option<Session>> = use_context();
+    // Offers the hint and refreshes the user once per mount, while the screen
+    // first draws, so the hint opens with the screen and the verification is
+    // current without signing in again.
+    use_hook(move || {
+        let user = session.peek().as_ref().map(|s| Box::new(s.user.clone()));
+        driver.dispatch(Action::Load(user));
     });
+    let account_hint_open = driver.overlays.hint;
+    let mut show_more_sheet = driver.overlays.more;
 
-    let navigator = use_navigator();
+    let state = driver.model.read();
+    let user = state.user().cloned();
+    let rows = state.rows();
+    let pending = state.pending(Utc::now());
+    let is_verified = state.is_verified();
+    drop(state);
 
     rsx! {
             div { class: "screen",
-                ScreenHeader { title: "Account", hint: account_hint_open }
+                ScreenHeader { title: model::TITLE, hint: account_hint_open }
 
                 HintDialog {
                     open: account_hint_open,
+                    actions: guide_link::one_time(HINT_PROFILE),
                     title: "Your account",
                     HintBullets {
                         HintBullet { "Tap a row's " HintKey { color: "--palette-6", "?" } " for what it does" }
@@ -91,24 +80,24 @@ pub fn Account() -> Element {
                 }
 
                 div { class: "screen-content content-enter",
-                    if let Some(s) = session().as_ref() {
+                    if let Some(user) = user.as_ref() {
                         div { class: "settings-sections",
 
                             div { class: "settings-list",
 
                                 div { class: "settings-list-header",
-                                    span { class: "settings-list-title", "Account" }
+                                    span { class: "settings-list-title", {model::ACCOUNT} }
                                 }
 
                                 div {
                                     class: "settings-row",
-                                    span { class: "settings-row-label", "Username" }
+                                    span { class: "settings-row-label", {Row::Username.label()} }
                                     div { class: "settings-row-value",
-                                        span { { s.user.username.to_string() } }
+                                        span { { user.username.to_string() } }
                                         Button {
                                             variant: ButtonVariant::Action,
-                                            onclick: move |_| change_username_open.set(true),
-                                            "Change"
+                                            onclick: move |_| driver.dispatch(Action::OpenSheet(Sheet::Username)),
+                                            {model::CHANGE}
                                         }
                                     }
                                 }
@@ -116,36 +105,36 @@ pub fn Account() -> Element {
                                 div {
                                     class: "settings-row",
                                     span { style: "display:flex;align-items:center;",
-                                        span { class: "settings-row-label", "Email" }
+                                        span { class: "settings-row-label", {Row::Email.label()} }
                                         InfoButton { topic: HintTopic::Email }
                                     }
                                     div { class: "settings-row-value",
                                         EmailVerification {
-                                            email: s.user.email.to_string(),
-                                            is_verified: s.user.email_verified_at.is_some(),
-                                            on_change: move |()| change_email_open.set(true),
+                                            email: user.email.to_string(),
+                                            is_verified,
+                                            on_change: move |()| driver.dispatch(Action::OpenSheet(Sheet::Email)),
                                         }
                                     }
                                 }
 
-                                if let Some(pending) = s.user.pending_email.as_ref() {
+                                if let Some(pending) = pending {
                                     div {
                                         class: "settings-row",
-                                        span { class: "settings-row-label", "Pending" }
+                                        span { class: "settings-row-label", {Row::Pending.label()} }
                                         div { class: "settings-row-value",
                                             PendingEmail {
-                                                email: pending.to_string(),
-                                                expires_at: s.user.pending_email_expires_at,
+                                                email: pending.email,
+                                                note: pending.note,
                                             }
                                         }
                                     }
                                 }
 
-                                if s.user.email_verified_at.is_none() {
+                                if rows.contains(&Row::Verification) {
                                     div {
                                         class: "settings-row",
                                         span { style: "display:flex;align-items:center;",
-                                        span { class: "settings-row-label", "Verification" }
+                                        span { class: "settings-row-label", {Row::Verification.label()} }
                                         InfoButton { topic: HintTopic::Verification }
                                     }
                                         div { class: "settings-row-value",
@@ -156,13 +145,13 @@ pub fn Account() -> Element {
 
                                 div {
                                     class: "settings-row",
-                                    span { class: "settings-row-label", "Password" }
+                                    span { class: "settings-row-label", {Row::Password.label()} }
                                     div { class: "settings-row-value",
-                                        span { "•••••••" }
+                                        span { {model::PASSWORD_MASK} }
                                         Button {
                                             variant: ButtonVariant::Action,
-                                            onclick: move |_| change_password_open.set(true),
-                                            "Change"
+                                            onclick: move |_| driver.dispatch(Action::OpenSheet(Sheet::Password)),
+                                            {model::CHANGE}
                                         }
                                     }
                                 }
@@ -171,34 +160,32 @@ pub fn Account() -> Element {
                             div { class: "settings-list",
 
                                 div { class: "settings-list-header",
-                                    span { class: "settings-list-title", "About" }
+                                    span { class: "settings-list-title", {model::ABOUT} }
                                 }
 
                                 div {
                                     class: "settings-row",
                                     span { style: "display:flex;align-items:center;",
-                                        span { class: "settings-row-label", "Website" }
+                                        span { class: "settings-row-label", {Row::Website.label()} }
                                         InfoButton { topic: HintTopic::Website }
                                     }
                                     div { class: "settings-row-value",
                                         Button {
                                             variant: ButtonVariant::Action,
-                                            onclick: move |_| open_url::open(WEB_BASE),
-                                            "zwipe.net \u{2197}"
+                                            onclick: move |_| driver.dispatch(Action::Website),
+                                            {model::WEBSITE_LINK}
                                         }
                                     }
                                 }
 
                                 div {
                                     class: "settings-row",
-                                    span { class: "settings-row-label", "Privacy policy" }
+                                    span { class: "settings-row-label", {Row::PrivacyPolicy.label()} }
                                     div { class: "settings-row-value",
                                         Button {
                                             variant: ButtonVariant::Action,
-                                            onclick: move |_| {
-                                                navigator.push(Router::PrivacyPolicy {});
-                                            },
-                                            "View"
+                                            onclick: move |_| driver.dispatch(Action::PrivacyPolicy),
+                                            {model::VIEW}
                                         }
                                     }
                                 }
@@ -206,17 +193,15 @@ pub fn Account() -> Element {
                                 div {
                                     class: "settings-row",
                                     span { style: "display:flex;align-items:center;",
-                                        span { class: "settings-row-label", "Version" }
+                                        span { class: "settings-row-label", {Row::Version.label()} }
                                         InfoButton { topic: HintTopic::Version }
                                     }
                                     div { class: "settings-row-value",
-                                        span { "v{APP_VERSION}" }
+                                        span { {model::version_label(APP_VERSION)} }
                                         Button {
                                             variant: ButtonVariant::Action,
-                                            onclick: move |_| {
-                                                navigator.push(Router::Changelog {});
-                                            },
-                                            "Changelog"
+                                            onclick: move |_| driver.dispatch(Action::Changelog),
+                                            {model::CHANGELOG}
                                         }
                                     }
                                 }
@@ -228,35 +213,38 @@ pub fn Account() -> Element {
                 ActionBar {
                     Button {
                         variant: ButtonVariant::Action,
-                        onclick: move |_| navigator.go_back(),
-                        "Back"
+                        onclick: move |_| driver.dispatch(Action::Back),
+                        {model::BACK}
                     }
                     Button {
                         variant: ButtonVariant::Action,
                         danger: true,
-                        onclick: move |_| show_logout_dialog.set(true),
-                        "Log out"
+                        onclick: move |_| driver.dispatch(Action::LogOut),
+                        {model::LOG_OUT}
                     }
                     Button {
                         variant: ButtonVariant::Action,
                         onclick: move |_| show_more_sheet.set(true),
-                        "More"
+                        {model::MORE}
                     }
                 }
 
-                BottomSheet { open: show_more_sheet, title: "More".to_string(),
+                BottomSheet { open: show_more_sheet, title: model::MORE_TITLE.to_string(),
                     Button {
                         danger: true,
-                        onclick: move |_| show_delete_dialog.set(true),
-                        "Delete account"
+                        onclick: move |_| driver.dispatch(Action::More(MoreItem::DeleteAccount)),
+                        {MoreItem::DeleteAccount.label()}
                     }
                 }
 
-                LogoutDialog { open: show_logout_dialog }
-                DeleteAccountDialog { open: show_delete_dialog }
-                ChangeUsernameSheet { open: change_username_open }
-                ChangeEmailSheet { open: change_email_open }
-                ChangePasswordSheet { open: change_password_open }
+                LogoutDialog {
+                    open: driver.overlays.log_out,
+                    on_confirm: move |()| driver.dispatch(Action::ConfirmLogOut),
+                }
+                DeleteAccountDialog { open: driver.overlays.delete }
+                ChangeUsernameSheet { open: driver.overlays.username }
+                ChangeEmailSheet { open: driver.overlays.email }
+                ChangePasswordSheet { open: driver.overlays.password }
             }
     }
 }

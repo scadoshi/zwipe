@@ -88,12 +88,13 @@ dx generates a bare `MainActivity.kt` (`class MainActivity : WryActivity()`), wh
 
 Skip it and the edge-swipe / hardware back closes the app from any screen (the pre-2026-07-09 bug). See [`../../../../archive/back_swipe_gesture.md`](../../../../archive/back_swipe_gesture.md). R8 keeps the handler (it's used), but the step-5 smoke test is the confirmation.
 
-## 1d. Patch the manifest (launchMode + configChanges)
+## 1d. Patch the manifest (launchMode + configChanges + screenOrientation)
 
-dx generates `MainActivity` with **no `launchMode`** (defaults to `standard`) and a short `configChanges` list. Both are bugs:
+dx generates `MainActivity` with **no `launchMode`** (defaults to `standard`), a short `configChanges` list and **no `screenOrientation`**. All three are bugs:
 
 - Without `launchMode="singleTask"`, an explicit start of the component while an instance exists (notification tap, another app, an app shortcut, the Play Store's **Open** button after an update) creates a *second* Activity in the live process. This app is a `NativeActivity`, so native init runs twice and `ndk_context` panics on `assert!(previous.is_none())`.
 - Without `uiMode` in `configChanges`, a system dark/light switch recreates the Activity, which reaches `onDestroy`, where the back-handler's process kill fires, so the app silently vanishes mid-session.
+- Without `screenOrientation="portrait"`, the app turns to landscape with the phone. The layout is portrait only, like iOS, which locks it in `Dioxus.toml`.
 
 ```bash
 ~/Developer/zwipe/zcripts/android/manifest.sh
@@ -174,7 +175,9 @@ strings /tmp/aabchk/base/dex/*.dex | grep -c "^getId$"                  # kept f
 unzip -p "$AAB" base/resources.pb | strings | grep -oE "Zwiper?" | sort -u  # launcher label -> Zwipe only
 ```
 
-All seven greps must hit. Anything missing means `patch_bundle.sh` didn't run, or ran before a later `dx bundle` wiped it.
+The orientation lock is an integer in the protobuf manifest, so `strings` can't see it. `bundletool` decodes it straight from the AAB: `bundletool dump manifest --bundle="$AAB" | grep -o 'screenOrientation="[^"]*"'` -> `screenOrientation="1"` (portrait).
+
+All seven greps and the orientation check must hit. Anything missing means `patch_bundle.sh` didn't run, or ran before a later `dx bundle` wiped it.
 
 **Note on tooling:** an AAB's manifest is protobuf, not binary XML, so `aapt2 dump xmltree --file AndroidManifest.xml <aab>` prints nothing, that form only works on an APK. `strings` on the extracted `base/manifest/AndroidManifest.xml` is the reliable check for a bundle. (On an APK you can use `aapt2 dump xmltree --file AndroidManifest.xml app.apk` and expect `launchMode(0x0101001d)=2` plus a `configChanges` value including `uiMode`, e.g. `0x400017a4`.)
 

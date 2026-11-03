@@ -21,6 +21,7 @@ use crate::domain::deck::models::deck::commander_suggestions::{
     CommanderSuggestion, CommanderSuggestions, CommanderSuggestionsError,
     InvalidCommanderDismissal, PlayStyleSummary,
 };
+use crate::domain::deck::ports::DeckService;
 use crate::inbound::http::middleware::AuthenticatedUser;
 use crate::inbound::http::{ApiError, AppState, To500};
 

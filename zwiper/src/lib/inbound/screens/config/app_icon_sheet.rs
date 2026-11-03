@@ -4,11 +4,12 @@
 
 use components::{
     BottomSheet, Button, ButtonVariant, THEME_GROUPS, TOAST_NORMAL, TOAST_QUICK, ThemeConfig,
+    ToastOptions, use_toast,
 };
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_core::domain::logo::Z;
 use zwipe_core::domain::user::preferences;
+use zwipe_core::text::sentence_case;
 
 use crate::outbound::app_icon;
 
@@ -106,7 +107,7 @@ pub fn AppIconSheet(
             }
             Err(e) => {
                 tracing::error!("failed to set app icon: {e}");
-                toast.error(e.to_string(), ToastOptions::default());
+                toast.error(sentence_case(&e.to_string()), ToastOptions::default());
             }
         }
         open.set(false);

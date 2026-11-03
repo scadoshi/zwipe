@@ -7,6 +7,7 @@ use uuid::Uuid;
 use zwipe_core::domain::deck::Deck;
 
 use crate::domain::deck::models::deck::get_deck::GetDeckError;
+use crate::domain::deck::ports::DeckService;
 use crate::inbound::http::middleware::AuthenticatedUser;
 use crate::inbound::http::{ApiError, AppState};
 

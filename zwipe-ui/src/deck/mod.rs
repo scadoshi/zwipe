@@ -1,11 +1,15 @@
-//! Deck rules the app keeps in its own crates: a deck row's count and pips here, and the command zone, list, form, export, buy and warning rules in the modules.
+//! Deck rules the app keeps in its own crates: a deck row's count and pips here, and the command zone, list, form, pickers, export, buy, view and warning rules in the modules.
 
 pub mod command_zone;
+mod create_gate;
 pub mod export;
 pub mod form;
 pub mod list;
+pub mod pickers;
+pub mod view;
 pub mod warning;
 
+pub use create_gate::{VERIFY_TO_CREATE, create_gate};
 use zwipe_core::domain::deck::DeckProfile;
 
 /// The deck's size as the app shows it: the cards in the deck, plus each command-zone card it has. The commander counts only in formats that have one.
@@ -79,6 +83,14 @@ mod tests {
         assert_eq!(card_count(&profile), 100);
         assert!(count_fits(&profile, 100));
         assert!(!count_fits(&profile, 101));
+    }
+
+    #[test]
+    fn a_server_count_at_the_cap_stays_there() {
+        let mut profile = deck_profile("Capped");
+        profile.card_count = i64::MAX;
+        profile.signature_spell_id = Some(Uuid::new_v4());
+        assert_eq!(card_count(&profile), i64::MAX);
     }
 
     #[test]

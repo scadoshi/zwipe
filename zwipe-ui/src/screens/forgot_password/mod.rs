@@ -1,0 +1,171 @@
+//! Forgot password: an email field with Back to login and Send reset link under it, and once a request goes in, a panel saying a link is on its way. The reset itself happens on the website, from the emailed link.
+//!
+//! The client keeps a [`State`] while the screen is up and hands every keystroke in as [`Action::EditEmail`]. The check is [`account::reset_email_error`]: the address as typed, untrimmed. Neither button waits on the request, so a second Send reset link sends again; every reply lands, and the first success shows the panel. The text input and its focus stay in the client.
+
+#[cfg(test)]
+mod tests;
+
+use crate::account;
+use crate::generation::{Generation, Ticket};
+
+/// The screen's title.
+pub const TITLE: &str = "Reset password";
+
+/// The email field's label and placeholder.
+pub const EMAIL: &str = "Email";
+
+/// The button back to Login.
+pub const BACK: &str = "Back to login";
+
+/// The submit button, gone once a request went in.
+pub const SEND: &str = "Send reset link";
+
+/// The panel's title once a request went in.
+pub const SENT_TITLE: &str = "Check your email";
+
+/// The panel's line once a request went in. It never says whether the address has an account.
+pub const SENT_BODY: &str = "If that email is registered, a reset link is on its way.";
+
+/// Where an action sends the user. The client maps each to its own route.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Destination {
+    /// Back where the user came from, Login, from Back to login.
+    Previous,
+}
+
+/// What a user does on Forgot password, and each reply the client hands back.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Action {
+    /// Sets the email to what is typed.
+    EditEmail(String),
+    /// Presses Send reset link. The email is judged from then on; the request goes out when it passes.
+    Submit,
+    /// The request holding `ticket` went in.
+    Sent {
+        /// The ticket from the [`Effect::RequestReset`] this answers.
+        ticket: Ticket,
+    },
+    /// The request holding `ticket` failed. The client has already logged it and raised its error toast.
+    Failed {
+        /// The ticket from the [`Effect::RequestReset`] this answers.
+        ticket: Ticket,
+    },
+    /// Presses Back to login.
+    Back,
+}
+
+/// What an action asks the client to do, in the order it should do it.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum Effect {
+    /// Asks for a reset link and answers with [`Action::Sent`] or [`Action::Failed`] carrying this ticket.
+    RequestReset {
+        /// The ticket to hand back.
+        ticket: Ticket,
+        /// The email as typed.
+        email: String,
+    },
+    /// Goes to this screen.
+    Navigate(Destination),
+}
+
+/// Forgot password for one visit: the field empty, nothing judged, nothing out.
+///
+/// Every request takes a fresh [`Ticket`] from one [`Generation`] and waits in a list, so each reply finds its own request and an unknown or repeated ticket changes nothing.
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
+pub struct State {
+    email: String,
+    /// Whether the email shows its line: it has held something, or Send reset link was pressed.
+    judged: bool,
+    /// Whether the spinner turns: set by a send, cleared by any reply.
+    loading: bool,
+    /// The requests out.
+    waiting: Vec<Ticket>,
+    /// Whether a request went in: the form gives way to the panel.
+    sent: bool,
+    tickets: Generation,
+}
+
+impl State {
+    /// The screen as it first draws: the field empty, nothing out.
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Applies `action` and returns what the client must do, in order.
+    ///
+    /// Send reset link does nothing once a request went in, as its button is gone.
+    #[must_use = "the client performs the effects"]
+    pub fn update(&mut self, action: Action) -> Vec<Effect> {
+        match action {
+            Action::EditEmail(value) => {
+                if !value.is_empty() {
+                    self.judged = true;
+                }
+                self.email = value;
+                Vec::new()
+            }
+            Action::Submit => self.submit(),
+            Action::Sent { ticket } => {
+                if self.settle(ticket) {
+                    self.sent = true;
+                }
+                Vec::new()
+            }
+            Action::Failed { ticket } => {
+                self.settle(ticket);
+                Vec::new()
+            }
+            Action::Back => vec![Effect::Navigate(Destination::Previous)],
+        }
+    }
+
+    /// The line under the email, once it has held something or a send was tried.
+    #[must_use]
+    pub fn error(&self) -> Option<String> {
+        if !self.judged {
+            return None;
+        }
+        account::reset_email_error(&self.email)
+    }
+
+    /// Whether the spinner turns under the field.
+    #[must_use]
+    pub fn is_loading(&self) -> bool {
+        self.loading
+    }
+
+    /// Whether a request went in, so the panel shows in place of the form and Send reset link is gone.
+    #[must_use]
+    pub fn is_sent(&self) -> bool {
+        self.sent
+    }
+
+    fn submit(&mut self) -> Vec<Effect> {
+        if self.sent {
+            return Vec::new();
+        }
+        self.judged = true;
+        if self.error().is_some() {
+            return Vec::new();
+        }
+        let ticket = self.tickets.next_ticket();
+        self.waiting.push(ticket);
+        self.loading = true;
+        vec![Effect::RequestReset {
+            ticket,
+            email: self.email.clone(),
+        }]
+    }
+
+    /// Takes the request holding `ticket` off the waiting list and stops the spinner, and returns whether it was waiting.
+    fn settle(&mut self, ticket: Ticket) -> bool {
+        let before = self.waiting.len();
+        self.waiting.retain(|t| *t != ticket);
+        if self.waiting.len() == before {
+            return false;
+        }
+        self.loading = false;
+        true
+    }
+}

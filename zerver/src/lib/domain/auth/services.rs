@@ -25,7 +25,9 @@ use crate::domain::auth::requests::confirm_email_change::{
 };
 use crate::domain::auth::requests::create_session::{CreateSession, CreateSessionError};
 use crate::domain::auth::requests::delete_user::{DeleteUser, DeleteUserError};
-use crate::domain::auth::requests::refresh_session::{RefreshSession, RefreshSessionError};
+use crate::domain::auth::requests::refresh_session::{
+    RefreshSession, RefreshSessionError, RotatedRefreshToken,
+};
 use crate::domain::auth::requests::register_user::{
     RegisterOutcome, RegisterUser, RegisterUserError,
 };
@@ -87,10 +89,10 @@ static TIMING_EQUALIZER_HASH: LazyLock<HashedPassword> = LazyLock::new(|| {
 /// Operations that modify user data (change username/email/password, delete user)
 /// require password re-authentication for security, even with a valid session.
 #[derive(Debug, Clone)]
-pub struct Service<AR, UR, ES> {
+pub struct Service<AR, UR> {
     auth_repo: AR,
     user_repo: UR,
-    email_sender: ES,
+    email_sender: Arc<dyn EmailSender>,
     jwt_secret: JwtSecret,
     /// How long each minted access token stays valid.
     access_token_lifetime: Duration,
@@ -104,11 +106,10 @@ pub struct Service<AR, UR, ES> {
     support_email: String,
 }
 
-impl<AR, UR, ES> Service<AR, UR, ES>
+impl<AR, UR> Service<AR, UR>
 where
     AR: AuthRepository,
     UR: UserRepository,
-    ES: EmailSender,
 {
     /// Creates a new authentication service with the provided repositories,
     /// email sender, JWT secret and access token lifetime, public web base URL,
@@ -116,7 +117,7 @@ where
     pub fn new(
         auth_repo: AR,
         user_repo: UR,
-        email_sender: ES,
+        email_sender: Arc<dyn EmailSender>,
         jwt_secret: JwtSecret,
         access_token_lifetime: Duration,
         web_base_url: String,
@@ -257,11 +258,10 @@ fn generate_hex_token() -> (String, String) {
     (raw, hash)
 }
 
-impl<AR, UR, ES> AuthService for Service<AR, UR, ES>
+impl<AR, UR> AuthService for Service<AR, UR>
 where
     AR: AuthRepository + Clone,
     UR: UserRepository + Clone,
-    ES: EmailSender,
 {
     // == config ==
     fn jwt_secret(&self) -> &JwtSecret {
@@ -371,9 +371,13 @@ where
             .await
             .unwrap_or_default();
 
-        let access_token =
-            AccessToken::generate(&user, &self.jwt_secret, self.access_token_lifetime)
-                .map_err(|e| AuthenticateUserError::FailedAccessToken(anyhow!("{e}")))?;
+        let access_token = AccessToken::generate(
+            &user,
+            request.platform,
+            &self.jwt_secret,
+            self.access_token_lifetime,
+        )
+        .map_err(|e| AuthenticateUserError::FailedAccessToken(anyhow!("{e}")))?;
 
         let refresh_token = self
             .auth_repo
@@ -405,8 +409,12 @@ where
             )
             .await?;
 
-        let access_token =
-            AccessToken::generate(&user, &self.jwt_secret, self.access_token_lifetime)?;
+        let access_token = AccessToken::generate(
+            &user,
+            request.platform,
+            &self.jwt_secret,
+            self.access_token_lifetime,
+        )?;
 
         let session = Session {
             user,
@@ -429,10 +437,17 @@ where
             .await
             .unwrap_or_default();
 
-        let refresh_token = self.auth_repo.use_refresh_token(request).await?;
+        let RotatedRefreshToken {
+            refresh_token,
+            platform,
+        } = self.auth_repo.use_refresh_token(request).await?;
 
-        let access_token =
-            AccessToken::generate(&user, &self.jwt_secret, self.access_token_lifetime)?;
+        let access_token = AccessToken::generate(
+            &user,
+            platform,
+            &self.jwt_secret,
+            self.access_token_lifetime,
+        )?;
 
         let session = Session {
             user,
@@ -454,6 +469,9 @@ where
     // == update ==
     async fn change_username(&self, request: &ChangeUsername) -> Result<User, ChangeUsernameError> {
         let old_username = self.verify_password(&request.into()).await?.username;
+        if old_username == request.new_username {
+            return Err(ChangeUsernameError::Unchanged);
+        }
         let user = self.auth_repo.change_username(request).await?;
 
         let html = include_str!("email_templates/username_changed.html")
@@ -494,6 +512,9 @@ where
     // == delete ==
     async fn request_email_change(&self, request: &ChangeEmail) -> Result<User, ChangeEmailError> {
         let mut user = self.verify_password(&request.into()).await?;
+        if user.email.as_ref() == request.email.as_ref() {
+            return Err(ChangeEmailError::Unchanged);
+        }
 
         let (raw, hash) = generate_hex_token();
         let expires_at =

@@ -37,7 +37,7 @@ use tower::ServiceExt; // oneshot
 use uuid::Uuid;
 use zwipe::domain::auth::models::access_token::JwtSecret;
 use zwipe::domain::email::models::{SendEmail, SendEmailError};
-use zwipe::domain::email::ports::EmailSender;
+use zwipe::domain::email::ports::{EmailSender, SendEmailFuture};
 use zwipe::domain::{auth, card, deck, health, metrics, user};
 use zwipe::inbound::http::{AppState, build_router};
 use zwipe::outbound::sqlx::postgres::Postgres;
@@ -47,19 +47,18 @@ const TEST_JWT_SECRET: &str = "test-jwt-secret-that-is-at-least-32-characters-lo
 
 /// Captures every outbound email instead of hitting Resend. Later slices read
 /// the verify/reset token out of the last captured body.
-#[derive(Clone, Default)]
+#[derive(Clone, Debug, Default)]
 pub(crate) struct FakeEmailSender {
     pub(crate) sent: Arc<Mutex<Vec<SendEmail>>>,
 }
 
 impl EmailSender for FakeEmailSender {
-    #[expect(
-        clippy::unused_async_trait_impl,
-        reason = "the push stays inside the future so it runs when the service awaits it, as the real sender's send does"
-    )]
-    async fn send_email(&self, email: SendEmail) -> Result<(), SendEmailError> {
-        self.sent.lock().unwrap().push(email);
-        Ok(())
+    fn send_email(&self, email: SendEmail) -> SendEmailFuture<'_> {
+        // The push stays inside the future so it runs when the service awaits it, as the real send does.
+        Box::pin(async move {
+            self.sent.lock().unwrap().push(email);
+            Ok::<(), SendEmailError>(())
+        })
     }
 }
 
@@ -137,7 +136,7 @@ impl TestApp {
         let auth_service = auth::services::Service::new(
             db.clone(),
             db.clone(),
-            emails.clone(),
+            Arc::new(emails.clone()),
             jwt_secret.clone(),
             chrono::Duration::hours(24),
             "http://localhost".to_string(),
@@ -147,8 +146,7 @@ impl TestApp {
         let health_service = health::services::Service::new(db.clone());
         let card_service = card::services::Service::new(db.clone());
         let deck_service = deck::services::Service::new(db.clone(), db.clone());
-        let metrics_service: Arc<dyn metrics::ports::ErasedMetricsService> =
-            Arc::new(metrics::services::Service::new(db));
+        let metrics_service = metrics::services::Service::new(db);
 
         let state = AppState {
             auth_service: Arc::new(auth_service),
@@ -156,11 +154,12 @@ impl TestApp {
             health_service: Arc::new(health_service),
             card_service: Arc::new(card_service),
             deck_service: Arc::new(deck_service),
-            metrics_service,
+            metrics_service: Arc::new(metrics_service),
             last_active_cache: Arc::new(DashMap::new()),
             featured_flavor: Arc::new(zwipe::inbound::http::cache::TtlSlot::new()),
             min_client_version: Arc::from("0.0.0"),
             web_base_url: Arc::from("http://localhost"),
+            swipe_cap: Arc::new(zwipe::inbound::http::swipe_cap::SwipeCap::new()),
         };
 
         let router = build_router(state, jwt_secret, vec![]);
@@ -289,6 +288,19 @@ impl TestApp {
     /// so this is what the app does too. The login comes from its own address
     /// so it doesn't spend the test's login budget.
     pub(crate) async fn register(&self, username: &str) -> (String, String) {
+        let session = self.register_on(username, None).await;
+        (
+            session["access_token"]["value"]
+                .as_str()
+                .unwrap()
+                .to_string(),
+            session["user"]["id"].as_str().unwrap().to_string(),
+        )
+    }
+
+    /// [`Self::register`], with the login reporting `platform` (`None` sends
+    /// no platform). Returns the whole login response.
+    pub(crate) async fn register_on(&self, username: &str, platform: Option<&str>) -> Value {
         let emails_before = self.emails.count();
         let body = serde_json::json!({
             "username": username,
@@ -305,15 +317,15 @@ impl TestApp {
             IpAddr::V4(Ipv4Addr::new(11, o[1], o[2], o[3].max(1))),
             40000,
         );
-        let login = serde_json::json!({ "identifier": username, "password": "TestPass123!" });
+        let mut login = serde_json::json!({ "identifier": username, "password": "TestPass123!" });
+        if let Some(platform) = platform {
+            login["platform"] = Value::from(platform);
+        }
         let (status, v) = self
             .send_from(login_ip, Method::POST, "/api/auth/login", Some(login), None)
             .await;
         assert_eq!(status, StatusCode::OK, "login after register failed: {v}");
-        (
-            v["access_token"]["value"].as_str().unwrap().to_string(),
-            v["user"]["id"].as_str().unwrap().to_string(),
-        )
+        v
     }
 }
 

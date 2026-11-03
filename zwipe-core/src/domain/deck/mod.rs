@@ -1,10 +1,15 @@
 //! Decks, their cards, tags and draw odds.
 
 pub mod draw_odds;
+pub mod limits;
 pub mod models;
 pub mod requests;
 pub mod tag_profile;
 
+pub use limits::{
+    MAX_CARDS_PER_DECK, MAX_COMMANDER_MAYBEBOARD, UNVERIFIED_MAX_CARDS_PER_DECK,
+    UNVERIFIED_MAX_DECKS_PER_USER,
+};
 pub use models::{
     Board, Deck, DeckCard, DeckCommandZone, DeckEntry, DeckMetrics, DeckName, DeckOtherTag,
     DeckProfile, DeckTag, DeckTagView, DeckWarning, Format, ImportMode, InvalidBoard,

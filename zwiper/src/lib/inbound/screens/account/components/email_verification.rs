@@ -1,25 +1,10 @@
 //! The Account email row: the address, its verification badge and the resend actions.
 
-use std::time::Duration;
-
-use chrono::{DateTime, Utc};
-use components::{Button, ButtonVariant, TOAST_LONG, TOAST_NORMAL};
+use components::{Button, ButtonVariant};
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
-use tokio::time;
-use zwipe_client::{ClientError, ZwipeClient};
-use zwipe_core::domain::auth::models::session::Session;
-use zwipe_ui::account;
+use zwipe_ui::screens::account::{self as model, Action};
 
-use crate::inbound::components::auth::authed::use_authed;
-use crate::inbound::components::auth::ensure_session::EnsureFresh;
-use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
-use crate::inbound::components::telemetry::vocabulary::{ProfileScreen, Screen, component, screen};
-
-/// Seconds before another resend is allowed. Mirrors the server's dedicated
-/// resend-verification rate-limit window (burst 1, then 1/60s per user) so the
-/// visible countdown and the 429 window agree.
-const RESEND_COOLDOWN_SECS: u32 = 60;
+use crate::inbound::screens::account::driver::Driver;
 
 /// Email display line: address, verified/unverified badge, and the Change
 /// button. Verification actions live in [`VerificationActions`], rendered as
@@ -33,14 +18,14 @@ pub(crate) fn EmailVerification(
     rsx! {
         span { "{email}" }
         if is_verified {
-            span { class: "badge-verified", "Verified" }
+            span { class: "badge-verified", {model::VERIFIED} }
         } else {
-            span { class: "badge-unverified", "Unverified" }
+            span { class: "badge-unverified", {model::UNVERIFIED} }
         }
         Button {
             variant: ButtonVariant::Action,
             onclick: move |_| on_change.call(()),
-            "Change"
+            {model::CHANGE}
         }
     }
 }
@@ -49,13 +34,12 @@ pub(crate) fn EmailVerification(
 /// the server says, how long that link has left. Servers older than
 /// `pending_email_expires_at` send only the address.
 #[component]
-pub(crate) fn PendingEmail(email: String, expires_at: Option<DateTime<Utc>>) -> Element {
-    let note = expires_at.map(|at| account::pending_note(at, Utc::now()));
+pub(crate) fn PendingEmail(email: String, note: Option<String>) -> Element {
     rsx! {
         div { style: "display:flex;flex-direction:column;align-items:flex-end;gap:0.25rem;",
             span { "{email}" }
             if let Some(note) = note {
-                span { class: "text-muted text-sm", "{note}" }
+                span { class: "badge-expiry", "{note}" }
             }
         }
     }
@@ -66,115 +50,30 @@ pub(crate) fn PendingEmail(email: String, expires_at: Option<DateTime<Utc>>) -> 
 /// user so the badge flips to Verified without leaving the screen.
 #[component]
 pub(crate) fn VerificationActions() -> Element {
-    let mut session: Signal<Option<Session>> = use_context();
-    let client: Signal<ZwipeClient> = use_context();
-    let toast = use_toast();
-    let usage_buffer: Signal<UsageBuffer> = use_context();
-    // check_verified goes through the facade; the resend button stays on the
-    // raw pattern because it branches on TooManyRequests (info toast, keep
-    // the cooldown) and the facade would double-toast that path.
-    let authed = use_authed(Screen::Profile(ProfileScreen::Main));
-    let mut is_resending = use_signal(|| false);
-    let mut is_checking = use_signal(|| false);
-    // Seconds left on the resend cooldown; the button re-enables at zero.
-    let mut cooldown = use_signal(|| 0u32);
+    let driver: Driver = use_context();
+    let state = driver.model.read();
+    let can_resend = state.can_resend();
+    let resend_label = state.resend_label();
+    let is_checking = state.is_checking();
+    drop(state);
 
     rsx! {
         Button {
             variant: ButtonVariant::Action,
-            disabled: is_resending() || cooldown() > 0,
+            disabled: !can_resend,
             onclick: move |evt: MouseEvent| {
                 evt.stop_propagation();
-                is_resending.set(true);
-                // Optimistic: gray out for the full window right away so
-                // rapid clicks can't race the request. Cleared below if
-                // the send genuinely failed.
-                cooldown.set(RESEND_COOLDOWN_SECS);
-                spawn(async move {
-                    let s = match session.ensure_fresh(client).await {
-                        Ok(s) => s,
-                        Err(e) => {
-                            usage_buffer.peek().report_error(screen::PROFILE, component::EMAIL_VERIFICATION, "resend_verification", &e);
-                            toast.error(
-                                e.to_user_message(),
-                                ToastOptions::default().duration(TOAST_LONG),
-                            );
-                            cooldown.set(0);
-                            is_resending.set(false);
-                            return;
-                        }
-                    };
-                    match client().resend_verification(&s).await {
-                        Ok(()) => toast.success(
-                            "Verification email sent".to_string(),
-                            ToastOptions::default().duration(TOAST_NORMAL),
-                        ),
-                        // Raced the server window: an email already went
-                        // out recently, so keep the countdown running.
-                        Err(ClientError::TooManyRequests(_)) => toast.info(
-                            "Please wait a moment".to_string(),
-                            ToastOptions::default().duration(TOAST_NORMAL),
-                        ),
-                        Err(e) => {
-                            usage_buffer.peek().report_error(screen::PROFILE, component::EMAIL_VERIFICATION, "resend_verification", &e);
-                            toast.error(
-                                e.to_user_message(),
-                                ToastOptions::default().duration(TOAST_LONG),
-                            );
-                            // The send didn't happen: don't strand the
-                            // user behind a timer.
-                            cooldown.set(0);
-                            is_resending.set(false);
-                            return;
-                        }
-                    }
-                    is_resending.set(false);
-                    // Drive the visible countdown to zero.
-                    while *cooldown.peek() > 0 {
-                        time::sleep(Duration::from_secs(1)).await;
-                        let remaining = *cooldown.peek();
-                        cooldown.set(remaining.saturating_sub(1));
-                    }
-                });
+                driver.dispatch(Action::Resend);
             },
-            "{account::resend_label(is_resending(), u64::from(cooldown()))}"
+            "{resend_label}"
         }
         Button {
             variant: ButtonVariant::Action,
             class: "btn-action-eye",
-            disabled: is_checking(),
+            disabled: is_checking,
             onclick: move |evt: MouseEvent| {
                 evt.stop_propagation();
-                is_checking.set(true);
-                spawn(async move {
-                    if let Some(fresh_user) = authed
-                        .run_at(component::EMAIL_VERIFICATION, "check_verified", |c, s| async move {
-                            c.fetch_user(&s).await
-                        })
-                        .await
-                    {
-                        let verified = fresh_user.email_verified_at.is_some();
-                        // Write the fresh user back into the session so
-                        // the badge (and anything else) updates in place.
-                        let current = session.peek().clone();
-                        if let Some(mut current) = current {
-                            current.user = fresh_user;
-                            session.set(Some(current));
-                        }
-                        if verified {
-                            toast.success(
-                                "Email verified".to_string(),
-                                ToastOptions::default().duration(TOAST_NORMAL),
-                            );
-                        } else {
-                            toast.info(
-                                "Not verified yet. Check your inbox".to_string(),
-                                ToastOptions::default().duration(TOAST_NORMAL),
-                            );
-                        }
-                    }
-                    is_checking.set(false);
-                });
+                driver.dispatch(Action::CheckVerification);
             },
             svg {
                 class: "refresh-icon",

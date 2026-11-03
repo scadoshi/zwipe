@@ -8,6 +8,7 @@
 //! text, a key chip or an emphasized word, the last two colored by a
 //! [`Role`].
 
+pub mod guide;
 pub mod one_time;
 pub mod topics;
 

@@ -1,173 +1,92 @@
 //! Change password bottom sheet.
 
-use components::{
-    AlertDialog, BottomSheet, Button, ButtonVariant, DialogAction, TOAST_QUICK, TextInput,
-};
+use components::{AlertDialog, BottomSheet, Button, ButtonVariant, DialogAction, TextInput};
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
-use zwipe_core::http::contracts::auth::HttpChangePassword;
-use zwipe_ui::account;
+use zwipe_ui::screens::account::{Action, BACK, CANCEL, Dialog, Field, Sheet};
 
-use crate::inbound::components::auth::authed::use_authed;
+use super::driver::{Driver, use_field_sync};
 use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::info_button;
-use crate::inbound::components::telemetry::vocabulary::{ProfileScreen, Screen};
 
-/// Bottom sheet for updating the user's password.
+/// Bottom sheet for updating the user's password. The current password is
+/// never judged here, so one that predates the policy can still be changed.
 #[component]
 pub fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
-    let authed = use_authed(Screen::Profile(ProfileScreen::ChangePassword));
+    let driver: Driver = use_context();
+    let sheet = Sheet::Password;
+    for field in sheet.fields() {
+        use_field_sync(&driver, sheet, *field);
+    }
+    let confirm = use_callback(move |()| driver.dispatch(Action::ConfirmPassword));
 
-    // we do not validate current password on frontend
-    // as to not lock them out of changing
-    // if their current somehow defies policy
-    let mut current_password = use_signal(String::new);
+    let model = driver.model.read();
+    let is_loading = model.is_saving(sheet);
+    let save_label = model.save_label(sheet);
+    let password_error = model.error(sheet, Field::NewPassword);
+    drop(model);
 
-    let mut new_password = use_signal(String::new);
-    let mut confirm_password = use_signal(String::new);
-    let mut password_error: Signal<Option<String>> = use_signal(|| None);
-    let mut password_touched = use_signal(|| false);
-    let mut submit_attempted = use_signal(|| false);
-    let mut validate_new_password = move || {
-        password_error.set(account::change_password_error(
-            &current_password(),
-            &new_password(),
-            &confirm_password(),
-            submit_attempted(),
-        ));
-    };
-
-    let mut show_confirm = use_signal(|| false);
-    let mut is_loading = use_signal(|| false);
-    let toast = use_toast();
-
-    let mut inputs_are_valid = move || {
-        validate_new_password();
-        password_error().is_none()
-    };
-
-    let mut clear_inputs = move || {
-        current_password.set(String::new());
-        new_password.set(String::new());
-        confirm_password.set(String::new());
-    };
-
-    // Reset the form each time the sheet opens so it never shows stale input.
-    use_effect(move || {
-        if open() {
-            clear_inputs();
-            password_error.set(None);
-            password_touched.set(false);
-            submit_attempted.set(false);
-        }
-    });
-
-    let attempt_submit = use_callback(move |()| {
-        submit_attempted.set(true);
-        if inputs_are_valid() {
-            tracing::info!("change password");
-            let request = HttpChangePassword::new(&current_password(), &new_password());
-            is_loading.set(true);
-            spawn(async move {
-                if authed
-                    .run("change_password", |c, s| async move {
-                        c.change_password(request, &s).await
-                    })
-                    .await
-                    .is_some()
-                {
-                    toast.success(
-                        "Password change successful".to_string(),
-                        ToastOptions::default().duration(TOAST_QUICK),
-                    );
-                    clear_inputs();
-                    submit_attempted.set(false);
-                    open.set(false);
-                }
-                is_loading.set(false);
-            });
-        }
-    });
-
-    use_effect(move || {
-        let new = new_password();
-        let confirm = confirm_password();
-        let _ = current_password();
-        if (!new.is_empty() || !confirm.is_empty()) && !password_touched() {
-            password_touched.set(true);
-        }
-        if password_touched() || submit_attempted() {
-            validate_new_password();
-        }
-    });
-
+    let dialog = Dialog::ConfirmPassword;
     rsx! {
         BottomSheet {
             open,
-            title: "Change password".to_string(),
+            title: sheet.title().to_string(),
             footer: rsx! {
                 Button {
                     variant: ButtonVariant::Action,
-                    disabled: is_loading(),
+                    disabled: is_loading,
                     onclick: move |_| open.set(false),
-                    "Back"
+                    {BACK}
                 }
                 Button {
                     variant: ButtonVariant::Action,
-                    disabled: is_loading(),
-                    onclick: move |_| {
-                        submit_attempted.set(true);
-                        validate_new_password();
-                        if password_error().is_none() {
-                            show_confirm.set(true);
-                        }
-                    },
-                    if is_loading() { "Saving..." } else { "Save changes" }
+                    disabled: is_loading,
+                    onclick: move |_| driver.dispatch(Action::Save(sheet)),
+                    {save_label}
                 }
             },
 
             div { class: "flex-col text-center",
 
                 TextInput {
-                    value: current_password,
+                    value: driver.inputs.get(sheet, Field::CurrentPassword),
                     id: "current_password",
-                    label: "Current password",
-                    placeholder: "Current password",
+                    label: Field::CurrentPassword.label(),
+                    placeholder: Field::CurrentPassword.placeholder(),
                     input_type: "password",
                 }
 
                 TextInput {
-                    value: new_password,
+                    value: driver.inputs.get(sheet, Field::NewPassword),
                     id: "new_password",
-                    label: "New password",
-                    placeholder: "New password",
+                    label: Field::NewPassword.label(),
+                    placeholder: Field::NewPassword.placeholder(),
                     input_type: "password",
-                    error: password_error(),
+                    error: password_error,
                     on_info: info_button::open_topic(HintTopic::Password),
                 }
 
                 TextInput {
-                    value: confirm_password,
+                    value: driver.inputs.get(sheet, Field::ConfirmPassword),
                     id: "confirm_password",
-                    label: "Confirm password",
-                    placeholder: "Confirm new",
+                    label: Field::ConfirmPassword.label(),
+                    placeholder: Field::ConfirmPassword.placeholder(),
                     input_type: "password",
                 }
             }
         }
 
         AlertDialog {
-            open: show_confirm,
-            title: "Change password",
+            open: driver.overlays.confirm_password,
+            title: dialog.title(),
             actions: vec![
-                DialogAction::Dismiss("Cancel".into()),
+                DialogAction::Dismiss(CANCEL.into()),
                 DialogAction::Confirm {
-                    label: "Confirm".into(),
+                    label: dialog.confirm().into(),
                     danger: false,
-                    on_confirm: attempt_submit,
+                    on_confirm: confirm,
                 },
             ],
-            "Changing your password will log you out on all other devices."
+            {dialog.body()}
         }
     }
 }

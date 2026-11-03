@@ -49,6 +49,9 @@ pub enum ChangeEmailError {
     /// User ID doesn't exist in database.
     #[error("user not found")]
     UserNotFound,
+    /// The new address is exactly the current one.
+    #[error("new email is the current email")]
+    Unchanged,
     /// Database operation failed.
     #[error(transparent)]
     Database(anyhow::Error),

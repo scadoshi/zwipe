@@ -9,40 +9,37 @@
 //! eyeball `RulesButton` as the other swipe screens for full card details.
 //!
 //! Cards come from the plain (deck-agnostic) `search_cards` route with a single
-//! `oracle_tags_contains_any` criterion; the same linear `CardStack` +
-//! `SwipeStack` machinery as the add screen, minus all the deck side effects.
+//! `oracle_tags_contains_any` criterion. What the browse knows and does (the
+//! cards, the cursor, paging) is `zwipe_ui::screens::oracle_tag_examples`; this
+//! file draws it through the same `SwipeStack` as the add screen.
 
 use components::{
-    ActionBar, Button, ButtonVariant, HintBullet, HintBullets, HintDialog, TOAST_QUICK,
-    use_overlay_back,
+    ActionBar, Button, ButtonVariant, HintBullet, HintBullets, HintDialog, Toasts,
+    use_overlay_back, use_toast,
 };
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
+use zwipe_client::ZwipeClient;
+use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
-use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
-use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
 use zwipe_core::domain::user::models::hints::HINT_OTAG_EXAMPLES;
+use zwipe_ui::screens::oracle_tag_examples::{
+    self as model, Action, Destination, Effect, State, Status,
+};
+use zwipe_ui::stack;
 
-use crate::inbound::components::auth::authed::use_authed;
-use crate::inbound::components::hint_dialog::{HintColored, use_one_time_hint};
+use crate::inbound::components::auth::authed::{Authed, use_authed};
+use crate::inbound::components::hint_dialog::{self, HintColored};
 use crate::inbound::components::interactions::swipe::SwipeStack;
 use crate::inbound::components::interactions::swipe::config::SwipeConfig;
 use crate::inbound::components::interactions::swipe::direction::Direction;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{OracleTagScreen, Screen, screen};
-use crate::inbound::screens::deck::card::components::action_history::{
-    BrowseAction, MAX_CARDS_IN_STACK,
-};
+use crate::inbound::components::{guide_link, ui_toast};
 use crate::inbound::screens::deck::card::components::card_info::{
     CardDetailsSheet, CardInfoDisplay, CardSkeleton, RulesButton,
 };
-use crate::inbound::screens::deck::card::components::card_stack::use_card_stack;
 use crate::inbound::screens::deck::card::components::printing_sheet::PrintingSheet;
 
-/// One page of example cards per fetch (matches the backend default).
-const PAGE_LIMIT: u32 = 25;
-/// Prefetch the next page once the cursor is within this many cards of the end.
-const LOAD_MORE_THRESHOLD: usize = 5;
 /// Pixels a swipe travels to commit.
 const SWIPE_DISTANCE_PX: f64 = 90.0;
 /// Pixels per millisecond a flick needs to commit.
@@ -50,28 +47,101 @@ const SWIPE_SPEED_PX_PER_MS: f64 = 2.5;
 /// Pixels a downward pull on the end card travels to go back.
 const BACK_PULL_PX: f64 = 60.0;
 
+/// The examples' model with the handles that perform its effects. Copy, so
+/// every handler and task holds its own.
+#[derive(Clone, Copy)]
+struct Driver {
+    model: Signal<State>,
+    open: Signal<bool>,
+    toast: Toasts,
+    authed: Authed,
+    session: Signal<Option<Session>>,
+    client: Signal<ZwipeClient>,
+    hint_open: Signal<bool>,
+    /// The top card's entrance, passed straight through as `SwipeStack`'s
+    /// `entering` prop, which clears it once the card has come in.
+    entering: Signal<Option<Direction>>,
+}
+
+impl Driver {
+    /// Applies `action` to the model and performs what it returns.
+    fn dispatch(self, action: Action) {
+        let mut model = self.model;
+        let effects = model.write().update(action);
+        for effect in effects {
+            self.perform(effect);
+        }
+    }
+
+    /// Performs one effect, feeding any reply back through [`Self::dispatch`].
+    fn perform(self, effect: Effect) {
+        match effect {
+            Effect::OfferHint(hint) => {
+                hint_dialog::open_and_record_hint(
+                    hint.key(),
+                    self.session,
+                    self.client,
+                    self.hint_open,
+                );
+            }
+            Effect::SearchCards { ticket, query } => {
+                let authed = self.authed;
+                spawn(async move {
+                    // The facade refreshes, reports, and toasts on failure (a
+                    // true auth failure also clears the session and the
+                    // AuthGate redirects).
+                    let reply = authed
+                        .run("load_examples", |c, s| async move {
+                            c.search_cards(&query, &s).await
+                        })
+                        .await;
+                    self.dispatch(match reply {
+                        Some(cards) => Action::Loaded { ticket, cards },
+                        None => Action::Failed { ticket },
+                    });
+                });
+            }
+            Effect::Enter(side) => {
+                let mut entering = self.entering;
+                entering.set(Some(match side {
+                    stack::Direction::Left => Direction::Left,
+                    stack::Direction::Right => Direction::Right,
+                    stack::Direction::Up => Direction::Up,
+                }));
+            }
+            Effect::Navigate(Destination::Previous) => {
+                let mut open = self.open;
+                open.set(false);
+            }
+            Effect::Toast(toast) => ui_toast::raise(self.toast, toast),
+        }
+    }
+}
+
 /// Deck-free swipe browse of the cards carrying a single oracle tag. An in-place
 /// overlay (host renders it when `open`, mounting fresh per tag); back-swipe or the
 /// Back button closes it.
 #[component]
-pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
+pub fn OracleTagExamples(open: Signal<bool>, slug: String) -> Element {
     use_overlay_back(open);
-    let toast = use_toast();
-    let authed = use_authed(Screen::OracleTag(OracleTagScreen::Examples));
+    let driver = Driver {
+        model: use_signal(State::new),
+        open,
+        toast: use_toast(),
+        authed: use_authed(Screen::OracleTag(OracleTagScreen::Examples)),
+        session: use_context(),
+        client: use_context(),
+        // Swipe-navigation hint: auto-opens once per account, reopenable via the "?".
+        hint_open: use_signal(|| false),
+        entering: use_signal(|| None),
+    };
+    let examples_hint_open = driver.hint_open;
 
-    // The tag we're serving, held in a signal so the fetch closures stay `Copy`.
-    // Re-navigating to a different tag always remounts (the dictionary sits
-    // between them), so seeding once on mount is enough.
-    let tag_slug = use_signal(|| slug.clone());
+    // Offers the hint and asks for the first page as the browse first draws.
+    // A different tag always remounts (the dictionary sits between them), so
+    // loading once per mount is enough.
+    use_hook(move || driver.dispatch(Action::Load { slug }));
 
-    // Swipe-navigation hint: auto-opens once per account, reopenable via the "?".
-    let examples_hint_open = use_one_time_hint(HINT_OTAG_EXAMPLES);
-
-    let mut stack = use_card_stack::<BrowseAction>();
-    let mut current_offset = use_signal(|| 0_u32);
-    let mut is_loading_more = use_signal(|| false);
-    let mut is_loading_cards = use_signal(|| true);
-    let mut pagination_exhausted = use_signal(|| false);
     // Gesture start point for the end-of-stack panel, which accepts a down-swipe
     // to step back into the pile (no card there, so no `SwipeStack`).
     let mut end_swipe_start: Signal<Option<(f64, f64)>> = use_signal(|| None);
@@ -88,117 +158,28 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
         SWIPE_SPEED_PX_PER_MS,
     );
 
-    let current_card = move || stack.current();
-
-    // Fetch the next page. Reads its guards via `peek` so it never subscribes a
-    // caller (the mount effect) to its own writes.
-    let mut load_more = move || {
-        if *is_loading_more.peek() || *pagination_exhausted.peek() {
-            return;
-        }
-        // Cap the in-memory stack like the add screen. A fat tag would otherwise
-        // append forever; stop paging and let the end panel show gracefully.
-        if stack.peek_len() >= MAX_CARDS_IN_STACK {
-            pagination_exhausted.set(true);
-            is_loading_cards.set(false);
-            return;
-        }
-        is_loading_more.set(true);
-
-        let offset = *current_offset.peek();
-        let mut builder = CardQueryBuilder::new();
-        builder
-            .set_oracle_tags_contains_any(vec![tag_slug.peek().clone()])
-            .set_is_token(false)
-            .set_sort(CardSortKey::EdhrecRank)
-            .set_limit(PAGE_LIMIT)
-            .set_offset(offset);
-
-        let Ok(filter) = builder.build() else {
-            is_loading_more.set(false);
-            is_loading_cards.set(false);
-            return;
-        };
-
-        spawn(async move {
-            // The facade refreshes, reports, and toasts on failure (a true
-            // auth failure also clears the session and the AuthGate
-            // redirects); the screen only handles the happy path and its own
-            // loading flags.
-            if let Some(new_cards) = authed
-                .run("load_examples", |c, s| async move {
-                    c.search_cards(&filter, &s).await
-                })
-                .await
-            {
-                if new_cards.is_empty() {
-                    pagination_exhausted.set(true);
-                } else {
-                    // Image-less cards render as a text identity frame
-                    // (FlippableCardImage), so we keep them; no client
-                    // filter means no barren pages either.
-                    match offset.checked_add(PAGE_LIMIT) {
-                        Some(next) => current_offset.set(next),
-                        // No offset past u32: this page is the last.
-                        None => pagination_exhausted.set(true),
-                    }
-                    stack.append(new_cards);
-                }
-            }
-            is_loading_more.set(false);
-            is_loading_cards.set(false);
-        });
+    let (status, window, current) = {
+        let model = driver.model.read();
+        (
+            model.status(),
+            model.window().to_vec(),
+            model.current().cloned(),
+        )
     };
 
-    // Mount load. Subscribes only to `tag_slug`, so it runs once (a new tag
-    // remounts the screen and re-seeds it).
-    use_effect(move || {
-        let _ = tag_slug();
-        load_more();
-    });
-
-    // Advance past the just-committed card. The cursor may land one past the end
-    // (empty window), that's the "no more cards" state.
-    let mut advance_after_commit = move || {
-        let total = stack.len();
-        if !stack.advance() {
-            return;
-        }
-        if stack
-            .index()
-            .checked_add(1)
-            .is_some_and(|seen| seen >= total.saturating_sub(LOAD_MORE_THRESHOLD))
-        {
-            load_more();
-        }
-    };
-
-    // Step the cursor back one card (down swipe / undo). Primes the enter
-    // animation from the left, the side cards exit on advance.
-    let mut go_back = move || {
-        let Some(action) = stack.pop_action() else {
-            toast.info(
-                "Already at the first card".to_string(),
-                ToastOptions::default().duration(TOAST_QUICK),
-            );
-            return;
-        };
-        if !stack.step_back(&action) {
-            // Couldn't step back (already at the top): restore the history.
-            stack.record(action);
-        }
-    };
+    let go_back = move || driver.dispatch(Action::BackOne);
 
     rsx! {
         div { class: "screen examples-overlay",
             // An overlay screen paints its own backdrop, since .screen is clear
             // and the screen beneath would show through.
             ::components::GridCells { still: true }
-            ScreenHeader { title: "Examples", hint: examples_hint_open }
+            ScreenHeader { title: model::TITLE, hint: examples_hint_open }
 
             HintDialog {
                 open: examples_hint_open,
-                title: "Example cards",
+                actions: guide_link::one_time(HINT_OTAG_EXAMPLES),
+                title: model::HINT_TITLE,
                 HintBullets {
                     HintBullet { "Swipe " HintColored { color: "--color-success", "left" } " for the next card" }
                     HintBullet { "Swipe " HintColored { color: "--accent-secondary", "down" } " to go back one" }
@@ -207,33 +188,32 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
 
             div { class: "screen-content card-swipe content-enter",
                 div { class: "form-container",
-                    if !stack.is_empty() && stack.index() < stack.len() {
-                        SwipeStack {
-                            cards: stack.window(),
-                            config: swipe_config,
-                            entering: stack.entering(),
-                            on_swipe_left: move |_card: Card| {
-                                stack.record(BrowseAction::Next);
-                                advance_after_commit();
-                            },
-                            // Right / up are inert in a read-only browse (also
-                            // blocked by SwipeConfig, so they never commit).
-                            on_swipe_right: move |_card: Card| {},
-                            on_swipe_up: move |_card: Card| {},
-                            on_swipe_down: move |_card: Card| {
-                                go_back();
-                            },
-                        }
+                    match status {
+                        Status::Showing => rsx! {
+                            SwipeStack {
+                                cards: window,
+                                config: swipe_config,
+                                entering: driver.entering,
+                                on_swipe_left: move |_card: Card| driver.dispatch(Action::Next),
+                                // Right / up are inert in a read-only browse (also
+                                // blocked by SwipeConfig, so they never commit).
+                                on_swipe_right: move |_card: Card| {},
+                                on_swipe_up: move |_card: Card| {},
+                                on_swipe_down: move |_card: Card| {
+                                    go_back();
+                                },
+                            }
 
-                        if let Some(card) = current_card() {
-                            CardInfoDisplay { card }
-                        }
-                    } else if !stack.is_empty() {
+                            if let Some(card) = current.clone() {
+                                CardInfoDisplay { card }
+                            }
+                        },
+                        Status::Loading => rsx! {
+                            CardSkeleton { is_loading: true }
+                        },
                         // Cursor past the last card. Still keep it down-swipeable
                         // so "back" leads into the pile from the end panel.
-                        if is_loading_more() {
-                            CardSkeleton { is_loading: true }
-                        } else {
+                        Status::End => rsx! {
                             div {
                                 class: "flex-col flex-center",
                                 style: "flex: 1; min-height: 0; width: 100%;",
@@ -269,13 +249,12 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
                                         go_back();
                                     }
                                 },
-                                div { class: "dict-empty", "No more cards. Swipe down to go back." }
+                                div { class: "dict-empty", {model::END} }
                             }
-                        }
-                    } else if is_loading_cards() {
-                        CardSkeleton { is_loading: true }
-                    } else {
-                        div { class: "dict-empty", "No example cards for this tag yet." }
+                        },
+                        Status::Empty => rsx! {
+                            div { class: "dict-empty", {model::EMPTY} }
+                        },
                     }
                 }
             }
@@ -283,10 +262,10 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
             ActionBar {
                 Button {
                     variant: ButtonVariant::Action,
-                    onclick: move |_| open.set(false),
-                    "Back"
+                    onclick: move |_| driver.dispatch(Action::Back),
+                    {model::BACK}
                 }
-                if current_card().is_some() {
+                if current.is_some() {
                     RulesButton { open: show_details }
                 }
             }
@@ -294,7 +273,7 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
             // Root-mounted so the sheets cover the footer, the printing sheet
             // after the details sheet so it draws over it. View-only printings
             // browse (deck-free, so it never mutates anything).
-            if let Some(card) = current_card() {
+            if let Some(card) = current {
                 CardDetailsSheet {
                     open: show_details,
                     card: card.clone(),

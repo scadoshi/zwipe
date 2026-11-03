@@ -7,6 +7,7 @@ use zwipe_core::domain::deck::requests::skip_deck_card::{InvalidSkipDeckCard, Sk
 use zwipe_core::http::contracts::deck::HttpSkipDeckCard;
 
 use crate::domain::deck::models::deck::skip_deck_card::SkipDeckCardError;
+use crate::domain::deck::ports::DeckService;
 use crate::inbound::http::middleware::AuthenticatedUser;
 use crate::inbound::http::{ApiError, AppState, To500};
 

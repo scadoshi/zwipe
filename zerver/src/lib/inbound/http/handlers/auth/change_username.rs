@@ -6,10 +6,12 @@ use axum::http::StatusCode;
 use zwipe_core::domain::user::User;
 use zwipe_core::http::contracts::auth::HttpChangeUsername;
 
+use crate::domain::auth::ports::AuthService;
 use crate::domain::auth::requests::change_username::{
     ChangeUsername, ChangeUsernameError, InvalidChangeUsername,
 };
 use crate::domain::metrics::models::kinds::AuditAction;
+use crate::domain::metrics::ports::MetricsService;
 use crate::inbound::http::middleware::AuthenticatedUser;
 use crate::inbound::http::{ApiError, AppState, To500};
 
@@ -19,6 +21,9 @@ impl From<ChangeUsernameError> for ApiError {
         match value {
             ChangeUsernameError::UserNotFound => Self::NotFound("user not found".to_string()),
             ChangeUsernameError::Duplicate => Self::Conflict("username already in use".to_string()),
+            ChangeUsernameError::Unchanged => Self::UnprocessableEntity(
+                "new username must be different from your current username".to_string(),
+            ),
             ChangeUsernameError::Database(e) | ChangeUsernameError::UserFromDb(e) => e.to_500(),
             ChangeUsernameError::AuthenticateUserError(e) => ApiError::from(e),
         }

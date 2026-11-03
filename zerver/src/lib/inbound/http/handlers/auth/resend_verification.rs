@@ -4,6 +4,8 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use zwipe_core::domain::user::requests::get_user::GetUser;
 
+use crate::domain::auth::ports::AuthService;
+use crate::domain::user::ports::UserService;
 use crate::inbound::http::middleware::AuthenticatedUser;
 use crate::inbound::http::{ApiError, AppState};
 

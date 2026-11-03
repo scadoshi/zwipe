@@ -1,8 +1,11 @@
 //! The account forms' rules, as the app has them: Log in, Register, Forgot password and the Account screen. Each check returns the line to show under its field, or `None` when the field is fine; the policy is zwipe-core's and only the words are picked here.
 
+use std::fmt::{self, Debug, Formatter};
+
 use chrono::{DateTime, Utc};
 use zwipe_core::domain::auth::models::password;
 use zwipe_core::domain::user::{Email, Username};
+use zwipe_core::text::sentence_case;
 
 use crate::toast::{Toast, ToastKind};
 
@@ -20,6 +23,43 @@ pub const PASSWORD_REQUIRED: &str = "Password is required";
 
 /// The line under a new password that repeats the current one.
 pub const PASSWORD_UNCHANGED: &str = "New password must be different from your current password";
+
+/// The line under a new username that repeats the current one.
+pub const USERNAME_UNCHANGED: &str = "New username must be different from your current username";
+
+/// The line under a new email address that repeats the current one.
+pub const EMAIL_UNCHANGED: &str = "New email must be different from your current email";
+
+/// A password as typed, carried by an action, a request or a screen's state. Its `Debug` hides it; [`read`](Self::read) is the way to the text.
+#[derive(Default, Clone, PartialEq, Eq)]
+pub struct Password(String);
+
+impl Password {
+    /// Wraps a password as typed.
+    #[must_use]
+    pub fn new(raw: impl Into<String>) -> Self {
+        Self(raw.into())
+    }
+
+    /// The password as typed, for a check or the request body.
+    #[must_use]
+    pub fn read(&self) -> &str {
+        &self.0
+    }
+
+    /// Whether nothing is typed.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+}
+
+// By hand: the derive would print the password.
+impl Debug for Password {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.write_str("Password(REDACTED)")
+    }
+}
 
 /// What a tap on Log in does.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -64,7 +104,7 @@ pub fn reset_email_error(raw: &str) -> Option<String> {
 #[must_use]
 pub fn password_error(password: &str, confirm: &str, attempted: bool) -> Option<String> {
     if let Err(e) = password::validate(password) {
-        return Some(e.to_string());
+        return Some(sentence_case(&e.to_string()));
     }
     let judged = attempted || confirm.chars().count() >= password.chars().count();
     (password != confirm && judged).then(|| PASSWORDS_DIFFER.to_owned())
@@ -85,13 +125,27 @@ pub fn change_password_error(
 /// Why `raw` is not a username, in the app's words, or `None` when it is one.
 #[must_use]
 pub fn username_error(raw: &str) -> Option<String> {
-    Username::new(raw).err().map(|e| e.to_string())
+    Username::new(raw)
+        .err()
+        .map(|e| sentence_case(&e.to_string()))
 }
 
 /// Why `raw` is not an email address, in the app's words, or `None` when it is one.
 #[must_use]
 pub fn email_error(raw: &str) -> Option<String> {
     Email::new(raw).err().map(|e| email_message(&e).to_owned())
+}
+
+/// What is wrong with a new username on Change username: [`username_error`], then [`USERNAME_UNCHANGED`] when it is exactly the current one. Usernames are unique by exact text, so a change of case is a change.
+#[must_use]
+pub fn change_username_error(current: &str, raw: &str) -> Option<String> {
+    username_error(raw).or_else(|| (raw == current).then(|| USERNAME_UNCHANGED.to_owned()))
+}
+
+/// What is wrong with a new address on Change email: [`email_error`], then [`EMAIL_UNCHANGED`] when it is exactly the current one.
+#[must_use]
+pub fn change_email_error(current: &str, raw: &str) -> Option<String> {
+    email_error(raw).or_else(|| (raw == current).then(|| EMAIL_UNCHANGED.to_owned()))
 }
 
 /// The app's wording for each way an email address can be wrong.
@@ -103,23 +157,23 @@ fn email_message(error: &email_address::Error) -> &'static str {
         UnsupportedDisplayName, UnsupportedDomainLiteral,
     };
     match error {
-        InvalidCharacter => "invalid character in email",
-        MissingSeparator => "missing @ symbol",
-        LocalPartEmpty => "missing text before @",
-        LocalPartTooLong => "text before @ is too long",
-        DomainEmpty => "missing domain after @",
-        DomainTooLong => "domain is too long",
-        SubDomainEmpty => "empty part in domain",
-        SubDomainTooLong => "a part of the domain is too long",
-        DomainTooFew => "domain must have at least one dot",
-        DomainInvalidSeparator => "invalid dot placement in domain",
-        UnbalancedQuotes => "unbalanced quotes in email",
-        InvalidComment => "invalid comment in email",
-        InvalidIPAddress => "invalid ip address in domain",
-        UnsupportedDomainLiteral => "domain literal not supported",
-        UnsupportedDisplayName => "display name not supported",
-        MissingDisplayName => "missing display name",
-        MissingEndBracket => "missing closing bracket",
+        InvalidCharacter => "Invalid character in email",
+        MissingSeparator => "Missing @ symbol",
+        LocalPartEmpty => "Missing text before @",
+        LocalPartTooLong => "Text before @ is too long",
+        DomainEmpty => "Missing domain after @",
+        DomainTooLong => "Domain is too long",
+        SubDomainEmpty => "Empty part in domain",
+        SubDomainTooLong => "A part of the domain is too long",
+        DomainTooFew => "Domain must have at least one dot",
+        DomainInvalidSeparator => "Invalid dot placement in domain",
+        UnbalancedQuotes => "Unbalanced quotes in email",
+        InvalidComment => "Invalid comment in email",
+        InvalidIPAddress => "Invalid IP address in domain",
+        UnsupportedDomainLiteral => "Domain literal not supported",
+        UnsupportedDisplayName => "Display name not supported",
+        MissingDisplayName => "Missing display name",
+        MissingEndBracket => "Missing closing bracket",
     }
 }
 
@@ -187,11 +241,11 @@ mod tests {
         assert_eq!(username_error("scotty"), None);
         assert_eq!(
             username_error("ab").as_deref(),
-            Some("must be at least 3 characters long")
+            Some("Must be at least 3 characters long")
         );
         assert_eq!(
             username_error("has space").as_deref(),
-            Some("cannot contain whitespace")
+            Some("Cannot contain whitespace")
         );
     }
 
@@ -200,11 +254,11 @@ mod tests {
         assert_eq!(email_error("me@zwipe.net"), None);
         assert_eq!(
             email_error("me.zwipe.net").as_deref(),
-            Some("missing @ symbol")
+            Some("Missing @ symbol")
         );
         assert_eq!(
             email_error("me@localhost").as_deref(),
-            Some("domain must have at least one dot")
+            Some("Domain must have at least one dot")
         );
     }
 
@@ -213,7 +267,7 @@ mod tests {
         let seven = "Aé1!bcd";
         assert_eq!(
             change_password_error("Old!pass1", seven, seven, true).as_deref(),
-            Some("must be at least 8 characters long"),
+            Some("Must be at least 8 characters long"),
             "eight bytes but seven characters is too short"
         );
         assert_eq!(
@@ -298,6 +352,34 @@ mod tests {
             PASSWORD_UNCHANGED,
             "New password must be different from your current password"
         );
+        assert_eq!(
+            USERNAME_UNCHANGED,
+            "New username must be different from your current username"
+        );
+        assert_eq!(
+            EMAIL_UNCHANGED,
+            "New email must be different from your current email"
+        );
+    }
+
+    #[test]
+    fn an_unchanged_username_or_email_is_refused_and_a_case_change_is_not() {
+        assert_eq!(
+            change_username_error("scadoshi", "scadoshi"),
+            Some(USERNAME_UNCHANGED.to_owned())
+        );
+        assert_eq!(change_username_error("scadoshi", "Scadoshi"), None);
+        assert_eq!(change_username_error("scadoshi", "someone"), None);
+        assert_eq!(
+            change_email_error("a@example.com", "a@example.com"),
+            Some(EMAIL_UNCHANGED.to_owned())
+        );
+        assert_eq!(change_email_error("a@example.com", "b@example.com"), None);
+    }
+
+    #[test]
+    fn a_malformed_username_shows_its_format_error_before_unchanged() {
+        assert_eq!(change_username_error("a", "a"), username_error("a"));
     }
 
     #[test]
@@ -353,11 +435,11 @@ mod tests {
     fn the_policy_wins_over_the_mismatch() {
         assert_eq!(
             password_error("short", "other", true).as_deref(),
-            Some("must be at least 8 characters long")
+            Some("Must be at least 8 characters long")
         );
         assert_eq!(
             password_error("", "", true).as_deref(),
-            Some("must be at least 8 characters long"),
+            Some("Must be at least 8 characters long"),
             "an empty password fails the policy, not the mismatch"
         );
     }
@@ -407,7 +489,7 @@ mod tests {
     fn change_password_repeats_registers_checks_then_refuses_the_same_password() {
         assert_eq!(
             change_password_error(GOOD, "short", "short", true).as_deref(),
-            Some("must be at least 8 characters long")
+            Some("Must be at least 8 characters long")
         );
         assert_eq!(
             change_password_error(GOOD, GOOD, "Abc", true).as_deref(),
@@ -437,6 +519,15 @@ mod tests {
         assert_eq!(resend_label(false, 42), "Resend in 42s");
         assert_eq!(resend_label(false, 1), "Resend in 1s", "no singular form");
         assert_eq!(resend_label(false, 0), "Resend");
+    }
+
+    #[test]
+    fn a_password_never_shows_in_debug() {
+        let password = Password::new("hunter22");
+        assert_eq!(format!("{password:?}"), "Password(REDACTED)");
+        assert_eq!(password.read(), "hunter22");
+        assert!(!password.is_empty());
+        assert!(Password::default().is_empty());
     }
 
     #[test]

@@ -8,89 +8,45 @@
 //! these (handled by the host screen); here the user tunes the set.
 
 use components::{
-    ActionBar, Button, ButtonVariant, DialogAction, HintDialog, TOAST_QUICK,
-    use_overlay_back_action,
+    ActionBar, Button, ButtonVariant, DialogAction, HintDialog, use_overlay_back_action,
 };
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
-use zwipe_core::domain::card::oracle_tag::{self, OracleTag};
+use zwipe_core::domain::card::oracle_tag::OracleTag;
 use zwipe_core::domain::deck::MAX_DECK_ORACLE_TAGS;
-use zwipe_ui::filter::fields;
+use zwipe_ui::deck::pickers::{self, Picker};
 
 use crate::inbound::components::catalog_cache::CatalogCache;
 use crate::inbound::components::concept_explainers::OracleTagsExplainer;
+use crate::inbound::components::guide_link;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::screens::oracle_tag_dictionary::OracleTagDictionary;
 
-/// Ranked catalog matches a non-empty search shows.
-const SEARCH_RESULT_LIMIT: usize = 40;
-
-/// In-place oracle-tag picker. Toggled by `open`; mutates `selected` (slugs)
-/// directly, with Save grayed until the set differs from the one it opened
-/// on and Back reverting to it. `on_close` returns to the form.
+/// In-place oracle-tag picker, up while `open`. `selected` holds the deck's oracle tag slugs; a chip tap goes to `on_toggle`, the × to `on_clear` and the dictionary's Use to `on_adopt`. Save (`on_save`) stays off while `unchanged`; Back (`on_back`) and the OS back gesture put back the tags it opened on.
 #[component]
 pub(crate) fn OracleTagSelect(
-    open: Signal<bool>,
-    mut selected: Signal<Vec<String>>,
-    on_close: EventHandler<()>,
+    open: ReadSignal<bool>,
+    selected: Vec<String>,
+    unchanged: bool,
+    on_toggle: EventHandler<String>,
+    on_clear: EventHandler<()>,
+    on_adopt: EventHandler<String>,
+    on_save: EventHandler<()>,
+    on_back: EventHandler<()>,
 ) -> Element {
     let client: Signal<ZwipeClient> = use_context();
     let cache: CatalogCache = use_context();
-    let toast = use_toast();
     let mut query = use_signal(String::new);
     let mut focused = use_signal(|| Option::<OracleTag>::None);
     let hint_open = use_signal(|| false);
-    // Dictionary overlay, stacked above this picker; its Use button adopts a tag.
+    // Dictionary overlay, stacked above this picker; its Use button adopts a tag
+    // and stays in place, toasting the outcome.
     let mut dict_open = use_signal(|| false);
     let open_dictionary = use_callback(move |()| dict_open.set(true));
 
-    // Adopt a tag chosen via the dictionary's Use button, respecting the deck cap.
-    // Stays in place (no return to the form), toasting the outcome.
-    let adopt_tag = move |slug: String| {
-        let mut current = selected();
-        if current.contains(&slug) {
-            toast.info(
-                "Tag already added".to_string(),
-                ToastOptions::default().duration(TOAST_QUICK),
-            );
-        } else if current.len() < MAX_DECK_ORACLE_TAGS {
-            current.push(slug);
-            selected.set(current);
-            toast.success(
-                "Tag added to deck".to_string(),
-                ToastOptions::default().duration(TOAST_QUICK),
-            );
-        } else {
-            toast.warning(
-                format!("You may only choose up to {MAX_DECK_ORACLE_TAGS} oracle tags"),
-                ToastOptions::default().duration(TOAST_QUICK),
-            );
-        }
-    };
-    // Snapshot the selection when the picker opens, so Back can revert to it.
-    let mut snapshot = use_signal(Vec::<String>::new);
-    use_effect(move || {
-        if open() {
-            snapshot.set(selected.peek().clone());
-        }
-    });
-
-    // Back, and the OS back gesture, revert to the snapshot and say so when
-    // there was something to revert.
-    let back = use_callback(move |(): ()| {
-        let mut selected = selected;
-        if !fields::same_set(&selected.peek(), &snapshot.peek()) {
-            toast.info(
-                "Oracle tags unchanged".to_string(),
-                ToastOptions::default().duration(TOAST_QUICK),
-            );
-        }
-        selected.set(snapshot());
-        on_close.call(());
-    });
-    use_overlay_back_action(open.into(), back);
-    let unchanged = fields::same_set(&selected(), &snapshot());
+    // Back, and the OS back gesture, revert to the tags it opened on.
+    let back = use_callback(move |(): ()| on_back.call(()));
+    use_overlay_back_action(open, back);
 
     // Read the shared app-wide oracle-tag catalog (prefetched at startup), warming
     // / revalidating it on open. One copy is shared with the dictionary + filter.
@@ -107,29 +63,15 @@ pub(crate) fn OracleTagSelect(
 
     let cell_read = cell.read();
     let tags: &[OracleTag] = cell_read.loaded().map_or(&[], Vec::as_slice);
-    let sel = selected();
+    let sel = selected;
 
-    // Empty search → the server-marked curated grid plus any selected slug
-    // not already in it, alphabetical. Non-empty search →
-    // the shared ranked catalog search, capped to the 40 best matches.
+    // Empty search shows the server-marked curated grid plus any selected
+    // slug, alphabetical; a search shows the best ranked matches.
     let q = query();
     let results: Vec<OracleTag> = if !open() || tags.is_empty() {
         Vec::new()
-    } else if q.trim().is_empty() {
-        // The server marks which tags the default grid shows, so retuning it
-        // is a deploy. A tag the backend stopped serving cannot be curated, so
-        // the grid does not intersect against the served set.
-        let mut curated: Vec<OracleTag> = tags
-            .iter()
-            .filter(|t| t.curated || sel.contains(&t.slug))
-            .cloned()
-            .collect();
-        curated.sort_by(|a, b| a.slug.cmp(&b.slug));
-        curated
     } else {
-        let mut matches = oracle_tag::search_oracle_tags(tags, &q);
-        matches.truncate(SEARCH_RESULT_LIMIT);
-        matches
+        pickers::oracle_tag_results(tags, &sel, &q)
     };
 
     rsx! {
@@ -138,7 +80,7 @@ pub(crate) fn OracleTagSelect(
             // clear and the one beneath would show through.
             ::components::GridCells { still: true }
             if open() {
-                ScreenHeader { title: "Oracle tags", hint: hint_open }
+                ScreenHeader { title: Picker::OracleTags.title(), hint: hint_open }
 
                 div { class: "screen-content content-enter tag-screen",
                     div { class: "tag-controls",
@@ -155,7 +97,7 @@ pub(crate) fn OracleTagSelect(
                                 button {
                                     class: "clear-btn",
                                     onclick: move |_| {
-                                        selected.set(Vec::new());
+                                        on_clear.call(());
                                         focused.set(None);
                                     },
                                     "\u{00d7}"
@@ -178,13 +120,11 @@ pub(crate) fn OracleTagSelect(
                             if let Some(t) = focused() {
                                 div { class: "tag-def-name", "{t.slug}" }
                                 div { class: "tag-def-text",
-                                    { t.description.unwrap_or_else(|| "No description for this tag.".to_string()) }
+                                    { t.description.unwrap_or_else(|| pickers::ORACLE_TAG_NO_DESCRIPTION.to_string()) }
                                 }
                             } else {
-                                div { class: "tag-def-name", "Hint" }
-                                div { class: "tag-def-text",
-                                    "Tap a tag to see what it means. Picking a deck tag pre-selects some of these for you."
-                                }
+                                div { class: "tag-def-name", "{pickers::PICKER_BAR_HINT}" }
+                                div { class: "tag-def-text", "{Picker::OracleTags.bar_empty()}" }
                             }
                         }
                     }
@@ -211,19 +151,7 @@ pub(crate) fn OracleTagSelect(
                                                 focused.set(Some(tag_for_focus.clone()));
                                                 // Clear the search so the curated grid returns after picking.
                                                 query.set(String::new());
-                                                let mut current = selected();
-                                                if let Some(pos) = current.iter().position(|s| s == &slug) {
-                                                    current.remove(pos);
-                                                    selected.set(current);
-                                                } else if current.len() < MAX_DECK_ORACLE_TAGS {
-                                                    current.push(slug.clone());
-                                                    selected.set(current);
-                                                } else {
-                                                    toast.warning(
-                                                        format!("You may only choose up to {MAX_DECK_ORACLE_TAGS} oracle tags"),
-                                                        ToastOptions::default().duration(TOAST_QUICK),
-                                                    );
-                                                }
+                                                on_toggle.call(slug.clone());
                                             },
                                             "{t.slug}"
                                         }
@@ -243,24 +171,27 @@ pub(crate) fn OracleTagSelect(
                     Button {
                         variant: ButtonVariant::Action,
                         disabled: unchanged,
-                        onclick: move |_| on_close.call(()),
+                        onclick: move |_| on_save.call(()),
                         "Save"
                     }
                 }
 
                 HintDialog {
                     open: hint_open,
-                    title: "Oracle tags",
-                    actions: vec![DialogAction::Confirm {
+                    title: Picker::OracleTags.title(),
+                    actions: [DialogAction::Confirm {
                         label: "Dictionary".into(),
                         danger: false,
                         on_confirm: open_dictionary,
-                    }],
+                    }]
+                    .into_iter()
+                    .chain(guide_link::screen(zwipe_ui::hint::HintTopic::OracleTags))
+                    .collect(),
                     OracleTagsExplainer {}
                 }
 
                 if dict_open() {
-                    OracleTagDictionary { open: dict_open, on_use: adopt_tag }
+                    OracleTagDictionary { open: dict_open, on_use: move |slug: String| on_adopt.call(slug) }
                 }
             }
         }

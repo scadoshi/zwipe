@@ -8,6 +8,7 @@ use zwipe_core::domain::deck::deck_profile::DeckProfile;
 use zwipe_core::domain::deck::requests::get_deck_profile::GetDeckProfile;
 
 use crate::domain::deck::models::deck::get_deck_profile::GetDeckProfileError;
+use crate::domain::deck::ports::DeckService;
 use crate::inbound::http::middleware::AuthenticatedUser;
 use crate::inbound::http::{ApiError, AppState};
 

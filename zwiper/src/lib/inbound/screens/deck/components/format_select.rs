@@ -7,87 +7,30 @@
 //! command-zone cascade (clearing commander and signature spell on a change).
 
 use components::{
-    ActionBar, Button, ButtonVariant, HintBullet, HintBullets, HintDialog, TOAST_QUICK,
-    use_overlay_back_action,
+    ActionBar, Button, ButtonVariant, HintBullet, HintBullets, HintDialog, use_overlay_back_action,
 };
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_core::domain::deck::format::Format;
+use zwipe_ui::deck::form;
+use zwipe_ui::deck::pickers::{self, Picker};
 
+use crate::inbound::components::guide_link;
 use crate::inbound::components::screen_header::ScreenHeader;
 
-/// Deck size summary, e.g. "100 cards, singleton" or "60+ cards, up to 4 copies".
-fn size_text(fmt: Format) -> String {
-    let copies = if fmt.copy_max() == 1 {
-        "singleton"
-    } else {
-        "up to 4 copies"
-    };
-    let count = match (fmt.min_cards(), fmt.max_cards()) {
-        (Some(a), Some(b)) if a == b => format!("{a} cards"),
-        (Some(a), Some(b)) => format!("{a} to {b} cards"),
-        (Some(a), None) => format!("{a}+ cards"),
-        _ => "Any size".to_string(),
-    };
-    format!("{count}, {copies}")
-}
-
-/// What the command zone holds for this format.
-fn command_zone_text(fmt: Format) -> &'static str {
-    if fmt.has_signature_spell() {
-        "Planeswalker commander + signature spell"
-    } else if fmt == Format::PauperCommander {
-        "1 uncommon creature commander"
-    } else if fmt.has_commander() {
-        if fmt.supports_partner() {
-            "1 legendary commander (partners & backgrounds OK)"
-        } else {
-            "1 legendary commander"
-        }
-    } else {
-        "None"
-    }
-}
-
-/// In-place format picker. Toggled by `open`. `on_select` fires with the chosen
-/// format, `on_clear` clears the current pick, `on_close` commits (Save, grayed
-/// until the pick differs from the one it opened on), `on_cancel` reverts (the
-/// parent restores the format + its command-zone cascade snapshot). Single-select
-/// with a live cascade, so the revert is parent-owned; this picker only knows
-/// whether there was something to revert, and says so.
+/// In-place format picker, up while `open`. A chip tap goes to `on_tap`, which picks the format or clears it when it is the one picked, with the command-zone knock-on clears. Save (`on_save`) stays off while `unchanged`; Back (`on_back`) and the OS back gesture put the format and command zone back as they were when the picker opened.
 #[component]
 pub(crate) fn FormatSelect(
-    open: Signal<bool>,
-    selected_format: Signal<Option<Format>>,
-    on_select: EventHandler<Format>,
-    on_clear: EventHandler<()>,
-    on_close: EventHandler<()>,
-    on_cancel: EventHandler<()>,
+    open: ReadSignal<bool>,
+    selected_format: Option<Format>,
+    unchanged: bool,
+    on_tap: EventHandler<Format>,
+    on_save: EventHandler<()>,
+    on_back: EventHandler<()>,
 ) -> Element {
-    let toast = use_toast();
-    // The pick the picker opened on, so Save can gray out while nothing has
-    // moved and Back can tell whether it is throwing anything away.
-    let mut snapshot = use_signal(|| Option::<Format>::None);
-    use_effect(move || {
-        if open() {
-            snapshot.set(*selected_format.peek());
-        }
-    });
-    let unchanged = selected_format() == snapshot();
-
     // OS back gesture closes this overlay before touching the router. It maps
-    // to Back, not Save: leaving a picker should abandon the pick, and the
-    // parent's on_cancel restores the format + command-zone snapshot and closes.
-    let back = use_callback(move |(): ()| {
-        if *selected_format.peek() != *snapshot.peek() {
-            toast.info(
-                "Format unchanged".to_string(),
-                ToastOptions::default().duration(TOAST_QUICK),
-            );
-        }
-        on_cancel.call(());
-    });
-    use_overlay_back_action(open.into(), back);
+    // to Back, not Save: leaving a picker abandons the pick.
+    let back = use_callback(move |(): ()| on_back.call(()));
+    use_overlay_back_action(open, back);
 
     let mut query = use_signal(String::new);
     let mut focused = use_signal(|| Option::<Format>::None);
@@ -100,12 +43,7 @@ pub(crate) fn FormatSelect(
     };
 
     let results: Vec<Format> = if open() {
-        let q = query().to_lowercase();
-        Format::all()
-            .iter()
-            .copied()
-            .filter(|f| q.is_empty() || f.display_name().to_lowercase().contains(&q))
-            .collect()
+        pickers::formats_matching(&query())
     } else {
         Vec::new()
     };
@@ -116,7 +54,7 @@ pub(crate) fn FormatSelect(
             // clear and the one beneath would show through.
             ::components::GridCells { still: true }
             if open() {
-                ScreenHeader { title: "Format", hint: hint_open }
+                ScreenHeader { title: Picker::Format.title(), hint: hint_open }
 
                 div { class: "screen-content content-enter tag-screen",
                     div { class: "tag-controls",
@@ -139,19 +77,13 @@ pub(crate) fn FormatSelect(
                             if let Some(fmt) = focused() {
                                 div { class: "tag-def-name", "{fmt.display_name()}" }
                                 ul { class: "tag-def-list",
-                                    li { "Pool: {fmt.card_pool()}" }
-                                    li { "Cards: {size_text(fmt)}" }
-                                    li { "Life: {fmt.starting_life()}" }
-                                    if fmt.has_commander() || fmt.has_signature_spell() {
-                                        li { "Command zone: {command_zone_text(fmt)}" }
-                                    }
-                                    if let Some(dmg) = fmt.commander_damage() {
-                                        li { "Commander damage: {dmg}" }
+                                    for line in form::format_details(fmt) {
+                                        li { "{line}" }
                                     }
                                 }
                             } else {
-                                div { class: "tag-def-name", "Hint" }
-                                div { class: "tag-def-text", "Tap a format to see its details here." }
+                                div { class: "tag-def-name", "{pickers::PICKER_BAR_HINT}" }
+                                div { class: "tag-def-text", "{Picker::Format.bar_empty()}" }
                             }
                         }
                     }
@@ -163,14 +95,10 @@ pub(crate) fn FormatSelect(
                             for fmt in results {
                                 div {
                                     key: "{fmt.display_name()}",
-                                    class: if selected_format() == Some(fmt) { "chip selected" } else { "chip" },
+                                    class: if selected_format == Some(fmt) { "chip selected" } else { "chip" },
                                     onclick: move |_| {
                                         focused.set(Some(fmt));
-                                        if selected_format() == Some(fmt) {
-                                            on_clear.call(());
-                                        } else {
-                                            on_select.call(fmt);
-                                        }
+                                        on_tap.call(fmt);
                                     },
                                     "{fmt.display_name()}"
                                 }
@@ -188,17 +116,19 @@ pub(crate) fn FormatSelect(
                     Button {
                         variant: ButtonVariant::Action,
                         disabled: unchanged,
-                        onclick: move |_| on_close.call(()),
+                        onclick: move |_| on_save.call(()),
                         "Save"
                     }
                 }
 
                 HintDialog {
                     open: hint_open,
-                    title: "Format",
+                    actions: guide_link::screen(zwipe_ui::hint::HintTopic::Format),
+                    title: Picker::Format.title(),
                     HintBullets {
-                        HintBullet { "Tap the picked format again to clear it" }
-                        HintBullet { "Changing the format clears the commander and signature spell" }
+                        for block in Picker::Format.hint().blocks {
+                            HintBullet { "{block.plain()}" }
+                        }
                     }
                 }
             }

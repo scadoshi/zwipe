@@ -3,9 +3,9 @@
 use std::future::Future;
 
 use uuid::Uuid;
+use zwipe_core::domain::auth::models::platform::ClientPlatform;
 use zwipe_core::http::contracts::metrics::{AnonymousEventKind, HttpCrashReport, HttpUsageBatch};
 
-use crate::domain::BoxFuture;
 use crate::domain::metrics::models::errors::MetricsError;
 use crate::domain::metrics::models::kinds::{AuditAction, EventKind};
 use crate::domain::metrics::models::lifetime_counters::LifetimeCounters;
@@ -13,10 +13,13 @@ use crate::domain::metrics::models::public_metrics::PublicMetrics;
 
 /// Database port for metrics writes and reads.
 pub trait MetricsRepository: Clone + Send + Sync + 'static {
-    /// Increments lifetime + daily counters for `user_id` by the batch values.
+    /// Increments lifetime + daily counters for `user_id` by the batch values,
+    /// and the day's totals for the session's `platform` (`None` counts as
+    /// unknown).
     fn apply_usage(
         &self,
         user_id: Uuid,
+        platform: Option<ClientPlatform>,
         batch: &HttpUsageBatch,
     ) -> impl Future<Output = Result<(), MetricsError>> + Send;
 
@@ -100,10 +103,11 @@ pub trait MetricsRepository: Clone + Send + Sync + 'static {
 
 /// Service port for metrics business logic.
 pub trait MetricsService: Clone + Send + Sync + 'static {
-    /// Applies a batched usage update from the client.
+    /// Applies a batched usage update from a client on `platform`.
     fn apply_usage(
         &self,
         user_id: Uuid,
+        platform: Option<ClientPlatform>,
         batch: &HttpUsageBatch,
     ) -> impl Future<Output = Result<(), MetricsError>> + Send;
 
@@ -182,156 +186,4 @@ pub trait MetricsService: Clone + Send + Sync + 'static {
         &self,
         user_id: Uuid,
     ) -> impl Future<Output = Result<bool, MetricsError>> + Send;
-}
-
-/// Object-safe wrapper used by `AppState` so the concrete service type stays
-/// out of the generic parameter list. Auto-implemented for any `MetricsService`.
-pub trait ErasedMetricsService: Send + Sync + 'static {
-    /// See [`MetricsService::apply_usage`].
-    fn apply_usage<'a>(
-        &'a self,
-        user_id: Uuid,
-        batch: &'a HttpUsageBatch,
-    ) -> BoxFuture<'a, Result<(), MetricsError>>;
-
-    /// See [`MetricsService::lifetime_counters`].
-    fn lifetime_counters(
-        &self,
-        user_id: Uuid,
-    ) -> BoxFuture<'_, Result<LifetimeCounters, MetricsError>>;
-
-    /// See [`MetricsService::record_event`].
-    fn record_event(
-        &self,
-        user_id: Uuid,
-        kind: EventKind,
-        deck_id: Option<Uuid>,
-    ) -> BoxFuture<'_, Result<(), MetricsError>>;
-
-    /// See [`MetricsService::record_audit`].
-    fn record_audit(
-        &self,
-        user_id: Uuid,
-        action: AuditAction,
-    ) -> BoxFuture<'_, Result<(), MetricsError>>;
-
-    /// See [`MetricsService::record_anonymous_event`].
-    fn record_anonymous_event(
-        &self,
-        session_id: Uuid,
-        kind: AnonymousEventKind,
-    ) -> BoxFuture<'_, Result<(), MetricsError>>;
-
-    /// See [`MetricsService::record_crash`].
-    fn record_crash<'a>(
-        &'a self,
-        report: &'a HttpCrashReport,
-    ) -> BoxFuture<'a, Result<(), MetricsError>>;
-
-    /// See [`MetricsService::insert_lifetime_row`].
-    fn insert_lifetime_row(&self, user_id: Uuid) -> BoxFuture<'_, Result<(), MetricsError>>;
-
-    /// See [`MetricsService::increment_decks_created`].
-    fn increment_decks_created(&self, user_id: Uuid) -> BoxFuture<'_, Result<(), MetricsError>>;
-
-    /// See [`MetricsService::increment_decks_completed`].
-    fn increment_decks_completed(&self, user_id: Uuid) -> BoxFuture<'_, Result<(), MetricsError>>;
-
-    /// See [`MetricsService::mark_deck_first_completed`].
-    fn mark_deck_first_completed(&self, deck_id: Uuid)
-    -> BoxFuture<'_, Result<bool, MetricsError>>;
-
-    /// See [`MetricsService::public_metrics`].
-    fn public_metrics(&self) -> BoxFuture<'_, Result<PublicMetrics, MetricsError>>;
-
-    /// See [`MetricsService::touch_last_active`].
-    fn touch_last_active(&self, user_id: Uuid) -> BoxFuture<'_, Result<(), MetricsError>>;
-
-    /// See [`MetricsService::mark_user_first_swiped`].
-    fn mark_user_first_swiped(&self, user_id: Uuid) -> BoxFuture<'_, Result<bool, MetricsError>>;
-}
-
-impl<T> ErasedMetricsService for T
-where
-    T: MetricsService,
-{
-    fn apply_usage<'a>(
-        &'a self,
-        user_id: Uuid,
-        batch: &'a HttpUsageBatch,
-    ) -> BoxFuture<'a, Result<(), MetricsError>> {
-        Box::pin(MetricsService::apply_usage(self, user_id, batch))
-    }
-
-    fn lifetime_counters(
-        &self,
-        user_id: Uuid,
-    ) -> BoxFuture<'_, Result<LifetimeCounters, MetricsError>> {
-        Box::pin(MetricsService::lifetime_counters(self, user_id))
-    }
-
-    fn record_event(
-        &self,
-        user_id: Uuid,
-        kind: EventKind,
-        deck_id: Option<Uuid>,
-    ) -> BoxFuture<'_, Result<(), MetricsError>> {
-        Box::pin(MetricsService::record_event(self, user_id, kind, deck_id))
-    }
-
-    fn record_audit(
-        &self,
-        user_id: Uuid,
-        action: AuditAction,
-    ) -> BoxFuture<'_, Result<(), MetricsError>> {
-        Box::pin(MetricsService::record_audit(self, user_id, action))
-    }
-
-    fn record_anonymous_event(
-        &self,
-        session_id: Uuid,
-        kind: AnonymousEventKind,
-    ) -> BoxFuture<'_, Result<(), MetricsError>> {
-        Box::pin(MetricsService::record_anonymous_event(
-            self, session_id, kind,
-        ))
-    }
-
-    fn record_crash<'a>(
-        &'a self,
-        report: &'a HttpCrashReport,
-    ) -> BoxFuture<'a, Result<(), MetricsError>> {
-        Box::pin(MetricsService::record_crash(self, report))
-    }
-
-    fn insert_lifetime_row(&self, user_id: Uuid) -> BoxFuture<'_, Result<(), MetricsError>> {
-        Box::pin(MetricsService::insert_lifetime_row(self, user_id))
-    }
-
-    fn increment_decks_created(&self, user_id: Uuid) -> BoxFuture<'_, Result<(), MetricsError>> {
-        Box::pin(MetricsService::increment_decks_created(self, user_id))
-    }
-
-    fn increment_decks_completed(&self, user_id: Uuid) -> BoxFuture<'_, Result<(), MetricsError>> {
-        Box::pin(MetricsService::increment_decks_completed(self, user_id))
-    }
-
-    fn mark_deck_first_completed(
-        &self,
-        deck_id: Uuid,
-    ) -> BoxFuture<'_, Result<bool, MetricsError>> {
-        Box::pin(MetricsService::mark_deck_first_completed(self, deck_id))
-    }
-
-    fn public_metrics(&self) -> BoxFuture<'_, Result<PublicMetrics, MetricsError>> {
-        Box::pin(MetricsService::public_metrics(self))
-    }
-
-    fn touch_last_active(&self, user_id: Uuid) -> BoxFuture<'_, Result<(), MetricsError>> {
-        Box::pin(MetricsService::touch_last_active(self, user_id))
-    }
-
-    fn mark_user_first_swiped(&self, user_id: Uuid) -> BoxFuture<'_, Result<bool, MetricsError>> {
-        Box::pin(MetricsService::mark_user_first_swiped(self, user_id))
-    }
 }

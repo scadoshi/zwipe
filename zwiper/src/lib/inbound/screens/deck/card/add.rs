@@ -1,33 +1,37 @@
-use std::collections::HashSet;
+//! Add deck cards: swipe through search results or the maybeboard to build a deck.
+//!
+//! What the screen knows and does is `zwipe_ui::screens::add_cards`; this
+//! file draws its state, performs its effects and keeps the gestures, the
+//! card's entrance, image easing and the sheets.
+
+use std::cell::Cell;
 
 use components::{
     ActionBar, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintDialog, HintKey, HintLine,
-    TOAST_NORMAL, TOAST_QUICK,
+    ToastOptions, Toasts, use_toast,
 };
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
+use dioxus::router::Navigator;
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
-use zwipe_core::domain::card::scryfall_data::colors::{Color, Colors};
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
-use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
-use zwipe_core::domain::card::search_card::card_type::CardType;
-use zwipe_core::domain::card::search_card::cards::Cards;
-use zwipe_core::domain::deck::format::Format;
-use zwipe_core::domain::deck::{Board, DeckEntry, Quantity, deck_metrics};
+use zwipe_core::domain::card::search_card::card_filter::query::CardQuery;
+use zwipe_core::domain::deck::Board;
 use zwipe_core::domain::user::models::hints::HINT_ADD_DECK_CARDS;
-use zwipe_core::http::contracts::deck::HttpDeckCardSearch;
-use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpPatchDeckCard};
-use zwipe_core::http::contracts::metrics::PileEndKind;
+use zwipe_ui::generation::Ticket;
+use zwipe_ui::screens::add_cards::{
+    self, Action, Destination, Effect, Pile, Source, State, UndoClaim,
+};
+use zwipe_ui::stack;
+use zwipe_ui::stores::parked;
 
 use super::components::card_info::{CardDetailsSheet, CardInfoDisplay, CardSkeleton, RulesButton};
 use super::components::printing_sheet::PrintingSheet;
-use crate::inbound::components::auth::authed::use_authed;
+use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::auth::ensure_session::EnsureFresh;
-use crate::inbound::components::generation::use_generation;
-use crate::inbound::components::hint_dialog::{HintColored, use_one_time_hint};
+use crate::inbound::components::hint_dialog::{self, HintColored};
 use crate::inbound::components::interactions::swipe::SwipeStack;
 use crate::inbound::components::interactions::swipe::config::SwipeConfig;
 use crate::inbound::components::interactions::swipe::direction::Direction;
@@ -35,25 +39,15 @@ use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::flush_loop;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen, component, screen};
-use crate::inbound::screens::deck::card::components::action_history::{
-    AddAction, CARDS_WARNING_THRESHOLD, MAX_CARDS_IN_STACK, MaybeboardAction, StackAction,
-};
+use crate::inbound::components::{guide_link, ui_toast};
+use crate::inbound::screens::deck::card::components::action_history::AddAction;
 use crate::inbound::screens::deck::card::components::add_stack_cache::{
     AddStackCache, ParkedStack,
 };
-use crate::inbound::screens::deck::card::components::card_stack::{CardStack, use_card_stack};
 use crate::inbound::screens::deck::card::components::filter_store::{FilterScope, FilterStore};
 use crate::inbound::screens::deck::card::components::flippable_card_image;
-use crate::inbound::screens::deck::card::components::in_flight_adds::{AddOutcome, InFlightAdds};
 use crate::inbound::screens::deck::card::components::undo_log::{UndoAction, UndoStore};
 use crate::inbound::screens::deck::card::filter::card_filter_sheet::CardFilterSheet;
-
-#[derive(Debug, Clone, Copy, PartialEq, Default)]
-enum AddSource {
-    #[default]
-    Search,
-    Maybeboard,
-}
 
 /// Pixels a swipe travels to commit.
 const SWIPE_DISTANCE_PX: f64 = 90.0;
@@ -61,310 +55,560 @@ const SWIPE_DISTANCE_PX: f64 = 90.0;
 const SWIPE_SPEED_PX_PER_MS: f64 = 2.5;
 /// Pixels a downward pull on the end card travels to undo the last swipe.
 const BACK_PULL_PX: f64 = 60.0;
-/// The stack-limit warning repeats every this many cards.
-const STACK_WARNING_EVERY: usize = 100;
 
-/// Applies the "lands already at target" state to the search filter: adds
-/// `CardType::Land` to the excludes and drops it from either include list, so we
-/// never end up with an include+exclude clash on Land (which serves zero cards).
-/// Merges with the user's existing card-type filters. Applied once on entry to
-/// the add screen when the deck already meets its land target.
-fn ensure_lands_excluded(mut filter_builder: Signal<CardQueryBuilder>) {
-    let mut fb = filter_builder.write();
+/// The screen's model with the handles that perform its effects. Copy, so
+/// every handler and task holds its own.
+#[derive(Clone, Copy)]
+struct Driver {
+    model: Signal<State>,
+    deck_id: Uuid,
+    navigator: Navigator,
+    toast: Toasts,
+    authed: Authed,
+    session: Signal<Option<Session>>,
+    client: Signal<ZwipeClient>,
+    usage_buffer: Signal<UsageBuffer>,
+    undo_store: UndoStore,
+    filter_store: FilterStore,
+    /// The filter the sheet edits; the model reads it on every rerun.
+    filter_builder: Signal<CardQueryBuilder>,
+    /// Bumped to rerun the filter; the filter sheet's sections reset on it.
+    filter_reset_counter: Signal<u32>,
+    /// The side the Search card on top enters from after an undo; the swipe
+    /// stack clears it when the entrance ends.
+    search_entering: Signal<Option<Direction>>,
+    /// The same for the maybeboard pile.
+    maybeboard_entering: Signal<Option<Direction>>,
+    hint_open: Signal<bool>,
+}
 
-    // Read current state into owned values so the immutable borrows drop before
-    // we mutate below.
-    let contains_any = fb.card_type_contains_any().map(<[CardType]>::to_vec);
-    let contains_all = fb.card_type_contains_all().map(<[CardType]>::to_vec);
-    let mut excluded = fb
-        .card_type_excludes_any()
-        .map(<[CardType]>::to_vec)
-        .unwrap_or_default();
-
-    // Drop Land from any include list: including and excluding Land at once
-    // matches nothing. Setting an empty vec clears the filter.
-    if let Some(includes) = contains_any {
-        let kept: Vec<CardType> = includes
-            .into_iter()
-            .filter(|t| *t != CardType::Land)
-            .collect();
-        fb.set_card_type_contains_any(kept);
+impl Driver {
+    /// Applies `action` to the model and performs what it returns.
+    fn dispatch(self, action: Action) {
+        let mut model = self.model;
+        let effects = model.write().update(action);
+        for effect in effects {
+            self.perform(effect);
+        }
     }
-    if let Some(includes) = contains_all {
-        let kept: Vec<CardType> = includes
-            .into_iter()
-            .filter(|t| *t != CardType::Land)
-            .collect();
-        fb.set_card_type_contains_all(kept);
+
+    /// Performs one effect, feeding any reply back through [`Self::dispatch`].
+    fn perform(self, effect: Effect) {
+        let Self {
+            deck_id,
+            navigator,
+            toast,
+            session,
+            client,
+            usage_buffer,
+            mut undo_store,
+            mut filter_store,
+            mut filter_builder,
+            mut filter_reset_counter,
+            hint_open,
+            ..
+        } = self;
+        match effect {
+            Effect::OfferHint(hint) => {
+                hint_dialog::open_and_record_hint(hint.key(), session, client, hint_open);
+            }
+            Effect::FetchDeck { ticket, deck_id } => self.fetch_deck(ticket, deck_id),
+            Effect::RefreshMaybeboard { ticket, deck_id } => {
+                self.refresh_maybeboard(ticket, deck_id);
+            }
+            Effect::Search {
+                ticket,
+                deck_id,
+                query,
+            } => self.search(ticket, deck_id, query),
+            Effect::LoadMore {
+                ticket,
+                deck_id,
+                query,
+            } => self.load_more(ticket, deck_id, query),
+            Effect::SkipCard { deck_id, oracle_id } => self.skip_card(deck_id, oracle_id),
+            Effect::UnskipCard { deck_id, oracle_id } => self.unskip_card(deck_id, oracle_id),
+            Effect::AddCard {
+                ticket,
+                deck_id,
+                card,
+                board,
+            } => self.add_card(ticket, deck_id, &card, board),
+            Effect::DeleteUndoneAdd { deck_id, card_id } => {
+                self.delete_undone_add(deck_id, card_id);
+            }
+            Effect::PromoteCard {
+                ticket,
+                deck_id,
+                card_id,
+            } => self.promote_card(ticket, deck_id, card_id),
+            Effect::TakeUndo {
+                ticket,
+                deck_id,
+                claim,
+            } => {
+                let taken = undo_store.take_newest(deck_id, |a| claims(claim, a));
+                self.dispatch(Action::Taken {
+                    ticket,
+                    taken: taken.map(Into::into),
+                });
+            }
+            Effect::UndoAdd {
+                ticket,
+                deck_id,
+                card_id,
+                board,
+            } => self.undo_add(ticket, deck_id, card_id, board),
+            Effect::UndoPromote {
+                ticket,
+                deck_id,
+                card_id,
+            } => self.undo_promote(ticket, deck_id, card_id),
+            Effect::RecordUndo { deck_id, action } => {
+                undo_store.push(deck_id, action.into());
+            }
+            Effect::Enter { pile, from } => self.entering(pile).set(Some(direction(from))),
+            Effect::StopEnter(pile) => self.entering(pile).set(None),
+            Effect::SetFilter(filter) => filter_builder.set(filter),
+            Effect::Rerun => {
+                let current = *filter_reset_counter.peek();
+                filter_reset_counter.set(current.wrapping_add(1));
+            }
+            Effect::ParkFilter { source, filter } => {
+                filter_store.park(scope(source), deck_id, filter);
+            }
+            Effect::EaseImages => flippable_card_image::reset_image_ease(),
+            Effect::PileEnd {
+                deck_id,
+                kind,
+                synergy,
+            } => usage_buffer.peek().record_pile_end(deck_id, kind, synergy),
+            Effect::Navigate(Destination::Previous) => navigator.go_back(),
+            Effect::Toast(raised) => ui_toast::raise(toast, raised),
+        }
     }
 
-    // Add Land to the excludes if not already present.
-    if !excluded.contains(&CardType::Land) {
-        excluded.push(CardType::Land);
-        fb.set_card_type_excludes_any(excluded);
+    /// Fetches the deck quietly.
+    fn fetch_deck(self, ticket: Ticket, deck_id: Uuid) {
+        let Self { authed, .. } = self;
+        spawn(async move {
+            // Quiet: the screen works without deck context; telemetry
+            // still records the failure.
+            let deck = authed
+                .run_quiet("load_deck_context", |c, s| async move {
+                    c.fetch_deck(deck_id, &s).await
+                })
+                .await;
+            self.dispatch(match deck {
+                Some(deck) => Action::DeckLoaded {
+                    ticket,
+                    deck: Box::new(deck),
+                },
+                None => Action::Failed { ticket },
+            });
+        });
+    }
+
+    /// Fetches the deck again for its maybeboard.
+    fn refresh_maybeboard(self, ticket: Ticket, deck_id: Uuid) {
+        let Self { authed, .. } = self;
+        spawn(async move {
+            let deck = authed
+                .run("search_cards", |c, s| async move {
+                    c.fetch_deck(deck_id, &s).await
+                })
+                .await;
+            self.dispatch(match deck {
+                Some(deck) => Action::DeckLoaded {
+                    ticket,
+                    deck: Box::new(deck),
+                },
+                None => Action::Failed { ticket },
+            });
+        });
+    }
+
+    /// Searches from the top, flushing buffered usage first.
+    fn search(self, ticket: Ticket, deck_id: Uuid, query: CardQuery) {
+        let Self {
+            authed,
+            session,
+            client,
+            usage_buffer,
+            ..
+        } = self;
+        usage_buffer.peek().record_search();
+        spawn(async move {
+            // Buffered usage feeds synergy ordering, so it goes out
+            // before the search.
+            flush_loop::flush_once(&usage_buffer(), &client, &session).await;
+            let reply = authed
+                .try_run("search_cards", |c, s| async move {
+                    c.search_deck_cards(deck_id, &query, &s).await
+                })
+                .await;
+            self.dispatch(match reply {
+                Ok(page) => Action::Searched { ticket, page },
+                Err(_) => Action::Failed { ticket },
+            });
+        });
+    }
+
+    /// Fetches the next page.
+    fn load_more(self, ticket: Ticket, deck_id: Uuid, query: CardQuery) {
+        let Self {
+            authed,
+            usage_buffer,
+            ..
+        } = self;
+        usage_buffer.peek().record_search();
+        spawn(async move {
+            let reply = authed
+                .try_run("load_more", |c, s| async move {
+                    c.search_deck_cards(deck_id, &query, &s).await
+                })
+                .await;
+            self.dispatch(match reply {
+                Ok(page) => Action::Searched { ticket, page },
+                Err(_) => Action::Failed { ticket },
+            });
+        });
+    }
+
+    /// Posts a skip quietly.
+    fn skip_card(self, deck_id: Uuid, oracle_id: Uuid) {
+        let Self { authed, .. } = self;
+        spawn(async move {
+            // Quiet: fires on every left swipe; a per-swipe toast on a
+            // bad connection would bury the screen, and the visual
+            // skip already happened.
+            let _ = authed
+                .run_quiet("skip_card", |c, s| async move {
+                    c.skip_deck_card(deck_id, oracle_id, &s).await
+                })
+                .await;
+        });
+    }
+
+    /// Deletes a skip.
+    fn unskip_card(self, deck_id: Uuid, oracle_id: Uuid) {
+        let Self { authed, .. } = self;
+        spawn(async move {
+            let _ = authed
+                .run("undo_skip", |c, s| async move {
+                    c.unskip_deck_card(deck_id, oracle_id, &s).await
+                })
+                .await;
+        });
+    }
+
+    /// Deletes a card whose add was undone while it was in flight.
+    fn delete_undone_add(self, deck_id: Uuid, card_id: Uuid) {
+        let Self { authed, .. } = self;
+        spawn(async move {
+            let _ = authed
+                .run("undo_add", |c, s| async move {
+                    c.delete_deck_card(deck_id, card_id, &s).await
+                })
+                .await;
+        });
+    }
+
+    /// Creates one copy of `card` on `board`.
+    fn add_card(self, ticket: Ticket, deck_id: Uuid, card: &Card, board: Board) {
+        let Self { authed, .. } = self;
+        let request = add_cards::add_request(card, board);
+        let operation = if board.is_maybeboard() {
+            "add_maybeboard"
+        } else {
+            "add_card"
+        };
+        spawn(async move {
+            let added = authed
+                .run(operation, |c, s| async move {
+                    c.create_deck_card(deck_id, &request, &s).await
+                })
+                .await;
+            self.dispatch(match added {
+                Some(deck_card) => Action::Added {
+                    ticket,
+                    deck_card: Box::new(deck_card),
+                },
+                None => Action::Failed { ticket },
+            });
+        });
+    }
+
+    /// Moves a maybeboard card to the deck.
+    fn promote_card(self, ticket: Ticket, deck_id: Uuid, card_id: Uuid) {
+        let Self { authed, .. } = self;
+        let request = add_cards::board_request(Board::Deck);
+        spawn(async move {
+            let moved = authed
+                .run("promote_maybeboard", |c, s| async move {
+                    c.update_deck_card(deck_id, card_id, &request, &s).await
+                })
+                .await;
+            self.dispatch(match moved {
+                Some(_) => Action::Landed { ticket },
+                None => Action::Failed { ticket },
+            });
+        });
+    }
+
+    /// The entrance signal for `pile`.
+    fn entering(self, pile: Source) -> Signal<Option<Direction>> {
+        match pile {
+            Source::Search => self.search_entering,
+            Source::Maybeboard => self.maybeboard_entering,
+        }
+    }
+
+    /// Undoes an add to `board`: deletes the card.
+    fn undo_add(self, ticket: Ticket, deck_id: Uuid, card_id: Uuid, board: Board) {
+        let Self { toast, client, .. } = self;
+        let operation = if board.is_maybeboard() {
+            "undo_maybe"
+        } else {
+            "undo_add"
+        };
+        // Facade holdout: staged compensation (a refresh failure rewinds the
+        // undo; a failed delete leaves the add standing).
+        spawn(async move {
+            let Some(session) = self.fresh_session(operation).await else {
+                self.dispatch(Action::NotSent { ticket });
+                return;
+            };
+            match client().delete_deck_card(deck_id, card_id, &session).await {
+                Ok(()) => self.dispatch(Action::Landed { ticket }),
+                Err(e) => {
+                    if board.is_maybeboard() {
+                        tracing::warn!("undo maybeboard (delete deck card) failed: {e}");
+                    } else {
+                        tracing::warn!("undo add (delete deck card) failed: {e}");
+                    }
+                    toast.error(format!("Failed to undo: {e}"), ToastOptions::default());
+                    self.dispatch(Action::Failed { ticket });
+                }
+            }
+        });
+    }
+
+    /// Undoes a move to the deck: sends the card back to the maybeboard.
+    fn undo_promote(self, ticket: Ticket, deck_id: Uuid, card_id: Uuid) {
+        let Self { toast, client, .. } = self;
+        let request = add_cards::board_request(Board::Maybeboard);
+        // Facade holdout: staged compensation (a refresh failure cancels the
+        // entrance; a failed move leaves the promote standing).
+        spawn(async move {
+            let Some(session) = self.fresh_session("undo_maybeboard").await else {
+                self.dispatch(Action::NotSent { ticket });
+                return;
+            };
+            match client()
+                .update_deck_card(deck_id, card_id, &request, &session)
+                .await
+            {
+                Ok(_) => self.dispatch(Action::Landed { ticket }),
+                Err(e) => {
+                    tracing::warn!("undo promote failed: {e}");
+                    toast.error(format!("Failed to undo: {e}"), ToastOptions::default());
+                    self.dispatch(Action::Failed { ticket });
+                }
+            }
+        });
+    }
+
+    /// A fresh session for an undo's call. On failure it reports the error
+    /// under `operation` and raises its toast.
+    async fn fresh_session(self, operation: &'static str) -> Option<Session> {
+        let Self {
+            toast,
+            session,
+            client,
+            usage_buffer,
+            ..
+        } = self;
+        match session.ensure_fresh(client).await {
+            Ok(session) => Some(session),
+            Err(e) => {
+                usage_buffer.peek().report_error(
+                    screen::DECK_CARD_ADD,
+                    component::NONE,
+                    operation,
+                    &e,
+                );
+                toast.error(e.to_user_message(), ToastOptions::default());
+                None
+            }
+        }
     }
 }
 
-/// Printing ids of the cards a page served after the synergy pool ran out.
-fn related_ids_of(page: &HttpDeckCardSearch) -> HashSet<Uuid> {
-    page.related_from
-        .map(|from| {
-            page.cards
-                .iter()
-                .skip(from)
-                .map(|card| card.card_profile.scryfall_data_id)
-                .collect()
-        })
-        .unwrap_or_default()
+/// The filter store's scope for a source.
+fn scope(source: Source) -> FilterScope {
+    match source {
+        Source::Search => FilterScope::AddSearch,
+        Source::Maybeboard => FilterScope::AddMaybeboard,
+    }
+}
+
+/// The app's swipe direction for a side the model names.
+fn direction(side: stack::Direction) -> Direction {
+    match side {
+        stack::Direction::Left => Direction::Left,
+        stack::Direction::Right => Direction::Right,
+        stack::Direction::Up => Direction::Up,
+    }
+}
+
+/// The model's side for a swipe that commits a card.
+fn side(direction: Direction) -> Option<stack::Direction> {
+    match direction {
+        Direction::Left => Some(stack::Direction::Left),
+        Direction::Right => Some(stack::Direction::Right),
+        Direction::Up => Some(stack::Direction::Up),
+        Direction::Down => None,
+    }
+}
+
+/// Whether `action` is the undo log entry `claim` takes back.
+fn claims(claim: UndoClaim, action: &UndoAction) -> bool {
+    match (claim, action) {
+        (UndoClaim::Added { card_id }, UndoAction::Added { card_id: added, .. }) => {
+            *added == card_id
+        }
+        (
+            UndoClaim::MovedBoard { card_id, from },
+            UndoAction::MovedBoard {
+                card_id: moved,
+                from: left,
+                ..
+            },
+        ) => *moved == card_id && *left == from,
+        _ => false,
+    }
+}
+
+/// The app's parked stack as zwipe-ui's.
+fn into_shared(parked: ParkedStack) -> parked::ParkedStack {
+    parked::ParkedStack {
+        cards: parked.cards,
+        index: parked.index,
+        history: parked.history.into_iter().map(shared_action).collect(),
+        filter: parked.filter,
+        exhausted: parked.exhausted,
+    }
+}
+
+/// zwipe-ui's parked stack as the app's.
+fn from_shared(parked: parked::ParkedStack) -> ParkedStack {
+    ParkedStack {
+        cards: parked.cards,
+        index: parked.index,
+        history: parked.history.into_iter().map(app_action).collect(),
+        filter: parked.filter,
+        exhausted: parked.exhausted,
+    }
+}
+
+/// The app's search swipe as zwipe-ui's.
+fn shared_action(action: AddAction) -> stack::AddAction {
+    match action {
+        AddAction::Skip => stack::AddAction::Skip,
+        AddAction::Add => stack::AddAction::Add,
+        AddAction::Maybe => stack::AddAction::Maybe,
+    }
+}
+
+/// zwipe-ui's search swipe as the app's.
+fn app_action(action: stack::AddAction) -> AddAction {
+    match action {
+        stack::AddAction::Skip => AddAction::Skip,
+        stack::AddAction::Add => AddAction::Add,
+        stack::AddAction::Maybe => AddAction::Maybe,
+    }
 }
 
 #[component]
 pub fn Add(deck_id: Uuid) -> Element {
-    let navigator = use_navigator();
-
-    // This screen's own filter: seeded from the per-(screen, deck) store,
-    // provided as context so the filter modules bind to it, parked on leave
-    // (see the use_drop below the source selector). Mount always starts on
-    // the Search source, so the seed is the AddSearch scope; a fresh filter
-    // gets the deck-context defaults from the deck-load effect as usual.
-    let filter_store: FilterStore = use_context();
+    // This screen's own filter: seeded from the per-(screen, deck) store and
+    // provided as context so the filter modules bind to it. Mount always
+    // starts on the Search source, so the seed is the AddSearch scope.
+    let mut filter_store: FilterStore = use_context();
     let restored_filter = filter_store.restore(FilterScope::AddSearch, deck_id);
-    let had_restored_filter = restored_filter.is_some();
-    let mut filter_builder: Signal<CardQueryBuilder> =
-        use_signal(move || restored_filter.unwrap_or_default());
+    let filter_builder: Signal<CardQueryBuilder> = {
+        let restored = restored_filter.clone();
+        use_signal(move || restored.unwrap_or_default())
+    };
     use_context_provider(|| filter_builder);
-    // App-scoped search stack (cards, cursor, undo history, animation),
-    // survives navigation so re-entry resumes mid-stack.
-    let mut stack: CardStack<AddAction> = use_context();
-    // Parked stacks for other decks; this deck's parked entry (if any) is
-    // restored by the mount effect, and `use_drop` below parks on leave.
+    // Bumped to rerun the filter; the filter sheet's sections reset on it.
+    let filter_reset_counter: Signal<u32> = use_signal(|| 0);
+    use_context_provider(|| filter_reset_counter);
+    // Parked stacks per deck, so returning resumes mid-stack.
     let mut stack_cache: AddStackCache = use_context();
-    let mut last_search_filter: Signal<Option<CardQueryBuilder>> = use_context();
-    let is_first_run = use_hook(|| std::cell::Cell::new(true));
-    // The global per-deck undo stack (walked by the deck cards screen's Undo
-    // button). This screen records its deck mutations into the parked stack
-    // and takes them back when its own gesture undo reverses one.
-    let mut undo_store: UndoStore = use_context();
 
-    // Swipe vocabulary hint: auto-opens on this user's first visit, the
-    // grayed "?" in the util bar reopens it on demand.
-    let swipe_hint_open = use_one_time_hint(HINT_ADD_DECK_CARDS);
     let mut show_details = use_signal(|| false);
     let mut printing_open = use_signal(|| false);
-
-    let mut deck_cards_ids = use_signal(HashSet::<Uuid>::new);
-    let mut deck_format: Signal<Option<Format>> = use_signal(|| None);
-    let mut deck_color_identity: Signal<Option<Colors>> = use_signal(|| None);
-    let mut deck_has_commander = use_signal(|| false);
-    let mut deck_loaded = use_signal(|| false);
-
-    // Land-count signal: the current mainboard land count and the effective
-    // target (the deck's user-set override, else the format heuristic). When an
-    // add pushes the count up across the target we toast once.
-    let mut mainboard_land_count: Signal<i32> = use_signal(|| 0);
-    let mut land_target: Signal<Option<i32>> = use_signal(|| None);
-
-    // Budget signal: running mainboard total in the budget currency, plus the
-    // budget + currency. Each add raises the running total; crossing 50/75/100%
-    // toasts once.
-    let mut deck_total_price: Signal<f64> = use_signal(|| 0.0);
-    let mut price_budget: Signal<Option<f64>> = use_signal(|| None);
-    let mut price_budget_currency: Signal<PriceCurrency> = use_signal(|| PriceCurrency::Usd);
-
-    // Source selector: search (API) vs maybeboard (local)
-    let mut add_source: Signal<AddSource> = use_signal(AddSource::default);
-
-    // Park this screen's filter under whichever source is live on leave; the
-    // other source's filter was already parked by the toggle when switching.
-    use_drop(move || {
-        let scope = match *add_source.peek() {
-            AddSource::Search => FilterScope::AddSearch,
-            AddSource::Maybeboard => FilterScope::AddMaybeboard,
-        };
-        let mut store = filter_store;
-        store.park(scope, deck_id, filter_builder.peek().clone());
-    });
-    // True when synergy was requested but the commander's cache is still warming
-    // (server fell back to the full pool); drives the inline "warming up" note.
-    let mut synergy_warming = use_signal(|| false);
-    // Cards the server served after the synergy pool ran out, by printing
-    // id, and whether that switch has been announced since the last fresh
-    // stack.
-    let mut related_ids: Signal<HashSet<Uuid>> = use_signal(HashSet::new);
-    let mut related_announced = use_signal(|| false);
-    let mut mb_entries: Signal<Vec<DeckEntry>> = use_signal(Vec::new);
-    // Screen-local maybeboard stack: a cycling view over `mb_entries`.
-    let mut mb_stack = use_card_stack::<MaybeboardAction>();
-
-    // Filters overlay at bottom of screen state
     let mut filters_overlay_open = use_signal(|| false);
-
     // Gesture start point for the end-of-stack skeleton, which accepts a
     // down-swipe to undo back into the pile (no card, so no SwipeStack).
     let mut end_swipe_start: Signal<Option<(f64, f64)>> = use_signal(|| None);
 
-    // Reset counter for collapsing accordions and clearing search queries.
-    // Readers only see that it moved, so bumps wrap.
-    let mut filter_reset_counter: Signal<u32> = use_signal(|| 0);
-    use_context_provider(|| filter_reset_counter);
-
-    let session: Signal<Option<Session>> = use_context();
-    let client: Signal<ZwipeClient> = use_context();
     let usage_buffer: Signal<UsageBuffer> = use_context();
-    let toast = use_toast();
-    let authed = use_authed(Screen::Deck(DeckScreen::CardAdd));
+    let driver = Driver {
+        model: use_signal(State::new),
+        deck_id,
+        navigator: use_navigator(),
+        toast: use_toast(),
+        authed: use_authed(Screen::Deck(DeckScreen::CardAdd)),
+        session: use_context(),
+        client: use_context(),
+        usage_buffer,
+        undo_store: use_context(),
+        filter_store,
+        filter_builder,
+        filter_reset_counter,
+        search_entering: use_signal(|| None),
+        maybeboard_entering: use_signal(|| None),
+        hint_open: use_signal(|| false),
+    };
 
-    // Toast once when synergy goes cold (the search fell back to the full pool).
-    // Deduped via a prev-value cell so re-searches / load-more while still warming
-    // don't re-fire it; only a fresh false->true transition toasts.
-    let synergy_was_warming = use_hook(|| std::cell::Cell::new(false));
-    use_effect(move || {
-        let warming = synergy_warming();
-        let was = synergy_was_warming.replace(warming);
-        if warming && !was {
-            toast.info(
-                "Synergy warming up; showing all cards for now".to_string(),
-                ToastOptions::default().duration(TOAST_NORMAL),
-            );
-        }
-    });
-
-    // Pagination state. Every request asks for offset 0: swiped cards leave
-    // the server's pool, so the next page is the top of what is left, and
-    // the dedup below drops cards still waiting in the stack.
-    let mut is_loading_more = use_signal(|| false);
-    let pagination_limit = 25_u32; // Matches backend default
-    // Keep the buffer comfortably ahead of the STACK_DEPTH window so the
-    // stack never visibly shrinks while a batch is in flight.
-    let load_more_threshold = 5_usize;
-    let mut pagination_exhausted = use_signal(|| false);
-
-    let mut is_loading_cards = use_signal(|| false);
-    // A fresh search (the filter effect, Refresh) starts a generation and a
-    // load-more joins the current one, so neither an older search nor a page
-    // of the stack it replaced lands on the new stack.
-    let mut stack_loads = use_generation();
-
-    // Park this deck's stack on leave so returning resumes mid-stack. Only a
-    // served stack parks, an empty one, or one with no recorded filter,
-    // refetches next time anyway.
-    use_drop(move || {
-        let Some(filter) = last_search_filter.peek().clone() else {
-            return;
-        };
-        if stack.peek_is_empty() {
-            return;
-        }
-        let (cards, index, history) = stack.park_state();
-        stack_cache.park(
+    // Load runs in the first render so the hint opens with the screen.
+    use_hook(move || {
+        let parked = stack_cache.take(deck_id).map(into_shared).map(Box::new);
+        driver.dispatch(Action::Load {
             deck_id,
-            ParkedStack {
-                cards,
-                index,
-                history,
-                filter,
-                exhausted: *pagination_exhausted.peek(),
-            },
-        );
+            filter: restored_filter,
+            parked,
+        });
     });
 
-    let current_card = move || stack.current();
-
-    // Lands drop out of the pool once the deck's land target is met. That auto
-    // exclusion is a default, not a user filter, so the dot ignores it (see the
-    // filter-dot condition below).
-    let lands_at_target = move || {
-        land_target()
-            .or_else(|| deck_format().and_then(|f| f.default_land_target()))
-            .is_some_and(|t| mainboard_land_count() >= t)
-    };
-
-    // Load more cards with pagination and de-duplication
-    let mut load_more_cards = move || {
-        // Check if we've hit the card limit
-        let current_card_count = stack.len();
-        if current_card_count >= MAX_CARDS_IN_STACK {
-            toast.warning(
-                "Card stack limit reached, please refresh your search to continue".to_string(),
-                ToastOptions::default().duration(TOAST_NORMAL),
-            );
+    // Every bump after the first render is an applied filter or a rerun the
+    // model asked for: hand the filter to the model.
+    let first_run = use_hook(|| Cell::new(true));
+    use_effect(move || {
+        let _ = filter_reset_counter();
+        if first_run.replace(false) {
             return;
         }
+        let filter = filter_builder.peek().clone();
+        driver.dispatch(Action::Filter(filter));
+    });
 
-        if is_loading_more() {
-            return;
+    // Park this screen's filter under the live source, and the search stack
+    // so returning resumes mid-stack, on leave.
+    use_drop(move || {
+        let model = driver.model.peek();
+        filter_store.park(
+            scope(model.source()),
+            deck_id,
+            filter_builder.peek().clone(),
+        );
+        if let Some(parked) = model.parked() {
+            stack_cache.park(deck_id, from_shared(parked));
         }
-
-        is_loading_more.set(true);
-
-        let mut builder = filter_builder.read().clone();
-        builder.set_is_token(false);
-        builder.set_limit(pagination_limit);
-        builder.set_offset(0);
-
-        let Ok(filter) = builder.build() else {
-            is_loading_more.set(false);
-            return;
-        };
-        let synergy = builder.synergy();
-        let ticket = stack_loads.current();
-
-        usage_buffer().record_search();
-        spawn(async move {
-            // A failed load-more toasts, so the pile never stops growing
-            // without a word.
-            let reply = authed
-                .try_run("load_more", |c, s| async move {
-                    c.search_deck_cards(deck_id, &filter, &s).await
-                })
-                .await;
-            if !stack_loads.is_current(ticket) {
-                // A fresh search replaced the stack this page was for.
-                is_loading_more.set(false);
-                return;
-            }
-            match reply {
-                Ok(page) => {
-                    synergy_warming.set(!page.synergy_applied);
-                    related_ids.write().extend(related_ids_of(&page));
-                    let new_cards = page.cards;
-                    let existing_cards = stack.cards();
-                    let deck_ids = deck_cards_ids();
-
-                    // Get existing card IDs for de-duplication
-                    let existing_ids: HashSet<Uuid> = existing_cards
-                        .iter()
-                        .map(|c| c.card_profile.scryfall_data_id)
-                        .collect();
-
-                    // Filter out duplicates, deck cards, and cards without images
-                    let unique_new_cards: Vec<Card> = new_cards
-                        .into_iter()
-                        .filter(|card| {
-                            !existing_ids.contains(&card.card_profile.scryfall_data_id)
-                                && !card
-                                    .scryfall_data
-                                    .oracle_id
-                                    .is_some_and(|oid| deck_ids.contains(&oid))
-                        })
-                        .collect();
-
-                    // Append unique cards to existing list
-                    if unique_new_cards.is_empty() {
-                        pagination_exhausted.set(true);
-                        usage_buffer().record_pile_end(deck_id, PileEndKind::Empty, synergy);
-                    } else {
-                        stack.append(unique_new_cards);
-                    }
-
-                    is_loading_more.set(false);
-                }
-                Err(_) => {
-                    is_loading_more.set(false);
-                }
-            }
-        });
-    };
+    });
 
     // Swipe config: the stack owns its own SwipeState internally.
     // Thresholds tuned for responsive rapid swiping: a drag past 90px OR a
@@ -380,943 +624,69 @@ pub fn Add(deck_id: Uuid) -> Element {
         SWIPE_SPEED_PX_PER_MS,
     );
 
-    // Advance past the just-committed card. The stack fires its on_swipe_*
-    // callbacks after the exit transition, so by now the card is off-screen.
-    // The cursor may land one past the end (empty window); that keeps undo
-    // aligned with the swipe that just committed.
-    let mut advance_after_commit = move || {
-        let total = stack.len();
-        if !stack.advance() {
-            return;
+    // A committed swipe: telemetry first, then the model.
+    let on_swipe = move |direction: Direction, card: &Card| {
+        usage_buffer.peek().record_swipe(direction);
+        let committed = side(direction);
+        if committed.is_some() && driver.model.peek().source() == Source::Search {
+            usage_buffer
+                .peek()
+                .record_signal(deck_id, card.scryfall_data.oracle_id, direction);
         }
-        if (CARDS_WARNING_THRESHOLD..MAX_CARDS_IN_STACK).contains(&total)
-            && total.is_multiple_of(STACK_WARNING_EVERY)
-        {
-            toast.info(
-                "Approaching the card stack limit, refresh your search to continue".to_string(),
-                ToastOptions::default().duration(TOAST_QUICK),
-            );
-        }
-        if stack.index() >= total && pagination_exhausted() {
-            // Past the last card with nothing left to fetch.
-            toast.warning("End of results".to_string(), ToastOptions::default());
-        } else if total > 0
-            && stack
-                .index()
-                .checked_add(1)
-                .is_some_and(|seen| seen >= total.saturating_sub(load_more_threshold))
-        {
-            // Within the prefetch threshold: top the stack up.
-            load_more_cards();
-        }
+        driver.dispatch(committed.map_or(Action::Undo, Action::Swipe));
     };
 
-    // Adds still waiting on their POST: an undo in that window is parked here
-    // and the add's task deletes the card once the POST lands.
-    let mut in_flight_adds = use_signal(InFlightAdds::default);
-
-    // The delete for an add the user undid while its POST was in flight.
-    let delete_undone_add = move |card_id: Uuid| {
-        spawn(async move {
-            let _ = authed
-                .run("undo_add", |c, s| async move {
-                    c.delete_deck_card(deck_id, card_id, &s).await
-                })
-                .await;
-        });
+    let (source, pile, window, current, printing_card, shows_synergy, validates_apply, shows_dot) = {
+        let model = driver.model.read();
+        (
+            model.source(),
+            model.pile(),
+            model.window().to_vec(),
+            model.current().cloned(),
+            model.printing_card().cloned(),
+            model.shows_synergy(),
+            model.validates_apply(),
+            model.shows_dot(&filter_builder.read()),
+        )
     };
-
-    let mut add_card_to_deck = move |card: Card| {
-        // A swipe adds one copy.
-        let request = HttpCreateDeckCard::new(&card.scryfall_data, 1, None);
-        let oracle_id = card.scryfall_data.oracle_id;
-        let card_id = card.scryfall_data.id;
-        let card_name = card.scryfall_data.name;
-
-        in_flight_adds.write().begin(card_id);
-        spawn(async move {
-            let added = authed
-                .run("add_card", |c, s| async move {
-                    c.create_deck_card(deck_id, &request, &s).await
-                })
-                .await
-                .is_some();
-            let outcome = in_flight_adds.write().finish(card_id);
-            if added && outcome == AddOutcome::Undo {
-                delete_undone_add(card_id);
-            } else if added {
-                if let Some(oid) = oracle_id {
-                    deck_cards_ids.write().insert(oid);
-                }
-                undo_store.push(deck_id, UndoAction::Added { card_id, card_name });
-            }
-        });
-    };
-
-    let mut add_card_to_maybeboard = move |card: Card| {
-        let request =
-            HttpCreateDeckCard::new(&card.scryfall_data, 1, Some("maybeboard".to_string()));
-        let oracle_id = card.scryfall_data.oracle_id;
-        let card_id = card.scryfall_data.id;
-        let card_name = card.scryfall_data.name.clone();
-
-        in_flight_adds.write().begin(card_id);
-        spawn(async move {
-            let added = authed
-                .run("add_maybeboard", |c, s| async move {
-                    c.create_deck_card(deck_id, &request, &s).await
-                })
-                .await;
-            let outcome = in_flight_adds.write().finish(card_id);
-            if added.is_some() && outcome == AddOutcome::Undo {
-                delete_undone_add(card_id);
-            } else if let Some(deck_card) = added {
-                if let Some(oid) = oracle_id {
-                    deck_cards_ids.write().insert(oid);
-                }
-                undo_store.push(deck_id, UndoAction::Added { card_id, card_name });
-                // Keep the maybeboard source in sync so switching to it
-                // shows this card without a refetch.
-                mb_entries.write().push(DeckEntry { card, deck_card });
-            }
-        });
-    };
-
-    let mut undo_last_action = move || {
-        // Pop last action from history
-        let Some(action) = stack.pop_action() else {
-            toast.info("Nothing to undo".to_string(), ToastOptions::default());
-            return;
-        };
-
-        // Step back one card (primes the enter animation from the direction
-        // the card originally exited). Fails at the first card.
-        if !stack.step_back(&action) {
-            toast.warning("No previous card".to_string(), ToastOptions::default());
-            stack.record(action); // Put it back
-            return;
-        }
-
-        // The cursor now sits on the very card the action committed, the
-        // linear stack never drops swiped cards, so the card is read back
-        // from the stack rather than stored in the history.
-        let Some(card) = stack.current() else {
-            stack.unwind_undo(action);
-            return;
-        };
-
-        match action {
-            AddAction::Skip => {
-                // Delete the suppression row posted at swipe time.
-                if let Some(oracle_id) = card.scryfall_data.oracle_id {
-                    spawn(async move {
-                        let _ = authed
-                            .run("undo_skip", |c, s| async move {
-                                c.unskip_deck_card(deck_id, oracle_id, &s).await
-                            })
-                            .await;
-                    });
-                }
-                toast.info(
-                    "Undid skip".to_string(),
-                    ToastOptions::default().duration(TOAST_QUICK),
-                );
-            }
-            AddAction::Add => {
-                // Need to delete from backend (undoing the add)
-                let card_id = card.scryfall_data.id;
-                let oracle_id = card.scryfall_data.oracle_id;
-                let was_land = card.scryfall_data.is_land();
-                let was_price =
-                    deck_metrics::card_price(&card.scryfall_data, price_budget_currency())
-                        .unwrap_or(0.0);
-
-                // The add's POST hasn't answered: its task deletes the card
-                // when it does. The counts rewind now, like a finished undo.
-                if in_flight_adds.write().undo(card_id) {
-                    if was_land {
-                        mainboard_land_count.set(mainboard_land_count().saturating_sub(1).max(0));
-                    }
-                    deck_total_price.set((deck_total_price() - was_price).max(0.0));
-                    toast.success(
-                        "Undid add".to_string(),
-                        ToastOptions::default().duration(TOAST_QUICK),
-                    );
-                    return;
-                }
-
-                // Reconcile with the global stack: take this add's entry
-                // back. Entry gone AND card gone from the deck means the
-                // deck-cards Undo button already reversed it, skip the
-                // server delete (it would double-delete); the stack UI is
-                // already rewound. Entry gone but card still present means
-                // it aged out of the cap, delete anyway.
-                let taken = undo_store.take_newest(
-                    deck_id,
-                    |a| matches!(a, UndoAction::Added { card_id: id, .. } if *id == card_id),
-                );
-                let still_in_deck =
-                    oracle_id.is_some_and(|oid| deck_cards_ids.peek().contains(&oid));
-                if taken.is_none() && !still_in_deck {
-                    toast.success(
-                        "Undid add".to_string(),
-                        ToastOptions::default().duration(TOAST_QUICK),
-                    );
-                    return;
-                }
-
-                // Facade holdout: this arm compensates differently per failure
-                // stage (refresh failure fully rewinds; a failed delete leaves
-                // the add standing on purpose), which run/try_run can't express.
-                spawn(async move {
-                    let session = match session.ensure_fresh(client).await {
-                        Ok(session) => session,
-                        Err(e) => {
-                            usage_buffer.peek().report_error(
-                                screen::DECK_CARD_ADD,
-                                component::NONE,
-                                "undo_add",
-                                &e,
-                            );
-                            toast.error(e.to_user_message(), ToastOptions::default());
-                            stack.unwind_undo(action); // Restore history + cursor
-                            if let Some(action) = taken {
-                                undo_store.push(deck_id, action);
-                            }
-                            return;
-                        }
-                    };
-
-                    match client().delete_deck_card(deck_id, card_id, &session).await {
-                        Ok(()) => {
-                            // Remove from exclusion HashSet
-                            if let Some(oid) = oracle_id {
-                                deck_cards_ids.write().remove(&oid);
-                            }
-                            if was_land {
-                                mainboard_land_count
-                                    .set(mainboard_land_count().saturating_sub(1).max(0));
-                            }
-                            deck_total_price.set((deck_total_price() - was_price).max(0.0));
-                            toast.success(
-                                "Undid add".to_string(),
-                                ToastOptions::default().duration(TOAST_QUICK),
-                            );
-                        }
-                        Err(e) => {
-                            tracing::warn!("undo add (delete deck card) failed: {e}");
-                            toast.error(format!("Failed to undo: {e}"), ToastOptions::default());
-                            // Don't restore action or index; the user can try again by adding the card
-                            // The add still stands server-side, so its global entry does too.
-                            if let Some(action) = taken {
-                                undo_store.push(deck_id, action);
-                            }
-                        }
-                    }
-                });
-            }
-            AddAction::Maybe => {
-                let card_id = card.scryfall_data.id;
-                let oracle_id = card.scryfall_data.oracle_id;
-
-                // Same in-flight parking as Add.
-                if in_flight_adds.write().undo(card_id) {
-                    toast.success(
-                        "Undid maybeboard".to_string(),
-                        ToastOptions::default().duration(TOAST_QUICK),
-                    );
-                    return;
-                }
-
-                // Same reconciliation as Add: entry gone + card gone means
-                // the button already reversed this; skip the server delete.
-                let taken = undo_store.take_newest(
-                    deck_id,
-                    |a| matches!(a, UndoAction::Added { card_id: id, .. } if *id == card_id),
-                );
-                let still_in_deck =
-                    oracle_id.is_some_and(|oid| deck_cards_ids.peek().contains(&oid));
-                if taken.is_none() && !still_in_deck {
-                    toast.success(
-                        "Undid maybeboard".to_string(),
-                        ToastOptions::default().duration(TOAST_QUICK),
-                    );
-                    return;
-                }
-
-                // Facade holdout: staged compensation, same as the Add arm.
-                spawn(async move {
-                    let session = match session.ensure_fresh(client).await {
-                        Ok(session) => session,
-                        Err(e) => {
-                            usage_buffer.peek().report_error(
-                                screen::DECK_CARD_ADD,
-                                component::NONE,
-                                "undo_maybe",
-                                &e,
-                            );
-                            toast.error(e.to_user_message(), ToastOptions::default());
-                            stack.unwind_undo(action);
-                            if let Some(action) = taken {
-                                undo_store.push(deck_id, action);
-                            }
-                            return;
-                        }
-                    };
-
-                    match client().delete_deck_card(deck_id, card_id, &session).await {
-                        Ok(()) => {
-                            if let Some(oid) = oracle_id {
-                                deck_cards_ids.write().remove(&oid);
-                            }
-                            // Mirror add_card_to_maybeboard's sync: the card
-                            // is off the maybeboard again.
-                            mb_entries
-                                .write()
-                                .retain(|e| e.card.scryfall_data.id != card_id);
-                            toast.success(
-                                "Undid maybeboard".to_string(),
-                                ToastOptions::default().duration(TOAST_QUICK),
-                            );
-                        }
-                        Err(e) => {
-                            tracing::warn!("undo maybeboard (delete deck card) failed: {e}");
-                            toast.error(format!("Failed to undo: {e}"), ToastOptions::default());
-                            // The maybeboard add still stands server-side.
-                            if let Some(action) = taken {
-                                undo_store.push(deck_id, action);
-                            }
-                        }
-                    }
-                });
-            }
+    let entering = driver.entering(source);
+    let end_pull = move |end: (f64, f64), start: (f64, f64)| {
+        let (dx, dy) = (end.0 - start.0, end.1 - start.1);
+        if dy >= BACK_PULL_PX && dy.abs() > dx.abs() {
+            driver.dispatch(Action::Undo);
         }
     };
-
-    let mut clear_filters = move || {
-        let opts = ToastOptions::default().duration(TOAST_QUICK);
-        // Reset stages the screen's default view; Apply commits it. It still
-        // confirms here: the sheet stays open with its sections collapsed, so
-        // without a toast a working Reset looks like a dead button.
-        // Synergy is
-        // a separate mode, not a filter, so it survives the reset (a commander
-        // deck lands back in synergy order). A lone sort counts as non-default,
-        // so Reset fires (and clears the sort) even when no card filter is set.
-        let synergy = filter_builder.peek().synergy();
-        let has_sort = filter_builder.peek().sort().is_some();
-        if add_source() == AddSource::Maybeboard {
-            // Maybeboard default is a blank filter.
-            if filter_builder.read().is_empty() && !has_sort {
-                toast.warning("Filter already at default".to_string(), opts);
-            } else {
-                filter_builder.write().clear();
-                filter_builder.write().set_synergy(synergy);
-                toast.info("Filter reset".to_string(), opts);
-            }
-        } else {
-            // Search default is deck context (colors + legality) in synergy
-            // order, plus the automatic land exclusion once the land target is
-            // met. All of that is part of the default, so it's re-applied here
-            // and doesn't count toward "already at default".
-            let at_default = filter_builder
-                .read()
-                .is_empty_ignoring_deck_context_and_auto_lands(lands_at_target());
-            if at_default && !has_sort {
-                toast.warning("Filter already at default".to_string(), opts);
-            } else {
-                filter_builder.write().clear();
-                if let Some(fmt) = deck_format() {
-                    filter_builder
-                        .write()
-                        .set_legalities_contains_any(vec![fmt.to_legality_key().to_string()]);
-                }
-                if let Some(colors) = deck_color_identity() {
-                    filter_builder.write().set_color_identity_within(colors);
-                }
-                filter_builder.write().set_synergy(synergy);
-                // Keep lands out if the deck is already at its land target.
-                if lands_at_target() {
-                    ensure_lands_excluded(filter_builder);
-                }
-                toast.info("Filter reset".to_string(), opts);
-            }
-        }
-    };
-
-    // Fetch deck cards on mount for filtering
-    use_effect(move || {
-        spawn(async move {
-            // Quiet: the screen works without deck context; telemetry still
-            // records the failure.
-            let fetched = authed
-                .run_quiet("load_deck_context", |c, s| async move {
-                    c.fetch_deck(deck_id, &s).await
-                })
-                .await;
-            if let Some(deck) = fetched {
-                let mut ids: HashSet<_> = deck
-                    .entries
-                    .iter()
-                    .filter_map(|entry| entry.card.scryfall_data.oracle_id)
-                    .collect();
-                // Resolve command zone cards to oracle_ids for exclusion
-                // and collect color identities from commander/partner/background
-                let mut identity_colors: Vec<Color> = Vec::new();
-                for cz_id in [
-                    deck.deck_profile.commander_id,
-                    deck.deck_profile.partner_commander_id,
-                    deck.deck_profile.background_id,
-                ]
-                .into_iter()
-                .flatten()
-                {
-                    if let Ok(card) = client().fetch_card(cz_id).await
-                        && let Some(oid) = card.scryfall_data.oracle_id
-                    {
-                        ids.insert(oid);
-                        identity_colors.extend(card.scryfall_data.color_identity.iter().copied());
-                    }
-                }
-                // Signature spell: oracle_id exclusion only (doesn't contribute to color identity)
-                if let Some(spell_id) = deck.deck_profile.signature_spell_id
-                    && let Ok(card) = client().fetch_card(spell_id).await
-                    && let Some(oid) = card.scryfall_data.oracle_id
-                {
-                    ids.insert(oid);
-                }
-                deck_cards_ids.set(ids);
-
-                // Collect maybeboard entries for the maybeboard source mode
-                let mb: Vec<DeckEntry> = deck
-                    .entries
-                    .iter()
-                    .filter(|e| e.deck_card.board.is_maybeboard())
-                    .cloned()
-                    .collect();
-                mb_entries.set(mb);
-
-                deck_has_commander.set(deck.deck_profile.commander_id.is_some());
-                // Default Synergy ON when the deck has a commander (the
-                // curated pool); OFF otherwise. Only for a fresh filter,
-                // a restored one keeps the user's own toggle state.
-                if !had_restored_filter {
-                    filter_builder
-                        .write()
-                        .set_synergy(deck.deck_profile.commander_id.is_some());
-                }
-                deck_loaded.set(true);
-
-                // Seed the land signal: count mainboard lands (quantity-aware,
-                // MDFC land faces included via is_land's combined type line),
-                // and resolve the target from the deck override or the format.
-                let land_count: i32 = deck
-                    .entries
-                    .iter()
-                    .filter(|e| e.deck_card.board.is_active() && e.card.scryfall_data.is_land())
-                    .map(|e| *e.deck_card.quantity)
-                    .sum();
-                mainboard_land_count.set(land_count);
-                // Explicit target only: no land toasts unless the user set one.
-                land_target.set(deck.deck_profile.land_target);
-                // If the deck already meets its land target (explicit override
-                // or the format default), start with lands excluded from the
-                // swipe pool. The auto-serve reset below re-fetches, so no
-                // separate counter bump is needed here.
-                let effective_target = deck.deck_profile.land_target.or_else(|| {
-                    deck.deck_profile
-                        .format
-                        .and_then(|f| f.default_land_target())
-                });
-                if let Some(t) = effective_target
-                    && land_count >= t
-                {
-                    ensure_lands_excluded(filter_builder);
-                }
-
-                // Seed the budget signal: running total in the budget
-                // currency, plus the budget + currency from the profile.
-                let currency = deck
-                    .deck_profile
-                    .price_target_currency
-                    .unwrap_or(PriceCurrency::Usd);
-                deck_total_price.set(deck_metrics::deck_price(
-                    &deck.entries,
-                    &deck.command_zone_cards,
-                    currency,
-                ));
-                price_budget.set(deck.deck_profile.price_target);
-                price_budget_currency.set(currency);
-
-                // Pre-populate format filter from deck
-                if let Some(fmt) = deck.deck_profile.format {
-                    deck_format.set(Some(fmt));
-                    if filter_builder.peek().legalities_contains_any().is_none() {
-                        filter_builder
-                            .write()
-                            .set_legalities_contains_any(vec![fmt.to_legality_key().to_string()]);
-                    }
-
-                    // Pre-populate color identity filter from commander
-                    if fmt.checks_color_identity() && deck.deck_profile.commander_id.is_some() {
-                        identity_colors.sort();
-                        identity_colors.dedup();
-                        let colors: Colors = identity_colors.into();
-                        deck_color_identity.set(Some(colors.clone()));
-                        if filter_builder.peek().color_identity_within().is_none() {
-                            filter_builder.write().set_color_identity_within(colors);
-                        }
-                    }
-                }
-
-                // Auto-serve: with deck context now populated, an empty
-                // stack can be filled immediately; the deck-aware search
-                // serves the default filter synergy-ordered, 25 a page.
-                // A non-empty stack is a preserved session; leave it be.
-                if stack.peek_is_empty() {
-                    let current = *filter_reset_counter.peek();
-                    filter_reset_counter.set(current.wrapping_add(1));
-                }
-            }
-        });
-    });
-
-    use_effect(move || {
-        let _ = filter_reset_counter();
-
-        let first = is_first_run.get();
-        is_first_run.set(false);
-
-        let mut builder = filter_builder.peek().clone();
-        builder.set_is_token(false);
-        builder.set_limit(pagination_limit);
-        builder.set_offset(0);
-
-        if first {
-            // == Initial mount ==
-            // Un-park this deck's stack if its filter still matches.
-            if let Some(parked) = stack_cache.take(deck_id) {
-                let mut prev_b = parked.filter.clone();
-                prev_b.set_is_token(false);
-                prev_b.set_limit(pagination_limit);
-                prev_b.set_offset(0);
-                if prev_b == builder && !parked.cards.is_empty() {
-                    pagination_exhausted.set(parked.exhausted);
-                    last_search_filter.set(Some(parked.filter.clone()));
-                    stack.restore(parked.cards, parked.index, parked.history);
-                    return;
-                }
-                // Filter changed since parking: fall through to a fresh fetch.
-            }
-        }
-
-        // == Clear and re-fetch ==
-        // Reaches here when:
-        //   - explicit user action (refresh / apply filter), OR
-        //   - initial mount with a different/new filter, OR
-        //   - initial mount with no existing cards
-        let ticket = stack_loads.next_ticket();
-        // A search still out no longer lands, so it can't end the skeleton.
-        if *is_loading_cards.peek() {
-            is_loading_cards.set(false);
-        }
-        stack.reset();
-        // Fresh results ease in again, even previously seen images.
-        flippable_card_image::reset_image_ease();
-        last_search_filter.set(None);
-        pagination_exhausted.set(false);
-
-        // Gate (Search mode, once the deck is loaded): only auto-serve a
-        // meaningful query. A commander format *with* a commander pulls
-        // synergy suggestions from cache; otherwise we need some intent (a
-        // filter, a sort, or synergy on). Only a truly blank query on a deck
-        // with no commander is left unserved, nudging the user to filter; an
-        // empty screen with no prompt reads as "no cards exist".
-        if *deck_loaded.peek() && matches!(*add_source.peek(), AddSource::Search) {
-            let is_commander_format = deck_format.peek().is_some_and(|f| f.has_commander());
-            let has_commander = *deck_has_commander.peek();
-            let has_intent = filter_builder.peek().has_search_intent();
-            let serve = if is_commander_format {
-                has_commander || has_intent
-            } else {
-                has_intent
-            };
-            if !serve {
-                toast.warning(
-                    "Try a filter to start swiping".to_string(),
-                    ToastOptions::default().duration(TOAST_NORMAL),
-                );
-                return;
-            }
-        }
-
-        // Auto-serve: a filter holding only deck context (format legality +
-        // commander identity) is a valid search now; the deck-aware endpoint
-        // serves it synergy-ordered. Only a truly empty builder (deck has no
-        // format/commander, context not yet loaded) fails build() and keeps
-        // today's empty state; the mount effect re-triggers once context lands.
-        let Ok(filter) = builder.build() else {
-            return;
-        };
-
-        is_loading_cards.set(true);
-
-        // Snapshot the filter builder state before the async block owns context.
-        let filter_snapshot = filter_builder.peek().clone();
-
-        usage_buffer().record_search();
-        spawn(async move {
-            // Flush buffered usage (signals feed synergy ordering) before the
-            // refetch. Skips post directly at swipe time.
-            flush_loop::flush_once(&usage_buffer(), &client, &session).await;
-            let reply = authed
-                .try_run("search_cards", |c, s| async move {
-                    c.search_deck_cards(deck_id, &filter, &s).await
-                })
-                .await;
-            if !stack_loads.is_current(ticket) {
-                return;
-            }
-            match reply {
-                Ok(page) => {
-                    let warming = !page.synergy_applied;
-                    synergy_warming.set(warming);
-                    related_ids.set(related_ids_of(&page));
-                    related_announced.set(false);
-                    let deck_ids = deck_cards_ids();
-                    let served: Vec<Card> = page
-                        .cards
-                        .into_iter()
-                        .filter(|card| {
-                            !card
-                                .scryfall_data
-                                .oracle_id
-                                .is_some_and(|oid| deck_ids.contains(&oid))
-                        })
-                        .collect();
-                    // Say why the screen is empty: a bare skeleton reads as
-                    // "no cards exist". Synergy is the usual silent culprit,
-                    // intersecting every other filter with the commander's
-                    // pool; while warming the server searched the full pool
-                    // instead, so warming is context rather than the cause.
-                    if served.is_empty() {
-                        usage_buffer().record_pile_end(
-                            deck_id,
-                            PileEndKind::Empty,
-                            filter_snapshot.synergy(),
-                        );
-                        let mut message = String::from("No results for this filter");
-                        if filter_snapshot.synergy() {
-                            message.push_str(if warming {
-                                "; Synergy is warming up, so all cards were searched"
-                            } else {
-                                "; tap Synergy to turn it off"
-                            });
-                        }
-                        toast.warning(message, ToastOptions::default().duration(TOAST_NORMAL));
-                    }
-                    stack.replace(served);
-                    // Record the filter that produced these results.
-                    last_search_filter.set(Some(filter_snapshot));
-                    is_loading_cards.set(false);
-                }
-                Err(_) => {
-                    is_loading_cards.set(false);
-                }
-            }
-        });
-    });
-
-    // Maybeboard filter effect: applies client-side filtering + sorting
-    use_effect(move || {
-        let _ = add_source();
-        let _ = filter_reset_counter();
-
-        if add_source() != AddSource::Maybeboard {
-            return;
-        }
-
-        let entries = mb_entries.peek().clone();
-        let builder = filter_builder.peek().clone();
-
-        let cards: Vec<Card> = entries.iter().map(|e| e.card.clone()).collect();
-        // In-memory path: bare criteria (no pagination), then the builder's sort.
-        let filtered = if builder.is_empty() {
-            cards
-        } else {
-            match builder.build_criteria() {
-                Ok(criteria) => Cards::from(cards).matching(&criteria).into(),
-                Err(_) => cards,
-            }
-        };
-        let filtered: Vec<Card> = Cards::from(filtered)
-            .sorted(builder.sort(), builder.direction())
-            .into();
-        mb_stack.replace(filtered);
-    });
-
-    let mb_current_card = move || mb_stack.current_wrapping();
-
-    let mut mb_promote_to_deck = move |card: Card| {
-        let scryfall_data_id = card.scryfall_data.id;
-        let card_name = card.scryfall_data.name.clone();
-        let request = HttpPatchDeckCard::new(None, Some("deck".to_string()));
-
-        // Optimistic: remove from maybeboard lists
-        mb_entries
-            .write()
-            .retain(|e| e.card.scryfall_data.id != scryfall_data_id);
-        mb_stack.remove_current();
-        // Also add to deck exclusion set so search mode won't show it
-        if let Some(oid) = card.scryfall_data.oracle_id {
-            deck_cards_ids.write().insert(oid);
-        }
-
-        spawn(async move {
-            if authed
-                .run("promote_maybeboard", |c, s| async move {
-                    c.update_deck_card(deck_id, scryfall_data_id, &request, &s)
-                        .await
-                })
-                .await
-                .is_some()
-            {
-                undo_store.push(
-                    deck_id,
-                    UndoAction::MovedBoard {
-                        card_id: scryfall_data_id,
-                        card_name,
-                        from: Board::Maybeboard,
-                    },
-                );
-            }
-        });
-    };
-
-    let mut mb_undo_last_action = move || {
-        let Some(action) = mb_stack.pop_action() else {
-            toast.info("Nothing to undo".to_string(), ToastOptions::default());
-            return;
-        };
-
-        mb_stack.prime_entering(action.exited());
-
-        match action {
-            MaybeboardAction::Skip => {
-                if !mb_stack.retreat_wrapping() {
-                    mb_stack.cancel_entering();
-                    return;
-                }
-                toast.info(
-                    "Undid skip".to_string(),
-                    ToastOptions::default().duration(TOAST_QUICK),
-                );
-            }
-            MaybeboardAction::Promote { card } => {
-                let card = *card;
-                let scryfall_data_id = card.scryfall_data.id;
-                let oracle_id = card.scryfall_data.oracle_id;
-
-                // Reconcile with the global stack before touching the UI:
-                // entry gone AND the card already back on the maybeboard
-                // means the deck-cards Undo button reversed this promote,
-                // re-inserting would duplicate the card in the stack, and
-                // the server move would be a no-op at best. Pure history
-                // rewind instead.
-                let taken = undo_store.take_newest(deck_id, |a| {
-                    matches!(
-                        a,
-                        UndoAction::MovedBoard { card_id, from: Board::Maybeboard, .. }
-                            if *card_id == scryfall_data_id
-                    )
-                });
-                let already_back = mb_entries
-                    .peek()
-                    .iter()
-                    .any(|e| e.card.scryfall_data.id == scryfall_data_id);
-                if taken.is_none() && already_back {
-                    mb_stack.cancel_entering();
-                    toast.info(
-                        "Already changed".to_string(),
-                        ToastOptions::default().duration(TOAST_QUICK),
-                    );
-                    return;
-                }
-
-                mb_stack.insert_current(card.clone());
-                let request = HttpPatchDeckCard::new(None, Some("maybeboard".to_string()));
-
-                // Facade holdout: staged compensation (refresh failure cancels
-                // the primed entry; a failed move leaves the promote standing).
-                spawn(async move {
-                    let session = match session.ensure_fresh(client).await {
-                        Ok(session) => session,
-                        Err(e) => {
-                            usage_buffer.peek().report_error(
-                                screen::DECK_CARD_ADD,
-                                component::NONE,
-                                "undo_maybeboard",
-                                &e,
-                            );
-                            toast.error(e.to_user_message(), ToastOptions::default());
-                            mb_stack.cancel_entering();
-                            if let Some(action) = taken {
-                                undo_store.push(deck_id, action);
-                            }
-                            return;
-                        }
-                    };
-
-                    match client()
-                        .update_deck_card(deck_id, scryfall_data_id, &request, &session)
-                        .await
-                    {
-                        Ok(_) => {
-                            if let Some(oid) = oracle_id {
-                                deck_cards_ids.write().remove(&oid);
-                            }
-                            // Re-add to mb_entries source of truth
-                            mb_entries.write().push(DeckEntry {
-                                card,
-                                deck_card: zwipe_core::domain::deck::DeckCard {
-                                    deck_id,
-                                    scryfall_data_id,
-                                    oracle_id: oracle_id.unwrap_or_default(),
-                                    quantity: Quantity::one(),
-                                    board: Board::Maybeboard,
-                                    mvp_at: None,
-                                },
-                            });
-                            toast.success(
-                                "Undid move to deck".to_string(),
-                                ToastOptions::default().duration(TOAST_QUICK),
-                            );
-                        }
-                        Err(e) => {
-                            tracing::warn!("undo promote failed: {e}");
-                            toast.error(format!("Failed to undo: {e}"), ToastOptions::default());
-                            // The promote still stands server-side.
-                            if let Some(action) = taken {
-                                undo_store.push(deck_id, action);
-                            }
-                        }
-                    }
-                });
-            }
-        }
-    };
-
-    // The first related card to reach the top of the stack: say the synergy
-    // pool is spent, once per fresh stack.
-    use_effect(move || {
-        let Some(card) = current_card() else {
-            return;
-        };
-        if *related_announced.peek()
-            || !related_ids
-                .read()
-                .contains(&card.card_profile.scryfall_data_id)
-        {
-            return;
-        }
-        related_announced.set(true);
-        toast.info(
-            "That's every synergy pick. Showing cards like your deck".to_string(),
-            ToastOptions::default().duration(TOAST_NORMAL),
-        );
-        usage_buffer.peek().record_pile_end(
-            deck_id,
-            PileEndKind::SynergyExhausted,
-            /* synergy */ true,
-        );
-    });
 
     rsx! {
             div { class: "screen",
-                ScreenHeader { title: "Add deck cards", hint: swipe_hint_open }
+                ScreenHeader { title: add_cards::TITLE, hint: driver.hint_open }
 
                 div { class: "screen-content card-swipe content-enter",
 
                 // Source selector chips
                 div { style: "max-width: 40rem; width: 100%; padding: 0 1rem;",
                     div { class: "chip-row",
-                        span { class: "stat-chip stat-chip-p1 chip-row-label", "From" }
-                        for (label, variant) in [("Search", AddSource::Search), ("Maybeboard", AddSource::Maybeboard)] {
+                        span { class: "stat-chip stat-chip-p1 chip-row-label", "{add_cards::FROM}" }
+                        for variant in Source::ALL {
                             Chip {
-                                selected: add_source() == variant,
+                                selected: source == variant,
                                 onclick: move |_| {
-                                    if add_source() == variant { return; }
-
-                                    // Each source keeps its own remembered filter:
-                                    // park the one we're leaving, restore the one
-                                    // we're entering (or build its default fresh).
-                                    let mut store = filter_store;
-                                    match variant {
-                                        AddSource::Maybeboard => {
-                                            store.park(
-                                                FilterScope::AddSearch,
-                                                deck_id,
-                                                filter_builder.peek().clone(),
-                                            );
-                                            // Maybeboard's default is a blank filter.
-                                            filter_builder.set(
-                                                store
-                                                    .restore(FilterScope::AddMaybeboard, deck_id)
-                                                    .unwrap_or_default(),
-                                            );
-                                        }
-                                        AddSource::Search => {
-                                            store.park(
-                                                FilterScope::AddMaybeboard,
-                                                deck_id,
-                                                filter_builder.peek().clone(),
-                                            );
-                                            if let Some(f) = store.restore(FilterScope::AddSearch, deck_id) {
-                                                filter_builder.set(f);
-                                            } else {
-                                                // Fresh Search default: deck context in
-                                                // synergy order, lands out at target.
-                                                let mut fresh = CardQueryBuilder::default();
-                                                if let Some(fmt) = deck_format() {
-                                                    fresh.set_legalities_contains_any(
-                                                        vec![fmt.to_legality_key().to_string()]
-                                                    );
-                                                }
-                                                if let Some(colors) = deck_color_identity() {
-                                                    fresh.set_color_identity_within(colors);
-                                                }
-                                                fresh.set_synergy(deck_has_commander());
-                                                filter_builder.set(fresh);
-                                                if lands_at_target() {
-                                                    ensure_lands_excluded(filter_builder);
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    add_source.set(variant);
-                                    mb_stack.rewind();
-                                    let current = *filter_reset_counter.peek();
-                                    filter_reset_counter.set(current.wrapping_add(1));
+                                    let remembered = filter_store.restore(scope(variant), deck_id);
+                                    driver.dispatch(Action::PickSource { source: variant, remembered });
                                 },
-                                "{label}"
+                                "{variant.label()}"
                             }
                         }
                         // Synergy ON/OFF: constrains the stack to the commander's
-                        // synergy pool, then sorts within it. Search source +
-                        // commander only (no commander = nothing to constrain to).
-                        // Pinned right (margin-left:auto) so it reads as its own
-                        // control, not part of the "From" source group.
-                        if add_source() == AddSource::Search && deck_has_commander() {
+                        // synergy pool, then sorts within it. Pinned right
+                        // (margin-left:auto) so it reads as its own control, not
+                        // part of the "From" source group.
+                        if shows_synergy {
                             div { style: "margin-left: auto;",
                                 Chip {
                                     selected: filter_builder.read().synergy(),
-                                    onclick: move |_| {
-                                        let on = !filter_builder.peek().synergy();
-                                        filter_builder.write().set_synergy(on);
-                                        let current = *filter_reset_counter.peek();
-                                        filter_reset_counter.set(current.wrapping_add(1));
-                                    },
-                                    "Synergy"
+                                    onclick: move |_| driver.dispatch(Action::ToggleSynergy),
+                                    "{add_cards::SYNERGY}"
                                 }
                             }
                         }
@@ -1324,179 +694,76 @@ pub fn Add(deck_id: Uuid) -> Element {
                 }
 
                 div { class : "form-container",
-                    if add_source() == AddSource::Search {
-                        // Search mode (existing behavior)
-                        if !stack.is_empty() && stack.index() < stack.len() {
+                    if source == Source::Search {
+                        if pile == Pile::Cards {
                             SwipeStack {
-                                cards: stack.window(),
+                                cards: window,
                                 config: swipe_config,
-                                entering: stack.entering(),
-                                on_swipe_left: move |card: Card| {
-                                    usage_buffer().record_swipe(Direction::Left);
-                                    usage_buffer().record_signal(deck_id, card.scryfall_data.oracle_id, Direction::Left);
-                                    // Post the durable skip immediately: a buffered
-                                    // skip is lost to a quick app kill.
-                                    if let Some(oracle_id) = card.scryfall_data.oracle_id {
-                                        spawn(async move {
-                                            // Quiet: fires on every left swipe; a per-swipe
-                                            // toast on a bad connection would bury the screen,
-                                            // and the visual skip already happened.
-                                            let _ = authed
-                                                .run_quiet("skip_card", |c, s| async move {
-                                                    c.skip_deck_card(deck_id, oracle_id, &s).await
-                                                })
-                                                .await;
-                                        });
-                                    }
-                                    stack.record(AddAction::Skip);
-                                    toast.info("Skipped".to_string(), ToastOptions::default().duration(TOAST_QUICK));
-                                    advance_after_commit();
-                                },
-                                on_swipe_right: move |card: Card| {
-                                    usage_buffer().record_swipe(Direction::Right);
-                                    usage_buffer().record_signal(deck_id, card.scryfall_data.oracle_id, Direction::Right);
-                                    stack.record(AddAction::Add);
-                                    let added_land = card.scryfall_data.is_land();
-                                    let added_price = deck_metrics::card_price(&card.scryfall_data, price_budget_currency()).unwrap_or(0.0);
-                                    add_card_to_deck(card);
-                                    toast.success("Added to deck".to_string(), ToastOptions::default().duration(TOAST_QUICK));
-                                    if added_land {
-                                        let prev = mainboard_land_count();
-                                        let now = prev + 1;
-                                        mainboard_land_count.set(now);
-                                        // Toast only on the upward crossing: debounced so
-                                        // every further land doesn't re-fire.
-                                        if let Some(target) = land_target()
-                                            && prev < target && now >= target
-                                        {
-                                            toast.info(
-                                                format!("Land target reached ({target})"),
-                                                ToastOptions::default().duration(TOAST_NORMAL),
-                                            );
-                                            // We don't touch the filter mid-session: a
-                                            // refetch here would reset the swipe stack and
-                                            // lose the user's spot. Lands are excluded only
-                                            // on the next entry to the add screen (see the
-                                            // deck-load block).
-                                        }
-                                    }
-                                    // Budget band: raise the running total, toast when it
-                                    // crosses into a higher 50/75/100% band (exact percentage).
-                                    if let Some(budget) = price_budget().filter(|b| *b > 0.0) {
-                                        let before = deck_total_price();
-                                        let after = before + added_price;
-                                        deck_total_price.set(after);
-                                        if deck_metrics::budget_tier(budget, after) > deck_metrics::budget_tier(budget, before) {
-                                            let pct = after / budget * 100.0;
-                                            let amount = price_budget_currency().format_amount(budget);
-                                            let msg = format!("Deck at {pct:.2}% of your {amount} budget");
-                                            let opts = ToastOptions::default().duration(TOAST_NORMAL);
-                                            if after >= budget {
-                                                toast.warning(msg, opts);
-                                            } else {
-                                                toast.info(msg, opts);
-                                            }
-                                        }
-                                    }
-                                    advance_after_commit();
-                                },
-                                on_swipe_up: move |card: Card| {
-                                    usage_buffer().record_swipe(Direction::Up);
-                                    usage_buffer().record_signal(deck_id, card.scryfall_data.oracle_id, Direction::Up);
-                                    stack.record(AddAction::Maybe);
-                                    add_card_to_maybeboard(card);
-                                    toast.info("Added to maybeboard".to_string(), ToastOptions::default().duration(TOAST_QUICK));
-                                    advance_after_commit();
-                                },
-                                on_swipe_down: move |_card: Card| {
-                                    usage_buffer().record_swipe(Direction::Down);
-                                    undo_last_action();
-                                },
+                                entering,
+                                on_swipe_left: move |card: Card| on_swipe(Direction::Left, &card),
+                                on_swipe_right: move |card: Card| on_swipe(Direction::Right, &card),
+                                on_swipe_up: move |card: Card| on_swipe(Direction::Up, &card),
+                                on_swipe_down: move |card: Card| on_swipe(Direction::Down, &card),
                             }
 
-                            if let Some(card) = current_card() {
+                            if let Some(card) = current.clone() {
                                 CardInfoDisplay { card }
                             }
-                        } else if !stack.is_empty() {
-                            // Cursor sits one past the last card. A prefetch
-                            // may still be topping the stack up; a dry end
-                            // keeps the skeleton down-swipeable so undo leads
-                            // back into the pile.
-                            if is_loading_more() {
-                                CardSkeleton { is_loading: true }
-                            } else {
-                                div {
-                                    style: "display: flex; flex-direction: column; flex: 1; min-height: 0; width: 100%;",
-                                    ontouchstart: move |e: Event<TouchData>| {
-                                        if let Some(t) = e.touches().into_iter().next() {
-                                            let p = t.client_coordinates();
-                                            end_swipe_start.set(Some((p.x, p.y)));
-                                        }
-                                    },
-                                    ontouchend: move |e: Event<TouchData>| {
-                                        let Some((sx, sy)) = end_swipe_start() else {
-                                            return;
-                                        };
-                                        end_swipe_start.set(None);
-                                        if let Some(t) = e.touches_changed().into_iter().next() {
-                                            let p = t.client_coordinates();
-                                            if p.y - sy >= BACK_PULL_PX && (p.y - sy).abs() > (p.x - sx).abs() {
-                                                undo_last_action();
-                                            }
-                                        }
-                                    },
-                                    onmousedown: move |e: Event<MouseData>| {
-                                        let p = e.client_coordinates();
+                        } else if pile == Pile::End {
+                            // Cursor sits one past the last card with nothing
+                            // more coming: the skeleton stays down-swipeable so
+                            // undo leads back into the pile.
+                            div {
+                                style: "display: flex; flex-direction: column; flex: 1; min-height: 0; width: 100%;",
+                                ontouchstart: move |e: Event<TouchData>| {
+                                    if let Some(t) = e.touches().into_iter().next() {
+                                        let p = t.client_coordinates();
                                         end_swipe_start.set(Some((p.x, p.y)));
-                                    },
-                                    onmouseup: move |e: Event<MouseData>| {
-                                        let Some((sx, sy)) = end_swipe_start() else {
-                                            return;
-                                        };
-                                        end_swipe_start.set(None);
-                                        let p = e.client_coordinates();
-                                        if p.y - sy >= BACK_PULL_PX && (p.y - sy).abs() > (p.x - sx).abs() {
-                                            undo_last_action();
-                                        }
-                                    },
-                                    CardSkeleton {}
-                                }
+                                    }
+                                },
+                                ontouchend: move |e: Event<TouchData>| {
+                                    let Some(start) = end_swipe_start() else {
+                                        return;
+                                    };
+                                    end_swipe_start.set(None);
+                                    if let Some(t) = e.touches_changed().into_iter().next() {
+                                        let p = t.client_coordinates();
+                                        end_pull((p.x, p.y), start);
+                                    }
+                                },
+                                onmousedown: move |e: Event<MouseData>| {
+                                    let p = e.client_coordinates();
+                                    end_swipe_start.set(Some((p.x, p.y)));
+                                },
+                                onmouseup: move |e: Event<MouseData>| {
+                                    let Some(start) = end_swipe_start() else {
+                                        return;
+                                    };
+                                    end_swipe_start.set(None);
+                                    let p = e.client_coordinates();
+                                    end_pull((p.x, p.y), start);
+                                },
+                                CardSkeleton {}
                             }
-                        } else if is_loading_cards() {
+                        } else if pile == Pile::Loading {
                             CardSkeleton { is_loading: true }
                         } else {
                             CardSkeleton {}
                         }
                     } else {
                         // Maybeboard mode
-                        if !mb_stack.is_empty() {
+                        if pile == Pile::Cards {
                             SwipeStack {
-                                cards: mb_stack.window(),
+                                cards: window,
                                 config: swipe_config,
-                                entering: mb_stack.entering(),
-                                on_swipe_left: move |_card: Card| {
-                                    usage_buffer().record_swipe(Direction::Left);
-                                    mb_stack.record(MaybeboardAction::Skip);
-                                    toast.info("Skipped".to_string(), ToastOptions::default().duration(TOAST_QUICK));
-                                    mb_stack.advance_wrapping();
-                                },
-                                on_swipe_right: move |card: Card| {
-                                    usage_buffer().record_swipe(Direction::Right);
-                                    mb_stack.record(MaybeboardAction::Promote { card: Box::new(card.clone()) });
-                                    mb_promote_to_deck(card);
-                                    toast.success("Moved to deck".to_string(), ToastOptions::default().duration(TOAST_QUICK));
-                                },
-                                on_swipe_up: move |_card: Card| {
-                                    usage_buffer().record_swipe(Direction::Up);
-                                    toast.info("Already on maybeboard".to_string(), ToastOptions::default().duration(TOAST_QUICK));
-                                },
-                                on_swipe_down: move |_card: Card| {
-                                    usage_buffer().record_swipe(Direction::Down);
-                                    mb_undo_last_action();
-                                },
+                                entering,
+                                on_swipe_left: move |card: Card| on_swipe(Direction::Left, &card),
+                                on_swipe_right: move |card: Card| on_swipe(Direction::Right, &card),
+                                on_swipe_up: move |card: Card| on_swipe(Direction::Up, &card),
+                                on_swipe_down: move |card: Card| on_swipe(Direction::Down, &card),
                             }
 
-                            if let Some(card) = mb_current_card() {
+                            if let Some(card) = current.clone() {
                                 CardInfoDisplay { card }
                             }
                         } else {
@@ -1510,135 +777,35 @@ pub fn Add(deck_id: Uuid) -> Element {
             ActionBar {
                 Button {
                     variant: ButtonVariant::Action,
-                    onclick: move |_| navigator.go_back(),
-                    "Back"
+                    onclick: move |_| driver.dispatch(Action::Back),
+                    "{add_cards::BACK}"
                 }
                 Button {
                     variant: ButtonVariant::Action,
                     onclick: move |_| filters_overlay_open.set(true),
-                    "Filter"
-                    if !filter_builder.read().is_empty_ignoring_deck_context_and_auto_lands(lands_at_target()) || filter_builder.read().sort().is_some() {
+                    "{add_cards::FILTER}"
+                    if shows_dot {
                         span { class: "filter-dot" }
                     }
                 }
                 Button {
                     variant: ButtonVariant::Action,
-                    onclick: move |_| {
-                        if add_source() == AddSource::Maybeboard {
-                            // Maybeboard mode: re-fetch deck to reload maybeboard entries
-                            spawn(async move {
-                                if let Some(deck) = authed
-                                    .run("search_cards", |c, s| async move {
-                                        c.fetch_deck(deck_id, &s).await
-                                    })
-                                    .await
-                                {
-                                    let mb: Vec<DeckEntry> = deck.entries
-                                        .iter()
-                                        .filter(|e| e.deck_card.board.is_maybeboard())
-                                        .cloned()
-                                        .collect();
-                                    mb_entries.set(mb);
-                                    mb_stack.rewind();
-                                    let current = *filter_reset_counter.peek();
-                                    filter_reset_counter.set(current.wrapping_add(1));
-                                }
-                            });
-                            toast.info(
-                                "Maybeboard refreshed".to_string(),
-                                ToastOptions::default().duration(TOAST_QUICK),
-                            );
-                        } else {
-                            // Search mode: re-fetch from API
-                            let mut builder = filter_builder.peek().clone();
-                            builder.set_is_token(false);
-                            builder.set_limit(pagination_limit);
-                            builder.set_offset(0);
-
-                            let Ok(filter) = builder.build() else {
-                                toast.warning(
-                                    "Filter is empty".to_string(),
-                                    ToastOptions::default().duration(TOAST_QUICK),
-                                );
-                                return;
-                            };
-
-                            let ticket = stack_loads.next_ticket();
-                            stack.reset();
-                            flippable_card_image::reset_image_ease();
-                            last_search_filter.set(None);
-                            pagination_exhausted.set(false);
-                            is_loading_cards.set(true);
-
-                            let filter_snapshot = filter_builder.peek().clone();
-
-                            usage_buffer().record_search();
-                            spawn(async move {
-                                // Flush buffered usage (signals feed synergy
-                                // ordering) before the refetch. Skips post
-                                // directly at swipe time.
-                                flush_loop::flush_once(&usage_buffer(), &client, &session).await;
-                                let reply = authed
-                                    .try_run("search_cards", |c, s| async move {
-                                        c.search_deck_cards(deck_id, &filter, &s).await
-                                    })
-                                    .await;
-                                if !stack_loads.is_current(ticket) {
-                                    return;
-                                }
-                                match reply {
-                                    Ok(page) => {
-                                        synergy_warming.set(!page.synergy_applied);
-                                        related_ids.set(related_ids_of(&page));
-                                        related_announced.set(false);
-                                        let deck_ids = deck_cards_ids();
-                                        stack.replace(
-                                            page.cards
-                                                .into_iter()
-                                                .filter(|card| {
-                                                    !card.scryfall_data.oracle_id.is_some_and(|oid| deck_ids.contains(&oid))
-                                                })
-                                                .collect(),
-                                        );
-                                        last_search_filter.set(Some(filter_snapshot));
-                                        is_loading_cards.set(false);
-                                    }
-                                    Err(_) => {
-                                        is_loading_cards.set(false);
-                                    }
-                                }
-                            });
-
-                            toast.info(
-                                "Stack refreshed".to_string(),
-                                ToastOptions::default().duration(TOAST_QUICK),
-                            );
-                        }
-                    },
-                    "Refresh"
+                    onclick: move |_| driver.dispatch(Action::Refresh),
+                    "{add_cards::REFRESH}"
                 }
-                {
-                    let has_card = if add_source() == AddSource::Maybeboard {
-                        mb_current_card().is_some()
-                    } else {
-                        current_card().is_some()
-                    };
-                    rsx! {
-                        if has_card {
-                            RulesButton { open: show_details }
-                        }
-                    }
+                if current.is_some() {
+                    RulesButton { open: show_details }
                 }
             }
 
             // Root-mounted (siblings of the ActionBar), so the bottom sheets'
             // z-index covers the footer instead of stacking under it. The
             // maybeboard pile shows details without Printings.
-            if add_source() == AddSource::Maybeboard {
-                if let Some(card) = mb_current_card() {
+            if source == Source::Maybeboard {
+                if let Some(card) = current {
                     CardDetailsSheet { open: show_details, card }
                 }
-            } else if let Some(card) = current_card() {
+            } else if let Some(card) = current {
                 CardDetailsSheet {
                     open: show_details,
                     card,
@@ -1649,22 +816,23 @@ pub fn Add(deck_id: Uuid) -> Element {
             // After the details sheet so it draws over it. Pick a printing →
             // re-skin the focused card and drop both sheets; swipe-right adds
             // that printing.
-            if let Some(card) = current_card() {
+            if let Some(card) = printing_card {
                 PrintingSheet {
                     host_screen: screen::DECK_CARD_ADD,
                     card,
                     open: printing_open,
                     on_save: move |new_card: Card| {
-                        stack.replace_current(new_card);
+                        driver.dispatch(Action::SwapPrinting(Box::new(new_card)));
                         show_details.set(false);
                     },
-                    saved_message: "Printing swapped",
+                    saved_message: add_cards::PRINTING_SWAPPED,
                 }
             }
 
             HintDialog {
-                open: swipe_hint_open,
-                title: "Swipe to build",
+                open: driver.hint_open,
+                actions: guide_link::one_time(HINT_ADD_DECK_CARDS),
+                title: add_cards::HINT_TITLE,
                 HintBullets {
                     HintBullet { "Swipe " HintColored { color: "--color-success", "right" } " adds the card" }
                     HintBullet { "Swipe " HintColored { color: "--color-error", "left" } " skips it for a week" }
@@ -1682,8 +850,11 @@ pub fn Add(deck_id: Uuid) -> Element {
                 // Only the server search needs intent: Maybeboard filters
                 // client-side and its default is a blank filter, so an empty
                 // Apply there (e.g. right after Reset) must commit, not warn.
-                validate_before_apply: add_source() == AddSource::Search,
-                on_clear: move |()| clear_filters(),
+                validate_before_apply: validates_apply,
+                on_clear: move |()| {
+                    let draft = filter_builder.peek().clone();
+                    driver.dispatch(Action::ResetFilter(draft));
+                },
             }
             }
     }

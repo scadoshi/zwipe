@@ -3,8 +3,10 @@
 use axum::extract::State;
 use axum::http::StatusCode;
 
+use crate::domain::auth::ports::AuthService;
 use crate::domain::auth::requests::revoke_sessions::{RevokeSessions, RevokeSessionsError};
 use crate::domain::metrics::models::kinds::{AuditAction, EventKind};
+use crate::domain::metrics::ports::MetricsService;
 use crate::inbound::http::middleware::AuthenticatedUser;
 use crate::inbound::http::{ApiError, AppState, To500};
 

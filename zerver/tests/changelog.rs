@@ -32,7 +32,10 @@ async fn changelog_serves_the_compiled_in_history(pool: sqlx::PgPool) {
 
     // Newest first, and each entry carries its notes.
     let latest = &releases[0];
-    assert_eq!(latest["version"].as_str().unwrap(), RELEASES[0].version);
+    assert_eq!(
+        latest["version"].as_str().unwrap(),
+        RELEASES[0].version.to_string()
+    );
     // `date` keeps the display string old apps render; `released_on` is the
     // same day as an ISO date, added alongside it.
     let day = RELEASES[0].date.unwrap();

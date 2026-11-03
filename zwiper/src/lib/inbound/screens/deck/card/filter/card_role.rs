@@ -6,6 +6,8 @@ use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::card_role::CardRoleView;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
+use zwipe_ui::filter::chips;
+use zwipe_ui::filter::sections::{ChipSet, Modes};
 
 use super::match_mode::MatchMode;
 use crate::inbound::components::catalog_cache::CatalogCache;
@@ -156,18 +158,18 @@ pub fn CardRole() -> Element {
                         {
                             let slug = role.slug.clone();
                             let display = role.display_name.clone();
-                            let is_excluded = excluded.contains(&slug);
+                            let is_excluded =
+                                chips::is_selected(ChipSet::RolesExclude, &filter_builder(), &slug);
                             rsx! {
                                 div {
                                     class: if is_excluded { "chip selected" } else { "chip" },
                                     onclick: move |_| {
-                                        let mut current = read_excluded();
-                                        if current.contains(&slug) {
-                                            current.retain(|s| s != &slug);
-                                        } else {
-                                            current.push(slug.clone());
-                                        }
-                                        write_excluded_roles(current);
+                                        chips::tap(
+                                            ChipSet::RolesExclude,
+                                            &mut filter_builder.write(),
+                                            &Modes::default(),
+                                            &slug,
+                                        );
                                     },
                                     { display }
                                 }

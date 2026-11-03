@@ -1,5 +1,7 @@
 //! A card as text: each face's name, mana cost, type line, rules text and stats.
 
+pub mod info;
+
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
 
 /// One face of a card, ready to draw. A single-faced card has one.

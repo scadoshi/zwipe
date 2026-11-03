@@ -14,7 +14,6 @@ use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::user::User;
 use zwipe_core::domain::user::username::Username;
 
-use crate::domain::BoxFuture;
 use crate::domain::auth::models::UserWithPasswordHash;
 use crate::domain::auth::models::access_token::JwtSecret;
 use crate::domain::auth::requests::authenticate_user::{AuthenticateUser, AuthenticateUserError};
@@ -26,7 +25,9 @@ use crate::domain::auth::requests::confirm_email_change::{
 };
 use crate::domain::auth::requests::create_session::{CreateSession, CreateSessionError};
 use crate::domain::auth::requests::delete_user::{DeleteUser, DeleteUserError};
-use crate::domain::auth::requests::refresh_session::{RefreshSession, RefreshSessionError};
+use crate::domain::auth::requests::refresh_session::{
+    RefreshSession, RefreshSessionError, RotatedRefreshToken,
+};
 use crate::domain::auth::requests::register_user::{
     RegisterOutcome, RegisterUser, RegisterUserError,
 };
@@ -76,11 +77,12 @@ pub trait AuthRepository: Clone + Send + Sync + 'static {
     /// Exchanges a refresh token for a new one (token rotation).
     ///
     /// Validates the old refresh token, deletes it, and generates a new one.
-    /// This implements refresh token rotation to prevent replay attacks.
+    /// This implements refresh token rotation to prevent replay attacks. The
+    /// new token keeps the family's platform, which comes back with it.
     fn use_refresh_token(
         &self,
         request: &RefreshSession,
-    ) -> impl Future<Output = Result<RefreshToken, RefreshSessionError>> + Send;
+    ) -> impl Future<Output = Result<RotatedRefreshToken, RefreshSessionError>> + Send;
 
     // == get ==
 
@@ -375,208 +377,4 @@ pub trait AuthService: Clone + Send + Sync + 'static {
         &self,
         request: &ResetPassword,
     ) -> impl Future<Output = Result<uuid::Uuid, ResetPasswordError>> + Send;
-}
-
-/// Object-safe wrapper used by `AppState` so the concrete service type stays
-/// out of the generic parameter list. Auto-implemented for any `AuthService`.
-pub trait ErasedAuthService: Send + Sync + 'static {
-    /// See [`AuthService::jwt_secret`].
-    fn jwt_secret(&self) -> &JwtSecret;
-
-    /// See [`AuthService::register_user`].
-    fn register_user<'a>(
-        &'a self,
-        request: &'a RegisterUser,
-    ) -> BoxFuture<'a, Result<RegisterOutcome, RegisterUserError>>;
-
-    /// See [`AuthService::create_session`].
-    fn create_session<'a>(
-        &'a self,
-        request: &'a CreateSession,
-    ) -> BoxFuture<'a, Result<Session, CreateSessionError>>;
-
-    /// See [`AuthService::refresh_session`].
-    fn refresh_session<'a>(
-        &'a self,
-        request: &'a RefreshSession,
-    ) -> BoxFuture<'a, Result<Session, RefreshSessionError>>;
-
-    /// See [`AuthService::authenticate_user`].
-    fn authenticate_user<'a>(
-        &'a self,
-        request: &'a AuthenticateUser,
-    ) -> BoxFuture<'a, Result<Session, AuthenticateUserError>>;
-
-    /// See [`AuthService::change_password_and_revoke_sessions`].
-    fn change_password_and_revoke_sessions<'a>(
-        &'a self,
-        request: &'a ChangePassword,
-    ) -> BoxFuture<'a, Result<(), ChangePasswordError>>;
-
-    /// See [`AuthService::change_username`].
-    fn change_username<'a>(
-        &'a self,
-        request: &'a ChangeUsername,
-    ) -> BoxFuture<'a, Result<User, ChangeUsernameError>>;
-
-    /// See [`AuthService::request_email_change`].
-    fn request_email_change<'a>(
-        &'a self,
-        request: &'a ChangeEmail,
-    ) -> BoxFuture<'a, Result<User, ChangeEmailError>>;
-
-    /// See [`AuthService::confirm_email_change`].
-    fn confirm_email_change<'a>(
-        &'a self,
-        request: &'a ConfirmEmailChange,
-    ) -> BoxFuture<'a, Result<User, ConfirmEmailChangeError>>;
-
-    /// See [`AuthService::delete_user`].
-    fn delete_user<'a>(
-        &'a self,
-        request: &'a DeleteUser,
-    ) -> BoxFuture<'a, Result<(), DeleteUserError>>;
-
-    /// See [`AuthService::revoke_sessions`].
-    fn revoke_sessions<'a>(
-        &'a self,
-        request: &'a RevokeSessions,
-    ) -> BoxFuture<'a, Result<(), RevokeSessionsError>>;
-
-    /// See [`AuthService::send_verification_email`].
-    fn send_verification_email<'a>(
-        &'a self,
-        user_id: Uuid,
-        to_email: &'a str,
-    ) -> BoxFuture<'a, Result<(), anyhow::Error>>;
-
-    /// See [`AuthService::verify_email`].
-    fn verify_email<'a>(
-        &'a self,
-        request: &'a VerifyEmail,
-    ) -> BoxFuture<'a, Result<(), VerifyEmailError>>;
-
-    /// See [`AuthService::request_password_reset`].
-    fn request_password_reset<'a>(
-        &'a self,
-        request: &'a RequestPasswordReset,
-    ) -> BoxFuture<'a, Result<(), RequestPasswordResetError>>;
-
-    /// See [`AuthService::reset_password`].
-    fn reset_password<'a>(
-        &'a self,
-        request: &'a ResetPassword,
-    ) -> BoxFuture<'a, Result<uuid::Uuid, ResetPasswordError>>;
-}
-
-impl<T> ErasedAuthService for T
-where
-    T: AuthService,
-{
-    fn jwt_secret(&self) -> &JwtSecret {
-        AuthService::jwt_secret(self)
-    }
-
-    fn register_user<'a>(
-        &'a self,
-        request: &'a RegisterUser,
-    ) -> BoxFuture<'a, Result<RegisterOutcome, RegisterUserError>> {
-        Box::pin(AuthService::register_user(self, request))
-    }
-
-    fn create_session<'a>(
-        &'a self,
-        request: &'a CreateSession,
-    ) -> BoxFuture<'a, Result<Session, CreateSessionError>> {
-        Box::pin(AuthService::create_session(self, request))
-    }
-
-    fn refresh_session<'a>(
-        &'a self,
-        request: &'a RefreshSession,
-    ) -> BoxFuture<'a, Result<Session, RefreshSessionError>> {
-        Box::pin(AuthService::refresh_session(self, request))
-    }
-
-    fn authenticate_user<'a>(
-        &'a self,
-        request: &'a AuthenticateUser,
-    ) -> BoxFuture<'a, Result<Session, AuthenticateUserError>> {
-        Box::pin(AuthService::authenticate_user(self, request))
-    }
-
-    fn change_password_and_revoke_sessions<'a>(
-        &'a self,
-        request: &'a ChangePassword,
-    ) -> BoxFuture<'a, Result<(), ChangePasswordError>> {
-        Box::pin(AuthService::change_password_and_revoke_sessions(
-            self, request,
-        ))
-    }
-
-    fn change_username<'a>(
-        &'a self,
-        request: &'a ChangeUsername,
-    ) -> BoxFuture<'a, Result<User, ChangeUsernameError>> {
-        Box::pin(AuthService::change_username(self, request))
-    }
-
-    fn request_email_change<'a>(
-        &'a self,
-        request: &'a ChangeEmail,
-    ) -> BoxFuture<'a, Result<User, ChangeEmailError>> {
-        Box::pin(AuthService::request_email_change(self, request))
-    }
-
-    fn confirm_email_change<'a>(
-        &'a self,
-        request: &'a ConfirmEmailChange,
-    ) -> BoxFuture<'a, Result<User, ConfirmEmailChangeError>> {
-        Box::pin(AuthService::confirm_email_change(self, request))
-    }
-
-    fn delete_user<'a>(
-        &'a self,
-        request: &'a DeleteUser,
-    ) -> BoxFuture<'a, Result<(), DeleteUserError>> {
-        Box::pin(AuthService::delete_user(self, request))
-    }
-
-    fn revoke_sessions<'a>(
-        &'a self,
-        request: &'a RevokeSessions,
-    ) -> BoxFuture<'a, Result<(), RevokeSessionsError>> {
-        Box::pin(AuthService::revoke_sessions(self, request))
-    }
-
-    fn send_verification_email<'a>(
-        &'a self,
-        user_id: Uuid,
-        to_email: &'a str,
-    ) -> BoxFuture<'a, Result<(), anyhow::Error>> {
-        Box::pin(AuthService::send_verification_email(
-            self, user_id, to_email,
-        ))
-    }
-
-    fn verify_email<'a>(
-        &'a self,
-        request: &'a VerifyEmail,
-    ) -> BoxFuture<'a, Result<(), VerifyEmailError>> {
-        Box::pin(AuthService::verify_email(self, request))
-    }
-
-    fn request_password_reset<'a>(
-        &'a self,
-        request: &'a RequestPasswordReset,
-    ) -> BoxFuture<'a, Result<(), RequestPasswordResetError>> {
-        Box::pin(AuthService::request_password_reset(self, request))
-    }
-
-    fn reset_password<'a>(
-        &'a self,
-        request: &'a ResetPassword,
-    ) -> BoxFuture<'a, Result<uuid::Uuid, ResetPasswordError>> {
-        Box::pin(AuthService::reset_password(self, request))
-    }
 }

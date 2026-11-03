@@ -5,8 +5,10 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use zwipe_core::http::contracts::auth::HttpResetPassword;
 
+use crate::domain::auth::ports::AuthService;
 use crate::domain::auth::requests::reset_password::{ResetPassword, ResetPasswordError};
 use crate::domain::metrics::models::kinds::AuditAction;
+use crate::domain::metrics::ports::MetricsService;
 use crate::inbound::http::{ApiError, AppState, To500};
 
 impl From<ResetPasswordError> for ApiError {
