@@ -503,11 +503,27 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                     actions: rsx! {
                                         Button {
                                             variant: ButtonVariant::Action,
+                                            class: "btn-icon",
                                             onclick: move |_| driver.dispatch(Action::Edit),
-                                            {deck_view::EDIT}
+                                            EditIcon {}
+                                            span { class: "sr-only", {deck_view::EDIT} }
                                         }
-                                        MoreItemButton { item: MoreItem::CloneDeck, enabled: more_enabled.clone(), driver }
-                                        MoreItemButton { item: MoreItem::ShareDeck, enabled: more_enabled.clone(), driver }
+                                        Button {
+                                            variant: ButtonVariant::Action,
+                                            class: "btn-icon",
+                                            disabled: !more_enabled.contains(&MoreItem::CloneDeck),
+                                            onclick: move |_| driver.dispatch(Action::More(MoreItem::CloneDeck)),
+                                            CloneIcon {}
+                                            span { class: "sr-only", {MoreItem::CloneDeck.short_label()} }
+                                        }
+                                        Button {
+                                            variant: ButtonVariant::Action,
+                                            class: "btn-icon",
+                                            disabled: !more_enabled.contains(&MoreItem::ShareDeck),
+                                            onclick: move |_| driver.dispatch(Action::More(MoreItem::ShareDeck)),
+                                            ShareIcon {}
+                                            span { class: "sr-only", {MoreItem::ShareDeck.short_label()} }
+                                        }
                                     },
                                 }
 
@@ -538,6 +554,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                         }
                                         if let (true, Some((tcg, ck))) = (more_enabled.contains(&MoreItem::BuyDeck), buy_links.clone()) {
                                             div { class: "deck-buy-row",
+                                                span { class: "stat-chip stat-chip-p1 chip-row-label", {MoreItem::BuyDeck.short_label()} }
                                                 Button {
                                                     variant: ButtonVariant::Action,
                                                     onclick: move |_| open_url::open(&tcg),
@@ -732,8 +749,9 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                 title: "Welcome to your deck",
                 HintBullets {
                     HintBullet { HintKey { "Cards" } " browses, adds and removes cards" }
-                    HintBullet { HintKey { "Edit" } " changes the name, format, command zone, tags and targets" }
-                    HintBullet { HintKey { "Clone" } " and " HintKey { "Share" } " sit beside Edit; import, export and delete are at the bottom" }
+                    HintBullet { "The pencil by " HintKey { "Profile" } " changes the name, format, command zone, tags and targets" }
+                    HintBullet { "Beside it, the two squares clone the deck and the box with the arrow shares a link to it" }
+                    HintBullet { "Import, export and delete are at the bottom of the page" }
                     HintBullet { "Skipped and removed cards stay out of the add stack. " HintKey { "Clear skips" } " at the bottom brings them back" }
                     HintBullet { "Stats fill in as the deck grows. Tap a section to expand it" }
                     HintBullet { "Warnings flag rule problems, each with a one-tap fix" }
@@ -790,6 +808,52 @@ fn MoreItemButton(item: MoreItem, enabled: Vec<MoreItem>, driver: Driver) -> Ele
             danger: item.is_danger(),
             onclick: move |_| driver.dispatch(Action::More(item)),
             {item.short_label()}
+        }
+    }
+}
+
+/// The edit icon: a pencil.
+#[component]
+fn EditIcon() -> Element {
+    rsx! {
+        svg {
+            class: "share-icon",
+            view_box: "0 0 24 24",
+            xmlns: "http://www.w3.org/2000/svg",
+            "aria-hidden": "true",
+            path { d: "M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4z" }
+            path { d: "M13.5 6.5l4 4" }
+        }
+    }
+}
+
+/// The clone icon: two overlapping squares.
+#[component]
+fn CloneIcon() -> Element {
+    rsx! {
+        svg {
+            class: "share-icon",
+            view_box: "0 0 24 24",
+            xmlns: "http://www.w3.org/2000/svg",
+            "aria-hidden": "true",
+            rect { x: "9", y: "9", width: "11", height: "11", rx: "2" }
+            path { d: "M15 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3" }
+        }
+    }
+}
+
+/// The share icon: a box with an arrow rising out of it.
+#[component]
+fn ShareIcon() -> Element {
+    rsx! {
+        svg {
+            class: "share-icon",
+            view_box: "0 0 24 24",
+            xmlns: "http://www.w3.org/2000/svg",
+            "aria-hidden": "true",
+            path { d: "M12 3v12" }
+            path { d: "M8 7l4-4 4 4" }
+            path { d: "M8 11H6a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-2" }
         }
     }
 }
