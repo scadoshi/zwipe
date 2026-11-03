@@ -33,7 +33,7 @@ These were settled with the owner before the per-screen review. A screen breaks 
 - Icons stand in for words only where the symbol is standard (+, −, a funnel, undo, refresh, the eye). Each icon has an accessible label, and the screen's hint names each one once.
 - A form's primary button (Log in, Import) sits at the end of the form, right after the last field, and scrolls with the content. The deck form is the exception, since it runs about three screens: its Save (Edit) floats from the moment something changes, and its Create (Create deck) floats once the form is valid.
 - Nothing hides behind More. Each action a More sheet holds today sits inline where it belongs, destructive ones in red. The four More sheets (Deck view, Decks, Account, Maybeboard and Suggested commanders) go away.
-- Overlays (bottom sheets and pickers: format, deck tags, oracle tags, card filter, printings, app icon, Universes Beyond) keep their own footer, made slimmer: the same compact buttons with less padding. Their Back becomes a close button or a swipe down.
+- No footer anywhere, overlays included (owner, 2026-11-03). A bottom sheet or picker (format, deck tags, oracle tags, card filter, printings, card details, app icon, Universes Beyond) closes with a swipe down or a close button in its title bar, and its Apply or Save is a checkmark in an action dock at its bottom right; the filter's Reset is the × on its funnel, as on Cards.
 - Swipe screens (Add, Remove, Swipe select) float their actions as icons (Filter, Refresh, the eye) in the bottom-right corner just above the bottom edge. Undo stays the swipe down.
 
 ### Where overlays open
