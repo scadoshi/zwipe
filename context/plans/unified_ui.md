@@ -55,6 +55,14 @@ These were settled with the owner before the per-screen review. A screen breaks 
 
 - Below 900px the web matches the app: no panels, bottom sheets for pickers, the theme and filters, and the same header with the hamburger. Wide windows keep zite's centered page and panels.
 
+## At release
+
+zwipe.net's guides and the privacy policy describe the shipped app, so they change on the day the release that carries this goes live, not before. Lines that name the old layout (2026-11-03):
+
+- `zite/src/pages/guides/content.rs`: Clear skips "Open the deck's More menu" (about line 348), the maybeboard "More, then Commander maybeboard" and "More, then Clear maybeboard" (592, 623), Playstyle "tap More, then Clear skips" (685), and "Open the deck and tap More" (1008).
+- `zwipe-core/src/legal/mod.rs`: the privacy policy's "you can clear this anytime from the deck's More menu".
+- Any guide screenshot showing the old footer, the "!" button or Config.
+
 ## Footer inventory
 
 Every footer in the app on 2026-11-03 and where its actions go. Where an action lands inside the content is settled in each screen's review.
