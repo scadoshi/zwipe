@@ -860,7 +860,7 @@ fn color_style(palette: &Palette, label: &str) -> Style {
 fn draw_clone(f: &mut Frame<'_>, palette: &Palette, clone: &CloneDialog) {
     let body = Paragraph::new(CLONE_BODY).wrap(Wrap { trim: true });
     let body_height = measure::height_of(body.line_count(DIALOG_WIDTH));
-    let inner = panel::draw(
+    let inner = panel::dialog(
         f,
         palette,
         f.area(),

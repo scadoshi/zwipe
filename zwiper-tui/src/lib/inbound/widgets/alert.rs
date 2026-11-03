@@ -168,7 +168,7 @@ impl AlertDialog {
         } else {
             1
         };
-        let inner = panel::draw(
+        let inner = panel::dialog(
             f,
             palette,
             f.area(),

@@ -56,7 +56,7 @@ impl InfoPopup {
         let body =
             Paragraph::new(self.lines(palette, usize::from(width))).wrap(Wrap { trim: false });
         let body_height = measure::height_of(body.line_count(width));
-        let inner = panel::draw(f, palette, f.area(), WIDTH, body_height.saturating_add(4));
+        let inner = panel::dialog(f, palette, f.area(), WIDTH, body_height.saturating_add(4));
         let [title_area, body_area, _, keys_area] = Layout::vertical([
             Constraint::Length(1),
             Constraint::Length(body_height.saturating_add(1)),

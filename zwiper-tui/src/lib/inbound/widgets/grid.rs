@@ -2,7 +2,7 @@
 //!
 //! The app draws it settled behind every screen, right over the theme's background, and the splash draws it raining in: each tile lands at `row * 18 ms` plus up to 160 ms of seeded scatter, falling three tiles over 350 ms with an ease-out.
 //!
-//! A tile fills four cells by two rows, about square since a cell is about twice as tall as it is wide, and the tiles meet with no gap, a mosaic of shades. Only the background changes, so text drawn over a tile stays as it is. Boxes (panels, fields, buttons, sheets, dialogs, toasts) fill with the theme's background and sit on the tiles like cards; loose text draws with no background of its own, so the tiles show up to its letters. A palette with no colors of its own draws no tiles.
+//! A tile fills four cells by two rows, about square since a cell is about twice as tall as it is wide, and the tiles meet with no gap, a mosaic of shades. Only the background changes, so text drawn over a tile stays as it is. Boxes on the grid (panels, fields, tiles) and loose text draw with no background of their own, so the tiles show under their letters; overlays (sheets, dialogs, toasts, popups) fill with the theme's background so what lies under them never shows through. A palette with no colors of its own draws no tiles.
 
 use std::time::Duration;
 
@@ -152,9 +152,9 @@ pub(crate) fn shades(
     cells
 }
 
-/// Lays the settled tiles back under the cells along the outside of every box in `area`, its border and any label on it, so the grid reaches each box's line.
+/// Lays the settled tiles back under the cells along the outside of every overlay in `area`, its border and any label on it, so the grid reaches each overlay's line.
 ///
-/// A box fills its border cells with the theme's background too, and a border glyph sits in the middle of its cell, so without this the outer half of every border shows as a plain band between the tiles and the line. A cell counts as a box's edge when it holds the plain background and a neighbor beside, above or below shows its tile; only those cells change, so the inside of a box stays solid and a box drawn over another box keeps its border on it. Reversed cells keep their fill.
+/// An overlay (a dialog, sheet, toast or popup) fills its border cells with the theme's background, and a border glyph sits in the middle of its cell, so this gives the outer half of each border cell back to the grid. A cell counts as an overlay's edge when it holds the plain background and a neighbor beside, above or below shows its tile; only those cells change, so the inside of an overlay stays solid and an overlay drawn over another keeps its border on it. Reversed cells keep their fill. A box on the grid has no fill, so its cells already show their tiles and this leaves them be.
 pub(crate) fn reach_edges(f: &mut Frame<'_>, palette: &Palette, area: Rect) {
     let Some(base) = palette.base.bg else {
         return;
@@ -309,7 +309,7 @@ mod tests {
     }
 
     #[test]
-    fn the_edges_of_a_box_take_their_tiles_and_its_inside_stays_solid() {
+    fn the_edges_of_an_overlay_take_their_tiles_and_its_inside_stays_solid() {
         let palette = Palette::for_account("gruvbox", true);
         let base = palette.base.bg.unwrap();
         let mut terminal = Terminal::new(TestBackend::new(40, 12)).unwrap();
@@ -318,9 +318,9 @@ mod tests {
                 f.render_widget(ratatui::widgets::Block::new().style(palette.base), f.area());
                 draw(f, &palette, f.area(), None);
                 let outer = Rect::new(4, 1, 20, 8);
-                f.render_widget(super::super::panel::bordered(&palette), outer);
+                f.render_widget(super::super::panel::overlay(&palette), outer);
                 f.render_widget(
-                    super::super::panel::bordered(&palette),
+                    super::super::panel::overlay(&palette),
                     Rect::new(8, 3, 8, 4),
                 );
                 reach_edges(f, &palette, f.area());
@@ -335,5 +335,36 @@ mod tests {
         for (x, y) in [(5, 2), (12, 2), (8, 3), (10, 4)] {
             assert_eq!(buffer[(x, y)].bg, base, "{x},{y} inside stays solid");
         }
+    }
+
+    #[test]
+    fn a_box_on_the_grid_shows_its_tiles_inside_and_on_its_border() {
+        let palette = Palette::for_account("gruvbox", true);
+        let mut terminal = Terminal::new(TestBackend::new(40, 12)).unwrap();
+        terminal
+            .draw(|f| {
+                f.render_widget(ratatui::widgets::Block::new().style(palette.base), f.area());
+                draw(f, &palette, f.area(), None);
+                f.render_widget(
+                    ratatui::widgets::Paragraph::new("Decks").block(
+                        super::super::panel::bordered(&palette).border_style(palette.border),
+                    ),
+                    Rect::new(4, 1, 20, 6),
+                );
+            })
+            .unwrap();
+        let buffer = terminal.backend().buffer();
+        let tiles = shades(&palette, buffer.area, None);
+        let tile = |x: u16, y: u16| tiles[usize::from(y) * 40 + usize::from(x)].unwrap();
+        assert_eq!(buffer[(4, 1)].symbol(), "╭", "a rounded corner");
+        for (x, y) in [(4, 1), (23, 6), (5, 2), (12, 4), (22, 5)] {
+            assert_eq!(buffer[(x, y)].bg, tile(x, y), "{x},{y} shows its tile");
+        }
+        assert_eq!(buffer[(5, 2)].symbol(), "D");
+        assert_eq!(
+            buffer[(5, 2)].fg,
+            palette.base.fg.unwrap(),
+            "text in the text color"
+        );
     }
 }

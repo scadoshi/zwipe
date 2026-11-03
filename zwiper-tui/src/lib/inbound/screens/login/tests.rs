@@ -498,7 +498,7 @@ fn empty_fields_show_no_placeholder_and_labels_sit_centered_at_every_size() {
 }
 
 #[test]
-fn the_grid_reaches_the_counter_tiles_and_the_fields() {
+fn the_grid_shows_under_the_counter_tiles_and_the_fields() {
     let mut harness = Harness::new();
     let palette = crate::domain::theme::Palette::for_account("gruvbox", true);
     harness.app.shared.palette = palette;
@@ -535,8 +535,17 @@ fn the_grid_reaches_the_counter_tiles_and_the_fields() {
         assert_eq!(buffer[(bx, by)].bg, tile(bx, by), "the {what}'s own border");
         assert_eq!(
             buffer[(bx + 1, by)].bg,
-            base,
-            "inside the {what} stays solid"
+            tile(bx + 1, by),
+            "inside the {what} shows its tile"
         );
     }
+    let [(x, y)] = crate::test_support::find_all(buffer, "Decks created")[..] else {
+        panic!("the counters:\n{rows}");
+    };
+    assert_ne!(tile(x, y), base, "a tile that shows under the label");
+    assert_eq!(
+        buffer[(x, y)].bg,
+        tile(x, y),
+        "the counter tile's label sits on its tile"
+    );
 }

@@ -154,7 +154,7 @@ impl HintDialog {
         let room = f.area().height.saturating_sub(6);
         let shown = body_height.min(room);
         let scroll = self.scroll.min(body_height.saturating_sub(shown));
-        let inner = panel::draw(f, palette, f.area(), WIDTH, shown.saturating_add(4));
+        let inner = panel::dialog(f, palette, f.area(), WIDTH, shown.saturating_add(4));
         let [title_area, top_rule, body_area, bottom_rule, button_area] = Layout::vertical([
             Constraint::Length(1),
             Constraint::Length(1),

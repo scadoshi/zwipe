@@ -1,4 +1,4 @@
-//! What every screen draws around its content: no title row, a key bar that names Help & feedback and the hint key once, and the grid backdrop showing up to loose content while boxes stay solid.
+//! What every screen draws around its content: no title row, a key bar that names Help & feedback and the hint key once, and the grid backdrop showing up to loose content and under the boxes on it while overlays stay solid.
 
 use crossterm::event::KeyCode;
 use ratatui::style::Color;
@@ -227,7 +227,7 @@ fn backgrounds(app: &mut App, width: u16, height: u16) -> (Vec<Vec<Color>>, Colo
 }
 
 #[test]
-fn the_grid_shows_around_loose_content_and_boxes_stay_solid() {
+fn the_grid_shows_around_loose_content_and_under_boxes() {
     for (width, height) in BUTTON_SIZES {
         // Account's first rows are loose text: a section title over its rows.
         let mut harness = Harness::on(Screen::Home(Box::default()));
@@ -239,7 +239,7 @@ fn the_grid_shows_around_loose_content_and_boxes_stay_solid() {
             rows[0].iter().all(|&bg| bg != base),
             "every cell of Account's first row carries a tile at {width}x{height}"
         );
-        // The deck list sits in a panel whose inside fills with the plain background.
+        // The deck list sits in a panel with no fill, so its inside shows the tiles.
         let mut harness = Harness::on(Screen::Home(Box::default()));
         harness.app.shared.user = Some(user(true));
         harness.open(decks::open);
@@ -253,16 +253,57 @@ fn the_grid_shows_around_loose_content_and_boxes_stay_solid() {
             .flat_map(|y| (0..width).map(move |x| (x, y)))
             .find(|&(x, y)| buffer[(x, y)].symbol() == "╭" && y < height / 2)
             .unwrap_or_else(|| panic!("the deck list's panel at {width}x{height}"));
-        let inside = &buffer[(corner.0 + 2, corner.1 + 1)];
+        let tiles = grid::shades(&harness.app.shared.palette, buffer.area, None);
+        let (x, y) = (corner.0 + 2, corner.1 + 1);
+        let tile = tiles[usize::from(y) * usize::from(width) + usize::from(x)].unwrap_or(base);
         assert_eq!(
-            inside.bg, base,
-            "a panel's inside stays solid at {width}x{height}"
+            buffer[(x, y)].bg,
+            tile,
+            "a panel's inside shows its tile at {width}x{height}"
+        );
+        assert_eq!(
+            buffer[corner].bg,
+            tiles[usize::from(corner.1) * usize::from(width) + usize::from(corner.0)]
+                .unwrap_or(base),
+            "a panel's corner shows its tile at {width}x{height}"
         );
         assert_ne!(
             buffer[(0, 0)].bg,
             base,
             "the margin beside the deck list carries a tile at {width}x{height}"
         );
+    }
+}
+
+#[test]
+fn an_overlay_over_a_box_on_the_grid_stays_solid() {
+    for (width, height) in BUTTON_SIZES {
+        let mut harness = Harness::on(Screen::Home(Box::default()));
+        harness.app.shared.user = Some(user(true));
+        harness.open(decks::open);
+        harness.app.shared.hint = None;
+        harness.press(KeyCode::F(1));
+        assert!(harness.app.shared.help.is_some(), "F1 opens Help");
+        let palette = Palette::for_account("gruvbox", true);
+        harness.app.shared.palette = palette;
+        let base = palette.base.bg.unwrap();
+        let terminal = render(&harness.app, width, height);
+        let buffer = terminal.backend().buffer();
+        let (x, y) = (0..height)
+            .flat_map(|y| (0..width).map(move |x| (x, y)))
+            .find(|&(x, y)| buffer[(x, y)].symbol() == "├")
+            .unwrap_or_else(|| panic!("Help's rule at {width}x{height}"));
+        let corner = (0..y)
+            .rev()
+            .find(|&row| buffer[(x, row)].symbol() == "╭")
+            .unwrap_or_else(|| panic!("Help's corner at {width}x{height}"));
+        for (cx, cy) in [(x + 1, y + 1), (x + 2, corner + 1), (x + 1, y - 1)] {
+            assert_eq!(
+                buffer[(cx, cy)].bg,
+                base,
+                "Help's inside at {cx},{cy} stays solid at {width}x{height}"
+            );
+        }
     }
 }
 

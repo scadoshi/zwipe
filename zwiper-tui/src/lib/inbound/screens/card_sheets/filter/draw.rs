@@ -39,7 +39,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, sheet: &FilterSheet, area
     footer
         .spans
         .extend(action_bar::line(palette, &[("r", "reset"), ("x", "clear"), ("?", "hint")]).spans);
-    let block = crate::inbound::widgets::panel::bordered(palette)
+    let block = crate::inbound::widgets::panel::overlay(palette)
         .title(Line::from(format!(" {} ", card_filter::TITLE)).bold())
         .title_bottom(footer)
         .border_style(palette.accent)

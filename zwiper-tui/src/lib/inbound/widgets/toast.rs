@@ -237,7 +237,7 @@ fn render(
     f.render_widget(Clear, rect);
     f.render_widget(
         paragraph.block(
-            crate::inbound::widgets::panel::bordered(palette)
+            crate::inbound::widgets::panel::overlay(palette)
                 .border_style(border(toast.kind, palette))
                 .style(base)
                 .padding(Padding::horizontal(1)),

@@ -173,7 +173,7 @@ pub(crate) fn frame(
         .min(area.height);
     let [_, sheet] =
         Layout::vertical([Constraint::Fill(1), Constraint::Length(height)]).areas(area);
-    let mut block = crate::inbound::widgets::panel::bordered(palette)
+    let mut block = crate::inbound::widgets::panel::overlay(palette)
         .title(
             Line::from(format!(" {title} "))
                 .style(palette.tertiary)

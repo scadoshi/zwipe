@@ -172,7 +172,7 @@ impl PrintingSheet {
         f.render_widget(Clear, sheet);
         f.render_widget(
             Paragraph::new(body).wrap(Wrap { trim: true }).block(
-                crate::inbound::widgets::panel::bordered(palette)
+                crate::inbound::widgets::panel::overlay(palette)
                     .title(Line::from(" Printings ").bold())
                     .title_bottom(footer)
                     .border_style(palette.accent)

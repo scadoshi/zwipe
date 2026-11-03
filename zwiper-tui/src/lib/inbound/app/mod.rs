@@ -170,7 +170,6 @@ impl App {
         grid::draw(f, palette, f.area(), None);
         if self.shared.update_required {
             update_required::draw::draw(f, &self.shared);
-            grid::reach_edges(f, palette, f.area());
             self.sweep(f, now);
             return;
         }
