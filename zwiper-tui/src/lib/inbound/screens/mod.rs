@@ -203,7 +203,7 @@ impl Screen {
         match self {
             Self::Home(view) => view.refresh(cx),
             Self::Login(form) => login::on_return(form, cx),
-            Self::Decks(list) => list.reload(cx),
+            Self::Decks(list) => decks::reload(list, cx),
             Self::Deck(view) => view.reload(cx),
             Self::DeckCards(view) => {
                 if !returned_from_dictionary(view.sheet.as_mut(), cx) {

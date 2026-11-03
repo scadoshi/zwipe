@@ -7,11 +7,12 @@ use zwipe_core::http::contracts::changelog::HttpChangelog;
 use zwipe_core::http::contracts::metrics::AnonymousEventKind;
 use zwipe_ui::changelog::ChangelogCache;
 use zwipe_ui::hint::{Block, HintContent, Span};
+use zwipe_ui::screens::deck_list::Status as DeckListStatus;
 
 use super::Flow;
 use super::harness::Harness;
 use crate::domain::theme::Palette;
-use crate::inbound::screens::{Request, Screen, Update, deck, decks};
+use crate::inbound::screens::{Request, Screen, Update, deck, decks, privacy};
 use crate::inbound::widgets::hint;
 use crate::inbound::widgets::toast::{self, ToastKind};
 use crate::test_support::{card, render, screen_text, user};
@@ -61,8 +62,17 @@ fn esc_steps_back_from_swipe_to_deck_to_decks_to_home() {
 
     harness.clear();
     harness.press(KeyCode::Esc);
-    assert!(matches!(harness.screen(), Screen::Decks(list) if list.loading));
-    assert_eq!(harness.pending(), [Request::Decks(decks::Request::Load)]);
+    assert!(
+        matches!(harness.screen(), Screen::Decks(list) if list.model.status() == DeckListStatus::Loading)
+    );
+    let ticket = decks::last_ticket(harness.pending());
+    assert_eq!(
+        harness.pending(),
+        [
+            Request::Decks(decks::Request::RefreshUser),
+            Request::Decks(decks::Request::Fetch { ticket }),
+        ]
+    );
 
     harness.clear();
     harness.press(KeyCode::Esc);
@@ -73,14 +83,27 @@ fn esc_steps_back_from_swipe_to_deck_to_decks_to_home() {
 
 #[test]
 fn a_result_reaches_its_screen_under_another() {
-    let (mut harness, _) = Harness::swiping(Vec::new());
-    harness.apply(decks::Update::Failed("offline".to_owned()));
-    harness.press(KeyCode::Esc);
+    let mut harness = Harness::on(Screen::Home(Box::default()));
+    harness.app.shared.user = Some(user(true));
+    harness.open(decks::open);
+    let ticket = decks::last_ticket(harness.pending());
+    harness.open(privacy::open);
+    harness.apply(decks::Update::Failed {
+        ticket,
+        error: "offline".to_owned(),
+    });
+    assert!(matches!(harness.screen(), Screen::Privacy(_)));
+    assert!(
+        harness.app.nav.screens_mut().any(
+            |s| matches!(s, Screen::Decks(list) if list.model.status() == DeckListStatus::Failed)
+        ),
+        "the failure lands on the list under Privacy"
+    );
     harness.clear();
     harness.press(KeyCode::Esc);
     assert!(
-        matches!(harness.screen(), Screen::Decks(list) if list.loading && list.error.is_none()),
-        "going back reloads over the old error"
+        matches!(harness.screen(), Screen::Decks(list) if list.model.status() == DeckListStatus::Loading),
+        "going back reloads over the old failure"
     );
 }
 

@@ -100,7 +100,11 @@ impl Harness {
         profile.format = Some(Format::Commander);
         let deck_id = profile.id;
         harness.open(decks::open);
-        harness.apply(decks::Update::Loaded(vec![profile.clone()]));
+        let ticket = decks::last_ticket(harness.pending());
+        harness.apply(decks::Update::Loaded {
+            ticket,
+            decks: vec![profile.clone()],
+        });
         harness.press(KeyCode::Enter);
         harness.apply(deck::Update::Loaded(Box::new(test_support::deck(
             profile,
