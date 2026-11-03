@@ -8,6 +8,7 @@ use zwipe_core::domain::user::models::hints::{InvalidHintKey, MarkHintShown};
 use zwipe_core::http::contracts::user::HttpMarkHintShown;
 
 use crate::domain::user::models::hints::MarkHintShownError;
+use crate::domain::user::ports::UserService;
 use crate::inbound::http::middleware::AuthenticatedUser;
 use crate::inbound::http::{ApiError, AppState, To500};
 

@@ -5,6 +5,7 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use zwipe_core::http::contracts::metrics::HttpCrashReport;
 
+use crate::domain::metrics::ports::MetricsService;
 use crate::inbound::http::{ApiError, AppState};
 
 /// Stores one crash report (no auth: the next launch after a crash may have

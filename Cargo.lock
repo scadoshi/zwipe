@@ -1046,12 +1046,15 @@ dependencies = [
 
 [[package]]
 name = "components"
-version = "1.16.2"
+version = "1.17.0"
 dependencies = [
  "dioxus",
+ "dioxus-ssr",
  "orangui",
+ "serde_json",
  "uuid",
  "zwipe-core",
+ "zwipe-ui",
 ]
 
 [[package]]
@@ -5222,7 +5225,7 @@ checksum = "04744f49eae99ab78e0d5c0b603ab218f515ea8cfe5a456d7629ad883a3b6e7d"
 [[package]]
 name = "orangui"
 version = "0.0.0"
-source = "git+https://github.com/scadoshi/orangui?branch=main#e6719eb3e267bd3c7ae54dfb666f717c5d3b6f50"
+source = "git+https://github.com/scadoshi/orangui?branch=main#16b8935439fda81020d54f23706bc98d01021571"
 dependencies = [
  "dioxus",
  "dioxus-primitives",
@@ -5230,10 +5233,21 @@ dependencies = [
  "jni 0.21.1",
  "ndk-context",
  "objc2",
+ "objc2-foundation",
+ "orangui-core 0.0.0 (git+https://github.com/scadoshi/orangui?branch=main)",
  "serde",
  "serde_json",
  "tokio",
  "web-sys",
+ "webbrowser",
+]
+
+[[package]]
+name = "orangui-core"
+version = "0.0.0"
+source = "git+https://github.com/scadoshi/orangui?branch=main#16b8935439fda81020d54f23706bc98d01021571"
+dependencies = [
+ "serde",
 ]
 
 [[package]]
@@ -9734,7 +9748,7 @@ dependencies = [
 
 [[package]]
 name = "zerver"
-version = "1.16.2"
+version = "1.17.0"
 dependencies = [
  "anyhow",
  "argon2",
@@ -9774,7 +9788,7 @@ dependencies = [
 
 [[package]]
 name = "zite"
-version = "1.16.2"
+version = "1.17.0"
 dependencies = [
  "components",
  "dioxus",
@@ -9862,7 +9876,7 @@ dependencies = [
 
 [[package]]
 name = "zwipe-client"
-version = "1.16.2"
+version = "1.17.0"
 dependencies = [
  "getrandom 0.4.3",
  "reqwest",
@@ -9877,7 +9891,7 @@ dependencies = [
 
 [[package]]
 name = "zwipe-core"
-version = "1.16.2"
+version = "1.17.0"
 dependencies = [
  "chrono",
  "email_address",
@@ -9894,20 +9908,21 @@ dependencies = [
 
 [[package]]
 name = "zwipe-ui"
-version = "1.16.2"
+version = "1.17.0"
 dependencies = [
  "chrono",
  "email_address",
  "getrandom 0.4.3",
- "orangui-core",
+ "orangui-core 0.0.0 (git+https://github.com/scadoshi/orangui?branch=main)",
  "serde_json",
+ "tracing",
  "uuid",
  "zwipe-core",
 ]
 
 [[package]]
 name = "zwiper"
-version = "1.16.2"
+version = "1.17.0"
 dependencies = [
  "anyhow",
  "apple-native-keyring-store",
@@ -9932,14 +9947,14 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "uuid",
- "webbrowser",
  "zwipe-client",
  "zwipe-core",
+ "zwipe-ui",
 ]
 
 [[package]]
 name = "zwiper-tui"
-version = "1.16.2"
+version = "1.17.0"
 dependencies = [
  "anyhow",
  "chrono",
@@ -9948,7 +9963,7 @@ dependencies = [
  "email_address",
  "futures",
  "image",
- "orangui-core",
+ "orangui-core 0.0.0 (git+https://github.com/scadoshi/orangui?rev=932abb5)",
  "ratatui",
  "ratatui-image",
  "reqwest",

@@ -16,20 +16,10 @@ use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::deck::{Board, DeckEntry};
+use zwipe_ui::deck::command_zone::Slot;
 
 /// Cap: enough to walk back a whole editing session; oldest entries drop.
 const MAX_UNDO_ACTIONS: usize = 100;
-
-/// Identifies which command zone slot a card occupies for printing updates.
-/// Lives here rather than in `view.rs`: the log is shared infrastructure,
-/// and screens depend on it: never the reverse.
-#[derive(Clone, Copy, PartialEq)]
-pub(crate) enum CommandZoneSlot {
-    Commander,
-    Partner,
-    Background,
-    SignatureSpell,
-}
 
 /// One undoable mutation, carrying what its inverse needs. Quantity bursts
 /// coalesce through the debounce: one burst, one entry.
@@ -61,18 +51,100 @@ pub(crate) enum UndoAction {
     /// not a `deck_card` row; undo rebuilds the profile request with the old
     /// printing id and restores the slot's pinned card signal.
     CommandZonePrintingChanged {
-        slot: CommandZoneSlot,
+        slot: Slot,
         old_card: Card,
         new_id: Uuid,
     },
 }
 
-/// The `board` field of a create request that puts a card back on `board`:
-/// `None` for the main deck, the server's default.
-pub(crate) fn create_board_field(board: Board) -> Option<String> {
-    match board {
-        Board::Deck => None,
-        other => Some(other.display_name().to_string()),
+impl From<UndoAction> for zwipe_ui::stores::undo::UndoAction {
+    fn from(action: UndoAction) -> Self {
+        match action {
+            UndoAction::Added { card_id, card_name } => Self::Added { card_id, card_name },
+            UndoAction::Removed { entry, baseline } => Self::Removed {
+                entry: Box::new(entry),
+                baseline,
+            },
+            UndoAction::QuantityChanged {
+                card_id,
+                card_name,
+                net,
+                baseline,
+            } => Self::QuantityChanged {
+                card_id,
+                card_name,
+                net,
+                baseline,
+            },
+            UndoAction::MovedBoard {
+                card_id,
+                card_name,
+                from,
+            } => Self::MovedBoard {
+                card_id,
+                card_name,
+                from,
+            },
+            UndoAction::PrintingChanged { old_card, new_id } => Self::PrintingChanged {
+                old_card: Box::new(old_card),
+                new_id,
+            },
+            UndoAction::CommandZonePrintingChanged {
+                slot,
+                old_card,
+                new_id,
+            } => Self::CommandZonePrintingChanged {
+                slot,
+                old_card: Box::new(old_card),
+                new_id,
+            },
+        }
+    }
+}
+
+impl From<zwipe_ui::stores::undo::UndoAction> for UndoAction {
+    fn from(action: zwipe_ui::stores::undo::UndoAction) -> Self {
+        use zwipe_ui::stores::undo::UndoAction as Shared;
+        match action {
+            Shared::Added { card_id, card_name } => Self::Added { card_id, card_name },
+            Shared::Removed { entry, baseline } => Self::Removed {
+                entry: *entry,
+                baseline,
+            },
+            Shared::QuantityChanged {
+                card_id,
+                card_name,
+                net,
+                baseline,
+            } => Self::QuantityChanged {
+                card_id,
+                card_name,
+                net,
+                baseline,
+            },
+            Shared::MovedBoard {
+                card_id,
+                card_name,
+                from,
+            } => Self::MovedBoard {
+                card_id,
+                card_name,
+                from,
+            },
+            Shared::PrintingChanged { old_card, new_id } => Self::PrintingChanged {
+                old_card: *old_card,
+                new_id,
+            },
+            Shared::CommandZonePrintingChanged {
+                slot,
+                old_card,
+                new_id,
+            } => Self::CommandZonePrintingChanged {
+                slot,
+                old_card: *old_card,
+                new_id,
+            },
+        }
     }
 }
 

@@ -5,6 +5,7 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use zwipe_core::http::contracts::auth::HttpDeleteUser;
 
+use crate::domain::auth::ports::AuthService;
 use crate::domain::auth::requests::delete_user::{DeleteUser, DeleteUserError, InvalidDeleteUser};
 use crate::inbound::http::middleware::AuthenticatedUser;
 use crate::inbound::http::{ApiError, AppState, To500};

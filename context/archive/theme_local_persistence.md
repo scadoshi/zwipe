@@ -78,7 +78,7 @@ Storage stays **per-app** (like session, which lives only in zwiper): zwiper's n
 
 ## Coordination with the otags frontend work (checked 2026-07-11)
 
-All six target files (`session.rs`, `outbound/mod.rs`, `session_upkeep.rs`, `bin/zwipe.rs`, `zite/src/main.rs`, `theme.rs`) are **currently clean** — the otags agent's footprint (`screens/deck/**`, `zwipe-components/{lib,card_row, *_chips}.rs`, `components.css`, card/deck domain + contracts) is disjoint from every file here. The one co-owned file across all theme+persistence work is `zwipe-components/src/changelog.rs` (both append to the 1.6.0 `entries` array) — trivial additive conflicts only; keep edits on distinct lines.
+All six target files (`session.rs`, `outbound/mod.rs`, `session_upkeep.rs`, `bin/zwiper.rs`, `zite/src/main.rs`, `theme.rs`) are **currently clean** — the otags agent's footprint (`screens/deck/**`, `zwipe-components/{lib,card_row, *_chips}.rs`, `components.css`, card/deck domain + contracts) is disjoint from every file here. The one co-owned file across all theme+persistence work is `zwipe-components/src/changelog.rs` (both append to the 1.6.0 `entries` array) — trivial additive conflicts only; keep edits on distinct lines.
 
 Operational: the zwiper crate does not compile while the otags agent has `card_info.rs` mid-edit, so **end-to-end verify of the zwiper persistence piece is gated on their crate compiling** (the zite piece verifies independently). Do not run crate-wide fmt or tree-wide git ops on zwiper meanwhile; scope fmt to the touched files.
 

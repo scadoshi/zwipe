@@ -17942,6 +17942,52 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
         "typal-tribble",
         "Cares about or supports Tribble creatures.",
     ),
+    (
+        "repeatable-land-tokens",
+        "Creates land tokens over and over rather than just once.",
+    ),
+    (
+        "cycle-trk-u-saga",
+        "A Star Trek Saga whose three chapters each do something different.",
+    ),
+    (
+        "cycle-trk-anomaly",
+        "A colorless land you sacrifice for a one-color effect and a Planet land token.",
+    ),
+    (
+        "cycle-trk-test",
+        "A Star Trek Test spell that has you choose one of two modes.",
+    ),
+    (
+        "repeatable-dilemma",
+        "Lets you choose among several modes again and again, each turn or activation.",
+    ),
+    (
+        "commander-lord",
+        "Makes the commanders you control stronger or harder to remove.",
+    ),
+    (
+        "tutor-land-planet",
+        "Searches your library for a basic land or Planet card.",
+    ),
+    (
+        "gives-beam-me-up",
+        "Lets you cast instants and sorceries from your graveyard by returning a creature to hand.",
+    ),
+    ("typal-vulcan", "Cares about Vulcan creatures."),
+    ("typal-scientist", "Cares about Scientist creatures."),
+    (
+        "typal-non-faerie",
+        "Cares about your creatures that aren't Faeries.",
+    ),
+    (
+        "tutor-creature-whale",
+        "Searches your library for a Whale card.",
+    ),
+    (
+        "nanni",
+        "Lets you play the top card of an opponent's library, spending mana as any color.",
+    ),
 ];
 
 /// Flatten [`ORACLE_TAG_DESCRIPTIONS`] into parallel `(slug, description)` arrays

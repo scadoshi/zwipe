@@ -2,7 +2,7 @@
 //! via the [Resend](https://resend.com) HTTP API.
 
 use crate::domain::email::models::{SendEmail, SendEmailError};
-use crate::domain::email::ports::EmailSender;
+use crate::domain::email::ports::{EmailSender, SendEmailFuture};
 
 /// Resend HTTP API adapter.
 ///
@@ -32,7 +32,14 @@ impl Resend {
 }
 
 impl EmailSender for Resend {
-    async fn send_email(&self, email: SendEmail) -> Result<(), SendEmailError> {
+    fn send_email(&self, email: SendEmail) -> SendEmailFuture<'_> {
+        Box::pin(self.send(email))
+    }
+}
+
+impl Resend {
+    /// Posts one email to the Resend API.
+    async fn send(&self, email: SendEmail) -> Result<(), SendEmailError> {
         let body = serde_json::json!({
             "from": self.from_email,
             "to": [email.to],

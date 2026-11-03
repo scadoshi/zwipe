@@ -1,15 +1,23 @@
 //! User login screen.
 
-use components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL, TextInput, ThemeConfig};
+use components::{
+    ActionBar, Button, ButtonVariant, TOAST_NORMAL, TextInput, ThemeConfig, ToastOptions, Toasts,
+    use_toast,
+};
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
+use dioxus::router::Navigator;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::user::preferences::PipStyle;
+use zwipe_core::domain::user::preferences::PipColor;
 use zwipe_core::http::contracts::auth::HttpAuthenticateUser;
+use zwipe_ui::account::Password;
+use zwipe_ui::screens::login::{
+    self, Action, CREATE_PROFILE, Destination, Effect, FORGOT_PASSWORD, Field, State,
+};
 
 use crate::inbound::components::home_hero::HomeHero;
 use crate::inbound::components::screen_header::ScreenHeader;
+use crate::inbound::components::ui_toast;
 use crate::inbound::router::Router;
 use crate::outbound::app_icon;
 use crate::outbound::session::Persist;
@@ -19,124 +27,150 @@ use crate::outbound::session::Persist;
 #[derive(Debug, Clone, Copy)]
 pub struct LoginPrefill(pub Signal<Option<String>>);
 
-/// What a tap on Log in does.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum SubmitGate {
-    /// A request is already out: ignore the tap.
-    Busy,
-    /// Nothing to send: tell the user.
-    MissingInputs,
-    /// Send the request.
-    Send,
+/// Login's model with the handles that perform its effects. Copy, so every
+/// handler and task holds its own.
+#[derive(Clone, Copy)]
+struct Driver {
+    model: Signal<State>,
+    identifier: Signal<String>,
+    password: Signal<String>,
+    navigator: Navigator,
+    toast: Toasts,
+    client: Signal<ZwipeClient>,
+    session: Signal<Option<Session>>,
+    pip_style: Signal<PipColor>,
+    theme: Signal<ThemeConfig>,
 }
 
-/// Decides a Log in tap from the loading flag and the form.
-fn submit_gate(is_loading: bool, inputs_are_present: bool) -> SubmitGate {
-    if is_loading {
-        SubmitGate::Busy
-    } else if inputs_are_present {
-        SubmitGate::Send
-    } else {
-        SubmitGate::MissingInputs
+impl Driver {
+    /// Applies `action` to the model and performs what it returns.
+    fn dispatch(self, action: Action) {
+        let mut model = self.model;
+        let effects = model.write().update(action);
+        for effect in effects {
+            self.perform(effect);
+        }
+    }
+
+    fn perform(self, effect: Effect) {
+        let Self {
+            mut identifier,
+            mut password,
+            mut session,
+            mut pip_style,
+            mut theme,
+            ..
+        } = self;
+        match effect {
+            Effect::SignIn {
+                ticket,
+                identifier,
+                password,
+            } => {
+                let request = HttpAuthenticateUser::new(&identifier, password.read());
+                spawn(async move {
+                    let client = self.client.peek().clone();
+                    let reply = match client.authenticate_user(request).await {
+                        Ok(new_session) => Action::LoggedIn {
+                            ticket,
+                            session: Box::new(new_session),
+                        },
+                        Err(e) => {
+                            tracing::warn!("login failed: {e}");
+                            self.toast.error(
+                                e.to_user_message(),
+                                ToastOptions::default().duration(TOAST_NORMAL),
+                            );
+                            Action::Failed { ticket }
+                        }
+                    };
+                    self.dispatch(reply);
+                });
+            }
+            Effect::SetIdentifier(value) => identifier.set(value),
+            Effect::ClearPassword => password.set(String::new()),
+            Effect::SignedIn(new_session) => {
+                new_session.infallible_save();
+                let picked = components::theme_from_preferences(&new_session.preferences);
+                app_icon::follow(&picked);
+                theme.set(picked);
+                pip_style.set(new_session.preferences.pip_style);
+                session.set(Some(*new_session));
+            }
+            Effect::Navigate(to) => {
+                self.navigator.push(route(to));
+            }
+            Effect::Toast(toast) => ui_toast::raise(self.toast, toast),
+        }
+    }
+}
+
+/// The app's route for each place Login leads.
+fn route(destination: Destination) -> Router {
+    match destination {
+        Destination::Home => Router::Home {},
+        Destination::Register => Router::Register {},
+        Destination::ForgotPassword => Router::ForgotPassword {},
     }
 }
 
 /// Login form screen for user authentication.
 #[component]
 pub fn Login() -> Element {
-    let navigator = use_navigator();
+    let driver = Driver {
+        model: use_signal(State::new),
+        identifier: use_signal(String::new),
+        password: use_signal(String::new),
+        navigator: use_navigator(),
+        toast: use_toast(),
+        client: use_context(),
+        session: use_context(),
+        pip_style: use_context(),
+        theme: use_context(),
+    };
 
-    let mut session: Signal<Option<Session>> = use_context();
-    let auth_client: Signal<ZwipeClient> = use_context();
-    let mut pip_style: Signal<PipStyle> = use_context();
-    let mut theme: Signal<ThemeConfig> = use_context();
-
-    let mut username_or_email = use_signal(String::new);
-    let mut password = use_signal(String::new);
+    use_effect(move || {
+        let value = (driver.identifier)();
+        driver.dispatch(Action::EditIdentifier(value));
+    });
+    use_effect(move || {
+        let value = (driver.password)();
+        driver.dispatch(Action::EditPassword(Password::new(value)));
+    });
 
     // Takes the prefill whenever it is set, including while this screen sits
     // mounted under Register.
     let LoginPrefill(mut prefill) = use_context();
     use_effect(move || {
         if let Some(identifier) = prefill() {
-            username_or_email.set(identifier);
-            password.set(String::new());
+            driver.dispatch(Action::Prefill(identifier));
             prefill.set(None);
         }
     });
 
-    let mut is_loading = use_signal(|| false);
-    let toast = use_toast();
-
-    // Login deliberately does NOT apply registration policy to what's typed.
-    // Those rules can tighten, and an account whose password or username predates
-    // a change would be rejected here and never reach the server to be told why,
-    // locking out a user whose credentials are perfectly correct. The server is
-    // the only authority on whether credentials are valid; all we check is that
-    // there is something to send.
-    let inputs_are_present =
-        move || !username_or_email().trim().is_empty() && !password().is_empty();
-
-    let mut attempt_submit = move || {
-        match submit_gate(*is_loading.peek(), inputs_are_present()) {
-            SubmitGate::Busy => return,
-            SubmitGate::MissingInputs => {
-                toast.error(
-                    "Enter your username or email and password".to_string(),
-                    ToastOptions::default().duration(TOAST_NORMAL),
-                );
-                return;
-            }
-            SubmitGate::Send => {}
-        }
-        is_loading.set(true);
-        let request = HttpAuthenticateUser::new(&username_or_email(), &password());
-        spawn(async move {
-            match auth_client().authenticate_user(request).await {
-                Ok(new_session) => {
-                    new_session.infallible_save();
-                    // Apply theme from preferences
-                    let picked = components::theme_from_preferences(&new_session.preferences);
-                    app_icon::follow(&picked);
-                    theme.set(picked);
-                    pip_style.set(new_session.preferences.pip_style);
-                    session.set(Some(new_session));
-                    // The password has done its job; the signal outlives the
-                    // screen in the router cache.
-                    password.set(String::new());
-                    is_loading.set(false);
-                    navigator.push(Router::Home {});
-                }
-                Err(e) => {
-                    tracing::warn!("login failed: {e}");
-                    toast.error(
-                        e.to_user_message(),
-                        ToastOptions::default().duration(TOAST_NORMAL),
-                    );
-                    is_loading.set(false);
-                }
-            }
-        });
-    };
+    let model = driver.model.read();
+    let is_loading = model.is_loading();
+    let submit_label = model.submit_label();
+    drop(model);
 
     rsx! {
         div { class: "screen",
-            ScreenHeader { title: "Login" }
+            ScreenHeader { title: login::TITLE }
             div { class: "screen-content centered content-enter",
             HomeHero {}
             div { class : "container-sm text-center",
                 form { class: "flex-col",
                     TextInput {
-                        value: username_or_email,
+                        value: driver.identifier,
                         id: "identity",
-                        label: "Username or email",
-                        placeholder: "Username or email",
+                        label: Field::Identifier.label(),
+                        placeholder: Field::Identifier.placeholder(),
                     }
                     TextInput {
-                        value: password,
+                        value: driver.password,
                         id: "password",
-                        label: "Password",
-                        placeholder: "Password",
+                        label: Field::Password.label(),
+                        placeholder: Field::Password.placeholder(),
                         input_type: "password",
                     }
                 }
@@ -145,23 +179,21 @@ pub fn Login() -> Element {
         ActionBar {
             Button {
                 variant: ButtonVariant::Action,
-                disabled: is_loading(),
-                onclick: move |_| attempt_submit(),
-                if is_loading() { "Logging in..." } else { "Log in" }
+                disabled: is_loading,
+                onclick: move |_| driver.dispatch(Action::Submit),
+                {submit_label}
             },
             Button {
                 variant: ButtonVariant::Action,
-                disabled: is_loading(),
-                onclick: move |_| {
-                navigator.push(Router::Register {});
-                },
-                "Create profile"
+                disabled: is_loading,
+                onclick: move |_| driver.dispatch(Action::CreateProfile),
+                {CREATE_PROFILE}
             }
             Button {
                 variant: ButtonVariant::Action,
-                disabled: is_loading(),
-                onclick: move |_| { navigator.push(Router::ForgotPassword {}); },
-                "Forgot password"
+                disabled: is_loading,
+                onclick: move |_| driver.dispatch(Action::ForgotPassword),
+                {FORGOT_PASSWORD}
             }
         }
     }
@@ -173,14 +205,12 @@ mod tests {
     use super::*;
 
     #[test]
-    fn a_tap_while_logging_in_sends_nothing() {
-        assert_eq!(submit_gate(true, true), SubmitGate::Busy);
-        assert_eq!(submit_gate(true, false), SubmitGate::Busy);
-    }
-
-    #[test]
-    fn an_idle_tap_checks_the_form() {
-        assert_eq!(submit_gate(false, true), SubmitGate::Send);
-        assert_eq!(submit_gate(false, false), SubmitGate::MissingInputs);
+    fn each_destination_has_its_route() {
+        assert_eq!(route(Destination::Home), Router::Home {});
+        assert_eq!(route(Destination::Register), Router::Register {});
+        assert_eq!(
+            route(Destination::ForgotPassword),
+            Router::ForgotPassword {}
+        );
     }
 }

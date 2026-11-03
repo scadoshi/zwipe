@@ -11,11 +11,13 @@ use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::oracle_tag::{self, OracleTag};
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
+use zwipe_ui::filter::fields::MatchGroup;
+use zwipe_ui::filter::picker::PickerField;
 
 use super::match_mode::MatchMode;
 use crate::inbound::components::catalog_cache::CatalogCache;
 
-pub(super) fn read_selected(fb: &CardQueryBuilder, mode: MatchMode) -> Vec<String> {
+fn read_selected(fb: &CardQueryBuilder, mode: MatchMode) -> Vec<String> {
     match mode {
         MatchMode::Any => fb
             .oracle_tags_contains_any()
@@ -28,7 +30,7 @@ pub(super) fn read_selected(fb: &CardQueryBuilder, mode: MatchMode) -> Vec<Strin
     }
 }
 
-pub(super) fn write_selected(fb: &mut CardQueryBuilder, mode: MatchMode, values: Vec<String>) {
+fn write_selected(fb: &mut CardQueryBuilder, mode: MatchMode, values: Vec<String>) {
     fb.unset_oracle_tags_contains_any();
     fb.unset_oracle_tags_contains_all();
     if !values.is_empty() {
@@ -43,13 +45,13 @@ pub(super) fn write_selected(fb: &mut CardQueryBuilder, mode: MatchMode, values:
     }
 }
 
-pub(super) fn read_excluded(fb: &CardQueryBuilder) -> Vec<String> {
+fn read_excluded(fb: &CardQueryBuilder) -> Vec<String> {
     fb.oracle_tags_excludes()
         .map(<[_]>::to_vec)
         .unwrap_or_default()
 }
 
-pub(super) fn write_excluded(fb: &mut CardQueryBuilder, values: Vec<String>) {
+fn write_excluded(fb: &mut CardQueryBuilder, values: Vec<String>) {
     if values.is_empty() {
         fb.unset_oracle_tags_excludes();
     } else {
@@ -62,10 +64,10 @@ pub(super) fn write_excluded(fb: &mut CardQueryBuilder, values: Vec<String>) {
 ///
 /// The dictionary overlay is owned by the parent filter sheet (rendered outside the
 /// sheet's `transform`, which would otherwise trap its `position: fixed`). The
-/// include/exclude "Dictionary" buttons here just open it, recording via
-/// `dict_exclude` which list its Use button should feed.
+/// include/exclude "Dictionary" buttons here just open it through
+/// `on_dictionary`, naming the list its Use button should feed.
 #[component]
-pub(crate) fn OracleTags(mut dict_open: Signal<bool>, mut dict_exclude: Signal<bool>) -> Element {
+pub(crate) fn OracleTags(on_dictionary: EventHandler<PickerField>) -> Element {
     let mut filter_builder: Signal<CardQueryBuilder> = use_context();
     let client: Signal<ZwipeClient> = use_context();
     let filter_reset: Signal<u32> = use_context();
@@ -108,10 +110,7 @@ pub(crate) fn OracleTags(mut dict_open: Signal<bool>, mut dict_exclude: Signal<b
                 label { class: "label-xs", r#for: "oracle-tags-search", "Oracle tags include" }
                 button {
                     class: "chip-xs",
-                    onclick: move |_| {
-                        dict_exclude.set(false);
-                        dict_open.set(true);
-                    },
+                    onclick: move |_| on_dictionary.call(PickerField::Include(MatchGroup::Tags)),
                     "Dictionary"
                 }
                 if !selected.is_empty() {
@@ -220,10 +219,7 @@ pub(crate) fn OracleTags(mut dict_open: Signal<bool>, mut dict_exclude: Signal<b
                 label { class: "label-xs", r#for: "oracle-tags-excludes-search", "Oracle tags exclude" }
                 button {
                     class: "chip-xs",
-                    onclick: move |_| {
-                        dict_exclude.set(true);
-                        dict_open.set(true);
-                    },
+                    onclick: move |_| on_dictionary.call(PickerField::Exclude(MatchGroup::Tags)),
                     "Dictionary"
                 }
                 if !excluded.is_empty() {

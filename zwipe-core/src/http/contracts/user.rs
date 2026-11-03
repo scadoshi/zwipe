@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::domain::user::preferences::PipStyle;
+use crate::domain::user::preferences::PipColor;
 
 /// HTTP request body for updating preferences.
 ///
@@ -24,7 +24,7 @@ pub struct HttpUpdatePreferences {
     /// Pip style, or absent to leave unchanged. serde defaults keep payloads
     /// from clients that predate the field.
     #[serde(default)]
-    pub pip_style: Option<PipStyle>,
+    pub pip_style: Option<PipColor>,
 }
 
 /// HTTP request body for marking a one-time UI hint as shown.

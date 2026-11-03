@@ -236,7 +236,7 @@ impl HintTopic {
                     text(" draws mana symbols in your theme's colors"),
                 ]),
                 bullet(vec![
-                    key("Natural"),
+                    key("Classic"),
                     text(" keeps Magic's classic colors on every theme"),
                 ]),
             ],

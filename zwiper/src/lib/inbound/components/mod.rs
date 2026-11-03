@@ -12,6 +12,8 @@ pub mod catalog_cache;
 pub mod concept_explainers;
 /// Generation counter that keeps a stale async reply from landing over a newer one.
 pub mod generation;
+/// The "See guide" action a hint dialog offers when zwipe.net has a guide for it.
+pub mod guide_link;
 /// One-time hint dialogs (per-account, tracked via `hints_shown`).
 pub mod hint_dialog;
 /// App-root receiver that renders on-demand "?" hint dialogs (sender/receiver).
@@ -40,5 +42,7 @@ pub mod telemetry;
     reason = "TriToggle's generated props derive PartialEq over its fn pointer props, which always hold the same fn items"
 )]
 pub mod tri_toggle;
+/// Raises zwipe-ui's toasts through the app's toaster.
+pub mod ui_toast;
 /// Blocking "Update required" screen (min-version gate).
 pub mod update_required;

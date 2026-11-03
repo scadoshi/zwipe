@@ -4,9 +4,9 @@
 
 use components::{
     BottomSheet, Button, ButtonVariant, THEME_GROUPS, TOAST_NORMAL, TOAST_QUICK, ThemeConfig,
+    ToastOptions, use_toast,
 };
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_core::domain::logo::Z;
 use zwipe_core::domain::user::preferences;
 

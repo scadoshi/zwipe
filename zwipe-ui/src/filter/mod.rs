@@ -1,5 +1,6 @@
 //! The card filter: the sheet's Apply decision, the Add screen's deck-context defaults, and the oracle tag dictionary's hand-off, ported from the app.
 
+pub mod chips;
 pub mod draft;
 pub mod fields;
 pub mod picker;

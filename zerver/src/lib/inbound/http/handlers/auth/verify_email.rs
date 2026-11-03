@@ -5,6 +5,7 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use zwipe_core::http::contracts::auth::HttpVerifyEmail;
 
+use crate::domain::auth::ports::AuthService;
 use crate::domain::auth::requests::verify_email::{VerifyEmail, VerifyEmailError};
 use crate::inbound::http::{ApiError, AppState, To500};
 

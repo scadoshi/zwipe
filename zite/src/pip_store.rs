@@ -4,30 +4,30 @@
 //!
 //! Storage exists only in the browser, so off wasm (the server build, the
 //! prerender) loading finds nothing and saving does nothing: the page renders
-//! [`PipStyle::Theme`] and the browser adopts the stored style after
+//! [`PipColor::Theme`] and the browser adopts the stored style after
 //! hydration. `index.html` reads the same key before first paint, so the
 //! classic pips show without a flash.
 
 use dioxus::prelude::*;
-use zwipe_core::domain::user::preferences::PipStyle;
+use zwipe_core::domain::user::preferences::PipColor;
 
 /// The `localStorage` key, beside the theme's `zwipe.theme`.
 pub(crate) const PIP_STYLE_KEY: &str = "zwipe.pips";
 
 #[cfg(target_arch = "wasm32")]
 mod imp {
-    use zwipe_core::domain::user::preferences::PipStyle;
+    use zwipe_core::domain::user::preferences::PipColor;
 
     fn storage() -> Option<web_sys::Storage> {
         web_sys::window()?.local_storage().ok().flatten()
     }
 
-    pub(super) fn load(key: &str) -> Option<PipStyle> {
+    pub(super) fn load(key: &str) -> Option<PipColor> {
         let raw = storage()?.get_item(key).ok().flatten()?;
         serde_json::from_str(&raw).ok()
     }
 
-    pub(super) fn save(key: &str, style: PipStyle) {
+    pub(super) fn save(key: &str, style: PipColor) {
         if let Some(storage) = storage()
             && let Ok(json) = serde_json::to_string(&style)
         {
@@ -38,13 +38,13 @@ mod imp {
 
 #[cfg(not(target_arch = "wasm32"))]
 mod imp {
-    use zwipe_core::domain::user::preferences::PipStyle;
+    use zwipe_core::domain::user::preferences::PipColor;
 
-    pub(super) fn load(_key: &str) -> Option<PipStyle> {
+    pub(super) fn load(_key: &str) -> Option<PipColor> {
         None
     }
 
-    pub(super) fn save(_key: &str, _style: PipStyle) {}
+    pub(super) fn save(_key: &str, _style: PipColor) {}
 }
 
 /// The site's pip style, stored as JSON under [`PIP_STYLE_KEY`].
@@ -53,8 +53,8 @@ mod imp {
 /// prerendered page, then adopts the stored style just after mount; every
 /// change after that is saved. Changes before the stored style is read are
 /// not saved, so the default never overwrites it.
-pub(crate) fn use_persisted_pip_style() -> Signal<PipStyle> {
-    let mut style = use_signal(PipStyle::default);
+pub(crate) fn use_persisted_pip_style() -> Signal<PipColor> {
+    let mut style = use_signal(PipColor::default);
     let mut loaded = use_signal(|| false);
 
     use_effect(move || {

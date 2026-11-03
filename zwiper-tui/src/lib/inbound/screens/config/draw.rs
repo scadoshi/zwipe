@@ -7,7 +7,7 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::Paragraph;
 use zwipe_core::domain::card::scryfall_data::universe;
 use zwipe_core::domain::user::preferences;
-use zwipe_core::domain::user::preferences::PipStyle;
+use zwipe_core::domain::user::preferences::PipColor;
 
 use super::{ConfigView, ExceptionsSheet, Sheet, Stop, ThemeSheet};
 use crate::domain::theme::{self, Palette, PickerRow};
@@ -108,8 +108,8 @@ fn lines(palette: &Palette, view: &ConfigView, width: usize) -> Vec<Line<'static
         "☀ Light"
     };
     let pips = match shown.pip_style {
-        PipStyle::Theme => "Theme",
-        PipStyle::Natural => "Natural",
+        PipColor::Theme => "Theme",
+        PipColor::Classic => "Classic",
     };
     let hidden = shown.exclude_universes_beyond;
     let mut exceptions = row(

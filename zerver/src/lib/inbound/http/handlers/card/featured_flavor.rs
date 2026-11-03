@@ -15,6 +15,7 @@ use axum::http::{StatusCode, header};
 use chrono::Timelike;
 use zwipe_core::domain::card::Card;
 
+use crate::domain::card::ports::CardService;
 use crate::domain::card::requests::get_card::GetCardError;
 use crate::inbound::http::{ApiError, AppState};
 

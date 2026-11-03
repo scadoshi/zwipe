@@ -2,7 +2,7 @@
 
 use crossterm::event::KeyCode;
 use zwipe_core::domain::user::hints::{HINT_CONFIG, HINT_UNIVERSES_BEYOND_EXCEPTIONS};
-use zwipe_core::domain::user::preferences::PipStyle;
+use zwipe_core::domain::user::preferences::PipColor;
 
 use super::{
     ConfigView, ExceptionsSheet, PreferenceChange, Request, Sheet, Stop, ThemeSheet, same_set,
@@ -69,8 +69,8 @@ fn activate(view: &mut ConfigView, cx: &mut Context<'_>) {
             dark_mode: !shown.dark_mode,
         },
         Stop::Pips => PreferenceChange::Pips(match shown.pip_style {
-            PipStyle::Theme => PipStyle::Natural,
-            PipStyle::Natural => PipStyle::Theme,
+            PipColor::Theme => PipColor::Classic,
+            PipColor::Classic => PipColor::Theme,
         }),
         Stop::UniversesBeyond => {
             PreferenceChange::HideUniversesBeyond(!shown.exclude_universes_beyond)

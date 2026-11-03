@@ -11,6 +11,7 @@ use zwipe_core::domain::deck::requests::update_deck_profile::{
 use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
 
 use crate::domain::deck::models::deck::update_deck_profile::UpdateDeckProfileError;
+use crate::domain::deck::ports::DeckService;
 use crate::inbound::http::handlers::deck_card::patch_deck_card;
 use crate::inbound::http::handlers::metrics::check_completion;
 use crate::inbound::http::middleware::AuthenticatedUser;

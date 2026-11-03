@@ -5,6 +5,7 @@ use axum::http::StatusCode;
 use zwipe_core::domain::deck::requests::delete_deck::{DeleteDeck, InvalidDeleteDeck};
 
 use crate::domain::deck::models::deck::delete_deck::DeleteDeckError;
+use crate::domain::deck::ports::DeckService;
 use crate::inbound::http::middleware::AuthenticatedUser;
 use crate::inbound::http::{ApiError, AppState, To500};
 

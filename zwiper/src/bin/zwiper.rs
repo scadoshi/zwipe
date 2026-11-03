@@ -4,7 +4,7 @@ use components::{DialogHostView, ThemeConfig, ToastStack, use_dialog_host};
 use dioxus::prelude::*;
 use tracing_subscriber::EnvFilter;
 use zwipe_core::domain::logo;
-use zwipe_core::domain::user::preferences::PipStyle;
+use zwipe_core::domain::user::preferences::PipColor;
 use zwiper::config::Config;
 use zwiper::inbound::components::auth::session_upkeep;
 use zwiper::inbound::components::hint_host::HintHost;
@@ -78,7 +78,7 @@ fn ThemeWrapper(children: Element) -> Element {
     // discarded pick.
     use_context_provider(|| follow);
     let class = follow.shown.read().css_class();
-    let pips = components::pip_style_class(use_context::<Signal<PipStyle>>()());
+    let pips = components::pip_color_class(use_context::<Signal<PipColor>>()());
     rsx! {
         div { class: "app-shell {class} {pips}",
             // In place from the start; the splash is what rains.
@@ -98,6 +98,8 @@ fn App() -> Element {
     // Not in main(): UIApplication does not exist until the app has launched,
     // so calling this earlier would silently do nothing.
     use_hook(zwiper::outbound::shake_to_edit::disable);
+    // Unclaimed link clicks open in the in-app browser, not Safari.
+    components::use_in_app_links();
 
     let upgrade_required = session_upkeep::spawn_upkeeper();
     let dialogs = use_dialog_host();

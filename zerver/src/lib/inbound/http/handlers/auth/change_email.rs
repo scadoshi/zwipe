@@ -6,10 +6,12 @@ use axum::http::StatusCode;
 use zwipe_core::domain::user::User;
 use zwipe_core::http::contracts::auth::HttpChangeEmail;
 
+use crate::domain::auth::ports::AuthService;
 use crate::domain::auth::requests::change_email::{
     ChangeEmail, ChangeEmailError, InvalidChangeEmail,
 };
 use crate::domain::metrics::models::kinds::AuditAction;
+use crate::domain::metrics::ports::MetricsService;
 use crate::inbound::http::middleware::AuthenticatedUser;
 use crate::inbound::http::{ApiError, AppState, To500};
 
@@ -17,6 +19,9 @@ impl From<ChangeEmailError> for ApiError {
     fn from(value: ChangeEmailError) -> Self {
         match value {
             ChangeEmailError::UserNotFound => Self::NotFound("user not found".to_string()),
+            ChangeEmailError::Unchanged => Self::UnprocessableEntity(
+                "new email must be different from your current email".to_string(),
+            ),
             ChangeEmailError::Database(e) | ChangeEmailError::UserFromDb(e) => e.to_500(),
             ChangeEmailError::AuthenticateUserError(e) => ApiError::from(e),
         }

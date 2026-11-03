@@ -13,6 +13,7 @@ use axum::extract::State;
 use reqwest::StatusCode;
 use zwipe_core::domain::card::keyword;
 
+use crate::domain::card::ports::CardService;
 use crate::inbound::http::{ApiError, AppState};
 
 /// Returns every distinct keyword name mapped to its reminder text.

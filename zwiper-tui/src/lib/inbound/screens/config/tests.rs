@@ -1,6 +1,6 @@
 use crossterm::event::KeyCode;
 use zwipe_core::domain::user::hints::{HINT_CONFIG, HINT_UNIVERSES_BEYOND_EXCEPTIONS};
-use zwipe_core::domain::user::preferences::PipStyle;
+use zwipe_core::domain::user::preferences::PipColor;
 
 use super::*;
 use crate::inbound::event_loop::harness::Harness;
@@ -109,14 +109,14 @@ fn a_toggle_shows_at_once_and_toasts_the_servers_answer() {
     let mut harness = on_config();
     focus(&mut harness, Stop::Pips);
     harness.press(KeyCode::Enter);
-    assert_eq!(view(&harness).shown.pip_style, PipStyle::Natural);
+    assert_eq!(view(&harness).shown.pip_style, PipColor::Classic);
     let Some(screens::Request::Config(Request::Save { seq, change, .. })) =
         harness.pending().first().cloned()
     else {
         panic!("no save");
     };
     let saved = UserPreferences {
-        pip_style: PipStyle::Natural,
+        pip_style: PipColor::Classic,
         ..UserPreferences::default()
     };
     harness.apply(Update::Saved {
@@ -126,7 +126,7 @@ fn a_toggle_shows_at_once_and_toasts_the_servers_answer() {
     });
     assert_eq!(
         last_toast(&harness).as_deref(),
-        Some("Pips in natural colors")
+        Some("Pips in classic colors")
     );
 }
 

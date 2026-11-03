@@ -34,14 +34,14 @@ BACKEND_URL=https://api.zwipe.net dx build --release --platform ios --device "sc
 
 Verify:
 ```bash
-ls ~/Developer/zwipe/target/dx/zwipe/release/ios/
-# Should contain Zwipe.app
+ls ~/Developer/zwipe/target/dx/zwiper/release/ios/
+# Should contain Zwiper.app
 ```
 
 ### Verify the binary targets iOS
 
 ```bash
-vtool -show ~/Developer/zwipe/target/dx/zwipe/release/ios/Zwipe.app/zwipe
+vtool -show ~/Developer/zwipe/target/dx/zwiper/release/ios/Zwiper.app/zwiper
 # Look for: LC_VERSION_MIN_IPHONEOS
 # See troubleshooting.md if it shows MACOS
 ```
@@ -53,7 +53,7 @@ vtool -show ~/Developer/zwipe/target/dx/zwipe/release/ios/Zwipe.app/zwipe
 ```bash
 # 1. Embed the App Store provisioning profile
 cp ~/certs/Zwipe_App_Store.mobileprovision \
-   ~/Developer/zwipe/target/dx/zwipe/release/ios/Zwipe.app/embedded.mobileprovision
+   ~/Developer/zwipe/target/dx/zwiper/release/ios/Zwiper.app/embedded.mobileprovision
 
 # 2. Get your signing identity
 security find-identity -v -p codesigning
@@ -62,7 +62,7 @@ security find-identity -v -p codesigning
 # 3. Re-sign with release entitlements
 codesign --force --sign "<HASH-OR-NAME>" \
   --entitlements ~/Developer/zwipe/zwiper/Entitlements-Release.plist \
-  ~/Developer/zwipe/target/dx/zwipe/release/ios/Zwipe.app
+  ~/Developer/zwipe/target/dx/zwiper/release/ios/Zwiper.app
 # Should print: "replacing existing signature"
 ```
 
@@ -73,7 +73,7 @@ codesign --force --sign "<HASH-OR-NAME>" \
 ```bash
 cd ~/Developer/zwipe
 mkdir -p Payload
-cp -r target/dx/zwipe/release/ios/Zwipe.app Payload/
+cp -r target/dx/zwiper/release/ios/Zwiper.app Payload/
 zip -r Zwipe.ipa Payload
 rm -rf Payload
 # Zwipe.ipa is now in ~/Developer/zwipe/

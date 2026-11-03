@@ -16,11 +16,23 @@ path = "src/lib.rs"
 dioxus = { version = "0.7.9" }
 uuid.workspace = true
 zwipe-core = { path = "../zwipe-core" }
+# The screen logic the clients share: the color map's model, the chart bars
+# and the changelog's filing, which this crate draws.
+zwipe-ui = { path = "../zwipe-ui" }
 # The generic UI kit: themes, panels, nav, charts and the entrance effects.
-# Everything here that is not Magic is a re-export of it. The workspace
-# Cargo.lock pins the commit; `cargo update -p orangui` moves it.
+# Everything here that is not Magic is a re-export of it, pinned to a
+# commit, on the same source as zwipe-ui's orangui-core so Cargo.lock holds
+# one copy.
 orangui = { git = "https://github.com/scadoshi/orangui", branch = "main" }
 
 [features]
 # ToastStack and TOAST_CSS, for the apps.
 toast = ["orangui/toast"]
+# open_url and use_in_app_links, for the apps: links open in the in-app browser.
+links = ["orangui/links"]
+
+[dev-dependencies]
+# Renders components to HTML in the golden test.
+dioxus-ssr = "0.7"
+# Builds card fixtures for the golden test.
+serde_json = { workspace = true }

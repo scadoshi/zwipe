@@ -1,161 +1,62 @@
 //! Change username bottom sheet.
 
-use components::{BottomSheet, Button, ButtonVariant, TOAST_QUICK, TextInput};
+use components::{BottomSheet, Button, ButtonVariant, TextInput};
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
-use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::user::username::Username;
-use zwipe_core::http::contracts::auth::HttpChangeUsername;
+use zwipe_ui::screens::account::{Action, BACK, Field, Sheet};
 
-use crate::inbound::components::auth::authed::use_authed;
-use crate::inbound::components::telemetry::vocabulary::{ProfileScreen, Screen};
+use super::driver::{Driver, use_field_sync};
 
 /// Bottom sheet for updating the user's username.
 #[component]
 pub fn ChangeUsernameSheet(mut open: Signal<bool>) -> Element {
-    let mut session: Signal<Option<Session>> = use_context();
-    let authed = use_authed(Screen::Profile(ProfileScreen::ChangeUsername));
+    let driver: Driver = use_context();
+    let sheet = Sheet::Username;
+    use_field_sync(&driver, sheet, Field::NewUsername);
+    use_field_sync(&driver, sheet, Field::Password);
 
-    let mut new_username = use_signal(String::new);
-    let mut username_error: Signal<Option<String>> = use_signal(|| None);
-    let mut username_touched = use_signal(|| false);
-    let mut validate_username = move || {
-        if let Err(e) = Username::new(new_username()) {
-            username_error.set(Some(e.to_string()));
-        } else {
-            username_error.set(None);
-        }
-    };
-
-    let mut password = use_signal(String::new);
-    let mut password_error: Signal<Option<String>> = use_signal(|| None);
-    let mut password_touched = use_signal(|| false);
-    let mut validate_password = move || {
-        if password().is_empty() {
-            password_error.set(Some("Password is required".to_string()));
-        } else {
-            password_error.set(None);
-        }
-    };
-
-    let mut submit_attempted = use_signal(|| false);
-    let mut is_loading = use_signal(|| false);
-    let toast = use_toast();
-
-    let mut inputs_are_valid = move || {
-        validate_username();
-        validate_password();
-        username_error().is_none() && password_error().is_none()
-    };
-
-    let mut clear_inputs = move || {
-        new_username.set(String::new());
-        password.set(String::new());
-    };
-
-    // Reset the form each time the sheet opens so it never shows stale input.
-    use_effect(move || {
-        if open() {
-            clear_inputs();
-            username_error.set(None);
-            password_error.set(None);
-            username_touched.set(false);
-            password_touched.set(false);
-            submit_attempted.set(false);
-        }
-    });
-
-    let mut attempt_submit = move || {
-        submit_attempted.set(true);
-        if inputs_are_valid() {
-            tracing::info!("change username to {}", new_username());
-            let request = HttpChangeUsername::new(&new_username(), &password());
-            is_loading.set(true);
-            spawn(async move {
-                if let Some(updated_user) = authed
-                    .run("change_username", |c, s| async move {
-                        c.change_username(request, &s).await
-                    })
-                    .await
-                {
-                    let new_name = updated_user.username.clone();
-                    // Re-read rather than mutate the captured session: the
-                    // facade consumed it, and the signal holds the freshest
-                    // (possibly rotated) value anyway.
-                    let current = session.peek().clone();
-                    if let Some(mut current) = current {
-                        current.user.username = updated_user.username;
-                        session.set(Some(current));
-                    }
-                    toast.success(
-                        format!("Username changed to {new_name}"),
-                        ToastOptions::default().duration(TOAST_QUICK),
-                    );
-                    clear_inputs();
-                    submit_attempted.set(false);
-                    open.set(false);
-                }
-                is_loading.set(false);
-            });
-        }
-    };
-
-    use_effect(move || {
-        let value = new_username();
-        if !value.is_empty() && !username_touched() {
-            username_touched.set(true);
-        }
-        if username_touched() || submit_attempted() {
-            validate_username();
-        }
-    });
-
-    use_effect(move || {
-        let value = password();
-        if !value.is_empty() && !password_touched() {
-            password_touched.set(true);
-        }
-        if password_touched() || submit_attempted() {
-            validate_password();
-        }
-    });
+    let model = driver.model.read();
+    let is_loading = model.is_saving(sheet);
+    let save_label = model.save_label(sheet);
+    let username_error = model.error(sheet, Field::NewUsername);
+    let password_error = model.error(sheet, Field::Password);
+    drop(model);
 
     rsx! {
         BottomSheet {
             open,
-            title: "Change username".to_string(),
+            title: sheet.title().to_string(),
             footer: rsx! {
                 Button {
                     variant: ButtonVariant::Action,
-                    disabled: is_loading(),
+                    disabled: is_loading,
                     onclick: move |_| open.set(false),
-                    "Back"
+                    {BACK}
                 }
                 Button {
                     variant: ButtonVariant::Action,
-                    disabled: is_loading(),
-                    onclick: move |_| attempt_submit(),
-                    if is_loading() { "Saving..." } else { "Save changes" }
+                    disabled: is_loading,
+                    onclick: move |_| driver.dispatch(Action::Save(sheet)),
+                    {save_label}
                 }
             },
 
             div { class: "flex-col text-center",
 
                 TextInput {
-                    value: new_username,
+                    value: driver.inputs.get(sheet, Field::NewUsername),
                     id: "new_username",
-                    label: "New username",
-                    placeholder: "New username",
-                    error: username_error(),
+                    label: Field::NewUsername.label(),
+                    placeholder: Field::NewUsername.placeholder(),
+                    error: username_error,
                 }
 
                 TextInput {
-                    value: password,
+                    value: driver.inputs.get(sheet, Field::Password),
                     id: "password",
-                    label: "Password",
-                    placeholder: "Password",
+                    label: Field::Password.label(),
+                    placeholder: Field::Password.placeholder(),
                     input_type: "password",
-                    error: password_error(),
+                    error: password_error,
                 }
             }
         }

@@ -9,7 +9,7 @@ mod tests;
 
 use zwipe_core::domain::card::scryfall_data::universe::UbFranchiseView;
 use zwipe_core::domain::user::hints::HINT_CONFIG;
-use zwipe_core::domain::user::preferences::{PipStyle, UserPreferences};
+use zwipe_core::domain::user::preferences::{PipColor, UserPreferences};
 use zwipe_core::http::contracts::user::HttpUpdatePreferences;
 use zwipe_ui::generation::{Generation, Ticket};
 
@@ -36,7 +36,7 @@ pub(crate) enum PreferenceChange {
         theme: String,
         dark_mode: bool,
     },
-    Pips(PipStyle),
+    Pips(PipColor),
     HideUniversesBeyond(bool),
     Exceptions(Vec<String>),
 }
@@ -83,8 +83,8 @@ impl PreferenceChange {
             Self::DarkMode { .. } if saved.dark_mode => "Dark mode on",
             Self::DarkMode { .. } => "Dark mode off",
             Self::Pips(_) => match saved.pip_style {
-                PipStyle::Theme => "Pips in theme colors",
-                PipStyle::Natural => "Pips in natural colors",
+                PipColor::Theme => "Pips in theme colors",
+                PipColor::Classic => "Pips in classic colors",
             },
             Self::HideUniversesBeyond(_) if saved.exclude_universes_beyond => {
                 "Universes Beyond hidden"

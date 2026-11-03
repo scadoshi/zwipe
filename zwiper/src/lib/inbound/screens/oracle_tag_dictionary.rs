@@ -11,31 +11,74 @@
 //! picker and card filter read: one fetch of the ~4,500-row list per session.
 
 use components::{
-    ActionBar, Button, ButtonVariant, HintBullet, HintBullets, HintDialog, HintKey, TOAST_NORMAL,
-    use_overlay_back,
+    ActionBar, Button, ButtonVariant, HintBullet, HintBullets, HintDialog, HintKey, Toasts,
+    use_overlay_back, use_toast,
 };
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
-use zwipe_core::domain::card::oracle_tag::{self, OracleTag};
+use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::user::models::hints::HINT_ORACLE_TAG_DICTIONARY;
+use zwipe_ui::screens::oracle_tag_dictionary::{
+    self as model, Action, Body, Catalog, Destination, Effect, List, State,
+};
 
 use crate::inbound::components::catalog_cache::{CatalogCache, CatalogCell};
-use crate::inbound::components::hint_dialog::{HintColored, use_one_time_hint};
+use crate::inbound::components::hint_dialog::{self, HintColored};
 use crate::inbound::components::screen_header::ScreenHeader;
+use crate::inbound::components::{guide_link, ui_toast};
 use crate::inbound::screens::oracle_tag_examples::OracleTagExamples;
 
-/// Cap on how many rows a search renders, so a broad query can't mount thousands
-/// of DOM nodes. Matches are ranked (exact, then slug/label, then description)
-/// and alphabetical within tiers, so the shown set is deterministic.
-const SEARCH_RESULT_CAP: usize = 100;
+/// The dictionary's model with the handles that perform its effects. Copy,
+/// so every handler holds its own.
+#[derive(Clone, Copy)]
+struct Driver {
+    model: Signal<State>,
+    open: Signal<bool>,
+    on_use: EventHandler<String>,
+    cache: CatalogCache,
+    toast: Toasts,
+    session: Signal<Option<Session>>,
+    client: Signal<ZwipeClient>,
+    hint_open: Signal<bool>,
+    examples_open: Signal<bool>,
+    examples_slug: Signal<String>,
+}
 
-/// The letter bucket a slug falls under: its first character lowercased, or `#`
-/// for anything not starting with a letter (e.g. `40k-model`, `5c-...`).
-fn bucket_of(slug: &str) -> char {
-    match slug.chars().next() {
-        Some(c) if c.is_ascii_alphabetic() => c.to_ascii_lowercase(),
-        _ => '#',
+impl Driver {
+    /// Applies `action` to the model and performs what it returns.
+    fn dispatch(self, action: Action) {
+        let mut model = self.model;
+        let effects = model.write().update(action);
+        for effect in effects {
+            self.perform(effect);
+        }
+    }
+
+    /// Performs one effect.
+    fn perform(self, effect: Effect) {
+        match effect {
+            Effect::OfferHint(hint) => {
+                hint_dialog::open_and_record_hint(
+                    hint.key(),
+                    self.session,
+                    self.client,
+                    self.hint_open,
+                );
+            }
+            Effect::EnsureCatalog => self.cache.ensure_oracle_tags(self.client),
+            Effect::AdoptTag(slug) => self.on_use.call(slug),
+            Effect::Navigate(Destination::Previous) => {
+                let mut open = self.open;
+                open.set(false);
+            }
+            Effect::Navigate(Destination::Examples(slug)) => {
+                let (mut examples_slug, mut examples_open) =
+                    (self.examples_slug, self.examples_open);
+                examples_slug.set(slug);
+                examples_open.set(true);
+            }
+            Effect::Toast(toast) => ui_toast::raise(self.toast, toast),
+        }
     }
 }
 
@@ -43,122 +86,101 @@ fn bucket_of(slug: &str) -> char {
 /// in-place overlay (the host renders it while `open`); each row offers **Examples**
 /// (opens the example-cards browse, stacked on top) and **Use** (`on_use`, which the
 /// host wires to adopt the tag into the deck or filter without leaving the picker).
+///
+/// What the dictionary knows and does is `zwipe_ui::screens::oracle_tag_dictionary`;
+/// this draws its state and performs its effects.
 #[component]
-pub fn OracleTagDictionary(mut open: Signal<bool>, on_use: EventHandler<String>) -> Element {
+pub fn OracleTagDictionary(open: Signal<bool>, on_use: EventHandler<String>) -> Element {
     use_overlay_back(open);
-    let client: Signal<ZwipeClient> = use_context();
-    let cache: CatalogCache = use_context();
-    let toast = use_toast();
+    let driver = Driver {
+        model: use_signal(State::new),
+        open,
+        on_use,
+        cache: use_context(),
+        toast: use_toast(),
+        session: use_context(),
+        client: use_context(),
+        hint_open: use_signal(|| false),
+        // Nested example-cards browse, stacked above the dictionary. Owned here so
+        // the dictionary stays mounted underneath while examples are open.
+        examples_open: use_signal(|| false),
+        examples_slug: use_signal(String::new),
+    };
+    let (hint, examples_open, examples_slug) =
+        (driver.hint_open, driver.examples_open, driver.examples_slug);
 
-    let hint = use_one_time_hint(HINT_ORACLE_TAG_DICTIONARY);
-    let mut selected_letter = use_signal(|| 'a');
-    let mut query = use_signal(String::new);
+    // Offers the hint and warms or revalidates the shared oracle-tag catalog as
+    // the dictionary first draws. The catalog is single-flight and usually
+    // already Loaded from the startup prefetch, so this is a cheap no-op.
+    use_hook(move || driver.dispatch(Action::Load));
+    let cell = driver.cache.oracle_tags.cell();
 
-    // Nested example-cards browse, stacked above the dictionary. Owned here so the
-    // dictionary stays mounted underneath while examples are open.
-    let mut examples_open = use_signal(|| false);
-    let mut examples_slug = use_signal(String::new);
-
-    // Warm / revalidate the shared oracle-tag catalog. Single-flight and usually
-    // already Loaded from the startup prefetch, so this is a cheap no-op on open.
-    use_effect(move || {
-        cache.ensure_oracle_tags(client);
-    });
-    let cell = cache.oracle_tags.cell();
-
-    // Surface a hard failure once (no cached data and the fetch failed).
+    // Surface a hard failure (no cached data and the fetch failed).
     use_effect(move || {
         if matches!(&*cell.read(), CatalogCell::Failed) {
-            toast.error(
-                "Couldn't load the oracle-tag dictionary".to_string(),
-                ToastOptions::default().duration(TOAST_NORMAL),
-            );
+            driver.dispatch(Action::CatalogFailed);
         }
     });
 
-    let cell_read = cell.read();
+    let (body, query) = {
+        let model = driver.model.read();
+        let cell_read = cell.read();
+        let catalog = match &*cell_read {
+            CatalogCell::Loading => Catalog::Loading,
+            CatalogCell::Failed => Catalog::Failed,
+            CatalogCell::Loaded { data, .. } => Catalog::Loaded(data),
+        };
+        (model.body(catalog), model.query().to_owned())
+    };
 
     rsx! {
         div { class: "screen dict-overlay",
             // An overlay screen paints its own backdrop, since .screen is clear
             // and the screen beneath would show through.
             ::components::GridCells { still: true }
-            ScreenHeader { title: "Oracle tags", hint }
+            ScreenHeader { title: model::TITLE, hint }
 
             div { class: "screen-content content-enter",
-                match &*cell_read {
-                    CatalogCell::Loading => rsx! { DictionarySkeleton {} },
-                    CatalogCell::Failed => rsx! {
-                        div { class: "dict-empty", "Couldn't load the dictionary. Pull back and try again." }
+                match body {
+                    Body::Loading => rsx! { DictionarySkeleton {} },
+                    Body::Failed(line) => rsx! {
+                        div { class: "dict-empty", "{line}" }
                     },
-                    CatalogCell::Loaded { data: tags, .. } => {
-                        let q = query().trim().to_lowercase();
-                        let searching = !q.is_empty();
-                        let has_hash = tags.iter().any(|t| bucket_of(&t.slug) == '#');
+                    // Switching letters / searching changes every row's key, so
+                    // Dioxus remounts the rows and their entrance animation replays
+                    // (mirrors the changelog filter pattern, per-row not per-list).
+                    Body::Browse { rail, list } => rsx! {
+                        div { class: "dict-controls",
+                            input {
+                                class: "input",
+                                id: "oracle-tag-dictionary-search",
+                                r#type: "text",
+                                placeholder: model::SEARCH_PLACEHOLDER,
+                                value: "{query}",
+                                autocapitalize: "none",
+                                autocorrect: "off",
+                                spellcheck: "false",
+                                oninput: move |event| driver.dispatch(Action::Search(event.value())),
+                            }
 
-                        // Empty query -> the selected letter's tags, alphabetical.
-                        // Non-empty -> the shared ranked catalog search, capped.
-                        let letter = selected_letter();
-                        let rows: Vec<OracleTag> = if searching {
-                            let mut matches = oracle_tag::search_oracle_tags(tags, &q);
-                            matches.truncate(SEARCH_RESULT_CAP);
-                            matches
-                        } else {
-                            let mut in_letter: Vec<OracleTag> = tags
-                                .iter()
-                                .filter(|t| bucket_of(&t.slug) == letter)
-                                .cloned()
-                                .collect();
-                            in_letter.sort_by(|a, b| a.slug.cmp(&b.slug));
-                            in_letter
-                        };
-
-                        // Switching letters / searching changes every row's key, so
-                        // Dioxus remounts the rows and their entrance animation replays
-                        // (mirrors the changelog filter pattern, per-row not per-list).
-                        rsx! {
-                            div { class: "dict-controls",
-                                input {
-                                    class: "input",
-                                    id: "oracle-tag-dictionary-search",
-                                    r#type: "text",
-                                    placeholder: "Search tags or descriptions",
-                                    value: "{query()}",
-                                    autocapitalize: "none",
-                                    autocorrect: "off",
-                                    spellcheck: "false",
-                                    oninput: move |event| query.set(event.value()),
-                                }
-
-                                div { class: "dict-letter-rail scroll-fade-x",
-                                    for c in ('a'..='z').chain(has_hash.then_some('#')) {
-                                        {
-                                            let is_sel = !searching && c == letter;
-                                            let label = if c == '#' { "#".to_string() } else { c.to_ascii_uppercase().to_string() };
-                                            rsx! {
-                                                button {
-                                                    key: "{c}",
-                                                    class: if is_sel { "chip selected" } else { "chip" },
-                                                    onclick: move |_| {
-                                                        query.set(String::new());
-                                                        selected_letter.set(c);
-                                                    },
-                                                    "{label}"
-                                                }
-                                            }
-                                        }
+                            div { class: "dict-letter-rail scroll-fade-x",
+                                for chip in rail {
+                                    button {
+                                        key: "{chip.letter}",
+                                        class: if chip.picked { "chip selected" } else { "chip" },
+                                        onclick: move |_| driver.dispatch(Action::PickLetter(chip.letter)),
+                                        "{chip.label}"
                                     }
                                 }
                             }
+                        }
 
-                            div { class: "dict-list",
-                                if rows.is_empty() {
-                                    if searching {
-                                        div { class: "dict-empty", "No tags match \u{201c}{q}\u{201d}." }
-                                    } else {
-                                        div { class: "dict-empty", "No tags start with {letter.to_ascii_uppercase()}." }
-                                    }
-                                } else {
+                        div { class: "dict-list",
+                            match list {
+                                List::Empty(line) => rsx! {
+                                    div { class: "dict-empty", "{line}" }
+                                },
+                                List::Rows(rows) => rsx! {
                                     for t in rows {
                                         {
                                             let slug_ex = t.slug.clone();
@@ -172,7 +194,7 @@ pub fn OracleTagDictionary(mut open: Signal<bool>, on_use: EventHandler<String>)
                                                         if let Some(desc) = t.description.clone() {
                                                             "{desc}"
                                                         } else {
-                                                            span { class: "dict-desc-missing", "No description yet" }
+                                                            span { class: "dict-desc-missing", {model::NO_DESCRIPTION} }
                                                         }
                                                     }
                                                     if !t.parent_slugs.is_empty() {
@@ -186,38 +208,35 @@ pub fn OracleTagDictionary(mut open: Signal<bool>, on_use: EventHandler<String>)
                                                     div { class: "dict-row-actions",
                                                         button {
                                                             class: "chip",
-                                                            onclick: move |_| {
-                                                                examples_slug.set(slug_ex.clone());
-                                                                examples_open.set(true);
-                                                            },
-                                                            "Examples"
+                                                            onclick: move |_| driver.dispatch(Action::OpenExamples(slug_ex.clone())),
+                                                            {model::EXAMPLES}
                                                         }
                                                         button {
                                                             class: "chip",
-                                                            onclick: move |_| on_use.call(slug_use.clone()),
-                                                            "Use"
+                                                            onclick: move |_| driver.dispatch(Action::Use(slug_use.clone())),
+                                                            {model::USE}
                                                         }
                                                     }
                                                 }
                                             }
                                         }
                                     }
-                                }
+                                },
                             }
                         }
-                    }
+                    },
                 }
             }
 
             ActionBar {
                 Button {
                     variant: ButtonVariant::Action,
-                    onclick: move |_| open.set(false),
-                    "Back"
+                    onclick: move |_| driver.dispatch(Action::Back),
+                    {model::BACK}
                 }
             }
 
-            HintDialog { open: hint, title: "Oracle tags",
+            HintDialog { open: hint, actions: guide_link::one_time(HINT_ORACLE_TAG_DICTIONARY), title: model::TITLE,
             HintBullets {
                 HintBullet { "Tap a " HintKey { color: "--palette-1", "letter" } " to browse, or " HintColored { color: "--accent-secondary", "search" } " by name or description" }
                 HintBullet { HintKey { "Examples" } " shows real cards with that tag" }

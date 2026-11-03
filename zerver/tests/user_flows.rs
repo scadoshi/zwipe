@@ -66,6 +66,36 @@ async fn change_username_wrong_password_rejected(pool: sqlx::PgPool) {
 }
 
 #[sqlx::test]
+async fn change_username_to_the_current_one_is_refused(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool);
+    let (token, _) = app.register("samename").await;
+
+    let (status, body) = app
+        .patch(
+            CHANGE_USERNAME_ROUTE,
+            json!({ "new_username": "samename", "password": "TestPass123!" }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "unchanged: {body}"
+    );
+
+    // A change of case is a different username.
+    let (status, updated) = app
+        .patch(
+            CHANGE_USERNAME_ROUTE,
+            json!({ "new_username": "SameName", "password": "TestPass123!" }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "case change: {updated}");
+    assert_eq!(updated["username"], "SameName");
+}
+
+#[sqlx::test]
 async fn change_password_then_login_with_new(pool: sqlx::PgPool) {
     let app = TestApp::new(pool);
     let (token, _) = app.register("pwuser").await;
@@ -152,6 +182,22 @@ async fn change_email_answers_the_same_for_a_taken_address(pool: sqlx::PgPool) {
     };
     assert_eq!(keys(&taken), keys(&free), "same user JSON shape");
     assert_eq!(taken["email_verified_at"], free["email_verified_at"]);
+}
+
+#[sqlx::test]
+async fn change_email_to_the_current_one_is_refused(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool);
+    let (token, _) = app.register("sameemail").await;
+
+    let (status, body) = request_change(&app, &token, "sameemail@test.local").await;
+    assert_eq!(
+        status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "unchanged: {body}"
+    );
+
+    let (_, me) = app.get(GET_USER_ROUTE, Some(&token)).await;
+    assert!(me["pending_email"].is_null(), "nothing pending: {me}");
 }
 
 /// 1.13.x still sends the retired `confirm_first` flag; it is ignored.
@@ -447,7 +493,7 @@ async fn universes_beyond_preference_round_trips(pool: sqlx::PgPool) {
 
 #[sqlx::test]
 async fn pip_style_preference_round_trips(pool: sqlx::PgPool) {
-    let app = TestApp::new(pool);
+    let app = TestApp::new(pool.clone());
     let (token, _) = app.register("pipuser").await;
 
     // Default: the theme's colors.
@@ -458,7 +504,7 @@ async fn pip_style_preference_round_trips(pool: sqlx::PgPool) {
     let (status, updated) = app
         .patch(
             PREFERENCES_ROUTE,
-            json!({ "pip_style": "natural" }),
+            json!({ "pip_style": "classic" }),
             Some(&token),
         )
         .await;
@@ -480,15 +526,41 @@ async fn pip_style_preference_round_trips(pool: sqlx::PgPool) {
     assert_eq!(status, StatusCode::OK, "get preferences: {prefs}");
     assert_eq!(prefs["pip_style"], "natural");
 
-    // A style that does not exist is rejected.
-    let (status, body) = app
+    // The stored row is the new name; the wire keeps the one 1.15.0 to 1.17.0 parse.
+    let stored: String = sqlx::query_scalar("SELECT pip_style FROM user_preferences")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(stored, "classic");
+
+    // A 1.15.0 to 1.17.0 client sending the earlier name still lands on classic.
+    let (status, updated) = app
         .patch(
             PREFERENCES_ROUTE,
-            json!({ "pip_style": "classic" }),
+            json!({ "pip_style": "theme" }),
             Some(&token),
         )
         .await;
-    assert!(status.is_client_error(), "unknown style: {status} {body}");
+    assert_eq!(status, StatusCode::OK, "reset: {updated}");
+    let (status, updated) = app
+        .patch(
+            PREFERENCES_ROUTE,
+            json!({ "pip_style": "natural" }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "earlier name: {updated}");
+    assert_eq!(updated["pip_style"], "natural");
+
+    // A color that does not exist is rejected.
+    let (status, body) = app
+        .patch(
+            PREFERENCES_ROUTE,
+            json!({ "pip_style": "bogus" }),
+            Some(&token),
+        )
+        .await;
+    assert!(status.is_client_error(), "unknown color: {status} {body}");
 }
 
 #[sqlx::test]

@@ -1,9 +1,12 @@
-//! The home screen's figures, scope and flavor card expiry. The buy links
-//! live in [`crate::buy`] and the color map test in
+//! The home screen's figures, scope, flavor card expiry and greeting. The
+//! buy links live in [`crate::buy`] and the color map test in
 //! [`crate::playstyle::color_map_has_data`].
 
 use chrono::{DateTime, Timelike, Utc};
+use zwipe_core::domain::user::User;
 use zwipe_core::http::contracts::metrics::{HttpLifetimeCounters, HttpPublicMetrics};
+
+use crate::toast::{Toast, ToastKind};
 
 /// The three counters under the logo, each `None` while it loads or when
 /// it is no number to show. Negative counts read as zero.
@@ -132,6 +135,57 @@ pub fn next_hour(now: DateTime<Utc>) -> DateTime<Utc> {
         .unwrap_or(DateTime::<Utc>::MAX_UTC)
 }
 
+/// The nudge an unverified user gets on Home.
+pub const VERIFY_EMAIL: &str = "Verify your email!";
+
+/// Where the user Home greets came from.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum UserSource {
+    /// Home's own refresh of the user, made each time it opens.
+    Fetched,
+    /// The session's copy, used when that refresh failed.
+    Cached,
+}
+
+/// The toast Home raises once it knows who the user is.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum Greeting {
+    /// "Hello, {username}!" for a verified user, once per launch.
+    Hello(String),
+    /// [`VERIFY_EMAIL`] for an unverified user, every time Home opens.
+    VerifyEmail,
+}
+
+impl Greeting {
+    /// The toast to raise: an info for [`Greeting::Hello`] and a warning for [`Greeting::VerifyEmail`], both up for [`QUICK`](crate::toast::QUICK).
+    #[must_use]
+    pub fn toast(&self) -> Toast {
+        match self {
+            Self::Hello(username) => Toast::quick(ToastKind::Info, format!("Hello, {username}!")),
+            Self::VerifyEmail => Toast::quick(ToastKind::Warning, VERIFY_EMAIL),
+        }
+    }
+
+    /// Whether raising this uses up the launch's greeting, so the client sets its greeted flag.
+    #[must_use]
+    pub fn uses_greeting(&self) -> bool {
+        matches!(self, Self::Hello(_))
+    }
+}
+
+/// What Home says to `user`, or `None`. `greeted` is the client's flag for this launch, set once a [`Greeting::Hello`] was raised; Home opens again on every return to it, and the hello is not repeated.
+///
+/// A verified user is greeted when not yet greeted. An unverified user is nudged to verify each time, since the nudge is a prompt to act on, not a welcome, and stops once the email is verified. When the refresh failed and only the session's copy is at hand ([`UserSource::Cached`]), a verified user is still greeted but an unverified one is not nudged, as the app does.
+#[must_use]
+pub fn greeting(user: &User, source: UserSource, greeted: bool) -> Option<Greeting> {
+    let verified = user.email_verified_at.is_some();
+    match (verified, source) {
+        (true, _) => (!greeted).then(|| Greeting::Hello(user.username.to_string())),
+        (false, UserSource::Fetched) => Some(Greeting::VerifyEmail),
+        (false, UserSource::Cached) => None,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use chrono::TimeZone;
@@ -201,6 +255,74 @@ mod tests {
         assert_eq!(
             next_hour(DateTime::<Utc>::MAX_UTC),
             DateTime::<Utc>::MAX_UTC
+        );
+    }
+
+    fn user(verified: bool) -> User {
+        let mut user = User::new(
+            Uuid::nil(),
+            zwipe_core::domain::user::Username::new("scotty").expect("a valid username"),
+            zwipe_core::domain::user::Email::new("me@zwipe.net").expect("a valid email"),
+        );
+        user.email_verified_at = verified.then(Utc::now);
+        user
+    }
+
+    #[test]
+    fn a_verified_user_is_greeted_once_per_launch() {
+        for source in [UserSource::Fetched, UserSource::Cached] {
+            let hello = greeting(&user(true), source, false);
+            assert_eq!(
+                hello,
+                Some(Greeting::Hello("scotty".to_owned())),
+                "{source:?}"
+            );
+            assert_eq!(
+                greeting(&user(true), source, true),
+                None,
+                "{source:?}, already greeted"
+            );
+        }
+    }
+
+    #[test]
+    fn an_unverified_user_is_nudged_on_every_fresh_refresh() {
+        assert_eq!(
+            greeting(&user(false), UserSource::Fetched, false),
+            Some(Greeting::VerifyEmail)
+        );
+        assert_eq!(
+            greeting(&user(false), UserSource::Fetched, true),
+            Some(Greeting::VerifyEmail),
+            "the nudge ignores the greeted flag"
+        );
+    }
+
+    #[test]
+    fn a_failed_refresh_never_nudges_from_the_cached_user() {
+        assert_eq!(greeting(&user(false), UserSource::Cached, false), None);
+        assert_eq!(greeting(&user(false), UserSource::Cached, true), None);
+    }
+
+    #[test]
+    fn only_the_hello_uses_up_the_greeting() {
+        assert!(Greeting::Hello("scotty".to_owned()).uses_greeting());
+        assert!(!Greeting::VerifyEmail.uses_greeting());
+    }
+
+    #[test]
+    fn the_greeting_toasts_are_the_apps_kind_band_and_words() {
+        assert_eq!(
+            Greeting::Hello("scotty".to_owned()).toast(),
+            Toast::new(ToastKind::Info, "Hello, scotty!", crate::toast::QUICK)
+        );
+        assert_eq!(
+            Greeting::VerifyEmail.toast(),
+            Toast::new(
+                ToastKind::Warning,
+                "Verify your email!",
+                crate::toast::QUICK
+            )
         );
     }
 }

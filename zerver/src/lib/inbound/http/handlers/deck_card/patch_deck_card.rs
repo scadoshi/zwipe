@@ -17,6 +17,7 @@ use zwipe_core::http::contracts::deck_card::HttpPatchDeckCard;
 use zwipe_core::http::helpers::Patch;
 
 use crate::domain::deck::models::deck_card::update_deck_card::UpdateDeckCardError;
+use crate::domain::deck::ports::DeckService;
 use crate::inbound::http::handlers::metrics::check_completion;
 use crate::inbound::http::middleware::AuthenticatedUser;
 use crate::inbound::http::{ApiError, AppState, To500};

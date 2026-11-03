@@ -5,12 +5,14 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::http::contracts::auth::HttpRefreshSession;
-use zwipe_core::version;
+use zwipe_core::version::Version;
 
+use crate::domain::auth::ports::AuthService;
 use crate::domain::auth::requests::refresh_session::{
     InvalidRefreshSession, RefreshSession, RefreshSessionError,
 };
 use crate::domain::metrics::models::kinds::{AuditAction, EventKind};
+use crate::domain::metrics::ports::MetricsService;
 use crate::domain::user::models::get_user::GetUserError;
 use crate::inbound::http::{ApiError, AppState, To500};
 
@@ -62,7 +64,8 @@ impl TryFrom<HttpRefreshSession> for RefreshSession {
         request.client_version = value
             .client_version
             .as_deref()
-            .and_then(version::canonical_version);
+            .and_then(|raw| raw.parse::<Version>().ok())
+            .map(|parsed| parsed.to_string());
         Ok(request)
     }
 }

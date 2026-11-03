@@ -54,6 +54,9 @@ pub enum ChangeUsernameError {
     /// Another user already has this username.
     #[error("user with that username already exists")]
     Duplicate,
+    /// The new username is exactly the current one.
+    #[error("new username is the current username")]
+    Unchanged,
     /// Database returned invalid user data after update.
     #[error("database returned invalid object: {0}")]
     UserFromDb(anyhow::Error),

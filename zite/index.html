@@ -107,9 +107,10 @@
                     }
                 } catch (e) {}
                 try {
-                    // zite's pip_store: "natural" puts back the classic pips.
-                    if (JSON.parse(localStorage.getItem("zwipe.pips")) === "natural") {
-                        document.body.classList.add("pips-natural");
+                    // zite's pip_store: "classic", or the earlier "natural", puts back the classic pips.
+                    var pips = JSON.parse(localStorage.getItem("zwipe.pips"));
+                    if (pips === "classic" || pips === "natural") {
+                        document.body.classList.add("pips-classic");
                     }
                 } catch (e) {}
             })();

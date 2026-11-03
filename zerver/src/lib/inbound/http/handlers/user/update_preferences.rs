@@ -7,6 +7,7 @@ use zwipe_core::domain::user::preferences::{UpdatePreferences, UserPreferences};
 use zwipe_core::http::contracts::user::HttpUpdatePreferences;
 
 use crate::domain::user::models::preferences::{InvalidUpdatePreferences, UpdatePreferencesError};
+use crate::domain::user::ports::UserService;
 use crate::inbound::http::middleware::AuthenticatedUser;
 use crate::inbound::http::{ApiError, AppState, To500};
 

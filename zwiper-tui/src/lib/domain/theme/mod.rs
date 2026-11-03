@@ -6,13 +6,13 @@ mod extras;
 mod palettes;
 
 use ratatui::style::{Color, Style};
-use zwipe_core::domain::user::preferences::{PipStyle, RENAMED_THEMES, UserPreferences};
+use zwipe_core::domain::user::preferences::{PipColor, RENAMED_THEMES, UserPreferences};
 
 use self::extras::EXTRAS;
 use self::palettes::{FAMILIES, GROUPS};
 
-/// Mana's classic pip fills in WUBRG order, the same on every theme, from the app's `.pips-natural`.
-const NATURAL_PIPS: [Rgb; 5] = [
+/// Mana's classic pip fills in WUBRG order, the same on every theme, from the app's `.pips-classic`.
+const CLASSIC_PIPS: [Rgb; 5] = [
     [0xf0, 0xf2, 0xc0],
     [0xb5, 0xcd, 0xe3],
     [0xac, 0xa2, 0x9a],
@@ -269,9 +269,9 @@ impl Palette {
     pub(crate) fn for_preferences(preferences: &UserPreferences) -> Self {
         let palette = Self::for_account(&preferences.theme, preferences.dark_mode);
         match preferences.pip_style {
-            PipStyle::Theme => palette,
-            PipStyle::Natural => Self {
-                mana: NATURAL_PIPS.map(|[r, g, b]| Style::new().fg(Color::Rgb(r, g, b))),
+            PipColor::Theme => palette,
+            PipColor::Classic => Self {
+                mana: CLASSIC_PIPS.map(|[r, g, b]| Style::new().fg(Color::Rgb(r, g, b))),
                 ..palette
             },
         }
@@ -363,14 +363,14 @@ mod tests {
     }
 
     #[test]
-    fn natural_pips_keep_the_theme_but_swap_the_mana_colors() {
+    fn classic_pips_keep_the_theme_but_swap_the_mana_colors() {
         let mut preferences = UserPreferences::default();
         let themed = Palette::for_preferences(&preferences);
-        preferences.pip_style = PipStyle::Natural;
-        let natural = Palette::for_preferences(&preferences);
-        assert_eq!(themed.base, natural.base);
-        assert_ne!(themed.mana, natural.mana);
-        assert_eq!(natural.mana[4].fg, Some(Color::Rgb(0x93, 0xb4, 0x83)));
+        preferences.pip_style = PipColor::Classic;
+        let classic = Palette::for_preferences(&preferences);
+        assert_eq!(themed.base, classic.base);
+        assert_ne!(themed.mana, classic.mana);
+        assert_eq!(classic.mana[4].fg, Some(Color::Rgb(0x93, 0xb4, 0x83)));
     }
 
     #[test]

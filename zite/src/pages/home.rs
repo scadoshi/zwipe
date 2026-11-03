@@ -16,10 +16,13 @@ const SPLASH_FADE_MS: u32 = 300;
 /// Newest shipped version, for the release banner. Reads `RELEASES`, never
 /// `UPCOMING`: an unreleased version must not be announced as shipped. Falls
 /// back to the crate version if the list is ever empty.
-fn latest_release() -> &'static str {
+fn latest_release() -> String {
     zwipe_core::content::changelog::RELEASES
         .first()
-        .map_or(env!("CARGO_PKG_VERSION"), |release| release.version)
+        .map_or_else(
+            || env!("CARGO_PKG_VERSION").to_owned(),
+            |release| release.version.to_string(),
+        )
 }
 
 /// App Store listing: canonical download + review source.

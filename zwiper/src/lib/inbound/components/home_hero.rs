@@ -12,10 +12,11 @@ use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::logo;
 use zwipe_core::http::contracts::metrics::{HttpLifetimeCounters, HttpPublicMetrics};
+use zwipe_ui::home::{Figures, Scope};
+use zwipe_ui::screens::home;
 
 use crate::inbound::components::auth::authed::use_authed;
 use crate::inbound::components::telemetry::vocabulary::Screen;
-use crate::inbound::router::Router;
 use crate::outbound::count_scope_store::CountScope;
 use crate::outbound::counts_store::PersistCounts;
 
@@ -62,6 +63,13 @@ pub struct CachedMyCounts {
     pub metrics: HttpLifetimeCounters,
     /// When it answered.
     pub fetched_at: Instant,
+}
+
+impl CachedMyCounts {
+    /// Older than `COUNTS_FRESH`, so the next screen asks again.
+    pub fn is_stale(&self) -> bool {
+        self.fetched_at.elapsed() >= COUNTS_FRESH
+    }
 }
 
 /// Everyone's counters from the cache above the router, refetched when
@@ -196,24 +204,23 @@ pub fn HomeHero() -> Element {
     }
 }
 
-/// Home's hero: [`HomeHero`] with an Activity button opening the Activity
-/// screen, and its "Everybody" tag as a button after the "Live" tag that
-/// switches the figures to the user's own counts ("Only me") and back. The
-/// choice is saved, so Home opens on the last one. Every switch rolls the
-/// figures to the other counts, rolling on while the user's are fetched the
-/// first time, and fades the button's label in; "Live" shows once the
-/// figures on screen come from this launch.
+/// Home's hero: [`HomeHero`] with an Activity button, and its "Everybody"
+/// tag as a button after the "Live" tag that switches the figures to the
+/// user's own counts ("Only me") and back. Home's model holds the scope,
+/// the figures and whether they are live; every switch rolls the figures
+/// to the other counts, rolling on while the user's are fetched the first
+/// time, and fades the button's label in.
 #[component]
-pub fn HomeHeroScoped() -> Element {
-    let mut scope: Signal<CountScope> = use_context();
-    let navigator = use_navigator();
-    let (public, public_live) = use_public_counts();
-    let mine = use_my_counts(scope, Screen::Home);
-    let (figures, live) = match scope() {
-        CountScope::AllUsers => (public_figures(public.as_ref()), public_live),
-        CountScope::JustMe => (my_figures(mine.as_ref()), mine.is_some()),
-    };
-    let label = scope().label();
+pub fn HomeHeroScoped(
+    figures: Figures,
+    live: bool,
+    scope: Scope,
+    ontoggle: EventHandler,
+    onactivity: EventHandler,
+) -> Element {
+    let label = scope.label();
+    let figures: Vec<(Option<u64>, &'static str)> =
+        figures.values().into_iter().zip(Figures::LABELS).collect();
     rsx! {
         HeroPanel {
             figures,
@@ -227,11 +234,7 @@ pub fn HomeHeroScoped() -> Element {
                     // Sized to its label, one monospace character a `ch`, so
                     // a switch eases between the two labels' widths.
                     style: "width:calc({label.chars().count()}ch + 1.2rem + 2px);",
-                    onclick: move |_| {
-                        let next = scope.peek().toggled();
-                        next.infallible_save();
-                        scope.set(next);
-                    },
+                    onclick: move |_| ontoggle.call(()),
                     // Keyed, so each label mounts fresh and fades in.
                     for label in [label] {
                         span { key: "{label}", class: "hero-scope-label", "{label}" }
@@ -239,10 +242,8 @@ pub fn HomeHeroScoped() -> Element {
                 }
                 button {
                     class: "card-action-btn",
-                    onclick: move |_| {
-                        navigator.push(Router::Activity {});
-                    },
-                    "Activity"
+                    onclick: move |_| onactivity.call(()),
+                    {home::ACTIVITY}
                 }
             },
         }
