@@ -270,6 +270,17 @@ button {
     cursor: pointer;
 }
 
+/* A sheet's dock: the sheet's transform is the dock's containing block, so
+   it floats at the sheet's bottom right over the content, which ends with
+   room to scroll its last row clear of it. */
+.bottom-sheet .app-float {
+    z-index: 2;
+}
+
+.bottom-sheet:has(.app-float) > .sheet-content {
+    padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+}
+
 /* The filter dot sits on the funnel's top left, clear of the reset. */
 .icon-pill-btn .filter-dot {
     position: absolute;
@@ -2686,9 +2697,10 @@ button {
     gap: 0.75rem;
 }
 
-.sheet-content.no-pad-x {
-    padding-left: 0;
-    padding-right: 0;
+/* The printing sheet's body runs the sheet's full width, out through the
+   content's padding, so the carousel's pages are the viewport wide. */
+.printing-sheet-body {
+    margin: 0 -1.5rem;
 }
 
 .sheet-content .btn {
@@ -3718,11 +3730,11 @@ button {
 /* The printing sheet opens over the card details sheet, so its backdrop and
    sheet sit above both of the shared sheet layers; the backdrop dims the sheet
    under it and a tap outside the printings lands on that backdrop. */
-.sheet-backdrop.sheet-over {
+.sheet-over > .sheet-backdrop {
     z-index: 204;
 }
 
-.bottom-sheet.sheet-over {
+.sheet-over > .bottom-sheet {
     z-index: 205;
 }
 

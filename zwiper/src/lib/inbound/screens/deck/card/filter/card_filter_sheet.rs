@@ -1,7 +1,4 @@
-use components::{
-    ActionBar, Button, ButtonVariant, HintBullet, HintBullets, HintDialog, HintKey, Toasts,
-    use_overlay_back, use_toast,
-};
+use components::{BottomSheet, HintBullet, HintBullets, HintDialog, HintKey, Toasts, use_toast};
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
@@ -15,6 +12,7 @@ use zwipe_ui::screens::card_filter::{self, Action, Destination, Effect, ResetNot
 use crate::inbound::components::accordion::{
     Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 };
+use crate::inbound::components::action_dock::{self, DockIcon};
 use crate::inbound::components::catalog_cache::CatalogCache;
 use crate::inbound::components::hint_dialog::{self, HintColored};
 use crate::inbound::components::hint_host::HintTopic;
@@ -139,14 +137,12 @@ impl Driver {
 /// Reads `Signal<CardQueryBuilder>` and `Signal<u32>` (`filter_reset_counter`) from context.
 #[component]
 pub(crate) fn CardFilterSheet(
-    mut open: Signal<bool>,
+    open: Signal<bool>,
     #[props(default = false)] show_format_filter: bool,
     #[props(default = false)] show_active_indicators: bool,
     #[props(default = false)] validate_before_apply: bool,
     on_clear: Option<EventHandler>,
 ) -> Element {
-    // OS back gesture closes this overlay before touching the router.
-    use_overlay_back(open);
     let filter_builder: Signal<CardQueryBuilder> = use_context();
     let filter_reset_counter: Signal<u32> = use_context();
     let should_collapse: Option<CollapseExpanded> = try_use_context::<CollapseExpanded>();
@@ -155,7 +151,7 @@ pub(crate) fn CardFilterSheet(
     let toast = use_toast();
     let catalogs: CatalogCache = use_context();
 
-    let mut hint_open = use_signal(|| false);
+    let hint_open = use_signal(|| false);
     // Oracle-tag dictionary overlay. Owned here (not in the `OracleTags` section)
     // so it renders as a sibling of the bottom sheet, outside the sheet's
     // `transform`; a `position: fixed` overlay nested inside that transform would
@@ -235,30 +231,14 @@ pub(crate) fn CardFilterSheet(
     };
 
     rsx! {
-        // Modal backdrop
-        div {
-            class: if open() { "sheet-backdrop show" } else { "sheet-backdrop" },
-            onclick: move |_| open.set(false),
-        }
+        // Closing without Apply (the ×, the backdrop, a drag down or the OS
+        // back gesture) puts the applied filter back and says so.
+        BottomSheet {
+            open,
+            title: card_filter::TITLE.to_string(),
+            hint: hint_open,
+            closable: true,
 
-        // Bottom sheet
-        div {
-            class: if open() { "bottom-sheet show" } else { "bottom-sheet" },
-
-            // The same backdrop orangui's BottomSheet carries, since this sheet is
-            // built by hand on the same classes.
-            ::components::GridCells { still: true }
-            div { class: "sheet-header", style: "position: relative;",
-                span { style: "font-size: 1rem; color: var(--accent-primary);", {card_filter::TITLE} }
-                Button {
-                    variant: ButtonVariant::Action,
-                    style: "position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); opacity: 0.55; padding: 0.2rem 0.6rem;",
-                    onclick: move |_| hint_open.set(true),
-                    "?"
-                }
-            }
-
-            div { class: "sheet-content",
                 // Mounted only while the sheet is open, so every section starts
                 // collapsed on reopen. The modal stays in the DOM (hidden via
                 // CSS) and Dioxus won't remount on a key change alone, so this
@@ -588,33 +568,30 @@ pub(crate) fn CardFilterSheet(
                     }
                 }
                 }
-            }
 
-            ActionBar {
-                Button {
-                    variant: ButtonVariant::Action,
-                    // Close without applying: the same escape as the backdrop.
-                    // The close effect puts the applied filter back and says so.
-                    onclick: move |_| open.set(false),
-                    {card_filter::BACK}
-                }
-                Button {
-                    variant: ButtonVariant::Action,
-                    disabled: unchanged,
-                    onclick: move |_| driver.dispatch(Action::Apply),
-                    {card_filter::APPLY}
-                }
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| {
-                        // Stages the default; Apply commits it, Back undoes it.
-                        if let Some(handler) = &on_clear {
-                            handler.call(());
-                        } else {
-                            driver.dispatch(Action::Reset);
-                        }
-                    },
-                    {card_filter::RESET}
+            // Reset and Apply float at the sheet's bottom right.
+            div { class: "app-float app-float-right",
+                div { class: "icon-pill",
+                    button {
+                        class: "icon-pill-btn",
+                        "aria-label": card_filter::RESET,
+                        onclick: move |_| {
+                            // Stages the default; Apply commits it, closing undoes it.
+                            if let Some(handler) = &on_clear {
+                                handler.call(());
+                            } else {
+                                driver.dispatch(Action::Reset);
+                            }
+                        },
+                        DockIcon { path: action_dock::UNDO }
+                    }
+                    button {
+                        class: "icon-pill-btn",
+                        "aria-label": card_filter::APPLY,
+                        disabled: unchanged,
+                        onclick: move |_| driver.dispatch(Action::Apply),
+                        DockIcon { path: action_dock::CHECK }
+                    }
                 }
             }
         }
