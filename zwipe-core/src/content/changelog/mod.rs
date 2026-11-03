@@ -53,7 +53,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "The header slides away as you scroll down and comes back as you scroll up",
         "Create floats over the deck list",
         "Decks drops its More menu; Commander maybeboard and Playstyle are in the main menu",
-        "The deck view's actions sit on the page: Edit, Clone and Share by the profile, the store links in Budget, and Import, Export, Clear skips and Delete at the bottom",
+        "The deck view's actions sit on the page: Edit, Clone and Share as icons by the profile, the store links in Budget, and Import, Export, Clear skips and Delete at the bottom",
     ],
 }];
 
