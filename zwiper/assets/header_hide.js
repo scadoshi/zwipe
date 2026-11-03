@@ -40,4 +40,18 @@
         },
         { capture: true, passive: true },
     );
+
+    // A header whose content sits at the top is fully shown. Dioxus reuses
+    // the header element across screens, so one that slid away on a scrolled
+    // screen would otherwise arrive on the next screen already gone.
+    const observer = new MutationObserver(() => {
+        for (const nav of document.querySelectorAll(".screen > .app-nav")) {
+            const area = nav.parentElement.querySelector(":scope > .screen-content");
+            if (area && area.scrollTop > 0) continue;
+            if (area) lastTop.delete(area);
+            offset.delete(nav);
+            nav.style.transform = "";
+        }
+    });
+    observer.observe(document.documentElement, { childList: true, subtree: true });
 })();
