@@ -221,6 +221,6 @@ mod tests {
         let Screen::OtagExamples(view) = harness.screen() else {
             panic!("no examples");
         };
-        assert_eq!(view.slug, "ramp");
+        assert_eq!(view.model.slug(), "ramp");
     }
 }

@@ -9,7 +9,7 @@ use ratatui::text::Line;
 use ratatui::widgets::{Padding, Paragraph, Widget, Wrap};
 use zwipe_core::domain::card::Card;
 
-use super::{EMPTY, END, ExamplesView};
+use super::ExamplesView;
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::widgets::card_motion::{self, CardMotion, Phase};
@@ -43,16 +43,15 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &ExamplesView) {
     match resting {
         Some(card) => f.render_widget(card_widget(palette, card), card_area),
         None if view.current().is_some() => {}
-        None if view.loading => draw_ghost_card(f, palette, card_area),
-        None => {
-            let message = if view.cards.is_empty() { EMPTY } else { END };
-            f.render_widget(
+        None => match view.model.message() {
+            Some(message) => f.render_widget(
                 Paragraph::new(Line::styled(message, palette.muted))
                     .centered()
                     .wrap(Wrap { trim: true }),
                 body.centered_vertically(Constraint::Length(1)),
-            );
-        }
+            ),
+            None => draw_ghost_card(f, palette, card_area),
+        },
     }
     if let Some(motion) = motion {
         let moving = match motion.phase() {

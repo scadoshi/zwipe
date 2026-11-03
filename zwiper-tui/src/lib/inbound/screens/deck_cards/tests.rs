@@ -471,7 +471,7 @@ fn an_open_rows_tags_reveal_with_tab_and_x_opens_their_examples() {
     assert_eq!(view(&harness).open_tag, Some(0));
     assert!(screen_text(&harness.app).contains("No description yet"));
     harness.press(KeyCode::Char('x'));
-    assert!(matches!(harness.screen(), Screen::OtagExamples(v) if v.slug == "mana-dork"));
+    assert!(matches!(harness.screen(), Screen::OtagExamples(v) if v.model.slug() == "mana-dork"));
 }
 
 #[test]

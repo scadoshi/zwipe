@@ -1,4 +1,6 @@
 use crossterm::event::KeyCode;
+use zwipe_ui::generation::Generation;
+use zwipe_ui::screens::oracle_tag_examples::{Status, query_for};
 
 use super::*;
 use crate::inbound::event_loop::harness::Harness;
@@ -7,25 +9,33 @@ use crate::test_support::{card, render, screen_text, user};
 
 const SLUG: &str = "mana-dork";
 
-/// Home with the examples for [`SLUG`] open over it, the hint already seen, and nothing queued.
-fn on_examples() -> Harness {
+/// The ticket on the last page request queued.
+fn last_ticket(harness: &Harness) -> Ticket {
+    match harness.pending().last() {
+        Some(screens::Request::OtagExamples(Request::Page { ticket, .. })) => *ticket,
+        other => panic!("no page went out: {other:?}"),
+    }
+}
+
+/// Home with the examples for [`SLUG`] open over it, the hint already seen, and nothing queued, with the visit's ticket. Every page of one visit carries it.
+fn on_examples() -> (Harness, Ticket) {
     let mut harness = Harness::on(Screen::Home(Box::default()));
     let mut me = user(true);
     me.hints_shown.insert(HINT_OTAG_EXAMPLES.to_owned(), true);
     harness.app.shared.user = Some(me);
     harness.open(|cx| open(cx, SLUG));
+    let ticket = last_ticket(&harness);
     harness.clear();
-    harness
+    (harness, ticket)
 }
 
 #[expect(
     clippy::arithmetic_side_effects,
     reason = "a test fixture: card names count up from a small offset"
 )]
-fn page(offset: u32, count: usize) -> Update {
+fn page(ticket: Ticket, offset: u32, count: usize) -> Update {
     Update::Page {
-        slug: SLUG.to_owned(),
-        offset,
+        ticket,
         cards: (0..count)
             .map(|i| {
                 let mut card = card(&format!("Card {}", usize::try_from(offset).unwrap() + i));
@@ -44,10 +54,10 @@ fn view(harness: &Harness) -> &ExamplesView {
     }
 }
 
-fn asked(offset: u32) -> screens::Request {
+fn asked(ticket: Ticket, offset: u32) -> screens::Request {
     Request::Page {
-        slug: SLUG.to_owned(),
-        offset,
+        ticket,
+        query: Box::new(query_for(SLUG, offset).unwrap()),
     }
     .into()
 }
@@ -57,11 +67,12 @@ fn opening_asks_for_the_first_page_and_shows_the_hint_once() {
     let mut harness = Harness::on(Screen::Home(Box::default()));
     harness.app.shared.user = Some(user(true));
     harness.open(|cx| open(cx, SLUG));
+    let ticket = last_ticket(&harness);
     assert_eq!(
         harness.pending(),
         [
-            asked(0),
-            screens::Request::MarkHintShown(HINT_OTAG_EXAMPLES.to_owned())
+            screens::Request::MarkHintShown(HINT_OTAG_EXAMPLES.to_owned()),
+            asked(ticket, 0),
         ]
     );
     let hint = harness.app.shared.hint.as_ref().unwrap();
@@ -73,20 +84,9 @@ fn opening_asks_for_the_first_page_and_shows_the_hint_once() {
 }
 
 #[test]
-fn the_query_is_the_apps() {
-    let query = query_for(SLUG, 50).unwrap();
-    assert_eq!(query.limit(), 25);
-    assert_eq!(query.offset(), 50);
-    assert_eq!(query.sort(), Some(CardSortKey::EdhrecRank));
-    let wire = serde_json::to_string(&query).unwrap();
-    assert!(wire.contains(SLUG), "{wire}");
-    assert!(wire.contains("\"is_token\":false"), "{wire}");
-}
-
-#[test]
 fn left_moves_on_and_the_next_page_loads_near_the_end() {
-    let mut harness = on_examples();
-    harness.apply(page(0, 25));
+    let (mut harness, ticket) = on_examples();
+    harness.apply(page(ticket, 0, 25));
     assert_eq!(
         view(&harness).current().unwrap().scryfall_data.name,
         "Card 0"
@@ -96,19 +96,18 @@ fn left_moves_on_and_the_next_page_loads_near_the_end() {
     }
     assert!(harness.pending().is_empty(), "six or more still ahead");
     harness.press(KeyCode::Char('h'));
-    assert_eq!(view(&harness).index, 19);
-    assert_eq!(harness.pending(), [asked(25)]);
+    assert_eq!(view(&harness).model.index(), 19);
+    assert_eq!(harness.pending(), [asked(ticket, 25)]);
     harness.press(KeyCode::Left);
     assert_eq!(harness.pending().len(), 1, "one page at a time");
-    harness.apply(page(25, 25));
-    assert_eq!(view(&harness).cards.len(), 50);
-    assert_eq!(view(&harness).offset, 50);
+    harness.apply(page(ticket, 25, 25));
+    assert_eq!(view(&harness).model.cards().len(), 50);
 }
 
 #[test]
 fn down_steps_back_and_says_so_at_the_first_card() {
-    let mut harness = on_examples();
-    harness.apply(page(0, 3));
+    let (mut harness, ticket) = on_examples();
+    harness.apply(page(ticket, 0, 3));
     harness.press(KeyCode::Down);
     assert_eq!(
         harness.app.shared.toasts.items()[0].message,
@@ -116,24 +115,24 @@ fn down_steps_back_and_says_so_at_the_first_card() {
     );
     harness.press(KeyCode::Left);
     harness.press(KeyCode::Char('j'));
-    assert_eq!(view(&harness).index, 0);
+    assert_eq!(view(&harness).model.index(), 0);
 }
 
 #[test]
 fn an_empty_page_ends_the_browse_and_down_comes_back() {
-    let mut harness = on_examples();
-    harness.apply(page(0, 2));
+    let (mut harness, ticket) = on_examples();
+    harness.apply(page(ticket, 0, 2));
     harness.press(KeyCode::Left);
-    assert_eq!(harness.pending(), [asked(25)]);
-    harness.apply(page(25, 0));
-    assert!(view(&harness).exhausted);
+    assert_eq!(harness.pending(), [asked(ticket, 25)]);
+    harness.apply(page(ticket, 25, 0));
     harness.press(KeyCode::Left);
-    assert_eq!(view(&harness).index, 2);
+    assert_eq!(view(&harness).model.index(), 2);
+    assert_eq!(view(&harness).model.status(), Status::End);
     // The last card is still flying off over the line; let it land.
     view_mut(&mut harness).motion = None;
     assert!(screen_text(&harness.app).contains("No more cards. Swipe down to go back."));
     harness.press(KeyCode::Left);
-    assert_eq!(view(&harness).index, 2, "nothing past the end");
+    assert_eq!(view(&harness).model.index(), 2, "nothing past the end");
     harness.press(KeyCode::Down);
     view_mut(&mut harness).motion = None;
     let screen = screen_text(&harness.app);
@@ -143,52 +142,44 @@ fn an_empty_page_ends_the_browse_and_down_comes_back() {
 
 #[test]
 fn a_tag_with_no_cards_says_so() {
-    let mut harness = on_examples();
+    let (mut harness, ticket) = on_examples();
     assert!(
         screen_text(&harness.app).contains('░'),
         "a ghost card first"
     );
-    harness.apply(page(0, 0));
+    harness.apply(page(ticket, 0, 0));
     assert!(screen_text(&harness.app).contains("No example cards for this tag yet."));
 }
 
 #[test]
-fn paging_stops_at_the_cap() {
-    let mut harness = on_examples();
-    if let Screen::OtagExamples(view) = harness.screen_mut() {
-        view.cards = (0..timing::EXAMPLES_MAX_CARDS)
-            .map(|i| card(&format!("Card {i}")))
-            .collect();
-        view.index = timing::EXAMPLES_MAX_CARDS - 2;
-        view.offset = 500;
-        view.loading = false;
-    }
-    harness.press(KeyCode::Left);
-    assert!(harness.pending().is_empty(), "no page past the cap");
-    assert!(view(&harness).exhausted);
-}
-
-#[test]
-fn a_late_page_for_another_tag_or_offset_is_ignored() {
-    let mut harness = on_examples();
+fn a_page_on_a_ticket_the_visit_did_not_issue_changes_nothing() {
+    let (mut harness, ticket) = on_examples();
+    let mut other = Generation::default();
+    other.next_ticket();
+    let stale = other.next_ticket();
+    assert_ne!(stale, ticket);
     harness.apply(Update::Page {
-        slug: "other".to_owned(),
-        offset: 0,
+        ticket: stale,
         cards: vec![card("Stray")],
     });
-    harness.apply(page(25, 1));
-    assert!(view(&harness).cards.is_empty(), "no stray cards");
-    assert!(view(&harness).loading);
+    harness.apply(Update::PageFailed {
+        ticket: stale,
+        message: "Server unavailable".to_owned(),
+    });
+    assert!(view(&harness).model.cards().is_empty(), "no stray cards");
+    assert_eq!(view(&harness).model.status(), Status::Loading);
+    harness.apply(page(ticket, 0, 1));
+    assert_eq!(view(&harness).model.cards().len(), 1);
 }
 
 #[test]
 fn a_failed_page_toasts_and_stops_loading() {
-    let mut harness = on_examples();
+    let (mut harness, ticket) = on_examples();
     harness.apply(Update::PageFailed {
-        slug: SLUG.to_owned(),
+        ticket,
         message: "Server unavailable".to_owned(),
     });
-    assert!(!view(&harness).loading);
+    assert_eq!(view(&harness).model.status(), Status::Empty);
     assert_eq!(
         harness.app.shared.toasts.items()[0].message,
         "Server unavailable"
@@ -198,8 +189,8 @@ fn a_failed_page_toasts_and_stops_loading() {
 
 #[test]
 fn d_opens_details_and_p_browses_printings_read_only() {
-    let mut harness = on_examples();
-    harness.apply(page(0, 1));
+    let (mut harness, ticket) = on_examples();
+    harness.apply(page(ticket, 0, 1));
     harness.press(KeyCode::Char('d'));
     let screen = screen_text(&harness.app);
     assert!(screen.contains("p Printings"));
@@ -220,7 +211,7 @@ fn d_opens_details_and_p_browses_printings_read_only() {
 
 #[test]
 fn question_mark_shows_the_hint_again() {
-    let mut harness = on_examples();
+    let (mut harness, _) = on_examples();
     harness.press(KeyCode::Char('?'));
     assert_eq!(
         harness
@@ -235,10 +226,10 @@ fn question_mark_shows_the_hint_again() {
 
 #[test]
 fn the_examples_fit_a_tiny_terminal() {
-    let mut harness = on_examples();
+    let (mut harness, ticket) = on_examples();
     render(&harness.app, 8, 3);
     render(&harness.app, 1, 1);
-    harness.apply(page(0, 1));
+    harness.apply(page(ticket, 0, 1));
     render(&harness.app, 8, 3);
     render(&harness.app, 1, 1);
     harness.press(KeyCode::Char('d'));
@@ -252,8 +243,8 @@ fn the_next_card_flies_off_left_and_a_step_back_flies_it_in() {
 
     use crate::inbound::widgets::card_motion::Phase;
 
-    let mut harness = on_examples();
-    harness.apply(page(0, 3));
+    let (mut harness, ticket) = on_examples();
+    harness.apply(page(ticket, 0, 3));
     harness.press(KeyCode::Left);
     let motion = view(&harness).motion.clone().expect("the card flies off");
     assert_eq!(motion.direction(), Direction::Left);
@@ -287,8 +278,8 @@ fn the_next_card_flies_off_left_and_a_step_back_flies_it_in() {
 fn the_swipe_keys_read_skip_and_undo_in_the_apps_swipe_colors() {
     use crate::test_support::word_colors;
 
-    let mut harness = on_examples();
-    harness.apply(page(0, 3));
+    let (mut harness, ticket) = on_examples();
+    harness.apply(page(ticket, 0, 3));
     let palette = harness.app.shared.palette;
     let row = "← skip  ↓ undo";
     assert!(screen_text(&harness.app).contains(row));
@@ -307,9 +298,9 @@ fn view_mut(harness: &mut Harness) -> &mut ExamplesView {
 
 #[test]
 fn the_examples_keep_every_key_on_a_narrow_terminal() {
-    let mut harness = on_examples();
+    let (mut harness, ticket) = on_examples();
     crate::test_support::assert_key_bar_fits(&harness.app, "? hint");
-    harness.apply(page(0, 2));
+    harness.apply(page(ticket, 0, 2));
     crate::test_support::assert_key_bar_fits(&harness.app, "? hint");
 }
 
@@ -321,7 +312,7 @@ fn a_leaving_card_keeps_its_words_whole_and_the_next_card_shows_under_it() {
 
     use crate::inbound::widgets::card_motion::{CardMotion, Phase};
 
-    let mut harness = on_examples();
+    let (mut harness, ticket) = on_examples();
     let rules = [
         "Protean Hydra enters with X +1/+1 counters on it. If damage would be dealt to Protean Hydra, prevent that damage and remove that many +1/+1 counters from it.",
         "When this enters, put a +1/+1 counter on each creature you control and draw a card.",
@@ -336,11 +327,7 @@ fn a_leaving_card_keeps_its_words_whole_and_the_next_card_shows_under_it() {
             c
         })
         .collect();
-    harness.apply(Update::Page {
-        slug: SLUG.to_owned(),
-        offset: 0,
-        cards,
-    });
+    harness.apply(Update::Page { ticket, cards });
     harness.press(KeyCode::Left);
     let Some(Phase::Exit(leaving)) = view(&harness).motion.as_ref().map(|m| m.phase().clone())
     else {

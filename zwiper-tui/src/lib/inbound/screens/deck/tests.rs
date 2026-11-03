@@ -797,7 +797,7 @@ fn every_sections_keys_work_in_every_layout() {
         }
         harness.press(KeyCode::Char(' '));
         assert!(
-            matches!(harness.screen(), Screen::OtagExamples(view) if view.slug == "mana-dork"),
+            matches!(harness.screen(), Screen::OtagExamples(view) if view.model.slug() == "mana-dork"),
             "{size}: Examples opens the tag's example cards"
         );
         // Close it without the deck's reload on return, which would put the panels back to loading.

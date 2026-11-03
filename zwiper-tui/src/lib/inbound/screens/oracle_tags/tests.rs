@@ -246,13 +246,12 @@ fn x_opens_the_examples_for_the_selected_tag() {
     let Screen::OtagExamples(examples) = harness.screen() else {
         panic!("no examples");
     };
-    assert_eq!(examples.slug, "anthem");
-    assert!(matches!(
-        harness.pending().first(),
-        Some(screens::Request::OtagExamples(
-            otag_examples::Request::Page { offset: 0, .. }
-        ))
-    ));
+    assert_eq!(examples.model.slug(), "anthem");
+    assert!(harness.pending().iter().any(|request| matches!(
+        request,
+        screens::Request::OtagExamples(otag_examples::Request::Page { query, .. })
+            if query.offset() == 0
+    )));
 }
 
 #[test]

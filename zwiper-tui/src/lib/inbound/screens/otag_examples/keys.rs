@@ -3,8 +3,9 @@
 //! While the details sheet is open it takes the keys: `p` opens the card's printings read only, Esc or q closes it, and the rest scroll it.
 
 use crossterm::event::KeyCode;
+use zwipe_ui::screens::oracle_tag_examples::Action;
 
-use super::{ExamplesView, reopen_hint};
+use super::{ExamplesView, dispatch, reopen_hint};
 use crate::inbound::app::Context;
 use crate::inbound::screens::printings::{self, Mode};
 use crate::inbound::widgets::help;
@@ -22,10 +23,10 @@ pub(crate) fn handle(view: &mut ExamplesView, code: KeyCode, cx: &mut Context<'_
         return;
     }
     match code {
-        KeyCode::Esc => cx.back(),
+        KeyCode::Esc => dispatch(view, Action::Back, cx),
         KeyCode::Char('!') => help::open(cx),
         KeyCode::Left | KeyCode::Char('h') => view.next(cx),
-        KeyCode::Down | KeyCode::Char('j') => view.back_one(cx),
+        KeyCode::Down | KeyCode::Char('j') => dispatch(view, Action::BackOne, cx),
         KeyCode::Char('d') => view.open_details(&cx.shared.palette),
         KeyCode::Char('?') => reopen_hint(cx),
         _ => {}

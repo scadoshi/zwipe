@@ -162,7 +162,7 @@ mod tests {
         );
         assert!(matches!(
             effects.navigation.as_slice(),
-            [Navigation::Push(Screen::OtagExamples(view))] if view.slug == "elf-tribal"
+            [Navigation::Push(Screen::OtagExamples(view))] if view.model.slug() == "elf-tribal"
         ));
 
         let mut terminal =

@@ -382,7 +382,7 @@ fn a_role_reveals_its_tags_and_a_tag_its_definition() {
     let Screen::OtagExamples(examples) = harness.screen() else {
         panic!("no examples");
     };
-    assert_eq!(examples.slug, "mana-rock");
+    assert_eq!(examples.model.slug(), "mana-rock");
     harness.press(KeyCode::Esc);
 
     view_mut(&mut harness).focus = Focus::Header(Section::Tags);

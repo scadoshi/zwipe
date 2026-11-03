@@ -1,8 +1,8 @@
 //! Oracle tag examples: real cards that carry one tag, most played first, browsed one at a time.
 //!
-//! The app's deck-free swipe browse, read only: Left (swipe left) moves to the next card and Down (swipe down) steps back one. Cards come from `search_cards` in pages of [`timing::PAGE_SIZE`] by EDHREC rank, fetched again when few are left ahead, up to [`timing::EXAMPLES_MAX_CARDS`]. An empty page marks the end.
+//! The app's deck-free swipe browse, read only: Left (swipe left) moves to the next card and Down (swipe down) steps back one. Cards come from `search_cards` in pages of [`zwipe_ui::timing::PAGE_SIZE`] by EDHREC rank, fetched again when few are left ahead, up to [`zwipe_ui::timing::EXAMPLES_MAX_CARDS`]. An empty page marks the end.
 //!
-//! `d` opens the card's details sheet, whose `p` opens its printings read only. Nothing here changes anything on the server.
+//! What the browse knows and decides (the cards, the cursor, the paging, the lines in place of a card) is zwipe-ui's [`State`]; this view adds the details sheet and the card's motion. `d` opens the card's details sheet, whose `p` opens its printings read only. Nothing here changes anything on the server.
 
 pub(crate) mod draw;
 pub(crate) mod keys;
@@ -13,14 +13,13 @@ use std::time::Instant;
 
 use ratatui::text::Line;
 use zwipe_core::domain::card::Card;
-use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
-use zwipe_core::domain::card::search_card::card_filter::error::InvalidCardCriteria;
+use zwipe_core::domain::card::search_card::card_filter::CardQuery;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
-use zwipe_core::domain::card::search_card::card_filter::{CardQuery, CardSortKey};
 use zwipe_core::domain::deck::deck_metrics;
 use zwipe_core::domain::user::models::hints::HINT_OTAG_EXAMPLES;
+use zwipe_ui::generation::Ticket;
+use zwipe_ui::screens::oracle_tag_examples::{Action, Destination, Effect, State};
 use zwipe_ui::stack::Direction;
-use zwipe_ui::timing;
 
 use super::Screen;
 use crate::domain::theme::Palette;
@@ -33,48 +32,27 @@ use crate::inbound::widgets::toast::ToastKind;
 use crate::inbound::widgets::{card_text, hint};
 use crate::outbound::account::Account;
 
-/// Said past the last card.
-pub(crate) const END: &str = "No more cards. Swipe down to go back.";
-
-/// Said when the tag has no cards at all.
-pub(crate) const EMPTY: &str = "No example cards for this tag yet.";
-
-/// Said when stepping back from the first card.
-pub(crate) const AT_FIRST: &str = "Already at the first card";
-
-/// The browse: the tag, the cards fetched so far, the cursor, and the paging state.
+/// The browse: the model plus what only the terminal keeps.
 #[derive(Debug)]
 pub(crate) struct ExamplesView {
-    pub(crate) slug: String,
-    pub(crate) cards: Vec<Card>,
-    /// The card on screen; equal to the count past the last card.
-    pub(crate) index: usize,
-    /// Where the next page starts.
-    pub(crate) offset: u32,
-    /// A page is on its way.
-    pub(crate) loading: bool,
-    /// An empty page came back or the cap was reached: no more pages.
-    pub(crate) exhausted: bool,
+    pub(crate) model: State,
     /// The details sheet over the card, when open.
     pub(crate) details: Option<Sheet>,
     /// The card flying off to the left, or the one coming back after a step back.
     pub(crate) motion: Option<CardMotion<Card>>,
 }
 
-impl ExamplesView {
-    fn new(slug: &str) -> Self {
+impl Default for ExamplesView {
+    fn default() -> Self {
         Self {
-            slug: slug.to_owned(),
-            cards: Vec::new(),
-            index: 0,
-            offset: 0,
-            loading: false,
-            exhausted: false,
+            model: State::new(),
             details: None,
             motion: None,
         }
     }
+}
 
+impl ExamplesView {
     /// Whether a card is in motion, so the loop redraws.
     pub(crate) fn animating(&self) -> bool {
         self.motion
@@ -84,60 +62,45 @@ impl ExamplesView {
 
     /// The card under the one on screen, which a card coming back covers.
     pub(crate) fn under(&self) -> Option<&Card> {
-        self.cards.get(self.index.checked_add(1)?)
+        self.model.window().get(1)
     }
 
     /// The card on screen, `None` past the last one.
     pub(crate) fn current(&self) -> Option<&Card> {
-        self.cards.get(self.index)
+        self.model.current()
     }
 
-    /// Asks for the next page unless one is on its way, the end was reached, or the browse holds [`timing::EXAMPLES_MAX_CARDS`].
-    pub(crate) fn load_more(&mut self, cx: &mut Context<'_>) {
-        if self.loading || self.exhausted {
-            return;
-        }
-        if self.cards.len() >= timing::EXAMPLES_MAX_CARDS {
-            self.exhausted = true;
-            return;
-        }
-        self.loading = true;
-        cx.request(
-            Request::Page {
-                slug: self.slug.clone(),
-                offset: self.offset,
-            }
-            .into(),
-        );
-    }
-
-    /// Moves to the next card, possibly past the last, and asks for more when few are left ahead.
+    /// Sends the card on screen off to the left and moves to the next, which may ask for more. Past the last card nothing moves.
     pub(crate) fn next(&mut self, cx: &mut Context<'_>) {
-        let total = self.cards.len();
         let Some(card) = self.current().cloned() else {
             return;
         };
         self.motion = Some(CardMotion::exit(Direction::Left, card, Instant::now()));
-        self.index = self.index.saturating_add(1);
-        if self.index.saturating_add(1) >= total.saturating_sub(timing::LOAD_MORE_AT) {
-            self.load_more(cx);
-        }
-    }
-
-    /// Steps back one card, or says it is already at the first.
-    pub(crate) fn back_one(&mut self, cx: &mut Context<'_>) {
-        match self.index.checked_sub(1) {
-            Some(index) => {
-                self.index = index;
-                self.motion = Some(CardMotion::enter(Direction::Left, Instant::now()));
-            }
-            None => cx.toast(ToastKind::Info, AT_FIRST.to_owned()),
-        }
+        dispatch(self, Action::Next, cx);
     }
 
     /// Opens the details sheet for the card on screen.
     pub(crate) fn open_details(&mut self, palette: &Palette) {
         self.details = self.current().map(|card| details_sheet(palette, card));
+    }
+}
+
+/// Applies `action` to the model and performs the effects it returns, in order.
+pub(crate) fn dispatch(view: &mut ExamplesView, action: Action, cx: &mut Context<'_>) {
+    for effect in view.model.update(action) {
+        match effect {
+            Effect::OfferHint(offer) => {
+                hint::once(cx, offer.key());
+            }
+            Effect::SearchCards { ticket, query } => {
+                cx.request(Request::Page { ticket, query }.into());
+            }
+            Effect::Enter(from) => {
+                view.motion = Some(CardMotion::enter(from, Instant::now()));
+            }
+            Effect::Navigate(Destination::Previous) => cx.back(),
+            Effect::Toast(toast) => cx.show(toast),
+        }
     }
 }
 
@@ -166,10 +129,13 @@ pub(crate) fn details_sheet(palette: &Palette, card: &Card) -> Sheet {
 }
 
 /// The examples' work.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub(crate) enum Request {
-    /// One page of the tag's cards from `offset`.
-    Page { slug: String, offset: u32 },
+    /// One page of the tag's cards, as the model built the search.
+    Page {
+        ticket: Ticket,
+        query: Box<CardQuery>,
+    },
 }
 
 impl Request {
@@ -181,18 +147,11 @@ impl Request {
     }
 }
 
-/// The examples' results.
+/// The examples' results, each carrying its request's ticket back to the model.
 #[derive(Debug)]
 pub(crate) enum Update {
-    Page {
-        slug: String,
-        offset: u32,
-        cards: Vec<Card>,
-    },
-    PageFailed {
-        slug: String,
-        message: String,
-    },
+    Page { ticket: Ticket, cards: Vec<Card> },
+    PageFailed { ticket: Ticket, message: String },
 }
 
 impl From<Request> for screens::Request {
@@ -214,27 +173,17 @@ fn pick(screen: &mut Screen) -> Option<&mut ExamplesView> {
     }
 }
 
-/// The search for one page of `slug`'s cards, as the app builds it.
-///
-/// # Errors
-///
-/// Returns [`InvalidCardCriteria`] when the criteria contradict each other, which these never do.
-pub(crate) fn query_for(slug: &str, offset: u32) -> Result<CardQuery, InvalidCardCriteria> {
-    CardQueryBuilder::new()
-        .set_oracle_tags_contains_any(vec![slug.to_owned()])
-        .set_is_token(false)
-        .set_sort(CardSortKey::EdhrecRank)
-        .set_limit(timing::PAGE_SIZE)
-        .set_offset(offset)
-        .build()
-}
-
-/// Opens the examples for `slug` and asks for the first page.
+/// Opens the examples for `slug`: the model offers the hint and asks for the first page.
 pub(crate) fn open(cx: &mut Context<'_>, slug: &str) {
-    let mut view = ExamplesView::new(slug);
-    view.load_more(cx);
+    let mut view = ExamplesView::default();
+    dispatch(
+        &mut view,
+        Action::Load {
+            slug: slug.to_owned(),
+        },
+        cx,
+    );
     cx.push(Screen::OtagExamples(Box::new(view)));
-    hint::once(cx, HINT_OTAG_EXAMPLES);
 }
 
 /// Shows the hint again, for its "?".
@@ -243,64 +192,26 @@ pub(crate) fn reopen_hint(cx: &mut Context<'_>) {
 }
 
 pub(crate) async fn perform(account: &Account, request: Request) -> Option<screens::Update> {
-    let Request::Page { slug, offset } = request;
-    let Ok(query) = query_for(&slug, offset) else {
-        // A query that cannot be built has no cards, which ends the browse.
-        return Some(
-            Update::Page {
-                slug,
-                offset,
-                cards: Vec::new(),
-            }
-            .into(),
-        );
-    };
+    let Request::Page { ticket, query } = request;
     let client = &account.client;
     match async { client.search_cards(&query, &account.fresh().await?).await }.await {
-        Ok(cards) => Some(
-            Update::Page {
-                slug,
-                offset,
-                cards,
-            }
-            .into(),
-        ),
+        Ok(cards) => Some(Update::Page { ticket, cards }.into()),
         Err(e) => Some(screens::failure(&e, |message| {
-            Update::PageFailed { slug, message }.into()
+            Update::PageFailed { ticket, message }.into()
         })),
     }
 }
 
+/// Hands a page to the model. A failure raises its toast even when the screen has closed.
 pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
-    match update {
-        Update::Page {
-            slug,
-            offset,
-            cards,
-        } => {
-            let Some(view) = nav.find_mut(pick) else {
-                return;
-            };
-            if view.slug != slug || view.offset != offset || !view.loading {
-                return;
-            }
-            view.loading = false;
-            if cards.is_empty() {
-                view.exhausted = true;
-            } else {
-                view.offset = offset.saturating_add(timing::PAGE_SIZE);
-                view.cards.extend(cards);
-            }
-        }
-        Update::PageFailed { slug, message } => {
-            let Some(view) = nav.find_mut(pick) else {
-                return;
-            };
-            if view.slug != slug {
-                return;
-            }
-            view.loading = false;
+    let action = match update {
+        Update::Page { ticket, cards } => Action::Loaded { ticket, cards },
+        Update::PageFailed { ticket, message } => {
             cx.toast(ToastKind::Error, message);
+            Action::Failed { ticket }
         }
+    };
+    if let Some(view) = nav.find_mut(pick) {
+        dispatch(view, action, cx);
     }
 }
