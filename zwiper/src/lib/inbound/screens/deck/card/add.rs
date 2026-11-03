@@ -745,8 +745,6 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 },
                                 CardSkeleton {}
                             }
-                        } else if pile == Pile::Loading {
-                            CardSkeleton { is_loading: true }
                         } else {
                             CardSkeleton {}
                         }

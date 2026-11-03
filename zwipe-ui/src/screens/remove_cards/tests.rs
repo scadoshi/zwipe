@@ -33,7 +33,15 @@ fn loaded(built: Deck) -> State {
         ticket,
         deck: Box::new(built),
     });
-    assert_eq!(effects, NOTHING, "loading asks for nothing more");
+    let expected = if state.status() == Status::Empty {
+        vec![Effect::Toast(Toast::quick(
+            ToastKind::Info,
+            NO_CARDS_ON_BOARDS,
+        ))]
+    } else {
+        Vec::new()
+    };
+    assert_eq!(effects, expected, "loading asks for nothing more");
     state
 }
 
@@ -421,7 +429,9 @@ fn removing_a_land_below_the_target_warns() {
         ]
     );
     assert!(
-        toasts(&state.update(Action::Remove)).len() == 1,
+        toasts(&state.update(Action::Remove))
+            .iter()
+            .all(|toast| toast.kind != ToastKind::Warning),
         "the warning fires once per crossing"
     );
 }
@@ -431,7 +441,11 @@ fn no_land_target_means_no_land_toast() {
     let mut built = deck_of(&["Forest"]);
     built.entries[0].card.scryfall_data.type_line = Some("Basic Land".to_owned());
     let mut state = loaded(built);
-    assert_eq!(toasts(&state.update(Action::Remove)).len(), 1);
+    assert!(
+        toasts(&state.update(Action::Remove))
+            .iter()
+            .all(|toast| toast.kind != ToastKind::Warning)
+    );
 }
 
 #[test]
@@ -453,7 +467,30 @@ fn moving_a_card_to_main_can_cross_the_budget() {
                 "Deck at 105.00% of your $10.00 budget",
                 NORMAL
             ),
+            Toast::quick(ToastKind::Info, NO_MORE_CARDS),
         ]
+    );
+}
+
+#[test]
+fn an_emptied_pile_says_why_once() {
+    let mut state = loaded(deck_of(&["Opt"]));
+    assert_eq!(
+        toasts(&state.update(Action::Keep)),
+        [Toast::quick(ToastKind::Info, KEPT)],
+        "keeping cycles the pile, so it never runs out"
+    );
+    assert_eq!(
+        toasts(&state.update(Action::Remove)),
+        [
+            Toast::quick(ToastKind::Success, REMOVED),
+            Toast::quick(ToastKind::Info, NO_MORE_CARDS),
+        ]
+    );
+    assert_eq!(state.status(), Status::Empty);
+    assert!(
+        toasts(&state.update(Action::Remove)).is_empty(),
+        "an already empty pile says nothing more"
     );
 }
 

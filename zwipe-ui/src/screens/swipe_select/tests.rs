@@ -70,10 +70,20 @@ fn loaded(pile: &[Card]) -> State {
         ticket,
         cards: pile.to_vec(),
     });
-    assert!(
-        effects.is_empty(),
-        "a full page asks for nothing: {effects:?}"
-    );
+    if pile.is_empty() {
+        assert_eq!(
+            effects,
+            [Effect::Toast(Toast::quick(
+                ToastKind::Info,
+                "No commanders match your filters"
+            ))]
+        );
+    } else {
+        assert!(
+            effects.is_empty(),
+            "a full page asks for nothing: {effects:?}"
+        );
+    }
     state
 }
 
@@ -777,4 +787,27 @@ fn the_copy_matches_the_app() {
     assert_eq!(MAYBEBOARD_TOAST, std::time::Duration::from_millis(1500));
     assert_eq!(PAGE_SIZE, 25);
     assert_eq!(LOAD_MORE_AT, 5);
+}
+
+#[test]
+fn swiping_the_last_card_says_the_pile_is_spent() {
+    let mut state = loaded(&cards(&["Krenko"]));
+    let ticket = ticket_of(&state.update(Action::Skip));
+    assert_eq!(
+        state.status(),
+        Status::Loading,
+        "the next page is asked for"
+    );
+    let effects = state.update(Action::Found {
+        ticket,
+        cards: Vec::new(),
+    });
+    assert_eq!(state.status(), Status::Empty);
+    assert_eq!(
+        effects,
+        [Effect::Toast(Toast::quick(
+            ToastKind::Info,
+            "No more commanders"
+        ))]
+    );
 }
