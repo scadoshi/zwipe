@@ -258,7 +258,7 @@ pub fn Config() -> Element {
                 HintDialog {
                     open: config_hint_open,
                     actions: guide_link::one_time(HINT_CONFIG),
-                    title: "Config",
+                    title: "Settings",
                     HintBullets {
                         HintBullet { "Set how Zwipe looks and which cards it shows" }
                         HintBullet { "Tap a row's " HintKey { color: "--palette-6", "?" } " for what it does" }

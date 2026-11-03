@@ -72,7 +72,7 @@ pub const DECKS: &str = "Decks";
 pub const ACCOUNT: &str = "Account";
 
 /// The action bar's button that opens Config.
-pub const CONFIG: &str = "Config";
+pub const CONFIG: &str = "Settings";
 
 /// Where an action sends the user. The client maps each to its own route.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

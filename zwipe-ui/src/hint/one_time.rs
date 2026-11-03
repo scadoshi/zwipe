@@ -69,7 +69,7 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
                     text(" has your email, password and log out"),
                 ]),
                 bullet(vec![
-                    key("Config"),
+                    key("Settings"),
                     text(" sets your theme and which cards show"),
                 ]),
                 bullet(vec![
@@ -90,7 +90,7 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
             ],
         ),
         OneTimeHint::Config => content(
-            "Config",
+            "Settings",
             vec![
                 bullet(vec![text("Set how Zwipe looks and which cards it shows")]),
                 bullet(vec![

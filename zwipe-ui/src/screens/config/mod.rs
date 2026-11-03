@@ -18,7 +18,7 @@ use crate::preferences::{self, PreferenceChange, Toggle, Toggles};
 use crate::toast::Toast;
 
 /// The screen's title.
-pub const TITLE: &str = "Config";
+pub const TITLE: &str = "Settings";
 
 /// The header of the list with the theme and pips.
 pub const APPEARANCE: &str = "Appearance";

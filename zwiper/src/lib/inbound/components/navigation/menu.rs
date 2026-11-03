@@ -29,7 +29,7 @@ pub enum Section {
     Activity,
     /// Account, and the privacy policy it links to.
     Account,
-    /// Config.
+    /// Settings (the `config` screen).
     Config,
     /// The changelog.
     Changelog,
@@ -58,7 +58,7 @@ impl Section {
             Self::Maybeboard => "Commander maybeboard",
             Self::Activity => "Activity",
             Self::Account => "Account",
-            Self::Config => "Config",
+            Self::Config => "Settings",
             Self::Changelog => "Changelog",
         }
     }

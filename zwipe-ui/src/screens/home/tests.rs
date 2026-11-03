@@ -649,7 +649,7 @@ fn every_button_navigates() {
 fn the_copy_matches_the_app() {
     assert_eq!(
         [TITLE, LIVE, ACTIVITY, DECKS, ACCOUNT, CONFIG],
-        ["Home", "Live", "Activity", "Decks", "Account", "Config"]
+        ["Home", "Live", "Activity", "Decks", "Account", "Settings"]
     );
     assert_eq!(
         [COLOR_MAP, PLAYSTYLE, NO_PLAY_STYLE, PLAY_STYLE_FAILED],
