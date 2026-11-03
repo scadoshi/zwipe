@@ -7,22 +7,21 @@
 //! reveals its definition in the pinned bar. Picking a Deck Tag pre-seeds some of
 //! these (handled by the host screen); here the user tunes the set.
 
-use components::{
-    ActionBar, Button, ButtonVariant, DialogAction, HintDialog, use_overlay_back_action,
-};
+use components::{Button, ButtonVariant, DialogAction, HintDialog, use_overlay_back_action};
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::oracle_tag::OracleTag;
 use zwipe_core::domain::deck::MAX_DECK_ORACLE_TAGS;
 use zwipe_ui::deck::pickers::{self, Picker};
 
+use crate::inbound::components::action_dock::{self, DockIcon};
 use crate::inbound::components::catalog_cache::CatalogCache;
 use crate::inbound::components::concept_explainers::OracleTagsExplainer;
 use crate::inbound::components::guide_link;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::screens::oracle_tag_dictionary::OracleTagDictionary;
 
-/// In-place oracle-tag picker, up while `open`. `selected` holds the deck's oracle tag slugs; a chip tap goes to `on_toggle`, the × to `on_clear` and the dictionary's Use to `on_adopt`. Save (`on_save`) stays off while `unchanged`; Back (`on_back`) and the OS back gesture put back the tags it opened on.
+/// In-place oracle-tag picker, up while `open`. `selected` holds the deck's oracle tag slugs; a chip tap goes to `on_toggle`, the × to `on_clear` and the dictionary's Use to `on_adopt`. The dock's checkmark (`on_save`) stays off while `unchanged`; the header's back arrow (`on_back`) and the OS back gesture put back the tags it opened on.
 #[component]
 pub(crate) fn OracleTagSelect(
     open: ReadSignal<bool>,
@@ -162,12 +161,16 @@ pub(crate) fn OracleTagSelect(
                     }
                 }
 
-                ActionBar {
-                    Button {
-                        variant: ButtonVariant::Action,
-                        disabled: unchanged,
-                        onclick: move |_| on_save.call(()),
-                        "Save"
+                // Save as the action dock's checkmark, pinned bottom right.
+                div { class: "app-float app-float-right",
+                    div { class: "icon-pill",
+                        button {
+                            class: "icon-pill-btn",
+                            "aria-label": "Save",
+                            disabled: unchanged,
+                            onclick: move |_| on_save.call(()),
+                            DockIcon { path: action_dock::CHECK }
+                        }
                     }
                 }
 

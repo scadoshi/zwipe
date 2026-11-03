@@ -6,18 +6,17 @@
 //! and clearing are reported through callbacks so the form can run its
 //! command-zone cascade (clearing commander and signature spell on a change).
 
-use components::{
-    ActionBar, Button, ButtonVariant, HintBullet, HintBullets, HintDialog, use_overlay_back_action,
-};
+use components::{HintBullet, HintBullets, HintDialog, use_overlay_back_action};
 use dioxus::prelude::*;
 use zwipe_core::domain::deck::format::Format;
 use zwipe_ui::deck::form;
 use zwipe_ui::deck::pickers::{self, Picker};
 
+use crate::inbound::components::action_dock::{self, DockIcon};
 use crate::inbound::components::guide_link;
 use crate::inbound::components::screen_header::ScreenHeader;
 
-/// In-place format picker, up while `open`. A chip tap goes to `on_tap`, which picks the format or clears it when it is the one picked, with the command-zone knock-on clears. Save (`on_save`) stays off while `unchanged`; Back (`on_back`) and the OS back gesture put the format and command zone back as they were when the picker opened.
+/// In-place format picker, up while `open`. A chip tap goes to `on_tap`, which picks the format or clears it when it is the one picked, with the command-zone knock-on clears. The dock's checkmark (`on_save`) stays off while `unchanged`; the header's back arrow (`on_back`) and the OS back gesture put the format and command zone back as they were when the picker opened.
 #[component]
 pub(crate) fn FormatSelect(
     open: ReadSignal<bool>,
@@ -107,12 +106,16 @@ pub(crate) fn FormatSelect(
                     }
                 }
 
-                ActionBar {
-                    Button {
-                        variant: ButtonVariant::Action,
-                        disabled: unchanged,
-                        onclick: move |_| on_save.call(()),
-                        "Save"
+                // Save as the action dock's checkmark, pinned bottom right.
+                div { class: "app-float app-float-right",
+                    div { class: "icon-pill",
+                        button {
+                            class: "icon-pill-btn",
+                            "aria-label": "Save",
+                            disabled: unchanged,
+                            onclick: move |_| on_save.call(()),
+                            DockIcon { path: action_dock::CHECK }
+                        }
                     }
                 }
 
