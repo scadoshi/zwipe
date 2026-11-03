@@ -382,7 +382,9 @@ fn edit_and_more_open_their_screens() {
     }
     harness.press(KeyCode::Char('j'));
     harness.press(KeyCode::Enter);
-    assert!(matches!(harness.screen(), Screen::DeckExport(view) if view.deck_id == deck_id));
+    assert!(
+        matches!(harness.screen(), Screen::DeckExport(view) if view.model.deck_id() == Some(deck_id))
+    );
     assert_eq!(
         harness
             .app

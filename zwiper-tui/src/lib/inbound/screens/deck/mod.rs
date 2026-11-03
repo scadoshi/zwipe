@@ -17,6 +17,7 @@ use zwipe_core::http::contracts::deck_card::HttpPatchDeckCard;
 use zwipe_core::http::helpers::Patch;
 use zwipe_ui::buy;
 use zwipe_ui::deck::warning::{self, Fix};
+use zwipe_ui::toast::Toast;
 
 use self::layout::Pane;
 use super::Screen;
@@ -927,7 +928,11 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
             if view.profile.id == deck_id {
                 view.share_token = Some(token);
                 if let Some(link) = view.share_link() {
-                    copy(cx, &link, "Share link copied");
+                    copy(
+                        cx,
+                        &link,
+                        Toast::quick(ToastKind::Info, "Share link copied"),
+                    );
                 }
             }
         }
@@ -948,10 +953,10 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
     }
 }
 
-/// Copies `text` to the clipboard and says `done`, or says it could not.
-pub(crate) fn copy(cx: &mut Context<'_>, text: &str, done: &str) {
+/// Copies `text` to the clipboard and raises `done`, or says it could not.
+pub(crate) fn copy(cx: &mut Context<'_>, text: &str, done: Toast) {
     if crate::inbound::widgets::clipboard::copy(text).is_ok() {
-        cx.toast_for(ToastKind::Info, done.to_owned(), toast::QUICK);
+        cx.show(done);
     } else {
         cx.toast(ToastKind::Error, format!("Could not copy {text}"));
     }

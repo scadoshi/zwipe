@@ -2,6 +2,7 @@
 
 use crossterm::event::KeyCode;
 use zwipe_ui::deck::warning;
+use zwipe_ui::toast::{Toast, ToastKind};
 
 use super::layout::Pane;
 use super::{
@@ -180,7 +181,11 @@ fn handle_dialog(
                 (Some(AlertChoice::Pressed(1)), true) => {
                     view.more = None;
                     if let Some(link) = view.share_link() {
-                        copy(cx, &link, "Share link copied");
+                        copy(
+                            cx,
+                            &link,
+                            Toast::quick(ToastKind::Info, "Share link copied"),
+                        );
                     }
                     None
                 }

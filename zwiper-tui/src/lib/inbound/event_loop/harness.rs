@@ -52,6 +52,15 @@ impl Harness {
         self.event_loop.settle(&mut self.app, effects);
     }
 
+    /// Runs `act` on the screen on top with a handler's [`Context`], such as a dispatch no key reaches, and settles what it asked for.
+    pub(crate) fn on_top(&mut self, act: impl FnOnce(&mut Screen, &mut Context<'_>)) {
+        let App { nav, shared, .. } = &mut self.app;
+        let mut cx = Context::new(shared);
+        act(nav.top_mut(), &mut cx);
+        let effects = cx.into_effects();
+        self.event_loop.settle(&mut self.app, effects);
+    }
+
     pub(crate) fn press(&mut self, code: KeyCode) -> Flow {
         self.event_loop
             .handle_key(&mut self.app, KeyEvent::new(code, KeyModifiers::NONE))
