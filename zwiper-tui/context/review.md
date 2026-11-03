@@ -52,14 +52,9 @@ Still open:
 - The deck view's warning fix buttons are still filled pills; convert them to brackets when the deck view comes up.
 - The privacy text says "a deck builder for mobile" (shared legal copy in zwipe-core).
 
-## Branches waiting on owner merges
+## Merged prerequisites
 
-Never merge or push to main from a work session; the owner merges.
-
-1. `chore/terminal-platform`: the server accepts the `terminal` client platform. Until it deploys, production rejects the TUI's sign-in. A Desktop fallback was offered as the alternative.
-2. `chore/zwiper-bin-name`: merged; the TUI binary is `zwipe`.
-3. `feat/zwipe-ui`: the shared logic crate zwiper, zwiper-web and zwiper-tui draw from.
-4. orangui `feat/orangui-core`: the Dioxus-free half of orangui that zwiper-tui pins by rev. Merge it, then bump the pins.
+All four branches the TUI waited on are on main as of 2026-11-03: the `terminal` client platform, the app binary renamed to `zwiper` (the TUI installs as `zwipe`), zwipe-ui, and orangui-core. `feat/tui` has main merged in and is switching each screen to its zwipe-ui screen model (the recipe is in `ARCHITECTURE.md`). Never merge or push to main from a work session; the owner merges.
 
 ## How the work runs
 
