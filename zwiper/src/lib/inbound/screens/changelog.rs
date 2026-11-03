@@ -17,7 +17,7 @@
 //! file draws its state and performs its effects. The chips themselves are
 //! drawn and pressed inside [`components::Changelog`].
 
-use components::{ActionBar, Button, ButtonVariant, Changelog as ChangelogContent};
+use components::Changelog as ChangelogContent;
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use zwipe_ui::screens::changelog::{self as model, Action, Destination, Effect, State, Status};
@@ -70,7 +70,7 @@ pub fn Changelog() -> Element {
 
     rsx! {
         div { class: "screen",
-            ScreenHeader { title: model::TITLE }
+            ScreenHeader { title: model::TITLE, back: move |()| driver.dispatch(Action::Back) }
 
             div { class: "screen-content content-enter",
                 div { class: "changelog-screen",
@@ -84,13 +84,6 @@ pub fn Changelog() -> Element {
                 }
             }
 
-            ActionBar {
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| driver.dispatch(Action::Back),
-                    {model::BACK}
-                }
-            }
         }
     }
 }

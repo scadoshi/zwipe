@@ -919,7 +919,7 @@ pub fn SuggestedCommanders() -> Element {
 
     rsx! {
         div { class: "screen",
-            ScreenHeader { title: model::TITLE, hint: hint_open }
+            ScreenHeader { title: model::TITLE, hint: hint_open, back: move |()| driver.dispatch(Action::Back) }
 
             HintDialog {
                 open: hint_open,
@@ -1049,11 +1049,6 @@ pub fn SuggestedCommanders() -> Element {
             }
 
             ActionBar {
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| driver.dispatch(Action::Back),
-                    {model::BACK}
-                }
                 if shows_swipe {
                     Button {
                         variant: ButtonVariant::Action,

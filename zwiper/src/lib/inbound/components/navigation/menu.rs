@@ -17,6 +17,8 @@ use crate::inbound::router::Router;
 /// A screen the signed-in menu opens.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Section {
+    /// Home.
+    Home,
     /// The deck list, and every screen inside a deck.
     Decks,
     /// Playstyle, with its suggested commanders.
@@ -34,8 +36,9 @@ pub enum Section {
 }
 
 impl Section {
-    /// Every section, in menu order: the deck screens, then the user's own.
-    pub const ALL: [Self; 7] = [
+    /// Every section, in menu order: Home, the deck screens, then the user's own.
+    pub const ALL: [Self; 8] = [
+        Self::Home,
         Self::Decks,
         Self::Playstyle,
         Self::Maybeboard,
@@ -49,6 +52,7 @@ impl Section {
     #[must_use]
     pub const fn label(self) -> &'static str {
         match self {
+            Self::Home => "Home",
             Self::Decks => "Decks",
             Self::Playstyle => "Playstyle",
             Self::Maybeboard => "Commander maybeboard",
@@ -63,6 +67,7 @@ impl Section {
     #[must_use]
     pub const fn route(self) -> Router {
         match self {
+            Self::Home => Router::Home {},
             Self::Decks => Router::DeckList {},
             Self::Playstyle => Router::SuggestedCommanders {},
             Self::Maybeboard => Router::CommanderMaybeboard {},
@@ -73,11 +78,12 @@ impl Section {
         }
     }
 
-    /// The section a route sits under, lit in the menu; `None` for Home and
-    /// the auth screens.
+    /// The section a route sits under, lit in the menu; `None` for the auth
+    /// screens.
     #[must_use]
     pub const fn of(route: &Router) -> Option<Self> {
         match route {
+            Router::Home {} => Some(Self::Home),
             Router::DeckList {}
             | Router::CreateDeck
             | Router::EditDeck { .. }
@@ -93,10 +99,7 @@ impl Section {
             Router::Account {} | Router::PrivacyPolicy {} => Some(Self::Account),
             Router::Config {} => Some(Self::Config),
             Router::Changelog {} => Some(Self::Changelog),
-            Router::Home {}
-            | Router::Login {}
-            | Router::Register {}
-            | Router::ForgotPassword {} => None,
+            Router::Login {} | Router::Register {} | Router::ForgotPassword {} => None,
         }
     }
 }
@@ -214,9 +217,8 @@ mod tests {
     }
 
     #[test]
-    fn home_and_the_auth_screens_light_up_nothing() {
+    fn the_auth_screens_light_up_nothing() {
         for route in [
-            Router::Home {},
             Router::Login {},
             Router::Register {},
             Router::ForgotPassword {},

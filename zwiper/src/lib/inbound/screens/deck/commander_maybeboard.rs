@@ -382,7 +382,7 @@ pub fn CommanderMaybeboard() -> Element {
 
     rsx! {
         div { class: "screen",
-            ScreenHeader { title: model::TITLE, hint: hint_open }
+            ScreenHeader { title: model::TITLE, hint: hint_open, back: move |()| driver.dispatch(Action::Back) }
 
             HintDialog {
                 open: hint_open,
@@ -534,11 +534,6 @@ pub fn CommanderMaybeboard() -> Element {
             }
 
             ActionBar {
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| driver.dispatch(Action::Back),
-                    {model::BACK}
-                }
                 Button {
                     variant: ButtonVariant::Action,
                     onclick: move |_| filters_overlay_open.set(true),

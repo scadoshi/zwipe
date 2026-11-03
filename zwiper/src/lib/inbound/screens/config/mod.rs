@@ -10,7 +10,7 @@ pub mod universes_beyond;
 
 use app_icon_sheet::AppIconSheet;
 use components::{
-    ActionBar, Button, ButtonVariant, DarkModeButton, HintBullet, HintBullets, HintDialog, HintKey,
+    Button, ButtonVariant, DarkModeButton, HintBullet, HintBullets, HintDialog, HintKey,
     TOAST_NORMAL, ThemeConfig, ToastOptions, Toasts, use_toast,
 };
 use dioxus::prelude::*;
@@ -253,7 +253,7 @@ pub fn Config() -> Element {
 
     rsx! {
             div { class: "screen",
-                ScreenHeader { title: model::TITLE, hint: config_hint_open }
+                ScreenHeader { title: model::TITLE, hint: config_hint_open, back: move |()| driver.dispatch(Action::Back) }
 
                 HintDialog {
                     open: config_hint_open,
@@ -404,13 +404,6 @@ pub fn Config() -> Element {
                     }
                 }
 
-                ActionBar {
-                    Button {
-                        variant: ButtonVariant::Action,
-                        onclick: move |_| driver.dispatch(Action::Back),
-                        {model::BACK}
-                    }
-                }
 
                 PreferencesSheet {
                     open: driver.preferences_open,

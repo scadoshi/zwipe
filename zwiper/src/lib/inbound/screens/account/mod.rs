@@ -67,7 +67,7 @@ pub fn Account() -> Element {
 
     rsx! {
             div { class: "screen",
-                ScreenHeader { title: model::TITLE, hint: account_hint_open }
+                ScreenHeader { title: model::TITLE, hint: account_hint_open, back: move |()| driver.dispatch(Action::Back) }
 
                 HintDialog {
                     open: account_hint_open,
@@ -211,11 +211,6 @@ pub fn Account() -> Element {
                 }
 
                 ActionBar {
-                    Button {
-                        variant: ButtonVariant::Action,
-                        onclick: move |_| driver.dispatch(Action::Back),
-                        {model::BACK}
-                    }
                     Button {
                         variant: ButtonVariant::Action,
                         danger: true,

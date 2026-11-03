@@ -285,7 +285,7 @@ pub fn DeckList() -> Element {
 
     rsx! {
             div { class: "screen",
-                ScreenHeader { title: deck_list::TITLE, hint: decks_hint_open }
+                ScreenHeader { title: deck_list::TITLE, hint: decks_hint_open, back: move |()| driver.dispatch(Action::Back) }
 
                 // Auto-opens once per account (HINT_DECK_LIST) when the model
                 // offers it; the header's ? reopens it on demand.
@@ -424,11 +424,6 @@ pub fn DeckList() -> Element {
             }
 
             ActionBar {
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| driver.dispatch(Action::Back),
-                    {deck_list::BACK}
-                }
                 Button {
                     variant: ButtonVariant::Action,
                     onclick: move |_| {
