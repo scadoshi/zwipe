@@ -28,6 +28,7 @@ use zwipe_ui::screens::home::{
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::auth::session_upkeep::FlavorCard;
 use crate::inbound::components::hint_dialog::{self, HintColored};
+use crate::inbound::components::home_decks::HomeDecks;
 use crate::inbound::components::home_hero::{CachedCounts, CachedMyCounts, HomeHeroScoped};
 use crate::inbound::components::home_play_style::{CachedPlayStyle, HomePlayStyle};
 use crate::inbound::components::screen_header::ScreenHeader;
@@ -423,6 +424,7 @@ pub fn Home() -> Element {
     let figures = state.figures();
     let live = state.live();
     let scope = state.scope();
+    let decks = state.decks();
     let play_style = state.play_style();
     let seed = state.seed();
     let flavor = state.flavor();
@@ -451,6 +453,11 @@ pub fn Home() -> Element {
                         driver.dispatch(Action::ToggleScope { mine_fresh });
                     },
                     onactivity: move |()| driver.dispatch(Action::Activity),
+                }
+
+                HomeDecks {
+                    decks,
+                    onopen: move |()| driver.dispatch(Action::Decks),
                 }
 
                 HomePlayStyle {

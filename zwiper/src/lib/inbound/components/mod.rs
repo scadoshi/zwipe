@@ -20,6 +20,8 @@ pub mod guide_link;
 pub mod hint_dialog;
 /// App-root receiver that renders on-demand "?" hint dialogs (sender/receiver).
 pub mod hint_host;
+/// Home's Decks panel: the deck count and an Open decks button.
+pub mod home_decks;
 /// The mark with the public counters, on home and the auth screens.
 pub mod home_hero;
 /// Home's Color map panel: the user's color territory map.
