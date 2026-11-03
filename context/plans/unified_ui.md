@@ -29,6 +29,7 @@ These were settled with the owner before the per-screen review. A screen breaks 
 
 - The app's bottom footer goes away. A screen's actions (Edit, Clone, Share, Delete and the like) sit inline in the content, like the web's panel footers.
 - A screen's one or two main actions can float instead: compact buttons just above the bottom edge, always on screen, with no bar behind them and the content scrolling underneath. Decks' Create and the commander lists' Swipe and Filter float.
+- The action dock is a screen's icon actions in one floating squircle bar at the bottom right (Cards first). It has no minimize button: it covers only a corner and each screen keeps room to scroll clear of it. If it ever crowds content, it shrinks with the header on scroll instead.
 - Icons stand in for words only where the symbol is standard (+, −, a funnel, undo, refresh, the eye). Each icon has an accessible label, and the screen's hint names each one once.
 - A form's primary button (Log in, Import) sits at the end of the form, right after the last field, and scrolls with the content. The deck form is the exception, since it runs about three screens: its Save (Edit) floats from the moment something changes, and its Create (Create deck) floats once the form is valid.
 - Nothing hides behind More. Each action a More sheet holds today sits inline where it belongs, destructive ones in red. The four More sheets (Deck view, Decks, Account, Maybeboard and Suggested commanders) go away.
@@ -76,7 +77,7 @@ Every footer in the app on 2026-11-03 and where its actions go. Where an action 
 | Account | Back, Log out, More (Delete account) | a danger zone at the very bottom holds Log out and Delete account, Delete in red; the menu has Log out too |
 | Export | Back, Copy | Copy inline |
 | Add, Remove, Swipe select | Back, Filter, Refresh, the eye | Filter, Refresh and the eye float as icons in the bottom-right corner |
-| Cards (today's Deck cards) | Back, Add, Remove, Filter, Undo, Reset filter | a floating icon pill, bottom center: + and −, a divider, the filter funnel and undo; reset is a small × on the funnel, shown only while a filter is on |
+| Cards (today's Deck cards) | Back, Add, Remove, Filter, Undo, Reset filter | the action dock, floating at the bottom right: + and −, a full-height divider, the filter funnel and undo; reset is a small squircle × on the funnel, shown only while a filter is on |
 | Commander maybeboard | Back, Filter, Swipe, More (Clear maybeboard) | Swipe and Filter float; Clear maybeboard inline |
 | Suggested commanders, Playstyle | Back, Swipe, More (Clear skips) | Swipe floats; Clear skips inline |
 | Activity, Settings, Privacy policy, dictionary, examples | Back | the back arrow, nothing else |

@@ -151,10 +151,11 @@ button {
 }
 
 /* ==================
-  action pill
+  action dock
  ==================== */
 
-/* A screen's icon actions as one floating squircle bar (Cards): icons only,
+/* The action dock: a screen's icon actions as one floating squircle bar
+   (Cards): icons only,
    a thin divider between groups that runs the bar's full height. */
 .icon-pill {
     display: flex;
@@ -226,7 +227,7 @@ button {
     height: 1.2rem;
     padding: 0;
     border: 1px solid var(--border-primary);
-    border-radius: 999px;
+    border-radius: 0.35rem;
     background-color: var(--bg-primary);
     color: var(--text-primary);
     font-size: 0.8rem;
