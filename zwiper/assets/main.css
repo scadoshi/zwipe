@@ -2556,6 +2556,35 @@ button {
     box-shadow: var(--shadow-sm);
 }
 
+/* An empty swipe stack's note at full strength, with a chip's edge and the
+   subtle text color: faded on a light theme it was a smudge on the page. */
+.message-empty:has(> .chip-note) {
+    opacity: 1;
+}
+
+.message-empty .chip-note {
+    border-color: var(--border-primary);
+    color: var(--text-subtle);
+}
+
+/* On a light theme a disabled chip keeps its edge and dims through its text
+   color alone: the kit's opacity takes a cream chip to nothing against a
+   cream page. */
+[class*="theme-"][class*="-light"] .chip.disabled {
+    opacity: 1;
+    color: var(--text-subtle);
+    border-color: var(--border-muted);
+}
+
+/* An empty heatmap day on a light theme: the kit's --border-secondary is
+   the panel's own cream, so the cell fills with the sink and takes a faint
+   edge instead. */
+[class*="theme-"][class*="-light"] .heat-cell.heat-0 {
+    fill: var(--bg-sink);
+    stroke: var(--border-muted);
+    stroke-width: 0.5;
+}
+
 .chip-remove {
     all: unset;
     cursor: pointer;

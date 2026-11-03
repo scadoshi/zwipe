@@ -71,6 +71,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Floating buttons rise above the keyboard",
         "The filter and printing sheets apply from a checkmark at the bottom right",
         "Log in, Create profile and Send a reset link sit at the bottom right",
+        "Light themes keep disabled chips, empty heatmap days and empty notes readable",
     ],
 }];
 
