@@ -712,8 +712,12 @@ fn filter_opens_the_card_filter_and_the_list_narrows_only_on_apply() {
     assert!(screen_text(&harness.app).contains(" Filter "));
 
     if let Some(sheet) = &mut view_mut(&mut harness).sheet {
-        sheet.filter.draft.set_name_contains("ra");
-        sheet.filter.draft.set_sort(CardSortKey::Name);
+        sheet.edit_draft(|d| {
+            d.set_name_contains("ra");
+        });
+        sheet.edit_draft(|d| {
+            d.set_sort(CardSortKey::Name);
+        });
     }
     assert_eq!(
         shown(&harness),
@@ -727,7 +731,7 @@ fn filter_opens_the_card_filter_and_the_list_narrows_only_on_apply() {
 
     harness.press(KeyCode::Char('f'));
     if let Some(sheet) = &mut view_mut(&mut harness).sheet {
-        sheet.filter.draft = CardQueryBuilder::default();
+        sheet.edit_draft(|d| *d = CardQueryBuilder::default());
     }
     harness.press(KeyCode::Char('a'));
     assert_eq!(shown(&harness), ["Atraxa", "Krenko", "Talrand", "Brago"]);
@@ -743,7 +747,7 @@ fn the_filters_dictionary_lands_in_the_sheet_and_refetches_nothing() {
     harness.press(KeyCode::Char('f'));
     harness.app.shared.hint = None;
     if let Some(sheet) = &mut view_mut(&mut harness).sheet {
-        sheet.dictionary = Some(PickerField::Exclude(MatchGroup::Tags));
+        sheet.opened_dictionary_for(PickerField::Exclude(MatchGroup::Tags));
     }
     harness.open(oracle_tags::open);
     harness.app.shared.hint = None;
@@ -755,7 +759,7 @@ fn the_filters_dictionary_lands_in_the_sheet_and_refetches_nothing() {
         .as_ref()
         .expect("the sheet is still open");
     assert_eq!(
-        sheet.filter.draft.oracle_tags_excludes(),
+        sheet.draft().oracle_tags_excludes(),
         Some(&["ramp".to_owned()][..])
     );
     assert_eq!(harness.pending(), []);

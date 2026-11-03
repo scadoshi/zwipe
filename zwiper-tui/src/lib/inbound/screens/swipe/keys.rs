@@ -6,7 +6,7 @@ use crossterm::event::KeyCode;
 use zwipe_ui::screens::add_cards::{Action, PRINTING_SWAPPED, Source};
 use zwipe_ui::stack::Direction;
 
-use super::{Entering, SwipeView, dispatch, reopen_hint, scope};
+use super::{Entering, SwipeView, dispatch, reopen_hint, reset_filter, scope};
 use crate::inbound::app::Context;
 use crate::inbound::screens::card_sheets::details::DetailsOutcome;
 use crate::inbound::screens::card_sheets::filter::{self, SheetOutcome};
@@ -81,6 +81,11 @@ fn switch_source(view: &mut SwipeView, cx: &mut Context<'_>) {
 /// Hands the key to the sheet on top, if any. Returns whether one took it.
 fn sheet_key(view: &mut SwipeView, code: KeyCode, cx: &mut Context<'_>) -> bool {
     if let Some(sheet) = &mut view.sheet {
+        if filter::keys::resets(sheet, code) {
+            let draft = sheet.draft().clone();
+            reset_filter(view, draft, cx);
+            return true;
+        }
         match filter::keys::handle(sheet, code, cx) {
             SheetOutcome::Open => {}
             SheetOutcome::Closed => view.sheet = None,

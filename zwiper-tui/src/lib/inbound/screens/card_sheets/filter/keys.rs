@@ -7,6 +7,7 @@
 use crossterm::event::KeyCode;
 use zwipe_core::domain::user::hints::HINT_FILTER;
 use zwipe_ui::filter::sections::{self, Clear, Row, Section};
+use zwipe_ui::screens::card_filter::Action;
 
 use super::{FilterSheet, PickerInput, SheetOutcome, Target};
 use crate::inbound::app::Context;
@@ -56,6 +57,11 @@ pub(crate) fn handle(sheet: &mut FilterSheet, code: KeyCode, cx: &mut Context<'_
     SheetOutcome::Open
 }
 
+/// Whether `code` presses Reset: `r` while no box takes the letters. A host whose own model resets the filter, as Add's does, takes the key before the sheet.
+pub(crate) fn resets(sheet: &FilterSheet, code: KeyCode) -> bool {
+    code == KeyCode::Char('r') && !sheet.typing()
+}
+
 /// Whether the focus is on the Oracle tags header or one of its rows, where `i` explains oracle tags.
 pub(crate) fn in_oracle_tags(sheet: &FilterSheet) -> bool {
     match sheet.focused() {
@@ -75,20 +81,18 @@ fn act(sheet: &mut FilterSheet, code: KeyCode, cx: &mut Context<'_>) {
         Target::Header(section) => {
             if toggle {
                 sheet.toggle_section(section);
-            } else if code == KeyCode::Char('x') && section.is_active(&sheet.filter.draft) {
-                section.clear(&mut sheet.filter.draft);
-                sheet.sync_inputs();
-                sheet.clamp_focus();
+            } else if code == KeyCode::Char('x') && sheet.model.active_sections().contains(&section)
+            {
+                sheet.clear_section(section, cx);
             }
         }
         Target::Row(Row::Label { mode, clear, .. }) => {
             if toggle && let Some(chip) = mode {
-                sheet.filter.modes.flip(&mut sheet.filter.draft, chip);
-                sheet.sync_inputs();
+                sheet.flip_mode(chip, cx);
             } else if code == KeyCode::Char('x')
                 && let Some(clear) = clear
             {
-                clear_label(sheet, clear);
+                clear_label(sheet, clear, cx);
             }
         }
         Target::Row(Row::Chips(set)) => {
@@ -101,14 +105,14 @@ fn act(sheet: &mut FilterSheet, code: KeyCode, cx: &mut Context<'_>) {
                 }
                 KeyCode::Enter | KeyCode::Char(' ') => {
                     let at = *focus;
-                    sheet.tap_chip(set, at, &cx.shared.cards.catalog);
+                    sheet.tap_chip(set, at, cx);
                 }
                 _ => {}
             }
         }
         Target::Row(Row::Stepper(row)) => match code {
-            KeyCode::Char('-') => sheet.step(row, -1),
-            KeyCode::Char('+' | '=') => sheet.step(row, 1),
+            KeyCode::Char('-') => sheet.step(row, -1, cx),
+            KeyCode::Char('+' | '=') => sheet.step(row, 1, cx),
             KeyCode::Left | KeyCode::Char('h') => sheet.step_max = false,
             KeyCode::Right | KeyCode::Char('l') => sheet.step_max = true,
             _ => {}
@@ -118,8 +122,10 @@ fn act(sheet: &mut FilterSheet, code: KeyCode, cx: &mut Context<'_>) {
 }
 
 /// Clears what a label's x covers, and the text boxes under it.
-fn clear_label(sheet: &mut FilterSheet, clear: Clear) {
-    clear.apply(&mut sheet.filter.draft);
+fn clear_label(sheet: &mut FilterSheet, clear: Clear, cx: &mut Context<'_>) {
+    let mut draft = sheet.draft().clone();
+    clear.apply(&mut draft);
+    sheet.edit(draft, cx);
     sheet.sync_inputs();
     for picker in sheet.pickers.values_mut() {
         *picker = PickerInput::default();
@@ -152,7 +158,9 @@ fn type_key(sheet: &mut FilterSheet, code: KeyCode, cx: &mut Context<'_>) {
                 && input.handle_key(code)
             {
                 let value = input.value().to_owned();
-                field.set(&mut sheet.filter.draft, &value);
+                let mut draft = sheet.draft().clone();
+                field.set(&mut draft, &value);
+                sheet.edit(draft, cx);
             }
         }
         Row::Number(field) => match code {
@@ -175,9 +183,9 @@ fn type_key(sheet: &mut FilterSheet, code: KeyCode, cx: &mut Context<'_>) {
                     .map(|p| p.input.value().to_owned())
                     .unwrap_or_default();
                 field.results(
-                    &sheet.filter.draft,
+                    sheet.draft(),
                     &query,
-                    &sheet.filter.config.sources,
+                    sheet.sources(),
                     &cx.shared.cards.catalog,
                 )
             };
@@ -193,15 +201,13 @@ fn type_key(sheet: &mut FilterSheet, code: KeyCode, cx: &mut Context<'_>) {
                 KeyCode::BackTab => picker.highlight = picker.highlight.saturating_sub(1),
                 KeyCode::Enter => {
                     let at = picker.highlight.min(results.len().saturating_sub(1));
-                    if let Some(value) = results.get(at) {
-                        let modes = sheet.filter.modes.clone();
-                        field.pick(&mut sheet.filter.draft, &modes, value);
+                    if let Some(value) = results.into_iter().nth(at) {
+                        sheet.dispatch(Action::Pick { field, value }, cx);
                     }
                 }
                 KeyCode::Backspace if picker.input.is_empty() => {
-                    let modes = sheet.filter.modes.clone();
-                    if let Some(last) = field.picked(&sheet.filter.draft).last() {
-                        field.unpick(&mut sheet.filter.draft, &modes, last);
+                    if let Some(value) = field.picked(sheet.draft()).pop() {
+                        sheet.dispatch(Action::Unpick { field, value }, cx);
                     }
                 }
                 _ => {

@@ -26,7 +26,7 @@ use zwipe_core::domain::deck::{Board, Deck, DeckCard};
 use zwipe_core::domain::user::hints::HINT_ADD_DECK_CARDS;
 use zwipe_core::http::contracts::deck::HttpDeckCardSearch;
 use zwipe_ui::deck_signals::Level;
-use zwipe_ui::filter::draft::{ResetRule, SheetConfig};
+use zwipe_ui::filter::draft::SheetConfig;
 use zwipe_ui::filter::picker::Sources;
 use zwipe_ui::generation::Ticket;
 use zwipe_ui::screens::add_cards::{self, Action, Destination, Effect, Source, State};
@@ -178,18 +178,13 @@ impl SwipeView {
         self.motion = Some(CardMotion::exit(direction, snapshot, Instant::now()));
     }
 
-    /// Opens the filter sheet for the source in use.
+    /// Opens the filter sheet for the source in use. Its Reset goes to the model's `ResetFilter` (see [`reset_filter`]), so the sheet keeps no Reset rule of its own.
     pub(crate) fn open_filter(&mut self, cx: &mut Context<'_>) {
-        let source = self.model.source();
-        let reset = match source {
-            Source::Search => ResetRule::AddSearch(self.model.context()),
-            Source::Maybeboard => ResetRule::AddMaybeboard,
-        };
         let config = SheetConfig {
             show_format: true,
             validate: self.model.validates_apply(),
-            reset,
             sources: Sources::Catalog,
+            ..SheetConfig::default()
         };
         self.sheet = Some(FilterSheet::open(cx, &self.filter, config));
     }
@@ -257,14 +252,33 @@ impl SwipeView {
     }
 }
 
+/// Where a `SetFilter` effect writes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum FilterSink {
+    /// The applied filter, which every action but the sheet's Reset writes.
+    Applied,
+    /// The open sheet's draft, which the app's Reset writes since its sheet edits the filter in place.
+    Sheet,
+}
+
 /// Applies `action` to the model and performs the effects it returns in order, then the actions those answer at once (`Taken` for `TakeUndo`, `Filter` for `Rerun`). A new card on top shows its front, and the images follow the pile.
 pub(crate) fn dispatch(view: &mut SwipeView, action: Action, cx: &mut Context<'_>) {
+    run(view, action, cx, FilterSink::Applied);
+}
+
+/// The filter sheet's Reset: the model stages the source's default in the sheet's `draft`, which Apply then commits and Back drops.
+pub(crate) fn reset_filter(view: &mut SwipeView, draft: CardQueryBuilder, cx: &mut Context<'_>) {
+    run(view, Action::ResetFilter(draft), cx, FilterSink::Sheet);
+}
+
+/// [`dispatch`], with `SetFilter` writing to `sink`.
+fn run(view: &mut SwipeView, action: Action, cx: &mut Context<'_>, sink: FilterSink) {
     let top = |view: &SwipeView| view.model.current().map(|c| c.scryfall_data.id);
     let before = top(view);
     let mut queue = VecDeque::from([action]);
     while let Some(action) = queue.pop_front() {
         for effect in view.model.update(action) {
-            if let Some(answer) = perform_effect(view, effect, cx) {
+            if let Some(answer) = perform_effect(view, effect, cx, sink) {
                 queue.push_back(answer);
             }
         }
@@ -280,7 +294,12 @@ pub(crate) fn dispatch(view: &mut SwipeView, action: Action, cx: &mut Context<'_
     clippy::too_many_lines,
     reason = "one arm per effect of the model, in one match as the recipe has it"
 )]
-fn perform_effect(view: &mut SwipeView, effect: Effect, cx: &mut Context<'_>) -> Option<Action> {
+fn perform_effect(
+    view: &mut SwipeView,
+    effect: Effect,
+    cx: &mut Context<'_>,
+    sink: FilterSink,
+) -> Option<Action> {
     match effect {
         Effect::OfferHint(offer) => {
             hint::once(cx, offer.key());
@@ -392,7 +411,14 @@ fn perform_effect(view: &mut SwipeView, effect: Effect, cx: &mut Context<'_>) ->
         Effect::RecordUndo { deck_id, action } => cx.shared.cards.undo.push(deck_id, action),
         Effect::Enter { pile, from } => view.entering.set(pile, Some(from)),
         Effect::StopEnter(pile) => view.entering.set(pile, None),
-        Effect::SetFilter(filter) => view.filter = filter,
+        Effect::SetFilter(filter) => match sink {
+            FilterSink::Applied => view.filter = filter,
+            FilterSink::Sheet => {
+                if let Some(sheet) = &mut view.sheet {
+                    sheet.replace_draft(filter, cx);
+                }
+            }
+        },
         Effect::Rerun => return Some(Action::Filter(view.filter.clone())),
         Effect::ParkFilter { source, filter } => {
             if let Some(deck_id) = view.model.deck_id() {

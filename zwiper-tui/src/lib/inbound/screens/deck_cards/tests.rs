@@ -429,7 +429,7 @@ fn the_filter_sheets_dictionary_returns_to_the_sheet_without_a_reload() {
     harness.press(KeyCode::Char('f'));
     harness.app.shared.hint = None;
     if let Some(sheet) = &mut view_mut(&mut harness).sheet {
-        sheet.dictionary = Some(PickerField::Include(MatchGroup::Tags));
+        sheet.opened_dictionary_for(PickerField::Include(MatchGroup::Tags));
     }
     harness.open(screens::oracle_tags::open);
     assert!(matches!(harness.screen(), Screen::OracleTags(_)));
@@ -442,7 +442,7 @@ fn the_filter_sheets_dictionary_returns_to_the_sheet_without_a_reload() {
         .as_ref()
         .expect("the sheet is still open");
     assert_eq!(
-        sheet.filter.draft.oracle_tags_contains_any(),
+        sheet.draft().oracle_tags_contains_any(),
         Some(&["ramp".to_owned()][..])
     );
     assert!(

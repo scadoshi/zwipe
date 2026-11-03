@@ -105,7 +105,7 @@ impl SwipePicker {
             show_format: false,
             ..SheetConfig::default()
         };
-        self.sheet = Some(FilterSheet::open(cx, &self.filter, config));
+        self.sheet = Some(FilterSheet::open_quiet(cx, &self.filter, config));
     }
 
     /// Whether the slot has what it needs to search: a format for the commander, a commander for the signature spell.
