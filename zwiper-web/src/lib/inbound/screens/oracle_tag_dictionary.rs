@@ -19,8 +19,8 @@ use components::{ActionBar, Button, ButtonVariant, PageHeader, TOAST_NORMAL, use
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
-use zwipe_core::domain::card::oracle_tag::{self, OracleTag};
-use zwipe_ui::timing::DICTIONARY_RESULT_CAP;
+use zwipe_core::domain::card::oracle_tag::OracleTag;
+use zwipe_ui::dictionary;
 
 use crate::inbound::catalog::CatalogCache;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
@@ -29,35 +29,6 @@ use crate::inbound::screens::oracle_tag_examples::OracleTagExamples;
 
 /// The search input's id, for `/`.
 const SEARCH_ID: &str = "oracle-tag-dictionary-search";
-
-/// The letter a slug is browsed under: its first character lowercased, or
-/// `#` for one that does not start with a letter.
-// Belongs in zwipe-ui: the app keeps this in its dictionary screen.
-fn bucket_of(slug: &str) -> char {
-    match slug.chars().next() {
-        Some(c) if c.is_ascii_alphabetic() => c.to_ascii_lowercase(),
-        _ => '#',
-    }
-}
-
-/// The rows the dictionary lists: the ranked search for a non-empty `q`,
-/// capped, else the tags under `letter` in slug order.
-// Belongs in zwipe-ui: the app keeps this inline in its dictionary screen.
-fn rows_for(tags: &[OracleTag], q: &str, letter: char) -> Vec<OracleTag> {
-    if q.is_empty() {
-        let mut in_letter: Vec<OracleTag> = tags
-            .iter()
-            .filter(|t| bucket_of(&t.slug) == letter)
-            .cloned()
-            .collect();
-        in_letter.sort_by(|a, b| a.slug.cmp(&b.slug));
-        in_letter
-    } else {
-        let mut matches = oracle_tag::search_oracle_tags(tags, q);
-        matches.truncate(DICTIONARY_RESULT_CAP);
-        matches
-    }
-}
 
 /// The dictionary over its host while `open`. `on_use` takes the slug of
 /// the row whose `Use` was pressed.
@@ -105,9 +76,9 @@ pub fn OracleTagDictionary(mut open: Signal<bool>, on_use: EventHandler<String>)
     let body = if let Some(tags) = slot.ready() {
         let q = query().trim().to_lowercase();
         let searching = !q.is_empty();
-        let has_hash = tags.iter().any(|t| bucket_of(&t.slug) == '#');
+        let rail = dictionary::letters(tags);
         let letter = selected_letter();
-        let rows = rows_for(tags, &q, letter);
+        let rows = dictionary::rows_for(tags, &q, letter);
         rsx! {
             div { class: "web-dict-browse",
                 div { class: "dict-controls",
@@ -123,7 +94,7 @@ pub fn OracleTagDictionary(mut open: Signal<bool>, on_use: EventHandler<String>)
                         oninput: move |event| query.set(event.value()),
                     }
                     div { class: "dict-letter-rail scroll-fade-x",
-                        for c in ('a'..='z').chain(has_hash.then_some('#')) {
+                        for c in rail {
                             button {
                                 key: "{c}",
                                 class: if !searching && c == letter { "chip selected" } else { "chip" },
@@ -256,50 +227,5 @@ fn DictionarySkeleton() -> Element {
                 }
             }
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn tag(slug: &str, description: Option<&str>) -> OracleTag {
-        OracleTag {
-            slug: slug.to_owned(),
-            label: slug.to_owned(),
-            description: description.map(str::to_owned),
-            parent_slugs: Vec::new(),
-            curated: false,
-        }
-    }
-
-    #[test]
-    fn a_slug_not_starting_with_a_letter_is_under_hash() {
-        assert_eq!(bucket_of("Ramp"), 'r');
-        assert_eq!(bucket_of("40k-model"), '#');
-        assert_eq!(bucket_of(""), '#');
-    }
-
-    #[test]
-    fn browsing_lists_one_letter_in_slug_order() {
-        let tags = [tag("ramp", None), tag("draw", None), tag("reanimate", None)];
-        let slugs: Vec<String> = rows_for(&tags, "", 'r')
-            .into_iter()
-            .map(|t| t.slug)
-            .collect();
-        assert_eq!(slugs, ["ramp", "reanimate"]);
-    }
-
-    #[test]
-    fn searching_reads_descriptions_across_letters() {
-        let tags = [
-            tag("ramp", Some("puts lands out")),
-            tag("draw", Some("more cards")),
-        ];
-        let slugs: Vec<String> = rows_for(&tags, "cards", 'r')
-            .into_iter()
-            .map(|t| t.slug)
-            .collect();
-        assert_eq!(slugs, ["draw"]);
     }
 }
