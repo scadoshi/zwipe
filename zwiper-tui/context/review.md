@@ -26,10 +26,11 @@ Forms and keys:
 - With no field active, letters are commands. Login: `c Create profile`, `f Forgot password`. Register and Reset password: Esc with no field active goes back to Login.
 - Navigation to another screen lives in the key bar, not in buttons on the screen. The form's own submit stays on the screen, right under its fields.
 - The owner dislikes F-key shortcuts like `F2 Save`. Revisit the deck form's `F2 Save` when it comes up in review, likely as Esc then a letter.
-- Every button looks the same; focus is the only highlight. A button is its label in brackets on one line, `[ Log in ]`, at every size, in rows, inside lines of text and in dialogs. At rest the brackets take the border color and the label the text color (error for danger, muted when disabled). Focused, brackets and label are bold in the accent (a danger button's own color), with no fill. There is no boxed button, no filled pill and no accent `primary` style; Account's Save changes is plain like the rest.
+- Every button looks the same; focus is the only highlight. A button is its label in brackets on one line, `[ Log in ]`, at every size, in rows, inside lines of text and in dialogs. At rest the brackets take the muted text color, brighter than the border, and the label the text color (error for danger, muted when disabled). Focused, brackets and label are bold in the accent (a danger button's own color), with no fill. There is no boxed button, no filled pill and no accent `primary` style; Account's Save changes is plain like the rest.
 - A filled block is always a tag (Everybody, Live, deck tags, chips) and never focusable.
-- Every About `?` marker on screen is a bracketed `[?]` button (no inner spaces): brackets in the border color at rest with the `?` in its own color, bold accent brackets and `?` while it is the marker the About key opens. It sits one space after its label. Key bar hints like `? hint` stay bare keys.
+- Every About `?` marker on screen is a bracketed `[?]` button (no inner spaces): brackets and `?` in the muted text color at rest at every site, bold accent brackets and `?` while it is the marker the About key opens. It sits one space after its label. Key bar hints like `? hint` stay bare keys.
 - Account, Config, Privacy and Changelog have no Back button; `Esc back` in the key bar does it. Account keeps Log out and More.
+- Account's Change sheets (username, email, password) have no Back button either: Save changes is their one button, and `Esc back` in the key bar goes back.
 - Register sits a row down from the top when there is room, so its logo never touches the screen's top edge.
 
 Earlier rules that still hold: swipe labels are only add, remove, skip, undo and maybeboard; toasts and hint prose use the app's text verbatim; the deck view uses responsive panels; telemetry stays; the color map matches the app.
@@ -39,11 +40,8 @@ Earlier rules that still hold: swipe labels are only add, remove, skip, undo and
 Paused on 2026-11-01 to save agent usage.
 
 Approved by the owner, not built yet (build these first on resume, in one pass):
-- Every `[?]` marker's `?` is gray (muted) at rest at every site, and bold accent when lit, like every button.
 - The deck view's sections and the deck form's fields get `[?]` markers for their explainers, and the deck form's F6 key goes away.
 - Playstyle's picked Oracle tags column shows its label in bold accent with its lit `[?]`, not a reversed (filled) label.
-- At-rest button brackets are brighter: a dim text color instead of the faint border color.
-- The Change sheets on Account drop `[ Back ]`; Esc already goes back.
 
 Still open:
 
