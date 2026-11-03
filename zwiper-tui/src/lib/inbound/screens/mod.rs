@@ -28,8 +28,8 @@ pub(crate) mod register;
 pub(crate) mod remove_cards;
 pub(crate) mod swipe;
 pub(crate) mod update_required;
+pub(crate) mod visit;
 
-use std::fmt;
 use std::time::Instant;
 
 use crossterm::event::KeyCode;
@@ -168,7 +168,6 @@ impl Screen {
     pub(crate) fn animating(&self) -> bool {
         match self {
             Self::Home(view) => view.animating(),
-            Self::Account(view) => view.animating(),
             Self::Login(form) => form.hero.animating(Instant::now()),
             Self::Changelog(view) => widgets::entrance::animating(view.filtered_at.elapsed()),
             Self::Swipe(view) => view.animating(),
@@ -471,10 +470,16 @@ async fn run_request(
 /// Applies one result: the app's own here, a screen's by its module, which finds its screen in `nav` if it is open.
 pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
     match update {
-        Update::Upkept { ended, minimum } => session::upkept(cx, ended, minimum.as_deref()),
+        Update::Upkept { ended, minimum } => {
+            session::upkept(cx, ended, minimum.as_deref());
+            if !ended {
+                home::check_flavor(nav, cx);
+            }
+        }
         Update::Changelog(changelog) => {
             cx.shared.changelog =
                 changelog.map_or(ChangelogCache::Failed, |c| ChangelogCache::Loaded(*c));
+            changelog::reload(nav, cx);
         }
         Update::SessionEnded => session::session_ended(cx),
         Update::Counts(metrics) => {
@@ -486,7 +491,7 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
             for hero in nav.screens_mut().filter_map(Screen::hero_mut) {
                 hero.take(&cx.shared.counts, now);
             }
-            home::counts_arrived(nav, cx.shared);
+            home::counts_arrived(nav, cx);
         }
         Update::SignedOut => login::signed_out(cx, None),
         Update::Status(status) => cx.shared.status = status,
@@ -546,16 +551,6 @@ pub(crate) fn shown(error: &ClientError) -> String {
 pub(crate) fn sign_out(cx: &mut Context<'_>, message: &str) {
     message.clone_into(&mut cx.shared.status);
     cx.request(Request::SignOut);
-}
-
-/// A password on its way to the server from a screen not yet on its zwipe-ui model, never shown in `Debug` output.
-#[derive(Clone, PartialEq, Eq)]
-pub(crate) struct Password(pub(crate) String);
-
-impl fmt::Debug for Password {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str("Password(<redacted>)")
-    }
 }
 
 #[cfg(test)]

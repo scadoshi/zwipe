@@ -17,7 +17,8 @@ src/lib/inbound/
 │   ├── oracle_tags/  otag_examples/  printings/  image_preview/
 │   ├── decks/  deck/  deck_form/  deck_import/  deck_export/
 │   ├── swipe/  deck_cards/  remove_cards/  card_sheets/
-│   └── account/  config/  privacy/  changelog/
+│   ├── account/  config/  privacy/  changelog/
+│   └── visit.rs    Visit, which keeps a reply to one opening of a screen out of the next
 └── widgets/        shared drawing pieces, each with its own tests
 ```
 
@@ -69,6 +70,9 @@ Every screen with a model in `zwipe_ui::screens` drives it instead of keeping it
 - A screen opened for one item opens on its id (`deck::open(cx, deck_id)`, `deck_export::open(cx, deck_id)`) and draws from the model's replies, never from a value the screen under it handed over. Tests answer its fetches from the queue: the deck view's `serve(harness, deck)` lands the latest profile and deck fetches, and `Harness::on_top` runs a dispatch no key reaches, such as a second `Load`.
 - A reply can land while another screen covers its own. When an effect would move the stack (the deck view's `Navigate` after a clone or a delete), `apply` checks `nav.top()` and performs everything else, so the model still settles but the screen on top stays.
 - An effect the terminal has no use for is matched and dropped with a comment saying why (the deck view's `FetchCommander`, since it draws no commander art), never left to a catch-all arm.
+- A model's `Effect::Wait(ticket)` is a request like any other: `perform` sleeps the model's tick (`account::TICK`) and answers with an update carrying the ticket, which `apply` hands back as `Action::Tick`. Every reply redraws, so a countdown needs no arm in `Screen::animating`.
+- A model's tickets start over each time its screen opens, and the TUI's tasks outlive the screen (the app's die with it). A screen that can close and open again while its replies are out stamps each request and update with the visit that sent it (`screens::visit::Visit`, from a process-wide counter; Account and Config use it) and lets `apply` dispatch only into the view of the same visit; toasts and the shared user still land from any visit.
+- A screen whose data outlives a visit (Home) builds the model's `Cached` from the TUI's caches in one `snapshot(shared)` and sends `Load` on every mount; `apply` writes each reply to the cache whichever visit asked, then dispatches it only into the current visit. A fetch the TUI already runs app-wide (Home's `FetchCounts`, which Login's hero shares through `shared.counts`) keeps the model's ticket on the view and hands it back when the shared update lands (`home::counts_arrived`). A clock-driven action the app sends on its session refresh (`CheckFlavor { now }`) goes out on the `Upkept` update.
 - Pitfalls: `TextInput::handle_key` clears the box's error on every edit, so `dispatch` must set it back from the model after each action, not only on submit. Replies reach a view through `nav.find_mut(pick)`, so a toast that must outlive the screen goes up before that lookup; a success that lands after the screen closed has no model to tell it what to do and does nothing, which is also what the app does, since its task dies with the screen. A text field's edit action takes the box's whole value, never the key, so cursor moves (Left, Home) are sent too; the model treats a repeat as a no-op.
 
 ## Crashes and error reports

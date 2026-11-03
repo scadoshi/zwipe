@@ -1,17 +1,12 @@
-use std::time::{Duration, Instant};
-
 use crossterm::event::KeyCode;
 use ratatui::style::Modifier;
+use zwipe_core::domain::user::Username;
 use zwipe_core::domain::user::hints::HINT_PROFILE;
 
 use super::*;
 use crate::inbound::event_loop::harness::Harness;
 use crate::inbound::screens::home;
 use crate::test_support::{render, screen_text, user};
-
-fn ask(request: Request) -> screens::Request {
-    request.into()
-}
 
 /// Home with the user known (the profile hint already seen), then Account over it, with nothing left queued.
 fn on_account(verified: bool) -> Harness {
@@ -33,10 +28,37 @@ fn view(harness: &Harness) -> &AccountView {
     }
 }
 
-fn view_mut(harness: &mut Harness) -> &mut AccountView {
-    match harness.screen_mut() {
-        Screen::Account(view) => view,
-        other => panic!("not on the account screen: {other:?}"),
+/// The account jobs waiting, in order.
+fn jobs(harness: &Harness) -> Vec<Job> {
+    harness
+        .pending()
+        .iter()
+        .filter_map(|request| match request {
+            screens::Request::Account(request) => Some(request.job.clone()),
+            _ => None,
+        })
+        .collect()
+}
+
+/// The ticket on the last account job waiting.
+fn last_ticket(harness: &Harness) -> Ticket {
+    match jobs(harness).last() {
+        Some(
+            Job::FetchUser { ticket }
+            | Job::CheckVerification { ticket }
+            | Job::Resend { ticket }
+            | Job::Wait { ticket }
+            | Job::Change { ticket, .. },
+        ) => *ticket,
+        None => panic!("no account job went out"),
+    }
+}
+
+/// `reply` for the visit on screen.
+fn reply(harness: &Harness, reply: Reply) -> Update {
+    Update {
+        visit: view(harness).visit,
+        reply,
     }
 }
 
@@ -51,18 +73,36 @@ fn toasts(harness: &Harness) -> Vec<(ToastKind, String)> {
         .collect()
 }
 
+/// Opens the focused row's sheet and types `values` into its fields in order, ending on the last.
+fn fill(harness: &mut Harness, values: &[&str]) {
+    harness.press(KeyCode::Enter);
+    for (at, value) in values.iter().enumerate() {
+        if at > 0 {
+            harness.press(KeyCode::Tab);
+        }
+        harness.type_text(value);
+    }
+}
+
+/// Focuses `stop`.
+fn focus(harness: &mut Harness, stop: Stop) {
+    while view(harness).focused() != Some(stop) {
+        harness.press(KeyCode::Char('j'));
+    }
+}
+
 #[test]
 fn opening_fetches_the_user_and_shows_the_profile_hint_the_first_time() {
     let mut harness = Harness::new();
     harness.app.shared.user = Some(user(true));
     harness.open(open);
-    assert_eq!(
+    assert!(matches!(
         harness.pending(),
         [
-            ask(Request::LoadUser),
-            screens::Request::MarkHintShown(HINT_PROFILE.to_owned())
-        ]
-    );
+            screens::Request::MarkHintShown(hint),
+            screens::Request::Account(Request { job: Job::FetchUser { .. }, .. }),
+        ] if hint == HINT_PROFILE
+    ));
     assert!(screen_text(&harness.app).contains("Your account"));
 }
 
@@ -93,6 +133,62 @@ fn the_screen_shows_its_rows_and_the_red_unverified_badge() {
 }
 
 #[test]
+fn a_fresh_user_lands_once_and_a_late_one_changes_nothing() {
+    let mut harness = Harness::new();
+    harness.app.shared.user = Some(user(false));
+    harness.open(open);
+    let ticket = last_ticket(&harness);
+    let fresh = reply(
+        &harness,
+        Reply::UserLoaded {
+            ticket,
+            user: Box::new(user(true)),
+        },
+    );
+    harness.apply(fresh);
+    assert!(view(&harness).model.is_verified());
+    let stale = reply(
+        &harness,
+        Reply::UserLoaded {
+            ticket,
+            user: Box::new(user(false)),
+        },
+    );
+    harness.apply(stale);
+    assert!(
+        view(&harness).model.is_verified(),
+        "a repeated reply landed"
+    );
+    assert_eq!(toasts(&harness), []);
+}
+
+#[test]
+fn a_reply_to_an_earlier_visit_never_lands_in_a_later_one() {
+    let mut harness = on_account(false);
+    harness.press(KeyCode::Esc);
+    harness.clear();
+    harness.press(KeyCode::Char('a'));
+    let ticket = last_ticket(&harness);
+    let earlier = view(&harness).visit;
+    harness.press(KeyCode::Esc);
+    harness.press(KeyCode::Char('a'));
+    assert_ne!(view(&harness).visit, earlier);
+    assert_eq!(
+        last_ticket(&harness),
+        ticket,
+        "both visits' fetches hold the same ticket"
+    );
+    harness.apply(Update {
+        visit: earlier,
+        reply: Reply::UserLoaded {
+            ticket,
+            user: Box::new(user(true)),
+        },
+    });
+    assert!(!view(&harness).model.is_verified());
+}
+
+#[test]
 fn a_bad_username_shows_live_and_a_good_one_is_sent_as_typed() {
     let mut harness = on_account(true);
     harness.press(KeyCode::Enter);
@@ -107,44 +203,76 @@ fn a_bad_username_shows_live_and_a_good_one_is_sent_as_typed() {
     harness.type_text("cdef");
     harness.press(KeyCode::Enter);
     harness.press(KeyCode::Enter);
-    assert_eq!(harness.pending(), [], "the password is required");
+    assert_eq!(jobs(&harness), [], "the password is required");
     harness.type_text("hunter2");
     harness.press(KeyCode::Enter);
-    assert_eq!(
-        harness.pending(),
-        [ask(Request::Change(AccountChange::Username {
-            username: "abcdef".to_owned(),
-            password: Password("hunter2".to_owned()),
-        }))]
+    assert!(matches!(
+        jobs(&harness).as_slice(),
+        [Job::Change {
+            change: Change::Username { username, password },
+            ..
+        }] if username == "abcdef" && password.read() == "hunter2"
+    ));
+    assert!(screen_text(&harness.app).contains("Saving..."));
+    harness.press(KeyCode::Esc);
+    assert!(
+        matches!(view(&harness).overlay, Some(Overlay::Form(_))),
+        "the sheet takes no keys while its change is out"
     );
 }
 
 #[test]
-fn a_change_closes_the_sheet_and_toasts_for_its_band() {
+fn a_change_closes_the_sheet_and_toasts_for_its_band_once() {
     let mut harness = on_account(true);
+    fill(&mut harness, &["abcdef", "hunter2"]);
     harness.press(KeyCode::Enter);
+    let ticket = last_ticket(&harness);
     let mut renamed = user(true);
-    renamed.username = zwipe_core::domain::user::Username::new("abcdef").unwrap();
-    harness.apply(Update::Changed {
-        user: Some(Box::new(renamed)),
-        message: "Username changed to abcdef".to_owned(),
-        duration: toast::QUICK,
-    });
+    renamed.username = Username::new("abcdef").unwrap();
+    let changed = reply(
+        &harness,
+        Reply::UsernameChanged {
+            ticket,
+            user: Box::new(renamed.clone()),
+        },
+    );
+    harness.apply(changed);
     assert!(view(&harness).overlay.is_none());
-    assert_eq!(view(&harness).user.username.to_string(), "abcdef");
+    assert_eq!(
+        view(&harness).model.user().map(|u| u.username.to_string()),
+        Some("abcdef".to_owned())
+    );
+    assert_eq!(harness.app.shared.username.as_deref(), Some("abcdef"));
     let up = &harness.app.shared.toasts.items()[0];
+    assert_eq!(up.message, "Username changed to abcdef");
     assert_eq!(up.expires_at.duration_since(up.shown_at), toast::QUICK);
+    let repeated = reply(
+        &harness,
+        Reply::UsernameChanged {
+            ticket,
+            user: Box::new(renamed),
+        },
+    );
+    harness.apply(repeated);
+    assert_eq!(toasts(&harness).len(), 1, "a repeated reply toasted again");
 }
 
 #[test]
 fn a_failed_change_toasts_and_keeps_the_sheet() {
     let mut harness = on_account(true);
+    fill(&mut harness, &["abcdef", "hunter2"]);
     harness.press(KeyCode::Enter);
-    if let Some(Overlay::Form(form)) = &mut view_mut(&mut harness).overlay {
-        form.busy = true;
-    }
-    harness.apply(Update::ChangeFailed("wrong password".to_owned()));
-    assert!(matches!(&view(&harness).overlay, Some(Overlay::Form(form)) if !form.busy));
+    let ticket = last_ticket(&harness);
+    let failed = reply(
+        &harness,
+        Reply::Failed {
+            ticket,
+            error: "wrong password".to_owned(),
+        },
+    );
+    harness.apply(failed);
+    assert!(matches!(&view(&harness).overlay, Some(Overlay::Form(_))));
+    assert!(!view(&harness).model.is_saving(Sheet::Username));
     assert_eq!(
         toasts(&harness),
         [(ToastKind::Error, "wrong password".to_owned())]
@@ -154,15 +282,8 @@ fn a_failed_change_toasts_and_keeps_the_sheet() {
 #[test]
 fn a_password_change_asks_first_and_checks_against_the_current_one() {
     let mut harness = on_account(true);
-    for _ in 0..2 {
-        harness.press(KeyCode::Char('j'));
-    }
-    assert_eq!(view(&harness).focused(), Some(Stop::ChangePassword));
-    harness.press(KeyCode::Enter);
-    if let Some(Overlay::Form(form)) = &mut view_mut(&mut harness).overlay {
-        form.fill(&["Same!pass1", "Same!pass1", "Same!pass1"]);
-        form.focus = 2;
-    }
+    focus(&mut harness, Stop::ChangePassword);
+    fill(&mut harness, &["Same!pass1", "Same!pass1", "Same!pass1"]);
     harness.press(KeyCode::Enter);
     let Some(Overlay::Form(form)) = &view(&harness).overlay else {
         panic!("no sheet");
@@ -171,9 +292,8 @@ fn a_password_change_asks_first_and_checks_against_the_current_one() {
         form.inputs[1].error(),
         Some("New password must be different from your current password")
     );
-    if let Some(Overlay::Form(form)) = &mut view_mut(&mut harness).overlay {
-        form.fill(&["Old!pass1", "New!pass22", "New!pass22"]);
-    }
+    harness.press(KeyCode::Esc);
+    fill(&mut harness, &["Old!pass1", "New!pass22", "New!pass22"]);
     harness.press(KeyCode::Enter);
     assert!(matches!(
         view(&harness).overlay,
@@ -181,61 +301,74 @@ fn a_password_change_asks_first_and_checks_against_the_current_one() {
     ));
     assert!(screen_text(&harness.app).contains("Changing your password will log you out"));
     harness.press(KeyCode::Char('y'));
-    assert_eq!(
-        harness.pending(),
-        [ask(Request::Change(AccountChange::Password {
-            current: Password("Old!pass1".to_owned()),
-            new: Password("New!pass22".to_owned()),
-        }))]
-    );
+    assert!(matches!(
+        jobs(&harness).as_slice(),
+        [Job::Change {
+            change: Change::Password { current, new },
+            ..
+        }] if current.read() == "Old!pass1" && new.read() == "New!pass22"
+    ));
+    assert!(matches!(view(&harness).overlay, Some(Overlay::Form(_))));
 }
 
 #[test]
-fn resend_waits_a_minute_after_it_lands_unless_it_failed() {
+fn resend_counts_down_a_minute_after_it_lands_unless_it_failed() {
     let mut harness = on_account(false);
-    harness.press(KeyCode::Char('j'));
-    harness.press(KeyCode::Char('j'));
-    assert_eq!(view(&harness).focused(), Some(Stop::Resend));
+    focus(&mut harness, Stop::Resend);
     harness.press(KeyCode::Enter);
-    assert_eq!(view(&harness).resend_label(), "Sending...");
+    assert_eq!(view(&harness).model.resend_label(), "Sending...");
     harness.press(KeyCode::Enter);
-    assert_eq!(
-        harness.pending(),
-        [ask(Request::Resend)],
-        "once while sending"
-    );
-    harness.apply(Update::Resent);
-    assert!(view(&harness).resend_label().starts_with("Resend in "));
-    assert!(view(&harness).animating());
+    assert_eq!(jobs(&harness).len(), 1, "once while sending");
+    let ticket = last_ticket(&harness);
+    let resent = reply(&harness, Reply::Resent { ticket });
+    harness.apply(resent);
+    assert_eq!(view(&harness).model.resend_label(), "Resend in 60s");
     assert_eq!(
         toasts(&harness),
         [(ToastKind::Success, "Verification email sent".to_owned())]
     );
+    let wait = last_ticket(&harness);
+    let tick = reply(&harness, Reply::Tick { ticket: wait });
+    harness.apply(tick);
+    assert_eq!(view(&harness).model.resend_label(), "Resend in 59s");
+    assert!(matches!(jobs(&harness).last(), Some(Job::Wait { .. })));
+}
 
-    view_mut(&mut harness).resend_ready_at = None;
+#[test]
+fn a_failed_resend_toasts_long_and_frees_the_button() {
+    let mut harness = on_account(false);
+    focus(&mut harness, Stop::Resend);
     harness.press(KeyCode::Enter);
-    harness.apply(Update::ResendFailed("offline".to_owned()));
-    assert_eq!(view(&harness).resend_label(), "Resend");
-    let failed = &harness.app.shared.toasts.items()[1];
-    assert_eq!(
-        failed.expires_at.duration_since(failed.shown_at),
-        toast::LONG
+    let ticket = last_ticket(&harness);
+    let failed = reply(
+        &harness,
+        Reply::ResendFailed {
+            ticket,
+            error: "offline".to_owned(),
+        },
     );
+    harness.apply(failed);
+    assert_eq!(view(&harness).model.resend_label(), "Resend");
+    let up = &harness.app.shared.toasts.items()[0];
+    assert_eq!(up.expires_at.duration_since(up.shown_at), toast::LONG);
 }
 
 #[test]
 fn checking_verification_toasts_either_way() {
     let mut harness = on_account(false);
-    for _ in 0..3 {
-        harness.press(KeyCode::Char('j'));
-    }
+    focus(&mut harness, Stop::Check);
     harness.press(KeyCode::Enter);
-    assert!(view(&harness).checking);
-    harness.apply(Update::User {
-        user: Box::new(user(true)),
-        toast: Some((ToastKind::Success, "Email verified")),
-    });
-    assert!(view(&harness).verified() && !view(&harness).checking);
+    assert!(view(&harness).model.is_checking());
+    let ticket = last_ticket(&harness);
+    let checked = reply(
+        &harness,
+        Reply::UserLoaded {
+            ticket,
+            user: Box::new(user(true)),
+        },
+    );
+    harness.apply(checked);
+    assert!(view(&harness).model.is_verified() && !view(&harness).model.is_checking());
     assert_eq!(
         toasts(&harness),
         [(ToastKind::Success, "Email verified".to_owned())]
@@ -266,24 +399,61 @@ fn more_opens_delete_which_counts_down_before_it_sends() {
     assert!(screen.contains("Delete (5)"));
     harness.type_text("pw");
     harness.press(KeyCode::Enter);
-    assert_eq!(harness.pending(), [], "still counting down");
-    if let Some(Overlay::More(Some(delete))) = &mut view_mut(&mut harness).overlay {
-        delete.opened_at = Instant::now()
-            .checked_sub(Duration::from_secs(6))
-            .expect("the clock is past six seconds");
-    }
-    harness.press(KeyCode::Enter);
-    assert_eq!(
-        harness.pending(),
-        [ask(Request::Change(AccountChange::Delete {
-            password: Password("pw".to_owned()),
-        }))]
+    assert!(
+        matches!(jobs(&harness).as_slice(), [Job::Wait { .. }]),
+        "still counting down"
     );
+    for _ in 0..5 {
+        let wait = last_ticket(&harness);
+        let tick = reply(&harness, Reply::Tick { ticket: wait });
+        harness.apply(tick);
+    }
+    assert!(screen_text(&harness.app).contains("Delete "));
+    harness.clear();
+    harness.press(KeyCode::Enter);
+    assert!(matches!(
+        jobs(&harness).as_slice(),
+        [Job::Change {
+            change: Change::Delete { password },
+            ..
+        }] if password.read() == "pw"
+    ));
     assert!(screen_text(&harness.app).contains("Deleting..."));
-    harness.apply(Update::DeleteFailed("wrong password".to_owned()));
-    assert!(matches!(&view(&harness).overlay, Some(Overlay::More(Some(d))) if !d.busy));
-    harness.apply(Update::Deleted);
-    assert!(matches!(harness.screen(), Screen::Login(_)));
+    let ticket = last_ticket(&harness);
+    let failed = reply(
+        &harness,
+        Reply::Failed {
+            ticket,
+            error: "wrong password".to_owned(),
+        },
+    );
+    harness.apply(failed);
+    assert!(!view(&harness).model.is_deleting());
+    harness.clear();
+    harness.press(KeyCode::Enter);
+    let ticket = last_ticket(&harness);
+    let deleted = reply(&harness, Reply::Deleted { ticket });
+    harness.clear();
+    harness.apply(deleted);
+    assert_eq!(harness.pending(), [screens::Request::SignOut]);
+}
+
+#[test]
+fn esc_on_delete_stops_its_countdown() {
+    let mut harness = on_account(true);
+    harness.press(KeyCode::Char('m'));
+    harness.press(KeyCode::Enter);
+    let wait = last_ticket(&harness);
+    harness.press(KeyCode::Esc);
+    assert!(matches!(view(&harness).overlay, Some(Overlay::More(None))));
+    let tick = reply(&harness, Reply::Tick { ticket: wait });
+    harness.clear();
+    harness.apply(tick);
+    assert_eq!(
+        jobs(&harness),
+        [],
+        "a closed dialog's tick asked for another"
+    );
 }
 
 #[test]
@@ -326,9 +496,7 @@ fn account_keeps_every_key_on_a_narrow_terminal() {
 #[test]
 fn a_focused_row_button_lines_up_with_the_row_buttons_under_it() {
     let mut harness = on_account(true);
-    while view(&harness).focused() != Some(Stop::Privacy) {
-        harness.press(KeyCode::Char('j'));
-    }
+    focus(&mut harness, Stop::Privacy);
     for (width, height) in [(200, 50), (120, 40), (80, 24), (60, 20)] {
         let terminal = crate::test_support::render(&harness.app, width, height);
         let buffer = terminal.backend().buffer();
@@ -368,7 +536,7 @@ fn the_change_sheet_and_log_out_dialog_draw_real_buttons_at_every_size() {
         };
         assert_eq!(buffer[(x, y)].fg, palette.error.fg.unwrap(), "danger");
     }
-    view_mut(&mut harness).overlay = Some(Overlay::Form(Form::new(FormKind::Username)));
+    harness.press(KeyCode::Enter);
     for (width, height) in crate::test_support::BUTTON_SIZES {
         let rows = crate::test_support::rows(&harness.app, width, height).join("\n");
         let terminal = render(&harness.app, width, height);

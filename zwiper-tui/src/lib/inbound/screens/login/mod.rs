@@ -254,7 +254,7 @@ pub(crate) fn signed_in(cx: &mut Context<'_>, session: &Session) {
 /// Takes `session` as the signed-in one: applies the account's theme, remembers it for the next launch, and holds the user.
 fn adopt(cx: &mut Context<'_>, session: &Session) {
     cx.use_preferences(&session.preferences);
-    cx.request(config::Request::LoadPreferences.into());
+    cx.request(config::Request::AdoptPreferences.into());
     cx.shared.username = Some(session.user.username.to_string());
     cx.shared.user = Some(session.user.clone());
 }

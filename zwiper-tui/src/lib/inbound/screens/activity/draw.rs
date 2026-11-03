@@ -10,9 +10,10 @@ use ratatui::layout::{Constraint, Layout, Margin, Rect};
 use ratatui::style::{Color as TermColor, Modifier, Style, Stylize};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Paragraph, Wrap};
-use zwipe_ui::activity::{self, Bar, DAYS_PER_WEEK, HeatLayout, RateKind, WEEKDAY_LABELS};
+use zwipe_ui::activity::{Bar, DAYS_PER_WEEK, HeatLayout, RateKind, WEEKDAY_LABELS};
+use zwipe_ui::screens::activity::{PASSES_TITLE, Rates, SHOW, Section, Status};
 
-use super::{ActivityView, Focus, Load, Loaded, PASSES_TITLE, Section, pass_row};
+use super::{ActivityView, Focus, Loaded, pass_row};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::screens::home::draw as home_draw;
@@ -82,16 +83,14 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &ActivityView) {
     ])
     .areas(area);
     draw_counts(f, shared, view, counts);
-    match &view.load {
-        Load::Loading => draw_lines(f, skeleton(palette, body.width), (0, 0), body),
-        Load::Failed => draw_note(f, palette, super::LOAD_FAILED, body),
-        Load::Loaded(loaded) if !activity::has_anything(&loaded.activity) => {
-            draw_note(f, palette, super::NOTHING_YET, body);
-        }
-        Load::Loaded(loaded) => {
-            let (lines, focus) = loaded_lines(shared, view, loaded, body.width);
+    match (view.model.status(), view.model.message(), view.loaded()) {
+        (Status::Loading, ..) => draw_lines(f, skeleton(palette, body.width), (0, 0), body),
+        (_, Some(note), _) => draw_note(f, palette, note, body),
+        (_, None, Some(loaded)) => {
+            let (lines, focus) = loaded_lines(shared, view, &loaded, body.width);
             draw_lines(f, lines, focus, body);
         }
+        (_, None, None) => {}
     }
     f.render_widget(action_bar::wrap(bar, keys.width), keys);
     if let Some(info) = &view.overlay {
@@ -208,12 +207,12 @@ fn key_hints(view: &ActivityView) -> Vec<(&'static str, &'static str)> {
                 if revealable {
                     keys.push(("Enter", "Reveal"));
                 }
-                if section == Section::Roles && view.open_role.is_some() {
+                if section == Section::Roles && view.model.revealed_role().is_some() {
                     keys.push(("Tab", "Tags"));
                 }
                 let examples = match section {
                     Section::Roles => view.role_tags.open_tag().is_some(),
-                    Section::Tags => view.open_tag.is_some(),
+                    Section::Tags => view.model.revealed_tag().is_some(),
                     Section::Activity => false,
                 };
                 if examples {
@@ -221,7 +220,7 @@ fn key_hints(view: &ActivityView) -> Vec<(&'static str, &'static str)> {
                 }
             }
             Focus::Passes => {
-                if view.loaded().is_some_and(|l| !l.activity.passes.is_empty()) {
+                if !view.model.passes().is_empty() {
                     keys.push(("Enter", "Expand"));
                 }
             }
@@ -278,7 +277,7 @@ pub(crate) fn indented(line: Line<'static>) -> Line<'static> {
 fn loaded_lines(
     shared: &Shared,
     view: &ActivityView,
-    loaded: &Loaded,
+    loaded: &Loaded<'_>,
     width: u16,
 ) -> (Vec<Line<'static>>, (usize, usize)) {
     let palette = &shared.palette;
@@ -315,9 +314,9 @@ fn loaded_lines(
     let mut header = vec![Span::raw(format!("{PASSES_TITLE} ")).bold()];
     header.extend(button::about(palette, view.focus == Focus::Passes));
     let header = Line::from(header);
-    if passes.is_empty() {
+    if let Some(line) = view.model.passes_line() {
         body.item(
-            vec![header, Line::styled(activity::PASSES_EMPTY, palette.muted)],
+            vec![header, Line::styled(line, palette.muted)],
             view.focus == Focus::Passes,
         );
     } else {
@@ -337,13 +336,12 @@ fn activity_body(
     body: &mut Body,
     palette: &Palette,
     view: &ActivityView,
-    loaded: &Loaded,
+    loaded: &Loaded<'_>,
     width: usize,
 ) {
-    let has_days = !loaded.activity.days.is_empty();
-    let outcomes = &loaded.activity.outcomes;
+    let has_days = view.model.shows_heatmap();
     if has_days {
-        let mut lines = heat_lines(palette, view, &loaded.heat, width);
+        let mut lines = heat_lines(palette, view, loaded.heat, width);
         lines.push(Line::default());
         lines.push(readout_line(palette, view));
         body.item(
@@ -351,11 +349,11 @@ fn activity_body(
             view.focus == Focus::Heat,
         );
     }
-    if activity::has_outcomes(outcomes) {
+    if view.model.shows_totals() {
         if has_days {
             body.line(indented(Line::styled("─".repeat(width), palette.muted)));
         }
-        for line in totals_lines(palette, &activity::outcome_bars(outcomes), width) {
+        for line in totals_lines(palette, &view.model.totals(), width) {
             body.line(indented(line));
         }
     }
@@ -573,32 +571,28 @@ fn rates_body(
     width: usize,
 ) {
     let palette = &shared.palette;
-    if !view.has_rates(section) {
-        let line = match section {
-            Section::Tags => activity::TAGS_EMPTY,
-            _ => activity::ROLES_EMPTY,
-        };
-        body.line(indented(Line::styled(line, palette.muted)));
-        return;
-    }
+    let bars = match view.rates(section) {
+        Rates::Unrated(line) => {
+            body.line(indented(Line::styled(line, palette.muted)));
+            return;
+        }
+        Rates::Uncharted(line) => {
+            body.item(
+                vec![indented(show_chips(palette, view.model.rate()))],
+                view.focus == Focus::Chips(section),
+            );
+            body.line(indented(Line::styled(line, palette.muted)));
+            return;
+        }
+        Rates::Charted(bars) => bars,
+    };
     body.item(
-        vec![indented(show_chips(palette, view.rate))],
+        vec![indented(show_chips(palette, view.model.rate()))],
         view.focus == Focus::Chips(section),
     );
-    let bars = view.bars(section);
-    if bars.is_empty() {
-        let line = match (section, view.loaded()) {
-            (Section::Tags, Some(loaded)) => {
-                activity::tag_empty_line(view.rate, &loaded.activity.tags)
-            }
-            _ => activity::NONE_REMOVED,
-        };
-        body.line(indented(Line::styled(line, palette.muted)));
-        return;
-    }
     let open = match section {
-        Section::Roles => view.open_role.as_deref(),
-        Section::Tags => view.open_tag.as_deref(),
+        Section::Roles => view.model.revealed_role(),
+        Section::Tags => view.model.revealed_tag(),
         Section::Activity => None,
     };
     let label_of = |bar: &Bar| match section {
@@ -652,7 +646,7 @@ fn rates_body(
 
 /// The Show row: its label, then the four rates with the picked one lit.
 fn show_chips(palette: &Palette, picked: RateKind) -> Line<'static> {
-    let mut spans = vec![Span::raw("Show").bold(), Span::raw(" ")];
+    let mut spans = vec![Span::raw(SHOW).bold(), Span::raw(" ")];
     for rate in RateKind::ALL {
         let style = if rate == picked {
             palette.accent.bold().reversed()
