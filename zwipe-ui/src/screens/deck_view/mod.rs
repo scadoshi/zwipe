@@ -221,6 +221,21 @@ impl MoreItem {
         }
     }
 
+    /// The item's label as a button on the deck view itself, where the deck is
+    /// already the subject: `Clone`, not `Clone deck`.
+    #[must_use]
+    pub fn short_label(self) -> &'static str {
+        match self {
+            Self::ImportCards => "Import",
+            Self::ExportCards => "Export",
+            Self::BuyDeck => "Buy",
+            Self::CloneDeck => "Clone",
+            Self::ShareDeck => "Share",
+            Self::ClearSkips => "Clear skips",
+            Self::DeleteDeck => "Delete",
+        }
+    }
+
     /// Whether the item is drawn in the danger color: Clear skips and Delete deck.
     #[must_use]
     pub fn is_danger(self) -> bool {

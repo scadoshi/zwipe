@@ -1,15 +1,13 @@
-//! The view deck screen's More sheet and the Buy, Share and Clear skips
-//! dialogs it opens.
+//! The deck view's Buy, Share and Clear skips dialogs, opened by the buttons
+//! on the screen itself.
 
-use components::{AlertDialog, BottomSheet, Button, DialogAction};
+use components::{AlertDialog, DialogAction};
 use dioxus::prelude::*;
-use zwipe_ui::screens::deck_view::{self, Action, Dialog, MoreItem};
+use zwipe_ui::screens::deck_view::{self, Action, Dialog};
 
-/// Whether the More sheet and each of the deck view's dialogs is up.
+/// Whether each of the deck view's dialogs is up.
 #[derive(Clone, Copy, PartialEq)]
 pub(crate) struct DeckDialogs {
-    /// The More sheet.
-    pub(crate) sheet: Signal<bool>,
     /// The Buy dialog.
     pub(crate) buy: Signal<bool>,
     /// The Clone dialog.
@@ -36,10 +34,9 @@ impl DeckDialogs {
     }
 }
 
-/// The sheet and every dialog, all closed.
+/// Every dialog, closed.
 pub(crate) fn use_deck_dialogs() -> DeckDialogs {
     DeckDialogs {
-        sheet: use_signal(|| false),
         buy: use_signal(|| false),
         clone: use_signal(|| false),
         share: use_signal(|| false),
@@ -51,8 +48,6 @@ pub(crate) fn use_deck_dialogs() -> DeckDialogs {
 #[component]
 pub(crate) fn MoreButtons(
     dialogs: DeckDialogs,
-    /// The items that can be pressed; the rest show disabled.
-    enabled: Vec<MoreItem>,
     /// The `TCGplayer` and `Card Kingdom` links, once the deck has loaded.
     buy_links: Option<(String, String)>,
     buy_body: &'static str,
@@ -62,7 +57,6 @@ pub(crate) fn MoreButtons(
     ondispatch: EventHandler<Action>,
 ) -> Element {
     let DeckDialogs {
-        sheet: mut show_more_sheet,
         buy: show_buy_dialog,
         share: show_share_dialog,
         clear_skips: show_clear_skips_dialog,
@@ -70,22 +64,18 @@ pub(crate) fn MoreButtons(
     } = dialogs;
 
     let share_deck = use_callback(move |()| {
-        show_more_sheet.set(false);
         ondispatch.call(Action::Share);
     });
 
     let copy_shared_link = use_callback(move |()| {
-        show_more_sheet.set(false);
         ondispatch.call(Action::CopyLink);
     });
 
     let stop_sharing = use_callback(move |()| {
-        show_more_sheet.set(false);
         ondispatch.call(Action::StopShare);
     });
 
     let clear_skips = use_callback(move |()| {
-        show_more_sheet.set(false);
         ondispatch.call(Action::ClearSkips);
     });
 
@@ -127,19 +117,6 @@ pub(crate) fn MoreButtons(
         ]
     };
 
-    // Import, Export, Buy and Clone close the sheet; Share, Clear skips and
-    // Delete open their dialog over it.
-    let press = move |item: MoreItem| {
-        if matches!(
-            item,
-            MoreItem::ImportCards | MoreItem::ExportCards | MoreItem::BuyDeck | MoreItem::CloneDeck
-        ) {
-            let mut sheet = show_more_sheet;
-            sheet.set(false);
-        }
-        ondispatch.call(Action::More(item));
-    };
-
     rsx! {
         AlertDialog {
             open: show_buy_dialog,
@@ -173,16 +150,5 @@ pub(crate) fn MoreButtons(
             "{share_body}"
         }
 
-        BottomSheet { open: show_more_sheet, title: deck_view::MORE_TITLE,
-            for item in MoreItem::ALL {
-                Button {
-                    key: "{item.label()}",
-                    disabled: !enabled.contains(&item),
-                    danger: item.is_danger(),
-                    onclick: move |_| press(item),
-                    {item.label()}
-                }
-            }
-        }
     }
 }

@@ -859,3 +859,15 @@ fn the_copy_matches_the_app() {
     assert_eq!([CLEAR, DELETE], ["Clear", "Delete"]);
     assert_eq!(DELETE_BODY, "Are you sure you want to delete this deck?");
 }
+
+#[test]
+fn every_short_label_drops_the_deck_or_cards_word() {
+    for item in MoreItem::ALL {
+        let short = item.short_label();
+        assert!(item.label().starts_with(short), "{item:?}: {short}");
+        assert!(
+            !short.ends_with(" deck") && !short.ends_with(" cards"),
+            "{item:?}: {short}"
+        );
+    }
+}

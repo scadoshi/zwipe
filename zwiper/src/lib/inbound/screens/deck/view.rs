@@ -4,8 +4,8 @@
 //! file draws its state and performs its effects.
 
 use components::{
-    ActionBar, AlertDialog, Button, ButtonVariant, DialogAction, HintBullet, HintBullets,
-    HintDialog, HintKey, TOAST_NORMAL, ToastOptions, Toasts, use_toast,
+    AlertDialog, Button, ButtonVariant, DialogAction, HintBullet, HintBullets, HintDialog, HintKey,
+    TOAST_NORMAL, ToastOptions, Toasts, use_toast,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -45,6 +45,7 @@ use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen, comp
 use crate::inbound::components::{guide_link, hint_dialog, ui_toast};
 use crate::inbound::router::Router;
 use crate::inbound::screens::oracle_tag_examples::OracleTagExamples;
+use crate::outbound::open_url;
 
 /// The deck view's model with the handles that perform its effects. Copy,
 /// so every handler and task holds its own.
@@ -399,7 +400,6 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
         hint_open: use_signal(|| false),
         dialogs: use_deck_dialogs(),
     };
-    let mut show_more_sheet = driver.dialogs.sheet;
     // First-deck tour: opens once per account when the model offers it on
     // the first Load; the header "?" reopens it on demand.
     let first_deck_hint_open = driver.hint_open;
@@ -500,6 +500,15 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                     deck_profile: deck_profile.clone(),
                                     commander: commander,
                                     card_count: card_count,
+                                    actions: rsx! {
+                                        Button {
+                                            variant: ButtonVariant::Action,
+                                            onclick: move |_| driver.dispatch(Action::Edit),
+                                            {deck_view::EDIT}
+                                        }
+                                        MoreItemButton { item: MoreItem::CloneDeck, enabled: more_enabled.clone(), driver }
+                                        MoreItemButton { item: MoreItem::ShareDeck, enabled: more_enabled.clone(), driver }
+                                    },
                                 }
 
                                 if sections.contains(&Section::Budget) {
@@ -526,6 +535,20 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                         DeckBudgetSection {
                                             total: total_line,
                                             average: average_line,
+                                        }
+                                        if let (true, Some((tcg, ck))) = (more_enabled.contains(&MoreItem::BuyDeck), buy_links.clone()) {
+                                            div { class: "deck-buy-row",
+                                                Button {
+                                                    variant: ButtonVariant::Action,
+                                                    onclick: move |_| open_url::open(&tcg),
+                                                    {deck_view::TCGPLAYER}
+                                                }
+                                                Button {
+                                                    variant: ButtonVariant::Action,
+                                                    onclick: move |_| open_url::open(&ck),
+                                                    {deck_view::CARD_KINGDOM}
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -635,6 +658,18 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                     }
                                 }
 
+                                // The less used actions, then the destructive two.
+                                div { class: "deck-page-actions",
+                                    div { class: "deck-page-actions-row",
+                                        MoreItemButton { item: MoreItem::ImportCards, enabled: more_enabled.clone(), driver }
+                                        MoreItemButton { item: MoreItem::ExportCards, enabled: more_enabled.clone(), driver }
+                                    }
+                                    div { class: "deck-page-actions-row",
+                                        MoreItemButton { item: MoreItem::ClearSkips, enabled: more_enabled.clone(), driver }
+                                        MoreItemButton { item: MoreItem::DeleteDeck, enabled: more_enabled, driver }
+                                    }
+                                }
+
                             }
                             }
                         },
@@ -649,21 +684,12 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                     }
                 }
 
-            ActionBar { class: "content-enter-delayed",
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| driver.dispatch(Action::Edit),
-                    {deck_view::EDIT}
-                }
+            // Cards, the screen's main action, floats over the page.
+            div { class: "app-float content-enter-delayed",
                 Button {
                     variant: ButtonVariant::Action,
                     onclick: move |_| driver.dispatch(Action::Cards),
                     {deck_view::CARDS}
-                }
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| show_more_sheet.set(true),
-                    {deck_view::MORE}
                 }
             }
 
@@ -683,7 +709,6 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
 
             MoreButtons {
                 dialogs: driver.dialogs,
-                enabled: more_enabled,
                 buy_links: buy_links,
                 buy_body: buy_body,
                 shared: shared,
@@ -708,8 +733,8 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                 HintBullets {
                     HintBullet { HintKey { "Cards" } " browses, adds and removes cards" }
                     HintBullet { HintKey { "Edit" } " changes the name, format, command zone, tags and targets" }
-                    HintBullet { HintKey { "More" } " imports, exports, clones, shares or deletes the deck" }
-                    HintBullet { "Skipped and removed cards stay out of the add stack. " HintKey { "More" } " then Clear skips brings them back" }
+                    HintBullet { HintKey { "Clone" } " and " HintKey { "Share" } " sit beside Edit; import, export and delete are at the bottom" }
+                    HintBullet { "Skipped and removed cards stay out of the add stack. " HintKey { "Clear skips" } " at the bottom brings them back" }
                     HintBullet { "Stats fill in as the deck grows. Tap a section to expand it" }
                     HintBullet { "Warnings flag rule problems, each with a one-tap fix" }
                 }
@@ -751,5 +776,20 @@ mod tests {
             route(Destination::Deck(deck_id)),
             Router::ViewDeck { deck_id }
         );
+    }
+}
+
+/// One of the deck's actions as a button: its label, the danger color for
+/// Clear skips and Delete, disabled while the model says it can't run.
+#[component]
+fn MoreItemButton(item: MoreItem, enabled: Vec<MoreItem>, driver: Driver) -> Element {
+    rsx! {
+        Button {
+            variant: ButtonVariant::Action,
+            disabled: !enabled.contains(&item),
+            danger: item.is_danger(),
+            onclick: move |_| driver.dispatch(Action::More(item)),
+            {item.short_label()}
+        }
     }
 }
