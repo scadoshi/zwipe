@@ -308,7 +308,7 @@ pub(crate) fn bare_about_markers(rows: &[String]) -> Vec<(usize, usize)> {
     found
 }
 
-/// Asserts the `[?]` starting at `(x, y)` in `buffer` draws as the About button in `palette`: no cell reversed or filled with a marker color, the brackets in the border color at rest, and brackets and `?` bold in the accent when `focused`.
+/// Asserts the `[?]` starting at `(x, y)` in `buffer` draws as the About button in `palette`: no cell reversed or filled with a marker color, brackets and `?` muted at rest, and brackets and `?` bold in the accent when `focused`.
 pub(crate) fn assert_about_marker(
     buffer: &ratatui::buffer::Buffer,
     palette: &crate::domain::theme::Palette,
@@ -342,17 +342,17 @@ pub(crate) fn assert_about_marker(
         }
     }
     if !focused {
-        for c in [x, x.saturating_add(2)] {
+        for c in x..x.saturating_add(3) {
+            let cell = &buffer[(c, y)];
             assert_eq!(
-                buffer[(c, y)].fg,
-                palette.border.fg.unwrap(),
-                "{context}: bracket at {c}"
+                cell.fg,
+                palette.muted.fg.unwrap(),
+                "{context}: muted at {c}"
+            );
+            assert!(
+                !cell.modifier.contains(Modifier::BOLD),
+                "{context}: not bold at rest at {c}"
             );
         }
-        assert_ne!(
-            buffer[(x.saturating_add(1), y)].fg,
-            palette.accent.fg.unwrap(),
-            "{context}: the ? at rest keeps its own color"
-        );
     }
 }

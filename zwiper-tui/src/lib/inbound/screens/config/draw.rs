@@ -69,8 +69,7 @@ fn button(palette: &Palette, view: &ConfigView, stop: Stop, label: &str) -> Vec<
 /// A row's `[?]`, focused while one of `stops` has the focus, since `i` then explains the row.
 fn about(palette: &Palette, view: &ConfigView, stops: &[Stop]) -> Vec<Span<'static>> {
     let focused = view.sheet.is_none() && stops.contains(&view.focused());
-    let mark = palette.swatches.get(5).copied().unwrap_or(palette.muted);
-    button::about(palette, mark, focused)
+    button::about(palette, focused)
 }
 
 /// A row: its label and `[?]`, its value, its buttons on the right.

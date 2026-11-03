@@ -296,7 +296,6 @@ fn loaded_lines(
             header.spans.push(Span::raw(" "));
             header.spans.extend(button::about(
                 palette,
-                palette.muted,
                 view.focused_section() == Some(section),
             ));
         }
@@ -314,11 +313,7 @@ fn loaded_lines(
     let passes = &loaded.activity.passes;
     body.line(Line::default());
     let mut header = vec![Span::raw(format!("{PASSES_TITLE} ")).bold()];
-    header.extend(button::about(
-        palette,
-        palette.muted,
-        view.focus == Focus::Passes,
-    ));
+    header.extend(button::about(palette, view.focus == Focus::Passes));
     let header = Line::from(header);
     if passes.is_empty() {
         body.item(

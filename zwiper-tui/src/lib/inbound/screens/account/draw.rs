@@ -105,8 +105,7 @@ fn row(
 fn about(palette: &Palette, view: &AccountView, stops: &[Stop]) -> Vec<Span<'static>> {
     let focused =
         view.overlay.is_none() && view.focused().is_some_and(|stop| stops.contains(&stop));
-    let mark = palette.swatches.get(5).copied().unwrap_or(palette.muted);
-    button::about(palette, mark, focused)
+    button::about(palette, focused)
 }
 
 /// A button on a row, highlighted while focused and muted while disabled.
@@ -278,7 +277,7 @@ fn more_sheet(palette: &Palette) -> Sheet {
     .with_footer("Esc", "Close")
 }
 
-/// A Change sheet: its fields with their error lines, then Save changes and Back on one line, and its footer keys.
+/// A Change sheet: its fields with their error lines, then Save changes, and its footer keys. Esc goes back.
 fn draw_form(f: &mut Frame<'_>, palette: &Palette, form: &Form) {
     let heights: Vec<u16> = form.inputs.iter().map(TextInput::height).collect();
     let fields = heights.iter().fold(0_u16, |sum, h| sum.saturating_add(*h));
@@ -287,10 +286,7 @@ fn draw_form(f: &mut Frame<'_>, palette: &Palette, form: &Form) {
     } else {
         "Save changes"
     };
-    let row = [
-        Button::new(save).disabled(form.busy),
-        Button::new("Back").disabled(form.busy),
-    ];
+    let row = [Button::new(save).disabled(form.busy)];
     let mut footer = vec![("Tab", "next"), ("Enter", "save"), ("Esc", "back")];
     if form.kind == FormKind::Password && form.focus == 1 {
         footer.insert(1, ("F2", "password rules"));

@@ -181,13 +181,7 @@ fn draw_color_map(f: &mut Frame<'_>, shared: &Shared, view: &HomeView, area: Rec
     } else {
         block = block
             .title(Line::from(" Color map ").bold().centered())
-            .title(
-                Line::from(widgets::button::about_corner(
-                    palette,
-                    palette.text().bold(),
-                ))
-                .right_aligned(),
-            );
+            .title(Line::from(widgets::button::about_corner(palette)).right_aligned());
     }
     let inner = block.inner(area);
     f.render_widget(block, area);

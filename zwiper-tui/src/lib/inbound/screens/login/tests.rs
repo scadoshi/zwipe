@@ -376,7 +376,7 @@ fn log_in_has_no_accent_at_rest_and_takes_it_on_its_edges_and_label_when_focused
                     palette.base.fg.unwrap(),
                     "no accent at {width}x{height}"
                 );
-                assert_eq!(buffer[(x - 2, y)].fg, palette.border.fg.unwrap());
+                assert_eq!(buffer[(x - 2, y)].fg, palette.muted.fg.unwrap());
             }
         }
     }

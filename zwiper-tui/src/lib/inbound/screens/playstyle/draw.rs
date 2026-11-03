@@ -286,7 +286,6 @@ fn loaded_lines(shared: &Shared, view: &PlaystyleView, width: u16, map_rows: u16
             header.spans.push(Span::raw(" "));
             header.spans.extend(button::about(
                 palette,
-                palette.muted,
                 view.about_section() == Some(section),
             ));
         }
@@ -521,7 +520,7 @@ fn tags_body(body: &mut Body, shared: &Shared, view: &PlaystyleView, width: usiz
             .saturating_add(usize::from(button::ABOUT_WIDTH));
         header.push(Span::styled(column.label(), style));
         header.push(Span::raw(" "));
-        header.extend(button::about(palette, palette.muted, picked));
+        header.extend(button::about(palette, picked));
         header.push(Span::raw(" ".repeat(COLUMN_WIDTH.saturating_sub(used))));
     }
     body.item(
@@ -552,7 +551,7 @@ fn tags_body(body: &mut Body, shared: &Shared, view: &PlaystyleView, width: usiz
 /// A group's header: its title and its `[?]`, focused while `?` opens the group's topic.
 fn group_header(palette: &Palette, title: &str, focused: bool) -> Line<'static> {
     let mut spans = vec![Span::raw(format!("{title} ")).bold()];
-    spans.extend(button::about(palette, palette.muted, focused));
+    spans.extend(button::about(palette, focused));
     Line::from(spans)
 }
 

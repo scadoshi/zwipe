@@ -1,8 +1,8 @@
 //! The app's buttons: a label in brackets on one line, `[ Log in ]`, at every size, alone inside a line of text or in a centered row the focus moves across.
 //!
-//! At rest the brackets take the border color and the label the button's color: the text color for a plain one, the error color for a danger one like `Log out` and `Delete`, muted while disabled. A focused button draws its brackets and a bold label in its focus color (the accent for a plain one, its own color for a danger one). No button fills its background, so focus is the only highlight and a filled block is always a tag.
+//! At rest the brackets take the muted text color and the label the button's color: the text color for a plain one, the error color for a danger one like `Log out` and `Delete`, muted while disabled. A focused button draws its brackets and a bold label in its focus color (the accent for a plain one, its own color for a danger one). No button fills its background, so focus is the only highlight and a filled block is always a tag.
 //!
-//! A `?` that opens an About topic is a button too: `about` draws it as `[?]`, with no inner spaces since it is one glyph.
+//! A `?` that opens an About topic is a button too: `about` draws it as `[?]`, with no inner spaces since it is one glyph, muted at rest like a button's brackets.
 
 use ratatui::Frame;
 use ratatui::layout::Rect;
@@ -87,7 +87,7 @@ pub(crate) fn spans(palette: &Palette, button: &Button<'_>, focused: bool) -> Ve
         let style = button.focus(palette).bold();
         (style, style)
     } else {
-        (palette.border, button.color(palette))
+        (palette.muted, button.color(palette))
     };
     vec![
         Span::styled("[", bracket),
@@ -99,25 +99,24 @@ pub(crate) fn spans(palette: &Palette, button: &Button<'_>, focused: bool) -> Ve
 /// Cells the About marker takes: `[?]`, a glyph between brackets with no spaces.
 pub(crate) const ABOUT_WIDTH: u16 = 3;
 
-/// The marker that opens an About topic, `[?]`, drawn as a button: at rest the brackets take the border color and the `?` takes `mark`, the color its place gives it; focused, brackets and `?` are bold in the accent. A marker is focused when it is the one its screen's About key opens right now. No fill either way.
-pub(crate) fn about(palette: &Palette, mark: Style, focused: bool) -> Vec<Span<'static>> {
-    let (bracket, glyph) = if focused {
-        let style = palette.accent.bold();
-        (style, style)
+/// The marker that opens an About topic, `[?]`, drawn as a button: muted at rest, brackets and `?` alike, at every site; focused, bold in the accent. A marker is focused when it is the one its screen's About key opens right now. No fill either way.
+pub(crate) fn about(palette: &Palette, focused: bool) -> Vec<Span<'static>> {
+    let style = if focused {
+        palette.accent.bold()
     } else {
-        (palette.border, mark)
+        palette.muted
     };
     vec![
-        Span::styled("[", bracket),
-        Span::styled("?", glyph),
-        Span::styled("]", bracket),
+        Span::styled("[", style),
+        Span::styled("?", style),
+        Span::styled("]", style),
     ]
 }
 
 /// An About marker at rest in a box's top-right corner, ` [?] `, a space between it and the border each side.
-pub(crate) fn about_corner(palette: &Palette, mark: Style) -> Vec<Span<'static>> {
+pub(crate) fn about_corner(palette: &Palette) -> Vec<Span<'static>> {
     let mut spans = vec![Span::raw(" ")];
-    spans.extend(about(palette, mark, /* focused */ false));
+    spans.extend(about(palette, /* focused */ false));
     spans.push(Span::raw(" "));
     spans
 }
@@ -255,7 +254,7 @@ mod tests {
     }
 
     #[test]
-    fn at_rest_the_brackets_take_the_border_color_and_the_label_its_own() {
+    fn at_rest_the_brackets_take_the_muted_color_and_the_label_its_own() {
         let palette = Palette::for_account("gruvbox", true);
         let terminal = drawn(&palette, 60, 1, None);
         let buffer = terminal.backend().buffer();
@@ -266,11 +265,11 @@ mod tests {
             (buffer.cell((x, 0)).unwrap().clone(), label)
         };
         let (bracket, label) = cells("[ Create");
-        assert_eq!(bracket.fg, palette.border.fg.unwrap());
+        assert_eq!(bracket.fg, palette.muted.fg.unwrap());
         assert_eq!(label.fg, palette.base.fg.unwrap());
         assert!(!label.modifier.contains(Modifier::BOLD));
         let (bracket, label) = cells("[ Log out");
-        assert_eq!(bracket.fg, palette.border.fg.unwrap());
+        assert_eq!(bracket.fg, palette.muted.fg.unwrap());
         assert_eq!(label.fg, palette.error.fg.unwrap(), "danger");
         for cell in buffer.content() {
             assert!(!cell.modifier.contains(Modifier::REVERSED));
@@ -300,24 +299,21 @@ mod tests {
         assert!(rest.iter().all(|s| s.style.bg.is_none()), "no fill");
         let disabled = spans(&palette, &Button::new("Resend").disabled(true), false);
         assert_eq!(disabled[1].style.fg, palette.muted.fg);
-        assert_eq!(disabled[0].style.fg, palette.border.fg);
+        assert_eq!(disabled[0].style.fg, palette.muted.fg);
         assert_eq!(row_width(&row()), 43);
     }
 
     #[test]
-    fn the_about_marker_is_a_bracketed_question_mark_at_rest_and_bold_accent_focused() {
+    fn the_about_marker_is_a_muted_bracketed_question_mark_at_rest_and_bold_accent_focused() {
         let palette = Palette::for_account("gruvbox", true);
-        let rest = about(&palette, palette.muted, false);
+        let rest = about(&palette, false);
         let shown: String = rest.iter().map(|s| s.content.as_ref()).collect();
         assert_eq!(shown, "[?]");
         assert_eq!(Line::from(rest.clone()).width(), usize::from(ABOUT_WIDTH));
-        assert_eq!(rest[0].style.fg, palette.border.fg, "opening bracket");
-        assert_eq!(rest[2].style.fg, palette.border.fg, "closing bracket");
-        assert_eq!(
-            rest[1].style.fg, palette.muted.fg,
-            "the mark keeps its color"
-        );
-        let focused = about(&palette, palette.muted, true);
+        for span in &rest {
+            assert_eq!(span.style.fg, palette.muted.fg, "muted at rest: {span:?}");
+        }
+        let focused = about(&palette, true);
         for span in rest.iter().chain(&focused) {
             assert!(span.style.bg.is_none(), "no fill: {span:?}");
             assert!(

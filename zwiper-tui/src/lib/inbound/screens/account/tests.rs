@@ -380,7 +380,15 @@ fn the_change_sheet_and_log_out_dialog_draw_real_buttons_at_every_size() {
         assert_eq!(save.fg, palette.base.fg.unwrap(), "plain like every button");
         assert!(!save.modifier.contains(Modifier::BOLD));
         assert_eq!(buffer[(x - 2, y)].symbol(), "[");
-        assert_ne!(crate::test_support::find_all(buffer, "[ Back ]"), []);
+        assert_eq!(
+            crate::test_support::find_all(buffer, "[ Back ]"),
+            [],
+            "Esc goes back"
+        );
+        assert!(
+            rows.contains("Esc back"),
+            "key bar at {width}x{height}:\n{rows}"
+        );
         let label = crate::test_support::find_all(buffer, " New username ")[0];
         let (left, right) = crate::test_support::label_margins(buffer, label, " New username ");
         assert!(left.abs_diff(right) <= 1, "centered at {width}x{height}");

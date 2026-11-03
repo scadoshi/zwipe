@@ -79,11 +79,7 @@ pub(crate) fn lines(
         ];
         if section == Section::OracleTags {
             spans.push(Span::raw(" "));
-            spans.extend(button::about(
-                palette,
-                palette.muted,
-                super::keys::in_oracle_tags(sheet),
-            ));
+            spans.extend(button::about(palette, super::keys::in_oracle_tags(sheet)));
         }
         if section.is_active(&sheet.filter.draft) {
             spans.push(Span::styled("  ×", palette.warning));

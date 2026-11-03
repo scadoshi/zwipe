@@ -38,7 +38,7 @@ impl Label<'_> {
             Self::Plain(text) => Some(Line::from(format!(" {text} ")).style(palette.tertiary)),
             Self::About(text) => {
                 let mut spans = vec![Span::styled(format!(" {text} "), palette.tertiary)];
-                spans.extend(button::about(palette, palette.tertiary, focused));
+                spans.extend(button::about(palette, focused));
                 spans.push(Span::raw(" "));
                 Some(Line::from(spans))
             }

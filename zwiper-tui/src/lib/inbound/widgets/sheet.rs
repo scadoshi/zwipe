@@ -184,8 +184,7 @@ pub(crate) fn frame(
         .border_style(palette.accent)
         .padding(Padding::horizontal(1));
     if hint {
-        block =
-            block.title(Line::from(button::about_corner(palette, palette.muted)).right_aligned());
+        block = block.title(Line::from(button::about_corner(palette)).right_aligned());
     }
     let inner = block.inner(sheet);
     f.render_widget(Clear, sheet);
