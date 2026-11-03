@@ -1,12 +1,11 @@
 //! Login's keys: typing in the fields, Tab and the arrows across the form, Enter on whatever has the focus, and Esc to end typing. With no field taking letters, `c` opens Create profile, `f` Reset password, `q` quits and `!` opens Help.
 
 use crossterm::event::KeyCode;
+use zwipe_ui::screens::login::Action;
 
-use super::{EMPTY_FORM, LoginField, LoginForm, Request};
+use super::{LoginField, LoginForm, dispatch, edit};
 use crate::inbound::app::Context;
-use crate::inbound::screens::{Password, forgot_password, register};
 use crate::inbound::widgets::help;
-use crate::inbound::widgets::toast::ToastKind;
 
 pub(crate) fn handle(form: &mut LoginForm, code: KeyCode, cx: &mut Context<'_>) {
     let Some(focus) = form.focus else {
@@ -23,19 +22,22 @@ pub(crate) fn handle(form: &mut LoginForm, code: KeyCode, cx: &mut Context<'_>) 
         KeyCode::BackTab | KeyCode::Up => form.focus = Some(focus.previous()),
         KeyCode::Enter => press(form, focus, cx),
         other => match form.focused_mut() {
-            Some(field) => {
-                field.handle_key(other);
+            Some((input, field)) => {
+                if input.handle_key(other) {
+                    let value = input.value().to_owned();
+                    dispatch(form, edit(field, value), cx);
+                }
             }
             None => command(form, other, cx),
         },
     }
 }
 
-/// A letter while no field takes it: `c` and `f` open Create profile and Reset password unless a sign-in is out, `q` quits and `!` opens Help.
-fn command(form: &LoginForm, code: KeyCode, cx: &mut Context<'_>) {
+/// A letter while no field takes it: `c` and `f` ask the model for Create profile and Reset password, which it holds while a sign-in is out, `q` quits and `!` opens Help.
+fn command(form: &mut LoginForm, code: KeyCode, cx: &mut Context<'_>) {
     match code {
-        KeyCode::Char('c') if !form.busy => register::open(cx),
-        KeyCode::Char('f') if !form.busy => forgot_password::open(cx),
+        KeyCode::Char('c') => dispatch(form, Action::CreateProfile, cx),
+        KeyCode::Char('f') => dispatch(form, Action::ForgotPassword, cx),
         KeyCode::Char('q') => cx.quit(),
         KeyCode::Char('!') => help::open(cx),
         _ => {}
@@ -46,29 +48,10 @@ fn command(form: &LoginForm, code: KeyCode, cx: &mut Context<'_>) {
 fn press(form: &mut LoginForm, focus: LoginField, cx: &mut Context<'_>) {
     match focus {
         LoginField::Identifier => form.focus = Some(LoginField::Password),
-        LoginField::Password | LoginField::LogIn => submit(form, cx),
+        LoginField::Password | LoginField::LogIn => dispatch(form, Action::Submit, cx),
         LoginField::ShowPassword => {
             let masked = form.password.is_masked();
             form.password.set_masked(!masked);
         }
     }
-}
-
-/// Sends the sign-in, the identifier as typed. An empty field gets the app's toast instead; the server alone judges the rest.
-fn submit(form: &mut LoginForm, cx: &mut Context<'_>) {
-    if form.busy {
-        return;
-    }
-    if form.identifier.value().trim().is_empty() || form.password.is_empty() {
-        cx.toast(ToastKind::Error, EMPTY_FORM.to_owned());
-        return;
-    }
-    form.busy = true;
-    cx.request(
-        Request::SignIn {
-            identifier: form.identifier.value().to_owned(),
-            password: Password(form.password.value().to_owned()),
-        }
-        .into(),
-    );
 }

@@ -548,7 +548,7 @@ pub(crate) fn sign_out(cx: &mut Context<'_>, message: &str) {
     cx.request(Request::SignOut);
 }
 
-/// A password on its way to the server, never shown in `Debug` output.
+/// A password on its way to the server from a screen not yet on its zwipe-ui model, never shown in `Debug` output.
 #[derive(Clone, PartialEq, Eq)]
 pub(crate) struct Password(pub(crate) String);
 
@@ -631,8 +631,9 @@ mod tests {
     #[test]
     fn the_password_never_shows_in_debug_output() {
         let request = Request::Login(login::Request::SignIn {
+            ticket: zwipe_ui::generation::Generation::default().next_ticket(),
             identifier: "scotty".to_owned(),
-            password: Password("hunter2".to_owned()),
+            password: zwipe_ui::account::Password::new("hunter2"),
         });
         assert!(!format!("{request:?}").contains("hunter2"));
     }
