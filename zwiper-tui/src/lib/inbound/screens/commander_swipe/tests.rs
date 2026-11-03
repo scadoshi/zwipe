@@ -3,10 +3,16 @@ use std::time::{Duration, Instant};
 use Color::{Blue, Red};
 use crossterm::event::KeyCode;
 use zwipe_core::domain::card::scryfall_data::colors::Color;
+use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_core::domain::user::models::hints::HINT_SUGGESTED_COMMANDERS;
 use zwipe_core::http::contracts::suggestions::{
     HttpColorAffinity, HttpCommanderSuggestions, HttpSharedTag, HttpSuggestionReasons,
 };
+use zwipe_ui::screens::swipe_select::{
+    CANT_SAVE, NOTHING_TO_UNDO, SAVED, SKIPPED, STACK_REFRESHED, SUGGESTED_TITLE, TITLE,
+    UNDID_SKIP, UNSAVED,
+};
+use zwipe_ui::timing;
 
 use super::*;
 use crate::inbound::event_loop::harness::Harness;
@@ -14,6 +20,9 @@ use crate::inbound::screens::playstyle::{self, PlaystyleView};
 use crate::inbound::widgets::hint;
 use crate::inbound::widgets::toast::Toast;
 use crate::test_support::{card, create_opened_with, render, screen_text, ticket, user};
+
+/// The pick toast.
+const SELECTED: &str = "Commander selected";
 
 /// The app's copy for this hint, as it reads.
 const SUGGESTED_HINT: &str = "• Swipe right starts a deck with that commander\n• Swipe left skips it for a week\n• Swipe up saves it to your commander maybeboard\n• Swipe down undoes the last swipe\nBest fit first, 100 deep. The eye shows why each one was suggested\nFilter narrows the stack to one color identity";
@@ -59,15 +68,15 @@ fn seen_user() -> zwipe_core::domain::user::User {
     me
 }
 
-/// Home, then Playstyle with [`held`] landed, then the swipe opened with `s`, nothing queued.
-fn swiping() -> Harness {
+/// Home, then Playstyle with `held` landed, then the swipe opened with `s`, nothing queued.
+fn swiping_with(held: Vec<HttpCommanderSuggestion>) -> Harness {
     let mut harness = Harness::on(Screen::Home(Box::default()));
     harness.app.shared.user = Some(seen_user());
     harness.open(playstyle::open);
     harness.apply(playstyle::Update::Loaded {
         ticket: ticket(1),
         found: Box::new(HttpCommanderSuggestions {
-            suggestions: held(),
+            suggestions: held,
             deck_count: 4,
             profile: None,
         }),
@@ -77,26 +86,44 @@ fn swiping() -> Harness {
     harness
 }
 
-/// Home, then the swipe in Commander mode excluding `exclude`, nothing queued.
-fn commander(exclude: HashSet<Uuid>) -> Harness {
+/// [`swiping_with`] the [`held`] list.
+fn swiping() -> Harness {
+    swiping_with(held())
+}
+
+/// The newest of the swipe's requests.
+fn last(harness: &Harness) -> Request {
+    match harness.pending().iter().rev().find_map(|r| match r {
+        screens::Request::CommanderSwipe(request) => Some(request.clone()),
+        _ => None,
+    }) {
+        Some(request) => request,
+        None => panic!("the swipe asked for nothing: {:?}", harness.pending()),
+    }
+}
+
+/// The newest page request's ticket and query.
+fn search(harness: &Harness) -> (Ticket, CardQuery) {
+    match last(harness) {
+        Request::Search { ticket, query } => (ticket, *query),
+        other => panic!("no search: {other:?}"),
+    }
+}
+
+/// Home, then the swipe in Commander mode excluding `exclude`, with its first page's ticket and nothing queued.
+fn commander(exclude: HashSet<Uuid>) -> (Harness, Ticket) {
     let mut harness = Harness::on(Screen::Home(Box::default()));
     harness.app.shared.user = Some(seen_user());
     harness.open(|cx| open(cx, Deal::Commander { exclude }, DeckLimit::Open));
+    let (ticket, _) = search(&harness);
     harness.clear();
-    harness
+    (harness, ticket)
 }
 
 fn view(harness: &Harness) -> &CommanderSwipeView {
     match harness.screen() {
         Screen::CommanderSwipe(view) => view,
         other => panic!("not the commander swipe: {other:?}"),
-    }
-}
-
-fn view_mut(harness: &mut Harness) -> &mut CommanderSwipeView {
-    match harness.screen_mut() {
-        Screen::CommanderSwipe(view) => view,
-        _ => panic!("not the commander swipe"),
     }
 }
 
@@ -112,6 +139,16 @@ fn top(harness: &Harness) -> String {
         .current()
         .map(|c| c.scryfall_data.name.clone())
         .unwrap_or_default()
+}
+
+/// The names of the cards from the top one down.
+fn dealt(harness: &Harness) -> Vec<String> {
+    view(harness)
+        .model
+        .window()
+        .iter()
+        .map(|c| c.scryfall_data.name.clone())
+        .collect()
 }
 
 fn oracle(harness: &Harness) -> Uuid {
@@ -151,12 +188,7 @@ fn s_deals_the_held_list_under_the_show_rows_identity() {
         _ => panic!("not Playstyle"),
     }
     harness.press(KeyCode::Char('s'));
-    let names: Vec<&str> = view(&harness)
-        .cards
-        .iter()
-        .map(|c| c.scryfall_data.name.as_str())
-        .collect();
-    assert_eq!(names, ["Krenko", "Zada"]);
+    assert_eq!(dealt(&harness), ["Krenko", "Zada"]);
     assert_eq!(
         harness.pending(),
         [screens::Request::MarkHintShown(
@@ -221,20 +253,33 @@ fn up_saves_and_down_takes_the_save_back() {
     let mut harness = swiping();
     let krenko = oracle(&harness);
     harness.press(KeyCode::Char('k'));
-    assert_eq!(harness.pending(), [Request::Save(krenko).into()]);
+    let Request::Save { ticket, oracle_id } = last(&harness) else {
+        panic!("no save: {:?}", harness.pending());
+    };
+    assert_eq!(oracle_id, krenko);
     assert_eq!(top(&harness), "Talrand");
     harness.clear();
-    harness.apply(Update::Saved);
+    harness.apply(Update::Landed { ticket });
     let toast = last_toast(&harness);
     assert_eq!(
         (toast.kind, toast.message.as_str()),
         (ToastKind::Success, SAVED)
     );
     assert!(toast.expires_at <= Instant::now() + Duration::from_millis(1500));
+    let toasts = harness.app.shared.toasts.items().len();
+    harness.apply(Update::Landed { ticket });
+    assert_eq!(
+        harness.app.shared.toasts.items().len(),
+        toasts,
+        "a repeated reply changes nothing"
+    );
     harness.press(KeyCode::Char('j'));
     assert_eq!(top(&harness), "Krenko");
-    assert_eq!(harness.pending(), [Request::Unsave(krenko).into()]);
-    harness.apply(Update::Unsaved);
+    let Request::Unsave { ticket, oracle_id } = last(&harness) else {
+        panic!("no unsave: {:?}", harness.pending());
+    };
+    assert_eq!(oracle_id, krenko);
+    harness.apply(Update::Landed { ticket });
     let toast = last_toast(&harness);
     assert_eq!(
         (toast.kind, toast.message.as_str()),
@@ -246,14 +291,18 @@ fn up_saves_and_down_takes_the_save_back() {
         NOTHING_TO_UNDO,
         "back at the first card"
     );
-    harness.apply(Update::Failed("Offline".to_owned()));
+    harness.apply(Update::Failed {
+        ticket,
+        message: Some("Offline".to_owned()),
+    });
     assert_eq!(last_toast(&harness).kind, ToastKind::Error);
 }
 
 #[test]
 fn a_card_without_an_oracle_id_cannot_be_saved_and_undoes_as_a_skip() {
-    let mut harness = swiping();
-    view_mut(&mut harness).cards[0].scryfall_data.oracle_id = None;
+    let mut held = held();
+    held[0].card.scryfall_data.oracle_id = None;
+    let mut harness = swiping_with(held);
     harness.press(KeyCode::Up);
     assert_eq!(harness.pending(), []);
     let toast = last_toast(&harness);
@@ -261,7 +310,7 @@ fn a_card_without_an_oracle_id_cannot_be_saved_and_undoes_as_a_skip() {
         (toast.kind, toast.message.as_str()),
         (ToastKind::Error, CANT_SAVE)
     );
-    assert_eq!(view(&harness).history, [Swiped::Skip]);
+    assert_eq!(top(&harness), "Talrand");
     harness.press(KeyCode::Down);
     assert_eq!(harness.pending(), []);
     assert_eq!(last_toast(&harness).message, UNDID_SKIP);
@@ -293,22 +342,16 @@ fn the_filter_redeals_behind_the_swiped_cards_and_the_host_takes_it() {
     assert!(text.contains(" Show   All   U   R "), "{text}");
     harness.press(KeyCode::Char('l'));
     harness.press(KeyCode::Enter);
-    let pile = view(&harness).suggested().unwrap();
+    let pile = view(&harness).suggested.as_ref().unwrap();
     assert_eq!(pile.identity, Some(vec![Blue]));
-    let names: Vec<&str> = view(&harness)
-        .cards
-        .iter()
-        .map(|c| c.scryfall_data.name.as_str())
-        .collect();
     assert_eq!(
-        names,
-        ["Krenko", "Talrand", "Kess"],
+        dealt(&harness),
+        ["Talrand", "Kess"],
         "Krenko was swiped, so blue deals behind it"
     );
-    assert_eq!(top(&harness), "Talrand");
     harness.press(KeyCode::Enter);
     assert_eq!(
-        view(&harness).suggested().unwrap().identity,
+        view(&harness).suggested.as_ref().unwrap().identity,
         None,
         "the picked chip again is All"
     );
@@ -316,12 +359,13 @@ fn the_filter_redeals_behind_the_swiped_cards_and_the_host_takes_it() {
     harness.press(KeyCode::Char('l'));
     harness.press(KeyCode::Enter);
     assert_eq!(
-        view(&harness).suggested().unwrap().identity,
+        view(&harness).suggested.as_ref().unwrap().identity,
         Some(vec![Red])
     );
     harness.press(KeyCode::Esc);
     assert_eq!(view(&harness).filter, None);
     assert!(screen_text(&harness.app).contains("f Filter •"));
+    harness.clear();
     harness.press(KeyCode::Esc);
     let host = playstyle_view(&harness);
     assert_eq!(host.identity, Some(vec![Red]), "one identity across both");
@@ -333,13 +377,18 @@ fn the_filter_redeals_behind_the_swiped_cards_and_the_host_takes_it() {
 
 #[test]
 fn a_filter_with_nothing_left_says_so() {
-    let mut harness = swiping();
-    if let Mode::Suggested(pile) = &mut view_mut(&mut harness).mode {
-        pile.held.retain(|s| s.card.scryfall_data.name != "Talrand");
-        pile.held.retain(|s| s.card.scryfall_data.name != "Kess");
-        pile.identity = Some(vec![Blue]);
-    }
-    view_mut(&mut harness).cards.clear();
+    let mut harness = Harness::on(Screen::Home(Box::default()));
+    harness.app.shared.user = Some(seen_user());
+    let red: Vec<HttpCommanderSuggestion> = held()
+        .into_iter()
+        .filter(|s| s.card.scryfall_data.color_identity.contains(&Red))
+        .collect();
+    let pile = SuggestedPile {
+        held: red,
+        deck_count: 4,
+        identity: Some(vec![Blue]),
+    };
+    harness.open(|cx| open(cx, Deal::Suggested(pile), DeckLimit::Open));
     assert!(
         screen_text(&harness.app).contains("No mono-blue commanders in your top 100"),
         "{}",
@@ -353,8 +402,9 @@ fn refresh_deals_again_from_the_top() {
     harness.press(KeyCode::Left);
     harness.press(KeyCode::Char('r'));
     assert_eq!(top(&harness), "Krenko");
-    assert_eq!(view(&harness).history, []);
-    assert_eq!(last_toast(&harness).message, REFRESHED);
+    assert_eq!(last_toast(&harness).message, STACK_REFRESHED);
+    harness.press(KeyCode::Down);
+    assert_eq!(last_toast(&harness).message, NOTHING_TO_UNDO);
 }
 
 #[test]
@@ -370,7 +420,7 @@ fn question_mark_shows_each_modes_hint() {
         (SUGGESTED_TITLE, SUGGESTED_HINT)
     );
     harness.press(KeyCode::Enter);
-    let mut harness = commander(HashSet::new());
+    let (mut harness, _) = commander(HashSet::new());
     harness.press(KeyCode::Char('?'));
     let hint = harness.app.shared.hint.as_ref().unwrap();
     assert_eq!(
@@ -378,7 +428,7 @@ fn question_mark_shows_each_modes_hint() {
             hint.content.title.as_str(),
             hint::text(&hint.content).as_str()
         ),
-        (COMMANDER_TITLE, COMMANDER_HINT)
+        (TITLE, COMMANDER_HINT)
     );
 }
 
@@ -389,53 +439,41 @@ fn commander_mode_pages_most_played_first_without_the_excluded() {
     let mut harness = Harness::on(Screen::Home(Box::default()));
     harness.app.shared.user = Some(seen_user());
     harness.open(|cx| open(cx, Deal::Commander { exclude }, DeckLimit::Open));
+    assert_eq!(harness.pending().len(), 1);
+    let (first, query) = search(&harness);
     assert_eq!(
-        harness.pending(),
-        [Request::Search {
-            ticket: ticket(0),
-            offset: 0,
-            filter: Box::default(),
-        }
-        .into()]
+        query.criteria().is_commander_in_format(),
+        Some(&Format::Commander)
+    );
+    assert_eq!(query.criteria().is_token(), Some(false));
+    assert_eq!(
+        (query.offset(), query.sort()),
+        (0, None),
+        "most played first"
     );
     let text = screen_text(&harness.app);
     assert!(text.contains('░'), "a ghost while the first page loads");
     harness.clear();
     let mut page = named(&["Edgar", "Krenko", "Ur-Dragon"]);
     page.insert(1, excluded);
-    harness.apply(Update::Page {
-        ticket: ticket(0),
-        offset: 0,
+    harness.apply(Update::Found {
+        ticket: first,
         cards: page,
     });
-    let names: Vec<&str> = view(&harness)
-        .cards
-        .iter()
-        .map(|c| c.scryfall_data.name.as_str())
-        .collect();
-    assert_eq!(names, ["Edgar", "Krenko", "Ur-Dragon"]);
+    assert_eq!(dealt(&harness), ["Edgar", "Krenko", "Ur-Dragon"]);
     harness.press(KeyCode::Left);
     assert_eq!(
-        harness.pending(),
-        [Request::Search {
-            ticket: ticket(0),
-            offset: timing::PAGE_SIZE,
-            filter: Box::default(),
-        }
-        .into()],
-        "two left is under the prefetch mark; a commander skip sends nothing"
+        harness.pending().len(),
+        1,
+        "two left is under the prefetch mark; a commander skip sends nothing else"
     );
+    let (next, query) = search(&harness);
+    assert_eq!(query.offset(), timing::PAGE_SIZE);
     harness.clear();
-    harness.apply(Update::Page {
-        ticket: ticket(0),
-        offset: timing::PAGE_SIZE,
+    harness.apply(Update::Found {
+        ticket: next,
         cards: Vec::new(),
     });
-    let Mode::Commander(search) = &view(&harness).mode else {
-        panic!("not commander mode");
-    };
-    assert!(search.exhausted);
-    assert!(!search.loading);
     harness.press(KeyCode::Left);
     assert_eq!(harness.pending(), [], "nothing more to ask for");
 }
@@ -443,75 +481,46 @@ fn commander_mode_pages_most_played_first_without_the_excluded() {
 #[test]
 fn an_excluded_page_pulls_ahead_and_a_stale_page_is_dropped() {
     let excluded = card("Atraxa");
-    let mut harness = commander(HashSet::from([excluded.scryfall_data.oracle_id.unwrap()]));
-    harness.apply(Update::Page {
-        ticket: ticket(0),
-        offset: 0,
+    let (mut harness, first) =
+        commander(HashSet::from([excluded.scryfall_data.oracle_id.unwrap()]));
+    harness.apply(Update::Found {
+        ticket: first,
         cards: vec![excluded],
     });
-    assert_eq!(
-        harness.pending(),
-        [Request::Search {
-            ticket: ticket(0),
-            offset: timing::PAGE_SIZE,
-            filter: Box::default(),
-        }
-        .into()]
-    );
-    view_mut(&mut harness).refresh_for_test();
-    harness.apply(Update::Page {
-        ticket: ticket(0),
-        offset: timing::PAGE_SIZE,
+    let (ahead, query) = search(&harness);
+    assert_eq!(query.offset(), timing::PAGE_SIZE);
+    harness.press(KeyCode::Char('r'));
+    let (fresh, _) = search(&harness);
+    harness.apply(Update::Found {
+        ticket: ahead,
         cards: named(&["Stale"]),
     });
-    assert_eq!(view(&harness).cards, [], "a page from the old search");
-    harness.apply(Update::SearchFailed { ticket: ticket(1) });
-    let Mode::Commander(search) = &view(&harness).mode else {
-        panic!("not commander mode");
-    };
-    assert!(!search.loading);
-    assert!(
-        commander_query(&CardQueryBuilder::default(), timing::PAGE_SIZE)
-            .build()
-            .is_ok()
+    assert_eq!(
+        dealt(&harness),
+        Vec::<String>::new(),
+        "a page from the old search"
     );
-}
-
-impl CommanderSwipeView {
-    /// Starts a new search the way Refresh does, outside a key press.
-    fn refresh_for_test(&mut self) {
-        if let Mode::Commander(search) = &mut self.mode {
-            search.ticket.next_ticket();
-            search.offset = 0;
-            search.loading = true;
-        }
-    }
+    harness.clear();
+    harness.apply(Update::Failed {
+        ticket: fresh,
+        message: None,
+    });
+    assert_eq!(view(&harness).model.status(), model::Status::Failed);
+    assert_eq!(
+        harness.app.shared.toasts.items().len(),
+        1,
+        "only the refresh toast"
+    );
 }
 
 #[test]
 fn closing_commander_mode_leaves_no_identity() {
-    let mut harness = commander(HashSet::new());
+    let (mut harness, _) = commander(HashSet::new());
     harness.press(KeyCode::Esc);
     assert_eq!(
         harness.app.shared.caches.handoff.commander_swipe,
         Some(Closed::default())
     );
-}
-
-#[test]
-fn redeal_keeps_the_swiped_in_front_then_the_new_pile_without_them() {
-    fn key(name: &&'static str) -> &'static str {
-        name
-    }
-    let dealt = ["Krenko", "Narset", "Zada", "Ghired"];
-    let fresh = ["Zada", "Krenko", "Talrand"];
-    assert_eq!(
-        redeal(&dealt, 2, &fresh, key),
-        vec!["Krenko", "Narset", "Zada", "Talrand"]
-    );
-    assert_eq!(redeal(&dealt, 0, &fresh, key), fresh.to_vec());
-    assert_eq!(redeal(&dealt, 1, &[], key), vec!["Krenko"]);
-    assert_eq!(redeal(&dealt, 9, &["Talrand"], key).len(), 5);
 }
 
 #[test]
@@ -524,7 +533,7 @@ fn tiny_terminals_do_not_panic() {
     for (w, h) in [(8, 3), (1, 1)] {
         render(&harness.app, w, h);
     }
-    let harness = commander(HashSet::new());
+    let (harness, _) = commander(HashSet::new());
     for (w, h) in [(8, 3), (1, 1)] {
         render(&harness.app, w, h);
     }
@@ -534,10 +543,9 @@ fn tiny_terminals_do_not_panic() {
 fn commander_modes_filter_is_the_card_filter_and_apply_deals_again() {
     use zwipe_ui::filter::sections::Section as FilterSection;
 
-    let mut harness = commander(HashSet::new());
-    harness.apply(Update::Page {
-        ticket: ticket(0),
-        offset: 0,
+    let (mut harness, first) = commander(HashSet::new());
+    harness.apply(Update::Found {
+        ticket: first,
         cards: named(&["Krenko", "Zada"]),
     });
     harness.press(KeyCode::Left);
@@ -549,37 +557,33 @@ fn commander_modes_filter_is_the_card_filter_and_apply_deals_again() {
         .expect("f opens the card filter");
     assert!(!sheet.sections().contains(&FilterSection::Format));
     assert!(screen_text(&harness.app).contains(" Filter "));
-    if let Some(sheet) = &mut view_mut(&mut harness).sheet {
-        sheet.filter.draft.set_name_contains("elf");
+    match harness.screen_mut() {
+        Screen::CommanderSwipe(view) => {
+            if let Some(sheet) = &mut view.sheet {
+                sheet.filter.draft.set_name_contains("elf");
+            }
+        }
+        _ => panic!("not the commander swipe"),
     }
     harness.clear();
     harness.press(KeyCode::Char('a'));
     assert!(view(&harness).sheet.is_none(), "Apply closes the sheet");
-    let mut narrowed = CardQueryBuilder::default();
-    narrowed.set_name_contains("elf");
+    assert_eq!(harness.pending().len(), 1, "Apply deals from the top");
+    let (_, query) = search(&harness);
+    assert_eq!(query.criteria().name_contains(), Some("elf"));
     assert_eq!(
-        harness.pending(),
-        [Request::Search {
-            ticket: ticket(1),
-            offset: 0,
-            filter: Box::new(narrowed.clone()),
-        }
-        .into()],
-        "Apply deals from the top with the filter"
+        query.criteria().is_commander_in_format(),
+        Some(&Format::Commander)
     );
-    assert_eq!(view(&harness).index, 0);
-    assert_eq!(view(&harness).cards, []);
-    assert_eq!(view(&harness).history, []);
+    assert_eq!(query.offset(), 0);
+    assert_eq!(dealt(&harness), Vec::<String>::new());
     assert!(screen_text(&harness.app).contains("Filter •"));
-
-    let query = commander_query(&narrowed, timing::PAGE_SIZE);
-    assert_eq!(query.name_contains(), Some("elf"));
-    assert_eq!(query.is_commander_in_format(), Some(&Format::Commander));
-    assert_eq!(query.offset(), timing::PAGE_SIZE);
+    harness.press(KeyCode::Down);
+    assert_eq!(last_toast(&harness).message, NOTHING_TO_UNDO);
 }
 
 #[test]
-fn skips_and_saves_fly_off_and_an_undo_flies_back_from_the_same_side() {
+fn skips_and_saves_fly_off_and_an_undo_flies_back_in() {
     use zwipe_ui::stack::Direction;
 
     use crate::inbound::widgets::card_motion::{CardMotion, Phase};
@@ -601,17 +605,19 @@ fn skips_and_saves_fly_off_and_an_undo_flies_back_from_the_same_side() {
     let motion = view(&harness).motion.clone().unwrap();
     assert_eq!(motion.direction(), Direction::Up);
     assert!(matches!(motion.phase(), Phase::Exit(c) if c.scryfall_data.name == second));
+    let third = top(&harness);
 
     harness.press(KeyCode::Down);
     let motion = view(&harness).motion.clone().unwrap();
     assert_eq!(
         (motion.direction(), motion.phase()),
-        (Direction::Up, &Phase::Enter)
+        (Direction::Left, &Phase::Enter),
+        "an undone card comes back from the left, as the model says"
     );
     assert_eq!(top(&harness), second);
     assert_eq!(
         view(&harness).under().map(|c| c.scryfall_data.name.clone()),
-        Some(top_after(&harness)),
+        Some(third),
         "the card it covers rests under it"
     );
     render(&harness.app, 80, 30);
@@ -628,22 +634,16 @@ fn skips_and_saves_fly_off_and_an_undo_flies_back_from_the_same_side() {
     );
 }
 
-/// The name of the card under the top one.
-fn top_after(harness: &Harness) -> String {
-    let at = view(harness).index.saturating_add(1);
-    view(harness).cards[at].scryfall_data.name.clone()
-}
-
 #[test]
 fn the_swipe_keys_read_add_skip_maybeboard_undo_in_the_apps_swipe_colors() {
     use crate::test_support::word_colors;
 
-    for mut harness in [swiping(), commander(HashSet::new())] {
-        harness.apply(Update::Page {
-            ticket: ticket(0),
-            offset: 0,
-            cards: named(&["Krenko", "Zada"]),
-        });
+    let (mut commander, first) = commander(HashSet::new());
+    commander.apply(Update::Found {
+        ticket: first,
+        cards: named(&["Krenko", "Zada"]),
+    });
+    for harness in [swiping(), commander] {
         let palette = harness.app.shared.palette;
         let row = "→ add  ← skip  ↑ maybeboard  ↓ undo";
         let text = screen_text(&harness.app);
@@ -664,5 +664,5 @@ fn the_swipe_keys_read_add_skip_maybeboard_undo_in_the_apps_swipe_colors() {
 #[test]
 fn the_commander_swipe_keeps_every_key_on_a_narrow_terminal() {
     crate::test_support::assert_key_bar_fits(&swiping().app, "Esc Back");
-    crate::test_support::assert_key_bar_fits(&commander(HashSet::new()).app, "Esc Back");
+    crate::test_support::assert_key_bar_fits(&commander(HashSet::new()).0.app, "Esc Back");
 }

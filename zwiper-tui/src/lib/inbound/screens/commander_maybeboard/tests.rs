@@ -9,7 +9,7 @@ use zwipe_ui::timing;
 
 use super::*;
 use crate::inbound::event_loop::harness::Harness;
-use crate::inbound::screens::commander_swipe::{self, Mode};
+use crate::inbound::screens::commander_swipe;
 use crate::inbound::widgets::toast::Toast;
 use crate::test_support::{card, create_opened_with, render, screen_text, ticket, user};
 
@@ -565,22 +565,34 @@ fn swipe_deals_commanders_without_the_saved_ones_and_refetches_on_close() {
     let mut harness = loaded();
     let want = view(&harness).model.saved_oracles();
     harness.press(KeyCode::Char('s'));
+    let Some(screens::Request::CommanderSwipe(commander_swipe::Request::Search {
+        ticket: page,
+        query,
+    })) = harness.pending().first().cloned()
+    else {
+        panic!("the swipe did not search: {:?}", harness.pending());
+    };
+    assert_eq!(harness.pending().len(), 1);
+    assert_eq!(
+        query.criteria().is_commander_in_format(),
+        Some(&zwipe_core::domain::deck::Format::Commander)
+    );
+    let mut saved = card("Saved");
+    saved.scryfall_data.oracle_id = want.iter().next().copied();
+    harness.apply(commander_swipe::Update::Found {
+        ticket: page,
+        cards: vec![saved, card("Fresh")],
+    });
     let Screen::CommanderSwipe(swipe) = harness.screen() else {
         panic!("the swipe did not open");
     };
-    let Mode::Commander(search) = &swipe.mode else {
-        panic!("not the Commander mode");
-    };
-    assert_eq!(search.exclude, want);
-    assert_eq!(
-        harness.pending(),
-        [commander_swipe::Request::Search {
-            ticket: ticket(0),
-            offset: 0,
-            filter: Box::default(),
-        }
-        .into()]
-    );
+    let names: Vec<&str> = swipe
+        .model
+        .window()
+        .iter()
+        .map(|c| c.scryfall_data.name.as_str())
+        .collect();
+    assert_eq!(names, ["Fresh"], "the saved commanders stay out");
     harness.clear();
     harness.press(KeyCode::Esc);
     assert!(matches!(harness.screen(), Screen::CommanderMaybeboard(_)));

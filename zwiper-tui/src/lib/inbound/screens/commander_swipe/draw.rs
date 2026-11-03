@@ -8,7 +8,7 @@ use ratatui::style::Style;
 use ratatui::text::Line;
 use ratatui::widgets::{Paragraph, Widget, Wrap};
 use zwipe_core::domain::card::Card;
-use zwipe_ui::playstyle;
+use zwipe_ui::screens::swipe_select::Status;
 
 use super::CommanderSwipeView;
 use crate::domain::theme::Palette;
@@ -69,7 +69,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &CommanderSwipeView
         }
     }
     f.render_widget(action_bar::wrap(bar, keys.width), keys);
-    if let (Some(filter), Some(pile)) = (view.filter, view.suggested()) {
+    if let (Some(filter), Some(pile)) = (view.filter, &view.suggested) {
         let chips = playstyle_draw::show_line(
             palette,
             &view.identities(),
@@ -89,22 +89,20 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &CommanderSwipeView
     }
 }
 
-/// The card on top and its reasons; a line when the Suggested filter matches nothing; ghost rows while a page loads or past the last card.
+/// The card on top and its reasons; the model's line when the Suggested filter matches nothing; ghost rows while a page loads or past the last card.
 fn body_lines(palette: &Palette, view: &CommanderSwipeView, width: usize) -> Vec<Line<'static>> {
-    let Some(card) = view.current() else {
-        let empty_pile = view
-            .suggested()
-            .filter(|_| view.cards.is_empty())
-            .and_then(|pile| pile.identity.as_deref());
-        if let Some(identity) = empty_pile.filter(|_| !view.loading()) {
-            return vec![Line::styled(
-                playstyle::empty_identity_line(identity),
-                palette.muted,
-            )];
+    if let Some(card) = view.current() {
+        return card_lines(palette, view, card);
+    }
+    match view.model.status() {
+        Status::Empty => view.model.message().map_or_else(
+            || skeleton::rows(palette, GHOST_ROWS, width),
+            |line| vec![Line::styled(line, palette.muted)],
+        ),
+        Status::Loading | Status::Failed | Status::Loaded => {
+            skeleton::rows(palette, GHOST_ROWS, width)
         }
-        return skeleton::rows(palette, GHOST_ROWS, width);
-    };
-    card_lines(palette, view, card)
+    }
 }
 
 /// A card as text with its rarity, and its reasons when it is the Suggested card on top.
@@ -115,12 +113,11 @@ fn card_lines(palette: &Palette, view: &CommanderSwipeView, card: &Card) -> Vec<
     let on_top = view
         .current()
         .is_some_and(|top| top.scryfall_data.id == data.id);
-    if on_top && let (Some(suggestion), Some(pile)) = (view.current_suggestion(), view.suggested())
-    {
+    if on_top && let Some(reasons) = view.reasons() {
         let reasons = playstyle_draw::reasons_lines(
             palette,
-            &suggestion.reasons,
-            pile.deck_count,
+            reasons,
+            view.model.deck_count(),
             Reasons::Heading,
         );
         if !reasons.is_empty() {

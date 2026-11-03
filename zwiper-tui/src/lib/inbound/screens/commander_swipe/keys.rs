@@ -3,8 +3,10 @@
 //! In the Suggested Filter sheet h/l and the arrows move the chip cursor, Enter or Space picks it (the picked one again is All), and Esc closes the sheet. Commander mode's Filter is the card filter sheet, with its own keys.
 
 use crossterm::event::KeyCode;
+use zwipe_ui::screens::swipe_select::Action;
+use zwipe_ui::stack::Direction;
 
-use super::{CommanderSwipeView, reopen_hint};
+use super::{CommanderSwipeView, dispatch, reopen_hint};
 use crate::inbound::app::Context;
 use crate::inbound::widgets::help;
 
@@ -26,19 +28,19 @@ pub(crate) fn handle(view: &mut CommanderSwipeView, code: KeyCode, cx: &mut Cont
             }
             KeyCode::Enter | KeyCode::Char(' ') => {
                 let cursor = filter.cursor;
-                view.pick_identity(cursor);
+                view.pick_identity(cursor, cx);
             }
             _ => {}
         }
         return;
     }
     match code {
-        KeyCode::Esc | KeyCode::Char('q') => view.close(cx),
+        KeyCode::Esc | KeyCode::Char('q') => dispatch(view, Action::Back, cx),
         KeyCode::Char('!') => help::open(cx),
-        KeyCode::Right | KeyCode::Char('l') => view.select(cx),
+        KeyCode::Right | KeyCode::Char('l') => dispatch(view, Action::Choose, cx),
         KeyCode::Up | KeyCode::Char('k') => view.save(cx),
-        KeyCode::Left | KeyCode::Char('h') => view.skip(cx),
-        KeyCode::Down | KeyCode::Char('j' | 'u') => view.undo(cx),
+        KeyCode::Left | KeyCode::Char('h') => view.swipe(Direction::Left, Action::Skip, cx),
+        KeyCode::Down | KeyCode::Char('j' | 'u') => dispatch(view, Action::Undo, cx),
         KeyCode::Char('r') => view.refresh(cx),
         KeyCode::Char('?') => reopen_hint(view, cx),
         KeyCode::Char('f') => view.open_filter(cx),

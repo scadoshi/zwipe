@@ -3,6 +3,8 @@
 //! Right picks the card on top: it closes the overlay and starts a deck with it through [`create_deck_with`]. Up saves it to the commander maybeboard, left skips it (in Suggested, hiding it for a week, quietly), and down undoes the last swipe, lifting a save or a dismissal. Closing leaves a [`Closed`] in the handoff, which tells the host to refetch and, from Suggested, which identity the Filter left picked.
 //!
 //! The app's eye button opens a details sheet over the card; the terminal shows the card's text and, in Suggested, its reasons right under it. Filter in Suggested picks one color identity from the Show chips; in Commander it opens the card filter sheet, whose Apply deals the stack again from the top.
+//!
+//! The pile, the paging, the swipes, their undo and their toasts are the shared `zwipe_ui::screens::swipe_select` model; this screen keeps the host's held list and its Filter, the card filter, the motion and the create gate, and performs the model's effects through [`dispatch`].
 
 pub(crate) mod draw;
 pub(crate) mod keys;
@@ -18,14 +20,15 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::colors;
 use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
+use zwipe_core::domain::card::search_card::card_filter::query::CardQuery;
 use zwipe_core::domain::deck::format::Format;
-use zwipe_core::domain::user::hints::OneTimeHint;
-use zwipe_core::http::contracts::suggestions::HttpCommanderSuggestion;
+use zwipe_core::http::contracts::suggestions::{HttpCommanderSuggestion, HttpSuggestionReasons};
 use zwipe_ui::filter::draft::SheetConfig;
-use zwipe_ui::generation::{Generation, Ticket};
+use zwipe_ui::generation::Ticket;
 use zwipe_ui::hint::{HintContent, SwipeSelectMode, one_time};
+use zwipe_ui::playstyle;
+use zwipe_ui::screens::swipe_select::{self as model, Action, Destination, Effect, State};
 use zwipe_ui::stack::Direction;
-use zwipe_ui::{filter, playstyle, timing};
 
 use super::card_sheets::filter::{FilterSheet, SheetOutcome};
 use super::playstyle::{DeckLimit, create_deck_with, suggestion_colors};
@@ -35,35 +38,30 @@ use crate::inbound::nav::Nav;
 use crate::inbound::screens;
 use crate::inbound::widgets::card_motion::CardMotion;
 use crate::inbound::widgets::hint;
-use crate::inbound::widgets::toast::{self, ToastKind};
+use crate::inbound::widgets::toast::ToastKind;
 use crate::outbound::account::Account;
 
-/// Pages pulled in a row when exclusions empty a served page, before giving up until the next swipe.
-pub(crate) const PULL_AHEAD: u8 = 4;
-
-/// The Suggested mode's hint title.
-#[cfg(test)]
-pub(crate) const SUGGESTED_TITLE: &str = "Suggested commanders";
-
-/// The Commander mode's hint title.
-#[cfg(test)]
-pub(crate) const COMMANDER_TITLE: &str = "Swipe select";
-
-pub(crate) const SELECTED: &str = "Commander selected";
-pub(crate) const SAVED: &str = "Added to your commander maybeboard";
-pub(crate) const CANT_SAVE: &str = "This card can't be saved";
-pub(crate) const SKIPPED: &str = "Skipped";
-pub(crate) const NOTHING_TO_UNDO: &str = "Nothing to undo";
-pub(crate) const UNSAVED: &str = "Removed from your commander maybeboard";
-pub(crate) const UNDID_SKIP: &str = "Undid skip";
-pub(crate) const REFRESHED: &str = "Stack refreshed";
-
-/// The ranking a Suggested swipe deals: the host's held list, the deck count its reasons count against, and the identity its Show row picked (`None` is All).
+/// The ranking a Suggested swipe deals: the host's whole held list, the deck count its reasons count against, and the identity its Show row picked (`None` is All). The swipe narrows it before the model deals it.
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct SuggestedPile {
     pub(crate) held: Vec<HttpCommanderSuggestion>,
     pub(crate) deck_count: u32,
     pub(crate) identity: Option<Vec<Color>>,
+}
+
+impl SuggestedPile {
+    /// The pile as the model deals it: the held list narrowed to the picked identity.
+    fn dealt(&self) -> model::SuggestedPile {
+        model::SuggestedPile {
+            suggestions: playstyle::of_identity(
+                &self.held,
+                suggestion_colors,
+                self.identity.as_deref(),
+            ),
+            deck_count: self.deck_count,
+            identity: self.identity.clone(),
+        }
+    }
 }
 
 /// What the swipe deals, chosen by its host.
@@ -82,81 +80,20 @@ pub(crate) struct Closed {
     pub(crate) identity: Option<Vec<Color>>,
 }
 
-/// A swipe that moved the pile on, so undo can reverse it.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum Swiped {
-    /// A plain skip, or an up on a card that could not be saved.
-    Skip,
-    /// Saved this oracle id to the commander maybeboard.
-    Maybe(Uuid),
-    /// Dismissed this oracle id for a week, in Suggested.
-    Dismissed(Uuid),
-}
-
-/// The Commander mode's paging.
-#[derive(Debug, Clone, PartialEq)]
-pub(crate) struct Search {
-    pub(crate) exclude: HashSet<Uuid>,
-    /// The search generation; only the newest search's pages land. A next page continues it.
-    pub(crate) ticket: Generation,
-    /// The next page's offset.
-    pub(crate) offset: u32,
-    /// The server ran out.
-    pub(crate) exhausted: bool,
-    /// A page is out.
-    pub(crate) loading: bool,
-    /// Pages pulled in a row because exclusions emptied them.
-    pub(crate) pulls: u8,
-    /// The card filter as last applied; each page's query starts from it.
-    pub(crate) filter: Box<CardQueryBuilder>,
-}
-
-/// Which pile the swipe deals.
-#[derive(Debug, Clone, PartialEq)]
-pub(crate) enum Mode {
-    Suggested(SuggestedPile),
-    Commander(Search),
-}
-
 /// The Suggested Filter sheet, open with its chip cursor (0 is All).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct Filter {
     pub(crate) cursor: usize,
 }
 
-/// A card's identity across printings: its oracle id, else its scryfall id.
-pub(crate) fn card_key(card: &Card) -> Uuid {
-    card.scryfall_data
-        .oracle_id
-        .unwrap_or(card.scryfall_data.id)
-}
-
-/// The pile re-dealt from a new ranking mid-session. The first `swiped` of `dealt` stay in front, so the top card's index and the undo history still line up with them; then every item of `fresh` whose key is not among them, in `fresh`'s order.
-pub(crate) fn redeal<T: Clone, K: PartialEq>(
-    dealt: &[T],
-    swiped: usize,
-    fresh: &[T],
-    key: impl Fn(&T) -> K,
-) -> Vec<T> {
-    let mut pile: Vec<T> = dealt.iter().take(swiped).cloned().collect();
-    let kept: Vec<K> = pile.iter().map(&key).collect();
-    pile.extend(
-        fresh
-            .iter()
-            .filter(|item| !kept.contains(&key(item)))
-            .cloned(),
-    );
-    pile
-}
-
-/// The commander swipe's state.
+/// The commander swipe: the shared `swipe_select` model, plus what only the terminal keeps.
 #[derive(Debug)]
 pub(crate) struct CommanderSwipeView {
-    pub(crate) mode: Mode,
-    /// Every card dealt so far, the top one at `index`.
-    pub(crate) cards: Vec<Card>,
-    pub(crate) index: usize,
-    pub(crate) history: Vec<Swiped>,
+    pub(crate) model: State,
+    /// Suggested: the host's held list and the identity the Filter picked. `None` in Commander.
+    pub(crate) suggested: Option<SuggestedPile>,
+    /// Commander: the card filter as last applied, which each search starts from.
+    pub(crate) card_filter: CardQueryBuilder,
     /// The create gate, as the host saw it when it opened the swipe.
     pub(crate) limit: DeckLimit,
     pub(crate) filter: Option<Filter>,
@@ -167,73 +104,44 @@ pub(crate) struct CommanderSwipeView {
 }
 
 impl CommanderSwipeView {
-    pub(crate) fn new(deal: Deal, limit: DeckLimit) -> Self {
-        let mode = match deal {
-            Deal::Suggested(pile) => Mode::Suggested(pile),
-            Deal::Commander { exclude } => Mode::Commander(Search {
-                exclude,
-                ticket: Generation::default(),
-                offset: 0,
-                exhausted: false,
-                loading: false,
-                pulls: 0,
-                filter: Box::default(),
-            }),
-        };
-        let mut view = Self {
-            mode,
-            cards: Vec::new(),
-            index: 0,
-            history: Vec::new(),
+    pub(crate) fn new(deal: &Deal, limit: DeckLimit) -> Self {
+        Self {
+            model: State::new(),
+            suggested: match deal {
+                Deal::Suggested(pile) => Some(pile.clone()),
+                Deal::Commander { .. } => None,
+            },
+            card_filter: CardQueryBuilder::new(),
             limit,
             filter: None,
             sheet: None,
             motion: None,
-        };
-        if let Mode::Suggested(pile) = &view.mode {
-            view.cards = dealt(pile);
-        }
-        view
-    }
-
-    pub(crate) fn suggested(&self) -> Option<&SuggestedPile> {
-        match &self.mode {
-            Mode::Suggested(pile) => Some(pile),
-            Mode::Commander(_) => None,
         }
     }
 
     /// The app's `swipe_select` hint for this mode: the suggested deal, or picking a commander.
     pub(crate) fn hint(&self) -> HintContent {
-        let mode = match self.mode {
-            Mode::Suggested(_) => SwipeSelectMode::Suggested { has_filter: true },
-            Mode::Commander(_) => SwipeSelectMode::Picking("commander"),
+        let mode = if self.suggested.is_some() {
+            SwipeSelectMode::Suggested { has_filter: true }
+        } else {
+            SwipeSelectMode::Picking("commander")
         };
         one_time::swipe_select(mode)
     }
 
     /// The card on top.
     pub(crate) fn current(&self) -> Option<&Card> {
-        self.cards.get(self.index)
+        self.model.current()
     }
 
-    /// The top card's suggestion, for its reasons, in Suggested.
-    pub(crate) fn current_suggestion(&self) -> Option<&HttpCommanderSuggestion> {
-        let id = self.current()?.scryfall_data.id;
-        self.suggested()?
-            .held
-            .iter()
-            .find(|s| s.card.scryfall_data.id == id)
-    }
-
-    /// Whether a page is out in Commander.
-    pub(crate) fn loading(&self) -> bool {
-        matches!(&self.mode, Mode::Commander(search) if search.loading)
+    /// Why the card on top was suggested, in Suggested.
+    pub(crate) fn reasons(&self) -> Option<&HttpSuggestionReasons> {
+        self.model.reasons()
     }
 
     /// The identities the Filter offers: those among the held list plus the picked one.
     pub(crate) fn identities(&self) -> Vec<Vec<Color>> {
-        self.suggested().map_or_else(Vec::new, |pile| {
+        self.suggested.as_ref().map_or_else(Vec::new, |pile| {
             colors::identities_present(
                 pile.held
                     .iter()
@@ -243,10 +151,10 @@ impl CommanderSwipeView {
         })
     }
 
-    /// Picks the Filter chip at `index` (0 is All; the picked identity again is All) and re-deals behind the cards already swiped.
-    pub(crate) fn pick_identity(&mut self, index: usize) {
+    /// Picks the Filter chip at `index` (0 is All; the picked identity again is All), and the model deals the narrowed pile behind the cards already swiped.
+    pub(crate) fn pick_identity(&mut self, index: usize, cx: &mut Context<'_>) {
         let identities = self.identities();
-        let Mode::Suggested(pile) = &mut self.mode else {
+        let Some(pile) = &mut self.suggested else {
             return;
         };
         let picked = index
@@ -257,13 +165,13 @@ impl CommanderSwipeView {
         } else {
             picked
         };
-        let fresh = dealt(pile);
-        self.cards = redeal(&self.cards, self.index, &fresh, card_key);
+        let dealt = pile.dealt();
         if let Some(filter) = &mut self.filter
-            && pile.identity.is_none()
+            && dealt.identity.is_none()
         {
             filter.cursor = 0;
         }
+        dispatch(self, Action::Redeal(dealt), cx);
     }
 
     /// Whether a card is in motion, so the loop redraws.
@@ -275,143 +183,54 @@ impl CommanderSwipeView {
 
     /// The card under the top one, which a card coming back after an undo covers.
     pub(crate) fn under(&self) -> Option<&Card> {
-        self.cards.get(self.index.checked_add(1)?)
+        self.model.window().get(1)
     }
 
-    /// Sends `card` off by `direction`, replacing any motion still running.
-    fn exit(&mut self, direction: Direction, card: Card) {
-        self.motion = Some(CardMotion::exit(direction, card, Instant::now()));
-    }
-
-    /// Moves past the top card, asking for more in Commander when few are left.
-    fn advance(&mut self, cx: &mut Context<'_>) {
-        self.index = self.index.saturating_add(1);
-        let left = self.cards.len().saturating_sub(self.index);
-        if let Mode::Commander(search) = &mut self.mode
-            && !search.exhausted
-            && left <= timing::LOAD_MORE_AT
-        {
-            search.pulls = 0;
-            load_more(search, cx);
+    /// Sends the card on top off by `direction`, then hands the swipe to the model.
+    pub(crate) fn swipe(&mut self, direction: Direction, action: Action, cx: &mut Context<'_>) {
+        if let Some(card) = self.current().cloned() {
+            self.motion = Some(CardMotion::exit(direction, card, Instant::now()));
         }
+        dispatch(self, action, cx);
     }
 
-    /// Right: picks the top card, closes, and starts a deck with it.
-    pub(crate) fn select(&mut self, cx: &mut Context<'_>) {
-        let Some(card) = self.current().cloned() else {
-            return;
-        };
-        cx.shared
-            .toasts
-            .push_for(ToastKind::Success, SELECTED.to_owned(), toast::QUICK);
-        self.close(cx);
-        create_deck_with(cx, &card, self.limit);
-    }
-
-    /// Up: saves the top card to the commander maybeboard and moves on.
+    /// Up: saves the card on top to the commander maybeboard, where the mode saves.
     pub(crate) fn save(&mut self, cx: &mut Context<'_>) {
-        let Some(card) = self.current().cloned() else {
-            return;
-        };
-        let oracle_id = card.scryfall_data.oracle_id;
-        self.exit(Direction::Up, card);
-        self.advance(cx);
-        let Some(oracle_id) = oracle_id else {
-            self.history.push(Swiped::Skip);
-            cx.shared
-                .toasts
-                .push_for(ToastKind::Error, CANT_SAVE.to_owned(), toast::NORMAL);
-            return;
-        };
-        self.history.push(Swiped::Maybe(oracle_id));
-        cx.request(Request::Save(oracle_id).into());
-    }
-
-    /// Left: skips the top card, in Suggested hiding it for a week.
-    pub(crate) fn skip(&mut self, cx: &mut Context<'_>) {
-        let Some(card) = self.current().cloned() else {
-            return;
-        };
-        let oracle_id = card.scryfall_data.oracle_id;
-        self.exit(Direction::Left, card);
-        self.advance(cx);
-        match (&self.mode, oracle_id) {
-            (Mode::Suggested(_), Some(oracle_id)) => {
-                self.history.push(Swiped::Dismissed(oracle_id));
-                cx.request(Request::Dismiss(oracle_id).into());
-            }
-            _ => self.history.push(Swiped::Skip),
-        }
-        cx.shared
-            .toasts
-            .push_for(ToastKind::Info, SKIPPED.to_owned(), toast::QUICK);
-    }
-
-    /// Down: brings the last card back, lifting its save or dismissal.
-    pub(crate) fn undo(&mut self, cx: &mut Context<'_>) {
-        let Some(index) = self.index.checked_sub(1) else {
-            cx.shared
-                .toasts
-                .push_for(ToastKind::Info, NOTHING_TO_UNDO.to_owned(), toast::NORMAL);
-            return;
-        };
-        self.index = index;
-        let swiped = self.history.pop();
-        let side = match swiped {
-            Some(Swiped::Maybe(_)) => Direction::Up,
-            Some(Swiped::Dismissed(_) | Swiped::Skip) | None => Direction::Left,
-        };
-        self.motion = Some(CardMotion::enter(side, Instant::now()));
-        match swiped {
-            Some(Swiped::Maybe(oracle_id)) => cx.request(Request::Unsave(oracle_id).into()),
-            Some(Swiped::Dismissed(oracle_id)) => {
-                cx.request(Request::Undismiss(oracle_id).into());
-                cx.shared
-                    .toasts
-                    .push_for(ToastKind::Info, UNDID_SKIP.to_owned(), toast::QUICK);
-            }
-            Some(Swiped::Skip) | None => {
-                cx.shared
-                    .toasts
-                    .push_for(ToastKind::Info, UNDID_SKIP.to_owned(), toast::QUICK);
-            }
+        if self.model.can_save() {
+            self.swipe(Direction::Up, Action::Save, cx);
         }
     }
 
     /// Deals afresh from the top: the host's pile again, or a new search.
     pub(crate) fn refresh(&mut self, cx: &mut Context<'_>) {
-        self.restart(cx);
-        cx.shared
-            .toasts
-            .push_for(ToastKind::Info, REFRESHED.to_owned(), toast::QUICK);
+        self.motion = None;
+        let filter = self.card_filter.clone();
+        dispatch(self, Action::Refresh(filter), cx);
     }
 
     /// Whether Filter carries its dot: an identity picked in Suggested, a criterion or sort in Commander.
     pub(crate) fn filter_dot(&self) -> bool {
-        match &self.mode {
-            Mode::Suggested(pile) => pile.identity.is_some(),
-            Mode::Commander(search) => filter::shows_dot(&search.filter),
+        match &self.suggested {
+            Some(pile) => pile.identity.is_some(),
+            None => model::filter_lit(&self.card_filter),
         }
     }
 
     /// Opens the Filter: the identity chips in Suggested, the card filter sheet without its format section in Commander.
     pub(crate) fn open_filter(&mut self, cx: &mut Context<'_>) {
-        match &self.mode {
-            Mode::Suggested(pile) => {
-                let cursor = pile
-                    .identity
-                    .as_ref()
-                    .and_then(|picked| self.identities().iter().position(|i| i == picked))
-                    .map_or(0, |i| i.saturating_add(1));
-                self.filter = Some(Filter { cursor });
-            }
-            Mode::Commander(search) => {
-                let config = SheetConfig {
-                    show_format: false,
-                    ..SheetConfig::default()
-                };
-                self.sheet = Some(FilterSheet::open(cx, &search.filter, config));
-            }
+        if let Some(pile) = &self.suggested {
+            let cursor = pile
+                .identity
+                .as_ref()
+                .and_then(|picked| self.identities().iter().position(|i| i == picked))
+                .map_or(0, |i| i.saturating_add(1));
+            self.filter = Some(Filter { cursor });
+        } else {
+            let config = SheetConfig {
+                show_format: false,
+                ..SheetConfig::default()
+            };
+            self.sheet = Some(FilterSheet::open(cx, &self.card_filter, config));
         }
     }
 
@@ -425,117 +244,80 @@ impl CommanderSwipeView {
             SheetOutcome::Closed => self.sheet = None,
             SheetOutcome::Applied(applied) => {
                 self.sheet = None;
-                if let Mode::Commander(search) = &mut self.mode {
-                    search.filter = applied;
-                }
-                self.restart(cx);
-            }
-        }
-    }
-
-    /// Deals from the top again without a word.
-    fn restart(&mut self, cx: &mut Context<'_>) {
-        self.motion = None;
-        self.index = 0;
-        self.history.clear();
-        match &mut self.mode {
-            Mode::Suggested(pile) => self.cards = dealt(pile),
-            Mode::Commander(search) => {
-                self.cards.clear();
-                search.offset = 0;
-                search.exhausted = false;
-                search.pulls = 0;
-                search.ticket.next_ticket();
-                search.loading = false;
-                load_more(search, cx);
+                self.motion = None;
+                self.card_filter = *applied;
+                let filter = self.card_filter.clone();
+                dispatch(self, Action::Filter(filter), cx);
             }
         }
     }
 
     /// Closes the swipe, leaving its host the identity picked and the word to refetch.
     pub(crate) fn close(&self, cx: &mut Context<'_>) {
-        let identity = self.suggested().and_then(|pile| pile.identity.clone());
+        let identity = self
+            .suggested
+            .as_ref()
+            .and_then(|pile| pile.identity.clone());
         cx.shared.caches.handoff.commander_swipe = Some(Closed { identity });
         cx.back();
     }
+}
 
-    /// Takes a page: drops cards already dealt or excluded, and pulls ahead when exclusions emptied a page the server had more behind.
-    fn land(&mut self, ticket: Ticket, offset: u32, page: Vec<Card>, cx: &mut Context<'_>) {
-        let Mode::Commander(search) = &mut self.mode else {
-            return;
-        };
-        if !search.ticket.is_current(ticket) || offset != search.offset {
-            return;
+/// Applies `action` to the model and performs what it returns.
+pub(crate) fn dispatch(view: &mut CommanderSwipeView, action: Action, cx: &mut Context<'_>) {
+    for effect in view.model.update(action) {
+        match effect {
+            Effect::OfferHint(offer) => {
+                hint::once_with(cx, offer.key(), view.hint());
+            }
+            Effect::SearchCommanders { ticket, query } | Effect::LoadMore { ticket, query } => {
+                cx.request(Request::Search { ticket, query }.into());
+            }
+            Effect::DismissCommander(oracle_id) => cx.request(Request::Dismiss(oracle_id).into()),
+            Effect::UndismissCommander(oracle_id) => {
+                cx.request(Request::Undismiss(oracle_id).into());
+            }
+            Effect::AddMaybeboardCard { ticket, oracle_id } => {
+                cx.request(Request::Save { ticket, oracle_id }.into());
+            }
+            Effect::RemoveMaybeboardCard { ticket, oracle_id } => {
+                cx.request(Request::Unsave { ticket, oracle_id }.into());
+            }
+            Effect::Enter(direction) => {
+                view.motion = Some(CardMotion::enter(direction, Instant::now()));
+            }
+            Effect::Pick(card) => {
+                view.close(cx);
+                create_deck_with(cx, &card, view.limit);
+            }
+            Effect::Navigate(Destination::Previous) => view.close(cx),
+            Effect::Toast(toast) => cx.show(toast),
         }
-        search.loading = false;
-        if page.is_empty() {
-            search.exhausted = true;
-            return;
-        }
-        search.offset = offset.saturating_add(timing::PAGE_SIZE);
-        let seen: HashSet<Uuid> = self.cards.iter().map(|c| c.scryfall_data.id).collect();
-        let fresh: Vec<Card> = page
-            .into_iter()
-            .filter(|c| !seen.contains(&c.scryfall_data.id))
-            .filter(|c| {
-                !c.scryfall_data
-                    .oracle_id
-                    .is_some_and(|o| search.exclude.contains(&o))
-            })
-            .collect();
-        if fresh.is_empty() && search.pulls < PULL_AHEAD {
-            search.pulls = search.pulls.saturating_add(1);
-            load_more(search, cx);
-            return;
-        }
-        self.cards.extend(fresh);
     }
-}
-
-/// The Suggested pile's cards: the held list narrowed to the picked identity.
-fn dealt(pile: &SuggestedPile) -> Vec<Card> {
-    playstyle::of_identity(&pile.held, suggestion_colors, pile.identity.as_deref())
-        .into_iter()
-        .map(|s| s.card)
-        .collect()
-}
-
-/// Asks for the next page unless one is out.
-fn load_more(search: &mut Search, cx: &mut Context<'_>) {
-    if search.loading {
-        return;
-    }
-    search.loading = true;
-    cx.request(
-        Request::Search {
-            ticket: search.ticket.current(),
-            offset: search.offset,
-            filter: search.filter.clone(),
-        }
-        .into(),
-    );
-}
-
-/// The query for one page of commanders: the user's card filter, then the Commander format, no tokens, and the page. With no sort in the filter the server serves its most-played order.
-pub(crate) fn commander_query(filter: &CardQueryBuilder, offset: u32) -> CardQueryBuilder {
-    let mut builder = filter.clone();
-    builder
-        .set_is_commander_in_format(Format::Commander)
-        .set_is_token(false)
-        .set_limit(timing::PAGE_SIZE)
-        .set_offset(offset);
-    builder
 }
 
 /// Opens the swipe over its host, dealing `deal`, with the host's create gate. Commander mode asks for its first page; both show the swipe hint the first time.
 pub(crate) fn open(cx: &mut Context<'_>, deal: Deal, limit: DeckLimit) {
-    let mut view = CommanderSwipeView::new(deal, limit);
-    if let Mode::Commander(search) = &mut view.mode {
-        load_more(search, cx);
-    }
-    let content = view.hint();
+    let mut view = CommanderSwipeView::new(&deal, limit);
+    let (mode, pile, excluded) = match deal {
+        Deal::Suggested(pile) => (model::Mode::Suggested, pile.dealt(), HashSet::new()),
+        Deal::Commander { exclude } => (
+            model::Mode::Commander(Format::Commander),
+            model::SuggestedPile::default(),
+            exclude,
+        ),
+    };
+    dispatch(
+        &mut view,
+        Action::Open {
+            mode: Some(mode),
+            filter: CardQueryBuilder::new(),
+            pile,
+            excluded,
+        },
+        cx,
+    );
     cx.push(Screen::CommanderSwipe(Box::new(view)));
-    hint::once_with(cx, OneTimeHint::SwipeSelect.key(), content);
 }
 
 /// Shows the hint again, for `?`.
@@ -543,22 +325,21 @@ pub(crate) fn reopen_hint(view: &CommanderSwipeView, cx: &mut Context<'_>) {
     hint::open(cx, view.hint());
 }
 
-/// The swipe's work.
+/// The swipe's work, the model's requests carrying their tickets.
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum Request {
-    /// One page of commanders under a ticket, narrowed by the card filter.
+    /// A page of commanders, the first of a fresh pile or the next one.
     Search {
         ticket: Ticket,
-        offset: u32,
-        filter: Box<CardQueryBuilder>,
+        query: Box<CardQuery>,
     },
     /// Saves to the commander maybeboard.
-    Save(Uuid),
+    Save { ticket: Ticket, oracle_id: Uuid },
     /// Takes a save back off, for undo.
-    Unsave(Uuid),
+    Unsave { ticket: Ticket, oracle_id: Uuid },
     /// Hides a suggestion for a week, quietly.
     Dismiss(Uuid),
-    /// Lifts a dismissal, quietly, for undo.
+    /// Lifts a dismissal, for undo; a failure is reported without a toast.
     Undismiss(Uuid),
 }
 
@@ -567,30 +348,26 @@ impl Request {
     pub(crate) fn action(&self) -> &'static str {
         match self {
             Self::Search { .. } => "search",
-            Self::Save(..) => "save",
-            Self::Unsave(..) => "unsave",
+            Self::Save { .. } => "save",
+            Self::Unsave { .. } => "unsave",
             Self::Dismiss(..) => "dismiss",
             Self::Undismiss(..) => "undismiss",
         }
     }
 }
 
-/// The swipe's results.
+/// The swipe's results, each carrying its ticket back.
 #[derive(Debug)]
 pub(crate) enum Update {
-    Page {
+    /// A page arrived.
+    Found { ticket: Ticket, cards: Vec<Card> },
+    /// A save or its undo went through.
+    Landed { ticket: Ticket },
+    /// A request failed: `Some` is the error toast a save or its undo raises first, `None` a quiet search.
+    Failed {
         ticket: Ticket,
-        offset: u32,
-        cards: Vec<Card>,
+        message: Option<String>,
     },
-    /// A page failed; the swipe stops loading and keeps what it has.
-    SearchFailed {
-        ticket: Ticket,
-    },
-    Saved,
-    Unsaved,
-    /// A save or its undo failed with this message.
-    Failed(String),
 }
 
 impl From<Request> for screens::Request {
@@ -614,15 +391,17 @@ fn pick(screen: &mut Screen) -> Option<&mut CommanderSwipeView> {
 
 pub(crate) async fn perform(account: &Account, request: Request) -> Option<screens::Update> {
     let client = &account.client;
+    let failed = |ticket: Ticket, e: &zwipe_client::ClientError| {
+        screens::failure(e, |message| {
+            Update::Failed {
+                ticket,
+                message: Some(message),
+            }
+            .into()
+        })
+    };
     match request {
-        Request::Search {
-            ticket,
-            offset,
-            filter,
-        } => {
-            let Ok(query) = commander_query(&filter, offset).build() else {
-                return Some(Update::SearchFailed { ticket }.into());
-            };
+        Request::Search { ticket, query } => Some(
             match async {
                 client
                     .search_commanders(&query, &account.fresh().await?)
@@ -630,20 +409,17 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
             }
             .await
             {
-                Ok(cards) => Some(
-                    Update::Page {
+                Ok(cards) => Update::Found { ticket, cards }.into(),
+                Err(e) => screens::failure(&e, |_| {
+                    Update::Failed {
                         ticket,
-                        offset,
-                        cards,
+                        message: None,
                     }
-                    .into(),
-                ),
-                Err(e) => Some(screens::failure(&e, |_| {
-                    Update::SearchFailed { ticket }.into()
-                })),
-            }
-        }
-        Request::Save(oracle_id) => {
+                    .into()
+                }),
+            },
+        ),
+        Request::Save { ticket, oracle_id } => Some(
             match async {
                 client
                     .add_commander_maybeboard_card(oracle_id, &account.fresh().await?)
@@ -651,13 +427,11 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
             }
             .await
             {
-                Ok(()) => Some(Update::Saved.into()),
-                Err(e) => Some(screens::failure(&e, |message| {
-                    Update::Failed(message).into()
-                })),
-            }
-        }
-        Request::Unsave(oracle_id) => {
+                Ok(()) => Update::Landed { ticket }.into(),
+                Err(e) => failed(ticket, &e),
+            },
+        ),
+        Request::Unsave { ticket, oracle_id } => Some(
             match async {
                 client
                     .remove_commander_maybeboard_card(oracle_id, &account.fresh().await?)
@@ -665,15 +439,13 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
             }
             .await
             {
-                Ok(()) => Some(Update::Unsaved.into()),
-                Err(e) => Some(screens::failure(&e, |message| {
-                    Update::Failed(message).into()
-                })),
-            }
-        }
+                Ok(()) => Update::Landed { ticket }.into(),
+                Err(e) => failed(ticket, &e),
+            },
+        ),
         // Quiet like the app's: the pile already moved on, and a failure only means the commander comes back sooner.
         Request::Dismiss(oracle_id) => {
-            let _ = async {
+            let _quiet = async {
                 client
                     .dismiss_commander(oracle_id, &account.fresh().await?)
                     .await
@@ -682,52 +454,36 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
             None
         }
         Request::Undismiss(oracle_id) => {
-            let _ = async {
+            if let Err(e) = async {
                 client
                     .undismiss_commander(oracle_id, &account.fresh().await?)
                     .await
             }
-            .await;
+            .await
+            {
+                let _reported = screens::shown(&e);
+            }
             None
         }
     }
 }
 
 pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
-    match update {
-        Update::Page {
-            ticket,
-            offset,
-            cards,
-        } => {
-            if let Some(view) = nav.find_mut(pick) {
-                view.land(ticket, offset, cards, cx);
-            }
-        }
-        Update::SearchFailed { ticket } => {
-            if let Some(view) = nav.find_mut(pick)
-                && let Mode::Commander(search) = &mut view.mode
-                && search.ticket.is_current(ticket)
-            {
-                search.loading = false;
-            }
-        }
-        Update::Saved => {
-            cx.shared.toasts.push_for(
-                ToastKind::Success,
-                SAVED.to_owned(),
-                timing::MAYBEBOARD_TOAST,
-            );
-        }
-        Update::Unsaved => {
-            cx.shared
-                .toasts
-                .push_for(ToastKind::Info, UNSAVED.to_owned(), toast::QUICK);
-        }
-        Update::Failed(message) => {
-            cx.shared
-                .toasts
-                .push_for(ToastKind::Error, message, toast::NORMAL);
-        }
+    // A failed save's toast goes up before the lookup, so it shows even when the swipe has closed.
+    if let Update::Failed {
+        message: Some(message),
+        ..
+    } = &update
+    {
+        cx.toast(ToastKind::Error, message.clone());
     }
+    let Some(view) = nav.find_mut(pick) else {
+        return;
+    };
+    let action = match update {
+        Update::Found { ticket, cards } => Action::Found { ticket, cards },
+        Update::Landed { ticket } => Action::Landed { ticket },
+        Update::Failed { ticket, .. } => Action::Failed { ticket },
+    };
+    dispatch(view, action, cx);
 }
