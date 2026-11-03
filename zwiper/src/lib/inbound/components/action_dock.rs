@@ -14,6 +14,8 @@ pub const UNDO: &str = "M9 14L4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3";
 /// The refresh icon: an arrow circling round.
 pub const REFRESH: &str = "M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5";
 
+/// The save icon: a checkmark.
+pub const CHECK: &str = "M5 12.5l4.5 4.5L19 7";
 /// The synergy icon: two chain links.
 pub const LINK: &str = "M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1";
 

@@ -221,14 +221,6 @@ button {
     color: var(--accent-primary);
 }
 
-/* A dock button that is a word (Save): as wide as its text. */
-.icon-pill-btn.icon-pill-word {
-    width: auto;
-    padding: 0 0.9rem;
-    font-size: 0.95rem;
-    font-family: inherit;
-}
-
 .icon-pill-btn:disabled {
     opacity: 0.35;
     cursor: default;

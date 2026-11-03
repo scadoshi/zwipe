@@ -25,6 +25,7 @@ use super::oracle_tag_select::OracleTagSelect;
 use super::skeletons::EditDeckSkeleton;
 use super::swipe_select::{SwipeMode, SwipeSelect};
 use super::tag_select::TagSelect;
+use crate::inbound::components::action_dock::{self, DockIcon};
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::catalog_cache::CatalogCache;
 use crate::inbound::components::screen_header::ScreenHeader;
@@ -356,16 +357,17 @@ pub(crate) fn DeckForm(open: Open) -> Element {
                 }
             }
 
-            // Save (Create on a new deck) as the action dock's one word, pinned
-            // bottom right, while there is something to save.
+            // Save as the action dock's checkmark, pinned bottom right, while
+            // there is something to save; dimmed while the save is out.
             if let Some(label) = save_label {
                 div { class: "app-float app-float-right",
                     div { class: "icon-pill",
                         button {
-                            class: "icon-pill-btn icon-pill-word",
+                            class: "icon-pill-btn",
+                            "aria-label": label,
                             disabled: saving,
                             onclick: move |_| driver.dispatch(Action::Save),
-                            {label}
+                            DockIcon { path: action_dock::CHECK }
                         }
                     }
                 }

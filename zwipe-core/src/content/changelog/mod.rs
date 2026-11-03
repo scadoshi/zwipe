@@ -61,7 +61,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Swipe screens give the card more room: the pile chips sit at the bottom beside the icons, and only the card's prices show under it",
         "Card details from the eye include the release date and artist",
         "Synergy on Add is a link icon beside the filter",
-        "Create and Edit deck save from a Save button at the bottom right",
+        "Create and Edit deck save from a checkmark at the bottom right",
     ],
 }];
 
