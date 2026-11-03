@@ -20,6 +20,8 @@
             if (!(area instanceof Element) || !area.classList.contains("screen-content")) return;
             const nav = area.parentElement && area.parentElement.querySelector(":scope > .app-nav");
             if (!nav) return;
+            // The menu is open: leave the header where it is.
+            if (nav.querySelector(".nav-panel-open")) return;
 
             const top = Math.max(0, area.scrollTop);
             const bottom = area.scrollHeight - area.clientHeight;

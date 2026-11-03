@@ -369,7 +369,19 @@ button {
     left: 0;
     right: 0;
     z-index: 101;
-    will-change: transform;
+}
+
+/* While the menu is open the header holds still and untransformed: a
+   transform would make it the containing block of the kit's fixed backdrop,
+   which then covered only the bar, so a tap outside the menu missed it. */
+.screen > .app-nav:has(.nav-panel-open) {
+    transform: none !important;
+}
+
+/* No footer sits over the home indicator any more, so the kit's band behind
+   it goes and the backdrop runs to the bottom edge. */
+.screen::after {
+    display: none;
 }
 
 .screen > .app-nav ~ .screen-content::before {
