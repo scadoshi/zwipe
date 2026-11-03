@@ -7,7 +7,7 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::user::models::preferences::PipStyle;
+use zwipe_core::domain::user::models::preferences::PipColor;
 use zwipe_core::http::contracts::auth::HttpAuthenticateUser;
 use zwipe_ui::account::{self, LoginGate};
 
@@ -29,7 +29,7 @@ pub fn Login() -> Element {
     let navigator = use_navigator();
     let mut session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
-    let mut pip_style: Signal<PipStyle> = use_context();
+    let mut pip_style: Signal<PipColor> = use_context();
     let mut theme: Signal<ThemeConfig> = use_context();
     let toast = use_toast();
 

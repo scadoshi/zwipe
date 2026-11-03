@@ -6,7 +6,7 @@ use components::{
 };
 use dioxus::prelude::*;
 use zwipe_core::domain::logo;
-use zwipe_core::domain::user::models::preferences::PipStyle;
+use zwipe_core::domain::user::models::preferences::PipColor;
 
 use crate::inbound::chrome::hint_topic::{HintHost, HintTopic};
 use crate::inbound::router::Route;
@@ -151,7 +151,7 @@ fn ThemeShell(children: Element) -> Element {
     let follow = components::use_theme_follow(use_context::<Signal<ThemeConfig>>(), ".app-shell");
     use_context_provider(|| follow);
     let class = follow.shown.read().css_class();
-    let pips = components::pip_style_class(use_context::<Signal<PipStyle>>()());
+    let pips = components::pip_color_class(use_context::<Signal<PipColor>>()());
     rsx! {
         div { class: "app-shell {class} {pips}",
             components::GridCells { still: true }

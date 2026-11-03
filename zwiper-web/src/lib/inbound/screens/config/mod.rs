@@ -9,7 +9,7 @@ use components::{ActionBar, Button, ButtonVariant, DarkModeButton, TOAST_NORMAL,
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::user::models::preferences::{self as user_preferences, PipStyle};
+use zwipe_core::domain::user::models::preferences::{self as user_preferences, PipColor};
 use zwipe_core::http::contracts::user::HttpUpdatePreferences;
 
 use crate::domain::preferences::{self, RequestSeq};
@@ -42,7 +42,7 @@ fn update(edit: impl FnOnce(&mut HttpUpdatePreferences)) -> HttpUpdatePreference
 #[component]
 pub fn Config() -> Element {
     let mut theme: Signal<ThemeConfig> = use_context();
-    let mut pip_style: Signal<PipStyle> = use_context();
+    let mut pip_style: Signal<PipColor> = use_context();
     let mut session: Signal<Option<Session>> = use_context();
     let authed = use_authed();
     let toast = use_toast();
@@ -142,8 +142,8 @@ pub fn Config() -> Element {
                     session.set(Some(latest));
                 }
                 said.call(match shown {
-                    PipStyle::Theme => "Pips in theme colors",
-                    PipStyle::Natural => "Pips in natural colors",
+                    PipColor::Theme => "Pips in theme colors",
+                    PipColor::Classic => "Pips in classic colors",
                 });
             }
         });
@@ -213,8 +213,8 @@ pub fn Config() -> Element {
                                     variant: ButtonVariant::Action,
                                     onclick: toggle_pips,
                                     match pip_style() {
-                                        PipStyle::Theme => "Theme",
-                                        PipStyle::Natural => "Natural",
+                                        PipColor::Theme => "Theme",
+                                        PipColor::Classic => "Classic",
                                     }
                                 }
                             }

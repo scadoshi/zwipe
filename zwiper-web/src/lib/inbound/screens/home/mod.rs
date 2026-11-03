@@ -21,7 +21,7 @@ use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::deck_metrics;
-use zwipe_core::domain::user::models::preferences::PipStyle;
+use zwipe_core::domain::user::models::preferences::PipColor;
 use zwipe_ui::home::{self, UserSource};
 
 use self::color_map::HomePlayStyle;
@@ -49,7 +49,7 @@ pub fn Home() -> Element {
     let toast = use_toast();
     let hint_open = use_one_time_hint(OneTimeHint::FirstLogin);
     let mut theme: Signal<ThemeConfig> = use_context();
-    let mut pip_style: Signal<PipStyle> = use_context();
+    let mut pip_style: Signal<PipColor> = use_context();
     let mut preview: Signal<Option<(ScryfallData, usize)>> = use_signal(|| None);
     let mut flavor: Signal<Option<FlavorCard>> = use_context();
 

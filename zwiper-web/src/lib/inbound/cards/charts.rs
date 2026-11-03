@@ -14,7 +14,7 @@ pub fn chart_bars(bars: Vec<Bar>) -> Vec<components::Bar> {
         .map(|bar| components::Bar {
             key: bar.key,
             label: bar.label,
-            count: usize::try_from(bar.count).unwrap_or(usize::MAX),
+            count: bar.count,
             pct: bar.pct,
             revealable: bar.revealable,
         })
