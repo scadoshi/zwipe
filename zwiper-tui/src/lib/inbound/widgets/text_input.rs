@@ -1,4 +1,4 @@
-//! A one-line text box: a cursor that moves, optional masking for passwords, and an error line under it. An empty box draws empty.
+//! A one-line text box: a cursor that moves, optional masking for passwords, and an error line centered under it. An empty box draws empty.
 
 use crossterm::event::KeyCode;
 use ratatui::Frame;
@@ -204,7 +204,7 @@ impl TextInput {
         self.cursor.saturating_sub(inner.saturating_sub(1))
     }
 
-    /// Draws the box titled `title`, centered on its top border, at the top of `area`, its border in the focus color while `focused`, and the error under it.
+    /// Draws the box titled `title`, centered on its top border, at the top of `area`, its border in the focus color while `focused`, and the error centered under it.
     pub(crate) fn draw<'text>(
         &self,
         f: &mut Frame<'_>,
@@ -233,7 +233,10 @@ impl TextInput {
                 height: 1,
                 ..area
             };
-            f.render_widget(Line::from(error.clone()).style(palette.error), error_area);
+            f.render_widget(
+                Line::from(error.clone()).style(palette.error).centered(),
+                error_area,
+            );
         }
     }
 
@@ -356,6 +359,12 @@ mod tests {
         assert!(screen.contains("Email"));
         assert!(screen.contains("scotty@zwipe.net"));
         assert!(screen.contains("Taken"));
+        let error_row: String = screen.chars().skip(90).take(30).collect();
+        assert_eq!(
+            error_row,
+            format!("{:^30}", "Taken"),
+            "the error sits centered under the box"
+        );
     }
 
     /// The box, unfocused and titled Username, drawn `width` cells wide.

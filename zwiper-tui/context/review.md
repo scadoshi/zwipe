@@ -23,6 +23,7 @@ Logo:
 Forms and keys:
 - No placeholder text in any box. Import's example decklist lives in its `?` hint.
 - Labels sit centered on the box border in `palette.tertiary`.
+- A field's error sits centered under its box, in the error color.
 - Esc ends typing in a field and never quits. Only `q` quits, and only when no field takes letters. Ctrl+C always quits.
 - With no field active, letters are commands. Login: `c Create profile`, `f Forgot password`. Register and Reset password: Esc with no field active goes back to Login.
 - Navigation to another screen lives in the key bar, not in buttons on the screen. The form's own submit stays on the screen, right under its fields.
