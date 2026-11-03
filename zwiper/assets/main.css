@@ -25,9 +25,12 @@
     }
 }
 
+/* The theme class rides on html as well as the shell, so the page color
+   under everything is the theme's and not the launch color. */
 html {
     touch-action: manipulation;
     overflow: hidden;
+    background-color: var(--bg-primary);
 }
 
 body {

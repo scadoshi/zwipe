@@ -81,6 +81,14 @@ fn ThemeWrapper(children: Element) -> Element {
     // discarded pick.
     use_context_provider(|| follow);
     let class = follow.shown.read().css_class();
+    // The page under the shell carries the theme class too, so the strip the
+    // WebView shows past the shell (a rubber band, the gap over the keyboard)
+    // is the theme's page color and not the launch color.
+    let shown = follow.shown;
+    use_effect(move || {
+        let class = shown.read().css_class();
+        document::eval(&format!("document.documentElement.className = {class:?};"));
+    });
     let pips = components::pip_color_class(use_context::<Signal<PipColor>>()());
     rsx! {
         div { class: "app-shell {class} {pips}",
