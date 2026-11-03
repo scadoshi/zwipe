@@ -1,7 +1,4 @@
-use components::{
-    ActionBar, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintDialog, HintKey, HintLine,
-    Toasts, use_toast,
-};
+use components::{Chip, HintBullet, HintBullets, HintDialog, HintKey, HintLine, Toasts, use_toast};
 use dioxus::core::spawn_forever;
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -1057,30 +1054,49 @@ pub fn View(deck_id: Uuid) -> Element {
                 }
             }
 
-            ActionBar {
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| driver.dispatch(Action::OpenAdd),
-                    "{deck_cards::ADD}"
-                }
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| driver.dispatch(Action::OpenRemove),
-                    "{deck_cards::REMOVE}"
-                }
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| filters_overlay_open.set(true),
-                    "{deck_cards::FILTER}"
-                    if filter::shows_dot(&filter) {
-                        span { class: "filter-dot" }
+            // The screen's actions as one floating icon bar at the bottom right:
+            // add and remove, then the filter (with its reset while a filter is
+            // on) and undo.
+            div { class: "app-float app-float-right",
+                div { class: "icon-pill",
+                    button {
+                        class: "icon-pill-btn",
+                        "aria-label": deck_cards::ADD,
+                        onclick: move |_| driver.dispatch(Action::OpenAdd),
+                        PillIcon { path: "M12 5v14M5 12h14" }
                     }
-                }
-                // Walks the undo log newest-first; hidden while there is
-                // nothing to undo (same pattern as Reset filter below).
-                if !undo_log.0.read().is_empty() {
-                    Button {
-                        variant: ButtonVariant::Action,
+                    button {
+                        class: "icon-pill-btn",
+                        "aria-label": deck_cards::REMOVE,
+                        onclick: move |_| driver.dispatch(Action::OpenRemove),
+                        PillIcon { path: "M5 12h14" }
+                    }
+                    span { class: "icon-pill-divider" }
+                    div { class: "icon-pill-filter",
+                        button {
+                            class: "icon-pill-btn",
+                            "aria-label": deck_cards::FILTER,
+                            onclick: move |_| filters_overlay_open.set(true),
+                            PillIcon { path: "M4 5h16l-6 7.5V19l-4 1v-7.5z" }
+                            if filter::shows_dot(&filter) {
+                                span { class: "filter-dot" }
+                            }
+                        }
+                        if !filter.is_empty() {
+                            button {
+                                class: "icon-pill-reset",
+                                "aria-label": deck_cards::RESET_FILTER,
+                                onclick: move |_| driver.dispatch(Action::ResetFilter),
+                                "\u{d7}"
+                            }
+                        }
+                    }
+                    // Walks the undo log newest-first; disabled while there is
+                    // nothing to undo, so the pill keeps its width.
+                    button {
+                        class: "icon-pill-btn",
+                        "aria-label": deck_cards::UNDO,
+                        disabled: undo_log.0.read().is_empty(),
                         onclick: move |_| {
                             let mut log = undo_log.0;
                             let popped = log.write().pop();
@@ -1088,15 +1104,7 @@ pub fn View(deck_id: Uuid) -> Element {
                                 driver.dispatch(Action::Undo(Box::new(to_shared_undo(action))));
                             }
                         },
-                        "{deck_cards::UNDO}"
-                    }
-                }
-                if !filter.is_empty() {
-                    Button {
-                        variant: ButtonVariant::Action,
-                        class: "btn-action-clear",
-                        onclick: move |_| driver.dispatch(Action::ResetFilter),
-                        "{deck_cards::RESET_FILTER}"
+                        PillIcon { path: "M9 14L4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3" }
                     }
                 }
             }
@@ -1119,6 +1127,7 @@ pub fn View(deck_id: Uuid) -> Element {
                     HintBullet { HintKey { "Group by" } " sorts by type, mana value, color or role" }
                     HintBullet { HintKey { "Boards" } " picks main, maybe or side" }
                     HintBullet { HintKey { "Show" } " toggles tokens, the command zone and row art" }
+                    HintBullet { "The bar at the bottom: " HintKey { "+" } " adds, " HintKey { "−" } " removes, the funnel filters (its " HintKey { "×" } " resets the filter), and the arrow undoes" }
                     HintBullet { HintKey { color: "--color-warning", "Star" } " marks up to three MVPs. Suggestions lean toward cards that share their roles" }
                 }
             }
@@ -1165,5 +1174,19 @@ mod tests {
             moved,
             UndoAction::MovedBoard { card_id: c, from: Board::Sideboard, .. } if c == card_id
         ));
+    }
+}
+
+/// One stroke icon for the action pill, drawn from a single SVG path.
+#[component]
+fn PillIcon(path: &'static str) -> Element {
+    rsx! {
+        svg {
+            class: "icon-pill-icon",
+            view_box: "0 0 24 24",
+            xmlns: "http://www.w3.org/2000/svg",
+            "aria-hidden": "true",
+            path { d: path }
+        }
     }
 }

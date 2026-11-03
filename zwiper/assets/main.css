@@ -151,6 +151,97 @@ button {
 }
 
 /* ==================
+  action pill
+ ==================== */
+
+/* A screen's icon actions as one floating squircle bar (Cards): icons only,
+   a thin divider between groups that runs the bar's full height. */
+.icon-pill {
+    display: flex;
+    align-items: stretch;
+    gap: 0.25rem;
+    padding: 0 0.4rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.9rem;
+}
+
+.icon-pill-btn {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.6rem;
+    height: 2.4rem;
+    margin: 0.3rem 0;
+    padding: 0;
+    border: none;
+    border-radius: 0.6rem;
+    background: transparent;
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+.icon-pill-btn:active {
+    background-color: var(--bg-secondary);
+}
+
+.icon-pill-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+.icon-pill-icon {
+    width: 1.3rem;
+    height: 1.3rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.icon-pill-divider {
+    flex: 0 0 1px;
+    align-self: stretch;
+    margin: 0 0.25rem;
+    background-color: var(--border-primary);
+}
+
+.icon-pill-filter {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+/* The filter's reset: a small x on the funnel's corner, shown while a filter
+   is on. */
+.icon-pill-reset {
+    position: absolute;
+    top: -0.35rem;
+    right: -0.35rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.2rem;
+    height: 1.2rem;
+    padding: 0;
+    border: 1px solid var(--border-primary);
+    border-radius: 999px;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 0.8rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+/* The filter dot sits on the funnel's top left, clear of the reset. */
+.icon-pill-btn .filter-dot {
+    position: absolute;
+    top: 0.35rem;
+    left: 0.45rem;
+}
+
+/* ==================
   deck view actions
  ==================== */
 
