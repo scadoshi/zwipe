@@ -150,11 +150,11 @@ button {
 
 /* The header sits over the top of the screen, under the status bar strip,
    and header_hide.js slides it up behind that strip as the content scrolls
-   down. Its height is fixed (the bar's 0.25rem padding around the 2.25rem
-   toggle, and its 1px rule), so each screen's scroll area opens with a spacer
-   that tall and nothing moves at rest. */
+   down. Its height is fixed (the bar's 0.5rem padding around a 1.85rem row,
+   the Z mark's height, and its 1px rule), so each screen's scroll area opens
+   with a spacer that tall and nothing moves at rest. */
 .screen {
-    --app-nav-h: calc(2.75rem + 1px);
+    --app-nav-h: calc(2.85rem + 1px);
 }
 
 .screen > .app-nav {
@@ -193,8 +193,89 @@ button {
    a wide mark and a narrow toggle. */
 .app-nav .nav-wrapper nav {
     grid-template-columns: 6rem minmax(0, 1fr) 6rem;
-    padding: 0.25rem 0.75rem;
+    /* One fixed row, the Z mark's height, so every screen's bar is the same
+       height whatever sits in its corners. */
+    grid-template-rows: 1.85rem;
+    padding: 0.5rem 0.75rem;
     position: relative;
+}
+
+/* The hamburger, made gentle: the old faded corner button's size and weight
+   (1.7rem tall, 0.2rem by 0.6rem padding, 0.55 opacity, from orangui's
+   .page-header-corner) with short 2px bars, full strength while pressed or
+   open. The open X's arms move by one gap plus one bar. */
+.app-nav .nav-toggle {
+    box-sizing: border-box;
+    justify-self: end;
+    align-items: center;
+    width: 2.1rem;
+    height: 1.7rem;
+    padding: 0.2rem 0.6rem;
+    gap: 0.22rem;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: 0.4rem;
+    opacity: 0.55;
+}
+
+.app-nav .nav-toggle:active,
+.app-nav .nav-toggle.nav-toggle-open {
+    opacity: 1;
+}
+
+.app-nav .nav-toggle .nav-toggle-bar {
+    width: 0.9rem;
+    height: 2px;
+    border-radius: 1px;
+    background: var(--text-primary);
+}
+
+.app-nav .nav-toggle-open .nav-toggle-bar:nth-child(1) {
+    transform: translateY(calc(0.22rem + 2px)) rotate(45deg);
+}
+
+.app-nav .nav-toggle-open .nav-toggle-bar:nth-child(3) {
+    transform: translateY(calc(-0.22rem - 2px)) rotate(-45deg);
+}
+
+/* The back arrow in the Z mark's corner, on a screen below a section, as
+   gentle as the hamburger it mirrors. */
+.app-nav-back {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: 2.1rem;
+    height: 1.7rem;
+    padding: 0;
+    margin: 0;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: 0.4rem;
+    color: var(--text-primary);
+    cursor: pointer;
+    opacity: 0.55;
+}
+
+.app-nav-back:active {
+    opacity: 1;
+}
+
+.app-nav-back-icon {
+    display: block;
+    width: 1rem;
+    height: 1rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* The title holds the middle column whatever sits in the left corner. */
+.app-nav .nav-persistent {
+    grid-column: 2;
+    grid-row: 1;
 }
 
 /* The Z mark as zite and the web draw it: seven lines at 0.9 line height,
@@ -207,37 +288,6 @@ button {
     display: block;
     letter-spacing: 0;
     color: var(--logo);
-}
-
-/* The back arrow in the Z mark's corner, on a screen below a section, boxed
-   like the hamburger it mirrors: the kit's .nav-toggle size, border and
-   corners. */
-.app-nav-back {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-sizing: border-box;
-    width: 2.25rem;
-    height: 2.25rem;
-    padding: 0;
-    margin: 0;
-    background: transparent;
-    border: 1px solid var(--border-primary);
-    border-radius: 0.35rem;
-    color: var(--text-primary);
-    cursor: pointer;
-    transition: border-color 0.15s;
-}
-
-.app-nav-back-icon {
-    display: block;
-    width: 1.25rem;
-    height: 1.25rem;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 2;
-    stroke-linecap: round;
-    stroke-linejoin: round;
 }
 
 .app-nav-title {
