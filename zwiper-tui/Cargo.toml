@@ -13,8 +13,8 @@ name = "zwiper_tui"
 path = "src/lib/lib.rs"
 
 [[bin]]
-name = "zwiper-tui"
-path = "src/bin/zwiper-tui.rs"
+name = "zwipe"
+path = "src/bin/zwipe.rs"
 
 [dependencies]
 zwipe-core = { path = "../zwipe-core" }

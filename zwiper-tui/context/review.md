@@ -59,7 +59,7 @@ Still open:
 Never merge or push to main from a work session; the owner merges.
 
 1. `chore/terminal-platform`: the server accepts the `terminal` client platform. Until it deploys, production rejects the TUI's sign-in. A Desktop fallback was offered as the alternative.
-2. `chore/zwiper-bin-name`: renames the app's binary to `zwiper` (the iOS and Android display names stay "Zwipe"). After it merges, merge main into `feat/tui` and set the TUI's `[[bin]] name = "zwipe"`.
+2. `chore/zwiper-bin-name`: merged; the TUI binary is `zwipe`.
 3. `feat/zwipe-ui`: the shared logic crate zwiper, zwiper-web and zwiper-tui draw from.
 4. orangui `feat/orangui-core`: the Dioxus-free half of orangui that zwiper-tui pins by rev. Merge it, then bump the pins.
 

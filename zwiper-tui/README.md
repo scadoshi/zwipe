@@ -6,7 +6,7 @@ ZWIPE in the terminal. Sign in with your ZWIPE account to see the home screen's 
 
 ```bash
 cargo install --git https://github.com/scadoshi/zwipe zwiper-tui
-zwiper-tui
+zwipe
 ```
 
 Needs Rust 1.88 or newer. Decks are made in the app; zwiper-tui builds them.
