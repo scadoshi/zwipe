@@ -51,13 +51,17 @@ pub const UPCOMING: &[Release] = &[Release {
         "Help & feedback moved from the header into the main menu",
         "Back is an arrow at the top left of every screen",
         "The header slides away as you scroll down and comes back as you scroll up",
-        "Create floats over the deck list",
+        "Decks creates a deck from a + at the bottom right",
         "Decks drops its More menu; Commander maybeboard and Playstyle are in the main menu",
         "The deck view's actions sit on the page: Edit, Clone and Share as icons by the profile, the store links in Budget, and Import, Export, Clear skips and Delete in Data and Danger zone panels at the bottom",
         "Account ends with a Danger zone panel for Log out and Delete account",
         "Commander maybeboard and Playstyle float Swipe and Filter at the bottom right, and Clear sits in a Danger zone panel",
         "The deck's card list has a floating bar of icons for add, remove, filter and undo; an x on the filter resets it",
         "Add, Remove, swipe select and Oracle tag examples float their filter, refresh and card details as icons at the bottom right",
+        "Swipe screens give the card more room: the pile chips sit at the bottom beside the icons, and only the card's prices show under it",
+        "Card details from the eye include the release date and artist",
+        "Synergy on Add is a link icon beside the filter",
+        "Create and Edit deck save from a Save button at the bottom right",
     ],
 }];
 
