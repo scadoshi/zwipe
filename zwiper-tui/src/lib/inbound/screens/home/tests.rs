@@ -1,9 +1,12 @@
 use std::time::{Duration, Instant};
 
 use crossterm::event::KeyCode;
+use zwipe_core::domain::card::Card;
 use zwipe_core::domain::user::models::hints::HINT_FIRST_LOGIN;
 use zwipe_core::http::contracts::metrics::HttpPublicMetrics;
 use zwipe_ui::color_map::{ColorMapCounts, ColorMapModel};
+use zwipe_ui::generation::Generation;
+use zwipe_ui::toast::ToastKind;
 
 use super::*;
 use crate::inbound::event_loop::harness::Harness;
@@ -63,6 +66,124 @@ fn summary(deck_count: u32) -> HttpPlayStyleSummary {
     .unwrap()
 }
 
+/// The home jobs waiting, in order.
+fn jobs(harness: &Harness) -> Vec<Job> {
+    harness
+        .pending()
+        .iter()
+        .filter_map(|request| match request {
+            screens::Request::Home(Request::Visit { job, .. }) => Some(job.clone()),
+            _ => None,
+        })
+        .collect()
+}
+
+/// The ticket on the last waiting job `of` picks.
+fn ticket(harness: &Harness, of: impl Fn(&Job) -> Option<Ticket>) -> Ticket {
+    jobs(harness)
+        .iter()
+        .rev()
+        .find_map(of)
+        .unwrap_or_else(|| panic!("no such job in {:?}", harness.pending()))
+}
+
+fn user_ticket(job: &Job) -> Option<Ticket> {
+    match job {
+        Job::User { ticket } => Some(*ticket),
+        _ => None,
+    }
+}
+
+fn play_style_ticket(job: &Job) -> Option<Ticket> {
+    match job {
+        Job::PlayStyle { ticket } => Some(*ticket),
+        _ => None,
+    }
+}
+
+fn flavor_ticket(job: &Job) -> Option<Ticket> {
+    match job {
+        Job::Flavor { ticket } => Some(*ticket),
+        _ => None,
+    }
+}
+
+fn my_counts_ticket(job: &Job) -> Option<Ticket> {
+    match job {
+        Job::MyMetrics { ticket } => Some(*ticket),
+        _ => None,
+    }
+}
+
+/// `reply` for the home on screen.
+fn reply(harness: &Harness, reply: Reply) -> Update {
+    Update::Visit {
+        visit: home(harness).visit,
+        reply,
+    }
+}
+
+/// The user fetch landing with `user`.
+fn land_user(harness: &mut Harness, user: zwipe_core::domain::user::User) {
+    let ticket = ticket(harness, user_ticket);
+    let update = reply(
+        harness,
+        Reply::User {
+            ticket,
+            user: Box::new(user),
+        },
+    );
+    harness.apply(update);
+}
+
+/// The user fetch failing.
+fn fail_user(harness: &mut Harness) {
+    let ticket = ticket(harness, user_ticket);
+    let update = reply(harness, Reply::UserFailed { ticket });
+    harness.apply(update);
+}
+
+/// The color map landing with `summary` for the signed-in user.
+fn land_play_style(harness: &mut Harness, summary: HttpPlayStyleSummary) {
+    let ticket = ticket(harness, play_style_ticket);
+    let user_id = me(harness);
+    let update = reply(
+        harness,
+        Reply::PlayStyle {
+            ticket,
+            user_id,
+            summary: Box::new(summary),
+        },
+    );
+    harness.apply(update);
+}
+
+/// The featured card landing as `card`.
+fn land_flavor(harness: &mut Harness, card: Card) {
+    let ticket = ticket(harness, flavor_ticket);
+    let update = reply(
+        harness,
+        Reply::Flavor {
+            ticket,
+            flavor: Box::new(FlavorCard::fetched(card, Utc::now())),
+        },
+    );
+    harness.apply(update);
+}
+
+/// The kinds of request waiting, by name, in order.
+fn names(harness: &Harness) -> Vec<&'static str> {
+    harness
+        .pending()
+        .iter()
+        .map(|request| match request {
+            screens::Request::Home(request) => request.action(),
+            screens::Request::FetchCounts => "fetch_counts",
+            _ => "other",
+        })
+        .collect()
+}
+
 fn flavored(name: &str) -> Card {
     let mut card = card(name);
     card.scryfall_data.flavor_text = Some("One bone broken for every twig snapped.".to_owned());
@@ -73,16 +194,21 @@ fn flavored(name: &str) -> Card {
 fn the_first_home_restores_then_fetches_every_panel() {
     let harness = on_home();
     assert_eq!(
-        harness.pending(),
+        names(&harness),
         [
-            ask(Request::Restore),
-            ask(Request::User),
-            ask(Request::Preferences),
-            screens::Request::FetchCounts,
-            ask(Request::PlayStyle),
-            ask(Request::Flavor),
-            screens::oracle_tags::Request::Catalog.into(),
+            "restore",
+            "user",
+            "preferences",
+            "fetch_counts",
+            "play_style",
+            "flavor",
+            "other",
         ]
+    );
+    assert!(
+        harness
+            .pending()
+            .ends_with(&[screens::oracle_tags::Request::Catalog.into()])
     );
 }
 
@@ -90,42 +216,36 @@ fn the_first_home_restores_then_fetches_every_panel() {
 fn a_return_home_skips_fresh_counters_and_an_unexpired_card() {
     let mut harness = on_home();
     harness.apply(counts(5));
-    harness.apply(Update::Flavor(Box::new(FlavorCard {
-        card: flavored("Elves"),
-        expires_at: Utc::now() + chrono::Duration::minutes(30),
-    })));
+    land_flavor(&mut harness, flavored("Elves"));
     harness.press(KeyCode::Char('c'));
     // Config's own one-time hint opens over it; close it so Esc goes back.
     harness.app.shared.hint = None;
     harness.clear();
     harness.press(KeyCode::Esc);
-    assert_eq!(
-        harness.pending(),
-        [
-            ask(Request::User),
-            ask(Request::Preferences),
-            ask(Request::PlayStyle)
-        ]
-    );
+    assert_eq!(names(&harness), ["user", "preferences", "play_style"]);
 }
 
 #[test]
 fn a_restored_copy_shows_but_is_not_live() {
-    let mut harness = on_home();
+    let mut harness = Harness::new();
+    harness.app.shared.user = Some(user(true));
     harness.app.shared.counts = Counts::restored(Some(HttpPublicMetrics {
         cards_swiped: 3,
         searches: 2,
         decks_created: 1,
     }));
+    harness.open(open);
     let restored = Figures {
         decks_created: Some(1),
         searches: Some(2),
         cards_swiped: Some(3),
     };
-    assert_eq!(figures_for(&harness.app.shared), Some(restored));
-    assert!(!live(&harness.app.shared));
+    assert_eq!(home(&harness).figures(), Some(restored));
+    assert!(!home(&harness).model.live());
+    assert!(names(&harness).contains(&"fetch_counts"), "asked for again");
     harness.apply(counts(9));
-    assert!(live(&harness.app.shared));
+    assert!(home(&harness).model.live());
+    assert_eq!(home(&harness).figures(), Some(figures(9)));
     assert!(home(&harness).figures_arrived.is_some());
 }
 
@@ -135,21 +255,25 @@ fn s_switches_to_my_counters_saves_the_scope_and_fetches_them() {
     harness.clear();
     harness.press(KeyCode::Char('s'));
     assert_eq!(harness.app.shared.caches.scope, Scope::OnlyMe);
-    assert!(figures_for(&harness.app.shared).is_none());
+    assert!(home(&harness).figures().is_none());
+    assert_eq!(names(&harness), ["save_scope", "my_metrics"]);
     assert_eq!(
-        harness.pending(),
-        [
-            ask(Request::SaveScope(Scope::OnlyMe)),
-            ask(Request::MyMetrics)
-        ]
+        harness.pending().first(),
+        Some(&ask(Request::SaveScope(Scope::OnlyMe)))
     );
+    let ticket = ticket(&harness, my_counts_ticket);
     let user_id = me(&harness);
-    harness.apply(Update::MyMetrics {
-        user_id,
-        figures: figures(7),
-    });
-    assert_eq!(figures_for(&harness.app.shared), Some(figures(7)));
-    assert!(live(&harness.app.shared));
+    let landed = reply(
+        &harness,
+        Reply::MyMetrics {
+            ticket,
+            user_id,
+            figures: figures(7),
+        },
+    );
+    harness.apply(landed);
+    assert_eq!(home(&harness).figures(), Some(figures(7)));
+    assert!(home(&harness).model.live());
 
     harness.clear();
     harness.press(KeyCode::Char('s'));
@@ -163,40 +287,97 @@ fn s_switches_to_my_counters_saves_the_scope_and_fetches_them() {
 fn another_users_counts_and_map_never_show() {
     let mut harness = on_home();
     harness.press(KeyCode::Char('s'));
-    harness.apply(Update::MyMetrics {
-        user_id: Uuid::new_v4(),
-        figures: figures(7),
-    });
-    harness.apply(Update::PlayStyle {
-        user_id: Uuid::new_v4(),
-        summary: Box::new(summary(2)),
-    });
-    assert!(figures_for(&harness.app.shared).is_none());
-    assert!(play_style_for(&harness.app.shared).is_none());
+    let counts_ticket = ticket(&harness, my_counts_ticket);
+    let map_ticket = ticket(&harness, play_style_ticket);
+    let theirs = reply(
+        &harness,
+        Reply::MyMetrics {
+            ticket: counts_ticket,
+            user_id: Uuid::new_v4(),
+            figures: figures(7),
+        },
+    );
+    harness.apply(theirs);
+    let their_map = reply(
+        &harness,
+        Reply::PlayStyle {
+            ticket: map_ticket,
+            user_id: Uuid::new_v4(),
+            summary: Box::new(summary(2)),
+        },
+    );
+    harness.apply(their_map);
+    assert!(home(&harness).figures().is_none());
+    assert_eq!(home(&harness).model.play_style(), PlayStyle::Loading);
+    assert!(harness.app.shared.caches.my_counts.is_none());
+    assert!(harness.app.shared.caches.play_style.is_none());
+}
+
+#[test]
+fn a_reply_to_an_earlier_mount_changes_nothing() {
+    let mut harness = on_home();
+    harness.press(KeyCode::Char('s'));
+    let user_at = ticket(&harness, user_ticket);
+    let counts_ticket = ticket(&harness, my_counts_ticket);
+    let map = ticket(&harness, play_style_ticket);
+    let flavor = ticket(&harness, flavor_ticket);
+    harness.press(KeyCode::Char('r'));
+    let user_id = me(&harness);
+    for late in [
+        Reply::User {
+            ticket: user_at,
+            user: Box::new(user(false)),
+        },
+        Reply::MyMetrics {
+            ticket: counts_ticket,
+            user_id,
+            figures: figures(7),
+        },
+        Reply::PlayStyle {
+            ticket: map,
+            user_id,
+            summary: Box::new(summary(2)),
+        },
+        Reply::Flavor {
+            ticket: flavor,
+            flavor: Box::new(FlavorCard::fetched(flavored("Elves"), Utc::now())),
+        },
+    ] {
+        let update = reply(&harness, late);
+        harness.apply(update);
+    }
+    let view = home(&harness);
+    assert!(view.figures().is_none());
+    assert_eq!(view.model.play_style(), PlayStyle::Loading);
+    assert_eq!(
+        view.model.flavor(),
+        zwipe_ui::screens::home::Flavor::Loading
+    );
+    assert_eq!(harness.app.shared.toasts.items().len(), 0, "no nudge");
 }
 
 #[test]
 fn an_unverified_user_is_told_to_verify_and_not_greeted() {
     let mut harness = on_home();
-    harness.apply(Update::User(Box::new(user(false))));
-    let toasts: Vec<&str> = harness
+    land_user(&mut harness, user(false));
+    let toasts: Vec<(ToastKind, &str)> = harness
         .app
         .shared
         .toasts
         .items()
         .iter()
-        .map(|t| t.message.as_str())
+        .map(|t| (t.kind, t.message.as_str()))
         .collect();
-    assert_eq!(toasts, ["Verify your email!"]);
+    assert_eq!(toasts, [(ToastKind::Warning, "Verify your email!")]);
     assert!(!harness.app.shared.caches.greeted);
 }
 
 #[test]
 fn a_verified_user_is_greeted_once_per_launch() {
     let mut harness = on_home();
-    harness.apply(Update::User(Box::new(user(true))));
-    harness.apply(Update::User(Box::new(user(true))));
-    harness.apply(Update::UserFailed);
+    land_user(&mut harness, user(true));
+    land_user(&mut harness, user(true));
+    fail_user(&mut harness);
     let toasts: Vec<&str> = harness
         .app
         .shared
@@ -211,7 +392,7 @@ fn a_verified_user_is_greeted_once_per_launch() {
 #[test]
 fn a_failed_refresh_greets_from_the_cached_user() {
     let mut harness = on_home();
-    harness.apply(Update::UserFailed);
+    fail_user(&mut harness);
     assert_eq!(
         harness.app.shared.toasts.items()[0].message,
         "Hello, scotty!"
@@ -260,26 +441,14 @@ fn question_mark_explains_the_color_map() {
 fn buy_opens_only_for_a_priced_card_and_close_dismisses() {
     let mut harness = on_home();
     let mut priced = flavored("Llanowar Elves");
-    harness.app.shared.caches.flavor = Some(FlavorCard {
-        card: priced.clone(),
-        expires_at: Utc::now(),
-    });
+    land_flavor(&mut harness, priced.clone());
     priced.scryfall_data.prices.usd = None;
     priced.scryfall_data.prices.usd_foil = None;
     priced.scryfall_data.prices.usd_etched = None;
-    let has_price = zwipe_core::domain::deck::deck_metrics::card_price(
-        &harness
-            .app
-            .shared
-            .caches
-            .flavor
-            .as_ref()
-            .unwrap()
-            .card
-            .scryfall_data,
-        zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency::Usd,
-    )
-    .is_some();
+    let has_price = matches!(
+        home(&harness).model.flavor(),
+        zwipe_ui::screens::home::Flavor::Quote(quote) if quote.price.is_some()
+    );
     harness.press(KeyCode::Char('b'));
     assert_eq!(home(&harness).overlay.is_some(), has_price);
     if has_price {
@@ -289,10 +458,7 @@ fn buy_opens_only_for_a_priced_card_and_close_dismisses() {
         harness.press(KeyCode::Enter);
         assert!(home(&harness).overlay.is_none());
     }
-    harness.app.shared.caches.flavor = Some(FlavorCard {
-        card: priced,
-        expires_at: Utc::now(),
-    });
+    land_flavor(&mut harness, priced);
     harness.press(KeyCode::Char('b'));
     assert!(home(&harness).overlay.is_none(), "no price, no Buy");
 }
@@ -300,10 +466,7 @@ fn buy_opens_only_for_a_priced_card_and_close_dismisses() {
 #[test]
 fn i_opens_the_featured_card_full_screen() {
     let mut harness = on_home();
-    harness.app.shared.caches.flavor = Some(FlavorCard {
-        card: flavored("Llanowar Elves"),
-        expires_at: Utc::now(),
-    });
+    land_flavor(&mut harness, flavored("Llanowar Elves"));
     harness.press(KeyCode::Char('i'));
     let Screen::ImagePreview(view) = harness.screen() else {
         panic!("no preview");
@@ -315,20 +478,13 @@ fn i_opens_the_featured_card_full_screen() {
 #[test]
 fn home_draws_the_strip_map_key_and_flavor() {
     let mut harness = on_home();
-    let user_id = me(&harness);
     harness.apply(screens::Update::Counts(Box::new(HttpPublicMetrics {
         decks_created: 28_049,
         searches: 12,
         cards_swiped: 1_234,
     })));
-    harness.apply(Update::PlayStyle {
-        user_id,
-        summary: Box::new(summary(2)),
-    });
-    harness.app.shared.caches.flavor = Some(FlavorCard {
-        card: flavored("Llanowar Elves"),
-        expires_at: Utc::now(),
-    });
+    land_play_style(&mut harness, summary(2));
+    land_flavor(&mut harness, flavored("Llanowar Elves"));
     if let Screen::Home(view) = harness.screen_mut() {
         let long_ago = Instant::now().checked_sub(Duration::from_secs(5)).unwrap();
         view.figures_arrived = Some(long_ago);
@@ -363,11 +519,7 @@ fn home_draws_the_strip_map_key_and_flavor() {
 fn a_user_without_decks_is_asked_to_build_one() {
     let mut harness = on_home();
     settle_entrance(&mut harness);
-    let user_id = me(&harness);
-    harness.apply(Update::PlayStyle {
-        user_id,
-        summary: Box::new(summary(0)),
-    });
+    land_play_style(&mut harness, summary(0));
     let screen = screen_text(&harness.app);
     assert!(screen.contains("Build a deck to see your playstyle"));
     assert!(screen.contains("p Playstyle"));
@@ -381,22 +533,17 @@ fn a_failed_map_says_so_and_loading_panels_ghost() {
     assert!(loading.contains("▒▒") || loading.contains("░"));
     assert!(!loading.contains("Featured flavor"));
     assert!(home(&harness).animating());
-    harness.apply(Update::PlayStyleFailed);
+    let ticket = ticket(&harness, play_style_ticket);
+    let failed = reply(&harness, Reply::PlayStyleFailed { ticket });
+    harness.apply(failed);
     assert!(screen_text(&harness.app).contains("Could not load your playstyle"));
 }
 
 #[test]
 fn home_fits_a_tiny_terminal() {
     let mut harness = on_home();
-    let user_id = me(&harness);
-    harness.apply(Update::PlayStyle {
-        user_id,
-        summary: Box::new(summary(2)),
-    });
-    harness.app.shared.caches.flavor = Some(FlavorCard {
-        card: flavored("Elves"),
-        expires_at: Utc::now(),
-    });
+    land_play_style(&mut harness, summary(2));
+    land_flavor(&mut harness, flavored("Elves"));
     render(&harness.app, 12, 5);
     render(&harness.app, 40, 12);
     render(&harness.app, 1, 1);
@@ -475,8 +622,8 @@ fn home_and_login_share_one_copy_of_everybodys_counts() {
         !harness.pending().contains(&screens::Request::FetchCounts),
         "the copy the sign-in hero fetched is still fresh"
     );
-    assert_eq!(figures_for(&harness.app.shared), Some(figures(7)));
-    assert!(live(&harness.app.shared));
+    assert_eq!(home(&harness).figures(), Some(figures(7)));
+    assert!(home(&harness).model.live());
     harness.apply(counts(8));
     assert_eq!(
         harness
@@ -488,16 +635,12 @@ fn home_and_login_share_one_copy_of_everybodys_counts() {
             .map(|m| m.searches),
         Some(8)
     );
-    assert_eq!(figures_for(&harness.app.shared), Some(figures(8)));
 }
 
 #[test]
 fn the_color_maps_playstyle_and_the_heros_activity_open_their_screens() {
     let mut harness = on_home();
-    harness.apply(Update::PlayStyle {
-        user_id: me(&harness),
-        summary: Box::new(summary(2)),
-    });
+    land_play_style(&mut harness, summary(2));
     harness.press(KeyCode::Char('p'));
     assert!(matches!(harness.screen(), Screen::Playstyle(_)));
     harness.app.shared.hint = None;
@@ -510,15 +653,8 @@ fn the_color_maps_playstyle_and_the_heros_activity_open_their_screens() {
 #[test]
 fn home_keeps_every_key_on_a_narrow_terminal() {
     let mut harness = on_home();
-    let user_id = me(&harness);
-    harness.apply(Update::PlayStyle {
-        user_id,
-        summary: Box::new(summary(2)),
-    });
-    harness.app.shared.caches.flavor = Some(FlavorCard {
-        card: flavored("Elves"),
-        expires_at: Utc::now(),
-    });
+    land_play_style(&mut harness, summary(2));
+    land_flavor(&mut harness, flavored("Elves"));
     if let Some(flavor) = &mut harness.app.shared.caches.flavor {
         flavor.card.scryfall_data.flavor_text = Some(
             "\"That drill shall not reach Ba Sing Se! This is what we trained for!\"".to_owned(),
@@ -546,7 +682,6 @@ fn home_keeps_every_key_on_a_narrow_terminal() {
 /// Home with everybody's counts, a five-color map as big as the live account's, and a featured card, all landed.
 fn settled_home() -> Harness {
     let mut harness = on_home();
-    let user_id = me(&harness);
     harness.apply(counts(261_100));
     let big: HttpPlayStyleSummary = serde_json::from_value(serde_json::json!({
         "deck_count": 10,
@@ -562,14 +697,8 @@ fn settled_home() -> Harness {
         },
     }))
     .unwrap();
-    harness.apply(Update::PlayStyle {
-        user_id,
-        summary: Box::new(big),
-    });
-    harness.app.shared.caches.flavor = Some(FlavorCard {
-        card: flavored("Fast Forward"),
-        expires_at: Utc::now(),
-    });
+    land_play_style(&mut harness, big);
+    land_flavor(&mut harness, flavored("Fast Forward"));
     if let Screen::Home(view) = harness.screen_mut() {
         let long_ago = Instant::now().checked_sub(Duration::from_secs(5)).unwrap();
         view.figures_arrived = Some(long_ago);
@@ -753,10 +882,15 @@ fn the_featured_image_loads_only_where_the_terminal_draws_real_images() {
 
     let mut bare = flavored("Blank Card");
     bare.scryfall_data.image_uris = None;
-    harness.apply(Update::Flavor(Box::new(FlavorCard {
-        card: bare,
-        expires_at: Utc::now(),
-    })));
+    // The cache takes a reply whatever its ticket; any ticket will do.
+    let update = reply(
+        &harness,
+        Reply::Flavor {
+            ticket: Generation::default().next_ticket(),
+            flavor: Box::new(FlavorCard::fetched(bare, Utc::now())),
+        },
+    );
+    harness.apply(update);
     assert!(
         harness.app.shared.caches.flavor_image.is_none(),
         "a card with no image drops the old one and asks for none"
@@ -877,11 +1011,7 @@ fn the_color_maps_about_marker_is_a_button_in_its_corner() {
     let mut harness = on_home();
     let palette = crate::domain::theme::Palette::for_account("gruvbox", true);
     harness.app.shared.palette = palette;
-    let user_id = me(&harness);
-    harness.apply(Update::PlayStyle {
-        user_id,
-        summary: Box::new(summary(2)),
-    });
+    land_play_style(&mut harness, summary(2));
     settle_entrance(&mut harness);
     for (width, height) in crate::test_support::BUTTON_SIZES {
         let terminal = render(&harness.app, width, height);
@@ -897,4 +1027,35 @@ fn the_color_maps_about_marker_is_a_button_in_its_corner() {
         );
         crate::test_support::assert_about_marker(buffer, &palette, (x + 1, y), false, &context);
     }
+}
+
+#[test]
+fn a_session_refresh_fetches_an_expired_featured_card_once() {
+    let mut harness = on_home();
+    let upkept = || screens::Update::Upkept {
+        ended: false,
+        minimum: None,
+    };
+    land_flavor(&mut harness, flavored("Elves"));
+    harness.clear();
+    harness.apply(upkept());
+    assert_eq!(
+        names(&harness),
+        Vec::<&str>::new(),
+        "still this hour's card"
+    );
+
+    if let Some(flavor) = &mut harness.app.shared.caches.flavor {
+        flavor.expires_at = Utc::now();
+    }
+    harness.press(KeyCode::Char('r'));
+    let ticket = ticket(&harness, flavor_ticket);
+    let failed = reply(&harness, Reply::FlavorFailed { ticket });
+    harness.apply(failed);
+    harness.clear();
+    harness.apply(upkept());
+    assert_eq!(names(&harness), ["flavor"]);
+    harness.clear();
+    harness.apply(upkept());
+    assert_eq!(names(&harness), Vec::<&str>::new(), "one fetch at a time");
 }

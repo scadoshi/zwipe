@@ -470,7 +470,12 @@ async fn run_request(
 /// Applies one result: the app's own here, a screen's by its module, which finds its screen in `nav` if it is open.
 pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
     match update {
-        Update::Upkept { ended, minimum } => session::upkept(cx, ended, minimum.as_deref()),
+        Update::Upkept { ended, minimum } => {
+            session::upkept(cx, ended, minimum.as_deref());
+            if !ended {
+                home::check_flavor(nav, cx);
+            }
+        }
         Update::Changelog(changelog) => {
             cx.shared.changelog =
                 changelog.map_or(ChangelogCache::Failed, |c| ChangelogCache::Loaded(*c));
@@ -486,7 +491,7 @@ pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
             for hero in nav.screens_mut().filter_map(Screen::hero_mut) {
                 hero.take(&cx.shared.counts, now);
             }
-            home::counts_arrived(nav, cx.shared);
+            home::counts_arrived(nav, cx);
         }
         Update::SignedOut => login::signed_out(cx, None),
         Update::Status(status) => cx.shared.status = status,
