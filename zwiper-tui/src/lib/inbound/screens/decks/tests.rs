@@ -4,7 +4,7 @@ use zwipe_core::domain::deck::{DeckOtherTag, Format};
 
 use super::*;
 use crate::inbound::event_loop::harness::Harness;
-use crate::inbound::screens::{self, deck, deck_form};
+use crate::inbound::screens::{self, deck};
 use crate::inbound::widgets::toast::Toasts;
 use crate::test_support::{deck_profile, render, screen_text, user};
 
@@ -229,7 +229,7 @@ fn create_is_refused_for_an_unverified_user_with_a_deck() {
     empty.app.shared.user = Some(user(false));
     empty.press(KeyCode::Char('c'));
     assert!(
-        matches!(empty.screen(), Screen::DeckForm(form) if form.mode == deck_form::Mode::Create)
+        matches!(empty.screen(), Screen::DeckForm(form) if form.model.mode() == zwipe_ui::screens::deck_form::Mode::Create)
     );
 }
 

@@ -1,4 +1,6 @@
-//! Create deck and Edit deck: the app's shared deck form, its command-zone searches and cascades, and the format, deck tag, oracle tag and swipe pickers over it.
+//! Create deck and Edit deck: the shared `zwipe_ui::screens::deck_form` model, drawn with the terminal's own text boxes, focus, picker search boxes and swipe picker.
+//!
+//! The model holds every value, the name check, the knock-on clears, the command-zone searches, the pickers' drafts and the save; this screen keeps the boxes in step with it, moves the focus, and performs its effects through [`dispatch`].
 
 pub(crate) mod draw;
 pub(crate) mod keys;
@@ -7,24 +9,23 @@ pub(crate) mod swipe_pick;
 #[cfg(test)]
 mod tests;
 
+use std::time::Duration;
+
+use serde::Serialize;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::oracle_tag::OracleTag;
 use zwipe_core::domain::card::search_card::card_filter::CardQuery;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
-use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
-use zwipe_core::domain::card::search_card::commander_eligibility::{self, PartnerKind};
-use zwipe_core::domain::deck::{
-    Deck, DeckName, DeckOtherTag, DeckProfile, DeckTagView, Format, PowerLevel, seed_oracle_tags,
-    seed_oracle_tags_from_catalog,
-};
+use zwipe_core::domain::deck::{Deck, DeckProfile, DeckTagView};
 use zwipe_core::http::contracts::deck::{HttpCreateDeckProfile, HttpUpdateDeckProfile};
-use zwipe_core::http::helpers::Patch;
-use zwipe_ui::deck::form::{self, Slot};
-use zwipe_ui::generation::{Generation, Ticket};
-use zwipe_ui::timing;
+use zwipe_ui::deck::form::Slot;
+use zwipe_ui::deck::pickers::TagPicker;
+use zwipe_ui::generation::Ticket;
+use zwipe_ui::hint::HintTopic;
+use zwipe_ui::screens::deck_form::{Action, Destination, Effect, Mode, Open, Results, State};
 
-use self::pickers::{FormatPicker, OraclePicker, TagPicker};
+use self::pickers::{FormatPicker, TagGrid};
 use self::swipe_pick::SwipePicker;
 use super::{Screen, card_sheets};
 use crate::inbound::app::Context;
@@ -32,93 +33,56 @@ use crate::inbound::nav::Nav;
 use crate::inbound::screens;
 use crate::inbound::toward::Toward;
 use crate::inbound::widgets::hint;
-use crate::inbound::widgets::info::InfoPopup;
 use crate::inbound::widgets::text_input::TextInput;
 use crate::inbound::widgets::toast::{self, ToastKind};
 use crate::outbound::account::Account;
 
-/// The named-partner search returns at most this many cards.
-const PARTNER_SEARCH_LIMIT: u32 = 5;
-
-/// Whether the form makes a new deck or changes one.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum Mode {
-    Create,
-    Edit { deck_id: Uuid },
-}
-
-impl Mode {
-    /// The key the server stores this form's hint under.
-    pub(crate) fn hint_key(self) -> &'static str {
-        match self {
-            Self::Create => "create_deck",
-            Self::Edit { .. } => "edit_deck",
-        }
-    }
-}
-
-/// What a command-zone field's results layer shows.
-#[derive(Debug, Default, Clone, PartialEq)]
-pub(crate) enum Dropdown {
-    #[default]
-    Hidden,
-    Searching,
-    /// The hits, or "No results" when empty.
-    Results(Vec<Card>),
-}
-
-/// One command-zone field: the chosen card, what is typed, its Filter toggle, and its search.
+/// One command-zone field's box, the result its arrows highlight, and the filter its swipe picker applied last.
 #[derive(Debug, Clone, PartialEq)]
-pub(crate) struct CardField {
-    pub(crate) card: Option<Card>,
-    /// The chosen card's name, or the query being typed.
+pub(crate) struct CardInput {
+    /// The chosen card's name, or the text typed, as the model shows it.
     pub(crate) input: TextInput,
-    pub(crate) filter_on: bool,
-    /// The search generation: each keystroke and pick takes a new ticket, so a reply to an older search is dropped.
-    pub(crate) generation: Generation,
-    pub(crate) dropdown: Dropdown,
-    /// The highlighted hit.
+    /// The highlighted result, back at the top whenever the results change.
     pub(crate) highlighted: usize,
     /// The filter the swipe picker applied last, kept while the picker is closed.
     pub(crate) swipe_filter: CardQueryBuilder,
 }
 
-impl Default for CardField {
+impl Default for CardInput {
     fn default() -> Self {
         Self {
-            card: None,
             input: TextInput::default(),
-            filter_on: true,
-            generation: Generation::default(),
-            dropdown: Dropdown::Hidden,
             highlighted: 0,
             swipe_filter: CardQueryBuilder::new(),
         }
     }
 }
 
-impl CardField {
-    /// Sets the chosen card and shows its name, closing the results.
-    fn choose(&mut self, card: Option<Card>) {
-        let name = card
-            .as_ref()
-            .map(|c| c.scryfall_data.name.clone())
-            .unwrap_or_default();
-        self.input.set_value(&name);
-        self.card = card;
-        self.dropdown = Dropdown::Hidden;
-        self.generation.next_ticket();
+/// The four command-zone boxes, one per [`Slot`].
+#[derive(Debug, Clone, Default, PartialEq)]
+pub(crate) struct CardInputs {
+    commander: CardInput,
+    partner: CardInput,
+    background: CardInput,
+    signature_spell: CardInput,
+}
+
+impl CardInputs {
+    pub(crate) fn get(&self, slot: Slot) -> &CardInput {
+        match slot {
+            Slot::Commander => &self.commander,
+            Slot::Partner => &self.partner,
+            Slot::Background => &self.background,
+            Slot::SignatureSpell => &self.signature_spell,
+        }
     }
 
-    pub(crate) fn card_id(&self) -> Option<Uuid> {
-        self.card.as_ref().map(|c| c.scryfall_data.id)
-    }
-
-    /// The results shown, when there are some.
-    pub(crate) fn hits(&self) -> &[Card] {
-        match &self.dropdown {
-            Dropdown::Results(cards) => cards,
-            _ => &[],
+    pub(crate) fn get_mut(&mut self, slot: Slot) -> &mut CardInput {
+        match slot {
+            Slot::Commander => &mut self.commander,
+            Slot::Partner => &mut self.partner,
+            Slot::Background => &mut self.background,
+            Slot::SignatureSpell => &mut self.signature_spell,
         }
     }
 }
@@ -139,146 +103,73 @@ pub(crate) enum Field {
 }
 
 impl Field {
-    /// The field's "?" explainer, as the app's info buttons word it.
-    pub(crate) fn info(self) -> InfoPopup {
+    /// Whether the field is a text box, where letters type instead of acting as keys.
+    pub(crate) fn takes_typing(self) -> bool {
+        matches!(self, Self::Name | Self::Price | Self::Card(_))
+    }
+
+    /// The field's explainer, which its `[?]` marker stands for.
+    pub(crate) fn topic(self) -> HintTopic {
         match self {
-            Self::Name => InfoPopup::new(
-                "Deck name",
-                &["Shown in your deck list. Change it any time"],
-            ),
-            Self::Format => InfoPopup::new(
-                "Format",
-                &[
-                    "Sets deck size, card pool and the command zone",
-                    "Changing it clears the commander and signature spell",
-                ],
-            ),
-            Self::Card(Slot::Commander) => InfoPopup::new(
-                "Commander",
-                &[
-                    "Search only shows cards that can lead this format. Filter searches any card",
-                    "Swipe picks one by swiping",
-                ],
-            ),
-            Self::Card(Slot::Partner) => {
-                InfoPopup::new("Partner", &["Shows when the commander allows a partner"])
-            }
-            Self::Card(Slot::Background) => InfoPopup::new(
-                "Background",
-                &["Shows when the commander can take a background"],
-            ),
-            Self::Card(Slot::SignatureSpell) => InfoPopup::new(
-                "Signature spell",
-                &["Oathbreaker only: the instant or sorcery that starts in the command zone"],
-            ),
-            Self::Power => InfoPopup::new(
-                "Power level",
-                &["The Commander bracket the deck aims for, 1 to 5"],
-            ),
-            Self::Land => InfoPopup::new(
-                "Land target",
-                &[
-                    "How many lands the deck should run. Fewer warns on the deck",
-                    "Not set uses the format's usual count",
-                ],
-            ),
-            Self::Currency | Self::Price => InfoPopup::new(
-                "Price target",
-                &["A budget for the mainboard. Going over warns on the deck"],
-            ),
-            Self::DeckTags => InfoPopup::new(
-                "Deck tags",
-                &[
-                    "The archetypes the deck is built around, like Aristocrats or Voltron",
-                    "Picking one pre-selects the oracle tags that define it",
-                    "Up to 5",
-                ],
-            ),
-            Self::OracleTags => InfoPopup::new(
-                "Oracle tags",
-                &[
-                    "The specific things the deck does, like spot removal, ramp or reanimation",
-                    "They shape which cards we suggest",
-                    "Your deck tags pre-pick a starter set from about 4,500. Fine to leave as is",
-                ],
-            ),
-            Self::OtherTags => InfoPopup::new(
-                "Other tags",
-                &["Labels that do not change suggestions, like Budget or Jank"],
-            ),
+            Self::Name => HintTopic::DeckName,
+            Self::Format => HintTopic::Format,
+            Self::Card(Slot::Commander) => HintTopic::Commander,
+            Self::Card(Slot::Partner) => HintTopic::Partner,
+            Self::Card(Slot::Background) => HintTopic::Background,
+            Self::Card(Slot::SignatureSpell) => HintTopic::SignatureSpell,
+            Self::Power => HintTopic::PowerLevel,
+            Self::Land => HintTopic::LandTarget,
+            Self::Currency | Self::Price => HintTopic::PriceTarget,
+            Self::DeckTags => HintTopic::DeckTags,
+            Self::OracleTags => HintTopic::OracleTags,
+            Self::OtherTags => HintTopic::OtherTags,
         }
     }
 }
 
-/// A full-screen picker or popup over the form.
+/// A full-screen picker over the form. Which picker the model has open says what it edits; the overlay keeps only its search box, focus and definition bar.
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum Overlay {
-    Format(Box<FormatPicker>),
-    DeckTags(TagPicker),
-    OracleTags(OraclePicker),
+    Format(FormatPicker),
+    Tags(TagPicker, TagGrid),
     Swipe(Box<SwipePicker>),
-    Info(InfoPopup),
 }
 
-/// The values an edit started from, to send only what changed.
-#[derive(Debug, Clone, PartialEq)]
-pub(crate) struct Original {
-    pub(crate) name: String,
-    pub(crate) format: Option<Format>,
-    /// Each slot's card once it has loaded.
-    pub(crate) cards: [Option<Uuid>; 4],
-    pub(crate) power: Option<PowerLevel>,
-    pub(crate) land_target: Option<i32>,
-    pub(crate) price: String,
-    pub(crate) currency: PriceCurrency,
-    pub(crate) tags: Vec<String>,
-    pub(crate) oracle_tags: Vec<String>,
-    pub(crate) other_tags: Vec<DeckOtherTag>,
-}
-
-/// The Create and Edit form's state: every field, which one has the focus, the overlay open over it, and whether a load or save is in flight.
+/// The Create and Edit form: the model, the boxes that show its text, which field has the focus, and the overlay open over it.
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct DeckForm {
-    pub(crate) mode: Mode,
-    /// Edit only: the deck is still loading.
-    pub(crate) loading: bool,
-    /// Edit only: why the deck failed to load.
-    pub(crate) load_error: Option<String>,
-    pub(crate) saving: bool,
+    pub(crate) model: State,
     pub(crate) name: TextInput,
-    /// Whether the name has held text, after which every change is checked.
-    pub(crate) name_touched: bool,
-    pub(crate) format: Option<Format>,
-    /// The four command-zone fields, in [`Slot::ALL`] order.
-    pub(crate) cards: [CardField; 4],
-    pub(crate) power: Option<PowerLevel>,
-    pub(crate) power_focus: usize,
-    pub(crate) land_target: Option<i32>,
-    pub(crate) currency: PriceCurrency,
     pub(crate) price: TextInput,
-    pub(crate) tags: Vec<String>,
+    pub(crate) inputs: CardInputs,
+    pub(crate) focus: Field,
+    pub(crate) power_focus: usize,
     pub(crate) tag_focus: usize,
-    pub(crate) oracle_tags: Vec<String>,
     pub(crate) oracle_focus: usize,
-    pub(crate) other_tags: Vec<DeckOtherTag>,
     pub(crate) other_focus: usize,
-    /// The oracle tags the deck tags seeded last, swapped out when the deck tags change.
-    pub(crate) applied_seed: Vec<String>,
+    /// The deck tag catalog the deck tag picker lists; the model holds its own copy for the oracle tag seed.
     pub(crate) deck_tag_catalog: Vec<DeckTagView>,
     /// The oracle tag catalog, `None` until it loads.
     pub(crate) oracle_catalog: Option<Vec<OracleTag>>,
-    pub(crate) focus: Field,
-    pub(crate) original: Option<Original>,
     pub(crate) overlay: Option<Overlay>,
 }
 
-/// The index of `slot` in the form's card fields.
-pub(crate) fn slot_index(slot: Slot) -> usize {
-    match slot {
-        Slot::Commander => 0,
-        Slot::Partner => 1,
-        Slot::Background => 2,
-        Slot::SignatureSpell => 3,
+impl Default for DeckForm {
+    fn default() -> Self {
+        Self {
+            model: State::new(),
+            name: TextInput::default(),
+            price: TextInput::default(),
+            inputs: CardInputs::default(),
+            focus: Field::Name,
+            power_focus: 0,
+            tag_focus: 0,
+            oracle_focus: 0,
+            other_focus: 0,
+            deck_tag_catalog: Vec::new(),
+            oracle_catalog: None,
+            overlay: None,
+        }
     }
 }
 
@@ -293,83 +184,8 @@ impl DeckForm {
         let Some(slug) = cx.shared.caches.handoff.oracle_tag.take() else {
             return;
         };
-        if matches!(self.overlay, Some(Overlay::OracleTags(_))) {
-            pickers::adopt_dictionary_tag(self, slug, cx);
-        }
-    }
-
-    pub(crate) fn new(mode: Mode) -> Self {
-        Self {
-            mode,
-            loading: matches!(mode, Mode::Edit { .. }),
-            load_error: None,
-            saving: false,
-            name: TextInput::default(),
-            name_touched: false,
-            format: None,
-            cards: Default::default(),
-            power: None,
-            power_focus: 0,
-            land_target: None,
-            currency: PriceCurrency::Usd,
-            price: TextInput::default(),
-            tags: Vec::new(),
-            tag_focus: 0,
-            oracle_tags: Vec::new(),
-            oracle_focus: 0,
-            other_tags: Vec::new(),
-            other_focus: 0,
-            applied_seed: Vec::new(),
-            deck_tag_catalog: Vec::new(),
-            oracle_catalog: None,
-            focus: Field::Name,
-            original: None,
-            overlay: None,
-        }
-    }
-
-    pub(crate) fn card(&self, slot: Slot) -> &CardField {
-        let [commander, partner, background, spell] = &self.cards;
-        match slot {
-            Slot::Commander => commander,
-            Slot::Partner => partner,
-            Slot::Background => background,
-            Slot::SignatureSpell => spell,
-        }
-    }
-
-    pub(crate) fn card_mut(&mut self, slot: Slot) -> &mut CardField {
-        let [commander, partner, background, spell] = &mut self.cards;
-        match slot {
-            Slot::Commander => commander,
-            Slot::Partner => partner,
-            Slot::Background => background,
-            Slot::SignatureSpell => spell,
-        }
-    }
-
-    pub(crate) fn commander(&self) -> Option<&Card> {
-        self.card(Slot::Commander).card.as_ref()
-    }
-
-    /// Whether a slot's field shows, under the app's rules.
-    pub(crate) fn shows(&self, slot: Slot) -> bool {
-        let commander_shown = self.format.is_some_and(|f| f.has_commander());
-        match slot {
-            Slot::Commander => commander_shown,
-            Slot::Partner => {
-                commander_shown
-                    && self
-                        .commander()
-                        .is_some_and(|c| commander_eligibility::partner_kind(c).is_some())
-            }
-            Slot::Background => {
-                commander_shown
-                    && self
-                        .commander()
-                        .is_some_and(commander_eligibility::has_choose_a_background)
-            }
-            Slot::SignatureSpell => self.format.is_some_and(|f| f.has_signature_spell()),
+        if matches!(self.overlay, Some(Overlay::Tags(TagPicker::OracleTags, _))) {
+            dispatch(self, Action::AdoptOracleTag(slug), cx);
         }
     }
 
@@ -379,7 +195,7 @@ impl DeckForm {
         fields.extend(
             Slot::ALL
                 .into_iter()
-                .filter(|s| self.shows(*s))
+                .filter(|s| self.model.shows(*s))
                 .map(Field::Card),
         );
         fields.extend([
@@ -404,403 +220,166 @@ impl DeckForm {
         }
     }
 
-    /// Keeps the focus on a field that shows.
-    fn clamp_focus(&mut self) {
+    /// Writes the model's text into the boxes that show it, and keeps the focus on a field that shows. `before` is each slot's results before the action, so a change puts the highlight back at the top.
+    fn sync(&mut self, before: &[Option<Results>]) {
+        let values = self.model.values();
+        if self.name.value() != values.name {
+            self.name.set_value(&values.name);
+        }
+        self.name
+            .set_error(self.model.name_error().map(str::to_owned));
+        if self.price.value() != values.price_text {
+            self.price.set_value(&values.price_text);
+        }
+        for (slot, was) in Slot::ALL.into_iter().zip(before) {
+            let shown = self.model.display(slot);
+            let field = self.inputs.get_mut(slot);
+            if field.input.value() != shown {
+                field.input.set_value(shown);
+            }
+            if self.model.results(slot) != *was {
+                field.highlighted = 0;
+            }
+        }
         if !self.fields().contains(&self.focus) {
             self.focus = Field::Format;
         }
     }
+}
 
-    /// Checks the name once it has held text, as the app checks it on every change.
-    pub(crate) fn check_name(&mut self) {
-        if !self.name.value().is_empty() {
-            self.name_touched = true;
-        }
-        if self.name_touched {
-            let error = DeckName::new(self.name.value())
-                .err()
-                .map(|e| e.to_string());
-            self.name.set_error(error);
-        }
-    }
+/// Applies `action` to the model and performs what it returns, then brings the boxes and the focus in step.
+pub(crate) fn dispatch(form: &mut DeckForm, action: Action, cx: &mut Context<'_>) {
+    run(form, action, cx, /* on_top */ true);
+}
 
-    /// Sets the commander. Changing from one card to another, or to none, clears the partner and background.
-    pub(crate) fn set_commander(&mut self, card: Option<Card>) {
-        let before = self.card(Slot::Commander).card_id();
-        let after = card.as_ref().map(|c| c.scryfall_data.id);
-        self.card_mut(Slot::Commander).choose(card);
-        if before.is_some() && before != after {
-            for slot in [Slot::Partner, Slot::Background] {
-                let field = self.card_mut(slot);
-                *field = CardField {
-                    filter_on: field.filter_on,
-                    ..CardField::default()
-                };
+/// [`dispatch`] for a reply, which may land while another screen covers the form; navigation then waits for nobody, as the app's task dies with its screen.
+fn run(form: &mut DeckForm, action: Action, cx: &mut Context<'_>, on_top: bool) {
+    let before: Vec<Option<Results>> = Slot::ALL.map(|s| form.model.results(s)).to_vec();
+    for effect in form.model.update(action) {
+        match effect {
+            Effect::OfferHint(offer) => {
+                hint::once(cx, offer.key());
             }
-        }
-        self.clamp_focus();
-    }
-
-    /// Sets a slot's card, through the commander cascade for the commander.
-    pub(crate) fn set_card(&mut self, slot: Slot, card: Option<Card>) {
-        if slot == Slot::Commander {
-            self.set_commander(card);
-        } else {
-            self.card_mut(slot).choose(card);
-        }
-    }
-
-    /// Sets or clears the format: every Filter goes back on, the commander clears, and the signature spell clears unless the new format has one.
-    pub(crate) fn set_format(&mut self, format: Option<Format>) {
-        self.format = format;
-        for field in &mut self.cards {
-            field.filter_on = true;
-        }
-        self.set_commander(None);
-        if !format.is_some_and(|f| f.has_signature_spell()) {
-            self.card_mut(Slot::SignatureSpell).choose(None);
-        }
-        self.clamp_focus();
-    }
-
-    /// Picks a card for `slot` from a search or a swipe, then looks for a named partner when it is the commander.
-    pub(crate) fn pick_card(&mut self, slot: Slot, card: Card, cx: &mut Context<'_>) {
-        let named = (slot == Slot::Commander)
-            .then(|| commander_eligibility::partner_kind(&card))
-            .flatten();
-        let commander_id = card.scryfall_data.id;
-        self.set_card(slot, Some(card));
-        if let Some(PartnerKind::Named(mate)) = named {
-            cx.request(Request::FindPartner { commander_id, mate }.into());
-        }
-    }
-
-    /// Restarts a slot's search for what is typed: hidden below the slot's minimum, else "Searching..." until the pause passes.
-    pub(crate) fn search(&mut self, slot: Slot, cx: &mut Context<'_>) {
-        let field = self.card_mut(slot);
-        let generation = field.generation.next_ticket();
-        field.highlighted = 0;
-        if field.input.len() < slot.min_chars() {
-            field.dropdown = Dropdown::Hidden;
-            return;
-        }
-        field.dropdown = Dropdown::Searching;
-        cx.request(Request::Debounce { slot, generation }.into());
-    }
-
-    /// The query for a slot's search once the pause has passed.
-    fn search_query(&self, slot: Slot) -> Option<CardQuery> {
-        let field = self.card(slot);
-        form::search_query(
-            slot,
-            field.input.value(),
-            field.filter_on,
-            self.format,
-            self.commander(),
-        )
-        .ok()
-    }
-
-    /// The deck tags after a picker closes: swaps the oracle tags the old ones seeded for those the new ones seed, and says so when any were added.
-    pub(crate) fn reseed(&mut self, cx: &mut Context<'_>) {
-        let new_seed = seed_oracle_tags_from_catalog(&self.tags, &self.deck_tag_catalog);
-        let (oracle_tags, added) =
-            form::reseed_oracle_tags(&self.oracle_tags, &self.applied_seed, &new_seed);
-        self.oracle_tags = oracle_tags;
-        self.applied_seed = new_seed;
-        if added {
-            cx.toast(
-                ToastKind::Info,
-                "Oracle tags derived from your deck tags".to_owned(),
-            );
-        }
-    }
-
-    /// Fills the form from a loaded deck and remembers each value as the original.
-    pub(crate) fn fill(&mut self, profile: &DeckProfile) {
-        self.loading = false;
-        self.name.set_value(&profile.name);
-        self.format = profile.format;
-        self.power = profile.power_level;
-        self.land_target = profile.land_target;
-        self.currency = profile.price_target_currency.unwrap_or_default();
-        self.price.set_value(
-            &profile
-                .price_target
-                .map(form::price_text)
-                .unwrap_or_default(),
-        );
-        self.tags.clone_from(&profile.tags);
-        self.oracle_tags.clone_from(&profile.oracle_tags);
-        self.other_tags.clone_from(&profile.other_tags);
-        self.applied_seed = seed_oracle_tags(&profile.tags);
-        self.original = Some(Original {
-            name: self.name.value().to_owned(),
-            format: self.format,
-            cards: [None; 4],
-            power: self.power,
-            land_target: self.land_target,
-            price: self.price.value().to_owned(),
-            currency: self.currency,
-            tags: self.tags.clone(),
-            oracle_tags: self.oracle_tags.clone(),
-            other_tags: self.other_tags.clone(),
-        });
-    }
-
-    /// The edit as the server takes it: only the fields that differ from the original.
-    pub(crate) fn changes(&self) -> Option<Changes> {
-        let original = self.original.as_ref()?;
-        let card_patch = |slot: Slot| {
-            let now = self.card(slot).card_id();
-            if now == original.cards.get(slot_index(slot)).copied().flatten() {
-                Patch::Unchanged
-            } else {
-                Patch::Set(now)
+            Effect::FetchDeck { ticket, deck_id } => {
+                cx.request(Request::LoadDeck { ticket, deck_id }.into());
             }
-        };
-        let patch = |changed: bool, value| {
-            if changed {
-                Patch::Set(value)
-            } else {
-                Patch::Unchanged
-            }
-        };
-        let price = form::parse_price(self.price.value());
-        Some(Changes {
-            name: (self.name.value() != original.name).then(|| self.name.value().to_owned()),
-            commander: card_patch(Slot::Commander),
-            partner: card_patch(Slot::Partner),
-            background: card_patch(Slot::Background),
-            signature_spell: card_patch(Slot::SignatureSpell),
-            format: patch(
-                self.format != original.format,
-                self.format.map(|f| f.to_legality_key().to_owned()),
+            Effect::FetchCard {
+                ticket,
+                slot,
+                card_id,
+            } => cx.request(
+                Request::FetchCard {
+                    ticket,
+                    slot,
+                    card_id,
+                }
+                .into(),
             ),
-            tags: patch_vec(self.tags != original.tags, &self.tags),
-            land_target: if self.land_target == original.land_target {
-                Patch::Unchanged
-            } else {
-                Patch::Set(self.land_target)
-            },
-            price_target: if price == form::parse_price(&original.price) {
-                Patch::Unchanged
-            } else {
-                Patch::Set(price)
-            },
-            currency: if self.currency == original.currency {
-                Patch::Unchanged
-            } else {
-                Patch::Set(Some(self.currency))
-            },
-            power: patch(
-                self.power != original.power,
-                self.power.map(|p| p.to_string()),
-            ),
-            other_tags: patch_vec(
-                self.other_tags != original.other_tags,
-                &self
-                    .other_tags
-                    .iter()
-                    .map(ToString::to_string)
-                    .collect::<Vec<_>>(),
-            ),
-            oracle_tags: patch_vec(self.oracle_tags != original.oracle_tags, &self.oracle_tags),
-        })
-    }
-
-    /// Whether an edit has anything to save, which shows "Save changes".
-    pub(crate) fn has_changes(&self) -> bool {
-        self.changes().is_some_and(|c| c.any())
-    }
-
-    /// The new deck as the server takes it.
-    pub(crate) fn fields_for_create(&self) -> NewDeck {
-        let price = form::parse_price(self.price.value());
-        NewDeck {
-            name: self.name.value().to_owned(),
-            commander: self.card(Slot::Commander).card_id(),
-            partner: self.card(Slot::Partner).card_id(),
-            background: self.card(Slot::Background).card_id(),
-            signature_spell: self.card(Slot::SignatureSpell).card_id(),
-            format: self.format.map(|f| f.to_legality_key().to_owned()),
-            tags: (!self.tags.is_empty()).then(|| self.tags.clone()),
-            power: self.power.map(|p| p.to_string()),
-            other_tags: (!self.other_tags.is_empty())
-                .then(|| self.other_tags.iter().map(ToString::to_string).collect()),
-            oracle_tags: (!self.oracle_tags.is_empty()).then(|| self.oracle_tags.clone()),
-            land_target: self.land_target,
-            price_target: price,
-            currency: price.map(|_| self.currency),
-        }
-    }
-
-    /// Saves: checks the name, then creates the deck or sends the changes.
-    pub(crate) fn save(&mut self, cx: &mut Context<'_>) {
-        if self.saving || self.loading || self.load_error.is_some() {
-            return;
-        }
-        if let Err(e) = DeckName::new(self.name.value()) {
-            self.name.set_error(Some(e.to_string()));
-            self.focus = Field::Name;
-            return;
-        }
-        match self.mode {
-            Mode::Create => {
-                self.saving = true;
-                cx.request(Request::Create(Box::new(self.fields_for_create())).into());
+            Effect::Debounce { ticket, wait } => {
+                cx.request(Request::Debounce { ticket, wait }.into());
             }
-            Mode::Edit { deck_id } => {
-                let Some(changes) = self.changes().filter(Changes::any) else {
-                    return;
-                };
-                self.saving = true;
+            Effect::SearchCards { ticket, query } => {
+                cx.request(Request::Search { ticket, query }.into());
+            }
+            Effect::FindPartner {
+                picked,
+                mate,
+                query,
+            } => cx.request(
+                Request::FindPartner {
+                    picked,
+                    mate,
+                    query,
+                }
+                .into(),
+            ),
+            Effect::CreateDeck { ticket, request } => {
                 cx.request(
-                    Request::Update {
-                        deck_id,
-                        changes: Box::new(changes),
+                    Request::Create {
+                        ticket,
+                        body: Body(request),
                     }
                     .into(),
                 );
             }
+            Effect::UpdateDeck {
+                ticket,
+                deck_id,
+                request,
+            } => cx.request(
+                Request::Update {
+                    ticket,
+                    deck_id,
+                    body: Body(request),
+                }
+                .into(),
+            ),
+            Effect::Navigate(_) if !on_top => {}
+            Effect::Navigate(Destination::Previous) => cx.back(),
+            // Edit opens over the deck view, so going to the deck is going back; Create's new deck takes the form's place.
+            Effect::Navigate(Destination::Deck(deck_id)) => match form.model.mode() {
+                Mode::Create => screens::deck::replace_with(cx, deck_id),
+                Mode::Edit(_) => cx.back(),
+            },
+            Effect::Toast(toast) => cx.show(toast),
         }
     }
-}
-
-fn patch_vec(changed: bool, value: &[String]) -> Patch<Vec<String>> {
-    if changed {
-        Patch::Set(Some(value.to_vec()))
-    } else {
-        Patch::Unchanged
-    }
-}
-
-/// A new deck's fields, as `HttpCreateDeckProfile` takes them.
-#[derive(Debug, Clone, PartialEq)]
-pub(crate) struct NewDeck {
-    pub(crate) name: String,
-    pub(crate) commander: Option<Uuid>,
-    pub(crate) partner: Option<Uuid>,
-    pub(crate) background: Option<Uuid>,
-    pub(crate) signature_spell: Option<Uuid>,
-    pub(crate) format: Option<String>,
-    pub(crate) tags: Option<Vec<String>>,
-    pub(crate) power: Option<String>,
-    pub(crate) other_tags: Option<Vec<String>>,
-    pub(crate) oracle_tags: Option<Vec<String>>,
-    pub(crate) land_target: Option<i32>,
-    pub(crate) price_target: Option<f64>,
-    pub(crate) currency: Option<PriceCurrency>,
-}
-
-impl NewDeck {
-    fn body(&self) -> HttpCreateDeckProfile {
-        HttpCreateDeckProfile::builder(&self.name)
-            .commander_id(self.commander)
-            .partner_commander_id(self.partner)
-            .background_id(self.background)
-            .signature_spell_id(self.signature_spell)
-            .format(self.format.clone())
-            .tags(self.tags.clone())
-            .power_level(self.power.clone())
-            .other_tags(self.other_tags.clone())
-            .oracle_tags(self.oracle_tags.clone())
-            .land_target(self.land_target)
-            .price_target(self.price_target)
-            .price_target_currency(self.currency)
-            .build()
-    }
-}
-
-/// An edit's changed fields, as `HttpUpdateDeckProfile` takes them.
-#[derive(Debug, Clone, PartialEq)]
-pub(crate) struct Changes {
-    pub(crate) name: Option<String>,
-    pub(crate) commander: Patch<Uuid>,
-    pub(crate) partner: Patch<Uuid>,
-    pub(crate) background: Patch<Uuid>,
-    pub(crate) signature_spell: Patch<Uuid>,
-    pub(crate) format: Patch<String>,
-    pub(crate) tags: Patch<Vec<String>>,
-    pub(crate) land_target: Patch<i32>,
-    pub(crate) price_target: Patch<f64>,
-    pub(crate) currency: Patch<PriceCurrency>,
-    pub(crate) power: Patch<String>,
-    pub(crate) other_tags: Patch<Vec<String>>,
-    pub(crate) oracle_tags: Patch<Vec<String>>,
-}
-
-impl Changes {
-    /// Whether anything changed.
-    pub(crate) fn any(&self) -> bool {
-        self.name.is_some()
-            || self.commander != Patch::Unchanged
-            || self.partner != Patch::Unchanged
-            || self.background != Patch::Unchanged
-            || self.signature_spell != Patch::Unchanged
-            || self.format != Patch::Unchanged
-            || self.tags != Patch::Unchanged
-            || self.land_target != Patch::Unchanged
-            || self.price_target != Patch::Unchanged
-            || self.currency != Patch::Unchanged
-            || self.power != Patch::Unchanged
-            || self.other_tags != Patch::Unchanged
-            || self.oracle_tags != Patch::Unchanged
-    }
-
-    fn body(&self) -> HttpUpdateDeckProfile {
-        HttpUpdateDeckProfile::builder()
-            .name(self.name.as_deref())
-            .commander_id(self.commander.clone())
-            .partner_commander_id(self.partner.clone())
-            .background_id(self.background.clone())
-            .signature_spell_id(self.signature_spell.clone())
-            .format(self.format.clone())
-            .tags(self.tags.clone())
-            .land_target(self.land_target.clone())
-            .price_target(self.price_target.clone())
-            .price_target_currency(self.currency.clone())
-            .power_level(self.power.clone())
-            .other_tags(self.other_tags.clone())
-            .oracle_tags(self.oracle_tags.clone())
-            .build()
-    }
+    form.sync(&before);
 }
 
 /// Shows the form's hint again.
-pub(crate) fn reopen_hint(cx: &mut Context<'_>, mode: Mode) {
-    hint::reopen(cx, mode.hint_key());
+pub(crate) fn reopen_hint(cx: &mut Context<'_>, form: &DeckForm) {
+    hint::reopen(cx, form.model.mode().hint().key());
 }
 
-/// The form's work.
+/// A request body the server takes, compared by the JSON it sends, since the contracts have no `PartialEq`.
+#[derive(Debug, Clone)]
+pub(crate) struct Body<T>(pub(crate) Box<T>);
+
+impl<T: Serialize> PartialEq for Body<T> {
+    fn eq(&self, other: &Self) -> bool {
+        serde_json::to_value(&*self.0).ok() == serde_json::to_value(&*other.0).ok()
+    }
+}
+
+/// The form's work, each of the model's requests carrying its ticket.
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum Request {
     DeckTagCatalog,
     OracleCatalog,
-    /// Waits out the typing pause before a slot's search.
+    /// Waits out the typing pause before a command-zone search.
     Debounce {
-        slot: Slot,
-        generation: Ticket,
+        ticket: Ticket,
+        wait: Duration,
     },
+    /// A command-zone search, quiet on failure.
     Search {
-        slot: Slot,
-        generation: Ticket,
+        ticket: Ticket,
         query: Box<CardQuery>,
     },
-    /// Looks for the commander's named partner.
+    /// Looks for the partner a "Partner with" commander names; a failure sends nothing back.
     FindPartner {
-        commander_id: Uuid,
+        picked: Uuid,
         mate: String,
+        query: Box<CardQuery>,
     },
-    LoadDeck(Uuid),
-    FetchCard {
-        slot: Slot,
-        id: Uuid,
-    },
-    Create(Box<NewDeck>),
-    Update {
+    LoadDeck {
+        ticket: Ticket,
         deck_id: Uuid,
-        changes: Box<Changes>,
+    },
+    FetchCard {
+        ticket: Ticket,
+        slot: Slot,
+        card_id: Uuid,
+    },
+    Create {
+        ticket: Ticket,
+        body: Body<HttpCreateDeckProfile>,
+    },
+    Update {
+        ticket: Ticket,
+        deck_id: Uuid,
+        body: Body<HttpUpdateDeckProfile>,
     },
     /// A page of the swipe picker's pile.
     SwipePage {
@@ -820,9 +399,9 @@ impl Request {
             Self::Debounce { .. } => "debounce",
             Self::Search { .. } => "search",
             Self::FindPartner { .. } => "find_partner",
-            Self::LoadDeck(..) => "load_deck",
+            Self::LoadDeck { .. } => "load_deck",
             Self::FetchCard { .. } => "fetch_card",
-            Self::Create(..) => "create",
+            Self::Create { .. } => "create",
             Self::Update { .. } => "update",
             Self::SwipePage { .. } => "swipe_page",
             Self::MaybeboardAdd(..) => "maybeboard_add",
@@ -831,38 +410,43 @@ impl Request {
     }
 }
 
-/// The form's results.
+/// The form's results, the model's carrying their tickets back.
 #[derive(Debug)]
 pub(crate) enum Update {
     DeckTagCatalog(Vec<DeckTagView>),
     OracleCatalog(Vec<OracleTag>),
     Debounced {
-        slot: Slot,
-        generation: Ticket,
+        ticket: Ticket,
     },
-    Results {
-        slot: Slot,
-        generation: Ticket,
+    Searched {
+        ticket: Ticket,
         cards: Vec<Card>,
     },
-    SearchFailed {
-        slot: Slot,
-        generation: Ticket,
-    },
-    PartnerHits {
-        commander_id: Uuid,
+    PartnerSearched {
+        picked: Uuid,
         mate: String,
         cards: Vec<Card>,
     },
-    DeckLoaded(Box<Deck>),
-    LoadFailed(String),
+    Loaded {
+        ticket: Ticket,
+        deck: Box<Deck>,
+    },
     CardLoaded {
-        slot: Slot,
+        ticket: Ticket,
         card: Box<Card>,
     },
-    Created(Box<DeckProfile>),
-    Updated,
-    SaveFailed(String),
+    Created {
+        ticket: Ticket,
+        profile: Box<DeckProfile>,
+    },
+    Updated {
+        ticket: Ticket,
+    },
+    /// One of the model's requests failed: `Some` is the error toast to raise first, `None` a quiet search.
+    Failed {
+        ticket: Ticket,
+        message: Option<String>,
+    },
     SwipePage {
         generation: Ticket,
         cards: Vec<Card>,
@@ -894,29 +478,30 @@ fn pick(screen: &mut Screen) -> Option<&mut DeckForm> {
 
 /// Opens Create with an empty form.
 pub(crate) fn open_create(cx: &mut Context<'_>) {
-    open_with(cx, DeckForm::new(Mode::Create));
+    open_with(cx, Open::Create { seed: None });
 }
 
-/// Opens Create seeded with a commander, as the Commander maybeboard's "Create deck" does: the format is Commander and the card is the commander.
+/// Opens Create seeded with a commander, as Playstyle, the commander swipe and the Commander maybeboard's "Create deck" do: the format is Commander and the card is the commander.
 pub(crate) fn open_create_with_commander(cx: &mut Context<'_>, commander: Card) {
-    let mut form = DeckForm::new(Mode::Create);
-    form.format = Some(Format::Commander);
-    form.card_mut(Slot::Commander).choose(Some(commander));
-    open_with(cx, form);
+    open_with(
+        cx,
+        Open::Create {
+            seed: Some(Box::new(commander)),
+        },
+    );
 }
 
 /// Opens Edit for `deck_id` and loads the deck.
 pub(crate) fn open_edit(cx: &mut Context<'_>, deck_id: Uuid) {
-    cx.request(Request::LoadDeck(deck_id).into());
-    open_with(cx, DeckForm::new(Mode::Edit { deck_id }));
+    open_with(cx, Open::Edit(deck_id));
 }
 
-fn open_with(cx: &mut Context<'_>, form: DeckForm) {
-    let mode = form.mode;
-    cx.push(Screen::DeckForm(Box::new(form)));
+fn open_with(cx: &mut Context<'_>, open: Open) {
+    let mut form = DeckForm::default();
     cx.request(Request::DeckTagCatalog.into());
     cx.request(Request::OracleCatalog.into());
-    hint::once(cx, mode.hint_key());
+    dispatch(&mut form, Action::Load(open), cx);
+    cx.push(Screen::DeckForm(Box::new(form)));
 }
 
 pub(crate) async fn perform(account: &Account, request: Request) -> Option<screens::Update> {
@@ -933,45 +518,64 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
             Ok(tags) => Some(Update::OracleCatalog(tags).into()),
             Err(e) => Some(error(&e)),
         },
-        Request::Debounce { slot, generation } => {
-            tokio::time::sleep(timing::COMMAND_ZONE_SEARCH_DEBOUNCE).await;
-            Some(Update::Debounced { slot, generation }.into())
+        Request::Debounce { ticket, wait } => {
+            tokio::time::sleep(wait).await;
+            Some(Update::Debounced { ticket }.into())
         }
-        Request::Search {
-            slot,
-            generation,
-            query,
-        } => Some(
+        Request::Search { ticket, query } => Some(
             match async { client.search_cards(&query, &account.fresh().await?).await }.await {
-                Ok(cards) => Update::Results {
-                    slot,
-                    generation,
+                Ok(cards) => Update::Searched { ticket, cards }.into(),
+                // A failed search only closes the results, as in the app.
+                Err(_) => Update::Failed {
+                    ticket,
+                    message: None,
+                }
+                .into(),
+            },
+        ),
+        Request::FindPartner {
+            picked,
+            mate,
+            query,
+        } => {
+            let cards = async { client.search_cards(&query, &account.fresh().await?).await }
+                .await
+                .ok()?;
+            Some(
+                Update::PartnerSearched {
+                    picked,
+                    mate,
                     cards,
                 }
                 .into(),
-                // A failed search only closes the results, as in the app.
-                Err(_) => Update::SearchFailed { slot, generation }.into(),
-            },
-        ),
-        Request::FindPartner { commander_id, mate } => {
-            find_partner(account, commander_id, mate).await
+            )
         }
-        Request::LoadDeck(deck_id) => Some(
+        Request::LoadDeck { ticket, deck_id } => Some(
             match async { client.fetch_deck(deck_id, &account.fresh().await?).await }.await {
-                Ok(deck) => Update::DeckLoaded(Box::new(deck)).into(),
-                Err(e) => screens::failure(&e, |m| Update::LoadFailed(m).into()),
+                Ok(deck) => Update::Loaded {
+                    ticket,
+                    deck: Box::new(deck),
+                }
+                .into(),
+                Err(e) => failed(ticket, &e),
             },
         ),
-        Request::FetchCard { slot, id } => Some(match client.fetch_card(id).await {
+        Request::FetchCard {
+            ticket, card_id, ..
+        } => Some(match client.fetch_card(card_id).await {
             Ok(card) => Update::CardLoaded {
-                slot,
+                ticket,
                 card: Box::new(card),
             }
             .into(),
-            Err(e) => error(&e),
+            Err(e) => failed(ticket, &e),
         }),
-        Request::Create(deck) => Some(create(account, &deck).await),
-        Request::Update { deck_id, changes } => Some(save(account, deck_id, &changes).await),
+        Request::Create { ticket, body } => Some(create(account, ticket, &body).await),
+        Request::Update {
+            ticket,
+            deck_id,
+            body,
+        } => Some(save(account, ticket, deck_id, &body).await),
         Request::SwipePage { generation, query } => Some(
             match async {
                 client
@@ -989,57 +593,58 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
     }
 }
 
-/// Looks up the commander's named partner; a failed lookup leaves the partner empty, as in the app.
-async fn find_partner(
-    account: &Account,
-    commander_id: Uuid,
-    mate: String,
-) -> Option<screens::Update> {
-    let client = &account.client;
-    let mut builder = CardQueryBuilder::with_name_contains(&mate);
-    builder.set_limit(PARTNER_SEARCH_LIMIT);
-    let query = builder.build().ok()?;
-    let cards = async { client.search_cards(&query, &account.fresh().await?).await }
-        .await
-        .ok()?;
-    Some(
-        Update::PartnerHits {
-            commander_id,
-            mate,
-            cards,
-        }
-        .into(),
-    )
-}
-
 /// Creates the new deck's profile.
-async fn create(account: &Account, deck: &NewDeck) -> screens::Update {
+async fn create(
+    account: &Account,
+    ticket: Ticket,
+    body: &Body<HttpCreateDeckProfile>,
+) -> screens::Update {
     match async {
         account
             .client
-            .create_deck_profile(&deck.body(), &account.fresh().await?)
+            .create_deck_profile(&body.0, &account.fresh().await?)
             .await
     }
     .await
     {
-        Ok(profile) => Update::Created(Box::new(profile)).into(),
-        Err(e) => screens::failure(&e, |m| Update::SaveFailed(m).into()),
+        Ok(profile) => Update::Created {
+            ticket,
+            profile: Box::new(profile),
+        }
+        .into(),
+        Err(e) => failed(ticket, &e),
     }
 }
 
 /// Saves the edited deck's changed fields.
-async fn save(account: &Account, deck_id: Uuid, changes: &Changes) -> screens::Update {
+async fn save(
+    account: &Account,
+    ticket: Ticket,
+    deck_id: Uuid,
+    body: &Body<HttpUpdateDeckProfile>,
+) -> screens::Update {
     match async {
         account
             .client
-            .update_deck_profile(deck_id, &changes.body(), &account.fresh().await?)
+            .update_deck_profile(deck_id, &body.0, &account.fresh().await?)
             .await
     }
     .await
     {
-        Ok(_) => Update::Updated.into(),
-        Err(e) => screens::failure(&e, |m| Update::SaveFailed(m).into()),
+        Ok(_) => Update::Updated { ticket }.into(),
+        Err(e) => failed(ticket, &e),
     }
+}
+
+/// A model request's failure, raising its error toast, or the session's end.
+fn failed(ticket: Ticket, error: &zwipe_client::ClientError) -> screens::Update {
+    screens::failure(error, |m| {
+        Update::Failed {
+            ticket,
+            message: Some(m),
+        }
+        .into()
+    })
 }
 
 /// Adds a commander to the user's commander maybeboard.
@@ -1074,141 +679,71 @@ async fn maybeboard_remove(account: &Account, oracle_id: Uuid) -> screens::Updat
 
 pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
     let on_top = matches!(nav.top(), Screen::DeckForm(_));
+    // An error toast goes up before the lookup, so it shows even when the form has closed.
+    if let Update::Error(message)
+    | Update::Failed {
+        message: Some(message),
+        ..
+    } = &update
+    {
+        cx.toast(ToastKind::Error, message.clone());
+    }
     let Some(form) = nav.find_mut(pick) else {
-        if let Update::Error(message) | Update::SaveFailed(message) = update {
-            cx.toast(ToastKind::Error, message);
-        }
         return;
     };
-    match update {
-        Update::DeckTagCatalog(tags) => form.deck_tag_catalog = tags,
-        Update::OracleCatalog(tags) => form.oracle_catalog = Some(tags),
-        Update::Debounced { slot, generation } => debounced(form, slot, generation, cx),
-        Update::Results {
-            slot,
-            generation,
-            cards,
-        } => {
-            let field = form.card_mut(slot);
-            if field.generation.is_current(generation) {
-                field.dropdown = Dropdown::Results(cards);
-                field.highlighted = 0;
-            }
+    let action = match update {
+        Update::DeckTagCatalog(tags) => {
+            form.deck_tag_catalog.clone_from(&tags);
+            Action::Catalog(tags)
         }
-        Update::SearchFailed { slot, generation } => {
-            let field = form.card_mut(slot);
-            if field.generation.is_current(generation) {
-                field.dropdown = Dropdown::Hidden;
-            }
+        Update::OracleCatalog(tags) => {
+            form.oracle_catalog = Some(tags);
+            return;
         }
-        Update::PartnerHits {
-            commander_id,
+        Update::Debounced { ticket } => Action::Debounced { ticket },
+        Update::Searched { ticket, cards } => Action::Searched { ticket, cards },
+        Update::PartnerSearched {
+            picked,
             mate,
             cards,
-        } => partner_hits(form, commander_id, &mate, &cards, cx),
-        Update::DeckLoaded(deck) => deck_loaded(form, &deck, cx),
-        Update::LoadFailed(message) => {
-            form.loading = false;
-            form.load_error = Some(message.clone());
-            cx.toast(ToastKind::Error, message);
-        }
-        Update::CardLoaded { slot, card } => card_loaded(form, slot, *card),
-        Update::Created(profile) => {
-            form.saving = false;
-            if on_top {
-                screens::deck::replace_with(cx, profile.id);
-            }
-        }
-        Update::Updated => {
-            form.saving = false;
-            if on_top {
-                cx.back();
-            }
-        }
-        Update::SaveFailed(message) => {
-            form.saving = false;
-            cx.toast(ToastKind::Error, message);
-        }
+        } => Action::PartnerSearched {
+            picked,
+            mate,
+            cards,
+        },
+        Update::Loaded { ticket, deck } => Action::Loaded {
+            ticket,
+            profile: Box::new(deck.deck_profile),
+        },
+        Update::CardLoaded { ticket, card } => Action::CardLoaded { ticket, card },
+        Update::Created { ticket, profile } => Action::Created {
+            ticket,
+            deck_id: profile.id,
+        },
+        Update::Updated { ticket } => Action::Updated { ticket },
+        Update::Failed { ticket, .. } => Action::Failed { ticket },
         Update::SwipePage { generation, cards } => {
             if let Some(Overlay::Swipe(picker)) = &mut form.overlay {
                 picker.take_page(generation, cards, cx);
             }
+            return;
         }
-        Update::MaybeboardAdded => cx.toast(
-            ToastKind::Success,
-            "Added to your commander maybeboard".to_owned(),
-        ),
-        Update::MaybeboardRemoved => cx.toast_for(
-            ToastKind::Info,
-            "Removed from your commander maybeboard".to_owned(),
-            toast::QUICK,
-        ),
-        Update::Error(message) => cx.toast(ToastKind::Error, message),
-    }
-}
-
-/// Runs the slot's search once typing settles, unless a newer keystroke superseded it.
-fn debounced(form: &mut DeckForm, slot: Slot, generation: Ticket, cx: &mut Context<'_>) {
-    if !form.card(slot).generation.is_current(generation) {
-        return;
-    }
-    match form.search_query(slot) {
-        Some(query) => cx.request(
-            Request::Search {
-                slot,
-                generation,
-                query: Box::new(query),
-            }
-            .into(),
-        ),
-        None => form.card_mut(slot).dropdown = Dropdown::Hidden,
-    }
-}
-
-/// Picks the named partner when the same commander is still chosen and the partner is empty.
-fn partner_hits(
-    form: &mut DeckForm,
-    commander_id: Uuid,
-    mate: &str,
-    cards: &[Card],
-    cx: &mut Context<'_>,
-) {
-    let same_commander = form.card(Slot::Commander).card_id() == Some(commander_id);
-    if same_commander
-        && form.card(Slot::Partner).card.is_none()
-        && let Some(partner) = form::named_partner(cards, mate).cloned()
-    {
-        cx.toast(
-            ToastKind::Info,
-            format!("Partner found and selected: {}", partner.scryfall_data.name),
-        );
-        form.set_card(Slot::Partner, Some(partner));
-    }
-}
-
-/// Fills the form from the loaded deck and fetches each chosen card.
-fn deck_loaded(form: &mut DeckForm, deck: &Deck, cx: &mut Context<'_>) {
-    form.fill(&deck.deck_profile);
-    let profile = &deck.deck_profile;
-    for (slot, id) in [
-        (Slot::Commander, profile.commander_id),
-        (Slot::Partner, profile.partner_commander_id),
-        (Slot::Background, profile.background_id),
-        (Slot::SignatureSpell, profile.signature_spell_id),
-    ] {
-        if let Some(id) = id {
-            cx.request(Request::FetchCard { slot, id }.into());
+        Update::MaybeboardAdded => {
+            cx.toast(
+                ToastKind::Success,
+                "Added to your commander maybeboard".to_owned(),
+            );
+            return;
         }
-    }
-}
-
-/// Sets a fetched card into its slot and marks it as the slot's original.
-fn card_loaded(form: &mut DeckForm, slot: Slot, card: Card) {
-    let id = card.scryfall_data.id;
-    form.card_mut(slot).choose(Some(card));
-    if let Some(original) = &mut form.original
-        && let Some(card) = original.cards.get_mut(slot_index(slot))
-    {
-        *card = Some(id);
-    }
+        Update::MaybeboardRemoved => {
+            cx.toast_for(
+                ToastKind::Info,
+                "Removed from your commander maybeboard".to_owned(),
+                toast::QUICK,
+            );
+            return;
+        }
+        Update::Error(_) => return,
+    };
+    run(form, action, cx, on_top);
 }

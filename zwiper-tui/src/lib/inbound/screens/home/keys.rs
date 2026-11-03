@@ -1,21 +1,13 @@
-//! Home's keys: the action bar's Decks, Account and Config, the hero's scope and Activity, the color map's Playstyle and "?", and the featured card's Image and Buy.
+//! Home's keys: the action bar's Decks, Account and Config, the hero's scope and Activity, the color map's Playstyle and "?", and the featured card's Image and Buy. Presses the model has an action for go through [`dispatch`].
 
 use crossterm::event::KeyCode;
-use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
-use zwipe_core::domain::deck::deck_metrics;
-use zwipe_ui::buy;
+use zwipe_ui::screens::home::{Action, BUY_BODY, BUY_TITLE, CLOSE, Flavor};
 
-use super::{HomeView, Overlay};
+use super::{HomeView, Overlay, dispatch, toggle_scope};
 use crate::inbound::app::Context;
-use crate::inbound::screens::{self, account, config, decks, image_preview};
+use crate::inbound::screens::{self, image_preview};
 use crate::inbound::widgets::alert::{AlertChoice, AlertDialog};
 use crate::inbound::widgets::{browser, help, info};
-
-/// The Buy dialog's title.
-pub(crate) const BUY_TITLE: &str = "Buy card";
-
-/// The Buy dialog's body.
-pub(crate) const BUY_BODY: &str = "Buy this card from a retailer.";
 
 /// The color map's "?" topic.
 pub(crate) fn color_map_topic() -> info::InfoPopup {
@@ -41,7 +33,7 @@ pub(crate) fn handle(view: &mut HomeView, code: KeyCode, cx: &mut Context<'_>) {
             Overlay::Buy(dialog) => match dialog.handle_key(code) {
                 Some(AlertChoice::Pressed(i)) => {
                     view.overlay = None;
-                    buy(cx, i);
+                    buy(view, cx, i);
                 }
                 Some(AlertChoice::Dismissed) => view.overlay = None,
                 None => {}
@@ -53,24 +45,25 @@ pub(crate) fn handle(view: &mut HomeView, code: KeyCode, cx: &mut Context<'_>) {
         KeyCode::Esc => cx.back(),
         KeyCode::Char('!') => help::open(cx),
         KeyCode::Char('q') => cx.quit(),
-        KeyCode::Char('d') | KeyCode::Enter => decks::open(cx),
-        KeyCode::Char('a') => account::open(cx),
-        KeyCode::Char('c') => config::open(cx),
-        KeyCode::Char('v') => screens::activity::open(cx),
-        KeyCode::Char('p') => screens::playstyle::open(cx),
-        KeyCode::Char('s') => view.toggle_scope(cx),
+        KeyCode::Char('d') | KeyCode::Enter => dispatch(view, Action::Decks, cx),
+        KeyCode::Char('a') => dispatch(view, Action::Account, cx),
+        KeyCode::Char('c') => dispatch(view, Action::Config, cx),
+        KeyCode::Char('v') => dispatch(view, Action::Activity, cx),
+        KeyCode::Char('p') => dispatch(view, Action::Playstyle, cx),
+        KeyCode::Char('s') => toggle_scope(view, cx),
         KeyCode::Char('?') => view.overlay = Some(Overlay::Info(color_map_topic())),
         KeyCode::Char('i') => {
-            if let Some(card) = featured(cx) {
-                image_preview::open(cx, card, 0);
+            if let Flavor::Quote(_) = view.model.flavor()
+                && let Some(card) = view.model.flavor_card()
+            {
+                image_preview::open(cx, card.clone(), 0);
             }
         }
         KeyCode::Char('b') => {
-            let priced = featured(cx).is_some_and(|card| {
-                deck_metrics::card_price(&card.scryfall_data, PriceCurrency::Usd).is_some()
-            });
-            if priced {
-                view.overlay = Some(Overlay::Buy(buy_dialog()));
+            if let Flavor::Quote(quote) = view.model.flavor()
+                && quote.price.is_some()
+            {
+                view.overlay = Some(Overlay::Buy(buy_dialog(view)));
             }
         }
         KeyCode::Char('r') => view.refresh(cx),
@@ -79,43 +72,21 @@ pub(crate) fn handle(view: &mut HomeView, code: KeyCode, cx: &mut Context<'_>) {
     }
 }
 
-/// The featured card when it has flavor text, the only time its panel shows.
-fn featured(cx: &Context<'_>) -> Option<zwipe_core::domain::card::Card> {
-    cx.shared
-        .caches
-        .flavor
-        .as_ref()
-        .map(|f| &f.card)
-        .filter(|card| has_flavor(card))
-        .cloned()
-}
-
-/// Whether a card has flavor text to quote.
-pub(crate) fn has_flavor(card: &zwipe_core::domain::card::Card) -> bool {
-    card.scryfall_data
-        .flavor_text
-        .as_deref()
-        .is_some_and(|t| !t.trim().is_empty())
-}
-
-/// The Buy dialog: Close, then the two retailers.
-pub(crate) fn buy_dialog() -> AlertDialog {
-    AlertDialog::new(BUY_TITLE, BUY_BODY)
-        .with_button("Close", None)
-        .with_button("TCGplayer \u{2197}", Some('t'))
-        .with_button("Card Kingdom \u{2197}", Some('k'))
+/// The Buy dialog: Close, then the model's retailer links, `t` and `k`.
+pub(crate) fn buy_dialog(view: &HomeView) -> AlertDialog {
+    let keys = ['t', 'k'];
+    view.model.buy_links().iter().zip(keys).fold(
+        AlertDialog::new(BUY_TITLE, BUY_BODY).with_button(CLOSE, None),
+        |dialog, (link, key)| dialog.with_button(link.label, Some(key)),
+    )
 }
 
 /// Opens the retailer behind the Buy dialog's button `index`, if it is one.
-fn buy(cx: &mut Context<'_>, index: usize) {
-    let Some(card) = featured(cx) else {
-        return;
-    };
-    let data = &card.scryfall_data;
-    let url = match index {
-        1 => buy::tcgplayer_card_url(&data.name, data.tcgplayer_id),
-        2 => buy::cardkingdom_card_url(&data.name),
-        _ => return,
-    };
-    browser::open(cx, &url);
+fn buy(view: &HomeView, cx: &mut Context<'_>, index: usize) {
+    let link = index
+        .checked_sub(1)
+        .and_then(|at| view.model.buy_links().into_iter().nth(at));
+    if let Some(link) = link {
+        browser::open(cx, &link.url);
+    }
 }

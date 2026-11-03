@@ -1,11 +1,16 @@
 use crossterm::event::KeyCode;
-use zwipe_core::domain::deck::{DeckOtherTag, MAX_DECK_ORACLE_TAGS};
+use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
+use zwipe_core::domain::deck::deck_tag::deck_tag_label;
+use zwipe_core::domain::deck::{DeckOtherTag, Format, MAX_DECK_ORACLE_TAGS};
+use zwipe_core::http::helpers::Patch;
+use zwipe_ui::screens::deck_form::Mode;
 
 use super::*;
 use crate::inbound::event_loop::harness::Harness;
 use crate::inbound::widgets::toast::Toasts;
 use crate::test_support::{
-    card, deck, deck_profile, render, screen_text, ticket, user, word_colors,
+    assert_about_marker, card, deck, deck_profile, find_all, render, screen_text, ticket, user,
+    word_colors,
 };
 
 /// Create over the deck list, with its hint closed and nothing queued.
@@ -32,9 +37,47 @@ fn form_mut(harness: &mut Harness) -> &mut DeckForm {
     }
 }
 
+/// Sends `action` to the form on top, as a key handler would.
+fn act(harness: &mut Harness, action: Action) {
+    let mut open = Box::new(form(harness).clone());
+    harness.open(|cx| dispatch(&mut open, action, cx));
+    *harness.screen_mut() = Screen::DeckForm(open);
+}
+
 /// Moves the focus to `field`.
 fn focus(harness: &mut Harness, field: Field) {
     form_mut(harness).focus = field;
+}
+
+/// The newest of the form's requests.
+fn last(harness: &Harness) -> &Request {
+    match harness.pending().iter().rev().find_map(|r| match r {
+        screens::Request::DeckForm(request) => Some(request),
+        _ => None,
+    }) {
+        Some(request) => request,
+        None => panic!("the form asked for nothing: {:?}", harness.pending()),
+    }
+}
+
+/// The ticket of the newest debounce.
+fn debounce_ticket(harness: &Harness) -> Ticket {
+    match last(harness) {
+        Request::Debounce { ticket, .. } => *ticket,
+        other => panic!("no debounce: {other:?}"),
+    }
+}
+
+/// Types `text` into the focused command-zone box and lands `cards` as its search.
+fn search(harness: &mut Harness, text: &str, cards: Vec<Card>) {
+    harness.type_text(text);
+    let ticket = debounce_ticket(harness);
+    harness.apply(Update::Debounced { ticket });
+    assert!(
+        matches!(last(harness), Request::Search { ticket: t, .. } if *t == ticket),
+        "the pause sends the search"
+    );
+    harness.apply(Update::Searched { ticket, cards });
 }
 
 fn tag(slug: &str, seeds: &[&str]) -> DeckTagView {
@@ -46,8 +89,6 @@ fn tag(slug: &str, seeds: &[&str]) -> DeckTagView {
     }
 }
 
-use zwipe_core::domain::deck::deck_tag::deck_tag_label;
-
 fn oracle(slug: &str, curated: bool) -> OracleTag {
     serde_json::from_value(serde_json::json!({
         "slug": slug,
@@ -57,6 +98,17 @@ fn oracle(slug: &str, curated: bool) -> OracleTag {
         "curated": curated,
     }))
     .unwrap()
+}
+
+fn toast_texts(harness: &Harness) -> Vec<String> {
+    harness
+        .app
+        .shared
+        .toasts
+        .items()
+        .iter()
+        .map(|t| t.message.clone())
+        .collect()
 }
 
 #[test]
@@ -96,9 +148,15 @@ fn the_name_is_checked_once_it_has_held_text() {
 #[test]
 fn saving_create_checks_the_name_then_sends_the_deck() {
     let mut harness = create();
+    focus(&mut harness, Field::Land);
     harness.press(KeyCode::F(2));
     assert_eq!(harness.pending(), []);
     assert!(form(&harness).name.error().is_some());
+    assert_eq!(
+        form(&harness).focus,
+        Field::Name,
+        "the refused name takes the focus"
+    );
     harness.type_text("Tokens");
     focus(&mut harness, Field::Land);
     harness.press(KeyCode::Char('+'));
@@ -112,37 +170,43 @@ fn saving_create_checks_the_name_then_sends_the_deck() {
     harness.press(KeyCode::Char('l'));
     harness.press(KeyCode::Enter);
     harness.press(KeyCode::F(2));
-    let Some(screens::Request::DeckForm(Request::Create(deck))) = harness.pending().first() else {
+    let Request::Create { ticket, body } = last(&harness).clone() else {
         panic!("no create: {:?}", harness.pending());
     };
-    assert_eq!(
-        **deck,
-        NewDeck {
-            name: "Tokens".to_owned(),
-            commander: None,
-            partner: None,
-            background: None,
-            signature_spell: None,
-            format: None,
-            tags: None,
-            power: Some("core".to_owned()),
-            other_tags: Some(vec!["jank".to_owned()]),
-            oracle_tags: None,
-            land_target: Some(1),
-            price_target: Some(12.5),
-            currency: Some(PriceCurrency::Usd),
-        }
-    );
-    assert!(form(&harness).saving);
-    harness.apply(Update::SaveFailed("deck limit reached".to_owned()));
-    assert!(!form(&harness).saving);
-    assert_eq!(
-        harness.app.shared.toasts.items()[0].message,
-        "deck limit reached"
-    );
+    let sent = &body.0;
+    assert_eq!(sent.name, "Tokens");
+    assert_eq!(sent.power_level.as_deref(), Some("core"));
+    assert_eq!(sent.other_tags, Some(vec!["jank".to_owned()]));
+    assert_eq!(sent.land_target, Some(1));
+    assert_eq!(sent.price_target, Some(12.5));
+    assert_eq!(sent.price_target_currency, Some(PriceCurrency::Usd));
+    assert_eq!(sent.format, None);
+    assert!(form(&harness).model.is_saving());
+    harness.apply(Update::Failed {
+        ticket,
+        message: Some("deck limit reached".to_owned()),
+    });
+    assert!(!form(&harness).model.is_saving());
+    assert_eq!(toast_texts(&harness), ["deck limit reached"]);
+
+    harness.press(KeyCode::F(2));
+    let Request::Create { ticket: again, .. } = last(&harness).clone() else {
+        panic!("no second create");
+    };
     let created = deck_profile("Tokens");
     let id = created.id;
-    harness.apply(Update::Created(Box::new(created)));
+    harness.apply(Update::Created {
+        ticket,
+        profile: Box::new(deck_profile("Stale")),
+    });
+    assert!(
+        matches!(harness.screen(), Screen::DeckForm(_)),
+        "a reply to the failed save changes nothing"
+    );
+    harness.apply(Update::Created {
+        ticket: again,
+        profile: Box::new(created),
+    });
     assert!(matches!(harness.screen(), Screen::Deck(view) if view.deck_id() == Some(id)));
     assert_eq!(harness.app.nav.depth(), 2, "the deck replaces the form");
 }
@@ -164,17 +228,19 @@ fn the_format_picker_cascades_and_back_reverts() {
     );
     harness.press(KeyCode::Right);
     harness.press(KeyCode::Enter);
-    let chosen = form(&harness).format;
+    let chosen = form(&harness).model.values().format;
     assert!(chosen.is_some_and(|f| f.has_commander()));
     let screen = screen_text(&harness.app);
     assert!(screen.contains("Pool:"));
     assert!(screen.contains("Life:"));
     harness.press(KeyCode::Esc);
-    assert_eq!(form(&harness).format, None, "Back reverts the pick");
     assert_eq!(
-        harness.app.shared.toasts.items()[0].message,
-        "Format unchanged"
+        form(&harness).model.values().format,
+        None,
+        "Back reverts the pick"
     );
+    assert!(form(&harness).overlay.is_none());
+    assert_eq!(toast_texts(&harness), ["Format unchanged"]);
 
     harness.press(KeyCode::Enter);
     harness.type_text("Commander");
@@ -188,11 +254,12 @@ fn the_format_picker_cascades_and_back_reverts() {
     );
 }
 
-/// Create with the Commander format picked and nothing queued.
+/// Create with the Commander format picked, the focus on the commander, and nothing queued.
 fn commander_form() -> Harness {
     let mut harness = create();
-    form_mut(&mut harness).set_format(Some(Format::Commander));
+    act(&mut harness, Action::TapFormat(Format::Commander));
     focus(&mut harness, Field::Card(Slot::Commander));
+    harness.clear();
     harness
 }
 
@@ -200,62 +267,59 @@ fn commander_form() -> Harness {
 fn the_commander_search_waits_for_three_letters_and_the_pause() {
     let mut harness = commander_form();
     harness.type_text("kr");
-    assert_eq!(
-        form(&harness).card(Slot::Commander).dropdown,
-        Dropdown::Hidden
-    );
+    assert_eq!(form(&harness).model.results(Slot::Commander), None);
     assert_eq!(harness.pending(), []);
     harness.type_text("e");
     assert_eq!(
-        form(&harness).card(Slot::Commander).dropdown,
-        Dropdown::Searching
+        form(&harness).model.results(Slot::Commander),
+        Some(Results::Searching)
     );
-    let generation = form(&harness).card(Slot::Commander).generation.current();
-    assert_eq!(
-        harness.pending().last(),
-        Some(&screens::Request::DeckForm(Request::Debounce {
-            slot: Slot::Commander,
-            generation
-        }))
-    );
+    let first = debounce_ticket(&harness);
     harness.clear();
-    harness.apply(Update::Debounced {
-        slot: Slot::Commander,
-        generation: ticket(0),
-    });
+    harness.apply(Update::Debounced { ticket: ticket(0) });
     assert_eq!(harness.pending(), [], "a stale pause is dropped");
-    harness.apply(Update::Debounced {
-        slot: Slot::Commander,
-        generation,
-    });
+    harness.apply(Update::Debounced { ticket: first });
     assert!(matches!(
         harness.pending(),
-        [screens::Request::DeckForm(Request::Search {
-            slot: Slot::Commander,
-            ..
-        })]
+        [screens::Request::DeckForm(Request::Search { .. })]
     ));
 
-    harness.apply(Update::Results {
-        slot: Slot::Commander,
-        generation,
+    harness.apply(Update::Searched {
+        ticket: first,
         cards: Vec::new(),
     });
     assert!(screen_text(&harness.app).contains("No results"));
-    harness.apply(Update::Results {
-        slot: Slot::Commander,
-        generation,
-        cards: vec![card("Krenko, Mob Boss"), card("Krenko, Tin Street Kingpin")],
+    harness.apply(Update::Searched {
+        ticket: first,
+        cards: vec![card("Krenko, Mob Boss")],
     });
+    assert_eq!(
+        form(&harness).model.results(Slot::Commander),
+        Some(Results::Empty),
+        "a repeated reply changes nothing"
+    );
+
+    search(
+        &mut harness,
+        "n",
+        vec![card("Krenko, Mob Boss"), card("Krenko, Tin Street Kingpin")],
+    );
     harness.press(KeyCode::Down);
     harness.press(KeyCode::Enter);
-    let field = form(&harness).card(Slot::Commander);
+    let view = form(&harness);
     assert_eq!(
-        field.card.as_ref().map(|c| c.scryfall_data.name.as_str()),
+        view.model
+            .values()
+            .commander
+            .as_ref()
+            .map(|c| c.scryfall_data.name.as_str()),
         Some("Krenko, Tin Street Kingpin")
     );
-    assert_eq!(field.input.value(), "Krenko, Tin Street Kingpin");
-    assert_eq!(field.dropdown, Dropdown::Hidden);
+    assert_eq!(
+        view.inputs.get(Slot::Commander).input.value(),
+        "Krenko, Tin Street Kingpin"
+    );
+    assert_eq!(view.model.results(Slot::Commander), None);
 }
 
 #[test]
@@ -264,35 +328,40 @@ fn a_named_partner_fills_itself_in() {
     let mut pir = card("Pir, Imaginative Rascal");
     pir.scryfall_data.oracle_text = Some("Partner with Toothy, Imaginary Friend".to_owned());
     let pir_id = pir.scryfall_data.id;
-    form_mut(&mut harness).card_mut(Slot::Commander).dropdown = Dropdown::Results(vec![pir]);
+    search(&mut harness, "pir", vec![pir]);
+    harness.clear();
     harness.press(KeyCode::Enter);
+    let Request::FindPartner { picked, mate, .. } = last(&harness).clone() else {
+        panic!("no partner search: {:?}", harness.pending());
+    };
     assert_eq!(
-        harness.pending(),
-        [screens::Request::DeckForm(Request::FindPartner {
-            commander_id: pir_id,
-            mate: "Toothy, Imaginary Friend".to_owned()
-        })]
+        (picked, mate.as_str()),
+        (pir_id, "Toothy, Imaginary Friend")
     );
     assert!(
         form(&harness)
             .fields()
             .contains(&Field::Card(Slot::Partner))
     );
-    harness.apply(Update::PartnerHits {
-        commander_id: pir_id,
-        mate: "Toothy, Imaginary Friend".to_owned(),
+    harness.apply(Update::PartnerSearched {
+        picked,
+        mate,
         cards: vec![card("Toothy, Imaginary Friend")],
     });
     assert_eq!(
-        harness.app.shared.toasts.items()[0].message,
-        "Partner found and selected: Toothy, Imaginary Friend"
+        toast_texts(&harness),
+        ["Partner found and selected: Toothy, Imaginary Friend"]
     );
-    assert!(form(&harness).card(Slot::Partner).card.is_some());
+    assert!(form(&harness).model.values().partner.is_some());
+    assert_eq!(
+        form(&harness).inputs.get(Slot::Partner).input.value(),
+        "Toothy, Imaginary Friend"
+    );
 
     harness.press(KeyCode::Backspace);
-    assert!(form(&harness).card(Slot::Commander).card.is_none());
+    assert!(form(&harness).model.values().commander.is_none());
     assert!(
-        form(&harness).card(Slot::Partner).card.is_none(),
+        form(&harness).model.values().partner.is_none(),
         "changing the commander clears the partner"
     );
 }
@@ -302,11 +371,11 @@ fn the_land_stepper_starts_at_the_formats_count() {
     let mut harness = commander_form();
     focus(&mut harness, Field::Land);
     harness.press(KeyCode::Char('-'));
-    assert_eq!(form(&harness).land_target, Some(37));
+    assert_eq!(form(&harness).model.values().land_target, Some(37));
     harness.press(KeyCode::Char('l'));
-    assert_eq!(form(&harness).land_target, Some(38));
+    assert_eq!(form(&harness).model.values().land_target, Some(38));
     harness.press(KeyCode::F(8));
-    assert_eq!(form(&harness).land_target, None);
+    assert_eq!(form(&harness).model.values().land_target, None);
 }
 
 #[test]
@@ -324,35 +393,30 @@ fn deck_tags_cap_at_five_and_seed_oracle_tags_on_save() {
         harness.press(KeyCode::Enter);
         harness.press(KeyCode::Right);
     }
-    assert_eq!(form(&harness).tags.len(), 5);
-    assert_eq!(
-        harness.app.shared.toasts.items()[0].message,
-        "You may only choose up to 5 tags"
-    );
+    let deck_tags = |harness: &Harness| form(harness).model.tags(TagPicker::DeckTags).len();
+    let oracle_tags = |harness: &Harness| form(harness).model.tags(TagPicker::OracleTags).len();
+    assert_eq!(deck_tags(&harness), 5);
+    assert_eq!(toast_texts(&harness), ["You may only choose up to 5 tags"]);
     // The toast sits over the picker's top row, where the count is.
-    harness.app.shared.toasts = crate::inbound::widgets::toast::Toasts::default();
+    harness.app.shared.toasts = Toasts::default();
     let screen = screen_text(&harness.app);
     assert!(screen.contains("5/5"));
     harness.press(KeyCode::F(2));
     assert!(form(&harness).overlay.is_none());
-    assert_eq!(form(&harness).oracle_tags.len(), 5);
+    assert_eq!(oracle_tags(&harness), 5);
     assert_eq!(
-        harness.app.shared.toasts.items().last().unwrap().message,
-        "Oracle tags derived from your deck tags"
+        toast_texts(&harness),
+        ["Oracle tags derived from your deck tags"]
     );
 
     harness.press(KeyCode::Enter);
     harness.press(KeyCode::F(8));
     harness.press(KeyCode::Esc);
-    assert_eq!(form(&harness).tags.len(), 5, "Back reverts");
+    assert_eq!(deck_tags(&harness), 5, "Back reverts");
     assert!(
-        harness
-            .app
-            .shared
-            .toasts
-            .items()
+        toast_texts(&harness)
             .iter()
-            .any(|t| t.message == "Deck tags unchanged")
+            .any(|t| t == "Deck tags unchanged")
     );
 }
 
@@ -375,7 +439,10 @@ fn the_oracle_picker_shows_curated_tags_then_search_hits() {
     harness.type_text("obsc");
     assert!(screen_text(&harness.app).contains("obscure"));
     harness.press(KeyCode::Enter);
-    assert_eq!(form(&harness).oracle_tags, ["obscure"]);
+    assert_eq!(
+        form(&harness).model.tags(TagPicker::OracleTags),
+        ["obscure"]
+    );
     let screen = screen_text(&harness.app);
     assert!(screen.contains("No description for this tag."));
     assert!(
@@ -383,7 +450,10 @@ fn the_oracle_picker_shows_curated_tags_then_search_hits() {
         "picked tags join the default grid"
     );
     harness.press(KeyCode::Esc);
-    assert_eq!(form(&harness).oracle_tags, Vec::<String>::new());
+    assert_eq!(
+        form(&harness).model.tags(TagPicker::OracleTags).to_vec(),
+        Vec::<String>::new()
+    );
 }
 
 /// Opens the dictionary from the oracle tag picker with F3 and comes back from it as Use does, with `slug`.
@@ -403,7 +473,7 @@ fn the_dictionarys_use_adds_a_tag_to_the_deck_and_keeps_the_picker_open() {
     let mut harness = create();
     focus(&mut harness, Field::OracleTags);
     harness.press(KeyCode::Enter);
-    let last = |harness: &Harness| {
+    let newest = |harness: &Harness| {
         harness
             .app
             .shared
@@ -414,30 +484,42 @@ fn the_dictionarys_use_adds_a_tag_to_the_deck_and_keeps_the_picker_open() {
     };
 
     use_from_dictionary(&mut harness, "ramp");
-    assert_eq!(form(&harness).oracle_tags, ["ramp"]);
+    assert_eq!(form(&harness).model.tags(TagPicker::OracleTags), ["ramp"]);
     assert!(matches!(
         form(&harness).overlay,
-        Some(Overlay::OracleTags(_))
+        Some(Overlay::Tags(TagPicker::OracleTags, _))
     ));
     assert_eq!(
-        last(&harness),
+        newest(&harness),
         Some((ToastKind::Success, "Tag added to deck".to_owned()))
     );
     assert!(harness.app.shared.caches.handoff.oracle_tag.is_none());
 
     use_from_dictionary(&mut harness, "ramp");
-    assert_eq!(form(&harness).oracle_tags, ["ramp"]);
+    assert_eq!(form(&harness).model.tags(TagPicker::OracleTags), ["ramp"]);
     assert_eq!(
-        last(&harness),
+        newest(&harness),
         Some((ToastKind::Info, "Tag already added".to_owned()))
     );
 
-    form_mut(&mut harness).oracle_tags =
-        (0..MAX_DECK_ORACLE_TAGS).map(|i| format!("t{i}")).collect();
-    use_from_dictionary(&mut harness, "ramp");
-    assert!(!form(&harness).oracle_tags.contains(&"ramp".to_owned()));
+    for i in 1..MAX_DECK_ORACLE_TAGS {
+        act(
+            &mut harness,
+            Action::ToggleTag {
+                picker: TagPicker::OracleTags,
+                slug: format!("t{i}"),
+            },
+        );
+    }
+    use_from_dictionary(&mut harness, "more");
+    assert!(
+        !form(&harness)
+            .model
+            .tags(TagPicker::OracleTags)
+            .contains(&"more".to_owned())
+    );
     assert_eq!(
-        last(&harness),
+        newest(&harness),
         Some((
             ToastKind::Warning,
             "You may only choose up to 30 oracle tags".to_owned()
@@ -465,15 +547,12 @@ fn the_swipe_picker_skips_picks_saves_and_undoes() {
     });
     assert!(screen_text(&harness.app).contains("Atraxa"));
     harness.press(KeyCode::Down);
-    assert_eq!(
-        harness.app.shared.toasts.items()[0].message,
-        "Nothing to undo"
-    );
+    assert_eq!(toast_texts(&harness), ["Nothing to undo"]);
     harness.press(KeyCode::Left);
     harness.press(KeyCode::Down);
     assert_eq!(
-        harness.app.shared.toasts.items().last().unwrap().message,
-        "Undid skip"
+        toast_texts(&harness).last().map(String::as_str),
+        Some("Undid skip")
     );
     harness.clear();
     harness.press(KeyCode::Up);
@@ -483,15 +562,22 @@ fn the_swipe_picker_skips_picks_saves_and_undoes() {
     ));
     harness.press(KeyCode::Right);
     assert_eq!(
-        harness.app.shared.toasts.items().last().unwrap().message,
-        "Commander selected"
+        toast_texts(&harness).last().map(String::as_str),
+        Some("Commander selected")
     );
     assert!(form(&harness).overlay.is_none());
     assert_eq!(
         form(&harness)
-            .commander()
+            .model
+            .values()
+            .commander
+            .as_ref()
             .map(|c| c.scryfall_data.name.as_str()),
         Some("Krenko")
+    );
+    assert_eq!(
+        form(&harness).inputs.get(Slot::Commander).input.value(),
+        "Krenko"
     );
 }
 
@@ -550,7 +636,7 @@ fn the_swipe_pickers_filter_opens_the_filter_sheet_and_narrows_the_pile() {
     );
 }
 
-/// Edit for a deck named Pile with a Modern format and one other tag, loaded.
+/// Edit for a deck named Pile with a Modern format, one other tag and a budget, loaded, with nothing queued.
 fn edit() -> (Harness, Uuid) {
     let mut harness = Harness::on(Screen::Decks(Box::default()));
     let mut profile = deck_profile("Pile");
@@ -559,7 +645,13 @@ fn edit() -> (Harness, Uuid) {
     profile.price_target = Some(50.0);
     let deck_id = profile.id;
     harness.open(|cx| open_edit(cx, deck_id));
-    harness.apply(Update::DeckLoaded(Box::new(deck(profile, Vec::new()))));
+    let Request::LoadDeck { ticket, .. } = *last(&harness) else {
+        panic!("Edit loads its deck");
+    };
+    harness.apply(Update::Loaded {
+        ticket,
+        deck: Box::new(deck(profile, Vec::new())),
+    });
     harness.clear();
     (harness, deck_id)
 }
@@ -569,29 +661,48 @@ fn edit_fills_the_form_and_saves_only_what_changed() {
     let (mut harness, deck_id) = edit();
     assert_eq!(form(&harness).name.value(), "Pile");
     assert_eq!(form(&harness).price.value(), "50");
-    assert!(!form(&harness).has_changes());
+    assert!(!form(&harness).model.has_changes());
     assert!(!screen_text(&harness.app).contains("Save changes"));
     harness.press(KeyCode::F(2));
     assert_eq!(harness.pending(), [], "nothing to save");
+    assert_eq!(toast_texts(&harness), Vec::<String>::new());
 
     harness.type_text("s");
     assert!(screen_text(&harness.app).contains("Save changes"));
     harness.press(KeyCode::F(2));
-    let Some(screens::Request::DeckForm(Request::Update {
+    let Request::Update {
+        ticket,
         deck_id: id,
-        changes,
-    })) = harness.pending().first()
+        body,
+    } = last(&harness).clone()
     else {
         panic!("no update: {:?}", harness.pending());
     };
-    assert_eq!(*id, deck_id);
-    assert_eq!(changes.name.as_deref(), Some("Piles"));
-    assert_eq!(changes.format, Patch::Unchanged);
-    assert_eq!(changes.price_target, Patch::Unchanged);
-    harness.apply(Update::Updated);
+    assert_eq!(id, deck_id);
+    assert_eq!(body.0.name, Patch::Set(Some("Piles".to_owned())));
+    assert_eq!(body.0.format, Patch::Unchanged);
+    assert_eq!(body.0.price_target, Patch::Unchanged);
+    harness.apply(Update::Updated { ticket });
     assert!(
         matches!(harness.screen(), Screen::Decks(_)),
         "back to the screen under"
+    );
+}
+
+#[test]
+fn a_late_deck_load_changes_nothing() {
+    let (mut harness, _) = edit();
+    harness.type_text("s");
+    let mut profile = deck_profile("Elsewhere");
+    profile.format = Some(Format::Modern);
+    harness.apply(Update::Loaded {
+        ticket: ticket(1),
+        deck: Box::new(deck(profile, Vec::new())),
+    });
+    assert_eq!(
+        form(&harness).name.value(),
+        "Piles",
+        "a repeated load leaves the edit"
     );
 }
 
@@ -600,8 +711,11 @@ fn clearing_the_price_clears_the_budget() {
     let (mut harness, _) = edit();
     focus(&mut harness, Field::Price);
     harness.press(KeyCode::F(8));
-    let changes = form(&harness).changes().unwrap();
-    assert_eq!(changes.price_target, Patch::Set(None));
+    harness.press(KeyCode::F(2));
+    let Request::Update { body, .. } = last(&harness) else {
+        panic!("no update: {:?}", harness.pending());
+    };
+    assert_eq!(body.0.price_target, Patch::Set(None));
 }
 
 #[test]
@@ -614,39 +728,105 @@ fn edit_loads_each_command_zone_card_without_cascading() {
     profile.partner_commander_id = Some(partner.scryfall_data.id);
     let deck_id = profile.id;
     harness.open(|cx| open_edit(cx, deck_id));
+    let Request::LoadDeck { ticket, .. } = *last(&harness) else {
+        panic!("Edit loads its deck");
+    };
     harness.clear();
-    harness.apply(Update::DeckLoaded(Box::new(deck(profile, Vec::new()))));
-    assert_eq!(harness.pending().len(), 2, "one fetch per card");
-    harness.apply(Update::CardLoaded {
-        slot: Slot::Partner,
-        card: Box::new(partner),
+    harness.apply(Update::Loaded {
+        ticket,
+        deck: Box::new(deck(profile, Vec::new())),
     });
-    harness.apply(Update::CardLoaded {
-        slot: Slot::Commander,
-        card: Box::new(commander),
-    });
-    assert!(form(&harness).card(Slot::Partner).card.is_some());
-    assert!(!form(&harness).has_changes());
+    let fetches: Vec<(Slot, Ticket)> = harness
+        .pending()
+        .iter()
+        .filter_map(|r| match r {
+            screens::Request::DeckForm(Request::FetchCard { ticket, slot, .. }) => {
+                Some((*slot, *ticket))
+            }
+            _ => None,
+        })
+        .collect();
+    assert_eq!(fetches.len(), 2, "one fetch per card");
+    for (slot, ticket) in fetches.into_iter().rev() {
+        let card = match slot {
+            Slot::Commander => commander.clone(),
+            _ => partner.clone(),
+        };
+        harness.apply(Update::CardLoaded {
+            ticket,
+            card: Box::new(card),
+        });
+    }
+    assert!(form(&harness).model.values().partner.is_some());
+    assert_eq!(
+        form(&harness).inputs.get(Slot::Partner).input.value(),
+        "Toothy"
+    );
+    assert!(!form(&harness).model.has_changes());
 }
 
 #[test]
 fn a_failed_edit_load_says_so() {
     let mut harness = Harness::on(Screen::Home(Box::default()));
     harness.open(|cx| open_edit(cx, Uuid::new_v4()));
+    let Request::LoadDeck { ticket, .. } = *last(&harness) else {
+        panic!("Edit loads its deck");
+    };
     assert!(screen_text(&harness.app).contains("░"));
-    harness.apply(Update::LoadFailed("deck not found".to_owned()));
+    harness.apply(Update::Failed {
+        ticket,
+        message: Some("deck not found".to_owned()),
+    });
+    assert_eq!(toast_texts(&harness), ["deck not found"]);
     harness.app.shared.toasts = Toasts::default();
     assert!(screen_text(&harness.app).contains("Could not load deck"));
 }
 
 #[test]
-fn f1_explains_the_focused_field() {
+fn i_explains_the_focused_field_and_f6_does_nothing() {
     let mut harness = create();
     focus(&mut harness, Field::Land);
     harness.press(KeyCode::F(6));
+    assert!(harness.app.shared.hint.is_none(), "F6 is gone");
+    assert!(!screen_text(&harness.app).contains("F6"));
+    harness.press(KeyCode::Char('i'));
     assert!(screen_text(&harness.app).contains("Not set uses the format's usual count"));
-    harness.press(KeyCode::Esc);
-    assert!(form(&harness).overlay.is_none());
+}
+
+#[test]
+fn every_field_has_an_about_marker_lit_while_i_opens_it() {
+    let mut harness = commander_form();
+    let palette = crate::domain::theme::Palette::for_account("gruvbox", true);
+    harness.app.shared.palette = palette;
+    let rows = crate::test_support::rows(&harness.app, 100, 40);
+    let bare = crate::test_support::bare_about_markers(&rows);
+    assert!(bare.is_empty(), "bare ? at {bare:?}:\n{}", rows.join("\n"));
+    let marker_after = |harness: &Harness, label: &str| {
+        let buffer = render(&harness.app, 100, 40).backend().buffer().clone();
+        let Some(&(x, y)) = find_all(&buffer, &format!("{label} [?]")).first() else {
+            panic!("no marker after {label}:\n{}", screen_text(&harness.app));
+        };
+        let width = u16::try_from(label.chars().count()).unwrap();
+        (buffer, (x + width + 1, y))
+    };
+    for label in [
+        "Deck name",
+        "Format",
+        "Commander",
+        "Power level",
+        "Land target",
+        "Price target",
+    ] {
+        marker_after(&harness, label);
+    }
+    focus(&mut harness, Field::Land);
+    let (buffer, at) = marker_after(&harness, "Land target");
+    assert_about_marker(&buffer, &palette, at, true, "the focused field");
+    let (buffer, at) = marker_after(&harness, "Format");
+    assert_about_marker(&buffer, &palette, at, false, "a field at rest");
+    focus(&mut harness, Field::Card(Slot::Commander));
+    let (buffer, at) = marker_after(&harness, "Commander");
+    assert_about_marker(&buffer, &palette, at, false, "a box that takes letters");
 }
 
 #[test]
@@ -657,25 +837,30 @@ fn enter_in_a_text_field_saves_nothing() {
     focus(&mut harness, Field::Price);
     harness.type_text("12");
     harness.press(KeyCode::Enter);
-    form_mut(&mut harness).set_format(Some(Format::Commander));
+    act(&mut harness, Action::TapFormat(Format::Commander));
     focus(&mut harness, Field::Card(Slot::Commander));
     harness.press(KeyCode::Enter);
-    assert_eq!(
-        harness.pending(),
-        [],
+    assert!(
+        !harness
+            .pending()
+            .iter()
+            .any(|r| matches!(r, screens::Request::DeckForm(Request::Create { .. }))),
         "only F2 saves, as the app's Save button does"
     );
-    assert!(!form(&harness).saving);
+    assert!(!form(&harness).model.is_saving());
     harness.press(KeyCode::F(2));
-    assert!(form(&harness).saving);
+    assert!(form(&harness).model.is_saving());
 }
 
 #[test]
 fn create_seeded_with_a_commander_starts_in_commander() {
     let mut harness = Harness::on(Screen::Home(Box::default()));
     harness.open(|cx| open_create_with_commander(cx, card("Krenko")));
-    assert_eq!(form(&harness).format, Some(Format::Commander));
-    assert!(form(&harness).commander().is_some());
+    let view = form(&harness);
+    assert_eq!(view.model.mode(), Mode::Create);
+    assert_eq!(view.model.values().format, Some(Format::Commander));
+    assert!(view.model.values().commander.is_some());
+    assert_eq!(view.inputs.get(Slot::Commander).input.value(), "Krenko");
 }
 
 #[test]

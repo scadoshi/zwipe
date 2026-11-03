@@ -7,9 +7,10 @@ use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::style::Stylize;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Paragraph, Wrap};
-use zwipe_ui::changelog::{self, ChangelogCache, Tag};
+use zwipe_ui::changelog::{Listed, Tag};
+use zwipe_ui::screens::changelog::{Chip, FAILED, Status};
 
-use super::{ChangelogView, Chip, FAILED};
+use super::ChangelogView;
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::widgets::{action_bar, entrance, measure, skeleton};
@@ -34,14 +35,13 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &ChangelogView) {
     let [body, keys] =
         Layout::vertical([Constraint::Fill(1), Constraint::Length(bar_height)]).areas(f.area());
     let body = body.centered_horizontally(Constraint::Length(WIDTH.min(body.width)));
-    match &shared.changelog {
-        ChangelogCache::Loading => draw_skeleton(f, palette, body),
-        ChangelogCache::Failed => {
+    match view.model.status() {
+        Status::Loading => draw_skeleton(f, palette, body),
+        Status::Failed => {
             f.render_widget(Line::from(FAILED).style(palette.muted), body);
         }
-        ChangelogCache::Loaded(log) => {
-            let listed = changelog::listed(log);
-            let rows = view.rows(&listed);
+        Status::Loaded => {
+            let rows = view.model.chip_rows();
             let chip_lines: Vec<Line<'static>> = rows
                 .iter()
                 .enumerate()
@@ -62,7 +62,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &ChangelogView) {
                 Paragraph::new(chip_lines).wrap(Wrap { trim: false }),
                 chips_area,
             );
-            let cards = card_lines(palette, &changelog::visible(&listed, &view.filter));
+            let cards = card_lines(palette, &view.model.shown());
             let cards = Paragraph::new(cards).wrap(Wrap { trim: false });
             let total = measure::height_of(cards.line_count(cards_area.width));
             let scroll = view.scroll.min(total.saturating_sub(cards_area.height));
@@ -83,7 +83,7 @@ fn chip_line(palette: &Palette, chips: &[Chip], focused: Option<usize>) -> Line<
         .iter()
         .enumerate()
         .flat_map(|(i, chip)| {
-            let style = if chip.lit {
+            let style = if chip.selected {
                 palette.accent.reversed().bold()
             } else {
                 palette.muted
@@ -103,7 +103,7 @@ fn chip_line(palette: &Palette, chips: &[Chip], focused: Option<usize>) -> Line<
 }
 
 /// The cards: version, date and tag, then a bullet per entry, a blank line between cards.
-fn card_lines(palette: &Palette, shown: &[changelog::Listed<'_>]) -> Vec<Line<'static>> {
+fn card_lines(palette: &Palette, shown: &[Listed<'_>]) -> Vec<Line<'static>> {
     let mut lines = Vec::new();
     for item in shown {
         let mut head = vec![

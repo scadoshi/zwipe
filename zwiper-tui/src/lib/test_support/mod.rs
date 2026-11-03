@@ -90,15 +90,20 @@ pub(crate) fn create_opened_with(
     harness: &crate::inbound::event_loop::harness::Harness,
 ) -> Option<&str> {
     use zwipe_core::domain::deck::Format;
+    use zwipe_ui::screens::deck_form::Mode;
 
     use crate::inbound::screens::Screen;
-    use crate::inbound::screens::deck_form::Mode;
 
     match harness.screen() {
         Screen::DeckForm(form)
-            if form.mode == Mode::Create && form.format == Some(Format::Commander) =>
+            if form.model.mode() == Mode::Create
+                && form.model.values().format == Some(Format::Commander) =>
         {
-            form.commander().map(|c| c.scryfall_data.name.as_str())
+            form.model
+                .values()
+                .commander
+                .as_ref()
+                .map(|c| c.scryfall_data.name.as_str())
         }
         _ => None,
     }
@@ -288,7 +293,7 @@ pub(crate) fn assert_bullets_hang(rows: &[String]) {
 }
 
 /// Key hints whose key is `?`, which stay bare in key bars and sheet footers.
-const QUESTION_KEYS: [&str; 4] = ["? hint", "? Hint", "? About", "F6 ?"];
+const QUESTION_KEYS: [&str; 3] = ["? hint", "? Hint", "? About"];
 
 /// Every bare About marker in `rows` as its column and row: a `?` right after a space, outside the `?` key hints. A `?` closing a sentence touches its word and the `[?]` button opens with a bracket, so neither counts.
 pub(crate) fn bare_about_markers(rows: &[String]) -> Vec<(usize, usize)> {

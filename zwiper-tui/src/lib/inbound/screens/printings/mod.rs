@@ -1,6 +1,6 @@
 //! A card's printings: every printing of its oracle card with set, collector number and price, one picked or only browsed.
 //!
-//! The app's `PrintingSheet`. What the sheet knows and decides (what loads, which printing it opens on, whether Save may fire, what each way out toasts) is zwipe-ui's [`State`]; this view adds the card it opened on and the cursor. In [`Mode::Pick`], Enter on another printing leaves it in `cx.shared.caches.handoff.printing`, says "Printing saved" and goes back; the host swaps it into its own list in its arm of `Screen::on_return` (card rows do this with `CardRows::take_printing`). In [`Mode::ReadOnly`] nothing can be picked. Nothing here goes to the server but the fetch of the printings.
+//! The app's `PrintingSheet`. What the sheet knows and decides (what loads, which printing it opens on, whether Save may fire, what each way out toasts) is zwipe-ui's [`State`]; this view adds the card it opened on and the cursor. In [`Mode::Pick`], Enter on another printing leaves it in `cx.shared.caches.handoff.printing`, says "Printing saved" and goes back; the host swaps it into its own list in its arm of `Screen::on_return` (and keeps its card row expanded with `CardRows::expand`). In [`Mode::ReadOnly`] nothing can be picked. Nothing here goes to the server but the fetch of the printings.
 
 pub(crate) mod draw;
 pub(crate) mod keys;

@@ -4,8 +4,11 @@
 
 use crossterm::event::KeyCode;
 use zwipe_ui::activity::RateKind;
+use zwipe_ui::screens::activity::{Action, Section};
 
-use super::{ActivityView, Focus, Load, Section, pass_row, passes_topic, reopen_hint};
+use super::{
+    ActivityView, Focus, dispatch, pass_row, passes_topic, reopen_hint, topic as section_topic,
+};
 use crate::inbound::app::Context;
 use crate::inbound::screens::otag_examples;
 use crate::inbound::toward::Toward;
@@ -20,7 +23,7 @@ pub(crate) fn handle(view: &mut ActivityView, code: KeyCode, cx: &mut Context<'_
         return;
     }
     match code {
-        KeyCode::Esc => return cx.back(),
+        KeyCode::Esc => return dispatch(view, Action::Back, cx),
         KeyCode::Char('!') => return help::open(cx),
         KeyCode::Char('H') => return reopen_hint(cx),
         KeyCode::Char('?') => {
@@ -32,7 +35,7 @@ pub(crate) fn handle(view: &mut ActivityView, code: KeyCode, cx: &mut Context<'_
     match view.focus {
         Focus::Header(section) => on_header(view, section, code),
         Focus::Heat => on_heat(view, code),
-        Focus::Chips(_) => on_chips(view, code),
+        Focus::Chips(_) => on_chips(view, code, cx),
         Focus::Bar(section, index) => on_bar(view, section, index, code, cx),
         Focus::Passes => on_passes(view, code, cx),
     }
@@ -41,7 +44,7 @@ pub(crate) fn handle(view: &mut ActivityView, code: KeyCode, cx: &mut Context<'_
 /// The focused section's topic while it is open, or the Most skipped group's.
 fn topic(view: &ActivityView) -> Option<info::InfoPopup> {
     match view.focused_section() {
-        Some(section) => view.is_open(section).then(|| section.topic()),
+        Some(section) => view.is_open(section).then(|| section_topic(section)),
         None => Some(passes_topic()),
     }
 }
@@ -94,10 +97,10 @@ fn on_heat(view: &mut ActivityView, code: KeyCode) {
     }
 }
 
-fn on_chips(view: &mut ActivityView, code: KeyCode) {
+fn on_chips(view: &mut ActivityView, code: KeyCode, cx: &mut Context<'_>) {
     let at = RateKind::ALL
         .iter()
-        .position(|&r| r == view.rate)
+        .position(|&r| r == view.model.rate())
         .unwrap_or(0);
     let next = match code {
         KeyCode::Left | KeyCode::Char('h') => at.checked_sub(1),
@@ -108,7 +111,7 @@ fn on_chips(view: &mut ActivityView, code: KeyCode) {
         }
     };
     if let Some(&rate) = next.and_then(|i| RateKind::ALL.get(i)) {
-        view.pick_rate(rate);
+        dispatch(view, Action::PickRate(rate), cx);
     }
 }
 
@@ -127,17 +130,18 @@ fn on_bar(
             if !bar.revealable {
                 return;
             }
-            match section {
-                Section::Roles => view.toggle_role(&bar.key),
-                Section::Tags => view.toggle_tag(&bar.key),
-                Section::Activity => {}
-            }
+            let action = match section {
+                Section::Roles => Action::ToggleRole(bar.key),
+                Section::Tags => Action::ToggleTag(bar.key),
+                Section::Activity => return,
+            };
+            dispatch(view, action, cx);
         }
         KeyCode::Tab | KeyCode::BackTab | KeyCode::Char('x') if section == Section::Roles => {
             view.role_tags.handle_key(code, cx);
         }
         KeyCode::Char('x') if section == Section::Tags => {
-            if let Some(slug) = &view.open_tag {
+            if let Some(slug) = view.model.revealed_tag() {
                 otag_examples::open(cx, slug);
             }
         }
@@ -152,13 +156,10 @@ fn on_passes(view: &mut ActivityView, code: KeyCode, cx: &mut Context<'_>) {
         view.step(Toward::Previous);
         return;
     }
-    let Load::Loaded(loaded) = &view.load else {
-        return;
-    };
     let palette = cx.shared.palette;
-    let rows: Vec<CardRow<'_>> = loaded
-        .activity
-        .passes
+    let rows: Vec<CardRow<'_>> = view
+        .model
+        .passes()
         .iter()
         .map(|p| pass_row(&palette, p))
         .collect();

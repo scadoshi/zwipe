@@ -1,136 +1,32 @@
 //! The Config screen: the theme with its Dark/Light button and the Themes sheet, the pip style, Universes Beyond and its Exceptions sheet.
 //!
-//! The toggles are optimistic, each with its own request count: the new value shows at once, an answer to a tap that a newer tap has overtaken is ignored, and a failure puts back the value from before that tap. Theme and pips show from the start; the Universes Beyond controls wait for the preferences to load, and stay off for good if they cannot.
+//! What the screen knows and decides is zwipe-ui's [`State`]: Universes Beyond and its exceptions, the optimistic toggles' tickets, which save lands, and every toast. The theme and the pips are the client's live values, kept here in [`ConfigView::shown`] and drawn by the whole app; the model hands each change to them back as an effect. The franchises the exceptions can name are the client's too.
 
 pub(crate) mod draw;
 pub(crate) mod keys;
 #[cfg(test)]
 mod tests;
 
+use zwipe_client::ClientError;
 use zwipe_core::domain::card::scryfall_data::universe::UbFranchiseView;
-use zwipe_core::domain::user::hints::HINT_CONFIG;
-use zwipe_core::domain::user::preferences::{PipColor, UserPreferences};
+use zwipe_core::domain::user::preferences::UserPreferences;
 use zwipe_core::http::contracts::user::HttpUpdatePreferences;
-use zwipe_ui::generation::{Generation, Ticket};
+use zwipe_ui::generation::Ticket;
+use zwipe_ui::preferences::PreferenceChange;
+use zwipe_ui::screens::config::{
+    Action, Destination, Effect, SaveTicket, Sheet as ModelSheet, State, Theme,
+};
 
 use super::Screen;
+use super::visit::Visit;
 use crate::domain::theme::{self, Palette, PickerRow};
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;
 use crate::inbound::toward::Toward;
 use crate::inbound::widgets::hint::{self, HintTopic};
-use crate::inbound::widgets::toast::{self, ToastKind};
+use crate::inbound::widgets::toast::ToastKind;
 use crate::outbound::account::Account;
-
-/// A change to one preference, as Config sends it.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) enum PreferenceChange {
-    /// A theme from the Themes sheet, keeping the mode.
-    Theme {
-        theme: String,
-        dark_mode: bool,
-    },
-    /// The same theme in the other mode.
-    DarkMode {
-        theme: String,
-        dark_mode: bool,
-    },
-    Pips(PipColor),
-    HideUniversesBeyond(bool),
-    Exceptions(Vec<String>),
-}
-
-impl PreferenceChange {
-    /// Applies the change to `preferences`, the way the screen shows it.
-    pub(crate) fn apply(&self, preferences: &mut UserPreferences) {
-        match self {
-            Self::Theme { theme, dark_mode } | Self::DarkMode { theme, dark_mode } => {
-                preferences.theme.clone_from(theme);
-                preferences.dark_mode = *dark_mode;
-            }
-            Self::Pips(style) => preferences.pip_style = *style,
-            Self::HideUniversesBeyond(hide) => preferences.exclude_universes_beyond = *hide,
-            Self::Exceptions(slugs) => preferences.universes_beyond_exceptions.clone_from(slugs),
-        }
-    }
-
-    /// The same preference as `preferences` hold it now, to put back if this change fails.
-    pub(crate) fn undo(&self, preferences: &UserPreferences) -> Self {
-        match self {
-            Self::Theme { .. } => Self::Theme {
-                theme: preferences.theme.clone(),
-                dark_mode: preferences.dark_mode,
-            },
-            Self::DarkMode { .. } => Self::DarkMode {
-                theme: preferences.theme.clone(),
-                dark_mode: preferences.dark_mode,
-            },
-            Self::Pips(_) => Self::Pips(preferences.pip_style),
-            Self::HideUniversesBeyond(_) => {
-                Self::HideUniversesBeyond(preferences.exclude_universes_beyond)
-            }
-            Self::Exceptions(_) => {
-                Self::Exceptions(preferences.universes_beyond_exceptions.clone())
-            }
-        }
-    }
-
-    /// The app's toast when the server takes the change, read from its answer.
-    pub(crate) fn saved_message(&self, saved: &UserPreferences) -> &'static str {
-        match self {
-            Self::Theme { .. } => "Theme saved",
-            Self::DarkMode { .. } if saved.dark_mode => "Dark mode on",
-            Self::DarkMode { .. } => "Dark mode off",
-            Self::Pips(_) => match saved.pip_style {
-                PipColor::Theme => "Pips in theme colors",
-                PipColor::Classic => "Pips in classic colors",
-            },
-            Self::HideUniversesBeyond(_) if saved.exclude_universes_beyond => {
-                "Universes Beyond hidden"
-            }
-            Self::HideUniversesBeyond(_) => "Universes Beyond shown",
-            Self::Exceptions(_) => "Exceptions saved",
-        }
-    }
-
-    /// Which optimistic toggle this is, for its own request count; `None` for the two sheets' saves.
-    fn toggle(&self) -> Option<usize> {
-        match self {
-            Self::DarkMode { .. } => Some(0),
-            Self::Pips(_) => Some(1),
-            Self::HideUniversesBeyond(_) => Some(2),
-            Self::Theme { .. } | Self::Exceptions(_) => None,
-        }
-    }
-}
-
-impl From<PreferenceChange> for HttpUpdatePreferences {
-    fn from(change: PreferenceChange) -> Self {
-        let mut request = Self {
-            theme: None,
-            dark_mode: None,
-            exclude_universes_beyond: None,
-            universes_beyond_exceptions: None,
-            pip_style: None,
-        };
-        match change {
-            PreferenceChange::Theme { theme, dark_mode }
-            | PreferenceChange::DarkMode { theme, dark_mode } => {
-                request.theme = Some(theme);
-                request.dark_mode = Some(dark_mode);
-            }
-            PreferenceChange::Pips(style) => request.pip_style = Some(style),
-            PreferenceChange::HideUniversesBeyond(hide) => {
-                request.exclude_universes_beyond = Some(hide);
-            }
-            PreferenceChange::Exceptions(slugs) => {
-                request.universes_beyond_exceptions = Some(slugs);
-            }
-        }
-        request
-    }
-}
 
 /// A button on Config's rows, in focus order.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -207,58 +103,36 @@ impl ThemeSheet {
     }
 }
 
-/// The Exceptions sheet: the draft of picked franchises and the focused chip.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct ExceptionsSheet {
-    /// The picked slugs, in the order they were picked.
-    pub(crate) draft: Vec<String>,
-    pub(crate) chip: usize,
-}
-
-/// Whether two lists of slugs pick the same set, ignoring order.
-pub(crate) fn same_set(a: &[String], b: &[String]) -> bool {
-    let mut a = a.to_vec();
-    let mut b = b.to_vec();
-    a.sort_unstable();
-    b.sort_unstable();
-    a == b
-}
-
-/// What is open over Config.
+/// What is open over Config. The Exceptions sheet's draft is the model's; the sheet keeps only the focused chip.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum Sheet {
     Themes(ThemeSheet),
-    Exceptions(ExceptionsSheet),
+    Exceptions { chip: usize },
 }
 
-/// The Config screen's state.
+/// The Config screen's state: the model plus what only the terminal keeps.
 #[derive(Debug)]
 pub(crate) struct ConfigView {
-    /// The preferences on screen.
+    pub(crate) model: State,
+    pub(crate) visit: Visit,
+    /// The theme, mode and pips the app draws in now: the preferences as last applied, with any preview or optimistic toggle over them. Universes Beyond is the model's, so its fields here are never read.
     pub(crate) shown: UserPreferences,
-    /// Whether the preferences loaded; the Universes Beyond controls wait on it.
-    pub(crate) loaded: bool,
     pub(crate) focus: usize,
-    /// Each toggle's save generation: Dark/Light, pips, Universes Beyond.
-    pub(crate) seqs: [Generation; 3],
     pub(crate) sheet: Option<Sheet>,
     /// The franchises the exceptions can name, as the server lists them; empty until they load.
     pub(crate) franchises: Vec<UbFranchiseView>,
-    /// Whether the Exceptions sheet has opened on this screen, for its one-time hint.
-    pub(crate) exceptions_opened: bool,
 }
 
 impl ConfigView {
-    /// Config on `shown`, the preferences as last applied.
+    /// Config on `shown`, the preferences as last applied, before [`Action::Load`].
     pub(crate) fn new(shown: UserPreferences) -> Self {
         Self {
+            model: State::new(),
+            visit: Visit::next(),
             shown,
-            loaded: false,
             focus: 0,
-            seqs: [Generation::default(); 3],
             sheet: None,
             franchises: Vec::new(),
-            exceptions_opened: false,
         }
     }
 
@@ -277,43 +151,124 @@ impl ConfigView {
         self.focus = self.focus.saturating_sub(1);
     }
 
-    /// Whether `stop` can be pressed: the Universes Beyond button once loaded, and Exceptions once loaded while Universes Beyond is hidden.
+    /// Whether `stop` can be pressed, as the model says for the two Universes Beyond buttons.
     pub(crate) fn enabled(&self, stop: Stop) -> bool {
         match stop {
-            Stop::UniversesBeyond => self.loaded,
-            Stop::Exceptions => self.loaded && self.shown.exclude_universes_beyond,
-            _ => true,
+            Stop::UniversesBeyond => self.model.universes_beyond_enabled(),
+            Stop::Exceptions => self.model.exceptions_enabled(),
+            Stop::Mode | Stop::Theme | Stop::Pips => true,
         }
     }
 
-    /// Shows a toggle at once and gives it a ticket; `None` for a change that is no toggle.
-    pub(crate) fn begin(&mut self, change: &PreferenceChange) -> Option<Ticket> {
-        change.apply(&mut self.shown);
-        change
-            .toggle()
-            .and_then(|i| self.seqs.get_mut(i))
-            .map(Generation::next_ticket)
-    }
-
-    /// Whether `seq` is still the latest tap of `change`'s toggle. A change that is no toggle is always the latest.
-    pub(crate) fn latest(&self, change: &PreferenceChange, seq: Option<Ticket>) -> bool {
-        match (change.toggle().and_then(|i| self.seqs.get(i)), seq) {
-            (Some(generation), Some(ticket)) => generation.is_current(ticket),
-            _ => true,
+    /// The theme drawn now, as the model's actions carry it.
+    pub(crate) fn theme(&self) -> Theme {
+        Theme {
+            name: self.shown.theme.clone(),
+            dark_mode: self.shown.dark_mode,
         }
     }
+
+    /// Queues `job` under this visit.
+    fn request(&self, cx: &mut Context<'_>, job: Job) {
+        cx.request(
+            Request::Visit {
+                visit: self.visit,
+                job,
+            }
+            .into(),
+        );
+    }
+}
+
+/// Applies `action` to the model and performs the effects it returns, in order.
+pub(crate) fn dispatch(view: &mut ConfigView, action: Action, cx: &mut Context<'_>) {
+    for effect in view.model.update(action) {
+        perform_effect(view, effect, cx);
+    }
+}
+
+fn perform_effect(view: &mut ConfigView, effect: Effect, cx: &mut Context<'_>) {
+    match effect {
+        Effect::OfferHint(offer) => {
+            hint::once(cx, offer.key());
+        }
+        Effect::FetchPreferences(ticket) => view.request(cx, Job::LoadPreferences { ticket }),
+        Effect::Save { ticket, change } => view.request(cx, Job::Save { ticket, change }),
+        Effect::ShowTheme(theme) => {
+            set_theme(view, theme);
+            show(cx, &view.shown);
+        }
+        Effect::ShowPips(style) => {
+            view.shown.pip_style = style;
+            show(cx, &view.shown);
+        }
+        Effect::ThemeSaved(theme) => {
+            set_theme(view, theme);
+            keep(cx, &view.shown);
+        }
+        Effect::PipsSaved(style) => {
+            view.shown.pip_style = style;
+            keep(cx, &view.shown);
+        }
+        Effect::OpenSheet(ModelSheet::Themes) => {
+            view.sheet = Some(Sheet::Themes(ThemeSheet::opening(&view.shown.theme)));
+        }
+        Effect::OpenSheet(ModelSheet::Exceptions) => {
+            view.sheet = Some(Sheet::Exceptions { chip: 0 });
+        }
+        Effect::CloseSheet(closing) => {
+            let open = match &view.sheet {
+                Some(Sheet::Themes(_)) => Some(ModelSheet::Themes),
+                Some(Sheet::Exceptions { .. }) => Some(ModelSheet::Exceptions),
+                None => None,
+            };
+            if open == Some(closing) {
+                view.sheet = None;
+            }
+        }
+        Effect::Navigate(Destination::Previous) => cx.back(),
+        Effect::Toast(toast) => cx.show(toast),
+    }
+}
+
+/// Puts `theme` on the view's live preferences.
+fn set_theme(view: &mut ConfigView, theme: Theme) {
+    view.shown.theme = theme.name;
+    view.shown.dark_mode = theme.dark_mode;
+}
+
+/// Draws in `shown`'s theme and pips, as the app's live theme.
+fn show(cx: &mut Context<'_>, shown: &UserPreferences) {
+    cx.shared.palette = Palette::for_preferences(shown);
+}
+
+/// Draws in `shown`'s theme and pips from now on and keeps them with the app's preferences, so the next launch opens in them.
+fn keep(cx: &mut Context<'_>, shown: &UserPreferences) {
+    let mut kept = cx.shared.preferences.clone().unwrap_or_default();
+    kept.theme.clone_from(&shown.theme);
+    kept.dark_mode = shown.dark_mode;
+    kept.pip_style = shown.pip_style;
+    cx.use_preferences(&kept);
 }
 
 /// Config's work.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum Request {
-    /// Fetches the preferences. Also sent at sign-in, to draw in the account's theme.
-    LoadPreferences,
-    /// Sends a change; `undo` puts back what it replaced if it fails.
+    /// Fetches the preferences at sign-in, to draw in the account's theme.
+    AdoptPreferences,
+    /// The screen's own work, stamped with the visit that asked for it.
+    Visit { visit: Visit, job: Job },
+}
+
+/// One piece of Config's work.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum Job {
+    /// Fetches the preferences. A failure says nothing.
+    LoadPreferences { ticket: Ticket },
+    /// Sends one change as its sparse update.
     Save {
-        seq: Option<Ticket>,
+        ticket: SaveTicket,
         change: PreferenceChange,
-        undo: PreferenceChange,
     },
     /// Fetches the franchises the exceptions can name.
     LoadFranchises,
@@ -323,9 +278,19 @@ impl Request {
     /// The action an error from this request is reported under, fixed so a renamed variant keeps its reports.
     pub(crate) fn action(&self) -> &'static str {
         match self {
-            Self::LoadPreferences => "load_preferences",
-            Self::Save { .. } => "save",
-            Self::LoadFranchises => "load_franchises",
+            Self::AdoptPreferences
+            | Self::Visit {
+                job: Job::LoadPreferences { .. },
+                ..
+            } => "load_preferences",
+            Self::Visit {
+                job: Job::Save { .. },
+                ..
+            } => "save",
+            Self::Visit {
+                job: Job::LoadFranchises,
+                ..
+            } => "load_franchises",
         }
     }
 }
@@ -333,16 +298,28 @@ impl Request {
 /// Config's results.
 #[derive(Debug)]
 pub(crate) enum Update {
-    Preferences(Box<UserPreferences>),
-    PreferencesUnavailable,
+    /// The account's preferences fetched at sign-in.
+    Adopt(Box<UserPreferences>),
+    /// A reply to the screen, stamped with the visit that asked.
+    Visit { visit: Visit, reply: Reply },
+}
+
+/// One reply, carrying its request's ticket back to the model.
+#[derive(Debug)]
+pub(crate) enum Reply {
+    Preferences {
+        ticket: Ticket,
+        preferences: Box<UserPreferences>,
+    },
+    PreferencesUnavailable {
+        ticket: Ticket,
+    },
     Saved {
-        seq: Option<Ticket>,
-        change: PreferenceChange,
+        ticket: SaveTicket,
         preferences: Box<UserPreferences>,
     },
     SaveFailed {
-        seq: Option<Ticket>,
-        undo: PreferenceChange,
+        ticket: SaveTicket,
         message: String,
     },
     Franchises(Vec<UbFranchiseView>),
@@ -367,13 +344,13 @@ fn pick(screen: &mut Screen) -> Option<&mut ConfigView> {
     }
 }
 
-/// Opens Config on the preferences as last applied, fetches them and the franchises, and shows the `config` hint the first time.
+/// Opens Config on the preferences as last applied; the model fetches them and offers the `config` hint, and the franchises load beside them.
 pub(crate) fn open(cx: &mut Context<'_>) {
     let shown = cx.shared.preferences.clone().unwrap_or_default();
-    cx.push(Screen::Config(Box::new(ConfigView::new(shown))));
-    cx.request(Request::LoadPreferences.into());
-    cx.request(Request::LoadFranchises.into());
-    hint::once(cx, HINT_CONFIG);
+    let mut view = ConfigView::new(shown);
+    dispatch(&mut view, Action::Load, cx);
+    view.request(cx, Job::LoadFranchises);
+    cx.push(Screen::Config(Box::new(view)));
 }
 
 /// The `?` topic of a stop's row.
@@ -388,120 +365,143 @@ pub(crate) fn topic(stop: Stop) -> Option<HintTopic> {
 
 pub(crate) async fn perform(account: &Account, request: Request) -> Option<screens::Update> {
     let client = &account.client;
-    match request {
-        Request::LoadPreferences => {
+    let (visit, job) = match request {
+        Request::AdoptPreferences => {
+            let preferences = async { client.fetch_preferences(&account.fresh().await?).await };
+            return match preferences.await {
+                Ok(preferences) => {
+                    account.set_preferences(preferences.clone()).await;
+                    Some(Update::Adopt(Box::new(preferences)).into())
+                }
+                Err(ClientError::Unauthorized(_)) => Some(screens::Update::SessionEnded),
+                // Reported, and otherwise quiet: the theme stays the one the session saved.
+                Err(e) => {
+                    screens::shown(&e);
+                    None
+                }
+            };
+        }
+        Request::Visit { visit, job } => (visit, job),
+    };
+    let reply = match job {
+        Job::LoadPreferences { ticket } => {
             match async { client.fetch_preferences(&account.fresh().await?).await }.await {
                 Ok(preferences) => {
                     account.set_preferences(preferences.clone()).await;
-                    Some(Update::Preferences(Box::new(preferences)).into())
+                    Reply::Preferences {
+                        ticket,
+                        preferences: Box::new(preferences),
+                    }
                 }
-                Err(e) => Some(screens::failure(&e, |_| {
-                    Update::PreferencesUnavailable.into()
-                })),
+                Err(e) => {
+                    return Some(screens::failure(&e, |_| {
+                        Update::Visit {
+                            visit,
+                            reply: Reply::PreferencesUnavailable { ticket },
+                        }
+                        .into()
+                    }));
+                }
             }
         }
-        Request::Save { seq, change, undo } => {
+        Job::Save { ticket, change } => {
             let result = async {
                 let session = account.fresh().await?;
                 client
-                    .update_preferences(HttpUpdatePreferences::from(change.clone()), &session)
+                    .update_preferences(HttpUpdatePreferences::from(change), &session)
                     .await
             }
             .await;
-            Some(match result {
+            match result {
                 Ok(preferences) => {
                     account.set_preferences(preferences.clone()).await;
-                    Update::Saved {
-                        seq,
-                        change,
+                    Reply::Saved {
+                        ticket,
                         preferences: Box::new(preferences),
                     }
-                    .into()
                 }
-                Err(e) => screens::failure(&e, |message| {
-                    Update::SaveFailed { seq, undo, message }.into()
-                }),
-            })
-        }
-        Request::LoadFranchises => client
-            .fetch_ub_franchises()
-            .await
-            .ok()
-            .map(|franchises| Update::Franchises(franchises).into()),
-    }
-}
-
-/// Draws in `preferences`' theme and pips, as the app's live theme.
-fn show(cx: &mut Context<'_>, preferences: &UserPreferences) {
-    cx.shared.palette = Palette::for_preferences(preferences);
-}
-
-pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
-    let view = nav.find_mut(pick);
-    match update {
-        Update::Preferences(preferences) => match view {
-            // An open Config takes the Universes Beyond settings and the pips; the theme stays the live one.
-            Some(view) => {
-                view.shown.exclude_universes_beyond = preferences.exclude_universes_beyond;
-                view.shown
-                    .universes_beyond_exceptions
-                    .clone_from(&preferences.universes_beyond_exceptions);
-                view.shown.pip_style = preferences.pip_style;
-                view.loaded = true;
+                Err(e) => {
+                    return Some(screens::failure(&e, |message| {
+                        Update::Visit {
+                            visit,
+                            reply: Reply::SaveFailed { ticket, message },
+                        }
+                        .into()
+                    }));
+                }
             }
-            None => cx.use_preferences(&preferences),
-        },
-        Update::PreferencesUnavailable => {}
-        Update::Saved {
-            seq,
-            change,
+        }
+        Job::LoadFranchises => Reply::Franchises(client.fetch_ub_franchises().await.ok()?),
+    };
+    Some(Update::Visit { visit, reply }.into())
+}
+
+/// Hands a reply to the model when its visit is still up. With Config closed, fetched or saved preferences become the app's, and a failure's toast still shows.
+pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
+    let (visit, reply) = match update {
+        Update::Adopt(preferences) => {
+            cx.use_preferences(&preferences);
+            return;
+        }
+        Update::Visit { visit, reply } => (visit, reply),
+    };
+    let view = nav.find_mut(pick).filter(|view| view.visit == visit);
+    let action = match reply {
+        Reply::Preferences {
+            ticket,
             preferences,
         } => {
             let Some(view) = view else {
                 cx.use_preferences(&preferences);
                 return;
             };
-            if !view.latest(&change, seq) {
-                return;
-            }
-            let kept_theme = (view.shown.theme.clone(), view.shown.dark_mode);
-            view.shown.clone_from(&preferences);
-            if matches!(
-                change,
-                PreferenceChange::Pips(_)
-                    | PreferenceChange::HideUniversesBeyond(_)
-                    | PreferenceChange::Exceptions(_)
-            ) {
-                // A toggle elsewhere leaves a theme preview or a newer mode tap on screen.
-                (view.shown.theme, view.shown.dark_mode) = kept_theme;
-            }
-            let shown = view.shown.clone();
-            cx.use_preferences(&shown);
-            let duration = match change {
-                PreferenceChange::Theme { .. } | PreferenceChange::Exceptions(_) => toast::QUICK,
-                _ => toast::NORMAL,
-            };
-            cx.toast_for(
-                ToastKind::Success,
-                change.saved_message(&preferences).to_owned(),
-                duration,
+            dispatch(
+                view,
+                Action::Loaded {
+                    ticket,
+                    preferences,
+                },
+                cx,
             );
+            return;
         }
-        Update::SaveFailed { seq, undo, message } => {
-            if let Some(view) = view
-                && view.latest(&undo, seq)
-                && undo.toggle().is_some()
-            {
-                undo.apply(&mut view.shown);
-                let shown = view.shown.clone();
-                show(cx, &shown);
-            }
+        Reply::PreferencesUnavailable { ticket } => Action::Failed { ticket },
+        Reply::Saved {
+            ticket,
+            preferences,
+        } => {
+            let Some(view) = view else {
+                cx.use_preferences(&preferences);
+                return;
+            };
+            // Universes Beyond as the server holds it, for the screens that filter by it.
+            let mut kept = cx.shared.preferences.clone().unwrap_or_default();
+            kept.exclude_universes_beyond = preferences.exclude_universes_beyond;
+            kept.universes_beyond_exceptions
+                .clone_from(&preferences.universes_beyond_exceptions);
+            cx.shared.preferences = Some(kept);
+            dispatch(
+                view,
+                Action::Saved {
+                    ticket,
+                    preferences,
+                },
+                cx,
+            );
+            return;
+        }
+        Reply::SaveFailed { ticket, message } => {
             cx.toast(ToastKind::Error, message);
+            Action::SaveFailed { ticket }
         }
-        Update::Franchises(franchises) => {
+        Reply::Franchises(franchises) => {
             if let Some(view) = view {
                 view.franchises = franchises;
             }
+            return;
         }
+    };
+    if let Some(view) = view {
+        dispatch(view, action, cx);
     }
 }

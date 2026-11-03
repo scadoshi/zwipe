@@ -1,4 +1,6 @@
 //! The Changelog screen: the launch's changelog under chip rows that narrow it from `Latest` to a year, a month and a minor version, with a skeleton while it loads and a note when it could not.
+//!
+//! What the screen knows and decides is zwipe-ui's [`State`]: the branch to draw, the chip rows and what each chip picks, and the releases shown. This view adds the focused chip, the scroll and the cards' entrance. The history is the app's `shared.changelog`, handed to the model on opening and again when the launch fetch lands.
 
 pub(crate) mod draw;
 pub(crate) mod keys;
@@ -7,25 +9,16 @@ mod tests;
 
 use std::time::Instant;
 
-use zwipe_ui::changelog::{self, Filter, Listed};
+use zwipe_ui::screens::changelog::{Action, Destination, Effect, State};
 
 use super::Screen;
 use crate::inbound::app::Context;
+use crate::inbound::nav::Nav;
 
-/// The load-failure note.
-pub(crate) const FAILED: &str = "Could not load the changelog";
-
-/// One chip: its label, and whether it is lit.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct Chip {
-    pub(crate) label: String,
-    pub(crate) lit: bool,
-}
-
-/// The Changelog screen's state: the filter, the focused chip, and how far the cards are scrolled.
+/// The Changelog screen's state: the model plus the focused chip, how far the cards are scrolled, and when they entered.
 #[derive(Debug)]
 pub(crate) struct ChangelogView {
-    pub(crate) filter: Filter,
+    pub(crate) model: State,
     /// The chip row with the focus: 0 for years, 1 for months, 2 for minor versions.
     pub(crate) row: usize,
     pub(crate) chip: usize,
@@ -37,7 +30,7 @@ pub(crate) struct ChangelogView {
 impl Default for ChangelogView {
     fn default() -> Self {
         Self {
-            filter: Filter::Latest,
+            model: State::new(),
             row: 0,
             chip: 0,
             scroll: 0,
@@ -47,104 +40,16 @@ impl Default for ChangelogView {
 }
 
 impl ChangelogView {
-    /// The chip rows the filter opens, each a list of chips with the lit one marked.
-    pub(crate) fn rows(&self, listed: &[Listed<'_>]) -> Vec<Vec<Chip>> {
-        let (year, month, minor) = match &self.filter {
-            Filter::Latest => (None, None, None),
-            Filter::Year(year) => (Some(year.as_str()), None, None),
-            Filter::Month { year, month } => (Some(year.as_str()), Some(month.as_str()), None),
-            Filter::Minor { year, month, minor } => (
-                Some(year.as_str()),
-                Some(month.as_str()),
-                Some(minor.as_str()),
-            ),
-        };
-        let mut first = vec![Chip {
-            label: "Latest".to_owned(),
-            lit: year.is_none(),
-        }];
-        first.extend(
-            changelog::years(listed)
-                .into_iter()
-                .map(|(key, label)| Chip {
-                    lit: year == Some(key.as_str()),
-                    label,
-                }),
-        );
-        let mut rows = vec![first];
-        if let Some(year) = year {
-            rows.push(
-                changelog::months(listed, year)
-                    .into_iter()
-                    .map(|(key, label)| Chip {
-                        lit: month == Some(key.as_str()),
-                        label,
-                    })
-                    .collect(),
-            );
-        }
-        if let Some(month) = month {
-            rows.push(
-                changelog::minors(listed, month)
-                    .into_iter()
-                    .map(|m| Chip {
-                        lit: minor == Some(m.as_str()),
-                        label: m,
-                    })
-                    .collect(),
-            );
-        }
-        rows
-    }
-
-    /// Presses the focused chip: it lights, clearing the rows under it, or when it is the deepest lit chip the filter goes up a level.
-    pub(crate) fn press(&mut self, listed: &[Listed<'_>]) {
-        let rows = self.rows(listed);
+    /// Presses the focused chip: the model picks its filter, the cards scroll back to the top and enter again, and the focus stays on a row that still shows.
+    pub(crate) fn press(&mut self, cx: &mut Context<'_>) {
+        let rows = self.model.chip_rows();
         let Some(chip) = rows.get(self.row).and_then(|r| r.get(self.chip)) else {
             return;
         };
-        let deepest = chip.lit && self.row.saturating_add(1) >= rows.len();
-        let filter = std::mem::take(&mut self.filter);
-        self.filter = match (self.row, filter) {
-            (0, _) if self.chip == 0 => Filter::Latest,
-            (0, Filter::Year(_)) if deepest => Filter::Latest,
-            (0, _) => {
-                let years = changelog::years(listed);
-                years
-                    .get(self.chip.saturating_sub(1))
-                    .map_or(Filter::Latest, |(key, _)| Filter::Year(key.clone()))
-            }
-            (1, Filter::Month { year, .. }) if deepest => Filter::Year(year),
-            (1, Filter::Year(year) | Filter::Month { year, .. } | Filter::Minor { year, .. }) => {
-                changelog::months(listed, &year).get(self.chip).map_or_else(
-                    || Filter::Year(year.clone()),
-                    |(key, _)| Filter::Month {
-                        year: year.clone(),
-                        month: key.clone(),
-                    },
-                )
-            }
-            (2, Filter::Minor { year, month, .. }) if deepest => Filter::Month { year, month },
-            (2, Filter::Month { year, month } | Filter::Minor { year, month, .. }) => {
-                changelog::minors(listed, &month)
-                    .get(self.chip)
-                    .map_or_else(
-                        || Filter::Month {
-                            year: year.clone(),
-                            month: month.clone(),
-                        },
-                        |minor| Filter::Minor {
-                            year: year.clone(),
-                            month: month.clone(),
-                            minor: minor.clone(),
-                        },
-                    )
-            }
-            (_, filter) => filter,
-        };
+        dispatch(self, Action::Pick(chip.target.clone()), cx);
         self.scroll = 0;
         self.filtered_at = Instant::now();
-        let depth = self.rows(listed).len();
+        let depth = self.model.chip_rows().len();
         if self.row >= depth {
             self.row = depth.saturating_sub(1);
             self.chip = 0;
@@ -152,7 +57,37 @@ impl ChangelogView {
     }
 }
 
-/// Opens the Changelog on `Latest`.
+/// Applies `action` to the model and performs the effects it returns.
+pub(crate) fn dispatch(view: &mut ChangelogView, action: Action, cx: &mut Context<'_>) {
+    for effect in view.model.update(action) {
+        match effect {
+            Effect::Navigate(Destination::Previous) => cx.back(),
+        }
+    }
+}
+
+fn pick(screen: &mut Screen) -> Option<&mut ChangelogView> {
+    match screen {
+        Screen::Changelog(view) => Some(view),
+        _ => None,
+    }
+}
+
+/// Opens the Changelog on `Latest` with the history as it stands.
 pub(crate) fn open(cx: &mut Context<'_>) {
-    cx.push(Screen::Changelog(Box::default()));
+    let mut view = ChangelogView::default();
+    dispatch(&mut view, Action::Load(cx.shared.changelog.clone()), cx);
+    cx.push(Screen::Changelog(Box::new(view)));
+}
+
+/// Hands an open Changelog the history the launch fetch just left in `shared.changelog`.
+pub(crate) fn reload(nav: &mut Nav, cx: &mut Context<'_>) {
+    if let Some(view) = nav.find_mut(pick) {
+        let cache = cx.shared.changelog.clone();
+        dispatch(view, Action::Load(cache), cx);
+        view.row = 0;
+        view.chip = 0;
+        view.scroll = 0;
+        view.filtered_at = Instant::now();
+    }
 }

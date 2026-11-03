@@ -1,15 +1,17 @@
-//! The deck form's keys. Tab, Shift-Tab and the arrows move between fields; text fields take typing, and Enter in one saves nothing, as in the app, whose Save sits outside the form; F2 saves, F8 clears the focused field, F6 explains it, Esc goes back. On a command-zone field, F3 toggles Filter and F4 opens Swipe.
+//! The deck form's keys. Tab, Shift-Tab and the arrows move between fields; text fields take typing, and Enter in one saves nothing, as in the app, whose Save sits outside the form; F2 saves, F8 clears the focused field, Esc goes back. On a field that takes no typing, `i` opens its About and `?` the form's hint. On a command-zone field, F3 toggles Filter and F4 opens Swipe.
 
 use crossterm::event::KeyCode;
+use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::{DeckOtherTag, PowerLevel};
 use zwipe_ui::deck::form::{self, Slot, Step};
+use zwipe_ui::deck::pickers::{Picker, TagPicker};
+use zwipe_ui::screens::deck_form::{Action, Results, Status};
 
-use super::pickers::{self, FormatPicker, OraclePicker, TagPicker};
-use super::{DeckForm, Field, Overlay, reopen_hint, swipe_pick};
+use super::{DeckForm, Field, Overlay, dispatch, pickers, reopen_hint, swipe_pick};
 use crate::inbound::app::Context;
 use crate::inbound::toward::Toward;
-use crate::inbound::widgets::info;
+use crate::inbound::widgets::hint;
 
 /// The currencies in the app's chip order.
 const CURRENCIES: [PriceCurrency; 3] = [PriceCurrency::Usd, PriceCurrency::Eur, PriceCurrency::Tix];
@@ -17,27 +19,24 @@ const CURRENCIES: [PriceCurrency; 3] = [PriceCurrency::Usd, PriceCurrency::Eur, 
 pub(crate) fn handle(form: &mut DeckForm, code: KeyCode, cx: &mut Context<'_>) {
     if let Some(overlay) = form.overlay.take() {
         form.overlay = match overlay {
-            Overlay::Info(popup) => (!info::closes_on(code)).then_some(Overlay::Info(popup)),
             Overlay::Format(picker) => pickers::handle_format(form, picker, code, cx),
-            Overlay::DeckTags(picker) => pickers::handle_tags(form, picker, code, cx),
-            Overlay::OracleTags(picker) => pickers::handle_oracle(form, picker, code, cx),
+            Overlay::Tags(which, grid) => pickers::handle_tags(form, which, grid, code, cx),
             Overlay::Swipe(picker) => swipe_pick::handle(form, picker, code, cx),
         };
         return;
     }
-    if form.saving {
+    if form.model.is_saving() {
         return;
     }
     match code {
-        KeyCode::Esc => return cx.back(),
-        KeyCode::F(2) => return form.save(cx),
-        KeyCode::F(6) => return form.overlay = Some(Overlay::Info(form.focus.info())),
+        KeyCode::Esc => return dispatch(form, Action::Back, cx),
+        KeyCode::F(2) => return save(form, cx),
         KeyCode::F(8) => return clear(form, cx),
         KeyCode::Tab => return form.step_focus(Toward::Next),
         KeyCode::BackTab => return form.step_focus(Toward::Previous),
         _ => {}
     }
-    if form.loading || form.load_error.is_some() {
+    if form.model.status() != Status::Ready {
         if code == KeyCode::Char('q') {
             cx.quit();
         }
@@ -50,7 +49,8 @@ pub(crate) fn handle(form: &mut DeckForm, code: KeyCode, cx: &mut Context<'_>) {
             KeyCode::Down => form.step_focus(Toward::Next),
             other => {
                 if form.name.handle_key(other) {
-                    form.check_name();
+                    let name = form.name.value().to_owned();
+                    dispatch(form, Action::SetName(name), cx);
                 }
             }
         },
@@ -61,10 +61,24 @@ pub(crate) fn handle(form: &mut DeckForm, code: KeyCode, cx: &mut Context<'_>) {
             KeyCode::Down => form.step_focus(Toward::Next),
             KeyCode::Char(c) if !form::price_char(c) => {}
             other => {
-                form.price.handle_key(other);
+                if form.price.handle_key(other) {
+                    let text = form.price.value().to_owned();
+                    dispatch(form, Action::TypePrice(text), cx);
+                }
             }
         },
         other => handle_plain(form, other, code, cx),
+    }
+}
+
+/// Saves, while the save button shows. A name the model refuses takes the focus.
+fn save(form: &mut DeckForm, cx: &mut Context<'_>) {
+    if form.model.save_label().is_none() {
+        return;
+    }
+    dispatch(form, Action::Save, cx);
+    if !form.model.is_saving() && form.model.name_error().is_some() {
+        form.focus = Field::Name;
     }
 }
 
@@ -72,7 +86,8 @@ pub(crate) fn handle(form: &mut DeckForm, code: KeyCode, cx: &mut Context<'_>) {
 fn handle_plain(form: &mut DeckForm, field: Field, code: KeyCode, cx: &mut Context<'_>) {
     match code {
         KeyCode::Char('q') => return cx.quit(),
-        KeyCode::Char('?') => return reopen_hint(cx, form.mode),
+        KeyCode::Char('?') => return reopen_hint(cx, form),
+        KeyCode::Char('i') => return hint::topic(cx, field.topic()),
         KeyCode::Up | KeyCode::Char('k') => return form.step_focus(Toward::Previous),
         KeyCode::Down | KeyCode::Char('j') => return form.step_focus(Toward::Next),
         _ => {}
@@ -82,77 +97,85 @@ fn handle_plain(form: &mut DeckForm, field: Field, code: KeyCode, cx: &mut Conte
     let press = matches!(code, KeyCode::Enter | KeyCode::Char(' '));
     let remove = matches!(code, KeyCode::Backspace | KeyCode::Delete);
     match field {
-        Field::Format if press => {
-            form.overlay = Some(Overlay::Format(Box::new(FormatPicker::open(form))));
-        }
-        Field::Format if remove => form.set_format(None),
+        Field::Format if press => pickers::open(form, Picker::Format, cx),
+        Field::Format if remove => dispatch(form, Action::ClearFormat, cx),
         Field::Power => {
             let count = PowerLevel::all().len();
             step(&mut form.power_focus, count, left, right);
-            if press {
-                let focused = PowerLevel::all().get(form.power_focus).copied();
-                form.power = if form.power == focused { None } else { focused };
+            if press && let Some(level) = PowerLevel::all().get(form.power_focus).copied() {
+                dispatch(form, Action::TogglePowerLevel(level), cx);
             } else if remove {
-                form.power = None;
+                dispatch(form, Action::ClearPowerLevel, cx);
             }
         }
         Field::Land => {
             if left || code == KeyCode::Char('-') {
-                form.land_target = Some(form::step_land_target(
-                    form.land_target,
-                    form.format,
-                    Step::Down,
-                ));
+                dispatch(form, Action::StepLand(Step::Down), cx);
             } else if right || matches!(code, KeyCode::Char('+' | '=')) {
-                form.land_target = Some(form::step_land_target(
-                    form.land_target,
-                    form.format,
-                    Step::Up,
-                ));
+                dispatch(form, Action::StepLand(Step::Up), cx);
             } else if remove {
-                form.land_target = None;
+                dispatch(form, Action::ClearLand, cx);
             }
         }
         Field::Currency => {
-            let mut at = CURRENCIES
-                .iter()
-                .position(|c| *c == form.currency)
-                .unwrap_or(0);
+            let currency = form.model.values().currency;
+            let mut at = CURRENCIES.iter().position(|c| *c == currency).unwrap_or(0);
             step(&mut at, CURRENCIES.len(), left, right);
-            form.currency = CURRENCIES.get(at).copied().unwrap_or_default();
-        }
-        Field::DeckTags => {
-            step(&mut form.tag_focus, form.tags.len(), left, right);
-            if press {
-                form.overlay = Some(Overlay::DeckTags(TagPicker::open(form)));
-            } else if remove && form.tag_focus < form.tags.len() {
-                form.tags.remove(form.tag_focus);
-                form.tag_focus = form.tag_focus.min(form.tags.len().saturating_sub(1));
+            let picked = CURRENCIES.get(at).copied().unwrap_or_default();
+            if picked != currency {
+                dispatch(form, Action::PickCurrency(picked), cx);
             }
         }
-        Field::OracleTags => {
-            step(&mut form.oracle_focus, form.oracle_tags.len(), left, right);
-            if press {
-                form.overlay = Some(Overlay::OracleTags(OraclePicker::open(form)));
-            } else if remove && form.oracle_focus < form.oracle_tags.len() {
-                form.oracle_tags.remove(form.oracle_focus);
-                form.oracle_focus = form
-                    .oracle_focus
-                    .min(form.oracle_tags.len().saturating_sub(1));
-            }
-        }
+        Field::DeckTags => tag_field(form, TagPicker::DeckTags, (left, right), code, cx),
+        Field::OracleTags => tag_field(form, TagPicker::OracleTags, (left, right), code, cx),
         Field::OtherTags => {
             let all = DeckOtherTag::all();
             step(&mut form.other_focus, all.len(), left, right);
             if press && let Some(tag) = all.get(form.other_focus).copied() {
-                if let Some(at) = form.other_tags.iter().position(|t| *t == tag) {
-                    form.other_tags.remove(at);
-                } else {
-                    form.other_tags.push(tag);
-                }
+                dispatch(form, Action::ToggleOtherTag(tag), cx);
             }
         }
         Field::Name | Field::Format | Field::Card(_) | Field::Price => {}
+    }
+}
+
+/// Keys on a tag field: left and right move through its chips, Enter opens its picker, and Backspace takes the focused chip off.
+fn tag_field(
+    form: &mut DeckForm,
+    which: TagPicker,
+    (left, right): (bool, bool),
+    code: KeyCode,
+    cx: &mut Context<'_>,
+) {
+    let count = form.model.tags(which).len();
+    let focus = match which {
+        TagPicker::DeckTags => &mut form.tag_focus,
+        TagPicker::OracleTags => &mut form.oracle_focus,
+    };
+    step(focus, count, left, right);
+    let at = *focus;
+    match code {
+        KeyCode::Enter | KeyCode::Char(' ') => pickers::open(form, which.into(), cx),
+        KeyCode::Backspace | KeyCode::Delete => {
+            let Some(slug) = form.model.tags(which).get(at).cloned() else {
+                return;
+            };
+            dispatch(
+                form,
+                Action::RemoveTag {
+                    picker: which,
+                    slug,
+                },
+                cx,
+            );
+            let last = form.model.tags(which).len().saturating_sub(1);
+            let focus = match which {
+                TagPicker::DeckTags => &mut form.tag_focus,
+                TagPicker::OracleTags => &mut form.oracle_focus,
+            };
+            *focus = at.min(last);
+        }
+        _ => {}
     }
 }
 
@@ -165,54 +188,63 @@ fn step(focus: &mut usize, count: usize, left: bool, right: bool) {
     }
 }
 
+/// The results shown under `slot`'s box, when there are some.
+fn hits(form: &DeckForm, slot: Slot) -> Vec<Card> {
+    match form.model.results(slot) {
+        Some(Results::Found(cards)) => cards,
+        _ => Vec::new(),
+    }
+}
+
 /// Keys on a command-zone field: typing searches, Up and Down move through the results, Enter picks one.
 fn handle_card(form: &mut DeckForm, slot: Slot, code: KeyCode, cx: &mut Context<'_>) {
-    let hits = form.card(slot).hits().len();
+    let hits = hits(form, slot);
     match code {
-        KeyCode::F(3) => {
-            let field = form.card_mut(slot);
-            field.filter_on = !field.filter_on;
-            form.search(slot, cx);
-        }
+        KeyCode::F(3) => dispatch(form, Action::ToggleFilter(slot), cx),
         KeyCode::F(4) => swipe_pick::open(form, slot, cx),
-        KeyCode::Down if hits > 0 => {
-            let field = form.card_mut(slot);
+        KeyCode::Down if !hits.is_empty() => {
+            let field = form.inputs.get_mut(slot);
             field.highlighted = field
                 .highlighted
                 .saturating_add(1)
-                .min(hits.saturating_sub(1));
+                .min(hits.len().saturating_sub(1));
         }
-        KeyCode::Up if hits > 0 => {
-            let field = form.card_mut(slot);
+        KeyCode::Up if !hits.is_empty() => {
+            let field = form.inputs.get_mut(slot);
             field.highlighted = field.highlighted.saturating_sub(1);
         }
         KeyCode::Up => form.step_focus(Toward::Previous),
         KeyCode::Down => form.step_focus(Toward::Next),
         KeyCode::Enter => {
-            let field = form.card(slot);
-            if let Some(card) = field.hits().get(field.highlighted).cloned() {
-                form.pick_card(slot, card, cx);
+            let highlighted = form.inputs.get(slot).highlighted;
+            if let Some(card) = hits.into_iter().nth(highlighted) {
+                dispatch(
+                    form,
+                    Action::PickResult {
+                        slot,
+                        card: Box::new(card),
+                    },
+                    cx,
+                );
             }
         }
         other => {
+            let edits = matches!(
+                other,
+                KeyCode::Char(_) | KeyCode::Backspace | KeyCode::Delete
+            );
             // A chosen card shows its name; editing it starts a new search, as tapping the box does in the app.
-            if form.card(slot).card.is_some()
-                && matches!(
-                    other,
-                    KeyCode::Char(_) | KeyCode::Backspace | KeyCode::Delete
-                )
-            {
-                form.set_card(slot, None);
+            if edits && form.model.values().slot(slot).is_some() {
+                dispatch(form, Action::TapInput(slot), cx);
                 if !matches!(other, KeyCode::Char(_)) {
                     return;
                 }
             }
-            let edited = matches!(
-                other,
-                KeyCode::Char(_) | KeyCode::Backspace | KeyCode::Delete
-            );
-            if form.card_mut(slot).input.handle_key(other) && edited {
-                form.search(slot, cx);
+            let input = &mut form.inputs.get_mut(slot).input;
+            let before = input.value().to_owned();
+            if input.handle_key(other) && input.value() != before {
+                let text = input.value().to_owned();
+                dispatch(form, Action::Type { slot, text }, cx);
             }
         }
     }
@@ -220,28 +252,18 @@ fn handle_card(form: &mut DeckForm, slot: Slot, code: KeyCode, cx: &mut Context<
 
 /// Clears the focused field, as its "×" does in the app.
 fn clear(form: &mut DeckForm, cx: &mut Context<'_>) {
-    match form.focus {
-        Field::Name => {
-            form.name.set_value("");
-            form.check_name();
-        }
-        Field::Format => form.set_format(None),
-        Field::Card(slot) => {
-            let field = form.card(slot);
-            if field.input.is_empty() || field.card.is_some() {
-                form.set_card(slot, None);
-            } else {
-                // Clears the query only, leaving any chosen card, as the input's own "×" does.
-                let field = form.card_mut(slot);
-                field.input.set_value("");
-                form.search(slot, cx);
-            }
-        }
-        Field::Power => form.power = None,
-        Field::Land => form.land_target = None,
-        Field::Currency | Field::Price => form.price.set_value(""),
-        Field::DeckTags => form.tags.clear(),
-        Field::OracleTags => form.oracle_tags.clear(),
-        Field::OtherTags => form.other_tags.clear(),
-    }
+    let action = match form.focus {
+        Field::Name => Action::SetName(String::new()),
+        Field::Format => Action::ClearFormat,
+        // The box's own "×" clears only the text typed; with none, the label's "×" empties the slot.
+        Field::Card(slot) if form.model.has_query(slot) => Action::ClearSearch(slot),
+        Field::Card(slot) => Action::ClearSlot(slot),
+        Field::Power => Action::ClearPowerLevel,
+        Field::Land => Action::ClearLand,
+        Field::Currency | Field::Price => Action::ClearPrice,
+        Field::DeckTags => Action::ClearTags(TagPicker::DeckTags),
+        Field::OracleTags => Action::ClearTags(TagPicker::OracleTags),
+        Field::OtherTags => Action::ClearOtherTags,
+    };
+    dispatch(form, action, cx);
 }
