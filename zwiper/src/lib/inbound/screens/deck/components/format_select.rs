@@ -54,7 +54,7 @@ pub(crate) fn FormatSelect(
             // clear and the one beneath would show through.
             ::components::GridCells { still: true }
             if open() {
-                ScreenHeader { title: Picker::Format.title(), hint: hint_open }
+                ScreenHeader { title: Picker::Format.title(), hint: hint_open, back: move |()| back.call(()) }
 
                 div { class: "screen-content content-enter tag-screen",
                     div { class: "tag-controls",
@@ -108,11 +108,6 @@ pub(crate) fn FormatSelect(
                 }
 
                 ActionBar {
-                    Button {
-                        variant: ButtonVariant::Action,
-                        onclick: move |_| back.call(()),
-                        "Back"
-                    }
                     Button {
                         variant: ButtonVariant::Action,
                         disabled: unchanged,

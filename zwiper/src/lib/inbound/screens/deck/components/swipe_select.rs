@@ -408,7 +408,7 @@ pub(crate) fn SwipeSelect(
             // clear and the one beneath would show through.
             ::components::GridCells { still: true }
             if open() {
-                ScreenHeader { title, hint: hint_open }
+                ScreenHeader { title, hint: hint_open, back: move |()| driver.dispatch(Action::Back) }
 
                 div { class: "screen-content card-swipe content-enter",
                     if has_cards {
@@ -452,11 +452,6 @@ pub(crate) fn SwipeSelect(
                 }
 
                 ActionBar {
-                    Button {
-                        variant: ButtonVariant::Action,
-                        onclick: move |_| driver.dispatch(Action::Back),
-                        {model::BACK}
-                    }
                     // The suggested ranking filters by the host's Show chips
                     // alone; a chosen identity lights the dot.
                     if has_suggested_filter {

@@ -60,7 +60,7 @@ pub(crate) fn TagSelect(
             // clear and the one beneath would show through.
             ::components::GridCells { still: true }
             if open() {
-                ScreenHeader { title: Picker::DeckTags.title(), hint: hint_open }
+                ScreenHeader { title: Picker::DeckTags.title(), hint: hint_open, back: move |()| back.call(()) }
 
                 div { class: "screen-content content-enter tag-screen",
                     div { class: "tag-controls",
@@ -131,11 +131,6 @@ pub(crate) fn TagSelect(
                 }
 
                 ActionBar {
-                    Button {
-                        variant: ButtonVariant::Action,
-                        onclick: move |_| back.call(()),
-                        "Back"
-                    }
                     Button {
                         variant: ButtonVariant::Action,
                         disabled: unchanged,
