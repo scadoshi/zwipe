@@ -1,6 +1,11 @@
 use Color::{Black, Blue, Green, Red, White};
 use crossterm::event::KeyCode;
+use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
 use zwipe_core::domain::user::models::hints::HINT_SWIPE_SELECT;
+use zwipe_ui::screens::commander_maybeboard::{
+    LOAD_FAILED, NO_COMMANDERS, NO_MATCH, NO_RESULTS, REMOVED, SEARCHING, TITLE, search_query,
+};
+use zwipe_ui::timing;
 
 use super::*;
 use crate::inbound::event_loop::harness::Harness;
@@ -71,12 +76,12 @@ fn press(harness: &mut Harness, codes: &[KeyCode]) {
     }
 }
 
-fn names(cards: &[&Card]) -> Vec<String> {
+fn names(cards: &[Card]) -> Vec<String> {
     cards.iter().map(|c| c.scryfall_data.name.clone()).collect()
 }
 
 fn shown(harness: &Harness) -> Vec<String> {
-    names(&view(harness).filtered())
+    names(&view(harness).shown())
 }
 
 fn last_toast(harness: &Harness) -> Toast {
@@ -109,10 +114,10 @@ fn the_maybeboard_opens_asking_for_everything_once() {
     assert_eq!(
         harness.pending(),
         [
+            screens::Request::MarkHintShown(HINT_COMMANDER_MAYBEBOARD.to_owned()),
             Request::Load { ticket: ticket(1) }.into(),
             Request::DeckProfiles.into(),
             oracle_tags::Request::Catalog.into(),
-            screens::Request::MarkHintShown(HINT_COMMANDER_MAYBEBOARD.to_owned()),
         ]
     );
     let hint = harness.app.shared.hint.as_ref().unwrap();
@@ -193,11 +198,11 @@ fn an_empty_maybeboard_says_so() {
 #[test]
 fn a_failed_first_load_says_so_and_toasts() {
     let mut harness = on_maybeboard(true);
-    harness.apply(Update::LoadFailed {
+    harness.apply(Update::Failed {
         ticket: ticket(1),
-        message: "Server down".to_owned(),
+        message: Some("Server down".to_owned()),
     });
-    assert!(view(&harness).load_failed);
+    assert_eq!(view(&harness).model.status(), Status::Failed);
     assert!(screen_text(&harness.app).contains(LOAD_FAILED));
     let toast = last_toast(&harness);
     assert_eq!(
@@ -213,12 +218,12 @@ fn a_failed_refetch_keeps_the_rows() {
     let Screen::CommanderMaybeboard(open) = harness.app.nav.top_mut() else {
         panic!("not the maybeboard");
     };
-    open.refetch(&mut cx);
-    harness.apply(Update::LoadFailed {
+    dispatch(open, Action::SwipeClosed, &mut cx);
+    harness.apply(Update::Failed {
         ticket: ticket(2),
-        message: "Server down".to_owned(),
+        message: Some("Server down".to_owned()),
     });
-    assert!(!view(&harness).load_failed);
+    assert_eq!(view(&harness).model.status(), Status::Loaded);
     assert_eq!(shown(&harness).len(), 4);
 }
 
@@ -227,7 +232,11 @@ fn only_the_newest_load_lands() {
     let mut harness = loaded();
     harness.press(KeyCode::Char('s'));
     harness.press(KeyCode::Esc);
-    assert!(view(&harness).ticket.is_current(ticket(2)));
+    assert!(
+        harness
+            .pending()
+            .contains(&Request::Load { ticket: ticket(2) }.into())
+    );
     harness.apply(Update::Loaded {
         ticket: ticket(1),
         cards: vec![colored("Old", &[])],
@@ -243,15 +252,16 @@ fn only_the_newest_load_lands() {
 #[test]
 fn a_load_sent_before_a_remove_does_not_bring_the_row_back() {
     let mut harness = loaded();
-    let atraxa = oracle(&saved_card(&harness, 0));
     harness.press(KeyCode::Char('s'));
     harness.press(KeyCode::Esc);
+    let before = view(&harness).model.entries().to_vec();
+    expand_first(&mut harness);
+    harness.press(KeyCode::Char('r'));
     harness.clear();
-    let before = view(&harness).entries.clone();
-    harness.apply(Update::Removed(atraxa));
+    harness.apply(Update::Removed { ticket: ticket(3) });
     assert_eq!(
         harness.pending(),
-        [Request::Load { ticket: ticket(3) }.into()],
+        [Request::Load { ticket: ticket(4) }.into()],
         "the load that predates the remove is not started again"
     );
     harness.apply(Update::Loaded {
@@ -264,8 +274,10 @@ fn a_load_sent_before_a_remove_does_not_bring_the_row_back() {
 #[test]
 fn a_remove_with_no_load_out_fetches_nothing() {
     let mut harness = loaded();
-    let atraxa = oracle(&saved_card(&harness, 0));
-    harness.apply(Update::Removed(atraxa));
+    expand_first(&mut harness);
+    harness.press(KeyCode::Char('r'));
+    harness.clear();
+    harness.apply(Update::Removed { ticket: ticket(2) });
     assert_eq!(harness.pending(), []);
     let toast = last_toast(&harness);
     assert_eq!(
@@ -275,7 +287,7 @@ fn a_remove_with_no_load_out_fetches_nothing() {
 }
 
 fn saved_card(harness: &Harness, index: usize) -> Card {
-    view(harness).entries[index].clone()
+    view(harness).model.entries()[index].clone()
 }
 
 #[test]
@@ -287,8 +299,15 @@ fn r_on_an_expanded_row_removes_it() {
     assert!(text.contains("r Remove"));
     harness.press(KeyCode::Char('r'));
     let atraxa = oracle(&saved_card(&harness, 0));
-    assert_eq!(harness.pending(), [Request::Remove(atraxa).into()]);
-    harness.apply(Update::Removed(atraxa));
+    assert_eq!(
+        harness.pending(),
+        [Request::Remove {
+            ticket: ticket(2),
+            oracle_id: atraxa
+        }
+        .into()]
+    );
+    harness.apply(Update::Removed { ticket: ticket(2) });
     assert_eq!(shown(&harness), ["Krenko", "Talrand", "Brago"]);
     assert_eq!(last_toast(&harness).message, "Removed");
 }
@@ -324,7 +343,8 @@ fn the_show_pips_keep_cards_holding_every_picked_color() {
     view_mut(&mut harness).focus = Focus::Show;
     // W is the second chip.
     press(&mut harness, &[KeyCode::Char('l'), KeyCode::Enter]);
-    assert_eq!(view(&harness).colors, [White]);
+    assert!(view(&harness).model.is_picked(White));
+    assert!(!view(&harness).model.shows_all());
     assert_eq!(shown(&harness), ["Atraxa", "Brago"]);
     // U too: both still hold white and blue.
     press(&mut harness, &[KeyCode::Char('l'), KeyCode::Enter]);
@@ -342,18 +362,8 @@ fn the_show_pips_keep_cards_holding_every_picked_color() {
     // All clears every color.
     view_mut(&mut harness).show_cursor = 0;
     harness.press(KeyCode::Enter);
-    assert_eq!(view(&harness).colors, []);
+    assert!(view(&harness).model.shows_all());
     assert_eq!(shown(&harness).len(), 4);
-}
-
-#[test]
-fn the_search_query_is_the_apps() {
-    let mut want = CardQueryBuilder::with_name_contains("atr");
-    want.set_is_commander_in_format(Format::Commander)
-        .set_is_token(false)
-        .set_sort(CardSortKey::Name)
-        .set_limit(8);
-    assert_eq!(search_query("  atr "), want);
 }
 
 #[test]
@@ -361,42 +371,53 @@ fn quick_add_waits_out_the_debounce_and_only_the_newest_query_searches() {
     let mut harness = loaded();
     type_query(&mut harness, "a");
     assert!(harness.pending().is_empty(), "one character never searches");
-    assert!(!view(&harness).quick.searching);
+    assert_eq!(view(&harness).model.quick_add(), None);
     harness.type_text("t");
     assert_eq!(
         harness.pending(),
-        [Request::Debounce { ticket: ticket(2) }.into()]
+        [Request::Debounce {
+            ticket: ticket(3),
+            wait: timing::QUICK_ADD_DEBOUNCE
+        }
+        .into()]
     );
     assert!(screen_text(&harness.app).contains(SEARCHING));
     harness.type_text("r");
     harness.clear();
-    harness.apply(Update::Debounced { ticket: ticket(2) });
+    harness.apply(Update::Debounced { ticket: ticket(3) });
     assert!(
         harness.pending().is_empty(),
         "an older debounce searched after a newer edit"
     );
-    harness.apply(Update::Debounced { ticket: ticket(3) });
+    harness.apply(Update::Debounced { ticket: ticket(4) });
     assert_eq!(
         harness.pending(),
         [Request::Search {
-            ticket: ticket(3),
-            query: "atr".to_owned(),
+            ticket: ticket(4),
+            query: Box::new(search_query("atr").build().unwrap()),
         }
         .into()]
     );
     harness.apply(Update::Searched {
-        ticket: ticket(2),
+        ticket: ticket(3),
         cards: vec![colored("Stale", &[])],
     });
-    assert!(view(&harness).quick.searching, "a stale result landed");
+    assert_eq!(
+        view(&harness).model.quick_add(),
+        Some(QuickAddResults::Searching),
+        "a stale result landed"
+    );
     harness.apply(Update::Searched {
-        ticket: ticket(3),
+        ticket: ticket(4),
         cards: vec![
             colored("Atraxa, Grand Unifier", &[]),
             colored("Atarka", &[]),
         ],
     });
-    assert!(!view(&harness).quick.searching);
+    assert_ne!(
+        view(&harness).model.quick_add(),
+        Some(QuickAddResults::Searching)
+    );
     let text = screen_text(&harness.app);
     assert!(text.contains("Atraxa, Grand Unifier"));
     assert!(text.contains("Atarka"));
@@ -414,7 +435,8 @@ fn typed_letters_go_to_the_box_not_the_keys() {
     harness.press(KeyCode::Esc);
     assert!(view(&harness).quick.query.is_empty());
     assert!(!view(&harness).quick.typing);
-    assert_eq!(view(&harness).quick.results, []);
+    assert_eq!(view(&harness).results(), []);
+    assert_eq!(view(&harness).model.query(), "");
     assert!(matches!(harness.screen(), Screen::CommanderMaybeboard(_)));
 }
 
@@ -434,13 +456,19 @@ fn a_failed_search_keeps_the_old_results() {
     let mut harness = loaded();
     type_query(&mut harness, "at");
     harness.apply(Update::Searched {
-        ticket: ticket(2),
+        ticket: ticket(3),
         cards: vec![colored("Atarka", &[])],
     });
     harness.type_text("a");
-    harness.apply(Update::SearchFailed { ticket: ticket(3) });
-    assert!(!view(&harness).quick.searching);
-    assert_eq!(names(&view(&harness).shown_results()), ["Atarka"]);
+    harness.apply(Update::Failed {
+        ticket: ticket(4),
+        message: None,
+    });
+    assert!(
+        harness.app.shared.toasts.items().is_empty(),
+        "a search fails quietly"
+    );
+    assert_eq!(names(&view(&harness).results()), ["Atarka"]);
 }
 
 #[test]
@@ -449,10 +477,10 @@ fn saved_commanders_never_show_as_results() {
     let krenko = saved_card(&harness, 1);
     type_query(&mut harness, "kr");
     harness.apply(Update::Searched {
-        ticket: ticket(2),
+        ticket: ticket(3),
         cards: vec![krenko],
     });
-    assert_eq!(names(&view(&harness).shown_results()), [""; 0]);
+    assert_eq!(names(&view(&harness).results()), [""; 0]);
     assert!(screen_text(&harness.app).contains(NO_RESULTS));
 }
 
@@ -462,7 +490,7 @@ fn picking_a_result_drops_its_chip_adds_it_on_top_and_refetches() {
     type_query(&mut harness, "at");
     let atarka = colored("Atarka", &[Red, Green]);
     harness.apply(Update::Searched {
-        ticket: ticket(2),
+        ticket: ticket(3),
         cards: vec![colored("Arcades", &[]), atarka.clone()],
     });
     // Enter hands the keys to the chips; l moves to the second.
@@ -472,15 +500,19 @@ fn picking_a_result_drops_its_chip_adds_it_on_top_and_refetches() {
     harness.press(KeyCode::Enter);
     assert_eq!(
         harness.pending(),
-        [Request::Add(Box::new(atarka.clone())).into()]
+        [Request::Add {
+            ticket: ticket(4),
+            oracle_id: oracle(&atarka)
+        }
+        .into()]
     );
-    assert_eq!(names(&view(&harness).shown_results()), ["Arcades"]);
+    assert_eq!(names(&view(&harness).results()), ["Arcades"]);
     harness.clear();
-    harness.apply(Update::Added(Box::new(atarka.clone())));
+    harness.apply(Update::Added { ticket: ticket(4) });
     assert_eq!(shown(&harness).first().unwrap(), "Atarka");
     assert_eq!(
         harness.pending(),
-        [Request::Load { ticket: ticket(2) }.into()]
+        [Request::Load { ticket: ticket(5) }.into()]
     );
     let toast = last_toast(&harness);
     assert_eq!(
@@ -488,7 +520,7 @@ fn picking_a_result_drops_its_chip_adds_it_on_top_and_refetches() {
         (ToastKind::Info, "Added Atarka")
     );
     // A second confirmation never duplicates the row.
-    harness.apply(Update::Added(Box::new(atarka)));
+    harness.apply(Update::Added { ticket: ticket(4) });
     assert_eq!(shown(&harness).len(), 5);
 }
 
@@ -510,9 +542,12 @@ fn clear_asks_first_then_empties_the_list() {
     assert_eq!(harness.pending(), []);
     press(&mut harness, &[KeyCode::Char('c'), KeyCode::Char('y')]);
     assert!(view(&harness).overlay.is_none());
-    assert_eq!(harness.pending(), [Request::Clear.into()]);
-    harness.apply(Update::Cleared);
-    assert_eq!(view(&harness).entries, []);
+    assert_eq!(
+        harness.pending(),
+        [Request::Clear { ticket: ticket(2) }.into()]
+    );
+    harness.apply(Update::Cleared { ticket: ticket(2) });
+    assert_eq!(view(&harness).model.entries(), []);
     assert_eq!(last_toast(&harness).message, "Maybeboard cleared");
     assert!(screen_text(&harness.app).contains(NO_COMMANDERS));
 }
@@ -528,7 +563,7 @@ fn esc_closes_the_more_sheet() {
 #[test]
 fn swipe_deals_commanders_without_the_saved_ones_and_refetches_on_close() {
     let mut harness = loaded();
-    let want = view(&harness).saved();
+    let want = view(&harness).model.saved_oracles();
     harness.press(KeyCode::Char('s'));
     let Screen::CommanderSwipe(swipe) = harness.screen() else {
         panic!("the swipe did not open");
@@ -572,7 +607,10 @@ fn a_picked_printing_swaps_in_place() {
         cx.into_effects().requests.is_empty(),
         "a printing refetches nothing"
     );
-    assert_eq!(view.entries[0].scryfall_data.id, printing.scryfall_data.id);
+    assert_eq!(
+        view.model.entries()[0].scryfall_data.id,
+        printing.scryfall_data.id
+    );
     assert_eq!(view.rows.expanded(), Some(printing.scryfall_data.id));
 }
 
@@ -665,7 +703,7 @@ fn tiny_terminals_do_not_panic() {
     }
     type_query(&mut harness, "at");
     harness.apply(Update::Searched {
-        ticket: ticket(2),
+        ticket: ticket(3),
         cards: vec![colored("Atarka", &[])],
     });
     for (w, h) in [(8, 3), (1, 1), (20, 6)] {
@@ -683,4 +721,23 @@ fn tiny_terminals_do_not_panic() {
 fn the_maybeboard_keeps_every_key_on_a_narrow_terminal() {
     crate::test_support::assert_key_bar_fits(&on_maybeboard(true).app, "Esc Back");
     crate::test_support::assert_key_bar_fits(&loaded().app, "Esc Back");
+}
+
+#[test]
+fn a_failed_remove_toasts_and_a_repeated_reply_changes_nothing() {
+    let mut harness = loaded();
+    expand_first(&mut harness);
+    harness.press(KeyCode::Char('r'));
+    harness.apply(Update::Failed {
+        ticket: ticket(2),
+        message: Some("Server down".to_owned()),
+    });
+    let toast = last_toast(&harness);
+    assert_eq!(
+        (toast.kind, toast.message.as_str()),
+        (ToastKind::Error, "Server down")
+    );
+    harness.apply(Update::Removed { ticket: ticket(2) });
+    assert_eq!(shown(&harness).len(), 4, "a failed remove never lands");
+    assert_eq!(harness.app.shared.toasts.items().len(), 1);
 }

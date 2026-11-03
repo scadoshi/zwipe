@@ -1,19 +1,17 @@
 //! The Commander maybeboard: the commanders the user saved for later, with a quick add search over every commander, a Show row of color pips, the card filter sheet, and the commander swipe to find more. The Decks screen's More sheet opens it.
 //!
-//! Entries arrive three ways: an up swipe in any commander swipe, an up swipe in this screen's own Swipe, or a result chip under Quick add. The Quick add search runs once the trimmed query is at least two characters and has rested for 300 ms; it never narrows the saved list, which only the Show pips do (every picked color must be in the card's identity).
+//! What the screen knows and decides (the saved list and its loads, the Quick add search and its debounce, the Show pips, the create gate, the edits and their toasts) is zwipe-ui's [`State`]; this view adds the Quick add box, the focus and chip cursors, the card rows, the More sheet and Clear dialog, and the card filter sheet with its applied filter.
 //!
-//! Each load takes a ticket and only the newest one's reply lands. A refetch with entries on screen is silent, and a remove or clear made while a load is out starts that load again, since its reply left before the edit and could bring a row back.
+//! The debounce is a request of its own: [`Request::Debounce`] sleeps off the main loop and answers [`Update::Debounced`], which the model turns into the search when no newer edit replaced it. The loop wakes on that answer, so nothing has to animate while a debounce waits, and tests apply the answer directly instead of sleeping.
 //!
-//! The debounce is a request of its own: [`Request::Debounce`] sleeps 300 ms off the main loop and answers [`Update::Debounced`], and only then, if no edit took a newer ticket, does the search go out. The loop wakes on that answer, so nothing has to animate while a debounce waits, and tests apply the answer directly instead of sleeping.
-//!
-//! The app's "Art" chip toggles row thumbnails; the terminal's card rows draw none, so the Show row leaves it out. The app's Back pushes the deck list; here Esc goes back to the screen underneath. The app's Filter opens the card filter sheet, which belongs to the card filter screens, so [`open_filter`] stands in for it.
+//! The app's "Art" chip toggles row thumbnails; the terminal's card rows draw none, so the Show row leaves it out. The app's Back pushes the deck list; here Esc goes back to the screen underneath. The app's Filter opens the card filter sheet, which belongs to the card filter screens, so [`open_filter`] stands in for it. The app's Swipe is an overlay whose right swipe goes through this model's create gate; here it is the commander swipe screen, which takes its own [`DeckLimit`], so the view keeps the deck count the model reads too.
 
 pub(crate) mod draw;
 pub(crate) mod keys;
 #[cfg(test)]
 mod tests;
 
-use std::collections::HashSet;
+use std::time::Duration;
 
 use crossterm::event::KeyCode;
 use uuid::Uuid;
@@ -21,17 +19,18 @@ use zwipe_client::ClientError;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
-use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
-use zwipe_core::domain::card::search_card::cards::Cards;
-use zwipe_core::domain::deck::format::Format;
+use zwipe_core::domain::card::search_card::card_filter::query::CardQuery;
 use zwipe_core::domain::user::models::hints::HINT_COMMANDER_MAYBEBOARD;
+use zwipe_ui::filter;
 use zwipe_ui::filter::draft::SheetConfig;
-use zwipe_ui::generation::{Generation, Ticket};
-use zwipe_ui::{filter, timing};
+use zwipe_ui::generation::Ticket;
+use zwipe_ui::screens::commander_maybeboard::{
+    Action, Destination, Effect, QuickAddResults, State, Status,
+};
 
 use super::card_sheets::filter::{FilterSheet, SheetOutcome};
 use super::playstyle::DeckLimit;
-use super::{Screen, card_sheets, oracle_tags};
+use super::{Screen, card_sheets, deck_form, oracle_tags};
 use crate::inbound::app::Context;
 use crate::inbound::nav::Nav;
 use crate::inbound::screens;
@@ -41,49 +40,8 @@ use crate::inbound::widgets::card_rows::CardRows;
 use crate::inbound::widgets::hint;
 use crate::inbound::widgets::sheet::Sheet;
 use crate::inbound::widgets::text_input::TextInput;
-use crate::inbound::widgets::toast::{self, ToastKind};
+use crate::inbound::widgets::toast::ToastKind;
 use crate::outbound::account::Account;
-
-/// The hint's title.
-#[cfg(test)]
-pub(crate) const TITLE: &str = "Commander maybeboard";
-
-/// The Quick add row's label.
-pub(crate) const QUICK_ADD: &str = "Quick add";
-
-/// The one result chip while a search is out.
-pub(crate) const SEARCHING: &str = "Searching...";
-
-/// The one result chip when the search found nothing not already saved.
-pub(crate) const NO_RESULTS: &str = "No results";
-
-/// Said when the first load failed.
-pub(crate) const LOAD_FAILED: &str = "Could not load your commander maybeboard";
-
-/// Said when nothing is saved.
-pub(crate) const NO_COMMANDERS: &str = "No commanders";
-
-/// Said when the Show pips hide every entry.
-pub(crate) const NO_MATCH: &str = "No commanders match";
-
-/// The list's group header.
-pub(crate) const LIST_TITLE: &str = "Commanders";
-
-/// The More sheet's title.
-pub(crate) const MORE_TITLE: &str = "More actions";
-
-/// The More sheet's one action, and its dialog's title.
-pub(crate) const CLEAR: &str = "Clear maybeboard";
-
-/// The Clear maybeboard dialog's body.
-pub(crate) const CLEAR_BODY: &str =
-    "Every commander on your maybeboard will be removed. This can't be undone.";
-
-/// The toast after a remove.
-pub(crate) const REMOVED: &str = "Removed";
-
-/// The toast after Clear maybeboard.
-pub(crate) const CLEARED: &str = "Maybeboard cleared";
 
 /// What has the keys.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -107,40 +65,23 @@ pub(crate) enum Overlay {
     Clear(AlertDialog),
 }
 
-/// The Quick add box and its search.
+/// The Quick add box. Its value follows each edit into the model, which runs the search.
 #[derive(Debug, Default)]
 pub(crate) struct QuickAdd {
     pub(crate) query: TextInput,
     /// Whether keys type into the box.
     pub(crate) typing: bool,
-    /// The query edit generation; only the newest ticket's debounce and search land.
-    pub(crate) ticket: Generation,
-    /// A search for the current query is waiting or out.
-    pub(crate) searching: bool,
-    /// The last search's commanders, saved ones included.
-    pub(crate) results: Vec<Card>,
     /// The result chip under the cursor.
     pub(crate) cursor: usize,
 }
 
-/// The Commander maybeboard's state.
+/// The Commander maybeboard's state: the model plus what only the terminal keeps.
 #[derive(Debug)]
 pub(crate) struct MaybeboardView {
-    /// Until the first reply lands.
-    pub(crate) is_loading: bool,
-    /// The last load failed with nothing held.
-    pub(crate) load_failed: bool,
-    /// The saved commanders, newest save first.
-    pub(crate) entries: Vec<Card>,
-    /// The load generation; only the newest ticket's reply lands.
-    pub(crate) ticket: Generation,
-    /// Whether the newest load is still out.
-    pub(crate) load_out: bool,
-    /// How many decks the user owns, once fetched, for the create gate.
+    pub(crate) model: State,
+    /// How many decks the user owns, once fetched, for the commander swipe's create gate. The model holds the same count for its own Create deck but does not show it.
     pub(crate) decks: Option<usize>,
     pub(crate) quick: QuickAdd,
-    /// The picked Show colors; none is All.
-    pub(crate) colors: Vec<Color>,
     /// The Show chip under the cursor: 0 is All, then W U B R G.
     pub(crate) show_cursor: usize,
     pub(crate) rows: CardRows,
@@ -152,18 +93,13 @@ pub(crate) struct MaybeboardView {
     pub(crate) sheet: Option<FilterSheet>,
 }
 
-impl MaybeboardView {
+impl Default for MaybeboardView {
     /// A view waiting on its first load.
-    pub(crate) fn loading() -> Self {
+    fn default() -> Self {
         Self {
-            is_loading: true,
-            load_failed: false,
-            entries: Vec::new(),
-            ticket: Generation::default(),
-            load_out: false,
+            model: State::new(),
             decks: None,
             quick: QuickAdd::default(),
-            colors: Vec::new(),
             show_cursor: 0,
             rows: CardRows::default(),
             focus: Focus::Input,
@@ -172,52 +108,17 @@ impl MaybeboardView {
             sheet: None,
         }
     }
+}
 
-    /// The oracle ids already saved.
-    pub(crate) fn saved(&self) -> HashSet<Uuid> {
-        self.entries
-            .iter()
-            .filter_map(|c| c.scryfall_data.oracle_id)
-            .collect()
+impl MaybeboardView {
+    /// Whether the first load is still out, so the whole page ghosts.
+    pub(crate) fn is_loading(&self) -> bool {
+        self.model.status() == Status::Loading
     }
 
-    /// The saved list narrowed by the Show pips, then by the applied card filter, then sorted when it set a sort; saved order otherwise.
-    pub(crate) fn filtered(&self) -> Vec<&Card> {
-        let shown: Vec<&Card> = self
-            .entries
-            .iter()
-            .filter(|c| {
-                self.colors
-                    .iter()
-                    .all(|color| c.scryfall_data.color_identity.contains(color))
-            })
-            .collect();
-        let criteria = if self.filter.is_empty() {
-            None
-        } else {
-            self.filter.build_criteria().ok()
-        };
-        let sort = self.filter.sort();
-        if criteria.is_none() && sort.is_none() {
-            return shown;
-        }
-        let mut cards = Cards::from(shown.iter().map(|&c| c.clone()).collect::<Vec<Card>>());
-        if let Some(criteria) = &criteria {
-            cards = cards.matching(criteria);
-        }
-        if let Some(sort) = sort {
-            cards = cards.sorted(sort, self.filter.direction());
-        }
-        let order: Vec<Card> = cards.into();
-        order
-            .iter()
-            .filter_map(|card| {
-                shown
-                    .iter()
-                    .copied()
-                    .find(|c| c.scryfall_data.id == card.scryfall_data.id)
-            })
-            .collect()
+    /// The saved list the Show pips and the applied card filter let through, as the model narrows it.
+    pub(crate) fn shown(&self) -> Vec<Card> {
+        self.model.shown(&self.filter)
     }
 
     /// Whether Filter carries its dot: the card filter has a criterion or a sort.
@@ -225,37 +126,26 @@ impl MaybeboardView {
         filter::shows_dot(&self.filter)
     }
 
-    /// Whether the query is long enough to search, which is also when the result chips show.
-    pub(crate) fn searching_catalog(&self) -> bool {
-        self.quick.query.value().trim().len() >= timing::QUICK_ADD_MIN_CHARS
-    }
-
-    /// The result chips: the last search's commanders that have an oracle id and are not saved yet.
-    pub(crate) fn shown_results(&self) -> Vec<&Card> {
-        let saved = self.saved();
-        self.quick
-            .results
-            .iter()
-            .filter(|c| {
-                c.scryfall_data
-                    .oracle_id
-                    .is_some_and(|o| !saved.contains(&o))
-            })
-            .collect()
+    /// The result chips that can be added, empty while searching or with nothing found.
+    pub(crate) fn results(&self) -> Vec<Card> {
+        match self.model.quick_add() {
+            Some(QuickAddResults::Found(cards)) => cards,
+            Some(QuickAddResults::Searching | QuickAddResults::Empty) | None => Vec::new(),
+        }
     }
 
     /// Everything the focus can land on, top to bottom.
     pub(crate) fn stops(&self) -> Vec<Focus> {
         let mut stops = Vec::new();
-        if self.is_loading {
+        if self.is_loading() {
             return stops;
         }
         stops.push(Focus::Input);
-        if self.searching_catalog() && !self.quick.searching && !self.shown_results().is_empty() {
+        if !self.results().is_empty() {
             stops.push(Focus::Results);
         }
         stops.push(Focus::Show);
-        if !self.load_failed && !self.filtered().is_empty() {
+        if self.model.status() != Status::Failed && !self.shown().is_empty() {
             stops.push(Focus::List);
         }
         stops
@@ -269,7 +159,7 @@ impl MaybeboardView {
             return false;
         };
         if focus == Focus::List {
-            let last = self.filtered().len().saturating_sub(1);
+            let last = self.shown().len().saturating_sub(1);
             self.rows
                 .set_focused(if toward == Toward::Next { 0 } else { last });
         }
@@ -279,7 +169,7 @@ impl MaybeboardView {
 
     /// Keeps the focus on a stop that still exists: the result chips fall back to the box, the rows to the Show row.
     pub(crate) fn settle_focus(&mut self) {
-        let count = self.shown_results().len();
+        let count = self.results().len();
         self.quick.cursor = self.quick.cursor.min(count.saturating_sub(1));
         let stops = self.stops();
         if stops.is_empty() || stops.contains(&self.focus) {
@@ -292,85 +182,98 @@ impl MaybeboardView {
     }
 
     /// Picks the Show chip at `index`: 0 clears every color, any other toggles that color.
-    pub(crate) fn pick_show(&mut self, index: usize) {
-        let Some(color) = index
+    pub(crate) fn pick_show(&mut self, index: usize, cx: &mut Context<'_>) {
+        let action = match index
             .checked_sub(1)
             .and_then(|i| Color::all().get(i).copied())
-        else {
-            self.colors.clear();
-            self.settle_focus();
-            return;
+        {
+            Some(color) => Action::ToggleColor(color),
+            None => Action::ShowAll,
         };
-        if self.colors.contains(&color) {
-            self.colors.retain(|&c| c != color);
-        } else {
-            self.colors.push(color);
-        }
-        self.settle_focus();
+        dispatch(self, action, cx);
     }
 
-    /// Starts a new load whose reply replaces any still out.
-    pub(crate) fn refetch(&mut self, cx: &mut Context<'_>) {
-        let ticket = self.ticket.next_ticket();
-        self.load_out = true;
-        cx.request(Request::Load { ticket }.into());
-    }
-
-    /// Starts again a load that went out before a local edit.
-    fn restart_stale_load(&mut self, cx: &mut Context<'_>) {
-        if self.load_out {
-            self.refetch(cx);
-        }
-    }
-
-    /// Takes the query after an edit: a new ticket, then either the results cleared (too short) or a debounce before searching.
+    /// Hands the box's query to the model after an edit.
     pub(crate) fn query_changed(&mut self, cx: &mut Context<'_>) {
-        let ticket = self.quick.ticket.next_ticket();
-        if self.searching_catalog() {
-            self.quick.searching = true;
-            cx.request(Request::Debounce { ticket }.into());
-        } else {
-            self.quick.searching = false;
-            self.quick.results.clear();
-        }
-        self.settle_focus();
+        self.quick.cursor = 0;
+        let query = self.quick.query.value().to_owned();
+        dispatch(self, Action::Type(query), cx);
     }
 
     /// Saves the result chip at `index`: it leaves the chips at once, and the row joins the list when the server confirms.
     pub(crate) fn add_result(&mut self, index: usize, cx: &mut Context<'_>) {
-        let Some(card) = self.shown_results().get(index).map(|&c| c.clone()) else {
+        let Some(oracle_id) = self
+            .results()
+            .get(index)
+            .and_then(|c| c.scryfall_data.oracle_id)
+        else {
             return;
         };
-        let Some(oracle_id) = card.scryfall_data.oracle_id else {
-            return;
-        };
-        self.quick
-            .results
-            .retain(|c| c.scryfall_data.oracle_id != Some(oracle_id));
-        self.settle_focus();
-        cx.request(Request::Add(Box::new(card)).into());
+        dispatch(self, Action::Add(oracle_id), cx);
     }
 
-    /// The create gate for the signed-in user.
+    /// The create gate the commander swipe takes for the signed-in user.
     pub(crate) fn deck_limit(&self, cx: &Context<'_>) -> DeckLimit {
         DeckLimit::of(cx.shared.user.as_ref(), self.decks)
     }
 
-    /// Refetches when the commander swipe closed, since its up swipes saved entries, and swaps in a printing picked from a row.
+    /// Refetches when the commander swipe closed, since its up swipes saved entries, and swaps in a printing picked from a row, keeping that row expanded.
     pub(crate) fn on_return(&mut self, cx: &mut Context<'_>) {
         if card_sheets::filter::returned_from_dictionary(self.sheet.as_mut(), cx) {
             return;
         }
         if cx.shared.caches.handoff.commander_swipe.take().is_some() {
-            self.refetch(cx);
+            dispatch(self, Action::SwipeClosed, cx);
         }
-        self.rows.take_printing(cx, &mut self.entries, itself);
+        if let Some(printing) = cx.shared.caches.handoff.printing.take() {
+            let id = printing.scryfall_data.id;
+            dispatch(self, Action::PickPrinting(Box::new(printing)), cx);
+            if self
+                .model
+                .entries()
+                .iter()
+                .any(|c| c.scryfall_data.id == id)
+            {
+                self.rows.expand(id);
+            }
+        }
     }
 }
 
-/// A saved entry is the card itself, for [`CardRows::take_printing`].
-fn itself(card: &mut Card) -> &mut Card {
-    card
+/// Applies `action` to the model, performs the effects it returns in order, and keeps the focus on a stop that still exists.
+pub(crate) fn dispatch(view: &mut MaybeboardView, action: Action, cx: &mut Context<'_>) {
+    let mut seed = None;
+    for effect in view.model.update(action) {
+        match effect {
+            Effect::OfferHint(offer) => {
+                hint::once(cx, offer.key());
+            }
+            Effect::FetchMaybeboard(ticket) => cx.request(Request::Load { ticket }.into()),
+            Effect::FetchDeckProfiles => cx.request(Request::DeckProfiles.into()),
+            Effect::Debounce { ticket, wait } => {
+                cx.request(Request::Debounce { ticket, wait }.into());
+            }
+            Effect::SearchCommanders { ticket, query } => {
+                cx.request(Request::Search { ticket, query }.into());
+            }
+            Effect::AddCommander { ticket, oracle_id } => {
+                cx.request(Request::Add { ticket, oracle_id }.into());
+            }
+            Effect::RemoveCommander { ticket, oracle_id } => {
+                cx.request(Request::Remove { ticket, oracle_id }.into());
+            }
+            Effect::ClearMaybeboard(ticket) => cx.request(Request::Clear { ticket }.into()),
+            Effect::SeedCommander(card) => seed = Some(*card),
+            Effect::Navigate(Destination::DeckList) => cx.back(),
+            Effect::Navigate(Destination::CreateDeck) => {
+                if let Some(card) = seed.take() {
+                    deck_form::open_create_with_commander(cx, card);
+                }
+            }
+            Effect::Toast(toast) => cx.show(toast),
+        }
+    }
+    view.settle_focus();
 }
 
 /// Opens the card filter sheet over the list's own filter, as the app's Filter does: no format section, Reset back to blank. The list changes only when Apply commits.
@@ -394,41 +297,33 @@ pub(crate) fn on_sheet(view: &mut MaybeboardView, code: KeyCode, cx: &mut Contex
             view.sheet = None;
             view.filter = *filter;
             view.rows.set_focused(0);
-            if view.focus == Focus::List && view.filtered().is_empty() {
+            if view.focus == Focus::List && view.shown().is_empty() {
                 view.focus = Focus::Show;
             }
         }
     }
 }
 
-/// The Quick add search for `query`: commanders in the Commander format by name, no tokens, sorted by name, eight at most.
-pub(crate) fn search_query(query: &str) -> CardQueryBuilder {
-    let mut builder = CardQueryBuilder::with_name_contains(query.trim());
-    builder
-        .set_is_commander_in_format(Format::Commander)
-        .set_is_token(false)
-        .set_sort(CardSortKey::Name)
-        .set_limit(timing::MAYBEBOARD_QUICK_ADD_LIMIT);
-    builder
-}
-
-/// The screen's work.
+/// The screen's work, each request but the deck count carrying its ticket.
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum Request {
-    /// The saved list, under a ticket.
+    /// The saved list.
     Load { ticket: Ticket },
     /// The user's decks, for the create gate.
     DeckProfiles,
     /// Waits out the debounce for the query edit with this ticket.
-    Debounce { ticket: Ticket },
-    /// Searches commanders by name for the query edit with this ticket.
-    Search { ticket: Ticket, query: String },
+    Debounce { ticket: Ticket, wait: Duration },
+    /// Searches commanders with the query the model built.
+    Search {
+        ticket: Ticket,
+        query: Box<CardQuery>,
+    },
     /// Saves a commander from the result chips.
-    Add(Box<Card>),
-    /// Takes a commander off by oracle id.
-    Remove(Uuid),
+    Add { ticket: Ticket, oracle_id: Uuid },
+    /// Takes a commander off.
+    Remove { ticket: Ticket, oracle_id: Uuid },
     /// Takes every commander off.
-    Clear,
+    Clear { ticket: Ticket },
 }
 
 impl Request {
@@ -439,23 +334,19 @@ impl Request {
             Self::DeckProfiles => "deck_profiles",
             Self::Debounce { .. } => "debounce",
             Self::Search { .. } => "search",
-            Self::Add(..) => "add",
-            Self::Remove(..) => "remove",
-            Self::Clear => "clear",
+            Self::Add { .. } => "add",
+            Self::Remove { .. } => "remove",
+            Self::Clear { .. } => "clear",
         }
     }
 }
 
-/// The screen's results.
+/// The screen's results, each carrying its request's ticket back to the model.
 #[derive(Debug)]
 pub(crate) enum Update {
     Loaded {
         ticket: Ticket,
         cards: Vec<Card>,
-    },
-    LoadFailed {
-        ticket: Ticket,
-        message: String,
     },
     /// How many decks the user owns.
     DeckProfiles(usize),
@@ -467,15 +358,20 @@ pub(crate) enum Update {
         ticket: Ticket,
         cards: Vec<Card>,
     },
-    /// A search failed, quietly; the old results stay.
-    SearchFailed {
+    Added {
         ticket: Ticket,
     },
-    Added(Box<Card>),
-    Removed(Uuid),
-    Cleared,
-    /// An add, remove or clear failed with this message.
-    ActionFailed(String),
+    Removed {
+        ticket: Ticket,
+    },
+    Cleared {
+        ticket: Ticket,
+    },
+    /// A request failed; `message` is the error toast's text, `None` for a quiet search.
+    Failed {
+        ticket: Ticket,
+        message: Option<String>,
+    },
 }
 
 impl From<Request> for screens::Request {
@@ -497,15 +393,13 @@ fn pick(screen: &mut Screen) -> Option<&mut MaybeboardView> {
     }
 }
 
-/// Opens the Commander maybeboard: fetches the list, the user's decks and the tag catalog, and shows the hint the first time.
+/// Opens the Commander maybeboard: the model offers the hint and fetches the list and the user's decks, and the tag catalog warms for the rows.
 pub(crate) fn open(cx: &mut Context<'_>) {
     cx.shared.caches.handoff.commander_swipe = None;
-    let mut view = MaybeboardView::loading();
-    view.refetch(cx);
-    cx.push(Screen::CommanderMaybeboard(Box::new(view)));
-    cx.request(Request::DeckProfiles.into());
+    let mut view = MaybeboardView::default();
+    dispatch(&mut view, Action::Load, cx);
     oracle_tags::ensure_catalog(cx);
-    hint::once(cx, HINT_COMMANDER_MAYBEBOARD);
+    cx.push(Screen::CommanderMaybeboard(Box::new(view)));
 }
 
 /// Shows the hint again, for `H`.
@@ -513,15 +407,20 @@ pub(crate) fn reopen_hint(cx: &mut Context<'_>) {
     hint::reopen(cx, HINT_COMMANDER_MAYBEBOARD);
 }
 
-/// Runs `call` for an action, its success as `done` and its failure as a message.
-async fn act(
+/// Runs the list edit `call`, its success as `done` and its failure with the message to toast.
+async fn edit(
+    ticket: Ticket,
     call: impl Future<Output = Result<(), ClientError>>,
     done: Update,
 ) -> Option<screens::Update> {
     match call.await {
         Ok(()) => Some(done.into()),
         Err(e) => Some(screens::failure(&e, |message| {
-            Update::ActionFailed(message).into()
+            Update::Failed {
+                ticket,
+                message: Some(message),
+            }
+            .into()
         })),
     }
 }
@@ -539,7 +438,11 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
             {
                 Ok(cards) => Some(Update::Loaded { ticket, cards }.into()),
                 Err(e) => Some(screens::failure(&e, |message| {
-                    Update::LoadFailed { ticket, message }.into()
+                    Update::Failed {
+                        ticket,
+                        message: Some(message),
+                    }
+                    .into()
                 })),
             }
         }
@@ -551,17 +454,14 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
                 Err(_) => None,
             }
         }
-        Request::Debounce { ticket } => {
-            tokio::time::sleep(timing::QUICK_ADD_DEBOUNCE).await;
+        Request::Debounce { ticket, wait } => {
+            tokio::time::sleep(wait).await;
             Some(Update::Debounced { ticket }.into())
         }
         Request::Search { ticket, query } => {
-            let Ok(filter) = search_query(&query).build() else {
-                return Some(Update::SearchFailed { ticket }.into());
-            };
             match async {
                 client
-                    .search_commanders(&filter, &account.fresh().await?)
+                    .search_commanders(&query, &account.fresh().await?)
                     .await
             }
             .await
@@ -569,139 +469,80 @@ pub(crate) async fn perform(account: &Account, request: Request) -> Option<scree
                 Ok(cards) => Some(Update::Searched { ticket, cards }.into()),
                 // Quiet, as the app's `run_quiet`: a toast per keystroke would bury the screen.
                 Err(e) => Some(screens::failure(&e, |_| {
-                    Update::SearchFailed { ticket }.into()
+                    Update::Failed {
+                        ticket,
+                        message: None,
+                    }
+                    .into()
                 })),
             }
         }
-        Request::Add(card) => {
-            let oracle_id = card.scryfall_data.oracle_id?;
-            act(
+        Request::Add { ticket, oracle_id } => {
+            edit(
+                ticket,
                 async {
                     client
                         .add_commander_maybeboard_card(oracle_id, &account.fresh().await?)
                         .await
                 },
-                Update::Added(card),
+                Update::Added { ticket },
             )
             .await
         }
-        Request::Remove(oracle_id) => {
-            act(
+        Request::Remove { ticket, oracle_id } => {
+            edit(
+                ticket,
                 async {
                     client
                         .remove_commander_maybeboard_card(oracle_id, &account.fresh().await?)
                         .await
                 },
-                Update::Removed(oracle_id),
+                Update::Removed { ticket },
             )
             .await
         }
-        Request::Clear => {
-            act(
+        Request::Clear { ticket } => {
+            edit(
+                ticket,
                 async {
                     client
                         .clear_commander_maybeboard(&account.fresh().await?)
                         .await
                 },
-                Update::Cleared,
+                Update::Cleared { ticket },
             )
             .await
         }
     }
 }
 
+/// Hands a reply to the model. A failure's error toast goes up even when the screen has closed.
 pub(crate) fn apply(nav: &mut Nav, update: Update, cx: &mut Context<'_>) {
-    let view = nav.find_mut(pick);
-    match update {
-        Update::Loaded { ticket, cards } => {
-            if let Some(view) = view.filter(|v| v.ticket.is_current(ticket)) {
-                view.entries = cards;
-                view.load_failed = false;
-                view.is_loading = false;
-                view.load_out = false;
-                view.settle_focus();
-            }
-        }
-        Update::LoadFailed { ticket, message } => {
-            cx.shared
-                .toasts
-                .push_for(ToastKind::Error, message, toast::NORMAL);
-            if let Some(view) = view.filter(|v| v.ticket.is_current(ticket)) {
-                view.load_failed = view.entries.is_empty();
-                view.is_loading = false;
-                view.load_out = false;
-                view.settle_focus();
-            }
-        }
+    let cleared = matches!(update, Update::Cleared { .. });
+    let action = match update {
+        Update::Loaded { ticket, cards } => Action::Loaded { ticket, cards },
         Update::DeckProfiles(count) => {
-            if let Some(view) = view {
+            if let Some(view) = nav.find_mut(pick) {
                 view.decks = Some(count);
             }
+            Action::DeckProfilesLoaded { count }
         }
-        Update::Debounced { ticket } => {
-            if let Some(view) = view.filter(|v| v.quick.ticket.is_current(ticket)) {
-                let query = view.quick.query.value().trim().to_owned();
-                cx.request(Request::Search { ticket, query }.into());
+        Update::Debounced { ticket } => Action::Debounced { ticket },
+        Update::Searched { ticket, cards } => Action::Searched { ticket, cards },
+        Update::Added { ticket } => Action::Added { ticket },
+        Update::Removed { ticket } => Action::Removed { ticket },
+        Update::Cleared { ticket } => Action::Cleared { ticket },
+        Update::Failed { ticket, message } => {
+            if let Some(message) = message {
+                cx.toast(ToastKind::Error, message);
             }
+            Action::Failed { ticket }
         }
-        Update::Searched { ticket, cards } => {
-            if let Some(view) = view.filter(|v| v.quick.ticket.is_current(ticket)) {
-                view.quick.results = cards;
-                view.quick.searching = false;
-                view.quick.cursor = 0;
-                view.settle_focus();
-            }
-        }
-        Update::SearchFailed { ticket } => {
-            if let Some(view) = view.filter(|v| v.quick.ticket.is_current(ticket)) {
-                view.quick.searching = false;
-                view.settle_focus();
-            }
-        }
-        Update::Added(card) => {
-            let name = card.scryfall_data.name.clone();
-            if let Some(view) = view {
-                let oracle_id = card.scryfall_data.oracle_id;
-                if !view
-                    .entries
-                    .iter()
-                    .any(|c| c.scryfall_data.oracle_id == oracle_id)
-                {
-                    view.entries.insert(0, *card);
-                }
-                view.refetch(cx);
-                view.settle_focus();
-            }
-            cx.shared
-                .toasts
-                .push_for(ToastKind::Info, format!("Added {name}"), toast::QUICK);
-        }
-        Update::Removed(oracle_id) => {
-            if let Some(view) = view {
-                view.entries
-                    .retain(|c| c.scryfall_data.oracle_id != Some(oracle_id));
-                view.restart_stale_load(cx);
-                view.settle_focus();
-            }
-            cx.shared
-                .toasts
-                .push_for(ToastKind::Info, REMOVED.to_owned(), toast::QUICK);
-        }
-        Update::Cleared => {
-            if let Some(view) = view {
-                view.entries.clear();
-                view.rows.collapse();
-                view.restart_stale_load(cx);
-                view.settle_focus();
-            }
-            cx.shared
-                .toasts
-                .push_for(ToastKind::Info, CLEARED.to_owned(), toast::QUICK);
-        }
-        Update::ActionFailed(message) => {
-            cx.shared
-                .toasts
-                .push_for(ToastKind::Error, message, toast::NORMAL);
+    };
+    if let Some(view) = nav.find_mut(pick) {
+        dispatch(view, action, cx);
+        if cleared && view.model.entries().is_empty() {
+            view.rows.collapse();
         }
     }
 }

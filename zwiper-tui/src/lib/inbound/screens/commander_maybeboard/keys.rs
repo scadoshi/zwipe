@@ -6,15 +6,14 @@ use crossterm::event::KeyCode;
 use ratatui::style::Stylize;
 use ratatui::text::{Line, Span};
 use zwipe_core::domain::card::scryfall_data::colors::Color;
-
-use super::{
-    CLEAR, CLEAR_BODY, Focus, MORE_TITLE, MaybeboardView, Overlay, Request, draw, on_sheet,
-    open_filter, reopen_hint,
+use zwipe_ui::screens::commander_maybeboard::{
+    Action, CANCEL, CLEAR, CLEAR_BODY, CLEAR_MAYBEBOARD, MORE_TITLE,
 };
+
+use super::{Focus, MaybeboardView, Overlay, dispatch, draw, on_sheet, open_filter, reopen_hint};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Context;
 use crate::inbound::screens::commander_swipe::{self, Deal};
-use crate::inbound::screens::playstyle;
 use crate::inbound::toward::Toward;
 use crate::inbound::widgets::alert::{AlertChoice, AlertDialog};
 use crate::inbound::widgets::card_rows::CardRow;
@@ -35,7 +34,7 @@ pub(crate) fn handle(view: &mut MaybeboardView, code: KeyCode, cx: &mut Context<
         return;
     }
     match code {
-        KeyCode::Esc => return cx.back(),
+        KeyCode::Esc => return dispatch(view, Action::Back, cx),
         KeyCode::Char('!') => return help::open(cx),
         KeyCode::Char('H') => return reopen_hint(cx),
         KeyCode::Char('f') => return open_filter(view, cx),
@@ -44,20 +43,20 @@ pub(crate) fn handle(view: &mut MaybeboardView, code: KeyCode, cx: &mut Context<
             view.overlay = Some(Overlay::More(more_sheet(&cx.shared.palette)));
             return;
         }
-        KeyCode::Char('/') if !view.is_loading => {
+        KeyCode::Char('/') if !view.is_loading() => {
             view.focus = Focus::Input;
             view.quick.typing = true;
             return;
         }
         _ => {}
     }
-    if view.is_loading {
+    if view.is_loading() {
         return;
     }
     match view.focus {
         Focus::Input => on_input(view, code, cx),
         Focus::Results => on_results(view, code, cx),
-        Focus::Show => on_show(view, code),
+        Focus::Show => on_show(view, code, cx),
         Focus::List => on_list(view, code, cx),
     }
 }
@@ -68,7 +67,7 @@ fn swipe(view: &MaybeboardView, cx: &mut Context<'_>) {
     commander_swipe::open(
         cx,
         Deal::Commander {
-            exclude: view.saved(),
+            exclude: view.model.saved_oracles(),
         },
         limit,
     );
@@ -78,16 +77,16 @@ fn swipe(view: &MaybeboardView, cx: &mut Context<'_>) {
 pub(crate) fn more_sheet(palette: &Palette) -> Sheet {
     let button = Line::from(vec![
         Span::raw("c ").bold(),
-        Span::styled(format!(" {CLEAR} "), palette.error.reversed()),
+        Span::styled(format!(" {CLEAR_MAYBEBOARD} "), palette.error.reversed()),
     ]);
     Sheet::new(MORE_TITLE, vec![button]).with_footer("Esc", "Close")
 }
 
 /// The Clear maybeboard dialog: Cancel, then the danger Clear.
 pub(crate) fn clear_dialog() -> AlertDialog {
-    AlertDialog::new(CLEAR, CLEAR_BODY)
-        .with_button("Cancel", Some('n'))
-        .with_danger_button("Clear", Some('y'))
+    AlertDialog::new(CLEAR_MAYBEBOARD, CLEAR_BODY)
+        .with_button(CANCEL, Some('n'))
+        .with_danger_button(CLEAR, Some('y'))
 }
 
 fn on_overlay(view: &mut MaybeboardView, code: KeyCode, cx: &mut Context<'_>) {
@@ -105,7 +104,7 @@ fn on_overlay(view: &mut MaybeboardView, code: KeyCode, cx: &mut Context<'_>) {
         Overlay::Clear(dialog) => match dialog.handle_key(code) {
             Some(AlertChoice::Pressed(1)) => {
                 view.overlay = None;
-                cx.request(Request::Clear.into());
+                dispatch(view, Action::Clear, cx);
             }
             Some(AlertChoice::Pressed(_) | AlertChoice::Dismissed) => {
                 view.overlay = Some(Overlay::More(more_sheet(&cx.shared.palette)));
@@ -186,24 +185,24 @@ fn on_results(view: &mut MaybeboardView, code: KeyCode, cx: &mut Context<'_>) {
     if step(view, code) {
         return;
     }
-    let count = view.shown_results().len();
+    let count = view.results().len();
     if let Some(index) = on_chips(&mut view.quick.cursor, count, code) {
         view.add_result(index, cx);
     }
 }
 
-fn on_show(view: &mut MaybeboardView, code: KeyCode) {
+fn on_show(view: &mut MaybeboardView, code: KeyCode, cx: &mut Context<'_>) {
     if step(view, code) {
         return;
     }
     let count = Color::all().len().saturating_add(1);
     if let Some(index) = on_chips(&mut view.show_cursor, count, code) {
-        view.pick_show(index);
+        view.pick_show(index, cx);
     }
 }
 
 fn on_list(view: &mut MaybeboardView, code: KeyCode, cx: &mut Context<'_>) {
-    let filtered: Vec<_> = view.filtered().into_iter().cloned().collect();
+    let filtered = view.shown();
     let last = filtered.len().saturating_sub(1);
     if leaves_rows(view.rows.focused(), last, code) {
         step(view, code);
@@ -220,18 +219,26 @@ fn on_list(view: &mut MaybeboardView, code: KeyCode, cx: &mut Context<'_>) {
     else {
         return;
     };
-    match code {
+    let action = match code {
         KeyCode::Char('c') => {
-            let limit = view.deck_limit(cx);
-            playstyle::create_deck_with(cx, card, limit);
-        }
-        KeyCode::Char('r') => {
-            if let Some(oracle_id) = card.scryfall_data.oracle_id {
-                cx.request(Request::Remove(oracle_id).into());
+            // With no session only the server can refuse, as in the app.
+            let verified = cx
+                .shared
+                .user
+                .as_ref()
+                .is_none_or(|u| u.email_verified_at.is_some());
+            Action::Create {
+                card: Box::new(card.clone()),
+                verified,
             }
         }
-        _ => {}
-    }
+        KeyCode::Char('r') => match card.scryfall_data.oracle_id {
+            Some(oracle_id) => Action::Remove(oracle_id),
+            None => return,
+        },
+        _ => return,
+    };
+    dispatch(view, action, cx);
 }
 
 /// Whether `code` steps out of the rows: up from the first row or down from the last.

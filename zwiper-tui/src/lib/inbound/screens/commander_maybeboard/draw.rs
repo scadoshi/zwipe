@@ -8,11 +8,12 @@ use ratatui::style::Stylize;
 use ratatui::text::{Line, Span};
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::colors::Color;
-
-use super::{
-    Focus, LIST_TITLE, LOAD_FAILED, MaybeboardView, NO_COMMANDERS, NO_MATCH, NO_RESULTS, Overlay,
-    QUICK_ADD, SEARCHING,
+use zwipe_ui::screens::commander_maybeboard::{
+    CREATE_DECK, LIST_TITLE, NO_RESULTS, QUICK_ADD, QuickAddResults, REMOVE, SEARCHING, SHOW,
+    SHOW_ALL,
 };
+
+use super::{Focus, MaybeboardView, Overlay};
 use crate::domain::theme::Palette;
 use crate::inbound::app::Shared;
 use crate::inbound::screens::activity::draw as activity_draw;
@@ -52,7 +53,7 @@ pub(crate) fn draw(f: &mut Frame<'_>, shared: &Shared, view: &MaybeboardView) {
         Constraint::Length(bar_height),
     ])
     .areas(area);
-    if view.is_loading {
+    if view.is_loading() {
         f.render_widget(
             crate::inbound::widgets::panel::bordered(palette)
                 .title(Span::styled(GHOST.repeat(QUICK_ADD.len()), palette.accent))
@@ -107,7 +108,7 @@ fn key_hints(view: &MaybeboardView) -> Vec<(&'static str, &'static str)> {
         keys.push(("Esc", "Clear"));
         return keys;
     }
-    if !view.is_loading {
+    if !view.is_loading() {
         keys.push(("j/k", "Move"));
         match view.focus {
             Focus::Input => {
@@ -144,9 +145,9 @@ fn key_hints(view: &MaybeboardView) -> Vec<(&'static str, &'static str)> {
 
 /// A saved commander as its card row: Create deck, then Remove when it has an oracle id.
 pub(crate) fn entry_row(card: &Card) -> CardRow<'_> {
-    let row = CardRow::new(card).with_action("c", "Create deck");
+    let row = CardRow::new(card).with_action("c", CREATE_DECK);
     if card.scryfall_data.oracle_id.is_some() {
-        row.with_action("r", "Remove")
+        row.with_action("r", REMOVE)
     } else {
         row
     }
@@ -155,13 +156,11 @@ pub(crate) fn entry_row(card: &Card) -> CardRow<'_> {
 /// The result chips: one muted chip while searching or when nothing is left to add, else one per commander, the one under the cursor picked out while focused.
 pub(crate) fn results_line(palette: &Palette, view: &MaybeboardView) -> Line<'static> {
     let note = |text: &str| Line::from(Span::styled(format!(" {text} "), palette.muted.reversed()));
-    if view.quick.searching {
-        return note(SEARCHING);
-    }
-    let shown = view.shown_results();
-    if shown.is_empty() {
-        return note(NO_RESULTS);
-    }
+    let shown = match view.model.quick_add() {
+        Some(QuickAddResults::Found(cards)) => cards,
+        Some(QuickAddResults::Searching) => return note(SEARCHING),
+        Some(QuickAddResults::Empty) | None => return note(NO_RESULTS),
+    };
     let focused = view.focus == Focus::Results;
     let mut spans = Vec::new();
     for (i, card) in shown.iter().enumerate() {
@@ -181,19 +180,19 @@ pub(crate) fn results_line(palette: &Palette, view: &MaybeboardView) -> Line<'st
 
 /// The Show row: its label, All, then the five color pips.
 pub(crate) fn show_line(palette: &Palette, view: &MaybeboardView) -> Line<'static> {
-    let mut chips = vec![ChipContent::text("All", view.colors.is_empty())];
+    let mut chips = vec![ChipContent::text(SHOW_ALL, view.model.shows_all())];
     chips.extend(
         Color::all()
             .iter()
             .enumerate()
             .map(|(index, color)| ChipContent {
                 spans: vec![mana::pip(palette, index)],
-                picked: view.colors.contains(color),
+                picked: view.model.is_picked(*color),
             }),
     );
     playstyle_draw::chip_line(
         palette,
-        "Show",
+        SHOW,
         chips,
         view.show_cursor,
         view.focus == Focus::Show,
@@ -205,7 +204,7 @@ fn loaded_lines(shared: &Shared, view: &MaybeboardView, width: u16) -> Body {
     let palette = &shared.palette;
     let wrap = usize::from(width).saturating_sub(GUTTER.len());
     let mut body = Body::default();
-    if view.searching_catalog() {
+    if view.model.searching_catalog() {
         body.item(
             playstyle_draw::wrap_at_gaps(results_line(palette, view), wrap),
             view.focus == Focus::Results,
@@ -217,22 +216,13 @@ fn loaded_lines(shared: &Shared, view: &MaybeboardView, width: u16) -> Body {
         view.focus == Focus::Show,
     );
     body.line(Line::default());
-    let note = if view.load_failed {
-        Some(LOAD_FAILED)
-    } else if view.entries.is_empty() {
-        Some(NO_COMMANDERS)
-    } else if view.filtered().is_empty() {
-        Some(NO_MATCH)
-    } else {
-        None
-    };
-    if let Some(note) = note {
+    if let Some(note) = view.model.message(&view.filter) {
         body.line(Line::styled(note, palette.muted));
         return body;
     }
     body.line(Line::from(Span::raw(LIST_TITLE).bold()));
-    let filtered = view.filtered();
-    let rows: Vec<CardRow<'_>> = filtered.iter().map(|&c| entry_row(c)).collect();
+    let shown = view.shown();
+    let rows: Vec<CardRow<'_>> = shown.iter().map(entry_row).collect();
     let lines = view.rows.lines(palette, &shared.caches.oracle_tags, &rows);
     let focused_row = view.rows.focused().min(rows.len().saturating_sub(1));
     for (i, row) in lines.into_iter().enumerate() {
