@@ -718,7 +718,7 @@ pub fn View(deck_id: Uuid) -> Element {
 
     rsx! {
             div { class: "screen",
-                ScreenHeader { title: deck_cards::TITLE, hint: deck_cards_hint_open }
+                ScreenHeader { title: deck_cards::TITLE, hint: deck_cards_hint_open, back: move |()| driver.dispatch(Action::Back) }
 
                 div { class: "screen-content",
 
@@ -1058,11 +1058,6 @@ pub fn View(deck_id: Uuid) -> Element {
             }
 
             ActionBar {
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| driver.dispatch(Action::Back),
-                    "{deck_cards::BACK}"
-                }
                 Button {
                     variant: ButtonVariant::Action,
                     onclick: move |_| driver.dispatch(Action::OpenAdd),

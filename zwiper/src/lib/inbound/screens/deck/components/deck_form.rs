@@ -335,7 +335,7 @@ pub(crate) fn DeckForm(open: Open) -> Element {
 
     rsx! {
             div { class: "screen",
-                ScreenHeader { title: mode.title(), hint: hint_open }
+                ScreenHeader { title: mode.title(), hint: hint_open, back: move |()| driver.dispatch(Action::Back) }
 
                 div { class: "screen-content content-enter",
                 div { class : "container-sm",
@@ -356,14 +356,8 @@ pub(crate) fn DeckForm(open: Open) -> Element {
                 }
             }
 
-            ActionBar {
-                Button {
-                    variant: ButtonVariant::Action,
-                    disabled: saving,
-                    onclick: move |_| driver.dispatch(Action::Back),
-                    {model::BACK}
-                }
-                if let Some(label) = save_label {
+            if let Some(label) = save_label {
+                ActionBar {
                     Button {
                         variant: ButtonVariant::Action,
                         disabled: saving,

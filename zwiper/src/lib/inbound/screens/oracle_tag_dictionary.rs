@@ -11,8 +11,7 @@
 //! picker and card filter read: one fetch of the ~4,500-row list per session.
 
 use components::{
-    ActionBar, Button, ButtonVariant, HintBullet, HintBullets, HintDialog, HintKey, Toasts,
-    use_overlay_back, use_toast,
+    HintBullet, HintBullets, HintDialog, HintKey, Toasts, use_overlay_back, use_toast,
 };
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
@@ -138,7 +137,7 @@ pub fn OracleTagDictionary(open: Signal<bool>, on_use: EventHandler<String>) -> 
             // An overlay screen paints its own backdrop, since .screen is clear
             // and the screen beneath would show through.
             ::components::GridCells { still: true }
-            ScreenHeader { title: model::TITLE, hint }
+            ScreenHeader { title: model::TITLE, hint, back: move |()| driver.dispatch(Action::Back) }
 
             div { class: "screen-content content-enter",
                 match body {
@@ -228,13 +227,6 @@ pub fn OracleTagDictionary(open: Signal<bool>, on_use: EventHandler<String>) -> 
                 }
             }
 
-            ActionBar {
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| driver.dispatch(Action::Back),
-                    {model::BACK}
-                }
-            }
 
             HintDialog { open: hint, actions: guide_link::one_time(HINT_ORACLE_TAG_DICTIONARY), title: model::TITLE,
             HintBullets {

@@ -14,8 +14,7 @@
 //! file draws it through the same `SwipeStack` as the add screen.
 
 use components::{
-    ActionBar, Button, ButtonVariant, HintBullet, HintBullets, HintDialog, Toasts,
-    use_overlay_back, use_toast,
+    ActionBar, HintBullet, HintBullets, HintDialog, Toasts, use_overlay_back, use_toast,
 };
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
@@ -174,7 +173,7 @@ pub fn OracleTagExamples(open: Signal<bool>, slug: String) -> Element {
             // An overlay screen paints its own backdrop, since .screen is clear
             // and the screen beneath would show through.
             ::components::GridCells { still: true }
-            ScreenHeader { title: model::TITLE, hint: examples_hint_open }
+            ScreenHeader { title: model::TITLE, hint: examples_hint_open, back: move |()| driver.dispatch(Action::Back) }
 
             HintDialog {
                 open: examples_hint_open,
@@ -260,11 +259,6 @@ pub fn OracleTagExamples(open: Signal<bool>, slug: String) -> Element {
             }
 
             ActionBar {
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| driver.dispatch(Action::Back),
-                    {model::BACK}
-                }
                 if current.is_some() {
                     RulesButton { open: show_details }
                 }

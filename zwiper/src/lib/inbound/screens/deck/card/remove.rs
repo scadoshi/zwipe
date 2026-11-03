@@ -492,7 +492,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
 
     rsx! {
             div { class: "screen",
-                ScreenHeader { title: remove_cards::TITLE, hint: swipe_hint_open }
+                ScreenHeader { title: remove_cards::TITLE, hint: swipe_hint_open, back: move |()| driver.dispatch(Action::Back) }
 
                 div { class: "screen-content card-swipe content-enter",
 
@@ -550,11 +550,6 @@ pub fn Remove(deck_id: Uuid) -> Element {
             }
 
             ActionBar {
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| driver.dispatch(Action::Back),
-                    {remove_cards::BACK}
-                }
                 Button {
                     variant: ButtonVariant::Action,
                     onclick: move |_| filters_overlay_open.set(true),

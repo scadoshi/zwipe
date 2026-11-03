@@ -158,7 +158,7 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
 
     rsx! {
             div { class: "screen",
-                ScreenHeader { title: deck_import::TITLE, hint: import_hint }
+                ScreenHeader { title: deck_import::TITLE, hint: import_hint, back: move |()| driver.dispatch(Action::Back) }
 
                 HintDialog {
                     open: import_hint,
@@ -270,11 +270,6 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                 }
 
                 ActionBar {
-                    Button {
-                        variant: ButtonVariant::Action,
-                        onclick: move |_| driver.dispatch(Action::Back),
-                        "{deck_import::BACK}"
-                    }
                     Button {
                         variant: ButtonVariant::Action,
                         disabled,

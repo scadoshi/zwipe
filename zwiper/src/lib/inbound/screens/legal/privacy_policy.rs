@@ -7,7 +7,6 @@
 //! the contact line calls [`open_url::open`](crate::outbound::open_url::open)
 //! directly.
 
-use components::{ActionBar, Button, ButtonVariant};
 use dioxus::prelude::*;
 use zwipe_core::domain::site::{DISCORD_URL, SUPPORT_EMAIL};
 use zwipe_core::legal::{PRIVACY_INTRO_HTML, PRIVACY_LAST_UPDATED, PRIVACY_POLICY_HTML};
@@ -35,7 +34,7 @@ pub fn PrivacyPolicy() -> Element {
 
     rsx! {
         div { class: "screen",
-            ScreenHeader { title: "Privacy policy" }
+            ScreenHeader { title: "Privacy policy", back: move |()| navigator.go_back() }
 
             div { class: "screen-content content-enter",
                 div { class: "privacy-content",
@@ -76,13 +75,6 @@ pub fn PrivacyPolicy() -> Element {
                 }
             }
 
-            ActionBar {
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| navigator.go_back(),
-                    "Back"
-                }
-            }
         }
     }
 }

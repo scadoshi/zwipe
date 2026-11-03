@@ -117,7 +117,7 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
 
     rsx! {
             div { class: "screen",
-                ScreenHeader { title: deck_export::TITLE, hint: export_hint }
+                ScreenHeader { title: deck_export::TITLE, hint: export_hint, back: move |()| driver.dispatch(Action::Back) }
 
                 HintDialog {
                     open: export_hint,
@@ -182,11 +182,6 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                 }
 
                 ActionBar {
-                    Button {
-                        variant: ButtonVariant::Action,
-                        onclick: move |_| driver.dispatch(Action::Back),
-                        "{deck_export::BACK}"
-                    }
                     Button {
                         variant: ButtonVariant::Action,
                         onclick: move |_| driver.dispatch(Action::Copy),

@@ -653,7 +653,7 @@ pub fn Add(deck_id: Uuid) -> Element {
 
     rsx! {
             div { class: "screen",
-                ScreenHeader { title: add_cards::TITLE, hint: driver.hint_open }
+                ScreenHeader { title: add_cards::TITLE, hint: driver.hint_open, back: move |()| driver.dispatch(Action::Back) }
 
                 div { class: "screen-content card-swipe content-enter",
 
@@ -767,11 +767,6 @@ pub fn Add(deck_id: Uuid) -> Element {
             }
 
             ActionBar {
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| driver.dispatch(Action::Back),
-                    "{add_cards::BACK}"
-                }
                 Button {
                     variant: ButtonVariant::Action,
                     onclick: move |_| filters_overlay_open.set(true),
