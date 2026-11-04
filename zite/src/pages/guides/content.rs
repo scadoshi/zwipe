@@ -404,7 +404,7 @@ pub(crate) static GUIDES: &[Guide] = &[
             ),
             Block::H2("Defaults and Reset"),
             Block::P(
-                "Every screen starts from a default view, and that default isn't always empty. The [[undo]] on the filter sheet returns you to it:",
+                "Every screen starts from a default view, and that default isn't always empty. The [[eraser]] on the filter sheet returns you to it:",
             ),
             Block::Bullets(&[
                 "Add cards on a commander deck: your commander's colors, the format's legal cards, in synergy order. Once you hit your land target, lands drop out too.",
@@ -413,7 +413,7 @@ pub(crate) static GUIDES: &[Guide] = &[
                 "Remove and browse: an empty filter, over your deck's own cards.",
             ]),
             Block::P(
-                "The dot on the [[funnel]] means you've changed something from that default, a filter or a different sort. The [[undo]] undoes the change and drops you back to the default. Synergy is a separate mode, so it stays however you set it.",
+                "The dot on the [[funnel]] means you've changed something from that default, a filter or a different sort. The [[eraser]] wipes the change and drops you back to the default. Synergy is a separate mode, so it stays however you set it.",
             ),
             Block::Note(
                 "These built-in defaults never light the dot, since you didn't set them: your commander's colors, format legality, the popularity or synergy order, and lands leaving once you're at target.",

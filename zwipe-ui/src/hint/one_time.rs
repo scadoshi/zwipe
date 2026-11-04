@@ -293,7 +293,7 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
                 bullet(vec![
                     icon_key(KeyIcon::Check),
                     text(" uses it. "),
-                    icon_key_in(KeyIcon::Undo, Role::Warning),
+                    icon_key_in(KeyIcon::Eraser, Role::Warning),
                     text(" then "),
                     icon_key(KeyIcon::Check),
                     text(" goes back to the default view"),

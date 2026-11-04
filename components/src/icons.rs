@@ -15,6 +15,8 @@ pub const MINUS: &str = "M5 12h14";
 pub const FUNNEL: &str = "M4 5h16l-6 7.5V19l-4 1v-7.5z";
 /// The undo icon: an arrow turning back.
 pub const UNDO: &str = "M9 14L4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3";
+/// An eraser: a sheet's reset, wiping the form back to its defaults.
+pub const ERASER: &str = "M7 21l-4.3-4.3a2.4 2.4 0 0 1 0-3.4l9.6-9.6a2.4 2.4 0 0 1 3.4 0l5.6 5.6a2.4 2.4 0 0 1 0 3.4L13 21M22 21H7M5 11l9 9";
 /// The refresh icon: an arrow circling round.
 pub const REFRESH: &str = "M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5";
 

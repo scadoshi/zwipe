@@ -85,6 +85,8 @@ pub enum KeyIcon {
     Funnel,
     /// The undo and reset button's arrow turning back.
     Undo,
+    /// A sheet's reset, wiping the form to its defaults.
+    Eraser,
     /// The refresh button's arrow circling round.
     Refresh,
     /// The save and apply button's checkmark.
@@ -127,6 +129,7 @@ impl KeyIcon {
             Self::Minus => "minus",
             Self::Funnel => "funnel",
             Self::Undo => "undo",
+            Self::Eraser => "eraser",
             Self::Refresh => "refresh",
             Self::Check => "check",
             Self::Copy => "copy",

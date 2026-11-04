@@ -101,6 +101,7 @@ fn guide_icon(name: &str) -> Option<GuideIcon> {
         "minus" => icons::MINUS,
         "funnel" => icons::FUNNEL,
         "undo" => icons::UNDO,
+        "eraser" => icons::ERASER,
         "refresh" => icons::REFRESH,
         "check" => icons::CHECK,
         "copy" => icons::COPY,
