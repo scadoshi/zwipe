@@ -29,8 +29,8 @@ use crate::inbound::shell::{OpenFrame, PublicFrame, Shell};
 
 /// The app's routes. The public ones sit in [`PublicFrame`], Privacy policy
 /// and Not found in [`OpenFrame`] (either nav), and the rest need a session ([`AuthGate`])
-/// and sit under the top nav [`Shell`]. The old `/changelog` goes to About,
-/// which holds the history now.
+/// and sit under the top nav [`Shell`]. `/changelog` redirects to About and
+/// `/config` to Settings.
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
 #[expect(missing_docs, reason = "each route field is the URL parameter its path names")]

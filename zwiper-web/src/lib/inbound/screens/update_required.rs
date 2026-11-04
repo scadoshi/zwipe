@@ -9,7 +9,6 @@ use dioxus::prelude::*;
 pub fn UpdateRequired() -> Element {
     rsx! {
         div { class: "screen web-screen",
-            div { class: "page-header" }
             div { class: "screen-content centered content-enter",
                 div { class: "container-sm text-center",
                     div { class: "card", style: "cursor: default;",

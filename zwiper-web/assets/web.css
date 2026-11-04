@@ -4,6 +4,8 @@
 
 :root {
     --web-content-max: 72rem;
+    /* zite's page on a wide window (the page grammar below). */
+    --web-page-max: 74rem;
     /* Where a sticky column stops: the page's 1rem gap under the nav. */
     --web-sticky-top: 1rem;
     /* How tall a sticky column may be: the window less the nav, the gap
@@ -103,9 +105,6 @@ body {
    under it, each a stack one panel gap apart, and the shorter column ends
    early. Below the breakpoint the columns dissolve into the screen's own
    single column. */
-:root {
-    --web-page-max: 74rem;
-}
 
 /* zite's tagline under the hero's mark and counters. */
 .web-hero-tagline {
@@ -255,9 +254,6 @@ body {
         box-sizing: border-box;
     }
 }
-
-/* ---- Public frame (login, register, reset) ---- */
-
 
 /* ---- Top nav ----
 
@@ -571,7 +567,7 @@ body {
     }
 }
 
-/* ---- Changelog ---- */
+/* ---- About ---- */
 
 /* About keeps the app's column of panels, centered, on a wide window. */
 @media (min-width: 900px) {
@@ -850,7 +846,7 @@ body {
         pointer-events: none;
         border-radius: 4.75% / 3.5%;
         overflow: hidden;
-        box-shadow: var(--shadow-lg, 0 0.5rem 1.5rem rgb(0 0 0 / 0.35));
+        box-shadow: var(--shadow-md);
         animation: chip-in 0.2s ease-out;
     }
 

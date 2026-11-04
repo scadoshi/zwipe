@@ -104,7 +104,7 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
     let mut printing_open = use_signal(|| false);
     let mut filter_open = use_signal(|| false);
     let mut hint_open = use_one_time_hint(OneTimeHint::RemoveDeckCards);
-    let docked = use_filter_docked(true);
+    let docked = use_filter_docked();
     let control = use_swipe_control();
 
     let mut bump = move || {

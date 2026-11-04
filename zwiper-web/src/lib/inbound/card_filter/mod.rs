@@ -43,12 +43,12 @@ use crate::inbound::chrome::sheet::{SheetForm, SheetFrame};
 use crate::inbound::chrome::toast::raise;
 use crate::inbound::screens::oracle_tag_dictionary::OracleTagDictionary;
 
-/// Whether the panel is docked open: a host that docks it, on a window at
-/// least three columns wide. The host reads it to hide its `Filter` button.
-pub fn use_filter_docked(dockable: bool) -> Signal<bool> {
+/// Whether the panel is docked open: on a window at least three columns
+/// wide. The host reads it to hide its `Filter` button.
+pub fn use_filter_docked() -> Signal<bool> {
     let wide = use_min_width(THREE_COLUMNS_PX);
     let mut docked = use_signal(|| false);
-    use_effect(move || docked.set(dockable && wide()));
+    use_effect(move || docked.set(wide()));
     docked
 }
 

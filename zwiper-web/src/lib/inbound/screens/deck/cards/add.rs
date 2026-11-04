@@ -138,7 +138,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
     let mut filter_open = use_signal(|| false);
     let mut pull_from: Signal<Option<(f64, f64)>> = use_signal(|| None);
     let mut hint_open = use_one_time_hint(OneTimeHint::AddDeckCards);
-    let docked = use_filter_docked(true);
+    let docked = use_filter_docked();
     let control = use_swipe_control();
 
     let context = move || -> AddContext {
