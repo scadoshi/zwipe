@@ -78,6 +78,9 @@ impl Driver {
                 login_prefill.set(Some(username));
             }
             Effect::Navigate(Destination::Previous) => self.navigator.go_back(),
+            Effect::Navigate(Destination::Login) => {
+                self.navigator.replace(Router::Login {});
+            }
             Effect::Toast(toast) => ui_toast::raise(self.toast, toast),
         }
     }

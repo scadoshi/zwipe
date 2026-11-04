@@ -1,5 +1,6 @@
 use super::*;
 use crate::account::INVALID_RESET_EMAIL;
+use crate::toast::NORMAL;
 
 fn typed(email: &str) -> State {
     let mut state = State::new();
@@ -58,14 +59,32 @@ fn the_email_is_checked_and_sent_untrimmed() {
     assert!(state.is_loading());
 }
 
+/// The effects a request that goes in with `email` returns.
+fn leaves_for_login(email: &str) -> Vec<Effect> {
+    vec![
+        Effect::Prefill(email.to_owned()),
+        Effect::Toast(Toast::new(ToastKind::Info, LINK_SENT, NORMAL)),
+        Effect::Navigate(Destination::Login),
+    ]
+}
+
 #[test]
-fn a_request_that_goes_in_shows_the_panel() {
+fn a_request_that_goes_in_prefills_login_toasts_and_goes_there() {
     let mut state = typed("a@b.co");
     let ticket = send(&mut state);
-    assert_eq!(state.update(Action::Sent { ticket }), []);
+    assert_eq!(
+        state.update(Action::EditEmail("c@d.co".to_owned())),
+        [],
+        "typing after a send"
+    );
+    assert_eq!(
+        state.update(Action::Sent { ticket }),
+        leaves_for_login("c@d.co"),
+        "the email as it stands, since Send does not hold the field"
+    );
     assert!(state.is_sent());
     assert!(!state.is_loading());
-    assert_eq!(state.update(Action::Submit), [], "the button is gone");
+    assert_eq!(state.update(Action::Submit), [], "the screen is leaving");
 }
 
 #[test]
@@ -88,8 +107,27 @@ fn a_second_send_while_one_is_out_sends_again_and_both_replies_land() {
         !state.is_loading(),
         "any reply stops the spinner, as in the app"
     );
-    assert_eq!(state.update(Action::Sent { ticket: second }), []);
+    assert_eq!(
+        state.update(Action::Sent { ticket: second }),
+        leaves_for_login("a@b.co")
+    );
     assert!(state.is_sent());
+}
+
+#[test]
+fn only_the_first_success_leaves() {
+    let mut state = typed("a@b.co");
+    let first = send(&mut state);
+    let second = send(&mut state);
+    assert_eq!(
+        state.update(Action::Sent { ticket: first }),
+        leaves_for_login("a@b.co")
+    );
+    assert_eq!(
+        state.update(Action::Sent { ticket: second }),
+        [],
+        "a second success leaves twice"
+    );
 }
 
 #[test]
@@ -103,7 +141,7 @@ fn a_late_reply_is_ignored() {
     let stranger = Generation::default().next_ticket();
     let mut idle = typed("a@b.co");
     assert_eq!(idle.update(Action::Sent { ticket: stranger }), []);
-    assert!(!idle.is_sent(), "a reply to nothing sent shows the panel");
+    assert!(!idle.is_sent(), "a reply to nothing sent leaves");
 }
 
 #[test]
@@ -119,14 +157,13 @@ fn back_goes_back_even_while_a_request_is_out() {
 #[test]
 fn the_copy_matches_the_app() {
     assert_eq!(
-        [TITLE, EMAIL, BACK, SEND, SENT_TITLE, SENT_BODY],
+        [TITLE, EMAIL, BACK, SEND, LINK_SENT],
         [
             "Reset password",
             "Email",
             "Back to login",
             "Send reset link",
-            "Check your email",
-            "If that email is registered, a reset link is on its way."
+            "If that email is registered, a reset link is on its way"
         ]
     );
 }

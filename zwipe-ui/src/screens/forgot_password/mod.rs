@@ -1,12 +1,13 @@
-//! Forgot password: an email field with Back to login and Send reset link under it, and once a request goes in, a panel saying a link is on its way. The reset itself happens on the website, from the emailed link.
+//! Forgot password: an email field with Back to login and Send reset link under it. The reset itself happens on the website, from the emailed link.
 //!
-//! The client keeps a [`State`] while the screen is up and hands every keystroke in as [`Action::EditEmail`]. The check is [`account::reset_email_error`]: the address as typed, untrimmed. Neither button waits on the request, so a second Send reset link sends again; every reply lands, and the first success shows the panel. The text input and its focus stay in the client.
+//! The client keeps a [`State`] while the screen is up and hands every keystroke in as [`Action::EditEmail`]. The check is [`account::reset_email_error`]: the address as typed, untrimmed. Neither button waits on the request, so a second Send reset link sends again; every reply lands, and the first success hands the email to Login with [`Effect::Prefill`], toasts [`LINK_SENT`] and goes there in place of this screen. The text input and its focus stay in the client.
 
 #[cfg(test)]
 mod tests;
 
 use crate::account;
 use crate::generation::{Generation, Ticket};
+use crate::toast::{Toast, ToastKind};
 
 /// The screen's title.
 pub const TITLE: &str = "Reset password";
@@ -17,20 +18,19 @@ pub const EMAIL: &str = "Email";
 /// The button back to Login.
 pub const BACK: &str = "Back to login";
 
-/// The submit button, gone once a request went in.
+/// The submit button.
 pub const SEND: &str = "Send reset link";
 
-/// The panel's title once a request went in.
-pub const SENT_TITLE: &str = "Check your email";
-
-/// The panel's line once a request went in. It never says whether the address has an account.
-pub const SENT_BODY: &str = "If that email is registered, a reset link is on its way.";
+/// The toast once a request went in. It never says whether the address has an account.
+pub const LINK_SENT: &str = "If that email is registered, a reset link is on its way";
 
 /// Where an action sends the user. The client maps each to its own route.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Destination {
     /// Back where the user came from, Login, from Back to login.
     Previous,
+    /// Login in place of this screen, once a request went in.
+    Login,
 }
 
 /// What a user does on Forgot password, and each reply the client hands back.
@@ -64,8 +64,12 @@ pub enum Effect {
         /// The email as typed.
         email: String,
     },
+    /// Hands this email to Login to fill in.
+    Prefill(String),
     /// Goes to this screen.
     Navigate(Destination),
+    /// Raises this toast.
+    Toast(Toast),
 }
 
 /// Forgot password for one visit: the field empty, nothing judged, nothing out.
@@ -80,7 +84,7 @@ pub struct State {
     loading: bool,
     /// The requests out.
     waiting: Vec<Ticket>,
-    /// Whether a request went in: the form gives way to the panel.
+    /// Whether a request went in: the first success leaves for Login, later replies change nothing.
     sent: bool,
     tickets: Generation,
 }
@@ -94,7 +98,7 @@ impl State {
 
     /// Applies `action` and returns what the client must do, in order.
     ///
-    /// Send reset link does nothing once a request went in, as its button is gone.
+    /// Send reset link does nothing once a request went in, as the screen is leaving.
     #[must_use = "the client performs the effects"]
     pub fn update(&mut self, action: Action) -> Vec<Effect> {
         match action {
@@ -107,10 +111,15 @@ impl State {
             }
             Action::Submit => self.submit(),
             Action::Sent { ticket } => {
-                if self.settle(ticket) {
-                    self.sent = true;
+                if !self.settle(ticket) || self.sent {
+                    return Vec::new();
                 }
-                Vec::new()
+                self.sent = true;
+                vec![
+                    Effect::Prefill(self.email.clone()),
+                    Effect::Toast(Toast::normal(ToastKind::Info, LINK_SENT)),
+                    Effect::Navigate(Destination::Login),
+                ]
             }
             Action::Failed { ticket } => {
                 self.settle(ticket);
@@ -135,7 +144,7 @@ impl State {
         self.loading
     }
 
-    /// Whether a request went in, so the panel shows in place of the form and Send reset link is gone.
+    /// Whether a request went in, so Send reset link does nothing more.
     #[must_use]
     pub fn is_sent(&self) -> bool {
         self.sent

@@ -20,7 +20,8 @@ use crate::outbound::app_icon;
 use crate::outbound::session::Persist;
 
 /// An identifier for the login form to fill in once, set by a screen that
-/// sends the user here (registration). Provided at the root.
+/// sends the user here (Create profile's username, Forgot password's email).
+/// Provided at the root.
 #[derive(Debug, Clone, Copy)]
 pub struct LoginPrefill(pub Signal<Option<String>>);
 

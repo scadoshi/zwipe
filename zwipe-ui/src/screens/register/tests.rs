@@ -155,7 +155,7 @@ fn a_second_submit_while_one_is_out_does_nothing() {
 }
 
 #[test]
-fn a_registration_that_goes_through_prefills_login_toasts_and_goes_back() {
+fn a_registration_that_goes_through_prefills_login_toasts_and_goes_there() {
     let (mut state, ticket) = sending();
     type_in(&mut state, Field::Username, "changed");
     assert_eq!(
@@ -163,7 +163,7 @@ fn a_registration_that_goes_through_prefills_login_toasts_and_goes_back() {
         vec![
             Effect::Prefill("newbie".to_owned()),
             Effect::Toast(Toast::new(ToastKind::Info, CHECK_INBOX, NORMAL)),
-            Effect::Navigate(Destination::Previous),
+            Effect::Navigate(Destination::Login),
         ],
         "the username sent, not the one typed since"
     );
