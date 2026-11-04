@@ -73,12 +73,6 @@ pub const PASSWORD_CHANGED: &str = "Password change successful";
 /// How long the client waits between [`Effect::Wait`] and the [`Action::Tick`] it sends back.
 pub const TICK: Duration = Duration::from_secs(1);
 
-/// The Version row's value for the client's `version`.
-#[must_use]
-pub fn version_label(version: &str) -> String {
-    format!("v{version}")
-}
-
 /// Where an action sends the user. The client maps each to its own route.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Destination {

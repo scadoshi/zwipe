@@ -1,7 +1,7 @@
 //! Saving the theme to the account, shared by Settings' Theme row and the
-//! main menu's theme row.
+//! main menu's theme buttons.
 //!
-//! Both rows drive a `zwipe_ui::screens::config` model and draw in the
+//! Both drive a `zwipe_ui::screens::config` model and draw in the
 //! app-wide `Signal<ThemeConfig>`. What they share sits here: the sheet that
 //! hands a kept pick on as an action, the request a save effect sends, and
 //! what a saved theme does to the app (the shell's theme and the app icon

@@ -20,11 +20,11 @@ pub mod guide_link;
 pub mod hint_dialog;
 /// App-root receiver that renders on-demand "?" hint dialogs (sender/receiver).
 pub mod hint_host;
-/// Home's Decks row: the deck count chip and an Open button.
+/// Home's Decks panel: the deck count and the All decks chip over the latest decks as tiles.
 pub mod home_decks;
 /// The mark with the public counters, on home and the auth screens.
 pub mod home_hero;
-/// Home's Color map panel: the user's color territory map.
+/// Home's Colors panel: a bar per color with the card count across the user's decks, and the Playstyle chip.
 pub mod home_play_style;
 /// Persistent, on-demand "?" help button (not one-time, no session dependency).
 pub mod info_button;

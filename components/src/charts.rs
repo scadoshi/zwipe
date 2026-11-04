@@ -393,7 +393,9 @@ pub fn DeckCharts(
     /// "?" beside each label; the site passes none.
     type_hint: Option<Element>,
     role_hint: Option<Element>,
-    #[props(default)] oracle_tag_hint: Option<Element>,
+    /// "?" beside the Oracle tags label.
+    #[props(default)]
+    oracle_tag_hint: Option<Element>,
     /// Each role's oracle tags, keyed by the role bar's label
     /// (`DeckMetrics::card_role_tags`).
     #[props(default)]

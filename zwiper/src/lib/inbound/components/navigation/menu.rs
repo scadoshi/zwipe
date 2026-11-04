@@ -83,15 +83,15 @@ impl Section {
         }
     }
 
-    /// The footer icon's path, for the sections in [`Self::FOOTER`].
+    /// The footer icon's path, for the sections in [`Self::FOOTER`]; the listed sections draw their label instead.
     #[must_use]
-    pub const fn icon(self) -> &'static str {
+    pub const fn icon(self) -> Option<&'static str> {
         match self {
-            Self::Home => HOUSE,
-            Self::Account => PERSON,
-            Self::Config => COG,
-            Self::About => INFO,
-            Self::Decks | Self::Playstyle | Self::Maybeboard | Self::Activity => "",
+            Self::Home => Some(HOUSE),
+            Self::Account => Some(PERSON),
+            Self::Config => Some(COG),
+            Self::About => Some(INFO),
+            Self::Decks | Self::Playstyle | Self::Maybeboard | Self::Activity => None,
         }
     }
 
@@ -178,15 +178,29 @@ pub fn MenuLinks(open: Signal<bool>, route: Router) -> Element {
     }
 }
 
-/// One entry's button, lit when it is `current`. A tap pushes `to`; on the
-/// screen it opens, it closes the menu instead.
+/// One menu button, lit when it is `current`: the label as text, or with an
+/// `icon` the icon alone, the label read out for it. A tap pushes `to`; on
+/// the screen it opens, it closes the menu instead.
 #[component]
-fn MenuEntry(label: &'static str, to: Router, current: bool, mut open: Signal<bool>) -> Element {
+fn MenuEntry(
+    label: &'static str,
+    to: Router,
+    current: bool,
+    mut open: Signal<bool>,
+    #[props(default)] icon: Option<&'static str>,
+) -> Element {
     let route: Router = use_route();
     let nav = use_navigator();
+    let class = match (icon.is_some(), current) {
+        (false, false) => "nav-link",
+        (false, true) => "nav-link active",
+        (true, false) => "btn-action nav-icon nav-link",
+        (true, true) => "btn-action nav-icon nav-link active",
+    };
     rsx! {
         button {
-            class: if current { "nav-link active" } else { "nav-link" },
+            class,
+            "aria-label": icon.map(|_| label),
             onclick: move |_| {
                 if to == route {
                     open.set(false);
@@ -194,29 +208,10 @@ fn MenuEntry(label: &'static str, to: Router, current: bool, mut open: Signal<bo
                     nav.push(to.clone());
                 }
             },
-            "{label}"
-        }
-    }
-}
-
-/// One footer section's icon button, lit when it is `current`. A tap pushes
-/// the section's route; on the screen it opens, it closes the menu instead.
-#[component]
-fn MenuIcon(section: Section, current: bool, mut open: Signal<bool>) -> Element {
-    let route: Router = use_route();
-    let nav = use_navigator();
-    rsx! {
-        button {
-            class: if current { "btn-action nav-icon nav-link active" } else { "btn-action nav-icon nav-link" },
-            "aria-label": section.label(),
-            onclick: move |_| {
-                if section.route() == route {
-                    open.set(false);
-                } else {
-                    nav.push(section.route());
-                }
-            },
-            DockIcon { path: section.icon() }
+            match icon {
+                Some(path) => rsx! { DockIcon { path } },
+                None => rsx! { "{label}" },
+            }
         }
     }
 }
@@ -239,7 +234,14 @@ pub fn MenuFooter(open: Signal<bool>) -> Element {
                 SupportButton {}
                 if signed_in {
                     for section in Section::FOOTER {
-                        MenuIcon { key: "{section.label()}", section, current: current == Some(section), open }
+                        MenuEntry {
+                            key: "{section.label()}",
+                            label: section.label(),
+                            to: section.route(),
+                            current: current == Some(section),
+                            open,
+                            icon: section.icon(),
+                        }
                     }
                     MenuTheme { open }
                 }
@@ -312,7 +314,10 @@ mod tests {
         all.sort_by_key(|section| section.label());
         assert_eq!(split, all);
         for section in Section::FOOTER {
-            assert!(!section.icon().is_empty(), "{section:?} has no icon");
+            assert!(section.icon().is_some(), "{section:?} has no icon");
+        }
+        for section in Section::LISTED {
+            assert_eq!(section.icon(), None, "{section:?} draws its label");
         }
     }
 
