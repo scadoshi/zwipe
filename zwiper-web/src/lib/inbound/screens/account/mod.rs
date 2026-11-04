@@ -1,6 +1,6 @@
-//! Account: the `Account` list, the change sheets as centered modals,
-//! `More` as a popover. The version, website and privacy policy live on
-//! About.
+//! Account: the `Account` list, the change sheets as centered modals, and
+//! a Danger zone panel at the bottom with Log out and Delete account. The
+//! version, website and privacy policy live on About.
 
 mod change_email;
 mod change_password;
@@ -8,14 +8,14 @@ mod change_username;
 mod delete_account;
 mod verification;
 
-use components::{ActionBar, Button, ButtonVariant};
+use components::{Button, ButtonVariant};
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
+use zwipe_ui::screens::account::{self as model, MoreItem};
 
 use crate::inbound::chrome::hint_topic::{HintTopic, InfoButton};
 use crate::inbound::chrome::logout_dialog::LogoutDialog;
-use crate::inbound::chrome::more_menu::{MoreButton, MoreMenu, use_more_menu};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::screens::account::change_email::ChangeEmailSheet;
 use crate::inbound::screens::account::change_password::ChangePasswordSheet;
@@ -34,9 +34,7 @@ use crate::inbound::shell::ScreenFrame;
 pub fn Account() -> Element {
     let mut session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
-    let navigator = use_navigator();
     let hint_open = use_one_time_hint(OneTimeHint::Profile);
-    let more = use_more_menu();
     let mut logout_open = use_signal(|| false);
     let mut delete_open = use_signal(|| false);
     let mut username_open = use_signal(|| false);
@@ -128,32 +126,38 @@ pub fn Account() -> Element {
                                 }
                             }
                         }
+                        div { class: "settings-list danger-zone",
+                            div { class: "settings-list-header",
+                                span { class: "settings-list-title danger-zone-title", {model::DANGER_ZONE} }
+                            }
+                            div { class: "settings-row",
+                                span { class: "settings-row-label", {model::LOG_OUT} }
+                                div { class: "settings-row-value",
+                                    Button {
+                                        variant: ButtonVariant::Action,
+                                        danger: true,
+                                        onclick: move |_| logout_open.set(true),
+                                        {model::LOG_OUT}
+                                    }
+                                }
+                            }
+                            div { class: "settings-row",
+                                span { class: "settings-row-label", {MoreItem::DeleteAccount.label()} }
+                                div { class: "settings-row-value",
+                                    Button {
+                                        variant: ButtonVariant::Action,
+                                        danger: true,
+                                        onclick: move |_| delete_open.set(true),
+                                        {model::DELETE}
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
-            ActionBar {
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| navigator.go_back(),
-                    "Back"
-                }
-                Button {
-                    variant: ButtonVariant::Action,
-                    danger: true,
-                    onclick: move |_| logout_open.set(true),
-                    "Log out"
-                }
-                MoreButton { menu: more }
-            }
         }
         OneTimeHintDialog { hint: OneTimeHint::Profile, open: hint_open }
-        MoreMenu { menu: more,
-            Button {
-                danger: true,
-                onclick: move |_| delete_open.set(true),
-                "Delete account"
-            }
-        }
         LogoutDialog { open: logout_open, on_confirm: log_out }
         DeleteAccountDialog { open: delete_open }
         ChangeUsernameSheet { open: username_open }
