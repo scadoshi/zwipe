@@ -1125,12 +1125,11 @@ i.ms.ms-cost.ms-gp {
    not lean on any host stylesheet's card/bullet rules. */
 
 /* The chip rows: years, then the picked year's months, then the picked
-   month's versions. */
+   month's versions. On zite they close the page's Changelog panel. */
 .changelog-filters {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-    margin-bottom: var(--panel-gap);
 }
 
 .changelog-filter {
@@ -1227,29 +1226,44 @@ i.ms.ms-cost.ms-gp {
     color: var(--accent-primary);
 }
 
-/* The rows look (`rows`): the chip rows and each release are settings-rows of
-   the panel the caller wraps them in, so the panel's hairlines divide the
-   releases. The rows stack their content with the panel body's padding.
-   Compound selectors, since the kit's .settings-row loads after this sheet. */
-.settings-row.changelog-filters-row,
-.settings-row.changelog-row {
+/* The panels look (ChangelogLook::App): the chip rows are a settings-row of
+   the Changelog panel the caller wraps them in, and each release is a
+   settings-list panel of its own under it, the version row as its header and
+   the bullets as its body. Compound selectors, since the kit's .settings-row
+   and .settings-list-header load after this sheet. */
+.settings-row.changelog-filters-row {
     flex-direction: column;
     align-items: stretch;
+    gap: 0.5rem;
     padding: 0.75rem 1rem;
     text-align: left;
 }
 
-.settings-row.changelog-filters-row {
-    gap: 0.5rem;
+.changelog-panels {
+    display: flex;
+    flex-direction: column;
+    gap: var(--panel-gap);
+    margin-top: var(--panel-gap);
 }
 
-.settings-row.changelog-row {
-    gap: 0;
+.changelog-panel {
     animation: changelog-card-in 0.35s ease-out both;
 }
 
-.changelog-row .changelog-version-row {
-    margin-bottom: 0.5rem;
+/* The version and date sit together at the left; the Upcoming or Latest tag
+   goes to the right end, where a panel header keeps its trailing piece. */
+.settings-list-header.changelog-version-row {
+    justify-content: flex-start;
+    margin-bottom: 0;
+}
+
+.changelog-panel .status-tag {
+    margin-left: auto;
+}
+
+.changelog-panel-body {
+    padding: 0.75rem 1rem;
+    text-align: left;
 }
 
 

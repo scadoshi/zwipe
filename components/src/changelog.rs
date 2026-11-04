@@ -3,8 +3,8 @@
 //! The release history, rendered identically on the website (`zite`) and in the
 //! app (`zwiper`). The data lives in `zwipe_core::content::changelog` (pure, so
 //! the server can serve it too); this crate owns the rendering and styling so
-//! the surfaces never drift. Each consumer wraps the [`Changelog`] component in
-//! its own chrome (a page with nav/footer on the web, a sheet in the app).
+//! the surfaces never drift. Each consumer wraps the two components in its
+//! own chrome (a page with nav/footer on the web, the About screen in the app).
 //! Styling is in `assets/magic.css`.
 //!
 //! The component takes the changelog as a prop, defaulting to the copy compiled
@@ -30,14 +30,16 @@
 //! in as `anchor`, which selects the chips down to that release's minor; zite
 //! then scrolls the card into view.
 //!
-//! Two looks share the one rendering path. The default floats the chip rows
-//! over a stack of release cards, zite's changelog page. With `rows` the
-//! chips and the releases are `settings-row`s for a `settings-list` panel the
-//! caller wraps them in: the app's About screen.
+//! The chips and the releases are two components, [`ChangelogFilters`] and
+//! [`ChangelogReleases`], sharing a `Signal<Filter>` the caller owns, so the
+//! chips can sit in the caller's titled panel while the releases stack under
+//! it on their own. Two looks share the one rendering path, [`ChangelogLook`]:
+//! zite's floating cards and the app's panels.
 
 use dioxus::prelude::*;
 use zwipe_core::http::contracts::changelog::HttpChangelog;
-use zwipe_ui::changelog::{Filter, Listed, Tag, listed, minors, months, visible, years};
+pub use zwipe_ui::changelog::Filter;
+use zwipe_ui::changelog::{Listed, Tag, listed, minors, months, visible, years};
 
 /// The label of the chip that goes back to [`Filter::Latest`].
 const LATEST_LABEL: &str = "Latest";
@@ -131,25 +133,36 @@ fn anchor_selection(fragment: &str, listed: &[Listed<'_>]) -> Option<Filter> {
         .map(Listed::minor_filter)
 }
 
-/// The release history: chip rows that narrow a newest-first list of
-/// versions, each with its date and notes. Starts on Latest. Renders just the
-/// content block (chips + list), so wrap it in your own page or sheet chrome.
+/// Which chrome the changelog's two halves take.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum ChangelogLook {
+    /// zite's: the chip rows sit in the page's own hero panel and each
+    /// release is a floating card.
+    #[default]
+    Site,
+    /// The app's: the chip rows are a `settings-row` of the Changelog panel
+    /// the caller wraps them in, and each release is a `settings-list` panel
+    /// of its own, the version row as its header.
+    App,
+}
+
+/// The chip rows that narrow the release list, drawn for the [`Filter`] in
+/// `selection`, which [`ChangelogReleases`] reads. Starts wherever the caller
+/// started the signal, [`Filter::Latest`] as a rule.
 ///
 /// `data` defaults to the compiled-in changelog; pass a fetched
 /// [`HttpChangelog`] to render a server-updated copy. `anchor` is a card id
-/// (see [`anchor_id`]) to select down to; an unknown one leaves Latest.
-/// `link_versions` makes each version heading a link to its card. `rows`
-/// renders the chips and each release as rows of the caller's `settings-list`
-/// panel instead of floating cards.
+/// (see [`anchor_id`]) to select down to; an unknown one leaves the
+/// selection alone.
 #[component]
-pub fn Changelog(
+pub fn ChangelogFilters(
     #[props(default = HttpChangelog::current())] data: HttpChangelog,
+    selection: Signal<Filter>,
     #[props(default)] anchor: Option<String>,
-    #[props(default)] link_versions: bool,
-    #[props(default)] rows: bool,
+    #[props(default)] look: ChangelogLook,
 ) -> Element {
     let listed = listed(&data);
-    let mut selection = use_signal(|| Filter::Latest);
+    let mut selection = selection;
     let target = anchor
         .as_deref()
         .and_then(|fragment| anchor_selection(fragment, &listed));
@@ -159,27 +172,14 @@ pub fn Changelog(
         }
     }));
 
-    let current = selection();
-    let chip_rows = chip_rows(&listed, &current);
-    let shown = visible(&listed, &current);
-    // Every listed release keeps its slot, shown or not, so a filter change
-    // toggles cards in place.
-    let show = |item: &Listed<'_>| shown.iter().any(|s| std::ptr::eq(s.release, item.release));
-    // Included in each card's key so switching filters remounts the visible
-    // cards, replaying their ease-in animation.
-    let filter_key = format!("{current:?}");
-    let (filters_class, list_class, release_class) = if rows {
-        (
-            "settings-row changelog-filters-row",
-            "changelog-rows",
-            "settings-row changelog-row",
-        )
-    } else {
-        ("changelog-filters", "changelog-list", "changelog-card")
+    let chip_rows = chip_rows(&listed, &selection());
+    let class = match look {
+        ChangelogLook::Site => "changelog-filters",
+        ChangelogLook::App => "settings-row changelog-filters-row",
     };
 
     rsx! {
-        div { class: filters_class,
+        div { class,
             for (r , row) in chip_rows.into_iter().enumerate() {
                 div { key: "{r}", class: "changelog-filter",
                     for chip in row {
@@ -198,6 +198,44 @@ pub fn Changelog(
                 }
             }
         }
+    }
+}
+
+/// The newest-first list of the releases `selection` shows, each with its
+/// date and notes. `data` is the same copy [`ChangelogFilters`] draws.
+/// `link_versions` makes each version heading a link to its card.
+#[component]
+pub fn ChangelogReleases(
+    #[props(default = HttpChangelog::current())] data: HttpChangelog,
+    selection: Signal<Filter>,
+    #[props(default)] link_versions: bool,
+    #[props(default)] look: ChangelogLook,
+) -> Element {
+    let listed = listed(&data);
+    let current = selection();
+    let shown = visible(&listed, &current);
+    // Every listed release keeps its slot, shown or not, so a filter change
+    // toggles cards in place.
+    let show = |item: &Listed<'_>| shown.iter().any(|s| std::ptr::eq(s.release, item.release));
+    // Included in each card's key so switching filters remounts the visible
+    // cards, replaying their ease-in animation.
+    let filter_key = format!("{current:?}");
+    let (list_class, release_class, header_class, body_class) = match look {
+        ChangelogLook::Site => (
+            "changelog-list",
+            "changelog-card",
+            "changelog-version-row",
+            "changelog-bullets",
+        ),
+        ChangelogLook::App => (
+            "changelog-panels",
+            "settings-list changelog-panel",
+            "settings-list-header changelog-version-row",
+            "changelog-bullets changelog-panel-body",
+        ),
+    };
+
+    rsx! {
         div { class: list_class,
             for (item , release) in listed.iter().map(|item| (item, item.release)) {
                 if show(item) {
@@ -205,7 +243,7 @@ pub fn Changelog(
                         key: "{filter_key}-{release.version}",
                         id: anchor_id(&release.version),
                         class: release_class,
-                        div { class: "changelog-version-row",
+                        div { class: header_class,
                             h2 { class: "changelog-version",
                                 if link_versions {
                                     a {
@@ -224,7 +262,7 @@ pub fn Changelog(
                                 span { class: "status-tag status-done", "Latest" }
                             }
                         }
-                        ul { class: "changelog-bullets",
+                        ul { class: body_class,
                             for entry in release.entries.iter() {
                                 li { "{entry}" }
                             }

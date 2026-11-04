@@ -15,8 +15,9 @@ use std::fs;
 use std::path::PathBuf;
 
 use components::{
-    Bar, BarChart, BarOrientation, Changelog, ColorChart, ColorMap, ColorMapCounts, ColorMapGhost,
-    DeckCharts, DrawOdds, FlippableCardImage, LabelCase,
+    Bar, BarChart, BarOrientation, ChangelogFilter, ChangelogFilters, ChangelogLook,
+    ChangelogReleases, ColorChart, ColorMap, ColorMapCounts, ColorMapGhost, DeckCharts, DrawOdds,
+    FlippableCardImage, LabelCase,
 };
 use dioxus::dioxus_core::NoOpMutations;
 use dioxus::prelude::*;
@@ -165,8 +166,10 @@ fn changelog_latest() {
     golden(
         "changelog_latest",
         &render(|| {
+            let selection = use_signal(|| ChangelogFilter::Latest);
             rsx! {
-                Changelog { data: two_years() }
+                ChangelogFilters { data: two_years(), selection }
+                ChangelogReleases { data: two_years(), selection }
             }
         }),
     );
@@ -177,12 +180,24 @@ fn changelog_anchored_with_links() {
     golden(
         "changelog_anchored",
         &render(|| {
+            let selection = use_signal(|| ChangelogFilter::Latest);
             rsx! {
-                Changelog {
-                    data: two_years(),
-                    anchor: "#v1-14-1",
-                    link_versions: true,
-                }
+                ChangelogFilters { data: two_years(), selection, anchor: "#v1-14-1" }
+                ChangelogReleases { data: two_years(), selection, link_versions: true }
+            }
+        }),
+    );
+}
+
+#[test]
+fn changelog_app_panels() {
+    golden(
+        "changelog_app_panels",
+        &render(|| {
+            let selection = use_signal(|| ChangelogFilter::Latest);
+            rsx! {
+                ChangelogFilters { data: two_years(), selection, look: ChangelogLook::App }
+                ChangelogReleases { data: two_years(), selection, look: ChangelogLook::App }
             }
         }),
     );
@@ -193,8 +208,10 @@ fn changelog_anchored_upcoming() {
     golden(
         "changelog_anchored_upcoming",
         &render(|| {
+            let selection = use_signal(|| ChangelogFilter::Latest);
             rsx! {
-                Changelog { data: two_years(), anchor: "v1-16-0" }
+                ChangelogFilters { data: two_years(), selection, anchor: "v1-16-0" }
+                ChangelogReleases { data: two_years(), selection }
             }
         }),
     );

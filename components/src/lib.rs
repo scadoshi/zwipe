@@ -5,8 +5,8 @@
 //! orangui items `zwiper` (the app) and `zite` (the site) use, so they keep one
 //! import path, and adds what needs `zwipe-core`: [`CardDetails`], [`CardRow`],
 //! [`CardRoleChips`], [`RoleTags`], [`OtagDef`], [`KeywordChips`],
-//! [`OracleText`], [`FlippableCardImage`], [`Changelog`], the deck charts
-//! ([`BarChart`], [`DeckCharts`], [`ColorChart`], [`ManaCurve`], [`ManaFulfillment`],
+//! [`OracleText`], [`FlippableCardImage`], [`ChangelogFilters`] and
+//! [`ChangelogReleases`], the deck charts ([`BarChart`], [`DeckCharts`], [`ColorChart`], [`ManaCurve`], [`ManaFulfillment`],
 //! [`DrawOdds`], [`ChartLabel`], with [`Fold`] and [`SeeMore`] behind their
 //! long rows), the [`ColorMap`] and [`ZwipeArchitecture`].
 //!
@@ -48,7 +48,9 @@ pub use architecture::ZwipeArchitecture;
 pub use card_details::{CardDetails, card_face_count};
 pub use card_role_chips::CardRoleChips;
 pub use card_row::CardRow;
-pub use changelog::Changelog;
+pub use changelog::{
+    ChangelogFilters, ChangelogLook, ChangelogReleases, Filter as ChangelogFilter,
+};
 pub use charts::{
     Bar, BarChart, BarOrientation, ChartLabel, ColorChart, DeckCharts, DrawOdds, LabelCase,
     ManaCurve, ManaFulfillment,
