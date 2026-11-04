@@ -11,6 +11,7 @@ use dioxus::prelude::*;
 use zwipe_core::domain::logo;
 use zwipe_core::domain::site::WEB_BASE;
 
+use crate::inbound::chrome::back_arrow::BackArrow;
 use crate::inbound::router::Route;
 use crate::inbound::shell::menu_footer::MenuFooter;
 use crate::inbound::shell::nav::{Back, MenuOpen, Section, route_of, section_of};
@@ -210,10 +211,9 @@ fn BackButton(back: Option<Back>, mut open: Signal<bool>) -> Element {
         return rsx! {};
     };
     rsx! {
-        button {
-            class: "nav-brand app-nav-back web-nav-narrow",
-            "aria-label": "Back",
-            onclick: move |_| {
+        BackArrow {
+            class: "web-nav-narrow",
+            onclick: move |()| {
                 open.set(false);
                 match &back {
                     Back::To(route) => {
@@ -225,13 +225,6 @@ fn BackButton(back: Option<Back>, mut open: Signal<bool>) -> Element {
                     }
                 }
             },
-            svg {
-                class: "app-nav-back-icon",
-                view_box: "0 0 24 24",
-                xmlns: "http://www.w3.org/2000/svg",
-                "aria-hidden": "true",
-                path { d: "M15 5 8 12l7 7" }
-            }
         }
     }
 }

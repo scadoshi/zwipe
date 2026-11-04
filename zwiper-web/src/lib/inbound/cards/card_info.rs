@@ -1,5 +1,5 @@
-//! A swipe card's text: its prices, set and artist under the card, and its
-//! full details in a sheet behind the eye button.
+//! A swipe card's text: its prices under the card, and its full details in
+//! a sheet behind the dock's eye.
 
 use components::{BottomSheet, Button, ButtonVariant, CardDetails};
 use dioxus::prelude::*;
@@ -8,42 +8,14 @@ use zwipe_ui::card::info;
 
 use crate::inbound::cards::otag::use_describe_tag;
 
-/// The card's prices, set, release date and artist, as the app shows them
-/// under a swipe card.
+/// The card's prices as chips under a swipe card, as the app shows them.
 #[component]
 pub fn CardInfoDisplay(card: Card) -> Element {
-    let data = &card.scryfall_data;
-    let blank = || "\u{a0}".to_string();
-    let price_text = info::price_line(data).unwrap_or_else(blank);
-    let set_text = info::set_line(data);
-    let released_text = info::released_line(data);
-    let artist_text = info::artist_line(data).unwrap_or_else(blank);
+    let prices = info::prices(&card.scryfall_data);
     rsx! {
-        div { class: "card-info",
-            span { class: "card-info-name", "{card.scryfall_data.name}" }
-            span { "{price_text}" }
-            span { "{set_text}" }
-            span { "{released_text}" }
-            span { "{artist_text}" }
-        }
-    }
-}
-
-/// The action bar's eye button, which opens and closes the card's
-/// [`CardDetailsSheet`].
-#[component]
-pub fn RulesButton(open: Signal<bool>) -> Element {
-    rsx! {
-        Button {
-            variant: ButtonVariant::Action,
-            class: "btn-action-eye",
-            onclick: move |_| open.toggle(),
-            svg {
-                class: "eye-icon",
-                view_box: "0 0 24 24",
-                xmlns: "http://www.w3.org/2000/svg",
-                path { d: "M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" }
-                circle { cx: "12", cy: "12", r: "3" }
+        div { class: "card-prices",
+            for price in prices {
+                span { key: "{price}", class: "card-row-price card-price-chip", "{price}" }
             }
         }
     }
@@ -102,23 +74,26 @@ pub fn CardDetailsSheet(
     }
 }
 
-/// A swipe card's ghost while its cards load: the image block and the info
-/// lines, with "No cards" in the block once a finished search came back empty.
+/// A swipe card's ghost while its cards load: the image block and the
+/// price line, with "No cards" in the block once a finished search came
+/// back empty.
 #[component]
 pub fn CardSkeleton(#[props(default)] is_loading: bool) -> Element {
     rsx! {
         div { class: "skeleton-card",
-            div { class: "skeleton-image",
-                if !is_loading {
-                    "No cards"
+            // The stack's slot, the card's ghost centered in it as the real
+            // card is.
+            div { class: "skeleton-stack",
+                div { class: "skeleton-image",
+                    if !is_loading {
+                        "No cards"
+                    }
                 }
             }
-            div { class: "skeleton-info",
-                div { class: "skeleton-bar skeleton-bar-name" }
-                div { class: "skeleton-bar skeleton-bar-price" }
-                div { class: "skeleton-bar skeleton-bar-set" }
-                div { class: "skeleton-bar skeleton-bar-date" }
-                div { class: "skeleton-bar skeleton-bar-artist" }
+            // The price line's ghost: two chip-sized pills, centered.
+            div { class: "card-prices",
+                div { class: "skeleton-bar skeleton-price-chip" }
+                div { class: "skeleton-bar skeleton-price-chip" }
             }
         }
     }

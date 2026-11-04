@@ -437,8 +437,8 @@ body {
     }
 }
 
-/* The nav's width-only pieces keep their own boxes (unlike .web-narrow-only,
-   a wrapper with no box): a corner button, a list item, the footer row. */
+/* The nav's width-only pieces keep their own boxes: a corner button, a
+   list item, the footer row. */
 @media (max-width: 899px) {
     .web-nav-wide {
         display: none !important;
@@ -774,24 +774,6 @@ body {
     }
 }
 
-/* ---- Width-only pieces: one on a wide window, the other below ---- */
-
-@media (max-width: 899px) {
-    .web-wide-only {
-        display: none !important;
-    }
-}
-
-@media (min-width: 900px) {
-    .web-narrow-only {
-        display: none !important;
-    }
-}
-
-.web-narrow-only {
-    display: contents;
-}
-
 /* ---- More menu: a popover on a wide window, the app's sheet below ---- */
 
 .web-more-anchor {
@@ -1122,7 +1104,9 @@ body {
         align-self: stretch;
     }
 
-    .web-examples .action-bar .btn-action-eye {
+    /* The card's details sit beside it, so the dock's eye has nothing to
+       open. */
+    .web-examples .action-dock {
         display: none;
     }
 }
@@ -1336,7 +1320,10 @@ body {
         display: block;
     }
 
-    .web-swipe-select .action-bar .btn-action-eye {
+    /* The card's details sit beside it, so the dock's eye has nothing to
+       open. */
+    .web-swipe-select .web-dock-eye,
+    .web-swipe-select .action-dock-divider {
         display: none;
     }
 }
@@ -1693,18 +1680,11 @@ body {
 
 /* ---- Add and Remove cards ---- */
 
-/* Below the breakpoint it is the app's swipe screen: the chip row, the
-   card and its info. A wide window puts the card's details beside it, and
+/* Below the breakpoint it is the app's swipe screen: the card, its prices
+   and the bottom row. A wide window puts the card's details beside it, and
    at three columns the filter docked after them. */
 .web-cards-swipe-main {
     display: contents;
-}
-
-.web-cards-swipe-row {
-    max-width: 40rem;
-    width: 100%;
-    padding: 0 1rem;
-    box-sizing: border-box;
 }
 
 .web-swipe-details {
@@ -1741,10 +1721,6 @@ body {
         align-items: center;
         gap: 0.5rem;
         min-width: 0;
-    }
-
-    .web-cards-swipe-row {
-        padding: 0;
     }
 
     .web-swipe-details {

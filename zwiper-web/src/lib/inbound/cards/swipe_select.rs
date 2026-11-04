@@ -31,8 +31,9 @@
 
 use std::collections::HashSet;
 
+use components::icons::REFRESH;
 use components::{
-    ActionBar, BottomSheet, Button, ButtonVariant, CardDetails, PageHeader, TOAST_QUICK,
+    BottomSheet, CardDetails, DockFilter, DockIcon, EyeIcon, PageHeader, TOAST_QUICK,
     use_overlay_back,
 };
 use dioxus::prelude::*;
@@ -57,9 +58,7 @@ use zwipe_ui::timing::{LOAD_MORE_AT, MAYBEBOARD_TOAST, PAGE_SIZE};
 
 use crate::domain::swipe_select::{card_key, redeal};
 use crate::inbound::card_filter::CardFilterPanel;
-use crate::inbound::cards::card_info::{
-    CardDetailsSheet, CardInfoDisplay, CardSkeleton, RulesButton,
-};
+use crate::inbound::cards::card_info::{CardDetailsSheet, CardInfoDisplay, CardSkeleton};
 use crate::inbound::cards::otag::{OtagExamplesOpen, use_describe_tag};
 use crate::inbound::cards::printing_sheet::PrintingSheet;
 use crate::inbound::cards::swipe_stack::{
@@ -67,6 +66,7 @@ use crate::inbound::cards::swipe_stack::{
     use_swipe_keys_or_undo,
 };
 use crate::inbound::chrome::authed::use_authed;
+use crate::inbound::chrome::back_arrow::BackArrow;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, SwipeSelectHint, open_and_record_hint};
 use crate::inbound::chrome::sheet::{SheetForm, SheetFrame};
 use crate::inbound::screens::playstyle::SuggestionReasons;
@@ -471,7 +471,7 @@ fn SwipeSelectBody(
         ..
     } = pile;
     let mut hint_again = hint_open;
-    let show_details = use_signal(|| false);
+    let mut show_details = use_signal(|| false);
     let mut printing_open = use_signal(|| false);
     let mut filter_open = use_signal(|| false);
     let suggested = mode == SwipeMode::Suggested;
@@ -634,11 +634,14 @@ fn SwipeSelectBody(
         .flatten()
         .map(empty_identity_line);
     let has_filter = suggested && suggested_filter.is_some();
+    let has_card = current.is_some();
 
     rsx! {
         PageHeader {
             title,
-            leading: rsx! { span { class: "page-header-corner" } },
+            leading: rsx! {
+                BackArrow { class: "page-header-support", onclick: move |()| on_close.call(()) }
+            },
             on_hint: move |()| hint_again.set(true),
         }
         div { class: "screen-content card-swipe content-enter web-swipe-select-body",
@@ -699,29 +702,26 @@ fn SwipeSelectBody(
                 }
             }
         }
-        ActionBar {
-            Button { variant: ButtonVariant::Action, onclick: move |_| on_close.call(()), "Back" }
+        // Filter, refresh and card details as the action dock. The suggested
+        // ranking filters by the host's Show chips alone; a chosen identity
+        // lights the dot. Back is the header's arrow.
+        div { class: "action-dock action-dock-right",
             if has_filter {
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| filter_open.set(true),
-                    "Filter"
-                    if suggested_identity.is_some() {
-                        span { class: "filter-dot" }
-                    }
+                DockFilter {
+                    label: "Filter",
+                    dot: suggested_identity.is_some(),
+                    onclick: move |()| filter_open.set(true),
                 }
             } else if !suggested {
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| filter_open.set(true),
-                    "Filter"
-                    if filter::shows_dot(&user_filter.read()) {
-                        span { class: "filter-dot" }
-                    }
+                DockFilter {
+                    label: "Filter",
+                    dot: filter::shows_dot(&user_filter.read()),
+                    onclick: move |()| filter_open.set(true),
                 }
             }
-            Button {
-                variant: ButtonVariant::Action,
+            button {
+                class: "action-dock-btn",
+                "aria-label": "Refresh",
                 onclick: move |_| {
                     on_refresh.call(());
                     toast.info(
@@ -729,10 +729,15 @@ fn SwipeSelectBody(
                         ToastOptions::default().duration(TOAST_QUICK),
                     );
                 },
-                "Refresh"
+                DockIcon { path: REFRESH }
             }
-            if current.is_some() {
-                RulesButton { open: show_details }
+            span { class: "action-dock-divider" }
+            button {
+                class: "action-dock-btn web-dock-eye",
+                "aria-label": "Card details",
+                disabled: !has_card,
+                onclick: move |_| show_details.toggle(),
+                EyeIcon {}
             }
         }
         if let Some(card) = current {
@@ -769,14 +774,7 @@ fn SwipeSelectBody(
         }
         if let (true, Some(chips)) = (suggested, suggested_filter) {
             SheetFrame { form: SheetForm::SidePanel,
-                BottomSheet {
-                    open: filter_open,
-                    title: "Filter",
-                    footer: rsx! {
-                        Button { variant: ButtonVariant::Action, onclick: move |_| filter_open.set(false), "Back" }
-                    },
-                    {chips}
-                }
+                BottomSheet { open: filter_open, title: "Filter", closable: true, {chips} }
             }
         }
     }

@@ -3,6 +3,7 @@
 //! zwipe-ui toast bridge.
 
 pub mod authed;
+pub mod back_arrow;
 pub mod form_panel;
 pub mod hint_body;
 pub mod hint_topic;

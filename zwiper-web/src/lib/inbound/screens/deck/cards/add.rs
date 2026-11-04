@@ -12,8 +12,9 @@
 
 use std::collections::HashSet;
 
+use components::icons::{LINK, REFRESH};
 use components::{
-    ActionBar, Button, ButtonVariant, Chip, TOAST_NORMAL, TOAST_QUICK, reset_image_ease,
+    Chip, DockFilter, DockIcon, EyeIcon, TOAST_NORMAL, TOAST_QUICK, reset_image_ease,
 };
 use dioxus::core::spawn_forever;
 use dioxus::prelude::*;
@@ -44,9 +45,7 @@ use zwipe_ui::timing::LOAD_MORE_AT;
 use super::{SwipeDetails, flip_top_card, signal_toast};
 use crate::inbound::card_filter::{CardFilterPanel, use_filter_docked};
 use crate::inbound::card_stores::CardStores;
-use crate::inbound::cards::card_info::{
-    CardDetailsSheet, CardInfoDisplay, CardSkeleton, RulesButton,
-};
+use crate::inbound::cards::card_info::{CardDetailsSheet, CardInfoDisplay, CardSkeleton};
 use crate::inbound::cards::printing_sheet::PrintingSheet;
 use crate::inbound::cards::swipe_stack::{
     EndUndoButton, Swipe, SwipeButtons, SwipeStack, use_swipe_control, use_swipe_keys_or_undo,
@@ -73,6 +72,22 @@ enum AddSource {
 }
 
 impl AddSource {
+    /// The other source, for the From chip.
+    fn toggled(self) -> Self {
+        match self {
+            Self::Search => Self::Maybeboard,
+            Self::Maybeboard => Self::Search,
+        }
+    }
+
+    /// The source's name on the From chip.
+    fn label(self) -> &'static str {
+        match self {
+            Self::Search => "Search",
+            Self::Maybeboard => "Maybeboard",
+        }
+    }
+
     /// The filter store scope each source remembers its filter under.
     fn scope(self) -> FilterScope {
         match self {
@@ -88,7 +103,6 @@ const ALL_SWIPES: [Swipe; 4] = [Swipe::Left, Swipe::Right, Swipe::Up, Swipe::Dow
 /// The Add cards screen for `deck_id`.
 #[component]
 pub fn AddDeckCard(deck_id: Uuid) -> Element {
-    let navigator = use_navigator();
     let toast = use_toast();
     let authed = use_authed();
     let session: Signal<Option<Session>> = use_context();
@@ -861,32 +875,6 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             on_hint: move |()| hint_open.set(true),
             div { class: "screen-content card-swipe content-enter web-cards-swipe",
                 div { class: "web-cards-swipe-main",
-                    div { class: "web-cards-swipe-row",
-                        div { class: "chip-row",
-                            span { class: "stat-chip stat-chip-p1 chip-row-label", "From" }
-                            for (label, variant) in [("Search", AddSource::Search), ("Maybeboard", AddSource::Maybeboard)] {
-                                Chip {
-                                    key: "{label}",
-                                    selected: at == variant,
-                                    onclick: move |_| switch_source(variant),
-                                    "{label}"
-                                }
-                            }
-                            if at == AddSource::Search && has_commander {
-                                div { style: "margin-left: auto;",
-                                    Chip {
-                                        selected: synergy_on,
-                                        onclick: move |_| {
-                                            let on = !filter.peek().synergy();
-                                            filter.write().set_synergy(on);
-                                            bump();
-                                        },
-                                        "Synergy"
-                                    }
-                                }
-                            }
-                        }
-                    }
                     div { class: "form-container",
                         if let Some(card) = current.clone() {
                             SwipeStack {
@@ -948,19 +936,56 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                     }
                 }
             }
-            ActionBar {
-                Button { variant: ButtonVariant::Action, onclick: move |_| navigator.go_back(), "Back" }
-                if !docked() {
-                    Button { variant: ButtonVariant::Action, onclick: move |_| filter_open.set(true),
-                        "Filter"
-                        if dot {
-                            span { class: "filter-dot" }
-                        }
+            // The bottom row: From and the chip naming the current source on
+            // the left, a tap switching to the other; the action dock (synergy,
+            // filter, refresh, card details) on the right. Back is the header's
+            // arrow.
+            div { class: "swipe-bottom-row",
+                div { class: "swipe-bottom-chips",
+                    span { class: "stat-chip stat-chip-p1 chip-row-label", "From" }
+                    Chip {
+                        selected: true,
+                        onclick: move |_| switch_source(at.toggled()),
+                        "{at.label()}"
                     }
                 }
-                Button { variant: ButtonVariant::Action, onclick: move |_| refresh.call(()), "Refresh" }
-                if has_current {
-                    RulesButton { open: show_details }
+                div { class: "action-dock",
+                    // Synergy on or off: constrains the stack to the commander's
+                    // synergy pool, then sorts within it. Lit while on.
+                    if at == AddSource::Search && has_commander {
+                        button {
+                            class: if synergy_on { "action-dock-btn action-dock-on" } else { "action-dock-btn" },
+                            "aria-label": "Synergy",
+                            "aria-pressed": "{synergy_on}",
+                            onclick: move |_| {
+                                let on = !filter.peek().synergy();
+                                filter.write().set_synergy(on);
+                                bump();
+                            },
+                            DockIcon { path: LINK }
+                        }
+                    }
+                    if !docked() {
+                        DockFilter {
+                            label: "Filter",
+                            dot,
+                            onclick: move |()| filter_open.set(true),
+                        }
+                    }
+                    button {
+                        class: "action-dock-btn",
+                        "aria-label": "Refresh",
+                        onclick: move |_| refresh.call(()),
+                        DockIcon { path: REFRESH }
+                    }
+                    span { class: "action-dock-divider" }
+                    button {
+                        class: "action-dock-btn",
+                        "aria-label": "Card details",
+                        disabled: !has_current,
+                        onclick: move |_| show_details.toggle(),
+                        EyeIcon {}
+                    }
                 }
             }
         }

@@ -6,7 +6,8 @@
 //! trimmed. The columns and the docked filter follow Add; Ctrl+Z also
 //! undoes, F flips, P opens the printings to look at and R is `Refresh`.
 
-use components::{ActionBar, Button, ButtonVariant, Chip, TOAST_QUICK};
+use components::icons::REFRESH;
+use components::{Chip, DockFilter, DockIcon, EyeIcon, TOAST_QUICK};
 use dioxus::core::spawn_forever;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -32,9 +33,7 @@ use zwipe_ui::stores::undo::{UndoAction, create_board_field};
 use super::{SwipeDetails, flip_top_card, signal_toast};
 use crate::inbound::card_filter::{CardFilterPanel, use_filter_docked};
 use crate::inbound::card_stores::CardStores;
-use crate::inbound::cards::card_info::{
-    CardDetailsSheet, CardInfoDisplay, CardSkeleton, RulesButton,
-};
+use crate::inbound::cards::card_info::{CardDetailsSheet, CardInfoDisplay, CardSkeleton};
 use crate::inbound::cards::printing_sheet::PrintingSheet;
 use crate::inbound::cards::swipe_stack::{
     Swipe, SwipeButtons, SwipeStack, use_swipe_control, use_swipe_keys_or_undo,
@@ -77,7 +76,6 @@ const ALL_SWIPES: [Swipe; 4] = [Swipe::Left, Swipe::Right, Swipe::Up, Swipe::Dow
 /// The Remove cards screen for `deck_id`.
 #[component]
 pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
-    let navigator = use_navigator();
     let toast = use_toast();
     let authed = use_authed();
     let session: Signal<Option<Session>> = use_context();
@@ -101,7 +99,7 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
     let mut stack: Signal<CardStack<RemoveAction>> = use_signal(CardStack::default);
     let mut board_filter = use_signal(|| BoardFilter::Deck);
     let mut counter = use_signal(|| 0u32);
-    let show_details = use_signal(|| false);
+    let mut show_details = use_signal(|| false);
     let mut printing_open = use_signal(|| false);
     let mut filter_open = use_signal(|| false);
     let mut hint_open = use_one_time_hint(OneTimeHint::RemoveDeckCards);
@@ -494,27 +492,6 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
             on_hint: move |()| hint_open.set(true),
             div { class: "screen-content card-swipe content-enter web-cards-swipe",
                 div { class: "web-cards-swipe-main",
-                    div { class: "web-cards-swipe-row",
-                        div { class: "chip-row",
-                            span { class: "stat-chip stat-chip-p1 chip-row-label", "Boards" }
-                            for (label, variant) in [
-                                ("Main", BoardFilter::Deck),
-                                ("Maybe", BoardFilter::Maybeboard),
-                                ("Side", BoardFilter::Sideboard),
-                                ("All", BoardFilter::All),
-                            ] {
-                                Chip {
-                                    key: "{label}",
-                                    selected: view == variant,
-                                    onclick: move |_| {
-                                        board_filter.set(variant);
-                                        bump();
-                                    },
-                                    "{label}"
-                                }
-                            }
-                        }
-                    }
                     div { class: "form-container",
                         if let Some(card) = current.clone() {
                             SwipeStack {
@@ -543,19 +520,50 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                     }
                 }
             }
-            ActionBar {
-                Button { variant: ButtonVariant::Action, onclick: move |_| navigator.go_back(), "Back" }
-                if !docked() {
-                    Button { variant: ButtonVariant::Action, onclick: move |_| filter_open.set(true),
-                        "Filter"
-                        if dot {
-                            span { class: "filter-dot" }
+            // The bottom row: the board chips on the left, the action dock
+            // (filter, refresh, card details) on the right. Back is the
+            // header's arrow.
+            div { class: "swipe-bottom-row",
+                div { class: "swipe-bottom-chips",
+                    for (label, variant) in [
+                        ("Main", BoardFilter::Deck),
+                        ("Maybe", BoardFilter::Maybeboard),
+                        ("Side", BoardFilter::Sideboard),
+                        ("All", BoardFilter::All),
+                    ] {
+                        Chip {
+                            key: "{label}",
+                            selected: view == variant,
+                            onclick: move |_| {
+                                board_filter.set(variant);
+                                bump();
+                            },
+                            "{label}"
                         }
                     }
                 }
-                Button { variant: ButtonVariant::Action, onclick: move |_| refresh.call(()), "Refresh" }
-                if current.is_some() {
-                    RulesButton { open: show_details }
+                div { class: "action-dock",
+                    if !docked() {
+                        DockFilter {
+                            label: "Filter",
+                            dot,
+                            onclick: move |()| filter_open.set(true),
+                        }
+                    }
+                    button {
+                        class: "action-dock-btn",
+                        "aria-label": "Refresh",
+                        onclick: move |_| refresh.call(()),
+                        DockIcon { path: REFRESH }
+                    }
+                    span { class: "action-dock-divider" }
+                    button {
+                        class: "action-dock-btn",
+                        "aria-label": "Card details",
+                        disabled: current.is_none(),
+                        onclick: move |_| show_details.toggle(),
+                        EyeIcon {}
+                    }
                 }
             }
         }
