@@ -1259,7 +1259,7 @@ body {
 /* A wide window draws Summary in the page's first row, so the profile
    column leaves it out. The panels pair up in rows of two: Summary beside
    Color map, Card roles beside Oracle tags, then Suggested commanders
-   beside Staples. */
+   beside Staples, and the Danger zone last. */
 @media (min-width: 900px) {
     .web-playstyle-summary-inline {
         display: none;
@@ -1292,6 +1292,7 @@ body {
     .web-playstyle-tags { order: 4; }
     .web-playstyle-suggested { order: 5; }
     .web-playstyle-staples { order: 6; }
+    .web-playstyle-danger { order: 7; }
 }
 
 /* ---- Swipe select ---- */

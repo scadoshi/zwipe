@@ -4,12 +4,14 @@
 //! On a wide window the Quick add, Show and list column sits on the left,
 //! `/` focuses Quick add, and ↑ and ↓ move through its result chips with
 //! Enter adding the highlighted one. Below the breakpoint it is the app's
-//! screen. `Back` follows browser history, a kept deviation.
+//! screen. Swipe sits in the list's header, Filter floats in the dock and
+//! Clear maybeboard is the Danger zone panel under the list.
 
 use std::collections::HashSet;
 
 use components::{
-    ActionBar, AlertDialog, Button, ButtonVariant, Chip, DialogAction, TOAST_LONG, TOAST_QUICK,
+    AlertDialog, Button, ButtonVariant, Chip, DangerZoneAction, DialogAction, TOAST_LONG,
+    TOAST_QUICK,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -33,7 +35,6 @@ use crate::inbound::cards::card_row::{CardOverlaysHost, CardRow, ShowRowArt, use
 use crate::inbound::cards::otag::{OtagExamplesHost, use_otag_reveals};
 use crate::inbound::cards::swipe_select::{SwipeMode, SwipeSelect};
 use crate::inbound::chrome::authed::use_authed;
-use crate::inbound::chrome::more_menu::{MoreButton, MoreMenu, use_more_menu};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::chrome::page_keys::{focus_by_id, use_page_keys};
 use crate::inbound::router::Route;
@@ -121,8 +122,6 @@ pub fn CommanderMaybeboard() -> Element {
     let toast = use_toast();
     let authed = use_authed();
     let hint_open = use_one_time_hint(OneTimeHint::CommanderMaybeboard);
-    let more = use_more_menu();
-    let mut more_open = more.open;
     let mut show_clear_dialog = use_signal(|| false);
 
     let mut show_row_art = use_signal(|| true);
@@ -311,7 +310,6 @@ pub fn CommanderMaybeboard() -> Element {
     });
 
     let clear_maybeboard = use_callback(move |()| {
-        more_open.set(false);
         spawn(async move {
             if authed
                 .run("clear_commander_maybeboard", |c, s| async move {
@@ -515,7 +513,16 @@ pub fn CommanderMaybeboard() -> Element {
                             }
                         } else {
                             div { class: "maybeboard-list card-group row-enter",
-                                div { class: "card-group-header", "Commanders" }
+                                // Swipe sits in the list's header, so it says
+                                // what gets swiped.
+                                div { class: "card-group-header card-group-header-with-hint",
+                                    span { "Commanders" }
+                                    Button {
+                                        variant: ButtonVariant::Action,
+                                        onclick: move |_| swipe_open.set(true),
+                                        "Swipe"
+                                    }
+                                }
                                 for card in filtered {
                                     MaybeboardRow {
                                         key: "{card.scryfall_data.id}",
@@ -527,29 +534,27 @@ pub fn CommanderMaybeboard() -> Element {
                                 }
                             }
                         }
+                        DangerZoneAction {
+                            label: "Clear maybeboard",
+                            button: "Clear",
+                            onclick: move |()| show_clear_dialog.set(true),
+                        }
                     }
                 }
             }
-            ActionBar {
-                Button { variant: ButtonVariant::Action, onclick: move |_| navigator.go_back(), "Back" }
-                Button { variant: ButtonVariant::Action, onclick: move |_| filter_open.set(true),
+            // Filter, the screen's action, floats at the bottom right.
+            div { class: "action-dock action-dock-right",
+                Button {
+                    variant: ButtonVariant::Action,
+                    onclick: move |_| filter_open.set(true),
                     "Filter"
                     if filter::shows_dot(&filter.read()) {
                         span { class: "filter-dot" }
                     }
                 }
-                Button { variant: ButtonVariant::Action, onclick: move |_| swipe_open.set(true), "Swipe" }
-                MoreButton { menu: more }
             }
         }
         OneTimeHintDialog { hint: OneTimeHint::CommanderMaybeboard, open: hint_open }
-        MoreMenu { menu: more, title: "More actions",
-            Button {
-                danger: true,
-                onclick: move |_| show_clear_dialog.set(true),
-                "Clear maybeboard"
-            }
-        }
         AlertDialog {
             open: show_clear_dialog,
             title: "Clear maybeboard",

@@ -6,14 +6,16 @@
 //! page; under it the other profile sections sit open in the left column
 //! and the Show row, the suggestions and Staples in the right. Below the
 //! breakpoint it is the app's single column with the profile as one
-//! accordion, Color map open.
+//! accordion, Color map open. Swipe sits in the list's header and Clear
+//! skips is the Danger zone panel after Staples.
 
 mod chips;
 mod profile;
 mod rows;
 
 use components::{
-    ActionBar, AlertDialog, Button, ButtonVariant, Chip, DialogAction, TOAST_LONG, TOAST_QUICK,
+    AlertDialog, Button, ButtonVariant, Chip, DangerZoneAction, DialogAction, TOAST_LONG,
+    TOAST_QUICK,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -40,7 +42,6 @@ use crate::inbound::cards::otag::{OtagExamplesHost, use_otag_reveals};
 use crate::inbound::cards::swipe_select::{SuggestedPile, SwipeMode, SwipeSelect};
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::hint_topic::{HintTopic, InfoButton};
-use crate::inbound::chrome::more_menu::{MoreButton, MoreMenu, use_more_menu};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::router::Route;
 use crate::inbound::screens::deck::skeletons::SkeletonInfoList;
@@ -58,8 +59,6 @@ fn suggestion_colors(suggestion: &HttpCommanderSuggestion) -> &[Color] {
 #[component]
 pub fn Playstyle() -> Element {
     let navigator = use_navigator();
-    let more = use_more_menu();
-    let mut more_open = more.open;
     let session: Signal<Option<Session>> = use_context();
     let toast = use_toast();
     let authed = use_authed();
@@ -238,7 +237,6 @@ pub fn Playstyle() -> Element {
     };
 
     let clear_dismissals = use_callback(move |()| {
-        more_open.set(false);
         spawn(async move {
             if authed
                 .run("clear_commander_dismissals", |c, s| async move {
@@ -323,9 +321,18 @@ pub fn Playstyle() -> Element {
                             }
                             div { class: "web-playstyle-list",
                                 div { class: "maybeboard-list card-group row-enter web-playstyle-cell web-playstyle-suggested",
+                                    // Swipe sits in the list's header, so it
+                                    // says what gets swiped.
                                     div { class: "card-group-header card-group-header-with-hint",
                                         span { "{LIST_TITLE}" }
-                                        InfoButton { topic: HintTopic::SuggestionList }
+                                        div { class: "card-group-header-actions",
+                                            Button {
+                                                variant: ButtonVariant::Action,
+                                                onclick: move |_| swipe_open.set(true),
+                                                "Swipe"
+                                            }
+                                            InfoButton { topic: HintTopic::SuggestionList }
+                                        }
                                     }
                                     div { class: "web-card-group-filters",
                                         ShowIdentityChips { active_identity, identities: identities(),
@@ -358,32 +365,20 @@ pub fn Playstyle() -> Element {
                                 if !staples.is_empty() {
                                     StaplesPanel { staples, deck_count: deck_count(), expanded_card }
                                 }
+                                div { class: "web-playstyle-cell web-playstyle-danger",
+                                    DangerZoneAction {
+                                        label: "Clear skips",
+                                        button: "Clear",
+                                        onclick: move |()| clear_open.set(true),
+                                    }
+                                }
                             }
                         }
                     }
                 }
             }
-            ActionBar {
-                if !cold_start {
-                    Button { variant: ButtonVariant::Action, onclick: move |_| swipe_open.set(true), "Swipe" }
-                }
-                // Wide: Clear skips on the bar. Narrow: the app's More sheet.
-                Button {
-                    variant: ButtonVariant::Action,
-                    danger: true,
-                    class: "web-wide-only",
-                    onclick: move |_| clear_open.set(true),
-                    "Clear skips"
-                }
-                span { class: "web-narrow-only",
-                    MoreButton { menu: more }
-                }
-            }
         }
         OneTimeHintDialog { hint: OneTimeHint::SuggestedCommanders, open: hint_open }
-        MoreMenu { menu: more, title: "More actions",
-            Button { danger: true, onclick: move |_| clear_open.set(true), "Clear skips" }
-        }
         AlertDialog {
             open: clear_open,
             title: "Clear skips",
