@@ -6,7 +6,8 @@
 //! a wide window it is a large modal with the card's details beside it;
 //! below the breakpoint it is the app's full-screen overlay.
 
-use components::{CardDetails, EyeIcon, PageHeader, TOAST_QUICK, use_overlay_back};
+use components::icons::EyeIcon;
+use components::{CardDetails, PageHeader, TOAST_QUICK, use_overlay_back};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_core::domain::card::Card;

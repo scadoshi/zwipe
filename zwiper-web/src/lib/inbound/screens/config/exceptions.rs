@@ -1,8 +1,8 @@
 //! The Exceptions sheet, a centered modal on a wide window: the franchises
 //! that still show while Universes Beyond is hidden.
 
-use components::icons::CHECK;
-use components::{BottomSheet, DockIcon, TOAST_QUICK};
+use components::icons::{CHECK, DockIcon};
+use components::{BottomSheet, TOAST_QUICK};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;

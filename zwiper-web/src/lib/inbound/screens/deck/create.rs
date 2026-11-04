@@ -2,8 +2,7 @@
 //! name passes. A commander handed over by Playstyle or the commander
 //! maybeboard arrives with the format set to Commander.
 
-use components::DockIcon;
-use components::icons::CHECK;
+use components::icons::{CHECK, DockIcon};
 use dioxus::prelude::*;
 use zwipe_core::domain::deck::{DeckName, Format};
 

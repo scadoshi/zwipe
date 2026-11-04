@@ -1,7 +1,7 @@
 //! The Change username sheet, a centered modal on a wide window.
 
-use components::icons::CHECK;
-use components::{BottomSheet, DockIcon, TOAST_QUICK, TextInput};
+use components::icons::{CHECK, DockIcon};
+use components::{BottomSheet, TOAST_QUICK, TextInput};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_core::domain::auth::models::session::Session;

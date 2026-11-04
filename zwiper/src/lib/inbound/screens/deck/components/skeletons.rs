@@ -37,15 +37,6 @@ pub(crate) fn DeckStatsSkeleton() -> Element {
     }
 }
 
-/// The Colors section while its counts load: the six ghost rows of a
-/// [`ColorBarsGhost`], the loaded bars' size.
-#[component]
-fn ColorsSkeleton() -> Element {
-    rsx! {
-        ColorBarsGhost {}
-    }
-}
-
 /// The suggested commanders' profile sections while the first load is in
 /// flight, in the deck view's skeleton grammar: the Colors section open on
 /// its ghost bars, then Summary and the two chart sections collapsed to
@@ -59,7 +50,7 @@ pub(crate) fn BuilderProfileSkeleton() -> Element {
                     div { class: "skeleton-bar skeleton-section-label" }
                     div { class: "skeleton-bar skeleton-chip skeleton-info-button" }
                 }
-                ColorsSkeleton {}
+                ColorBarsGhost {}
             }
             for i in 0..3 {
                 div { key: "{i}", class: "skeleton-chart-box",

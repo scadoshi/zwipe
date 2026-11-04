@@ -6,8 +6,8 @@
 //! trimmed. The columns and the docked filter follow Add; Ctrl+Z also
 //! undoes, F flips, P opens the printings to look at and R is `Refresh`.
 
-use components::icons::REFRESH;
-use components::{Chip, DockFilter, DockIcon, EyeIcon, TOAST_QUICK};
+use components::icons::{DockIcon, EyeIcon, REFRESH};
+use components::{Chip, DockFilter, TOAST_QUICK};
 use dioxus::core::spawn_forever;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};

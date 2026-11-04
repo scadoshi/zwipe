@@ -633,7 +633,7 @@ impl State {
             .color_map
             .as_ref()
             .map(ColorCounts::from)
-            .filter(crate::colors::has_data)
+            .filter(ColorCounts::has_cards)
     }
 
     /// The Summary section's rows.

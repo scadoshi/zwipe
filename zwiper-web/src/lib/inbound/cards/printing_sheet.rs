@@ -7,8 +7,8 @@
 //! app's bottom sheet. It closes from its title bar's ×, a backdrop tap, a
 //! drag down or Esc; Save is the checkmark in its dock.
 
-use components::icons::CHECK;
-use components::{BottomSheet, DockIcon, TOAST_QUICK};
+use components::icons::{CHECK, DockIcon};
+use components::{BottomSheet, TOAST_QUICK};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_core::domain::card::Card;

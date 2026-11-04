@@ -8,13 +8,13 @@
 //! [`OracleText`], [`FlippableCardImage`], [`ChangelogFilters`] and
 //! [`ChangelogReleases`], the deck charts ([`BarChart`], [`DeckCharts`], [`ColorChart`], [`ManaCurve`], [`ManaFulfillment`],
 //! [`DrawOdds`], [`ChartLabel`], with [`Fold`] and [`SeeMore`] behind their
-//! long rows), the [`ColorBars`] and [`ZwipeArchitecture`]. The pieces the
-//! two clients' chrome shares sit here too: the [`icons`] module's stroke
-//! paths with [`DockIcon`] and [`EyeIcon`], the dock's [`DockFilter`],
-//! [`DangerZoneAction`], the one-row Danger zone panel, [`MenuSection`],
-//! the main menu's section list, and Home's [`HomeDecks`] and
-//! [`HomeColors`] panels with [`ColorsEmpty`], the line the Colors bars show
-//! before any deck has a card.
+//! long rows), the [`ColorBars`], [`ZwipeArchitecture`] and the [`hint`]
+//! renderer that draws zwipe-ui's typed hint copy. orangui's [`icons`] and
+//! dock come through by name like the rest of the kit. The pieces the two
+//! clients' chrome shares sit here too: [`DangerZoneAction`], the one-row
+//! Danger zone panel, [`MenuSection`], the main menu's section list, and
+//! Home's [`HomeDecks`] and [`HomeColors`] panels with [`ColorsEmpty`], the
+//! line the Colors bars show before any deck has a card.
 //!
 //! Styling ships as string constants to inline through `document::Style`.
 //! orangui's sheets come through as they are; [`MAGIC_CSS`] holds this crate's
@@ -44,12 +44,11 @@ mod changelog;
 mod charts;
 mod color_bars;
 mod danger_zone;
-mod dock_filter;
 mod flippable_card_image;
 mod fold;
+pub mod hint;
 mod home_colors;
 mod home_decks;
-pub mod icons;
 mod keyword_chips;
 mod menu_section;
 mod oracle_text;
@@ -67,29 +66,28 @@ pub use charts::{
     Bar, BarChart, BarOrientation, ChartLabel, ColorChart, DeckCharts, DrawOdds, LabelCase,
     ManaCurve, ManaFulfillment,
 };
-pub use color_bars::{ColorBars, ColorBarsGhost, mana_var};
+pub use color_bars::{ColorBars, ColorBarsGhost};
 pub use danger_zone::DangerZoneAction;
-pub use dock_filter::DockFilter;
 pub use flippable_card_image::{FlippableCardImage, reset_image_ease};
 pub use fold::{FOLD_AT, Fold, SEE_LESS, SEE_MORE, SeeMore, fold_split};
 pub use home_colors::{ColorsEmpty, HomeColors};
 pub use home_decks::HomeDecks;
-pub use icons::{DockIcon, EyeIcon};
 pub use keyword_chips::{KeywordChips, KeywordReminders};
 pub use menu_section::MenuSection;
 pub use oracle_text::OracleText;
 pub use orangui::{
-    ALLOWED_THEMES, APP_CSS, ActionBar, ActionButton, AlertDialog, BOOT_BG, BOOT_HEAD,
+    ALLOWED_THEMES, APP_CSS, ActionBar, ActionButton, ActionDock, AlertDialog, BOOT_BG, BOOT_HEAD,
     BRAND_RESET_JS, Banner, BootReveal, BottomSheet, Button, ButtonVariant, COMPONENTS_CSS,
-    ChartTip, Chip, DarkModeButton, Decode, DialogAction, DialogHostView, GalleryFooter,
-    GalleryFrame, GridCells, HEAT_CELL, HEAT_ROWS, HeatCell, HeatGrid, HeatHit, HeatReadout,
-    HintBullet, HintBullets, HintDialog, HintKey, HintLine, InfoButton, KEYBOARD_INSET_JS,
-    ModeIcon, NAV_GLIDE_JS, NavBar, PageHeader, PageMeta, PaletteIcon, Panel, PasswordInput,
-    RETIRED_THEMES, REVEAL_JS, Replay, SCROLL_FADE_JS, SITE_CSS, SiteMeta, Splash, SplashGate,
-    StatsStrip, THEME_GROUPS, THEMES_CSS, TOAST_LONG, TOAST_NORMAL, TOAST_QUICK, TextInput,
-    ThemeConfig, ThemePicker, ThemeSheet, heat_span, peak_indices, status_uses, use_dialog_host,
-    use_heat_pick, use_os_back, use_overlay_back, use_overlay_back_action, use_overlay_back_stack,
-    use_persisted_theme, use_theme_follow, use_theme_wipe, with_separators,
+    ChartTip, Chip, DarkModeButton, Decode, DialogAction, DialogHostView, DockAction, DockFilter,
+    DockPlace, GalleryFooter, GalleryFrame, GridCells, HEAT_CELL, HEAT_ROWS, HeatCell, HeatGrid,
+    HeatHit, HeatReadout, HintBullet, HintBullets, HintDialog, HintKey, HintLine, InfoButton,
+    KEYBOARD_INSET_JS, ModeIcon, NAV_GLIDE_JS, NavBar, NavCtaIcon, PageHeader, PageMeta,
+    PaletteIcon, Panel, PasswordInput, RETIRED_THEMES, REVEAL_JS, Replay, SCROLL_FADE_JS, SITE_CSS,
+    SiteMeta, Splash, SplashGate, StatsStrip, THEME_GROUPS, THEMES_CSS, TOAST_LONG, TOAST_NORMAL,
+    TOAST_QUICK, TextInput, ThemeConfig, ThemePicker, ThemeSheet, heat_span, icons, peak_indices,
+    status_uses, use_dialog_host, use_heat_pick, use_os_back, use_overlay_back,
+    use_overlay_back_action, use_overlay_back_stack, use_persisted_theme, use_theme_follow,
+    use_theme_wipe, with_separators,
 };
 #[cfg(feature = "links")]
 pub use orangui::{OpenUrlError, open_url, use_in_app_links};

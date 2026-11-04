@@ -10,21 +10,19 @@
 //! startup, 1-day TTL, stale-while-revalidate), the same copy the oracle-tag
 //! picker and card filter read: one fetch of the ~4,500-row list per session.
 
-use components::{
-    HintBullet, HintBullets, HintDialog, HintKey, Toasts, use_overlay_back, use_toast,
-};
+use components::{Toasts, use_overlay_back, use_toast};
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::user::models::hints::HINT_ORACLE_TAG_DICTIONARY;
+use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_ui::screens::oracle_tag_dictionary::{
     self as model, Action, Body, Catalog, Destination, Effect, List, State,
 };
 
 use crate::inbound::components::catalog_cache::{CatalogCache, CatalogCell};
-use crate::inbound::components::hint_dialog::{self, HintColored};
+use crate::inbound::components::hint_dialog::{self, OneTimeHintDialog};
 use crate::inbound::components::screen_header::ScreenHeader;
-use crate::inbound::components::{guide_link, ui_toast};
+use crate::inbound::components::ui_toast;
 use crate::inbound::screens::oracle_tag_examples::OracleTagExamples;
 
 /// The dictionary's model with the handles that perform its effects. Copy,
@@ -228,14 +226,7 @@ pub fn OracleTagDictionary(open: Signal<bool>, on_use: EventHandler<String>) -> 
             }
 
 
-            HintDialog { open: hint, actions: guide_link::one_time(HINT_ORACLE_TAG_DICTIONARY), title: model::TITLE,
-            HintBullets {
-                HintBullet { "Tap a " HintKey { color: "--palette-1", "letter" } " to browse, or " HintColored { color: "--accent-secondary", "search" } " by name or description" }
-                HintBullet { HintKey { "Examples" } " shows real cards with that tag" }
-                HintBullet { HintKey { "Use" } " adds the tag where you came from" }
-                HintBullet { "Some tags have no description yet" }
-            }
-        }
+            OneTimeHintDialog { open: hint, hint: OneTimeHint::OracleTagDictionary }
 
             if examples_open() {
                 OracleTagExamples { open: examples_open, slug: examples_slug() }

@@ -7,13 +7,13 @@
 //! open once more later. A screen's header `?` reopens it on demand without
 //! recording it again. The hints are zwipe-core's and their copy zwipe-ui's.
 
+use components::hint::ContentHintDialog;
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 pub use zwipe_core::domain::user::models::hints::OneTimeHint;
 use zwipe_ui::hint::{SwipeSelectMode, one_time};
 
-use crate::inbound::chrome::hint_body::ContentHintDialog;
 use crate::inbound::session::ensure_fresh::ensure_fresh;
 use crate::outbound::session_store::SessionStore;
 

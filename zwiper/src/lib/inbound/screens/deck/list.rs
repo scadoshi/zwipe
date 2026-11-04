@@ -11,7 +11,8 @@
 //! What the screen knows and does is `zwipe_ui::screens::deck_list`; this
 //! file draws its state and performs its effects.
 
-use components::{Chip, HintBullet, HintBullets, HintDialog, HintKey};
+use components::icons::{self};
+use components::{Chip, DockAction};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use dioxus_primitives::toast::{Toasts, use_toast};
@@ -20,16 +21,16 @@ use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::deck;
 use zwipe_core::domain::deck::deck_profile::DeckProfile;
-use zwipe_core::domain::user::models::hints::HINT_DECK_LIST;
+use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_ui::deck::command_zone;
 use zwipe_ui::deck::list::{self, GroupBy};
 use zwipe_ui::screens::deck_list::{self, Action, Destination, Effect, State, Status};
 
-use crate::inbound::components::action_dock::{self, DockIcon};
 use crate::inbound::components::auth::authed::{Authed, use_authed};
+use crate::inbound::components::hint_dialog::OneTimeHintDialog;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen};
-use crate::inbound::components::{guide_link, hint_dialog, ui_toast};
+use crate::inbound::components::{hint_dialog, ui_toast};
 use crate::inbound::router::Router;
 use crate::inbound::screens::deck::components::skeletons::{ChipRowSkeleton, DeckListSkeleton};
 
@@ -284,16 +285,7 @@ pub fn DeckList() -> Element {
 
                 // Auto-opens once per account (HINT_DECK_LIST) when the model
                 // offers it; the header's ? reopens it on demand.
-                HintDialog {
-                    open: decks_hint_open,
-                    actions: guide_link::one_time(HINT_DECK_LIST),
-                    title: "Your decks",
-                    HintBullets {
-                        HintBullet { "Tap a deck to open it" }
-                        HintBullet { HintKey { "Group by" } " folds the list into sections, " HintKey { "Show" } " narrows it by color or tag" }
-                        HintBullet { "The " HintKey { DockIcon { path: action_dock::PLUS } } " at the bottom right starts a new deck" }
-                    }
-                }
+                OneTimeHintDialog { open: decks_hint_open, hint: OneTimeHint::DeckList }
 
                 div { class: "screen-content",
                 div { class: "flex-col",
@@ -420,10 +412,10 @@ pub fn DeckList() -> Element {
 
             // Create as the action dock's +, pinned bottom right.
             div { class: "action-dock action-dock-right",
-                button {
-                    class: "action-dock-btn",
-                    "aria-label": deck_list::CREATE,
-                    onclick: move |_| {
+                DockAction {
+                    label: deck_list::CREATE,
+                    icon: icons::PLUS,
+                    onclick: move |()| {
                         // Unverified users are limited to 1 deck. The backend
                         // enforces this too, but the model surfaces it first.
                         // With no session only the server can refuse.
@@ -433,7 +425,6 @@ pub fn DeckList() -> Element {
                             .is_none_or(|s| s.user.email_verified_at.is_some());
                         driver.dispatch(Action::Create { verified });
                     },
-                    DockIcon { path: action_dock::PLUS }
                 }
             }
             }

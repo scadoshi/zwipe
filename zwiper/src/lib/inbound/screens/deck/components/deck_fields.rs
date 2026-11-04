@@ -1,17 +1,17 @@
 //! The deck fields the create and edit screens share: name, format, the command zone, power level, budget and tags, drawn from the screen model.
 
-use components::{HintBullet, HintBullets, HintDialog, HintKey, TextInput};
+use components::TextInput;
 use dioxus::prelude::*;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::{
     self, DeckOtherTag, MAX_DECK_ORACLE_TAGS, MAX_DECK_TAGS, PowerLevel,
 };
+use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_ui::deck::form::{Slot, Step};
 use zwipe_ui::deck::pickers::{Picker, TagPicker};
 use zwipe_ui::screens::deck_form::{self as model, Action, Results, State};
 
-use crate::inbound::components::guide_link;
-use crate::inbound::components::hint_dialog::HintColored;
+use crate::inbound::components::hint_dialog::OneTimeHintDialog;
 use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::info_button::{self, InfoButton};
 
@@ -410,23 +410,13 @@ fn SlotField(
     }
 }
 
-/// Explainer dialog for the deck create/edit form. Shared by both screens so
-/// the command-zone behavior is described in one place. `open` is owned by the
-/// screen (a one-time hint plus a "?" button); `hint_key` is the one-time
-/// hint it is recorded under, which picks its guide link.
+/// Explainer dialog for the deck create/edit form, Create's or Edit's
+/// one-time `hint`, whose copy the two share. `open` is owned by the screen
+/// (a one-time hint plus a "?" button).
 #[component]
-pub(crate) fn DeckFieldsHint(open: Signal<bool>, hint_key: &'static str) -> Element {
+pub(crate) fn DeckFieldsHint(open: Signal<bool>, hint: OneTimeHint) -> Element {
     rsx! {
-        HintDialog {
-            open,
-            actions: guide_link::one_time(hint_key),
-            title: "Building a deck",
-            HintBullets {
-                HintBullet { HintColored { color: "--accent-primary", "Profile" } " is what the deck is, " HintColored { color: "--accent-secondary", "Budget" } " what it may cost, " HintColored { color: "--accent-tertiary", "Tags" } " what it does" }
-                HintBullet { "Tags shape which cards we suggest" }
-                HintBullet { "Tap a field's " HintKey { color: "--palette-6", "?" } " for what it does" }
-            }
-        }
+        OneTimeHintDialog { open, hint }
     }
 }
 

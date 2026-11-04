@@ -6,8 +6,8 @@
 //! failed. Import (or Replace) is the checkmark in the dock at the bottom
 //! right; Ctrl+Enter (Cmd+Enter on a Mac) runs it too.
 
-use components::icons::CHECK;
-use components::{Chip, DockIcon, TOAST_NORMAL, TOAST_QUICK};
+use components::icons::{CHECK, DockIcon};
+use components::{Chip, TOAST_NORMAL, TOAST_QUICK};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;

@@ -7,8 +7,8 @@
 
 use std::collections::HashSet;
 
-use components::icons::PLUS;
-use components::{Chip, DockIcon, TOAST_LONG};
+use components::icons::{DockIcon, PLUS};
+use components::{Chip, TOAST_LONG};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::{ClientError, ZwipeClient};

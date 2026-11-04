@@ -31,11 +31,8 @@
 
 use std::collections::HashSet;
 
-use components::icons::REFRESH;
-use components::{
-    BottomSheet, CardDetails, DockFilter, DockIcon, EyeIcon, PageHeader, TOAST_QUICK,
-    use_overlay_back,
-};
+use components::icons::{DockIcon, EyeIcon, REFRESH};
+use components::{BottomSheet, CardDetails, DockFilter, PageHeader, TOAST_QUICK, use_overlay_back};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;

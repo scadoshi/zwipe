@@ -6,12 +6,11 @@
 //! at a time; none is recorded, so a `?` opens its hint every time. The
 //! topics and their copy are zwipe-ui's.
 
+use components::hint::HintBody;
 use components::{AlertDialog, DialogAction};
 use dioxus::prelude::*;
 use zwipe_ui::hint::GOT_IT;
 pub use zwipe_ui::hint::HintTopic;
-
-use crate::inbound::chrome::hint_body::HintBody;
 
 /// Draws the posted topic as a dialog and clears the channel when it
 /// closes. Mount once at the root, beside the router, under the context that

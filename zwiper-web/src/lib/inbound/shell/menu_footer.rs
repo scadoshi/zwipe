@@ -2,7 +2,8 @@
 //! Help and feedback and, signed in, the icons for Home, Account, Settings
 //! and About, the theme pair, and a small Log out that asks first.
 
-use components::{AlertDialog, DialogAction, DockIcon};
+use components::icons::DockIcon;
+use components::{AlertDialog, DialogAction};
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;

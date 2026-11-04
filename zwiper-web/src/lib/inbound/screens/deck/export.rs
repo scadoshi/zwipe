@@ -5,8 +5,8 @@
 //! and the decklist fills the right at full height. Copy is the icon in the
 //! dock at the bottom right.
 
-use components::icons::COPY;
-use components::{Chip, DockIcon, TOAST_QUICK};
+use components::icons::{COPY, DockIcon};
+use components::{Chip, TOAST_QUICK};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;

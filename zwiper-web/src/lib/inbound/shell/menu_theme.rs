@@ -6,7 +6,7 @@
 //! sheet is the menu's descendant, so the menu stays painted and folds as
 //! the sheet rises, the way the kit's `ThemePicker` folds a site's menu.
 
-use components::{DockIcon, ModeIcon, ThemeConfig};
+use components::{ModeIcon, PaletteIcon, ThemeConfig};
 use dioxus::prelude::*;
 
 use crate::inbound::screens::config::{ThemesSheet, use_toggle_dark_mode};
@@ -28,7 +28,7 @@ pub fn MenuTheme(mut open: Signal<bool>) -> Element {
                 open.set(false);
                 sheet_open.set(true);
             },
-            DockIcon { path: components::icons::PALETTE }
+            PaletteIcon {}
         }
         button {
             class: "btn-action nav-icon",

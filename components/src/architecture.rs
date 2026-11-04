@@ -1,7 +1,7 @@
 //! Zwipe's architecture as a two-slide carousel in a panel: how the seven
 //! crates and orangui import each other, then how the running pieces talk.
-//! zite's About page and the portfolio's Zwipe page both show it, so it lives
-//! here.
+//! zite's About page shows it; the portfolio keeps a copy of this file for
+//! its Zwipe page.
 //!
 //! Inline SVG through the shared diagram pieces, so the boxes take the theme's
 //! colors; the frame and footer are the demo gallery's ([`GalleryFrame`],

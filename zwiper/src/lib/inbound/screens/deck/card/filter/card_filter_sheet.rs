@@ -1,9 +1,10 @@
-use components::{BottomSheet, HintBullet, HintBullets, HintDialog, HintKey, Toasts, use_toast};
+use components::icons::{self};
+use components::{BottomSheet, DockAction, Toasts, use_toast};
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
-use zwipe_core::domain::user::models::hints::HINT_FILTER;
+use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_ui::filter::draft::SheetConfig;
 use zwipe_ui::filter::picker::PickerField;
 use zwipe_ui::filter::sections::Section;
@@ -12,12 +13,11 @@ use zwipe_ui::screens::card_filter::{self, Action, Destination, Effect, ResetNot
 use crate::inbound::components::accordion::{
     Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 };
-use crate::inbound::components::action_dock::{self, DockIcon};
 use crate::inbound::components::catalog_cache::CatalogCache;
-use crate::inbound::components::hint_dialog::{self, HintColored};
+use crate::inbound::components::hint_dialog::{self, OneTimeHintDialog};
 use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::info_button::InfoButton;
-use crate::inbound::components::{guide_link, ui_toast};
+use crate::inbound::components::ui_toast;
 use crate::inbound::screens::deck::card::filter::artist::Artist;
 use crate::inbound::screens::deck::card::filter::card_role::CardRole;
 use crate::inbound::screens::deck::card::filter::combat::Combat;
@@ -571,10 +571,10 @@ pub(crate) fn CardFilterSheet(
 
             // Reset and Apply float at the sheet's bottom right.
             div { class: "action-dock action-dock-right sheet-dock",
-                button {
-                    class: "action-dock-btn",
-                    "aria-label": card_filter::RESET,
-                    onclick: move |_| {
+                DockAction {
+                    label: card_filter::RESET,
+                    icon: icons::ERASER,
+                    onclick: move |()| {
                         // Stages the default; Apply commits it, closing undoes it.
                         if let Some(handler) = &on_clear {
                             handler.call(());
@@ -582,29 +582,17 @@ pub(crate) fn CardFilterSheet(
                             driver.dispatch(Action::Reset);
                         }
                     },
-                    DockIcon { path: action_dock::ERASER }
                 }
-                button {
-                    class: "action-dock-btn",
-                    "aria-label": card_filter::APPLY,
+                DockAction {
+                    label: card_filter::APPLY,
+                    icon: icons::CHECK,
                     disabled: unchanged,
-                    onclick: move |_| driver.dispatch(Action::Apply),
-                    DockIcon { path: action_dock::CHECK }
+                    onclick: move |()| driver.dispatch(Action::Apply),
                 }
             }
         }
 
-        HintDialog {
-            open: hint_open,
-            actions: guide_link::one_time(HINT_FILTER),
-            title: "Filters",
-            HintBullets {
-                HintBullet { "Picks which cards show: the ones served to " HintColored { color: "--accent-primary", "swipe" } ", or which of the deck's cards list" }
-                HintBullet { "Open a section to set name, mana, type, color, " HintColored { color: "--accent-tertiary", "Oracle tags" } " and more. Stack as many as you want" }
-                HintBullet { HintKey { DockIcon { path: action_dock::CHECK } } " uses it. " HintKey { color: "--color-warning", DockIcon { path: action_dock::ERASER } } " then " HintKey { DockIcon { path: action_dock::CHECK } } " goes back to the default view" }
-                HintBullet { "Each screen keeps its own filter" }
-            }
-        }
+        OneTimeHintDialog { open: hint_open, hint: OneTimeHint::Filter }
 
         // Rendered outside the bottom sheet (see `otag_dict_open` note) so its
         // full-screen fixed overlay isn't trapped by the sheet's transform.

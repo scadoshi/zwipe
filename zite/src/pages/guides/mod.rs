@@ -9,10 +9,11 @@
 
 mod content;
 
-use components::icons::{self, CloneIcon, DockIcon, EditIcon, EyeIcon, ShareIcon};
+use components::hint::KeyGlyph;
 use components::{GalleryFooter, GalleryFrame, HintKey, Panel};
 use content::{Block, GUIDES, Guide};
 use dioxus::prelude::*;
+use zwipe_ui::hint::KeyIcon;
 
 use crate::components::PageMeta;
 use crate::{Footer, Nav, Route, WEB_BASE};
@@ -46,8 +47,9 @@ enum Inline<'line> {
     /// A highlighted keyword: a filter name, an option value, a button's
     /// words.
     Keyword(&'line str),
-    /// An icon button, named as [`guide_icon`] lists them, drawn as the
-    /// button's own icon in a hint key.
+    /// An icon button, named as [`KeyIcon::name`] lists them, drawn as the
+    /// button's own icon in a hint key. A name no icon has renders as the
+    /// literal token so a typo shows.
     Icon(&'line str),
 }
 
@@ -78,48 +80,6 @@ fn tokens(text: &str) -> Vec<Inline<'_>> {
     runs
 }
 
-/// The icon an `[[icon]]` token draws.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum GuideIcon {
-    /// A dock icon drawn from one path.
-    Path(&'static str),
-    /// The card details eye.
-    Eye,
-    /// The edit pencil.
-    Pencil,
-    /// The clone squares.
-    Clone,
-    /// The share box.
-    Share,
-}
-
-/// The icon `[[name]]` draws, or `None` for a name the app has no icon for,
-/// which renders as the literal token so a typo shows.
-fn guide_icon(name: &str) -> Option<GuideIcon> {
-    let path = match name {
-        "plus" => icons::PLUS,
-        "minus" => icons::MINUS,
-        "funnel" => icons::FUNNEL,
-        "undo" => icons::UNDO,
-        "eraser" => icons::ERASER,
-        "refresh" => icons::REFRESH,
-        "check" => icons::CHECK,
-        "copy" => icons::COPY,
-        "link" => icons::LINK,
-        "person" => icons::PERSON,
-        "cog" => icons::COG,
-        "info" => icons::INFO,
-        "palette" => icons::PALETTE,
-        "home" => icons::HOUSE,
-        "eye" => return Some(GuideIcon::Eye),
-        "pencil" => return Some(GuideIcon::Pencil),
-        "clone" => return Some(GuideIcon::Clone),
-        "share" => return Some(GuideIcon::Share),
-        _ => return None,
-    };
-    Some(GuideIcon::Path(path))
-}
-
 /// Renders body text: `backtick`-delimited tokens become highlighted keyword
 /// spans (filter names, option values, enum members, and the like) and
 /// `[[icon]]` tokens become the icon button's own icon in a hint key, so a
@@ -131,12 +91,8 @@ fn inline(text: &str) -> Element {
             match run {
                 Inline::Keyword(s) => rsx! { span { class: "guide-kw", "{s}" } },
                 Inline::Text(s) => rsx! { "{s}" },
-                Inline::Icon(name) => match guide_icon(name) {
-                    Some(GuideIcon::Path(path)) => rsx! { HintKey { DockIcon { path } } },
-                    Some(GuideIcon::Eye) => rsx! { HintKey { EyeIcon {} } },
-                    Some(GuideIcon::Pencil) => rsx! { HintKey { EditIcon {} } },
-                    Some(GuideIcon::Clone) => rsx! { HintKey { CloneIcon {} } },
-                    Some(GuideIcon::Share) => rsx! { HintKey { ShareIcon {} } },
+                Inline::Icon(name) => match KeyIcon::from_name(name) {
+                    Some(icon) => rsx! { HintKey { KeyGlyph { icon } } },
                     None => rsx! { "[[{name}]]" },
                 },
             }
@@ -590,16 +546,6 @@ mod tests {
     }
 
     #[test]
-    fn every_dock_icon_has_a_name_and_a_typo_has_none() {
-        assert_eq!(guide_icon("plus"), Some(GuideIcon::Path(icons::PLUS)));
-        assert_eq!(guide_icon("home"), Some(GuideIcon::Path(icons::HOUSE)));
-        assert_eq!(guide_icon("pencil"), Some(GuideIcon::Pencil));
-        assert_eq!(guide_icon("eye"), Some(GuideIcon::Eye));
-        assert_eq!(guide_icon("funel"), None);
-        assert_eq!(guide_icon(""), None);
-    }
-
-    #[test]
     fn every_icon_token_in_the_guides_names_a_real_icon() {
         let mut lines: Vec<&str> = Vec::new();
         for g in GUIDES {
@@ -616,7 +562,7 @@ mod tests {
             for run in tokens(line) {
                 if let Inline::Icon(name) = run {
                     assert!(
-                        guide_icon(name).is_some(),
+                        KeyIcon::from_name(name).is_some(),
                         "unknown icon [[{name}]] in {line:?}"
                     );
                 }

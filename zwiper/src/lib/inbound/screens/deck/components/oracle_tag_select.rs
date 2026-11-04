@@ -7,14 +7,15 @@
 //! reveals its definition in the pinned bar. Picking a Deck Tag pre-seeds some of
 //! these (handled by the host screen); here the user tunes the set.
 
-use components::{Button, ButtonVariant, DialogAction, HintDialog, use_overlay_back_action};
+use components::{
+    Button, ButtonVariant, DialogAction, DockAction, HintDialog, icons, use_overlay_back_action,
+};
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::oracle_tag::OracleTag;
 use zwipe_core::domain::deck::MAX_DECK_ORACLE_TAGS;
 use zwipe_ui::deck::pickers::{self, Picker};
 
-use crate::inbound::components::action_dock::{self, DockIcon};
 use crate::inbound::components::catalog_cache::CatalogCache;
 use crate::inbound::components::concept_explainers::OracleTagsExplainer;
 use crate::inbound::components::guide_link;
@@ -163,12 +164,11 @@ pub(crate) fn OracleTagSelect(
 
                 // Save as the action dock's checkmark, pinned bottom right.
                 div { class: "action-dock action-dock-right",
-                    button {
-                        class: "action-dock-btn",
-                        "aria-label": "Save",
+                    DockAction {
+                        label: "Save",
+                        icon: icons::CHECK,
                         disabled: unchanged,
-                        onclick: move |_| on_save.call(()),
-                        DockIcon { path: action_dock::CHECK }
+                        onclick: move |()| on_save.call(()),
                     }
                 }
 

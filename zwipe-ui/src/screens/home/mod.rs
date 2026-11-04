@@ -18,7 +18,7 @@ use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_core::http::contracts::suggestions::HttpPlayStyleSummary;
 
 use crate::buy;
-use crate::colors::{self, Bar, ColorCounts};
+use crate::colors::{Bar, ColorCounts};
 use crate::generation::{Generation, Ticket};
 use crate::home::{self, Figures, Scope, UserSource};
 use crate::toast::Toast;
@@ -647,11 +647,9 @@ impl State {
                 .color_map
                 .as_ref()
                 .map(ColorCounts::from)
-                .filter(colors::has_data)
+                .filter(ColorCounts::has_cards)
                 .filter(|_| summary.deck_count > 0)
-                .map_or(PlayStyle::Empty, |counts| {
-                    PlayStyle::Bars(colors::bars(&counts))
-                }),
+                .map_or(PlayStyle::Empty, |counts| PlayStyle::Bars(counts.bars())),
             None if self.play_style_failed => PlayStyle::Failed,
             None => PlayStyle::Loading,
         }

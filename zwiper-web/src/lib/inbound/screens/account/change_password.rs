@@ -1,8 +1,8 @@
 //! The Change password sheet, a centered modal on a wide window, with its
 //! confirm dialog stacked on top.
 
-use components::icons::CHECK;
-use components::{AlertDialog, BottomSheet, DialogAction, DockIcon, TOAST_QUICK, TextInput};
+use components::icons::{CHECK, DockIcon};
+use components::{AlertDialog, BottomSheet, DialogAction, TOAST_QUICK, TextInput};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_core::http::contracts::auth::HttpChangePassword;

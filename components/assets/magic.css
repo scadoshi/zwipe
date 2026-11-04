@@ -1277,6 +1277,15 @@ i.ms.ms-cost.ms-gp {
     padding: 0.5rem 1rem 0.9rem;
 }
 
+/* A deck chart of color rows: the label over the rows, in the Mana section's
+   side padding. */
+.color-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 0 0.75rem;
+}
+
 /* Inside a deck chart the bars take the chart's own side padding. */
 .color-chart .color-bars {
     padding: 0.25rem 0 0;

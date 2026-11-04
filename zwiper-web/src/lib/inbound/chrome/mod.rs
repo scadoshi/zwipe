@@ -5,7 +5,6 @@
 pub mod authed;
 pub mod back_arrow;
 pub mod form_panel;
-pub mod hint_body;
 pub mod hint_topic;
 pub mod logout_dialog;
 pub mod media;

@@ -8,16 +8,13 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Instant;
 
 use chrono::Utc;
-use components::{
-    AlertDialog, DialogAction, HintBullet, HintBullets, HintDialog, HintKey, ThemeConfig, Toasts,
-    use_toast,
-};
+use components::{AlertDialog, DialogAction, ThemeConfig, Toasts, use_toast};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
-use zwipe_core::domain::user::models::hints::HINT_FIRST_LOGIN;
+use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_core::domain::user::preferences::PipColor;
 use zwipe_ui::generation::Ticket;
 use zwipe_ui::home::{Figures, Scope};
@@ -25,16 +22,15 @@ use zwipe_ui::screens::home::{
     self, Action, Age, Cached, CachedFigures, DeckTile, Destination, Effect, Flavor, State,
 };
 
-use crate::inbound::components::action_dock::{self, DockIcon};
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::auth::session_upkeep::FlavorCard;
-use crate::inbound::components::hint_dialog::{self, HintColored};
+use crate::inbound::components::hint_dialog::{self, OneTimeHintDialog};
 use crate::inbound::components::home_decks::{CachedDecks, HomeDecks};
 use crate::inbound::components::home_hero::{CachedCounts, CachedMyCounts, HomeHeroScoped};
 use crate::inbound::components::home_play_style::{CachedPlayStyle, HomePlayStyle};
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::Screen;
-use crate::inbound::components::{guide_link, ui_toast};
+use crate::inbound::components::ui_toast;
 use crate::inbound::router::Router;
 use crate::inbound::screens::deck::card::components::image_preview::ImagePreview;
 use crate::outbound::app_icon;
@@ -565,18 +561,7 @@ pub fn Home() -> Element {
                     }
                 }
             }
-            HintDialog {
-                open: first_login_hint_open,
-                actions: guide_link::one_time(HINT_FIRST_LOGIN),
-                title: "Welcome to Zwipe",
-                HintBullets {
-                    HintBullet { HintKey { "Decks" } " lists your latest decks; All decks opens the list" }
-                    HintBullet { HintKey { "Colors" } " counts your decks' cards by color. Tap Playstyle for suggested commanders" }
-                    HintBullet { HintKey { "Account" } ", the " HintKey { DockIcon { path: action_dock::PERSON } } " in the menu's footer, has your email, password and log out" }
-                    HintBullet { HintKey { "Settings" } ", the " HintKey { DockIcon { path: action_dock::COG } } " beside it, sets your theme and which cards show" }
-                    HintBullet { HintColored { color: "--color-warning", "Verify your email" } " in Account for full deck and card limits" }
-                }
-            }
+            OneTimeHintDialog { open: first_login_hint_open, hint: OneTimeHint::FirstLogin }
 
             ImagePreview { card: preview_card, dismissing: preview_dismissing }
 

@@ -12,6 +12,7 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
 use zwipe_core::domain::deck::{DeckProfile, DeckWarning, deck_tag_label};
+use zwipe_ui::colors::ColorCounts;
 use zwipe_ui::deck::form::Slot;
 use zwipe_ui::deck::warning::{self, Fix};
 use zwipe_ui::screens::deck_view::{BUY, EDIT, MoreItem};
@@ -291,7 +292,7 @@ pub fn StatsSections(
                         hint: rsx! { InfoButton { topic: HintTopic::ManaCurve } },
                     }
                     ColorChart {
-                        color_bars: m.color_bars(),
+                        bars: ColorCounts::from(&m).bars(),
                         hint: rsx! { InfoButton { topic: HintTopic::ColorChart } },
                     }
                     ManaFulfillment {

@@ -4,8 +4,6 @@
 
 /// Expandable accordion component.
 pub mod accordion;
-/// The action dock: a screen's icon actions in one floating bar.
-pub mod action_dock;
 /// Authentication-related components (login form, register form).
 pub mod auth;
 /// App-wide cache of slow-changing filter catalogs (artists, sets, oracle tags…).

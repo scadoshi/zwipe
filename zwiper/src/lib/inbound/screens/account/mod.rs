@@ -17,7 +17,7 @@ mod components;
 /// The model with the handles that perform its effects.
 mod driver;
 
-use ::components::{Button, ButtonVariant, HintBullet, HintBullets, HintDialog, HintKey};
+use ::components::{Button, ButtonVariant};
 use change_email::ChangeEmailSheet;
 use change_password::ChangePasswordSheet;
 use change_username::ChangeUsernameSheet;
@@ -26,11 +26,11 @@ use components::delete_account_dialog::DeleteAccountDialog;
 use components::email_verification::{EmailVerification, PendingEmail, VerificationActions};
 use dioxus::prelude::*;
 use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::user::models::hints::HINT_PROFILE;
+use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_ui::screens::account::{self as model, Action, MoreItem, Row, Sheet};
 
 use self::driver::{Driver, use_driver};
-use crate::inbound::components::guide_link;
+use crate::inbound::components::hint_dialog::OneTimeHintDialog;
 use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::info_button::InfoButton;
 use crate::inbound::components::logout_dialog::LogoutDialog;
@@ -62,15 +62,7 @@ pub fn Account() -> Element {
             div { class: "screen",
                 ScreenHeader { title: model::TITLE, hint: account_hint_open, back: move |()| driver.dispatch(Action::Back) }
 
-                HintDialog {
-                    open: account_hint_open,
-                    actions: guide_link::one_time(HINT_PROFILE),
-                    title: "Your account",
-                    HintBullets {
-                        HintBullet { "Tap a row's " HintKey { color: "--palette-6", "?" } " for what it does" }
-                        HintBullet { HintKey { "Danger zone" } " at the bottom logs you out or deletes your account" }
-                    }
-                }
+                OneTimeHintDialog { open: account_hint_open, hint: OneTimeHint::Profile }
 
                 div { class: "screen-content content-enter",
                     if let Some(user) = user.as_ref() {

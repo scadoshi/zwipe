@@ -1,4 +1,5 @@
-use components::{Chip, HintBullet, HintBullets, HintDialog, HintKey, HintLine, Toasts, use_toast};
+use components::icons::{self};
+use components::{Chip, DockAction, DockFilter, Toasts, use_toast};
 use dioxus::core::spawn_forever;
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -13,7 +14,7 @@ use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilde
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::card::search_card::group_cards::GroupByOption;
 use zwipe_core::domain::deck::{self, Board};
-use zwipe_core::domain::user::models::hints::HINT_DECK_CARDS;
+use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_core::http::contracts::deck_card::HttpPatchDeckCard;
 use zwipe_ui::deck::command_zone::Slot;
 use zwipe_ui::deck_cards::{Write, Zone};
@@ -28,14 +29,13 @@ use super::components::image_preview::ImagePreview;
 use super::components::printing_sheet::PrintingSheet;
 use super::components::quick_add::QuickAdd;
 use super::components::undo_log::{UndoAction, UndoLog, UndoStore, take_newest_in};
-use crate::inbound::components::action_dock::{self, DockFilter, DockIcon};
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::catalog_cache::CatalogCache;
-use crate::inbound::components::hint_dialog::{self, HintColored};
+use crate::inbound::components::hint_dialog::{self, OneTimeHintDialog};
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen, component, screen};
-use crate::inbound::components::{guide_link, ui_toast};
+use crate::inbound::components::ui_toast;
 use crate::inbound::router::Router;
 use crate::inbound::screens::deck::card::filter::card_filter_sheet::{
     CardFilterSheet, CollapseExpanded,
@@ -1077,17 +1077,15 @@ pub fn View(deck_id: Uuid) -> Element {
             // add and remove, then the filter (with its reset while a filter is
             // on) and undo.
             div { class: "action-dock action-dock-right",
-                button {
-                    class: "action-dock-btn",
-                    "aria-label": deck_cards::ADD,
-                    onclick: move |_| driver.dispatch(Action::OpenAdd),
-                    DockIcon { path: action_dock::PLUS }
+                DockAction {
+                    label: deck_cards::ADD,
+                    icon: icons::PLUS,
+                    onclick: move |()| driver.dispatch(Action::OpenAdd),
                 }
-                button {
-                    class: "action-dock-btn",
-                    "aria-label": deck_cards::REMOVE,
-                    onclick: move |_| driver.dispatch(Action::OpenRemove),
-                    DockIcon { path: action_dock::MINUS }
+                DockAction {
+                    label: deck_cards::REMOVE,
+                    icon: icons::MINUS,
+                    onclick: move |()| driver.dispatch(Action::OpenRemove),
                 }
                 span { class: "action-dock-divider" }
                 DockFilter {
@@ -1100,18 +1098,17 @@ pub fn View(deck_id: Uuid) -> Element {
                 }
                 // Walks the undo log newest-first; disabled while there is
                 // nothing to undo, so the pill keeps its width.
-                button {
-                    class: "action-dock-btn",
-                    "aria-label": deck_cards::UNDO,
+                DockAction {
+                    label: deck_cards::UNDO,
+                    icon: icons::UNDO,
                     disabled: undo_log.0.read().is_empty(),
-                    onclick: move |_| {
+                    onclick: move |()| {
                         let mut log = undo_log.0;
                         let popped = log.write().pop();
                         if let Some(action) = popped {
                             driver.dispatch(Action::Undo(Box::new(to_shared_undo(action))));
                         }
                     },
-                    DockIcon { path: action_dock::UNDO }
                 }
             }
 
@@ -1123,20 +1120,7 @@ pub fn View(deck_id: Uuid) -> Element {
 
             ImagePreview { card: preview_card, dismissing: preview_dismissing }
 
-            HintDialog {
-                open: deck_cards_hint_open,
-                actions: guide_link::one_time(HINT_DECK_CARDS),
-                title: "Browsing your deck",
-                HintLine { "Tap a row for details, quantity and printings" }
-                HintBullets {
-                    HintBullet { "Tap a " HintColored { color: "--palette-1", "keyword" } " chip for what it does, or a " HintColored { color: "--palette-1", "role" } " chip for its oracle tags" }
-                    HintBullet { HintKey { "Group by" } " sorts by type, mana value, color or role" }
-                    HintBullet { HintKey { "Boards" } " picks main, maybe or side" }
-                    HintBullet { HintKey { "Show" } " toggles tokens, the command zone and row art" }
-                    HintBullet { "The bar at the bottom: " HintKey { DockIcon { path: action_dock::PLUS } } " adds, " HintKey { DockIcon { path: action_dock::MINUS } } " removes, " HintKey { DockIcon { path: action_dock::FUNNEL } } " filters (its " HintKey { "×" } " resets the filter), and " HintKey { DockIcon { path: action_dock::UNDO } } " undoes" }
-                    HintBullet { HintKey { color: "--color-warning", "Star" } " marks up to three MVPs. Suggestions lean toward cards that share their roles" }
-                }
-            }
+            OneTimeHintDialog { open: deck_cards_hint_open, hint: OneTimeHint::DeckCards }
 
             if let Some(card) = printing_card {
                 PrintingSheet {

@@ -4,9 +4,8 @@
 //! file draws its state, performs its effects and keeps the gestures, the
 //! card's entrance and the sheets.
 
-use components::{
-    Chip, HintBullet, HintBullets, HintDialog, HintLine, ToastOptions, Toasts, use_toast,
-};
+use components::icons::{self, EyeIcon};
+use components::{Chip, DockAction, DockFilter, ToastOptions, Toasts, use_toast};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use uuid::Uuid;
@@ -16,7 +15,7 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
 use zwipe_core::domain::deck::Board;
-use zwipe_core::domain::user::models::hints::HINT_REMOVE_DECK_CARDS;
+use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_ui::generation::Ticket;
 use zwipe_ui::screens::remove_cards::{
     self, Action, BoardFilter, Destination, Effect, State, UndoClaim,
@@ -27,17 +26,16 @@ use zwipe_ui::stores::undo as shared_undo;
 use super::components::card_info::{CardDetailsSheet, CardInfoDisplay, CardSkeleton};
 use super::components::filter_store::{FilterScope, FilterStore};
 use super::components::printing_sheet::PrintingSheet;
-use crate::inbound::components::action_dock::{self, DockFilter, DockIcon, EyeIcon};
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::auth::ensure_session::EnsureFresh;
-use crate::inbound::components::hint_dialog::{self, HintColored};
+use crate::inbound::components::hint_dialog::{self, OneTimeHintDialog};
 use crate::inbound::components::interactions::swipe::SwipeStack;
 use crate::inbound::components::interactions::swipe::config::SwipeConfig;
 use crate::inbound::components::interactions::swipe::direction::Direction;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen, component, screen};
-use crate::inbound::components::{guide_link, ui_toast};
+use crate::inbound::components::ui_toast;
 use crate::inbound::router::Router;
 use crate::inbound::screens::deck::card::components::undo_log::{UndoAction, UndoStore};
 use crate::inbound::screens::deck::card::filter::card_filter_sheet::CardFilterSheet;
@@ -569,10 +567,10 @@ pub fn Remove(deck_id: Uuid) -> Element {
                         dot: !filter_builder.read().is_empty() || filter_builder.read().sort().is_some(),
                         onclick: move |()| filters_overlay_open.set(true),
                     }
-                    button {
-                        class: "action-dock-btn",
-                        "aria-label": remove_cards::REFRESH,
-                        onclick: move |_| {
+                    DockAction {
+                        label: remove_cards::REFRESH,
+                        icon: icons::REFRESH,
+                        onclick: move |()| {
                             // Refresh rewinds the stack, which ends any entrance.
                             entering.set(None);
                             driver.dispatch(Action::Refresh);
@@ -580,7 +578,6 @@ pub fn Remove(deck_id: Uuid) -> Element {
                                 driver.bump_filter();
                             }
                         },
-                        DockIcon { path: action_dock::REFRESH }
                     }
                     span { class: "action-dock-divider" }
                     button {
@@ -615,18 +612,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                 }
             }
 
-            HintDialog {
-                open: swipe_hint_open,
-                actions: guide_link::one_time(HINT_REMOVE_DECK_CARDS),
-                title: remove_cards::HINT_TITLE,
-                HintBullets {
-                    HintBullet { "Swipe " HintColored { color: "--color-success", "right" } " removes the card" }
-                    HintBullet { "Swipe " HintColored { color: "--color-error", "left" } " keeps it" }
-                    HintBullet { "Swipe " HintColored { color: "--color-warning", "up" } " moves it between main and maybeboard" }
-                    HintBullet { "Swipe " HintColored { color: "--accent-tertiary", "down" } " undoes the last swipe" }
-                }
-                HintLine { "The board chips up top pick which board you are trimming" }
-            }
+            OneTimeHintDialog { open: swipe_hint_open, hint: OneTimeHint::RemoveDeckCards }
 
             CardFilterSheet {
                 open: filters_overlay_open,

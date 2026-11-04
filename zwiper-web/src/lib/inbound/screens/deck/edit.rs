@@ -2,8 +2,8 @@
 //! dock's checkmark only while something differs from it. Only the changed
 //! fields are sent.
 
-use components::icons::CHECK;
-use components::{DockIcon, TOAST_NORMAL};
+use components::TOAST_NORMAL;
+use components::icons::{CHECK, DockIcon};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;

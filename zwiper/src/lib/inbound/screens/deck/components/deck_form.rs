@@ -2,7 +2,7 @@
 //!
 //! What the form knows and does is `zwipe_ui::screens::deck_form`; this file draws its state, opens the swipe pickers and performs its effects.
 
-use components::{TOAST_NORMAL, ToastOptions, Toasts, use_toast};
+use components::{DockAction, TOAST_NORMAL, ToastOptions, Toasts, icons, use_toast};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use tokio::time;
@@ -25,7 +25,6 @@ use super::oracle_tag_select::OracleTagSelect;
 use super::skeletons::EditDeckSkeleton;
 use super::swipe_select::{SwipeMode, SwipeSelect};
 use super::tag_select::TagSelect;
-use crate::inbound::components::action_dock::{self, DockIcon};
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::catalog_cache::CatalogCache;
 use crate::inbound::components::screen_header::ScreenHeader;
@@ -389,12 +388,11 @@ pub(crate) fn DeckForm(open: Open) -> Element {
             // there is something to save; dimmed while the save is out.
             if let Some(label) = save_label {
                 div { class: "action-dock action-dock-right",
-                    button {
-                        class: "action-dock-btn",
-                        "aria-label": label,
+                    DockAction {
+                        label,
+                        icon: icons::CHECK,
                         disabled: saving,
-                        onclick: move |_| driver.dispatch(Action::Save),
-                        DockIcon { path: action_dock::CHECK }
+                        onclick: move |()| driver.dispatch(Action::Save),
                     }
                 }
             }
@@ -471,6 +469,6 @@ pub(crate) fn DeckForm(open: Open) -> Element {
                 on_back: move |()| driver.dispatch(Action::BackPicker),
             }
 
-            DeckFieldsHint { open: hint_open, hint_key: mode.hint().key() }
+            DeckFieldsHint { open: hint_open, hint: mode.hint() }
     }
 }

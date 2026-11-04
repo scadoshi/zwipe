@@ -23,8 +23,10 @@
 
 mod rows;
 
-use components::icons::{CHECK, UNDO};
-use components::{Button, ButtonVariant, DockIcon, TOAST_NORMAL, use_overlay_back};
+use components::icons::{CHECK, ERASER};
+use components::{
+    ActionDock, Button, ButtonVariant, DockAction, DockPlace, TOAST_NORMAL, use_overlay_back,
+};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
@@ -33,6 +35,7 @@ use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilde
 use zwipe_ui::filter::draft::{ApplyOutcome, FilterDraft, SheetConfig};
 use zwipe_ui::filter::picker::PickerField;
 use zwipe_ui::filter::sections::Section;
+use zwipe_ui::screens::card_filter;
 
 use self::rows::{SectionRows, bump};
 use crate::inbound::catalog::CatalogCache;
@@ -266,7 +269,7 @@ pub fn CardFilterPanel(
                     "\u{00d7}"
                 }
             }
-            span { class: "sheet-title", "Filter" }
+            span { class: "sheet-title", {card_filter::TITLE} }
             Button {
                 variant: ButtonVariant::Action,
                 class: "web-sheet-hint",
@@ -280,19 +283,13 @@ pub fn CardFilterPanel(
     };
     // Reset and Apply float at the panel's bottom right, as in the app.
     let dock = rsx! {
-        div { class: "action-dock action-dock-right sheet-dock",
-            button {
-                class: "action-dock-btn",
-                "aria-label": "Reset",
-                onclick: move |_| reset(),
-                DockIcon { path: UNDO }
-            }
-            button {
-                class: "action-dock-btn",
-                "aria-label": "Apply",
+        ActionDock { place: DockPlace::Sheet,
+            DockAction { label: card_filter::RESET, icon: ERASER, onclick: move |()| reset() }
+            DockAction {
+                label: card_filter::APPLY,
+                icon: CHECK,
                 disabled: unchanged,
-                onclick: move |_| apply(),
-                DockIcon { path: CHECK }
+                onclick: move |()| apply(),
             }
         }
     };

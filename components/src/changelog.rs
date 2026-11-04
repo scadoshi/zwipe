@@ -36,6 +36,8 @@
 //! it on their own. Two looks share the one rendering path, [`ChangelogLook`]:
 //! zite's floating cards and the app's panels.
 
+use std::ptr;
+
 use dioxus::prelude::*;
 use zwipe_core::http::contracts::changelog::HttpChangelog;
 pub use zwipe_ui::changelog::Filter;
@@ -157,12 +159,11 @@ pub enum ChangelogLook {
 #[component]
 pub fn ChangelogFilters(
     #[props(default = HttpChangelog::current())] data: HttpChangelog,
-    selection: Signal<Filter>,
+    mut selection: Signal<Filter>,
     #[props(default)] anchor: Option<String>,
     #[props(default)] look: ChangelogLook,
 ) -> Element {
     let listed = listed(&data);
-    let mut selection = selection;
     let target = anchor
         .as_deref()
         .and_then(|fragment| anchor_selection(fragment, &listed));
@@ -216,7 +217,7 @@ pub fn ChangelogReleases(
     let shown = visible(&listed, &current);
     // Every listed release keeps its slot, shown or not, so a filter change
     // toggles cards in place.
-    let show = |item: &Listed<'_>| shown.iter().any(|s| std::ptr::eq(s.release, item.release));
+    let show = |item: &Listed<'_>| shown.iter().any(|s| ptr::eq(s.release, item.release));
     // Included in each card's key so switching filters remounts the visible
     // cards, replaying their ease-in animation.
     let filter_key = format!("{current:?}");

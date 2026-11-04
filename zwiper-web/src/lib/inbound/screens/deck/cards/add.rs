@@ -12,10 +12,8 @@
 
 use std::collections::HashSet;
 
-use components::icons::{LINK, REFRESH};
-use components::{
-    Chip, DockFilter, DockIcon, EyeIcon, TOAST_NORMAL, TOAST_QUICK, reset_image_ease,
-};
+use components::icons::{DockIcon, EyeIcon, LINK, REFRESH};
+use components::{Chip, DockFilter, TOAST_NORMAL, TOAST_QUICK, reset_image_ease};
 use dioxus::core::spawn_forever;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};

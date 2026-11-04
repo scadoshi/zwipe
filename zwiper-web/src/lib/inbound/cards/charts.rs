@@ -2,7 +2,7 @@
 
 use zwipe_core::http::contracts::suggestions::HttpColorMap;
 use zwipe_ui::activity::Bar;
-use zwipe_ui::colors::{ColorCounts, bars, has_data};
+use zwipe_ui::colors::ColorCounts;
 
 /// zwipe-ui's chart bars as the kit's chart draws them.
 pub fn chart_bars(bars: Vec<Bar>) -> Vec<components::Bar> {
@@ -21,5 +21,5 @@ pub fn chart_bars(bars: Vec<Bar>) -> Vec<components::Bar> {
 /// it (zwipe-ui's rule): one per color in WUBRG order, then colorless.
 pub fn color_bars(map: &HttpColorMap) -> Option<Vec<zwipe_ui::colors::Bar>> {
     let counts = ColorCounts::from(map);
-    has_data(&counts).then(|| bars(&counts))
+    counts.has_cards().then(|| counts.bars())
 }

@@ -3,14 +3,14 @@
 //! toggle itself lives on the Config screen; this sheet edits only
 //! the whitelist. The server applies both at serve time.
 
-use components::{BottomSheet, Button, ButtonVariant, HintDialog, HintLine};
+use components::{BottomSheet, Button, ButtonVariant};
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
-use zwipe_core::domain::user::models::hints::HINT_UNIVERSES_BEYOND_EXCEPTIONS;
+use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_ui::screens::config::{self as model, Action};
 
 use crate::inbound::components::catalog_cache::CatalogCache;
-use crate::inbound::components::guide_link;
+use crate::inbound::components::hint_dialog::OneTimeHintDialog;
 
 /// Bottom sheet editing the exceptions whitelist. Config's model holds the
 /// draft, seeded from the saved list on each open; the sheet draws `draft` and
@@ -98,11 +98,6 @@ pub fn UniversesBeyondExceptionsSheet(
             }
         }
 
-        HintDialog {
-            open: hint_open,
-            actions: guide_link::one_time(HINT_UNIVERSES_BEYOND_EXCEPTIONS),
-            title: "Franchise exceptions",
-            HintLine { "Picked franchises still show while Universes Beyond is hidden" }
-        }
+        OneTimeHintDialog { open: hint_open, hint: OneTimeHint::UniversesBeyondExceptions }
     }
 }

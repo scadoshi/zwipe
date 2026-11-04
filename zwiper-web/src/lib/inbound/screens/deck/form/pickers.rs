@@ -8,10 +8,11 @@
 //! back and says so when something changed; the checkmark keeps the change
 //! and stays off while nothing has. `/` focuses the search.
 
-use components::icons::CHECK;
+use components::hint::{ContentHintDialog, HintBody};
+use components::icons::{CHECK, DockIcon};
 use components::{
-    Button, ButtonVariant, DialogAction, DockIcon, HintDialog, PageHeader, TOAST_NORMAL,
-    TOAST_QUICK, use_overlay_back_action,
+    Button, ButtonVariant, DialogAction, HintDialog, PageHeader, TOAST_NORMAL, TOAST_QUICK,
+    use_overlay_back_action,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -33,7 +34,6 @@ use crate::domain::deck::{
 use crate::inbound::catalog::CatalogCache;
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::back_arrow::BackArrow;
-use crate::inbound::chrome::hint_body::{ContentHintDialog, HintBody};
 use crate::inbound::chrome::page_keys::{focus_by_id, use_page_keys};
 use crate::inbound::screens::oracle_tag_dictionary::OracleTagDictionary;
 

@@ -14,8 +14,8 @@
 use std::collections::{HashMap, HashSet};
 
 use chrono::Utc;
-use components::icons::{MINUS, PLUS, UNDO};
-use components::{CardDetails, Chip, DockFilter, DockIcon, TOAST_QUICK};
+use components::icons::{DockIcon, MINUS, PLUS, UNDO};
+use components::{CardDetails, Chip, DockFilter, TOAST_QUICK};
 use dioxus::core::spawn_forever;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};

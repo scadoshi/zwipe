@@ -3,13 +3,19 @@
 //! Lightweight, contextual teaching moments: a dialog auto-opens the first
 //! time a user reaches a screen (tracked per account via the `hints_shown`
 //! map on the user), then never again. Screens may keep a small "?" button
-//! that reopens it on demand.
+//! that reopens it on demand. What a dialog says is zwipe-ui's
+//! [`one_time`](zwipe_ui::hint::one_time) copy, drawn by
+//! [`OneTimeHintDialog`](crate::inbound::components::hint_dialog::OneTimeHintDialog).
 
+use components::hint::ContentHintDialog;
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::user::hints::OneTimeHint;
+use zwipe_ui::hint::one_time;
 
 use crate::inbound::components::auth::ensure_session::EnsureFresh;
+use crate::inbound::components::guide_link;
 use crate::outbound::session::Persist;
 
 /// Opens the returned signal once per account for the given hint key, and
@@ -68,11 +74,15 @@ pub fn open_and_record_hint(
     });
 }
 
-/// A color-coded word inside a hint (e.g. a swipe direction). `color` is a
-/// CSS variable name like `--color-success`.
+/// The dialog `hint` opens: its copy from [`one_time::content_for`] and its
+/// guide link, when zwipe.net has one. Nothing for a hint whose copy is
+/// built per overlay, like Swipe select.
 #[component]
-pub fn HintColored(color: String, children: Element) -> Element {
+pub fn OneTimeHintDialog(open: Signal<bool>, hint: OneTimeHint) -> Element {
+    let Some(content) = one_time::content_for(hint) else {
+        return rsx! {};
+    };
     rsx! {
-        span { style: "color: var({color}); font-weight: 600;", {children} }
+        ContentHintDialog { open, content, actions: guide_link::one_time(hint.key()) }
     }
 }

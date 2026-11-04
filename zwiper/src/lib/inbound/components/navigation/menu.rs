@@ -14,12 +14,12 @@
 /// The menu's sections, the shape shared with zwiper-web; the routes they
 /// open are this app's, in [`route_of`] and [`section_of`].
 pub use components::MenuSection as Section;
+use components::icons::DockIcon;
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_ui::screens::account::LOG_OUT;
 
-use crate::inbound::components::action_dock::DockIcon;
 use crate::inbound::components::auth::signal_logout::SignalLogout;
 use crate::inbound::components::logout_dialog::LogoutDialog;
 use crate::inbound::components::navigation::menu_theme::MenuTheme;
