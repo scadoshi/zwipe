@@ -3,9 +3,10 @@
 //!
 //! The top panel holds the rows Account used to carry under About (Version,
 //! zwipe.net and Privacy policy), with their labels from
-//! `zwipe_ui::screens::account`. Under it sit the Scryfall credit and the Fan
-//! Content notice from `zwipe_core::legal`, then the shared
-//! [`components::Changelog`], the same history the website shows.
+//! `zwipe_ui::screens::account`. Under it a Credits panel holds the Scryfall
+//! credit and the Fan Content notice from `zwipe_core::legal`, then under a
+//! Changelog title sits the shared [`components::Changelog`], the same
+//! history the website shows.
 //!
 //! The changelog is fetched once in the background at startup and cached for
 //! the session (see [`crate::inbound::components::auth::session_upkeep`]).
@@ -121,9 +122,18 @@ pub fn About() -> Element {
                         }
                     }
 
-                    div { class: "about-credits",
-                        p { dangerous_inner_html: SCRYFALL_CREDIT_HTML }
-                        p { dangerous_inner_html: FAN_CONTENT_HTML }
+                    div { class: "settings-list about-panel",
+                        div { class: "settings-list-header",
+                            span { class: "settings-list-title", {model::CREDITS} }
+                        }
+                        div { class: "about-credits",
+                            p { dangerous_inner_html: SCRYFALL_CREDIT_HTML }
+                            p { dangerous_inner_html: FAN_CONTENT_HTML }
+                        }
+                    }
+
+                    div { class: "settings-list-header about-section-header",
+                        span { class: "settings-list-title", {model::TITLE} }
                     }
 
                     match (status, data) {

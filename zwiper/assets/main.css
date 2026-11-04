@@ -101,22 +101,36 @@ button {
     text-align: left;
 }
 
-/* About's credits under its panel: small and quiet, the links underlined. */
+/* About's panels under the first: the Credits list and the Changelog title,
+   each a panel gap below what precedes it. */
+.about-panel,
+.about-section-header {
+    margin-top: var(--panel-gap);
+}
+
+/* The Changelog title over the chip rows, aligned with the panel titles
+   above it and without a panel box of its own. */
+.about-section-header {
+    border-bottom: none;
+    padding-bottom: 0.5rem;
+}
+
+/* The Credits panel's body: two short paragraphs as the row text, with the
+   row's padding. Their links share the privacy policy's link rule. */
 .about-credits {
-    margin: 1rem 0 1.5rem;
-    font-size: 0.8rem;
+    padding: 0.75rem 1rem;
+    font-size: 0.85rem;
     line-height: 1.5;
     color: var(--text-secondary);
-    text-align: center;
+    text-align: left;
 }
 
 .about-credits p {
     margin: 0 0 0.5rem;
 }
 
-.about-credits a {
-    color: inherit;
-    text-decoration: underline;
+.about-credits p:last-child {
+    margin-bottom: 0;
 }
 
 .screen-content.card-swipe {
@@ -4093,8 +4107,10 @@ button {
     margin-bottom: 0.4rem;
 }
 
+/* Links in body text: the privacy policy's and About's credits. */
 .privacy-content a,
-.privacy-content .privacy-link {
+.privacy-content .privacy-link,
+.about-credits a {
     color: var(--palette-1);
     text-decoration: underline;
     cursor: pointer;

@@ -95,6 +95,7 @@ fn shown(state: &State) -> Vec<&str> {
 #[test]
 fn the_copy_matches_the_app() {
     assert_eq!(TITLE, "Changelog");
+    assert_eq!(CREDITS, "Credits");
     assert_eq!(FAILED, "Could not load the changelog");
     assert_eq!(LATEST, "Latest");
     assert_eq!(BACK, "Back");

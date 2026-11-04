@@ -9,8 +9,11 @@ use zwipe_core::http::contracts::changelog::HttpChangelog;
 
 use crate::changelog::{self, ChangelogCache, Filter, Listed};
 
-/// The screen's title.
+/// The screen's title, and the section title over the history on About.
 pub const TITLE: &str = "Changelog";
+
+/// About's panel title over the Scryfall credit and the Fan Content notice.
+pub const CREDITS: &str = "Credits";
 
 /// The note in place of the history when the launch fetch failed.
 pub const FAILED: &str = "Could not load the changelog";
