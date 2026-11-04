@@ -248,7 +248,7 @@ impl HintTopic {
                 HintLine { "Mainboard cards by oracle tag, the finer tags under each role. Tap a tag for what it means" }
             },
             Self::ColorChart => rsx! {
-                HintLine { "Mainboard cards by color" }
+                HintLine { "Mainboard cards by color identity; a two-color card counts for both" }
             },
             Self::ManaCurve => rsx! {
                 HintLine { "Nonland mainboard cards by mana value" }

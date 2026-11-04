@@ -324,7 +324,9 @@ impl HintTopic {
             Self::OracleTagChart => vec![line(vec![text(
                 "Mainboard cards by oracle tag, the finer tags under each role. Tap a tag for what it means",
             )])],
-            Self::ColorChart => vec![line(vec![text("Mainboard cards by color")])],
+            Self::ColorChart => vec![line(vec![text(
+                "Mainboard cards by color identity; a two-color card counts for both",
+            )])],
             Self::ManaCurve => vec![line(vec![text("Nonland mainboard cards by mana value")])],
             Self::ManaFulfillment => vec![
                 bullet(vec![text(
