@@ -51,7 +51,7 @@ pub use charts::{
     Bar, BarChart, BarOrientation, ChartLabel, ColorChart, DeckCharts, DrawOdds, LabelCase,
     ManaCurve, ManaFulfillment,
 };
-pub use color_map::{ColorMap, ColorMapGhost};
+pub use color_map::{ColorMap, ColorMapGhost, mana_var};
 pub use flippable_card_image::{FlippableCardImage, reset_image_ease};
 pub use keyword_chips::{KeywordChips, KeywordReminders};
 pub use oracle_text::OracleText;

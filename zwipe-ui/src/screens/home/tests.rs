@@ -162,7 +162,6 @@ fn a_new_state_ghosts_every_panel() {
     assert_eq!(state.flavor(), Flavor::Loading);
     assert_eq!(state.flavor_card(), None);
     assert_eq!(state.buy_links(), []);
-    assert_eq!(state.seed(), 0);
 }
 
 #[test]
@@ -202,7 +201,7 @@ fn a_warm_load_draws_what_is_held_and_skips_fresh_copies() {
     assert!(state.live());
     assert_eq!(
         state.play_style(),
-        PlayStyle::Map(ColorMapCounts {
+        PlayStyle::Bars(ColorMapCounts {
             cards: [1, 0, 0, 0, 4],
             colorless: 0
         })
@@ -336,7 +335,7 @@ fn the_color_map_draws_only_with_decks_and_cards() {
         (summary(2, [0; 5], 0), PlayStyle::Empty),
         (
             summary(2, [0; 5], 3),
-            PlayStyle::Map(ColorMapCounts {
+            PlayStyle::Bars(ColorMapCounts {
                 cards: [0; 5],
                 colorless: 3,
             }),
@@ -449,7 +448,7 @@ fn a_failed_summary_says_so_unless_one_is_held() {
     let ticket = ticket_of(&effects, play_style_ticket);
     let _ = state.update(Action::PlayStyleFailed { ticket });
     assert!(
-        matches!(state.play_style(), PlayStyle::Map(_)),
+        matches!(state.play_style(), PlayStyle::Bars(_)),
         "the held summary stays"
     );
 }
@@ -728,12 +727,6 @@ fn a_late_user_reply_is_ignored() {
 }
 
 #[test]
-fn the_seed_is_the_users_as_playstyle_draws_it() {
-    let (state, _) = load(cold());
-    assert_eq!(state.seed(), color_map::seed_from_id(7));
-}
-
-#[test]
 fn every_button_navigates() {
     let mut state = State::new();
     for (action, to) in [
@@ -763,9 +756,9 @@ fn the_copy_matches_the_app() {
         ["All decks", "Create a deck", "Could not load your decks"]
     );
     assert_eq!(
-        [COLOR_MAP, PLAYSTYLE, NO_PLAY_STYLE, PLAY_STYLE_FAILED],
+        [COLORS, PLAYSTYLE, NO_PLAY_STYLE, PLAY_STYLE_FAILED],
         [
-            "Color map",
+            "Colors",
             "Playstyle",
             "Build a deck to see your playstyle",
             "Could not load your playstyle"

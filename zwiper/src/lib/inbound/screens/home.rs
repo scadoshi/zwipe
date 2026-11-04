@@ -467,7 +467,6 @@ pub fn Home() -> Element {
     let scope = state.scope();
     let decks = state.decks();
     let play_style = state.play_style();
-    let seed = state.seed();
     let flavor = state.flavor();
     let flavor_data = state.flavor_card().map(|c| c.scryfall_data.clone());
     let buy_links = state.buy_links();
@@ -505,7 +504,6 @@ pub fn Home() -> Element {
 
                 HomePlayStyle {
                     play_style,
-                    seed,
                     onplaystyle: move |()| driver.dispatch(Action::Playstyle),
                 }
 

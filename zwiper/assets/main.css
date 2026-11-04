@@ -121,7 +121,7 @@ button {
     padding: 0.75rem 1rem;
     font-size: 0.85rem;
     line-height: 1.5;
-    color: var(--text-secondary);
+    color: var(--text-primary);
     text-align: left;
 }
 
@@ -3131,21 +3131,82 @@ button {
     padding-bottom: 0.75rem;
 }
 
-/* Home's Color map title bar: the title centered, the Playstyle chip pinned to
-   the left end. */
-.home-panel-header {
-    position: relative;
-    justify-content: center;
+/* Home's Colors panel: Colors at the left of its header, the Playstyle
+   chip and the "?" at the right, then one compact bar per color. */
+.home-colors {
+    min-height: 0;
+    padding-bottom: 0;
+    text-align: left;
 }
 
-/* The "?" at the right end, out of the flow so the header keeps its
-   height. */
-.home-panel-hint {
-    position: absolute;
-    right: 0.75rem;
-    top: 50%;
-    transform: translateY(-50%);
+.home-colors > .settings-list-header {
+    padding: 0.6rem 1rem;
+}
+
+.home-colors > .settings-list-header .btn-action {
+    padding: 0.3rem 0.6rem;
+}
+
+/* The panel's one line while it has no counts to draw. */
+.home-colors-line {
+    padding: 1rem;
+}
+
+.color-bars {
     display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 0.5rem 1rem 0.9rem;
+}
+
+.color-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.color-bar-row > .ms {
+    flex: 0 0 auto;
+    font-size: 0.85rem;
+}
+
+/* The track shows under a short fill and stays visible under a white one on
+   a cream background. */
+.color-bar-track {
+    flex: 1;
+    height: 0.5rem;
+    border-radius: 0.25rem;
+    background-color: var(--border-secondary);
+    overflow: hidden;
+}
+
+.color-bar-fill {
+    box-sizing: border-box;
+    height: 100%;
+    border-radius: inherit;
+    border: 1px solid var(--border-primary);
+}
+
+.color-bar-count {
+    flex: 0 0 2.2rem;
+    text-align: right;
+    font-size: 0.85rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+}
+
+.color-bar-pip-ghost {
+    flex: 0 0 auto;
+    width: 0.85rem;
+    height: 0.85rem;
+    border-radius: 50%;
+}
+
+.color-bar-count-ghost {
+    flex: 0 0 auto;
+    width: 1.6rem;
+    height: 0.75rem;
+    margin-left: 0.6rem;
 }
 
 .home-flavor {
@@ -3327,9 +3388,9 @@ button {
     align-self: stretch;
 }
 
-/* Home's Decks panel: the Color map's panel, Decks at the left of its
+/* Home's Decks panel: the Colors panel's style, Decks at the left of its
    header with the count chip and All decks at the right, then three tiles
-   across at the Color map's chip gap. The one row is Create a deck while
+   across at the Colors panel's row gap. The one row is Create a deck while
    the user has no deck. */
 .home-decks {
     min-height: 0;
@@ -3436,15 +3497,6 @@ button {
     height: 1.35rem;
 }
 
-/* A Home panel's buttons, centered under a line. */
-.home-panel-actions {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 0.5rem;
-    margin-top: 0.75rem;
-    padding: 0 1rem;
-}
 
 /* =========================
   stepper for integer inputs

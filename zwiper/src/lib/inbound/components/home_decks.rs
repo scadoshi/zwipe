@@ -18,7 +18,7 @@ pub struct CachedDecks {
     pub decks: Vec<DeckTile>,
 }
 
-/// The panel between the hero and the Color map, in the Color map's panel
+/// The panel between the hero and the Colors panel, in the Colors panel's
 /// style: Decks at the left of its header, the count chip and the All decks
 /// chip at the right, then the [`LATEST_DECKS`] most recently updated decks
 /// as three tiles across, each opening its deck. With no deck the one row

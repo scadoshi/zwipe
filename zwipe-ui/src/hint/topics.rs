@@ -65,7 +65,9 @@ pub enum HintTopic {
     ManaFulfillment,
     /// The deck view's draw odds.
     DrawOdds,
-    /// Home's color map.
+    /// Home's Colors bars.
+    HomeColors,
+    /// Playstyle's color map.
     ColorMap,
     /// Playstyle's Card roles chart.
     SuggestionRoleChart,
@@ -93,7 +95,7 @@ pub enum HintTopic {
 
 impl HintTopic {
     /// Every topic, in the app's order.
-    pub const ALL: [Self; 39] = [
+    pub const ALL: [Self; 40] = [
         Self::Password,
         Self::Email,
         Self::Verification,
@@ -121,6 +123,7 @@ impl HintTopic {
         Self::ManaCurve,
         Self::ManaFulfillment,
         Self::DrawOdds,
+        Self::HomeColors,
         Self::ColorMap,
         Self::SuggestionRoleChart,
         Self::SuggestionTagChart,
@@ -162,7 +165,7 @@ impl HintTopic {
             Self::OtherTags => "Other tags",
             Self::TypeChart => "Types",
             Self::RoleChart => "Roles",
-            Self::ColorChart => "Colors",
+            Self::ColorChart | Self::HomeColors => "Colors",
             Self::ManaCurve => "Mana curve",
             Self::ManaFulfillment => "Mana cost fulfillment",
             Self::DrawOdds => "Draw odds",
@@ -337,6 +340,15 @@ impl HintTopic {
                 bullet(vec![text(
                     "Random draw only. Mulligans, tutors and card draw are not counted",
                 )]),
+            ],
+            Self::HomeColors => vec![
+                bullet(vec![text(
+                    "How many cards across your decks are each color, colorless last",
+                )]),
+                bullet(vec![text(
+                    "A card counts once per deck it is in, and a two-color card counts for both colors",
+                )]),
+                bullet(vec![text("Playstyle has the full picture")]),
             ],
             Self::ColorMap => vec![
                 bullet(vec![text(

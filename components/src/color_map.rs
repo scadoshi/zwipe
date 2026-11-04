@@ -37,9 +37,10 @@ fn tile_fill(tile: &Tile) -> String {
     }
 }
 
-/// The CSS custom property holding `color`'s mana fill.
+/// The CSS custom property holding `color`'s mana fill, `--mana-white` through
+/// `--mana-green`: what the map's tiles and Home's Colors bars fill with.
 #[must_use]
-pub(crate) fn mana_var(color: Color) -> &'static str {
+pub fn mana_var(color: Color) -> &'static str {
     match color {
         Color::White => "--mana-white",
         Color::Blue => "--mana-blue",

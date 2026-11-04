@@ -37,7 +37,8 @@ impl HintTopic {
             | Self::ManaCurve
             | Self::ManaFulfillment
             | Self::DrawOdds => Some("deck-stats"),
-            Self::ColorMap
+            Self::HomeColors
+            | Self::ColorMap
             | Self::SuggestionRoleChart
             | Self::SuggestionTagChart
             | Self::SuggestionTagDecks
@@ -100,7 +101,7 @@ mod tests {
             .collect()
     }
 
-    const TOPICS: [HintTopic; 39] = [
+    const TOPICS: [HintTopic; 40] = [
         HintTopic::Password,
         HintTopic::Email,
         HintTopic::Verification,
@@ -128,6 +129,7 @@ mod tests {
         HintTopic::ManaCurve,
         HintTopic::ManaFulfillment,
         HintTopic::DrawOdds,
+        HintTopic::HomeColors,
         HintTopic::ColorMap,
         HintTopic::SuggestionRoleChart,
         HintTopic::SuggestionTagChart,

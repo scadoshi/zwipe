@@ -1,6 +1,6 @@
-//! Home: the hero's counters and their scope, the Decks panel, the Color map panel, the featured flavor card, the greeting and the first-login hint.
+//! Home: the hero's counters and their scope, the Decks panel, the Colors panel, the featured flavor card, the greeting and the first-login hint.
 //!
-//! Home's data outlives a visit: the client keeps the counters, the playstyle summary, the flavor card and the scope above its screens, so a return to Home draws them at once. The client hands what it holds to [`Action::Load`] as [`Cached`], the model asks for what is missing or old, and the client writes each reply to its own copy as well as handing it back. The figures come from [`crate::home`], the color map test from [`crate::playstyle::color_map_has_data`] and the retailer links from [`crate::buy`].
+//! Home's data outlives a visit: the client keeps the counters, the playstyle summary, the flavor card and the scope above its screens, so a return to Home draws them at once. The client hands what it holds to [`Action::Load`] as [`Cached`], the model asks for what is missing or old, and the client writes each reply to its own copy as well as handing it back. The figures come from [`crate::home`], the color counts test from [`crate::playstyle::color_map_has_data`] and the retailer links from [`crate::buy`].
 
 #[cfg(test)]
 mod tests;
@@ -16,7 +16,7 @@ use zwipe_core::domain::user::User;
 use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_core::http::contracts::suggestions::HttpPlayStyleSummary;
 
-use crate::color_map::{self, ColorMapCounts};
+use crate::color_map::ColorMapCounts;
 use crate::generation::{Generation, Ticket};
 use crate::home::{self, Figures, Scope, UserSource};
 use crate::toast::Toast;
@@ -43,16 +43,16 @@ pub const DECKS_FAILED: &str = "Could not load your decks";
 /// How many decks the Decks panel lists, the most recently updated first.
 pub const LATEST_DECKS: usize = 3;
 
-/// The Color map panel's title.
-pub const COLOR_MAP: &str = "Color map";
+/// The Colors panel's title.
+pub const COLORS: &str = "Colors";
 
-/// The Color map panel's button that opens Playstyle.
+/// The Colors panel's chip that opens Playstyle.
 pub const PLAYSTYLE: &str = "Playstyle";
 
-/// The Color map panel's line before any deck has a colored card.
+/// The Colors panel's line before any deck has a card.
 pub const NO_PLAY_STYLE: &str = "Build a deck to see your playstyle";
 
-/// The Color map panel's line when the summary failed to load and none is held.
+/// The Colors panel's line when the summary failed to load and none is held.
 pub const PLAY_STYLE_FAILED: &str = "Could not load your playstyle";
 
 /// The featured flavor panel's title.
@@ -103,7 +103,7 @@ pub enum Destination {
     Config,
     /// Activity, from the hero.
     Activity,
-    /// Playstyle, from the Color map panel.
+    /// Playstyle, from the Colors panel.
     Playstyle,
 }
 
@@ -349,17 +349,17 @@ pub enum Decks {
     Loaded(DeckPanel),
 }
 
-/// What the Color map panel draws.
+/// What the Colors panel draws.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PlayStyle {
     /// The summary is out and none is held: the panel ghosts.
     Loading,
-    /// The fetch failed and none is held: [`PLAY_STYLE_FAILED`] over the Playstyle button.
+    /// The fetch failed and none is held: [`PLAY_STYLE_FAILED`] under the header.
     Failed,
-    /// No deck has a colored or colorless card: [`NO_PLAY_STYLE`] over the Playstyle button.
+    /// No deck has a colored or colorless card: [`NO_PLAY_STYLE`] under the header.
     Empty,
-    /// The map for these counts, with the Playstyle button at the end of its key.
-    Map(ColorMapCounts),
+    /// A bar per color then colorless, each with its count, the largest at full width.
+    Bars(ColorMapCounts),
 }
 
 /// The featured flavor card's quote and the row under it.
@@ -606,13 +606,6 @@ impl State {
         }
     }
 
-    /// The color map's seed, from the user's id so Home draws the shape Playstyle does. 0 with no user.
-    #[must_use]
-    pub fn seed(&self) -> u64 {
-        self.user
-            .map_or(0, |id| color_map::seed_from_id(id.as_u128()))
-    }
-
     /// What the Decks panel draws. Decks held show even after a failed refetch. The playstyle summary's deck count is not the one shown: it counts the decks with cards.
     #[must_use]
     pub fn decks(&self) -> Decks {
@@ -626,7 +619,7 @@ impl State {
         }
     }
 
-    /// What the Color map panel draws. A summary held shows even after a failed refetch.
+    /// What the Colors panel draws. A summary held shows even after a failed refetch.
     #[must_use]
     pub fn play_style(&self) -> PlayStyle {
         match &self.play_style {
@@ -636,7 +629,7 @@ impl State {
                 .map(ColorMapCounts::from)
                 .filter(playstyle::color_map_has_data)
                 .filter(|_| summary.deck_count > 0)
-                .map_or(PlayStyle::Empty, PlayStyle::Map),
+                .map_or(PlayStyle::Empty, PlayStyle::Bars),
             None if self.play_style_failed => PlayStyle::Failed,
             None => PlayStyle::Loading,
         }
