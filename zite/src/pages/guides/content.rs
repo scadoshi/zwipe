@@ -1059,7 +1059,7 @@ pub(crate) static GUIDES: &[Guide] = &[
             ),
             Block::H2("Charts"),
             Block::P(
-                "Distributions cover card type and strategic role, in the Types and Roles charts. Roles reads on the same roles shown as chips on each card. Mana holds your Lands against their target, Average mana value, the mana curve (nonland cards by cost, 0 to 6+), the Colors chart, and mana fulfillment (whether your mana base makes enough of each color, with a ✔ when covered).",
+                "Distributions cover card type, strategic role and oracle tag, in the Types, Roles and Oracle tags charts. Roles reads on the same roles shown as chips on each card; Roles, Oracle tags and Draw odds show their top five rows with a See more for the rest. Mana holds your Lands against their target, Average mana value, the mana curve (nonland cards by cost, 0 to 6+), the Colors chart, and mana fulfillment (whether your mana base makes enough of each color, with a ✔ when covered).",
             ),
             Block::Image {
                 file: "deck-stats/01-distributions.webp",

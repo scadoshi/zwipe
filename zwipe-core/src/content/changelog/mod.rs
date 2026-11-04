@@ -41,6 +41,8 @@ pub const UPCOMING: &[Release] = &[Release {
     version: Version::new(1, 18, 0),
     date: None,
     entries: &[
+        "Distributions shows the top five card roles and a new oracle tags chart, with See more for the rest",
+        "Draw odds shows its top five groups, with See more for the rest",
         "Back after deleting a deck returns to Decks, not the deleted deck",
         "Could not load lines are muted chips, the same as other empty results",
         "Saving a theme lowers the Themes sheet instead of cutting it off",
