@@ -32,7 +32,7 @@ Copy `.env.example` if present, or refer to `context/operations/infrastructure/s
 
 ## Project Structure
 
-The workspace has six crates: `zwipe-core` (shared domain), `zerver` (backend), `zwiper` (mobile/iOS/Android), `zite` (web client), `zwipe-client` (typed API client), and `components` (shared Dioxus UI).
+The workspace has seven crates: `zwipe-core` (shared domain), `zerver` (backend), `zwiper` (mobile/iOS/Android), `zite` (web client), `zwipe-client` (typed API client), `zwipe-ui` (shared screen logic, no UI crate), and `components` (shared Dioxus UI).
 
 ### zwipe-core
 

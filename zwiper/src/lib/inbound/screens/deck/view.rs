@@ -789,8 +789,8 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                 title: "Welcome to your deck",
                 HintBullets {
                     HintBullet { HintKey { "Cards" } " browses, adds and removes cards" }
-                    HintBullet { "The pencil by " HintKey { "Profile" } " changes the name, format, command zone, tags and targets" }
-                    HintBullet { "Beside it, the two squares clone the deck and the box with the arrow shares a link to it" }
+                    HintBullet { "The " HintKey { EditIcon {} } " by " HintKey { "Profile" } " changes the name, format, command zone, tags and targets" }
+                    HintBullet { "Beside it, " HintKey { CloneIcon {} } " clones the deck and " HintKey { ShareIcon {} } " shares a link to it" }
                     HintBullet { "Import, export and delete are at the bottom of the page" }
                     HintBullet { "Skipped and removed cards stay out of the add stack. " HintKey { "Clear skips" } " at the bottom brings them back" }
                     HintBullet { "Stats fill in as the deck grows. Tap a section to expand it" }

@@ -1,11 +1,9 @@
-//! The stroke icons the clients' action docks and menus draw, each one SVG
-//! path on a 24 by 24 grid, and the components that draw them.
+//! The stroke icons the app's icon buttons draw, and the paths behind them.
 //!
-//! Every path is a stroke in `currentColor` with no fill, so a host colors
-//! an icon through the button it sits in. The kit's `.action-dock-icon`
-//! and `.nav-icon` rules size them; the deck view's profile icons
-//! ([`EditIcon`], [`CloneIcon`], [`ShareIcon`]) take the app's
-//! `.profile-icon` rule, sized to the text button they sit in.
+//! The same icons sit inside a hint's key chip when copy names an icon
+//! button: `HintKey { DockIcon { path: PLUS } }` draws the button's own
+//! squircle, so the copy never has to describe the icon in words. The site's
+//! guides draw them the same way.
 
 use dioxus::prelude::*;
 
@@ -17,6 +15,8 @@ pub const MINUS: &str = "M5 12h14";
 pub const FUNNEL: &str = "M4 5h16l-6 7.5V19l-4 1v-7.5z";
 /// The undo icon: an arrow turning back.
 pub const UNDO: &str = "M9 14L4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3";
+/// An eraser: a sheet's reset, wiping the form back to its defaults.
+pub const ERASER: &str = "M7 21l-4.3-4.3a2.4 2.4 0 0 1 0-3.4l9.6-9.6a2.4 2.4 0 0 1 3.4 0l5.6 5.6a2.4 2.4 0 0 1 0 3.4L13 21M22 21H7M5 11l9 9";
 /// The refresh icon: an arrow circling round.
 pub const REFRESH: &str = "M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5";
 
@@ -41,7 +41,7 @@ pub const PALETTE: &str = "M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.93 0 1.65-.75 1.
 /// The synergy icon: two chain links.
 pub const LINK: &str = "M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1";
 
-/// One stroke icon for a dock or menu button, drawn from a single SVG path.
+/// One stroke icon for a dock button, drawn from a single SVG path.
 #[component]
 pub fn DockIcon(path: &'static str) -> Element {
     rsx! {
@@ -70,12 +70,12 @@ pub fn EyeIcon() -> Element {
     }
 }
 
-/// The edit icon: a pencil, in the deck view's profile header.
+/// The edit icon: a pencil.
 #[component]
 pub fn EditIcon() -> Element {
     rsx! {
         svg {
-            class: "profile-icon",
+            class: "action-dock-icon",
             view_box: "0 0 24 24",
             xmlns: "http://www.w3.org/2000/svg",
             "aria-hidden": "true",
@@ -85,12 +85,12 @@ pub fn EditIcon() -> Element {
     }
 }
 
-/// The clone icon: two overlapping squares, in the deck view's profile header.
+/// The clone icon: two overlapping squares.
 #[component]
 pub fn CloneIcon() -> Element {
     rsx! {
         svg {
-            class: "profile-icon",
+            class: "action-dock-icon",
             view_box: "0 0 24 24",
             xmlns: "http://www.w3.org/2000/svg",
             "aria-hidden": "true",
@@ -100,13 +100,12 @@ pub fn CloneIcon() -> Element {
     }
 }
 
-/// The share icon: a box with an arrow rising out of it, in the deck view's
-/// profile header.
+/// The share icon: a box with an arrow rising out of it.
 #[component]
 pub fn ShareIcon() -> Element {
     rsx! {
         svg {
-            class: "profile-icon",
+            class: "action-dock-icon",
             view_box: "0 0 24 24",
             xmlns: "http://www.w3.org/2000/svg",
             "aria-hidden": "true",

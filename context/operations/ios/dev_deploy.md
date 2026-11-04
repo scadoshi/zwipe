@@ -8,16 +8,14 @@ Build and install on a connected iPhone. **Debug** is the daily workflow; **rele
 
 ## Build and deploy
 
-One script per profile, because the profile picks the output directory as well as the compiler flags:
+One script, with the profile as a flag, because the profile picks the output directory as well as the compiler flags and the script installs from the directory it just built into:
 
 ```bash
-zcripts/ios/deploy_debug.sh      # the daily one
-zcripts/ios/deploy_release.sh    # optimized, what the store will run
+zcripts/ios/deploy.sh              # debug, the daily one
+zcripts/ios/deploy.sh --release    # optimized, what the store will run
 ```
 
-Both build against `https://api.zwipe.net` unless `BACKEND_URL` is set in the environment, find the iPhone on the cable, and install to it by UDID. With two phones plugged in and no `--device`, they list both and stop rather than guessing: `--device matthew` picks one by any part of its name. A phone this Mac has paired before but is not plugged in does not count.
-
-Both are thin wrappers over `zcripts/ios/deploy.sh`, which takes `--release` if you prefer one entry point.
+It builds against `https://api.zwipe.net` unless `BACKEND_URL` is set in the environment, finds the iPhone on the cable, and installs to it by UDID. With two phones plugged in and no `--device`, it lists both and stops rather than guessing: `--device matthew` picks one by any part of its name. A phone this Mac has paired before but is not plugged in does not count, so scotland-mobile alone on the cable deploys without a flag. `zcripts/ios/deploy_debug.sh` is a thin wrapper over the debug form.
 
 No backup step, unlike cairn: every deck lives on the server, so a reinstall has nothing on the phone to lose.
 

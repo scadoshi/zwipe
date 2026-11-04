@@ -1,7 +1,9 @@
 //! Guide article content, as data. Each `Guide` renders into the privacy-page
 //! long-form layout via `super::render_block`. Keep articles accurate to the
-//! app: labels here mirror the real in-app UI text. Never describe where
-//! synergy data comes from; only its user-facing behavior.
+//! app: labels here mirror the real in-app UI text, `backticks` mark a
+//! keyword and `[[name]]` draws an icon button as its icon (the names are in
+//! `super::guide_icon`), so no line describes an icon in words. Never
+//! describe where synergy data comes from; only its user-facing behavior.
 
 use dioxus::prelude::*;
 
@@ -174,15 +176,15 @@ pub(crate) static GUIDES: &[Guide] = &[
         related: &[],
         blocks: &[
             Block::Lead(
-                "Zwipe builds Magic: The Gathering decks by swiping through cards one at a time, instead of typing names into a form.",
+                "Zwipe builds Magic: The Gathering decks by swiping through cards one at a time.",
             ),
             Block::H2("Create a deck"),
             Block::P(
-                "Make a deck, name it, and pick a format. A commander format also unlocks the command-zone fields: commander, and where relevant partner, background, or signature spell.",
+                "Name a deck and pick a format. A commander format adds the command-zone fields: commander, plus partner, background, or signature spell where relevant.",
             ),
             Block::Image {
                 file: "getting-started/01-create-deck.webp",
-                alt: "The Create deck form with a name typed, the Commander format picked, and Krenko, Mob Boss as commander",
+                alt: "The Create deck form with the Commander format picked and Krenko, Mob Boss as commander",
                 caption: None,
             },
             Block::H2("Build by swiping"),
@@ -195,19 +197,19 @@ pub(crate) static GUIDES: &[Guide] = &[
             ]),
             Block::Image {
                 file: "getting-started/02-add-cards.webp",
-                alt: "The Add deck cards screen with a Goblin on top of the stack and the Search, Maybeboard, and Synergy chips above it",
+                alt: "The Add deck cards screen: a Goblin on top of the stack, the From row's Search chip, the link icon lit in the dock",
                 caption: None,
             },
             Block::P(
-                "Every add saves instantly and syncs across your devices. Skips stick too: swipe left and that card stays out of this deck for a week, even after you close the app. Each deck also keeps your place, so you can hop between decks and pick up where you left off.",
+                "Every add saves and syncs across your devices. A skip keeps that card out of this deck for a week, even after you close the app. Each deck keeps your place in the stack.",
             ),
             Block::H2("Shape the stack"),
             Block::P(
-                "On a commander deck, the Synergy toggle starts the stack with cards that fit your commander. Filter narrows by color, type, keyword, price, and more. Sorting reorders what you see without changing which cards are eligible.",
+                "On a commander deck, Synergy, the [[link]] in the dock, starts the stack with cards that fit your commander. The [[funnel]] narrows by color, type, keyword, price, and more. Sorting reorders without changing which cards are eligible.",
             ),
             Block::H2("Review and refine"),
             Block::P(
-                "As the deck grows, the deck view fills with live stats, charts, and a warnings list with one-tap fixes. Trim with the remove flow, set a budget or land target, and import or export any time. Each area has its own guide below.",
+                "The deck view shows live stats, charts, and warnings with one-tap fixes. Trim with the remove flow, set a budget or land target, import or export. Each has its own guide below.",
             ),
             Block::Image {
                 file: "getting-started/03-deck-cards.webp",
@@ -228,7 +230,7 @@ pub(crate) static GUIDES: &[Guide] = &[
             ),
             Block::H2("The four swipes"),
             Block::P(
-                "A first-visit hint (\"Swipe to build\") covers the gestures, and the \"?\" in the header reopens it.",
+                "A first-visit hint (\"Swipe to build\") covers the gestures, and the `?` in the header reopens it.",
             ),
             Block::Swipe(&[
                 ("right", "add the card to your deck"),
@@ -236,45 +238,43 @@ pub(crate) static GUIDES: &[Guide] = &[
                 ("up", "send it to your maybeboard"),
                 ("down", "undo your last swipe"),
             ]),
-            Block::P(
-                "Only the top card is interactive, and double-faced cards flip to show the back.",
-            ),
+            Block::P("Only the top card responds. Double-faced cards flip to show the back."),
             Block::Image {
                 file: "swipe-to-build/01-swipe-hint.webp",
-                alt: "The Swipe to build hint over the add screen: the four colored directions plus the Synergy note",
+                alt: "The Swipe to build hint: the four colored directions and the Synergy note",
                 caption: None,
             },
             Block::H2("Skips are remembered"),
             Block::P(
-                "A left swipe keeps that card out of this deck's swipe pile for a week, even after you reopen the app. After that it can come back, behind the cards you haven't seen yet. Clear skips in the deck's More menu brings them all back sooner. The swipe-memory guide covers this in full.",
+                "A left swipe keeps the card out of this deck's pile for a week. `Clear` beside Clear skips in the deck's Danger zone panel brings skipped cards back sooner. See Swipe memory.",
             ),
             Block::H2("Synergy"),
             Block::P(
-                "On a commander deck, the Synergy chip starts the stack with cards that fit your commander, best fits first, 25 at a time, then continues with cards like your deck. Off, you browse every legal card. It's on by default, and toggling it reloads the stack.",
+                "On a commander deck, the [[link]] in the dock turns Synergy on and the stack starts with cards that fit your commander, best fits first. Off, you browse every legal card. See Synergy-ranked cards.",
             ),
             Block::Note(
                 "If synergy is still warming up, Zwipe shows the full pool and tells you once.",
             ),
             Block::H2("Filter, sort, and the maybeboard"),
             Block::P(
-                "Filter decides which cards are dealt; a dot marks an active filter. Sorting reorders the current set only. The From row swaps the stack to your Maybeboard, where a right swipe promotes a card into the deck. Each source keeps its own filter, and the Maybeboard starts unfiltered.",
+                "The [[funnel]] decides which cards are dealt; a dot on it marks an active filter. Sorting only reorders. The Maybeboard chip after From deals your maybeboard instead; a right swipe there promotes a card into the deck. Each source keeps its own filter.",
             ),
             Block::Image {
                 file: "swipe-to-build/02-filter-sheet.webp",
-                alt: "The filter sheet open over the add screen with Types picked and a mana value range set",
+                alt: "The filter sheet with Types picked and a mana value range set",
                 caption: None,
             },
             Block::Image {
                 file: "swipe-to-build/03-maybeboard-stack.webp",
-                alt: "The From row switched to Maybeboard: the pile dealing saved cards with the Maybeboard chip lit",
+                alt: "The From row switched to Maybeboard, its chip lit, dealing saved cards",
                 caption: None,
             },
             Block::H2("Undo"),
             Block::P(
-                "Swipe down to undo your last swipe; undoing an add removes the card again, and undoing a skip brings the card back. Your place and undo history travel with each deck, so leaving and returning picks up where you left off. Refresh (or changing the filter) starts a fresh stack and clears the history.",
+                "Swipe down to undo: an added card comes back out, a skipped card comes back. Your place and undo history stay with each deck while the app is open. The [[refresh]], or a filter change, deals a fresh stack and clears the history.",
             ),
             Block::Note(
-                "At the very end of the stack, swipe down on the empty card to step back through your last swipes.",
+                "At the end of the stack, swipe down on the empty card to step back through your last swipes.",
             ),
         ],
     },
@@ -285,9 +285,7 @@ pub(crate) static GUIDES: &[Guide] = &[
         tags: &["Swiping", "Deck building"],
         related: &["swipe-to-build", "swipe-memory"],
         blocks: &[
-            Block::Lead(
-                "The remove flow is the mirror of building: instead of the whole card pool, it deals only the cards already in your deck.",
-            ),
+            Block::Lead("The remove flow deals only the cards already in your deck."),
             Block::H2("The four swipes"),
             Block::P("A first-visit hint (\"Swipe to trim\") covers them:"),
             Block::Swipe(&[
@@ -301,15 +299,15 @@ pub(crate) static GUIDES: &[Guide] = &[
             ]),
             Block::H2("Boards, filter, and refresh"),
             Block::P(
-                "The Boards row picks the pool you're trimming: Main, Maybe, Side, or All. Filter narrows it further, and Refresh restarts the stack and clears your undo history.",
+                "The Boards row picks the pool: Main, Maybe, Side, or All. The [[funnel]] narrows it. The [[refresh]] restarts the stack and clears your undo history.",
             ),
             Block::Image {
                 file: "remove-cards/01-remove-swipe.webp",
-                alt: "The Remove deck cards screen mid-swipe, with the Boards row set to Main above the pile",
+                alt: "The Remove deck cards screen mid-swipe, with Boards set to Main",
                 caption: None,
             },
             Block::Note(
-                "A card you remove also stops showing up when adding to this deck, for a month instead of a skip's week. Clear the deck's skips to bring removed cards back sooner.",
+                "A removed card stays out of this deck's add pile for a month (a skip lasts a week). Clear skips brings it back sooner.",
             ),
         ],
     },
@@ -320,36 +318,30 @@ pub(crate) static GUIDES: &[Guide] = &[
         tags: &["Swiping"],
         related: &["swipe-to-build", "remove-cards"],
         blocks: &[
-            Block::Lead(
-                "Zwipe remembers the cards you skip. Skip one and it stays out of that deck's swipe pile for a week, so you don't swipe past it again while you're building.",
-            ),
+            Block::Lead("Skip a card and it stays out of that deck's swipe pile for a week."),
             Block::H2("A skip lasts a week"),
             Block::P(
-                "A left swipe on the add screen tells Zwipe you don't want that card in this deck right now. It stays out of the swipe pile for 7 days, and that holds after you close and reopen the app. Skip it again when it comes back and the 7 days start over. Quick add still finds it by name, since typing a name is explicit intent.",
+                "A left swipe on the add screen keeps the card out of the pile for 7 days, even after you close and reopen the app. Skip it again when it comes back and the 7 days start over. Quick add still finds it by name.",
             ),
             Block::H2("A removal lasts a month"),
-            Block::P(
-                "Removing a card from a deck keeps it out of the pile for 30 days. Taking a card out says more than skipping it once, so it stays away longer.",
-            ),
+            Block::P("Removing a card from a deck keeps it out of the pile for 30 days."),
             Block::H2("When cards come back"),
             Block::P(
-                "Once a skip or removal runs out, the card can show up again, but only after every card you haven't seen yet. Old skips come back at the end of the pile, not the front.",
+                "When a skip or removal runs out, the card comes back at the end of the pile, after every card you haven't seen yet.",
             ),
             Block::H2("It's per deck"),
-            Block::P(
-                "Memory is scoped to the deck you're building. Skipping a card in one deck never hides it in another, so each deck's suggestions reflect only your choices for that deck.",
-            ),
+            Block::P("Skipping a card in one deck never hides it in another."),
             Block::H2("Pick up where you left off"),
             Block::P(
-                "While the app is open, each deck keeps its place in the stack along with your recent swipes for undo, so you can jump out to tweak another deck and come back where you left off. Restarting the app, or changing the filter, deals a fresh stack.",
+                "While the app is open, each deck keeps its place in the stack and your recent swipes for undo. Restarting the app, or changing the filter, deals a fresh stack.",
             ),
             Block::H2("Changed your mind? Clear skips"),
             Block::P(
-                "Open the deck's More menu and tap Clear skips. Every card you skipped or removed for that deck comes back into the pool right away, and swiping starts fresh.",
+                "Open the deck, scroll to the Danger zone panel and tap `Clear` beside Clear skips. Every card you skipped or removed for that deck comes back right away.",
             ),
             Block::Image {
                 file: "swipe-memory/01-clear-skips.webp",
-                alt: "The deck's More actions sheet with Clear skips among the actions",
+                alt: "The Danger zone panel with the Clear skips row and its Clear button",
                 caption: None,
             },
             Block::Note("Clearing skips can't be undone, and it only affects the one deck."),
@@ -363,46 +355,45 @@ pub(crate) static GUIDES: &[Guide] = &[
         related: &["card-roles", "oracle-tags"],
         blocks: &[
             Block::Lead(
-                "Filters decide which cards you see, whether you're adding, browsing, or trimming. The sheet is an accordion, one section per attribute.",
+                "Filters decide which cards you see. The sheet is an accordion, one section per attribute.",
             ),
             Block::H2("What you can filter on"),
             Block::Bullets(&[
-                "`Name`: contains, or doesn't contain.",
-                "`Oracle text`: rules text contains or excludes; match or exclude specific oracle words or keyword abilities.",
+                "`Name` and `Flavor text`: contains, or doesn't contain.",
+                "`Oracle text`: rules text, oracle words, or keyword abilities, included or excluded.",
                 "`Types`: the basic card types, or any type-line word like `legendary` or `dragon`.",
                 "`Mana`: mana value, color identity (`exact` or `within` a set of colors), and colors produced.",
                 "`Combat`: power and toughness, `exact` or a `range`.",
                 "`Rarity`, `Set`, `Artist`: include or exclude values.",
-                "`Flavor text`: contains, or doesn't contain.",
-                "`Card roles`: 27 strategic roles (`Ramp`, `Removal`, `Draw`, `Wipe`, and so on).",
-                "`Oracle tags`: the granular, community-maintained functional tags (spot removal, ramp, reanimation, and thousands more); include or exclude, with a curated set up front and search for the rest.",
+                "`Card roles`: 27 roles like `Ramp`, `Removal`, `Draw`, `Wipe`.",
+                "`Oracle tags`: thousands of functional tags (spot removal, ramp, reanimation); include or exclude, with a curated set up front and search for the rest.",
                 "`Format`: `Is commander in` and `Is legal in`.",
-                "`Price`: a currency (`USD`, `EUR`, or `TIX`) with optional min and max.",
+                "`Price`: min and max in `USD`, `EUR`, or `TIX`.",
             ]),
             Block::Image {
                 file: "swipe-to-build/02-filter-sheet.webp",
-                alt: "The filter sheet mid-use: Types selected, a mana value range of 2 to 5, and a red color pip picked",
+                alt: "The filter sheet mid-use: Types selected, mana value 2 to 5, red picked",
                 caption: None,
             },
             Block::H2("Combining"),
             Block::P(
-                "Sections combine with `AND`, so stack as many as you like. A multi-value section's `Any`/`All` toggle sets whether a card needs one selected value or all of them, and `include` and `exclude` can run at once.",
+                "Sections combine with `AND`. A multi-value section's `Any`/`All` toggle sets whether a card needs one selected value or all of them. `include` and `exclude` can run at once.",
             ),
             Block::Note(
-                "Pick the same value as both `include` and `exclude` and `Apply` stops with \"Filter can't both include and exclude\" for that section, leaving the sheet open so you can fix it.",
+                "The same value in both `include` and `exclude` stops the [[check]] with \"Filter can't both include and exclude\"; the sheet stays open so you can fix it.",
             ),
             Block::Image {
                 file: "filtering/02-filter-hint.webp",
-                alt: "The Filters hint: filters decide which cards you see; stack sections and tap Apply",
+                alt: "The Filters hint: stack sections and apply with the check in the dock",
                 caption: None,
             },
             Block::H2("Sorting"),
             Block::P(
-                "Sort by `Name`, `Mana value`, `Power`, `Toughness`, `Rarity`, `Release Date`, `Price`, `Popularity`, or `Random`. Sorting only reorders the set you're looking at; it never changes which cards are eligible. Each screen keeps its own filter and sort for the session, so changing them here never affects another screen.",
+                "Sort by `Name`, `Mana value`, `Power`, `Toughness`, `Rarity`, `Release Date`, `Price`, `Popularity`, or `Random`. Sorting only reorders. Each screen keeps its own filter and sort for the session.",
             ),
             Block::H2("Defaults and Reset"),
             Block::P(
-                "Every screen starts from a default view, and that default isn't always empty. `Reset` returns you to it:",
+                "Each screen has a default view, and the [[eraser]] on the filter sheet returns to it:",
             ),
             Block::Bullets(&[
                 "Add cards on a commander deck: your commander's colors, the format's legal cards, in synergy order. Once you hit your land target, lands drop out too.",
@@ -411,17 +402,12 @@ pub(crate) static GUIDES: &[Guide] = &[
                 "Remove and browse: an empty filter, over your deck's own cards.",
             ]),
             Block::P(
-                "The dot on the `Filter` button means you've changed something from that default, a filter or a different sort. `Reset` undoes the change and drops you back to the default. Synergy is a separate mode, so it stays however you set it.",
+                "The dot on the [[funnel]] means you've changed a filter or sort from that default. Synergy is a separate mode and stays however you set it.",
             ),
-            Block::Note(
-                "These built-in defaults never light the dot, since you didn't set them: your commander's colors, format legality, the popularity or synergy order, and lands leaving once you're at target.",
-            ),
+            Block::Note("The built-in defaults never light the dot."),
             Block::H2("Card roles"),
             Block::P(
-                "A card role is what a card does, and cards can hold several (`Lightning Bolt` is `Burn` and `Removal`). Zwipe assigns them automatically, so you just pick the roles you want.",
-            ),
-            Block::Note(
-                "A card's roles are drawn from its oracle tags. See Read a card at a glance for the card-level view of the same idea.",
+                "A card can hold several roles (`Lightning Bolt` is `Burn` and `Removal`). Zwipe assigns them from the card's oracle tags; you pick the roles you want. See Read a card at a glance.",
             ),
         ],
     },
@@ -432,38 +418,36 @@ pub(crate) static GUIDES: &[Guide] = &[
         tags: &["Deck building", "Cards"],
         related: &["filtering", "deck-tags", "swipe-to-build"],
         blocks: &[
-            Block::Lead(
-                "Two screens have controls that change what you see: your deck list, and each deck's card list. They work the same way on both.",
-            ),
+            Block::Lead("Your deck list and each deck's card list share the same controls."),
             Block::H2("The deck list"),
             Block::P(
-                "Group by folds your decks into sections by Format, Color, or Tag; a deck with several tags appears under each of them. None leaves them ungrouped, which is still one collapsible group headed All. Color makes a group per exact color combination, headed by its mana pips instead of a color word. Show narrows the list: color pips keep decks whose identity contains every pip you pick, tag chips match any of their tags, and All resets.",
+                "Group by sections your decks by Format, Color, or Tag; a deck with several tags appears under each. None is one collapsible group headed All. Color makes a group per exact color combination, headed by its mana pips. Show narrows the list: color pips keep decks whose identity contains every pip you pick, tag chips match any tag, and All resets.",
             ),
             Block::Image {
                 file: "organize-and-browse/01-deck-list-by-tag.webp",
-                alt: "The deck list grouped by Tag: Aggro and Artifacts sections with the Show pips and tag chips above",
+                alt: "The deck list grouped by Tag, with the Show pips and tag chips above",
                 caption: None,
             },
             Block::H2("A deck's card list"),
             Block::P(
-                "Group by sections the cards by Type, Mana value, Color, or Card role, and None leaves them in one list; grouping by Color makes a group per exact color combination, headed by its mana pips. Boards is three independent toggles, Main, Maybe, and Side, so you can read two boards at once; turn the last one off and Main snaps back on. Show toggles Tokens, the Command zone, and Art, which shows or hides card art.",
+                "Group by sections cards by Type, Mana value, Color, or Card role; None is one list. Boards is three independent toggles, Main, Maybe, and Side; turn the last one off and Main snaps back on. Show toggles Tokens, the Command zone, and Art.",
             ),
             Block::H2("Collapse what you're done with"),
             Block::P(
-                "Tap any group header on either list to fold that section, with the same arrow the card rows use. On the card list, Tokens, Lands, Maybeboard, and Sideboard fold the same way. Collapses last for the visit; everything opens fresh next time.",
+                "Tap a group header on either list to fold it. On the card list, Tokens, Lands, Maybeboard, and Sideboard fold too. Collapses last for the visit.",
             ),
             Block::Image {
                 file: "organize-and-browse/02-cards-by-type-collapsed.webp",
-                alt: "A card list grouped by Type with the Creatures section collapsed between expanded groups",
+                alt: "A card list grouped by Type with the Creatures section collapsed",
                 caption: None,
             },
             Block::H2("Quick add"),
             Block::P(
-                "The Quick add bar at the top of the card list searches by name and adds a result to your mainboard with one tap. Results float over the list instead of pushing it around, and the search reaches cards you skipped while swiping.",
+                "Quick add at the top of the card list searches by name and adds a result to your mainboard with one tap. It reaches cards you skipped while swiping.",
             ),
             Block::Image {
                 file: "organize-and-browse/03-quick-add-results.webp",
-                alt: "Quick add mid-search: results floating over the card list, one tap from the mainboard",
+                alt: "Quick add results floating over the card list",
                 caption: None,
             },
         ],
@@ -476,15 +460,15 @@ pub(crate) static GUIDES: &[Guide] = &[
         related: &["commander-and-formats", "oracle-tags"],
         blocks: &[
             Block::Lead(
-                "On a commander deck, Synergy leads with the cards that actually work with your commander instead of every legal card.",
+                "On a commander deck, Synergy leads with the cards that work with your commander.",
             ),
             Block::H2("Where and how"),
             Block::P(
-                "The Synergy chip sits on the From row of the Add deck cards screen whenever the source is Search and your deck has a commander. On, the stack starts with fitting cards, served best-first, 25 at a time, and shuffled within each batch per deck per day, so the same commander doesn't show an identical stack twice; off, you browse everything legal. It's on by default, and toggling it reloads the stack.",
+                "Synergy is the [[link]] in the Add deck cards dock, there when the source is Search and the deck has a commander. On, the stack starts with fitting cards, best first, 25 at a time, shuffled within each batch per deck per day. Off, you browse everything legal. It's on by default, and toggling it reloads the stack.",
             ),
             Block::Image {
                 file: "synergy/01-synergy-on.webp",
-                alt: "The add screen with the Synergy chip lit and a Goblin on top of the stack for a Goblin commander",
+                alt: "The add screen with the Synergy link lit and a Goblin on top for a Goblin commander",
                 caption: None,
             },
             Block::Note(
@@ -492,15 +476,15 @@ pub(crate) static GUIDES: &[Guide] = &[
             ),
             Block::H2("When the synergy picks run out"),
             Block::P(
-                "Each commander has a few hundred synergy picks. Once you've swiped through them, the stack keeps going with cards like your deck: ones that share what your commander and your best picks do, and a rare shared trait counts for more than a common one like ramp. Zwipe says so once, when the first of those cards comes up. With a sort applied, the stack stops at the last synergy pick instead.",
+                "Each commander has a few hundred synergy picks. After them, the stack continues with cards like your deck, where a rare shared trait counts for more than a common one like ramp. Zwipe says so once. With a sort applied, the stack stops at the last synergy pick.",
             ),
             Block::H2("Synergy vs. sorting"),
             Block::P(
-                "Synergy sets which cards appear and their order; Sort only reorders the current set. Keep Synergy on to stay on-theme, then sort within those picks.",
+                "Synergy sets which cards appear and their order; Sort only reorders the current set.",
             ),
             Block::H2("Oracle tags sharpen the order"),
             Block::P(
-                "Any oracle tags you've selected on the deck contribute to that ordering too, alongside commander synergy, so the cards up top fit both your commander and what your deck is trying to do. See Sharpen suggestions with oracle tags.",
+                "Oracle tags selected on the deck shape the order too. See Sharpen suggestions with oracle tags.",
             ),
         ],
     },
@@ -516,23 +500,23 @@ pub(crate) static GUIDES: &[Guide] = &[
             ),
             Block::H2("Pick a format"),
             Block::P(
-                "The Format picker is single-select: tap a format to see its details (pool, size, life, command zone), and tap again to clear. Commander formats are listed first.",
+                "Tap a format to see its details (pool, size, life, command zone); tap again to clear. Commander formats are listed first.",
             ),
             Block::Bullets(&[
                 "Commander formats: `Brawl`, `Commander`, `Duel Commander`, `Historic Brawl`, `Oathbreaker`, `Pauper Commander`, `PreDH`, `Standard Brawl`.",
                 "Other formats: `Alchemy`, `Explorer`, `Future`, `Gladiator`, `Historic`, `Legacy`, `Modern`, `Old School`, `Pauper`, `Penny Dreadful`, `Pioneer`, `Premodern`, `Standard`, `Timeless`, `Vintage`.",
             ]),
             Block::P(
-                "Each format has its own rules: Commander is 100 cards, singleton, 40 life; Oathbreaker is 60 with a planeswalker and signature spell; 60-card constructed formats allow four copies. Changing the format clears your commander.",
+                "Commander is 100 cards, singleton, 40 life; Oathbreaker is 60 with a planeswalker and signature spell; 60-card constructed formats allow four copies. Changing the format clears your commander.",
             ),
             Block::Image {
                 file: "commander-and-formats/01-format-picker.webp",
-                alt: "The Format picker with Commander selected, commander formats listed first",
+                alt: "The Format picker with Commander selected",
                 caption: None,
             },
             Block::H2("Pick a commander"),
             Block::P(
-                "Each command-zone field (Commander, plus Partner, Background, or Signature spell when relevant) offers two paths:",
+                "Each command-zone field (Commander, Partner, Background, Signature spell) fills two ways:",
             ),
             Block::Steps(&[
                 "Type to search. Filter on limits results to eligible cards; off searches any card by name.",
@@ -547,11 +531,11 @@ pub(crate) static GUIDES: &[Guide] = &[
                 caption: None,
             },
             Block::Note(
-                "Some partners name a specific mate (\"Partner with [Name]\"). Pick one and Zwipe fills in the named partner for you.",
+                "Pick a \"Partner with [Name]\" commander and Zwipe fills in the named partner.",
             ),
             Block::H2("Color identity"),
             Block::P(
-                "In commander formats, your deck's colors come from the commander (plus partner and background). The add screen stays inside those colors, and anything off-color is flagged in warnings.",
+                "In commander formats, the deck's colors come from the commander, partner, and background. The add screen stays inside them, and off-color cards show in warnings.",
             ),
         ],
     },
@@ -563,15 +547,15 @@ pub(crate) static GUIDES: &[Guide] = &[
         related: &["commander-and-formats", "swipe-to-build"],
         blocks: &[
             Block::Lead(
-                "Found a commander you like but you're not building it today? Swipe up while picking a commander and it lands on your commander maybeboard, one list shared across your whole account.",
+                "Swipe up while picking a commander and it lands on your commander maybeboard, one list shared across your account.",
             ),
             Block::H2("Two maybeboards, one word"),
             Block::P(
-                "Every deck has its own maybeboard for cards you might add to that deck. The commander maybeboard is different: it belongs to your account, not any deck, and it holds commanders only.",
+                "Each deck has its own maybeboard for cards. The commander maybeboard belongs to your account and holds commanders only.",
             ),
             Block::H2("Save a commander"),
             Block::P(
-                "In any Swipe select picker for a commander, while creating or editing a deck, the up swipe saves the card on top:",
+                "In any Swipe select picker for a commander, the up swipe saves the top card:",
             ),
             Block::Swipe(&[
                 ("right", "choose it for this deck"),
@@ -581,46 +565,46 @@ pub(crate) static GUIDES: &[Guide] = &[
             ]),
             Block::Image {
                 file: "commander-maybeboard/01-swipe-select-hint.webp",
-                alt: "The Swipe select hint: right chooses that commander, up saves it to your commander maybeboard",
+                alt: "The Swipe select hint: right chooses, up saves to your commander maybeboard",
                 caption: None,
             },
             Block::P(
-                "Saving never interrupts the pick: the pile advances and you keep swiping. A down swipe right after takes the save back too. The list holds up to 50 commanders.",
+                "The pile advances and you keep swiping. A down swipe takes the save back. The list holds up to 50 commanders.",
             ),
             Block::H2("The Commander maybeboard screen"),
             Block::P(
-                "Open it from the Decks screen: More, then Commander maybeboard. Saves show newest first as card rows with art (the Art chip hides it). Expand a row for its full details and three actions:",
+                "Open Commander maybeboard from the menu. Saves show newest first as card rows with art (the Art chip hides it). Expand a row for details and three actions:",
             ),
             Block::Image {
                 file: "commander-maybeboard/02-saved-commanders.webp",
-                alt: "The Commander maybeboard screen: saved commanders as art rows with power level, price, and color pips",
+                alt: "The Commander maybeboard screen: saved commanders with power level, price, and color pips",
                 caption: None,
             },
             Block::Bullets(&[
                 "`Create deck` starts a new deck with that commander already in the command zone and the format set to Commander.",
-                "`Printing` swaps which printing shows, and the printing you pick carries into Create deck.",
+                "`Printing` swaps the printing, and your pick carries into Create deck.",
                 "`Remove` takes it off the list.",
             ]),
             Block::Image {
                 file: "commander-maybeboard/03-expanded-row.webp",
-                alt: "A saved commander expanded to its full details with the Printing, Create deck, and Remove buttons",
+                alt: "A saved commander expanded, with Printing, Create deck, and Remove",
                 caption: None,
             },
             Block::H2("Add without swiping"),
             Block::P(
-                "The Quick add bar searches commanders by name; tap a result to save it on the spot. The color pips and the Filter button narrow the list of saves, same as filtering anywhere else.",
+                "Quick add searches commanders by name; tap a result to save it. The color pips and the Filter button narrow the list of saves.",
             ),
             Block::Image {
                 file: "commander-maybeboard/04-maybeboard-hint.webp",
-                alt: "The Commander maybeboard hint: Swipe deals commanders here, Quick add searches by name, Create deck starts a deck",
+                alt: "The Commander maybeboard hint: Swipe, Quick add, and Create deck",
                 caption: None,
             },
             Block::H2("Swipe right from the list"),
             Block::P(
-                "The Swipe button deals commanders right on this screen, with your saves left out, so you only see commanders you haven't saved. A right swipe starts a new deck with the pick; up saves it for later, like everywhere else.",
+                "The Swipe button deals commanders you haven't saved. Right starts a new deck with the pick; up saves it.",
             ),
             Block::Note(
-                "Clear the whole list from More, then Clear maybeboard. It asks first, because there's no undo.",
+                "Clear the whole list from the Danger zone panel: tap `Clear` beside Clear maybeboard. It asks first; there's no undo.",
             ),
         ],
     },
@@ -632,38 +616,36 @@ pub(crate) static GUIDES: &[Guide] = &[
         related: &["commander-maybeboard", "synergy", "activity"],
         blocks: &[
             Block::Lead(
-                "Your decks already say what you like to play. Playstyle reads every one of them, in any format, then ranks commanders you haven't built yet.",
+                "Playstyle reads every deck you have, in any format, and ranks commanders you haven't built yet.",
             ),
             Block::H2("Finding it"),
             Block::Bullets(&[
-                "On the Home screen, tap Playstyle on the Colors panel. It's also on the Decks screen, under More.",
+                "On the Home screen, tap Playstyle on the Colors panel. It's also in the menu.",
                 "Your colors, card roles and oracle tags come first.",
-                "Under them, Suggested commanders lists your top 10 as card rows, best fit first. Its question mark explains the ranking.",
-                "Tap a color chip in the Show row to see only those colors. Tap it again to see them all.",
-                "Staples, at the bottom, lists the cards that show up in the most of your decks. Each row leads with the share of your decks that run it, and an expanded row gives the count, like 4 of 6 decks. Basic lands are left out. Tap a Type or Color chip to narrow it. It has a question mark too.",
+                "Under them, Suggested commanders lists your top 10 as card rows, best fit first. Its `?` explains the ranking.",
+                "Tap a color chip in the Show row to narrow to those colors; tap again to clear.",
+                "Staples, at the bottom, lists the cards in the most of your decks: each row shows the share of decks that run it, and an expanded row the count, like 4 of 6. Basic lands are left out. Type and Color chips narrow it, and it has a `?` too.",
             ]),
             Block::H2("What your decks say"),
             Block::P(
-                "Colors opens first. It's a bar per color, with its mana pip and how many of your cards are that color, colorless last. The longest bar is the color you build in most. It's the same panel as on Home. Under it are more sections. Tap one to open it.",
+                "Colors opens first: a bar per color with its mana pip and how many of your cards are that color, colorless last. It's the same panel as on Home. Tap a section under it to open it.",
             ),
             Block::Bullets(&[
                 "Summary shows how many decks were read, your most built color combination and your top single color.",
                 "Card roles shows how many of your decks fill each role, like ramp or removal. Tap a role to see its tags.",
                 "Oracle tags lists your 10 most impactful tags. Tap a tag to see what it means.",
-                "Colors, Card roles and Oracle tags each have a question mark in the header that explains them.",
+                "Each has a `?` in its header.",
             ]),
             Block::H2("How a tag's impact adds up"),
             Block::Bullets(&[
-                "Decks is how many of your decks have the tag. More decks, more impact.",
-                "Cards is how many cards carry it across those decks. More cards, more impact.",
+                "Decks is how many of your decks have the tag, Cards how many cards carry it across them. More of either, more impact.",
                 "Impact is how much more your decks lean on a tag than Magic cards do overall. Your top tag scores 100.",
-                "A tag your decks use no more often than other Magic cards do doesn't show up at all.",
-                "Each column has its own question mark, too.",
+                "A tag your decks use no more than Magic overall doesn't show up.",
+                "Each column has its own `?`, too.",
             ]),
-            Block::P("There's a little more math under the hood, but that's the gist."),
             Block::H2("Why this commander"),
             Block::P(
-                "Expand a row and tap Why this commander? to see why it made the list. You get the oracle tags it shares with your decks and the colors you keep building in. While you swipe, a card's details sheet shows the same reasons already open.",
+                "Expand a row and tap Why this commander? for the oracle tags it shares with your decks and the colors you keep building in. While you swipe, the card's details sheet shows the same reasons.",
             ),
             Block::H2("What you can do with one"),
             Block::Bullets(&[
@@ -673,7 +655,7 @@ pub(crate) static GUIDES: &[Guide] = &[
             ]),
             Block::H2("Swipe deeper"),
             Block::P(
-                "Swipe deals the same ranking as a stack, up to 100 deep. Tap Filter while you swipe to narrow it to one color identity.",
+                "Swipe deals the same ranking as a stack, up to 100 deep. Tap the [[funnel]] while you swipe to narrow it to one color identity.",
             ),
             Block::Swipe(&[
                 ("right", "start a new deck with this commander"),
@@ -682,7 +664,7 @@ pub(crate) static GUIDES: &[Guide] = &[
                 ("down", "undo your last swipe"),
             ]),
             Block::P(
-                "Skipped commanders come back on their own after seven days. To bring them all back now, tap More, then Clear skips.",
+                "Skipped commanders come back after seven days, or sooner with `Clear` beside Clear skips in the Danger zone panel.",
             ),
             Block::Note(
                 "You need a deck with some cards in it before anything shows up. Any format counts.",
@@ -701,16 +683,16 @@ pub(crate) static GUIDES: &[Guide] = &[
             ),
             Block::H2("Finding it"),
             Block::P(
-                "On the Home screen, tap Activity under the counters. It opens on the Activity section, and each section has a question mark that explains it.",
+                "On the Home screen, tap Activity under the counters. Each section has a `?`.",
             ),
             Block::H2("What's on it"),
             Block::Bullets(&[
-                "Activity is a heatmap of the last year, a square per day, darker the more you swiped and searched. Your biggest days are lit. Tap a square for its counts. Under it, Totals shows what the cards dealt to your decks came to: added, skipped, saved to a maybeboard, or added and later removed.",
+                "Activity is a heatmap of the last year, a square per day, darker the more you swiped and searched. Tap a square for its counts. Totals, under it, counts the cards dealt to your decks: added, skipped, saved to a maybeboard, or added and later removed.",
                 "Card roles and Oracle tags share a Show chip row: Added, Skipped and Maybeboard are shares of the cards dealt to you, and Removed is the share of cards you added and later took out. Pick one in either section and both follow.",
                 "Card roles shows your rate for each role. Tap one to see the tags you swiped under it.",
                 "Oracle tags lists up to ten tags where your rate is higher than other players', highest first. Tap a tag to see what it means.",
                 "Both read your decks with a commander, for roles and tags dealt at least 10 times.",
-                "Most skipped lists cards you skip and never add or save, with how many times you skipped each and, in an open row, the commanders you skipped it under. It weighs your skips against other players', so a card most people pass on only shows up after a lot of skips, while one they usually keep shows up after two.",
+                "Most skipped lists cards you skip and never add or save, with the skip count and, in an open row, the commanders you skipped it under. Skips are weighed against other players': a card most people pass on needs a lot of skips to show up, one they usually keep needs two.",
             ]),
         ],
     },
@@ -734,7 +716,7 @@ pub(crate) static GUIDES: &[Guide] = &[
             ),
             Block::Image {
                 file: "budgeting/01-budget-section.webp",
-                alt: "The Budget section with the currency chips and a total running past its price target",
+                alt: "The Budget section with the currency chips and a total past its price target",
                 caption: None,
             },
             Block::Note(
@@ -742,7 +724,7 @@ pub(crate) static GUIDES: &[Guide] = &[
             ),
             Block::H2("Prices and buying"),
             Block::P(
-                "The Budget section shows Total price and Average card price, switchable across USD, EUR, and TIX with the currency chip in its header, and each card lists its prices while you swipe. Buy deck (under More) opens mass-entry links to TCGplayer and Card Kingdom.",
+                "The Budget section shows Total price and Average card price; the currency chip in its header switches USD, EUR, and TIX. Each card lists its prices while you swipe. The Buy row links to TCGplayer and Card Kingdom with the deck filled in.",
             ),
         ],
     },
@@ -753,9 +735,7 @@ pub(crate) static GUIDES: &[Guide] = &[
         tags: &["Deck building"],
         related: &["budgeting", "deck-stats"],
         blocks: &[
-            Block::Lead(
-                "Set the number of lands you want and Zwipe warns you as the deck fills, so you don't finish short on mana.",
-            ),
+            Block::Lead("Set how many lands you want and Zwipe warns you as the deck fills."),
             Block::H2("Set the target"),
             Block::P(
                 "The Land target stepper starts at \"Not set.\" The first tap sets a default (about 37 for 100-card formats, 17 for 60-card), then you adjust.",
@@ -766,16 +746,14 @@ pub(crate) static GUIDES: &[Guide] = &[
             ),
             Block::Image {
                 file: "land-targets/01-mana-section.webp",
-                alt: "The Mana section: lands counted against their target, average mana value, the curve, and cost fulfillment",
+                alt: "The Mana section: lands against their target, average mana value, the curve, and cost fulfillment",
                 caption: None,
             },
             Block::H2("Lands leave the stack"),
             Block::P(
-                "When you open the add screen with your land count already at target (your target, or the format default), Zwipe excludes lands from the swipe stack so it stops dealing you ones you don't need. It adds `Land` to the `Basic types` exclude filter. To bring lands back while you're still at target, remove that exclude yourself; a `Reset` keeps it in place, since excluding lands is the default once you're at target. Reaching the target mid-session takes effect the next time you enter the screen.",
+                "Open the add screen at or past target (yours, or the format default) and lands drop out of the stack: `Land` goes into the `Basic types` exclude filter. Remove that exclude to bring lands back; `Reset` keeps it, since it's the default at target. Reaching the target mid-session takes effect the next time you enter the screen.",
             ),
-            Block::Note(
-                "Even with no target set, warnings use your format's default land count as a fallback.",
-            ),
+            Block::Note("With no target set, warnings use your format's default land count."),
         ],
     },
     Guide {
@@ -794,16 +772,16 @@ pub(crate) static GUIDES: &[Guide] = &[
             ),
             Block::Image {
                 file: "deck-tags/01-tag-picker.webp",
-                alt: "The Deck tags picker at five of five, the tapped tag's definition showing above the alphabetical list",
+                alt: "The Deck tags picker at five of five, the tapped tag's definition above the list",
                 caption: None,
             },
             Block::H2("How many"),
             Block::P(
-                "Up to five tags per deck (shown as N/5), from one flat alphabetical list. Tags are only ever added, never renamed, so old ones keep working.",
+                "Up to five per deck (shown as N/5), from one alphabetical list. Tags are never renamed, so old ones keep working.",
             ),
             Block::H2("Tags seed oracle tags"),
             Block::P(
-                "Picking a deck tag auto-selects the oracle tags that define that archetype, so an Aggro tag pulls in things like haste and burn. Those oracle tags are what sharpen the cards Zwipe suggests. See the Oracle tags guide for the full picture.",
+                "Picking a deck tag auto-selects the oracle tags that define that archetype; Aggro pulls in haste and burn. Those oracle tags sharpen the cards Zwipe suggests. See Sharpen suggestions with oracle tags.",
             ),
         ],
     },
@@ -819,11 +797,11 @@ pub(crate) static GUIDES: &[Guide] = &[
         ],
         blocks: &[
             Block::Lead(
-                "Oracle tags are the granular, community-maintained tags for what a card actually does: `spot-removal`, `ramp`, `sacrifice-outlet`, and thousands more. Select them on a deck and Zwipe suggests cards that fit them better.",
+                "Oracle tags say what a card does: `spot-removal`, `ramp`, `sacrifice-outlet`, and thousands more. Select them on a deck and Zwipe suggests cards that fit.",
             ),
             Block::H2("Where they come from"),
             Block::P(
-                "Picking a deck tag (Aggro, Reanimator, Voltron, and so on) auto-selects a starter set of oracle tags for that archetype. Leave them as-is if you're not sure, or open Tags on the edit form to add or remove oracle tags directly.",
+                "Picking a deck tag (Aggro, Reanimator, Voltron) auto-selects a starter set for that archetype. Open Tags on the edit form to add or remove oracle tags directly.",
             ),
             Block::H2("Selecting them"),
             Block::P(
@@ -831,15 +809,15 @@ pub(crate) static GUIDES: &[Guide] = &[
             ),
             Block::Image {
                 file: "oracle-tags/01-tag-search.webp",
-                alt: "The Oracle tags picker mid-search, matching tags listed with the selected ones outlined",
+                alt: "The Oracle tags picker mid-search, with the selected tags outlined",
                 caption: None,
             },
             Block::Note(
-                "Not sure what a tag does? Tap Dictionary in the picker to look it up. See Browse the oracle-tag dictionary.",
+                "Tap Dictionary in the picker to look a tag up. See Browse the oracle-tag dictionary.",
             ),
             Block::H2("What they do"),
             Block::P(
-                "Selected oracle tags sharpen which cards Zwipe suggests while you swipe, and on a commander deck they contribute to the synergy order alongside your commander. See Synergy-ranked cards.",
+                "Selected tags sharpen which cards Zwipe suggests while you swipe, and on a commander deck they shape the synergy order. See Synergy-ranked cards.",
             ),
             Block::Image {
                 file: "oracle-tags/02-tags-section.webp",
@@ -847,7 +825,7 @@ pub(crate) static GUIDES: &[Guide] = &[
                 caption: None,
             },
             Block::Note(
-                "Deck tags are the quick start; oracle tags let you fine-tune. See Deck tags, card roles & oracle tags: how they fit for how all three connect.",
+                "Deck tags are the quick start, oracle tags the fine-tune. See Deck tags, card roles, and oracle tags: how they fit.",
             ),
         ],
     },
@@ -859,37 +837,35 @@ pub(crate) static GUIDES: &[Guide] = &[
         related: &["oracle-tags", "card-roles"],
         blocks: &[
             Block::Lead(
-                "The oracle-tag dictionary covers every oracle tag, about 4,500 in all, each with a plain-language description of what it means.",
+                "The oracle-tag dictionary describes every oracle tag, about 4,500 in all.",
             ),
             Block::H2("Opening it"),
             Block::P(
-                "Open the Oracle tags picker from Tags on the deck's edit form, then tap Dictionary next to Search. The picker's help button has a Dictionary button too. The card filter sheet reaches it as well: the Oracle tags section carries its own Dictionary button for include and for exclude.",
+                "In the Oracle tags picker (Tags on the deck's edit form), tap Dictionary next to Search; the picker's `?` has a Dictionary button too. On the filter sheet, the Oracle tags section has one for include and one for exclude.",
             ),
             Block::H2("Browse by letter"),
             Block::P(
-                "An A to Z rail runs across the top, plus a # group for tags that start with a number. Tap a letter to list every tag that starts with it, in alphabetical order.",
+                "An A to Z rail runs across the top, plus # for tags that start with a number. Tap a letter to list its tags alphabetically.",
             ),
             Block::Image {
                 file: "oracle-tag-dictionary/01-by-letter.webp",
-                alt: "The dictionary on the letter S, each entry showing its description and parent tag",
+                alt: "The dictionary on the letter S, each entry with its description and parent tag",
                 caption: None,
             },
             Block::H2("Search"),
             Block::P(
-                "Type in the search box to match across the whole catalog by tag name or description, not just the letter you're on. A broad search shows the first matches.",
+                "Search matches the whole catalog by tag name or description. A broad search shows the first matches.",
             ),
             Block::Image {
                 file: "oracle-tag-dictionary/02-search.webp",
-                alt: "A dictionary search for burn, listing the tag and its relatives with descriptions",
+                alt: "A dictionary search for burn, listing the tag and its relatives",
                 caption: None,
             },
             Block::H2("What each entry shows"),
             Block::P(
-                "Every row lists the tag's name, its description, and any parent tags it sits under, then two buttons: Examples shows cards that carry the tag, and Use adopts the tag into the deck or filter you opened the dictionary from, without leaving the picker. Every tag has a description written by Zwipe. A tag added since the last pass may read \"No description yet\" until it gets one.",
+                "Each row lists the tag's name, description, and parent tags, then two buttons: Examples shows cards that carry the tag, and Use adopts it into the deck or filter you came from. A tag added since the last pass may read \"No description yet.\"",
             ),
-            Block::Note(
-                "For the wider picture of picking oracle tags on a deck, see Sharpen suggestions with oracle tags.",
-            ),
+            Block::Note("See Sharpen suggestions with oracle tags for picking tags on a deck."),
         ],
     },
     Guide {
@@ -900,24 +876,24 @@ pub(crate) static GUIDES: &[Guide] = &[
         related: &["oracle-tags", "filtering"],
         blocks: &[
             Block::Lead(
-                "Card roles sum up a card's oracle tags in a few broad labels, like Removal, Ramp, or Card advantage, that tell you what a card does at a glance.",
+                "Card roles sum up a card's oracle tags in broad labels like Removal, Ramp, or Card advantage.",
             ),
             Block::H2("The chips"),
             Block::P(
-                "Expand a card's row and its Card roles chips show every role that card fills. You never pick roles yourself, they're computed from the card's oracle tags.",
+                "Expand a card's row for its Card roles chips. Roles are computed from the card's oracle tags; you never pick them.",
             ),
             Block::H2("Drilling down"),
             Block::P(
-                "Tap a role chip to reveal the specific oracle tags underneath it. A trailing \"Other tags\" chip holds any of the card's functional tags that don't fall under a role.",
+                "Tap a role chip to see the oracle tags under it. A trailing \"Other tags\" chip holds tags that fall under no role.",
             ),
             Block::Image {
                 file: "card-roles/01-role-chips.webp",
-                alt: "An expanded card row with its Card roles chips, one opened to the oracle tags beneath it and a description",
+                alt: "An expanded card row with its Card roles chips, one opened to its oracle tags",
                 caption: None,
             },
             Block::H2("Roles"),
             Block::P(
-                "The deck view's Distributions section includes a Roles chart, the same roles as the card chips, but counted across your whole deck, so you can see at a glance where it's thin. Tap a role to see the oracle tags your deck's cards carry under it.",
+                "The deck view's Distributions section has a Roles chart, the same roles counted across the whole deck. Tap a role to see the oracle tags your cards carry under it.",
             ),
         ],
     },
@@ -929,31 +905,26 @@ pub(crate) static GUIDES: &[Guide] = &[
         related: &["deck-tags", "card-roles", "oracle-tags"],
         blocks: &[
             Block::Lead(
-                "Zwipe has three related tagging concepts, and they're easy to mix up. Here's how they fit together: deck tags seed oracle tags, oracle tags sharpen suggestions, and card roles sum up what a card's oracle tags say.",
+                "Deck tags seed oracle tags, oracle tags sharpen suggestions, and card roles sum up what a card's oracle tags say.",
             ),
             Block::H2("Deck tags: the archetype you pick"),
             Block::P(
-                "Deck tags label your deck's game plan, Aggro, Tokens, Reanimator, and so on. Picking one auto-selects the oracle tags that define it, so one pick sets up the rest.",
+                "Deck tags label your game plan: Aggro, Tokens, Reanimator. Picking one auto-selects the oracle tags that define it.",
             ),
             Block::H2("Oracle tags: the specific things your deck does"),
             Block::P(
-                "Oracle tags are granular and functional: `spot-removal`, `ramp`, `sacrifice-outlet`. Deck tags seed a starter set, but you can add or remove them directly to fine-tune. Selected oracle tags are what sharpen which cards Zwipe suggests.",
+                "Oracle tags are specific: `spot-removal`, `ramp`, `sacrifice-outlet`. Add or remove them directly to fine-tune. Selected oracle tags sharpen which cards Zwipe suggests.",
             ),
             Block::H2("Card roles: the summary"),
             Block::P(
-                "Card roles are different from the other two: you never assign them, they're computed from a card's oracle tags. Those tags roll up into a small set of coarse roles, Removal, Ramp, Card advantage, shown as chips when you expand a card's row or open its rules. Tap a role to see the oracle tags underneath it. You can still filter the stack by role.",
+                "You never assign card roles; they're computed from a card's oracle tags and shown as chips (Removal, Ramp, Card advantage) when you expand a card's row or open its rules. Tap a role to see the oracle tags under it. You can filter the stack by role.",
             ),
             Block::H2("How it flows"),
             Block::Diagram(
                 "You configure\n  Deck tags\n     │ seed\n     ▼\n  Oracle tags  (refine freely)\n     │ match\n     ▼\nZwipe serves\n  cards that fit your deck",
             ),
-            Block::P("The more you set up a deck, the better its suggestions."),
-            Block::H2("The one-liner"),
-            Block::P(
-                "Tell Zwipe what your deck does, and it suggests cards that fit. Deck tags and oracle tags are how you tell Zwipe; card roles are how Zwipe shows you what any given card brings to the table.",
-            ),
             Block::Note(
-                "For the full detail on each piece, see Tag decks by archetype, Sharpen suggestions with oracle tags, and Read a card at a glance.",
+                "See Tag decks by archetype, Sharpen suggestions with oracle tags, and Read a card at a glance.",
             ),
         ],
     },
@@ -965,32 +936,30 @@ pub(crate) static GUIDES: &[Guide] = &[
         related: &["deck-tags", "deck-stats", "share-your-deck"],
         blocks: &[
             Block::Lead(
-                "Every deck has a few cards that define it. Star up to three of them as MVPs, and Zwipe leans that deck's suggestions toward what you starred.",
+                "Star up to three cards as a deck's MVPs and Zwipe leans that deck's suggestions toward them.",
             ),
             Block::H2("Star a card"),
             Block::P(
-                "In a deck's card list, tap a card to expand its row, then tap Star. A gold ★ shows on the row so your MVPs read at a glance, and Unstar frees the slot.",
+                "In a deck's card list, expand a card's row and tap Star. A gold ★ marks the row; Unstar frees the slot.",
             ),
             Block::Image {
                 file: "deck-mvps/01-featured-strip.webp",
-                alt: "A deck's featured strip: the commander beside three starred MVPs, each labeled under its card",
+                alt: "A deck's featured strip: the commander beside three starred MVPs",
                 caption: None,
             },
             Block::H2("Three per deck"),
             Block::P(
-                "Each deck holds three MVP slots. Once three are starred, Zwipe turns down a fourth (\"This deck already has 3 MVPs\"), so promoting a new one means unstarring one first. Three keeps MVPs to the cards that define the deck.",
+                "A fourth star is refused (\"This deck already has 3 MVPs\"); unstar one first.",
             ),
             Block::H2("What a star does"),
             Block::P(
-                "Beyond marking the card in the list, your MVPs tell Zwipe what this deck is about, so it leans this deck's suggestions toward them. Stars are per deck, so one deck's MVPs never affect another's.",
+                "MVPs steer this deck's suggestions. Stars are per deck; one deck's MVPs never affect another's.",
             ),
             Block::H2("Removing and cloning"),
             Block::P(
-                "Removing a card, or moving it off the mainboard, clears its star and frees the slot. Cloning a deck carries its MVPs along. Exported decklists leave stars out, since a marker would break pastes into other apps, so MVPs travel by clone rather than by export.",
+                "Removing a card, or moving it off the mainboard, clears its star. Cloning a deck carries its MVPs along; exported decklists leave stars out.",
             ),
-            Block::Note(
-                "Your MVPs also headline your shared deck page, featured up top alongside the command zone.",
-            ),
+            Block::Note("MVPs also headline your shared deck page, beside the command zone."),
         ],
     },
     Guide {
@@ -1001,44 +970,44 @@ pub(crate) static GUIDES: &[Guide] = &[
         related: &["deck-mvps", "deck-stats"],
         blocks: &[
             Block::Lead(
-                "Any deck can go public with one link. Whoever you send it to opens it in a browser, no account or app on their end.",
+                "Any deck can go public with one link, viewable in a browser with no account or app.",
             ),
             Block::H2("Create the link"),
             Block::Steps(&[
-                "Open the deck and tap More.",
-                "Tap Share deck, then Create link.",
-                "The link copies to your clipboard, ready to paste anywhere.",
+                "Open the deck and tap the [[share]] beside its profile.",
+                "Tap Create link.",
+                "The link copies to your clipboard.",
             ]),
             Block::Image {
                 file: "share-your-deck/01-share-dialog.webp",
-                alt: "The Share deck dialog before sharing: anyone with the link can view this deck, with a Create link button",
+                alt: "The Share deck dialog before sharing, with its Create link button",
                 caption: None,
             },
             Block::P(
-                "The link lives at zwipe.net and stays up until you turn it off. Come back to the same dialog for Copy link whenever you need it again.",
+                "The link lives at zwipe.net until you turn it off. The same dialog has Copy link.",
             ),
             Block::H2("What viewers see"),
             Block::P(
-                "The page mirrors your deck view. Name, format, and tags sit up top, your commander and starred MVPs show as card images (tap one for the full art), and the deck's numbers sit in the same collapsible sections the app has: Budget, Tags, Distributions, Mana, and Draw odds.",
+                "The page mirrors your deck view: name, format, and tags up top, your commander and starred MVPs as card images (tap one for the full art), and the same collapsible sections as the app: Budget, Tags, Distributions, Mana, and Draw odds.",
             ),
             Block::Image {
                 file: "share-your-deck/02-shared-page.webp",
-                alt: "A shared deck open in a browser at zwipe.net: featured cards, Budget and Tags sections, and the card list below",
+                alt: "A shared deck in a browser at zwipe.net: featured cards, Budget and Tags, the card list below",
                 caption: None,
             },
             Block::P(
-                "Below that is the full card list with the Group by, Show, and Filter by controls, expandable rows, collapsible group headers, and a section for the tokens your cards make.",
+                "Below is the full card list with Group by, Show, and Filter by, expandable rows, collapsible headers, and a section for the tokens your cards make.",
             ),
             Block::Note(
                 "The page tracks your latest saved deck, usually within a few minutes of an edit.",
             ),
             Block::H2("Stop sharing"),
             Block::P(
-                "Same dialog, Stop share. The link stops working right away. Sharing again later makes a new link, so the old one stays broken wherever you posted it.",
+                "Same dialog, Stop share. The link stops working right away, and sharing again makes a new one.",
             ),
             Block::Image {
                 file: "share-your-deck/03-stop-share.webp",
-                alt: "The same dialog once a deck is shared, now offering Copy link and Stop share",
+                alt: "The dialog once shared, offering Copy link and Stop share",
                 caption: None,
             },
         ],
@@ -1050,29 +1019,27 @@ pub(crate) static GUIDES: &[Guide] = &[
         tags: &["Deck stats"],
         related: &["budgeting", "land-targets", "import-export"],
         blocks: &[
-            Block::Lead(
-                "Open a deck and its stats update as you build. Everything reflects your mainboard; sideboard and maybeboard cards are excluded.",
-            ),
+            Block::Lead("A deck's stats update as you build. They count the mainboard only."),
             Block::H2("Profile, Budget & Tags"),
             Block::P(
-                "Profile summarizes the deck: name, format, commander (and partner, background, or signature spell), your Cards count, and a Power level, the Commander bracket from Exhibition (1) to cEDH (5). Budget holds your price target, Total price, and Average card price, with a USD / EUR / TIX currency chip in its header; your land target lives in Mana. Tags holds your deck tags and oracle tags.",
+                "Profile: name, format, command zone, Cards count, and Power level, the Commander bracket from Exhibition (1) to cEDH (5). Budget: price target, Total price, and Average card price, with a USD / EUR / TIX chip in its header. Tags: deck tags and oracle tags. The land target lives in Mana.",
             ),
             Block::H2("Charts"),
             Block::P(
-                "Distributions cover card type, strategic role and oracle tag, in the Types, Roles and Oracle tags charts. Roles reads on the same roles shown as chips on each card; Roles, Oracle tags and Draw odds show their top five rows with a See more for the rest. Mana holds your Lands against their target, Average mana value, the mana curve (nonland cards by cost, 0 to 6+), the Colors chart, and mana fulfillment (whether your mana base makes enough of each color, with a ✔ when covered).",
+                "Distributions has the Types, Roles and Oracle tags charts; Roles uses the same roles as the card chips. Roles, Oracle tags and Draw odds show five rows with a See more. Mana holds Lands against their target, Average mana value, the curve (nonland cards by cost, 0 to 6+), Colors, and mana fulfillment, with a ✔ per color your mana base covers.",
             ),
             Block::Image {
                 file: "deck-stats/01-distributions.webp",
-                alt: "The Distributions section open: average power and toughness, type bars, and the role breakdown below",
+                alt: "The Distributions section: average power and toughness, type bars, and roles below",
                 caption: None,
             },
             Block::H2("Draw odds"),
             Block::P(
-                "The chance of drawing at least one card of a type (lands, or any category) by a chosen turn, updated live and stepped turn by turn.",
+                "The chance of drawing at least one card of a category (lands, or any other) by a chosen turn, stepped turn by turn.",
             ),
             Block::Image {
                 file: "deck-stats/02-draw-odds.webp",
-                alt: "The Draw odds section open with the turn stepper on the opening hand and a percentage per category",
+                alt: "The Draw odds section with the turn stepper on the opening hand",
                 caption: None,
             },
             Block::H2("Warnings"),
@@ -1088,16 +1055,14 @@ pub(crate) static GUIDES: &[Guide] = &[
         tags: &["Importing", "Deck building"],
         related: &["deck-stats"],
         blocks: &[
-            Block::Lead(
-                "Zwipe reads and writes plain decklists, so you can move decks in and out.",
-            ),
+            Block::Lead("Zwipe reads and writes plain decklists."),
             Block::H2("Importing"),
             Block::P(
                 "On Import, pick a source (Text, or an Archidekt URL), a Mode (add to or replace the board), and a Board (Main, Maybe, or Side). Text is one card per line, like \"1 Sol Ring.\"",
             ),
             Block::Image {
                 file: "import-export/01-import-paste.webp",
-                alt: "The Import screen with a decklist pasted in, the source, mode, and board chips set above it",
+                alt: "The Import screen with a decklist pasted in and the source, mode, and board chips set",
                 caption: None,
             },
             Block::P(
@@ -1105,21 +1070,19 @@ pub(crate) static GUIDES: &[Guide] = &[
             ),
             Block::Image {
                 file: "import-export/02-imported.webp",
-                alt: "A finished import: the matched cards listed under Imported with a count of what came in",
+                alt: "A finished import, matched cards listed under Imported with a count",
                 caption: None,
             },
             Block::H2("Exporting"),
             Block::P(
-                "Export builds a plain decklist with Commander, Deck, Maybeboard, and Sideboard sections. Toggle which boards to include, then tap Copy.",
+                "Export builds a plain decklist with Commander, Deck, Maybeboard, and Sideboard sections. Toggle which boards to include, then tap the [[copy]].",
             ),
             Block::Image {
                 file: "import-export/03-export.webp",
-                alt: "The Export screen with the board chips above a decklist split into Commander and Deck sections",
+                alt: "The Export screen: board chips above a decklist split into Commander and Deck",
                 caption: None,
             },
-            Block::Note(
-                "The export matches the importer, so a copied list pastes straight back in, or over to a friend.",
-            ),
+            Block::Note("The export pastes straight back into the importer."),
         ],
     },
 ];

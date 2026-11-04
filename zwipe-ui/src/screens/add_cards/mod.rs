@@ -95,12 +95,11 @@ pub const UNDID_MOVE_TO_DECK: &str = "Undid move to deck";
 pub const ALREADY_CHANGED: &str = "Already changed";
 
 /// The toast when paging stops at the stack's cap.
-pub const STACK_LIMIT_REACHED: &str =
-    "Card stack limit reached, please refresh your search to continue";
+pub const STACK_LIMIT_REACHED: &str = "Card stack limit reached, start a new search to continue";
 
 /// The toast as the stack nears its cap.
 pub const STACK_LIMIT_NEAR: &str =
-    "Approaching the card stack limit, refresh your search to continue";
+    "Approaching the card stack limit, start a new search to continue";
 
 /// The toast for a swipe past the last card with nothing left to fetch.
 pub const END_OF_RESULTS: &str = "End of results";

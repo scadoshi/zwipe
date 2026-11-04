@@ -9,7 +9,8 @@
 
 mod content;
 
-use components::{GalleryFooter, GalleryFrame, Panel};
+use components::icons::{self, CloneIcon, DockIcon, EditIcon, EyeIcon, ShareIcon};
+use components::{GalleryFooter, GalleryFrame, HintKey, Panel};
 use content::{Block, GUIDES, Guide};
 use dioxus::prelude::*;
 
@@ -36,22 +37,123 @@ fn swipe_class(dir: &str) -> &'static str {
     }
 }
 
-/// Renders body text, turning `backtick`-delimited tokens into highlighted
-/// keyword spans (filter names, option values, enum members, and the like).
+/// One run of a guide line: plain text, a `backtick` keyword, or an
+/// `[[icon]]` naming an icon button.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Inline<'line> {
+    /// Text drawn as is.
+    Text(&'line str),
+    /// A highlighted keyword: a filter name, an option value, a button's
+    /// words.
+    Keyword(&'line str),
+    /// An icon button, named as [`guide_icon`] lists them, drawn as the
+    /// button's own icon in a hint key.
+    Icon(&'line str),
+}
+
+/// Splits a guide line into its runs: `backtick` pairs are keywords and
+/// `[[name]]` is an icon; an unclosed `[[` stays text.
+fn tokens(text: &str) -> Vec<Inline<'_>> {
+    let mut runs = Vec::new();
+    for (i, part) in text.split('`').enumerate() {
+        if i % 2 == 1 {
+            runs.push(Inline::Keyword(part));
+            continue;
+        }
+        let mut rest = part;
+        while let Some((before, after)) = rest.split_once("[[") {
+            let Some((name, tail)) = after.split_once("]]") else {
+                break;
+            };
+            if !before.is_empty() {
+                runs.push(Inline::Text(before));
+            }
+            runs.push(Inline::Icon(name));
+            rest = tail;
+        }
+        if !rest.is_empty() {
+            runs.push(Inline::Text(rest));
+        }
+    }
+    runs
+}
+
+/// The icon an `[[icon]]` token draws.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum GuideIcon {
+    /// A dock icon drawn from one path.
+    Path(&'static str),
+    /// The card details eye.
+    Eye,
+    /// The edit pencil.
+    Pencil,
+    /// The clone squares.
+    Clone,
+    /// The share box.
+    Share,
+}
+
+/// The icon `[[name]]` draws, or `None` for a name the app has no icon for,
+/// which renders as the literal token so a typo shows.
+fn guide_icon(name: &str) -> Option<GuideIcon> {
+    let path = match name {
+        "plus" => icons::PLUS,
+        "minus" => icons::MINUS,
+        "funnel" => icons::FUNNEL,
+        "undo" => icons::UNDO,
+        "eraser" => icons::ERASER,
+        "refresh" => icons::REFRESH,
+        "check" => icons::CHECK,
+        "copy" => icons::COPY,
+        "link" => icons::LINK,
+        "person" => icons::PERSON,
+        "cog" => icons::COG,
+        "info" => icons::INFO,
+        "palette" => icons::PALETTE,
+        "home" => icons::HOUSE,
+        "eye" => return Some(GuideIcon::Eye),
+        "pencil" => return Some(GuideIcon::Pencil),
+        "clone" => return Some(GuideIcon::Clone),
+        "share" => return Some(GuideIcon::Share),
+        _ => return None,
+    };
+    Some(GuideIcon::Path(path))
+}
+
+/// Renders body text: `backtick`-delimited tokens become highlighted keyword
+/// spans (filter names, option values, enum members, and the like) and
+/// `[[icon]]` tokens become the icon button's own icon in a hint key, so a
+/// guide never describes an icon in words.
 fn inline(text: &str) -> Element {
-    let parts = text
-        .split('`')
-        .enumerate()
-        .map(|(i, s)| (i % 2 == 1, s.to_string()));
+    let runs = tokens(text);
     rsx! {
-        for (kw , s) in parts {
-            if kw {
-                span { class: "guide-kw", "{s}" }
-            } else {
-                "{s}"
+        for run in runs {
+            match run {
+                Inline::Keyword(s) => rsx! { span { class: "guide-kw", "{s}" } },
+                Inline::Text(s) => rsx! { "{s}" },
+                Inline::Icon(name) => match guide_icon(name) {
+                    Some(GuideIcon::Path(path)) => rsx! { HintKey { DockIcon { path } } },
+                    Some(GuideIcon::Eye) => rsx! { HintKey { EyeIcon {} } },
+                    Some(GuideIcon::Pencil) => rsx! { HintKey { EditIcon {} } },
+                    Some(GuideIcon::Clone) => rsx! { HintKey { CloneIcon {} } },
+                    Some(GuideIcon::Share) => rsx! { HintKey { ShareIcon {} } },
+                    None => rsx! { "[[{name}]]" },
+                },
             }
         }
     }
+}
+
+/// A guide line's words alone: keywords without their backticks, icon
+/// tokens dropped.
+fn prose(text: &str) -> String {
+    tokens(text)
+        .into_iter()
+        .filter_map(|run| match run {
+            Inline::Text(s) | Inline::Keyword(s) => Some(s),
+            Inline::Icon(_) => None,
+        })
+        .collect()
 }
 
 /// A guide's screenshots, harvested for the sidecar gallery panel.
@@ -165,14 +267,15 @@ fn render_block(b: &'static Block) -> Element {
 
 /// Everything about a guide the index search can match: title, summary, tags,
 /// and the article's prose. Lowercased, with the `backtick` keyword markers
-/// stripped so a search for "group by" hits `Group by` in the body too.
+/// stripped so a search for "group by" hits `Group by` in the body too, and
+/// the `[[icon]]` tokens dropped, since nobody types them.
 ///
 /// Built per keystroke over the compiled [`GUIDES`] array (21 articles, no
 /// index, no network), cheap enough that caching would cost more than it saves.
 fn haystack(g: &Guide) -> String {
     let mut s = String::new();
     let mut push = |t: &str| {
-        s.push_str(t);
+        s.push_str(&prose(t));
         s.push(' ');
     };
     push(g.title);
@@ -199,7 +302,6 @@ fn haystack(g: &Guide) -> String {
             Block::Diagram(_) | Block::Image { .. } => {}
         }
     }
-    s.retain(|c| c != '`');
     s.to_lowercase()
 }
 
@@ -456,5 +558,85 @@ pub fn GuidePage(slug: String) -> Element {
             }
         }
         Footer {}
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_line_splits_into_text_keywords_and_icons() {
+        assert_eq!(
+            tokens("Tap the [[funnel]], then `Apply`."),
+            vec![
+                Inline::Text("Tap the "),
+                Inline::Icon("funnel"),
+                Inline::Text(", then "),
+                Inline::Keyword("Apply"),
+                Inline::Text("."),
+            ]
+        );
+        assert_eq!(
+            tokens("[[plus]] starts a deck"),
+            vec![Inline::Icon("plus"), Inline::Text(" starts a deck")]
+        );
+        assert_eq!(
+            tokens("an unclosed [[ stays"),
+            vec![Inline::Text("an unclosed [[ stays")],
+            "an unclosed token is text"
+        );
+        assert_eq!(tokens(""), vec![]);
+    }
+
+    #[test]
+    fn every_dock_icon_has_a_name_and_a_typo_has_none() {
+        assert_eq!(guide_icon("plus"), Some(GuideIcon::Path(icons::PLUS)));
+        assert_eq!(guide_icon("home"), Some(GuideIcon::Path(icons::HOUSE)));
+        assert_eq!(guide_icon("pencil"), Some(GuideIcon::Pencil));
+        assert_eq!(guide_icon("eye"), Some(GuideIcon::Eye));
+        assert_eq!(guide_icon("funel"), None);
+        assert_eq!(guide_icon(""), None);
+    }
+
+    #[test]
+    fn every_icon_token_in_the_guides_names_a_real_icon() {
+        let mut lines: Vec<&str> = Vec::new();
+        for g in GUIDES {
+            for b in g.blocks {
+                match b {
+                    Block::Lead(t) | Block::H2(t) | Block::P(t) | Block::Note(t) => lines.push(t),
+                    Block::Steps(items) | Block::Bullets(items) => lines.extend(items.iter()),
+                    Block::Swipe(rows) => lines.extend(rows.iter().map(|(_, m)| m)),
+                    Block::Diagram(_) | Block::Image { .. } => {}
+                }
+            }
+        }
+        for line in lines {
+            for run in tokens(line) {
+                if let Inline::Icon(name) = run {
+                    assert!(
+                        guide_icon(name).is_some(),
+                        "unknown icon [[{name}]] in {line:?}"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn the_search_haystack_drops_icon_tokens_and_backticks() {
+        assert_eq!(
+            prose("Tap the [[funnel]], then `Apply`."),
+            "Tap the , then Apply."
+        );
+        let guide = GUIDES
+            .iter()
+            .find(|g| g.slug == "swipe-to-build")
+            .expect("the swipe guide ships");
+        let hay = haystack(guide);
+        assert!(!hay.contains("[["), "{hay}");
+        assert!(!hay.contains('`'), "{hay}");
+        assert!(hay.contains("synergy"), "{hay}");
     }
 }

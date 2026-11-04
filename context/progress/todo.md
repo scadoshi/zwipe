@@ -8,6 +8,11 @@ Only open, actionable items live here. When something ships, its outcome moves t
 
 ## Next Up
 
+- [ ] **1.18.0 ship list (2026-11-04).** Main at 995a918cc carries the unified UI, the pip bars in place of the color map, the changelog panels, the icon keys in hints and guides, the eraser reset, the palette on Settings' Change button and the 1rem menu footer icons. Still to do before the cut: Scotty's phone walk of the latest build (judging the footer icon size), store screenshots in the new look, the release-day guide edits, and retaking the guide screenshots on zwipe.net that still show the old Synergy chip and More sheet (the captions were reworded, the images were not).
+
+- [ ] **Merge main into `feat/web` and finish the web's hint rendering.** The branch last merged 6f133985e. Expect conflicts in `components/src/icons.rs` (main grew its own) and `home_colors.rs`; `zwiper-web/src/lib/inbound/chrome/hint_body.rs` needs the `KeyIcon` to icon mapping so icon-only keys draw. Hosting is `app.zwipe.net` (owner, 2026-11-04); the Log in pill on zite waits for the web app to be up.
+
+
 - [x] ~~**Close the email enumeration oracle.**~~ DONE 2026-10-23: with the floor at 1.13.0, Phase 4 of [`../plans/archive/verify_first_registration.md`](../plans/archive/verify_first_registration.md) and [`../plans/archive/confirm_first_email_change.md`](../plans/archive/confirm_first_email_change.md) is on main. The old register and change-email paths and both flags are gone, and PR #32's 409s came in with it. Left: one live registration from the shipped app with a new address and one with a taken one.
 
 - [x] ~~**Small leftovers from the email work.**~~ DONE 2026-10-23. zervice's nightly upkeep prunes expired `email_change_requests` rows (the grant it needs was applied on the box first), and `zcripts/metrics/funnel.sql` has a signed-in step that counts new accounts with a first login, since register no longer starts a session. Profile's Pending row says when the confirmation link expires: zerver sends an additive `pending_email_expires_at` on `User` now, and the app reads it from 1.14.0.

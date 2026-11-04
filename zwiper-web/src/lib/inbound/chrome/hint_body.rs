@@ -1,6 +1,10 @@
 //! Draws zwipe-ui's typed hint copy with the kit's hint pieces, so every
 //! `?` topic and one-time hint reads word for word as the app's.
 
+use components::icons::{
+    CHECK, COG, COPY, CloneIcon, DockIcon, ERASER, EditIcon, EyeIcon, FUNNEL, HOUSE, INFO, LINK,
+    MINUS, PALETTE, PERSON, PLUS, REFRESH, ShareIcon, UNDO,
+};
 use components::{HintBullet, HintBullets, HintDialog, HintKey, HintLine, ModeIcon};
 use dioxus::prelude::*;
 use zwipe_ui::hint::{Block, HintContent, KeyIcon, Span};
@@ -59,8 +63,10 @@ fn Spans(spans: Vec<Span>) -> Element {
                 Span::Key { label, role, icon } => rsx! {
                     HintKey { color: role.css_var(),
                         if let Some(icon) = icon {
-                            ModeIcon { dark: icon == KeyIcon::Dark }
-                            " "
+                            KeyGlyph { icon }
+                            if !label.is_empty() {
+                                " "
+                            }
                         }
                         "{label}"
                     }
@@ -71,6 +77,36 @@ fn Spans(spans: Vec<Span>) -> Element {
             }
         }
     }
+}
+
+/// A key's icon, drawn as the button it names draws it: the dock icons from
+/// their paths, the eye, pencil, clone and share from their components, and
+/// the sun or moon from the kit's mode icon.
+#[component]
+fn KeyGlyph(icon: KeyIcon) -> Element {
+    let path = match icon {
+        KeyIcon::Plus => PLUS,
+        KeyIcon::Minus => MINUS,
+        KeyIcon::Funnel => FUNNEL,
+        KeyIcon::Undo => UNDO,
+        KeyIcon::Eraser => ERASER,
+        KeyIcon::Refresh => REFRESH,
+        KeyIcon::Check => CHECK,
+        KeyIcon::Copy => COPY,
+        KeyIcon::Link => LINK,
+        KeyIcon::Person => PERSON,
+        KeyIcon::Cog => COG,
+        KeyIcon::Info => INFO,
+        KeyIcon::Palette => PALETTE,
+        KeyIcon::Home => HOUSE,
+        KeyIcon::Eye => return rsx! { EyeIcon {} },
+        KeyIcon::Edit => return rsx! { EditIcon {} },
+        KeyIcon::Clone => return rsx! { CloneIcon {} },
+        KeyIcon::Share => return rsx! { ShareIcon {} },
+        KeyIcon::Light => return rsx! { ModeIcon { dark: false } },
+        KeyIcon::Dark => return rsx! { ModeIcon { dark: true } },
+    };
+    rsx! { DockIcon { path } }
 }
 
 /// A colored word inside a hint, such as a swipe direction. `color` names a

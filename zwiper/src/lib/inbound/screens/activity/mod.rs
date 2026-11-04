@@ -236,7 +236,7 @@ pub fn Activity() -> Element {
                     HintBullet { HintKey { "Card roles" } " and " HintKey { "Oracle tags" } " show how often you add, skip, save or remove each one" }
                     HintBullet { HintKey { "Most skipped" } " lists cards you skip that other players usually keep" }
                 }
-                HintLine { "Each section's ? explains it" }
+                HintLine { "Each section's " HintKey { color: "--palette-6", "?" } " explains it" }
             }
 
             div { class: "screen-content",

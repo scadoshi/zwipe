@@ -842,7 +842,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                     HintBullet { "Swipe " HintColored { color: "--color-warning", "up" } " sends it to the maybeboard" }
                     HintBullet { "Swipe " HintColored { color: "--accent-tertiary", "down" } " undoes the last swipe" }
                     HintBullet { "The chip after " HintKey { "From" } " switches between Search and your Maybe pile" }
-                    HintBullet { "The link icon is " HintKey { "Synergy" } ": on starts with cards that work with your commander, then cards like your deck. Off shows every legal card" }
+                    HintBullet { HintKey { DockIcon { path: action_dock::LINK } } " is Synergy: on starts with cards that work with your commander, then cards like your deck. Off shows every legal card" }
                 }
                 HintLine { "Sort only reorders. It never hides cards" }
             }

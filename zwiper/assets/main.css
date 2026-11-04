@@ -226,6 +226,11 @@ button {
     gap: 0.4rem;
 }
 
+/* The header row's icons, edit, clone and share, each in a kit .btn-icon. */
+.deck-profile-actions .action-dock-icon {
+    display: block;
+}
+
 /* The retailer links under the Budget rows, behind a Buy label chip and a
    rule. */
 .deck-buy-row {
@@ -3153,14 +3158,14 @@ button {
     padding: 0.175rem 0;
 }
 
-/* One line per tag, a long slug cut with an ellipsis, so every row is the
-   same height. Tapping the chip still reveals the tag's description. */
+/* A long slug wraps inside its chip, the way the deck charts' tag chips do,
+   so every tag reads in full; a wrapped row is simply taller. Tapping the
+   chip still reveals the tag's description. */
 .tag-table-tag .keyword-chip {
     max-width: 100%;
-    text-align: left;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    text-align: center;
+    white-space: normal;
+    overflow-wrap: anywhere;
 }
 
 /* Each number column takes a palette slot; its header label and its stat

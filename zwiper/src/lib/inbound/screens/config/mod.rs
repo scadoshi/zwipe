@@ -9,7 +9,7 @@ pub mod universes_beyond;
 use app_icon_sheet::AppIconSheet;
 use components::{
     Button, ButtonVariant, DarkModeButton, HintBullet, HintBullets, HintDialog, HintKey,
-    TOAST_NORMAL, ThemeConfig, ToastOptions, Toasts, use_toast,
+    PaletteIcon, TOAST_NORMAL, ThemeConfig, ToastOptions, Toasts, use_toast,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -256,6 +256,8 @@ pub fn Config() -> Element {
                                     Button {
                                         variant: ButtonVariant::Action,
                                         onclick: move |_| driver.dispatch(Action::OpenThemes),
+                                        PaletteIcon {}
+                                        " "
                                         {model::CHANGE}
                                     }
                                 }

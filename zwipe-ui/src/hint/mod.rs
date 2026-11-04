@@ -7,6 +7,10 @@
 //! [`Block`]s; a block is a line or a bullet of [`Span`]s; a span is plain
 //! text, a key chip or an emphasized word, the last two colored by a
 //! [`Role`].
+//!
+//! A key chip names a button the way the button renders: a text button by
+//! its words, an icon button by its icon alone, as a [`KeyIcon`] the
+//! renderer draws inside the chip. Copy never describes an icon in words.
 
 pub mod guide;
 pub mod one_time;
@@ -68,13 +72,81 @@ impl Role {
     }
 }
 
-/// An icon drawn inside a key chip, before its label and a space.
+/// An icon drawn inside a key chip: alone, for an icon button, or before a
+/// label and a space. The dock icons are the app's action dock set; each
+/// renderer maps them to its own paths.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum KeyIcon {
+    /// The add button's plus.
+    Plus,
+    /// The remove button's minus.
+    Minus,
+    /// The filter button's funnel.
+    Funnel,
+    /// The undo and reset button's arrow turning back.
+    Undo,
+    /// A sheet's reset, wiping the form to its defaults.
+    Eraser,
+    /// The refresh button's arrow circling round.
+    Refresh,
+    /// The save and apply button's checkmark.
+    Check,
+    /// The copy button's two stacked sheets.
+    Copy,
+    /// The synergy button's chain links.
+    Link,
+    /// The card details button's eye.
+    Eye,
+    /// The edit button's pencil.
+    Edit,
+    /// The clone button's two overlapping squares.
+    Clone,
+    /// The share button's box with an arrow rising out of it.
+    Share,
+    /// The Account button's person.
+    Person,
+    /// The Settings button's cog.
+    Cog,
+    /// The About button's circled i.
+    Info,
+    /// The Theme button's palette.
+    Palette,
+    /// The Home button's house.
+    Home,
     /// Light mode's sun.
     Light,
     /// Dark mode's moon.
     Dark,
+}
+
+impl KeyIcon {
+    /// What the icon reads as in the plain-text form of a hint, such as
+    /// `plus` or `pencil`.
+    #[must_use]
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Plus => "plus",
+            Self::Minus => "minus",
+            Self::Funnel => "funnel",
+            Self::Undo => "undo",
+            Self::Eraser => "eraser",
+            Self::Refresh => "refresh",
+            Self::Check => "check",
+            Self::Copy => "copy",
+            Self::Link => "link",
+            Self::Eye => "eye",
+            Self::Edit => "pencil",
+            Self::Clone => "clone",
+            Self::Share => "share",
+            Self::Person => "person",
+            Self::Cog => "cog",
+            Self::Info => "info",
+            Self::Palette => "palette",
+            Self::Home => "home",
+            Self::Light => "light",
+            Self::Dark => "dark",
+        }
+    }
 }
 
 /// One run of hint copy.
@@ -83,12 +155,15 @@ pub enum Span {
     /// Plain text, drawn as is with its spaces.
     Text(String),
     /// A key chip naming a button or a chip on the screen, such as `Apply`.
+    /// An icon button's chip is its icon alone: an empty label with an
+    /// icon.
     Key {
-        /// The words on the chip.
+        /// The words on the chip; empty for an icon-only chip.
         label: String,
         /// The chip's color.
         role: Role,
-        /// An icon before the label, if any.
+        /// An icon before the label, or the chip's whole content when the
+        /// label is empty.
         icon: Option<KeyIcon>,
     },
     /// A word or phrase drawn bold in a role's color, such as a swipe
@@ -102,11 +177,17 @@ pub enum Span {
 }
 
 impl Span {
-    /// The words the span reads as, without its styling or icon.
+    /// The words the span reads as, without its styling. An icon-only key
+    /// reads as its icon's [`KeyIcon::name`].
     #[must_use]
     pub fn text(&self) -> &str {
         match self {
             Self::Text(text) | Self::Emph { text, .. } => text,
+            Self::Key {
+                label,
+                icon: Some(icon),
+                ..
+            } if label.is_empty() => icon.name(),
             Self::Key { label, .. } => label,
         }
     }
@@ -181,6 +262,20 @@ fn key_in(label: &str, role: Role) -> Span {
     }
 }
 
+/// An icon button's key chip, the icon alone, in the default color.
+fn icon_key(icon: KeyIcon) -> Span {
+    icon_key_in(icon, Role::default())
+}
+
+/// An icon button's key chip, the icon alone, in `role`'s color.
+fn icon_key_in(icon: KeyIcon, role: Role) -> Span {
+    Span::Key {
+        label: String::new(),
+        role,
+        icon: Some(icon),
+    }
+}
+
 /// Words drawn bold in `role`'s color.
 fn emph(text: &str, role: Role) -> Span {
     Span::Emph {
@@ -218,6 +313,42 @@ mod tests {
             Role::Palette2,
             "key chips default to palette 2"
         );
+    }
+
+    #[test]
+    fn an_icon_key_reads_as_its_icon_name() {
+        let block = line(vec![
+            text("The "),
+            icon_key(KeyIcon::Plus),
+            text(" adds and the "),
+            icon_key_in(KeyIcon::Undo, Role::Warning),
+            text(" resets"),
+        ]);
+        assert_eq!(block.plain(), "The plus adds and the undo resets");
+        assert_eq!(
+            icon_key(KeyIcon::Edit),
+            Span::Key {
+                label: String::new(),
+                role: Role::Palette2,
+                icon: Some(KeyIcon::Edit),
+            }
+        );
+        assert_eq!(
+            icon_key_in(KeyIcon::Check, Role::Success),
+            Span::Key {
+                label: String::new(),
+                role: Role::Success,
+                icon: Some(KeyIcon::Check),
+            }
+        );
+        let labeled = Span::Key {
+            label: "light".to_owned(),
+            role: Role::default(),
+            icon: Some(KeyIcon::Light),
+        };
+        assert_eq!(labeled.text(), "light", "a labeled key keeps its words");
+        assert_eq!(KeyIcon::Edit.name(), "pencil");
+        assert_eq!(KeyIcon::Clone.name(), "clone");
     }
 
     #[test]

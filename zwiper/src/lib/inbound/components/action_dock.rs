@@ -5,6 +5,6 @@
 
 pub use components::DockFilter;
 pub use components::icons::{
-    ARROW, CHECK, COG, COPY, DockIcon, EyeIcon, FUNNEL, HOUSE, INFO, LINK, MINUS, PALETTE, PERSON,
-    PLUS, REFRESH, SEND, UNDO,
+    ARROW, CHECK, COG, COPY, DockIcon, ERASER, EyeIcon, FUNNEL, HOUSE, INFO, LINK, MINUS, PALETTE,
+    PERSON, PLUS, REFRESH, SEND, UNDO,
 };

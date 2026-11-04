@@ -2,7 +2,7 @@ use components::{Panel, ZwipeArchitecture};
 use dioxus::prelude::*;
 
 use crate::components::PageMeta;
-use crate::{Footer, Nav};
+use crate::{Footer, Nav, Route};
 
 // Source-material links, used inside the architecture diagram (Wikipedia-style refs).
 const URL_ZWIPER: &str = "https://github.com/scadoshi/zwipe/tree/main/zwiper";
@@ -10,6 +10,7 @@ const URL_ZITE: &str = "https://github.com/scadoshi/zwipe/tree/main/zite";
 const URL_ZERVER: &str = "https://github.com/scadoshi/zwipe/tree/main/zerver";
 const URL_ZWIPE_CORE: &str = "https://github.com/scadoshi/zwipe/tree/main/zwipe-core";
 const URL_COMPONENTS: &str = "https://github.com/scadoshi/zwipe/tree/main/components";
+const URL_ZWIPE_UI: &str = "https://github.com/scadoshi/zwipe/tree/main/zwipe-ui";
 const URL_ZWIPE_CLIENT: &str = "https://github.com/scadoshi/zwipe/tree/main/zwipe-client";
 const URL_ORANGUI: &str = "https://github.com/scadoshi/orangui";
 const URL_DIOXUS: &str = "https://dioxuslabs.com";
@@ -40,6 +41,7 @@ pub fn About() -> Element {
                     actions: rsx! {
                         a { class: "panel-action", href: "https://github.com/scadoshi/zwipe", "Source" span { class: "ext", "\u{2197}" } }
                         a { class: "panel-action", href: "https://scottyfermo.com", "Built by Scotty" span { class: "ext", "\u{2197}" } }
+                        Link { class: "panel-action", to: Route::Privacy {}, "Privacy policy" }
                     },
                     p {
                         "Zwipe is built and maintained by Scotty Fermo, a Commander player who
@@ -52,7 +54,7 @@ pub fn About() -> Element {
             div { class: "section",
                 div { class: "section-head",
                     Panel { title: "System architecture",
-                        p { class: "card-summary", "Six Rust crates in one workspace, on top of orangui, the UI kit I built and share between this app, this site and two other apps of mine. What each one does, and where it pulls from." }
+                        p { class: "card-summary", "Seven Rust crates in one workspace, on top of orangui, the UI kit I built and share between this app, this site and two other apps of mine. What each one does, and where it pulls from." }
                     }
                 }
                 div { class: "arch-figure", ZwipeArchitecture {} }
@@ -81,6 +83,8 @@ pub fn About() -> Element {
                                 a { href: URL_ZWIPE_CORE, "zwipe-core" }
                                 ", "
                                 a { href: URL_ZWIPE_CLIENT, "zwipe-client" }
+                                ", "
+                                a { href: URL_ZWIPE_UI, "zwipe-ui" }
                                 " and "
                                 a { href: URL_COMPONENTS, "components" }
                             }
@@ -144,6 +148,28 @@ pub fn About() -> Element {
                         }
                     }
                     Panel {
+                        eyebrow: "Shared screen logic",
+                        title: "zwipe-ui",
+                        actions: rsx! {
+                            a { class: "panel-action", href: URL_ZWIPE_UI, "Source" span { class: "ext", "\u{2197}" } }
+                        },
+                        div { class: "arch-tags",
+                            span { class: "tag tag-p1", "Pure Rust" }
+                            span { class: "tag tag-p2", "Any client" }
+                        }
+                        ul { class: "card-bullets",
+                            li { "What every screen shows and does, decided once: color bars, the filter draft, the swipe stack, hint copy, timings" }
+                            li { "No UI crate, so a web, desktop or terminal client draws the same screens as the app" }
+                            li {
+                                "Imports "
+                                a { href: URL_ZWIPE_CORE, "zwipe-core" }
+                                " and "
+                                a { href: URL_ORANGUI, "orangui" }
+                                "'s Dioxus-free half"
+                            }
+                        }
+                    }
+                    Panel {
                         eyebrow: "Shared UI",
                         title: "components",
                         actions: rsx! {
@@ -167,6 +193,8 @@ pub fn About() -> Element {
                             li {
                                 "Imports "
                                 a { href: URL_ZWIPE_CORE, "zwipe-core" }
+                                ", "
+                                a { href: URL_ZWIPE_UI, "zwipe-ui" }
                                 " and "
                                 a { href: URL_ORANGUI, "orangui" }
                             }
