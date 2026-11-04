@@ -41,8 +41,8 @@ pub const UPCOMING: &[Release] = &[Release {
     version: Version::new(1, 17, 1),
     date: None,
     entries: &[
-        "The main menu's footer has the theme and Dark/Light switch, as the website's menu does",
-        "Home shows your deck count with an Open button into Decks",
+        "The main menu's footer has a paintbrush for the theme and a sun or moon for Dark/Light",
+        "Home's Decks panel lists your three latest decks with a button to all of them",
         "About's credits sit in their own panel and its links are in the accent color",
         "zwipe.net's theme menu stays open after a pick, so the next theme is one click away",
         "A one-card deck shows 1 card in the deck list",

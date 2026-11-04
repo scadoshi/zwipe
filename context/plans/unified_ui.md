@@ -16,7 +16,7 @@ These were settled with the owner before the per-screen review. A screen breaks 
 - The menu looks exactly like the web's folded nav: a full-width panel dropping from the header, items stacked, the current one lit.
 - The app's "!" support button leaves the header for the menu's bottom row.
 - Every screen but Home and the auth screens shows a back arrow in the left corner, boxed like the hamburger, calling the screen's own Back (the previous screen, or its fixed parent where it has one). Home is always the menu's first entry. Android's system back keeps working as it does now. (Decided 2026-11-03 while building)
-- Signed in, the menu's footer opens with a theme row over the icon row, as the websites' phone-width menu has it: the current theme's name as the kit's picker trigger, which opens the Themes sheet and folds the menu as it rises, and the kit's Dark/Light switch, which flips the mode and saves it at once through the same path as Settings. Settings keeps its Theme row; signed out, the footer holds only the `!`. (owner, 2026-11-03)
+- Signed in, the menu's footer holds, after the About `i`, a paintbrush that opens the Themes sheet and folds the menu as it rises, and the kit's sun or moon naming the mode in use, which flips Dark/Light and saves it at once through the same path as Settings. No theme row over the icons: one band. Settings keeps its Theme row; signed out, the footer holds only the `!`. (owner, 2026-11-03)
 
 ### Header
 
@@ -141,7 +141,7 @@ Reviewed 2026-11-03. Home keeps its three panels, gains a Decks row, and otherwi
 - Hero: the ASCII logo stays, with the three stats, the Live and Everybody chips and the Activity button under it. Activity stays as a shortcut even though the menu lists it.
 - Color map: unchanged, with its `?`, the color chips and the Playstyle button, also kept as a shortcut.
 - Featured flavor: unchanged. Each client keeps its own Buy: the app's Buy sheet, the web's TCGplayer and Card Kingdom links.
-- Decks (owner, 2026-11-03): a single settings row between the hero and the Color map, as wide as the other panels: the Decks label on the left, the deck count as a chip and an Open button into the deck list on the right, with no panel header or tile. The count comes from the playstyle summary Home already fetches, so the chip and button ghost with the Color map, and a failed fetch with nothing held puts a `?` in the chip with a muted hint beside it. No recent decks and no continue-swiping shortcut.
+- Decks (owner, 2026-11-03): a panel between the hero and the Color map in the Color map's style, an obvious lane into the decks. Its header has Decks on the left and, on the right, the deck count as a chip beside an All decks chip into the deck list. Under it, the three most recently updated decks as tappable rows, the name on the left and the format chip on the right, each opening its deck; with no deck the one row is Create a deck. Home fetches the deck list for it and caches it above the router like the summary; while the fetch is out three rows ghost, and a failed fetch with nothing held shows a muted line under the header with its All decks chip. A tiles layout (the commander's art or the deck's pips over the name) stays in the file behind `Layout` until the owner picks. No continue-swiping shortcut.
 
 ## Deck view
 
