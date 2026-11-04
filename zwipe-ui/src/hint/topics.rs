@@ -327,7 +327,7 @@ impl HintTopic {
             Self::DrawOdds => vec![
                 bullet(vec![
                     text(
-                        "Chance of at least one card from each group in the opening hand, or by a turn. ",
+                        "Chance of at least one card from each group by a turn; turn 0 is the opening hand. ",
                     ),
                     key("-"),
                     text(" and "),

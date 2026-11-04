@@ -432,9 +432,9 @@ pub fn ManaCurve(mana_curve_bars: [(usize, u32); 7], hint: Option<Element>) -> E
     }
 }
 
-/// Draw odds: `P(>=1)` per category as horizontal bars, with ‹ › to step the
-/// draw window from the opening hand through later turns. On the draw:
-/// `draws = 7 + turn` (opening hand = turn 0). `buckets` is `(label, count K)`;
+/// Draw odds: `P(>=1)` per category as horizontal bars, with - and + to step
+/// the draw window from turn 0, the opening hand, through later turns. On the
+/// draw: `draws = 7 + turn`. `buckets` is `(label, count K)`;
 /// probabilities recompute live for the selected turn from the deck's engine.
 #[component]
 pub fn DrawOdds(
@@ -446,11 +446,9 @@ pub fn DrawOdds(
     let mut turn = use_signal(|| 0u32);
     // The stepper holds `turn` at MAX_TURN or below, so this never saturates.
     let draws = turn().saturating_add(7);
-    let heading = if turn() == 0 {
-        "Odds of ≥1 in opening hand".to_string()
-    } else {
-        format!("Odds of ≥1 by turn {}", turn())
-    };
+    // Turn 0 is the opening hand, named as a turn so the heading keeps one
+    // width as the turn steps; the figure space pads single digits.
+    let heading = format!("Odds of \u{2265}1 by turn {:\u{2007}>2}", turn());
     // Map each bucket to its odds in the loop header rather than a
     // `{ let …; rsx! }` block inside the `for` (which confuses Dioxus node
     // diffing and drops the bar-width style on alternating turns); the keyed

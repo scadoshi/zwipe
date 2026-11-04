@@ -253,7 +253,7 @@ impl HintTopic {
             },
             Self::DrawOdds => rsx! {
                 HintBullets {
-                    HintBullet { "Chance of at least one card from each group in the opening hand, or by a turn. " HintKey { "-" } " and " HintKey { "+" } " step the turn" }
+                    HintBullet { "Chance of at least one card from each group by a turn; turn 0 is the opening hand. " HintKey { "-" } " and " HintKey { "+" } " step the turn" }
                     HintBullet { "Random draw only. Mulligans, tutors and card draw are not counted" }
                 }
             },
