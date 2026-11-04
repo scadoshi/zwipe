@@ -245,7 +245,6 @@ pub fn Config() -> Element {
                                     InfoButton { topic: HintTopic::Theme }
                                 }
                                 div { class: "settings-row-value",
-                                    PaletteIcon {}
                                     span { { user::preferences::display_theme_name(&theme_config().name) } }
                                     DarkModeButton {
                                         is_dark: theme_config().is_dark,
@@ -257,6 +256,8 @@ pub fn Config() -> Element {
                                     Button {
                                         variant: ButtonVariant::Action,
                                         onclick: move |_| driver.dispatch(Action::OpenThemes),
+                                        PaletteIcon {}
+                                        " "
                                         {model::CHANGE}
                                     }
                                 }
