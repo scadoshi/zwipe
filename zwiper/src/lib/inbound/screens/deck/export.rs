@@ -3,22 +3,21 @@
 //! What the screen knows and does is `zwipe_ui::screens::deck_export`; this
 //! file draws its state and performs its effects.
 
-use components::icons::{self, DockIcon};
-use components::{
-    Chip, DockAction, HintBullet, HintBullets, HintDialog, HintKey, Toasts, use_toast,
-};
+use components::icons::{self};
+use components::{Chip, DockAction, Toasts, use_toast};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::user::models::hints::HINT_EXPORT;
+use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_ui::screens::deck_export::{self, Action, Board, Destination, Effect, State, Status};
 
 use crate::inbound::components::auth::authed::{Authed, use_authed};
+use crate::inbound::components::hint_dialog::OneTimeHintDialog;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen};
-use crate::inbound::components::{guide_link, hint_dialog, ui_toast};
+use crate::inbound::components::{hint_dialog, ui_toast};
 use crate::inbound::router::Router;
 use crate::inbound::screens::deck::components::skeletons::ChipRowSkeleton;
 use crate::inbound::screens::deck::missing_deck;
@@ -133,15 +132,7 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
             div { class: "screen",
                 ScreenHeader { title: deck_export::TITLE, hint: export_hint, back: move |()| driver.dispatch(Action::Back) }
 
-                HintDialog {
-                    open: export_hint,
-                    actions: guide_link::one_time(HINT_EXPORT),
-                    title: "Exporting your deck",
-                    HintBullets {
-                        HintBullet { HintKey { "Export" } " picks which boards to include" }
-                        HintBullet { "The " HintKey { DockIcon { path: icons::COPY } } " at the bottom right puts the decklist on your clipboard" }
-                    }
-                }
+                OneTimeHintDialog { open: export_hint, hint: OneTimeHint::Export }
 
                 div { class: "screen-content content-enter",
                     // Console stays a fixed flex child on the grid; the

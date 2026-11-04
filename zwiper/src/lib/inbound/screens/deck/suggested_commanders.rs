@@ -28,8 +28,7 @@
 
 use components::{
     AlertDialog, Bar, BarChart, BarOrientation, Button, ButtonVariant, CardRoleChips, Chip,
-    ColorBars, DialogAction, HintBullet, HintBullets, HintDialog, HintKey, HintLine, OtagDef,
-    RoleTags, Toasts, use_toast,
+    ColorBars, DialogAction, OtagDef, RoleTags, Toasts, use_toast,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -40,7 +39,7 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::card::search_card::card_type::CardType;
-use zwipe_core::domain::user::models::hints::HINT_SUGGESTED_COMMANDERS;
+use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_core::http::contracts::suggestions::{
     HttpCommanderSuggestion, HttpStaple, HttpSuggestionReasons,
 };
@@ -59,13 +58,13 @@ use super::components::skeletons::{BuilderProfileSkeleton, ShowChipRowSkeleton};
 use super::components::swipe_select::{SuggestedPile, SwipeMode, SwipeSelect};
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::catalog_cache::CatalogCache;
-use crate::inbound::components::hint_dialog::{self, HintColored};
+use crate::inbound::components::hint_dialog::{self, OneTimeHintDialog};
 use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::home_play_style::ColorsEmpty;
 use crate::inbound::components::info_button::InfoButton;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{Screen, screen};
-use crate::inbound::components::{guide_link, ui_toast};
+use crate::inbound::components::ui_toast;
 use crate::inbound::router::Router;
 use crate::inbound::screens::deck::card::components::card_row::{
     CardRow, OtagDescribe, OtagExamplesOpen, ShowRowArt,
@@ -915,20 +914,7 @@ pub fn SuggestedCommanders() -> Element {
         div { class: "screen",
             ScreenHeader { title: model::TITLE, hint: hint_open, back: move |()| driver.dispatch(Action::Back) }
 
-            HintDialog {
-                open: hint_open,
-                actions: guide_link::one_time(HINT_SUGGESTED_COMMANDERS),
-                title: "Playstyle",
-                HintLine { "Your colors, card roles and top oracle tags, read from every deck you own in any format" }
-                HintBullets {
-                    HintBullet { HintKey { "Create deck" } " begins a deck with that commander" }
-                    HintBullet { HintKey { "Maybeboard" } " saves it to your commander maybeboard" }
-                    HintBullet { HintKey { color: "--color-error", "Remove" } " hides it for a week and pulls the next one up" }
-                    HintBullet { HintKey { "Swipe" } " deals the same ranking: " HintColored { color: "--color-success", "right" } " starts a deck, " HintColored { color: "--color-warning", "up" } " saves, " HintColored { color: "--color-error", "left" } " skips it" }
-                    HintBullet { HintKey { "Show" } " narrows the list to one color identity" }
-                }
-                HintLine { "Below them, your top 10 commanders ranked against all your decks, best fit first. Swipe keeps going down the same ranking" }
-            }
+            OneTimeHintDialog { open: hint_open, hint: OneTimeHint::SuggestedCommanders }
 
             div { class: "screen-content",
                 // Bounded like the commander maybeboard: screen-content centers

@@ -469,6 +469,6 @@ pub(crate) fn DeckForm(open: Open) -> Element {
                 on_back: move |()| driver.dispatch(Action::BackPicker),
             }
 
-            DeckFieldsHint { open: hint_open, hint_key: mode.hint().key() }
+            DeckFieldsHint { open: hint_open, hint: mode.hint() }
     }
 }

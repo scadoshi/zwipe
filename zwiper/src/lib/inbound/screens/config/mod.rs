@@ -8,8 +8,8 @@ pub mod universes_beyond;
 
 use app_icon_sheet::AppIconSheet;
 use components::{
-    Button, ButtonVariant, DarkModeButton, HintBullet, HintBullets, HintDialog, HintKey,
-    PaletteIcon, TOAST_NORMAL, ThemeConfig, ToastOptions, Toasts, use_toast,
+    Button, ButtonVariant, DarkModeButton, PaletteIcon, TOAST_NORMAL, ThemeConfig, ToastOptions,
+    Toasts, use_toast,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -18,18 +18,18 @@ use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::user;
 use zwipe_core::domain::user::hints::OneTimeHint;
-use zwipe_core::domain::user::models::hints::HINT_CONFIG;
 use zwipe_core::domain::user::preferences::PipColor;
 use zwipe_core::text::sentence_case;
 use zwipe_ui::screens::config::{self as model, Action, Destination, Effect, Sheet, State};
 
 use crate::inbound::components::auth::authed::{Authed, use_authed};
+use crate::inbound::components::hint_dialog::OneTimeHintDialog;
 use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::info_button::InfoButton;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{ProfileScreen, Screen};
 use crate::inbound::components::theme_save::{self, ThemeSaveSheet, theme_config_of, theme_of};
-use crate::inbound::components::{guide_link, hint_dialog, ui_toast};
+use crate::inbound::components::{hint_dialog, ui_toast};
 use crate::outbound::app_icon;
 use crate::outbound::session::Persist;
 
@@ -219,15 +219,7 @@ pub fn Config() -> Element {
             div { class: "screen",
                 ScreenHeader { title: model::TITLE, hint: config_hint_open, back: move |()| driver.dispatch(Action::Back) }
 
-                HintDialog {
-                    open: config_hint_open,
-                    actions: guide_link::one_time(HINT_CONFIG),
-                    title: "Settings",
-                    HintBullets {
-                        HintBullet { "Set how Zwipe looks and which cards it shows" }
-                        HintBullet { "Tap a row's " HintKey { color: "--palette-6", "?" } " for what it does" }
-                    }
-                }
+                OneTimeHintDialog { open: config_hint_open, hint: OneTimeHint::Config }
 
                 div { class: "screen-content content-enter",
                     div { class: "settings-sections",

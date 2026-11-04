@@ -1,12 +1,10 @@
-use components::icons::{self, DockIcon};
-use components::{
-    BottomSheet, DockAction, HintBullet, HintBullets, HintDialog, HintKey, Toasts, use_toast,
-};
+use components::icons::{self};
+use components::{BottomSheet, DockAction, Toasts, use_toast};
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
-use zwipe_core::domain::user::models::hints::HINT_FILTER;
+use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_ui::filter::draft::SheetConfig;
 use zwipe_ui::filter::picker::PickerField;
 use zwipe_ui::filter::sections::Section;
@@ -16,10 +14,10 @@ use crate::inbound::components::accordion::{
     Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 };
 use crate::inbound::components::catalog_cache::CatalogCache;
-use crate::inbound::components::hint_dialog::{self, HintColored};
+use crate::inbound::components::hint_dialog::{self, OneTimeHintDialog};
 use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::info_button::InfoButton;
-use crate::inbound::components::{guide_link, ui_toast};
+use crate::inbound::components::ui_toast;
 use crate::inbound::screens::deck::card::filter::artist::Artist;
 use crate::inbound::screens::deck::card::filter::card_role::CardRole;
 use crate::inbound::screens::deck::card::filter::combat::Combat;
@@ -594,17 +592,7 @@ pub(crate) fn CardFilterSheet(
             }
         }
 
-        HintDialog {
-            open: hint_open,
-            actions: guide_link::one_time(HINT_FILTER),
-            title: "Filters",
-            HintBullets {
-                HintBullet { "Picks which cards show: the ones served to " HintColored { color: "--accent-primary", "swipe" } ", or which of the deck's cards list" }
-                HintBullet { "Open a section to set name, mana, type, color, " HintColored { color: "--accent-tertiary", "Oracle tags" } " and more. Stack as many as you want" }
-                HintBullet { HintKey { DockIcon { path: icons::CHECK } } " uses it. " HintKey { color: "--color-warning", DockIcon { path: icons::ERASER } } " then " HintKey { DockIcon { path: icons::CHECK } } " goes back to the default view" }
-                HintBullet { "Each screen keeps its own filter" }
-            }
-        }
+        OneTimeHintDialog { open: hint_open, hint: OneTimeHint::Filter }
 
         // Rendered outside the bottom sheet (see `otag_dict_open` note) so its
         // full-screen fixed overlay isn't trapped by the sheet's transform.

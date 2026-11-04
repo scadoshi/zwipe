@@ -14,25 +14,25 @@
 //! file draws it through the same `SwipeStack` as the add screen.
 
 use components::icons::EyeIcon;
-use components::{HintBullet, HintBullets, HintDialog, Toasts, use_overlay_back, use_toast};
+use components::{Toasts, use_overlay_back, use_toast};
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
-use zwipe_core::domain::user::models::hints::HINT_OTAG_EXAMPLES;
+use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_ui::screens::oracle_tag_examples::{
     self as model, Action, Destination, Effect, State, Status,
 };
 use zwipe_ui::stack;
 
 use crate::inbound::components::auth::authed::{Authed, use_authed};
-use crate::inbound::components::hint_dialog::{self, HintColored};
+use crate::inbound::components::hint_dialog::{self, OneTimeHintDialog};
 use crate::inbound::components::interactions::swipe::SwipeStack;
 use crate::inbound::components::interactions::swipe::config::SwipeConfig;
 use crate::inbound::components::interactions::swipe::direction::Direction;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{OracleTagScreen, Screen, screen};
-use crate::inbound::components::{guide_link, ui_toast};
+use crate::inbound::components::ui_toast;
 use crate::inbound::screens::deck::card::components::card_info::{
     CardDetailsSheet, CardInfoDisplay, CardSkeleton,
 };
@@ -175,15 +175,7 @@ pub fn OracleTagExamples(open: Signal<bool>, slug: String) -> Element {
             ::components::GridCells { still: true }
             ScreenHeader { title: model::TITLE, hint: examples_hint_open, back: move |()| driver.dispatch(Action::Back) }
 
-            HintDialog {
-                open: examples_hint_open,
-                actions: guide_link::one_time(HINT_OTAG_EXAMPLES),
-                title: model::HINT_TITLE,
-                HintBullets {
-                    HintBullet { "Swipe " HintColored { color: "--color-success", "left" } " for the next card" }
-                    HintBullet { "Swipe " HintColored { color: "--accent-secondary", "down" } " to go back one" }
-                }
-            }
+            OneTimeHintDialog { open: examples_hint_open, hint: OneTimeHint::OtagExamples }
 
             div { class: "screen-content card-swipe content-enter",
                 div { class: "form-container",

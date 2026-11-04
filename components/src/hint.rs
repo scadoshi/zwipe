@@ -12,7 +12,9 @@ use orangui::icons::{
     CHECK, COG, COPY, CloneIcon, DockIcon, ERASER, EditIcon, EyeIcon, FUNNEL, HOUSE, INFO, LINK,
     MINUS, PERSON, PLUS, REFRESH, ShareIcon, UNDO,
 };
-use orangui::{HintBullet, HintBullets, HintDialog, HintKey, HintLine, ModeIcon, PaletteIcon};
+use orangui::{
+    DialogAction, HintBullet, HintBullets, HintDialog, HintKey, HintLine, ModeIcon, PaletteIcon,
+};
 use zwipe_ui::hint::{Block, HintContent, KeyIcon, Span};
 
 /// A run of blocks as drawn: consecutive bullets share one list.
@@ -125,10 +127,17 @@ pub fn HintColored(color: String, children: Element) -> Element {
     }
 }
 
-/// A hint's dialog drawn from its `content`.
+/// A hint's dialog drawn from its `content`, with `actions` (a guide link,
+/// as a rule) before its dismiss button.
 #[component]
-pub fn ContentHintDialog(open: Signal<bool>, content: HintContent) -> Element {
+pub fn ContentHintDialog(
+    open: Signal<bool>,
+    content: HintContent,
+    #[props(default)] actions: Vec<DialogAction>,
+) -> Element {
     rsx! {
-        HintDialog { open, title: content.title.clone(), HintBody { blocks: content.blocks } }
+        HintDialog { open, title: content.title.clone(), actions,
+            HintBody { blocks: content.blocks }
+        }
     }
 }

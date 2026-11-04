@@ -20,10 +20,7 @@
 
 use std::collections::HashSet;
 
-use components::{
-    AlertDialog, Button, ButtonVariant, Chip, DialogAction, HintBullet, HintBullets, HintDialog,
-    HintKey, HintLine, Toasts, use_toast,
-};
+use components::{AlertDialog, Button, ButtonVariant, Chip, DialogAction, Toasts, use_toast};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use tokio::time;
@@ -35,7 +32,7 @@ use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::deck::format::Format;
-use zwipe_core::domain::user::models::hints::HINT_COMMANDER_MAYBEBOARD;
+use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_ui::generation::Ticket;
 use zwipe_ui::screens::commander_maybeboard::{
     self as model, Action, Destination, Effect, QuickAddResults, State, Status,
@@ -46,11 +43,11 @@ use super::components::skeletons::{ChipRowSkeleton, QuickAddSkeleton};
 use super::components::swipe_select::{SwipeMode, SwipeSelect};
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::catalog_cache::CatalogCache;
-use crate::inbound::components::hint_dialog::{self, HintColored};
+use crate::inbound::components::hint_dialog::{self, OneTimeHintDialog};
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::{Screen, screen};
-use crate::inbound::components::{guide_link, ui_toast};
+use crate::inbound::components::ui_toast;
 use crate::inbound::router::Router;
 use crate::inbound::screens::deck::card::components::card_row::{
     CardRow, OtagDescribe, OtagExamplesOpen, ShowRowArt,
@@ -383,19 +380,7 @@ pub fn CommanderMaybeboard() -> Element {
         div { class: "screen",
             ScreenHeader { title: model::TITLE, hint: hint_open, back: move |()| driver.dispatch(Action::Back) }
 
-            HintDialog {
-                open: hint_open,
-                actions: guide_link::one_time(HINT_COMMANDER_MAYBEBOARD),
-                title: "Commander maybeboard",
-                HintLine { "Commanders you save land here" }
-                HintBullets {
-                    HintBullet { "Swipe " HintColored { color: "--color-warning", "up" } " while picking a commander saves it here" }
-                    HintBullet { HintKey { "Swipe" } " deals commanders: right starts a deck, up saves one" }
-                    HintBullet { HintKey { "Quick add" } " searches by name" }
-                    HintBullet { HintKey { "Create deck" } " starts a deck with that commander" }
-                    HintBullet { HintKey { color: "--color-error", "Remove" } " takes it off the list" }
-                }
-            }
+            OneTimeHintDialog { open: hint_open, hint: OneTimeHint::CommanderMaybeboard }
 
             div { class: "screen-content",
                 // Bounded like the deck cards screen: screen-content centers

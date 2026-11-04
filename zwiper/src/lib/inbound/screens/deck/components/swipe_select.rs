@@ -22,10 +22,10 @@
 
 use std::collections::HashSet;
 
-use components::icons::{self, DockIcon, EyeIcon};
+use components::hint::ContentHintDialog;
+use components::icons::{self, EyeIcon};
 use components::{
-    BottomSheet, DockAction, DockFilter, HintBullet, HintBullets, HintDialog, HintKey, HintLine,
-    ToastOptions, Toasts, use_overlay_back, use_toast,
+    BottomSheet, DockAction, DockFilter, ToastOptions, Toasts, use_overlay_back, use_toast,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -36,18 +36,18 @@ use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilde
 use zwipe_core::domain::card::search_card::card_filter::query::CardQuery;
 use zwipe_core::domain::user::models::hints::HINT_SWIPE_SELECT;
 use zwipe_ui::generation::Ticket;
+use zwipe_ui::hint::{SwipeSelectMode, one_time};
 use zwipe_ui::screens::swipe_select::{self as model, Action, Destination, Effect, State, Status};
 pub(crate) use zwipe_ui::screens::swipe_select::{Mode as SwipeMode, SuggestedPile};
 use zwipe_ui::stack;
 
-use crate::inbound::components::hint_dialog::{self, HintColored};
 use crate::inbound::components::interactions::swipe::SwipeStack;
 use crate::inbound::components::interactions::swipe::config::SwipeConfig;
 use crate::inbound::components::interactions::swipe::direction::Direction;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::component;
-use crate::inbound::components::{guide_link, ui_toast};
+use crate::inbound::components::{guide_link, hint_dialog, ui_toast};
 use crate::inbound::screens::deck::card::components::card_info::{
     CardDetailsSheet, CardInfoDisplay, CardSkeleton, use_describe_tag,
 };
@@ -397,6 +397,13 @@ pub(crate) fn SwipeSelect(
     let on_examples = try_use_context::<OtagExamplesOpen>().map(|e| e.0);
     // The suggested Filter: the chosen identity lights the button's dot.
     let has_suggested_filter = suggested && suggested_filter.is_some();
+    let hint_mode = if suggested {
+        SwipeSelectMode::Suggested {
+            has_filter: has_suggested_filter,
+        }
+    } else {
+        SwipeSelectMode::Picking(noun)
+    };
     let mut directions = vec![Direction::Left, Direction::Right, Direction::Down];
     if maybe_enabled {
         directions.push(Direction::Up);
@@ -541,29 +548,10 @@ pub(crate) fn SwipeSelect(
                     }
                 }
 
-                HintDialog {
+                ContentHintDialog {
                     open: hint_open,
                     actions: guide_link::one_time(HINT_SWIPE_SELECT),
-                    title,
-                    HintBullets {
-                        if suggested {
-                            HintBullet { "Swipe " HintColored { color: "--color-success", "right" } " starts a deck with that commander" }
-                            HintBullet { "Swipe " HintColored { color: "--color-error", "left" } " skips it for a week" }
-                        } else {
-                            HintBullet { "Swipe " HintColored { color: "--color-success", "right" } " picks that {noun}" }
-                            HintBullet { "Swipe " HintColored { color: "--color-error", "left" } " skips it" }
-                        }
-                        HintBullet { "Swipe " HintColored { color: "--color-warning", "up" } " saves it to your commander maybeboard" }
-                        HintBullet { "Swipe " HintColored { color: "--accent-tertiary", "down" } " undoes the last swipe" }
-                    }
-                    if suggested {
-                        HintLine { "Best fit first, 100 deep. " HintKey { EyeIcon {} } " shows why each one was suggested" }
-                        if has_suggested_filter {
-                            HintLine { HintKey { DockIcon { path: icons::FUNNEL } } " narrows the stack to one color identity" }
-                        }
-                    } else {
-                        HintLine { "Most-played first. " HintKey { DockIcon { path: icons::FUNNEL } } " narrows by color or anything else" }
-                    }
+                    content: one_time::swipe_select(hint_mode),
                 }
             }
         }

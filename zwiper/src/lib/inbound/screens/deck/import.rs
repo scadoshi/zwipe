@@ -7,21 +7,22 @@
 //! effects.
 
 use components::icons::{self, DockIcon};
-use components::{Chip, HintBullet, HintBullets, HintDialog, HintKey, Toasts, use_toast};
+use components::{Chip, Toasts, use_toast};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::user::models::hints::HINT_IMPORT;
+use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_ui::screens::deck_import::{
     self, Action, Board, Destination, Effect, MODES, Source, State, mode_label,
 };
 
 use crate::inbound::components::auth::authed::{Authed, use_authed};
+use crate::inbound::components::hint_dialog::OneTimeHintDialog;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen};
-use crate::inbound::components::{guide_link, hint_dialog, ui_toast};
+use crate::inbound::components::{hint_dialog, ui_toast};
 use crate::inbound::router::Router;
 use crate::inbound::screens::deck::card::components::undo_log::UndoStore;
 use crate::inbound::screens::deck::missing_deck;
@@ -174,17 +175,7 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
             div { class: "screen",
                 ScreenHeader { title: deck_import::TITLE, hint: import_hint, back: move |()| driver.dispatch(Action::Back) }
 
-                HintDialog {
-                    open: import_hint,
-                    actions: guide_link::one_time(HINT_IMPORT),
-                    title: "Importing cards",
-                    HintBullets {
-                        HintBullet { "Paste a decklist, or switch " HintKey { "From" } " to an Archidekt deck link" }
-                        HintBullet { HintKey { "Add" } " keeps your current cards. " HintKey { color: "--color-warning", "Replace" } " swaps the board's contents" }
-                        HintBullet { HintKey { "Board" } " picks where the cards go" }
-                        HintBullet { "Importing clears the deck's undo history" }
-                    }
-                }
+                OneTimeHintDialog { open: import_hint, hint: OneTimeHint::Import }
 
                 div { class: "screen-content content-enter",
                     // Console stays a fixed flex child on the grid; the

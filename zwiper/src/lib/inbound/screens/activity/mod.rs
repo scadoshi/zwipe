@@ -9,7 +9,6 @@
 /// The screen's accordion sections and hard passes group.
 pub(crate) mod sections;
 
-use components::{HintBullet, HintBullets, HintDialog, HintKey, HintLine};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use uuid::Uuid;
@@ -17,7 +16,7 @@ use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
-use zwipe_core::domain::user::models::hints::HINT_ACTIVITY;
+use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_ui::screens::activity::{
     self as model, Action, Destination, Effect, Section, State, Status,
 };
@@ -25,10 +24,11 @@ use zwipe_ui::screens::activity::{
 use self::sections::{ActivitySections, HardPassesPanel, HeatGhost};
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::catalog_cache::CatalogCache;
+use crate::inbound::components::hint_dialog;
+use crate::inbound::components::hint_dialog::OneTimeHintDialog;
 use crate::inbound::components::home_hero::MyCountsPanel;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{Screen, screen};
-use crate::inbound::components::{guide_link, hint_dialog};
 use crate::inbound::screens::deck::card::components::card_row::{
     OtagDescribe, OtagExamplesOpen, ShowRowArt,
 };
@@ -226,18 +226,7 @@ pub fn Activity() -> Element {
         div { class: "screen",
             ScreenHeader { title: model::TITLE, hint: hint_open, back: move |()| driver.dispatch(Action::Back) }
 
-            HintDialog {
-                open: hint_open,
-                actions: guide_link::one_time(HINT_ACTIVITY),
-                title: "Activity",
-                HintLine { "How you pick, read from your swipes" }
-                HintBullets {
-                    HintBullet { HintKey { "Activity" } " maps your swipes and searches over the last year, and what the cards dealt to your decks came to" }
-                    HintBullet { HintKey { "Card roles" } " and " HintKey { "Oracle tags" } " show how often you add, skip, save or remove each one" }
-                    HintBullet { HintKey { "Most skipped" } " lists cards you skip that other players usually keep" }
-                }
-                HintLine { "Each section's " HintKey { color: "--palette-6", "?" } " explains it" }
-            }
+            OneTimeHintDialog { open: hint_open, hint: OneTimeHint::Activity }
 
             div { class: "screen-content",
                 // Bounded like Playstyle: screen-content centers its children,
