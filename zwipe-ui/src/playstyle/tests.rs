@@ -451,38 +451,6 @@ fn bar(key: &str, label: &str, count: u64, pct: u32) -> Bar {
 }
 
 #[test]
-fn a_color_map_has_data_with_any_colored_or_colorless_card() {
-    assert!(!color_map_has_data(&ColorMapCounts::default()));
-    assert!(color_map_has_data(&ColorMapCounts {
-        colorless: 1,
-        ..ColorMapCounts::default()
-    }));
-    assert!(color_map_has_data(&ColorMapCounts {
-        cards: [0, 0, 0, 0, 2],
-        ..ColorMapCounts::default()
-    }));
-}
-
-#[test]
-fn a_color_map_reads_only_wubrg_codes_for_data() {
-    use zwipe_core::http::contracts::suggestions::{HttpColorCards, HttpColorMap};
-
-    let map = |code: &str| HttpColorMap {
-        colors: vec![HttpColorCards {
-            color: code.to_owned(),
-            cards: 3,
-        }],
-        colorless_cards: 0,
-        pairs: Vec::new(),
-    };
-    assert!(color_map_has_data(&ColorMapCounts::from(&map("G"))));
-    assert!(
-        !color_map_has_data(&ColorMapCounts::from(&map("C"))),
-        "a code outside WUBRG is no data, as in the app"
-    );
-}
-
-#[test]
 fn role_bars_keep_the_order_sent_and_abbreviate_like_the_deck_chart() {
     let roles = [
         HttpProfileRole {

@@ -562,7 +562,7 @@ fn back_goes_to_the_screen_before() {
 fn the_sections_follow_the_profile() {
     let state = loaded(ranking(), full_profile());
     assert_eq!(state.sections(), Section::ALL);
-    assert!(state.color_map().is_some());
+    assert!(state.colors().is_some());
     let summary = state.summary().unwrap();
     assert_eq!(summary.decks, "4");
     assert_eq!(state.role_bars().len(), 1);
@@ -573,19 +573,19 @@ fn the_sections_follow_the_profile() {
     let state = loaded(ranking(), bare_profile(2));
     assert_eq!(
         state.sections(),
-        [Section::ColorMap, Section::Summary],
+        [Section::Colors, Section::Summary],
         "no roles or tags, no chart or table"
     );
-    assert_eq!(state.color_map(), None, "an empty map draws Home's line");
+    assert_eq!(state.colors(), None, "no cards draws Home's line");
 }
 
 #[test]
-fn only_the_color_map_opens_on_entry() {
+fn only_colors_opens_on_entry() {
     let open: Vec<Section> = Section::ALL
         .into_iter()
         .filter(|s| s.opens_on_entry())
         .collect();
-    assert_eq!(open, [Section::ColorMap]);
+    assert_eq!(open, [Section::Colors]);
 }
 
 #[test]
@@ -684,7 +684,7 @@ fn the_copy_matches_the_app() {
     assert_eq!(NO_SUGGESTIONS, "No suggestions right now");
     assert_eq!(LIST_TITLE, "Suggested commanders");
     assert_eq!(SUMMARY_TITLE, "Summary");
-    assert_eq!(COLORS_TITLE, "Color map");
+    assert_eq!(COLORS_TITLE, "Colors");
     assert_eq!(ROLES_TITLE, "Card roles");
     assert_eq!(TAGS_TITLE, "Oracle tags");
     assert_eq!(SUMMARY_DECKS, "Decks");
@@ -718,8 +718,5 @@ fn the_copy_matches_the_app() {
     assert_eq!(SKIPPED, "Skipped for a week");
     assert_eq!(SKIPS_CLEARED, "Skips cleared");
     let titles: Vec<&str> = Section::ALL.into_iter().map(Section::title).collect();
-    assert_eq!(
-        titles,
-        ["Color map", "Summary", "Card roles", "Oracle tags"]
-    );
+    assert_eq!(titles, ["Colors", "Summary", "Card roles", "Oracle tags"]);
 }

@@ -18,7 +18,7 @@ use zwipe_core::http::contracts::suggestions::{
 };
 
 use crate::activity::Bar;
-use crate::color_map::ColorMapCounts;
+use crate::colors::ColorCounts;
 use crate::deck;
 use crate::generation::{Generation, Ticket};
 use crate::playstyle::{self, ProfileSummary, SharedTags, StapleColor, TagRow};
@@ -43,8 +43,8 @@ pub const LIST_TITLE: &str = "Suggested commanders";
 /// The Summary section's title.
 pub const SUMMARY_TITLE: &str = "Summary";
 
-/// The color map section's title.
-pub const COLORS_TITLE: &str = "Color map";
+/// The Colors section's title.
+pub const COLORS_TITLE: &str = "Colors";
 
 /// The card roles chart's section title.
 pub const ROLES_TITLE: &str = "Card roles";
@@ -146,8 +146,8 @@ pub enum Destination {
 /// One of the profile's sections, in the order they draw.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Section {
-    /// The color territory map of the user's cards.
-    ColorMap,
+    /// A bar per color of the user's cards, colorless last.
+    Colors,
     /// The deck count, the top colors and the top color.
     Summary,
     /// The chart of card roles across the decks.
@@ -158,23 +158,23 @@ pub enum Section {
 
 impl Section {
     /// Every section, top to bottom.
-    pub const ALL: [Self; 4] = [Self::ColorMap, Self::Summary, Self::Roles, Self::Tags];
+    pub const ALL: [Self; 4] = [Self::Colors, Self::Summary, Self::Roles, Self::Tags];
 
     /// The section's header, also its accordion key in the app.
     #[must_use]
     pub fn title(self) -> &'static str {
         match self {
-            Self::ColorMap => COLORS_TITLE,
+            Self::Colors => COLORS_TITLE,
             Self::Summary => SUMMARY_TITLE,
             Self::Roles => ROLES_TITLE,
             Self::Tags => TAGS_TITLE,
         }
     }
 
-    /// Whether the section opens with the screen. Only the color map does.
+    /// Whether the section opens with the screen. Only Colors does.
     #[must_use]
     pub fn opens_on_entry(self) -> bool {
-        self == Self::ColorMap
+        self == Self::Colors
     }
 }
 
@@ -607,7 +607,7 @@ impl State {
         self.profile.as_ref()
     }
 
-    /// The profile sections that draw, top to bottom: the color map and Summary whenever there is a profile, Card roles when a role has decks, Oracle tags when a tag does.
+    /// The profile sections that draw, top to bottom: Colors and Summary whenever there is a profile, Card roles when a role has decks, Oracle tags when a tag does.
     #[must_use]
     pub fn sections(&self) -> Vec<Section> {
         if self.profile.is_none() {
@@ -618,22 +618,22 @@ impl State {
         Section::ALL
             .into_iter()
             .filter(|section| match section {
-                Section::ColorMap | Section::Summary => true,
+                Section::Colors | Section::Summary => true,
                 Section::Roles => has_roles,
                 Section::Tags => has_tags,
             })
             .collect()
     }
 
-    /// The color map's counts, or `None` when there is no profile or the map has nothing on it, where the client draws Home's empty line instead.
+    /// The Colors section's counts, or `None` when there is no profile or no deck has a card, where the client draws Home's empty line instead.
     #[must_use]
-    pub fn color_map(&self) -> Option<ColorMapCounts> {
+    pub fn colors(&self) -> Option<ColorCounts> {
         self.profile
             .as_ref()?
             .color_map
             .as_ref()
-            .map(ColorMapCounts::from)
-            .filter(playstyle::color_map_has_data)
+            .map(ColorCounts::from)
+            .filter(crate::colors::has_data)
     }
 
     /// The Summary section's rows.

@@ -1,6 +1,6 @@
 //! Home: the hero's counters and their scope, the Decks panel, the Colors panel, the featured flavor card, the greeting and the first-login hint.
 //!
-//! Home's data outlives a visit: the client keeps the counters, the playstyle summary, the flavor card and the scope above its screens, so a return to Home draws them at once. The client hands what it holds to [`Action::Load`] as [`Cached`], the model asks for what is missing or old, and the client writes each reply to its own copy as well as handing it back. The figures come from [`crate::home`], the color counts test from [`crate::playstyle::color_map_has_data`] and the retailer links from [`crate::buy`].
+//! Home's data outlives a visit: the client keeps the counters, the playstyle summary, the flavor card and the scope above its screens, so a return to Home draws them at once. The client hands what it holds to [`Action::Load`] as [`Cached`], the model asks for what is missing or old, and the client writes each reply to its own copy as well as handing it back. The figures come from [`crate::home`], the Colors panel's bars from [`crate::colors`] and the retailer links from [`crate::buy`].
 
 #[cfg(test)]
 mod tests;
@@ -17,11 +17,11 @@ use zwipe_core::domain::user::User;
 use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_core::http::contracts::suggestions::HttpPlayStyleSummary;
 
-use crate::color_map::ColorMapCounts;
+use crate::buy;
+use crate::colors::{self, Bar, ColorCounts};
 use crate::generation::{Generation, Ticket};
 use crate::home::{self, Figures, Scope, UserSource};
 use crate::toast::Toast;
-use crate::{buy, playstyle};
 
 /// The screen's title.
 pub const TITLE: &str = "Home";
@@ -370,41 +370,6 @@ impl Decks {
     }
 }
 
-/// One bar in the Colors panel.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct Bar {
-    /// The bar's color, `None` for the colorless bar.
-    pub color: Option<Color>,
-    /// Cards across the user's decks whose color identity includes the color, or that have none.
-    pub count: u32,
-    /// The bar's fill as a share of the largest count, 0 to 100.
-    pub pct: u32,
-}
-
-/// The Colors panel's bars for `counts`: one per color in WUBRG order, then colorless, the largest count at 100.
-#[must_use]
-pub fn bars(counts: &ColorMapCounts) -> Vec<Bar> {
-    let max = counts
-        .cards
-        .iter()
-        .copied()
-        .chain([counts.colorless])
-        .max()
-        .unwrap_or(0)
-        .max(1);
-    let bar = |color: Option<Color>, count: u32| Bar {
-        color,
-        count,
-        pct: count.saturating_mul(100).checked_div(max).unwrap_or(0),
-    };
-    Color::all()
-        .into_iter()
-        .zip(counts.cards)
-        .map(|(color, count)| bar(Some(color), count))
-        .chain([bar(None, counts.colorless)])
-        .collect()
-}
-
 /// What the Colors panel draws.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PlayStyle {
@@ -681,10 +646,12 @@ impl State {
             Some(summary) => summary
                 .color_map
                 .as_ref()
-                .map(ColorMapCounts::from)
-                .filter(playstyle::color_map_has_data)
+                .map(ColorCounts::from)
+                .filter(colors::has_data)
                 .filter(|_| summary.deck_count > 0)
-                .map_or(PlayStyle::Empty, |counts| PlayStyle::Bars(bars(&counts))),
+                .map_or(PlayStyle::Empty, |counts| {
+                    PlayStyle::Bars(colors::bars(&counts))
+                }),
             None if self.play_style_failed => PlayStyle::Failed,
             None => PlayStyle::Loading,
         }

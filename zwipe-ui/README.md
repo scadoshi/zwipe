@@ -8,7 +8,7 @@ It names no UI crate, so it builds for iOS, Android, the terminal and `wasm32-un
 
 Anything that decides what a screen shows or does and that two or more clients need, in the app's behavior. Where a port drifted from the app, the app wins and a test pins it.
 
-- The color map's tiles, shades and rings (`color_map`), with the golden test that checks them against the app.
+- The color counts across the user's decks and the bars that draw them (`colors`), shared by Home's Colors panel and Playstyle's Colors section.
 - Activity's heatmap, totals, rate charts and `year_line`; Playstyle's identities, reasons, profile and staples filters; home's figures, scope and flavor card expiry.
 - The deck list's Group by and Show, the create gate (`deck::create_gate`), the deck form's values and rules (Create's request, Edit's sparse update, the knock-on clears, which slots show) and its pickers (`deck::pickers`), the command zone's labels, group headers, row art and slot update (`deck::command_zone`), the deck view's sections, total price, share link, clone name and toasts (`deck::view`), export text, the import toast, warning fixes and buy links.
 - The commander maybeboard's pip filter, Quick add gate, highlight and copy, and swipe select's key and re-deal (`commander`).
