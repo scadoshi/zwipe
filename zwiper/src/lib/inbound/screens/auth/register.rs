@@ -7,7 +7,6 @@ use zwipe_client::ZwipeClient;
 use zwipe_core::http::contracts::auth::HttpRegisterUser;
 use zwipe_core::http::contracts::metrics::AnonymousEventKind;
 use zwipe_ui::account::Password;
-use zwipe_ui::screens::login;
 use zwipe_ui::screens::register::{self, Action, Destination, Effect, Field, State};
 
 use crate::inbound::components::hint_host::HintTopic;
@@ -185,7 +184,7 @@ pub fn Register() -> Element {
                         onclick: move |_| {
                             driver.navigator.push(Router::Login {});
                         },
-                        {login::LOG_IN}
+                        {register::BACK}
                     }
                 }
             }

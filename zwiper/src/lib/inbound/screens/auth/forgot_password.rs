@@ -8,7 +8,7 @@ use dioxus::router::Navigator;
 use zwipe_client::ZwipeClient;
 use zwipe_core::http::contracts::auth::HttpRequestPasswordReset;
 use zwipe_ui::screens::forgot_password::{
-    self, Action, Destination, EMAIL, Effect, SEND, SENT_BODY, SENT_TITLE, State,
+    self, Action, BACK, Destination, EMAIL, Effect, SEND, SENT_BODY, SENT_TITLE, State,
 };
 use zwipe_ui::screens::login;
 
@@ -128,7 +128,7 @@ pub fn ForgotPassword() -> Element {
                                 onclick: move |_| {
                                     driver.navigator.push(Router::Login {});
                                 },
-                                {login::LOG_IN}
+                                {BACK}
                             }
                             Button {
                                 variant: ButtonVariant::Action,

@@ -110,6 +110,49 @@
     color: var(--accent-tertiary);
 }
 
+/* ---- Fold (components::Fold, components::SeeMore) ----
+   The rows past a chart's first five, eased open and shut with the grid-rows
+   0fr<->1fr technique like .keyword-reveal. Mounted shut with its rows inside. */
+.chart-fold {
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    transition:
+        grid-template-rows 0.25s ease,
+        opacity 0.25s ease;
+}
+
+.chart-fold.open {
+    grid-template-rows: 1fr;
+    opacity: 1;
+}
+
+.chart-fold-inner {
+    overflow: hidden;
+    min-height: 0;
+}
+
+/* Inside a grid of chart rows: the fold and its inner span the row grid and
+   share its columns, so the folded rows line up with the shown ones and size
+   the chip column while shut. */
+.chart-fold.subgrid {
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+}
+
+.chart-fold.subgrid > .chart-fold-inner {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: subgrid;
+    align-items: center;
+}
+
+.chart-see-more {
+    display: flex;
+    justify-content: center;
+    margin-top: 0.35rem;
+}
+
 /* ---- CardRow (components::CardRow) ---- */
 
 .card-row {

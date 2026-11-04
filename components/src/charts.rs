@@ -3,9 +3,10 @@
 //!
 //! Pure div-bar charts (no canvas, no JS) styled against the theme variables,
 //! fed the chart-ready tuples `DeckMetrics` produces (`mana_curve_bars`,
-//! `type_bars`, `color_bars`, `card_role_bars`). Shared so both surfaces render
-//! the same picture; the interactive pieces (draw odds, mana fulfillment) are
-//! used by the app only.
+//! `type_bars`, `color_bars`, `card_role_bars`, `oracle_tag_bars`). Shared so
+//! both surfaces render the same picture. A horizontal chart with more than
+//! [`FOLD_AT`] rows shows that many and folds the rest behind a [`SeeMore`]
+//! chip.
 
 use std::collections::BTreeMap;
 
@@ -16,7 +17,8 @@ use zwipe_core::domain::deck::draw_odds;
 /// bars zwipe-ui computes straight to the chart.
 pub use zwipe_ui::activity::Bar;
 
-use crate::role_tags::RoleTags;
+use crate::fold::{FOLD_AT, Fold, SeeMore, fold_split};
+use crate::role_tags::{OtagDef, RoleTags};
 
 /// A chart's title, a sentence-case chip in the theme's heading accent
 /// centered over each flattened chart block.
@@ -115,6 +117,10 @@ fn reveal_at<'k>(selected: Option<&'k str>, shown: Option<&'k str>) -> Option<Re
 /// `.keyword-chip`, active when open, and eases `reveal`'s content open
 /// directly under the open row, one row at a time. A bar that is not
 /// [`Bar::revealable`] draws a grey chip there and reports no tap.
+///
+/// With `fold` set, a horizontal chart shows its first [`FOLD_AT`] rows and
+/// folds the rest behind a [`SeeMore`] chip; the fold's state is this chart's
+/// and starts shut. A vertical chart never folds.
 #[component]
 pub fn BarChart(
     /// The [`ChartLabel`] over the bars; none renders the bars alone.
@@ -141,8 +147,15 @@ pub fn BarChart(
     /// prints the bare count.
     #[props(default)]
     count_suffix: &'static str,
+    /// Horizontal only: show [`FOLD_AT`] rows and fold the rest.
+    #[props(default)]
+    fold: bool,
 ) -> Element {
     let layout = Layout::new(orientation, on_bar.is_some());
+    let mut fold_open = use_signal(|| false);
+    let fold_at = if fold { FOLD_AT } else { usize::MAX };
+    let (shown_bars, folded_bars) = fold_split(&bars, fold_at);
+    let toggle_fold = use_callback(move |()| fold_open.toggle());
     let count_style = if count_suffix.is_empty() {
         COUNT_CELL_STYLE
     } else {
@@ -218,6 +231,58 @@ pub fn BarChart(
         reveal_at_bar(bar)?;
         reveal.map(|r| r.call(bar.key.clone()))
     };
+    // Rows space by their own padding, not the column's gap, so a shut fold
+    // adds no height.
+    let plain_row = |bar: &Bar| {
+        rsx! {
+            div { style: "display:flex;align-items:center;gap:0.5rem;padding:0.175rem 0;",
+                span { style: label_style(bar), onclick: tap(bar.key.clone()),
+                    "{bar.label}"
+                }
+                div { style: "flex:1;height:0.9rem;background:var(--border-secondary);border-radius:0.15rem;overflow:hidden;",
+                    div {
+                        style: format!(
+                            "height:100%;width:{}%;background:var(--text-primary);opacity:0.65;border-radius:0.15rem;",
+                            bar.pct
+                        ),
+                    }
+                }
+                span { style: count_style, "{bar.count}{count_suffix}" }
+            }
+        }
+    };
+    // Three grid cells and the row's reveal, spanning the grid.
+    let chip_row = |bar: &Bar| {
+        rsx! {
+            div { style: "padding:0.175rem 0;text-align:right;",
+                if bar.revealable {
+                    button { class: chip_class(bar), onclick: tap_chip(bar.key.clone()),
+                        "{chip_label(bar)}"
+                    }
+                } else {
+                    span { class: "keyword-chip static muted", "{chip_label(bar)}" }
+                }
+            }
+            div { style: "flex:1;height:0.9rem;background:var(--border-secondary);border-radius:0.15rem;overflow:hidden;",
+                div {
+                    style: format!(
+                        "height:100%;width:{}%;background:var(--text-primary);opacity:0.65;border-radius:0.15rem;",
+                        bar.pct
+                    ),
+                }
+            }
+            span { style: count_style, "{bar.count}{count_suffix}" }
+            // Mounted shut under every row so opening one is a class
+            // change the reveal can ease, not a fresh node.
+            div { class: reveal_class(bar), style: "grid-column:1 / -1;",
+                div { class: "keyword-reveal-inner",
+                    if let Some(content) = reveal_content(bar) {
+                        {content}
+                    }
+                }
+            }
+        }
+    };
     rsx! {
         div { style: "display:flex;flex-direction:column;gap:0.35rem;padding:0 0.75rem;",
             if let Some(text) = label {
@@ -242,57 +307,37 @@ pub fn BarChart(
                     }
                 },
                 Layout::Rows => rsx! {
-                    for bar in bars.iter() {
-                        div { style: "display:flex;align-items:center;gap:0.5rem;",
-                            span { style: label_style(bar), onclick: tap(bar.key.clone()),
-                                "{bar.label}"
+                    for bar in shown_bars.iter() {
+                        {plain_row(bar)}
+                    }
+                    if let Some(rest) = folded_bars {
+                        Fold { open: fold_open(),
+                            for bar in rest.iter() {
+                                {plain_row(bar)}
                             }
-                            div { style: "flex:1;height:0.9rem;background:var(--border-secondary);border-radius:0.15rem;overflow:hidden;",
-                                div {
-                                    style: format!(
-                                        "height:100%;width:{}%;background:var(--text-primary);opacity:0.65;border-radius:0.15rem;",
-                                        bar.pct
-                                    ),
-                                }
-                            }
-                            span { style: count_style, "{bar.count}{count_suffix}" }
                         }
+                        SeeMore { open: fold_open(), on_toggle: toggle_fold }
                     }
                 },
                 // A grid rather than flex rows so the chip column is as wide as
                 // the widest chip on every row. Rows space by the label cell's
-                // padding, not a row gap, so the shut reveals add no height.
+                // padding, not a row gap, so the shut reveals and a shut fold
+                // add no height.
                 Layout::ChipRows => rsx! {
                     div { style: format!("display:grid;grid-template-columns:fit-content({CHIP_LABEL_MAX_WIDTH}) minmax(0,1fr) auto;column-gap:0.5rem;align-items:center;"),
-                        for bar in bars.iter() {
-                            div { style: "padding:0.175rem 0;text-align:right;",
-                                if bar.revealable {
-                                    button { class: chip_class(bar), onclick: tap_chip(bar.key.clone()),
-                                        "{chip_label(bar)}"
-                                    }
-                                } else {
-                                    span { class: "keyword-chip static muted", "{chip_label(bar)}" }
-                                }
-                            }
-                            div { style: "flex:1;height:0.9rem;background:var(--border-secondary);border-radius:0.15rem;overflow:hidden;",
-                                div {
-                                    style: format!(
-                                        "height:100%;width:{}%;background:var(--text-primary);opacity:0.65;border-radius:0.15rem;",
-                                        bar.pct
-                                    ),
-                                }
-                            }
-                            span { style: count_style, "{bar.count}{count_suffix}" }
-                            // Mounted shut under every row so opening one is a class
-                            // change the reveal can ease, not a fresh node.
-                            div { class: reveal_class(bar), style: "grid-column:1 / -1;",
-                                div { class: "keyword-reveal-inner",
-                                    if let Some(content) = reveal_content(bar) {
-                                        {content}
-                                    }
+                        for bar in shown_bars.iter() {
+                            {chip_row(bar)}
+                        }
+                        if let Some(rest) = folded_bars {
+                            Fold { open: fold_open(), subgrid: true,
+                                for bar in rest.iter() {
+                                    {chip_row(bar)}
                                 }
                             }
                         }
+                    }
+                    if folded_bars.is_some() {
+                        SeeMore { open: fold_open(), on_toggle: toggle_fold }
                     }
                 },
             }
@@ -385,6 +430,7 @@ pub fn DeckCharts(
                         on_bar: toggle_role,
                         selected: selected_role(),
                         reveal: role_reveal,
+                        fold: true,
                     }
                 } else {
                     BarChart {

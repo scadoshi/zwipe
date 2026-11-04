@@ -7,7 +7,8 @@
 //! [`CardRoleChips`], [`RoleTags`], [`OtagDef`], [`KeywordChips`],
 //! [`OracleText`], [`FlippableCardImage`], [`Changelog`], the deck charts
 //! ([`BarChart`], [`DeckCharts`], [`ColorChart`], [`ManaCurve`], [`ManaFulfillment`],
-//! [`DrawOdds`], [`ChartLabel`]), the [`ColorMap`] and [`ZwipeArchitecture`].
+//! [`DrawOdds`], [`ChartLabel`], with [`Fold`] and [`SeeMore`] behind their
+//! long rows), the [`ColorMap`] and [`ZwipeArchitecture`].
 //!
 //! Styling ships as string constants to inline through `document::Style`.
 //! orangui's sheets come through as they are; [`MAGIC_CSS`] holds this crate's
@@ -37,6 +38,7 @@ mod changelog;
 mod charts;
 mod color_map;
 mod flippable_card_image;
+mod fold;
 mod keyword_chips;
 mod oracle_text;
 mod role_tags;
@@ -53,6 +55,7 @@ pub use charts::{
 };
 pub use color_map::{ColorMap, ColorMapGhost, mana_var};
 pub use flippable_card_image::{FlippableCardImage, reset_image_ease};
+pub use fold::{FOLD_AT, Fold, SEE_LESS, SEE_MORE, SeeMore, fold_split};
 pub use keyword_chips::{KeywordChips, KeywordReminders};
 pub use oracle_text::OracleText;
 pub use orangui::{
