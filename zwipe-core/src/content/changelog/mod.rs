@@ -44,6 +44,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Saving a theme lowers the Themes sheet instead of cutting it off",
         "The main menu's footer has a palette for the theme and a sun or moon for Dark/Light",
         "Home's Decks panel shows your three latest decks as tiles with a button to all of them",
+        "Home's Colors panel shows your color counts as bars with the mana pips, and the color map moved to Playstyle",
         "Draw odds names the opening hand turn 0, so the heading keeps its width as the turn steps",
         "About's credits sit in their own panel and its links are in the accent color",
         "zwipe.net's theme menu stays open after a pick, so the next theme is one click away",

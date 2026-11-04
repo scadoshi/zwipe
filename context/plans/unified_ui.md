@@ -52,7 +52,7 @@ These were settled with the owner before the per-screen review. A screen breaks 
 
 ### Home
 
-- Home is a dashboard, not a launcher: the hero, Color map and Featured flavor. Navigation lives in the menu, apart from Home's two shortcuts (Activity, Playstyle).
+- Home is a dashboard, not a launcher: the hero, Decks, Colors and Featured flavor. Navigation lives in the menu, apart from Home's two shortcuts (Activity, Playstyle).
 
 ### zwiper-web at phone width
 
@@ -139,9 +139,13 @@ The review is of the app: each screen got what it shows, where its actions go an
 Reviewed 2026-11-03. Home keeps its three panels, gains a Decks panel, and otherwise changes only by the global rules: the new header replaces "!" and the centered title, and the footer's Decks, Account and Config go, since the menu has them.
 
 - Hero: the ASCII logo stays, with the three stats, the Live and Everybody chips and the Activity button under it. Activity stays as a shortcut even though the menu lists it.
-- Color map: unchanged, with its `?`, the color chips and the Playstyle button, also kept as a shortcut.
+- Colors (owner, 2026-11-03): the Color map panel becomes Colors, in the Decks panel's style: Colors at the left of its header, the Playstyle chip and the `?` at the right, then six compact bars in WUBRG order and colorless last, each with its mana pip at the left, its fill in the color's mana variable (a muted neutral for colorless) over a visible track, the largest count at full width and the count at the bar's end. With no deck the same no-decks line sits under the header, Playstyle chip kept. The tiles map itself lives on Playstyle.
 - Featured flavor: unchanged. Each client keeps its own Buy: the app's Buy sheet, the web's TCGplayer and Card Kingdom links.
-- Decks (owner, 2026-11-03): a panel between the hero and the Color map in the Color map's style, an obvious lane into the decks. Its header has Decks on the left and, on the right, the deck count as a chip beside an All decks chip into the deck list. Under it, the three most recently updated decks as tiles, three across: the commander's art crop in a squircle (a filled squircle with the deck's pips without one), then the name chip and the muted format chip under the image, the name on one line with an ellipsis; a tap anywhere on the tile opens the deck. With no deck the one row is Create a deck. Home fetches the deck list for it and caches it above the router like the summary; while the fetch is out three tiles ghost, and a failed fetch with nothing held shows a muted line under the header with its All decks chip. No continue-swiping shortcut.
+- Decks (owner, 2026-11-03): a panel between the hero and the Colors panel in the same panel style, an obvious lane into the decks. Its header has Decks on the left and, on the right, the deck count as a chip beside an All decks chip into the deck list. Under it, the three most recently updated decks as tiles, three across: the commander's art crop in a squircle (a filled squircle with the deck's pips without one), then the name chip and the muted format chip under the image, the name on one line with an ellipsis; a tap anywhere on the tile opens the deck. With no deck the one row is Create a deck. Home fetches the deck list for it and caches it above the router like the summary; while the fetch is out three tiles ghost, and a failed fetch with nothing held shows a muted line under the header with its All decks chip. No continue-swiping shortcut.
+
+## Playstyle
+
+Reviewed 2026-11-03 (owner). The color territory map is the screen's first panel, titled Color map with its `?`, open on entry above Summary, Card roles, Oracle tags and the commander list. It reads the same playstyle summary Home's Colors panel does, with no request of its own beyond the summary the screen already fetches. The map's skeleton stays with the screen's other ghosts.
 
 ## Deck view
 
