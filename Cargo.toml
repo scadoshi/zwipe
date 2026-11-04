@@ -144,7 +144,3 @@ strip = "debuginfo"
 # tao 0.37.0 vendored as 0.34.9. See vendor/tao/VENDOR.md.
 [patch.crates-io]
 tao = { path = "vendor/tao" }
-
-[patch."https://github.com/scadoshi/orangui"]
-orangui = { path = "../orangui" }
-orangui-core = { path = "../orangui/orangui-core" }
