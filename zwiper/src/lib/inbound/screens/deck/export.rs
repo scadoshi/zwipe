@@ -165,7 +165,11 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                             },
                             None => {
                                 if status == Status::Failed {
-                                    rsx! { p { class: "text-muted", "{deck_export::LOAD_FAILED}" } }
+                                    rsx! {
+                                        div { class: "message-empty",
+                                            span { class: "chip-note", {deck_export::LOAD_FAILED} }
+                                        }
+                                    }
                                 } else {
                                     rsx! {
                                         div { class: "skeleton-export",

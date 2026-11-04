@@ -352,7 +352,11 @@ pub(crate) fn DeckForm(open: Open) -> Element {
                                 }
                             }
                         },
-                        Status::Failed => rsx! { p { class: "text-muted", {model::LOAD_FAILED} } },
+                        Status::Failed => rsx! {
+                            div { class: "message-empty",
+                                span { class: "chip-note", {model::LOAD_FAILED} }
+                            }
+                        },
                         Status::Loading => rsx! { EditDeckSkeleton {} }
                     }
                 }

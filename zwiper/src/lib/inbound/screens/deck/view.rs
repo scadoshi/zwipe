@@ -708,7 +708,11 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                             }
                             }
                         },
-                        None if failed => rsx! { p { class: "text-muted", {deck_view::LOAD_FAILED} } },
+                        None if failed => rsx! {
+                            div { class: "message-empty",
+                                span { class: "chip-note", {deck_view::LOAD_FAILED} }
+                            }
+                        },
                         None => rsx! {
                             div { class: "content-enter",
                                   style: "width: calc(100% - 4rem); display: flex; flex-direction: column; gap: var(--panel-gap); padding: 1rem 0;",
