@@ -24,7 +24,7 @@ pub(crate) mod deck_warnings;
 pub(crate) mod featured_cards;
 /// Full-screen format picker with definitions.
 pub(crate) mod format_select;
-/// Buy sheet and more actions bottom sheets for the view screen.
+/// The view screen's Share and Clear skips dialogs.
 pub(crate) mod more_buttons;
 /// Full-screen oracle-tag picker (fetched catalog + curated defaults + search).
 pub(crate) mod oracle_tag_select;

@@ -20,7 +20,7 @@ use zwipe_core::http::contracts::deck_card::HttpPatchDeckCard;
 use zwipe_ui::deck::command_zone::Slot;
 use zwipe_ui::generation::Ticket;
 use zwipe_ui::screens::deck_view::{
-    self, Action, Destination, Dialog, Effect, MoreItem, Section, State,
+    self, Action, Destination, Dialog, Effect, MoreItem, Retailer, Section, State,
 };
 
 use super::components::clone_deck_dialog::CloneDeckDialog;
@@ -170,6 +170,7 @@ impl Driver {
                 ui_toast::raise(self.toast, done);
             }
             Effect::OpenDialog(dialog) => self.dialogs.open(dialog),
+            Effect::OpenUrl(url) => open_url::open(&url),
             Effect::Navigate(destination) => {
                 self.navigator.push(route(destination));
             }
@@ -480,8 +481,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
         .into_iter()
         .filter(|item| state.is_enabled(*item))
         .collect();
-    let buy_links = state.buy_links();
-    let buy_body = state.buy_body();
+    let buy_row = state.buy_links().is_some();
     let shared = state.share_token().is_some();
     let share_body = state.share_body();
     let clone_name = state.clone_name();
@@ -575,18 +575,16 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                             total: total_line,
                                             average: average_line,
                                         }
-                                        if let (true, Some((tcg, ck))) = (more_enabled.contains(&MoreItem::BuyDeck), buy_links.clone()) {
+                                        if buy_row {
                                             div { class: "deck-buy-row",
-                                                span { class: "stat-chip stat-chip-p1 chip-row-label", {MoreItem::BuyDeck.short_label()} }
-                                                Button {
-                                                    variant: ButtonVariant::Action,
-                                                    onclick: move |_| open_url::open(&tcg),
-                                                    {deck_view::TCGPLAYER}
-                                                }
-                                                Button {
-                                                    variant: ButtonVariant::Action,
-                                                    onclick: move |_| open_url::open(&ck),
-                                                    {deck_view::CARD_KINGDOM}
+                                                span { class: "stat-chip stat-chip-p1 chip-row-label", {deck_view::BUY} }
+                                                for retailer in Retailer::ALL {
+                                                    Button {
+                                                        key: "{retailer:?}",
+                                                        variant: ButtonVariant::Action,
+                                                        onclick: move |_| driver.dispatch(Action::Buy(retailer)),
+                                                        {retailer.label()}
+                                                    }
                                                 }
                                             }
                                         }
@@ -768,8 +766,6 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
 
             MoreButtons {
                 dialogs: driver.dialogs,
-                buy_links: buy_links,
-                buy_body: buy_body,
                 shared: shared,
                 share_body: share_body,
                 ondispatch: move |action| driver.dispatch(action),

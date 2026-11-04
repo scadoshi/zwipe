@@ -1,6 +1,6 @@
 //! The deck view: one deck's profile, its sections and stats, the warnings with their fixes, and the More sheet with its dialogs and requests.
 //!
-//! The client keeps a [`State`] while the screen is up and sends [`Action::Load`] with the deck's id when it opens or the id changes. Which sections show, the Budget figures, the share link and the clone prefill come from [`crate::deck::view`], the fixes from [`crate::deck::warning`] and the buy links from [`crate::buy`]. Which sections are open, the dialogs' visibility and the clone name being typed stay in the client.
+//! The client keeps a [`State`] while the screen is up and sends [`Action::Load`] with the deck's id when it opens or the id changes. Which sections show, the Budget figures, the share link and the clone prefill come from [`crate::deck::view`], the fixes from [`crate::deck::warning`] and the buy links from [`crate::buy`]. Which sections are open, the dialogs' visibility and the clone name being typed stay in the client; the Budget section's Buy row opens a retailer through [`Effect::OpenUrl`].
 
 #[cfg(test)]
 mod tests;
@@ -63,23 +63,14 @@ pub const LANDS: &str = "Lands";
 /// The Mana section's average mana value row.
 pub const AVERAGE_MANA_VALUE: &str = "Average mana value";
 
-/// The button that closes the Buy and Share dialogs.
+/// The button that closes the Share dialog.
 pub const CLOSE: &str = "Close";
 
 /// The button that closes the Clone, Clear skips and Delete dialogs without acting.
 pub const CANCEL: &str = "Cancel";
 
-/// The Buy dialog's line once the deck has loaded.
-pub const BUY_BODY: &str = "Buy this deck's cards from a retailer.";
-
-/// The Buy dialog's line before the deck has loaded.
-pub const BUY_NONE: &str = "No buy links are available for this deck.";
-
-/// The Buy dialog's `TCGplayer` link.
-pub const TCGPLAYER: &str = "TCGplayer \u{2197}";
-
-/// The Buy dialog's `Card Kingdom` link.
-pub const CARD_KINGDOM: &str = "Card Kingdom \u{2197}";
+/// The Budget section's Buy row label, before the retailer buttons.
+pub const BUY: &str = "Buy";
 
 /// The Clone dialog's line above the name field.
 pub const CLONE_BODY: &str = "Make an exact copy of your deck under a new name.";
@@ -189,8 +180,6 @@ pub enum MoreItem {
     ImportCards,
     /// Opens Export, once the deck has a card.
     ExportCards,
-    /// Opens the Buy dialog, once the deck has a card.
-    BuyDeck,
     /// Opens the Clone dialog.
     CloneDeck,
     /// Opens the Share dialog.
@@ -203,10 +192,9 @@ pub enum MoreItem {
 
 impl MoreItem {
     /// Every item, top to bottom.
-    pub const ALL: [Self; 7] = [
+    pub const ALL: [Self; 6] = [
         Self::ImportCards,
         Self::ExportCards,
-        Self::BuyDeck,
         Self::CloneDeck,
         Self::ShareDeck,
         Self::ClearSkips,
@@ -219,7 +207,6 @@ impl MoreItem {
         match self {
             Self::ImportCards => "Import cards",
             Self::ExportCards => "Export cards",
-            Self::BuyDeck => "Buy deck",
             Self::CloneDeck => "Clone deck",
             Self::ShareDeck => "Share deck",
             Self::ClearSkips => "Clear skips",
@@ -234,7 +221,6 @@ impl MoreItem {
         match self {
             Self::ImportCards => "Import",
             Self::ExportCards => "Export",
-            Self::BuyDeck => "Buy",
             Self::CloneDeck => "Clone",
             Self::ShareDeck => "Share",
             Self::ClearSkips => "Clear",
@@ -249,11 +235,32 @@ impl MoreItem {
     }
 }
 
+/// A retailer the Budget section's Buy row opens, with the deck's cards filled in.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Retailer {
+    /// `TCGplayer`'s mass entry.
+    TcgPlayer,
+    /// `Card Kingdom`'s deck builder.
+    CardKingdom,
+}
+
+impl Retailer {
+    /// Every retailer, in the order the Buy row shows them.
+    pub const ALL: [Self; 2] = [Self::TcgPlayer, Self::CardKingdom];
+
+    /// The retailer's button text.
+    #[must_use]
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::TcgPlayer => "TCGplayer \u{2197}",
+            Self::CardKingdom => "Card Kingdom \u{2197}",
+        }
+    }
+}
+
 /// A dialog over the deck view. The client keeps whether each is up.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Dialog {
-    /// The retailer links.
-    Buy,
     /// A name for the copy.
     Clone,
     /// Create, copy or stop the share link.
@@ -269,7 +276,6 @@ impl Dialog {
     #[must_use]
     pub fn title(self) -> &'static str {
         match self {
-            Self::Buy => "Buy deck",
             Self::Clone => "Clone deck",
             Self::Share => "Share deck",
             Self::ClearSkips => "Clear skips",
@@ -335,6 +341,8 @@ pub enum Action {
     Cards,
     /// Presses an item in the More sheet. The client closes the sheet where it does.
     More(MoreItem),
+    /// Presses a retailer on the Budget section's Buy row. Nothing until the deck loads with a card.
+    Buy(Retailer),
     /// Opens Add cards, the below-minimum warning's first fix.
     AddCards,
     /// Sets a card's quantity, a copy-limit warning's fix.
@@ -513,6 +521,8 @@ pub enum Effect {
     },
     /// Opens this dialog.
     OpenDialog(Dialog),
+    /// Opens this address outside the client.
+    OpenUrl(String),
     /// Goes to this screen.
     Navigate(Destination),
     /// Goes to this screen in place of the current one, so Back skips a screen with nothing left to show.
@@ -722,6 +732,11 @@ impl State {
             Action::Cards => self.navigate(Destination::DeckCards),
             Action::AddCards => self.navigate(Destination::AddCards),
             Action::More(item) => self.more(item),
+            Action::Buy(retailer) => self
+                .buy_link(retailer)
+                .map(Effect::OpenUrl)
+                .into_iter()
+                .collect(),
             Action::CopyLink => self.share_token.map(copy_link).into_iter().collect(),
             Action::SetQuantity { card, quantity } => {
                 self.mutate(Mutation::SetQuantity { card, quantity })
@@ -884,7 +899,6 @@ impl State {
         match item {
             MoreItem::ImportCards => self.navigate(Destination::ImportDeck),
             MoreItem::ExportCards => self.navigate(Destination::ExportDeck),
-            MoreItem::BuyDeck => vec![Effect::OpenDialog(Dialog::Buy)],
             MoreItem::CloneDeck => vec![Effect::OpenDialog(Dialog::Clone)],
             MoreItem::ShareDeck => vec![Effect::OpenDialog(Dialog::Share)],
             MoreItem::ClearSkips => vec![Effect::OpenDialog(Dialog::ClearSkips)],
@@ -1094,11 +1108,11 @@ impl State {
         self.charted().map(|m| format!("{:.1}", m.avg_cmc))
     }
 
-    /// Whether a More item can be pressed: Export and Buy wait for a card.
+    /// Whether a More item can be pressed: Export waits for a card.
     #[must_use]
     pub fn is_enabled(&self, item: MoreItem) -> bool {
         match item {
-            MoreItem::ExportCards | MoreItem::BuyDeck => self.has_cards(),
+            MoreItem::ExportCards => self.has_cards(),
             MoreItem::ImportCards
             | MoreItem::CloneDeck
             | MoreItem::ShareDeck
@@ -1107,10 +1121,10 @@ impl State {
         }
     }
 
-    /// The `TCGplayer` and `Card Kingdom` links: the profile's command zone, then the main and side boards. `None` until the deck loads.
+    /// The `TCGplayer` and `Card Kingdom` links: the profile's command zone, then the main and side boards. `None` until the deck loads with a card.
     #[must_use]
     pub fn buy_links(&self) -> Option<(String, String)> {
-        let deck = self.deck()?;
+        let deck = self.deck().filter(|_| self.has_cards())?;
         let names: Vec<&str> = self
             .profile()
             .map(|p| {
@@ -1136,14 +1150,13 @@ impl State {
         ))
     }
 
-    /// The Buy dialog's line: [`BUY_BODY`] with links, [`BUY_NONE`] before the deck loads.
-    #[must_use]
-    pub fn buy_body(&self) -> &'static str {
-        if self.deck().is_some() {
-            BUY_BODY
-        } else {
-            BUY_NONE
-        }
+    /// The Buy row's link for `retailer`, while [`Self::buy_links`] has them.
+    fn buy_link(&self, retailer: Retailer) -> Option<String> {
+        let (tcg, ck) = self.buy_links()?;
+        Some(match retailer {
+            Retailer::TcgPlayer => tcg,
+            Retailer::CardKingdom => ck,
+        })
     }
 
     /// The live share link's token: `Some` while the deck has a public link.
