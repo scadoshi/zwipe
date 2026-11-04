@@ -78,6 +78,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "The privacy policy no longer repeats the Fan Content notice",
         "zwipe.net's theme menu stays open after a pick",
         "zwipe.net's nav shows the stores as Apple and Play icons and its footer holds Contribute",
+        "Hints and the guides on zwipe.net show an icon button as the icon itself instead of naming it in words",
     ],
 }];
 
