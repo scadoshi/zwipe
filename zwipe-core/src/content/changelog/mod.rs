@@ -41,6 +41,8 @@ pub const UPCOMING: &[Release] = &[Release {
     version: Version::new(1, 17, 1),
     date: None,
     entries: &[
+        "Back after deleting a deck returns to Decks, not the deleted deck",
+        "Could not load lines are muted chips, the same as other empty results",
         "Saving a theme lowers the Themes sheet instead of cutting it off",
         "The main menu's footer has a palette for the theme and a sun or moon for Dark/Light",
         "Home's Decks panel shows your three latest decks as tiles with a button to all of them",
