@@ -1,11 +1,11 @@
 //! Home's Decks panel: the deck count and an All decks chip in its header,
-//! the latest decks under it, each a tap into the deck.
+//! the latest decks as tiles under it, each a tap into the deck.
 
 use components::{Button, ButtonVariant};
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::scryfall_data::colors::Color;
-use zwipe_ui::screens::home::{self, DeckPanel, DeckRow, Decks, LATEST_DECKS};
+use zwipe_ui::screens::home::{self, DeckPanel, DeckTile, Decks, LATEST_DECKS};
 
 /// The last deck list fetched, kept above the router (as
 /// `Signal<Option<CachedDecks>>`) so a return to Home lists the decks at
@@ -15,29 +15,16 @@ pub struct CachedDecks {
     /// The user the decks belong to; another user's copy is never shown.
     pub user_id: Uuid,
     /// What zerver answered, most recently updated first.
-    pub decks: Vec<DeckRow>,
+    pub decks: Vec<DeckTile>,
 }
-
-/// How the panel's body draws the latest decks.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[expect(dead_code, reason = "both layouts stay until the owner picks one")]
-enum Layout {
-    /// One row per deck: the name on the left, the format chip on the right.
-    Rows,
-    /// A row of tiles: the commander's art, or the deck's color pips, over
-    /// the name.
-    Tiles,
-}
-
-/// The layout Home draws. Switch to [`Layout::Tiles`] for the tiles.
-const LAYOUT: Layout = Layout::Rows;
 
 /// The panel between the hero and the Color map, in the Color map's panel
 /// style: Decks at the left of its header, the count chip and the All decks
-/// chip at the right, then the [`LATEST_DECKS`] most recently updated decks,
-/// each opening its deck. With no deck the one row opens Create deck; while
-/// the fetch is out three rows ghost; a failed fetch with nothing cached
-/// shows a muted line over the All decks chip. Home's model decides which.
+/// chip at the right, then the [`LATEST_DECKS`] most recently updated decks
+/// as three tiles across, each opening its deck. With no deck the one row
+/// opens Create deck; while the fetch is out three tiles ghost; a failed
+/// fetch with nothing cached shows a muted line over the All decks chip.
+/// Home's model decides which.
 #[component]
 pub fn HomeDecks(
     decks: Decks,
@@ -58,10 +45,7 @@ pub fn HomeDecks(
                             span { class: "home-deck-name", {home::CREATE_DECK} }
                         }
                     } else {
-                        match LAYOUT {
-                            Layout::Rows => rsx! { DeckRows { panel, ondeck } },
-                            Layout::Tiles => rsx! { DeckTiles { panel, ondeck } },
-                        }
+                        DeckTiles { panel, ondeck }
                     }
                 },
                 Decks::Failed => rsx! {
@@ -70,10 +54,14 @@ pub fn HomeDecks(
                 },
                 Decks::Loading => rsx! {
                     PanelHeader { count: None, onopen }
-                    for i in 0..LATEST_DECKS {
-                        div { key: "{i}", class: "settings-row home-deck-row",
-                            div { class: "skeleton-bar home-deck-skeleton-name" }
-                            div { class: "skeleton-bar skeleton-chip" }
+                    div { class: "home-deck-tiles",
+                        for i in 0..LATEST_DECKS {
+                            div { key: "{i}", class: "home-deck-tile",
+                                div { class: "skeleton-bar home-deck-tile-art" }
+                                div { class: "home-deck-tile-chips",
+                                    div { class: "skeleton-bar skeleton-chip home-deck-skeleton-chip" }
+                                }
+                            }
                         }
                     }
                 },
@@ -103,28 +91,10 @@ fn PanelHeader(count: Option<u32>, onopen: EventHandler) -> Element {
     }
 }
 
-/// Layout A: one settings row per deck, the name on the left and the format
-/// chip on the right.
-#[component]
-fn DeckRows(panel: DeckPanel, ondeck: EventHandler<Uuid>) -> Element {
-    rsx! {
-        for deck in panel.latest {
-            div {
-                key: "{deck.id}",
-                class: "settings-row home-deck-row",
-                role: "button",
-                onclick: move |_| ondeck.call(deck.id),
-                span { class: "home-deck-name", "{deck.name}" }
-                if let Some(format) = deck.format {
-                    span { class: "stat-chip stat-chip-p3", "{format.display_name()}" }
-                }
-            }
-        }
-    }
-}
-
-/// Layout B: a row of tiles, each the commander's art crop (or the deck's
-/// color pips without one) over the name on one line.
+/// Three tiles across: the commander's art crop in a squircle (a filled
+/// squircle with the deck's pips without one), then the name chip and the
+/// format chip under it. The name keeps to one line and ellipsizes; the
+/// format sits beside it when both fit and under it otherwise.
 #[component]
 fn DeckTiles(panel: DeckPanel, ondeck: EventHandler<Uuid>) -> Element {
     rsx! {
@@ -141,7 +111,12 @@ fn DeckTiles(panel: DeckPanel, ondeck: EventHandler<Uuid>) -> Element {
                             {pips(&deck)}
                         }
                     }
-                    div { class: "home-deck-tile-name", "{deck.name}" }
+                    div { class: "home-deck-tile-chips",
+                        span { class: "stat-chip home-deck-tile-name", "{deck.name}" }
+                        if let Some(format) = deck.format {
+                            span { class: "stat-chip stat-chip-muted", "{format.display_name()}" }
+                        }
+                    }
                 }
             }
         }
@@ -150,7 +125,7 @@ fn DeckTiles(panel: DeckPanel, ondeck: EventHandler<Uuid>) -> Element {
 
 /// The deck's color identity as mana pips in WUBRG order, or the colorless
 /// pip for a deck with no colored card.
-fn pips(deck: &DeckRow) -> Element {
+fn pips(deck: &DeckTile) -> Element {
     let colors: Vec<Color> = Color::all()
         .into_iter()
         .filter(|color| {

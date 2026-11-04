@@ -22,7 +22,7 @@ use zwipe_core::domain::user::preferences::PipColor;
 use zwipe_ui::generation::Ticket;
 use zwipe_ui::home::{Figures, Scope};
 use zwipe_ui::screens::home::{
-    self, Action, Age, Cached, CachedFigures, DeckRow, Destination, Effect, Flavor, State,
+    self, Action, Age, Cached, CachedFigures, DeckTile, Destination, Effect, Flavor, State,
 };
 
 use crate::inbound::components::auth::authed::{Authed, use_authed};
@@ -330,7 +330,7 @@ impl Driver {
                 .await
             {
                 Some(profiles) => {
-                    let decks: Vec<DeckRow> = profiles.iter().map(DeckRow::from).collect();
+                    let decks: Vec<DeckTile> = profiles.iter().map(DeckTile::from).collect();
                     cache.set(Some(CachedDecks {
                         user_id,
                         decks: decks.clone(),

@@ -3344,8 +3344,9 @@ button {
 }
 
 /* Home's Decks panel: the Color map's panel, Decks at the left of its
-   header with the count chip and All decks at the right, then one row per
-   deck. */
+   header with the count chip and All decks at the right, then three tiles
+   across at the Color map's chip gap. The one row is Create a deck while
+   the user has no deck. */
 .home-decks {
     min-height: 0;
     padding-bottom: 0;
@@ -3380,44 +3381,47 @@ button {
     padding: 1rem;
 }
 
-.home-deck-skeleton-name {
-    width: 45%;
-    height: 0.9rem;
-}
-
-/* Layout B: three tiles in a row, the commander's art or the deck's pips
-   over the name on one line. */
 .home-deck-tiles {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.6rem;
+    gap: 0.4rem;
     padding: 0.75rem 1rem 1rem;
 }
 
+/* A tile is the squircle over its chips with nothing drawn around them;
+   the whole of it is the deck's button. */
 .home-deck-tile {
     display: flex;
     flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
     width: 100%;
     min-width: 0;
     padding: 0;
-    border: 1px solid var(--border-secondary);
-    border-radius: 0.6rem;
-    background-color: var(--bg-raised);
+    border: 0;
+    background: none;
     color: var(--text-primary);
-    overflow: hidden;
     cursor: pointer;
     text-align: center;
 }
 
+.home-deck-tile:active > .home-deck-tile-art {
+    filter: brightness(0.85);
+}
+
+/* The squircle: the art crop filling it, or the raised fill with the pips
+   centered as the placeholder. */
 .home-deck-tile-art {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 0.2rem;
     width: 100%;
-    aspect-ratio: 4 / 3;
-    background-color: var(--bg-primary);
-    font-size: 1.1rem;
+    aspect-ratio: 1 / 1;
+    border-radius: 22%;
+    background-color: var(--bg-raised);
+    overflow: hidden;
+    font-size: 1.3rem;
 }
 
 .home-deck-tile-art > img {
@@ -3427,15 +3431,25 @@ button {
     object-fit: cover;
 }
 
-.home-deck-tile-name {
-    display: block;
+/* The name chip and the muted format chip, wrapping and centered. */
+.home-deck-tile-chips {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.3rem;
     width: 100%;
-    box-sizing: border-box;
-    padding: 0.35rem 0.4rem;
-    font-size: 0.75rem;
+    min-width: 0;
+}
+
+.home-deck-tile-name {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.home-deck-skeleton-chip {
+    width: 70%;
+    height: 1.35rem;
 }
 
 /* A Home panel's buttons, centered under a line. */

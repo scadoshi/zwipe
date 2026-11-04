@@ -93,7 +93,7 @@ pub const CONFIG: &str = "Settings";
 pub enum Destination {
     /// The deck list, from the Decks panel's All decks chip or the action bar.
     Decks,
-    /// This deck, from its row in the Decks panel.
+    /// This deck, from its tile in the Decks panel.
     Deck(Uuid),
     /// Create deck, from the Decks panel's row while the user has no deck.
     CreateDeck,
@@ -169,7 +169,7 @@ pub struct Cached {
     /// The featured flavor card, if one is held, expired or not.
     pub flavor: Option<FlavorCard>,
     /// The signed-in user's decks, if a copy of theirs is held, newest first. Another user's copy is left out.
-    pub decks: Option<Vec<DeckRow>>,
+    pub decks: Option<Vec<DeckTile>>,
     /// The time Home opens, for the flavor card's expiry.
     pub now: DateTime<Utc>,
 }
@@ -228,7 +228,7 @@ pub enum Action {
         /// The ticket from the [`Effect::FetchDecks`] this answers.
         ticket: Ticket,
         /// Every deck of the user's.
-        decks: Vec<DeckRow>,
+        decks: Vec<DeckTile>,
     },
     /// The deck fetch holding `ticket` failed. Decks already held stay on screen.
     DecksFailed {
@@ -259,7 +259,7 @@ pub enum Action {
     },
     /// Opens the deck list, from the Decks panel's All decks chip or the action bar.
     Decks,
-    /// Opens this deck, from its row in the Decks panel.
+    /// Opens this deck, from its tile in the Decks panel.
     OpenDeck(Uuid),
     /// Opens Create deck, from the Decks panel's row while the user has no deck.
     CreateDeck,
@@ -302,22 +302,22 @@ pub enum Effect {
     Toast(Toast),
 }
 
-/// One deck in the Decks panel.
+/// One deck in the Decks panel: a tile with the art over the name and format chips.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct DeckRow {
-    /// The deck's id, for the route its row opens.
+pub struct DeckTile {
+    /// The deck's id, for the route its tile opens.
     pub id: Uuid,
     /// The deck's name.
     pub name: String,
-    /// The deck's format, shown as a chip when set.
+    /// The deck's format, the muted chip under the art when set.
     pub format: Option<Format>,
     /// The deck's color identity as WUBRG short codes, in the server's order.
     pub color_identity: Vec<String>,
-    /// The commander's art crop, when the deck has a commander with one.
+    /// The commander's art crop in the tile's squircle, when the deck has a commander with one; the deck's pips stand in without one.
     pub art_url: Option<String>,
 }
 
-impl From<&DeckProfile> for DeckRow {
+impl From<&DeckProfile> for DeckTile {
     fn from(profile: &DeckProfile) -> Self {
         Self {
             id: profile.id,
@@ -335,13 +335,13 @@ pub struct DeckPanel {
     /// The deck count in the header's chip: every deck of the user's, the listed ones included.
     pub count: u32,
     /// The [`LATEST_DECKS`] most recently updated decks, newest first. Empty shows the [`CREATE_DECK`] row.
-    pub latest: Vec<DeckRow>,
+    pub latest: Vec<DeckTile>,
 }
 
 /// What the Decks panel draws.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Decks {
-    /// The decks are out and none are held: three ghost rows.
+    /// The decks are out and none are held: three ghost tiles.
     Loading,
     /// The fetch failed and none are held: [`DECKS_FAILED`] over the All decks chip.
     Failed,
@@ -415,7 +415,7 @@ pub struct State {
     play_style_failed: bool,
     flavor: Option<FlavorCard>,
     flavor_out: bool,
-    decks: Option<Vec<DeckRow>>,
+    decks: Option<Vec<DeckTile>>,
     decks_failed: bool,
     generations: Generations,
 }

@@ -133,9 +133,9 @@ fn decks_ticket(e: &Effect) -> Option<Ticket> {
     }
 }
 
-/// A deck row named `name`, with the id `n`.
-fn deck(n: u128, name: &str) -> DeckRow {
-    DeckRow {
+/// A deck tile named `name`, with the id `n`.
+fn deck(n: u128, name: &str) -> DeckTile {
+    DeckTile {
         id: Uuid::from_u128(n),
         name: name.to_owned(),
         format: None,
