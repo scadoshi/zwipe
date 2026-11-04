@@ -33,6 +33,7 @@ impl HintTopic {
             Self::PriceTarget => Some("budgeting"),
             Self::TypeChart
             | Self::RoleChart
+            | Self::OracleTagChart
             | Self::ColorChart
             | Self::ManaCurve
             | Self::ManaFulfillment
@@ -101,7 +102,7 @@ mod tests {
             .collect()
     }
 
-    const TOPICS: [HintTopic; 40] = [
+    const TOPICS: [HintTopic; 41] = [
         HintTopic::Password,
         HintTopic::Email,
         HintTopic::Verification,
@@ -125,6 +126,7 @@ mod tests {
         HintTopic::OtherTags,
         HintTopic::TypeChart,
         HintTopic::RoleChart,
+        HintTopic::OracleTagChart,
         HintTopic::ColorChart,
         HintTopic::ManaCurve,
         HintTopic::ManaFulfillment,

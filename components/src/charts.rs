@@ -374,20 +374,26 @@ fn role_bars(
         .collect()
 }
 
-/// Count-based distribution charts (types, roles), rendered as flat
-/// sub-blocks: two [`BarChart`]s, the role one horizontal.
+/// Count-based distribution charts (types, roles, oracle tags), rendered as
+/// flat sub-blocks: [`BarChart`]s, the role and oracle tag ones horizontal
+/// and folded past their first [`FOLD_AT`] rows.
 ///
 /// With `role_tags` set, the role chart's labels are chips and a tapped role
 /// eases its tags open under its row as [`RoleTags`], one role at a time, the
-/// way the Playstyle screen's Card roles chart does. `describe_tag` and
-/// `on_examples` go to those tags.
+/// way the Playstyle screen's Card roles chart does. The oracle tag chart's
+/// labels are chips too, and a tapped tag opens its [`OtagDef`]. `describe_tag`
+/// and `on_examples` go to both.
 #[component]
 pub fn DeckCharts(
     type_bars: Option<Vec<(&'static str, usize, u32)>>,
     category_bars: Option<Vec<(&'static str, usize, u32)>>,
+    /// The deck's oracle tags by count (`DeckMetrics::oracle_tag_bars`).
+    #[props(default)]
+    oracle_tag_bars: Option<Vec<(String, usize, u32)>>,
     /// "?" beside each label; the site passes none.
     type_hint: Option<Element>,
     role_hint: Option<Element>,
+    #[props(default)] oracle_tag_hint: Option<Element>,
     /// Each role's oracle tags, keyed by the role bar's label
     /// (`DeckMetrics::card_role_tags`).
     #[props(default)]
@@ -408,6 +414,19 @@ pub fn DeckCharts(
             selected_role.set(None);
         } else {
             selected_role.set(Some(key));
+        }
+    });
+    let mut selected_tag: Signal<Option<String>> = use_signal(|| None);
+    let tag_reveal = use_callback(move |slug: String| {
+        rsx! {
+            OtagDef { slug, describe_tag, on_examples }
+        }
+    });
+    let toggle_tag = use_callback(move |key: String| {
+        if selected_tag().as_deref() == Some(key.as_str()) {
+            selected_tag.set(None);
+        } else {
+            selected_tag.set(Some(key));
         }
     });
     rsx! {
@@ -438,11 +457,41 @@ pub fn DeckCharts(
                         bars: tuple_bars(cat_bars),
                         hint: role_hint,
                         orientation: BarOrientation::Horizontal,
+                        fold: true,
                     }
                 }
             }
         }
+
+        if let Some(tag_bars) = oracle_tag_bars.as_ref() {
+            if !tag_bars.is_empty() {
+                BarChart {
+                    label: "Oracle tags",
+                    bars: slug_bars(tag_bars),
+                    hint: oracle_tag_hint,
+                    orientation: BarOrientation::Horizontal,
+                    label_case: LabelCase::AsIs,
+                    on_bar: toggle_tag,
+                    selected: selected_tag(),
+                    reveal: tag_reveal,
+                    fold: true,
+                }
+            }
+        }
     }
+}
+
+/// `DeckMetrics` slug tuples as bars.
+fn slug_bars(bars: &[(String, usize, u32)]) -> Vec<Bar> {
+    bars.iter()
+        .map(|(slug, count, pct)| {
+            Bar::new(
+                slug.clone(),
+                u64::try_from(*count).unwrap_or(u64::MAX),
+                *pct,
+            )
+        })
+        .collect()
 }
 
 /// The deck's cards per color as vertical bars, shown in the Mana section.

@@ -64,6 +64,8 @@ pub enum HintTopic {
     TypeChart,
     /// Deck view: the Roles chart.
     RoleChart,
+    /// The deck view's Oracle tags chart.
+    OracleTagChart,
     /// Deck view: the Colors chart, in the Mana section.
     ColorChart,
     /// Deck view: mana curve chart.
@@ -105,7 +107,9 @@ impl HintTopic {
     pub fn title(&self) -> &'static str {
         match self {
             Self::DeckTags => "Deck tags",
-            Self::OracleTags | Self::SuggestionTagChart | Self::TagRates => "Oracle tags",
+            Self::OracleTags | Self::OracleTagChart | Self::SuggestionTagChart | Self::TagRates => {
+                "Oracle tags"
+            }
             Self::DeckName => "Deck name",
             Self::Format => "Format",
             Self::Commander => "Commander",
@@ -240,6 +244,9 @@ impl HintTopic {
             },
             Self::RoleChart => rsx! {
                 HintLine { "Mainboard cards by role, like ramp or removal. Cards with no role are left out. Tap a role to see its tags" }
+            },
+            Self::OracleTagChart => rsx! {
+                HintLine { "Mainboard cards by oracle tag, the finer tags under each role. Tap a tag for what it means" }
             },
             Self::ColorChart => rsx! {
                 HintLine { "Mainboard cards by color" }

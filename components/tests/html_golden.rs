@@ -314,6 +314,42 @@ fn deck_charts_with_role_tags() {
     );
 }
 
+/// Seven roles: five show and two fold behind See more, in the role grid and
+/// in the oracle tag grid under it.
+#[test]
+fn deck_charts_fold_past_five_rows() {
+    golden(
+        "deck_charts_folded",
+        &render(|| {
+            let roles = vec![
+                ("ramp", 12, 100),
+                ("draw", 10, 83),
+                ("remov", 8, 67),
+                ("wipe", 4, 33),
+                ("tutor", 3, 25),
+                ("recur", 2, 17),
+                ("stax", 1, 8),
+            ];
+            let tags = vec![
+                ("mana-rock".to_string(), 9, 100),
+                ("cantrip".to_string(), 6, 67),
+                ("destroy-creature".to_string(), 4, 44),
+                ("exile-creature".to_string(), 2, 22),
+                ("counterspell".to_string(), 2, 22),
+                ("wrath".to_string(), 1, 11),
+            ];
+            rsx! {
+                DeckCharts {
+                    type_bars: vec![("creature", 30, 100)],
+                    category_bars: roles,
+                    oracle_tag_bars: tags,
+                    role_tags: BTreeMap::from([("ramp", vec!["mana-rock".to_string()])]),
+                }
+            }
+        }),
+    );
+}
+
 /// The fixture card's Scryfall data.
 fn card() -> ScryfallData {
     let value: serde_json::Value = serde_json::from_str(CARD_JSON).unwrap();

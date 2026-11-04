@@ -491,6 +491,9 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
     let category_bars: Option<Vec<(&str, usize, u32)>> =
         chart_metrics.as_ref().and_then(DeckMetrics::card_role_bars);
     let role_tags = chart_metrics.as_ref().map(|m| m.card_role_tags.clone());
+    let oracle_tag_bars: Option<Vec<(String, usize, u32)>> = chart_metrics
+        .as_ref()
+        .and_then(DeckMetrics::oracle_tag_bars);
 
     let draw_odds_data: Option<(u32, Vec<(&'static str, u32)>)> =
         chart_metrics.as_ref().map(DeckMetrics::draw_odds_buckets);
@@ -614,15 +617,24 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                                     span { class: "info-row-value", style: "white-space:nowrap;", "{value}" }
                                                 }
                                             }
-                                            DeckCharts {
-                                                type_bars: type_bars.clone(),
-                                                category_bars: category_bars.clone(),
-                                                role_tags: role_tags.clone(),
-                                                describe_tag,
-                                                on_examples: open_examples,
-                                                type_hint: rsx! { InfoButton { topic: HintTopic::TypeChart } },
-                                                role_hint: rsx! { InfoButton { topic: HintTopic::RoleChart } },
-                                            }
+                                            // Keyed by deck so the charts' folds and open
+                                            // rows start over when the route moves to
+                                            // another deck. In its own block because a
+                                            // key goes on a block's first node.
+                                            {rsx! {
+                                                DeckCharts {
+                                                    key: "{deck_id}",
+                                                    type_bars: type_bars.clone(),
+                                                    category_bars: category_bars.clone(),
+                                                    oracle_tag_bars,
+                                                    role_tags: role_tags.clone(),
+                                                    describe_tag,
+                                                    on_examples: open_examples,
+                                                    type_hint: rsx! { InfoButton { topic: HintTopic::TypeChart } },
+                                                    role_hint: rsx! { InfoButton { topic: HintTopic::RoleChart } },
+                                                    oracle_tag_hint: rsx! { InfoButton { topic: HintTopic::OracleTagChart } },
+                                                }
+                                            }}
                                         }
                                     }
 

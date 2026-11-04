@@ -72,6 +72,9 @@ pub struct DeckMetrics {
     /// carrying them under that role, most first, ties by slug. A role whose
     /// cards carry no tags under it is absent.
     pub card_role_tags: BTreeMap<&'static str, Vec<String>>,
+    /// Every oracle tag across the mainboard with the copies carrying it,
+    /// most first, ties by slug.
+    pub oracle_tag_counts: Vec<(String, usize)>,
     /// Average numeric power over cards that have one (front face for
     /// multi-face cards; `*`/`X` sides skipped). `None` if no card qualified.
     pub avg_power: Option<f64>,
@@ -210,6 +213,18 @@ impl DeckMetrics {
             .collect()
     }
 
+    /// Chart-ready oracle tag distribution: `(slug, count, width pct)`,
+    /// `None` when no mainboard card carries a tag.
+    pub fn oracle_tag_bars(&self) -> Option<Vec<(String, usize, u32)>> {
+        let max = self.oracle_tag_counts.iter().map(|(_, c)| *c).max()?;
+        Some(
+            self.oracle_tag_counts
+                .iter()
+                .map(|(slug, count)| (slug.clone(), *count, Self::bar_pct(*count, max)))
+                .collect(),
+        )
+    }
+
     /// Draw-odds inputs: `(library size, [(bucket label, count)])`, lands
     /// plus each card role. Library size is the mainboard (the commander sits
     /// in the command zone, not the library).
@@ -263,6 +278,7 @@ impl DeckMetrics {
         let mut cat_buckets = vec![0usize; all_cats.len()];
         let mut cat_tag_counts: Vec<BTreeMap<String, usize>> =
             vec![BTreeMap::new(); all_cats.len()];
+        let mut oracle_tag_tally: BTreeMap<String, usize> = BTreeMap::new();
         let mut usd_sum = 0.0f64;
         let mut usd_copies = 0.0f64;
         let mut eur_sum = 0.0f64;
@@ -316,6 +332,10 @@ impl DeckMetrics {
                 {
                     *slot = slot.saturating_add(qty);
                 }
+            }
+            for tag in &card.card_profile.oracle_tags {
+                let count = oracle_tag_tally.entry(tag.clone()).or_insert(0);
+                *count = count.saturating_add(qty);
             }
             for (slug, tags) in &card.card_profile.oracle_tags_by_role {
                 if let Some(idx) = all_cats
@@ -462,6 +482,7 @@ impl DeckMetrics {
             .filter(|(_, counts)| !counts.is_empty())
             .map(|(cat, counts)| (cat.to_short_name(), ranked_tags(counts)))
             .collect();
+        let oracle_tag_counts = ranked_counts(oracle_tag_tally);
 
         let total_price_usd = if usd_copies > 0.0 {
             Some(usd_sum)
@@ -521,18 +542,27 @@ impl DeckMetrics {
             avg_price_tix,
             card_role_counts,
             card_role_tags,
+            oracle_tag_counts,
             avg_power,
             avg_toughness,
         }
     }
 }
 
-/// Tag slugs by count, most first, ties by slug.
-fn ranked_tags(counts: BTreeMap<String, usize>) -> Vec<String> {
+/// Tag slugs with their counts, most first, ties by slug.
+fn ranked_counts(counts: BTreeMap<String, usize>) -> Vec<(String, usize)> {
     let mut ranked: Vec<(String, usize)> = counts.into_iter().collect();
     // Stable over the map's slug order, so equal counts stay alphabetical.
     ranked.sort_by_key(|(_, count)| std::cmp::Reverse(*count));
-    ranked.into_iter().map(|(slug, _)| slug).collect()
+    ranked
+}
+
+/// Tag slugs by count, most first, ties by slug.
+fn ranked_tags(counts: BTreeMap<String, usize>) -> Vec<String> {
+    ranked_counts(counts)
+        .into_iter()
+        .map(|(slug, _)| slug)
+        .collect()
 }
 
 /// Numeric stat for averaging: the top-level value, falling back to the front
@@ -909,8 +939,58 @@ mod tests {
                 (*role).to_string(),
                 tags.iter().map(|t| (*t).to_string()).collect(),
             );
+            profile
+                .oracle_tags
+                .extend(tags.iter().map(|t| (*t).to_string()));
         }
         entry
+    }
+
+    #[test]
+    fn oracle_tags_rank_by_copies_then_slug() {
+        let bolt = tagged("Lightning Bolt", 4, &[("removal", &["burn-creature"])]);
+        let doom = tagged("Doom Blade", 1, &[("removal", &["destroy-creature"])]);
+        let path = tagged(
+            "Path to Exile",
+            1,
+            &[("removal", &["exile-creature", "destroy-creature"])],
+        );
+        let ring = tagged("Sol Ring", 1, &[("ramp", &["mana-rock"])]);
+        let metrics = DeckMetrics::from_entries(&[ring, doom, path, bolt]);
+        assert_eq!(
+            metrics.oracle_tag_counts,
+            vec![
+                ("burn-creature".to_string(), 4),
+                ("destroy-creature".to_string(), 2),
+                ("exile-creature".to_string(), 1),
+                ("mana-rock".to_string(), 1),
+            ],
+            "copies first, then the slug breaks a tie"
+        );
+        assert_eq!(
+            metrics.oracle_tag_bars(),
+            Some(vec![
+                ("burn-creature".to_string(), 4, 100),
+                ("destroy-creature".to_string(), 2, 50),
+                ("exile-creature".to_string(), 1, 25),
+                ("mana-rock".to_string(), 1, 25),
+            ])
+        );
+    }
+
+    #[test]
+    fn oracle_tags_absent_without_tagged_cards() {
+        let metrics = DeckMetrics::from_entries(&[make_entry("Forest", 1)]);
+        assert_eq!(metrics.oracle_tag_counts, Vec::<(String, usize)>::new());
+        assert_eq!(metrics.oracle_tag_bars(), None);
+    }
+
+    #[test]
+    fn oracle_tags_skip_other_boards() {
+        let mut side = tagged("Negate", 1, &[("counterspell", &["counter-noncreature"])]);
+        side.deck_card.board = crate::domain::deck::Board::Sideboard;
+        let metrics = DeckMetrics::from_entries(&[side]);
+        assert_eq!(metrics.oracle_tag_counts, Vec::<(String, usize)>::new());
     }
 
     #[test]

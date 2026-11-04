@@ -57,6 +57,8 @@ pub enum HintTopic {
     TypeChart,
     /// The deck view's Roles chart.
     RoleChart,
+    /// The deck view's Oracle tags chart.
+    OracleTagChart,
     /// The deck view's Colors chart.
     ColorChart,
     /// The deck view's mana curve.
@@ -95,7 +97,7 @@ pub enum HintTopic {
 
 impl HintTopic {
     /// Every topic, in the app's order.
-    pub const ALL: [Self; 40] = [
+    pub const ALL: [Self; 41] = [
         Self::Password,
         Self::Email,
         Self::Verification,
@@ -119,6 +121,7 @@ impl HintTopic {
         Self::OtherTags,
         Self::TypeChart,
         Self::RoleChart,
+        Self::OracleTagChart,
         Self::ColorChart,
         Self::ManaCurve,
         Self::ManaFulfillment,
@@ -152,7 +155,9 @@ impl HintTopic {
             Self::Website => "Website",
             Self::Version => "Version",
             Self::DeckTags => "Deck tags",
-            Self::OracleTags | Self::SuggestionTagChart | Self::TagRates => "Oracle tags",
+            Self::OracleTags | Self::OracleTagChart | Self::SuggestionTagChart | Self::TagRates => {
+                "Oracle tags"
+            }
             Self::DeckName => "Deck name",
             Self::Format => "Format",
             Self::Commander => "Commander",
@@ -316,6 +321,9 @@ impl HintTopic {
             Self::TypeChart => vec![line(vec![text("Mainboard cards by type")])],
             Self::RoleChart => vec![line(vec![text(
                 "Mainboard cards by role, like ramp or removal. Cards with no role are left out. Tap a role to see its tags",
+            )])],
+            Self::OracleTagChart => vec![line(vec![text(
+                "Mainboard cards by oracle tag, the finer tags under each role. Tap a tag for what it means",
             )])],
             Self::ColorChart => vec![line(vec![text("Mainboard cards by color")])],
             Self::ManaCurve => vec![line(vec![text("Nonland mainboard cards by mana value")])],
