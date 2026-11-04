@@ -32,7 +32,7 @@ pub const TITLE: &str = "Playstyle";
 pub const LOAD_FAILED: &str = "Could not load your suggestions";
 
 /// The line in place of the screen when the user has no deck with cards to read from.
-pub const COLD_START: &str = "Build a deck to see your playstyle";
+pub const COLD_START: &str = "No playstyle yet";
 
 /// The line in place of the list when the server suggested nothing.
 pub const NO_SUGGESTIONS: &str = "No suggestions right now";

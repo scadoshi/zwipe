@@ -680,7 +680,7 @@ fn reasons_draw_nothing_without_a_tag_or_color() {
 fn the_copy_matches_the_app() {
     assert_eq!(TITLE, "Playstyle");
     assert_eq!(LOAD_FAILED, "Could not load your suggestions");
-    assert_eq!(COLD_START, "Build a deck to see your playstyle");
+    assert_eq!(COLD_START, "No playstyle yet");
     assert_eq!(NO_SUGGESTIONS, "No suggestions right now");
     assert_eq!(LIST_TITLE, "Suggested commanders");
     assert_eq!(SUMMARY_TITLE, "Summary");

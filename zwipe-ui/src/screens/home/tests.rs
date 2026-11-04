@@ -756,7 +756,7 @@ fn the_copy_matches_the_app() {
         [
             "Colors",
             "Playstyle",
-            "Build a deck to see your playstyle",
+            "Your playstyle shows here",
             "Could not load your playstyle"
         ]
     );
