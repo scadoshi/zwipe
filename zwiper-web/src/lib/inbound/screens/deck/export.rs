@@ -2,9 +2,11 @@
 //! boards to include and `Copy`.
 //!
 //! On a wide window the `Export` chips sit in a narrow column on the left
-//! and the decklist fills the right at full height.
+//! and the decklist fills the right at full height. Copy is the icon in the
+//! dock at the bottom right.
 
-use components::{ActionBar, Button, ButtonVariant, Chip, TOAST_QUICK};
+use components::icons::COPY;
+use components::{Chip, DockIcon, TOAST_QUICK};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
@@ -15,14 +17,12 @@ use zwipe_ui::deck::export::{self, Boards};
 use super::skeletons::ChipRowSkeleton;
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
-use crate::inbound::router::Route;
 use crate::inbound::shell::ScreenFrame;
 use crate::outbound::browser;
 
 /// The Export screen for `deck_id`.
 #[component]
 pub fn ExportDeck(deck_id: Uuid) -> Element {
-    let navigator = use_navigator();
     let authed = use_authed();
     let toast = use_toast();
     let hint_open = use_one_time_hint(OneTimeHint::Export);
@@ -97,16 +97,11 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                     }
                 }
             }
-            ActionBar {
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| {
-                        navigator.push(Route::ViewDeck { deck_id });
-                    },
-                    "Back"
-                }
-                Button {
-                    variant: ButtonVariant::Action,
+            // Copy as the action dock's icon, pinned bottom right.
+            div { class: "action-dock action-dock-right",
+                button {
+                    class: "action-dock-btn",
+                    "aria-label": "Copy",
                     onclick: move |_| {
                         if let Some(list) = text() {
                             browser::copy_to_clipboard(&list);
@@ -116,7 +111,7 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                             );
                         }
                     },
-                    "Copy"
+                    DockIcon { path: COPY }
                 }
             }
         }
