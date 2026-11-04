@@ -77,6 +77,13 @@ body {
     display: none;
 }
 
+/* A screen with a floating dock or a swipe screen's bottom row ends its
+   content with room to scroll the last row clear of it, the kit's soft 5rem,
+   which the padding above would otherwise override. */
+.web-scroll-screen:has(> .action-dock, > .swipe-bottom-row) > .screen-content {
+    padding-bottom: 5rem;
+}
+
 /* Under the nav a screen has no header bar. Its title stays for assistive
    tech, and its `?` rides at the right end of its action bar. */
 .web-sr-only {

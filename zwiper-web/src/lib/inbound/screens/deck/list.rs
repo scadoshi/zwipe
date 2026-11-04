@@ -1,5 +1,5 @@
 //! Decks: every deck the user has, with Group by, the Show row and its tags,
-//! collapsible groups, the Create gate and the More menu.
+//! collapsible groups, and Create as the dock's `+` behind its gate.
 //!
 //! On a wide window the tag row stays unfolded and each group lays its rows
 //! out two to a line with larger art. Below the breakpoint it is the app's
@@ -7,7 +7,8 @@
 
 use std::collections::HashSet;
 
-use components::{ActionBar, Button, ButtonVariant, Chip, TOAST_LONG};
+use components::icons::PLUS;
+use components::{Chip, DockIcon, TOAST_LONG};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::{ClientError, ZwipeClient};
@@ -19,7 +20,6 @@ use zwipe_ui::deck::list::{self, GroupBy, Show};
 use zwipe_ui::deck::{card_count, cards_label, command_zone, count_fits};
 
 use crate::inbound::chrome::authed::use_authed;
-use crate::inbound::chrome::more_menu::{MoreButton, MoreMenu, use_more_menu};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, open_and_record_hint};
 use crate::inbound::router::Route;
 use crate::inbound::screens::deck::skeletons::{ChipRowSkeleton, DeckListSkeleton};
@@ -36,8 +36,6 @@ pub fn DeckList() -> Element {
     let authed = use_authed();
     let hint_open = use_signal(|| false);
     let mut hint_fired = use_signal(|| false);
-    let more = use_more_menu();
-    let mut more_open = more.open;
 
     let mut group_by = use_signal(GroupBy::default);
     let collapsed: Signal<HashSet<String>> = use_signal(HashSet::new);
@@ -230,35 +228,17 @@ pub fn DeckList() -> Element {
                     }
                 }
             }
-            ActionBar {
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| {
-                        navigator.push(Route::Home {});
-                    },
-                    "Back"
+            // Create as the action dock's +, pinned bottom right.
+            div { class: "action-dock action-dock-right",
+                button {
+                    class: "action-dock-btn",
+                    "aria-label": "Create",
+                    onclick: on_create,
+                    DockIcon { path: PLUS }
                 }
-                Button { variant: ButtonVariant::Action, onclick: on_create, "Create" }
-                MoreButton { menu: more }
             }
         }
         OneTimeHintDialog { hint: OneTimeHint::DeckList, open: hint_open }
-        MoreMenu { menu: more, title: "More actions",
-            Button {
-                onclick: move |_| {
-                    more_open.set(false);
-                    navigator.push(Route::CommanderMaybeboard {});
-                },
-                "Commander maybeboard"
-            }
-            Button {
-                onclick: move |_| {
-                    more_open.set(false);
-                    navigator.push(Route::Playstyle {});
-                },
-                "Playstyle"
-            }
-        }
     }
 }
 
