@@ -1,6 +1,6 @@
 //! Forgot password screen.
 
-use components::{Chip, Panel, TOAST_NORMAL, TextInput, ToastOptions, Toasts, use_toast};
+use components::{Panel, TOAST_NORMAL, TextInput, ToastOptions, Toasts, use_toast};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use zwipe_client::ZwipeClient;
@@ -111,33 +111,31 @@ pub fn ForgotPassword() -> Element {
                     }
                 }
             }
-            // Send floats at the bottom right until the link is sent, the
-            // other auth screens as chips under it.
+            // One dock at the bottom right until the link is sent: the other
+            // auth screens as text segments, then Send as the paper plane.
             if !is_sent {
-                div { class: "action-dock-stack",
-                    div { class: "action-dock",
-                        button {
-                            class: "action-dock-btn",
-                            "aria-label": SEND,
-                            onclick: move |_| driver.dispatch(Action::Submit),
-                            DockIcon { path: action_dock::SEND }
-                        }
+                div { class: "action-dock action-dock-right",
+                    button {
+                        class: "action-dock-text",
+                        onclick: move |_| {
+                            driver.navigator.push(Router::Login {});
+                        },
+                        {login::LOG_IN}
                     }
-                    div { class: "action-dock-chips",
-                        Chip {
-                            selected: false,
-                            onclick: move |_| {
-                                driver.navigator.push(Router::Login {});
-                            },
-                            {login::LOG_IN}
-                        }
-                        Chip {
-                            selected: false,
-                            onclick: move |_| {
-                                driver.navigator.push(Router::Register {});
-                            },
-                            {login::CREATE_PROFILE}
-                        }
+                    span { class: "action-dock-divider" }
+                    button {
+                        class: "action-dock-text",
+                        onclick: move |_| {
+                            driver.navigator.push(Router::Register {});
+                        },
+                        {login::CREATE_PROFILE}
+                    }
+                    span { class: "action-dock-divider" }
+                    button {
+                        class: "action-dock-btn",
+                        "aria-label": SEND,
+                        onclick: move |_| driver.dispatch(Action::Submit),
+                        DockIcon { path: action_dock::SEND }
                     }
                 }
             }

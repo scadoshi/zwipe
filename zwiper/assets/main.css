@@ -199,42 +199,25 @@ button {
     white-space: nowrap;
 }
 
-/* A two-row dock (the auth screens): the icon bar on top and a row of link
-   chips under it, both right-aligned, floating where a dock would and lifting
-   over the keyboard the same way. */
-.action-dock-stack {
-    position: fixed;
-    right: 0.6rem;
-    bottom: calc(env(safe-area-inset-bottom, 0px) / 2 + 0.6rem + var(--keyboard-inset, 0px));
-    z-index: 50;
+/* A text segment in a dock (the auth screens' links to each other): the
+   dock's height with horizontal padding, so the dividers run edge to edge as
+   they do between icons, at the kit chip's font size. */
+.action-dock-text {
     display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 0.4rem;
-    transition: bottom 0.25s ease;
-}
-
-.action-dock-stack > .action-dock {
-    position: static;
+    align-items: center;
     margin: 0;
-}
-
-.action-dock-chips {
-    display: flex;
-    flex-wrap: nowrap;
-    justify-content: flex-end;
-    gap: 0.35rem;
-}
-
-.action-dock-chips > .chip {
-    padding: 0.3rem 0.5rem;
+    padding: 0 0.6rem;
+    border: none;
+    border-radius: 0.6rem;
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 0.75rem;
     white-space: nowrap;
+    cursor: pointer;
 }
 
-/* The stack is a row taller than the bar, so its screen keeps that much more
-   room to scroll the last field clear of it. */
-.screen:has(> .action-dock-stack) > .screen-content {
-    --content-pad-bottom: 7rem;
+.action-dock-text:active {
+    background-color: var(--bg-primary);
 }
 
 /* The filter dot sits on the funnel's top left, clear of the reset. */

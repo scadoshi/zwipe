@@ -1,6 +1,6 @@
 //! New user registration screen.
 
-use components::{Chip, TOAST_NORMAL, TextInput, ToastOptions, Toasts, use_toast};
+use components::{TOAST_NORMAL, TextInput, ToastOptions, Toasts, use_toast};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use zwipe_client::ZwipeClient;
@@ -170,26 +170,23 @@ pub fn Register() -> Element {
                 }
             }
         }
-            // Create profile floats at the bottom right, Log in as a chip
-            // under it.
-            div { class: "action-dock-stack",
-                div { class: "action-dock",
-                    button {
-                        class: "action-dock-btn",
-                        "aria-label": submit_label,
-                        disabled: is_loading,
-                        onclick: move |_| driver.dispatch(Action::Submit),
-                        DockIcon { path: action_dock::ARROW }
-                    }
+            // One dock at the bottom right: Log in as a text segment, then
+            // Create profile as the arrow.
+            div { class: "action-dock action-dock-right",
+                button {
+                    class: "action-dock-text",
+                    onclick: move |_| {
+                        driver.navigator.push(Router::Login {});
+                    },
+                    {login::LOG_IN}
                 }
-                div { class: "action-dock-chips",
-                    Chip {
-                        selected: false,
-                        onclick: move |_| {
-                            driver.navigator.push(Router::Login {});
-                        },
-                        {login::LOG_IN}
-                    }
+                span { class: "action-dock-divider" }
+                button {
+                    class: "action-dock-btn",
+                    "aria-label": submit_label,
+                    disabled: is_loading,
+                    onclick: move |_| driver.dispatch(Action::Submit),
+                    DockIcon { path: action_dock::ARROW }
                 }
             }
     }
