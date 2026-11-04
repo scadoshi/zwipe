@@ -3282,48 +3282,30 @@ button {
     align-self: stretch;
 }
 
-/* Home's Decks panel: one of the hero's stat tiles beside the Open decks
-   button, centered under the title bar. */
+/* Home's Decks row: a one-row settings list as wide as the hero panel above
+   it, with a gap between the two. */
 .home-decks {
-    min-height: 0;
+    width: calc(100% - 2rem);
+    max-width: 24rem;
+    margin-top: var(--panel-gap);
+    padding: 0;
 }
 
-.home-decks-row {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.75rem;
-    padding: 1rem 1rem 0;
+/* The hint beside the "?" chip when the count failed to load. */
+.home-decks-hint {
+    font-size: 0.75rem;
+    color: var(--text-muted);
 }
 
-.home-decks-strip {
-    display: flex;
+/* The chip's ghost and the Open button's, their sizes. */
+.home-decks-skeleton-count {
+    width: 2rem;
+    height: 1.4rem;
 }
 
-.home-decks .stat {
-    min-width: 5rem;
-    padding: 0.6rem 0.75rem 0.5rem;
-}
-
-.home-decks .stat-num {
-    font-size: 1.25rem;
-}
-
-.home-decks .stat-label {
-    font-size: 0.65rem;
-    letter-spacing: 0.04em;
-}
-
-/* The tile's ghosts: a bar the number's height and one the label's. */
-.home-decks .skeleton-stat-num {
-    width: 1.5rem;
-    height: 1.375rem;
-}
-
-.home-decks .skeleton-stat-label {
-    width: 2.2rem;
-    height: 0.65rem;
-    margin-top: 0.15rem;
+.home-decks-skeleton-open {
+    width: 3.6rem;
+    height: 1.7rem;
 }
 
 /* A Home panel's buttons, centered under a line. */

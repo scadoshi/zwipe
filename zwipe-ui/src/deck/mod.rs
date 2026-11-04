@@ -41,18 +41,6 @@ pub fn cards_label(count: i64) -> String {
     }
 }
 
-/// `deck` for one, `decks` otherwise: the word under a deck count.
-#[must_use]
-pub fn deck_unit(count: u32) -> &'static str {
-    if count == 1 { "deck" } else { "decks" }
-}
-
-/// `1 deck`, `2 decks`.
-#[must_use]
-pub fn decks_label(count: u32) -> String {
-    format!("{count} {}", deck_unit(count))
-}
-
 /// Whether `count` fits the format's minimum and maximum deck size. A deck with no format, or a format with no limit, always fits.
 #[must_use]
 pub fn count_fits(profile: &DeckProfile, count: i64) -> bool {
@@ -119,15 +107,6 @@ mod tests {
         assert_eq!(cards_label(1), "1 card");
         assert_eq!(cards_label(0), "0 cards");
         assert_eq!(cards_label(100), "100 cards");
-    }
-
-    #[test]
-    fn one_deck_is_singular() {
-        assert_eq!(decks_label(1), "1 deck");
-        assert_eq!(decks_label(0), "0 decks");
-        assert_eq!(decks_label(12), "12 decks");
-        assert_eq!(deck_unit(1), "deck");
-        assert_eq!(deck_unit(2), "decks");
     }
 
     #[test]
