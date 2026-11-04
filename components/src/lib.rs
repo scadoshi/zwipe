@@ -8,7 +8,10 @@
 //! [`OracleText`], [`FlippableCardImage`], [`Changelog`], the deck charts
 //! ([`BarChart`], [`DeckCharts`], [`ColorChart`], [`ManaCurve`], [`ManaFulfillment`],
 //! [`DrawOdds`], [`ChartLabel`], with [`Fold`] and [`SeeMore`] behind their
-//! long rows), the [`ColorMap`] and [`ZwipeArchitecture`].
+//! long rows), the [`ColorMap`] and [`ZwipeArchitecture`]. The pieces the
+//! two clients' chrome shares sit here too: the [`icons`] module's stroke
+//! paths with [`DockIcon`] and [`EyeIcon`], and [`MenuSection`], the main
+//! menu's section list.
 //!
 //! Styling ships as string constants to inline through `document::Style`.
 //! orangui's sheets come through as they are; [`MAGIC_CSS`] holds this crate's
@@ -39,7 +42,9 @@ mod charts;
 mod color_map;
 mod flippable_card_image;
 mod fold;
+pub mod icons;
 mod keyword_chips;
+mod menu_section;
 mod oracle_text;
 mod role_tags;
 mod theme;
@@ -56,7 +61,9 @@ pub use charts::{
 pub use color_map::{ColorMap, ColorMapGhost, mana_var};
 pub use flippable_card_image::{FlippableCardImage, reset_image_ease};
 pub use fold::{FOLD_AT, Fold, SEE_LESS, SEE_MORE, SeeMore, fold_split};
+pub use icons::{DockIcon, EyeIcon};
 pub use keyword_chips::{KeywordChips, KeywordReminders};
+pub use menu_section::MenuSection;
 pub use oracle_text::OracleText;
 pub use orangui::{
     ALLOWED_THEMES, APP_CSS, ActionBar, ActionButton, AlertDialog, BOOT_BG, BOOT_HEAD,

@@ -63,6 +63,13 @@ Before you run `fmt`, update nightly. CI's rustfmt merges imports that older nig
 
 All 23 screen models are on main. Each entry above is one switch; they can go in any order, though Card filter before Add cards and the deck cards view saves a second pass on the filter hand-off.
 
+## Moved to components on this branch
+
+The web catch-up (unified UI, slice 1) moved the app pieces both clients' chrome draws into `components`, so each has one copy. The app re-exports them from its old paths, so nothing else in zwiper changed.
+
+- [x] **Dock icons.** `components::icons`: the stroke paths (`PLUS`, `MINUS`, `FUNNEL`, `UNDO`, `REFRESH`, `CHECK`, `COPY`, `ARROW`, `SEND`, `HOUSE`, `PERSON`, `COG`, `INFO`, `PALETTE`, `LINK`) with `DockIcon` and `EyeIcon`, re-exported at `components::{DockIcon, EyeIcon}`. The app's `action_dock` re-exports them; `DockFilter` stays the app's.
+- [x] **Menu sections.** `components::MenuSection`: the eight sections with `ALL`, `LISTED`, `FOOTER`, `label()` and `icon()`. The routes stay per client (`route_of`, `section_of` in the app's `navigation/menu.rs` and the web's `shell/nav.rs`), since each has its own router.
+
 ## Coming
 
 - Nothing more from the shared crates for now; switch the entries above.
