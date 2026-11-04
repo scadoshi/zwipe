@@ -50,6 +50,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Home's Colors panel shows your color counts as bars with the mana pips, and the color map moved to Playstyle",
         "Draw odds names the opening hand turn 0, so the heading keeps its width as the turn steps",
         "About's credits sit in their own panel and its links are in the accent color",
+        "About's changelog sits in its own panel with the version filter at its top",
         "zwipe.net's theme menu stays open after a pick, so the next theme is one click away",
         "A one-card deck shows 1 card in the deck list",
         "The land target stops at 0",
