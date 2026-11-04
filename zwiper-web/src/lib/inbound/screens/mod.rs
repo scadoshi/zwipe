@@ -1,9 +1,9 @@
 //! One module per screen.
 
+pub mod about;
 pub mod account;
 pub mod activity;
 pub mod auth;
-pub mod changelog;
 pub mod commander_maybeboard;
 pub mod config;
 pub mod deck;

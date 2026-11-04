@@ -12,7 +12,7 @@ use zwipe_core::legal::{PRIVACY_INTRO_HTML, PRIVACY_LAST_UPDATED};
 use crate::domain::privacy::{self, CONTACT};
 use crate::inbound::shell::ScreenFrame;
 
-/// The policy, from Account. A contents entry scrolls its card into view.
+/// The policy, from About. A contents entry scrolls its card into view.
 #[component]
 pub fn PrivacyPolicy() -> Element {
     let navigator = use_navigator();

@@ -3,12 +3,12 @@
 use dioxus::prelude::*;
 use uuid::Uuid;
 
+use crate::inbound::screens::about::About;
 use crate::inbound::screens::account::Account;
 use crate::inbound::screens::activity::Activity;
 use crate::inbound::screens::auth::forgot_password::ForgotPassword;
 use crate::inbound::screens::auth::login::Login;
 use crate::inbound::screens::auth::register::Register;
-use crate::inbound::screens::changelog::Changelog;
 use crate::inbound::screens::commander_maybeboard::CommanderMaybeboard;
 use crate::inbound::screens::config::Config;
 use crate::inbound::screens::deck::cards::add::AddDeckCard;
@@ -29,11 +29,13 @@ use crate::inbound::shell::{OpenFrame, PublicFrame, Shell};
 
 /// The app's routes. The public ones sit in [`PublicFrame`], Privacy policy
 /// and Not found in [`OpenFrame`] (either nav), and the rest need a session ([`AuthGate`])
-/// and sit under the top nav [`Shell`].
+/// and sit under the top nav [`Shell`]. The old `/changelog` goes to About,
+/// which holds the history now.
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
 #[expect(missing_docs, reason = "each route field is the URL parameter its path names")]
 pub enum Route {
+    #[redirect("/changelog", || Route::About {})]
     // == public ==
     #[layout(PublicFrame)]
         /// Username or email and password.
@@ -58,18 +60,18 @@ pub enum Route {
     // == authed ==
     #[layout(AuthGate)]
     #[layout(Shell)]
-        /// The counters, the color map and the featured flavor card.
+        /// The hero, the Decks and Colors panels and the featured flavor card.
         #[route("/")]
         Home {},
-        /// Username, email, password, About, log out, delete account.
+        /// Username, email, password, log out, delete account.
         #[route("/user")]
         Account {},
         /// Theme, pips and Universes Beyond.
         #[route("/config")]
         Config {},
-        /// Release history, from Account.
-        #[route("/changelog")]
-        Changelog {},
+        /// The version, the links, the credits and the release history.
+        #[route("/about")]
+        About {},
         /// How the user picks, from their swipes.
         #[route("/activity")]
         Activity {},

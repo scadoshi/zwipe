@@ -1,5 +1,6 @@
-//! Account: the `Account` and `About` lists side by side on a wide window,
-//! the change sheets as centered modals, `More` as a popover.
+//! Account: the `Account` list, the change sheets as centered modals,
+//! `More` as a popover. The version, website and privacy policy live on
+//! About.
 
 mod change_email;
 mod change_password;
@@ -11,14 +12,11 @@ use components::{ActionBar, Button, ButtonVariant};
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::site::WEB_BASE;
 
-use crate::config::APP_VERSION;
 use crate::inbound::chrome::hint_topic::{HintTopic, InfoButton};
 use crate::inbound::chrome::logout_dialog::LogoutDialog;
 use crate::inbound::chrome::more_menu::{MoreButton, MoreMenu, use_more_menu};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
-use crate::inbound::router::Route;
 use crate::inbound::screens::account::change_email::ChangeEmailSheet;
 use crate::inbound::screens::account::change_password::ChangePasswordSheet;
 use crate::inbound::screens::account::change_username::ChangeUsernameSheet;
@@ -28,7 +26,6 @@ use crate::inbound::screens::account::verification::{
 };
 use crate::inbound::session::logout;
 use crate::inbound::shell::ScreenFrame;
-use crate::outbound::browser;
 
 /// The account screen. Every visit fetches the user once with the session as
 /// it is, so the verification badge is current without logging in again; a
@@ -127,46 +124,6 @@ pub fn Account() -> Element {
                                         variant: ButtonVariant::Action,
                                         onclick: move |_| password_open.set(true),
                                         "Change"
-                                    }
-                                }
-                            }
-                        }
-                        div { class: "settings-list",
-                            div { class: "settings-list-header",
-                                span { class: "settings-list-title", "About" }
-                            }
-                            div { class: "settings-row",
-                                RowLabel { label: "Website", topic: HintTopic::Website }
-                                div { class: "settings-row-value",
-                                    Button {
-                                        variant: ButtonVariant::Action,
-                                        onclick: move |_| browser::open_in_new_tab(WEB_BASE),
-                                        "zwipe.net \u{2197}"
-                                    }
-                                }
-                            }
-                            div { class: "settings-row",
-                                span { class: "settings-row-label", "Privacy policy" }
-                                div { class: "settings-row-value",
-                                    Button {
-                                        variant: ButtonVariant::Action,
-                                        onclick: move |_| {
-                                            navigator.push(Route::PrivacyPolicy {});
-                                        },
-                                        "View"
-                                    }
-                                }
-                            }
-                            div { class: "settings-row",
-                                RowLabel { label: "Version", topic: HintTopic::Version }
-                                div { class: "settings-row-value",
-                                    span { "v{APP_VERSION}" }
-                                    Button {
-                                        variant: ButtonVariant::Action,
-                                        onclick: move |_| {
-                                            navigator.push(Route::Changelog {});
-                                        },
-                                        "Changelog"
                                     }
                                 }
                             }

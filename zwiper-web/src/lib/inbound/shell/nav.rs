@@ -23,8 +23,8 @@ pub enum Back {
 impl Back {
     /// The back arrow's target from `route`, or `None` on Home and the auth
     /// screens, whose left corner is empty. A screen inside a deck goes up
-    /// the deck tree, the maybeboard to Playstyle, Changelog and Privacy
-    /// policy to Account, and a section goes to the screen before it.
+    /// the deck tree, the maybeboard to Playstyle, Privacy policy to About,
+    /// and a section goes to the screen before it.
     pub fn of(route: &Route) -> Option<Back> {
         match route {
             Route::Home {} | Route::Login {} | Route::Register {} | Route::ForgotPassword {} => {
@@ -35,6 +35,7 @@ impl Back {
             | Route::Playstyle {}
             | Route::Account {}
             | Route::Config {}
+            | Route::About {}
             | Route::NotFound { .. } => Some(Back::Previous),
             Route::CreateDeck {} | Route::ViewDeck { .. } => Some(Back::To(Route::DeckList {})),
             Route::EditDeck { deck_id }
@@ -46,7 +47,7 @@ impl Back {
                 Some(Back::To(Route::ViewDeck { deck_id: *deck_id }))
             }
             Route::CommanderMaybeboard {} => Some(Back::To(Route::Playstyle {})),
-            Route::Changelog {} | Route::PrivacyPolicy {} => Some(Back::To(Route::Account {})),
+            Route::PrivacyPolicy {} => Some(Back::To(Route::About {})),
         }
     }
 }
@@ -55,8 +56,7 @@ impl Back {
 /// are this client's, in [`route_of`] and [`section_of`].
 pub use components::MenuSection as Section;
 
-/// The screen `section` opens. About is the Changelog screen until the
-/// About screen is built.
+/// The screen `section` opens.
 #[must_use]
 pub const fn route_of(section: Section) -> Route {
     match section {
@@ -67,7 +67,7 @@ pub const fn route_of(section: Section) -> Route {
         Section::Activity => Route::Activity {},
         Section::Account => Route::Account {},
         Section::Config => Route::Config {},
-        Section::About => Route::Changelog {},
+        Section::About => Route::About {},
     }
 }
 
@@ -91,7 +91,7 @@ pub const fn section_of(route: &Route) -> Option<Section> {
         Route::CommanderMaybeboard {} => Some(Section::Maybeboard),
         Route::Account {} => Some(Section::Account),
         Route::Config {} => Some(Section::Config),
-        Route::PrivacyPolicy {} | Route::Changelog {} => Some(Section::About),
+        Route::PrivacyPolicy {} | Route::About {} => Some(Section::About),
         Route::Login {}
         | Route::Register {}
         | Route::ForgotPassword {}
@@ -153,8 +153,11 @@ mod tests {
     }
 
     #[test]
-    fn the_privacy_policy_and_changelog_light_up_about() {
+    fn the_privacy_policy_lights_up_about_and_goes_back_to_it() {
         assert_eq!(section_of(&Route::PrivacyPolicy {}), Some(Section::About));
-        assert_eq!(section_of(&Route::Changelog {}), Some(Section::About));
+        assert_eq!(
+            Back::of(&Route::PrivacyPolicy {}),
+            Some(Back::To(Route::About {}))
+        );
     }
 }
