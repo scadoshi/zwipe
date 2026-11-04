@@ -82,7 +82,9 @@ pub fn ScreenFrame(
     rsx! {
         document::Title { "{title} | Zwipe" }
         div { class: "screen web-screen web-scroll-screen",
-            h1 { class: "web-sr-only", "{title}" }
+            // Under the nav a screen has no header bar; the title stays for
+            // assistive tech.
+            h1 { class: "sr-only", "{title}" }
             if let Some(line) = description {
                 div { class: "web-page-head-wrap",
                     div { class: "web-form-panel web-page-head",

@@ -266,10 +266,10 @@ pub fn CardFilterPanel(
                     "\u{00d7}"
                 }
             }
-            span { style: "font-size: 1rem; color: var(--accent-primary);", "Filter" }
+            span { class: "sheet-title", "Filter" }
             Button {
                 variant: ButtonVariant::Action,
-                style: "position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); opacity: 0.55; padding: 0.2rem 0.6rem;",
+                class: "web-sheet-hint",
                 onclick: move |_| {
                     let mut hint_open = hint_open;
                     hint_open.set(true);

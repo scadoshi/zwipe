@@ -70,20 +70,6 @@ body {
     }
 }
 
-/* Under the nav a screen has no header bar. Its title stays for assistive
-   tech. */
-.web-sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-}
-
 /* On a wide window without a page head the `?` sits on its own line at
    the page's end, at the right, so it never covers the last panel. */
 .web-screen-hint {
@@ -955,7 +941,7 @@ body {
         border: 1px solid var(--border-secondary);
         border-radius: 1rem;
         overflow: hidden;
-        box-shadow: 0 0 0 100vmax rgb(0 0 0 / 0.55), var(--shadow-sm);
+        box-shadow: 0 0 0 100vmax var(--bg-overlay), var(--shadow-sm);
     }
 
     .web-examples-body {
@@ -1524,6 +1510,17 @@ body {
 
 .web-filter-dock > .sheet-header {
     background-color: var(--bg-primary);
+}
+
+/* The filter sheet's `?`, in the header's right corner at the title's
+   height, faded like a hint button. */
+.web-sheet-hint {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0.55;
+    padding: 0.2rem 0.6rem;
 }
 
 .web-filter-dock-content {

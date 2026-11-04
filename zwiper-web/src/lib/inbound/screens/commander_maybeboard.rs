@@ -23,6 +23,7 @@ use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilde
 use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
 use zwipe_core::domain::card::search_card::cards::Cards;
 use zwipe_core::domain::deck::format::Format;
+use zwipe_ui::commander::maybeboard::{self, Step};
 use zwipe_ui::filter;
 use zwipe_ui::filter::draft::SheetConfig;
 use zwipe_ui::generation::{Generation, Ticket};
@@ -427,11 +428,11 @@ pub fn CommanderMaybeboard() -> Element {
                                     match event.key() {
                                         Key::ArrowDown => {
                                             event.prevent_default();
-                                            highlight.set(commander_maybeboard::step_highlight(highlight(), count, true));
+                                            highlight.set(maybeboard::step_highlight(highlight(), count, Step::Down));
                                         }
                                         Key::ArrowUp => {
                                             event.prevent_default();
-                                            highlight.set(commander_maybeboard::step_highlight(highlight(), count, false));
+                                            highlight.set(maybeboard::step_highlight(highlight(), count, Step::Up));
                                         }
                                         Key::Enter => {
                                             let picked = highlight()

@@ -1,7 +1,7 @@
 //! Playstyle's profile: the Color map, Summary, Card roles and Oracle tags
 //! sections over the suggestions, and their loading ghosts.
 
-use components::{BarChart, BarOrientation, ColorMap, OtagDef, RoleTags};
+use components::{BarChart, BarOrientation, ColorMap, ColorMapEmpty, OtagDef, RoleTags};
 use dioxus::prelude::*;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::scryfall_data::colors::Color;
@@ -9,9 +9,7 @@ use zwipe_core::http::contracts::suggestions::HttpBuilderProfile;
 use zwipe_ui::playstyle::{SummaryValue, TagRow, profile_summary, role_bars, role_tags, tag_rows};
 
 use super::chips::IdentityPips;
-use crate::inbound::cards::charts::{
-    ColorMapEmpty, ColorMapSkeleton, chart_bars, map_counts, user_seed,
-};
+use crate::inbound::cards::charts::{ColorMapSkeleton, chart_bars, map_counts, user_seed};
 use crate::inbound::cards::otag::{OtagDescribe, OtagExamplesOpen};
 use crate::inbound::chrome::hint_topic::{HintTopic, InfoButton};
 use crate::inbound::chrome::section::CollapsibleSection;

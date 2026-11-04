@@ -57,12 +57,3 @@ pub fn ColorMapSkeleton(#[props(default)] key_action: bool) -> Element {
         }
     }
 }
-
-/// The line in a color map's place before any deck has colored cards, on
-/// Home and in Playstyle's Color map section.
-#[component]
-pub fn ColorMapEmpty() -> Element {
-    rsx! {
-        div { class: "message-empty", style: "padding: 1rem;", "Build a deck to see your playstyle" }
-    }
-}
