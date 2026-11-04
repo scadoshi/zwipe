@@ -7,7 +7,7 @@
     /* Where a sticky column stops: the page's 1rem gap under the nav. */
     --web-sticky-top: 1rem;
     /* How tall a sticky column may be: the window less the nav, the gap
-       over the column, the bottom action bar and a gap over it. */
+       over the column and room at the bottom. */
     --web-sticky-max: calc(100dvh - 10rem);
 }
 
@@ -27,7 +27,7 @@ body {
 }
 
 /* A screen fills its frame instead of the whole viewport: one window tall
-   under the nav, scrolling inside itself (see the action bar below). */
+   under the nav, scrolling inside itself (see Scrolling below). */
 .screen.web-screen {
     position: relative;
     inset: auto;
@@ -38,13 +38,13 @@ body {
     min-height: 0;
 }
 
-/* ---- Scrolling and the action bar ----
+/* ---- Scrolling ----
 
    A screen under the nav scrolls as one column. Its content grows to fill
-   the window, and its action bar comes last, sticking to the window's
-   bottom edge at every width, so its actions are always on screen. At the
-   end of the page the content stops above the bar, so nothing stays
-   hidden behind it. There is no site footer. */
+   the window and ends with a little room; a screen with a floating dock or a
+   swipe screen's bottom row leaves enough to scroll its last row clear of
+   it, the kit's soft 5rem. There is no bar at a screen's end and no site
+   footer. */
 .web-main > .web-scroll-screen {
     overflow-x: hidden;
     overflow-y: auto;
@@ -58,34 +58,12 @@ body {
     padding-bottom: 1.5rem;
 }
 
-/* The app's bottom action bar: a top rule over the panel background, the
-   buttons centered in the app's order, wrapping when they don't fit. */
-.web-scroll-screen > .action-bar {
-    position: sticky;
-    bottom: 0;
-    order: 2;
-    z-index: 3;
-    justify-content: center;
-    padding: 0.75rem 1rem;
-    border-top: 1px solid var(--border-secondary);
-    border-bottom: none;
-    background-color: var(--bg-primary);
-}
-
-/* An action bar with nothing in it would be an empty strip. */
-.web-scroll-screen > .action-bar:empty {
-    display: none;
-}
-
-/* A screen with a floating dock or a swipe screen's bottom row ends its
-   content with room to scroll the last row clear of it, the kit's soft 5rem,
-   which the padding above would otherwise override. */
 .web-scroll-screen:has(> .action-dock, > .swipe-bottom-row) > .screen-content {
     padding-bottom: 5rem;
 }
 
 /* Under the nav a screen has no header bar. Its title stays for assistive
-   tech, and its `?` rides at the right end of its action bar. */
+   tech. */
 .web-sr-only {
     position: absolute;
     width: 1px;
@@ -98,11 +76,8 @@ body {
     border: 0;
 }
 
-/* The `?` comes after the bar and is pulled up into its right end: it
-   sticks the bar's bottom padding above the window's edge, so it moves
-   with the bar. Its height is a fixed button row's, which the pull-up
-   matches. The bar keeps the same room on both sides so its buttons stay
-   centered. */
+/* On a wide window without a page head the `?` sits on its own line at
+   the page's end, at the right, so it never covers the last panel. */
 .web-screen-hint {
     position: sticky;
     bottom: 0.75rem;
@@ -111,7 +86,7 @@ body {
     align-self: flex-end;
     box-sizing: border-box;
     height: 1.9rem;
-    margin: calc(-1.9rem - 0.75rem) 1rem 0.75rem 0;
+    margin: 0 1rem 0.75rem 0;
     opacity: 0.55;
 }
 
@@ -124,17 +99,6 @@ body {
     .web-screen-hint {
         display: none;
     }
-}
-
-/* With no action bar the `?` keeps its own line at the page's end, so it
-   never covers the last panel. */
-.web-screen:not(:has(> .action-bar)) > .web-screen-hint {
-    margin-top: 0;
-}
-
-.web-screen:has(> .web-screen-hint) > .action-bar {
-    padding-left: 3.5rem;
-    padding-right: 3.5rem;
 }
 
 /* ---- Page grammar ----
@@ -533,12 +497,6 @@ body {
     }
 }
 
-/* Update required has no nav: its header stays, and its empty action bar
-   would be an empty strip. */
-.web-screen > .action-bar:empty {
-    display: none;
-}
-
 @media (min-width: 900px) {
     /* Toasts move top right. */
     .toast-container {
@@ -655,10 +613,6 @@ body {
         transition: opacity 0.2s ease, transform 0.2s ease;
     }
 
-    .web-sheet-modal > .bottom-sheet .action-bar {
-        padding-bottom: 1rem;
-    }
-
     /* A panel that edits the page beside it, sliding in from the right. */
     .web-sheet-side > .bottom-sheet {
         top: 0;
@@ -674,10 +628,6 @@ body {
 
     .web-sheet-side > .bottom-sheet.show {
         transform: translateX(0);
-    }
-
-    .web-sheet-side > .bottom-sheet .action-bar {
-        padding-bottom: 1rem;
     }
 
     /* The page stays undimmed so the panel's changes show on it; a click

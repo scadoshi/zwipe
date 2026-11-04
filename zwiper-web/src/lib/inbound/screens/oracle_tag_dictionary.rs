@@ -13,9 +13,9 @@
 //! On a wide window it is a large modal with the letter rail as a column on
 //! the left; below the breakpoint it is the app's full-screen overlay. `/`
 //! focuses the search, a letter key jumps to that letter while the search
-//! is empty and unfocused, and Esc is `Back`.
+//! is empty and unfocused, and Esc is Back, the header's arrow.
 
-use components::{ActionBar, Button, ButtonVariant, PageHeader, TOAST_NORMAL, use_overlay_back};
+use components::{PageHeader, TOAST_NORMAL, use_overlay_back};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
@@ -23,6 +23,7 @@ use zwipe_core::domain::card::oracle_tag::OracleTag;
 use zwipe_ui::dictionary;
 
 use crate::inbound::catalog::CatalogCache;
+use crate::inbound::chrome::back_arrow::BackArrow;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::chrome::page_keys::{focus_by_id, use_page_keys};
 use crate::inbound::screens::oracle_tag_examples::OracleTagExamples;
@@ -144,16 +145,15 @@ pub fn OracleTagDictionary(mut open: Signal<bool>, on_use: EventHandler<String>)
             components::GridCells { still: true }
             PageHeader {
                 title: "Oracle tags",
-                leading: rsx! { span { class: "page-header-corner" } },
+                leading: rsx! {
+                    BackArrow { class: "page-header-support", onclick: move |()| open.set(false) }
+                },
                 on_hint: move |()| {
                     let mut hint_open = hint_open;
                     hint_open.set(true);
                 },
             }
             div { class: "screen-content content-enter", {body} }
-            ActionBar {
-                Button { variant: ButtonVariant::Action, onclick: move |_| open.set(false), "Back" }
-            }
             OneTimeHintDialog { hint: OneTimeHint::OracleTagDictionary, open: hint_open }
             if examples_open() {
                 for slug in [examples_slug()] {

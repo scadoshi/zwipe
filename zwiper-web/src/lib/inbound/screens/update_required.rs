@@ -35,7 +35,6 @@ pub fn UpdateRequired() -> Element {
                     }
                 }
             }
-            div { class: "action-bar" }
         }
     }
 }

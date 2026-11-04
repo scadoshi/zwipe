@@ -4,7 +4,6 @@
 //! The copy is zwipe-core's, compiled in, so the app, the website and this
 //! page say the same; there is nothing to load.
 
-use components::{ActionBar, Button, ButtonVariant};
 use dioxus::prelude::*;
 use zwipe_core::domain::site::{DISCORD_URL, SUPPORT_EMAIL};
 use zwipe_core::legal::{PRIVACY_INTRO_HTML, PRIVACY_LAST_UPDATED};
@@ -12,10 +11,10 @@ use zwipe_core::legal::{PRIVACY_INTRO_HTML, PRIVACY_LAST_UPDATED};
 use crate::domain::privacy::{self, CONTACT};
 use crate::inbound::shell::ScreenFrame;
 
-/// The policy, from About. A contents entry scrolls its card into view.
+/// The policy, from About. A contents entry scrolls its card into view;
+/// Back is the header's arrow.
 #[component]
 pub fn PrivacyPolicy() -> Element {
-    let navigator = use_navigator();
     let sections = privacy::sections();
     let headings = sections
         .iter()
@@ -79,13 +78,6 @@ pub fn PrivacyPolicy() -> Element {
                             }
                         }
                     }
-                }
-            }
-            ActionBar {
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| navigator.go_back(),
-                    "Back"
                 }
             }
         }

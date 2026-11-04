@@ -6,7 +6,7 @@
 mod exceptions;
 mod themes;
 
-use components::{ActionBar, Button, ButtonVariant, DarkModeButton, TOAST_NORMAL, ThemeConfig};
+use components::{Button, ButtonVariant, DarkModeButton, TOAST_NORMAL, ThemeConfig};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_core::domain::auth::models::session::Session;
@@ -48,7 +48,6 @@ pub fn Config() -> Element {
     let mut session: Signal<Option<Session>> = use_context();
     let authed = use_authed();
     let toast = use_toast();
-    let navigator = use_navigator();
     let hint_open = use_one_time_hint(OneTimeHint::Config);
 
     let said = use_callback(move |what: &'static str| {
@@ -240,13 +239,6 @@ pub fn Config() -> Element {
                             }
                         }
                     }
-                }
-            }
-            ActionBar {
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| navigator.go_back(),
-                    "Back"
                 }
             }
         }

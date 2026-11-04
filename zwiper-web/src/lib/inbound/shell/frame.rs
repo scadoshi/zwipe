@@ -46,10 +46,10 @@ pub fn OpenFrame() -> Element {
 }
 
 /// A screen under the top nav. `title` names the screen for assistive tech,
-/// the browser tab and the folded nav. The screen scrolls as one column,
-/// and its action bar, the last thing in it, sticks to the window's bottom
-/// edge at every width. Help is the nav's `Community` link. There is no
-/// site footer.
+/// the browser tab and the folded nav. The screen scrolls as one column
+/// with no bar at its end: its actions float in a dock or sit inline, and
+/// Back is the folded nav's arrow. Help is the menu's `!`. There is no site
+/// footer.
 ///
 /// Below the breakpoint the title and the `?` sit centered in the folded
 /// nav. With a `description`, a wide window opens the page with a page
