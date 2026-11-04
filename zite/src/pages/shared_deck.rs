@@ -21,6 +21,7 @@ use zwipe_core::domain::card::search_card::group_cards::{GroupByOption, GroupCar
 use zwipe_core::domain::deck::deck_metrics::{self, DeckMetrics};
 use zwipe_core::domain::deck::{Board, DeckEntry, Format, deck_tag_label};
 use zwipe_core::http::contracts::deck::HttpSharedDeck;
+use zwipe_ui::colors::ColorCounts;
 
 use crate::components::{OVERLAY_EXIT_MS, PageMeta, sleep_ms};
 use crate::{Footer, Nav, api};
@@ -865,7 +866,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
                             span { class: "info-row-value", "{metrics.avg_cmc:.1}" }
                         }
                         ManaCurve { mana_curve_bars: metrics.mana_curve_bars() }
-                        ColorChart { color_bars: metrics.color_bars() }
+                        ColorChart { bars: ColorCounts::from(&metrics).bars() }
                         ManaFulfillment { rows: balance_rows }
                     }
                 },

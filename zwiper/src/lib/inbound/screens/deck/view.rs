@@ -13,12 +13,12 @@ use dioxus::router::Navigator;
 use uuid::Uuid;
 use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
 use zwipe_core::domain::user::models::hints::HINT_FIRST_DECK;
 use zwipe_core::http::contracts::deck::HttpCloneDeck;
 use zwipe_core::http::contracts::deck_card::HttpPatchDeckCard;
+use zwipe_ui::colors::ColorCounts;
 use zwipe_ui::deck::command_zone::Slot;
 use zwipe_ui::generation::Ticket;
 use zwipe_ui::screens::deck_view::{
@@ -493,8 +493,9 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
         chart_metrics.as_ref().map(DeckMetrics::mana_curve_bars);
     let type_bars: Option<Vec<(&str, usize, u32)>> =
         chart_metrics.as_ref().map(DeckMetrics::type_bars);
-    let color_bars: Option<Vec<(Option<Color>, usize, u32)>> =
-        chart_metrics.as_ref().map(DeckMetrics::color_bars);
+    let color_bars: Option<Vec<zwipe_ui::colors::Bar>> = chart_metrics
+        .as_ref()
+        .map(|metrics| ColorCounts::from(metrics).bars());
     let category_bars: Option<Vec<(&str, usize, u32)>> =
         chart_metrics.as_ref().and_then(DeckMetrics::card_role_bars);
     let role_tags = chart_metrics.as_ref().map(|m| m.card_role_tags.clone());
@@ -664,9 +665,9 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                                 hint: rsx! { InfoButton { topic: HintTopic::ManaCurve } },
                                             }
                                         }
-                                        if let Some(color_bars) = color_bars {
+                                        if let Some(bars) = color_bars {
                                             ColorChart {
-                                                color_bars,
+                                                bars,
                                                 hint: rsx! { InfoButton { topic: HintTopic::ColorChart } },
                                             }
                                         }

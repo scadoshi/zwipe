@@ -23,6 +23,7 @@ use dioxus::prelude::*;
 use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
 use zwipe_core::http::contracts::changelog::{HttpChangelog, HttpRelease};
+use zwipe_ui::colors::Bar as ColorBar;
 
 /// A real card as the API serves it, shared with zwipe-ui's tests.
 const CARD_JSON: &str = include_str!("../../zwipe-ui/src/test_support/card.json");
@@ -68,7 +69,7 @@ fn color_bars() {
     golden(
         "color_bars",
         &dioxus_ssr::render_element(rsx! {
-            ColorBars { bars: zwipe_ui::colors::bars(&counts) }
+            ColorBars { bars: counts.bars() }
         }),
     );
 }
@@ -262,7 +263,12 @@ fn deck_charts_with_role_tags() {
                     type_bars: vec![("land", 36, 100)],
                     category_bars: vec![("ramp", 10, 100)],
                 }
-                ColorChart { color_bars: vec![(Some(Color::White), 12, 100), (None, 0, 0)] }
+                ColorChart {
+                    bars: vec![
+                        ColorBar { color: Some(Color::White), count: 12, pct: 100 },
+                        ColorBar { color: None, count: 0, pct: 0 },
+                    ],
+                }
             }
         }),
     );

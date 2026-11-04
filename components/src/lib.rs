@@ -58,7 +58,7 @@ pub use charts::{
     Bar, BarChart, BarOrientation, ChartLabel, ColorChart, DeckCharts, DrawOdds, LabelCase,
     ManaCurve, ManaFulfillment,
 };
-pub use color_bars::{ColorBars, ColorBarsGhost, mana_var};
+pub use color_bars::{ColorBars, ColorBarsGhost};
 pub use flippable_card_image::{FlippableCardImage, reset_image_ease};
 pub use fold::{FOLD_AT, Fold, SEE_LESS, SEE_MORE, SeeMore, fold_split};
 pub use keyword_chips::{KeywordChips, KeywordReminders};

@@ -21,7 +21,7 @@ const GHOST_ROWS: u32 = 6;
 /// The CSS custom property holding `color`'s mana fill, `--mana-white` through
 /// `--mana-green`: what the color bars fill with.
 #[must_use]
-pub fn mana_var(color: Color) -> &'static str {
+pub(crate) fn mana_var(color: Color) -> &'static str {
     match color {
         Color::White => "--mana-white",
         Color::Blue => "--mana-blue",

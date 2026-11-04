@@ -201,10 +201,13 @@ fn a_warm_load_draws_what_is_held_and_skips_fresh_copies() {
     assert!(state.live());
     assert_eq!(
         state.play_style(),
-        PlayStyle::Bars(colors::bars(&ColorCounts {
-            cards: [1, 0, 0, 0, 4],
-            colorless: 0
-        }))
+        PlayStyle::Bars(
+            ColorCounts {
+                cards: [1, 0, 0, 0, 4],
+                colorless: 0
+            }
+            .bars()
+        )
     );
     assert!(matches!(state.flavor(), Flavor::Quote(_)));
 }
@@ -353,10 +356,13 @@ fn the_colors_draw_only_with_decks_and_cards() {
         (summary(2, [0; 5], 0), PlayStyle::Empty),
         (
             summary(2, [0; 5], 3),
-            PlayStyle::Bars(colors::bars(&ColorCounts {
-                cards: [0; 5],
-                colorless: 3,
-            })),
+            PlayStyle::Bars(
+                ColorCounts {
+                    cards: [0; 5],
+                    colorless: 3,
+                }
+                .bars(),
+            ),
         ),
         (
             HttpPlayStyleSummary {

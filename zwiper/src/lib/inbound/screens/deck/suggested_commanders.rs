@@ -454,7 +454,7 @@ pub(crate) fn BuilderProfileSections(
                     InfoButton { topic: HintTopic::Colors }
                 },
                 if let Some(counts) = color_counts {
-                    ColorBars { bars: zwipe_ui::colors::bars(&counts) }
+                    ColorBars { bars: counts.bars() }
                 } else {
                     ColorsEmpty {}
                 }
