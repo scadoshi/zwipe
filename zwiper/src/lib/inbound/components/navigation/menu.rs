@@ -243,8 +243,16 @@ pub fn MenuFooter(open: Signal<bool>) -> Element {
                             icon: section.icon(),
                         }
                     }
-                    MenuTheme { open }
+                } else {
+                    MenuEntry {
+                        label: Section::About.label(),
+                        to: Section::About.route(),
+                        current: current == Some(Section::About),
+                        open,
+                        icon: Section::About.icon(),
+                    }
                 }
+                MenuTheme { open }
             }
             if signed_in {
                 button {

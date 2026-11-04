@@ -12,6 +12,7 @@
 
 use components::{ModeIcon, PaletteIcon, ThemeConfig, Toasts, use_toast};
 use dioxus::prelude::*;
+use zwipe_core::domain::auth::models::session::Session;
 use zwipe_ui::screens::config::{Action, Effect, Sheet, State};
 
 use crate::inbound::components::auth::authed::{Authed, use_authed};
@@ -25,6 +26,7 @@ use crate::inbound::components::ui_toast;
 struct Driver {
     model: Signal<State>,
     authed: Authed,
+    session: Signal<Option<Session>>,
     toast: Toasts,
     theme_config: Signal<ThemeConfig>,
     /// The menu's open state, folded as the sheet opens.
@@ -48,6 +50,7 @@ impl Driver {
     fn perform(self, effect: Effect) {
         let Self {
             authed,
+            session,
             toast,
             mut theme_config,
             mut menu_open,
@@ -56,7 +59,9 @@ impl Driver {
         } = self;
         match effect {
             Effect::Save { ticket, change } => {
-                theme_save::save(authed, ticket, change, move |action| self.dispatch(action));
+                theme_save::save(authed, session, ticket, change, move |action| {
+                    self.dispatch(action);
+                });
             }
             Effect::ShowTheme(theme) => theme_config.set(theme_config_of(theme)),
             Effect::ThemeSaved(theme) => theme_save::saved(theme_config, theme),
@@ -83,15 +88,16 @@ impl Driver {
     }
 }
 
-/// The signed-in menu's theme buttons, two footer icons: the palette
-/// opens the Themes sheet and folds the menu, and the sun or moon names the
-/// mode in use and flips it, saving at once.
+/// The menu's theme buttons, two footer icons: the palette opens the Themes
+/// sheet and folds the menu, and the sun or moon names the mode in use and
+/// flips it, saving at once, to the profile or, signed out, to the device.
 #[component]
 pub fn MenuTheme(open: Signal<bool>) -> Element {
     let theme_config: Signal<ThemeConfig> = use_context();
     let driver = Driver {
         model: use_signal(State::new),
         authed: use_authed(Screen::Profile(ProfileScreen::Preferences)),
+        session: use_context(),
         toast: use_toast(),
         theme_config,
         menu_open: open,

@@ -5,10 +5,13 @@
 //! app-wide `Signal<ThemeConfig>`. What they share sits here: the sheet that
 //! hands a kept pick on as an action, the request a save effect sends, and
 //! what a saved theme does to the app (the shell's theme and the app icon
-//! that follows it).
+//! that follows it). Signed out, a save answers itself with the pick kept
+//! on the device (the session upkeep stores every theme change) and a
+//! profile's theme takes over at login.
 
 use components::{ThemeConfig, ThemeSheet};
 use dioxus::prelude::*;
+use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::http::contracts::user::HttpUpdatePreferences;
 use zwipe_ui::preferences::PreferenceChange;
 use zwipe_ui::screens::config::{Action, SaveTicket, Theme};
@@ -35,13 +38,22 @@ pub fn theme_of(config: ThemeConfig) -> Theme {
 /// Sends `change` as its sparse update and hands the model's reply to
 /// `dispatch`: [`Action::Saved`] with the server's preferences, or
 /// [`Action::SaveFailed`] once `authed` has reported the failure and raised
-/// its error toast.
+/// its error toast. Without a session the reply is the pick kept on the
+/// device.
 pub fn save(
     authed: Authed,
+    session: Signal<Option<Session>>,
     ticket: SaveTicket,
     change: PreferenceChange,
     dispatch: impl Fn(Action) + 'static,
 ) {
+    if session.peek().is_none() {
+        dispatch(Action::Saved {
+            ticket,
+            preferences: Box::new(change.kept_on_device()),
+        });
+        return;
+    }
     let request = HttpUpdatePreferences::from(change);
     spawn(async move {
         let reply = authed

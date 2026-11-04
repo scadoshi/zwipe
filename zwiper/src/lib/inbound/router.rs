@@ -48,6 +48,13 @@ pub enum Router {
     /// Request a password reset email.
     #[route("/forgot-password")]
     ForgotPassword {},
+    /// About: version, links, credits and the release history, in the menu
+    /// signed in or out.
+    #[route("/about")]
+    About {},
+    /// Privacy policy: shared legal copy, reached from About.
+    #[route("/privacy")]
+    PrivacyPolicy {},
 
     // == authed ==
     // Everything below requires a valid session (AuthGate redirects to
@@ -64,14 +71,6 @@ pub enum Router {
     /// Appearance and card settings: theme, app icon, Universes Beyond.
     #[route("/config")]
     Config {},
-
-    /// Privacy policy: shared legal copy, reached from About.
-    #[route("/privacy")]
-    PrivacyPolicy {},
-
-    /// About: version, links, credits and the release history, in the menu.
-    #[route("/about")]
-    About {},
 
     /// Activity: how the user picks, from their swipes, reached from the
     /// Home counters.

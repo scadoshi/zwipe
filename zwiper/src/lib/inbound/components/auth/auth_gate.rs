@@ -3,8 +3,9 @@
 //! A router layout wrapping every authed route: if no valid session exists it
 //! redirects to the login screen, otherwise it renders the matched child route
 //! via `Outlet`. "Authed" is the default and only the pre-auth screens (login /
-//! register / forgot-password) are public: a new authed screen is gated by
-//! being under this layout, with nothing to remember to wrap.
+//! register / forgot-password), About and the privacy policy are public: a
+//! new authed screen is gated by being under this layout, with nothing to
+//! remember to wrap.
 
 use dioxus::prelude::*;
 use zwipe_core::domain::auth::models::session::Session;

@@ -57,6 +57,17 @@ impl PreferenceChange {
         }
     }
 
+    /// The preferences a pick made signed out stands for: the defaults with
+    /// this change applied. A client keeps them on the device and answers
+    /// its own save with them, so the screen settles the way a server reply
+    /// settles it; a profile's preferences take over at login.
+    #[must_use]
+    pub fn kept_on_device(&self) -> UserPreferences {
+        let mut preferences = UserPreferences::default();
+        self.apply(&mut preferences);
+        preferences
+    }
+
     /// The same preference as `preferences` hold it now, so applying it puts
     /// back what this change replaces. Take it before [`apply`](Self::apply).
     #[must_use]
