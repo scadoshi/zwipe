@@ -184,9 +184,7 @@ pub fn Register() -> Element {
                 div { class: "form-links",
                     Button {
                         variant: ButtonVariant::Action,
-                        onclick: move |_| {
-                            driver.navigator.push(Router::Login {});
-                        },
+                        onclick: move |_| driver.dispatch(Action::Back),
                         {register::BACK}
                     }
                 }

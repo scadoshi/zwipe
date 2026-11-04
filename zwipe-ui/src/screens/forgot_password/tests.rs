@@ -155,14 +155,24 @@ fn back_goes_back_even_while_a_request_is_out() {
 }
 
 #[test]
+fn create_profile_goes_to_register() {
+    let mut state = State::new();
+    assert_eq!(
+        state.update(Action::CreateProfile),
+        vec![Effect::Navigate(Destination::Register)]
+    );
+}
+
+#[test]
 fn the_copy_matches_the_app() {
     assert_eq!(
-        [TITLE, EMAIL, BACK, SEND, LINK_SENT],
+        [TITLE, EMAIL, BACK, SEND, CREATE_PROFILE, LINK_SENT],
         [
             "Reset password",
             "Email",
             "Back to login",
             "Send reset link",
+            "Create profile",
             "If that email is registered, a reset link is on its way"
         ]
     );

@@ -1,4 +1,4 @@
-//! Forgot password: an email field with Back to login and Send reset link under it. The reset itself happens on the website, from the emailed link.
+//! Forgot password: an email field with Send reset link under it, then Back to login and Create profile. The reset itself happens on the website, from the emailed link.
 //!
 //! The client keeps a [`State`] while the screen is up and hands every keystroke in as [`Action::EditEmail`]. The check is [`account::reset_email_error`]: the address as typed, untrimmed. Neither button waits on the request, so a second Send reset link sends again; every reply lands, and the first success hands the email to Login with [`Effect::Prefill`], toasts [`LINK_SENT`] and goes there in place of this screen. The text input and its focus stay in the client.
 
@@ -21,6 +21,9 @@ pub const BACK: &str = "Back to login";
 /// The submit button.
 pub const SEND: &str = "Send reset link";
 
+/// The button to Register.
+pub const CREATE_PROFILE: &str = "Create profile";
+
 /// The toast once a request went in. It never says whether the address has an account.
 pub const LINK_SENT: &str = "If that email is registered, a reset link is on its way";
 
@@ -31,6 +34,8 @@ pub enum Destination {
     Previous,
     /// Login in place of this screen, once a request went in.
     Login,
+    /// Register, from Create profile.
+    Register,
 }
 
 /// What a user does on Forgot password, and each reply the client hands back.
@@ -52,6 +57,8 @@ pub enum Action {
     },
     /// Presses Back to login.
     Back,
+    /// Presses Create profile.
+    CreateProfile,
 }
 
 /// What an action asks the client to do, in the order it should do it.
@@ -126,6 +133,7 @@ impl State {
                 Vec::new()
             }
             Action::Back => vec![Effect::Navigate(Destination::Previous)],
+            Action::CreateProfile => vec![Effect::Navigate(Destination::Register)],
         }
     }
 

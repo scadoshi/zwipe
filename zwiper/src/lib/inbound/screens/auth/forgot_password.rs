@@ -6,9 +6,8 @@ use dioxus::router::Navigator;
 use zwipe_client::ZwipeClient;
 use zwipe_core::http::contracts::auth::HttpRequestPasswordReset;
 use zwipe_ui::screens::forgot_password::{
-    self, Action, BACK, Destination, EMAIL, Effect, SEND, State,
+    self, Action, BACK, CREATE_PROFILE, Destination, EMAIL, Effect, SEND, State,
 };
-use zwipe_ui::screens::login;
 
 use crate::inbound::components::home_hero::HomeHero;
 use crate::inbound::components::screen_header::ScreenHeader;
@@ -65,6 +64,9 @@ impl Driver {
             Effect::Navigate(Destination::Previous) => self.navigator.go_back(),
             Effect::Navigate(Destination::Login) => {
                 self.navigator.replace(Router::Login {});
+            }
+            Effect::Navigate(Destination::Register) => {
+                self.navigator.push(Router::Register {});
             }
             Effect::Toast(toast) => ui_toast::raise(self.toast, toast),
         }
@@ -128,17 +130,13 @@ pub fn ForgotPassword() -> Element {
                     div { class: "form-links",
                         Button {
                             variant: ButtonVariant::Action,
-                            onclick: move |_| {
-                                driver.navigator.push(Router::Login {});
-                            },
+                            onclick: move |_| driver.dispatch(Action::Back),
                             {BACK}
                         }
                         Button {
                             variant: ButtonVariant::Action,
-                            onclick: move |_| {
-                                driver.navigator.push(Router::Register {});
-                            },
-                            {login::CREATE_PROFILE}
+                            onclick: move |_| driver.dispatch(Action::CreateProfile),
+                            {CREATE_PROFILE}
                         }
                     }
                 }
