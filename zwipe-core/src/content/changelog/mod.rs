@@ -60,7 +60,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Sheets close from an x in their corner or a drag down",
         "Floating buttons rise above the keyboard",
         "Home shows your three latest decks as tiles with a button to all of them",
-        "Home shows your color counts as bars; the color map lives on Playstyle",
+        "The color map is gone: Home, Playstyle and a deck's Mana section show colors as bars with mana pips",
         "Distributions shows the top five card roles and a new oracle tags chart, the rest behind See more",
         "Draw odds shows its top five groups, the rest behind See more",
         "Draw odds names the opening hand turn 0",

@@ -636,7 +636,7 @@ pub(crate) static GUIDES: &[Guide] = &[
             ),
             Block::H2("Finding it"),
             Block::Bullets(&[
-                "On the Home screen, tap Playstyle on the Color map panel. It's also on the Decks screen, under More.",
+                "On the Home screen, tap Playstyle on the Colors panel. It's also on the Decks screen, under More.",
                 "Your colors, card roles and oracle tags come first.",
                 "Under them, Suggested commanders lists your top 10 as card rows, best fit first. Its question mark explains the ranking.",
                 "Tap a color chip in the Show row to see only those colors. Tap it again to see them all.",
@@ -644,13 +644,13 @@ pub(crate) static GUIDES: &[Guide] = &[
             ]),
             Block::H2("What your decks say"),
             Block::P(
-                "Color map opens first. It grows a map of tiles from your cards, each color claiming ground in proportion to its cards, in a shape generated per player. Every color grows out from the middle and fades toward the edge. The key under it counts each color's cards, colorless too. It's the same map as on Home. Under it are more sections. Tap one to open it.",
+                "Colors opens first. It's a bar per color, with its mana pip and how many of your cards are that color, colorless last. The longest bar is the color you build in most. It's the same panel as on Home. Under it are more sections. Tap one to open it.",
             ),
             Block::Bullets(&[
                 "Summary shows how many decks were read, your most built color combination and your top single color.",
                 "Card roles shows how many of your decks fill each role, like ramp or removal. Tap a role to see its tags.",
                 "Oracle tags lists your 10 most impactful tags. Tap a tag to see what it means.",
-                "Color map, Card roles and Oracle tags each have a question mark in the header that explains them.",
+                "Colors, Card roles and Oracle tags each have a question mark in the header that explains them.",
             ]),
             Block::H2("How a tag's impact adds up"),
             Block::Bullets(&[
