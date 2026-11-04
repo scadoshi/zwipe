@@ -4,7 +4,7 @@
 //! color distribution, and summary stats. Supports both `Vec<Card>` (each card
 //! counted once) and `Vec<DeckEntry>` (each card counted by its quantity).
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use crate::domain::card::Card;
 use crate::domain::card::card_role::CardRole;
@@ -72,8 +72,10 @@ pub struct DeckMetrics {
     /// carrying them under that role, most first, ties by slug. A role whose
     /// cards carry no tags under it is absent.
     pub card_role_tags: BTreeMap<&'static str, Vec<String>>,
-    /// Every oracle tag across the mainboard with the copies carrying it,
-    /// most first, ties by slug.
+    /// Every functional oracle tag across the mainboard with the copies
+    /// carrying it, most first, ties by slug. A card's tags are the ones filed
+    /// under its roles plus its other tags, each counted once per card; the
+    /// noise the server strips from those is left out.
     pub oracle_tag_counts: Vec<(String, usize)>,
     /// Average numeric power over cards that have one (front face for
     /// multi-face cards; `*`/`X` sides skipped). `None` if no card qualified.
@@ -335,7 +337,14 @@ impl DeckMetrics {
                     *slot = slot.saturating_add(qty);
                 }
             }
-            for tag in &card.card_profile.oracle_tags {
+            let functional_tags: BTreeSet<&String> = card
+                .card_profile
+                .oracle_tags_by_role
+                .values()
+                .flatten()
+                .chain(&card.card_profile.other_oracle_tags)
+                .collect();
+            for tag in functional_tags {
                 let count = oracle_tag_tally.entry(tag.clone()).or_insert(0);
                 *count = count.saturating_add(qty);
             }
@@ -941,11 +950,26 @@ mod tests {
                 (*role).to_string(),
                 tags.iter().map(|t| (*t).to_string()).collect(),
             );
-            profile
-                .oracle_tags
-                .extend(tags.iter().map(|t| (*t).to_string()));
         }
         entry
+    }
+
+    #[test]
+    fn oracle_tags_count_once_per_card_with_the_other_bucket() {
+        let mut ring = tagged(
+            "Sol Ring",
+            2,
+            &[("ramp", &["mana-rock"]), ("fast_mana", &["mana-rock"])],
+        );
+        let profile = &mut ring.card.card_profile;
+        profile.other_oracle_tags.push("eponymous".to_string());
+        profile.oracle_tags.push("activated-ability".to_string());
+        let metrics = DeckMetrics::from_entries(&[ring]);
+        assert_eq!(
+            metrics.oracle_tag_counts,
+            vec![("eponymous".to_string(), 2), ("mana-rock".to_string(), 2)],
+            "a tag under two roles counts once, other tags count, raw noise does not"
+        );
     }
 
     #[test]
