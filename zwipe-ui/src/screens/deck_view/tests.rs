@@ -673,7 +673,7 @@ fn clearing_skips_toasts() {
 }
 
 #[test]
-fn a_delete_goes_back_to_the_list() {
+fn a_delete_replaces_the_deck_with_the_list() {
     let (profile, built) = two_cards("Elves");
     let mut state = loaded(&profile, built);
     let effects = state.update(Action::Delete);
@@ -681,7 +681,7 @@ fn a_delete_goes_back_to_the_list() {
         state.update(Action::Deleted {
             ticket: ticket_of(&effects)
         }),
-        [Effect::Navigate(Destination::DeckList)]
+        [Effect::Replace(Destination::DeckList)]
     );
 }
 

@@ -5,12 +5,13 @@
 //! card's entrance, image easing and the sheets.
 
 use components::{
-    Chip, HintBullet, HintBullets, HintDialog, HintKey, HintLine, ToastOptions, Toasts, use_toast,
+    Chip, HintBullet, HintBullets, HintDialog, HintKey, HintLine, TOAST_NORMAL, ToastOptions,
+    Toasts, use_toast,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use uuid::Uuid;
-use zwipe_client::ZwipeClient;
+use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
@@ -47,6 +48,7 @@ use crate::inbound::screens::deck::card::components::filter_store::{FilterScope,
 use crate::inbound::screens::deck::card::components::flippable_card_image;
 use crate::inbound::screens::deck::card::components::undo_log::{UndoAction, UndoStore};
 use crate::inbound::screens::deck::card::filter::card_filter_sheet::CardFilterSheet;
+use crate::inbound::screens::deck::missing_deck;
 
 /// Pixels a swipe travels to commit.
 const SWIPE_DISTANCE_PX: f64 = 90.0;
@@ -189,16 +191,27 @@ impl Driver {
 
     /// Fetches the deck quietly.
     fn fetch_deck(self, ticket: Ticket, deck_id: Uuid) {
-        let Self { authed, .. } = self;
+        let Self {
+            authed,
+            navigator,
+            toast,
+            ..
+        } = self;
         spawn(async move {
             // Quiet: the screen works without deck context; telemetry
-            // still records the failure.
+            // still records the failure. A missing deck is the exception.
             let deck = authed
-                .run_quiet("load_deck_context", |c, s| async move {
+                .try_run_quiet("load_deck_context", |c, s| async move {
                     c.fetch_deck(deck_id, &s).await
                 })
                 .await;
-            self.dispatch(match deck {
+            if let Err(e @ ClientError::NotFound(_)) = &deck {
+                toast.error(
+                    e.to_user_message(),
+                    ToastOptions::default().duration(TOAST_NORMAL),
+                );
+            }
+            self.dispatch(match missing_deck::settle(navigator, deck) {
                 Some(deck) => Action::DeckLoaded {
                     ticket,
                     deck: Box::new(deck),

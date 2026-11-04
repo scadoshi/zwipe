@@ -116,6 +116,23 @@ impl Authed {
         self.execute(component::NONE, op, true, f).await.ok()
     }
 
+    /// [`Self::run_quiet`] handing the `Err` back, for sites that act on
+    /// the kind of failure without toasting it.
+    ///
+    /// # Errors
+    ///
+    /// Returns the refresh's or the call's [`ClientError`].
+    pub async fn try_run_quiet<T, Fut>(
+        &self,
+        op: &'static str,
+        f: impl FnOnce(ZwipeClient, Session) -> Fut,
+    ) -> Result<T, ClientError>
+    where
+        Fut: Future<Output = Result<T, ClientError>>,
+    {
+        self.execute(component::NONE, op, true, f).await
+    }
+
     /// [`Self::run_quiet`] with a component breadcrumb.
     pub async fn run_quiet_at<T, Fut>(
         &self,

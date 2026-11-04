@@ -33,6 +33,7 @@ use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen, component, screen};
 use crate::inbound::components::{hint_dialog, ui_toast};
 use crate::inbound::router::Router;
+use crate::inbound::screens::deck::missing_deck;
 
 /// The form's model with the handles that perform its effects. Copy, so every handler and task holds its own.
 #[derive(Clone, Copy)]
@@ -90,12 +91,12 @@ impl Driver {
                             c.fetch_deck(deck_id, &s).await
                         })
                         .await;
-                    self.dispatch(match reply {
-                        Ok(deck) => Action::Loaded {
+                    self.dispatch(match missing_deck::settle(self.navigator, reply) {
+                        Some(deck) => Action::Loaded {
                             ticket,
                             profile: Box::new(deck.deck_profile),
                         },
-                        Err(_) => Action::Failed { ticket },
+                        None => Action::Failed { ticket },
                     });
                 });
             }

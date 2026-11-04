@@ -124,7 +124,7 @@ pub const DELETE: &str = "Delete";
 /// Where an action sends the user. The client maps each to its own route.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Destination {
-    /// The deck list, from Back and after a delete.
+    /// The deck list, from Back and in place of a deleted deck.
     DeckList,
     /// Edit deck for this deck.
     EditDeck(Uuid),
@@ -510,6 +510,8 @@ pub enum Effect {
     OpenDialog(Dialog),
     /// Goes to this screen.
     Navigate(Destination),
+    /// Goes to this screen in place of the current one, so Back skips a screen with nothing left to show.
+    Replace(Destination),
     /// Raises this toast.
     Toast(Toast),
 }
@@ -787,7 +789,7 @@ impl State {
             (Mutation::ClearSkips, Landed::SkipsCleared) => {
                 vec![Effect::Toast(Done::SkipsCleared.toast())]
             }
-            (Mutation::Delete, Landed::Deleted) => vec![Effect::Navigate(Destination::DeckList)],
+            (Mutation::Delete, Landed::Deleted) => vec![Effect::Replace(Destination::DeckList)],
             _ => Vec::new(),
         }
     }

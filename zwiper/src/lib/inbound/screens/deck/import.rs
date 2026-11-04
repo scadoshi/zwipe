@@ -24,6 +24,7 @@ use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen};
 use crate::inbound::components::{guide_link, hint_dialog, ui_toast};
 use crate::inbound::router::Router;
 use crate::inbound::screens::deck::card::components::undo_log::UndoStore;
+use crate::inbound::screens::deck::missing_deck;
 
 /// Import's model with the handles that perform its effects. Copy, so every
 /// handler and task holds its own.
@@ -79,9 +80,9 @@ impl Driver {
                             c.import_deck_cards(deck_id, &text, board, mode, &s).await
                         })
                         .await;
-                    self.dispatch(match reply {
-                        Ok(result) => Action::Imported { ticket, result },
-                        Err(_) => Action::Failed { ticket },
+                    self.dispatch(match missing_deck::settle(navigator, reply) {
+                        Some(result) => Action::Imported { ticket, result },
+                        None => Action::Failed { ticket },
                     });
                 });
             }
@@ -100,9 +101,9 @@ impl Driver {
                                 .await
                         })
                         .await;
-                    self.dispatch(match reply {
-                        Ok(result) => Action::Imported { ticket, result },
-                        Err(_) => Action::Failed { ticket },
+                    self.dispatch(match missing_deck::settle(navigator, reply) {
+                        Some(result) => Action::Imported { ticket, result },
+                        None => Action::Failed { ticket },
                     });
                 });
             }

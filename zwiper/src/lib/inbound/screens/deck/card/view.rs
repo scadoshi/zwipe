@@ -45,6 +45,7 @@ use crate::inbound::screens::deck::components::featured_cards::FeaturedCards;
 use crate::inbound::screens::deck::components::skeletons::{
     ChipRowSkeleton, DeckCardListSkeleton, QuickAddSkeleton,
 };
+use crate::inbound::screens::deck::missing_deck;
 use crate::inbound::screens::oracle_tag_examples::OracleTagExamples;
 
 /// The app's copy of a shared undo entry, for the screen's live log.
@@ -381,10 +382,12 @@ impl Driver {
     /// keep their tolerant handling inside. The profile goes to the model as
     /// soon as it lands, so the header draws before the cards.
     fn fetch_deck(self, ticket: Ticket, deck_id: Uuid) {
-        let authed = self.authed;
+        let Self {
+            authed, navigator, ..
+        } = self;
         spawn(async move {
             let loaded = authed
-                .run("load_deck", |c, s| async move {
+                .try_run("load_deck", |c, s| async move {
                     let deck = c.fetch_deck(deck_id, &s).await?;
                     let mut zone = Zone::default();
                     if let Ok(profile) = c.fetch_deck_profile(deck_id, &s).await {
@@ -400,7 +403,7 @@ impl Driver {
                     Ok((deck, zone))
                 })
                 .await;
-            self.dispatch(match loaded {
+            self.dispatch(match missing_deck::settle(navigator, loaded) {
                 Some((deck, zone)) => Action::Loaded {
                     ticket,
                     deck: Box::new(deck),

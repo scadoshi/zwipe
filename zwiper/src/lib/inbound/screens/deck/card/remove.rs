@@ -41,6 +41,7 @@ use crate::inbound::components::{guide_link, ui_toast};
 use crate::inbound::screens::deck::card::components::undo_log::{UndoAction, UndoStore};
 use crate::inbound::screens::deck::card::filter::card_filter_sheet::CardFilterSheet;
 use crate::inbound::screens::deck::card::filter::deck_cards::DeckCards;
+use crate::inbound::screens::deck::missing_deck;
 
 /// Pixels a swipe travels to commit.
 const SWIPE_DISTANCE_PX: f64 = 90.0;
@@ -177,16 +178,17 @@ impl Driver {
     fn fetch_deck(self, ticket: Ticket, deck_id: Uuid) {
         let Self {
             authed,
+            navigator,
             mut deck_cards_for_filter,
             ..
         } = self;
         spawn(async move {
             let deck = authed
-                .run("load_deck", |c, s| async move {
+                .try_run("load_deck", |c, s| async move {
                     c.fetch_deck(deck_id, &s).await
                 })
                 .await;
-            let Some(deck) = deck else {
+            let Some(deck) = missing_deck::settle(navigator, deck) else {
                 self.dispatch(Action::Failed { ticket });
                 return;
             };

@@ -19,6 +19,7 @@ use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen};
 use crate::inbound::components::{guide_link, hint_dialog, ui_toast};
 use crate::inbound::router::Router;
 use crate::inbound::screens::deck::components::skeletons::ChipRowSkeleton;
+use crate::inbound::screens::deck::missing_deck;
 
 /// Export's model with the handles that perform its effects. Copy, so every
 /// handler and task holds its own.
@@ -66,12 +67,12 @@ impl Driver {
                             c.fetch_deck(deck_id, &s).await
                         })
                         .await;
-                    self.dispatch(match reply {
-                        Ok(deck) => Action::Loaded {
+                    self.dispatch(match missing_deck::settle(navigator, reply) {
+                        Some(deck) => Action::Loaded {
                             ticket,
                             deck: Box::new(deck),
                         },
-                        Err(_) => Action::Failed { ticket },
+                        None => Action::Failed { ticket },
                     });
                 });
             }

@@ -34,6 +34,7 @@ use super::components::deck_tags_section::DeckTagsSection;
 use super::components::deck_warnings::DeckWarnings;
 use super::components::more_buttons::{DeckDialogs, MoreButtons, use_deck_dialogs};
 use super::components::skeletons::{DeckProfileSkeleton, DeckStatsSkeleton};
+use super::missing_deck;
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::catalog_cache::CatalogCache;
 use crate::inbound::components::hint_host::HintTopic;
@@ -172,6 +173,9 @@ impl Driver {
             Effect::Navigate(destination) => {
                 self.navigator.push(route(destination));
             }
+            Effect::Replace(destination) => {
+                self.navigator.replace(route(destination));
+            }
             Effect::Toast(raised) => ui_toast::raise(self.toast, raised),
         }
     }
@@ -183,6 +187,17 @@ impl Driver {
         self.dispatch(reply.map_or(Action::Failed { ticket }, landed));
     }
 
+    /// [`Self::settle`] for a fetch of the deck itself: a not-found reply
+    /// leaves for the deck list instead.
+    fn settle_deck<T>(
+        self,
+        ticket: Ticket,
+        reply: Result<T, ClientError>,
+        landed: impl FnOnce(T) -> Action,
+    ) {
+        self.settle(ticket, missing_deck::settle(self.navigator, reply), landed);
+    }
+
     fn fetch_profile(self, ticket: Ticket, deck_id: Uuid) {
         spawn(async move {
             // try_run reports a failure and raises its error toast.
@@ -192,7 +207,7 @@ impl Driver {
                     c.fetch_deck_profile(deck_id, &s).await
                 })
                 .await;
-            self.settle(ticket, reply.ok(), |profile| Action::ProfileLoaded {
+            self.settle_deck(ticket, reply, |profile| Action::ProfileLoaded {
                 ticket,
                 profile: Box::new(profile),
             });
@@ -207,7 +222,7 @@ impl Driver {
                     c.fetch_deck(deck_id, &s).await
                 })
                 .await;
-            self.settle(ticket, reply.ok(), |deck| Action::DeckLoaded {
+            self.settle_deck(ticket, reply, |deck| Action::DeckLoaded {
                 ticket,
                 deck: Box::new(deck),
             });
@@ -705,11 +720,13 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                 }
 
             // Cards, the screen's main action, floats at the bottom right.
-            div { class: "action-dock action-dock-right content-enter-delayed",
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| driver.dispatch(Action::Cards),
-                    {deck_view::CARDS}
+            if !failed {
+                div { class: "action-dock action-dock-right content-enter-delayed",
+                    Button {
+                        variant: ButtonVariant::Action,
+                        onclick: move |_| driver.dispatch(Action::Cards),
+                        {deck_view::CARDS}
+                    }
                 }
             }
 

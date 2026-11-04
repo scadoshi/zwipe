@@ -16,6 +16,8 @@ pub mod export;
 pub mod import;
 /// Deck list screen showing all user's decks.
 pub mod list;
+/// Leaving a deck screen whose deck is gone.
+pub(crate) mod missing_deck;
 /// Playstyle screen: the user's decks summed up over suggested
 /// commanders ranked against them.
 pub mod suggested_commanders;
