@@ -236,7 +236,7 @@ impl HintTopic {
                 HintLine { "Guides, the changelog and news, in your browser" }
             },
             Self::Version => rsx! {
-                HintLine { "The build you are on. " HintKey { "Changelog" } " lists what changed in each release" }
+                HintLine { "The build you are on. What changed in each release is listed below" }
             },
             Self::TypeChart => rsx! {
                 HintLine { "Mainboard cards by type" }

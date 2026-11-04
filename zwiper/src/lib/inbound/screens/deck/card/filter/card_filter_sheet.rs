@@ -601,7 +601,7 @@ pub(crate) fn CardFilterSheet(
             HintBullets {
                 HintBullet { "Picks which cards show: the ones served to " HintColored { color: "--accent-primary", "swipe" } ", or which of the deck's cards list" }
                 HintBullet { "Open a section to set name, mana, type, color, " HintColored { color: "--accent-tertiary", "Oracle tags" } " and more. Stack as many as you want" }
-                HintBullet { HintKey { "Apply" } " uses it. " HintKey { color: "--color-warning", "Reset" } " then " HintKey { "Apply" } " goes back to the default view" }
+                HintBullet { HintKey { DockIcon { path: action_dock::CHECK } } " uses it. " HintKey { color: "--color-warning", DockIcon { path: action_dock::UNDO } } " then " HintKey { DockIcon { path: action_dock::CHECK } } " goes back to the default view" }
                 HintBullet { "Each screen keeps its own filter" }
             }
         }

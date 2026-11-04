@@ -23,7 +23,7 @@
 use std::collections::HashSet;
 
 use components::{
-    BottomSheet, HintBullet, HintBullets, HintDialog, HintLine, ToastOptions, Toasts,
+    BottomSheet, HintBullet, HintBullets, HintDialog, HintKey, HintLine, ToastOptions, Toasts,
     use_overlay_back, use_toast,
 };
 use dioxus::prelude::*;
@@ -558,12 +558,12 @@ pub(crate) fn SwipeSelect(
                         HintBullet { "Swipe " HintColored { color: "--accent-tertiary", "down" } " undoes the last swipe" }
                     }
                     if suggested {
-                        HintLine { "Best fit first, 100 deep. The eye shows why each one was suggested" }
+                        HintLine { "Best fit first, 100 deep. " HintKey { EyeIcon {} } " shows why each one was suggested" }
                         if has_suggested_filter {
-                            HintLine { "The funnel narrows the stack to one color identity" }
+                            HintLine { HintKey { DockIcon { path: action_dock::FUNNEL } } " narrows the stack to one color identity" }
                         }
                     } else {
-                        HintLine { "Most-played first. The funnel narrows by color or anything else" }
+                        HintLine { "Most-played first. " HintKey { DockIcon { path: action_dock::FUNNEL } } " narrows by color or anything else" }
                     }
                 }
             }

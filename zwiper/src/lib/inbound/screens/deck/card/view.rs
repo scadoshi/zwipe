@@ -1133,7 +1133,7 @@ pub fn View(deck_id: Uuid) -> Element {
                     HintBullet { HintKey { "Group by" } " sorts by type, mana value, color or role" }
                     HintBullet { HintKey { "Boards" } " picks main, maybe or side" }
                     HintBullet { HintKey { "Show" } " toggles tokens, the command zone and row art" }
-                    HintBullet { "The bar at the bottom: " HintKey { "+" } " adds, " HintKey { "−" } " removes, the funnel filters (its " HintKey { "×" } " resets the filter), and the arrow undoes" }
+                    HintBullet { "The bar at the bottom: " HintKey { DockIcon { path: action_dock::PLUS } } " adds, " HintKey { DockIcon { path: action_dock::MINUS } } " removes, " HintKey { DockIcon { path: action_dock::FUNNEL } } " filters (its " HintKey { "×" } " resets the filter), and " HintKey { DockIcon { path: action_dock::UNDO } } " undoes" }
                     HintBullet { HintKey { color: "--color-warning", "Star" } " marks up to three MVPs. Suggestions lean toward cards that share their roles" }
                 }
             }

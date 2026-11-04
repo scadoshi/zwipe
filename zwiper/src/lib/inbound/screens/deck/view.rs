@@ -3,6 +3,7 @@
 //! What the screen knows and does is `zwipe_ui::screens::deck_view`; this
 //! file draws its state and performs its effects.
 
+use components::icons::{CloneIcon, EditIcon, ShareIcon};
 use components::{
     AlertDialog, Button, ButtonVariant, DialogAction, HintBullet, HintBullets, HintDialog, HintKey,
     TOAST_NORMAL, ToastOptions, Toasts, use_toast,
@@ -788,8 +789,8 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                 title: "Welcome to your deck",
                 HintBullets {
                     HintBullet { HintKey { "Cards" } " browses, adds and removes cards" }
-                    HintBullet { "The pencil by " HintKey { "Profile" } " changes the name, format, command zone, tags and targets" }
-                    HintBullet { "Beside it, the two squares clone the deck and the box with the arrow shares a link to it" }
+                    HintBullet { "The " HintKey { EditIcon {} } " by " HintKey { "Profile" } " changes the name, format, command zone, tags and targets" }
+                    HintBullet { "Beside it, " HintKey { CloneIcon {} } " clones the deck and " HintKey { ShareIcon {} } " shares a link to it" }
                     HintBullet { "Import, export and delete are at the bottom of the page" }
                     HintBullet { "Skipped and removed cards stay out of the add stack. " HintKey { "Clear skips" } " at the bottom brings them back" }
                     HintBullet { "Stats fill in as the deck grows. Tap a section to expand it" }
@@ -869,52 +870,6 @@ fn ActionPanel(
                     }
                 }
             }
-        }
-    }
-}
-
-/// The edit icon: a pencil.
-#[component]
-fn EditIcon() -> Element {
-    rsx! {
-        svg {
-            class: "profile-icon",
-            view_box: "0 0 24 24",
-            xmlns: "http://www.w3.org/2000/svg",
-            "aria-hidden": "true",
-            path { d: "M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4z" }
-            path { d: "M13.5 6.5l4 4" }
-        }
-    }
-}
-
-/// The clone icon: two overlapping squares.
-#[component]
-fn CloneIcon() -> Element {
-    rsx! {
-        svg {
-            class: "profile-icon",
-            view_box: "0 0 24 24",
-            xmlns: "http://www.w3.org/2000/svg",
-            "aria-hidden": "true",
-            rect { x: "9", y: "9", width: "11", height: "11", rx: "2" }
-            path { d: "M15 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3" }
-        }
-    }
-}
-
-/// The share icon: a box with an arrow rising out of it.
-#[component]
-fn ShareIcon() -> Element {
-    rsx! {
-        svg {
-            class: "profile-icon",
-            view_box: "0 0 24 24",
-            xmlns: "http://www.w3.org/2000/svg",
-            "aria-hidden": "true",
-            path { d: "M12 3v12" }
-            path { d: "M8 7l4-4 4 4" }
-            path { d: "M8 11H6a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-2" }
         }
     }
 }

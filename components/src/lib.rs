@@ -8,7 +8,8 @@
 //! [`OracleText`], [`FlippableCardImage`], [`ChangelogFilters`] and
 //! [`ChangelogReleases`], the deck charts ([`BarChart`], [`DeckCharts`], [`ColorChart`], [`ManaCurve`], [`ManaFulfillment`],
 //! [`DrawOdds`], [`ChartLabel`], with [`Fold`] and [`SeeMore`] behind their
-//! long rows), the [`ColorBars`] and [`ZwipeArchitecture`].
+//! long rows), the [`ColorBars`], [`ZwipeArchitecture`] and the [`icons`] the
+//! app's icon buttons and both clients' hint keys draw.
 //!
 //! Styling ships as string constants to inline through `document::Style`.
 //! orangui's sheets come through as they are; [`MAGIC_CSS`] holds this crate's
@@ -39,6 +40,7 @@ mod charts;
 mod color_bars;
 mod flippable_card_image;
 mod fold;
+pub mod icons;
 mod keyword_chips;
 mod oracle_text;
 mod role_tags;

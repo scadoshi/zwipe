@@ -137,7 +137,7 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                     title: "Exporting your deck",
                     HintBullets {
                         HintBullet { HintKey { "Export" } " picks which boards to include" }
-                        HintBullet { "The two sheets at the bottom right put the decklist on your clipboard" }
+                        HintBullet { "The " HintKey { DockIcon { path: action_dock::COPY } } " at the bottom right puts the decklist on your clipboard" }
                     }
                 }
 

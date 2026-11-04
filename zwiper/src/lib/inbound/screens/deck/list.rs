@@ -291,7 +291,7 @@ pub fn DeckList() -> Element {
                     HintBullets {
                         HintBullet { "Tap a deck to open it" }
                         HintBullet { HintKey { "Group by" } " folds the list into sections, " HintKey { "Show" } " narrows it by color or tag" }
-                        HintBullet { "The " HintKey { "+" } " at the bottom right starts a new deck" }
+                        HintBullet { "The " HintKey { DockIcon { path: action_dock::PLUS } } " at the bottom right starts a new deck" }
                     }
                 }
 
