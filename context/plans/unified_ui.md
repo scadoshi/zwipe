@@ -136,12 +136,12 @@ The review is of the app: each screen got what it shows, where its actions go an
 
 ## Home
 
-Reviewed 2026-11-03. Home keeps its three panels, gains a Decks row, and otherwise changes only by the global rules: the new header replaces "!" and the centered title, and the footer's Decks, Account and Config go, since the menu has them.
+Reviewed 2026-11-03. Home keeps its three panels, gains a Decks panel, and otherwise changes only by the global rules: the new header replaces "!" and the centered title, and the footer's Decks, Account and Config go, since the menu has them.
 
 - Hero: the ASCII logo stays, with the three stats, the Live and Everybody chips and the Activity button under it. Activity stays as a shortcut even though the menu lists it.
 - Color map: unchanged, with its `?`, the color chips and the Playstyle button, also kept as a shortcut.
 - Featured flavor: unchanged. Each client keeps its own Buy: the app's Buy sheet, the web's TCGplayer and Card Kingdom links.
-- Decks (owner, 2026-11-03): a panel between the hero and the Color map in the Color map's style, an obvious lane into the decks. Its header has Decks on the left and, on the right, the deck count as a chip beside an All decks chip into the deck list. Under it, the three most recently updated decks as tappable rows, the name on the left and the format chip on the right, each opening its deck; with no deck the one row is Create a deck. Home fetches the deck list for it and caches it above the router like the summary; while the fetch is out three rows ghost, and a failed fetch with nothing held shows a muted line under the header with its All decks chip. A tiles layout (the commander's art or the deck's pips over the name) stays in the file behind `Layout` until the owner picks. No continue-swiping shortcut.
+- Decks (owner, 2026-11-03): a panel between the hero and the Color map in the Color map's style, an obvious lane into the decks. Its header has Decks on the left and, on the right, the deck count as a chip beside an All decks chip into the deck list. Under it, the three most recently updated decks as tiles, three across: the commander's art crop in a squircle (a filled squircle with the deck's pips without one), then the name chip and the muted format chip under the image, the name on one line with an ellipsis; a tap anywhere on the tile opens the deck. With no deck the one row is Create a deck. Home fetches the deck list for it and caches it above the router like the summary; while the fetch is out three tiles ghost, and a failed fetch with nothing held shows a muted line under the header with its All decks chip. No continue-swiping shortcut.
 
 ## Deck view
 
