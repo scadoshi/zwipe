@@ -29,6 +29,59 @@ const APPLE_TOUCH_ICON: Asset = asset!("/assets/icon-180.png");
 const MANIFEST: Asset = asset!("/assets/site.webmanifest");
 const Z_LOGO: &str = zwipe_core::domain::logo::Z;
 
+/// A store the nav links as an icon pill.
+#[derive(Clone, Copy, PartialEq, Debug)]
+struct Store {
+    /// The link's accessible name and tooltip.
+    label: &'static str,
+    href: &'static str,
+    /// A filled 24-unit icon path, drawn in the pill's color.
+    path: &'static str,
+}
+
+/// The nav's store links, left to right.
+const STORES: [Store; 2] = [
+    Store {
+        label: "App Store",
+        href: "https://apps.apple.com/us/app/zwipe-tcg/id6761341603",
+        path: APPLE,
+    },
+    Store {
+        label: "Play Store",
+        href: "https://play.google.com/store/apps/details?id=com.scadoshi.zwipe",
+        path: GOOGLE_PLAY,
+    },
+];
+
+/// The Apple mark (Simple Icons).
+const APPLE: &str = "M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701";
+
+/// The Google Play mark (Simple Icons).
+const GOOGLE_PLAY: &str = "M3.609 1.814L13.792 12 3.61 22.186a.996.996 0 0 1-.61-.92V2.734a1 1 0 0 1 .609-.92zm10.89 10.893l2.302 2.302-10.937 6.333 8.635-8.635zm3.199-3.198l2.807 1.626a1 1 0 0 1 0 1.73l-2.808 1.626L15.206 12l2.492-2.491zM5.864 2.658L16.8 8.99l-2.302 2.302-8.634-8.634z";
+
+/// One store as the kit's icon pill: the SVG inside, the label as its name.
+#[component]
+fn StoreIcon(cta: Store, onclick: Option<EventHandler<MouseEvent>>) -> Element {
+    rsx! {
+        a {
+            class: "nav-cta nav-cta-icon",
+            href: cta.href,
+            "aria-label": cta.label,
+            title: cta.label,
+            onclick: move |event| {
+                if let Some(handler) = &onclick {
+                    handler.call(event);
+                }
+            },
+            svg {
+                view_box: "0 0 24 24",
+                "aria-hidden": "true",
+                path { d: cta.path }
+            }
+        }
+    }
+}
+
 #[derive(Routable, Clone, PartialEq)]
 #[rustfmt::skip]
 enum Route {
@@ -306,15 +359,8 @@ pub fn Nav() -> Element {
                 }
             },
             persistent: rsx! {
-                a {
-                    class: "nav-cta",
-                    href: "https://apps.apple.com/us/app/zwipe-tcg/id6761341603",
-                    "App Store" span { class: "ext", "\u{2197}" }
-                }
-                a {
-                    class: "nav-cta",
-                    href: "https://play.google.com/store/apps/details?id=com.scadoshi.zwipe",
-                    "Play Store" span { class: "ext", "\u{2197}" }
+                for cta in STORES {
+                    StoreIcon { key: "{cta.label}", cta }
                 }
             },
             links: rsx! {
@@ -333,20 +379,11 @@ pub fn Nav() -> Element {
                 li {
                     Link { to: Route::Community {}, onclick: move |_| open.set(false), "Community" }
                 }
-                li { class: "nav-cta-item",
-                    a {
-                        class: "nav-cta",
-                        href: "https://apps.apple.com/us/app/zwipe-tcg/id6761341603",
-                        onclick: move |_| open.set(false),
-                        "App Store" span { class: "ext", "\u{2197}" }
-                    }
-                }
-                li { class: "nav-cta-item",
-                    a {
-                        class: "nav-cta",
-                        href: "https://play.google.com/store/apps/details?id=com.scadoshi.zwipe",
-                        onclick: move |_| open.set(false),
-                        "Play Store" span { class: "ext", "\u{2197}" }
+                // The store pills hide in the collapsed panel on mobile,
+                // where the persistent copies beside the toggle cover them.
+                for cta in STORES {
+                    li { key: "{cta.label}", class: "nav-cta-item",
+                        StoreIcon { cta, onclick: move |_| open.set(false) }
                     }
                 }
             },
