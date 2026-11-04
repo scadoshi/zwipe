@@ -171,12 +171,12 @@ body {
 
 /* ---- Input panels ----
 
-   A form is its own panel at every width, as wide as the page with its
-   fields held to 26rem in the middle: the kit panel's title bar named
-   after its screen, the fields, then a footer of buttons under a
-   full-bleed rule: the app's compact action bar buttons in one centered
-   row, the primary first, wrapping only when they don't fit. Below the
-   breakpoint it keeps the page's side gutter. */
+   A sign-in form is its own panel at every width, as wide as the page with
+   its fields held to 26rem in the middle: the kit panel's title bar named
+   after its screen, the fields, the full-width submit under them at the
+   inputs' corner radius, then the links to the other sign-in screens as
+   chips in one centered row (the app's .form-submit and .form-links). Below
+   the breakpoint it keeps the page's side gutter. */
 .web-auth {
     display: flex;
     flex-direction: column;
@@ -210,26 +210,10 @@ body {
     margin: 0 auto;
 }
 
-.web-form-actions {
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-/* Reset password once sent: the outcome in the success color over its
-   line, in the form panel's place. */
-.web-sent-title {
-    margin: 0 0 0.5rem;
-    color: var(--color-success);
-    font-weight: 700;
-    text-align: center;
-}
-
-.web-sent-line {
-    margin: 0;
-    text-align: center;
+/* The chip row stays inside the panel, under the form's column, instead
+   of spanning the window as the app's does. */
+.web-form-panel > .form-links {
+    margin: 1rem 0 0;
 }
 
 @media (min-width: 900px) {

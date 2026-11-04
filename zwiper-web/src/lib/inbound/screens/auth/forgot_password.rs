@@ -1,120 +1,165 @@
 //! Forgot password: the email field as its own panel at the top of the page
-//! at every width, with `Send reset link` in its footer, and a panel saying
-//! `Check your email` in its place once sent. The nav's `Log in` goes back
-//! to Login.
+//! at every width, `Send reset link` full width under it, then `Back to
+//! login` and `Create profile` as chips beneath. A sent link returns to
+//! Login in this screen's place with the email filled in and says a link is
+//! on its way.
 //!
-//! The reset itself happens on the website, from the emailed link.
+//! The reset itself happens on the website, from the emailed link. What the
+//! screen knows and does is `zwipe_ui::screens::forgot_password`; this file
+//! draws its state and performs its effects.
 
 use components::{Button, ButtonVariant, TOAST_NORMAL, TextInput};
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
+use dioxus::router::Navigator;
+use dioxus_primitives::toast::{ToastOptions, Toasts, use_toast};
 use zwipe_client::ZwipeClient;
 use zwipe_core::http::contracts::auth::HttpRequestPasswordReset;
-use zwipe_ui::account;
+use zwipe_ui::screens::forgot_password::{
+    self, Action, BACK, CREATE_PROFILE, Destination, EMAIL, Effect, SEND, State,
+};
 
-use crate::inbound::chrome::form_panel::{FormPanelActions, FormPanelHead};
+use crate::inbound::chrome::form_panel::FormPanelHead;
+use crate::inbound::chrome::toast::raise;
+use crate::inbound::router::Route;
+use crate::inbound::screens::auth::login::LoginPrefill;
+use crate::inbound::screens::auth::register::go_back_or_login;
 use crate::inbound::shell::ScreenFrame;
 
-/// Reset password: asks for an email, then says a link is on its way. The
-/// answer never says whether the address has an account. Neither button
-/// waits on the request, so a second `Send reset link` sends again. Enter in
-/// the field runs `Send reset link`.
+/// Forgot password's model with the handles that perform its effects. Copy,
+/// so every handler and task holds its own.
+#[derive(Clone, Copy)]
+struct Driver {
+    model: Signal<State>,
+    email: Signal<String>,
+    navigator: Navigator,
+    toast: Toasts,
+    client: Signal<ZwipeClient>,
+    login_prefill: Signal<Option<String>>,
+}
+
+impl Driver {
+    /// Applies `action` to the model and performs what it returns.
+    fn dispatch(self, action: Action) {
+        let mut model = self.model;
+        let effects = model.write().update(action);
+        for effect in effects {
+            self.perform(effect);
+        }
+    }
+
+    fn perform(self, effect: Effect) {
+        match effect {
+            Effect::RequestReset { ticket, email } => {
+                let request = HttpRequestPasswordReset::new(&email);
+                spawn(async move {
+                    let client = self.client.peek().clone();
+                    // The answer never says whether the address has an
+                    // account.
+                    let reply = match client.request_password_reset(request).await {
+                        Ok(()) => Action::Sent { ticket },
+                        Err(e) => {
+                            tracing::warn!("password reset request failed: {e}");
+                            self.toast.error(
+                                e.to_user_message(),
+                                ToastOptions::default().duration(TOAST_NORMAL),
+                            );
+                            Action::Failed { ticket }
+                        }
+                    };
+                    self.dispatch(reply);
+                });
+            }
+            Effect::Prefill(email) => {
+                let mut login_prefill = self.login_prefill;
+                login_prefill.set(Some(email));
+            }
+            Effect::Navigate(Destination::Previous) => go_back_or_login(self.navigator),
+            Effect::Navigate(Destination::Login) => {
+                self.navigator.replace(Route::Login {});
+            }
+            Effect::Navigate(Destination::Register) => {
+                self.navigator.push(Route::Register {});
+            }
+            Effect::Toast(toast) => raise(self.toast, &toast),
+        }
+    }
+}
+
+/// Reset password: asks for an email, then leaves for Login saying a link
+/// is on its way. Return in the field runs `Send reset link`.
 #[component]
 pub fn ForgotPassword() -> Element {
-    let client: Signal<ZwipeClient> = use_context();
-    let toast = use_toast();
-
-    let email = use_signal(String::new);
-    let mut submit_attempted = use_signal(|| false);
-    let mut email_touched = use_signal(|| false);
-    let mut is_loading = use_signal(|| false);
-    let mut sent = use_signal(|| false);
-    use_effect(move || {
-        if !email().is_empty() {
-            email_touched.set(true);
-        }
-    });
-    let email_error = (email_touched() || submit_attempted())
-        .then(|| account::reset_email_error(&email()))
-        .flatten();
-
-    let mut attempt_submit = move || {
-        submit_attempted.set(true);
-        let typed = email.peek().clone();
-        if account::reset_email_error(&typed).is_some() {
-            return;
-        }
-        is_loading.set(true);
-        let request = HttpRequestPasswordReset::new(&typed);
-        spawn(async move {
-            let http = client.peek().clone();
-            match http.request_password_reset(request).await {
-                Ok(()) => sent.set(true),
-                Err(e) => {
-                    tracing::warn!("password reset request failed: {e}");
-                    toast.error(
-                        e.to_user_message(),
-                        ToastOptions::default().duration(TOAST_NORMAL),
-                    );
-                }
-            }
-            is_loading.set(false);
-        });
+    let LoginPrefill(login_prefill) = use_context();
+    let driver = Driver {
+        model: use_signal(State::new),
+        email: use_signal(String::new),
+        navigator: use_navigator(),
+        toast: use_toast(),
+        client: use_context(),
+        login_prefill,
     };
 
-    let submit = use_callback(move |()| attempt_submit());
+    use_effect(move || {
+        let value = (driver.email)();
+        driver.dispatch(Action::EditEmail(value));
+    });
+
+    let model = driver.model.read();
+    let is_loading = model.is_loading();
+    let email_error = model.error();
+    drop(model);
 
     rsx! {
-        ScreenFrame { title: "Reset password",
+        ScreenFrame { title: forgot_password::TITLE,
             div { class: "screen-content centered content-enter",
                 div { class: "web-auth web-page",
-                    if sent() {
-                        div { class: "web-form-panel web-sent-panel",
-                            FormPanelHead { title: "Reset password" }
-                            p { class: "web-sent-title", "Check your email" }
-                            p { class: "web-sent-line", "If that email is registered, a reset link is on its way." }
-                        }
-                    } else {
-                        div { class: "container-sm text-center web-form-panel",
-                                FormPanelHead { title: "Reset password" }
-                            form {
-                                class: "flex-col",
-                                onsubmit: move |event| {
-                                    event.prevent_default();
-                                    submit.call(());
-                                },
-                                TextInput {
-                                    value: email,
-                                    id: "email",
-                                    label: "Email",
-                                    placeholder: "Email",
-                                    error: email_error,
-                                }
-                                if is_loading() {
-                                    div { class: "spinner" }
-                                }
-                                button { r#type: "submit", hidden: true }
+                    div { class: "container-sm text-center web-form-panel",
+                        FormPanelHead { title: forgot_password::TITLE }
+                        form {
+                            class: "flex-col",
+                            onsubmit: move |event| {
+                                event.prevent_default();
+                                driver.dispatch(Action::Submit);
+                            },
+                            TextInput {
+                                value: driver.email,
+                                id: "email",
+                                label: EMAIL,
+                                placeholder: EMAIL,
+                                error: email_error,
                             }
-                            FormPanelActions {
-                                ForgotActions { on_submit: submit }
+                            if is_loading {
+                                div { class: "spinner" }
+                            }
+                            // The form's one button, so Return in the field
+                            // clicks it; the click submits itself, never the
+                            // page.
+                            div { class: "form-submit",
+                                Button {
+                                    disabled: is_loading,
+                                    onclick: move |evt: MouseEvent| {
+                                        evt.prevent_default();
+                                        driver.dispatch(Action::Submit);
+                                    },
+                                    {SEND}
+                                }
+                            }
+                        }
+                        div { class: "form-links",
+                            Button {
+                                variant: ButtonVariant::Action,
+                                onclick: move |_| driver.dispatch(Action::Back),
+                                {BACK}
+                            }
+                            Button {
+                                variant: ButtonVariant::Action,
+                                onclick: move |_| driver.dispatch(Action::CreateProfile),
+                                {CREATE_PROFILE}
                             }
                         }
                     }
                 }
             }
-        }
-    }
-}
-
-/// `Send reset link`, in the form panel's footer; gone once the link is
-/// sent.
-#[component]
-fn ForgotActions(on_submit: Callback<()>) -> Element {
-    rsx! {
-        Button {
-            variant: ButtonVariant::Action,
-            onclick: move |_| on_submit.call(()),
-            "Send reset link"
         }
     }
 }

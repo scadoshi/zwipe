@@ -1,120 +1,208 @@
 //! Login: the form as its own panel at the top of the page at every width,
-//! titled `Login`, with `Log in`, `Create profile` and `Forgot password` in
-//! a row in its footer.
+//! titled `Login`: the two fields, `Log in` full width under them, then
+//! `Create profile` and `Forgot password` as chips in one centered row.
+//!
+//! What the screen knows and does is `zwipe_ui::screens::login`; this file
+//! draws its state and performs its effects.
 
 use components::{Button, ButtonVariant, TOAST_NORMAL, TextInput, ThemeConfig};
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
+use dioxus::router::Navigator;
+use dioxus_primitives::toast::{ToastOptions, Toasts, use_toast};
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::user::models::preferences::PipColor;
 use zwipe_core::http::contracts::auth::HttpAuthenticateUser;
-use zwipe_ui::account::{self, LoginGate};
+use zwipe_ui::account::Password;
+use zwipe_ui::screens::login::{self, Action, Destination, Effect, Field, State};
 
-use crate::inbound::chrome::form_panel::{FormPanelActions, FormPanelHead};
+use crate::inbound::chrome::form_panel::FormPanelHead;
 use crate::inbound::chrome::toast::raise;
 use crate::inbound::router::Route;
 use crate::inbound::shell::ScreenFrame;
 use crate::outbound::session_store::SessionStore;
 
-/// An identifier for the login form to take once, set by Register on
-/// success. Provided at the root, so it works while Login sits under
-/// Register in the history.
+/// An identifier for the login form to fill in once, set by a screen that
+/// sends the user here (Create profile's username, Forgot password's
+/// email). Provided at the root, so it works while Login sits under them in
+/// the history.
 #[derive(Debug, Clone, Copy)]
 pub struct LoginPrefill(pub Signal<Option<String>>);
 
-/// The login screen. Enter in either field runs `Log in`.
+/// Login's model with the handles that perform its effects. Copy, so every
+/// handler and task holds its own.
+#[derive(Clone, Copy)]
+struct Driver {
+    model: Signal<State>,
+    identifier: Signal<String>,
+    password: Signal<String>,
+    navigator: Navigator,
+    toast: Toasts,
+    client: Signal<ZwipeClient>,
+    session: Signal<Option<Session>>,
+    pip_style: Signal<PipColor>,
+    theme: Signal<ThemeConfig>,
+}
+
+impl Driver {
+    /// Applies `action` to the model and performs what it returns.
+    fn dispatch(self, action: Action) {
+        let mut model = self.model;
+        let effects = model.write().update(action);
+        for effect in effects {
+            self.perform(effect);
+        }
+    }
+
+    fn perform(self, effect: Effect) {
+        let Self {
+            mut identifier,
+            mut password,
+            mut session,
+            mut pip_style,
+            mut theme,
+            ..
+        } = self;
+        match effect {
+            Effect::SignIn {
+                ticket,
+                identifier,
+                password,
+            } => {
+                let request = HttpAuthenticateUser::new(&identifier, password.read());
+                spawn(async move {
+                    let client = self.client.peek().clone();
+                    let reply = match client.authenticate_user(request).await {
+                        Ok(new_session) => Action::LoggedIn {
+                            ticket,
+                            session: Box::new(new_session),
+                        },
+                        Err(e) => {
+                            tracing::warn!("login failed: {e}");
+                            self.toast.error(
+                                e.to_user_message(),
+                                ToastOptions::default().duration(TOAST_NORMAL),
+                            );
+                            Action::Failed { ticket }
+                        }
+                    };
+                    self.dispatch(reply);
+                });
+            }
+            Effect::SetIdentifier(value) => identifier.set(value),
+            Effect::ClearPassword => password.set(String::new()),
+            Effect::SignedIn(new_session) => {
+                SessionStore::browser().infallible_save(&new_session);
+                theme.set(components::theme_from_preferences(&new_session.preferences));
+                pip_style.set(new_session.preferences.pip_style);
+                session.set(Some(*new_session));
+            }
+            Effect::Navigate(to) => {
+                self.navigator.push(route(to));
+            }
+            Effect::Toast(toast) => raise(self.toast, &toast),
+        }
+    }
+}
+
+/// The web's route for each place Login leads.
+fn route(destination: Destination) -> Route {
+    match destination {
+        Destination::Home => Route::Home {},
+        Destination::Register => Route::Register {},
+        Destination::ForgotPassword => Route::ForgotPassword {},
+    }
+}
+
+/// The login screen. Return in either field runs `Log in`.
 #[component]
 pub fn Login() -> Element {
-    let navigator = use_navigator();
-    let mut session: Signal<Option<Session>> = use_context();
-    let client: Signal<ZwipeClient> = use_context();
-    let mut pip_style: Signal<PipColor> = use_context();
-    let mut theme: Signal<ThemeConfig> = use_context();
-    let toast = use_toast();
+    let driver = Driver {
+        model: use_signal(State::new),
+        identifier: use_signal(String::new),
+        password: use_signal(String::new),
+        navigator: use_navigator(),
+        toast: use_toast(),
+        client: use_context(),
+        session: use_context(),
+        pip_style: use_context(),
+        theme: use_context(),
+    };
 
-    let mut identifier = use_signal(String::new);
-    let mut password = use_signal(String::new);
-    let mut is_loading = use_signal(|| false);
+    use_effect(move || {
+        let value = (driver.identifier)();
+        driver.dispatch(Action::EditIdentifier(value));
+    });
+    use_effect(move || {
+        let value = (driver.password)();
+        driver.dispatch(Action::EditPassword(Password::new(value)));
+    });
 
-    // Takes the prefill whenever one is set: the identifier fills in, the
-    // password clears, and the prefill is used up.
+    // Takes the prefill whenever it is set, including while this screen sits
+    // mounted under Register or Forgot password.
     let LoginPrefill(mut prefill) = use_context();
     use_effect(move || {
-        if let Some(value) = prefill() {
-            identifier.set(value);
-            password.set(String::new());
+        if let Some(identifier) = prefill() {
+            driver.dispatch(Action::Prefill(identifier));
             prefill.set(None);
         }
     });
 
-    let mut attempt_submit = move || {
-        match account::login_gate(*is_loading.peek(), &identifier.peek(), &password.peek()) {
-            LoginGate::Busy => return,
-            LoginGate::MissingInputs => {
-                raise(toast, &account::missing_inputs_toast());
-                return;
-            }
-            LoginGate::Send => {}
-        }
-        is_loading.set(true);
-        let request = HttpAuthenticateUser::new(&identifier.peek(), &password.peek());
-        spawn(async move {
-            let http = client.peek().clone();
-            match http.authenticate_user(request).await {
-                Ok(new_session) => {
-                    SessionStore::browser().infallible_save(&new_session);
-                    theme.set(components::theme_from_preferences(&new_session.preferences));
-                    pip_style.set(new_session.preferences.pip_style);
-                    session.set(Some(new_session));
-                    password.set(String::new());
-                    is_loading.set(false);
-                    navigator.push(Route::Home {});
-                }
-                Err(e) => {
-                    tracing::warn!("login failed: {e}");
-                    toast.error(
-                        e.to_user_message(),
-                        ToastOptions::default().duration(TOAST_NORMAL),
-                    );
-                    is_loading.set(false);
-                }
-            }
-        });
-    };
-
-    let submit = use_callback(move |()| attempt_submit());
+    let model = driver.model.read();
+    let is_loading = model.is_loading();
+    let submit_label = model.submit_label();
+    drop(model);
 
     rsx! {
-        ScreenFrame { title: "Login",
+        ScreenFrame { title: login::TITLE,
             div { class: "screen-content centered content-enter",
                 div { class: "web-auth web-page",
                     div { class: "container-sm text-center web-form-panel",
-                        FormPanelHead { title: "Login" }
+                        FormPanelHead { title: login::TITLE }
                         form {
                             class: "flex-col",
                             onsubmit: move |event| {
                                 event.prevent_default();
-                                submit.call(());
+                                driver.dispatch(Action::Submit);
                             },
                             TextInput {
-                                value: identifier,
+                                value: driver.identifier,
                                 id: "identity",
-                                label: "Username or email",
-                                placeholder: "Username or email",
+                                label: Field::Identifier.label(),
+                                placeholder: Field::Identifier.placeholder(),
                             }
                             TextInput {
-                                value: password,
+                                value: driver.password,
                                 id: "password",
-                                label: "Password",
-                                placeholder: "Password",
+                                label: Field::Password.label(),
+                                placeholder: Field::Password.placeholder(),
                                 input_type: "password",
                             }
-                            // Enter in a field submits the form through this.
-                            button { r#type: "submit", hidden: true }
+                            // The form's one button, so Return in a field
+                            // clicks it; the click submits itself, never the
+                            // page.
+                            div { class: "form-submit",
+                                Button {
+                                    disabled: is_loading,
+                                    onclick: move |evt: MouseEvent| {
+                                        evt.prevent_default();
+                                        driver.dispatch(Action::Submit);
+                                    },
+                                    {submit_label}
+                                }
+                            }
                         }
-                        FormPanelActions {
-                            LoginActions { loading: is_loading(), on_submit: submit }
+                        div { class: "form-links",
+                            Button {
+                                variant: ButtonVariant::Action,
+                                onclick: move |_| driver.dispatch(Action::CreateProfile),
+                                {login::CREATE_PROFILE}
+                            }
+                            Button {
+                                variant: ButtonVariant::Action,
+                                onclick: move |_| driver.dispatch(Action::ForgotPassword),
+                                {login::FORGOT_PASSWORD}
+                            }
                         }
                     }
                 }
@@ -123,33 +211,14 @@ pub fn Login() -> Element {
     }
 }
 
-/// `Log in`, `Create profile` and `Forgot password`, all held while a login
-/// is out. In a row in the form panel's footer.
-#[component]
-fn LoginActions(loading: bool, on_submit: Callback<()>) -> Element {
-    let navigator = use_navigator();
-    rsx! {
-        Button {
-            variant: ButtonVariant::Action,
-            disabled: loading,
-            onclick: move |_| on_submit.call(()),
-            if loading { "Logging in..." } else { "Log in" }
-        }
-        Button {
-            variant: ButtonVariant::Action,
-            disabled: loading,
-            onclick: move |_| {
-                navigator.push(Route::Register {});
-            },
-            "Create profile"
-        }
-        Button {
-            variant: ButtonVariant::Action,
-            disabled: loading,
-            onclick: move |_| {
-                navigator.push(Route::ForgotPassword {});
-            },
-            "Forgot password"
-        }
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn each_destination_has_its_route() {
+        assert_eq!(route(Destination::Home), Route::Home {});
+        assert_eq!(route(Destination::Register), Route::Register {});
+        assert_eq!(route(Destination::ForgotPassword), Route::ForgotPassword {});
     }
 }
