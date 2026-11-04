@@ -1184,6 +1184,31 @@ i.ms.ms-cost.ms-gp {
     color: var(--accent-primary);
 }
 
+/* The rows look (`rows`): the chip rows and each release are settings-rows of
+   the panel the caller wraps them in, so the panel's hairlines divide the
+   releases. The rows stack their content with the panel body's padding.
+   Compound selectors, since the kit's .settings-row loads after this sheet. */
+.settings-row.changelog-filters-row,
+.settings-row.changelog-row {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 0.75rem 1rem;
+    text-align: left;
+}
+
+.settings-row.changelog-filters-row {
+    gap: 0.5rem;
+}
+
+.settings-row.changelog-row {
+    gap: 0;
+    animation: changelog-card-in 0.35s ease-out both;
+}
+
+.changelog-row .changelog-version-row {
+    margin-bottom: 0.5rem;
+}
+
 
 /* ---- ColorMap (components::ColorMap) ---- */
 

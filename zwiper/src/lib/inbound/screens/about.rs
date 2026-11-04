@@ -4,9 +4,10 @@
 //! The top panel holds the rows Account used to carry under About (Version,
 //! zwipe.net and Privacy policy), with their labels from
 //! `zwipe_ui::screens::account`. Under it a Credits panel holds the Scryfall
-//! credit and the Fan Content notice from `zwipe_core::legal`, then under a
-//! Changelog title sits the shared [`components::Changelog`], the same
-//! history the website shows.
+//! credit and the Fan Content notice from `zwipe_core::legal`, then a
+//! Changelog panel holds the shared [`components::Changelog`] as rows, the
+//! same history the website shows: the version filter first, then a release
+//! per row.
 //!
 //! The changelog is fetched once in the background at startup and cached for
 //! the session (see [`crate::inbound::components::auth::session_upkeep`]).
@@ -132,16 +133,19 @@ pub fn About() -> Element {
                         }
                     }
 
-                    div { class: "settings-list-header about-section-header",
-                        span { class: "settings-list-title", {model::TITLE} }
-                    }
-
-                    match (status, data) {
-                        (Status::Loaded, Some(data)) => rsx! { ChangelogContent { data } },
-                        (Status::Failed, _) => rsx! {
-                            span { class: "chip-note", {model::FAILED} }
-                        },
-                        (Status::Loading | Status::Loaded, _) => rsx! { ChangelogSkeleton {} },
+                    div { class: "settings-list about-panel",
+                        div { class: "settings-list-header",
+                            span { class: "settings-list-title", {model::TITLE} }
+                        }
+                        match (status, data) {
+                            (Status::Loaded, Some(data)) => rsx! { ChangelogContent { data, rows: true } },
+                            (Status::Failed, _) => rsx! {
+                                div { class: "settings-row changelog-row",
+                                    span { class: "chip-note", {model::FAILED} }
+                                }
+                            },
+                            (Status::Loading | Status::Loaded, _) => rsx! { ChangelogSkeleton {} },
+                        }
                     }
                 }
             }
@@ -150,21 +154,23 @@ pub fn About() -> Element {
 }
 
 /// Placeholder shown while the startup changelog fetch is still in flight.
-/// Mirrors the real changelog's filter chips + release-card layout.
+/// Mirrors the real changelog's rows: the filter chips, then a release per row.
 #[component]
 fn ChangelogSkeleton() -> Element {
-    // Bullet counts per placeholder card, roughly matching a real release.
+    // Bullet counts per placeholder row, roughly matching a real release.
     const CARD_BULLETS: &[usize] = &[5, 3, 4];
 
     rsx! {
-        div { class: "changelog-skeleton-chips",
-            for i in 0..8 {
-                div { key: "{i}", class: "skeleton-bar changelog-skeleton-chip" }
+        div { class: "settings-row changelog-filters-row",
+            div { class: "changelog-skeleton-chips",
+                for i in 0..8 {
+                    div { key: "{i}", class: "skeleton-bar changelog-skeleton-chip" }
+                }
             }
         }
-        div { class: "changelog-list",
+        div { class: "changelog-rows",
             for (c , bullets) in CARD_BULLETS.iter().enumerate() {
-                div { key: "{c}", class: "changelog-card",
+                div { key: "{c}", class: "settings-row changelog-row",
                     div { class: "changelog-skeleton-row",
                         div { class: "skeleton-bar changelog-skeleton-version" }
                         div { class: "skeleton-bar changelog-skeleton-date" }

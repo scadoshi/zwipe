@@ -101,18 +101,10 @@ button {
     text-align: left;
 }
 
-/* About's panels under the first: the Credits list and the Changelog title,
-   each a panel gap below what precedes it. */
-.about-panel,
-.about-section-header {
+/* About's panels under the first, Credits and Changelog, each a panel gap
+   below what precedes it. */
+.about-panel {
     margin-top: var(--panel-gap);
-}
-
-/* The Changelog title over the chip rows, aligned with the panel titles
-   above it and without a panel box of its own. */
-.about-section-header {
-    border-bottom: none;
-    padding-bottom: 0.5rem;
 }
 
 /* The Credits panel's body: two short paragraphs as the row text, with the
@@ -1379,7 +1371,6 @@ button {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
-    margin-bottom: 1.5rem;
 }
 
 .changelog-skeleton-chip {
