@@ -4,8 +4,10 @@
 //! file draws its state, performs its effects and keeps the gestures, the
 //! card's entrance and the sheets.
 
+use components::icons::{self, EyeIcon};
 use components::{
-    Chip, HintBullet, HintBullets, HintDialog, HintLine, ToastOptions, Toasts, use_toast,
+    Chip, DockAction, DockFilter, HintBullet, HintBullets, HintDialog, HintLine, ToastOptions,
+    Toasts, use_toast,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -27,7 +29,6 @@ use zwipe_ui::stores::undo as shared_undo;
 use super::components::card_info::{CardDetailsSheet, CardInfoDisplay, CardSkeleton};
 use super::components::filter_store::{FilterScope, FilterStore};
 use super::components::printing_sheet::PrintingSheet;
-use crate::inbound::components::action_dock::{self, DockFilter, DockIcon, EyeIcon};
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::auth::ensure_session::EnsureFresh;
 use crate::inbound::components::hint_dialog::{self, HintColored};
@@ -569,10 +570,10 @@ pub fn Remove(deck_id: Uuid) -> Element {
                         dot: !filter_builder.read().is_empty() || filter_builder.read().sort().is_some(),
                         onclick: move |()| filters_overlay_open.set(true),
                     }
-                    button {
-                        class: "action-dock-btn",
-                        "aria-label": remove_cards::REFRESH,
-                        onclick: move |_| {
+                    DockAction {
+                        label: remove_cards::REFRESH,
+                        icon: icons::REFRESH,
+                        onclick: move |()| {
                             // Refresh rewinds the stack, which ends any entrance.
                             entering.set(None);
                             driver.dispatch(Action::Refresh);
@@ -580,7 +581,6 @@ pub fn Remove(deck_id: Uuid) -> Element {
                                 driver.bump_filter();
                             }
                         },
-                        DockIcon { path: action_dock::REFRESH }
                     }
                     span { class: "action-dock-divider" }
                     button {

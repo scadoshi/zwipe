@@ -8,8 +8,9 @@
 //! [`OracleText`], [`FlippableCardImage`], [`ChangelogFilters`] and
 //! [`ChangelogReleases`], the deck charts ([`BarChart`], [`DeckCharts`], [`ColorChart`], [`ManaCurve`], [`ManaFulfillment`],
 //! [`DrawOdds`], [`ChartLabel`], with [`Fold`] and [`SeeMore`] behind their
-//! long rows), the [`ColorBars`], [`ZwipeArchitecture`] and the [`icons`] the
-//! app's icon buttons and both clients' hint keys draw.
+//! long rows), the [`ColorBars`], [`ZwipeArchitecture`] and the [`hint`]
+//! renderer that draws zwipe-ui's typed hint copy. orangui's [`icons`] come
+//! through by name like the rest of the kit.
 //!
 //! Styling ships as string constants to inline through `document::Style`.
 //! orangui's sheets come through as they are; [`MAGIC_CSS`] holds this crate's
@@ -40,7 +41,7 @@ mod charts;
 mod color_bars;
 mod flippable_card_image;
 mod fold;
-pub mod icons;
+pub mod hint;
 mod keyword_chips;
 mod oracle_text;
 mod role_tags;
@@ -63,17 +64,18 @@ pub use fold::{FOLD_AT, Fold, SEE_LESS, SEE_MORE, SeeMore, fold_split};
 pub use keyword_chips::{KeywordChips, KeywordReminders};
 pub use oracle_text::OracleText;
 pub use orangui::{
-    ALLOWED_THEMES, APP_CSS, ActionBar, ActionButton, AlertDialog, BOOT_BG, BOOT_HEAD,
+    ALLOWED_THEMES, APP_CSS, ActionBar, ActionButton, ActionDock, AlertDialog, BOOT_BG, BOOT_HEAD,
     BRAND_RESET_JS, Banner, BootReveal, BottomSheet, Button, ButtonVariant, COMPONENTS_CSS,
-    ChartTip, Chip, DarkModeButton, Decode, DialogAction, DialogHostView, GalleryFooter,
-    GalleryFrame, GridCells, HEAT_CELL, HEAT_ROWS, HeatCell, HeatGrid, HeatHit, HeatReadout,
-    HintBullet, HintBullets, HintDialog, HintKey, HintLine, InfoButton, KEYBOARD_INSET_JS,
-    ModeIcon, NAV_GLIDE_JS, NavBar, PageHeader, PageMeta, PaletteIcon, Panel, PasswordInput,
-    RETIRED_THEMES, REVEAL_JS, Replay, SCROLL_FADE_JS, SITE_CSS, SiteMeta, Splash, SplashGate,
-    StatsStrip, THEME_GROUPS, THEMES_CSS, TOAST_LONG, TOAST_NORMAL, TOAST_QUICK, TextInput,
-    ThemeConfig, ThemePicker, ThemeSheet, heat_span, peak_indices, status_uses, use_dialog_host,
-    use_heat_pick, use_os_back, use_overlay_back, use_overlay_back_action, use_overlay_back_stack,
-    use_persisted_theme, use_theme_follow, use_theme_wipe, with_separators,
+    ChartTip, Chip, DarkModeButton, Decode, DialogAction, DialogHostView, DockAction, DockFilter,
+    DockPlace, GalleryFooter, GalleryFrame, GridCells, HEAT_CELL, HEAT_ROWS, HeatCell, HeatGrid,
+    HeatHit, HeatReadout, HintBullet, HintBullets, HintDialog, HintKey, HintLine, InfoButton,
+    KEYBOARD_INSET_JS, ModeIcon, NAV_GLIDE_JS, NavBar, NavCtaIcon, PageHeader, PageMeta,
+    PaletteIcon, Panel, PasswordInput, RETIRED_THEMES, REVEAL_JS, Replay, SCROLL_FADE_JS, SITE_CSS,
+    SiteMeta, Splash, SplashGate, StatsStrip, THEME_GROUPS, THEMES_CSS, TOAST_LONG, TOAST_NORMAL,
+    TOAST_QUICK, TextInput, ThemeConfig, ThemePicker, ThemeSheet, heat_span, icons, peak_indices,
+    status_uses, use_dialog_host, use_heat_pick, use_os_back, use_overlay_back,
+    use_overlay_back_action, use_overlay_back_stack, use_persisted_theme, use_theme_follow,
+    use_theme_wipe, with_separators,
 };
 #[cfg(feature = "links")]
 pub use orangui::{OpenUrlError, open_url, use_in_app_links};

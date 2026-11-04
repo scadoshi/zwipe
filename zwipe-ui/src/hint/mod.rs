@@ -120,6 +120,37 @@ pub enum KeyIcon {
 }
 
 impl KeyIcon {
+    /// Every icon, in [`KeyIcon::name`] order.
+    pub const ALL: [Self; 20] = [
+        Self::Plus,
+        Self::Minus,
+        Self::Funnel,
+        Self::Undo,
+        Self::Eraser,
+        Self::Refresh,
+        Self::Check,
+        Self::Copy,
+        Self::Link,
+        Self::Eye,
+        Self::Edit,
+        Self::Clone,
+        Self::Share,
+        Self::Person,
+        Self::Cog,
+        Self::Info,
+        Self::Palette,
+        Self::Home,
+        Self::Light,
+        Self::Dark,
+    ];
+
+    /// The icon whose [`KeyIcon::name`] is `name`, or `None` for a name no
+    /// icon has.
+    #[must_use]
+    pub fn from_name(name: &str) -> Option<Self> {
+        Self::ALL.into_iter().find(|icon| icon.name() == name)
+    }
+
     /// What the icon reads as in the plain-text form of a hint, such as
     /// `plus` or `pencil`.
     #[must_use]
@@ -349,6 +380,16 @@ mod tests {
         assert_eq!(labeled.text(), "light", "a labeled key keeps its words");
         assert_eq!(KeyIcon::Edit.name(), "pencil");
         assert_eq!(KeyIcon::Clone.name(), "clone");
+    }
+
+    #[test]
+    fn every_icon_round_trips_through_its_name() {
+        for icon in KeyIcon::ALL {
+            assert_eq!(KeyIcon::from_name(icon.name()), Some(icon), "{icon:?}");
+        }
+        assert_eq!(KeyIcon::from_name("pencil"), Some(KeyIcon::Edit));
+        assert_eq!(KeyIcon::from_name("funel"), None);
+        assert_eq!(KeyIcon::from_name(""), None);
     }
 
     #[test]

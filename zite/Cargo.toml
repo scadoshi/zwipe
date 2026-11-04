@@ -20,6 +20,8 @@ server = ["dioxus/server", "dep:tokio"]
 zwipe-core = { path = "../zwipe-core" }
 zwipe-client = { path = "../zwipe-client" }
 components = { path = "../components" }
+# The guides name icons as zwipe-ui's hint model does, so one list serves both.
+zwipe-ui = { path = "../zwipe-ui" }
 dioxus = { version = "0.7.9", features = ["router", "fullstack"] }
 serde = { workspace = true }
 serde_json = { workspace = true }

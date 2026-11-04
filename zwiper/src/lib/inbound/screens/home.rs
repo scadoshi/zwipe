@@ -8,6 +8,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Instant;
 
 use chrono::Utc;
+use components::icons::{self, DockIcon};
 use components::{
     AlertDialog, DialogAction, HintBullet, HintBullets, HintDialog, HintKey, ThemeConfig, Toasts,
     use_toast,
@@ -25,7 +26,6 @@ use zwipe_ui::screens::home::{
     self, Action, Age, Cached, CachedFigures, DeckTile, Destination, Effect, Flavor, State,
 };
 
-use crate::inbound::components::action_dock::{self, DockIcon};
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::auth::session_upkeep::FlavorCard;
 use crate::inbound::components::hint_dialog::{self, HintColored};
@@ -572,8 +572,8 @@ pub fn Home() -> Element {
                 HintBullets {
                     HintBullet { HintKey { "Decks" } " lists your latest decks; All decks opens the list" }
                     HintBullet { HintKey { "Colors" } " counts your decks' cards by color. Tap Playstyle for suggested commanders" }
-                    HintBullet { HintKey { "Account" } ", the " HintKey { DockIcon { path: action_dock::PERSON } } " in the menu's footer, has your email, password and log out" }
-                    HintBullet { HintKey { "Settings" } ", the " HintKey { DockIcon { path: action_dock::COG } } " beside it, sets your theme and which cards show" }
+                    HintBullet { HintKey { "Account" } ", the " HintKey { DockIcon { path: icons::PERSON } } " in the menu's footer, has your email, password and log out" }
+                    HintBullet { HintKey { "Settings" } ", the " HintKey { DockIcon { path: icons::COG } } " beside it, sets your theme and which cards show" }
                     HintBullet { HintColored { color: "--color-warning", "Verify your email" } " in Account for full deck and card limits" }
                 }
             }

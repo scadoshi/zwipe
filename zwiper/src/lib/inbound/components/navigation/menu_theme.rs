@@ -10,11 +10,10 @@
 //! stays painted and folds as the sheet rises, the way the kit's
 //! `ThemePicker` folds a site's menu.
 
-use components::{ModeIcon, ThemeConfig, Toasts, use_toast};
+use components::{ModeIcon, PaletteIcon, ThemeConfig, Toasts, use_toast};
 use dioxus::prelude::*;
 use zwipe_ui::screens::config::{Action, Effect, Sheet, State};
 
-use crate::inbound::components::action_dock::{DockIcon, PALETTE};
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::telemetry::vocabulary::{ProfileScreen, Screen};
 use crate::inbound::components::theme_save::{self, ThemeSaveSheet, theme_config_of, theme_of};
@@ -104,7 +103,7 @@ pub fn MenuTheme(open: Signal<bool>) -> Element {
             class: "btn-action nav-icon",
             "aria-label": "Theme",
             onclick: move |_| driver.dispatch(Action::OpenThemes),
-            DockIcon { path: PALETTE }
+            PaletteIcon {}
         }
         button {
             class: "btn-action nav-icon",

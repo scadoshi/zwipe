@@ -11,12 +11,12 @@
 //! tap on an entry only navigates: the new screen's header mounts with the
 //! panel still open and folds it shut over its own content.
 
+use components::icons::{COG, DockIcon, HOUSE, INFO, PERSON};
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_ui::screens::account::LOG_OUT;
 
-use crate::inbound::components::action_dock::{COG, DockIcon, HOUSE, INFO, PERSON};
 use crate::inbound::components::auth::signal_logout::SignalLogout;
 use crate::inbound::components::logout_dialog::LogoutDialog;
 use crate::inbound::components::navigation::menu_theme::MenuTheme;

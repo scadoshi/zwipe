@@ -2,8 +2,8 @@
 //! pages. The per-token pages (shared deck, verify, confirm email, reset) render in the browser.
 
 use ::components::{
-    BRAND_RESET_JS, COMPONENTS_CSS, Decode, MAGIC_CSS, NAV_GLIDE_JS, NavBar, REVEAL_JS, Replay,
-    SCROLL_FADE_JS, SITE_CSS, THEMES_CSS, ThemeConfig, ThemePicker, use_theme_wipe,
+    BRAND_RESET_JS, COMPONENTS_CSS, Decode, MAGIC_CSS, NAV_GLIDE_JS, NavBar, NavCtaIcon, REVEAL_JS,
+    Replay, SCROLL_FADE_JS, SITE_CSS, THEMES_CSS, ThemeConfig, ThemePicker, use_theme_wipe,
 };
 use dioxus::prelude::*;
 use zwipe_core::domain::user::preferences::PipColor;
@@ -34,6 +34,7 @@ const Z_LOGO: &str = zwipe_core::domain::logo::Z;
 struct Store {
     /// The link's accessible name and tooltip.
     label: &'static str,
+    /// The store page the pill opens.
     href: &'static str,
     /// A filled 24-unit icon path, drawn in the pill's color.
     path: &'static str,
@@ -58,29 +59,6 @@ const APPLE: &str = "M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1
 
 /// The Google Play mark (Simple Icons).
 const GOOGLE_PLAY: &str = "M3.609 1.814L13.792 12 3.61 22.186a.996.996 0 0 1-.61-.92V2.734a1 1 0 0 1 .609-.92zm10.89 10.893l2.302 2.302-10.937 6.333 8.635-8.635zm3.199-3.198l2.807 1.626a1 1 0 0 1 0 1.73l-2.808 1.626L15.206 12l2.492-2.491zM5.864 2.658L16.8 8.99l-2.302 2.302-8.634-8.634z";
-
-/// One store as the kit's icon pill: the SVG inside, the label as its name.
-#[component]
-fn StoreIcon(cta: Store, onclick: Option<EventHandler<MouseEvent>>) -> Element {
-    rsx! {
-        a {
-            class: "nav-cta nav-cta-icon",
-            href: cta.href,
-            "aria-label": cta.label,
-            title: cta.label,
-            onclick: move |event| {
-                if let Some(handler) = &onclick {
-                    handler.call(event);
-                }
-            },
-            svg {
-                view_box: "0 0 24 24",
-                "aria-hidden": "true",
-                path { d: cta.path }
-            }
-        }
-    }
-}
 
 #[derive(Routable, Clone, PartialEq)]
 #[rustfmt::skip]
@@ -360,7 +338,12 @@ pub fn Nav() -> Element {
             },
             persistent: rsx! {
                 for cta in STORES {
-                    StoreIcon { key: "{cta.label}", cta }
+                    NavCtaIcon {
+                        key: "{cta.label}",
+                        href: cta.href,
+                        label: cta.label,
+                        path: cta.path,
+                    }
                 }
             },
             links: rsx! {
@@ -380,7 +363,12 @@ pub fn Nav() -> Element {
                 // where the persistent copies beside the toggle cover them.
                 for cta in STORES {
                     li { key: "{cta.label}", class: "nav-cta-item",
-                        StoreIcon { cta, onclick: move |_| open.set(false) }
+                        NavCtaIcon {
+                            href: cta.href,
+                            label: cta.label,
+                            path: cta.path,
+                            onclick: move |_| open.set(false),
+                        }
                     }
                 }
             },

@@ -4,8 +4,10 @@
 //! file draws its state, performs its effects and keeps the gestures, the
 //! card's entrance, image easing and the sheets.
 
+use components::icons::{self, DockIcon, EyeIcon};
 use components::{
-    Chip, HintBullet, HintBullets, HintDialog, HintKey, HintLine, ToastOptions, Toasts, use_toast,
+    Chip, DockAction, DockFilter, HintBullet, HintBullets, HintDialog, HintKey, HintLine,
+    ToastOptions, Toasts, use_toast,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -26,7 +28,6 @@ use zwipe_ui::stores::parked;
 
 use super::components::card_info::{CardDetailsSheet, CardInfoDisplay, CardSkeleton};
 use super::components::printing_sheet::PrintingSheet;
-use crate::inbound::components::action_dock::{self, DockFilter, DockIcon, EyeIcon};
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::auth::ensure_session::EnsureFresh;
 use crate::inbound::components::hint_dialog::{self, HintColored};
@@ -773,7 +774,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                             "aria-label": add_cards::SYNERGY,
                             "aria-pressed": "{filter_builder.read().synergy()}",
                             onclick: move |_| driver.dispatch(Action::ToggleSynergy),
-                            DockIcon { path: action_dock::LINK }
+                            DockIcon { path: icons::LINK }
                         }
                     }
                     DockFilter {
@@ -781,11 +782,10 @@ pub fn Add(deck_id: Uuid) -> Element {
                         dot: shows_dot,
                         onclick: move |()| filters_overlay_open.set(true),
                     }
-                    button {
-                        class: "action-dock-btn",
-                        "aria-label": add_cards::REFRESH,
-                        onclick: move |_| driver.dispatch(Action::Refresh),
-                        DockIcon { path: action_dock::REFRESH }
+                    DockAction {
+                        label: add_cards::REFRESH,
+                        icon: icons::REFRESH,
+                        onclick: move |()| driver.dispatch(Action::Refresh),
                     }
                     span { class: "action-dock-divider" }
                     button {
@@ -842,7 +842,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                     HintBullet { "Swipe " HintColored { color: "--color-warning", "up" } " sends it to the maybeboard" }
                     HintBullet { "Swipe " HintColored { color: "--accent-tertiary", "down" } " undoes the last swipe" }
                     HintBullet { "The chip after " HintKey { "From" } " switches between Search and your Maybe pile" }
-                    HintBullet { HintKey { DockIcon { path: action_dock::LINK } } " is Synergy: on starts with cards that work with your commander, then cards like your deck. Off shows every legal card" }
+                    HintBullet { HintKey { DockIcon { path: icons::LINK } } " is Synergy: on starts with cards that work with your commander, then cards like your deck. Off shows every legal card" }
                 }
                 HintLine { "Sort only reorders. It never hides cards" }
             }

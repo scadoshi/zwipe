@@ -13,6 +13,7 @@
 //! cards, the cursor, paging) is `zwipe_ui::screens::oracle_tag_examples`; this
 //! file draws it through the same `SwipeStack` as the add screen.
 
+use components::icons::EyeIcon;
 use components::{HintBullet, HintBullets, HintDialog, Toasts, use_overlay_back, use_toast};
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
@@ -24,7 +25,6 @@ use zwipe_ui::screens::oracle_tag_examples::{
 };
 use zwipe_ui::stack;
 
-use crate::inbound::components::action_dock::EyeIcon;
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::hint_dialog::{self, HintColored};
 use crate::inbound::components::interactions::swipe::SwipeStack;

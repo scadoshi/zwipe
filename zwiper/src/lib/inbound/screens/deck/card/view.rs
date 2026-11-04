@@ -1,4 +1,8 @@
-use components::{Chip, HintBullet, HintBullets, HintDialog, HintKey, HintLine, Toasts, use_toast};
+use components::icons::{self, DockIcon};
+use components::{
+    Chip, DockAction, DockFilter, HintBullet, HintBullets, HintDialog, HintKey, HintLine, Toasts,
+    use_toast,
+};
 use dioxus::core::spawn_forever;
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -28,7 +32,6 @@ use super::components::image_preview::ImagePreview;
 use super::components::printing_sheet::PrintingSheet;
 use super::components::quick_add::QuickAdd;
 use super::components::undo_log::{UndoAction, UndoLog, UndoStore, take_newest_in};
-use crate::inbound::components::action_dock::{self, DockFilter, DockIcon};
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::catalog_cache::CatalogCache;
 use crate::inbound::components::hint_dialog::{self, HintColored};
@@ -1077,17 +1080,15 @@ pub fn View(deck_id: Uuid) -> Element {
             // add and remove, then the filter (with its reset while a filter is
             // on) and undo.
             div { class: "action-dock action-dock-right",
-                button {
-                    class: "action-dock-btn",
-                    "aria-label": deck_cards::ADD,
-                    onclick: move |_| driver.dispatch(Action::OpenAdd),
-                    DockIcon { path: action_dock::PLUS }
+                DockAction {
+                    label: deck_cards::ADD,
+                    icon: icons::PLUS,
+                    onclick: move |()| driver.dispatch(Action::OpenAdd),
                 }
-                button {
-                    class: "action-dock-btn",
-                    "aria-label": deck_cards::REMOVE,
-                    onclick: move |_| driver.dispatch(Action::OpenRemove),
-                    DockIcon { path: action_dock::MINUS }
+                DockAction {
+                    label: deck_cards::REMOVE,
+                    icon: icons::MINUS,
+                    onclick: move |()| driver.dispatch(Action::OpenRemove),
                 }
                 span { class: "action-dock-divider" }
                 DockFilter {
@@ -1100,18 +1101,17 @@ pub fn View(deck_id: Uuid) -> Element {
                 }
                 // Walks the undo log newest-first; disabled while there is
                 // nothing to undo, so the pill keeps its width.
-                button {
-                    class: "action-dock-btn",
-                    "aria-label": deck_cards::UNDO,
+                DockAction {
+                    label: deck_cards::UNDO,
+                    icon: icons::UNDO,
                     disabled: undo_log.0.read().is_empty(),
-                    onclick: move |_| {
+                    onclick: move |()| {
                         let mut log = undo_log.0;
                         let popped = log.write().pop();
                         if let Some(action) = popped {
                             driver.dispatch(Action::Undo(Box::new(to_shared_undo(action))));
                         }
                     },
-                    DockIcon { path: action_dock::UNDO }
                 }
             }
 
@@ -1133,7 +1133,7 @@ pub fn View(deck_id: Uuid) -> Element {
                     HintBullet { HintKey { "Group by" } " sorts by type, mana value, color or role" }
                     HintBullet { HintKey { "Boards" } " picks main, maybe or side" }
                     HintBullet { HintKey { "Show" } " toggles tokens, the command zone and row art" }
-                    HintBullet { "The bar at the bottom: " HintKey { DockIcon { path: action_dock::PLUS } } " adds, " HintKey { DockIcon { path: action_dock::MINUS } } " removes, " HintKey { DockIcon { path: action_dock::FUNNEL } } " filters (its " HintKey { "×" } " resets the filter), and " HintKey { DockIcon { path: action_dock::UNDO } } " undoes" }
+                    HintBullet { "The bar at the bottom: " HintKey { DockIcon { path: icons::PLUS } } " adds, " HintKey { DockIcon { path: icons::MINUS } } " removes, " HintKey { DockIcon { path: icons::FUNNEL } } " filters (its " HintKey { "×" } " resets the filter), and " HintKey { DockIcon { path: icons::UNDO } } " undoes" }
                     HintBullet { HintKey { color: "--color-warning", "Star" } " marks up to three MVPs. Suggestions lean toward cards that share their roles" }
                 }
             }

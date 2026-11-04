@@ -3,7 +3,7 @@
 //! What the sheet knows and does is `zwipe_ui::screens::printing_sheet`;
 //! this file draws its state, keeps the carousel, and performs its effects.
 
-use components::{BottomSheet, TOAST_NORMAL, ToastOptions, Toasts, use_toast};
+use components::{BottomSheet, DockAction, TOAST_NORMAL, ToastOptions, Toasts, icons, use_toast};
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::Card;
@@ -12,7 +12,6 @@ use zwipe_ui::screens::printing_sheet::{self as model, Action, Effect, Mode, Sta
 
 use super::card_info::{CardInfoDisplay, PrintingSheetSkeleton};
 use super::flippable_card_image::FlippableCardImage;
-use crate::inbound::components::action_dock::{self, DockIcon};
 use crate::inbound::components::interactions::carousel::Carousel;
 use crate::inbound::components::interactions::carousel::dots::CarouselDots;
 use crate::inbound::components::interactions::carousel::state::CarouselState;
@@ -233,12 +232,11 @@ pub(crate) fn PrintingSheet(
                 // printing it opened on.
                 if shows_save {
                     div { class: "action-dock action-dock-right sheet-dock",
-                        button {
-                            class: "action-dock-btn",
-                            "aria-label": model::SAVE,
+                        DockAction {
+                            label: model::SAVE,
+                            icon: icons::CHECK,
                             disabled: !can_save,
-                            onclick: move |_| driver.dispatch(Action::Save { at: current_idx }),
-                            DockIcon { path: action_dock::CHECK }
+                            onclick: move |()| driver.dispatch(Action::Save { at: current_idx }),
                         }
                     }
                 }

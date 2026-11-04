@@ -3,7 +3,10 @@
 //! What the screen knows and does is `zwipe_ui::screens::deck_export`; this
 //! file draws its state and performs its effects.
 
-use components::{Chip, HintBullet, HintBullets, HintDialog, HintKey, Toasts, use_toast};
+use components::icons::{self, DockIcon};
+use components::{
+    Chip, DockAction, HintBullet, HintBullets, HintDialog, HintKey, Toasts, use_toast,
+};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use uuid::Uuid;
@@ -12,7 +15,6 @@ use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::user::models::hints::HINT_EXPORT;
 use zwipe_ui::screens::deck_export::{self, Action, Board, Destination, Effect, State, Status};
 
-use crate::inbound::components::action_dock::{self, DockIcon};
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen};
@@ -137,7 +139,7 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                     title: "Exporting your deck",
                     HintBullets {
                         HintBullet { HintKey { "Export" } " picks which boards to include" }
-                        HintBullet { "The " HintKey { DockIcon { path: action_dock::COPY } } " at the bottom right puts the decklist on your clipboard" }
+                        HintBullet { "The " HintKey { DockIcon { path: icons::COPY } } " at the bottom right puts the decklist on your clipboard" }
                     }
                 }
 
@@ -199,11 +201,10 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
 
                 // Copy as the action dock's icon, pinned bottom right.
                 div { class: "action-dock action-dock-right",
-                    button {
-                        class: "action-dock-btn",
-                        "aria-label": deck_export::COPY,
-                        onclick: move |_| driver.dispatch(Action::Copy),
-                        DockIcon { path: action_dock::COPY }
+                    DockAction {
+                        label: deck_export::COPY,
+                        icon: icons::COPY,
+                        onclick: move |()| driver.dispatch(Action::Copy),
                     }
                 }
             }

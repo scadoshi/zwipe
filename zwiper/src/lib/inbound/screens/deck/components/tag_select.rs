@@ -7,12 +7,11 @@
 //! at the top, so users learn what a tag does while picking it. The search box
 //! filters the grid by name for quick jumps.
 
-use components::{HintBullet, HintBullets, HintDialog, use_overlay_back_action};
+use components::{DockAction, HintBullet, HintBullets, HintDialog, icons, use_overlay_back_action};
 use dioxus::prelude::*;
 use zwipe_core::domain::deck::{DeckTagView, MAX_DECK_TAGS};
 use zwipe_ui::deck::pickers::{self, Picker};
 
-use crate::inbound::components::action_dock::{self, DockIcon};
 use crate::inbound::components::concept_explainers::DeckTagsExplainer;
 use crate::inbound::components::guide_link;
 use crate::inbound::components::screen_header::ScreenHeader;
@@ -131,12 +130,11 @@ pub(crate) fn TagSelect(
 
                 // Save as the action dock's checkmark, pinned bottom right.
                 div { class: "action-dock action-dock-right",
-                    button {
-                        class: "action-dock-btn",
-                        "aria-label": "Save",
+                    DockAction {
+                        label: "Save",
+                        icon: icons::CHECK,
                         disabled: unchanged,
-                        onclick: move |_| on_save.call(()),
-                        DockIcon { path: action_dock::CHECK }
+                        onclick: move |()| on_save.call(()),
                     }
                 }
 

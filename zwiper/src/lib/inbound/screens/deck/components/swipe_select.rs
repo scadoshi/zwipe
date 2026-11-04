@@ -22,9 +22,10 @@
 
 use std::collections::HashSet;
 
+use components::icons::{self, DockIcon, EyeIcon};
 use components::{
-    BottomSheet, HintBullet, HintBullets, HintDialog, HintKey, HintLine, ToastOptions, Toasts,
-    use_overlay_back, use_toast,
+    BottomSheet, DockAction, DockFilter, HintBullet, HintBullets, HintDialog, HintKey, HintLine,
+    ToastOptions, Toasts, use_overlay_back, use_toast,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -39,7 +40,6 @@ use zwipe_ui::screens::swipe_select::{self as model, Action, Destination, Effect
 pub(crate) use zwipe_ui::screens::swipe_select::{Mode as SwipeMode, SuggestedPile};
 use zwipe_ui::stack;
 
-use crate::inbound::components::action_dock::{self, DockFilter, DockIcon, EyeIcon};
 use crate::inbound::components::hint_dialog::{self, HintColored};
 use crate::inbound::components::interactions::swipe::SwipeStack;
 use crate::inbound::components::interactions::swipe::config::SwipeConfig;
@@ -472,11 +472,10 @@ pub(crate) fn SwipeSelect(
                             onclick: move |()| filters_overlay_open.set(true),
                         }
                     }
-                    button {
-                        class: "action-dock-btn",
-                        "aria-label": model::REFRESH,
-                        onclick: move |_| refresh(),
-                        DockIcon { path: action_dock::REFRESH }
+                    DockAction {
+                        label: model::REFRESH,
+                        icon: icons::REFRESH,
+                        onclick: move |()| refresh(),
                     }
                     span { class: "action-dock-divider" }
                     button {
@@ -560,10 +559,10 @@ pub(crate) fn SwipeSelect(
                     if suggested {
                         HintLine { "Best fit first, 100 deep. " HintKey { EyeIcon {} } " shows why each one was suggested" }
                         if has_suggested_filter {
-                            HintLine { HintKey { DockIcon { path: action_dock::FUNNEL } } " narrows the stack to one color identity" }
+                            HintLine { HintKey { DockIcon { path: icons::FUNNEL } } " narrows the stack to one color identity" }
                         }
                     } else {
-                        HintLine { "Most-played first. " HintKey { DockIcon { path: action_dock::FUNNEL } } " narrows by color or anything else" }
+                        HintLine { "Most-played first. " HintKey { DockIcon { path: icons::FUNNEL } } " narrows by color or anything else" }
                     }
                 }
             }

@@ -6,6 +6,7 @@
 //! file holds the text being typed, draws the model's state and performs its
 //! effects.
 
+use components::icons::{self, DockIcon};
 use components::{Chip, HintBullet, HintBullets, HintDialog, HintKey, Toasts, use_toast};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -17,7 +18,6 @@ use zwipe_ui::screens::deck_import::{
     self, Action, Board, Destination, Effect, MODES, Source, State, mode_label,
 };
 
-use crate::inbound::components::action_dock::{self, DockIcon};
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen};
@@ -298,7 +298,7 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                             };
                             driver.dispatch(Action::Submit { input });
                         },
-                        DockIcon { path: action_dock::CHECK }
+                        DockIcon { path: icons::CHECK }
                     }
                 }
             }
