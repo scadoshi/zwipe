@@ -6,6 +6,7 @@ pub mod authed;
 pub mod form_panel;
 pub mod hint_body;
 pub mod hint_topic;
+pub mod logout_dialog;
 pub mod media;
 pub mod more_menu;
 pub mod one_time_hint;

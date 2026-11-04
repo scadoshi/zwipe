@@ -17,7 +17,7 @@ use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::hint_topic::{HintTopic, InfoButton};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::screens::config::exceptions::ExceptionsSheet;
-use crate::inbound::screens::config::themes::ThemesSheet;
+pub(crate) use crate::inbound::screens::config::themes::{ThemesSheet, use_toggle_dark_mode};
 use crate::inbound::shell::{ScreenFrame, page_description};
 use crate::outbound::session_store::SessionStore;
 
@@ -41,7 +41,7 @@ fn update(edit: impl FnOnce(&mut HttpUpdatePreferences)) -> HttpUpdatePreference
 /// before that click, and a reply overtaken by a newer click is ignored.
 #[component]
 pub fn Config() -> Element {
-    let mut theme: Signal<ThemeConfig> = use_context();
+    let theme: Signal<ThemeConfig> = use_context();
     let mut pip_style: Signal<PipColor> = use_context();
     let mut session: Signal<Option<Session>> = use_context();
     let authed = use_authed();
@@ -79,41 +79,7 @@ pub fn Config() -> Element {
         });
     });
 
-    let mut dark_seq = use_signal(RequestSeq::default);
-    let toggle_dark_mode = move |_| {
-        let prev = theme.peek().clone();
-        let next = ThemeConfig {
-            name: prev.name.clone(),
-            is_dark: !prev.is_dark,
-        };
-        theme.set(next.clone());
-        let mine = dark_seq.write().begin();
-        let request = update(|r| {
-            r.theme = Some(next.name);
-            r.dark_mode = Some(next.is_dark);
-        });
-        spawn(async move {
-            let reply = authed
-                .try_run("update_preferences", |c, s| async move {
-                    c.update_preferences(request, &s).await
-                })
-                .await
-                .ok();
-            let saved_dark = reply.as_ref().map(|r| r.dark_mode);
-            let saved = reply.map(|r| components::theme_from_preferences(&r));
-            let Some(shown) = preferences::settle(*dark_seq.peek(), mine, saved, prev) else {
-                return;
-            };
-            theme.set(shown);
-            if let Some(dark) = saved_dark {
-                said.call(if dark {
-                    "Dark mode on"
-                } else {
-                    "Dark mode off"
-                });
-            }
-        });
-    };
+    let toggle_dark_mode = use_toggle_dark_mode();
 
     let mut pip_seq = use_signal(RequestSeq::default);
     let toggle_pips = move |_| {
@@ -198,7 +164,7 @@ pub fn Config() -> Element {
                             RowLabel { label: "Theme", topic: HintTopic::Theme }
                             div { class: "settings-row-value",
                                 span { {user_preferences::display_theme_name(&theme().name)} }
-                                DarkModeButton { is_dark: theme().is_dark, onclick: toggle_dark_mode }
+                                DarkModeButton { is_dark: theme().is_dark, onclick: move |_| toggle_dark_mode.call(()) }
                                 Button {
                                     variant: ButtonVariant::Action,
                                     onclick: move |_| themes_open.set(true),

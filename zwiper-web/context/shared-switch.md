@@ -70,6 +70,11 @@ The web catch-up (unified UI, slice 1) moved the app pieces both clients' chrome
 - [x] **Dock icons.** `components::icons`: the stroke paths (`PLUS`, `MINUS`, `FUNNEL`, `UNDO`, `REFRESH`, `CHECK`, `COPY`, `ARROW`, `SEND`, `HOUSE`, `PERSON`, `COG`, `INFO`, `PALETTE`, `LINK`) with `DockIcon` and `EyeIcon`, re-exported at `components::{DockIcon, EyeIcon}`. The app's `action_dock` re-exports them; `DockFilter` stays the app's.
 - [x] **Menu sections.** `components::MenuSection`: the eight sections with `ALL`, `LISTED`, `FOOTER`, `label()` and `icon()`. The routes stay per client (`route_of`, `section_of` in the app's `navigation/menu.rs` and the web's `shell/nav.rs`), since each has its own router.
 
+## Kept as copies
+
+- [ ] **Header hide script.** `zwiper-web/assets/header_hide.js` is the app's `zwiper/assets/header_hide.js` keyed to the web's shell (`.web-shell > .web-app-nav`, the `.web-scroll-screen` scroller, phone width only). It belongs in orangui as an opt-in constant like `KEYBOARD_INSET_JS`, with the header and scroller named generically, once orangui can be repinned; then both clients take it from `components`.
+- [ ] **Header and menu CSS.** The phone-width block in `web.css` under `Header below the breakpoint` repeats what zwiper's `main.css` scopes to `.app-nav` (the nav grid, the dropped panel), on `.web-app-nav`, since the app's selector would also restyle the wide bar. The pieces' own rules (`.app-nav-back`, `.app-nav-title`, `.app-nav-support`, `.app-nav-logout`) come from `main.css` as it is.
+
 ## Coming
 
 - Nothing more from the shared crates for now; switch the entries above.

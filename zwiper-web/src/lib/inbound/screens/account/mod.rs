@@ -7,7 +7,7 @@ mod change_username;
 mod delete_account;
 mod verification;
 
-use components::{ActionBar, AlertDialog, Button, ButtonVariant, DialogAction};
+use components::{ActionBar, Button, ButtonVariant};
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
@@ -15,6 +15,7 @@ use zwipe_core::domain::site::WEB_BASE;
 
 use crate::config::APP_VERSION;
 use crate::inbound::chrome::hint_topic::{HintTopic, InfoButton};
+use crate::inbound::chrome::logout_dialog::LogoutDialog;
 use crate::inbound::chrome::more_menu::{MoreButton, MoreMenu, use_more_menu};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::router::Route;
@@ -196,19 +197,7 @@ pub fn Account() -> Element {
                 "Delete account"
             }
         }
-        AlertDialog {
-            open: logout_open,
-            title: "Log out",
-            actions: vec![
-                DialogAction::Dismiss("Cancel".into()),
-                DialogAction::Confirm {
-                    label: "Log out".into(),
-                    danger: true,
-                    on_confirm: log_out,
-                },
-            ],
-            "Are you sure you want to log out?"
-        }
+        LogoutDialog { open: logout_open, on_confirm: log_out }
         DeleteAccountDialog { open: delete_open }
         ChangeUsernameSheet { open: username_open }
         ChangeEmailSheet { open: email_open }

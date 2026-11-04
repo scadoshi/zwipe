@@ -12,7 +12,8 @@ use zwipe_core::domain::logo;
 use zwipe_core::domain::site::WEB_BASE;
 
 use crate::inbound::router::Route;
-use crate::inbound::shell::nav::{Back, MenuOpen, Section};
+use crate::inbound::shell::menu_footer::MenuFooter;
+use crate::inbound::shell::nav::{Back, MenuOpen, Section, route_of, section_of};
 
 /// The screen on view's title and its `?`, which the folded nav shows
 /// between the corners. A screen with a page head sets it.
@@ -24,13 +25,15 @@ pub(super) struct PageTitle {
     pub(super) on_hint: Option<Callback<()>>,
 }
 
-/// The nav for a signed-in user over the matched screen: Decks, Activity,
-/// Playstyle, Account, Config and `Community`, the current one lit. The mark is
-/// the way Home on a wide window.
+/// The nav for a signed-in user over the matched screen. A wide window
+/// shows Decks, Activity, Playstyle, Account, Config and `Community` as
+/// pills, the current one lit, with the mark the way Home. Below the
+/// breakpoint the menu is the app's: Decks, Playstyle, Activity and
+/// Commander maybeboard, then `Community`, over the footer row of icons.
 #[component]
 pub fn Shell() -> Element {
     let route: Route = use_route();
-    let current = Section::of(&route);
+    let current = section_of(&route);
     let open = use_menu_open(&route);
     let page = use_context_provider(|| Signal::new(None::<PageTitle>));
 
@@ -47,14 +50,29 @@ pub fn Shell() -> Element {
                         NavTitle { page }
                     },
                     links: rsx! {
-                        for section in Section::ALL.into_iter().filter(|s| *s != Section::Home) {
-                            li { key: "{section.label()}",
-                                NavLink { to: section.route(), label: section.label(), current: current == Some(section), open }
+                        // The app's list; a wide window hides the maybeboard
+                        // and orders Activity before Playstyle (web.css).
+                        for section in Section::LISTED {
+                            li {
+                                key: "{section.label()}",
+                                class: if section == Section::Maybeboard { "web-nav-narrow" } else { "" },
+                                "data-section": section.label(),
+                                NavLink { to: route_of(section), label: section.label(), current: current == Some(section), open }
+                            }
+                        }
+                        // Account and Config stay pills on a wide window; the
+                        // folded menu's footer holds them as icons.
+                        for section in [Section::Account, Section::Config] {
+                            li { key: "{section.label()}", class: "web-nav-wide",
+                                NavLink { to: route_of(section), label: wide_label(section), current: current == Some(section), open }
                             }
                         }
                         li {
                             CommunityLink { open }
                         }
+                    },
+                    trailing: rsx! {
+                        MenuFooter { open, signed_in: true }
                     },
                 }
             }
@@ -67,15 +85,24 @@ pub fn Shell() -> Element {
 
 /// The nav over the public screens: the mark, then `Log in`, `Create
 /// profile` and `Privacy policy`, the current one lit, and `Community`.
+/// Below the breakpoint the list is the app's signed-out menu, Log in,
+/// Create profile and Forgot password, with the `!` alone in its footer.
 #[component]
 pub fn PublicNav() -> Element {
     let route: Route = use_route();
     let open = use_menu_open(&route);
     let page: Signal<Option<PageTitle>> = use_context();
+    // The app's signed-out list; a wide window shows Privacy policy in
+    // place of Forgot password, which Login links to.
     let links = [
-        (Route::Login {}, "Log in"),
-        (Route::Register {}, "Create profile"),
-        (Route::PrivacyPolicy {}, "Privacy policy"),
+        (Route::Login {}, "Log in", ""),
+        (Route::Register {}, "Create profile", ""),
+        (
+            Route::ForgotPassword {},
+            "Forgot password",
+            "web-nav-narrow",
+        ),
+        (Route::PrivacyPolicy {}, "Privacy policy", "web-nav-wide"),
     ];
     rsx! {
         div { class: "web-app-nav",
@@ -89,14 +116,17 @@ pub fn PublicNav() -> Element {
                     NavTitle { page }
                 },
                 links: rsx! {
-                    for (to, label) in links {
-                        li { key: "{label}",
+                    for (to, label, class) in links {
+                        li { key: "{label}", class,
                             NavLink { current: to == route, to, label, open }
                         }
                     }
                     li {
                         CommunityLink { open }
                     }
+                },
+                trailing: rsx! {
+                    MenuFooter { open, signed_in: false }
                 },
             }
         }
@@ -161,7 +191,7 @@ fn NavMark(open: Signal<bool>) -> Element {
     rsx! {
         Link {
             to: Route::Home {},
-            class: "nav-brand web-nav-mark web-wide-only",
+            class: "nav-brand web-nav-mark web-nav-wide",
             "aria-label": "Home",
             onclick: move |_| open.set(false),
             span { class: "nav-logo web-nav-logo", "{logo::Z}" }
@@ -181,7 +211,7 @@ fn BackButton(back: Option<Back>, mut open: Signal<bool>) -> Element {
     };
     rsx! {
         button {
-            class: "nav-brand app-nav-back web-narrow-only",
+            class: "nav-brand app-nav-back web-nav-narrow",
             "aria-label": "Back",
             onclick: move |_| {
                 open.set(false);
@@ -203,6 +233,15 @@ fn BackButton(back: Option<Back>, mut open: Signal<bool>) -> Element {
                 path { d: "M15 5 8 12l7 7" }
             }
         }
+    }
+}
+
+/// A wide window's pill text for a footer section: Config keeps its name
+/// there until the screen is renamed with the next merge of main.
+const fn wide_label(section: Section) -> &'static str {
+    match section {
+        Section::Config => "Config",
+        other => other.label(),
     }
 }
 

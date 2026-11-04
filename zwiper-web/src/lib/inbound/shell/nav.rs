@@ -51,83 +51,51 @@ impl Back {
     }
 }
 
-/// One nav entry.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Section {
-    /// Home.
-    Home,
-    /// The deck list and every screen reached from a deck.
-    Decks,
-    /// Activity.
-    Activity,
-    /// Playstyle, with the commander maybeboard it leads to.
-    Playstyle,
-    /// Account, with the privacy policy and changelog it links to.
-    Account,
-    /// Config.
-    Config,
+/// The menu's sections, the shape shared with the app; the routes they open
+/// are this client's, in [`route_of`] and [`section_of`].
+pub use components::MenuSection as Section;
+
+/// The screen `section` opens. About is the Changelog screen until the
+/// About screen is built.
+#[must_use]
+pub const fn route_of(section: Section) -> Route {
+    match section {
+        Section::Home => Route::Home {},
+        Section::Decks => Route::DeckList {},
+        Section::Playstyle => Route::Playstyle {},
+        Section::Maybeboard => Route::CommanderMaybeboard {},
+        Section::Activity => Route::Activity {},
+        Section::Account => Route::Account {},
+        Section::Config => Route::Config {},
+        Section::About => Route::Changelog {},
+    }
 }
 
-impl Section {
-    /// Every entry, top to bottom.
-    pub const ALL: [Section; 6] = [
-        Section::Home,
-        Section::Decks,
-        Section::Activity,
-        Section::Playstyle,
-        Section::Account,
-        Section::Config,
-    ];
-
-    /// The entry's text.
-    pub fn label(self) -> &'static str {
-        match self {
-            Section::Home => "Home",
-            Section::Decks => "Decks",
-            Section::Activity => "Activity",
-            Section::Playstyle => "Playstyle",
-            Section::Account => "Account",
-            Section::Config => "Config",
-        }
-    }
-
-    /// Where the entry goes.
-    pub fn route(self) -> Route {
-        match self {
-            Section::Home => Route::Home {},
-            Section::Decks => Route::DeckList {},
-            Section::Activity => Route::Activity {},
-            Section::Playstyle => Route::Playstyle {},
-            Section::Account => Route::Account {},
-            Section::Config => Route::Config {},
-        }
-    }
-
-    /// The entry `route` lights up, or `None` for a route outside the
-    /// nav (the public screens, not found).
-    pub fn of(route: &Route) -> Option<Section> {
-        match route {
-            Route::Home {} => Some(Section::Home),
-            Route::DeckList {}
-            | Route::CreateDeck {}
-            | Route::EditDeck { .. }
-            | Route::ViewDeck { .. }
-            | Route::ImportDeck { .. }
-            | Route::ExportDeck { .. }
-            | Route::AddDeckCard { .. }
-            | Route::ViewDeckCard { .. }
-            | Route::RemoveDeckCard { .. } => Some(Section::Decks),
-            Route::Activity {} => Some(Section::Activity),
-            Route::Playstyle {} | Route::CommanderMaybeboard {} => Some(Section::Playstyle),
-            Route::Account {} | Route::PrivacyPolicy {} | Route::Changelog {} => {
-                Some(Section::Account)
-            }
-            Route::Config {} => Some(Section::Config),
-            Route::Login {}
-            | Route::Register {}
-            | Route::ForgotPassword {}
-            | Route::NotFound { .. } => None,
-        }
+/// The section `route` sits under, lit in the menu, or `None` for a route
+/// outside it (the public screens, not found).
+#[must_use]
+pub const fn section_of(route: &Route) -> Option<Section> {
+    match route {
+        Route::Home {} => Some(Section::Home),
+        Route::DeckList {}
+        | Route::CreateDeck {}
+        | Route::EditDeck { .. }
+        | Route::ViewDeck { .. }
+        | Route::ImportDeck { .. }
+        | Route::ExportDeck { .. }
+        | Route::AddDeckCard { .. }
+        | Route::ViewDeckCard { .. }
+        | Route::RemoveDeckCard { .. } => Some(Section::Decks),
+        Route::Activity {} => Some(Section::Activity),
+        Route::Playstyle {} => Some(Section::Playstyle),
+        Route::CommanderMaybeboard {} => Some(Section::Maybeboard),
+        Route::Account {} => Some(Section::Account),
+        Route::Config {} => Some(Section::Config),
+        Route::PrivacyPolicy {} | Route::Changelog {} => Some(Section::About),
+        Route::Login {}
+        | Route::Register {}
+        | Route::ForgotPassword {}
+        | Route::NotFound { .. } => None,
     }
 }
 
@@ -140,7 +108,7 @@ mod tests {
     #[test]
     fn every_entry_lights_itself_up() {
         for section in Section::ALL {
-            assert_eq!(Section::of(&section.route()), Some(section), "{section:?}");
+            assert_eq!(section_of(&route_of(section)), Some(section), "{section:?}");
         }
     }
 
@@ -153,7 +121,7 @@ mod tests {
             Route::ExportDeck { deck_id },
             Route::CreateDeck {},
         ] {
-            assert_eq!(Section::of(&route), Some(Section::Decks), "{route:?}");
+            assert_eq!(section_of(&route), Some(Section::Decks), "{route:?}");
         }
     }
 
@@ -180,7 +148,13 @@ mod tests {
 
     #[test]
     fn public_screens_light_up_nothing() {
-        assert_eq!(Section::of(&Route::Login {}), None);
-        assert_eq!(Section::of(&Route::ForgotPassword {}), None);
+        assert_eq!(section_of(&Route::Login {}), None);
+        assert_eq!(section_of(&Route::ForgotPassword {}), None);
+    }
+
+    #[test]
+    fn the_privacy_policy_and_changelog_light_up_about() {
+        assert_eq!(section_of(&Route::PrivacyPolicy {}), Some(Section::About));
+        assert_eq!(section_of(&Route::Changelog {}), Some(Section::About));
     }
 }

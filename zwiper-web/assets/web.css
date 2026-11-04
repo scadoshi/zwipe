@@ -430,6 +430,34 @@ body {
     }
 }
 
+/* The nav's width-only pieces keep their own boxes (unlike .web-narrow-only,
+   a wrapper with no box): a corner button, a list item, the footer row. */
+@media (max-width: 899px) {
+    .web-nav-wide {
+        display: none !important;
+    }
+}
+
+/* A wide window keeps zite's order, Activity before Playstyle, and has no
+   menu footer: the bar's pills carry its screens. */
+@media (min-width: 900px) {
+    .web-nav-narrow {
+        display: none !important;
+    }
+
+    .web-shell .nav-links > li[data-section="Decks"] {
+        order: -2;
+    }
+
+    .web-shell .nav-links > li[data-section="Activity"] {
+        order: -1;
+    }
+
+    .web-shell .nav-panel .nav-trailing {
+        display: none;
+    }
+}
+
 /* ---- Header below the breakpoint ----
 
    The app's header from the kit's NavBar: the back arrow or an empty left
