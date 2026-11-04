@@ -1178,13 +1178,6 @@ body {
     transition: transform 0.25s ease;
 }
 
-.web-buy-link.web-menu-link {
-    display: flex;
-    justify-content: center;
-    width: 100%;
-    box-sizing: border-box;
-}
-
 @media (hover: hover) {
     .web-buy-link:hover .web-buy-ext {
         transform: translate(0.12em, -0.12em);

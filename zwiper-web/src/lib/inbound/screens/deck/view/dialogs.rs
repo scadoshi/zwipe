@@ -1,45 +1,60 @@
-//! The deck view's `More` menu and its dialogs: Import and Export, the
-//! retailer links in place of the app's `Buy deck`, Clone, Share with Copy
-//! and Stop share, Clear skips and Delete.
-//!
-//! Import, Export, a retailer and Clone close the menu; Share, Clear skips
-//! and Delete open their dialog over it, and an action in the dialog closes
-//! it, as the app does with its sheet.
+//! The deck view's dialogs: Clone, Share with Copy and Stop share, Clear
+//! skips and Delete. The profile header's icons and the Danger zone panel
+//! open them; an action in a dialog closes it, as the app does.
 
-use components::{ActionButton, AlertDialog, Button, DialogAction, TOAST_QUICK};
+use components::{ActionButton, AlertDialog, DialogAction, TOAST_QUICK};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
 use zwipe_core::http::contracts::deck::HttpCloneDeck;
 
 use crate::domain::deck::share_link;
-use crate::inbound::cards::buy_links::MenuBuyLink;
 use crate::inbound::chrome::authed::use_authed;
-use crate::inbound::chrome::more_menu::{MoreMenu, MoreMenuState};
 use crate::inbound::router::Route;
 use crate::outbound::browser;
 
-/// The menu and its dialogs for `deck_id`. `has_cards` turns on Export and
-/// the retailers; `buy` holds the `TCGplayer` and `Card Kingdom` links once
-/// the deck has loaded. `share_token` is the deck's live link, which Share
-/// and Stop share update in place.
+/// Which of the deck's dialogs is up. `Copy`, so the buttons that open
+/// them and the dialogs share it.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct DeckDialogs {
+    /// The Clone dialog.
+    pub clone: Signal<bool>,
+    /// The Share dialog.
+    pub share: Signal<bool>,
+    /// The Clear skips dialog.
+    pub clear: Signal<bool>,
+    /// The Delete dialog.
+    pub delete: Signal<bool>,
+}
+
+/// Every dialog closed.
+pub fn use_deck_dialogs() -> DeckDialogs {
+    DeckDialogs {
+        clone: use_signal(|| false),
+        share: use_signal(|| false),
+        clear: use_signal(|| false),
+        delete: use_signal(|| false),
+    }
+}
+
+/// The dialogs for `deck_id`. `share_token` is the deck's live link, which
+/// Share and Stop share update in place.
 #[component]
-pub fn DeckMore(
+pub fn DeckDialogsHost(
     deck_id: Uuid,
-    menu: MoreMenuState,
-    has_cards: bool,
-    buy: Option<(String, String)>,
+    dialogs: DeckDialogs,
     mut share_token: Signal<Option<Uuid>>,
     clone_name: String,
 ) -> Element {
     let navigator = use_navigator();
     let authed = use_authed();
     let toast = use_toast();
-    let mut open = menu.open;
-    let mut share_open = use_signal(|| false);
-    let mut clear_open = use_signal(|| false);
-    let mut delete_open = use_signal(|| false);
-    let mut clone_open = use_signal(|| false);
+    let DeckDialogs {
+        clone: clone_open,
+        share: share_open,
+        clear: clear_open,
+        delete: delete_open,
+    } = dialogs;
 
     let copy_link = move |token: Uuid| {
         browser::copy_to_clipboard(&share_link(token));
@@ -49,7 +64,6 @@ pub fn DeckMore(
         );
     };
     let create_link = use_callback(move |()| {
-        open.set(false);
         spawn(async move {
             if let Some(shared) = authed
                 .run("share_deck", |c, s| async move {
@@ -63,13 +77,11 @@ pub fn DeckMore(
         });
     });
     let copy_shared = use_callback(move |()| {
-        open.set(false);
         if let Some(token) = *share_token.peek() {
             copy_link(token);
         }
     });
     let stop_share = use_callback(move |()| {
-        open.set(false);
         spawn(async move {
             if authed
                 .run("unshare_deck", |c, s| async move {
@@ -89,7 +101,6 @@ pub fn DeckMore(
     // The app first sends its pending skips so they clear too; the web
     // records none.
     let clear_skips = use_callback(move |()| {
-        open.set(false);
         spawn(async move {
             if authed
                 .run("clear_suppressions", |c, s| async move {
@@ -105,6 +116,7 @@ pub fn DeckMore(
             }
         });
     });
+    // Decks replaces the gone deck in history, so Back never reopens it.
     let delete = use_callback(move |()| {
         spawn(async move {
             if authed
@@ -114,7 +126,7 @@ pub fn DeckMore(
                 .await
                 .is_some()
             {
-                navigator.push(Route::DeckList {});
+                navigator.replace(Route::DeckList {});
             }
         });
     });
@@ -149,41 +161,8 @@ pub fn DeckMore(
             ],
         )
     };
-    let (tcgplayer, cardkingdom) = match buy.filter(|_| has_cards) {
-        Some((tcg, ck)) => (Some(tcg), Some(ck)),
-        None => (None, None),
-    };
 
     rsx! {
-        MoreMenu { menu, title: "More actions",
-            Button {
-                onclick: move |_| {
-                    open.set(false);
-                    navigator.push(Route::ImportDeck { deck_id });
-                },
-                "Import cards"
-            }
-            Button {
-                disabled: !has_cards,
-                onclick: move |_| {
-                    open.set(false);
-                    navigator.push(Route::ExportDeck { deck_id });
-                },
-                "Export cards"
-            }
-            MenuBuyLink { href: tcgplayer, label: "TCGplayer", on_open: move |()| open.set(false) }
-            MenuBuyLink { href: cardkingdom, label: "Card Kingdom", on_open: move |()| open.set(false) }
-            Button {
-                onclick: move |_| {
-                    open.set(false);
-                    clone_open.set(true);
-                },
-                "Clone deck"
-            }
-            Button { onclick: move |_| share_open.set(true), "Share deck" }
-            Button { danger: true, onclick: move |_| clear_open.set(true), "Clear skips" }
-            Button { danger: true, onclick: move |_| delete_open.set(true), "Delete deck" }
-        }
         AlertDialog {
             open: share_open,
             title: "Share deck",

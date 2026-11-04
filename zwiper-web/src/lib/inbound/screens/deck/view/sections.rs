@@ -1,6 +1,8 @@
-//! The deck view's panels: the Profile card, and the Budget, Tags,
-//! Distributions, Mana, Draw odds and Warnings sections.
+//! The deck view's panels: the Profile card with Edit, Clone and Share in
+//! its header, and the Budget (with its Buy row), Tags, Distributions,
+//! Mana, Draw odds and Warnings sections.
 
+use components::icons::{CloneIcon, EditIcon, ShareIcon};
 use components::{
     Button, ButtonVariant, ColorChart, DeckCharts, DrawOdds, ManaCurve, ManaFulfillment,
 };
@@ -12,7 +14,9 @@ use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
 use zwipe_core::domain::deck::{DeckProfile, DeckWarning, deck_tag_label};
 use zwipe_ui::deck::form::Slot;
 use zwipe_ui::deck::warning::{self, Fix};
+use zwipe_ui::screens::deck_view::{BUY, EDIT, MoreItem};
 
+use super::dialogs::DeckDialogs;
 use crate::domain::deck::total_price_line;
 use crate::inbound::cards::otag::{OtagDescribe, OtagExamplesOpen};
 use crate::inbound::chrome::hint_topic::{HintTopic, InfoButton};
@@ -31,9 +35,23 @@ fn InfoRow(label: String, value: String) -> Element {
 }
 
 /// The Profile card: name, card count, format, the command zone and power
-/// level. The commander row prefers the fetched card's name.
+/// level, with Edit, Clone and Share as icons in its header, the actions
+/// on the deck as a whole. The commander row prefers the fetched card's
+/// name.
 #[component]
-pub fn ProfileCard(profile: DeckProfile, commander: Option<Card>, cards: usize) -> Element {
+pub fn ProfileCard(
+    profile: DeckProfile,
+    commander: Option<Card>,
+    cards: usize,
+    dialogs: DeckDialogs,
+) -> Element {
+    let navigator = use_navigator();
+    let deck_id = profile.id;
+    let DeckDialogs {
+        mut clone,
+        mut share,
+        ..
+    } = dialogs;
     let label = Slot::Commander.label(profile.format);
     let commander_name = commander
         .map(|c| c.scryfall_data.name)
@@ -46,6 +64,31 @@ pub fn ProfileCard(profile: DeckProfile, commander: Option<Card>, cards: usize) 
         div { class: "settings-list",
             div { class: "settings-list-header",
                 span { class: "settings-list-title", "Profile" }
+                div { class: "deck-profile-actions",
+                    Button {
+                        variant: ButtonVariant::Action,
+                        class: "btn-icon",
+                        onclick: move |_| {
+                            navigator.push(Route::EditDeck { deck_id });
+                        },
+                        EditIcon {}
+                        span { class: "sr-only", {EDIT} }
+                    }
+                    Button {
+                        variant: ButtonVariant::Action,
+                        class: "btn-icon",
+                        onclick: move |_| clone.set(true),
+                        CloneIcon {}
+                        span { class: "sr-only", {MoreItem::CloneDeck.short_label()} }
+                    }
+                    Button {
+                        variant: ButtonVariant::Action,
+                        class: "btn-icon",
+                        onclick: move |_| share.set(true),
+                        ShareIcon {}
+                        span { class: "sr-only", {MoreItem::ShareDeck.short_label()} }
+                    }
+                }
             }
             InfoRow { label: "Name", value: profile.name.to_string() }
             InfoRow { label: "Cards", value: cards.to_string() }
@@ -69,12 +112,14 @@ pub fn ProfileCard(profile: DeckProfile, commander: Option<Card>, cards: usize) 
     }
 }
 
-/// The Budget section: its currency chips (only with cards to price) and
-/// the total and average price.
+/// The Budget section: its currency chips (only with cards to price), the
+/// total and average price, and the Buy row with the `TCGplayer` and `Card
+/// Kingdom` links once `buy` holds them.
 #[component]
 pub fn BudgetSection(
     profile: DeckProfile,
     metrics: Option<DeckMetrics>,
+    buy: Option<(String, String)>,
     mut currency: Signal<PriceCurrency>,
     open_section: Signal<Option<String>>,
 ) -> Element {
@@ -110,7 +155,30 @@ pub fn BudgetSection(
                         value: average.map_or_else(|| "N/A".to_owned(), |v| shown.format_amount(v)),
                     }
                 }
+                if let Some((tcgplayer, cardkingdom)) = buy {
+                    div { class: "deck-buy-row",
+                        span { class: "stat-chip stat-chip-p1 chip-row-label", {BUY} }
+                        BuyLink { href: tcgplayer, label: "TCGplayer" }
+                        BuyLink { href: cardkingdom, label: "Card Kingdom" }
+                    }
+                }
             }
+        }
+    }
+}
+
+/// One retailer link in the Buy row, drawn as the row's action buttons,
+/// opening in a new tab with the `↗` that marks it as leaving the site.
+#[component]
+fn BuyLink(href: String, label: &'static str) -> Element {
+    rsx! {
+        a {
+            class: "btn-action web-buy-link",
+            href,
+            target: "_blank",
+            rel: "noopener",
+            "{label}"
+            span { class: "web-buy-ext", "\u{2197}" }
         }
     }
 }

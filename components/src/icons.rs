@@ -3,7 +3,9 @@
 //!
 //! Every path is a stroke in `currentColor` with no fill, so a host colors
 //! an icon through the button it sits in. The kit's `.action-dock-icon`
-//! and `.nav-icon` rules size them.
+//! and `.nav-icon` rules size them; the deck view's profile icons
+//! ([`EditIcon`], [`CloneIcon`], [`ShareIcon`]) take the app's
+//! `.profile-icon` rule, sized to the text button they sit in.
 
 use dioxus::prelude::*;
 
@@ -64,6 +66,53 @@ pub fn EyeIcon() -> Element {
             "aria-hidden": "true",
             path { d: "M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" }
             circle { cx: "12", cy: "12", r: "3" }
+        }
+    }
+}
+
+/// The edit icon: a pencil, in the deck view's profile header.
+#[component]
+pub fn EditIcon() -> Element {
+    rsx! {
+        svg {
+            class: "profile-icon",
+            view_box: "0 0 24 24",
+            xmlns: "http://www.w3.org/2000/svg",
+            "aria-hidden": "true",
+            path { d: "M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4z" }
+            path { d: "M13.5 6.5l4 4" }
+        }
+    }
+}
+
+/// The clone icon: two overlapping squares, in the deck view's profile header.
+#[component]
+pub fn CloneIcon() -> Element {
+    rsx! {
+        svg {
+            class: "profile-icon",
+            view_box: "0 0 24 24",
+            xmlns: "http://www.w3.org/2000/svg",
+            "aria-hidden": "true",
+            rect { x: "9", y: "9", width: "11", height: "11", rx: "2" }
+            path { d: "M15 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3" }
+        }
+    }
+}
+
+/// The share icon: a box with an arrow rising out of it, in the deck view's
+/// profile header.
+#[component]
+pub fn ShareIcon() -> Element {
+    rsx! {
+        svg {
+            class: "profile-icon",
+            view_box: "0 0 24 24",
+            xmlns: "http://www.w3.org/2000/svg",
+            "aria-hidden": "true",
+            path { d: "M12 3v12" }
+            path { d: "M8 7l4-4 4 4" }
+            path { d: "M8 11H6a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-2" }
         }
     }
 }

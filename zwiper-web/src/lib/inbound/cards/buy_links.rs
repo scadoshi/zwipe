@@ -31,33 +31,3 @@ pub fn CardBuyLinks(name: String, tcgplayer_id: Option<i32>) -> Element {
         BuyLink { href: buy::cardkingdom_card_url(&name), label: "Card Kingdom" }
     }
 }
-
-/// One retailer as an item of a `More` menu: a link styled as the menu's
-/// buttons, or a disabled button while there is nothing to buy. A click
-/// closes the menu through `on_open`.
-#[component]
-pub fn MenuBuyLink(
-    href: Option<String>,
-    label: &'static str,
-    on_open: EventHandler<()>,
-) -> Element {
-    match href {
-        Some(href) => rsx! {
-            a {
-                class: "btn web-buy-link web-menu-link",
-                href,
-                target: "_blank",
-                rel: "noopener",
-                onclick: move |_| on_open.call(()),
-                "{label}"
-                span { class: "web-buy-ext", "\u{2197}" }
-            }
-        },
-        None => rsx! {
-            components::Button { disabled: true, onclick: move |_| {},
-                "{label}"
-                span { class: "web-buy-ext", "\u{2197}" }
-            }
-        },
-    }
-}

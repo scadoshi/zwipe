@@ -1,18 +1,21 @@
-//! The deck view: the Profile card, the Budget, Tags, stats and Warnings
-//! sections, and the More menu.
+//! The deck view: the Profile card with Edit, Clone and Share, the Budget,
+//! Tags, stats and Warnings sections, the Data and Danger zone panels at
+//! the foot, and Cards floating in the dock.
 //!
 //! On a wide window the Profile card is the hero at the top of zite's page;
 //! under it Budget, Tags and the stats share the left column, and Warnings
-//! over the cards column for reading share the right. Every section is open
-//! at once. Below the breakpoint it is the app's accordion with `Budget`
-//! open and no cards column. The app's `Back` goes: the nav's `Decks` and
-//! the browser's back do its job.
+//! over the cards column for reading share the right, with Data and Danger
+//! zone in a row under both. Every section is open at once. Below the
+//! breakpoint it is the app's accordion with `Budget` open and no cards
+//! column. A deck the server no longer has leaves for Decks, as the app's
+//! model does with `Action::Gone`.
 
 pub mod cards;
-pub mod more;
+pub mod dialogs;
+pub mod panels;
 pub mod sections;
 
-use components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL, TOAST_QUICK};
+use components::{Button, ButtonVariant, TOAST_NORMAL, TOAST_QUICK};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
@@ -25,9 +28,11 @@ use zwipe_core::domain::deck::{Deck, DeckProfile};
 use zwipe_core::http::contracts::deck_card::HttpPatchDeckCard;
 use zwipe_ui::buy;
 use zwipe_ui::deck::form::Slot;
+use zwipe_ui::screens::deck_view::CARDS;
 
 use self::cards::CardsColumn;
-use self::more::DeckMore;
+use self::dialogs::{DeckDialogsHost, use_deck_dialogs};
+use self::panels::{DangerZonePanel, DataPanel};
 use self::sections::{
     BudgetSection, ProfileCard, StatsSections, TagsSection, WarningFixes, WarningsSection,
 };
@@ -36,7 +41,6 @@ use crate::domain::deck::{has_budget, metrics_possible, tag_count};
 use crate::inbound::cards::card_row::{CardOverlaysHost, use_card_overlays};
 use crate::inbound::cards::otag::{OtagExamplesHost, use_otag_reveals};
 use crate::inbound::chrome::authed::use_authed;
-use crate::inbound::chrome::more_menu::{MoreButton, use_more_menu};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::router::Route;
 use crate::inbound::shell::ScreenFrame;
@@ -50,7 +54,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
     let authed = use_authed();
     let toast = use_toast();
     let hint_open = use_one_time_hint(OneTimeHint::FirstDeck);
-    let more = use_more_menu();
+    let dialogs = use_deck_dialogs();
     let examples = use_otag_reveals();
     let overlays = use_card_overlays();
     let open_section: Signal<Option<String>> = use_signal(|| Some("Budget".to_owned()));
@@ -75,6 +79,17 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                 })
                 .await
         }));
+
+    // A deck the server no longer has leaves for Decks, replacing this
+    // screen in history so Back never reopens it; the fetch's toast has
+    // already said why.
+    use_effect(move || {
+        let gone = matches!(&*profile.read(), Some(Err(ClientError::NotFound(_))))
+            || matches!(&*deck.read(), Some(Err(ClientError::NotFound(_))));
+        if gone {
+            navigator.replace(Route::DeckList {});
+        }
+    });
 
     // Once per deck: the currency chips start on the target's currency, the
     // share link is the saved one, and the commander card is fetched for
@@ -197,6 +212,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
         .read()
         .as_ref()
         .map(|r| r.as_ref().cloned().map_err(|_| ()));
+    let shows_cards = loaded_profile.as_ref().is_some_and(Result::is_ok);
     let clone_name = loaded_profile
         .as_ref()
         .and_then(|r| r.as_ref().ok())
@@ -220,12 +236,18 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                         rsx! {
                             div { class: "content-enter web-deck-view web-page web-sections-open",
                                 div { class: "web-hero web-hero-narrow",
-                                    ProfileCard { profile: p.clone(), commander: commander(), cards }
+                                    ProfileCard { profile: p.clone(), commander: commander(), cards, dialogs }
                                 }
                                 div { class: "web-columns",
                                     div { class: "web-column",
                                         if has_budget(&p, metrics.is_some()) {
-                                            BudgetSection { profile: p.clone(), metrics: metrics.clone(), currency, open_section }
+                                            BudgetSection {
+                                                profile: p.clone(),
+                                                metrics: metrics.clone(),
+                                                buy: buy_links,
+                                                currency,
+                                                open_section,
+                                            }
                                         }
                                         if tag_count(&p) > 0 {
                                             TagsSection { profile: p.clone(), open_section }
@@ -247,6 +269,17 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                                 DeckCardsSkeleton {}
                                             }
                                         }
+                                    }
+                                }
+                                // The less used actions at the foot of the page,
+                                // Danger zone last; the content's trailing room
+                                // keeps the floating Cards off Delete.
+                                div { class: "web-columns",
+                                    div { class: "web-column",
+                                        DataPanel { deck_id, has_cards: metrics.is_some() }
+                                    }
+                                    div { class: "web-column",
+                                        DangerZonePanel { dialogs }
                                     }
                                 }
                             }
@@ -274,32 +307,20 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                     },
                 }
             }
-            ActionBar { class: "content-enter-delayed",
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| {
-                        navigator.push(Route::EditDeck { deck_id });
-                    },
-                    "Edit"
+            // Cards, the screen's main action, floats at the bottom right.
+            if shows_cards {
+                div { class: "action-dock action-dock-right content-enter-delayed",
+                    Button {
+                        variant: ButtonVariant::Action,
+                        onclick: move |_| {
+                            navigator.push(Route::ViewDeckCard { deck_id });
+                        },
+                        {CARDS}
+                    }
                 }
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| {
-                        navigator.push(Route::ViewDeckCard { deck_id });
-                    },
-                    "Cards"
-                }
-                MoreButton { menu: more }
             }
         }
-        DeckMore {
-            deck_id,
-            menu: more,
-            has_cards: metrics.is_some(),
-            buy: buy_links,
-            share_token,
-            clone_name,
-        }
+        DeckDialogsHost { deck_id, dialogs, share_token, clone_name }
         OneTimeHintDialog { hint: OneTimeHint::FirstDeck, open: hint_open }
         CardOverlaysHost { overlays, on_printing_save: move |_: Card| {}, read_only: true }
         OtagExamplesHost { examples }
