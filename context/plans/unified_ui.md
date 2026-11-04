@@ -11,7 +11,7 @@ These were settled with the owner before the per-screen review. A screen breaks 
 ### Navigation
 
 - The app gets the web's folded nav, the same `NavBar` from the kit: the screen's title with its `?` in the middle and the hamburger at the top right. No Z mark (owner, 2026-11-03): Home is the menu's first entry and Home's hero carries the logo, so the left corner is empty on Home and the auth screens and holds the back arrow everywhere else. zwiper-web's and zite's narrow views drop their Z mark the same way; zite keeps it on wide windows. Tapping the hamburger drops down the list of sections as buttons, exactly as the web does below 900px.
-- The menu lists, signed in: Home, Decks, Playstyle, Commander maybeboard, Activity, Account, Settings and About, one list with no rule. Under them a small bottom row holds a `!` for Help & feedback and a small Log out, not full menu items.
+- The menu lists, signed in: Home, Decks, Playstyle, Activity, Commander maybeboard, Account, Settings and About, one list with no rule. Under them a small bottom row holds a `!` for Help & feedback and a small Log out, not full menu items.
 - Account and Settings (today's Config) stay two screens. Log out is also in Account's danger zone.
 - The menu looks exactly like the web's folded nav: a full-width panel dropping from the header, items stacked, the current one lit.
 - The app's "!" support button leaves the header for the menu's bottom row.
@@ -134,12 +134,12 @@ The review is of the app: each screen got what it shows, where its actions go an
 
 ## Home
 
-Reviewed 2026-11-03. Home keeps its three panels, gains a Decks panel, and otherwise changes only by the global rules: the new header replaces "!" and the centered title, and the footer's Decks, Account and Config go, since the menu has them.
+Reviewed 2026-11-03. Home keeps its three panels, gains a Decks row, and otherwise changes only by the global rules: the new header replaces "!" and the centered title, and the footer's Decks, Account and Config go, since the menu has them.
 
 - Hero: the ASCII logo stays, with the three stats, the Live and Everybody chips and the Activity button under it. Activity stays as a shortcut even though the menu lists it.
 - Color map: unchanged, with its `?`, the color chips and the Playstyle button, also kept as a shortcut.
 - Featured flavor: unchanged. Each client keeps its own Buy: the app's Buy sheet, the web's TCGplayer and Card Kingdom links.
-- Decks (owner, 2026-11-03): a new panel between the hero and the Color map, in the Color map's panel style, with the deck count as one of the hero's stat tiles beside an Open decks button into the deck list. The count comes from the playstyle summary Home already fetches, so the panel ghosts with the Color map and shows a muted line when that fetch fails with nothing held. No recent decks and no continue-swiping shortcut.
+- Decks (owner, 2026-11-03): a single settings row between the hero and the Color map, as wide as the other panels: the Decks label on the left, the deck count as a chip and an Open button into the deck list on the right, with no panel header or tile. The count comes from the playstyle summary Home already fetches, so the chip and button ghost with the Color map, and a failed fetch with nothing held puts a `?` in the chip with a muted hint beside it. No recent decks and no continue-swiping shortcut.
 
 ## Deck view
 

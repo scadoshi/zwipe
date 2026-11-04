@@ -41,7 +41,8 @@ pub const UPCOMING: &[Release] = &[Release {
     version: Version::new(1, 17, 1),
     date: None,
     entries: &[
-        "Home shows a Decks panel with your deck count and a button into Decks",
+        "Home shows your deck count with an Open button into Decks",
+        "About's credits sit in their own panel and its links are in the accent color",
         "zwipe.net's theme menu stays open after a pick, so the next theme is one click away",
         "A one-card deck shows 1 card in the deck list",
         "The land target stops at 0",
