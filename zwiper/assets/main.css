@@ -201,8 +201,8 @@ button {
 
 /* A sign-in form's submit: the kit's full-width button under the last
    field, with the field's corners and padding so it reads as the form's
-   last row, then the chips to the other sign-in screens, one per row,
-   centered. The field's own bottom margin is the only gap above it; the
+   last row, then the chips to the other sign-in screens in one centered
+   row, wrapping if they must. The field's own bottom margin is the only gap above it; the
    content's trailing padding keeps the last chip clear of the home
    indicator. */
 .form-submit > .btn {
@@ -213,10 +213,12 @@ button {
 
 .form-links {
     display: flex;
-    flex-direction: column;
-    align-items: center;
+    flex-wrap: wrap;
+    justify-content: center;
     gap: 0.5rem;
-    margin-top: 1rem;
+    /* The row may run wider than the form's column: it spans the screen,
+       centered on the column, with the page gutter at each side. */
+    margin: 1rem calc(50% - 50vw + 1rem) 0;
 }
 
 /* The filter dot sits on the funnel's top left, clear of the reset. */
