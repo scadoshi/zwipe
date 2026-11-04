@@ -13,10 +13,14 @@ use crate::inbound::router::Route;
 use crate::inbound::screens::auth::login::LoginPrefill;
 use crate::inbound::screens::update_required::UpdateRequired;
 use crate::inbound::session::upkeep;
+use crate::inbound::shell::MenuOpen;
 use crate::inbound::{caches, card_stores, catalog};
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
 const WEB_CSS: Asset = asset!("/assets/web.css");
+/// The header's scroll follow at phone width: the web's own copy of the
+/// app's `header_hide.js`, keyed to the shell's header and scroller.
+const HEADER_HIDE_JS: &str = include_str!("../../../assets/header_hide.js");
 const FONT_JBM_400: Asset = asset!("/assets/fonts/jetbrains-mono-400.woff2");
 const FONT_JBM_500: Asset = asset!("/assets/fonts/jetbrains-mono-500.woff2");
 const FONT_JBM_700: Asset = asset!("/assets/fonts/jetbrains-mono-700.woff2");
@@ -50,6 +54,9 @@ pub fn App() -> Element {
     use_context_provider(|| Signal::new(None::<HintTopic>));
     // Closed until the splash starts to fade; the entrances wait on it.
     use_context_provider(|| components::SplashGate(Signal::new(false)));
+    // The main menu's open state, above the router so it carries across
+    // screens.
+    use_context_provider(|| MenuOpen(Signal::new(false)));
 
     rsx! {
         document::Link { rel: "icon", href: FAVICON }
@@ -69,6 +76,7 @@ pub fn App() -> Element {
         document::Style { {components::TOAST_CSS} }
         document::Link { rel: "stylesheet", href: WEB_CSS }
         document::Script { {components::SCROLL_FADE_JS} }
+        document::Script { {HEADER_HIDE_JS} }
         document::Meta { name: "viewport", content: "width=device-width, initial-scale=1.0" }
 
         ThemeShell {

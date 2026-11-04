@@ -324,8 +324,11 @@ body {
     height: 100dvh;
 }
 
-.web-shell > .nav-wrapper {
+.web-shell > .web-app-nav {
     flex: none;
+}
+
+.web-shell .nav-wrapper {
     margin-bottom: 0;
 }
 
@@ -371,7 +374,8 @@ body {
         max-height: none;
     }
 
-    .web-shell .nav-toggle {
+    .web-shell .nav-toggle,
+    .web-shell .nav-persistent {
         display: none;
     }
 
@@ -423,6 +427,90 @@ body {
 
     .web-shell .nav-wrapper nav > .nav-brand {
         justify-self: auto;
+    }
+}
+
+/* ---- Header below the breakpoint ----
+
+   The app's header from the kit's NavBar: the back arrow or an empty left
+   corner, the screen's title and its `?` in the middle, the hamburger on
+   the right, and the menu dropping from it over the screen. It sits over
+   the top of the shell, and header_hide.js slides it up as the screen
+   scrolls down. Its height is the kit's --app-nav-h, and the screen opens
+   with that much padding, so nothing moves at rest. The pieces' own rules
+   (.app-nav-back, .app-nav-title, the menu footer's buttons) come from
+   zwiper's main.css; these are the ones it scopes to its .app-nav. */
+@media (max-width: 899px) {
+    .web-shell {
+        position: relative;
+    }
+
+    .web-shell > .web-app-nav {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 101;
+    }
+
+    /* The header holds still while the menu or the theme sheet is up: a
+       transform would make it the containing block of the kit's fixed
+       backdrop and sheet. */
+    .web-shell > .web-app-nav:has(.nav-panel-open),
+    .web-shell > .web-app-nav:has(.theme-picker-sheet .bottom-sheet.show) {
+        transform: none !important;
+    }
+
+    .web-shell .web-main > .web-scroll-screen {
+        padding-top: var(--app-nav-h);
+        box-sizing: border-box;
+    }
+
+    .web-app-nav .nav-wrapper {
+        box-shadow: none;
+        border-bottom: 1px solid var(--border-secondary);
+    }
+
+    /* Both outer columns are one width, so the title centers on the screen
+       whatever sits in the corners; one fixed row, the corner buttons'
+       height, so every screen's bar is the same height. */
+    .web-app-nav .nav-wrapper nav {
+        grid-template-columns: 2.6rem minmax(0, 1fr) 2.6rem;
+        grid-template-rows: 1.7rem;
+        padding: 0.5rem 0.75rem;
+    }
+
+    .web-app-nav .nav-persistent {
+        grid-column: 2;
+        grid-row: 1;
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    /* The open menu drops over the screen instead of pushing it down. It
+       leaves the grid, so it runs edge to edge. */
+    .web-app-nav .nav-panel {
+        grid-column: auto;
+        grid-row: auto;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        margin-left: 0;
+        margin-right: 0;
+        border-bottom: 1px solid transparent;
+    }
+
+    .web-app-nav .nav-panel-open {
+        margin-top: 0;
+        padding-bottom: 0;
+        border-bottom-color: var(--border-secondary);
+    }
+
+    /* Every entry shows; the kit caps the list for zite's longer menu. */
+    .web-app-nav .nav-panel .nav-links {
+        max-height: none;
+        overflow: visible;
     }
 }
 
@@ -613,48 +701,12 @@ body {
    zite's page header on a wide window: a panel at the top of the page with
    the screen's title, its `?` at the right end, and the description under
    a rule. Below the breakpoint it hides and the title and `?` sit in the
-   folded nav between the mark and the hamburger. */
+   header's middle (see the header below). */
 .web-page-head-wrap {
     display: none;
 }
 
-.web-nav-brand-row {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    min-width: 0;
-}
-
-/* Centered in the folded nav, the `?` right after the title. */
-.web-shell .nav-wrapper nav {
-    position: relative;
-}
-
-.web-nav-title {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    max-width: calc(100% - 9rem);
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    min-width: 0;
-}
-
-.web-nav-title-text {
-    color: var(--accent-primary);
-    letter-spacing: 0.1em;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
 @media (min-width: 900px) {
-    .web-nav-title {
-        display: none;
-    }
-
     .web-page-head-wrap {
         display: block;
         width: 100%;

@@ -7,4 +7,5 @@ pub mod nav;
 mod top_nav;
 
 pub use frame::{OpenFrame, PublicFrame, ScreenFrame, page_description};
+pub use nav::MenuOpen;
 pub use top_nav::Shell;

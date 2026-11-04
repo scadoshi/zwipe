@@ -1,6 +1,55 @@
-//! The nav's entries and which one a route belongs to.
+//! The nav's entries, which one a route belongs to, and where a screen's
+//! back arrow goes.
+
+use dioxus::prelude::*;
 
 use crate::inbound::router::Route;
+
+/// Whether the main menu is open, shared by the nav over every screen.
+/// Provided once at the app root so the panel outlives the screen it was
+/// opened on and its close transition plays over the next one.
+#[derive(Debug, Clone, Copy)]
+pub struct MenuOpen(pub Signal<bool>);
+
+/// Where the header's back arrow goes from a screen.
+#[derive(Debug, Clone, PartialEq)]
+pub enum Back {
+    /// The screen before this one, or Home when the tab has no history.
+    Previous,
+    /// The screen's fixed parent.
+    To(Route),
+}
+
+impl Back {
+    /// The back arrow's target from `route`, or `None` on Home and the auth
+    /// screens, whose left corner is empty. A screen inside a deck goes up
+    /// the deck tree, the maybeboard to Playstyle, Changelog and Privacy
+    /// policy to Account, and a section goes to the screen before it.
+    pub fn of(route: &Route) -> Option<Back> {
+        match route {
+            Route::Home {} | Route::Login {} | Route::Register {} | Route::ForgotPassword {} => {
+                None
+            }
+            Route::DeckList {}
+            | Route::Activity {}
+            | Route::Playstyle {}
+            | Route::Account {}
+            | Route::Config {}
+            | Route::NotFound { .. } => Some(Back::Previous),
+            Route::CreateDeck {} | Route::ViewDeck { .. } => Some(Back::To(Route::DeckList {})),
+            Route::EditDeck { deck_id }
+            | Route::ImportDeck { deck_id }
+            | Route::ExportDeck { deck_id }
+            | Route::AddDeckCard { deck_id }
+            | Route::ViewDeckCard { deck_id }
+            | Route::RemoveDeckCard { deck_id } => {
+                Some(Back::To(Route::ViewDeck { deck_id: *deck_id }))
+            }
+            Route::CommanderMaybeboard {} => Some(Back::To(Route::Playstyle {})),
+            Route::Changelog {} | Route::PrivacyPolicy {} => Some(Back::To(Route::Account {})),
+        }
+    }
+}
 
 /// One nav entry.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -106,6 +155,27 @@ mod tests {
         ] {
             assert_eq!(Section::of(&route), Some(Section::Decks), "{route:?}");
         }
+    }
+
+    #[test]
+    fn home_and_the_auth_screens_have_no_back_arrow() {
+        for route in [Route::Home {}, Route::Login {}, Route::Register {}] {
+            assert_eq!(Back::of(&route), None, "{route:?}");
+        }
+    }
+
+    #[test]
+    fn a_deck_screen_goes_back_up_the_deck_tree() {
+        let deck_id = Uuid::new_v4();
+        assert_eq!(
+            Back::of(&Route::AddDeckCard { deck_id }),
+            Some(Back::To(Route::ViewDeck { deck_id }))
+        );
+        assert_eq!(
+            Back::of(&Route::ViewDeck { deck_id }),
+            Some(Back::To(Route::DeckList {}))
+        );
+        assert_eq!(Back::of(&Route::Activity {}), Some(Back::Previous));
     }
 
     #[test]
