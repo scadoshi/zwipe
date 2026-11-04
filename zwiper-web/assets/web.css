@@ -915,6 +915,14 @@ body {
     margin: 0.75rem 0;
 }
 
+/* Below the breakpoint the card is swiped, as in the app: only its prices
+   sit under it. The buttons stay for a wide window's mouse. */
+@media (max-width: 899px) {
+    .web-swipe-buttons {
+        display: none;
+    }
+}
+
 .web-swipe-arrow {
     font-weight: 700;
 }

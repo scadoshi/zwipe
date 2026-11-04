@@ -81,11 +81,11 @@ impl AddSource {
         }
     }
 
-    /// The source's name on the From chip.
+    /// The source's name on the From chip, the app's.
     fn label(self) -> &'static str {
         match self {
-            Self::Search => "Search",
-            Self::Maybeboard => "Maybeboard",
+            Self::Search => add_cards::Source::Search.label(),
+            Self::Maybeboard => add_cards::Source::Maybeboard.label(),
         }
     }
 
@@ -943,7 +943,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             // arrow.
             div { class: "swipe-bottom-row",
                 div { class: "swipe-bottom-chips",
-                    span { class: "stat-chip stat-chip-p1 chip-row-label", "From" }
+                    span { class: "stat-chip stat-chip-p1 chip-row-label", "{add_cards::FROM}" }
                     Chip {
                         selected: true,
                         onclick: move |_| switch_source(at.toggled()),
