@@ -15,13 +15,13 @@
 /// and images. Shown on the app's About screen and in zite's footer.
 pub const SCRYFALL_CREDIT_HTML: &str = r#"Card data and images from <a href="https://scryfall.com" target="_blank" rel="noopener noreferrer">Scryfall</a>."#;
 
-/// The Fan Content notice Wizards' policy asks for, as an HTML fragment. The
-/// privacy policy ends with the same sentence.
+/// The Fan Content notice Wizards' policy asks for, as an HTML fragment,
+/// shown on the app's About screen and in zite's footer.
 pub const FAN_CONTENT_HTML: &str = r#"Zwipe is unofficial Fan Content permitted under the <a href="https://company.wizards.com/en/legal/fancontentpolicy" target="_blank" rel="noopener noreferrer">Fan Content Policy</a>. Not approved/endorsed by Wizards. Portions of the materials used are property of Wizards of the Coast. ©Wizards of the Coast LLC."#;
 
 /// When the privacy policy was last revised, shown as a chip in each app's
 /// first panel.
-pub const PRIVACY_LAST_UPDATED: &str = "October 2026";
+pub const PRIVACY_LAST_UPDATED: &str = "November 2026";
 
 /// The policy's opening paragraph. Each app renders it under its own
 /// "Privacy policy" heading, beside the [`PRIVACY_LAST_UPDATED`] chip.
@@ -69,17 +69,15 @@ pub const PRIVACY_POLICY_HTML: &str = r#"<h2>Data we collect</h2>
 <p>Passwords are hashed with argon2. Refresh tokens are SHA-256 hashed before storage. All traffic is encrypted in transit via HTTPS. We do not have access to your plaintext password.</p>
 
 <h2>Children</h2>
-<p>Zwipe is not directed at children under 13. We do not knowingly collect data from children under 13.</p>
-
-<h2>Fan content</h2>
-<p>Zwipe is unofficial Fan Content permitted under the <a href="https://company.wizards.com/en/legal/fancontentpolicy" target="_blank" rel="noopener noreferrer">Fan Content Policy</a>. Not approved/endorsed by Wizards. Portions of the materials used are property of Wizards of the Coast. ©Wizards of the Coast LLC.</p>"#;
+<p>Zwipe is not directed at children under 13. We do not knowingly collect data from children under 13.</p>"#;
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn the_privacy_policy_carries_the_fan_content_notice() {
-        assert!(PRIVACY_POLICY_HTML.contains(FAN_CONTENT_HTML));
+    fn the_privacy_policy_leaves_the_fan_content_notice_to_about() {
+        assert!(!PRIVACY_POLICY_HTML.contains("Fan Content"));
+        assert!(FAN_CONTENT_HTML.contains("Fan Content Policy"));
     }
 }

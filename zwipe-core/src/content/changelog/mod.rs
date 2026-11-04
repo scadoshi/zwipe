@@ -46,6 +46,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Saving a theme lowers the Themes sheet instead of cutting it off",
         "The main menu's footer has a palette for the theme and a sun or moon for Dark/Light",
         "Home's Decks panel shows your three latest decks as tiles with a button to all of them",
+        "The privacy policy no longer repeats the Fan Content notice, which About and zwipe.net carry",
         "Home's Colors panel shows your color counts as bars with the mana pips, and the color map moved to Playstyle",
         "Draw odds names the opening hand turn 0, so the heading keeps its width as the turn steps",
         "About's credits sit in their own panel and its links are in the accent color",
@@ -83,6 +84,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Light themes keep disabled chips, empty heatmap days and empty notes readable",
         "A screen's header is shown on arrival even when the last screen was scrolled",
         "The menu lists the deck screens; Home, Account, Settings and About are icons in its footer",
+        "Closing a dialog opened from the main menu leaves the menu open",
     ],
 }];
 
