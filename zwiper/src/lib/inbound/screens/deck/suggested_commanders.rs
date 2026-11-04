@@ -7,7 +7,7 @@
 //! each with its pips and name; a tapped chip narrows the held list to that identity, and the Art chip
 //! toggles the row thumbnails. An expanded row offers **Create deck** (seeds
 //! the create screen), **Maybeboard** (saves to the commander maybeboard) and
-//! **Remove** (hides it for a week). The action bar's Swipe opens the shared
+//! **Remove** (hides it for a week). The Swipe button opens the shared
 //! overlay in its suggested mode, which deals the same held list and whose
 //! Filter sheet holds the same Show chips. Every action
 //! that removes a row fills from the held list and refetches only when fewer
@@ -27,9 +27,9 @@
 //! file draws its state and performs its effects.
 
 use components::{
-    ActionBar, AlertDialog, Bar, BarChart, BarOrientation, BottomSheet, Button, ButtonVariant,
-    CardRoleChips, Chip, ColorMap, ColorMapCounts, DialogAction, HintBullet, HintBullets,
-    HintDialog, HintKey, HintLine, OtagDef, RoleTags, Toasts, use_toast,
+    AlertDialog, Bar, BarChart, BarOrientation, Button, ButtonVariant, CardRoleChips, Chip,
+    ColorMap, ColorMapCounts, DialogAction, HintBullet, HintBullets, HintDialog, HintKey, HintLine,
+    OtagDef, RoleTags, Toasts, use_toast,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -53,6 +53,7 @@ use zwipe_ui::screens::playstyle::{
 };
 
 use super::components::collapsible_section::CollapsibleSection;
+use super::components::danger_zone::DangerZoneAction;
 use super::components::skeletons::{BuilderProfileSkeleton, ShowChipRowSkeleton};
 use super::components::swipe_select::{SuggestedPile, SwipeMode, SwipeSelect};
 use crate::inbound::components::auth::authed::{Authed, use_authed};
@@ -855,7 +856,6 @@ pub fn SuggestedCommanders() -> Element {
     let swipe_mode = use_memo(|| Some(SwipeMode::Suggested));
     let mut printing_card: Signal<Option<Card>> = use_signal(|| None);
     let mut printing_open = use_signal(|| false);
-    let mut show_more_sheet = use_signal(|| false);
     let mut show_clear_dialog = use_signal(|| false);
 
     // Tells the model when the Swipe overlay closes: its swipes dismissed and
@@ -890,7 +890,6 @@ pub fn SuggestedCommanders() -> Element {
     let on_action = move |action: Action| driver.dispatch(action);
 
     let clear_dismissals = use_callback(move |()| {
-        show_more_sheet.set(false);
         driver.dispatch(Action::ClearSkips);
     });
 
@@ -919,7 +918,7 @@ pub fn SuggestedCommanders() -> Element {
 
     rsx! {
         div { class: "screen",
-            ScreenHeader { title: model::TITLE, hint: hint_open }
+            ScreenHeader { title: model::TITLE, hint: hint_open, back: move |()| driver.dispatch(Action::Back) }
 
             HintDialog {
                 open: hint_open,
@@ -999,9 +998,20 @@ pub fn SuggestedCommanders() -> Element {
                                 }
                             } else {
                                 div { class: "maybeboard-list card-group row-enter",
+                                    // Swipe sits in the list's header, so it
+                                    // says what gets swiped.
                                     div { class: "card-group-header card-group-header-with-hint",
                                         span { {model::LIST_TITLE} }
-                                        InfoButton { topic: HintTopic::SuggestionList }
+                                        div { class: "card-group-header-actions",
+                                            if shows_swipe {
+                                                Button {
+                                                    variant: ButtonVariant::Action,
+                                                    onclick: move |_| swipe_open.set(true),
+                                                    {model::SWIPE}
+                                                }
+                                            }
+                                            InfoButton { topic: HintTopic::SuggestionList }
+                                        }
                                     }
                                     for suggestion in rows {
                                         SuggestionRow {
@@ -1043,38 +1053,13 @@ pub fn SuggestedCommanders() -> Element {
                                     on_action,
                                 }
                             }
+                            DangerZoneAction {
+                                label: model::CLEAR_SKIPS,
+                                button: model::CLEAR,
+                                onclick: move |()| show_clear_dialog.set(true),
+                            }
                         }
                     }
-                }
-            }
-
-            ActionBar {
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| driver.dispatch(Action::Back),
-                    {model::BACK}
-                }
-                if shows_swipe {
-                    Button {
-                        variant: ButtonVariant::Action,
-                        onclick: move |_| swipe_open.set(true),
-                        {model::SWIPE}
-                    }
-                }
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| show_more_sheet.set(true),
-                    {model::MORE}
-                }
-            }
-
-            BottomSheet { open: show_more_sheet, title: model::MORE_TITLE,
-                Button {
-                    danger: true,
-                    onclick: move |_| {
-                        show_clear_dialog.set(true);
-                    },
-                    {model::CLEAR_SKIPS}
                 }
             }
 

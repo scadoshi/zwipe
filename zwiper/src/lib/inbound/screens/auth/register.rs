@@ -1,21 +1,20 @@
 //! New user registration screen.
 
-use components::{
-    ActionBar, Button, ButtonVariant, TOAST_NORMAL, TextInput, ToastOptions, Toasts, use_toast,
-};
+use components::{Button, ButtonVariant, TOAST_NORMAL, TextInput, ToastOptions, Toasts, use_toast};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use zwipe_client::ZwipeClient;
 use zwipe_core::http::contracts::auth::HttpRegisterUser;
 use zwipe_core::http::contracts::metrics::AnonymousEventKind;
 use zwipe_ui::account::Password;
-use zwipe_ui::screens::register::{self, Action, BACK, Destination, Effect, Field, State};
+use zwipe_ui::screens::register::{self, Action, Destination, Effect, Field, State};
 
 use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::home_hero::HomeHero;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::anonymous;
 use crate::inbound::components::{info_button, ui_toast};
+use crate::inbound::router::Router;
 use crate::inbound::screens::auth::login::LoginPrefill;
 
 /// Register's model with the handles that perform its effects. Copy, so
@@ -79,6 +78,9 @@ impl Driver {
                 login_prefill.set(Some(username));
             }
             Effect::Navigate(Destination::Previous) => self.navigator.go_back(),
+            Effect::Navigate(Destination::Login) => {
+                self.navigator.replace(Router::Login {});
+            }
             Effect::Toast(toast) => ui_toast::raise(self.toast, toast),
         }
     }
@@ -134,7 +136,7 @@ pub fn Register() -> Element {
             div { class: "screen-content content-enter",
             HomeHero {}
             div { class : "container-sm text-center",
-                form { class: "flex-col",
+                form { class: "flex-col", onsubmit: move |evt| evt.prevent_default(),
                     TextInput {
                         value: driver.username,
                         id: "username",
@@ -166,21 +168,26 @@ pub fn Register() -> Element {
                         placeholder: Field::ConfirmPassword.placeholder(),
                         input_type: "password",
                     }
+                    // The form's one button, so Return in a field clicks it;
+                    // the click handles the submit itself, never the page.
+                    div { class: "form-submit",
+                        Button {
+                            disabled: is_loading,
+                            onclick: move |evt: MouseEvent| {
+                                evt.prevent_default();
+                                driver.dispatch(Action::Submit);
+                            },
+                            {submit_label}
+                        }
+                    }
                 }
-            }
-        }
-        ActionBar {
-            Button {
-                variant: ButtonVariant::Action,
-                disabled: is_loading,
-                onclick: move |_| driver.dispatch(Action::Back),
-                {BACK}
-            }
-            Button {
-                variant: ButtonVariant::Action,
-                disabled: is_loading,
-                onclick : move |_| driver.dispatch(Action::Submit),
-                {submit_label}
+                div { class: "form-links",
+                    Button {
+                        variant: ButtonVariant::Action,
+                        onclick: move |_| driver.dispatch(Action::Back),
+                        {register::BACK}
+                    }
+                }
             }
         }
     }

@@ -1,7 +1,4 @@
-use components::{
-    ActionBar, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintDialog, HintKey, HintLine,
-    Toasts, use_toast,
-};
+use components::{Chip, HintBullet, HintBullets, HintDialog, HintKey, HintLine, Toasts, use_toast};
 use dioxus::core::spawn_forever;
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -31,6 +28,7 @@ use super::components::image_preview::ImagePreview;
 use super::components::printing_sheet::PrintingSheet;
 use super::components::quick_add::QuickAdd;
 use super::components::undo_log::{UndoAction, UndoLog, UndoStore, take_newest_in};
+use crate::inbound::components::action_dock::{self, DockFilter, DockIcon};
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::catalog_cache::CatalogCache;
 use crate::inbound::components::hint_dialog::{self, HintColored};
@@ -47,6 +45,7 @@ use crate::inbound::screens::deck::components::featured_cards::FeaturedCards;
 use crate::inbound::screens::deck::components::skeletons::{
     ChipRowSkeleton, DeckCardListSkeleton, QuickAddSkeleton,
 };
+use crate::inbound::screens::deck::missing_deck;
 use crate::inbound::screens::oracle_tag_examples::OracleTagExamples;
 
 /// The app's copy of a shared undo entry, for the screen's live log.
@@ -226,13 +225,18 @@ impl Driver {
             }
             Effect::Collapse => expanded_card.set(None),
             Effect::OpenPrintings => printing_sheet_open.set(true),
-            Effect::Navigate(Destination::Previous) => navigator.go_back(),
-            Effect::Navigate(Destination::AddCards(deck_id)) => {
-                navigator.push(Router::AddDeckCard { deck_id });
-            }
-            Effect::Navigate(Destination::RemoveCards(deck_id)) => {
-                navigator.push(Router::RemoveDeckCard { deck_id });
-            }
+            Effect::Navigate(destination) => match route(destination) {
+                Some(route) => {
+                    navigator.push(route);
+                }
+                None => navigator.go_back(),
+            },
+            Effect::Replace(destination) => match route(destination) {
+                Some(route) => {
+                    navigator.replace(route);
+                }
+                None => navigator.go_back(),
+            },
             Effect::Toast(t) => ui_toast::raise(toast, t),
         }
     }
@@ -383,10 +387,10 @@ impl Driver {
     /// keep their tolerant handling inside. The profile goes to the model as
     /// soon as it lands, so the header draws before the cards.
     fn fetch_deck(self, ticket: Ticket, deck_id: Uuid) {
-        let authed = self.authed;
+        let Self { authed, .. } = self;
         spawn(async move {
             let loaded = authed
-                .run("load_deck", |c, s| async move {
+                .try_run("load_deck", |c, s| async move {
                     let deck = c.fetch_deck(deck_id, &s).await?;
                     let mut zone = Zone::default();
                     if let Ok(profile) = c.fetch_deck_profile(deck_id, &s).await {
@@ -402,15 +406,27 @@ impl Driver {
                     Ok((deck, zone))
                 })
                 .await;
-            self.dispatch(match loaded {
-                Some((deck, zone)) => Action::Loaded {
+            self.dispatch(missing_deck::settle(
+                loaded,
+                |(deck, zone)| Action::Loaded {
                     ticket,
                     deck: Box::new(deck),
                     zone: Box::new(zone),
                 },
-                None => Action::Failed { ticket },
-            });
+                Action::Gone { ticket },
+                Action::Failed { ticket },
+            ));
         });
+    }
+}
+
+/// The route a destination opens, or `None` for the screen before this one.
+fn route(destination: Destination) -> Option<Router> {
+    match destination {
+        Destination::Previous => None,
+        Destination::AddCards(deck_id) => Some(Router::AddDeckCard { deck_id }),
+        Destination::RemoveCards(deck_id) => Some(Router::RemoveDeckCard { deck_id }),
+        Destination::DeckList => Some(Router::DeckList {}),
     }
 }
 
@@ -718,7 +734,7 @@ pub fn View(deck_id: Uuid) -> Element {
 
     rsx! {
             div { class: "screen",
-                ScreenHeader { title: deck_cards::TITLE, hint: deck_cards_hint_open }
+                ScreenHeader { title: deck_cards::TITLE, hint: deck_cards_hint_open, back: move |()| driver.dispatch(Action::Back) }
 
                 div { class: "screen-content",
 
@@ -1057,52 +1073,45 @@ pub fn View(deck_id: Uuid) -> Element {
                 }
             }
 
-            ActionBar {
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| driver.dispatch(Action::Back),
-                    "{deck_cards::BACK}"
-                }
-                Button {
-                    variant: ButtonVariant::Action,
+            // The screen's actions as one floating icon bar at the bottom right:
+            // add and remove, then the filter (with its reset while a filter is
+            // on) and undo.
+            div { class: "action-dock action-dock-right",
+                button {
+                    class: "action-dock-btn",
+                    "aria-label": deck_cards::ADD,
                     onclick: move |_| driver.dispatch(Action::OpenAdd),
-                    "{deck_cards::ADD}"
+                    DockIcon { path: action_dock::PLUS }
                 }
-                Button {
-                    variant: ButtonVariant::Action,
+                button {
+                    class: "action-dock-btn",
+                    "aria-label": deck_cards::REMOVE,
                     onclick: move |_| driver.dispatch(Action::OpenRemove),
-                    "{deck_cards::REMOVE}"
+                    DockIcon { path: action_dock::MINUS }
                 }
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| filters_overlay_open.set(true),
-                    "{deck_cards::FILTER}"
-                    if filter::shows_dot(&filter) {
-                        span { class: "filter-dot" }
-                    }
+                span { class: "action-dock-divider" }
+                DockFilter {
+                    label: deck_cards::FILTER,
+                    dot: filter::shows_dot(&filter),
+                    active: !filter.is_empty(),
+                    onclick: move |()| filters_overlay_open.set(true),
+                    on_reset: move |()| driver.dispatch(Action::ResetFilter),
+                    reset_label: deck_cards::RESET_FILTER,
                 }
-                // Walks the undo log newest-first; hidden while there is
-                // nothing to undo (same pattern as Reset filter below).
-                if !undo_log.0.read().is_empty() {
-                    Button {
-                        variant: ButtonVariant::Action,
-                        onclick: move |_| {
-                            let mut log = undo_log.0;
-                            let popped = log.write().pop();
-                            if let Some(action) = popped {
-                                driver.dispatch(Action::Undo(Box::new(to_shared_undo(action))));
-                            }
-                        },
-                        "{deck_cards::UNDO}"
-                    }
-                }
-                if !filter.is_empty() {
-                    Button {
-                        variant: ButtonVariant::Action,
-                        class: "btn-action-clear",
-                        onclick: move |_| driver.dispatch(Action::ResetFilter),
-                        "{deck_cards::RESET_FILTER}"
-                    }
+                // Walks the undo log newest-first; disabled while there is
+                // nothing to undo, so the pill keeps its width.
+                button {
+                    class: "action-dock-btn",
+                    "aria-label": deck_cards::UNDO,
+                    disabled: undo_log.0.read().is_empty(),
+                    onclick: move |_| {
+                        let mut log = undo_log.0;
+                        let popped = log.write().pop();
+                        if let Some(action) = popped {
+                            driver.dispatch(Action::Undo(Box::new(to_shared_undo(action))));
+                        }
+                    },
+                    DockIcon { path: action_dock::UNDO }
                 }
             }
 
@@ -1124,6 +1133,7 @@ pub fn View(deck_id: Uuid) -> Element {
                     HintBullet { HintKey { "Group by" } " sorts by type, mana value, color or role" }
                     HintBullet { HintKey { "Boards" } " picks main, maybe or side" }
                     HintBullet { HintKey { "Show" } " toggles tokens, the command zone and row art" }
+                    HintBullet { "The bar at the bottom: " HintKey { "+" } " adds, " HintKey { "−" } " removes, the funnel filters (its " HintKey { "×" } " resets the filter), and the arrow undoes" }
                     HintBullet { HintKey { color: "--color-warning", "Star" } " marks up to three MVPs. Suggestions lean toward cards that share their roles" }
                 }
             }

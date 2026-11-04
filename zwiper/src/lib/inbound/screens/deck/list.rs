@@ -11,10 +11,7 @@
 //! What the screen knows and does is `zwipe_ui::screens::deck_list`; this
 //! file draws its state and performs its effects.
 
-use components::{
-    ActionBar, BottomSheet, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintDialog,
-    HintKey,
-};
+use components::{Chip, HintBullet, HintBullets, HintDialog, HintKey};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use dioxus_primitives::toast::{Toasts, use_toast};
@@ -26,8 +23,9 @@ use zwipe_core::domain::deck::deck_profile::DeckProfile;
 use zwipe_core::domain::user::models::hints::HINT_DECK_LIST;
 use zwipe_ui::deck::command_zone;
 use zwipe_ui::deck::list::{self, GroupBy};
-use zwipe_ui::screens::deck_list::{self, Action, Destination, Effect, MoreItem, State, Status};
+use zwipe_ui::screens::deck_list::{self, Action, Destination, Effect, State, Status};
 
+use crate::inbound::components::action_dock::{self, DockIcon};
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen};
@@ -120,8 +118,6 @@ fn route(destination: Destination) -> Router {
         Destination::Home => Router::Home {},
         Destination::Deck(deck_id) => Router::ViewDeck { deck_id },
         Destination::CreateDeck => Router::CreateDeck,
-        Destination::CommanderMaybeboard => Router::CommanderMaybeboard {},
-        Destination::Playstyle => Router::SuggestedCommanders {},
     }
 }
 
@@ -256,7 +252,6 @@ pub fn DeckList() -> Element {
     };
     let decks_hint_open = driver.hint_open;
     let session = driver.session;
-    let mut show_more_sheet = use_signal(|| false);
 
     // Refreshes the user, so email_verified_at is current without re-login,
     // and fetches the decks, once per mount.
@@ -285,7 +280,7 @@ pub fn DeckList() -> Element {
 
     rsx! {
             div { class: "screen",
-                ScreenHeader { title: deck_list::TITLE, hint: decks_hint_open }
+                ScreenHeader { title: deck_list::TITLE, hint: decks_hint_open, back: move |()| driver.dispatch(Action::Back) }
 
                 // Auto-opens once per account (HINT_DECK_LIST) when the model
                 // offers it; the header's ? reopens it on demand.
@@ -296,7 +291,7 @@ pub fn DeckList() -> Element {
                     HintBullets {
                         HintBullet { "Tap a deck to open it" }
                         HintBullet { HintKey { "Group by" } " folds the list into sections, " HintKey { "Show" } " narrows it by color or tag" }
-                        HintBullet { HintKey { "Create" } " starts a new deck" }
+                        HintBullet { "The " HintKey { "+" } " at the bottom right starts a new deck" }
                     }
                 }
 
@@ -423,14 +418,11 @@ pub fn DeckList() -> Element {
                 }
             }
 
-            ActionBar {
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| driver.dispatch(Action::Back),
-                    {deck_list::BACK}
-                }
-                Button {
-                    variant: ButtonVariant::Action,
+            // Create as the action dock's +, pinned bottom right.
+            div { class: "action-dock action-dock-right",
+                button {
+                    class: "action-dock-btn",
+                    "aria-label": deck_list::CREATE,
                     onclick: move |_| {
                         // Unverified users are limited to 1 deck. The backend
                         // enforces this too, but the model surfaces it first.
@@ -441,30 +433,7 @@ pub fn DeckList() -> Element {
                             .is_none_or(|s| s.user.email_verified_at.is_some());
                         driver.dispatch(Action::Create { verified });
                     },
-                    {deck_list::CREATE}
-                }
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| show_more_sheet.set(true),
-                    {deck_list::MORE}
-                }
-            }
-
-            // Side features live here rather than crowding the action bar.
-            BottomSheet { open: show_more_sheet, title: deck_list::MORE_TITLE,
-                Button {
-                    onclick: move |_| {
-                        show_more_sheet.set(false);
-                        driver.dispatch(Action::More(MoreItem::CommanderMaybeboard));
-                    },
-                    {MoreItem::CommanderMaybeboard.label()}
-                }
-                Button {
-                    onclick: move |_| {
-                        show_more_sheet.set(false);
-                        driver.dispatch(Action::More(MoreItem::Playstyle));
-                    },
-                    {MoreItem::Playstyle.label()}
+                    DockIcon { path: action_dock::PLUS }
                 }
             }
             }
@@ -485,13 +454,5 @@ mod tests {
             Router::ViewDeck { deck_id }
         );
         assert_eq!(route(Destination::CreateDeck), Router::CreateDeck);
-        assert_eq!(
-            route(Destination::CommanderMaybeboard),
-            Router::CommanderMaybeboard {}
-        );
-        assert_eq!(
-            route(Destination::Playstyle),
-            Router::SuggestedCommanders {}
-        );
     }
 }

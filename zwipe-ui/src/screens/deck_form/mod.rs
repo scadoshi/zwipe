@@ -36,14 +36,11 @@ pub const EDIT_TITLE: &str = "Edit deck";
 /// The line in place of the form when Edit's deck failed to load.
 pub const LOAD_FAILED: &str = "Could not load deck";
 
-/// The action bar's Back button.
+/// The Back button.
 pub const BACK: &str = "Back";
 
-/// Create's save button.
+/// The save button, Create's and Edit's; Edit shows it only while something changed.
 pub const SAVE: &str = "Save";
-
-/// Edit's save button, shown only while something changed.
-pub const SAVE_CHANGES: &str = "Save changes";
 
 /// The save button while the save is out.
 pub const SAVING: &str = "Saving...";
@@ -172,6 +169,8 @@ pub enum Destination {
     Previous,
     /// The deck view for the deck with this id: Edit's Back, and after either save.
     Deck(Uuid),
+    /// The deck list, in place of a screen whose deck is gone.
+    DeckList,
 }
 
 /// What a user does on the form, and each reply the client hands back.
@@ -196,6 +195,11 @@ pub enum Action {
     /// The request holding `ticket` failed. The client has already reported it, and raised its error toast unless it was a search.
     Failed {
         /// The ticket from the effect this answers.
+        ticket: Ticket,
+    },
+    /// The request holding `ticket` found no deck: the server no longer has it. The client has already reported it and raised its toast.
+    Gone {
+        /// The ticket from the request this answers.
         ticket: Ticket,
     },
     /// The server's deck tag catalog, whenever the client's copy changes. Closing the deck tag picker seeds oracle tags from it; an empty catalog seeds nothing.
@@ -298,7 +302,7 @@ pub enum Action {
     SavePicker,
     /// The open picker's Back, or the OS back gesture over it: puts back what it opened on, saying so when that throws a change away.
     BackPicker,
-    /// The action bar's save button.
+    /// The Save button.
     Save,
     /// The save holding `ticket` made the deck with this id.
     Created {
@@ -312,7 +316,7 @@ pub enum Action {
         /// The ticket from the [`Effect::UpdateDeck`] this answers.
         ticket: Ticket,
     },
-    /// The action bar's Back.
+    /// Back.
     Back,
 }
 
@@ -378,6 +382,8 @@ pub enum Effect {
     },
     /// Goes to this screen.
     Navigate(Destination),
+    /// Goes to this screen in place of the current one, so Back skips a screen with nothing left to show.
+    Replace(Destination),
     /// Raises this toast.
     Toast(Toast),
 }
@@ -538,6 +544,10 @@ impl State {
             Action::Failed { ticket } => {
                 self.failed(ticket);
                 Vec::new()
+            }
+            Action::Gone { ticket } => {
+                self.failed(ticket);
+                vec![Effect::Replace(Destination::DeckList)]
             }
             Action::Catalog(catalog) => {
                 self.catalog = catalog;
@@ -718,7 +728,7 @@ impl State {
         self.tag_list(picker)
     }
 
-    /// Whether a save is out, which turns both action bar buttons off.
+    /// Whether a save is out, which turns Back and Save off.
     #[must_use]
     pub fn is_saving(&self) -> bool {
         self.saving
@@ -741,10 +751,7 @@ impl State {
         } else if self.saving {
             Some(SAVING)
         } else {
-            match self.mode {
-                Mode::Create => Some(SAVE),
-                Mode::Edit(_) => Some(SAVE_CHANGES),
-            }
+            Some(SAVE)
         }
     }
 

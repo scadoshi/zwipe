@@ -1,7 +1,7 @@
 //! Account screen and its edit sheets.
 //!
 //! Shows username, email and password with bottom sheets to change them,
-//! plus the About rows, logging out and deleting the account.
+//! plus logging out and deleting the account.
 //!
 //! What the screen knows and does is `zwipe_ui::screens::account`; these
 //! files draw its state and perform its effects.
@@ -17,9 +17,7 @@ mod components;
 /// The model with the handles that perform its effects.
 mod driver;
 
-use ::components::{
-    ActionBar, BottomSheet, Button, ButtonVariant, HintBullet, HintBullets, HintDialog, HintKey,
-};
+use ::components::{Button, ButtonVariant, HintBullet, HintBullets, HintDialog, HintKey};
 use change_email::ChangeEmailSheet;
 use change_password::ChangePasswordSheet;
 use change_username::ChangeUsernameSheet;
@@ -38,10 +36,6 @@ use crate::inbound::components::info_button::InfoButton;
 use crate::inbound::components::logout_dialog::LogoutDialog;
 use crate::inbound::components::screen_header::ScreenHeader;
 
-/// Client version baked in at compile time, shown at the bottom of the screen
-/// so users can report which build they're on.
-const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
-
 /// Account screen showing account details and management options.
 #[component]
 pub fn Account() -> Element {
@@ -56,7 +50,6 @@ pub fn Account() -> Element {
         driver.dispatch(Action::Load(user));
     });
     let account_hint_open = driver.overlays.hint;
-    let mut show_more_sheet = driver.overlays.more;
 
     let state = driver.model.read();
     let user = state.user().cloned();
@@ -67,7 +60,7 @@ pub fn Account() -> Element {
 
     rsx! {
             div { class: "screen",
-                ScreenHeader { title: model::TITLE, hint: account_hint_open }
+                ScreenHeader { title: model::TITLE, hint: account_hint_open, back: move |()| driver.dispatch(Action::Back) }
 
                 HintDialog {
                     open: account_hint_open,
@@ -75,7 +68,7 @@ pub fn Account() -> Element {
                     title: "Your account",
                     HintBullets {
                         HintBullet { "Tap a row's " HintKey { color: "--palette-6", "?" } " for what it does" }
-                        HintBullet { HintKey { "More" } " deletes your account" }
+                        HintBullet { HintKey { "Danger zone" } " at the bottom logs you out or deletes your account" }
                     }
                 }
 
@@ -157,83 +150,34 @@ pub fn Account() -> Element {
                                 }
                             }
 
-                            div { class: "settings-list",
-
+                            div { class: "settings-list danger-zone",
                                 div { class: "settings-list-header",
-                                    span { class: "settings-list-title", {model::ABOUT} }
+                                    span { class: "settings-list-title danger-zone-title", {model::DANGER_ZONE} }
                                 }
-
-                                div {
-                                    class: "settings-row",
-                                    span { style: "display:flex;align-items:center;",
-                                        span { class: "settings-row-label", {Row::Website.label()} }
-                                        InfoButton { topic: HintTopic::Website }
-                                    }
+                                div { class: "settings-row",
+                                    span { class: "settings-row-label", {model::LOG_OUT} }
                                     div { class: "settings-row-value",
                                         Button {
                                             variant: ButtonVariant::Action,
-                                            onclick: move |_| driver.dispatch(Action::Website),
-                                            {model::WEBSITE_LINK}
+                                            danger: true,
+                                            onclick: move |_| driver.dispatch(Action::LogOut),
+                                            {model::LOG_OUT}
                                         }
                                     }
                                 }
-
-                                div {
-                                    class: "settings-row",
-                                    span { class: "settings-row-label", {Row::PrivacyPolicy.label()} }
+                                div { class: "settings-row",
+                                    span { class: "settings-row-label", {MoreItem::DeleteAccount.label()} }
                                     div { class: "settings-row-value",
                                         Button {
                                             variant: ButtonVariant::Action,
-                                            onclick: move |_| driver.dispatch(Action::PrivacyPolicy),
-                                            {model::VIEW}
-                                        }
-                                    }
-                                }
-
-                                div {
-                                    class: "settings-row",
-                                    span { style: "display:flex;align-items:center;",
-                                        span { class: "settings-row-label", {Row::Version.label()} }
-                                        InfoButton { topic: HintTopic::Version }
-                                    }
-                                    div { class: "settings-row-value",
-                                        span { {model::version_label(APP_VERSION)} }
-                                        Button {
-                                            variant: ButtonVariant::Action,
-                                            onclick: move |_| driver.dispatch(Action::Changelog),
-                                            {model::CHANGELOG}
+                                            danger: true,
+                                            onclick: move |_| driver.dispatch(Action::More(MoreItem::DeleteAccount)),
+                                            {model::DELETE}
                                         }
                                     }
                                 }
                             }
                         }
-                    }
-                }
-
-                ActionBar {
-                    Button {
-                        variant: ButtonVariant::Action,
-                        onclick: move |_| driver.dispatch(Action::Back),
-                        {model::BACK}
-                    }
-                    Button {
-                        variant: ButtonVariant::Action,
-                        danger: true,
-                        onclick: move |_| driver.dispatch(Action::LogOut),
-                        {model::LOG_OUT}
-                    }
-                    Button {
-                        variant: ButtonVariant::Action,
-                        onclick: move |_| show_more_sheet.set(true),
-                        {model::MORE}
-                    }
-                }
-
-                BottomSheet { open: show_more_sheet, title: model::MORE_TITLE.to_string(),
-                    Button {
-                        danger: true,
-                        onclick: move |_| driver.dispatch(Action::More(MoreItem::DeleteAccount)),
-                        {MoreItem::DeleteAccount.label()}
                     }
                 }
 

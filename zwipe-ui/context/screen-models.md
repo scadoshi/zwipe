@@ -38,12 +38,12 @@ impl State {
 
 ## Loading and generations
 
-Every fetch takes a `Ticket` from the model's own `Generation` inside `update`, and the effect carries it. The client hands it back on the reply. `update` drops any reply whose ticket a newer fetch has replaced, so a reload, a fast retype or a slow first request can't land over newer data. A request that continues the current one (a next page) uses `Generation::current` instead of `next_ticket`. Tests cover it with an `a_late_reply_is_ignored` case per fetch.
+Every fetch takes a `Ticket` from the model's own `Generation` inside `update`, and the effect carries it. The client hands it back on the reply. `update` drops any reply whose ticket a newer fetch has replaced, so a reload, a fast retype or a slow first request can't land over newer data. A request that continues the current one (a next page) uses `Generation::current` instead of `next_ticket`. Tests cover it with an `a_late_reply_is_ignored` case per fetch. Tickets come from one counter for the whole process, so a reply to an earlier visit of a screen never matches a ticket from a later one, even though each new `State` starts its `Generation` over; a client whose requests outlive their screen (the TUI) needs no visit stamp of its own.
 
 ## What stays in the client
 
 - Drawing, layout, focus, scroll, hover, gestures and animation. The TUI's focused chip and selected row, the web's wide layout that keeps the tag row open.
-- Overlays that are pure presentation: whether the More sheet or a `?` dialog is up. The items in them and where they lead are the model's.
+- Overlays that are pure presentation: whether a sheet or a `?` dialog is up. The items in them and where they lead are the model's.
 - I/O: zwipe-client calls, session storage, the hint's "seen" check and record, opening URLs.
 - Telemetry and error reporting, through each client's request runner.
 

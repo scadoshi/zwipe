@@ -110,6 +110,49 @@
     color: var(--accent-tertiary);
 }
 
+/* ---- Fold (components::Fold, components::SeeMore) ----
+   The rows past a chart's first five, eased open and shut with the grid-rows
+   0fr<->1fr technique like .keyword-reveal. Mounted shut with its rows inside. */
+.chart-fold {
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    transition:
+        grid-template-rows 0.25s ease,
+        opacity 0.25s ease;
+}
+
+.chart-fold.open {
+    grid-template-rows: 1fr;
+    opacity: 1;
+}
+
+.chart-fold-inner {
+    overflow: hidden;
+    min-height: 0;
+}
+
+/* Inside a grid of chart rows: the fold and its inner span the row grid and
+   share its columns, so the folded rows line up with the shown ones and size
+   the chip column while shut. */
+.chart-fold.subgrid {
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+}
+
+.chart-fold.subgrid > .chart-fold-inner {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: subgrid;
+    align-items: center;
+}
+
+.chart-see-more {
+    display: flex;
+    justify-content: center;
+    margin-top: 0.35rem;
+}
+
 /* ---- CardRow (components::CardRow) ---- */
 
 .card-row {
@@ -673,6 +716,19 @@ i.ms.ms-cost.ms-gp {
     border-color: color-mix(in srgb, var(--palette-3) 35%, transparent);
 }
 
+/* The printing's release date and artist, shown by hosts that ask for them. */
+.detail-chip-date {
+    color: var(--palette-1);
+    background-color: color-mix(in srgb, var(--palette-1) 12%, transparent);
+    border-color: color-mix(in srgb, var(--palette-1) 35%, transparent);
+}
+
+.detail-chip-artist {
+    color: var(--palette-6);
+    background-color: color-mix(in srgb, var(--palette-6) 12%, transparent);
+    border-color: color-mix(in srgb, var(--palette-6) 35%, transparent);
+}
+
 .detail-chip-pt {
     color: var(--palette-5);
     background-color: color-mix(in srgb, var(--palette-5) 15%, transparent);
@@ -1171,6 +1227,31 @@ i.ms.ms-cost.ms-gp {
     color: var(--accent-primary);
 }
 
+/* The rows look (`rows`): the chip rows and each release are settings-rows of
+   the panel the caller wraps them in, so the panel's hairlines divide the
+   releases. The rows stack their content with the panel body's padding.
+   Compound selectors, since the kit's .settings-row loads after this sheet. */
+.settings-row.changelog-filters-row,
+.settings-row.changelog-row {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 0.75rem 1rem;
+    text-align: left;
+}
+
+.settings-row.changelog-filters-row {
+    gap: 0.5rem;
+}
+
+.settings-row.changelog-row {
+    gap: 0;
+    animation: changelog-card-in 0.35s ease-out both;
+}
+
+.changelog-row .changelog-version-row {
+    margin-bottom: 0.5rem;
+}
+
 
 /* ---- ColorMap (components::ColorMap) ---- */
 
@@ -1265,6 +1346,23 @@ i.ms.ms-cost.ms-gp {
    the chips. */
 .color-map-key > .card-action-btn {
     align-self: stretch;
+}
+
+/* A bar chart's row: the track fills the row beside its label, and the fill
+   is the bar, its width set inline from the row's share. */
+.chart-track {
+    flex: 1;
+    height: 0.9rem;
+    background: var(--border-secondary);
+    border-radius: 0.15rem;
+    overflow: hidden;
+}
+
+.chart-fill {
+    height: 100%;
+    background: var(--text-primary);
+    opacity: 0.65;
+    border-radius: 0.15rem;
 }
 
 /* A chart's title: a chip in the theme's heading accent, centered over its

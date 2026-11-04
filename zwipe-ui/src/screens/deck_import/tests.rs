@@ -292,6 +292,17 @@ fn a_new_import_clears_the_last_result() {
 }
 
 #[test]
+fn a_gone_deck_is_replaced_by_the_deck_list() {
+    let (mut state, _) = opened();
+    let ticket = send(&mut state, "x");
+    assert_eq!(
+        state.update(Action::Gone { ticket }),
+        [Effect::Replace(Destination::DeckList)]
+    );
+    assert!(!state.importing());
+}
+
+#[test]
 fn a_failed_import_leaves_no_result_and_takes_another_submit() {
     let (mut state, _) = opened();
     let ticket = send(&mut state, "x");

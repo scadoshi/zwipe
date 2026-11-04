@@ -3,10 +3,7 @@
 //! What the screen knows and does is `zwipe_ui::screens::deck_export`; this
 //! file draws its state and performs its effects.
 
-use components::{
-    ActionBar, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintDialog, HintKey, Toasts,
-    use_toast,
-};
+use components::{Chip, HintBullet, HintBullets, HintDialog, HintKey, Toasts, use_toast};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use uuid::Uuid;
@@ -15,12 +12,14 @@ use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::user::models::hints::HINT_EXPORT;
 use zwipe_ui::screens::deck_export::{self, Action, Board, Destination, Effect, State, Status};
 
+use crate::inbound::components::action_dock::{self, DockIcon};
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen};
 use crate::inbound::components::{guide_link, hint_dialog, ui_toast};
 use crate::inbound::router::Router;
 use crate::inbound::screens::deck::components::skeletons::ChipRowSkeleton;
+use crate::inbound::screens::deck::missing_deck;
 
 /// Export's model with the handles that perform its effects. Copy, so every
 /// handler and task holds its own.
@@ -68,13 +67,15 @@ impl Driver {
                             c.fetch_deck(deck_id, &s).await
                         })
                         .await;
-                    self.dispatch(match reply {
-                        Ok(deck) => Action::Loaded {
+                    self.dispatch(missing_deck::settle(
+                        reply,
+                        |deck| Action::Loaded {
                             ticket,
                             deck: Box::new(deck),
                         },
-                        Err(_) => Action::Failed { ticket },
-                    });
+                        Action::Gone { ticket },
+                        Action::Failed { ticket },
+                    ));
                 });
             }
             Effect::Copy { text, done } => {
@@ -85,10 +86,21 @@ impl Driver {
                 document::eval(&js);
                 ui_toast::raise(toast, done);
             }
-            Effect::Navigate(Destination::Deck(deck_id)) => {
-                navigator.push(Router::ViewDeck { deck_id });
+            Effect::Navigate(destination) => {
+                navigator.push(route(destination));
+            }
+            Effect::Replace(destination) => {
+                navigator.replace(route(destination));
             }
         }
+    }
+}
+
+/// The app's route for each destination.
+fn route(destination: Destination) -> Router {
+    match destination {
+        Destination::Deck(deck_id) => Router::ViewDeck { deck_id },
+        Destination::DeckList => Router::DeckList {},
     }
 }
 
@@ -117,7 +129,7 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
 
     rsx! {
             div { class: "screen",
-                ScreenHeader { title: deck_export::TITLE, hint: export_hint }
+                ScreenHeader { title: deck_export::TITLE, hint: export_hint, back: move |()| driver.dispatch(Action::Back) }
 
                 HintDialog {
                     open: export_hint,
@@ -125,7 +137,7 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                     title: "Exporting your deck",
                     HintBullets {
                         HintBullet { HintKey { "Export" } " picks which boards to include" }
-                        HintBullet { HintKey { "Copy" } " puts the decklist on your clipboard" }
+                        HintBullet { "The two sheets at the bottom right put the decklist on your clipboard" }
                     }
                 }
 
@@ -166,7 +178,11 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                             },
                             None => {
                                 if status == Status::Failed {
-                                    rsx! { p { class: "text-muted", "{deck_export::LOAD_FAILED}" } }
+                                    rsx! {
+                                        div { class: "message-empty",
+                                            span { class: "chip-note", {deck_export::LOAD_FAILED} }
+                                        }
+                                    }
                                 } else {
                                     rsx! {
                                         div { class: "skeleton-export",
@@ -181,16 +197,13 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                     }
                 }
 
-                ActionBar {
-                    Button {
-                        variant: ButtonVariant::Action,
-                        onclick: move |_| driver.dispatch(Action::Back),
-                        "{deck_export::BACK}"
-                    }
-                    Button {
-                        variant: ButtonVariant::Action,
+                // Copy as the action dock's icon, pinned bottom right.
+                div { class: "action-dock action-dock-right",
+                    button {
+                        class: "action-dock-btn",
+                        "aria-label": deck_export::COPY,
                         onclick: move |_| driver.dispatch(Action::Copy),
-                        "{deck_export::COPY}"
+                        DockIcon { path: action_dock::COPY }
                     }
                 }
             }

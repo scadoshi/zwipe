@@ -120,12 +120,8 @@ pub fn AppIconSheet(
             open,
             title: "App icon",
             on_dismiss: move |()| discard.call(()),
+            closable: true,
             footer: rsx! {
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| discard.call(()),
-                    "Back"
-                }
                 Button {
                     variant: ButtonVariant::Action,
                     disabled: draft() == saved(),

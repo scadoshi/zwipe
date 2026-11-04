@@ -16,7 +16,7 @@ use std::path::PathBuf;
 
 use components::{
     Bar, BarChart, BarOrientation, Changelog, ColorChart, ColorMap, ColorMapCounts, ColorMapGhost,
-    DeckCharts, FlippableCardImage, LabelCase,
+    DeckCharts, DrawOdds, FlippableCardImage, LabelCase,
 };
 use dioxus::dioxus_core::NoOpMutations;
 use dioxus::prelude::*;
@@ -309,6 +309,66 @@ fn deck_charts_with_role_tags() {
                     category_bars: vec![("ramp", 10, 100)],
                 }
                 ColorChart { color_bars: vec![("W", 12, 100), ("U", 0, 0)] }
+            }
+        }),
+    );
+}
+
+/// Seven roles: five show and two fold behind See more, in the role grid and
+/// in the oracle tag grid under it.
+#[test]
+fn deck_charts_fold_past_five_rows() {
+    golden(
+        "deck_charts_folded",
+        &render(|| {
+            let roles = vec![
+                ("ramp", 12, 100),
+                ("draw", 10, 83),
+                ("remov", 8, 67),
+                ("wipe", 4, 33),
+                ("tutor", 3, 25),
+                ("recur", 2, 17),
+                ("stax", 1, 8),
+            ];
+            let tags = vec![
+                ("mana-rock".to_string(), 9, 100),
+                ("cantrip".to_string(), 6, 67),
+                ("destroy-creature".to_string(), 4, 44),
+                ("exile-creature".to_string(), 2, 22),
+                ("counterspell".to_string(), 2, 22),
+                ("wrath".to_string(), 1, 11),
+            ];
+            rsx! {
+                DeckCharts {
+                    type_bars: vec![("creature", 30, 100)],
+                    category_bars: roles,
+                    oracle_tag_bars: tags,
+                    role_tags: BTreeMap::from([("ramp", vec!["mana-rock".to_string()])]),
+                }
+            }
+        }),
+    );
+}
+
+/// Six buckets: the stepper, five rows, then the sixth behind See more.
+#[test]
+fn draw_odds_fold_past_five_rows() {
+    golden(
+        "draw_odds_folded",
+        &render(|| {
+            rsx! {
+                DrawOdds {
+                    deck_size: 99,
+                    buckets: vec![
+                        ("Land", 36),
+                        ("ramp", 12),
+                        ("draw", 10),
+                        ("remov", 8),
+                        ("wipe", 4),
+                        ("tutor", 3),
+                    ],
+                }
+                DrawOdds { deck_size: 60, buckets: vec![("Land", 24), ("ramp", 4)] }
             }
         }),
     );

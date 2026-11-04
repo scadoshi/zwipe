@@ -3,7 +3,7 @@ use zwipe_core::domain::user::{Email, Username};
 use zwipe_core::http::contracts::suggestions::{HttpColorCards, HttpColorMap};
 
 use super::*;
-use crate::test_support::card;
+use crate::test_support::{card, deck_profile};
 use crate::toast::ToastKind;
 
 /// 12:34 UTC on a fixed day, mid-hour.
@@ -79,6 +79,7 @@ fn warm() -> Cached {
         mine: Some(held(1, Age::Fresh)),
         play_style: Some(summary(2, [1, 0, 0, 0, 4], 0)),
         flavor: Some(flavor("Llanowar Elves", Some("One bone broken"))),
+        decks: Some(vec![deck(1, "Elves"), deck(2, "Goblins")]),
         ..cold()
     }
 }
@@ -125,6 +126,24 @@ fn play_style_ticket(e: &Effect) -> Option<Ticket> {
     }
 }
 
+fn decks_ticket(e: &Effect) -> Option<Ticket> {
+    match e {
+        Effect::FetchDecks(t) => Some(*t),
+        _ => None,
+    }
+}
+
+/// A deck tile named `name`, with the id `n`.
+fn deck(n: u128, name: &str) -> DeckTile {
+    DeckTile {
+        id: Uuid::from_u128(n),
+        name: name.to_owned(),
+        format: None,
+        color_identity: Vec::new(),
+        art_url: None,
+    }
+}
+
 fn flavor_ticket(e: &Effect) -> Option<Ticket> {
     match e {
         Effect::FetchFlavor(t) => Some(*t),
@@ -139,10 +158,10 @@ fn a_new_state_ghosts_every_panel() {
     assert_eq!(state.figures(), Figures::default());
     assert!(!state.live());
     assert_eq!(state.play_style(), PlayStyle::Loading);
+    assert_eq!(state.decks(), Decks::Loading);
     assert_eq!(state.flavor(), Flavor::Loading);
     assert_eq!(state.flavor_card(), None);
     assert_eq!(state.buy_links(), []);
-    assert_eq!(state.seed(), 0);
 }
 
 #[test]
@@ -153,6 +172,7 @@ fn a_cold_load_asks_for_everything_then_offers_the_hint() {
         Effect::FetchPreferences,
         Effect::FetchCounts(_),
         Effect::FetchPlayStyle(_),
+        Effect::FetchDecks(_),
         Effect::FetchFlavor(_),
         Effect::OfferHint(OneTimeHint::FirstLogin),
     ] = effects.as_slice()
@@ -171,6 +191,7 @@ fn a_warm_load_draws_what_is_held_and_skips_fresh_copies() {
         Effect::FetchUser(_),
         Effect::FetchPreferences,
         Effect::FetchPlayStyle(_),
+        Effect::FetchDecks(_),
         Effect::OfferHint(OneTimeHint::FirstLogin),
     ] = effects.as_slice()
     else {
@@ -180,10 +201,10 @@ fn a_warm_load_draws_what_is_held_and_skips_fresh_copies() {
     assert!(state.live());
     assert_eq!(
         state.play_style(),
-        PlayStyle::Map(ColorMapCounts {
+        PlayStyle::Bars(bars(&ColorMapCounts {
             cards: [1, 0, 0, 0, 4],
             colorless: 0
-        })
+        }))
     );
     assert!(matches!(state.flavor(), Flavor::Quote(_)));
 }
@@ -308,16 +329,63 @@ fn a_late_counts_reply_is_ignored() {
 }
 
 #[test]
+fn the_bars_scale_to_the_largest_count_with_colorless_last() {
+    let counts = ColorMapCounts {
+        cards: [1, 0, 0, 0, 4],
+        colorless: 2,
+    };
+    let rows: Vec<(Option<Color>, u32, u32)> = bars(&counts)
+        .into_iter()
+        .map(|bar| (bar.color, bar.count, bar.pct))
+        .collect();
+    assert_eq!(
+        rows,
+        [
+            (Some(Color::White), 1, 25),
+            (Some(Color::Blue), 0, 0),
+            (Some(Color::Black), 0, 0),
+            (Some(Color::Red), 0, 0),
+            (Some(Color::Green), 4, 100),
+            (None, 2, 50),
+        ]
+    );
+    assert!(
+        bars(&ColorMapCounts::default())
+            .iter()
+            .all(|bar| bar.pct == 0),
+        "nothing to share"
+    );
+}
+
+#[test]
+fn a_deck_tile_reads_its_color_identity_in_wubrg_order() {
+    let mut profile = deck_profile("Esper");
+    profile.color_identity = vec![
+        "b".to_owned(),
+        "W".to_owned(),
+        "X".to_owned(),
+        "U".to_owned(),
+    ];
+    let tile = DeckTile::from(&profile);
+    assert_eq!(
+        tile.color_identity,
+        [Color::White, Color::Blue, Color::Black]
+    );
+    profile.color_identity = Vec::new();
+    assert_eq!(DeckTile::from(&profile).color_identity, []);
+}
+
+#[test]
 fn the_color_map_draws_only_with_decks_and_cards() {
     for (summary, want) in [
         (summary(0, [1, 0, 0, 0, 0], 0), PlayStyle::Empty),
         (summary(2, [0; 5], 0), PlayStyle::Empty),
         (
             summary(2, [0; 5], 3),
-            PlayStyle::Map(ColorMapCounts {
+            PlayStyle::Bars(bars(&ColorMapCounts {
                 cards: [0; 5],
                 colorless: 3,
-            }),
+            })),
         ),
         (
             HttpPlayStyleSummary {
@@ -336,6 +404,82 @@ fn the_color_map_draws_only_with_decks_and_cards() {
 }
 
 #[test]
+fn the_decks_panel_lists_the_latest_three_in_the_servers_order() {
+    let (mut state, effects) = load(cold());
+    assert_eq!(state.decks(), Decks::Loading);
+    let ticket = ticket_of(&effects, decks_ticket);
+    let _ = state.update(Action::DecksLoaded {
+        ticket,
+        decks: vec![deck(4, "d"), deck(1, "a"), deck(3, "c"), deck(2, "b")],
+    });
+    assert_eq!(
+        state.decks(),
+        Decks::Loaded(DeckPanel {
+            count: 4,
+            latest: vec![deck(4, "d"), deck(1, "a"), deck(3, "c")],
+        }),
+        "the first three as listed, the count of them all"
+    );
+
+    let ticket = ticket_of(&effects, play_style_ticket);
+    let _ = state.update(Action::PlayStyleLoaded {
+        ticket,
+        summary: summary(1, [0; 5], 0),
+    });
+    let Decks::Loaded(panel) = state.decks() else {
+        panic!("loaded");
+    };
+    assert_eq!(panel.count, 4, "the summary counts only decks with cards");
+}
+
+#[test]
+fn the_decks_panel_with_no_deck_offers_create_and_a_failure_says_so_unless_held() {
+    let (mut state, effects) = load(cold());
+    let ticket = ticket_of(&effects, decks_ticket);
+    let _ = state.update(Action::DecksLoaded {
+        ticket,
+        decks: Vec::new(),
+    });
+    assert_eq!(state.decks(), Decks::Empty);
+    assert_eq!(state.decks().action(), DecksAction::CreateDeck);
+
+    let (mut state, effects) = load(cold());
+    let ticket = ticket_of(&effects, decks_ticket);
+    let effects = state.update(Action::DecksFailed { ticket });
+    assert!(effects.is_empty(), "the client reports it: {effects:?}");
+    assert_eq!(state.decks(), Decks::Failed);
+    assert_eq!(state.decks().action(), DecksAction::AllDecks);
+
+    let (mut state, effects) = load(warm());
+    assert_eq!(
+        state.decks(),
+        Decks::Loaded(DeckPanel {
+            count: 2,
+            latest: vec![deck(1, "Elves"), deck(2, "Goblins")],
+        }),
+        "held before the refetch lands"
+    );
+    let ticket = ticket_of(&effects, decks_ticket);
+    let _ = state.update(Action::DecksFailed { ticket });
+    assert!(
+        matches!(state.decks(), Decks::Loaded(_)),
+        "the held decks stay"
+    );
+}
+
+#[test]
+fn a_late_decks_reply_is_ignored() {
+    let (mut state, effects) = load(cold());
+    let older = ticket_of(&effects, decks_ticket);
+    let _ = state.update(Action::Load(Box::new(cold())));
+    let _ = state.update(Action::DecksLoaded {
+        ticket: older,
+        decks: vec![deck(1, "a")],
+    });
+    assert_eq!(state.decks(), Decks::Loading);
+}
+
+#[test]
 fn a_failed_summary_says_so_unless_one_is_held() {
     let (mut state, effects) = load(cold());
     let ticket = ticket_of(&effects, play_style_ticket);
@@ -347,7 +491,7 @@ fn a_failed_summary_says_so_unless_one_is_held() {
     let ticket = ticket_of(&effects, play_style_ticket);
     let _ = state.update(Action::PlayStyleFailed { ticket });
     assert!(
-        matches!(state.play_style(), PlayStyle::Map(_)),
+        matches!(state.play_style(), PlayStyle::Bars(_)),
         "the held summary stays"
     );
 }
@@ -626,18 +770,15 @@ fn a_late_user_reply_is_ignored() {
 }
 
 #[test]
-fn the_seed_is_the_users_as_playstyle_draws_it() {
-    let (state, _) = load(cold());
-    assert_eq!(state.seed(), color_map::seed_from_id(7));
-}
-
-#[test]
 fn every_button_navigates() {
     let mut state = State::new();
     for (action, to) in [
         (Action::Decks, Destination::Decks),
-        (Action::Account, Destination::Account),
-        (Action::Config, Destination::Config),
+        (
+            Action::OpenDeck(Uuid::from_u128(9)),
+            Destination::Deck(Uuid::from_u128(9)),
+        ),
+        (Action::CreateDeck, Destination::CreateDeck),
         (Action::Activity, Destination::Activity),
         (Action::Playstyle, Destination::Playstyle),
     ] {
@@ -648,15 +789,19 @@ fn every_button_navigates() {
 #[test]
 fn the_copy_matches_the_app() {
     assert_eq!(
-        [TITLE, LIVE, ACTIVITY, DECKS, ACCOUNT, CONFIG],
-        ["Home", "Live", "Activity", "Decks", "Account", "Config"]
+        [TITLE, LIVE, ACTIVITY, DECKS],
+        ["Home", "Live", "Activity", "Decks"]
     );
     assert_eq!(
-        [COLOR_MAP, PLAYSTYLE, NO_PLAY_STYLE, PLAY_STYLE_FAILED],
+        [ALL_DECKS, CREATE_DECK, DECKS_FAILED],
+        ["All decks", "Create a deck", "Could not load your decks"]
+    );
+    assert_eq!(
+        [COLORS, PLAYSTYLE, NO_PLAY_STYLE, PLAY_STYLE_FAILED],
         [
-            "Color map",
+            "Colors",
             "Playstyle",
-            "Build a deck to see your playstyle",
+            "Your playstyle shows here",
             "Could not load your playstyle"
         ]
     );

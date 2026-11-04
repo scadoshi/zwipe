@@ -33,7 +33,7 @@ pub const PASSES_TITLE: &str = "Most skipped";
 /// The label over the commanders an open Most skipped row was skipped under.
 pub const SKIPPED_UNDER: &str = "Skipped under";
 
-/// The action bar's button back to the screen before.
+/// The Back button, to the screen before.
 pub const BACK: &str = "Back";
 
 /// Where an action sends the user. The client maps each to its own route.

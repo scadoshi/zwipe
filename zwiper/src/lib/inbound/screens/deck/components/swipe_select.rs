@@ -23,8 +23,8 @@
 use std::collections::HashSet;
 
 use components::{
-    ActionBar, BottomSheet, Button, ButtonVariant, HintBullet, HintBullets, HintDialog, HintKey,
-    HintLine, ToastOptions, Toasts, use_overlay_back, use_toast,
+    BottomSheet, HintBullet, HintBullets, HintDialog, HintLine, ToastOptions, Toasts,
+    use_overlay_back, use_toast,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -39,6 +39,7 @@ use zwipe_ui::screens::swipe_select::{self as model, Action, Destination, Effect
 pub(crate) use zwipe_ui::screens::swipe_select::{Mode as SwipeMode, SuggestedPile};
 use zwipe_ui::stack;
 
+use crate::inbound::components::action_dock::{self, DockFilter, DockIcon, EyeIcon};
 use crate::inbound::components::hint_dialog::{self, HintColored};
 use crate::inbound::components::interactions::swipe::SwipeStack;
 use crate::inbound::components::interactions::swipe::config::SwipeConfig;
@@ -48,7 +49,7 @@ use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::component;
 use crate::inbound::components::{guide_link, ui_toast};
 use crate::inbound::screens::deck::card::components::card_info::{
-    CardDetailsSheet, CardInfoDisplay, CardSkeleton, RulesButton, use_describe_tag,
+    CardDetailsSheet, CardInfoDisplay, CardSkeleton, use_describe_tag,
 };
 use crate::inbound::screens::deck::card::components::card_row::OtagExamplesOpen;
 use crate::inbound::screens::deck::card::components::printing_sheet::PrintingSheet;
@@ -408,7 +409,7 @@ pub(crate) fn SwipeSelect(
             // clear and the one beneath would show through.
             ::components::GridCells { still: true }
             if open() {
-                ScreenHeader { title, hint: hint_open }
+                ScreenHeader { title, hint: hint_open, back: move |()| driver.dispatch(Action::Back) }
 
                 div { class: "screen-content card-swipe content-enter",
                     if has_cards {
@@ -442,8 +443,6 @@ pub(crate) fn SwipeSelect(
                         if let Some(card) = current_card.clone() {
                             CardInfoDisplay { card }
                         }
-                    } else if status == Status::Loading {
-                        CardSkeleton { is_loading: true }
                     } else if let Some(line) = empty_line {
                         div { class: "message-empty",
                             span { class: "chip-note", "{line}" }
@@ -453,42 +452,42 @@ pub(crate) fn SwipeSelect(
                     }
                 }
 
-                ActionBar {
-                    Button {
-                        variant: ButtonVariant::Action,
-                        onclick: move |_| driver.dispatch(Action::Back),
-                        {model::BACK}
-                    }
-                    // The suggested ranking filters by the host's Show chips
-                    // alone; a chosen identity lights the dot.
+                // Filter, refresh and card details as the action dock. The
+                // suggested ranking filters by the host's Show chips alone; a
+                // chosen identity lights the dot.
+                div { class: "action-dock action-dock-right",
                     if has_suggested_filter {
-                        Button {
-                            variant: ButtonVariant::Action,
-                            onclick: move |_| suggested_filter_open.set(true),
-                            {model::FILTER}
-                            if has_suggested_identity {
-                                span { class: "filter-dot" }
-                            }
+                        DockFilter {
+                            label: model::FILTER,
+                            dot: has_suggested_identity,
+                            onclick: move |()| suggested_filter_open.set(true),
                         }
                     } else if !suggested {
-                        Button {
-                            variant: ButtonVariant::Action,
-                            onclick: move |_| filters_overlay_open.set(true),
-                            {model::FILTER}
-                            // Popularity order is this screen's default (no sort),
-                            // so any user filter or any explicit sort lights the dot.
-                            if model::filter_lit(&filter_builder.read()) {
-                                span { class: "filter-dot" }
-                            }
+                        // Popularity order is this screen's default (no
+                        // sort), so any user filter or explicit sort lights
+                        // the dot.
+                        DockFilter {
+                            label: model::FILTER,
+                            dot: model::filter_lit(&filter_builder.read()),
+                            onclick: move |()| filters_overlay_open.set(true),
                         }
                     }
-                    Button {
-                        variant: ButtonVariant::Action,
+                    button {
+                        class: "action-dock-btn",
+                        "aria-label": model::REFRESH,
                         onclick: move |_| refresh(),
-                        {model::REFRESH}
+                        DockIcon { path: action_dock::REFRESH }
                     }
-                    if has_cards {
-                        RulesButton { open: show_details }
+                    span { class: "action-dock-divider" }
+                    button {
+                        class: "action-dock-btn",
+                        "aria-label": "Card details",
+                        disabled: !has_cards,
+                        onclick: move |_| {
+                            let mut open = show_details;
+                            open.toggle();
+                        },
+                        EyeIcon {}
                     }
                 }
 
@@ -533,18 +532,12 @@ pub(crate) fn SwipeSelect(
                 }
 
                 // A chip applies as it is tapped and the stack re-deals behind
-                // the sheet, so Back is its one button.
+                // the sheet, so the sheet only closes.
                 if let (true, Some(chips)) = (suggested, suggested_filter) {
                     BottomSheet {
                         open: suggested_filter_open,
                         title: "Filter",
-                        footer: rsx! {
-                            Button {
-                                variant: ButtonVariant::Action,
-                                onclick: move |_| suggested_filter_open.set(false),
-                                "Back"
-                            }
-                        },
+                        closable: true,
                         {chips}
                     }
                 }
@@ -567,10 +560,10 @@ pub(crate) fn SwipeSelect(
                     if suggested {
                         HintLine { "Best fit first, 100 deep. The eye shows why each one was suggested" }
                         if has_suggested_filter {
-                            HintLine { HintKey { "Filter" } " narrows the stack to one color identity" }
+                            HintLine { "The funnel narrows the stack to one color identity" }
                         }
                     } else {
-                        HintLine { "Most-played first. " HintKey { "Filter" } " narrows by color or anything else" }
+                        HintLine { "Most-played first. The funnel narrows by color or anything else" }
                     }
                 }
             }

@@ -1,11 +1,12 @@
-//! Home's Color map panel: the user's color territory map, with a Playstyle
-//! button that opens the full screen.
+//! Home's Colors panel: a bar per color with the card count across the
+//! user's decks, and a Playstyle chip in its header that opens the full
+//! screen.
 
-use components::{ColorMap, ColorMapCounts, ColorMapGhost};
+use components::{Button, ButtonVariant, mana_var};
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::http::contracts::suggestions::HttpPlayStyleSummary;
-use zwipe_ui::screens::home::{self, PlayStyle};
+use zwipe_ui::screens::home::{self, Bar, PlayStyle};
 
 use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::info_button::InfoButton;
@@ -21,121 +22,127 @@ pub struct CachedPlayStyle {
     pub summary: HttpPlayStyleSummary,
 }
 
-/// The panel under the hero, a sibling of the featured flavor card: the
-/// title bar, then the user's [`ColorMap`], seeded by their id so it draws
-/// the same shape as the Playstyle screen's Color map section, with a
-/// Playstyle button at the end of its key. Before any deck has colored cards
-/// it shows one line instead; a failed fetch with nothing cached shows a
-/// muted line. Either line has the Playstyle button under it, so the screen
-/// stays reachable from Home; while the fetch is out the whole panel is a
-/// ghost. Home's model decides which.
+/// The fill of the colorless bar, which has no mana variable.
+const COLORLESS_FILL: &str = "var(--text-muted)";
+
+/// The panel between Decks and the featured flavor card, in the Decks
+/// panel's style: Colors and its "?" centered in its header with the
+/// Playstyle chip in the right corner, then one compact bar per color in W U B R G order
+/// and colorless last, the pip at its left, the count at its end and the
+/// largest count at full width. Before any deck has a card it shows one line
+/// under the header instead; a failed fetch with nothing cached shows a muted
+/// line. The header's Playstyle chip stays in both, so the screen is always
+/// reachable from Home; while the fetch is out the whole panel is a ghost.
+/// Home's model decides which.
 #[component]
-pub fn HomePlayStyle(play_style: PlayStyle, seed: u64, onplaystyle: EventHandler) -> Element {
+pub fn HomePlayStyle(play_style: PlayStyle, onplaystyle: EventHandler) -> Element {
     rsx! {
-        div { class: "container-sm text-center flex-col home-flavor content-enter-delayed",
+        div { class: "container-sm flex-col home-flavor home-colors content-enter-delayed",
             match play_style {
-                PlayStyle::Map(_) | PlayStyle::Empty => {
-                    let counts = match play_style {
-                        PlayStyle::Map(counts) => Some(ColorMapCounts {
-                            cards: counts.cards,
-                            colorless: counts.colorless,
-                        }),
-                        PlayStyle::Empty | PlayStyle::Failed | PlayStyle::Loading => None,
-                    };
-                    rsx! {
-                        PanelHeader {}
-                        if let Some(counts) = counts {
-                            ColorMap {
-                                counts,
-                                seed,
-                                key_action: rsx! {
-                                    PlaystyleButton { onclick: onplaystyle }
-                                },
-                            }
-                        } else {
-                            ColorMapEmpty {}
-                            div { class: "home-panel-actions", PlaystyleButton { onclick: onplaystyle } }
-                        }
-                    }
-                }
+                PlayStyle::Bars(bars) => rsx! {
+                    PanelHeader { onplaystyle }
+                    ColorBars { bars }
+                },
+                PlayStyle::Empty => rsx! {
+                    PanelHeader { onplaystyle }
+                    ColorMapEmpty {}
+                },
                 PlayStyle::Failed => rsx! {
-                    PanelHeader {}
-                    div { class: "message-empty", style: "padding: 1rem;",
-                        {home::PLAY_STYLE_FAILED}
-                    }
-                    div { class: "home-panel-actions", PlaystyleButton { onclick: onplaystyle } }
+                    PanelHeader { onplaystyle }
+                    div { class: "message-empty home-colors-line", {home::PLAY_STYLE_FAILED} }
                 },
                 PlayStyle::Loading => rsx! {
-                    // Everything ghosts until the summary lands: the title as
-                    // a bar, the "?" as a bare chip its size, then the map's
-                    // ghost with the Playstyle button's at the key's end.
-                    div { class: "skeleton-card-header home-panel-header", style: "display: flex;",
-                        span { class: "home-panel-hint",
+                    // Everything ghosts until the summary lands: the title
+                    // and the "?" as bars their size in the middle, the chip
+                    // as a bare chip in the corner, then the six bars with a
+                    // pip and a count each.
+                    div { class: "skeleton-card-header settings-list-header home-panel-header-centered",
+                        div { class: "home-panel-header-title",
+                            div { class: "skeleton-bar skeleton-section-label home-panel-skeleton-title" }
                             div { class: "skeleton-bar skeleton-chip skeleton-info-button" }
                         }
-                        div { class: "skeleton-bar skeleton-section-label", style: "width: 30%; margin-bottom: 0;" }
+                        div { class: "home-panel-header-action",
+                            div { class: "skeleton-bar skeleton-chip skeleton-chip-md" }
+                        }
                     }
-                    ColorMapSkeleton { key_action: true }
+                    div { class: "color-bars",
+                        for i in 0..6 {
+                            div { key: "{i}", class: "color-bar-row",
+                                div { class: "skeleton-bar color-bar-pip-ghost" }
+                                div { class: "skeleton-bar color-bar-track" }
+                                div { class: "skeleton-bar color-bar-count-ghost" }
+                            }
+                        }
+                    }
                 },
             }
         }
     }
 }
 
-/// A [`ColorMap`] while its counts load: a [`ColorMapGhost`] of skeleton
-/// tiles sweeping out from the middle in the map's own box, then under its
-/// rule a bare chip for each of the key's five colors and a wider one for
-/// colorless, and with `key_action` one more for the button at the key's
-/// end.
+/// The bars the model lists: the mana pip at the left, the track filled in
+/// the color's mana variable (a muted neutral for colorless) to the bar's
+/// share, and the count right-aligned at the end. A zero count draws its pip
+/// and count over an empty track.
 #[component]
-pub(crate) fn ColorMapSkeleton(#[props(default)] key_action: bool) -> Element {
+fn ColorBars(bars: Vec<Bar>) -> Element {
+    let rows = bars.into_iter().map(|bar| {
+        let (pip, fill) = match bar.color {
+            Some(color) => (
+                color.to_short_name().to_lowercase(),
+                format!("var({})", mana_var(color)),
+            ),
+            None => ("c".to_owned(), COLORLESS_FILL.to_owned()),
+        };
+        (pip, fill, bar.count, bar.pct)
+    });
     rsx! {
-        div { class: "color-map",
-            ColorMapGhost {}
-            div { class: "color-map-key",
-                for i in 0..5 {
-                    div { key: "{i}", class: "skeleton-bar skeleton-chip skeleton-chip-md" }
-                }
-                div { class: "skeleton-bar skeleton-chip skeleton-chip-lg" }
-                if key_action {
-                    div { class: "skeleton-bar skeleton-chip skeleton-chip-lg" }
+        div { class: "color-bars",
+            for (pip, fill, count, pct) in rows {
+                div { key: "{pip}", class: "color-bar-row",
+                    i { class: "ms ms-{pip} ms-cost" }
+                    div { class: "color-bar-track",
+                        if count > 0 {
+                            div {
+                                class: "color-bar-fill",
+                                style: "width: {pct}%; background-color: {fill};",
+                            }
+                        }
+                    }
+                    span { class: "color-bar-count", "{count}" }
                 }
             }
         }
     }
 }
 
-/// What a color map shows in its place before any deck has colored cards, on
-/// Home and in Playstyle's Color map section.
+/// What a color map or the Colors bars show in their place before any deck
+/// has a card, on Home and in Playstyle's Color map section.
 #[component]
 pub(crate) fn ColorMapEmpty() -> Element {
     rsx! {
-        div { class: "message-empty", style: "padding: 1rem;", {home::NO_PLAY_STYLE} }
+        div { class: "message-empty home-colors-line", {home::NO_PLAY_STYLE} }
     }
 }
 
-/// The panel's title bar: Color map centered and its "?" at the right end,
-/// where the app's other headers keep theirs.
+/// The panel's header: Colors and its "?" centered as one unit, the way
+/// the app header pairs its title and "?", the Playstyle chip alone in the
+/// right corner.
 #[component]
-fn PanelHeader() -> Element {
+fn PanelHeader(onplaystyle: EventHandler) -> Element {
     rsx! {
-        div { class: "settings-list-header home-panel-header",
-            span { class: "home-panel-hint",
-                InfoButton { topic: HintTopic::ColorMap }
+        div { class: "settings-list-header home-panel-header-centered",
+            div { class: "home-panel-header-title",
+                span { class: "settings-list-title", {home::COLORS} }
+                InfoButton { topic: HintTopic::HomeColors }
             }
-            span { class: "settings-list-title", {home::COLOR_MAP} }
-        }
-    }
-}
-
-/// Opens the Playstyle screen, in the card details bar's button grammar.
-#[component]
-fn PlaystyleButton(onclick: EventHandler) -> Element {
-    rsx! {
-        button {
-            class: "card-action-btn",
-            onclick: move |_| onclick.call(()),
-            {home::PLAYSTYLE}
+            div { class: "home-panel-header-action",
+                Button {
+                    variant: ButtonVariant::Action,
+                    onclick: move |_| onplaystyle.call(()),
+                    {home::PLAYSTYLE}
+                }
+            }
         }
     }
 }

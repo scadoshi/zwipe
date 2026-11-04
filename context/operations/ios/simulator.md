@@ -10,14 +10,14 @@ Xcode 27 ships no `Simulator.app`. `DeviceHub.app` replaced it, at `/Application
 
 If the old window is wanted back, install Xcode 26 alongside 27 and use its `Contents/Developer/Applications/Simulator.app`. Both versions coexist and `xcode-select` decides which owns the toolchain. An older Simulator may refuse a newer runtime, so pair it with a runtime it knows.
 
-## Default device: iPhone 16 Pro Max (6.9")
+## Default device: iPhone 17 Pro Max (6.9")
 
-The project default for running and screenshotting is the **6.9" iPhone 16 Pro Max** (the App Store's required 6.9" size, 1320×2868; the 11 Pro Max's 6.5" set is still accepted but no longer the required one, so the 11 Pro Max device was deleted 2026-10-19). Screenshot size comes from the device model, not the runtime, so any installed iOS runtime will do.
+The project default for running and screenshotting is the **6.9" iPhone 17 Pro Max** (the App Store's required 6.9" size, 1320×2868; the 11 Pro Max's 6.5" set is still accepted but no longer the required one, so the 11 Pro Max device was deleted 2026-10-19). Screenshot size comes from the device model, not the runtime, so any installed iOS runtime will do.
 
 `dx serve --platform ios` installs to the *booted* simulator and will **not boot one for you**, which is what makes it look like nothing happens:
 
 ```bash
-zcripts/ios/sim.sh              # shuts others down, boots the 16 Pro Max
+zcripts/ios/sim.sh              # shuts others down, boots the 17 Pro Max
 zcripts/ios/sim.sh "iPhone 17"  # or any other created device
 ```
 
@@ -59,9 +59,9 @@ xcrun simctl create "iPhone 15 Pro Max" \
   "com.apple.CoreSimulator.SimDeviceType.iPhone-15-Pro-Max" \
   "com.apple.CoreSimulator.SimRuntime.iOS-26-5"
 
-# iPhone 16 Pro Max (6.9" for App Store screenshots)
-xcrun simctl create "iPhone 16 Pro Max" \
-  "com.apple.CoreSimulator.SimDeviceType.iPhone-16-Pro-Max" \
+# iPhone 17 Pro Max (6.9" for App Store screenshots)
+xcrun simctl create "iPhone 17 Pro Max" \
+  "com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro-Max" \
   "com.apple.CoreSimulator.SimRuntime.iOS-26-5"
 ```
 

@@ -9,9 +9,7 @@
 /// The screen's accordion sections and hard passes group.
 pub(crate) mod sections;
 
-use components::{
-    ActionBar, Button, ButtonVariant, HintBullet, HintBullets, HintDialog, HintKey, HintLine,
-};
+use components::{HintBullet, HintBullets, HintDialog, HintKey, HintLine};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use uuid::Uuid;
@@ -226,7 +224,7 @@ pub fn Activity() -> Element {
 
     rsx! {
         div { class: "screen",
-            ScreenHeader { title: model::TITLE, hint: hint_open }
+            ScreenHeader { title: model::TITLE, hint: hint_open, back: move |()| driver.dispatch(Action::Back) }
 
             HintDialog {
                 open: hint_open,
@@ -280,13 +278,6 @@ pub fn Activity() -> Element {
                 }
             }
 
-            ActionBar {
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| driver.dispatch(Action::Back),
-                    {model::BACK}
-                }
-            }
 
             // Pick a printing: swap that pass's card in place and keep the
             // row expanded under its new scryfall id.

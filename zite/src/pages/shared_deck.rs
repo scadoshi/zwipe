@@ -805,7 +805,9 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
             ));
         }
         {
-            let role_rows = metrics.card_role_bars().map_or(0, |b| b.len());
+            // Each folded chart stands five rows and a See more tall.
+            let role_rows = metrics.card_role_bars().map_or(0, |b| b.len().min(6));
+            let tag_rows = metrics.oracle_tag_bars().map_or(0, |b| b.len().min(6));
             let avg_pt = if metrics.avg_power.is_some() || metrics.avg_toughness.is_some() {
                 let fmt = |v: Option<f64>| v.map_or_else(|| "-".to_string(), |v| format!("{v:.1}"));
                 Some(format!(
@@ -818,7 +820,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
             };
             panels.push((
                 "Distributions",
-                role_rows.saturating_add(7),
+                role_rows.saturating_add(tag_rows).saturating_add(7),
                 rsx! {
                     div { class: "sd-chart-body",
                         if let Some(value) = avg_pt {
@@ -830,6 +832,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
                         DeckCharts {
                             type_bars: Some(metrics.type_bars()),
                             category_bars: metrics.card_role_bars(),
+                            oracle_tag_bars: metrics.oracle_tag_bars(),
                             role_tags: Some(metrics.card_role_tags.clone()),
                             describe_tag,
                         }
@@ -870,7 +873,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
         }
         {
             let (deck_size, buckets) = metrics.draw_odds_buckets();
-            let bucket_count = buckets.len();
+            let bucket_count = buckets.len().min(6);
             panels.push((
                 "Draw odds",
                 bucket_count.saturating_add(3),

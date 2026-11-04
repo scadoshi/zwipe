@@ -59,18 +59,25 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
         OneTimeHint::FirstLogin => content(
             "Welcome to Zwipe",
             vec![
-                bullet(vec![key("Decks"), text(" holds your decks")]),
                 bullet(vec![
-                    key("Color map"),
-                    text(" grows from your decks' colors. Tap Playstyle for suggested commanders"),
+                    key("Decks"),
+                    text(" lists your latest decks; All decks opens the list"),
+                ]),
+                bullet(vec![
+                    key("Colors"),
+                    text(
+                        " counts your decks' cards by color. Tap Playstyle for suggested commanders",
+                    ),
                 ]),
                 bullet(vec![
                     key("Account"),
-                    text(" has your email, password and log out"),
+                    text(
+                        ", the person icon in the menu's footer, has your email, password and log out",
+                    ),
                 ]),
                 bullet(vec![
-                    key("Config"),
-                    text(" sets your theme and which cards show"),
+                    key("Settings"),
+                    text(", the cog beside it, sets your theme and which cards show"),
                 ]),
                 bullet(vec![
                     emph("Verify your email", Role::Warning),
@@ -86,11 +93,14 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
                     key_in("?", Role::Palette6),
                     text(" for what it does"),
                 ]),
-                bullet(vec![key("More"), text(" deletes your account")]),
+                bullet(vec![
+                    key("Danger zone"),
+                    text(" at the bottom logs you out or deletes your account"),
+                ]),
             ],
         ),
         OneTimeHint::Config => content(
-            "Config",
+            "Settings",
             vec![
                 bullet(vec![text("Set how Zwipe looks and which cards it shows")]),
                 bullet(vec![
@@ -116,7 +126,11 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
                     key("Show"),
                     text(" narrows it by color or tag"),
                 ]),
-                bullet(vec![key("Create"), text(" starts a new deck")]),
+                bullet(vec![
+                    text("The "),
+                    key("+"),
+                    text(" at the bottom right starts a new deck"),
+                ]),
             ],
         ),
         OneTimeHint::FirstDeck => content(
@@ -124,17 +138,20 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
             vec![
                 bullet(vec![key("Cards"), text(" browses, adds and removes cards")]),
                 bullet(vec![
-                    key("Edit"),
+                    text("The pencil by "),
+                    key("Profile"),
                     text(" changes the name, format, command zone, tags and targets"),
                 ]),
-                bullet(vec![
-                    key("More"),
-                    text(" imports, exports, clones, shares or deletes the deck"),
-                ]),
+                bullet(vec![text(
+                    "Beside it, the two squares clone the deck and the box with the arrow shares a link to it",
+                )]),
+                bullet(vec![text(
+                    "Import, export and delete are at the bottom of the page",
+                )]),
                 bullet(vec![
                     text("Skipped and removed cards stay out of the add stack. "),
-                    key("More"),
-                    text(" then Clear skips brings them back"),
+                    key("Clear skips"),
+                    text(" at the bottom brings them back"),
                 ]),
                 bullet(vec![text(
                     "Stats fill in as the deck grows. Tap a section to expand it",
@@ -278,10 +295,9 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
             "Exporting your deck",
             vec![
                 bullet(vec![key("Export"), text(" picks which boards to include")]),
-                bullet(vec![
-                    key("Copy"),
-                    text(" puts the decklist on your clipboard"),
-                ]),
+                bullet(vec![text(
+                    "The two sheets at the bottom right put the decklist on your clipboard",
+                )]),
             ],
         ),
         OneTimeHint::OracleTagDictionary => content(
@@ -455,19 +471,16 @@ pub fn swipe_select(mode: SwipeSelectMode) -> HintContent {
                 "Best fit first, 100 deep. The eye shows why each one was suggested",
             )]));
             if has_filter {
-                blocks.push(line(vec![
-                    key("Filter"),
-                    text(" narrows the stack to one color identity"),
-                ]));
+                blocks.push(line(vec![text(
+                    "The funnel narrows the stack to one color identity",
+                )]));
             }
             "Suggested commanders"
         }
         SwipeSelectMode::Picking(_) => {
-            blocks.push(line(vec![
-                text("Most-played first. "),
-                key("Filter"),
-                text(" narrows by color or anything else"),
-            ]));
+            blocks.push(line(vec![text(
+                "Most-played first. The funnel narrows by color or anything else",
+            )]));
             "Swipe select"
         }
     };
@@ -505,7 +518,29 @@ mod tests {
         assert_eq!(welcome.title, "Welcome to Zwipe");
         assert_eq!(
             welcome.blocks[0],
-            bullet(vec![key("Decks"), text(" holds your decks")])
+            bullet(vec![
+                key("Decks"),
+                text(" lists your latest decks; All decks opens the list")
+            ])
+        );
+    }
+
+    #[test]
+    fn the_hints_name_the_shipped_controls() {
+        let welcome = content_for(OneTimeHint::FirstLogin).unwrap();
+        assert_eq!(
+            welcome.blocks[1].plain(),
+            "Colors counts your decks' cards by color. Tap Playstyle for suggested commanders"
+        );
+        let decks = content_for(OneTimeHint::DeckList).unwrap();
+        assert_eq!(
+            decks.blocks[2].plain(),
+            "The + at the bottom right starts a new deck"
+        );
+        let account = content_for(OneTimeHint::Profile).unwrap();
+        assert_eq!(
+            account.blocks[1].plain(),
+            "Danger zone at the bottom logs you out or deletes your account"
         );
     }
 

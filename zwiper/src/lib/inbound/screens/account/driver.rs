@@ -20,8 +20,6 @@ use crate::inbound::components::auth::signal_logout::SignalLogout;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::{ProfileScreen, Screen, component, screen};
 use crate::inbound::components::{hint_dialog, ui_toast};
-use crate::inbound::router::Router;
-use crate::outbound::open_url;
 
 /// The request runners, one per telemetry screen the account reports under.
 #[derive(Clone, Copy)]
@@ -32,11 +30,10 @@ struct Runners {
     password: Authed,
 }
 
-/// Whether each sheet, dialog and the More sheet is up.
+/// Whether each sheet and dialog is up.
 #[derive(Clone, Copy)]
 pub(crate) struct Overlays {
     pub(crate) hint: Signal<bool>,
-    pub(crate) more: Signal<bool>,
     pub(crate) log_out: Signal<bool>,
     pub(crate) delete: Signal<bool>,
     pub(crate) confirm_password: Signal<bool>,
@@ -110,7 +107,6 @@ pub(crate) fn use_driver() -> Driver {
         model: use_signal(State::new),
         overlays: Overlays {
             hint: use_signal(|| false),
-            more: use_signal(|| false),
             log_out: use_signal(|| false),
             delete: use_signal(|| false),
             confirm_password: use_signal(|| false),
@@ -268,14 +264,7 @@ impl Driver {
                 open.set(true);
             }
             Effect::LogOut => self.session.logout(self.client),
-            Effect::OpenUrl(url) => open_url::open(&url),
             Effect::Navigate(Destination::Previous) => self.navigator.go_back(),
-            Effect::Navigate(Destination::PrivacyPolicy) => {
-                self.navigator.push(Router::PrivacyPolicy {});
-            }
-            Effect::Navigate(Destination::Changelog) => {
-                self.navigator.push(Router::Changelog {});
-            }
             Effect::Toast(toast) => ui_toast::raise(self.toast, toast),
         }
     }

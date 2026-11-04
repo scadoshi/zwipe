@@ -313,7 +313,8 @@ impl DeckRepository for Postgres {
                LEFT JOIN scryfall_data sd ON d.commander_id = sd.id
                WHERE d.user_id = $1
                GROUP BY d.id, d.name, d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id,
-                        d.format, d.land_target, d.price_target, d.price_target_currency, d.share_token, d.user_id, sd.name"#,
+                        d.format, d.land_target, d.price_target, d.price_target_currency, d.share_token, d.user_id, sd.name
+               ORDER BY d.updated_at DESC, d.id"#,
             request.user_id
         )
         .fetch_all(&self.pool)

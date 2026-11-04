@@ -9,8 +9,8 @@ use std::time::Instant;
 
 use chrono::Utc;
 use components::{
-    ActionBar, AlertDialog, Button, ButtonVariant, DialogAction, HintBullet, HintBullets,
-    HintDialog, HintKey, ThemeConfig, Toasts, use_toast,
+    AlertDialog, DialogAction, HintBullet, HintBullets, HintDialog, HintKey, ThemeConfig, Toasts,
+    use_toast,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -22,12 +22,13 @@ use zwipe_core::domain::user::preferences::PipColor;
 use zwipe_ui::generation::Ticket;
 use zwipe_ui::home::{Figures, Scope};
 use zwipe_ui::screens::home::{
-    self, Action, Age, Cached, CachedFigures, Destination, Effect, Flavor, State,
+    self, Action, Age, Cached, CachedFigures, DeckTile, Destination, Effect, Flavor, State,
 };
 
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::auth::session_upkeep::FlavorCard;
 use crate::inbound::components::hint_dialog::{self, HintColored};
+use crate::inbound::components::home_decks::{CachedDecks, HomeDecks};
 use crate::inbound::components::home_hero::{CachedCounts, CachedMyCounts, HomeHeroScoped};
 use crate::inbound::components::home_play_style::{CachedPlayStyle, HomePlayStyle};
 use crate::inbound::components::screen_header::ScreenHeader;
@@ -52,6 +53,7 @@ struct Caches {
     play_style: Signal<Option<CachedPlayStyle>>,
     flavor: Signal<Option<FlavorCard>>,
     scope: Signal<CountScope>,
+    decks: Signal<Option<CachedDecks>>,
 }
 
 impl Caches {
@@ -87,6 +89,12 @@ impl Caches {
             card: f.card.clone(),
             expires_at: f.expires_at,
         });
+        let decks = self
+            .decks
+            .peek()
+            .as_ref()
+            .filter(|c| Some(c.user_id) == user)
+            .map(|c| c.decks.clone());
         Cached {
             user,
             scope: scope_of(*self.scope.peek()),
@@ -94,6 +102,7 @@ impl Caches {
             mine,
             play_style,
             flavor,
+            decks,
             now: Utc::now(),
         }
     }
@@ -143,6 +152,7 @@ impl Driver {
             Effect::FetchCounts(ticket) => self.fetch_counts(ticket),
             Effect::FetchMyCounts(ticket) => self.fetch_my_counts(ticket),
             Effect::FetchPlayStyle(ticket) => self.fetch_play_style(ticket),
+            Effect::FetchDecks(ticket) => self.fetch_decks(ticket),
             Effect::FetchFlavor(ticket) => self.fetch_flavor(ticket),
             Effect::OfferHint(hint) => {
                 hint_dialog::open_and_record_hint(
@@ -304,6 +314,35 @@ impl Driver {
         });
     }
 
+    /// Fetches the user's decks into the cache, reporting a failure without
+    /// a toast.
+    fn fetch_decks(self, ticket: Ticket) {
+        let authed = self.authed;
+        let mut cache = self.caches.decks;
+        let Some(user_id) = self.session.peek().as_ref().map(|s| s.user.id) else {
+            return;
+        };
+        spawn(async move {
+            let action = match authed
+                .run_quiet("deck_profiles", |c, s| async move {
+                    c.fetch_deck_profiles(&s).await
+                })
+                .await
+            {
+                Some(profiles) => {
+                    let decks: Vec<DeckTile> = profiles.iter().map(DeckTile::from).collect();
+                    cache.set(Some(CachedDecks {
+                        user_id,
+                        decks: decks.clone(),
+                    }));
+                    Action::DecksLoaded { ticket, decks }
+                }
+                None => Action::DecksFailed { ticket },
+            };
+            self.dispatch(action);
+        });
+    }
+
     /// Fetches the featured flavor card: ONE shared server pick per UTC hour
     /// (unauthed endpoint; everyone sees the same card at the same moment),
     /// cached until the top of the next hour and overwritten only on
@@ -339,8 +378,8 @@ impl Driver {
 fn route(destination: Destination) -> Router {
     match destination {
         Destination::Decks => Router::DeckList {},
-        Destination::Account => Router::Account {},
-        Destination::Config => Router::Config {},
+        Destination::Deck(deck_id) => Router::ViewDeck { deck_id },
+        Destination::CreateDeck => Router::CreateDeck,
         Destination::Activity => Router::Activity {},
         Destination::Playstyle => Router::SuggestedCommanders {},
     }
@@ -372,6 +411,7 @@ pub fn Home() -> Element {
         play_style: use_context(),
         flavor: use_context(),
         scope: use_context(),
+        decks: use_context(),
     };
     // Opening Home takes in what the caches hold, so a return draws it on
     // the first frame, and keeps what the model asks for to perform below.
@@ -423,8 +463,8 @@ pub fn Home() -> Element {
     let figures = state.figures();
     let live = state.live();
     let scope = state.scope();
+    let decks = state.decks();
     let play_style = state.play_style();
-    let seed = state.seed();
     let flavor = state.flavor();
     let flavor_data = state.flavor_card().map(|c| c.scryfall_data.clone());
     let buy_links = state.buy_links();
@@ -453,9 +493,15 @@ pub fn Home() -> Element {
                     onactivity: move |()| driver.dispatch(Action::Activity),
                 }
 
+                HomeDecks {
+                    decks,
+                    onopen: move |()| driver.dispatch(Action::Decks),
+                    ondeck: move |id| driver.dispatch(Action::OpenDeck(id)),
+                    oncreate: move |()| driver.dispatch(Action::CreateDeck),
+                }
+
                 HomePlayStyle {
                     play_style,
-                    seed,
                     onplaystyle: move |()| driver.dispatch(Action::Playstyle),
                 }
 
@@ -523,30 +569,16 @@ pub fn Home() -> Element {
                 actions: guide_link::one_time(HINT_FIRST_LOGIN),
                 title: "Welcome to Zwipe",
                 HintBullets {
-                    HintBullet { HintKey { "Decks" } " holds your decks" }
-                    HintBullet { HintKey { "Color map" } " grows from your decks' colors. Tap Playstyle for suggested commanders" }
-                    HintBullet { HintKey { "Account" } " has your email, password and log out" }
-                    HintBullet { HintKey { "Config" } " sets your theme and which cards show" }
+                    HintBullet { HintKey { "Decks" } " lists your latest decks; All decks opens the list" }
+                    HintBullet { HintKey { "Colors" } " counts your decks' cards by color. Tap Playstyle for suggested commanders" }
+                    HintBullet { HintKey { "Account" } ", the person icon in the menu's footer, has your email, password and log out" }
+                    HintBullet { HintKey { "Settings" } ", the cog beside it, sets your theme and which cards show" }
                     HintBullet { HintColored { color: "--color-warning", "Verify your email" } " in Account for full deck and card limits" }
                 }
             }
 
             ImagePreview { card: preview_card, dismissing: preview_dismissing }
 
-            ActionBar {
-                Button { variant: ButtonVariant::Action,
-                    onclick: move |_| driver.dispatch(Action::Decks),
-                    {home::DECKS}
-                }
-                Button { variant: ButtonVariant::Action,
-                    onclick: move |_| driver.dispatch(Action::Account),
-                    {home::ACCOUNT}
-                }
-                Button { variant: ButtonVariant::Action,
-                    onclick: move |_| driver.dispatch(Action::Config),
-                    {home::CONFIG}
-                }
-            }
 
             AlertDialog {
                 open: show_buy_sheet,
@@ -560,13 +592,19 @@ pub fn Home() -> Element {
 
 #[cfg(test)]
 mod tests {
+    use uuid::Uuid;
+
     use super::*;
 
     #[test]
     fn every_destination_has_the_app_route() {
         assert_eq!(route(Destination::Decks), Router::DeckList {});
-        assert_eq!(route(Destination::Account), Router::Account {});
-        assert_eq!(route(Destination::Config), Router::Config {});
+        let deck_id = Uuid::nil();
+        assert_eq!(
+            route(Destination::Deck(deck_id)),
+            Router::ViewDeck { deck_id }
+        );
+        assert_eq!(route(Destination::CreateDeck), Router::CreateDeck);
         assert_eq!(route(Destination::Activity), Router::Activity {});
         assert_eq!(
             route(Destination::Playstyle),

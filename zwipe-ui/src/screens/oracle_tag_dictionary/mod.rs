@@ -32,7 +32,7 @@ pub const EXAMPLES: &str = "Examples";
 /// A row's chip that hands the tag to the screen that opened the dictionary.
 pub const USE: &str = "Use";
 
-/// The action bar's button back to the screen that opened the dictionary.
+/// The Back button, to the screen that opened the dictionary.
 pub const BACK: &str = "Back";
 
 /// The line when a search matches no tag: `No tags match “{query}”.`, the query trimmed and lowercased.

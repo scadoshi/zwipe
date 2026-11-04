@@ -2,7 +2,7 @@
 //!
 //! What the form knows and does is `zwipe_ui::screens::deck_form`; this file draws its state, opens the swipe pickers and performs its effects.
 
-use components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL, ToastOptions, Toasts, use_toast};
+use components::{TOAST_NORMAL, ToastOptions, Toasts, use_toast};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use tokio::time;
@@ -25,6 +25,7 @@ use super::oracle_tag_select::OracleTagSelect;
 use super::skeletons::EditDeckSkeleton;
 use super::swipe_select::{SwipeMode, SwipeSelect};
 use super::tag_select::TagSelect;
+use crate::inbound::components::action_dock::{self, DockIcon};
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::catalog_cache::CatalogCache;
 use crate::inbound::components::screen_header::ScreenHeader;
@@ -32,6 +33,7 @@ use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen, component, screen};
 use crate::inbound::components::{hint_dialog, ui_toast};
 use crate::inbound::router::Router;
+use crate::inbound::screens::deck::missing_deck;
 
 /// The form's model with the handles that perform its effects. Copy, so every handler and task holds its own.
 #[derive(Clone, Copy)]
@@ -69,6 +71,28 @@ impl Driver {
     }
 
     /// Performs one effect, feeding any reply back through [`Self::dispatch`].
+    /// Fetches Edit's deck; a gone deck is [`Action::Gone`].
+    fn fetch_deck(self, ticket: Ticket, deck_id: Uuid) {
+        let authed = self.authed;
+        spawn(async move {
+            // try_run reports a failure and raises its error toast.
+            let reply = authed
+                .try_run("load_deck", |c, s| async move {
+                    c.fetch_deck(deck_id, &s).await
+                })
+                .await;
+            self.dispatch(missing_deck::settle(
+                reply,
+                |deck| Action::Loaded {
+                    ticket,
+                    profile: Box::new(deck.deck_profile),
+                },
+                Action::Gone { ticket },
+                Action::Failed { ticket },
+            ));
+        });
+    }
+
     fn perform(self, effect: Effect) {
         let authed = self.authed;
         let client = self.client;
@@ -81,23 +105,7 @@ impl Driver {
                     self.hint_open,
                 );
             }
-            Effect::FetchDeck { ticket, deck_id } => {
-                spawn(async move {
-                    // try_run reports a failure and raises its error toast.
-                    let reply = authed
-                        .try_run("load_deck", |c, s| async move {
-                            c.fetch_deck(deck_id, &s).await
-                        })
-                        .await;
-                    self.dispatch(match reply {
-                        Ok(deck) => Action::Loaded {
-                            ticket,
-                            profile: Box::new(deck.deck_profile),
-                        },
-                        Err(_) => Action::Failed { ticket },
-                    });
-                });
-            }
+            Effect::FetchDeck { ticket, deck_id } => self.fetch_deck(ticket, deck_id),
             Effect::FetchCard {
                 ticket,
                 slot,
@@ -164,10 +172,18 @@ impl Driver {
                     });
                 });
             }
-            Effect::Navigate(Destination::Previous) => self.navigator.go_back(),
-            Effect::Navigate(Destination::Deck(deck_id)) => {
-                self.navigator.push(Router::ViewDeck { deck_id });
-            }
+            Effect::Navigate(destination) => match route(destination) {
+                Some(route) => {
+                    self.navigator.push(route);
+                }
+                None => self.navigator.go_back(),
+            },
+            Effect::Replace(destination) => match route(destination) {
+                Some(route) => {
+                    self.navigator.replace(route);
+                }
+                None => self.navigator.go_back(),
+            },
             Effect::Toast(toast) => ui_toast::raise(self.toast, toast),
         }
     }
@@ -225,6 +241,15 @@ impl Driver {
                 Err(e) => tracing::warn!("partner autofill search failed: {e}"),
             }
         });
+    }
+}
+
+/// The route a destination opens, or `None` for the screen before this one.
+fn route(destination: Destination) -> Option<Router> {
+    match destination {
+        Destination::Previous => None,
+        Destination::Deck(deck_id) => Some(Router::ViewDeck { deck_id }),
+        Destination::DeckList => Some(Router::DeckList {}),
     }
 }
 
@@ -335,7 +360,7 @@ pub(crate) fn DeckForm(open: Open) -> Element {
 
     rsx! {
             div { class: "screen",
-                ScreenHeader { title: mode.title(), hint: hint_open }
+                ScreenHeader { title: mode.title(), hint: hint_open, back: move |()| driver.dispatch(Action::Back) }
 
                 div { class: "screen-content content-enter",
                 div { class : "container-sm",
@@ -350,25 +375,26 @@ pub(crate) fn DeckForm(open: Open) -> Element {
                                 }
                             }
                         },
-                        Status::Failed => rsx! { p { class: "text-muted", {model::LOAD_FAILED} } },
+                        Status::Failed => rsx! {
+                            div { class: "message-empty",
+                                span { class: "chip-note", {model::LOAD_FAILED} }
+                            }
+                        },
                         Status::Loading => rsx! { EditDeckSkeleton {} }
                     }
                 }
             }
 
-            ActionBar {
-                Button {
-                    variant: ButtonVariant::Action,
-                    disabled: saving,
-                    onclick: move |_| driver.dispatch(Action::Back),
-                    {model::BACK}
-                }
-                if let Some(label) = save_label {
-                    Button {
-                        variant: ButtonVariant::Action,
+            // Save as the action dock's checkmark, pinned bottom right, while
+            // there is something to save; dimmed while the save is out.
+            if let Some(label) = save_label {
+                div { class: "action-dock action-dock-right",
+                    button {
+                        class: "action-dock-btn",
+                        "aria-label": label,
                         disabled: saving,
                         onclick: move |_| driver.dispatch(Action::Save),
-                        {label}
+                        DockIcon { path: action_dock::CHECK }
                     }
                 }
             }

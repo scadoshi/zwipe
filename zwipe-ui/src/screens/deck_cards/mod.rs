@@ -33,7 +33,7 @@ use crate::timing;
 use crate::toast::{Toast, ToastKind};
 
 /// The screen's title.
-pub const TITLE: &str = "Deck cards";
+pub const TITLE: &str = "Cards";
 
 /// The hint's title.
 pub const HINT_TITLE: &str = "Browsing your deck";
@@ -74,22 +74,22 @@ pub const MVP: &str = "MVP";
 /// The line under the chip rows when the main board shows nothing.
 pub const NO_CARDS: &str = "No cards";
 
-/// The action bar's button back to where the user came from.
+/// The Back button, to where the user came from.
 pub const BACK: &str = "Back";
 
-/// The action bar's button that opens Add cards.
+/// The button that opens Add cards.
 pub const ADD: &str = "Add";
 
-/// The action bar's button that opens Remove cards.
+/// The button that opens Remove cards.
 pub const REMOVE: &str = "Remove";
 
-/// The action bar's button that opens the filter sheet.
+/// The button that opens the filter sheet.
 pub const FILTER: &str = "Filter";
 
-/// The action bar's button that walks the undo log back, shown while it holds an entry.
+/// The button that walks the undo log back, shown while it holds an entry.
 pub const UNDO: &str = "Undo";
 
-/// The action bar's button that clears the filter, shown while one is on.
+/// The button that clears the filter, shown while one is on.
 pub const RESET_FILTER: &str = "Reset filter";
 
 /// The toast once a loaded deck shows under a remembered filter.
@@ -210,6 +210,8 @@ pub enum Destination {
     AddCards(Uuid),
     /// Remove cards for this deck.
     RemoveCards(Uuid),
+    /// The deck list, in place of a screen whose deck is gone.
+    DeckList,
 }
 
 /// Which write a request is, for the client's telemetry name and its reporting.
@@ -301,6 +303,11 @@ pub enum Action {
     },
     /// The request holding `ticket` failed. The client has already reported it, and raised its error toast unless the request was quiet.
     Failed {
+        /// The ticket from the request this answers.
+        ticket: Ticket,
+    },
+    /// The request holding `ticket` found no deck: the server no longer has it. The client has already reported it and raised its toast.
+    Gone {
         /// The ticket from the request this answers.
         ticket: Ticket,
     },
@@ -516,6 +523,8 @@ pub enum Effect {
     OpenPrintings,
     /// Goes to this screen.
     Navigate(Destination),
+    /// Goes to this screen in place of the current one, so Back skips a screen with nothing left to show.
+    Replace(Destination),
     /// Raises this toast.
     Toast(Toast),
 }
@@ -699,6 +708,7 @@ impl State {
                 Vec::new()
             }
             Action::Failed { ticket } => self.failed(ticket),
+            Action::Gone { ticket } => self.gone(ticket),
             Action::Filter(filter) => {
                 self.filter = *filter;
                 Vec::new()
@@ -833,6 +843,12 @@ impl State {
             )));
         }
         effects.push(Effect::Refilter);
+        effects
+    }
+
+    fn gone(&mut self, ticket: Ticket) -> Vec<Effect> {
+        let mut effects = self.failed(ticket);
+        effects.push(Effect::Replace(Destination::DeckList));
         effects
     }
 

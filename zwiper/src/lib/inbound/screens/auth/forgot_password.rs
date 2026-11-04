@@ -1,19 +1,19 @@
 //! Forgot password screen.
 
-use components::{
-    ActionBar, Button, ButtonVariant, Panel, TOAST_NORMAL, TextInput, ToastOptions, Toasts,
-    use_toast,
-};
+use components::{Button, ButtonVariant, TOAST_NORMAL, TextInput, ToastOptions, Toasts, use_toast};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use zwipe_client::ZwipeClient;
 use zwipe_core::http::contracts::auth::HttpRequestPasswordReset;
 use zwipe_ui::screens::forgot_password::{
-    self, Action, BACK, Destination, EMAIL, Effect, SEND, SENT_BODY, SENT_TITLE, State,
+    self, Action, BACK, CREATE_PROFILE, Destination, EMAIL, Effect, SEND, State,
 };
 
 use crate::inbound::components::home_hero::HomeHero;
 use crate::inbound::components::screen_header::ScreenHeader;
+use crate::inbound::components::ui_toast;
+use crate::inbound::router::Router;
+use crate::inbound::screens::auth::login::LoginPrefill;
 
 /// Forgot password's model with the handles that perform its effects. Copy,
 /// so every handler and task holds its own.
@@ -24,6 +24,7 @@ struct Driver {
     navigator: Navigator,
     toast: Toasts,
     client: Signal<ZwipeClient>,
+    login_prefill: Signal<Option<String>>,
 }
 
 impl Driver {
@@ -56,7 +57,18 @@ impl Driver {
                     self.dispatch(reply);
                 });
             }
+            Effect::Prefill(email) => {
+                let mut login_prefill = self.login_prefill;
+                login_prefill.set(Some(email));
+            }
             Effect::Navigate(Destination::Previous) => self.navigator.go_back(),
+            Effect::Navigate(Destination::Login) => {
+                self.navigator.replace(Router::Login {});
+            }
+            Effect::Navigate(Destination::Register) => {
+                self.navigator.push(Router::Register {});
+            }
+            Effect::Toast(toast) => ui_toast::raise(self.toast, toast),
         }
     }
 }
@@ -64,12 +76,14 @@ impl Driver {
 /// Forgot password screen for initiating a password reset.
 #[component]
 pub fn ForgotPassword() -> Element {
+    let LoginPrefill(login_prefill) = use_context();
     let driver = Driver {
         model: use_signal(State::new),
         email: use_signal(String::new),
         navigator: use_navigator(),
         toast: use_toast(),
         client: use_context(),
+        login_prefill,
     };
 
     use_effect(move || {
@@ -79,7 +93,6 @@ pub fn ForgotPassword() -> Element {
 
     let model = driver.model.read();
     let is_loading = model.is_loading();
-    let is_sent = model.is_sent();
     let email_error = model.error();
     drop(model);
 
@@ -88,40 +101,43 @@ pub fn ForgotPassword() -> Element {
             ScreenHeader { title: forgot_password::TITLE }
             div { class: "screen-content centered content-enter",
                 HomeHero {}
-                if is_sent {
-                    div { class: "outcome-success",
-                        Panel { title: SENT_TITLE, centered: true,
-                            p { {SENT_BODY} }
+                div { class: "container-sm text-center",
+                    form { class: "flex-col", onsubmit: move |evt| evt.prevent_default(),
+                        TextInput {
+                            value: driver.email,
+                            id: "email",
+                            label: EMAIL,
+                            placeholder: EMAIL,
+                            error: email_error,
+                        }
+                        if is_loading {
+                            div { class: "spinner" }
+                        }
+                        // The form's one button, so Return in the field
+                        // clicks it; the click handles the submit itself,
+                        // never the page.
+                        div { class: "form-submit",
+                            Button {
+                                disabled: is_loading,
+                                onclick: move |evt: MouseEvent| {
+                                    evt.prevent_default();
+                                    driver.dispatch(Action::Submit);
+                                },
+                                {SEND}
+                            }
                         }
                     }
-                } else {
-                    div { class: "container-sm text-center",
-                        form { class: "flex-col",
-                            TextInput {
-                                value: driver.email,
-                                id: "email",
-                                label: EMAIL,
-                                placeholder: EMAIL,
-                                error: email_error,
-                            }
-                            if is_loading {
-                                div { class: "spinner" }
-                            }
+                    div { class: "form-links",
+                        Button {
+                            variant: ButtonVariant::Action,
+                            onclick: move |_| driver.dispatch(Action::Back),
+                            {BACK}
                         }
-                    }
-                }
-            }
-            ActionBar {
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| driver.dispatch(Action::Back),
-                    {BACK}
-                }
-                if !is_sent {
-                    Button {
-                        variant: ButtonVariant::Action,
-                        onclick: move |_| driver.dispatch(Action::Submit),
-                        {SEND}
+                        Button {
+                            variant: ButtonVariant::Action,
+                            onclick: move |_| driver.dispatch(Action::CreateProfile),
+                            {CREATE_PROFILE}
+                        }
                     }
                 }
             }

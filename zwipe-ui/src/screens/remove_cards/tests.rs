@@ -33,7 +33,15 @@ fn loaded(built: Deck) -> State {
         ticket,
         deck: Box::new(built),
     });
-    assert_eq!(effects, NOTHING, "loading asks for nothing more");
+    let expected = if state.status() == Status::Empty {
+        vec![Effect::Toast(Toast::quick(
+            ToastKind::Info,
+            NO_CARDS_ON_BOARDS,
+        ))]
+    } else {
+        Vec::new()
+    };
+    assert_eq!(effects, expected, "loading asks for nothing more");
     state
 }
 
@@ -105,7 +113,7 @@ fn undo_with(state: &mut State, taken: Option<UndoAction>) -> Vec<Effect> {
 
 #[test]
 fn the_copy_matches_the_app() {
-    assert_eq!(TITLE, "Remove deck cards");
+    assert_eq!(TITLE, "Remove");
     assert_eq!(HINT_TITLE, "Swipe to trim");
     assert_eq!(BOARDS, "Boards");
     assert_eq!([BACK, FILTER, REFRESH], ["Back", "Filter", "Refresh"]);
@@ -174,6 +182,16 @@ fn a_loaded_deck_shows_its_main_board() {
     assert_eq!(names(&state), ["Opt", "Sol Ring"]);
     assert_eq!(top(&state).as_deref(), Some("Opt"));
     assert_eq!(state.window().len(), 2);
+}
+
+#[test]
+fn a_gone_deck_is_replaced_by_the_deck_list() {
+    let (mut state, ticket) = loading(&deck_profile("Trim"));
+    assert_eq!(
+        state.update(Action::Gone { ticket }),
+        [Effect::Replace(Destination::DeckList)]
+    );
+    assert_eq!(state.status(), Status::Failed);
 }
 
 #[test]
@@ -421,7 +439,9 @@ fn removing_a_land_below_the_target_warns() {
         ]
     );
     assert!(
-        toasts(&state.update(Action::Remove)).len() == 1,
+        toasts(&state.update(Action::Remove))
+            .iter()
+            .all(|toast| toast.kind != ToastKind::Warning),
         "the warning fires once per crossing"
     );
 }
@@ -431,7 +451,11 @@ fn no_land_target_means_no_land_toast() {
     let mut built = deck_of(&["Forest"]);
     built.entries[0].card.scryfall_data.type_line = Some("Basic Land".to_owned());
     let mut state = loaded(built);
-    assert_eq!(toasts(&state.update(Action::Remove)).len(), 1);
+    assert!(
+        toasts(&state.update(Action::Remove))
+            .iter()
+            .all(|toast| toast.kind != ToastKind::Warning)
+    );
 }
 
 #[test]
@@ -453,7 +477,30 @@ fn moving_a_card_to_main_can_cross_the_budget() {
                 "Deck at 105.00% of your $10.00 budget",
                 NORMAL
             ),
+            Toast::quick(ToastKind::Info, NO_MORE_CARDS),
         ]
+    );
+}
+
+#[test]
+fn an_emptied_pile_says_why_once() {
+    let mut state = loaded(deck_of(&["Opt"]));
+    assert_eq!(
+        toasts(&state.update(Action::Keep)),
+        [Toast::quick(ToastKind::Info, KEPT)],
+        "keeping cycles the pile, so it never runs out"
+    );
+    assert_eq!(
+        toasts(&state.update(Action::Remove)),
+        [
+            Toast::quick(ToastKind::Success, REMOVED),
+            Toast::quick(ToastKind::Info, NO_MORE_CARDS),
+        ]
+    );
+    assert_eq!(state.status(), Status::Empty);
+    assert!(
+        toasts(&state.update(Action::Remove)).is_empty(),
+        "an already empty pile says nothing more"
     );
 }
 

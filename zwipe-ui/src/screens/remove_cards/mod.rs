@@ -24,7 +24,7 @@ use crate::stores::undo::{self, UndoAction};
 use crate::toast::{Toast, ToastKind};
 
 /// The screen's title.
-pub const TITLE: &str = "Remove deck cards";
+pub const TITLE: &str = "Remove";
 
 /// The hint's title.
 pub const HINT_TITLE: &str = "Swipe to trim";
@@ -32,13 +32,13 @@ pub const HINT_TITLE: &str = "Swipe to trim";
 /// The label in front of the board chips.
 pub const BOARDS: &str = "Boards";
 
-/// The action bar's button back to where the user came from.
+/// The Back button, to where the user came from.
 pub const BACK: &str = "Back";
 
-/// The action bar's button that opens the card filter.
+/// The button that opens the card filter.
 pub const FILTER: &str = "Filter";
 
-/// The action bar's button that brings the stack back to its first card.
+/// The button that brings the stack back to its first card.
 pub const REFRESH: &str = "Refresh";
 
 /// The toast for a left swipe.
@@ -71,11 +71,22 @@ pub const ALREADY_CHANGED: &str = "Already changed";
 /// The toast for Refresh.
 pub const STACK_REFRESHED: &str = "Stack refreshed";
 
+/// The toast when the last card is swiped.
+pub const NO_MORE_CARDS: &str = "No more cards";
+
+/// The toast when the picked boards hold no cards.
+pub const NO_CARDS_ON_BOARDS: &str = "No cards on these boards";
+
+/// The toast when the filter matches no card on the picked boards.
+pub const NO_MATCHES: &str = "No cards match your filters";
+
 /// Where an action sends the user. The client maps each to its own route.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Destination {
     /// Wherever the user came from, from Back.
     Previous,
+    /// The deck list, in place of a screen whose deck is gone.
+    DeckList,
 }
 
 /// Which board the stack trims.
@@ -192,6 +203,11 @@ pub enum Action {
         /// The ticket from the request this answers.
         ticket: Ticket,
     },
+    /// The request holding `ticket` found no deck: the server no longer has it. The client has already reported it and raised its toast.
+    Gone {
+        /// The ticket from the request this answers.
+        ticket: Ticket,
+    },
     /// The client's card filter was applied: the stack is built again from the first card.
     Filter(CardQueryBuilder),
     /// Picks the board to trim; the stack is built again from the first card.
@@ -305,6 +321,8 @@ pub enum Effect {
     Enter(Direction),
     /// Goes to this screen.
     Navigate(Destination),
+    /// Goes to this screen in place of the current one, so Back skips a screen with nothing left to show.
+    Replace(Destination),
     /// Raises this toast.
     Toast(Toast),
 }
@@ -398,11 +416,28 @@ impl State {
         Self::default()
     }
 
-    /// Applies `action` and returns what the client must do, in order.
+    /// Applies `action` and returns what the client must do, in order. When the pile turns empty it says so with a toast.
     ///
     /// A reply whose request is no longer waiting changes nothing.
     #[must_use = "the client performs the effects"]
     pub fn update(&mut self, action: Action) -> Vec<Effect> {
+        let swiped = matches!(action, Action::Keep | Action::Remove | Action::Move);
+        let before = self.status();
+        let mut effects = self.apply(action);
+        if before != Status::Empty && self.status() == Status::Empty {
+            let line = if swiped {
+                NO_MORE_CARDS
+            } else if self.filter.is_empty() {
+                NO_CARDS_ON_BOARDS
+            } else {
+                NO_MATCHES
+            };
+            effects.push(Effect::Toast(Toast::quick(ToastKind::Info, line)));
+        }
+        effects
+    }
+
+    fn apply(&mut self, action: Action) -> Vec<Effect> {
         match action {
             Action::Load { deck_id, filter } => self.load(deck_id, filter),
             Action::Loaded { ticket, deck } => {
@@ -412,6 +447,7 @@ impl State {
                 Vec::new()
             }
             Action::Failed { ticket } => self.failed(ticket),
+            Action::Gone { ticket } => self.gone(ticket),
             Action::Filter(filter) => {
                 self.filter = filter;
                 self.rerun();
@@ -475,6 +511,12 @@ impl State {
     }
 
     /// Settles a failed request.
+    fn gone(&mut self, ticket: Ticket) -> Vec<Effect> {
+        let mut effects = self.failed(ticket);
+        effects.push(Effect::Replace(Destination::DeckList));
+        effects
+    }
+
     fn failed(&mut self, ticket: Ticket) -> Vec<Effect> {
         let Some(deck_id) = self.deck_id else {
             return Vec::new();

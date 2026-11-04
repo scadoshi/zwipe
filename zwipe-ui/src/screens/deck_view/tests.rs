@@ -78,7 +78,7 @@ fn a_new_state_is_loading_with_no_deck() {
     assert_eq!(state.currency(), PriceCurrency::Usd);
     assert_eq!(state.clone_name(), "");
     assert_eq!(state.card_count(), 0);
-    assert_eq!(state.buy_body(), BUY_NONE);
+    assert_eq!(state.buy_links(), None);
     assert_eq!(state.share_body(), SHARE_UNSHARED);
 }
 
@@ -199,6 +199,16 @@ fn a_failed_commander_leaves_the_profile_shown() {
 }
 
 #[test]
+fn a_gone_deck_is_replaced_by_the_deck_list() {
+    let (mut state, ticket, _) = loading(&deck_profile("Gone"));
+    assert_eq!(
+        state.update(Action::Gone { ticket }),
+        [Effect::Replace(Destination::DeckList)]
+    );
+    assert_eq!(state.status(), Status::Failed);
+}
+
+#[test]
 fn a_failed_profile_reads_could_not_load() {
     let profile = deck_profile("Gone");
     let (mut state, ticket, _) = loading(&profile);
@@ -304,7 +314,7 @@ fn the_deck_lands_with_metrics_and_stats_sections() {
         "several sections show at once"
     );
     assert!(!state.stats_loading());
-    assert_eq!(state.buy_body(), BUY_BODY);
+    assert!(state.buy_links().is_some());
     assert!(state.currency_chips_shown());
 }
 
@@ -426,10 +436,6 @@ fn the_action_bar_and_more_items_go_where_the_app_goes() {
             Effect::Navigate(Destination::ExportDeck(id)),
         ),
         (
-            Action::More(MoreItem::BuyDeck),
-            Effect::OpenDialog(Dialog::Buy),
-        ),
-        (
             Action::More(MoreItem::CloneDeck),
             Effect::OpenDialog(Dialog::Clone),
         ),
@@ -456,11 +462,27 @@ fn export_and_buy_wait_for_a_card() {
     let profile = deck_profile("Empty");
     let mut state = loaded(&profile, deck(profile.clone(), Vec::new()));
     for item in MoreItem::ALL {
-        let off = matches!(item, MoreItem::ExportCards | MoreItem::BuyDeck);
+        let off = matches!(item, MoreItem::ExportCards);
         assert_eq!(state.is_enabled(item), !off, "{item:?}");
     }
     assert_eq!(state.update(Action::More(MoreItem::ExportCards)), []);
-    assert_eq!(state.update(Action::More(MoreItem::BuyDeck)), []);
+    assert_eq!(state.buy_links(), None);
+    assert_eq!(state.update(Action::Buy(Retailer::TcgPlayer)), []);
+}
+
+#[test]
+fn buy_opens_the_retailer_with_the_deck_filled_in() {
+    let (profile, built) = two_cards("Krenko");
+    let mut state = loaded(&profile, built);
+    let (tcg, ck) = state.buy_links().unwrap();
+    assert_eq!(
+        state.update(Action::Buy(Retailer::TcgPlayer)),
+        [Effect::OpenUrl(tcg)]
+    );
+    assert_eq!(
+        state.update(Action::Buy(Retailer::CardKingdom)),
+        [Effect::OpenUrl(ck)]
+    );
 }
 
 #[test]
@@ -673,7 +695,7 @@ fn clearing_skips_toasts() {
 }
 
 #[test]
-fn a_delete_goes_back_to_the_list() {
+fn a_delete_replaces_the_deck_with_the_list() {
     let (profile, built) = two_cards("Elves");
     let mut state = loaded(&profile, built);
     let effects = state.update(Action::Delete);
@@ -681,7 +703,7 @@ fn a_delete_goes_back_to_the_list() {
         state.update(Action::Deleted {
             ticket: ticket_of(&effects)
         }),
-        [Effect::Navigate(Destination::DeckList)]
+        [Effect::Replace(Destination::DeckList)]
     );
 }
 
@@ -771,14 +793,12 @@ fn can_clone_needs_more_than_spaces() {
 fn the_copy_matches_the_app() {
     assert_eq!(TITLE, "Deck");
     assert_eq!(LOAD_FAILED, "Could not load deck");
-    assert_eq!([BACK, EDIT, CARDS, MORE], ["Back", "Edit", "Cards", "More"]);
-    assert_eq!(MORE_TITLE, "More actions");
+    assert_eq!([EDIT, CARDS], ["Edit", "Cards"]);
     assert_eq!(
         MoreItem::ALL.map(MoreItem::label),
         [
             "Import cards",
             "Export cards",
-            "Buy deck",
             "Clone deck",
             "Share deck",
             "Clear skips",
@@ -787,7 +807,7 @@ fn the_copy_matches_the_app() {
     );
     assert_eq!(
         MoreItem::ALL.map(MoreItem::is_danger),
-        [false, false, false, false, false, true, true]
+        [false, false, false, false, true, true]
     );
     assert_eq!(
         Section::ALL.map(Section::title),
@@ -802,20 +822,13 @@ fn the_copy_matches_the_app() {
     );
     assert_eq!(
         [
-            Dialog::Buy,
             Dialog::Clone,
             Dialog::Share,
             Dialog::ClearSkips,
             Dialog::Delete
         ]
         .map(Dialog::title),
-        [
-            "Buy deck",
-            "Clone deck",
-            "Share deck",
-            "Clear skips",
-            "Delete deck"
-        ]
+        ["Clone deck", "Share deck", "Clear skips", "Delete deck"]
     );
     assert_eq!(
         [TOTAL_PRICE, AVERAGE_CARD_PRICE, NO_PRICE],
@@ -826,10 +839,9 @@ fn the_copy_matches_the_app() {
         ["Average P/T", "Lands", "Average mana value"]
     );
     assert_eq!([CLOSE, CANCEL], ["Close", "Cancel"]);
-    assert_eq!(BUY_BODY, "Buy this deck's cards from a retailer.");
-    assert_eq!(BUY_NONE, "No buy links are available for this deck.");
+    assert_eq!(BUY, "Buy");
     assert_eq!(
-        [TCGPLAYER, CARD_KINGDOM],
+        Retailer::ALL.map(Retailer::label),
         ["TCGplayer \u{2197}", "Card Kingdom \u{2197}"]
     );
     assert_eq!(
@@ -858,4 +870,16 @@ fn the_copy_matches_the_app() {
     );
     assert_eq!([CLEAR, DELETE], ["Clear", "Delete"]);
     assert_eq!(DELETE_BODY, "Are you sure you want to delete this deck?");
+}
+
+#[test]
+fn every_short_label_drops_the_deck_or_cards_word() {
+    for item in MoreItem::ALL {
+        let short = item.short_label();
+        assert!(item.label().starts_with(short), "{item:?}: {short}");
+        assert!(
+            !short.ends_with(" deck") && !short.ends_with(" cards"),
+            "{item:?}: {short}"
+        );
+    }
 }

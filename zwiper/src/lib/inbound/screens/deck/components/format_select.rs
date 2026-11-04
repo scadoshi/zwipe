@@ -6,18 +6,17 @@
 //! and clearing are reported through callbacks so the form can run its
 //! command-zone cascade (clearing commander and signature spell on a change).
 
-use components::{
-    ActionBar, Button, ButtonVariant, HintBullet, HintBullets, HintDialog, use_overlay_back_action,
-};
+use components::{HintBullet, HintBullets, HintDialog, use_overlay_back_action};
 use dioxus::prelude::*;
 use zwipe_core::domain::deck::format::Format;
 use zwipe_ui::deck::form;
 use zwipe_ui::deck::pickers::{self, Picker};
 
+use crate::inbound::components::action_dock::{self, DockIcon};
 use crate::inbound::components::guide_link;
 use crate::inbound::components::screen_header::ScreenHeader;
 
-/// In-place format picker, up while `open`. A chip tap goes to `on_tap`, which picks the format or clears it when it is the one picked, with the command-zone knock-on clears. Save (`on_save`) stays off while `unchanged`; Back (`on_back`) and the OS back gesture put the format and command zone back as they were when the picker opened.
+/// In-place format picker, up while `open`. A chip tap goes to `on_tap`, which picks the format or clears it when it is the one picked, with the command-zone knock-on clears. The dock's checkmark (`on_save`) stays off while `unchanged`; the header's back arrow (`on_back`) and the OS back gesture put the format and command zone back as they were when the picker opened.
 #[component]
 pub(crate) fn FormatSelect(
     open: ReadSignal<bool>,
@@ -54,7 +53,7 @@ pub(crate) fn FormatSelect(
             // clear and the one beneath would show through.
             ::components::GridCells { still: true }
             if open() {
-                ScreenHeader { title: Picker::Format.title(), hint: hint_open }
+                ScreenHeader { title: Picker::Format.title(), hint: hint_open, back: move |()| back.call(()) }
 
                 div { class: "screen-content content-enter tag-screen",
                     div { class: "tag-controls",
@@ -107,17 +106,14 @@ pub(crate) fn FormatSelect(
                     }
                 }
 
-                ActionBar {
-                    Button {
-                        variant: ButtonVariant::Action,
-                        onclick: move |_| back.call(()),
-                        "Back"
-                    }
-                    Button {
-                        variant: ButtonVariant::Action,
+                // Save as the action dock's checkmark, pinned bottom right.
+                div { class: "action-dock action-dock-right",
+                    button {
+                        class: "action-dock-btn",
+                        "aria-label": "Save",
                         disabled: unchanged,
                         onclick: move |_| on_save.call(()),
-                        "Save"
+                        DockIcon { path: action_dock::CHECK }
                     }
                 }
 

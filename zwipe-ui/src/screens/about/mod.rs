@@ -1,16 +1,29 @@
-//! Changelog: the release history from the launch's fetch, under chip rows that narrow it from `Latest` to a year, a month and a minor version. Reached from Account.
+//! About: the client's version, the links to the website and the privacy policy, the credits, and the release history from the launch's fetch under chip rows that narrow it from `Latest` to a year, a month and a minor version.
 //!
-//! Where each release files is [`crate::changelog`]; this model adds what the screen does with it: which branch draws while the launch fetch is out or after it failed, the chip rows a filter opens and what each chip selects, and Back. The history comes in on [`Action::Load`] from the client's [`ChangelogCache`], with no retry and no compiled fallback. The web's anchors and every scroll stay in the client.
+//! Where each release files is [`crate::changelog`]; this model adds what the screen does with it: which branch draws while the launch fetch is out or after it failed, the chip rows a filter opens and what each chip selects, the rows over the history and where each one leads, and Back. The history comes in on [`Action::Load`] from the client's [`ChangelogCache`], with no retry and no compiled fallback. The client's version, the web's anchors and every scroll stay in the client.
 
 #[cfg(test)]
 mod tests;
 
+use zwipe_core::domain::site::WEB_BASE;
 use zwipe_core::http::contracts::changelog::HttpChangelog;
 
 use crate::changelog::{self, ChangelogCache, Filter, Listed};
 
 /// The screen's title.
-pub const TITLE: &str = "Changelog";
+pub const TITLE: &str = "About";
+
+/// The Website row's button.
+pub const WEBSITE_LINK: &str = "zwipe.net \u{2197}";
+
+/// The Privacy policy row's button.
+pub const VIEW: &str = "View";
+
+/// The panel title over the Scryfall credit and the Fan Content notice.
+pub const CREDITS: &str = "Credits";
+
+/// The panel title over the history.
+pub const CHANGELOG: &str = "Changelog";
 
 /// The note in place of the history when the launch fetch failed.
 pub const FAILED: &str = "Could not load the changelog";
@@ -18,14 +31,48 @@ pub const FAILED: &str = "Could not load the changelog";
 /// The first chip, which goes back to [`Filter::Latest`].
 pub const LATEST: &str = "Latest";
 
-/// The action bar's button back to the screen before.
+/// The Back button, to the screen before.
 pub const BACK: &str = "Back";
+
+/// The Version row's value: `v` and the client's version.
+#[must_use]
+pub fn version_label(version: &str) -> String {
+    format!("v{version}")
+}
 
 /// Where an action sends the user. The client maps each to its own route.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Destination {
     /// The screen the user came from, through the client's history.
     Previous,
+    /// The privacy policy, from its row.
+    PrivacyPolicy,
+}
+
+/// A row in the top panel, in the order [`ROWS`] lists them.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Row {
+    /// The client's version.
+    Version,
+    /// The link to the website.
+    Website,
+    /// The link to the privacy policy.
+    PrivacyPolicy,
+}
+
+/// The top panel's rows, top to bottom.
+pub const ROWS: [Row; 3] = [Row::Version, Row::Website, Row::PrivacyPolicy];
+
+impl Row {
+    /// The row's label.
+    #[must_use]
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Version => "Version",
+            Self::Website => "Website",
+            Self::PrivacyPolicy => "Privacy policy",
+        }
+    }
 }
 
 /// Which branch the screen draws.
@@ -50,25 +97,31 @@ pub struct Chip {
     pub target: Filter,
 }
 
-/// What a user does on the Changelog, and each change to the client's cache.
+/// What a user does on About, and each change to the client's cache.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Action {
     /// Opens the screen on `Latest` with the cache as it stands. Send it again when the launch fetch lands while the screen is up.
     Load(ChangelogCache),
     /// Narrows the list to this filter, a chip's [`Chip::target`].
     Pick(Filter),
+    /// Opens the website, from the Website row.
+    Website,
+    /// Opens the privacy policy, from its row.
+    PrivacyPolicy,
     /// Goes back to the screen before.
     Back,
 }
 
 /// What an action asks the client to do.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Effect {
+    /// Opens this address outside the client.
+    OpenUrl(String),
     /// Goes to this screen.
     Navigate(Destination),
 }
 
-/// The Changelog for one visit. Starts loading on `Latest`; send [`Action::Load`] with the client's cache.
+/// About for one visit. Starts loading on `Latest`; send [`Action::Load`] with the client's cache.
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct State {
     cache: ChangelogCache,
@@ -95,6 +148,8 @@ impl State {
                     self.filter = filter;
                 }
             }
+            Action::Website => return vec![Effect::OpenUrl(WEB_BASE.to_owned())],
+            Action::PrivacyPolicy => return vec![Effect::Navigate(Destination::PrivacyPolicy)],
             Action::Back => return vec![Effect::Navigate(Destination::Previous)],
         }
         Vec::new()

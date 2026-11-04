@@ -4,11 +4,8 @@
 //! file draws its state, performs its effects and keeps the gestures, the
 //! card's entrance, image easing and the sheets.
 
-use std::cell::Cell;
-
 use components::{
-    ActionBar, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintDialog, HintKey, HintLine,
-    ToastOptions, Toasts, use_toast,
+    Chip, HintBullet, HintBullets, HintDialog, HintKey, HintLine, ToastOptions, Toasts, use_toast,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -27,19 +24,22 @@ use zwipe_ui::screens::add_cards::{
 use zwipe_ui::stack;
 use zwipe_ui::stores::parked;
 
-use super::components::card_info::{CardDetailsSheet, CardInfoDisplay, CardSkeleton, RulesButton};
+use super::components::card_info::{CardDetailsSheet, CardInfoDisplay, CardSkeleton};
 use super::components::printing_sheet::PrintingSheet;
+use crate::inbound::components::action_dock::{self, DockFilter, DockIcon, EyeIcon};
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::auth::ensure_session::EnsureFresh;
 use crate::inbound::components::hint_dialog::{self, HintColored};
 use crate::inbound::components::interactions::swipe::SwipeStack;
 use crate::inbound::components::interactions::swipe::config::SwipeConfig;
 use crate::inbound::components::interactions::swipe::direction::Direction;
+use crate::inbound::components::on_bump::use_on_bump;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::flush_loop;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen, component, screen};
 use crate::inbound::components::{guide_link, ui_toast};
+use crate::inbound::router::Router;
 use crate::inbound::screens::deck::card::components::action_history::AddAction;
 use crate::inbound::screens::deck::card::components::add_stack_cache::{
     AddStackCache, ParkedStack,
@@ -48,6 +48,7 @@ use crate::inbound::screens::deck::card::components::filter_store::{FilterScope,
 use crate::inbound::screens::deck::card::components::flippable_card_image;
 use crate::inbound::screens::deck::card::components::undo_log::{UndoAction, UndoStore};
 use crate::inbound::screens::deck::card::filter::card_filter_sheet::CardFilterSheet;
+use crate::inbound::screens::deck::missing_deck;
 
 /// Pixels a swipe travels to commit.
 const SWIPE_DISTANCE_PX: f64 = 90.0;
@@ -183,29 +184,37 @@ impl Driver {
                 kind,
                 synergy,
             } => usage_buffer.peek().record_pile_end(deck_id, kind, synergy),
-            Effect::Navigate(Destination::Previous) => navigator.go_back(),
+            Effect::Navigate(Destination::Previous) | Effect::Replace(Destination::Previous) => {
+                navigator.go_back();
+            }
+            Effect::Navigate(Destination::DeckList) | Effect::Replace(Destination::DeckList) => {
+                navigator.replace(Router::DeckList {});
+            }
             Effect::Toast(raised) => ui_toast::raise(toast, raised),
         }
     }
 
     /// Fetches the deck quietly.
     fn fetch_deck(self, ticket: Ticket, deck_id: Uuid) {
-        let Self { authed, .. } = self;
+        let Self { authed, toast, .. } = self;
         spawn(async move {
             // Quiet: the screen works without deck context; telemetry
-            // still records the failure.
+            // still records the failure. A missing deck is the exception.
             let deck = authed
-                .run_quiet("load_deck_context", |c, s| async move {
+                .try_run_quiet("load_deck_context", |c, s| async move {
                     c.fetch_deck(deck_id, &s).await
                 })
                 .await;
-            self.dispatch(match deck {
-                Some(deck) => Action::DeckLoaded {
+            self.dispatch(missing_deck::settle_quiet(
+                toast,
+                deck,
+                |deck| Action::DeckLoaded {
                     ticket,
                     deck: Box::new(deck),
                 },
-                None => Action::Failed { ticket },
-            });
+                Action::Gone { ticket },
+                Action::Failed { ticket },
+            ));
         });
     }
 
@@ -586,12 +595,7 @@ pub fn Add(deck_id: Uuid) -> Element {
 
     // Every bump after the first render is an applied filter or a rerun the
     // model asked for: hand the filter to the model.
-    let first_run = use_hook(|| Cell::new(true));
-    use_effect(move || {
-        let _ = filter_reset_counter();
-        if first_run.replace(false) {
-            return;
-        }
+    use_on_bump(filter_reset_counter, move || {
         let filter = filter_builder.peek().clone();
         driver.dispatch(Action::Filter(filter));
     });
@@ -657,41 +661,12 @@ pub fn Add(deck_id: Uuid) -> Element {
         }
     };
 
+    let no_card = current.is_none();
     rsx! {
             div { class: "screen",
-                ScreenHeader { title: add_cards::TITLE, hint: driver.hint_open }
+                ScreenHeader { title: add_cards::TITLE, hint: driver.hint_open, back: move |()| driver.dispatch(Action::Back) }
 
                 div { class: "screen-content card-swipe content-enter",
-
-                // Source selector chips
-                div { style: "max-width: 40rem; width: 100%; padding: 0 1rem;",
-                    div { class: "chip-row",
-                        span { class: "stat-chip stat-chip-p1 chip-row-label", "{add_cards::FROM}" }
-                        for variant in Source::ALL {
-                            Chip {
-                                selected: source == variant,
-                                onclick: move |_| {
-                                    let remembered = filter_store.restore(scope(variant), deck_id);
-                                    driver.dispatch(Action::PickSource { source: variant, remembered });
-                                },
-                                "{variant.label()}"
-                            }
-                        }
-                        // Synergy ON/OFF: constrains the stack to the commander's
-                        // synergy pool, then sorts within it. Pinned right
-                        // (margin-left:auto) so it reads as its own control, not
-                        // part of the "From" source group.
-                        if shows_synergy {
-                            div { style: "margin-left: auto;",
-                                Chip {
-                                    selected: filter_builder.read().synergy(),
-                                    onclick: move |_| driver.dispatch(Action::ToggleSynergy),
-                                    "{add_cards::SYNERGY}"
-                                }
-                            }
-                        }
-                    }
-                }
 
                 div { class : "form-container",
                     if source == Source::Search {
@@ -745,8 +720,6 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 },
                                 CardSkeleton {}
                             }
-                        } else if pile == Pile::Loading {
-                            CardSkeleton { is_loading: true }
                         } else {
                             CardSkeleton {}
                         }
@@ -774,27 +747,57 @@ pub fn Add(deck_id: Uuid) -> Element {
                 }
             }
 
-            ActionBar {
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| driver.dispatch(Action::Back),
-                    "{add_cards::BACK}"
-                }
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| filters_overlay_open.set(true),
-                    "{add_cards::FILTER}"
-                    if shows_dot {
-                        span { class: "filter-dot" }
+            // The bottom row: the source chips on the left, the action dock
+            // (synergy, filter, refresh, card details) on the right.
+            div { class: "swipe-bottom-row",
+                // From, then one chip naming the current source; a tap switches
+                // to the other.
+                div { class: "swipe-bottom-chips",
+                    span { class: "stat-chip stat-chip-p1 chip-row-label", "{add_cards::FROM}" }
+                    Chip {
+                        selected: true,
+                        onclick: move |_| {
+                            let next = source.toggled();
+                            let remembered = filter_store.restore(scope(next), deck_id);
+                            driver.dispatch(Action::PickSource { source: next, remembered });
+                        },
+                        "{source.label()}"
                     }
                 }
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| driver.dispatch(Action::Refresh),
-                    "{add_cards::REFRESH}"
-                }
-                if current.is_some() {
-                    RulesButton { open: show_details }
+                div { class: "action-dock",
+                    // Synergy on or off: constrains the stack to the commander's
+                    // synergy pool, then sorts within it. Lit while on.
+                    if shows_synergy {
+                        button {
+                            class: if filter_builder.read().synergy() { "action-dock-btn action-dock-on" } else { "action-dock-btn" },
+                            "aria-label": add_cards::SYNERGY,
+                            "aria-pressed": "{filter_builder.read().synergy()}",
+                            onclick: move |_| driver.dispatch(Action::ToggleSynergy),
+                            DockIcon { path: action_dock::LINK }
+                        }
+                    }
+                    DockFilter {
+                        label: add_cards::FILTER,
+                        dot: shows_dot,
+                        onclick: move |()| filters_overlay_open.set(true),
+                    }
+                    button {
+                        class: "action-dock-btn",
+                        "aria-label": add_cards::REFRESH,
+                        onclick: move |_| driver.dispatch(Action::Refresh),
+                        DockIcon { path: action_dock::REFRESH }
+                    }
+                    span { class: "action-dock-divider" }
+                    button {
+                        class: "action-dock-btn",
+                        "aria-label": "Card details",
+                        disabled: no_card,
+                        onclick: move |_| {
+                            let mut open = show_details;
+                            open.toggle();
+                        },
+                        EyeIcon {}
+                    }
                 }
             }
 
@@ -838,7 +841,8 @@ pub fn Add(deck_id: Uuid) -> Element {
                     HintBullet { "Swipe " HintColored { color: "--color-error", "left" } " skips it for a week" }
                     HintBullet { "Swipe " HintColored { color: "--color-warning", "up" } " sends it to the maybeboard" }
                     HintBullet { "Swipe " HintColored { color: "--accent-tertiary", "down" } " undoes the last swipe" }
-                    HintBullet { HintKey { "Synergy" } " on starts with cards that work with your commander, then cards like your deck. Off shows every legal card" }
+                    HintBullet { "The chip after " HintKey { "From" } " switches between Search and your Maybe pile" }
+                    HintBullet { "The link icon is " HintKey { "Synergy" } ": on starts with cards that work with your commander, then cards like your deck. Off shows every legal card" }
                 }
                 HintLine { "Sort only reorders. It never hides cards" }
             }

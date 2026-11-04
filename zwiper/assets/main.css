@@ -25,9 +25,12 @@
     }
 }
 
+/* The theme class rides on html as well as the shell, so the page color
+   under everything is the theme's and not the launch color. */
 html {
     touch-action: manipulation;
     overflow: hidden;
+    background-color: var(--bg-primary);
 }
 
 body {
@@ -60,12 +63,19 @@ button {
     position: fixed;
     inset: 0;
     padding-top: env(safe-area-inset-top, 0px);
-    padding-bottom: env(safe-area-inset-bottom, 0px);
     display: flex;
     flex-direction: column;
     width: 100%;
     /* No fill: orangui's GridCells layer under the screen is the backdrop. */
     color: var(--text-primary);
+}
+
+/* The scroll area runs to the window's bottom edge, under the home
+   indicator, so the last row scrolls up clear of it instead of the area
+   stopping short. The indicator's inset is the content's own trailing
+   padding, on top of the room a screen asks for in --content-pad-bottom. */
+.screen > .screen-content {
+    padding-bottom: calc(var(--content-pad-bottom, 0px) + env(safe-area-inset-bottom, 0px));
 }
 
 /* Scrollbars hidden everywhere. On the iOS WebView the bar is a non-interactive
@@ -91,9 +101,360 @@ button {
     text-align: left;
 }
 
+/* About's panels under the first, Credits and Changelog, each a panel gap
+   below what precedes it. */
+.about-panel {
+    margin-top: var(--panel-gap);
+}
+
+/* The Credits panel's body: two short paragraphs as the row text, with the
+   row's padding. Their links share the privacy policy's link rule. */
+.about-credits {
+    padding: 0.75rem 1rem;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: var(--text-primary);
+    text-align: left;
+}
+
+.about-credits p {
+    margin: 0 0 0.5rem;
+}
+
+.about-credits p:last-child {
+    margin-bottom: 0;
+}
+
 .screen-content.card-swipe {
     overflow-y: hidden;
     justify-content: flex-start;
+}
+
+/* ==================
+  action dock
+ ==================== */
+
+/* The kit's .action-dock is the floating bar; the screen's content ends
+   with room to scroll its last row clear of it. The room goes through
+   --content-pad-bottom rather than the kit's soft 5rem, so the screen's own
+   trailing padding adds the home indicator's inset to it, and a swipe
+   screen's bottom row asks for the same room. */
+.screen:has(> .action-dock, > .swipe-bottom-row) > .screen-content {
+    --content-pad-bottom: 5rem;
+}
+
+/* A text Button floating in a dock (the deck view's Cards, the maybeboard's
+   action): the bar is its chrome. */
+.action-dock > .btn-action {
+    min-height: 2.4rem;
+    margin: 0.3rem 0;
+    border: none;
+    box-shadow: none;
+    background: transparent;
+}
+
+/* A swipe screen's bottom row: its pile chips on the left, compact, and the
+   action dock on the right, so no chip row costs the card height up top. The
+   row floats where a dock would and lifts over the keyboard the same way. */
+.swipe-bottom-row {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 0.4rem + var(--keyboard-inset, 0px));
+    z-index: 50;
+    transition: bottom 0.25s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0 1rem;
+    box-sizing: border-box;
+    pointer-events: none;
+}
+
+.swipe-bottom-row > * {
+    pointer-events: auto;
+}
+
+.swipe-bottom-row > .action-dock {
+    position: static;
+    margin: 0;
+}
+
+.swipe-bottom-chips {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 0.35rem;
+    min-width: 0;
+}
+
+.swipe-bottom-chips > .chip {
+    padding: 0.3rem 0.5rem;
+    white-space: nowrap;
+}
+
+/* A sign-in form's submit: the kit's full-width button under the last
+   field, with the field's corners and padding so it reads as the form's
+   last row, then the chips to the other sign-in screens in one centered
+   row, wrapping if they must. The field's own bottom margin is the only gap above it; the
+   content's trailing padding keeps the last chip clear of the home
+   indicator. */
+.form-submit > .btn {
+    margin: 0;
+    padding: 0.75rem 1rem;
+    border-radius: 0.4rem;
+}
+
+.form-links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    /* The row may run wider than the form's column: it spans the screen,
+       centered on the column, with the page gutter at each side. */
+    margin: 1rem calc(50% - 50vw + 1rem) 0;
+}
+
+/* The filter dot sits on the funnel's top left, clear of the reset. */
+.action-dock-btn .filter-dot {
+    position: absolute;
+    top: 0.35rem;
+    left: 0.45rem;
+}
+
+/* ==================
+  deck view actions
+ ==================== */
+
+/* Edit, Clone and Share at the end of the profile panel's header row. */
+.deck-profile-actions {
+    display: flex;
+    gap: 0.4rem;
+}
+
+/* The header row's icons, edit, clone and share, each in a kit .btn-icon. */
+.profile-icon {
+    display: block;
+    width: 1.1em;
+    height: 1.1em;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* Text for screen readers only, the label of an icon button. */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* The retailer links under the Budget rows, behind a Buy label chip and a
+   rule. */
+.deck-buy-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 0.4rem;
+    padding: 0.75rem 0.5rem;
+    border-top: 1px solid var(--border-secondary);
+}
+
+/* Compact enough that the chip and both links share one line on a phone. */
+.deck-buy-row > .btn,
+.deck-buy-row > button {
+    padding-left: 0.6rem;
+    padding-right: 0.6rem;
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+
+/* ==================
+  list header actions
+ ==================== */
+
+/* A card group header's trailing side: the list's own action beside its ?. */
+.card-group-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* ==================
+  danger zone
+ ==================== */
+
+/* The Danger zone panels, Account's and the deck view's, under a title in
+   the danger color. Compound selector so it outranks orangui's title color. */
+.settings-list-title.danger-zone-title {
+    color: var(--color-error);
+}
+
+/* ==================
+  header and main menu
+ ==================== */
+
+/* The header sits over the top of the screen, under the status bar strip,
+   and header_hide.js slides it up behind that strip as the content scrolls
+   down. Its height is the kit's --app-nav-h, and the kit opens each screen's
+   scroll area with a spacer that tall. */
+.screen > .app-nav {
+    position: absolute;
+    top: env(safe-area-inset-top, 0px);
+    left: 0;
+    right: 0;
+    z-index: 101;
+}
+
+/* While the menu is open the header holds still and untransformed: a
+   transform would make it the containing block of the kit's fixed backdrop,
+   which then covered only the bar, so a tap outside the menu missed it. */
+.screen > .app-nav:has(.nav-panel-open) {
+    transform: none !important;
+}
+
+/* The status bar strip (orangui's .screen::before) stays over the header as it
+   slides under. */
+.screen::before {
+    z-index: 102;
+}
+
+/* The kit's NavBar as the app's header. A phone is always under the kit's
+   60rem fold, so the bar shows the back arrow (or nothing, on Home and the
+   auth screens), the title and the hamburger, and the links wait in the
+   menu. */
+.app-nav .nav-wrapper {
+    margin-bottom: 0;
+    box-shadow: none;
+    border-bottom: 1px solid var(--border-secondary);
+}
+
+/* Both outer columns are one width, so the title centers on the screen
+   whatever sits in the corners. */
+.app-nav .nav-wrapper nav {
+    grid-template-columns: 2.6rem minmax(0, 1fr) 2.6rem;
+    /* One fixed row, the corner buttons' height, so every screen's bar is
+       the same height, an empty corner included. */
+    grid-template-rows: 1.7rem;
+    padding: 0.5rem 0.75rem;
+    position: relative;
+}
+
+/* The back arrow in the left corner, on a screen below a section, as
+   gentle as the hamburger it mirrors. */
+.app-nav-back {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: 2.1rem;
+    height: 1.7rem;
+    padding: 0;
+    margin: 0;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: 0.4rem;
+    color: var(--text-primary);
+    cursor: pointer;
+    opacity: var(--fade-corner);
+}
+
+.app-nav-back:active {
+    opacity: 1;
+}
+
+.app-nav-back-icon {
+    display: block;
+    width: 1rem;
+    height: 1rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* The title holds the middle column whatever sits in the left corner. */
+.app-nav .nav-persistent {
+    grid-column: 2;
+    grid-row: 1;
+}
+
+.app-nav-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+}
+
+.app-nav-title-text {
+    font-size: 1rem;
+    font-weight: 400;
+    letter-spacing: 0.1em;
+    margin: 0;
+    color: var(--accent-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* The open menu drops over the screen instead of pushing it down. It leaves
+   the grid, whose area would otherwise be its containing block and inset it by
+   the bar's padding, so it runs edge to edge. */
+.app-nav .nav-panel {
+    grid-column: auto;
+    grid-row: auto;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-left: 0;
+    margin-right: 0;
+    border-bottom: 1px solid transparent;
+}
+
+.app-nav .nav-panel-open {
+    margin-top: 0;
+    padding-bottom: 0;
+    border-bottom-color: var(--border-secondary);
+}
+
+/* Every entry shows. The kit caps the links at three and a half rows for
+   zite, whose menu carries more. */
+.app-nav .nav-panel .nav-links {
+    max-height: none;
+    overflow: visible;
+}
+
+/* The header holds still while the sheet is up, as while the menu is open:
+   a transform would make it the sheet's containing block. */
+.screen > .app-nav:has(.theme-picker-sheet .bottom-sheet.show) {
+    transform: none !important;
+}
+
+/* The menu's footer is the kit's .nav-trailing-row: the ! and, signed in,
+   the Home, Account, Settings and About icons with the Theme palette and
+   the mode's sun or moon at one end, and Log out at the other. The two
+   text buttons sit at the icons' height and fade. */
+.app-nav-support,
+.app-nav-logout {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 1.7rem;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.85rem;
+    opacity: var(--fade-corner);
 }
 
 /* ==================
@@ -598,8 +959,7 @@ button {
 }
 
 /* .btn-action (Button Action) is in the shared components.css and the header
-   corners in the shared app.css. The other modifiers (.btn-action-eye,
-   .btn-action-clear) stay here. */
+   corners in the shared app.css. The .btn-action-eye modifier stays here. */
 .filter-dot {
     width: 6px;
     height: 6px;
@@ -643,11 +1003,6 @@ button {
     align-items: center;
     justify-content: center;
     align-self: stretch;
-}
-
-/* .btn-action:disabled, .btn-danger and .btn-action-danger are in components.css. */
-.btn-action-clear {
-    animation: row-enter 0.2s ease-out both;
 }
 
 /* ===========================
@@ -807,14 +1162,26 @@ button {
   specific - skeleton
  ============================= */
 
+/* The loading swipe card: laid out as the real one is, a stack slot that
+   fills the height with the card centered in it, then the price line. */
 .skeleton-card {
     display: flex;
     flex-direction: column;
-    width: calc(100vw - 2rem);
+    width: 100%;
     flex: 1;
     min-height: 0;
-    margin: 1rem auto 0.75rem auto;
     animation: skeleton-enter 250ms ease;
+}
+
+/* The stack's slot: .swipe-stack-card's padding and centering. */
+.skeleton-stack {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem 1rem;
+    box-sizing: border-box;
 }
 
 @keyframes skeleton-enter {
@@ -826,11 +1193,14 @@ button {
     }
 }
 
+/* The card's ghost in a Magic card's shape, bound as the swipe card's image
+   is: .card-image's calc(100% - 2rem) width, and its min(55vh, 100%) height
+   carried into the width through the card's shape. */
 .skeleton-image {
-    flex: 1;
-    min-height: 0;
+    width: min(calc(100% - 2rem), calc(55vh * 63 / 88));
+    aspect-ratio: 63 / 88;
+    max-height: 100%;
     border-radius: 1rem;
-    margin: 1rem 1rem 0.75rem 1rem;
     background-color: var(--border-muted);
     display: flex;
     align-items: center;
@@ -840,34 +1210,11 @@ button {
     animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-.skeleton-info {
-    display: flex;
-    flex-direction: column;
-    gap: 0.4rem;
-    padding: 0.5rem 1rem;
-}
-
 .skeleton-bar {
     height: 0.65rem;
     border-radius: 0.375rem;
     background-color: var(--border-muted);
     animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-.skeleton-bar-name {
-    width: 35%;
-}
-.skeleton-bar-price {
-    width: 60%;
-}
-.skeleton-bar-set {
-    width: 45%;
-}
-.skeleton-bar-date {
-    width: 40%;
-}
-.skeleton-bar-artist {
-    width: 50%;
 }
 
 @keyframes skeleton-pulse {
@@ -956,7 +1303,6 @@ button {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
-    margin-bottom: 1.5rem;
 }
 
 .changelog-skeleton-chip {
@@ -1669,24 +2015,6 @@ button {
     gap: 1rem;
 }
 
-/* An outcome under the hero, as wide as the hero and one panel gap below it.
-   Its title wears the outcome: the success green. Not a link, so it keeps its
-   resting border under a finger. */
-.outcome-success {
-    width: 100%;
-    max-width: 26rem;
-    padding: 0 1rem;
-    margin-top: var(--panel-gap);
-}
-
-.outcome-success .panel-card:hover {
-    border-color: var(--border-secondary);
-}
-
-.outcome-success .panel-title {
-    color: var(--color-success);
-}
-
 .home-hero .hero-head {
     display: flex;
     flex-direction: column;
@@ -1963,28 +2291,27 @@ button {
     max-height: 38vh;
 }
 
-.card-info {
+/* The swipe card's prices under it: money chips on one line, centered, a
+   chip tall even with none. */
+.card-prices {
     display: flex;
-    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 0.4rem;
     flex-shrink: 0;
-    gap: 0.2rem;
-    font-size: 0.75rem;
-    font-weight: 500;
-    line-height: 1.25;
-    color: var(--palette-5);
-    padding: 0.5rem 1rem;
-    align-self: flex-start;
+    min-height: 1.7rem;
+    margin-top: 0.5rem;
 }
 
-.card-info-name {
-    font-weight: 700;
-    color: var(--palette-3);
-    max-width: calc(100vw - 4rem);
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    overflow-wrap: anywhere;
+.skeleton-bar.skeleton-price-chip {
+    width: 4.5rem;
+    height: 1.6rem;
+    border-radius: 0.4rem;
+}
+
+.card-prices > .card-price-chip {
+    font-size: 0.8rem;
+    padding: 0.2rem 0.55rem;
 }
 
 /* Card-rules sheet body: reuses the expanded card-row detail markup
@@ -2101,6 +2428,26 @@ button {
     font-size: 0.75rem;
     color: var(--text-muted);
     box-shadow: var(--shadow-sm);
+}
+
+/* An empty swipe stack's note at full strength, with a chip's edge and the
+   subtle text color: faded on a light theme it was a smudge on the page. */
+.message-empty:has(> .chip-note) {
+    opacity: 1;
+}
+
+.message-empty .chip-note {
+    border-color: var(--border-primary);
+    color: var(--text-subtle);
+}
+
+/* An empty heatmap day on a light theme: the kit's --border-secondary is
+   the panel's own cream, so the cell fills with the sink and takes a faint
+   edge instead. */
+[class*="theme-"][class*="-light"] .heat-cell.heat-0 {
+    fill: var(--bg-sink);
+    stroke: var(--border-muted);
+    stroke-width: 0.5;
 }
 
 .chip-remove {
@@ -2238,9 +2585,10 @@ button {
     gap: 0.75rem;
 }
 
-.sheet-content.no-pad-x {
-    padding-left: 0;
-    padding-right: 0;
+/* The printing sheet's body runs the sheet's full width, out through the
+   content's padding, so the carousel's pages are the viewport wide. */
+.printing-sheet-body {
+    margin: 0 -1.5rem;
 }
 
 .sheet-content .btn {
@@ -2505,7 +2853,7 @@ button {
    column would push its top out of reach. No panel shrinks to make room. */
 .home-content {
     /* Room under the last panel once the column scrolls, matching the top. */
-    padding-bottom: 1rem;
+    --content-pad-bottom: 1rem;
 }
 
 .home-content > * {
@@ -2688,21 +3036,137 @@ button {
     padding-bottom: 0.75rem;
 }
 
-/* Home's Color map title bar: the title centered, the Playstyle chip pinned to
-   the left end. */
-.home-panel-header {
-    position: relative;
-    justify-content: center;
+/* Home's Colors panel: Colors and its "?" centered in its header, the
+   Playstyle chip in the right corner, then one compact bar per color. */
+.home-colors {
+    --home-panel-action-width: 5.4rem;
+    min-height: 0;
+    padding-bottom: 0;
+    text-align: left;
 }
 
-/* The "?" at the right end, out of the flow so the header keeps its
-   height. */
-.home-panel-hint {
+.home-colors > .settings-list-header {
+    padding: 0.6rem 1rem;
+}
+
+/* A Home panel header whose title group is centered on the panel, with one
+   action in the right corner. The action leaves the flow, so the group
+   centers on the whole panel rather than on the room beside the action;
+   --home-panel-action-width (the corner action's width, set per panel) is
+   reserved on both sides, so the group stays centered and clear of the
+   action, and the title ellipsizes instead of wrapping when it would not
+   fit. */
+.home-flavor > .settings-list-header.home-panel-header-centered {
+    position: relative;
+    justify-content: center;
+    flex-wrap: nowrap;
+    padding-left: calc(1rem + var(--home-panel-action-width, 0rem) + 0.5rem);
+    padding-right: calc(1rem + var(--home-panel-action-width, 0rem) + 0.5rem);
+}
+
+.home-panel-header-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+    max-width: 100%;
+}
+
+.home-panel-header-title > .settings-list-title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* The chip and the "?" keep the header the height of a plain one. */
+.home-panel-header-title > .stat-chip,
+.home-panel-header-title > .info-button,
+.home-panel-header-title > .skeleton-info-button {
+    flex: none;
+    margin: -0.25rem 0;
+}
+
+.home-panel-header-action {
     position: absolute;
-    right: 0.75rem;
+    right: 1rem;
     top: 50%;
     transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+}
+
+/* The ghost title is the word's width, not the section label's share. */
+.home-panel-skeleton-title {
+    width: 3.6rem;
+    margin-bottom: 0;
+}
+
+.home-colors > .settings-list-header .btn-action {
+    padding: 0.3rem 0.6rem;
+}
+
+/* The panel's one line while it has no counts to draw. */
+.home-colors-line {
+    padding: 1rem;
+}
+
+.color-bars {
     display: flex;
+    flex-direction: column;
+    padding: 0.5rem 1rem 0.9rem;
+}
+
+/* Rows space by their own padding, like the deck charts' Roles rows. */
+.color-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.175rem 0;
+}
+
+.color-bar-row > .ms {
+    flex: 0 0 auto;
+    font-size: 0.85rem;
+}
+
+/* The deck charts' bar: a blocky track the fill spans at full height. The
+   track shows under a short fill and stays visible under a white one on a
+   cream background. */
+.color-bar-track {
+    flex: 1;
+    height: 0.9rem;
+    border-radius: 0.15rem;
+    background-color: var(--border-secondary);
+    overflow: hidden;
+}
+
+.color-bar-fill {
+    box-sizing: border-box;
+    height: 100%;
+    border-radius: inherit;
+    border: 1px solid var(--border-primary);
+}
+
+.color-bar-count {
+    flex: 0 0 2.2rem;
+    text-align: right;
+    font-size: 0.85rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+}
+
+.color-bar-pip-ghost {
+    flex: 0 0 auto;
+    width: 0.85rem;
+    height: 0.85rem;
+    border-radius: 50%;
+}
+
+.color-bar-count-ghost {
+    flex: 0 0 auto;
+    width: 1.6rem;
+    height: 0.75rem;
+    margin-left: 0.6rem;
 }
 
 .home-flavor {
@@ -2884,15 +3348,101 @@ button {
     align-self: stretch;
 }
 
-/* A Home panel's buttons, centered under a line. */
-.home-panel-actions {
+/* Home's Decks panel: the Colors panel's style, Decks and the count chip
+   centered in its header with All decks in the right corner, then three
+   tiles across at the Colors panel's row gap. The one row is Create a deck
+   while the user has no deck. */
+.home-decks {
+    --home-panel-action-width: 5.4rem;
+    min-height: 0;
+    padding-bottom: 0;
+    text-align: left;
+}
+
+.home-decks > .settings-list-header {
+    padding: 0.6rem 1rem;
+}
+
+.home-decks > .settings-list-header .btn-action {
+    padding: 0.3rem 0.6rem;
+}
+
+/* The panel's one line while it has no deck to draw or the fetch failed. */
+.home-decks-line {
+    padding: 1rem;
+}
+
+.home-deck-tiles {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.4rem;
+    padding: 0.75rem 1rem 1rem;
+}
+
+/* A tile is the squircle over its chips with nothing drawn around them;
+   the whole of it is the deck's button. */
+.home-deck-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    width: 100%;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--text-primary);
+    cursor: pointer;
+    text-align: center;
+}
+
+.home-deck-tile:active > .home-deck-tile-art {
+    filter: brightness(0.85);
+}
+
+/* The squircle: the art crop filling it, or the raised fill with the pips
+   centered as the placeholder. */
+.home-deck-tile-art {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.2rem;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    border-radius: 22%;
+    background-color: var(--bg-raised);
+    overflow: hidden;
+    font-size: 1.3rem;
+}
+
+.home-deck-tile-art > img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* The name chip and the muted format chip, wrapping and centered. */
+.home-deck-tile-chips {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 0.5rem;
-    margin-top: 0.75rem;
-    padding: 0 1rem;
+    gap: 0.3rem;
+    width: 100%;
+    min-width: 0;
 }
+
+.home-deck-tile-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.home-deck-skeleton-chip {
+    width: 70%;
+    height: 1.35rem;
+}
+
 
 /* =========================
   stepper for integer inputs
@@ -3226,11 +3776,6 @@ button {
 
 /* Universes Beyond sheet: grayed franchise chips until the hide toggle is on,
    and short explanatory notes under the title and section label. */
-.pref-row:disabled {
-    opacity: 0.45;
-    cursor: default;
-}
-
 .ub-chips-disabled {
     opacity: 0.45;
     pointer-events: none;
@@ -3270,11 +3815,11 @@ button {
 /* The printing sheet opens over the card details sheet, so its backdrop and
    sheet sit above both of the shared sheet layers; the backdrop dims the sheet
    under it and a tap outside the printings lands on that backdrop. */
-.sheet-backdrop.sheet-over {
+.sheet-over > .sheet-backdrop {
     z-index: 204;
 }
 
-.bottom-sheet.sheet-over {
+.sheet-over > .bottom-sheet {
     z-index: 205;
 }
 
@@ -3669,8 +4214,10 @@ button {
     margin-bottom: 0.4rem;
 }
 
+/* Links in body text: the privacy policy's and About's credits. */
 .privacy-content a,
-.privacy-content .privacy-link {
+.privacy-content .privacy-link,
+.about-credits a {
     color: var(--palette-1);
     text-decoration: underline;
     cursor: pointer;

@@ -1,6 +1,6 @@
 //! Register: username, email, password and confirmation fields that check themselves as they are typed, with Back to login and Create profile under them.
 //!
-//! The client keeps a [`State`] while the screen is up and hands every keystroke in as an `Edit` action. Each check comes from [`crate::account`]. A field starts showing its line once it has held something, or after a submit, and from then on follows every change; the password's line covers the confirmation. A registration that goes through hands its username to Login with [`Effect::Prefill`] and goes back. The text inputs, their focus, the password rules' `?` and the funnel events stay in the client.
+//! The client keeps a [`State`] while the screen is up and hands every keystroke in as an `Edit` action. Each check comes from [`crate::account`]. A field starts showing its line once it has held something, or after a submit, and from then on follows every change; the password's line covers the confirmation. A registration that goes through hands its username to Login with [`Effect::Prefill`] and goes there in place of this screen, so Back does not return to the filled form. The text inputs, their focus, the password rules' `?` and the funnel events stay in the client.
 
 #[cfg(test)]
 mod tests;
@@ -75,8 +75,10 @@ impl Field {
 /// Where an action sends the user. The client maps each to its own route.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Destination {
-    /// Back where the user came from, Login, from Back to login or once a registration goes through.
+    /// Back where the user came from, Login, from Back to login.
     Previous,
+    /// Login in place of this screen, once a registration goes through.
+    Login,
 }
 
 /// What a user does on Register, and each reply the client hands back.
@@ -193,7 +195,7 @@ impl State {
                 vec![
                     Effect::Prefill(username),
                     Effect::Toast(Toast::normal(ToastKind::Info, CHECK_INBOX)),
-                    Effect::Navigate(Destination::Previous),
+                    Effect::Navigate(Destination::Login),
                 ]
             }
             Action::Failed { ticket } => {

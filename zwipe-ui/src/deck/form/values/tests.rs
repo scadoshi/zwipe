@@ -67,7 +67,7 @@ fn app_create(f: &AppForm) -> HttpCreateDeckProfile {
         .build()
 }
 
-/// `edit.rs`'s change memos, `has_made_changes` and `do_submit`, as the app built the request. `None` when the app showed no "Save changes".
+/// `edit.rs`'s change memos, `has_made_changes` and `do_submit`, as the app built the request. `None` when the app showed no Save.
 #[expect(
     clippy::too_many_lines,
     reason = "a verbatim copy of the app's thirteen change memos"

@@ -3,19 +3,16 @@
 
 /// App icon bottom sheet.
 pub mod app_icon_sheet;
-/// Theme bottom sheet, saving to the account's preferences.
-pub mod preferences;
 /// Universes Beyond exceptions bottom sheet.
 pub mod universes_beyond;
 
 use app_icon_sheet::AppIconSheet;
 use components::{
-    ActionBar, Button, ButtonVariant, DarkModeButton, HintBullet, HintBullets, HintDialog, HintKey,
+    Button, ButtonVariant, DarkModeButton, HintBullet, HintBullets, HintDialog, HintKey,
     TOAST_NORMAL, ThemeConfig, ToastOptions, Toasts, use_toast,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
-use preferences::PreferencesSheet;
 use universes_beyond::UniversesBeyondExceptionsSheet;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
@@ -23,15 +20,15 @@ use zwipe_core::domain::user;
 use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_core::domain::user::models::hints::HINT_CONFIG;
 use zwipe_core::domain::user::preferences::PipColor;
-use zwipe_core::http::contracts::user::HttpUpdatePreferences;
 use zwipe_core::text::sentence_case;
-use zwipe_ui::screens::config::{self as model, Action, Destination, Effect, Sheet, State, Theme};
+use zwipe_ui::screens::config::{self as model, Action, Destination, Effect, Sheet, State};
 
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::info_button::InfoButton;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{ProfileScreen, Screen};
+use crate::inbound::components::theme_save::{self, ThemeSaveSheet, theme_config_of, theme_of};
 use crate::inbound::components::{guide_link, hint_dialog, ui_toast};
 use crate::outbound::app_icon;
 use crate::outbound::session::Persist;
@@ -105,30 +102,13 @@ impl Driver {
                 });
             }
             Effect::Save { ticket, change } => {
-                let request = HttpUpdatePreferences::from(change);
-                spawn(async move {
-                    // try_run reports a failure and raises its error toast.
-                    let reply = authed
-                        .try_run("update_preferences", |c, s| async move {
-                            c.update_preferences(request, &s).await
-                        })
-                        .await;
-                    self.dispatch(match reply {
-                        Ok(preferences) => Action::Saved {
-                            ticket,
-                            preferences: Box::new(preferences),
-                        },
-                        Err(_) => Action::SaveFailed { ticket },
-                    });
-                });
+                theme_save::save(authed, ticket, change, move |action| self.dispatch(action));
             }
             Effect::ShowTheme(theme) => theme_config.set(theme_config_of(theme)),
             Effect::ShowPips(style) => pip_style.set(style),
             Effect::ThemeSaved(theme) => {
-                let theme = theme_config_of(theme).resolve().unwrap_or_default();
-                app_icon::follow(&theme);
+                theme_save::saved(theme_config, theme);
                 app_icon_theme.set(app_icon::current());
-                theme_config.set(theme);
             }
             Effect::PipsSaved(style) => {
                 pip_style.set(style);
@@ -158,22 +138,6 @@ impl Driver {
         if *signal.peek() != open {
             signal.set(open);
         }
-    }
-}
-
-/// The app's theme value for a theme the model names.
-fn theme_config_of(theme: Theme) -> ThemeConfig {
-    ThemeConfig {
-        name: theme.name,
-        is_dark: theme.dark_mode,
-    }
-}
-
-/// The model's theme value for the theme the app draws in.
-fn theme_of(config: ThemeConfig) -> Theme {
-    Theme {
-        name: config.name,
-        dark_mode: config.is_dark,
     }
 }
 
@@ -253,12 +217,12 @@ pub fn Config() -> Element {
 
     rsx! {
             div { class: "screen",
-                ScreenHeader { title: model::TITLE, hint: config_hint_open }
+                ScreenHeader { title: model::TITLE, hint: config_hint_open, back: move |()| driver.dispatch(Action::Back) }
 
                 HintDialog {
                     open: config_hint_open,
                     actions: guide_link::one_time(HINT_CONFIG),
-                    title: "Config",
+                    title: "Settings",
                     HintBullets {
                         HintBullet { "Set how Zwipe looks and which cards it shows" }
                         HintBullet { "Tap a row's " HintKey { color: "--palette-6", "?" } " for what it does" }
@@ -404,15 +368,8 @@ pub fn Config() -> Element {
                     }
                 }
 
-                ActionBar {
-                    Button {
-                        variant: ButtonVariant::Action,
-                        onclick: move |_| driver.dispatch(Action::Back),
-                        {model::BACK}
-                    }
-                }
 
-                PreferencesSheet {
+                ThemeSaveSheet {
                     open: driver.preferences_open,
                     on: move |action| driver.dispatch(action),
                 }

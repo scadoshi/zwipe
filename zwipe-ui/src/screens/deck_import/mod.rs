@@ -55,7 +55,7 @@ pub const IMPORTED: &str = "Imported";
 /// The label over the lines that did not resolve.
 pub const UNRESOLVED: &str = "Unresolved";
 
-/// The action bar's button back to the deck.
+/// The Back button, to the deck.
 pub const BACK: &str = "Back";
 
 /// The submit button in [`ImportMode::Add`].
@@ -72,6 +72,8 @@ pub const IMPORTING: &str = "Importing...";
 pub enum Destination {
     /// The deck view for this deck, from Back.
     Deck(Uuid),
+    /// The deck list, in place of a screen whose deck is gone.
+    DeckList,
 }
 
 /// Where the cards come from.
@@ -192,6 +194,11 @@ pub enum Action {
         /// The ticket from the effect this answers.
         ticket: Ticket,
     },
+    /// The request holding `ticket` found no deck: the server no longer has it. The client has already reported it and raised its toast.
+    Gone {
+        /// The ticket from the request this answers.
+        ticket: Ticket,
+    },
     /// Goes back to the deck.
     Back,
 }
@@ -233,6 +240,8 @@ pub enum Effect {
     Toast(Toast),
     /// Goes to this screen.
     Navigate(Destination),
+    /// Goes to this screen in place of the current one, so Back skips a screen with nothing left to show.
+    Replace(Destination),
 }
 
 /// Where the import stands.
@@ -298,6 +307,12 @@ impl State {
                 if self.lands(ticket) {
                     self.phase = Phase::Idle;
                 }
+            }
+            Action::Gone { ticket } => {
+                if self.lands(ticket) {
+                    self.phase = Phase::Idle;
+                }
+                return vec![Effect::Replace(Destination::DeckList)];
             }
             Action::Back => {
                 return self

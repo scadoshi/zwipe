@@ -29,6 +29,11 @@
 //! 1.12.1). zite links each version heading to it and passes the URL fragment
 //! in as `anchor`, which selects the chips down to that release's minor; zite
 //! then scrolls the card into view.
+//!
+//! Two looks share the one rendering path. The default floats the chip rows
+//! over a stack of release cards, zite's changelog page. With `rows` the
+//! chips and the releases are `settings-row`s for a `settings-list` panel the
+//! caller wraps them in: the app's About screen.
 
 use dioxus::prelude::*;
 use zwipe_core::http::contracts::changelog::HttpChangelog;
@@ -133,12 +138,15 @@ fn anchor_selection(fragment: &str, listed: &[Listed<'_>]) -> Option<Filter> {
 /// `data` defaults to the compiled-in changelog; pass a fetched
 /// [`HttpChangelog`] to render a server-updated copy. `anchor` is a card id
 /// (see [`anchor_id`]) to select down to; an unknown one leaves Latest.
-/// `link_versions` makes each version heading a link to its card.
+/// `link_versions` makes each version heading a link to its card. `rows`
+/// renders the chips and each release as rows of the caller's `settings-list`
+/// panel instead of floating cards.
 #[component]
 pub fn Changelog(
     #[props(default = HttpChangelog::current())] data: HttpChangelog,
     #[props(default)] anchor: Option<String>,
     #[props(default)] link_versions: bool,
+    #[props(default)] rows: bool,
 ) -> Element {
     let listed = listed(&data);
     let mut selection = use_signal(|| Filter::Latest);
@@ -152,7 +160,7 @@ pub fn Changelog(
     }));
 
     let current = selection();
-    let rows = chip_rows(&listed, &current);
+    let chip_rows = chip_rows(&listed, &current);
     let shown = visible(&listed, &current);
     // Every listed release keeps its slot, shown or not, so a filter change
     // toggles cards in place.
@@ -160,10 +168,19 @@ pub fn Changelog(
     // Included in each card's key so switching filters remounts the visible
     // cards, replaying their ease-in animation.
     let filter_key = format!("{current:?}");
+    let (filters_class, list_class, release_class) = if rows {
+        (
+            "settings-row changelog-filters-row",
+            "changelog-rows",
+            "settings-row changelog-row",
+        )
+    } else {
+        ("changelog-filters", "changelog-list", "changelog-card")
+    };
 
     rsx! {
-        div { class: "changelog-filters",
-            for (r , row) in rows.into_iter().enumerate() {
+        div { class: filters_class,
+            for (r , row) in chip_rows.into_iter().enumerate() {
                 div { key: "{r}", class: "changelog-filter",
                     for chip in row {
                         {
@@ -181,13 +198,13 @@ pub fn Changelog(
                 }
             }
         }
-        div { class: "changelog-list",
+        div { class: list_class,
             for (item , release) in listed.iter().map(|item| (item, item.release)) {
                 if show(item) {
                     div {
                         key: "{filter_key}-{release.version}",
                         id: anchor_id(&release.version),
-                        class: "changelog-card",
+                        class: release_class,
                         div { class: "changelog-version-row",
                             h2 { class: "changelog-version",
                                 if link_versions {

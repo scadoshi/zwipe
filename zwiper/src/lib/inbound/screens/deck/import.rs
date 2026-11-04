@@ -6,10 +6,7 @@
 //! file holds the text being typed, draws the model's state and performs its
 //! effects.
 
-use components::{
-    ActionBar, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintDialog, HintKey, Toasts,
-    use_toast,
-};
+use components::{Chip, HintBullet, HintBullets, HintDialog, HintKey, Toasts, use_toast};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use uuid::Uuid;
@@ -20,12 +17,14 @@ use zwipe_ui::screens::deck_import::{
     self, Action, Board, Destination, Effect, MODES, Source, State, mode_label,
 };
 
+use crate::inbound::components::action_dock::{self, DockIcon};
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen};
 use crate::inbound::components::{guide_link, hint_dialog, ui_toast};
 use crate::inbound::router::Router;
 use crate::inbound::screens::deck::card::components::undo_log::UndoStore;
+use crate::inbound::screens::deck::missing_deck;
 
 /// Import's model with the handles that perform its effects. Copy, so every
 /// handler and task holds its own.
@@ -81,10 +80,12 @@ impl Driver {
                             c.import_deck_cards(deck_id, &text, board, mode, &s).await
                         })
                         .await;
-                    self.dispatch(match reply {
-                        Ok(result) => Action::Imported { ticket, result },
-                        Err(_) => Action::Failed { ticket },
-                    });
+                    self.dispatch(missing_deck::settle(
+                        reply,
+                        |result| Action::Imported { ticket, result },
+                        Action::Gone { ticket },
+                        Action::Failed { ticket },
+                    ));
                 });
             }
             Effect::ImportArchidektDeck {
@@ -102,18 +103,31 @@ impl Driver {
                                 .await
                         })
                         .await;
-                    self.dispatch(match reply {
-                        Ok(result) => Action::Imported { ticket, result },
-                        Err(_) => Action::Failed { ticket },
-                    });
+                    self.dispatch(missing_deck::settle(
+                        reply,
+                        |result| Action::Imported { ticket, result },
+                        Action::Gone { ticket },
+                        Action::Failed { ticket },
+                    ));
                 });
             }
             Effect::ClearUndo(deck_id) => undo_store.clear(deck_id),
             Effect::Toast(raised) => ui_toast::raise(toast, raised),
-            Effect::Navigate(Destination::Deck(deck_id)) => {
-                navigator.push(Router::ViewDeck { deck_id });
+            Effect::Navigate(destination) => {
+                navigator.push(route(destination));
+            }
+            Effect::Replace(destination) => {
+                navigator.replace(route(destination));
             }
         }
+    }
+}
+
+/// The app's route for each destination.
+fn route(destination: Destination) -> Router {
+    match destination {
+        Destination::Deck(deck_id) => Router::ViewDeck { deck_id },
+        Destination::DeckList => Router::DeckList {},
     }
 }
 
@@ -158,7 +172,7 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
 
     rsx! {
             div { class: "screen",
-                ScreenHeader { title: deck_import::TITLE, hint: import_hint }
+                ScreenHeader { title: deck_import::TITLE, hint: import_hint, back: move |()| driver.dispatch(Action::Back) }
 
                 HintDialog {
                     open: import_hint,
@@ -269,14 +283,12 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                     }
                 }
 
-                ActionBar {
-                    Button {
-                        variant: ButtonVariant::Action,
-                        onclick: move |_| driver.dispatch(Action::Back),
-                        "{deck_import::BACK}"
-                    }
-                    Button {
-                        variant: ButtonVariant::Action,
+                // Import (or Replace) as the action dock's checkmark, pinned
+                // bottom right.
+                div { class: "action-dock action-dock-right",
+                    button {
+                        class: "action-dock-btn",
+                        "aria-label": "{submit_label}",
                         disabled,
                         onclick: move |_| {
                             let source = driver.model.peek().source();
@@ -286,7 +298,7 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                             };
                             driver.dispatch(Action::Submit { input });
                         },
-                        "{submit_label}"
+                        DockIcon { path: action_dock::CHECK }
                     }
                 }
             }

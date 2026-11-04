@@ -9,19 +9,34 @@ use zwipe_core::domain::card::scryfall_data::ScryfallData;
 /// Prices show exactly as Scryfall sends them, with no rounding or reformatting. Foil and etched prices are not shown.
 #[must_use]
 pub fn price_line(card: &ScryfallData) -> Option<String> {
-    let prices = &card.prices;
-    let shown: Vec<String> = [
-        prices.usd.as_ref().map(|usd| format!(" ${usd}")),
-        prices.eur.as_ref().map(|eur| format!(" €{eur}")),
-        prices.tix.as_ref().map(|tix| format!(" {tix} TIX")),
-    ]
-    .into_iter()
-    .flatten()
-    .collect();
+    let shown = prices(card);
     if shown.is_empty() {
         return None;
     }
-    Some(format!("Prices:{}", shown.join(" |")))
+    Some(format!("Prices: {}", shown.join(" | ")))
+}
+
+/// Each price the card has, one per chip: `$1.23`, then `€1.10`, then
+/// `0.05 TIX`, in that order. Empty when it has none of the three.
+///
+/// Prices show exactly as Scryfall sends them, with no rounding.
+#[must_use]
+pub fn prices(card: &ScryfallData) -> Vec<String> {
+    let prices = &card.prices;
+    [
+        prices.usd.as_ref().map(|usd| format!("${usd}")),
+        prices.eur.as_ref().map(|eur| format!("€{eur}")),
+        prices.tix.as_ref().map(|tix| format!("{tix} TIX")),
+    ]
+    .into_iter()
+    .flatten()
+    .collect()
+}
+
+/// The card's top-level artist, or `None` when it is missing or empty.
+#[must_use]
+pub fn artist(card: &ScryfallData) -> Option<&str> {
+    card.artist.as_deref().filter(|artist| !artist.is_empty())
 }
 
 /// The set line: `Set: ` and the set's name.
@@ -41,10 +56,7 @@ pub fn released_line(card: &ScryfallData) -> String {
 /// Only the top-level artist shows, as in the app, even when a multi-faced card's faces name different artists.
 #[must_use]
 pub fn artist_line(card: &ScryfallData) -> Option<String> {
-    card.artist
-        .as_deref()
-        .filter(|artist| !artist.is_empty())
-        .map(|artist| format!("Artist: {artist}"))
+    artist(card).map(|artist| format!("Artist: {artist}"))
 }
 
 #[cfg(test)]
@@ -61,6 +73,24 @@ mod tests {
         data.prices.eur = eur.map(str::to_owned);
         data.prices.tix = tix.map(str::to_owned);
         data
+    }
+
+    #[test]
+    fn prices_lists_each_one_the_card_has_in_order() {
+        assert_eq!(
+            prices(&priced(Some("1.23"), Some("1.10"), Some("0.05"))),
+            ["$1.23", "€1.10", "0.05 TIX"]
+        );
+        assert_eq!(prices(&priced(None, Some("1.10"), None)), ["€1.10"]);
+        assert_eq!(prices(&priced(None, None, None)), Vec::<String>::new());
+    }
+
+    #[test]
+    fn the_price_line_joins_the_prices() {
+        assert_eq!(
+            price_line(&priced(Some("1.23"), None, Some("0.05"))).as_deref(),
+            Some("Prices: $1.23 | 0.05 TIX")
+        );
     }
 
     #[test]

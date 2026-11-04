@@ -97,6 +97,16 @@ fn an_empty_deck_loads_with_an_empty_decklist() {
 }
 
 #[test]
+fn a_gone_deck_is_replaced_by_the_deck_list() {
+    let (mut state, _, ticket) = loading();
+    assert_eq!(
+        state.update(Action::Gone { ticket }),
+        [Effect::Replace(Destination::DeckList)]
+    );
+    assert_eq!(state.status(), Status::Failed);
+}
+
+#[test]
 fn a_failed_fetch_shows_the_failed_line() {
     let (mut state, _, ticket) = loading();
     assert_eq!(state.update(Action::Failed { ticket }), NONE);

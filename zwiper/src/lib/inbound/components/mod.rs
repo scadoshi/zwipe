@@ -4,6 +4,8 @@
 
 /// Expandable accordion component.
 pub mod accordion;
+/// The action dock: a screen's icon actions in one floating bar.
+pub mod action_dock;
 /// Authentication-related components (login form, register form).
 pub mod auth;
 /// App-wide cache of slow-changing filter catalogs (artists, sets, oracle tags…).
@@ -18,9 +20,11 @@ pub mod guide_link;
 pub mod hint_dialog;
 /// App-root receiver that renders on-demand "?" hint dialogs (sender/receiver).
 pub mod hint_host;
+/// Home's Decks panel: the deck count and the All decks chip over the latest decks as tiles.
+pub mod home_decks;
 /// The mark with the public counters, on home and the auth screens.
 pub mod home_hero;
-/// Home's Color map panel: the user's color territory map.
+/// Home's Colors panel: a bar per color with the card count across the user's decks, and the Playstyle chip.
 pub mod home_play_style;
 /// Persistent, on-demand "?" help button (not one-time, no session dependency).
 pub mod info_button;
@@ -30,12 +34,16 @@ pub mod interactions;
 pub mod logout_dialog;
 /// Navigation plumbing (OS back-intent bridge).
 pub mod navigation;
+/// Runs a closure on each counter bump after mount.
+pub mod on_bump;
 /// Shared screen header (centered title + optional "?" hint trigger).
 pub mod screen_header;
 /// Global floating help/support button + bottom sheet.
 pub mod support;
 /// Usage telemetry buffer + flush loop.
 pub mod telemetry;
+/// Saving the theme to the account, shared by Settings and the main menu.
+pub mod theme_save;
 /// Three-state toggle component (true/false/any).
 #[expect(
     unpredictable_function_pointer_comparisons,

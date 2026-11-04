@@ -281,6 +281,25 @@ fn a_late_search_reply_is_ignored() {
 }
 
 #[test]
+fn a_gone_deck_is_replaced_by_the_deck_list() {
+    let built = commander_deck(&[]);
+    let mut state = State::new();
+    let effects = state.update(Action::Load {
+        deck_id: built.deck_profile.id,
+        filter: None,
+        parked: None,
+    });
+    let Some(Effect::FetchDeck { ticket, .. }) = effects.get(1) else {
+        panic!("the deck is fetched: {effects:?}");
+    };
+    assert_eq!(
+        state.update(Action::Gone { ticket: *ticket }),
+        [Effect::Replace(Destination::DeckList)]
+    );
+    assert!(!state.is_deck_loaded());
+}
+
+#[test]
 fn a_failed_search_stops_loading() {
     let (mut state, _) = with_deck(&commander_deck(&[]));
     let ticket = ticket_of(&state.update(Action::Filter(state.filter().clone())));
@@ -1036,12 +1055,12 @@ fn a_late_deck_reply_is_ignored() {
 
 #[test]
 fn the_copy_matches_the_app() {
-    assert_eq!(TITLE, "Add deck cards");
+    assert_eq!(TITLE, "Add");
     assert_eq!(HINT_TITLE, "Swipe to build");
     assert_eq!(FROM, "From");
     assert_eq!(SYNERGY, "Synergy");
     assert_eq!([BACK, FILTER, REFRESH], ["Back", "Filter", "Refresh"]);
-    assert_eq!(Source::ALL.map(Source::label), ["Search", "Maybeboard"]);
+    assert_eq!(Source::ALL.map(Source::label), ["Search", "Maybe"]);
     assert_eq!(PRINTING_SWAPPED, "Printing swapped");
     assert_eq!(
         [
@@ -1104,4 +1123,10 @@ fn the_copy_matches_the_app() {
         "That's every synergy pick. Showing cards like your deck"
     );
     assert_eq!((QUICK, NORMAL), (crate::toast::QUICK, crate::toast::NORMAL));
+}
+
+#[test]
+fn the_source_toggle_flips_between_the_two() {
+    assert_eq!(Source::Search.toggled(), Source::Maybeboard);
+    assert_eq!(Source::Maybeboard.toggled(), Source::Search);
 }

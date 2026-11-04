@@ -7,18 +7,17 @@
 //! at the top, so users learn what a tag does while picking it. The search box
 //! filters the grid by name for quick jumps.
 
-use components::{
-    ActionBar, Button, ButtonVariant, HintBullet, HintBullets, HintDialog, use_overlay_back_action,
-};
+use components::{HintBullet, HintBullets, HintDialog, use_overlay_back_action};
 use dioxus::prelude::*;
 use zwipe_core::domain::deck::{DeckTagView, MAX_DECK_TAGS};
 use zwipe_ui::deck::pickers::{self, Picker};
 
+use crate::inbound::components::action_dock::{self, DockIcon};
 use crate::inbound::components::concept_explainers::DeckTagsExplainer;
 use crate::inbound::components::guide_link;
 use crate::inbound::components::screen_header::ScreenHeader;
 
-/// In-place tag picker, up while `open`, over the server-delivered `catalog` (`GET /api/deck/tags`), so a new deck tag is selectable without a client release. `selected` holds the deck's tag slugs; a chip tap goes to `on_toggle` and the × to `on_clear`. Save (`on_save`) stays off while `unchanged`; Back (`on_back`) and the OS back gesture put back the tags it opened on.
+/// In-place tag picker, up while `open`, over the server-delivered `catalog` (`GET /api/deck/tags`), so a new deck tag is selectable without a client release. `selected` holds the deck's tag slugs; a chip tap goes to `on_toggle` and the × to `on_clear`. The dock's checkmark (`on_save`) stays off while `unchanged`; the header's back arrow (`on_back`) and the OS back gesture put back the tags it opened on.
 #[component]
 pub(crate) fn TagSelect(
     open: ReadSignal<bool>,
@@ -35,7 +34,7 @@ pub(crate) fn TagSelect(
     let hint_open = use_signal(|| false);
 
     // OS back gesture closes this picker before the router sees it, and maps to
-    // Back rather than Save, the same as the Back button below.
+    // Back rather than Save, the same as the header's back arrow.
     let back = use_callback(move |(): ()| on_back.call(()));
     use_overlay_back_action(open, back);
 
@@ -60,7 +59,7 @@ pub(crate) fn TagSelect(
             // clear and the one beneath would show through.
             ::components::GridCells { still: true }
             if open() {
-                ScreenHeader { title: Picker::DeckTags.title(), hint: hint_open }
+                ScreenHeader { title: Picker::DeckTags.title(), hint: hint_open, back: move |()| back.call(()) }
 
                 div { class: "screen-content content-enter tag-screen",
                     div { class: "tag-controls",
@@ -130,17 +129,14 @@ pub(crate) fn TagSelect(
                     }
                 }
 
-                ActionBar {
-                    Button {
-                        variant: ButtonVariant::Action,
-                        onclick: move |_| back.call(()),
-                        "Back"
-                    }
-                    Button {
-                        variant: ButtonVariant::Action,
+                // Save as the action dock's checkmark, pinned bottom right.
+                div { class: "action-dock action-dock-right",
+                    button {
+                        class: "action-dock-btn",
+                        "aria-label": "Save",
                         disabled: unchanged,
                         onclick: move |_| on_save.call(()),
-                        "Save"
+                        DockIcon { path: action_dock::CHECK }
                     }
                 }
 

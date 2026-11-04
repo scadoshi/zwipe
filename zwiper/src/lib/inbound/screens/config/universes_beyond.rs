@@ -41,12 +41,8 @@ pub fn UniversesBeyondExceptionsSheet(
             title: model::EXCEPTIONS.to_string(),
             hint: hint_open,
             on_dismiss: move |()| on.call(Action::DiscardExceptions),
+            closable: true,
             footer: rsx! {
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| on.call(Action::DiscardExceptions),
-                    {model::BACK}
-                }
                 Button {
                     variant: ButtonVariant::Action,
                     disabled: unchanged,

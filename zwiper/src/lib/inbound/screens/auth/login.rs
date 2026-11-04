@@ -1,8 +1,7 @@
 //! User login screen.
 
 use components::{
-    ActionBar, Button, ButtonVariant, TOAST_NORMAL, TextInput, ThemeConfig, ToastOptions, Toasts,
-    use_toast,
+    Button, ButtonVariant, TOAST_NORMAL, TextInput, ThemeConfig, ToastOptions, Toasts, use_toast,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -11,9 +10,7 @@ use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::user::preferences::PipColor;
 use zwipe_core::http::contracts::auth::HttpAuthenticateUser;
 use zwipe_ui::account::Password;
-use zwipe_ui::screens::login::{
-    self, Action, CREATE_PROFILE, Destination, Effect, FORGOT_PASSWORD, Field, State,
-};
+use zwipe_ui::screens::login::{self, Action, Destination, Effect, Field, State};
 
 use crate::inbound::components::home_hero::HomeHero;
 use crate::inbound::components::screen_header::ScreenHeader;
@@ -23,7 +20,8 @@ use crate::outbound::app_icon;
 use crate::outbound::session::Persist;
 
 /// An identifier for the login form to fill in once, set by a screen that
-/// sends the user here (registration). Provided at the root.
+/// sends the user here (Create profile's username, Forgot password's email).
+/// Provided at the root.
 #[derive(Debug, Clone, Copy)]
 pub struct LoginPrefill(pub Signal<Option<String>>);
 
@@ -159,7 +157,7 @@ pub fn Login() -> Element {
             div { class: "screen-content centered content-enter",
             HomeHero {}
             div { class : "container-sm text-center",
-                form { class: "flex-col",
+                form { class: "flex-col", onsubmit: move |evt| evt.prevent_default(),
                     TextInput {
                         value: driver.identifier,
                         id: "identity",
@@ -173,27 +171,31 @@ pub fn Login() -> Element {
                         placeholder: Field::Password.placeholder(),
                         input_type: "password",
                     }
+                    // The form's one button, so Return in a field clicks it;
+                    // the click handles the submit itself, never the page.
+                    div { class: "form-submit",
+                        Button {
+                            disabled: is_loading,
+                            onclick: move |evt: MouseEvent| {
+                                evt.prevent_default();
+                                driver.dispatch(Action::Submit);
+                            },
+                            {submit_label}
+                        }
+                    }
                 }
-            }
-        }
-        ActionBar {
-            Button {
-                variant: ButtonVariant::Action,
-                disabled: is_loading,
-                onclick: move |_| driver.dispatch(Action::Submit),
-                {submit_label}
-            },
-            Button {
-                variant: ButtonVariant::Action,
-                disabled: is_loading,
-                onclick: move |_| driver.dispatch(Action::CreateProfile),
-                {CREATE_PROFILE}
-            }
-            Button {
-                variant: ButtonVariant::Action,
-                disabled: is_loading,
-                onclick: move |_| driver.dispatch(Action::ForgotPassword),
-                {FORGOT_PASSWORD}
+                div { class: "form-links",
+                    Button {
+                        variant: ButtonVariant::Action,
+                        onclick: move |_| driver.dispatch(Action::CreateProfile),
+                        {login::CREATE_PROFILE}
+                    }
+                    Button {
+                        variant: ButtonVariant::Action,
+                        onclick: move |_| driver.dispatch(Action::ForgotPassword),
+                        {login::FORGOT_PASSWORD}
+                    }
+                }
             }
         }
     }

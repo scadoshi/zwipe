@@ -57,6 +57,8 @@ pub enum HintTopic {
     TypeChart,
     /// The deck view's Roles chart.
     RoleChart,
+    /// The deck view's Oracle tags chart.
+    OracleTagChart,
     /// The deck view's Colors chart.
     ColorChart,
     /// The deck view's mana curve.
@@ -65,7 +67,9 @@ pub enum HintTopic {
     ManaFulfillment,
     /// The deck view's draw odds.
     DrawOdds,
-    /// Home's color map.
+    /// Home's Colors bars.
+    HomeColors,
+    /// Playstyle's color map.
     ColorMap,
     /// Playstyle's Card roles chart.
     SuggestionRoleChart,
@@ -93,7 +97,7 @@ pub enum HintTopic {
 
 impl HintTopic {
     /// Every topic, in the app's order.
-    pub const ALL: [Self; 39] = [
+    pub const ALL: [Self; 41] = [
         Self::Password,
         Self::Email,
         Self::Verification,
@@ -117,10 +121,12 @@ impl HintTopic {
         Self::OtherTags,
         Self::TypeChart,
         Self::RoleChart,
+        Self::OracleTagChart,
         Self::ColorChart,
         Self::ManaCurve,
         Self::ManaFulfillment,
         Self::DrawOdds,
+        Self::HomeColors,
         Self::ColorMap,
         Self::SuggestionRoleChart,
         Self::SuggestionTagChart,
@@ -149,7 +155,9 @@ impl HintTopic {
             Self::Website => "Website",
             Self::Version => "Version",
             Self::DeckTags => "Deck tags",
-            Self::OracleTags | Self::SuggestionTagChart | Self::TagRates => "Oracle tags",
+            Self::OracleTags | Self::OracleTagChart | Self::SuggestionTagChart | Self::TagRates => {
+                "Oracle tags"
+            }
             Self::DeckName => "Deck name",
             Self::Format => "Format",
             Self::Commander => "Commander",
@@ -162,7 +170,7 @@ impl HintTopic {
             Self::OtherTags => "Other tags",
             Self::TypeChart => "Types",
             Self::RoleChart => "Roles",
-            Self::ColorChart => "Colors",
+            Self::ColorChart | Self::HomeColors => "Colors",
             Self::ManaCurve => "Mana curve",
             Self::ManaFulfillment => "Mana cost fulfillment",
             Self::DrawOdds => "Draw odds",
@@ -250,11 +258,9 @@ impl HintTopic {
             Self::Website => vec![line(vec![text(
                 "Guides, the changelog and news, in your browser",
             )])],
-            Self::Version => vec![line(vec![
-                text("The build you are on. "),
-                key("Changelog"),
-                text(" lists what changed in each release"),
-            ])],
+            Self::Version => vec![line(vec![text(
+                "The build you are on. What changed in each release is listed below",
+            )])],
             Self::OracleTags => vec![
                 bullet(vec![
                     text("The "),
@@ -316,6 +322,9 @@ impl HintTopic {
             Self::RoleChart => vec![line(vec![text(
                 "Mainboard cards by role, like ramp or removal. Cards with no role are left out. Tap a role to see its tags",
             )])],
+            Self::OracleTagChart => vec![line(vec![text(
+                "Mainboard cards by oracle tag, the finer tags under each role. Tap a tag for what it means",
+            )])],
             Self::ColorChart => vec![line(vec![text("Mainboard cards by color")])],
             Self::ManaCurve => vec![line(vec![text("Nonland mainboard cards by mana value")])],
             Self::ManaFulfillment => vec![
@@ -329,7 +338,7 @@ impl HintTopic {
             Self::DrawOdds => vec![
                 bullet(vec![
                     text(
-                        "Chance of at least one card from each group in the opening hand, or by a turn. ",
+                        "Chance of at least one card from each group by a turn; turn 0 is the opening hand. ",
                     ),
                     key("-"),
                     text(" and "),
@@ -339,6 +348,15 @@ impl HintTopic {
                 bullet(vec![text(
                     "Random draw only. Mulligans, tutors and card draw are not counted",
                 )]),
+            ],
+            Self::HomeColors => vec![
+                bullet(vec![text(
+                    "How many cards across your decks are each color, colorless last",
+                )]),
+                bullet(vec![text(
+                    "A card counts once per deck it is in, and a two-color card counts for both colors",
+                )]),
+                bullet(vec![text("Playstyle has the full picture")]),
             ],
             Self::ColorMap => vec![
                 bullet(vec![text(
@@ -497,11 +515,9 @@ mod tests {
         assert_eq!(last.plain(), format!("Up to {MAX_DECK_TAGS}"));
         assert_eq!(
             HintTopic::Version.blocks()[0],
-            line(vec![
-                text("The build you are on. "),
-                key("Changelog"),
-                text(" lists what changed in each release"),
-            ])
+            line(vec![text(
+                "The build you are on. What changed in each release is listed below",
+            )])
         );
     }
 

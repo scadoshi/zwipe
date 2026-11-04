@@ -1,6 +1,6 @@
 //! The commander maybeboard: the user's saved commanders narrowed by the Show pips and the card filter, Quick add by name, Create deck through the create gate, Remove, Clear maybeboard and the screen's one-time hint.
 //!
-//! The client keeps a [`State`] while the screen is up and sends [`Action::Load`] when it opens. The pip and Quick add rules come from [`crate::commander::maybeboard`] and the Create check from [`crate::deck::create_gate`]. The Swipe overlay stays the client's: its up swipes save on their own, and the client sends [`Action::SwipeClosed`] when it closes and [`Action::Create`] for a right swipe. The card filter sheet, the Art chip, the expanded row and whether the More sheet or the Clear dialog is up stay in the client too.
+//! The client keeps a [`State`] while the screen is up and sends [`Action::Load`] when it opens. The pip and Quick add rules come from [`crate::commander::maybeboard`] and the Create check from [`crate::deck::create_gate`]. The Swipe overlay stays the client's: its up swipes save on their own, and the client sends [`Action::SwipeClosed`] when it closes and [`Action::Create`] for a right swipe. The card filter sheet, the Art chip, the expanded row and whether the Clear dialog is up stay in the client too.
 
 #[cfg(test)]
 mod tests;
@@ -54,22 +54,13 @@ pub const CREATE_DECK: &str = "Create deck";
 /// A row's button that takes its commander off the list.
 pub const REMOVE: &str = "Remove";
 
-/// The action bar's button back to the deck list.
-pub const BACK: &str = "Back";
-
-/// The action bar's button that opens the card filter.
+/// The button that opens the card filter.
 pub const FILTER: &str = "Filter";
 
-/// The action bar's button that opens the commander swipe.
+/// The button that opens the commander swipe.
 pub const SWIPE: &str = "Swipe";
 
-/// The action bar's button that opens the More sheet.
-pub const MORE: &str = "More";
-
-/// The More sheet's title.
-pub const MORE_TITLE: &str = "More actions";
-
-/// The More sheet's one button, and the title of the dialog it opens.
+/// The button that asks to clear the list, and the title of the dialog it opens.
 pub const CLEAR_MAYBEBOARD: &str = "Clear maybeboard";
 
 /// The Clear maybeboard dialog's line.
@@ -204,7 +195,7 @@ pub enum Action {
         /// The ticket from the [`Effect::RemoveCommander`] this answers.
         ticket: Ticket,
     },
-    /// Clears the list, from the Clear maybeboard dialog. The client closes the More sheet.
+    /// Clears the list, from the Clear maybeboard dialog.
     Clear,
     /// The clear holding `ticket` went through.
     Cleared {

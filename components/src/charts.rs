@@ -3,9 +3,10 @@
 //!
 //! Pure div-bar charts (no canvas, no JS) styled against the theme variables,
 //! fed the chart-ready tuples `DeckMetrics` produces (`mana_curve_bars`,
-//! `type_bars`, `color_bars`, `card_role_bars`). Shared so both surfaces render
-//! the same picture; the interactive pieces (draw odds, mana fulfillment) are
-//! used by the app only.
+//! `type_bars`, `color_bars`, `card_role_bars`, `oracle_tag_bars`). Shared so
+//! both surfaces render the same picture. A horizontal chart with more than
+//! [`FOLD_AT`] rows shows that many and folds the rest behind a [`SeeMore`]
+//! chip.
 
 use std::collections::BTreeMap;
 
@@ -16,7 +17,8 @@ use zwipe_core::domain::deck::draw_odds;
 /// bars zwipe-ui computes straight to the chart.
 pub use zwipe_ui::activity::Bar;
 
-use crate::role_tags::RoleTags;
+use crate::fold::{FOLD_AT, Fold, SeeMore, fold_split};
+use crate::role_tags::{OtagDef, RoleTags};
 
 /// A chart's title, a sentence-case chip in the theme's heading accent
 /// centered over each flattened chart block.
@@ -115,6 +117,10 @@ fn reveal_at<'k>(selected: Option<&'k str>, shown: Option<&'k str>) -> Option<Re
 /// `.keyword-chip`, active when open, and eases `reveal`'s content open
 /// directly under the open row, one row at a time. A bar that is not
 /// [`Bar::revealable`] draws a grey chip there and reports no tap.
+///
+/// With `fold` set, a horizontal chart shows its first [`FOLD_AT`] rows and
+/// folds the rest behind a [`SeeMore`] chip; the fold's state is this chart's
+/// and starts shut. A vertical chart never folds.
 #[component]
 pub fn BarChart(
     /// The [`ChartLabel`] over the bars; none renders the bars alone.
@@ -141,8 +147,15 @@ pub fn BarChart(
     /// prints the bare count.
     #[props(default)]
     count_suffix: &'static str,
+    /// Horizontal only: show [`FOLD_AT`] rows and fold the rest.
+    #[props(default)]
+    fold: bool,
 ) -> Element {
     let layout = Layout::new(orientation, on_bar.is_some());
+    let mut fold_open = use_signal(|| false);
+    let fold_at = if fold { FOLD_AT } else { usize::MAX };
+    let (shown_bars, folded_bars) = fold_split(&bars, fold_at);
+    let toggle_fold = use_callback(move |()| fold_open.toggle());
     let count_style = if count_suffix.is_empty() {
         COUNT_CELL_STYLE
     } else {
@@ -218,6 +231,48 @@ pub fn BarChart(
         reveal_at_bar(bar)?;
         reveal.map(|r| r.call(bar.key.clone()))
     };
+    // Rows space by their own padding, not the column's gap, so a shut fold
+    // adds no height.
+    let plain_row = |bar: &Bar| {
+        rsx! {
+            div { style: "display:flex;align-items:center;gap:0.5rem;padding:0.175rem 0;",
+                span { style: label_style(bar), onclick: tap(bar.key.clone()),
+                    "{bar.label}"
+                }
+                div { class: "chart-track",
+                    div { class: "chart-fill", style: "width:{bar.pct}%;" }
+                }
+                span { style: count_style, "{bar.count}{count_suffix}" }
+            }
+        }
+    };
+    // Three grid cells and the row's reveal, spanning the grid.
+    let chip_row = |bar: &Bar| {
+        rsx! {
+            div { style: "padding:0.175rem 0;text-align:right;",
+                if bar.revealable {
+                    button { class: chip_class(bar), onclick: tap_chip(bar.key.clone()),
+                        "{chip_label(bar)}"
+                    }
+                } else {
+                    span { class: "keyword-chip static muted", "{chip_label(bar)}" }
+                }
+            }
+            div { class: "chart-track",
+                div { class: "chart-fill", style: "width:{bar.pct}%;" }
+            }
+            span { style: count_style, "{bar.count}{count_suffix}" }
+            // Mounted shut under every row so opening one is a class
+            // change the reveal can ease, not a fresh node.
+            div { class: reveal_class(bar), style: "grid-column:1 / -1;",
+                div { class: "keyword-reveal-inner",
+                    if let Some(content) = reveal_content(bar) {
+                        {content}
+                    }
+                }
+            }
+        }
+    };
     rsx! {
         div { style: "display:flex;flex-direction:column;gap:0.35rem;padding:0 0.75rem;",
             if let Some(text) = label {
@@ -242,57 +297,37 @@ pub fn BarChart(
                     }
                 },
                 Layout::Rows => rsx! {
-                    for bar in bars.iter() {
-                        div { style: "display:flex;align-items:center;gap:0.5rem;",
-                            span { style: label_style(bar), onclick: tap(bar.key.clone()),
-                                "{bar.label}"
+                    for bar in shown_bars.iter() {
+                        {plain_row(bar)}
+                    }
+                    if let Some(rest) = folded_bars {
+                        Fold { open: fold_open(),
+                            for bar in rest.iter() {
+                                {plain_row(bar)}
                             }
-                            div { style: "flex:1;height:0.9rem;background:var(--border-secondary);border-radius:0.15rem;overflow:hidden;",
-                                div {
-                                    style: format!(
-                                        "height:100%;width:{}%;background:var(--text-primary);opacity:0.65;border-radius:0.15rem;",
-                                        bar.pct
-                                    ),
-                                }
-                            }
-                            span { style: count_style, "{bar.count}{count_suffix}" }
                         }
+                        SeeMore { open: fold_open(), on_toggle: toggle_fold }
                     }
                 },
                 // A grid rather than flex rows so the chip column is as wide as
                 // the widest chip on every row. Rows space by the label cell's
-                // padding, not a row gap, so the shut reveals add no height.
+                // padding, not a row gap, so the shut reveals and a shut fold
+                // add no height.
                 Layout::ChipRows => rsx! {
                     div { style: format!("display:grid;grid-template-columns:fit-content({CHIP_LABEL_MAX_WIDTH}) minmax(0,1fr) auto;column-gap:0.5rem;align-items:center;"),
-                        for bar in bars.iter() {
-                            div { style: "padding:0.175rem 0;text-align:right;",
-                                if bar.revealable {
-                                    button { class: chip_class(bar), onclick: tap_chip(bar.key.clone()),
-                                        "{chip_label(bar)}"
-                                    }
-                                } else {
-                                    span { class: "keyword-chip static muted", "{chip_label(bar)}" }
-                                }
-                            }
-                            div { style: "flex:1;height:0.9rem;background:var(--border-secondary);border-radius:0.15rem;overflow:hidden;",
-                                div {
-                                    style: format!(
-                                        "height:100%;width:{}%;background:var(--text-primary);opacity:0.65;border-radius:0.15rem;",
-                                        bar.pct
-                                    ),
-                                }
-                            }
-                            span { style: count_style, "{bar.count}{count_suffix}" }
-                            // Mounted shut under every row so opening one is a class
-                            // change the reveal can ease, not a fresh node.
-                            div { class: reveal_class(bar), style: "grid-column:1 / -1;",
-                                div { class: "keyword-reveal-inner",
-                                    if let Some(content) = reveal_content(bar) {
-                                        {content}
-                                    }
+                        for bar in shown_bars.iter() {
+                            {chip_row(bar)}
+                        }
+                        if let Some(rest) = folded_bars {
+                            Fold { open: fold_open(), subgrid: true,
+                                for bar in rest.iter() {
+                                    {chip_row(bar)}
                                 }
                             }
                         }
+                    }
+                    if folded_bars.is_some() {
+                        SeeMore { open: fold_open(), on_toggle: toggle_fold }
                     }
                 },
             }
@@ -329,20 +364,28 @@ fn role_bars(
         .collect()
 }
 
-/// Count-based distribution charts (types, roles), rendered as flat
-/// sub-blocks: two [`BarChart`]s, the role one horizontal.
+/// Count-based distribution charts (types, roles, oracle tags), rendered as
+/// flat sub-blocks: [`BarChart`]s, the role and oracle tag ones horizontal
+/// and folded past their first [`FOLD_AT`] rows.
 ///
 /// With `role_tags` set, the role chart's labels are chips and a tapped role
 /// eases its tags open under its row as [`RoleTags`], one role at a time, the
-/// way the Playstyle screen's Card roles chart does. `describe_tag` and
-/// `on_examples` go to those tags.
+/// way the Playstyle screen's Card roles chart does. The oracle tag chart's
+/// labels are chips too, and a tapped tag opens its [`OtagDef`]. `describe_tag`
+/// and `on_examples` go to both.
 #[component]
 pub fn DeckCharts(
     type_bars: Option<Vec<(&'static str, usize, u32)>>,
     category_bars: Option<Vec<(&'static str, usize, u32)>>,
+    /// The deck's oracle tags by count (`DeckMetrics::oracle_tag_bars`).
+    #[props(default)]
+    oracle_tag_bars: Option<Vec<(String, usize, u32)>>,
     /// "?" beside each label; the site passes none.
     type_hint: Option<Element>,
     role_hint: Option<Element>,
+    /// "?" beside the Oracle tags label.
+    #[props(default)]
+    oracle_tag_hint: Option<Element>,
     /// Each role's oracle tags, keyed by the role bar's label
     /// (`DeckMetrics::card_role_tags`).
     #[props(default)]
@@ -365,6 +408,19 @@ pub fn DeckCharts(
             selected_role.set(Some(key));
         }
     });
+    let mut selected_tag: Signal<Option<String>> = use_signal(|| None);
+    let tag_reveal = use_callback(move |slug: String| {
+        rsx! {
+            OtagDef { slug, describe_tag, on_examples }
+        }
+    });
+    let toggle_tag = use_callback(move |key: String| {
+        if selected_tag().as_deref() == Some(key.as_str()) {
+            selected_tag.set(None);
+        } else {
+            selected_tag.set(Some(key));
+        }
+    });
     rsx! {
         if let Some(type_bars) = type_bars.as_ref() {
             BarChart {
@@ -385,6 +441,7 @@ pub fn DeckCharts(
                         on_bar: toggle_role,
                         selected: selected_role(),
                         reveal: role_reveal,
+                        fold: true,
                     }
                 } else {
                     BarChart {
@@ -392,11 +449,41 @@ pub fn DeckCharts(
                         bars: tuple_bars(cat_bars),
                         hint: role_hint,
                         orientation: BarOrientation::Horizontal,
+                        fold: true,
                     }
                 }
             }
         }
+
+        if let Some(tag_bars) = oracle_tag_bars.as_ref() {
+            if !tag_bars.is_empty() {
+                BarChart {
+                    label: "Oracle tags",
+                    bars: slug_bars(tag_bars),
+                    hint: oracle_tag_hint,
+                    orientation: BarOrientation::Horizontal,
+                    label_case: LabelCase::AsIs,
+                    on_bar: toggle_tag,
+                    selected: selected_tag(),
+                    reveal: tag_reveal,
+                    fold: true,
+                }
+            }
+        }
     }
+}
+
+/// `DeckMetrics` slug tuples as bars.
+fn slug_bars(bars: &[(String, usize, u32)]) -> Vec<Bar> {
+    bars.iter()
+        .map(|(slug, count, pct)| {
+            Bar::new(
+                slug.clone(),
+                u64::try_from(*count).unwrap_or(u64::MAX),
+                *pct,
+            )
+        })
+        .collect()
 }
 
 /// The deck's cards per color as vertical bars, shown in the Mana section.
@@ -432,10 +519,12 @@ pub fn ManaCurve(mana_curve_bars: [(usize, u32); 7], hint: Option<Element>) -> E
     }
 }
 
-/// Draw odds: `P(>=1)` per category as horizontal bars, with ‹ › to step the
-/// draw window from the opening hand through later turns. On the draw:
-/// `draws = 7 + turn` (opening hand = turn 0). `buckets` is `(label, count K)`;
-/// probabilities recompute live for the selected turn from the deck's engine.
+/// Draw odds: `P(>=1)` per category as horizontal bars, with - and + to step
+/// the draw window from turn 0, the opening hand, through later turns. On the
+/// draw: `draws = 7 + turn`. `buckets` is `(label, count K)` in the order to
+/// show; probabilities recompute live for the selected turn from the deck's
+/// engine. The first [`FOLD_AT`] buckets show under the stepper and the rest
+/// fold behind a [`SeeMore`] chip.
 #[component]
 pub fn DrawOdds(
     deck_size: u32,
@@ -444,23 +533,27 @@ pub fn DrawOdds(
 ) -> Element {
     const MAX_TURN: u32 = 20;
     let mut turn = use_signal(|| 0u32);
+    let mut fold_open = use_signal(|| false);
+    let toggle_fold = use_callback(move |()| fold_open.toggle());
     // The stepper holds `turn` at MAX_TURN or below, so this never saturates.
     let draws = turn().saturating_add(7);
-    let heading = if turn() == 0 {
-        "Odds of ≥1 in opening hand".to_string()
-    } else {
-        format!("Odds of ≥1 by turn {}", turn())
-    };
+    // Turn 0 is the opening hand, named as a turn so the heading keeps one
+    // width as the turn steps; the figure space pads single digits.
+    let heading = format!("Odds of \u{2265}1 by turn {:\u{2007}>2}", turn());
     // Map each bucket to its odds in the loop header rather than a
     // `{ let …; rsx! }` block inside the `for` (which confuses Dioxus node
     // diffing and drops the bar-width style on alternating turns); the keyed
     // loop below remounts changed rows.
-    let rows = buckets.iter().map(|(label, k)| {
-        (
-            *label,
-            whole_percent(draw_odds::p_at_least_one(deck_size, *k, draws)),
-        )
-    });
+    let rows: Vec<(&'static str, u32)> = buckets
+        .iter()
+        .map(|(label, k)| {
+            (
+                *label,
+                whole_percent(draw_odds::p_at_least_one(deck_size, *k, draws)),
+            )
+        })
+        .collect();
+    let (shown_rows, folded_rows) = fold_split(&rows, FOLD_AT);
     rsx! {
         div { style: "display:flex;flex-direction:column;gap:0.35rem;padding:0 0.75rem;",
             div { style: "display:flex;align-items:center;justify-content:center;gap:0.6rem;",
@@ -482,23 +575,38 @@ pub fn DrawOdds(
                     "+"
                 }
             }
-            for (label, pct) in rows {
-                // Key includes pct so a changed row remounts (fresh DOM) instead
-                // of an in-place style update; the WebView drops the latter and
-                // leaves the bar unfilled on alternating turns otherwise.
-                div {
-                    key: "{label}-{pct}",
-                    style: "display:flex;align-items:center;gap:0.5rem;",
-                    span { style: "width:5ch;font-size:0.7rem;color:var(--text-primary);opacity:0.85;text-align:right;flex-shrink:0;text-transform:uppercase;",
-                        "{label}"
-                    }
-                    div { style: "flex:1;height:0.9rem;background:var(--border-secondary);border-radius:0.15rem;overflow:hidden;",
-                        div { style: "height:100%;width:{pct}%;background:var(--text-primary);opacity:0.65;border-radius:0.15rem;" }
-                    }
-                    span { style: "font-size:0.7rem;color:var(--text-primary);opacity:0.85;width:4ch;text-align:right;flex-shrink:0;",
-                        "{pct}%"
+            for (label, pct) in shown_rows.iter().copied() {
+                OddsRow { label, pct }
+            }
+            if let Some(rest) = folded_rows {
+                Fold { open: fold_open(),
+                    for (label, pct) in rest.iter().copied() {
+                        OddsRow { label, pct }
                     }
                 }
+                SeeMore { open: fold_open(), on_toggle: toggle_fold }
+            }
+        }
+    }
+}
+
+/// One draw odds bar. Its key includes `pct` so a changed row remounts
+/// (fresh DOM) instead of an in-place style update; the web view drops the
+/// latter and leaves the bar unfilled on alternating turns otherwise.
+#[component]
+fn OddsRow(label: &'static str, pct: u32) -> Element {
+    rsx! {
+        div {
+            key: "{label}-{pct}",
+            style: "display:flex;align-items:center;gap:0.5rem;padding:0.175rem 0;",
+            span { style: "width:5ch;font-size:0.7rem;color:var(--text-primary);opacity:0.85;text-align:right;flex-shrink:0;text-transform:uppercase;",
+                "{label}"
+            }
+            div { class: "chart-track",
+                div { class: "chart-fill", style: "width:{pct}%;" }
+            }
+            span { style: "font-size:0.7rem;color:var(--text-primary);opacity:0.85;width:4ch;text-align:right;flex-shrink:0;",
+                "{pct}%"
             }
         }
     }

@@ -4,6 +4,8 @@
 pub(crate) mod clone_deck_dialog;
 /// Collapsible titled card wrapper for deck-view sections.
 pub(crate) mod collapsible_section;
+/// A one-action Danger zone panel for the foot of a list screen.
+pub(crate) mod danger_zone;
 /// Collapsible "Budget" section (land target, price target) for the view.
 pub(crate) mod deck_budget_section;
 /// Deck chart visualizations for the view screen.
@@ -22,7 +24,7 @@ pub(crate) mod deck_warnings;
 pub(crate) mod featured_cards;
 /// Full-screen format picker with definitions.
 pub(crate) mod format_select;
-/// Buy sheet and more actions bottom sheets for the view screen.
+/// The view screen's Share and Clear skips dialogs.
 pub(crate) mod more_buttons;
 /// Full-screen oracle-tag picker (fetched catalog + curated defaults + search).
 pub(crate) mod oracle_tag_select;

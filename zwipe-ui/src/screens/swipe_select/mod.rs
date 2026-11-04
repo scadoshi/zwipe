@@ -31,13 +31,13 @@ pub const TITLE: &str = "Swipe select";
 /// The overlay's title in [`Mode::Suggested`].
 pub const SUGGESTED_TITLE: &str = "Suggested commanders";
 
-/// The action bar's button that closes the overlay.
+/// The button that closes the overlay.
 pub const BACK: &str = "Back";
 
-/// The action bar's button that opens the filter sheet.
+/// The button that opens the filter sheet.
 pub const FILTER: &str = "Filter";
 
-/// The action bar's button that searches again from the top.
+/// The button that searches again from the top.
 pub const REFRESH: &str = "Refresh";
 
 /// The toast for a left swipe.
@@ -327,11 +327,32 @@ impl State {
         Self::default()
     }
 
-    /// Applies `action` and returns what the client must do, in order.
+    /// Applies `action` and returns what the client must do, in order. When the pile turns empty it says so with a toast, unless [`State::message`] already has a line for it or the action leaves the overlay.
     ///
     /// A reply whose request is no longer waiting changes nothing.
     #[must_use = "the client performs the effects"]
     pub fn update(&mut self, action: Action) -> Vec<Effect> {
+        let leaves = matches!(action, Action::Choose | Action::Back);
+        let before = self.status();
+        let mut effects = self.apply(action);
+        if !leaves
+            && before != Status::Empty
+            && self.status() == Status::Empty
+            && self.message().is_none()
+        {
+            let noun = self.noun();
+            // Cards still in the stack were dealt and swiped past; none means the search found nothing.
+            let line = if self.stack.is_empty() {
+                format!("No {noun}s match your filters")
+            } else {
+                format!("No more {noun}s")
+            };
+            effects.push(Effect::Toast(Toast::quick(ToastKind::Info, line)));
+        }
+        effects
+    }
+
+    fn apply(&mut self, action: Action) -> Vec<Effect> {
         match action {
             Action::Open {
                 mode,

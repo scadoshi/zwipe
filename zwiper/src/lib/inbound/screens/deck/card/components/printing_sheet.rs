@@ -3,10 +3,7 @@
 //! What the sheet knows and does is `zwipe_ui::screens::printing_sheet`;
 //! this file draws its state, keeps the carousel, and performs its effects.
 
-use components::{
-    ActionBar, Button, ButtonVariant, TOAST_NORMAL, ToastOptions, Toasts, use_overlay_back_action,
-    use_toast,
-};
+use components::{BottomSheet, TOAST_NORMAL, ToastOptions, Toasts, use_toast};
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::Card;
@@ -15,6 +12,7 @@ use zwipe_ui::screens::printing_sheet::{self as model, Action, Effect, Mode, Sta
 
 use super::card_info::{CardInfoDisplay, PrintingSheetSkeleton};
 use super::flippable_card_image::FlippableCardImage;
+use crate::inbound::components::action_dock::{self, DockIcon};
 use crate::inbound::components::interactions::carousel::Carousel;
 use crate::inbound::components::interactions::carousel::dots::CarouselDots;
 use crate::inbound::components::interactions::carousel::state::CarouselState;
@@ -60,7 +58,7 @@ impl Driver {
                 spawn(async move {
                     match client().fetch_printings(oracle_id).await {
                         Ok(printings) => {
-                            // Measure viewport width (sheet-content uses no-pad-x so carousel is full-width)
+                            // The carousel runs the sheet's full width.
                             let mut eval = document::eval("dioxus.send(window.innerWidth)");
                             page_width
                                 .set(eval.recv::<f64>().await.unwrap_or(FALLBACK_PAGE_WIDTH_PX));
@@ -173,92 +171,75 @@ pub(crate) fn PrintingSheet(
         )
     };
 
-    // OS back closes the sheet before the router sees it. This one hand-rolls
-    // its own backdrop + `.bottom-sheet` markup instead of using the shared
-    // `BottomSheet`, so it needs its own registration, and it mirrors the
-    // backdrop exactly, warning when an unsaved printing is about to be lost.
-    let dismiss = use_callback(move |(): ()| driver.dispatch(Action::Dismiss { at: current_idx }));
-    use_overlay_back_action(open.into(), dismiss);
-
     rsx! {
-        // Modal backdrop. `sheet-over` lifts the backdrop and sheet above a
-        // details sheet already open under them.
-        div {
-            class: if open() { "sheet-backdrop sheet-over show" } else { "sheet-backdrop sheet-over" },
-            onclick: move |_| driver.dispatch(Action::Dismiss { at: current_idx }),
-        }
+        // `sheet-over` lifts the backdrop and sheet above a details sheet
+        // already open under them. A backdrop tap, the ×, a drag down or the
+        // OS back gesture leave the same way, warning when an unsaved printing
+        // is about to be lost.
+        div { class: "sheet-over",
+            BottomSheet {
+                open,
+                title: model::TITLE.to_string(),
+                closable: true,
+                on_dismiss: move |()| driver.dispatch(Action::Dismiss { at: current_idx }),
 
-        // Bottom sheet
-        div {
-            class: if open() { "bottom-sheet sheet-over show" } else { "bottom-sheet sheet-over" },
-
-            // The same backdrop orangui's BottomSheet carries, since this sheet is
-            // built by hand on the same classes.
-            ::components::GridCells { still: true }
-            div { class: "sheet-header",
-                span { style: "font-size: 1rem; color: var(--accent-primary);", {model::TITLE} }
-            }
-
-            div { class: "sheet-content no-pad-x",
-                if status == Status::Loading {
-                    PrintingSheetSkeleton {}
-                } else if status == Status::Several {
-                    // Multi-printing: carousel
-                    Carousel { state: carousel_state,
-                        for printing in printings.iter() {
-                            {
-                                let id = printing.scryfall_data.id;
-                                let sd = printing.scryfall_data.clone();
-                                rsx! {
-                                    div { class: "carousel-page", key: "{id}",
-                                        FlippableCardImage {
-                                            sd,
-                                            size: ImageSize::Large,
-                                            class: "carousel-card-image".to_string(),
+                div { class: "printing-sheet-body",
+                    if status == Status::Loading {
+                        PrintingSheetSkeleton {}
+                    } else if status == Status::Several {
+                        // Multi-printing: carousel
+                        Carousel { state: carousel_state,
+                            for printing in printings.iter() {
+                                {
+                                    let id = printing.scryfall_data.id;
+                                    let sd = printing.scryfall_data.clone();
+                                    rsx! {
+                                        div { class: "carousel-page", key: "{id}",
+                                            FlippableCardImage {
+                                                sd,
+                                                size: ImageSize::Large,
+                                                class: "carousel-card-image".to_string(),
+                                            }
                                         }
                                     }
                                 }
                             }
                         }
-                    }
 
-                    CarouselDots { current: current_idx, total: printings.len() }
+                        CarouselDots { current: current_idx, total: printings.len() }
 
-                    // Info row for currently visible printing
-                    if let Some(card) = visible_card {
-                        CardInfoDisplay { card }
-                    }
-                } else if let Some(card) = visible_card {
-                    // Single printing: just show the image, no carousel
-                    if card.scryfall_data.primary_image_url(ImageSize::Large).is_some() {
-                        div { style: "display: flex; justify-content: center; margin-bottom: 0.75rem;",
-                            FlippableCardImage {
-                                sd: card.scryfall_data.clone(),
-                                size: ImageSize::Large,
-                                class: "carousel-card-image".to_string(),
+                        // Info row for currently visible printing
+                        if let Some(card) = visible_card {
+                            CardInfoDisplay { card }
+                        }
+                    } else if let Some(card) = visible_card {
+                        // Single printing: just show the image, no carousel
+                        if card.scryfall_data.primary_image_url(ImageSize::Large).is_some() {
+                            div { style: "display: flex; justify-content: center; margin-bottom: 0.75rem;",
+                                FlippableCardImage {
+                                    sd: card.scryfall_data.clone(),
+                                    size: ImageSize::Large,
+                                    class: "carousel-card-image".to_string(),
+                                }
                             }
                         }
+
+                        CardInfoDisplay { card }
                     }
-
-                    CardInfoDisplay { card }
-                }
-            }
-
-            ActionBar {
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| driver.dispatch(Action::Back { at: current_idx }),
-                    {model::BACK}
                 }
 
-                // Always there when saving is possible at all, grayed until
-                // the carousel has moved off the printing it opened on.
+                // Save floats at the sheet's bottom right whenever saving is
+                // possible at all, grayed until the carousel has moved off the
+                // printing it opened on.
                 if shows_save {
-                    Button {
-                        variant: ButtonVariant::Action,
-                        disabled: !can_save,
-                        onclick: move |_| driver.dispatch(Action::Save { at: current_idx }),
-                        {model::SAVE}
+                    div { class: "action-dock action-dock-right sheet-dock",
+                        button {
+                            class: "action-dock-btn",
+                            "aria-label": model::SAVE,
+                            disabled: !can_save,
+                            onclick: move |_| driver.dispatch(Action::Save { at: current_idx }),
+                            DockIcon { path: action_dock::CHECK }
+                        }
                     }
                 }
             }

@@ -8,12 +8,15 @@ use zwipe_core::domain::user::preferences::PipColor;
 use zwiper::config::Config;
 use zwiper::inbound::components::auth::session_upkeep;
 use zwiper::inbound::components::hint_host::HintHost;
+use zwiper::inbound::components::navigation::menu::MenuOpen;
 use zwiper::inbound::components::update_required::UpdateRequired;
 use zwiper::inbound::router::Router;
 
 const FAVICON: Asset = asset!("/assets/favicon/favicon.ico");
 const MAIN_CSS: Asset = asset!("/assets/main.css");
 const ACCORDION_CSS: Asset = asset!("/assets/accordion.css");
+/// Slides each screen's header away as its content scrolls down and back as it scrolls up.
+const HEADER_HIDE_JS: &str = include_str!("../../assets/header_hide.js");
 
 // Self-hosted JetBrains Mono. Registered via asset!() (not a CSS url(), which
 // manganis does not bundle) so the woff2 files ship in the app bundle. The full
@@ -78,6 +81,14 @@ fn ThemeWrapper(children: Element) -> Element {
     // discarded pick.
     use_context_provider(|| follow);
     let class = follow.shown.read().css_class();
+    // The page under the shell carries the theme class too, so the strip the
+    // WebView shows past the shell (a rubber band, the gap over the keyboard)
+    // is the theme's page color and not the launch color.
+    let shown = follow.shown;
+    use_effect(move || {
+        let class = shown.read().css_class();
+        document::eval(&format!("document.documentElement.className = {class:?};"));
+    });
     let pips = components::pip_color_class(use_context::<Signal<PipColor>>()());
     rsx! {
         div { class: "app-shell {class} {pips}",
@@ -106,6 +117,9 @@ fn App() -> Element {
     use_context_provider(|| dialogs);
     // Closed until the splash starts to fade; the entrances wait on it.
     use_context_provider(|| components::SplashGate(Signal::new(false)));
+    // The main menu's open state, above the router so it carries across
+    // screens.
+    use_context_provider(|| MenuOpen(Signal::new(false)));
     rsx! {
         document::Link { rel: "icon", href: FAVICON }
         document::Style {
@@ -125,6 +139,8 @@ fn App() -> Element {
         // Drives the edge fades on sideways scrollers where CSS scroll
         // timelines are missing (the dictionary's letter rail).
         document::Script { {components::SCROLL_FADE_JS} }
+        document::Script { {HEADER_HIDE_JS} }
+        document::Script { {components::KEYBOARD_INSET_JS} }
         document::Meta {
             name: "viewport",
             content: "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"

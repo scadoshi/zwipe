@@ -7,12 +7,12 @@ use uuid::Uuid;
 
 use crate::inbound::components::auth::auth_gate::AuthGate;
 use crate::inbound::components::navigation::back_handler::BackHandlerLayout;
+use crate::inbound::screens::about::About;
 use crate::inbound::screens::account::Account;
 use crate::inbound::screens::activity::Activity;
 use crate::inbound::screens::auth::forgot_password::ForgotPassword;
 use crate::inbound::screens::auth::login::Login;
 use crate::inbound::screens::auth::register::Register;
-use crate::inbound::screens::changelog::Changelog;
 use crate::inbound::screens::config::Config;
 use crate::inbound::screens::deck::card::add::Add as AddDeckCard;
 use crate::inbound::screens::deck::card::remove::Remove as RemoveDeckCard;
@@ -57,7 +57,7 @@ pub enum Router {
     #[route("/")]
     Home {},
 
-    /// Account: username/email/password edits, About, log out, delete account.
+    /// Account: username/email/password edits, log out, delete account.
     #[route("/user")]
     Account {},
 
@@ -65,13 +65,13 @@ pub enum Router {
     #[route("/config")]
     Config {},
 
-    /// Privacy policy: shared legal copy, reached from Account.
+    /// Privacy policy: shared legal copy, reached from About.
     #[route("/privacy")]
     PrivacyPolicy {},
 
-    /// Release history: shared changelog, reached from Account.
-    #[route("/changelog")]
-    Changelog {},
+    /// About: version, links, credits and the release history, in the menu.
+    #[route("/about")]
+    About {},
 
     /// Activity: how the user picks, from their swipes, reached from the
     /// Home counters.

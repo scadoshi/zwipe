@@ -64,6 +64,8 @@ pub enum HintTopic {
     TypeChart,
     /// Deck view: the Roles chart.
     RoleChart,
+    /// The deck view's Oracle tags chart.
+    OracleTagChart,
     /// Deck view: the Colors chart, in the Mana section.
     ColorChart,
     /// Deck view: mana curve chart.
@@ -72,7 +74,9 @@ pub enum HintTopic {
     ManaFulfillment,
     /// Deck view: draw odds chart.
     DrawOdds,
-    /// Home and Playstyle: the color map.
+    /// Home: the Colors bars.
+    HomeColors,
+    /// Playstyle: the color map.
     ColorMap,
     /// Playstyle: the card roles chart.
     SuggestionRoleChart,
@@ -103,7 +107,9 @@ impl HintTopic {
     pub fn title(&self) -> &'static str {
         match self {
             Self::DeckTags => "Deck tags",
-            Self::OracleTags | Self::SuggestionTagChart | Self::TagRates => "Oracle tags",
+            Self::OracleTags | Self::OracleTagChart | Self::SuggestionTagChart | Self::TagRates => {
+                "Oracle tags"
+            }
             Self::DeckName => "Deck name",
             Self::Format => "Format",
             Self::Commander => "Commander",
@@ -125,7 +131,7 @@ impl HintTopic {
             Self::Version => "Version",
             Self::TypeChart => "Types",
             Self::RoleChart => "Roles",
-            Self::ColorChart => "Colors",
+            Self::ColorChart | Self::HomeColors => "Colors",
             Self::ManaCurve => "Mana curve",
             Self::ManaFulfillment => "Mana cost fulfillment",
             Self::DrawOdds => "Draw odds",
@@ -239,6 +245,9 @@ impl HintTopic {
             Self::RoleChart => rsx! {
                 HintLine { "Mainboard cards by role, like ramp or removal. Cards with no role are left out. Tap a role to see its tags" }
             },
+            Self::OracleTagChart => rsx! {
+                HintLine { "Mainboard cards by oracle tag, the finer tags under each role. Tap a tag for what it means" }
+            },
             Self::ColorChart => rsx! {
                 HintLine { "Mainboard cards by color" }
             },
@@ -253,8 +262,15 @@ impl HintTopic {
             },
             Self::DrawOdds => rsx! {
                 HintBullets {
-                    HintBullet { "Chance of at least one card from each group in the opening hand, or by a turn. " HintKey { "-" } " and " HintKey { "+" } " step the turn" }
+                    HintBullet { "Chance of at least one card from each group by a turn; turn 0 is the opening hand. " HintKey { "-" } " and " HintKey { "+" } " step the turn" }
                     HintBullet { "Random draw only. Mulligans, tutors and card draw are not counted" }
+                }
+            },
+            Self::HomeColors => rsx! {
+                HintBullets {
+                    HintBullet { "How many cards across your decks are each color, colorless last" }
+                    HintBullet { "A card counts once per deck it is in, and a two-color card counts for both colors" }
+                    HintBullet { "Playstyle has the full picture" }
                 }
             },
             Self::ColorMap => rsx! {

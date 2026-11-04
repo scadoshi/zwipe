@@ -1,8 +1,7 @@
 //! Support / help entry point.
 //!
-//! A small faded "!" button rendered at the left of every screen header (via
-//! [`ScreenHeader`](crate::inbound::components::screen_header::ScreenHeader)), mirroring the "?"
-//! hint on the right. Tapping it opens a dialog with ways to reach the
+//! A small "!" button in the main menu's bottom row (see
+//! [`menu`](crate::inbound::components::navigation::menu)). Tapping it opens a dialog with ways to reach the
 //! team: email a problem report or join the Discord. The report email is
 //! pre-filled with the app version and platform so every report self-documents.
 
@@ -22,7 +21,7 @@ const PLATFORM: &str = "Android";
 #[cfg(not(target_os = "android"))]
 const PLATFORM: &str = "iOS";
 
-/// Floating help button + support dialog, rendered globally.
+/// The menu's help button and its support dialog.
 #[component]
 pub fn SupportButton() -> Element {
     let mut open = use_signal(|| false);
@@ -35,7 +34,7 @@ pub fn SupportButton() -> Element {
 
     rsx! {
         button {
-            class: "btn-action page-header-support",
+            class: "btn-action app-nav-support",
             "aria-label": support::BUTTON_LABEL,
             onclick: move |_| open.set(true),
             {support::GLYPH}

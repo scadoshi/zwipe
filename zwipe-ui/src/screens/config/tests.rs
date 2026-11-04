@@ -598,7 +598,7 @@ fn back_goes_to_the_screen_before() {
 
 #[test]
 fn the_copy_matches_the_app() {
-    assert_eq!(TITLE, "Config");
+    assert_eq!(TITLE, "Settings");
     assert_eq!(APPEARANCE, "Appearance");
     assert_eq!(CARDS, "Cards");
     assert_eq!(THEME, "Theme");

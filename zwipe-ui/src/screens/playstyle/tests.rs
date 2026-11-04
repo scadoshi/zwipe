@@ -680,7 +680,7 @@ fn reasons_draw_nothing_without_a_tag_or_color() {
 fn the_copy_matches_the_app() {
     assert_eq!(TITLE, "Playstyle");
     assert_eq!(LOAD_FAILED, "Could not load your suggestions");
-    assert_eq!(COLD_START, "Build a deck to see your playstyle");
+    assert_eq!(COLD_START, "No playstyle yet");
     assert_eq!(NO_SUGGESTIONS, "No suggestions right now");
     assert_eq!(LIST_TITLE, "Suggested commanders");
     assert_eq!(SUMMARY_TITLE, "Summary");
@@ -706,10 +706,7 @@ fn the_copy_matches_the_app() {
     assert_eq!(CREATE_DECK, "Create deck");
     assert_eq!(MAYBEBOARD, "Maybeboard");
     assert_eq!(REMOVE, "Remove");
-    assert_eq!(BACK, "Back");
     assert_eq!(SWIPE, "Swipe");
-    assert_eq!(MORE, "More");
-    assert_eq!(MORE_TITLE, "More actions");
     assert_eq!(CLEAR_SKIPS, "Clear skips");
     assert_eq!(
         CLEAR_BODY,

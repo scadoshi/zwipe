@@ -18,6 +18,16 @@ use crate::inbound::components::auth::ensure_session::EnsureFresh;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::{Screen, component};
 
+/// Whether a failed call raises its error toast. Every failure is logged and
+/// reported to telemetry either way.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Toasting {
+    /// The user sees the failure.
+    Toast,
+    /// Telemetry and log only, for work the user never waits on.
+    Quiet,
+}
+
 /// Everything the ceremony needs, in one Copy handle so closures and spawns
 /// capture it freely.
 #[derive(Clone, Copy)]
@@ -66,7 +76,9 @@ impl Authed {
     where
         Fut: Future<Output = Result<T, ClientError>>,
     {
-        self.execute(component::NONE, op, false, f).await.ok()
+        self.execute(component::NONE, op, Toasting::Toast, f)
+            .await
+            .ok()
     }
 
     /// [`Self::run`] with a component breadcrumb, for dialogs and sheets that
@@ -80,7 +92,7 @@ impl Authed {
     where
         Fut: Future<Output = Result<T, ClientError>>,
     {
-        self.execute(component, op, false, f).await.ok()
+        self.execute(component, op, Toasting::Toast, f).await.ok()
     }
 
     /// Same reporting as [`Self::run`], but hands the `Err` back instead of
@@ -98,7 +110,7 @@ impl Authed {
     where
         Fut: Future<Output = Result<T, ClientError>>,
     {
-        self.execute(component::NONE, op, false, f).await
+        self.execute(component::NONE, op, Toasting::Toast, f).await
     }
 
     /// Telemetry and log only, no toast: for work the user never initiated
@@ -113,7 +125,26 @@ impl Authed {
     where
         Fut: Future<Output = Result<T, ClientError>>,
     {
-        self.execute(component::NONE, op, true, f).await.ok()
+        self.execute(component::NONE, op, Toasting::Quiet, f)
+            .await
+            .ok()
+    }
+
+    /// [`Self::run_quiet`] handing the `Err` back, for sites that act on
+    /// the kind of failure without toasting it.
+    ///
+    /// # Errors
+    ///
+    /// Returns the refresh's or the call's [`ClientError`].
+    pub async fn try_run_quiet<T, Fut>(
+        &self,
+        op: &'static str,
+        f: impl FnOnce(ZwipeClient, Session) -> Fut,
+    ) -> Result<T, ClientError>
+    where
+        Fut: Future<Output = Result<T, ClientError>>,
+    {
+        self.execute(component::NONE, op, Toasting::Quiet, f).await
     }
 
     /// [`Self::run_quiet`] with a component breadcrumb.
@@ -126,14 +157,14 @@ impl Authed {
     where
         Fut: Future<Output = Result<T, ClientError>>,
     {
-        self.execute(component, op, true, f).await.ok()
+        self.execute(component, op, Toasting::Quiet, f).await.ok()
     }
 
     async fn execute<T, Fut>(
         &self,
         component: &'static str,
         op: &'static str,
-        quiet: bool,
+        toasting: Toasting,
         f: impl FnOnce(ZwipeClient, Session) -> Fut,
     ) -> Result<T, ClientError>
     where
@@ -145,25 +176,31 @@ impl Authed {
         let session = match self.session.ensure_fresh(self.client).await {
             Ok(session) => session,
             Err(e) => {
-                self.report(component, op, &e, quiet);
+                self.report(component, op, &e, toasting);
                 return Err(e);
             }
         };
         match f((self.client)(), session).await {
             Ok(value) => Ok(value),
             Err(e) => {
-                self.report(component, op, &e, quiet);
+                self.report(component, op, &e, toasting);
                 Err(e)
             }
         }
     }
 
-    fn report(&self, component: &'static str, op: &'static str, e: &ClientError, quiet: bool) {
+    fn report(
+        &self,
+        component: &'static str,
+        op: &'static str,
+        e: &ClientError,
+        toasting: Toasting,
+    ) {
         tracing::warn!("{op} failed: {e}");
         self.usage_buffer
             .peek()
             .report_error(self.screen.as_str(), component, op, e);
-        if !quiet {
+        if toasting == Toasting::Toast {
             self.toast.error(
                 e.to_user_message(),
                 ToastOptions::default().duration(TOAST_NORMAL),

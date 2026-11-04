@@ -1,6 +1,6 @@
-//! Home: the hero's counters and their scope, the Color map panel, the featured flavor card, the greeting and the first-login hint.
+//! Home: the hero's counters and their scope, the Decks panel, the Colors panel, the featured flavor card, the greeting and the first-login hint.
 //!
-//! Home's data outlives a visit: the client keeps the counters, the playstyle summary, the flavor card and the scope above its screens, so a return to Home draws them at once. The client hands what it holds to [`Action::Load`] as [`Cached`], the model asks for what is missing or old, and the client writes each reply to its own copy as well as handing it back. The figures come from [`crate::home`], the color map test from [`crate::playstyle::color_map_has_data`] and the retailer links from [`crate::buy`].
+//! Home's data outlives a visit: the client keeps the counters, the playstyle summary, the flavor card and the scope above its screens, so a return to Home draws them at once. The client hands what it holds to [`Action::Load`] as [`Cached`], the model asks for what is missing or old, and the client writes each reply to its own copy as well as handing it back. The figures come from [`crate::home`], the color counts test from [`crate::playstyle::color_map_has_data`] and the retailer links from [`crate::buy`].
 
 #[cfg(test)]
 mod tests;
@@ -8,13 +8,16 @@ mod tests;
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::deck_metrics;
+use zwipe_core::domain::deck::deck_profile::DeckProfile;
+use zwipe_core::domain::deck::format::Format;
 use zwipe_core::domain::user::User;
 use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_core::http::contracts::suggestions::HttpPlayStyleSummary;
 
-use crate::color_map::{self, ColorMapCounts};
+use crate::color_map::ColorMapCounts;
 use crate::generation::{Generation, Ticket};
 use crate::home::{self, Figures, Scope, UserSource};
 use crate::toast::Toast;
@@ -29,16 +32,31 @@ pub const LIVE: &str = "Live";
 /// The hero's button that opens Activity.
 pub const ACTIVITY: &str = "Activity";
 
-/// The Color map panel's title.
-pub const COLOR_MAP: &str = "Color map";
+/// The Decks panel's chip that opens the deck list.
+pub const ALL_DECKS: &str = "All decks";
 
-/// The Color map panel's button that opens Playstyle.
+/// The Decks panel's corner chip while the user has no deck; it opens Create deck.
+pub const CREATE_DECK: &str = "Create a deck";
+
+/// The Decks panel's line while the user has no deck.
+pub const NO_DECKS: &str = "Your decks show here";
+
+/// The Decks panel's line when the decks failed to load and none are held.
+pub const DECKS_FAILED: &str = "Could not load your decks";
+
+/// How many decks the Decks panel lists, the most recently updated first.
+pub const LATEST_DECKS: usize = 3;
+
+/// The Colors panel's title.
+pub const COLORS: &str = "Colors";
+
+/// The Colors panel's chip that opens Playstyle.
 pub const PLAYSTYLE: &str = "Playstyle";
 
-/// The Color map panel's line before any deck has a colored card.
-pub const NO_PLAY_STYLE: &str = "Build a deck to see your playstyle";
+/// The Colors panel's line before any deck has a card.
+pub const NO_PLAY_STYLE: &str = "Your playstyle shows here";
 
-/// The Color map panel's line when the summary failed to load and none is held.
+/// The Colors panel's line when the summary failed to load and none is held.
 pub const PLAY_STYLE_FAILED: &str = "Could not load your playstyle";
 
 /// The featured flavor panel's title.
@@ -65,27 +83,21 @@ pub const TCGPLAYER: &str = "TCGplayer \u{2197}";
 /// The Buy dialog's link to `Card Kingdom`.
 pub const CARD_KINGDOM: &str = "Card Kingdom \u{2197}";
 
-/// The action bar's button that opens the deck list.
+/// The Decks panel's title.
 pub const DECKS: &str = "Decks";
-
-/// The action bar's button that opens Account.
-pub const ACCOUNT: &str = "Account";
-
-/// The action bar's button that opens Config.
-pub const CONFIG: &str = "Config";
 
 /// Where an action sends the user. The client maps each to its own route.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Destination {
-    /// The deck list, from the action bar.
+    /// The deck list, from the Decks panel's All decks chip.
     Decks,
-    /// Account, from the action bar.
-    Account,
-    /// Config, from the action bar.
-    Config,
+    /// This deck, from its tile in the Decks panel.
+    Deck(Uuid),
+    /// Create deck, from the Decks panel's corner chip while the user has no deck.
+    CreateDeck,
     /// Activity, from the hero.
     Activity,
-    /// Playstyle, from the Color map panel.
+    /// Playstyle, from the Colors panel.
     Playstyle,
 }
 
@@ -150,6 +162,8 @@ pub struct Cached {
     pub play_style: Option<HttpPlayStyleSummary>,
     /// The featured flavor card, if one is held, expired or not.
     pub flavor: Option<FlavorCard>,
+    /// The signed-in user's decks, if a copy of theirs is held, newest first. Another user's copy is left out.
+    pub decks: Option<Vec<DeckTile>>,
     /// The time Home opens, for the flavor card's expiry.
     pub now: DateTime<Utc>,
 }
@@ -203,6 +217,18 @@ pub enum Action {
         /// The ticket from the [`Effect::FetchPlayStyle`] this answers.
         ticket: Ticket,
     },
+    /// The decks arrived for the fetch holding `ticket`, newest first as the server lists them.
+    DecksLoaded {
+        /// The ticket from the [`Effect::FetchDecks`] this answers.
+        ticket: Ticket,
+        /// Every deck of the user's.
+        decks: Vec<DeckTile>,
+    },
+    /// The deck fetch holding `ticket` failed. Decks already held stay on screen.
+    DecksFailed {
+        /// The ticket from the [`Effect::FetchDecks`] this answers.
+        ticket: Ticket,
+    },
     /// Fetches the flavor card again if it has expired by `now` and no fetch is out. The app and the web send it each time the session refreshes.
     CheckFlavor {
         /// The time now.
@@ -225,12 +251,12 @@ pub enum Action {
         /// Whether the client holds the user's own counters from under [`COUNTS_FRESH`](crate::timing::COUNTS_FRESH) ago, so switching to them asks for none.
         mine_fresh: bool,
     },
-    /// Opens the deck list.
+    /// Opens the deck list, from the Decks panel's All decks chip.
     Decks,
-    /// Opens Account.
-    Account,
-    /// Opens Config.
-    Config,
+    /// Opens this deck, from its tile in the Decks panel.
+    OpenDeck(Uuid),
+    /// Opens Create deck, from the Decks panel's corner chip while the user has no deck.
+    CreateDeck,
     /// Opens Activity.
     Activity,
     /// Opens Playstyle.
@@ -250,6 +276,8 @@ pub enum Effect {
     FetchMyCounts(Ticket),
     /// Fetches the playstyle summary, stores it, and answers with [`Action::PlayStyleLoaded`] or [`Action::PlayStyleFailed`] carrying this ticket. A failure is reported without a toast.
     FetchPlayStyle(Ticket),
+    /// Fetches the user's decks, stores them, and answers with [`Action::DecksLoaded`] or [`Action::DecksFailed`] carrying this ticket. A failure is reported without a toast.
+    FetchDecks(Ticket),
     /// Fetches the featured flavor card, stores it, and answers with [`Action::FlavorLoaded`] or [`Action::FlavorFailed`] carrying this ticket. A failure only logs.
     FetchFlavor(Ticket),
     /// Opens this one-time hint if the user hasn't seen it, and records it as seen.
@@ -264,17 +292,130 @@ pub enum Effect {
     Toast(Toast),
 }
 
-/// What the Color map panel draws.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// One deck in the Decks panel: a tile with the art over the name and format chips.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DeckTile {
+    /// The deck's id, for the route its tile opens.
+    pub id: Uuid,
+    /// The deck's name.
+    pub name: String,
+    /// The deck's format, the muted chip under the art when set.
+    pub format: Option<Format>,
+    /// The deck's color identity in WUBRG order, the pips in the squircle without art; empty for a colorless deck.
+    pub color_identity: Vec<Color>,
+    /// The commander's art crop in the tile's squircle, when the deck has a commander with one; the deck's pips stand in without one.
+    pub art_url: Option<String>,
+}
+
+impl From<&DeckProfile> for DeckTile {
+    /// Reads the profile's color codes in any case and order; a code that is no color is dropped.
+    fn from(profile: &DeckProfile) -> Self {
+        let colors: Vec<Color> = profile
+            .color_identity
+            .iter()
+            .filter_map(|code| Color::try_from(code.as_str()).ok())
+            .collect();
+        Self {
+            id: profile.id,
+            name: profile.name.to_string(),
+            format: profile.format,
+            color_identity: Color::all()
+                .into_iter()
+                .filter(|color| colors.contains(color))
+                .collect(),
+            art_url: profile.commander_art_url.clone(),
+        }
+    }
+}
+
+/// What the Decks panel draws under its header.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DeckPanel {
+    /// The deck count in the header's chip: every deck of the user's, the listed ones included.
+    pub count: u32,
+    /// The [`LATEST_DECKS`] most recently updated decks, newest first. Never empty: no deck is [`Decks::Empty`].
+    pub latest: Vec<DeckTile>,
+}
+
+/// The chip in the Decks panel's right corner.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum DecksAction {
+    /// [`ALL_DECKS`], opening the deck list.
+    AllDecks,
+    /// [`CREATE_DECK`], opening Create deck.
+    CreateDeck,
+}
+
+/// What the Decks panel draws.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Decks {
+    /// The decks are out and none are held: three ghost tiles.
+    Loading,
+    /// The fetch failed and none are held: [`DECKS_FAILED`] under the header.
+    Failed,
+    /// The user has no deck: [`NO_DECKS`] under the header, no count chip, and [`CREATE_DECK`] in the corner.
+    Empty,
+    /// The count and the latest decks.
+    Loaded(DeckPanel),
+}
+
+impl Decks {
+    /// The chip in the header's corner: Create a deck with no deck, All decks otherwise.
+    #[must_use]
+    pub fn action(&self) -> DecksAction {
+        match self {
+            Self::Empty => DecksAction::CreateDeck,
+            Self::Loading | Self::Failed | Self::Loaded(_) => DecksAction::AllDecks,
+        }
+    }
+}
+
+/// One bar in the Colors panel.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct Bar {
+    /// The bar's color, `None` for the colorless bar.
+    pub color: Option<Color>,
+    /// Cards across the user's decks whose color identity includes the color, or that have none.
+    pub count: u32,
+    /// The bar's fill as a share of the largest count, 0 to 100.
+    pub pct: u32,
+}
+
+/// The Colors panel's bars for `counts`: one per color in WUBRG order, then colorless, the largest count at 100.
+#[must_use]
+pub fn bars(counts: &ColorMapCounts) -> Vec<Bar> {
+    let max = counts
+        .cards
+        .iter()
+        .copied()
+        .chain([counts.colorless])
+        .max()
+        .unwrap_or(0)
+        .max(1);
+    let bar = |color: Option<Color>, count: u32| Bar {
+        color,
+        count,
+        pct: count.saturating_mul(100).checked_div(max).unwrap_or(0),
+    };
+    Color::all()
+        .into_iter()
+        .zip(counts.cards)
+        .map(|(color, count)| bar(Some(color), count))
+        .chain([bar(None, counts.colorless)])
+        .collect()
+}
+
+/// What the Colors panel draws.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PlayStyle {
     /// The summary is out and none is held: the panel ghosts.
     Loading,
-    /// The fetch failed and none is held: [`PLAY_STYLE_FAILED`] over the Playstyle button.
+    /// The fetch failed and none is held: [`PLAY_STYLE_FAILED`] under the header.
     Failed,
-    /// No deck has a colored or colorless card: [`NO_PLAY_STYLE`] over the Playstyle button.
+    /// No deck has a colored or colorless card: [`NO_PLAY_STYLE`] under the header.
     Empty,
-    /// The map for these counts, with the Playstyle button at the end of its key.
-    Map(ColorMapCounts),
+    /// A bar per color then colorless, each with its count, the largest at full width.
+    Bars(Vec<Bar>),
 }
 
 /// The featured flavor card's quote and the row under it.
@@ -316,6 +457,7 @@ struct Generations {
     my_counts: Generation,
     play_style: Generation,
     flavor: Generation,
+    decks: Generation,
 }
 
 /// Home for one visit. Starts with nothing held and nothing out; send [`Action::Load`] with what the client holds.
@@ -329,6 +471,8 @@ pub struct State {
     play_style_failed: bool,
     flavor: Option<FlavorCard>,
     flavor_out: bool,
+    decks: Option<Vec<DeckTile>>,
+    decks_failed: bool,
     generations: Generations,
 }
 
@@ -388,6 +532,17 @@ impl State {
                     self.play_style_failed = true;
                 }
             }
+            Action::DecksLoaded { ticket, decks } => {
+                if self.generations.decks.is_current(ticket) {
+                    self.decks = Some(decks);
+                    self.decks_failed = false;
+                }
+            }
+            Action::DecksFailed { ticket } => {
+                if self.generations.decks.is_current(ticket) {
+                    self.decks_failed = true;
+                }
+            }
             Action::CheckFlavor { now } => return self.check_flavor(now).into_iter().collect(),
             Action::FlavorLoaded { ticket, flavor } => {
                 if self.generations.flavor.is_current(ticket) {
@@ -409,15 +564,15 @@ impl State {
                 return effects;
             }
             Action::Decks => return vec![Effect::Navigate(Destination::Decks)],
-            Action::Account => return vec![Effect::Navigate(Destination::Account)],
-            Action::Config => return vec![Effect::Navigate(Destination::Config)],
+            Action::OpenDeck(id) => return vec![Effect::Navigate(Destination::Deck(id))],
+            Action::CreateDeck => return vec![Effect::Navigate(Destination::CreateDeck)],
             Action::Activity => return vec![Effect::Navigate(Destination::Activity)],
             Action::Playstyle => return vec![Effect::Navigate(Destination::Playstyle)],
         }
         Vec::new()
     }
 
-    /// Takes in what the client holds and asks for what is missing or old: the user and preferences with a session, everybody's counters unless fresh, the user's own when they show and are not fresh, the summary with a session, and the flavor card when none is held or it expired. Then offers the first-login hint.
+    /// Takes in what the client holds and asks for what is missing or old: the user and preferences with a session, everybody's counters unless fresh, the user's own when they show and are not fresh, the summary and the decks with a session, and the flavor card when none is held or it expired. Then offers the first-login hint.
     fn load(&mut self, cached: Cached) -> Vec<Effect> {
         let Cached {
             user,
@@ -426,6 +581,7 @@ impl State {
             mine,
             play_style,
             flavor,
+            decks,
             now,
         } = cached;
         let mine_fresh = mine.is_some_and(|m| m.age == Age::Fresh);
@@ -438,6 +594,8 @@ impl State {
         self.play_style_failed = false;
         self.flavor = flavor;
         self.flavor_out = false;
+        self.decks = decks;
+        self.decks_failed = false;
 
         let mut effects = Vec::new();
         if user.is_some() {
@@ -454,6 +612,7 @@ impl State {
             effects.push(Effect::FetchPlayStyle(
                 self.generations.play_style.next_ticket(),
             ));
+            effects.push(Effect::FetchDecks(self.generations.decks.next_ticket()));
         }
         effects.extend(self.check_flavor(now));
         effects.push(Effect::OfferHint(OneTimeHint::FirstLogin));
@@ -501,14 +660,21 @@ impl State {
         }
     }
 
-    /// The color map's seed, from the user's id so Home draws the shape Playstyle does. 0 with no user.
+    /// What the Decks panel draws. Decks held show even after a failed refetch. The playstyle summary's deck count is not the one shown: it counts the decks with cards.
     #[must_use]
-    pub fn seed(&self) -> u64 {
-        self.user
-            .map_or(0, |id| color_map::seed_from_id(id.as_u128()))
+    pub fn decks(&self) -> Decks {
+        match &self.decks {
+            Some(decks) if decks.is_empty() => Decks::Empty,
+            Some(decks) => Decks::Loaded(DeckPanel {
+                count: u32::try_from(decks.len()).unwrap_or(u32::MAX),
+                latest: decks.iter().take(LATEST_DECKS).cloned().collect(),
+            }),
+            None if self.decks_failed => Decks::Failed,
+            None => Decks::Loading,
+        }
     }
 
-    /// What the Color map panel draws. A summary held shows even after a failed refetch.
+    /// What the Colors panel draws. A summary held shows even after a failed refetch.
     #[must_use]
     pub fn play_style(&self) -> PlayStyle {
         match &self.play_style {
@@ -518,7 +684,7 @@ impl State {
                 .map(ColorMapCounts::from)
                 .filter(playstyle::color_map_has_data)
                 .filter(|_| summary.deck_count > 0)
-                .map_or(PlayStyle::Empty, PlayStyle::Map),
+                .map_or(PlayStyle::Empty, |counts| PlayStyle::Bars(bars(&counts))),
             None if self.play_style_failed => PlayStyle::Failed,
             None => PlayStyle::Loading,
         }

@@ -348,14 +348,6 @@ fn rows_back_and_more_navigate() {
         state.update(Action::Back),
         [Effect::Navigate(Destination::Home)]
     );
-    assert_eq!(
-        state.update(Action::More(MoreItem::CommanderMaybeboard)),
-        [Effect::Navigate(Destination::CommanderMaybeboard)]
-    );
-    assert_eq!(
-        state.update(Action::More(MoreItem::Playstyle)),
-        [Effect::Navigate(Destination::Playstyle)]
-    );
 }
 
 #[test]
@@ -382,10 +374,5 @@ fn the_copy_matches_the_app() {
             "No decks match"
         ]
     );
-    assert_eq!(
-        [BACK, CREATE, MORE, MORE_TITLE],
-        ["Back", "Create", "More", "More actions"]
-    );
-    let labels: Vec<&str> = MoreItem::ALL.iter().map(|i| i.label()).collect();
-    assert_eq!(labels, ["Commander maybeboard", "Playstyle"]);
+    assert_eq!(CREATE, "Create");
 }

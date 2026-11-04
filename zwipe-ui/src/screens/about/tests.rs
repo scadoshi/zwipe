@@ -94,7 +94,14 @@ fn shown(state: &State) -> Vec<&str> {
 
 #[test]
 fn the_copy_matches_the_app() {
-    assert_eq!(TITLE, "Changelog");
+    assert_eq!(TITLE, "About");
+    assert_eq!(WEBSITE_LINK, "zwipe.net ↗");
+    assert_eq!(VIEW, "View");
+    assert_eq!(version_label("1.15.0"), "v1.15.0");
+    let labels: Vec<&str> = ROWS.into_iter().map(Row::label).collect();
+    assert_eq!(labels, ["Version", "Website", "Privacy policy"]);
+    assert_eq!(CREDITS, "Credits");
+    assert_eq!(CHANGELOG, "Changelog");
     assert_eq!(FAILED, "Could not load the changelog");
     assert_eq!(LATEST, "Latest");
     assert_eq!(BACK, "Back");
@@ -139,6 +146,19 @@ fn loading_again_starts_on_latest() {
     let mut state = on(two_years(), year("2026"));
     let _ = state.update(Action::Load(ChangelogCache::Loaded(two_years())));
     assert_eq!(state.filter(), &Filter::Latest);
+}
+
+#[test]
+fn the_rows_open_the_website_and_the_privacy_policy() {
+    let mut state = State::new();
+    assert_eq!(
+        state.update(Action::Website),
+        [Effect::OpenUrl(WEB_BASE.to_owned())]
+    );
+    assert_eq!(
+        state.update(Action::PrivacyPolicy),
+        [Effect::Navigate(Destination::PrivacyPolicy)]
+    );
 }
 
 #[test]

@@ -5,8 +5,7 @@
 //! card's entrance and the sheets.
 
 use components::{
-    ActionBar, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintDialog, HintLine,
-    ToastOptions, Toasts, use_toast,
+    Chip, HintBullet, HintBullets, HintDialog, HintLine, ToastOptions, Toasts, use_toast,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -25,9 +24,10 @@ use zwipe_ui::screens::remove_cards::{
 use zwipe_ui::stack;
 use zwipe_ui::stores::undo as shared_undo;
 
-use super::components::card_info::{CardDetailsSheet, CardInfoDisplay, CardSkeleton, RulesButton};
+use super::components::card_info::{CardDetailsSheet, CardInfoDisplay, CardSkeleton};
 use super::components::filter_store::{FilterScope, FilterStore};
 use super::components::printing_sheet::PrintingSheet;
+use crate::inbound::components::action_dock::{self, DockFilter, DockIcon, EyeIcon};
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::auth::ensure_session::EnsureFresh;
 use crate::inbound::components::hint_dialog::{self, HintColored};
@@ -38,9 +38,11 @@ use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen, component, screen};
 use crate::inbound::components::{guide_link, ui_toast};
+use crate::inbound::router::Router;
 use crate::inbound::screens::deck::card::components::undo_log::{UndoAction, UndoStore};
 use crate::inbound::screens::deck::card::filter::card_filter_sheet::CardFilterSheet;
 use crate::inbound::screens::deck::card::filter::deck_cards::DeckCards;
+use crate::inbound::screens::deck::missing_deck;
 
 /// Pixels a swipe travels to commit.
 const SWIPE_DISTANCE_PX: f64 = 90.0;
@@ -168,7 +170,12 @@ impl Driver {
                 undo_store.push(deck_id, from_shared(action));
             }
             Effect::Enter(side) => entering.set(Some(direction(side))),
-            Effect::Navigate(Destination::Previous) => navigator.go_back(),
+            Effect::Navigate(Destination::Previous) | Effect::Replace(Destination::Previous) => {
+                navigator.go_back();
+            }
+            Effect::Navigate(Destination::DeckList) | Effect::Replace(Destination::DeckList) => {
+                navigator.replace(Router::DeckList {});
+            }
             Effect::Toast(raised) => ui_toast::raise(toast, raised),
         }
     }
@@ -182,20 +189,28 @@ impl Driver {
         } = self;
         spawn(async move {
             let deck = authed
-                .run("load_deck", |c, s| async move {
+                .try_run("load_deck", |c, s| async move {
                     c.fetch_deck(deck_id, &s).await
                 })
                 .await;
-            let Some(deck) = deck else {
-                self.dispatch(Action::Failed { ticket });
-                return;
-            };
-            deck_cards_for_filter.set(deck.entries.iter().map(|e| e.card.clone()).collect());
-            self.dispatch(Action::Loaded {
-                ticket,
-                deck: Box::new(deck),
-            });
-            self.bump_filter();
+            let action = missing_deck::settle(
+                deck,
+                |deck| {
+                    deck_cards_for_filter
+                        .set(deck.entries.iter().map(|e| e.card.clone()).collect());
+                    Action::Loaded {
+                        ticket,
+                        deck: Box::new(deck),
+                    }
+                },
+                Action::Gone { ticket },
+                Action::Failed { ticket },
+            );
+            let loaded = matches!(action, Action::Loaded { .. });
+            self.dispatch(action);
+            if loaded {
+                self.bump_filter();
+            }
         });
     }
 
@@ -490,28 +505,12 @@ pub fn Remove(deck_id: Uuid) -> Element {
     let board_filter = state.board();
     drop(state);
 
+    let no_card = current.is_none();
     rsx! {
             div { class: "screen",
-                ScreenHeader { title: remove_cards::TITLE, hint: swipe_hint_open }
+                ScreenHeader { title: remove_cards::TITLE, hint: swipe_hint_open, back: move |()| driver.dispatch(Action::Back) }
 
                 div { class: "screen-content card-swipe content-enter",
-
-                // Board filter chips
-                div { style: "max-width: 40rem; width: 100%; padding: 0 1rem;",
-                    div { class: "chip-row",
-                        span { class: "stat-chip stat-chip-p1 chip-row-label", {remove_cards::BOARDS} }
-                        for variant in BoardFilter::ALL {
-                            Chip {
-                                selected: board_filter == variant,
-                                onclick: move |_| {
-                                    driver.dispatch(Action::PickBoard(variant));
-                                    driver.bump_filter();
-                                },
-                                "{variant.label()}"
-                            }
-                        }
-                    }
-                }
 
                 div { class: "form-container",
                     if !stack_empty {
@@ -549,34 +548,51 @@ pub fn Remove(deck_id: Uuid) -> Element {
                 }
             }
 
-            ActionBar {
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| driver.dispatch(Action::Back),
-                    {remove_cards::BACK}
-                }
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| filters_overlay_open.set(true),
-                    {remove_cards::FILTER}
-                    if !filter_builder.read().is_empty() || filter_builder.read().sort().is_some() {
-                        span { class: "filter-dot" }
+            // The bottom row: the board chips on the left, the action dock
+            // (filter, refresh, card details) on the right.
+            div { class: "swipe-bottom-row",
+                div { class: "swipe-bottom-chips",
+                    for variant in BoardFilter::ALL {
+                        Chip {
+                            selected: board_filter == variant,
+                            onclick: move |_| {
+                                driver.dispatch(Action::PickBoard(variant));
+                                driver.bump_filter();
+                            },
+                            "{variant.label()}"
+                        }
                     }
                 }
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| {
-                        // Refresh rewinds the stack, which ends any entrance.
-                        entering.set(None);
-                        driver.dispatch(Action::Refresh);
-                        if filter_builder.peek().sort() == Some(CardSortKey::Random) {
-                            driver.bump_filter();
-                        }
-                    },
-                    {remove_cards::REFRESH}
-                }
-                if current.is_some() {
-                    RulesButton { open: show_details }
+                div { class: "action-dock",
+                    DockFilter {
+                        label: remove_cards::FILTER,
+                        dot: !filter_builder.read().is_empty() || filter_builder.read().sort().is_some(),
+                        onclick: move |()| filters_overlay_open.set(true),
+                    }
+                    button {
+                        class: "action-dock-btn",
+                        "aria-label": remove_cards::REFRESH,
+                        onclick: move |_| {
+                            // Refresh rewinds the stack, which ends any entrance.
+                            entering.set(None);
+                            driver.dispatch(Action::Refresh);
+                            if filter_builder.peek().sort() == Some(CardSortKey::Random) {
+                                driver.bump_filter();
+                            }
+                        },
+                        DockIcon { path: action_dock::REFRESH }
+                    }
+                    span { class: "action-dock-divider" }
+                    button {
+                        class: "action-dock-btn",
+                        "aria-label": "Card details",
+                        disabled: no_card,
+                        onclick: move |_| {
+                            let mut open = show_details;
+                            open.toggle();
+                        },
+                        EyeIcon {}
+                    }
                 }
             }
 

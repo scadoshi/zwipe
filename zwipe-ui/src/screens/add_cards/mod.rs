@@ -35,7 +35,7 @@ use crate::timing;
 use crate::toast::{Toast, ToastKind};
 
 /// The screen's title.
-pub const TITLE: &str = "Add deck cards";
+pub const TITLE: &str = "Add";
 
 /// The hint's title.
 pub const HINT_TITLE: &str = "Swipe to build";
@@ -46,13 +46,13 @@ pub const FROM: &str = "From";
 /// The chip that narrows Search to the commander's synergy pool.
 pub const SYNERGY: &str = "Synergy";
 
-/// The action bar's button back to where the user came from.
+/// The Back button, to where the user came from.
 pub const BACK: &str = "Back";
 
-/// The action bar's button that opens the filter sheet.
+/// The button that opens the filter sheet.
 pub const FILTER: &str = "Filter";
 
-/// The action bar's button that searches again, or reloads the maybeboard.
+/// The button that searches again, or reloads the maybeboard.
 pub const REFRESH: &str = "Refresh";
 
 /// The printings sheet's toast once a printing is picked.
@@ -134,6 +134,8 @@ pub const MAYBEBOARD_REFRESHED: &str = "Maybeboard refreshed";
 pub enum Destination {
     /// Wherever the user came from, from Back.
     Previous,
+    /// The deck list, in place of a screen whose deck is gone.
+    DeckList,
 }
 
 /// Which pile the screen swipes.
@@ -155,7 +157,16 @@ impl Source {
     pub fn label(self) -> &'static str {
         match self {
             Self::Search => "Search",
-            Self::Maybeboard => "Maybeboard",
+            Self::Maybeboard => "Maybe",
+        }
+    }
+
+    /// The other source: what a tap on the one-chip source toggle switches to.
+    #[must_use]
+    pub fn toggled(self) -> Self {
+        match self {
+            Self::Search => Self::Maybeboard,
+            Self::Maybeboard => Self::Search,
         }
     }
 }
@@ -261,6 +272,11 @@ pub enum Action {
     },
     /// The request holding `ticket` failed. The client has already reported it and raised its error toast.
     Failed {
+        /// The ticket from the request this answers.
+        ticket: Ticket,
+    },
+    /// The request holding `ticket` found no deck: the server no longer has it. The client has already reported it and raised its toast.
+    Gone {
         /// The ticket from the request this answers.
         ticket: Ticket,
     },
@@ -436,6 +452,8 @@ pub enum Effect {
     },
     /// Goes to this screen.
     Navigate(Destination),
+    /// Goes to this screen in place of the current one, so Back skips a screen with nothing left to show.
+    Replace(Destination),
     /// Raises this toast.
     Toast(Toast),
 }
@@ -561,6 +579,7 @@ impl State {
             Action::Taken { ticket, taken } => self.taken(ticket, taken),
             Action::NotSent { ticket } => self.not_sent(ticket),
             Action::Failed { ticket } => self.failed(ticket),
+            Action::Gone { ticket } => self.gone(ticket),
             Action::Filter(filter) => {
                 self.filter = filter;
                 let effects = self.fresh_search();
@@ -943,6 +962,12 @@ impl State {
     }
 
     /// Settles a failed request.
+    fn gone(&mut self, ticket: Ticket) -> Vec<Effect> {
+        let mut effects = self.failed(ticket);
+        effects.push(Effect::Replace(Destination::DeckList));
+        effects
+    }
+
     fn failed(&mut self, ticket: Ticket) -> Vec<Effect> {
         let Some(deck_id) = self.deck_id else {
             return Vec::new();

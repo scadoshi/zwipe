@@ -4,8 +4,8 @@
 //! file draws its state and performs its effects.
 
 use components::{
-    ActionBar, AlertDialog, Button, ButtonVariant, DialogAction, HintBullet, HintBullets,
-    HintDialog, HintKey, TOAST_NORMAL, ToastOptions, Toasts, use_toast,
+    AlertDialog, Button, ButtonVariant, DialogAction, HintBullet, HintBullets, HintDialog, HintKey,
+    TOAST_NORMAL, ToastOptions, Toasts, use_toast,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -20,7 +20,7 @@ use zwipe_core::http::contracts::deck_card::HttpPatchDeckCard;
 use zwipe_ui::deck::command_zone::Slot;
 use zwipe_ui::generation::Ticket;
 use zwipe_ui::screens::deck_view::{
-    self, Action, Destination, Dialog, Effect, MoreItem, Section, State,
+    self, Action, Destination, Dialog, Effect, MoreItem, Retailer, Section, State,
 };
 
 use super::components::clone_deck_dialog::CloneDeckDialog;
@@ -34,6 +34,7 @@ use super::components::deck_tags_section::DeckTagsSection;
 use super::components::deck_warnings::DeckWarnings;
 use super::components::more_buttons::{DeckDialogs, MoreButtons, use_deck_dialogs};
 use super::components::skeletons::{DeckProfileSkeleton, DeckStatsSkeleton};
+use super::missing_deck;
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::catalog_cache::CatalogCache;
 use crate::inbound::components::hint_host::HintTopic;
@@ -45,6 +46,7 @@ use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen, comp
 use crate::inbound::components::{guide_link, hint_dialog, ui_toast};
 use crate::inbound::router::Router;
 use crate::inbound::screens::oracle_tag_examples::OracleTagExamples;
+use crate::outbound::open_url;
 
 /// The deck view's model with the handles that perform its effects. Copy,
 /// so every handler and task holds its own.
@@ -168,8 +170,12 @@ impl Driver {
                 ui_toast::raise(self.toast, done);
             }
             Effect::OpenDialog(dialog) => self.dialogs.open(dialog),
+            Effect::OpenUrl(url) => open_url::open(&url),
             Effect::Navigate(destination) => {
                 self.navigator.push(route(destination));
+            }
+            Effect::Replace(destination) => {
+                self.navigator.replace(route(destination));
             }
             Effect::Toast(raised) => ui_toast::raise(self.toast, raised),
         }
@@ -182,6 +188,22 @@ impl Driver {
         self.dispatch(reply.map_or(Action::Failed { ticket }, landed));
     }
 
+    /// [`Self::settle`] for a fetch of the deck itself: a not-found reply is
+    /// [`Action::Gone`].
+    fn settle_deck<T>(
+        self,
+        ticket: Ticket,
+        reply: Result<T, ClientError>,
+        landed: impl FnOnce(T) -> Action,
+    ) {
+        self.dispatch(missing_deck::settle(
+            reply,
+            landed,
+            Action::Gone { ticket },
+            Action::Failed { ticket },
+        ));
+    }
+
     fn fetch_profile(self, ticket: Ticket, deck_id: Uuid) {
         spawn(async move {
             // try_run reports a failure and raises its error toast.
@@ -191,7 +213,7 @@ impl Driver {
                     c.fetch_deck_profile(deck_id, &s).await
                 })
                 .await;
-            self.settle(ticket, reply.ok(), |profile| Action::ProfileLoaded {
+            self.settle_deck(ticket, reply, |profile| Action::ProfileLoaded {
                 ticket,
                 profile: Box::new(profile),
             });
@@ -206,7 +228,7 @@ impl Driver {
                     c.fetch_deck(deck_id, &s).await
                 })
                 .await;
-            self.settle(ticket, reply.ok(), |deck| Action::DeckLoaded {
+            self.settle_deck(ticket, reply, |deck| Action::DeckLoaded {
                 ticket,
                 deck: Box::new(deck),
             });
@@ -399,7 +421,6 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
         hint_open: use_signal(|| false),
         dialogs: use_deck_dialogs(),
     };
-    let mut show_more_sheet = driver.dialogs.sheet;
     // First-deck tour: opens once per account when the model offers it on
     // the first Load; the header "?" reopens it on demand.
     let first_deck_hint_open = driver.hint_open;
@@ -460,8 +481,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
         .into_iter()
         .filter(|item| state.is_enabled(*item))
         .collect();
-    let buy_links = state.buy_links();
-    let buy_body = state.buy_body();
+    let buy_row = state.buy_links().is_some();
     let shared = state.share_token().is_some();
     let share_body = state.share_body();
     let clone_name = state.clone_name();
@@ -476,6 +496,9 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
     let category_bars: Option<Vec<(&str, usize, u32)>> =
         chart_metrics.as_ref().and_then(DeckMetrics::card_role_bars);
     let role_tags = chart_metrics.as_ref().map(|m| m.card_role_tags.clone());
+    let oracle_tag_bars: Option<Vec<(String, usize, u32)>> = chart_metrics
+        .as_ref()
+        .and_then(DeckMetrics::oracle_tag_bars);
 
     let draw_odds_data: Option<(u32, Vec<(&'static str, u32)>)> =
         chart_metrics.as_ref().map(DeckMetrics::draw_odds_buckets);
@@ -484,7 +507,11 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
 
     rsx! {
             div { class: "screen",
-                ScreenHeader { title: deck_view::TITLE, hint: first_deck_hint_open }
+                ScreenHeader {
+                    title: deck_view::TITLE,
+                    hint: first_deck_hint_open,
+                    back: move |()| driver.dispatch(Action::Back),
+                }
 
                 div { class: "screen-content",
                     match profile {
@@ -496,6 +523,31 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                     deck_profile: deck_profile.clone(),
                                     commander: commander,
                                     card_count: card_count,
+                                    actions: rsx! {
+                                        Button {
+                                            variant: ButtonVariant::Action,
+                                            class: "btn-icon",
+                                            onclick: move |_| driver.dispatch(Action::Edit),
+                                            EditIcon {}
+                                            span { class: "sr-only", {deck_view::EDIT} }
+                                        }
+                                        Button {
+                                            variant: ButtonVariant::Action,
+                                            class: "btn-icon",
+                                            disabled: !more_enabled.contains(&MoreItem::CloneDeck),
+                                            onclick: move |_| driver.dispatch(Action::More(MoreItem::CloneDeck)),
+                                            CloneIcon {}
+                                            span { class: "sr-only", {MoreItem::CloneDeck.short_label()} }
+                                        }
+                                        Button {
+                                            variant: ButtonVariant::Action,
+                                            class: "btn-icon",
+                                            disabled: !more_enabled.contains(&MoreItem::ShareDeck),
+                                            onclick: move |_| driver.dispatch(Action::More(MoreItem::ShareDeck)),
+                                            ShareIcon {}
+                                            span { class: "sr-only", {MoreItem::ShareDeck.short_label()} }
+                                        }
+                                    },
                                 }
 
                                 if sections.contains(&Section::Budget) {
@@ -522,6 +574,19 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                         DeckBudgetSection {
                                             total: total_line,
                                             average: average_line,
+                                        }
+                                        if buy_row {
+                                            div { class: "deck-buy-row",
+                                                span { class: "stat-chip stat-chip-p1 chip-row-label", {deck_view::BUY} }
+                                                for retailer in Retailer::ALL {
+                                                    Button {
+                                                        key: "{retailer:?}",
+                                                        variant: ButtonVariant::Action,
+                                                        onclick: move |_| driver.dispatch(Action::Buy(retailer)),
+                                                        {retailer.label()}
+                                                    }
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -555,15 +620,24 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                                     span { class: "info-row-value", style: "white-space:nowrap;", "{value}" }
                                                 }
                                             }
-                                            DeckCharts {
-                                                type_bars: type_bars.clone(),
-                                                category_bars: category_bars.clone(),
-                                                role_tags: role_tags.clone(),
-                                                describe_tag,
-                                                on_examples: open_examples,
-                                                type_hint: rsx! { InfoButton { topic: HintTopic::TypeChart } },
-                                                role_hint: rsx! { InfoButton { topic: HintTopic::RoleChart } },
-                                            }
+                                            // Keyed by deck so the charts' folds and open
+                                            // rows start over when the route moves to
+                                            // another deck. In its own block because a
+                                            // key goes on a block's first node.
+                                            {rsx! {
+                                                DeckCharts {
+                                                    key: "{deck_id}",
+                                                    type_bars: type_bars.clone(),
+                                                    category_bars: category_bars.clone(),
+                                                    oracle_tag_bars,
+                                                    role_tags: role_tags.clone(),
+                                                    describe_tag,
+                                                    on_examples: open_examples,
+                                                    type_hint: rsx! { InfoButton { topic: HintTopic::TypeChart } },
+                                                    role_hint: rsx! { InfoButton { topic: HintTopic::RoleChart } },
+                                                    oracle_tag_hint: rsx! { InfoButton { topic: HintTopic::OracleTagChart } },
+                                                }
+                                            }}
                                         }
                                     }
 
@@ -608,6 +682,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                             open_section: open_section,
                                             header_accessory: rsx! { InfoButton { topic: HintTopic::DrawOdds } },
                                             DrawOdds {
+                                                key: "{deck_id}",
                                                 deck_size: deck_size,
                                                 buckets: buckets,
                                             }
@@ -631,10 +706,29 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                     }
                                 }
 
+                                ActionPanel {
+                                    title: deck_view::DATA,
+                                    danger: false,
+                                    items: vec![MoreItem::ImportCards, MoreItem::ExportCards],
+                                    enabled: more_enabled.clone(),
+                                    driver,
+                                }
+                                ActionPanel {
+                                    title: deck_view::DANGER_ZONE,
+                                    danger: true,
+                                    items: vec![MoreItem::ClearSkips, MoreItem::DeleteDeck],
+                                    enabled: more_enabled,
+                                    driver,
+                                }
+
                             }
                             }
                         },
-                        None if failed => rsx! { p { class: "text-muted", {deck_view::LOAD_FAILED} } },
+                        None if failed => rsx! {
+                            div { class: "message-empty",
+                                span { class: "chip-note", {deck_view::LOAD_FAILED} }
+                            }
+                        },
                         None => rsx! {
                             div { class: "content-enter",
                                   style: "width: calc(100% - 4rem); display: flex; flex-direction: column; gap: var(--panel-gap); padding: 1rem 0;",
@@ -645,26 +739,14 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                     }
                 }
 
-            ActionBar { class: "content-enter-delayed",
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| driver.dispatch(Action::Back),
-                    {deck_view::BACK}
-                }
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| driver.dispatch(Action::Edit),
-                    {deck_view::EDIT}
-                }
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| driver.dispatch(Action::Cards),
-                    {deck_view::CARDS}
-                }
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| show_more_sheet.set(true),
-                    {deck_view::MORE}
+            // Cards, the screen's main action, floats at the bottom right.
+            if !failed {
+                div { class: "action-dock action-dock-right content-enter-delayed",
+                    Button {
+                        variant: ButtonVariant::Action,
+                        onclick: move |_| driver.dispatch(Action::Cards),
+                        {deck_view::CARDS}
+                    }
                 }
             }
 
@@ -684,9 +766,6 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
 
             MoreButtons {
                 dialogs: driver.dialogs,
-                enabled: more_enabled,
-                buy_links: buy_links,
-                buy_body: buy_body,
                 shared: shared,
                 share_body: share_body,
                 ondispatch: move |action| driver.dispatch(action),
@@ -708,9 +787,10 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                 title: "Welcome to your deck",
                 HintBullets {
                     HintBullet { HintKey { "Cards" } " browses, adds and removes cards" }
-                    HintBullet { HintKey { "Edit" } " changes the name, format, command zone, tags and targets" }
-                    HintBullet { HintKey { "More" } " imports, exports, clones, shares or deletes the deck" }
-                    HintBullet { "Skipped and removed cards stay out of the add stack. " HintKey { "More" } " then Clear skips brings them back" }
+                    HintBullet { "The pencil by " HintKey { "Profile" } " changes the name, format, command zone, tags and targets" }
+                    HintBullet { "Beside it, the two squares clone the deck and the box with the arrow shares a link to it" }
+                    HintBullet { "Import, export and delete are at the bottom of the page" }
+                    HintBullet { "Skipped and removed cards stay out of the add stack. " HintKey { "Clear skips" } " at the bottom brings them back" }
                     HintBullet { "Stats fill in as the deck grows. Tap a section to expand it" }
                     HintBullet { "Warnings flag rule problems, each with a one-tap fix" }
                 }
@@ -752,5 +832,88 @@ mod tests {
             route(Destination::Deck(deck_id)),
             Router::ViewDeck { deck_id }
         );
+    }
+}
+
+/// A panel of the deck's actions, one row each: the action's name, then its
+/// button, disabled while the model says it can't run. `danger` titles the
+/// panel in the danger color, as Account's Danger zone is.
+#[component]
+fn ActionPanel(
+    title: &'static str,
+    danger: bool,
+    items: Vec<MoreItem>,
+    enabled: Vec<MoreItem>,
+    driver: Driver,
+) -> Element {
+    rsx! {
+        div { class: "settings-list",
+            div { class: "settings-list-header",
+                span {
+                    class: if danger { "settings-list-title danger-zone-title" } else { "settings-list-title" },
+                    {title}
+                }
+            }
+            for item in items {
+                div { key: "{item.label()}", class: "settings-row",
+                    span { class: "settings-row-label", {item.label()} }
+                    div { class: "settings-row-value",
+                        Button {
+                            variant: ButtonVariant::Action,
+                            disabled: !enabled.contains(&item),
+                            danger: item.is_danger(),
+                            onclick: move |_| driver.dispatch(Action::More(item)),
+                            {item.short_label()}
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// The edit icon: a pencil.
+#[component]
+fn EditIcon() -> Element {
+    rsx! {
+        svg {
+            class: "profile-icon",
+            view_box: "0 0 24 24",
+            xmlns: "http://www.w3.org/2000/svg",
+            "aria-hidden": "true",
+            path { d: "M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4z" }
+            path { d: "M13.5 6.5l4 4" }
+        }
+    }
+}
+
+/// The clone icon: two overlapping squares.
+#[component]
+fn CloneIcon() -> Element {
+    rsx! {
+        svg {
+            class: "profile-icon",
+            view_box: "0 0 24 24",
+            xmlns: "http://www.w3.org/2000/svg",
+            "aria-hidden": "true",
+            rect { x: "9", y: "9", width: "11", height: "11", rx: "2" }
+            path { d: "M15 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3" }
+        }
+    }
+}
+
+/// The share icon: a box with an arrow rising out of it.
+#[component]
+fn ShareIcon() -> Element {
+    rsx! {
+        svg {
+            class: "profile-icon",
+            view_box: "0 0 24 24",
+            xmlns: "http://www.w3.org/2000/svg",
+            "aria-hidden": "true",
+            path { d: "M12 3v12" }
+            path { d: "M8 7l4-4 4 4" }
+            path { d: "M8 11H6a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-2" }
+        }
     }
 }
