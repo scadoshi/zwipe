@@ -1393,8 +1393,8 @@ code {
 /* The theme picker (switcher, dropdown, mode toggle) and its in-nav-panel
    overrides live in orangui (components.css). The site adds the pip toggle
    after it, so the two sit in one row: `.theme-controls` spaces them as the
-   picker spaces its own pair, and in the hamburger panel it takes over the
-   picker's divider so the toggle shares that row. */
+   picker spaces its own pair, and in the hamburger panel the two share the
+   kit's footer band. */
 .theme-controls {
     display: flex;
     align-items: center;
@@ -1406,14 +1406,12 @@ code {
     font-size: 0.85em;
 }
 
+/* In the hamburger panel the kit's trailing band already draws the rule
+   and the padding, so the pair only centers and wraps inside it. */
 @media (max-width: 60rem) {
     .nav-panel .theme-controls {
         justify-content: center;
         flex-wrap: wrap;
-        padding-top: 0.75rem;
-        border-top: 1px solid var(--border-primary);
-        margin-left: -0.75rem;
-        margin-right: -0.75rem;
     }
     .nav-panel .theme-controls .theme-picker {
         padding-top: 0;
@@ -1423,21 +1421,22 @@ code {
     }
 }
 
-@media (max-width: 60rem) and (max-height: 30rem) {
-    .nav-panel .theme-controls {
-        padding-top: 0.5rem;
-    }
-    .nav-panel .theme-controls .theme-picker {
-        padding-top: 0;
-    }
-}
-
 /* ==================
         footer
  ==================== */
 
 .site-footer {
     margin-top: 0;
+}
+
+/* The links under the copyright: Privacy policy, Community and Contribute
+   as pills, centered in one row. */
+.footer-links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    margin: 0.75rem 0 1rem;
 }
 
 /* Visually hidden but exposed to assistive tech and crawlers. Used for the

@@ -396,18 +396,17 @@ pub fn Nav() -> Element {
     }
 }
 
-/// The site footer: copyright, the privacy, community and contribute links, and the Scryfall and
+/// The site footer: the copyright, then Privacy policy, Community and Contribute as pills, and the Scryfall and
 /// Wizards notices.
 #[component]
 pub fn Footer() -> Element {
     rsx! {
         footer { class: "site-footer content-enter-delayed",
-            p { "© 2026 Zwipe | "
-                Link { to: Route::Privacy {}, "Privacy policy" }
-                " | "
-                Link { to: Route::Community {}, "Community" }
-                " | "
-                Link { to: Route::Contribute {}, "Contribute" }
+            p { "© 2026 Zwipe" }
+            div { class: "footer-links",
+                Link { to: Route::Privacy {}, class: "nav-cta", "Privacy policy" }
+                Link { to: Route::Community {}, class: "nav-cta", "Community" }
+                Link { to: Route::Contribute {}, class: "nav-cta", "Contribute" }
             }
             p { class: "site-footer-note",
                 "Card data and images from "
