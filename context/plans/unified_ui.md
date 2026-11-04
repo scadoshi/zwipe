@@ -16,7 +16,7 @@ These were settled with the owner before the per-screen review. A screen breaks 
 - The menu looks exactly like the web's folded nav: a full-width panel dropping from the header, items stacked, the current one lit.
 - The app's "!" support button leaves the header for the menu's bottom row.
 - Every screen but Home and the auth screens shows a back arrow in the left corner, boxed like the hamburger, calling the screen's own Back (the previous screen, or its fixed parent where it has one). Home is always the menu's first entry. Android's system back keeps working as it does now. (Decided 2026-11-03 while building)
-- Signed in, the menu's footer holds, after the About `i`, a paintbrush that opens the Themes sheet and folds the menu as it rises, and the kit's sun or moon naming the mode in use, which flips Dark/Light and saves it at once through the same path as Settings. No theme row over the icons: one band. Settings keeps its Theme row; signed out, the footer holds only the `!`. (owner, 2026-11-03)
+- Signed in, the menu's footer holds, after the About `i`, a palette that opens the Themes sheet and folds the menu as it rises, and the kit's sun or moon naming the mode in use, which flips Dark/Light and saves it at once through the same path as Settings. No theme row over the icons: one band. Settings keeps its Theme row; signed out, the footer holds only the `!`. (owner, 2026-11-03)
 
 ### Header
 

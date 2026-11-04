@@ -2,7 +2,7 @@
 //!
 //! Signed in, it lists the deck sections, then a footer with the `!` for
 //! Help and feedback, the icons for Home, Account, Settings and About, the
-//! theme's paintbrush and the mode's sun or moon, and Log out.
+//! theme's palette and the mode's sun or moon, and Log out.
 //! Signed out, it lists the auth screens. The entry for the screen
 //! on view, or the section it sits under, is lit.
 //!

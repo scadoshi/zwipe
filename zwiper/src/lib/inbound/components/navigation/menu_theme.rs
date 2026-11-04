@@ -1,4 +1,4 @@
-//! The main menu's theme buttons, after the footer's icons: a paintbrush
+//! The main menu's theme buttons, after the footer's icons: a palette
 //! that opens the Themes sheet and the mode's sun or moon, which flips
 //! Dark/Light.
 //!
@@ -14,7 +14,7 @@ use components::{ModeIcon, ThemeConfig, Toasts, use_toast};
 use dioxus::prelude::*;
 use zwipe_ui::screens::config::{Action, Effect, Sheet, State};
 
-use crate::inbound::components::action_dock::{BRUSH, DockIcon};
+use crate::inbound::components::action_dock::{DockIcon, PALETTE};
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::telemetry::vocabulary::{ProfileScreen, Screen};
 use crate::inbound::components::theme_save::{self, ThemeSaveSheet, theme_config_of, theme_of};
@@ -84,7 +84,7 @@ impl Driver {
     }
 }
 
-/// The signed-in menu's theme buttons, two footer icons: the paintbrush
+/// The signed-in menu's theme buttons, two footer icons: the palette
 /// opens the Themes sheet and folds the menu, and the sun or moon names the
 /// mode in use and flips it, saving at once.
 #[component]
@@ -104,7 +104,7 @@ pub fn MenuTheme(open: Signal<bool>) -> Element {
             class: "btn-action app-nav-icon",
             "aria-label": "Theme",
             onclick: move |_| driver.dispatch(Action::OpenThemes),
-            DockIcon { path: BRUSH }
+            DockIcon { path: PALETTE }
         }
         button {
             class: "btn-action app-nav-icon",
