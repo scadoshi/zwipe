@@ -65,7 +65,7 @@ pub fn Shell() -> Element {
                         // folded menu's footer holds them as icons.
                         for section in [Section::Account, Section::Config] {
                             li { key: "{section.label()}", class: "web-nav-wide",
-                                NavLink { to: route_of(section), label: wide_label(section), current: current == Some(section), open }
+                                NavLink { to: route_of(section), label: section.label(), current: current == Some(section), open }
                             }
                         }
                         li {
@@ -226,15 +226,6 @@ fn BackButton(back: Option<Back>, mut open: Signal<bool>) -> Element {
                 }
             },
         }
-    }
-}
-
-/// A wide window's pill text for a footer section: Config keeps its name
-/// there until the screen is renamed with the next merge of main.
-const fn wide_label(section: Section) -> &'static str {
-    match section {
-        Section::Config => "Config",
-        other => other.label(),
     }
 }
 

@@ -1,4 +1,5 @@
-//! Config: the `Appearance` and `Cards` lists side by side on a wide window,
+//! Settings (the `config` screen): the `Appearance` and `Cards` lists side
+//! by side on a wide window,
 //! Themes as a side panel and Exceptions as a modal. The app's `App icon`
 //! row is left out, since a browser has no app icon.
 
@@ -11,6 +12,7 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::user::models::preferences::{self as user_preferences, PipColor};
 use zwipe_core::http::contracts::user::HttpUpdatePreferences;
+use zwipe_ui::screens::config;
 
 use crate::domain::preferences::{self, RequestSeq};
 use crate::inbound::chrome::authed::use_authed;
@@ -34,7 +36,7 @@ fn update(edit: impl FnOnce(&mut HttpUpdatePreferences)) -> HttpUpdatePreference
     request
 }
 
-/// The config screen. Theme and pips show at once from what this browser
+/// The Settings screen. Theme and pips show at once from what this browser
 /// has; the Universes Beyond controls wait for the account's preferences,
 /// and stay disabled for the visit if that load fails. Every toggle flips at
 /// once, saves, and says what it did; a failure puts back the value from
@@ -148,7 +150,7 @@ pub fn Config() -> Element {
 
     rsx! {
         ScreenFrame {
-            title: "Config",
+            title: config::TITLE,
             description: page_description(OneTimeHint::Config),
             on_hint: move |()| {
                 let mut hint_open = hint_open;

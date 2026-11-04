@@ -36,6 +36,7 @@ use crate::inbound::shell::{OpenFrame, PublicFrame, Shell};
 #[expect(missing_docs, reason = "each route field is the URL parameter its path names")]
 pub enum Route {
     #[redirect("/changelog", || Route::About {})]
+    #[redirect("/config", || Route::Config {})]
     // == public ==
     #[layout(PublicFrame)]
         /// Username or email and password.
@@ -66,8 +67,9 @@ pub enum Route {
         /// Username, email, password, log out, delete account.
         #[route("/user")]
         Account {},
-        /// Theme, pips and Universes Beyond.
-        #[route("/config")]
+        /// Settings: theme, pips and Universes Beyond. The old `/config`
+        /// redirects here.
+        #[route("/settings")]
         Config {},
         /// The version, the links, the credits and the release history.
         #[route("/about")]
