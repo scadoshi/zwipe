@@ -11,8 +11,10 @@
 //! long rows), the [`ColorMap`] and [`ZwipeArchitecture`]. The pieces the
 //! two clients' chrome shares sit here too: the [`icons`] module's stroke
 //! paths with [`DockIcon`] and [`EyeIcon`], the dock's [`DockFilter`],
-//! [`DangerZoneAction`], the one-row Danger zone panel, and [`MenuSection`],
-//! the main menu's section list.
+//! [`DangerZoneAction`], the one-row Danger zone panel, [`MenuSection`],
+//! the main menu's section list, and Home's [`HomeDecks`] and
+//! [`HomeColors`] panels with [`ColorMapEmpty`], the line a color map shows
+//! before any deck has a card.
 //!
 //! Styling ships as string constants to inline through `document::Style`.
 //! orangui's sheets come through as they are; [`MAGIC_CSS`] holds this crate's
@@ -45,6 +47,8 @@ mod danger_zone;
 mod dock_filter;
 mod flippable_card_image;
 mod fold;
+mod home_colors;
+mod home_decks;
 pub mod icons;
 mod keyword_chips;
 mod menu_section;
@@ -66,6 +70,8 @@ pub use danger_zone::DangerZoneAction;
 pub use dock_filter::DockFilter;
 pub use flippable_card_image::{FlippableCardImage, reset_image_ease};
 pub use fold::{FOLD_AT, Fold, SEE_LESS, SEE_MORE, SeeMore, fold_split};
+pub use home_colors::{ColorMapEmpty, HomeColors};
+pub use home_decks::HomeDecks;
 pub use icons::{DockIcon, EyeIcon};
 pub use keyword_chips::{KeywordChips, KeywordReminders};
 pub use menu_section::MenuSection;

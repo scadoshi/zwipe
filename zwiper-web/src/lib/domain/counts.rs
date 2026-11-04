@@ -1,5 +1,5 @@
-//! Everybody's counters on the public screens: one shared copy, fetched at
-//! most once a minute.
+//! Everybody's counters: one shared copy above the router, fetched at most
+//! once a minute.
 
 use chrono::{DateTime, Duration, Utc};
 use zwipe_core::http::contracts::metrics::HttpPublicMetrics;
@@ -33,8 +33,8 @@ impl CachedCounts {
         }
     }
 
-    /// Restored, or older than zwipe-ui's [`COUNTS_FRESH`] at `now`, so a
-    /// mounting hero fetches again. The copy stays on screen while it does.
+    /// Restored, or older than zwipe-ui's [`COUNTS_FRESH`] at `now`, so Home
+    /// fetches again. The copy stays on screen while it does.
     pub fn is_stale(&self, now: DateTime<Utc>) -> bool {
         let fresh = Duration::from_std(COUNTS_FRESH).unwrap_or(Duration::MAX);
         self.fetched_at
@@ -45,12 +45,6 @@ impl CachedCounts {
     pub fn is_live(&self) -> bool {
         self.fetched_at.is_some()
     }
-}
-
-/// Whether a hero mounting at `now` should fetch: no copy, a restored one,
-/// or one past zwipe-ui's [`COUNTS_FRESH`].
-pub fn needs_fetch(cache: Option<&CachedCounts>, now: DateTime<Utc>) -> bool {
-    cache.is_none_or(|cached| cached.is_stale(now))
 }
 
 #[cfg(test)]
@@ -66,14 +60,9 @@ mod tests {
     }
 
     #[test]
-    fn nothing_cached_fetches() {
-        assert!(needs_fetch(None, Utc::now()));
-    }
-
-    #[test]
-    fn a_restored_copy_fetches_and_is_not_live() {
+    fn a_restored_copy_is_stale_and_not_live() {
         let cached = CachedCounts::restored(metrics());
-        assert!(needs_fetch(Some(&cached), Utc::now()));
+        assert!(cached.is_stale(Utc::now()));
         assert!(!cached.is_live());
     }
 
@@ -82,7 +71,7 @@ mod tests {
         let at = Utc::now();
         let cached = CachedCounts::fetched(metrics(), at);
         assert!(cached.is_live());
-        assert!(!needs_fetch(Some(&cached), at + Duration::seconds(59)));
-        assert!(needs_fetch(Some(&cached), at + Duration::seconds(60)));
+        assert!(!cached.is_stale(at + Duration::seconds(59)));
+        assert!(cached.is_stale(at + Duration::seconds(60)));
     }
 }
