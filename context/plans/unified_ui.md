@@ -1,42 +1,43 @@
 # One UI for the app and the web
 
-**Status: SPEC COMPLETE (2026-11-03), not built.** Every screen was reviewed with the owner, most of them in the simulator; the build follows the work order below. Nothing ships to users on zwiper-web until both clients follow it.
+**Status: built, in review on devices, ships as 1.18.0.** Every screen was reviewed with the owner on 2026-11-03, most in the simulator, and the app follows this file. zwiper-web's narrow layout follows on `feat/web`; nothing ships to users there until both clients match.
 
-The app and zwiper-web drifted into two layouts: the app has a full-width bottom footer of actions on 27 surfaces and a "!" / title / "?" header, while the web has zite's nav bar, a hamburger below 900px, page heads and panels with their own footers. The goal is one layout grammar, so that finishing the web is wiring and not redesign. The app moves toward the web's chrome, and the web at phone width moves toward the app.
+The app and zwiper-web had drifted into two layouts: the app a full-width bottom footer of actions and a "!" / title / "?" header, the web zite's nav bar with a hamburger below 900px, page heads and panels with their own footers. This file is the one layout grammar, so finishing the web is wiring and not redesign. The app took the web's chrome, and the web at phone width takes the app's.
 
 ## Global rules
 
-These were settled with the owner before the per-screen review. A screen breaks one only when its section below says so.
+Settled with the owner before the per-screen review. A screen breaks one only when its section below says so.
 
 ### Navigation
 
-- The app gets the web's folded nav, the same `NavBar` from the kit: the screen's title with its `?` in the middle and the hamburger at the top right. No Z mark (owner, 2026-11-03): Home is the menu's first entry and Home's hero carries the logo, so the left corner is empty on Home and the auth screens and holds the back arrow everywhere else. zwiper-web's and zite's narrow views drop their Z mark the same way; zite keeps it on wide windows. Tapping the hamburger drops down the list of sections as buttons, exactly as the web does below 900px.
-- The menu lists, signed in: Home, Decks, Playstyle, Activity, Commander maybeboard, Account, Settings and About, one list with no rule. Under them a small bottom row holds a `!` for Help & feedback and a small Log out, not full menu items.
-- Account and Settings (today's Config) stay two screens. Log out is also in Account's danger zone.
-- The menu looks exactly like the web's folded nav: a full-width panel dropping from the header, items stacked, the current one lit.
-- The app's "!" support button leaves the header for the menu's bottom row.
-- Every screen but Home and the auth screens shows a back arrow in the left corner, boxed like the hamburger, calling the screen's own Back (the previous screen, or its fixed parent where it has one). Home is always the menu's first entry. Android's system back keeps working as it does now. (Decided 2026-11-03 while building)
-- Signed in, the menu's footer holds, after the About `i`, a palette that opens the Themes sheet and folds the menu as it rises, and the kit's sun or moon naming the mode in use, which flips Dark/Light and saves it at once through the same path as Settings. No theme row over the icons: one band. Settings keeps its Theme row; signed out, the footer holds only the `!`. (owner, 2026-11-03)
+- Every screen opens with the kit's `NavBar`, folded: the screen's title with its `?` in the middle and the hamburger at the top right. No Z mark (owner, 2026-11-03): Home is in the menu and Home's hero carries the logo, so the left corner is empty on Home and the auth screens and holds the back arrow everywhere else. zwiper-web's and zite's narrow views drop their Z mark the same way; zite keeps it on wide windows.
+- The menu, signed in, lists four sections as text rows: Decks, Playstyle, Activity, Commander maybeboard. The current section is lit; a deck's inner screens light Decks, the privacy policy lights About.
+- Under the list one footer row holds, left to right, the `!` for Help & feedback, then Home, Account, Settings and About as icons (house, person, cog, circled i), then the theme pair (owner, 2026-11-03): a palette that opens the Themes sheet and folds the menu as it rises, and the kit's sun or moon naming the mode in use, which flips Dark/Light and saves at once through the same path as Settings' Theme row. A small Log out sits at the row's right and asks first. No theme row over the icons: one band.
+- Signed out, the menu lists Log in, Create profile and Forgot password, and the footer holds only the `!`.
+- Account and Settings (the `config` screen) stay two screens. Log out is also in Account's Danger zone.
+- The menu looks exactly like the web's folded nav: a full-width panel dropping from the header, items stacked, the current one lit. Its open state is app-wide, so a tap on an entry only navigates and the next screen's header folds the panel over its own content.
+- Every screen but Home and the auth screens shows a back arrow in the left corner, boxed like the hamburger, calling the screen's own Back (the previous screen, or its fixed parent where it has one). Android's system back and the iOS edge swipe close an open menu before they leave the screen. (Decided 2026-11-03 while building)
 
 ### Header
 
-- The header bar is about 43pt tall, down from 58pt: 0.5rem of padding around one 1.7rem row, the corner buttons' height, so every screen is the same height. The safe area above it stays, since the Dynamic Island sits in it.
-- The hamburger and the back arrow are gentle: small soft boxes (2.1 by 1.7rem, 0.4rem corners) at 0.55 opacity like the old `?` and `!` corner buttons, full strength while pressed or open, the hamburger's bars short and 2px thick. The portfolio site and zite take the same look when their navs are next touched.
-- The header follows the scroll, as in X: scrolling down slides it up behind the status bar point for point until only the safe area shows, and any scroll up slides it back the same way. It never snaps on a threshold. The safe area strip keeps the page background, so content doesn't run under the clock and the island.
-- The back arrow, the title and the hamburger go with it; they come back together.
-- Swipe screens don't scroll, and a swipe down there is undo, so their header is always shown.
+- The header bar is about 43pt tall: 0.5rem of padding around one 1.7rem row, the corner buttons' height, so every screen is the same height. The safe area above it stays, since the Dynamic Island sits in it.
+- The hamburger and the back arrow are gentle: small soft boxes (2.1 by 1.7rem, 0.4rem corners) at 0.55 opacity, full strength while pressed or open, the hamburger's bars short and 2px thick. The portfolio site and zite take the same look when their navs are next touched.
+- The header follows the scroll, as in X: scrolling down slides it up behind the status bar point for point until only the safe area shows, and any scroll up slides it back the same way. It never snaps on a threshold. The safe area strip keeps the page background, so content does not run under the clock and the island.
+- The back arrow, the title and the hamburger go with it and come back together.
+- Swipe screens do not scroll, and a swipe down there is undo, so their header is always shown.
 
 ### Actions
 
-- The app's bottom footer goes away. A screen's actions (Edit, Clone, Share, Delete and the like) sit inline in the content, like the web's panel footers.
-- A screen's one or two main actions can float instead: compact buttons just above the bottom edge, always on screen, with no bar behind them and the content scrolling underneath. Decks' Create and the maybeboard's Filter float. A list's own action (the commander lists' Swipe) sits in that list's header, beside its `?`, so it says what it acts on (owner, 2026-11-03).
-- The action dock is a screen's icon actions in one floating squircle bar at the bottom right (Cards first). It has no minimize button: it covers only a corner and each screen keeps room to scroll clear of it. If it ever crowds content, it shrinks with the header on scroll instead.
-- Icons stand in for words only where the symbol is standard (+, −, a funnel, undo, refresh, the eye). Each icon has an accessible label, and the screen's hint names each one once.
-- A form's primary button (Log in, Import) sits at the end of the form, right after the last field, and scrolls with the content. The deck form is the exception, since it runs about three screens: its Save (Edit) floats from the moment something changes, and its Create (Create deck) floats once the form is valid.
-- The three sign-in forms have no action dock (owner, 2026-11-03): the submit is the kit's full-width button under the last field, Log in, Create profile or Send, and the links to the other sign-in screens are chips under it, each on its own row, centered, so a new user finds Create profile and Forgot password without opening the menu. Login links to Create profile and Forgot password, Create profile to Log in, Forgot password to Log in and Create profile. Return in a field submits.
-- Nothing hides behind More. Each action a More sheet holds today sits inline where it belongs, destructive ones in red. The four More sheets (Deck view, Decks, Account, Maybeboard and Suggested commanders) go away.
-- No footer anywhere, overlays included (owner, 2026-11-03). A bottom sheet or picker (format, deck tags, oracle tags, card filter, printings, card details, app icon, Universes Beyond) closes with a swipe down or a close button in its title bar, and its Apply or Save is a checkmark in an action dock at its bottom right; the filter's Reset is the × on its funnel, as on Cards.
-- Swipe screens (Add, Remove, Swipe select) float their actions as icons (Filter, Refresh, the eye) in the bottom-right corner just above the bottom edge. Undo stays the swipe down.
+- No screen has a bottom bar. A screen's actions sit inline in the content, like the web's panel footers, or float.
+- The action dock is a screen's icon actions in one floating squircle bar at the bottom right. It has no minimize button: it covers only a corner and each screen keeps room to scroll clear of it. Floating buttons rise above the keyboard.
+- A screen's one or two main actions float in that dock. Decks' Create is a + there; the maybeboard's Filter floats as a chip. A list's own action (the commander lists' Swipe) sits in that list's header, beside its title, so it says what it acts on (owner, 2026-11-03).
+- Icons stand in for words only where the symbol is standard (+, −, a funnel, undo, refresh, a checkmark, the eye, two sheets for Copy, a paper plane for Send, chain links for Synergy). Each icon has an accessible label, and the screen's hint names each one once.
+- A form's primary action sits in the dock as an icon: Import's import, Export's Copy. The deck form's Save (Edit) is a checkmark in the dock from the moment something changes, and its Create (Create deck) once the form is valid.
+- The three sign-in forms have no action dock (owner, 2026-11-03): the submit is the kit's full-width button under the last field, Log in, Create profile or Send, and the links to the other sign-in screens are chips in one centered row beneath it, so a new user finds Create profile and Forgot password without opening the menu. Login links to Create profile and Forgot password, Create profile to Back to login, Forgot password to Back to login and Create profile. Return in a field submits.
+- Nothing hides behind More. Each action a More sheet held sits inline where it belongs, destructive ones in red in a Danger zone panel. There is no More sheet.
+- No footer anywhere, overlays included (owner, 2026-11-03). A bottom sheet or picker (format, deck tags, oracle tags, card filter, printings, card details, app icon, Universes Beyond) closes with a swipe down or an × in its corner, and its Apply or Save is a checkmark in an action dock at its bottom right.
+- The card filter sheet's Reset is an undo icon beside that checkmark in the sheet's own dock: it stages the default, Apply commits it, closing undoes it. On Cards the dock's funnel also carries a small × while a filter is on, which resets at once. Open question for the owner: the plan called for the × on the funnel only, and the sheet's undo icon shipped alongside it; keep both, or drop the ×.
+- Swipe screens (Add, Remove, Swipe select, Oracle tag examples) float their actions as icons (Filter, Refresh, the eye) in the dock. Undo stays the swipe down. Add's Synergy is the link icon beside the filter.
 
 ### Where overlays open
 
@@ -48,11 +49,11 @@ These were settled with the owner before the per-screen review. A screen breaks 
 
 ### Hints
 
-- Every hint that names a footer button or More is rewritten for where the action now sits. The deck view's welcome hint ("More imports, exports, clones, shares or deletes the deck") is the first; the build pass checks every hint in `zwipe-ui/src/hint/`.
+- Every hint names the control as it sits now: the dock's icons, Colors, the + button, Danger zone. No hint names a footer button or More. `zwipe-ui/src/hint/` holds the copy.
 
 ### Home
 
-- Home is a dashboard, not a launcher: the hero, Decks, Colors and Featured flavor. Navigation lives in the menu, apart from Home's two shortcuts (Activity, Playstyle).
+- Home is a dashboard, not a launcher: the hero, Decks, Colors and Featured flavor. Navigation lives in the menu, apart from Home's shortcuts (Activity in the hero, All decks and Playstyle in the panel headers).
 
 ### zwiper-web at phone width
 
@@ -60,112 +61,108 @@ These were settled with the owner before the per-screen review. A screen breaks 
 
 ## Web follow-ups
 
-What zwiper-web and zite change to match, kept as the app changes. Items marked kit land in orangui, so zite, zwiper-web, cairn and the portfolio site take them together.
+What zwiper-web and zite change to match. Items marked kit land in orangui, so zite, zwiper-web, cairn and the portfolio site take them together.
 
 - Kit: the gentle hamburger and back arrow (2.1 by 1.7rem, 0.4rem corners, 0.55 opacity, 2px bars) in `NavBar`, so every site's folded nav matches the app.
 - Kit: a tap outside an open menu closes it everywhere, and nothing that transforms the bar may trap its backdrop.
 - Kit: the theme picker opens as a bottom sheet below the 60rem fold (phone width) and stays the drop-down on wide windows (owner, 2026-11-03).
-- Kit: bottom sheets lose their footers: a close button in the title bar, drag down to close, Apply or Save as a dock checkmark.
-- zwiper-web narrow view: no Z mark, a back arrow on screens below a section, the same menu (Home first, Help & feedback and Log out in its footer), no page footers, and the action docks, floating Cards, Data and Danger zone panels, Settings and About as in the app.
+- Kit: bottom sheets have no footers: an × in the corner, drag down to close, Apply or Save as a dock checkmark.
+- zwiper-web narrow view: no Z mark, a back arrow on screens below a section, the same menu (the four sections, the footer icons, the theme pair, Help & feedback and Log out), no page footers, and the action docks, floating Cards, Data and Danger zone panels, Settings and About as in the app.
 - zwiper-web narrow view: the swipe screens' layout (pile chips on the bottom row beside the dock, only prices under the card, Synergy as the dock's link icon, the From toggle chip).
 - zwiper-web: Config's route becomes `/settings`; screen titles come from zwipe-ui, so Add, Remove, Cards and Settings arrive with the next merge of main.
 - zite: at phone width its nav drops the Z mark, as the app's does (owner, 2026-11-03); wide windows keep it as the marketing site's brand. Otherwise it takes the kit items above.
 
 ## At release
 
-zwipe.net's guides and the privacy policy describe the shipped app, so they change on the day the release that carries this goes live, not before. Lines that name the old layout (2026-11-03):
+zwipe.net's guides and the privacy policy describe the shipped app, so they change on the day 1.18.0 goes live, not before. Lines that still name the old layout (2026-11-03):
 
-- `zite/src/pages/guides/content.rs`: Clear skips "Open the deck's More menu" (about line 348), the maybeboard "More, then Commander maybeboard" and "More, then Clear maybeboard" (592, 623), Playstyle "tap More, then Clear skips" (685), and "Open the deck and tap More" (1008).
+- `zite/src/pages/guides/content.rs`: "Clear skips in the deck's More menu" (about line 249), "Open the deck's More menu and tap Clear skips" (348), the maybeboard "More, then Commander maybeboard" and "More, then Clear maybeboard" (592, 623), Playstyle "tap More, then Clear skips" (685), and "Open the deck and tap More" (1008).
 - `zwipe-core/src/legal/mod.rs`: the privacy policy's "you can clear this anytime from the deck's More menu".
 - Any guide screenshot showing the old footer, the "!" button or Config.
 
-## Footer inventory
+## Where each screen's actions sit
 
-Every footer in the app on 2026-11-03 and where its actions go. Where an action lands inside the content is settled in each screen's review.
-
-| Screen | Footer today | Goes to |
-|---|---|---|
-| Home | Decks, Account, Config | the menu |
-| About 20 screens | Back, with others | the header's back arrow |
-| Decks | Back, Create, More (Commander maybeboard, Playstyle) | Create floats; More's two links move to the menu |
-| Deck view | Back, Edit, Cards, More | see Deck view below |
-| Account | Back, Log out, More (Delete account) | a danger zone at the very bottom holds Log out and Delete account, Delete in red; the menu has Log out too |
-| Export | Back, Copy | Copy inline |
-| Add, Remove, Swipe select | Back, Filter, Refresh, the eye | Filter, Refresh and the eye float as icons in the bottom-right corner |
-| Cards (today's Deck cards) | Back, Add, Remove, Filter, Undo, Reset filter | the action dock, floating at the bottom right: + and −, a full-height divider, the filter funnel and undo; reset is a small squircle × on the funnel, shown only while a filter is on |
-| Commander maybeboard | Back, Filter, Swipe, More (Clear maybeboard) | Filter floats; Swipe in the list's header; Clear maybeboard inline |
-| Suggested commanders, Playstyle | Back, Swipe, More (Clear skips) | Swipe in the list's header; Clear skips inline |
-| Activity, Settings, Privacy policy, dictionary, examples | Back | the back arrow, nothing else |
-| Import | Back, Import | Import at the end of the form |
-| Create and Edit deck | Back, and Save or Create once there is something to save | Save and Create float |
-| Login, Register, Forgot password | their form buttons | each form's own button at its end; signed out, the menu lists Log in, Create profile, Forgot password and Privacy policy, and the forms carry no links to each other |
-| Overlays | Back with Save, or Back, Apply, Reset | a slimmer footer of their own |
-
-## Work order
-
-1. Review every screen below into this file. Done 2026-11-03.
-2. Build the app's new chrome once: the nav, the hiding header, the back arrow, no footer.
-3. Redo the app screen by screen.
-4. Bring zwiper-web's narrow layout to match, on `feat/web`, then finish the shared-model switches there.
+| Screen | Actions |
+|---|---|
+| Home | none of its own; Activity in the hero, All decks (or Create a deck) and Playstyle in the panel headers |
+| Decks | Create as a + in the dock |
+| Deck view | see Deck view below |
+| Account | a Danger zone panel at the very bottom with Log out and Delete account, Delete in red |
+| Export | Copy as an icon in the dock |
+| Import | Import as an icon in the dock |
+| Add, Remove, Swipe select, Oracle tag examples | Filter, Refresh and the eye as icons in the dock; Add adds Synergy as the link icon |
+| Cards | the dock: + and −, a divider, the funnel (with its × while a filter is on) and undo |
+| Commander maybeboard | Swipe in the list's header; Filter floats as a chip; Clear maybeboard in a Danger zone panel |
+| Playstyle | Swipe in the list's header; Clear skips in a Danger zone panel |
+| Activity, Settings, Privacy policy, dictionary | the back arrow, nothing else |
+| Create and Edit deck | Save or Create as a checkmark in the dock once there is something to save |
+| Login, Register, Forgot password | the full-width submit under the form, link chips in one row beneath |
+| Overlays | an × in the corner or a drag down to close; Apply or Save as a dock checkmark; the filter sheet adds its Reset undo |
 
 ## Screens
 
-The review is of the app: each screen got what it shows, where its actions go and anything that breaks a global rule. zite stays the marketing site and the web's wide layouts stay their own, so the web is fitted to these screens afterwards, not compared screen by screen now. The order follows a user's path through the app.
+Each screen below was reviewed with the owner on 2026-11-03: what it shows, where its actions sit and anything that breaks a global rule. zite stays the marketing site and the web's wide layouts stay their own. The order follows a user's path through the app.
 
 - [x] Login (`/login`)
 - [x] Register (`/register`)
 - [x] Forgot password (`/forgot-password`)
 - [x] Home (`/`), below
-- [x] Playstyle (a full screen Home opens in the app, its own route on the web; the menu lists it in both)
+- [x] Playstyle (a full screen Home opens in the app, its own route on the web; the menu lists it in both), below
 - [x] Activity (`/activity`)
 - [x] Decks (`/deck`)
 - [x] Create deck (`/deck/create`) and Edit deck (`/deck/update/:deck_id`), with the format, deck tag and oracle tag pickers
 - [x] Deck view (`/deck/get/:deck_id`), below
-- [x] Deck cards (`/deck/card/view/:deck_id`), retitled Cards
-- [x] Add cards (`/deck/card/add/:deck_id`), retitled Add, with the card filter sheet and the printing sheet
-- [x] Remove cards (`/deck/card/remove/:deck_id`), retitled Remove
+- [x] Cards (`/deck/card/view/:deck_id`)
+- [x] Add (`/deck/card/add/:deck_id`), with the card filter sheet and the printing sheet
+- [x] Remove (`/deck/card/remove/:deck_id`)
 - [x] Import and Export (`/deck/card/import/:deck_id`, `/deck/card/export/:deck_id`)
 - [x] Commander maybeboard (`/deck/commander-maybeboard`) and Swipe select
 - [x] Suggested commanders (`/deck/suggested-commanders`)
 - [x] Oracle tag dictionary and examples
 - [x] Account (`/user`)
-- [x] Settings (today's Config, `/config`; the web's route becomes `/settings`)
-- [x] About (new, replaces Changelog in the menu), below
+- [x] Settings (`/config` in the app; the web's route becomes `/settings`)
+- [x] About (`/about`, replaces Changelog in the menu), below
 - [x] Privacy policy (`/privacy`), opened from About
 - [x] Update required
 
+## Sign-in screens
+
+Login, Register and Forgot password have an empty left corner and the signed-out menu on the right. Login's hero is Home's. The submit is the full-width button under the last field; the chips beneath link to the other screens. Create profile and Forgot password return to Log in in place of themselves once they succeed, with the username (or the email) filled in, so Back does not reopen the finished form.
+
 ## Home
 
-Reviewed 2026-11-03. Home keeps its three panels, gains a Decks panel, and otherwise changes only by the global rules: the new header replaces "!" and the centered title, and the footer's Decks, Account and Config go, since the menu has them.
+Home keeps the hero and Featured flavor, holds a Decks panel and a Colors panel between them, and otherwise follows the global rules: the header is the menu's, with no `!` and no footer.
 
-- Hero: the ASCII logo stays, with the three stats, the Live and Everybody chips and the Activity button under it. Activity stays as a shortcut even though the menu lists it.
-- Colors (owner, 2026-11-03): the Color map panel becomes Colors, in the Decks panel's style: Colors at the left of its header, the Playstyle chip and the `?` at the right, then six compact bars in WUBRG order and colorless last, each with its mana pip at the left, its fill in the color's mana variable (a muted neutral for colorless) over a visible track, the largest count at full width and the count at the bar's end. With no deck the same no-decks line sits under the header, Playstyle chip kept. The tiles map itself lives on Playstyle.
+- Hero: the ASCII logo, the three stats, the Live and Everybody chips and the Activity button under it. Activity stays as a shortcut even though the menu lists it.
+- Decks (owner, 2026-11-03): a panel between the hero and Colors. Its header centers Decks and the deck count chip as one unit, with an All decks chip alone in the right corner. Under it, the three most recently updated decks as tiles, three across: the commander's art crop in a squircle (a filled squircle with the deck's pips without one), then the name chip and the muted format chip under the image, the name on one line with an ellipsis; a tap anywhere on the tile opens the deck. With no deck the count chip hides, the corner chip is Create a deck and one muted line sits under the header. Home fetches the deck list and caches it above the router like the summary; while the fetch is out three tiles ghost, and a failed fetch with nothing held shows a muted line under the header with its All decks chip. No continue-swiping shortcut.
+- Colors (owner, 2026-11-03): the panel between Decks and Featured flavor, in the Decks panel's style. Its header centers Colors and its `?`, with the Playstyle chip alone in the right corner. Under it six compact bars in WUBRG order and colorless last, each with its mana pip at the left, its fill in the color's mana variable (a muted neutral for colorless) over a visible track, the largest count at full width and the count at the bar's end. With no deck the same no-decks line sits under the header, Playstyle chip kept. While the fetch is out the whole panel ghosts. The tiles map itself lives on Playstyle.
 - Featured flavor: unchanged. Each client keeps its own Buy: the app's Buy sheet, the web's TCGplayer and Card Kingdom links.
-- Decks (owner, 2026-11-03): a panel between the hero and the Colors panel in the same panel style, an obvious lane into the decks. Its header has Decks on the left and, on the right, the deck count as a chip beside an All decks chip into the deck list. Under it, the three most recently updated decks as tiles, three across: the commander's art crop in a squircle (a filled squircle with the deck's pips without one), then the name chip and the muted format chip under the image, the name on one line with an ellipsis; a tap anywhere on the tile opens the deck. With no deck the one row is Create a deck. Home fetches the deck list for it and caches it above the router like the summary; while the fetch is out three tiles ghost, and a failed fetch with nothing held shows a muted line under the header with its All decks chip. No continue-swiping shortcut.
 
 ## Playstyle
 
-Reviewed 2026-11-03 (owner). The color territory map is the screen's first panel, titled Color map with its `?`, open on entry above Summary, Card roles, Oracle tags and the commander list. It reads the same playstyle summary Home's Colors panel does, with no request of its own beyond the summary the screen already fetches. The map's skeleton stays with the screen's other ghosts.
+Reviewed 2026-11-03 (owner). The color territory map is the screen's first panel, titled Color map with its `?`, open on entry above Summary, Card roles, Oracle tags and the commander list. It reads the same playstyle summary Home's Colors panel does, with no request of its own beyond the summary the screen already fetches. The map's skeleton stays with the screen's other ghosts. Swipe sits in the commander list's header; Clear skips is a Danger zone panel.
 
 ## Deck view
 
 Reviewed 2026-11-03.
 
-- The profile panel's header row carries Edit, Clone and Share as compact buttons: the actions on the deck as a whole.
-- Buy lives in the Budget panel: its TCGplayer and Card Kingdom links.
-- Cards, the screen's main action, floats at the bottom like Decks' Create.
-- The less used actions sit at the bottom of the page: Import and Export, then the destructive two, Clear skips and Delete, in red. The page leaves room under them so the floating Cards never covers Delete.
-- The More sheet goes away.
+- The profile panel's header row carries Edit, Clone and Share as icons: the actions on the deck as a whole.
+- Buy lives in the Budget panel: a Buy label with the TCGplayer and Card Kingdom chips.
+- Cards, the screen's main action, floats in the dock at the bottom right as a chip.
+- The less used actions sit at the bottom of the page in two panels of rows: Data holds Import and Export, Danger zone holds Clear skips and Delete, titled and buttoned in red. The page leaves room under them so the floating Cards never covers Delete.
+- Back after a delete, or a deck the server no longer has, lands on Decks, not the gone deck.
+- Distributions shows the top five card roles and the top five oracle tags as charts, the rest behind a See more chip that eases open to See less. Draw odds shows its top five groups the same way and names the opening hand turn 0.
 
 ## Screen titles
 
-Shorter titles, set in zwipe-ui so every client takes them: Add deck cards becomes Add, Remove deck cards becomes Remove, Deck cards becomes Cards. Add and Remove keep their filter.
+Shorter titles, set in zwipe-ui so every client takes them: Add, Remove and Cards for the add, remove and deck cards screens. Add and Remove keep their filter.
 
-Config becomes Settings everywhere a user reads it: the screen title, Home's hint and the welcome hint's bullet, the app's hint title and the web's nav label. The card filter's own Config section keeps its name, so the word means one thing. Module and type names in code stay `config`.
+Config is Settings everywhere a user reads it: the screen title, Home's hint and the welcome hint's bullet, the app's hint title and the web's nav label. The card filter's own Config section keeps its name, so the word means one thing. Module and type names in code stay `config`.
 
 ## About
 
-Reviewed 2026-11-03. A new screen in the menu, beside Account and Settings. It takes over Account's About list (zwipe.net, Privacy policy, Version), so Account ends with its Account list and the danger zone.
+Reviewed 2026-11-03. The screen in the menu's footer beside Account and Settings. It holds what was Account's About list (zwipe.net, Privacy policy, Version), so Account ends with its Account list and the Danger zone.
 
-- The current version at the top, then the changelog inline below it (today's Changelog screen folds into About).
-- The zwipe.net link, the Scryfall data credit and the Fan Content notice, and the Privacy policy link.
+- A top panel of rows: Version with its `?`, Website with its `?` and the zwipe.net chip, Privacy policy with a View chip.
+- A Credits panel: the Scryfall data credit and the Fan Content notice. The privacy policy does not repeat the notice.
+- A Changelog panel: the shared changelog as rows, the version filter first, then a release per row, from the copy fetched at startup; a skeleton while it is out, a muted note when it failed.
