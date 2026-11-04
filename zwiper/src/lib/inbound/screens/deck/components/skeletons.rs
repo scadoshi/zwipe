@@ -1,8 +1,7 @@
 //! Loading skeletons for the deck screens.
 
+use components::ColorMapGhost;
 use dioxus::prelude::*;
-
-use crate::inbound::components::home_play_style::ColorMapSkeleton;
 
 /// One bordered "settings-list"-shaped skeleton with `rows` row placeholders inside.
 #[component]
@@ -33,6 +32,25 @@ pub(crate) fn DeckStatsSkeleton() -> Element {
                 div { key: "{i}", class: "skeleton-chart-box",
                     div { class: "skeleton-bar skeleton-section-label" }
                 }
+            }
+        }
+    }
+}
+
+/// A color map while its counts load: a [`ColorMapGhost`] of skeleton tiles
+/// sweeping out from the middle in the map's own box, then under its rule
+/// a bare chip for each of the key's five colors and a wider one for
+/// colorless.
+#[component]
+fn ColorMapSkeleton() -> Element {
+    rsx! {
+        div { class: "color-map",
+            ColorMapGhost {}
+            div { class: "color-map-key",
+                for i in 0..5 {
+                    div { key: "{i}", class: "skeleton-bar skeleton-chip skeleton-chip-md" }
+                }
+                div { class: "skeleton-bar skeleton-chip skeleton-chip-lg" }
             }
         }
     }
