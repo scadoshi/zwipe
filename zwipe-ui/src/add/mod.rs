@@ -174,7 +174,7 @@ pub fn no_results_message(synergy: bool, warming: bool) -> String {
     let suffix = match (synergy, warming) {
         (false, _) => "",
         (true, true) => "; Synergy is warming up, so all cards were searched",
-        (true, false) => "; tap Synergy to turn it off",
+        (true, false) => "; Synergy is on, turn it off to search everything",
     };
     format!("No results for this filter{suffix}")
 }
@@ -286,7 +286,7 @@ mod tests {
         );
         assert_eq!(
             no_results_message(true, false),
-            "No results for this filter; tap Synergy to turn it off"
+            "No results for this filter; Synergy is on, turn it off to search everything"
         );
         assert!(no_results_message(true, true).ends_with("so all cards were searched"));
         let b = normalized(&CardQueryBuilder::default());

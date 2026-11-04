@@ -256,7 +256,7 @@ fn an_empty_search_says_why() {
         toasts(&effects),
         [Toast::normal(
             ToastKind::Warning,
-            "No results for this filter; tap Synergy to turn it off"
+            "No results for this filter; Synergy is on, turn it off to search everything"
         )]
     );
     assert_eq!(state.pile(), Pile::Empty);
@@ -1108,11 +1108,11 @@ fn the_copy_matches_the_app() {
     );
     assert_eq!(
         STACK_LIMIT_REACHED,
-        "Card stack limit reached, please refresh your search to continue"
+        "Card stack limit reached, start a new search to continue"
     );
     assert_eq!(
         STACK_LIMIT_NEAR,
-        "Approaching the card stack limit, refresh your search to continue"
+        "Approaching the card stack limit, start a new search to continue"
     );
     assert_eq!(
         SYNERGY_WARMING,

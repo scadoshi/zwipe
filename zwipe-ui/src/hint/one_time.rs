@@ -6,7 +6,9 @@
 
 use zwipe_core::domain::user::hints::OneTimeHint;
 
-use super::{Block, HintContent, Role, bullet, emph, key, key_in, line, text};
+use super::{
+    Block, HintContent, KeyIcon, Role, bullet, emph, icon_key, icon_key_in, key, key_in, line, text,
+};
 
 /// Which overlay the Swipe select hint opens over; its copy changes with it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -71,13 +73,15 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
                 ]),
                 bullet(vec![
                     key("Account"),
-                    text(
-                        ", the person icon in the menu's footer, has your email, password and log out",
-                    ),
+                    text(", the "),
+                    icon_key(KeyIcon::Person),
+                    text(" in the menu's footer, has your email, password and log out"),
                 ]),
                 bullet(vec![
                     key("Settings"),
-                    text(", the cog beside it, sets your theme and which cards show"),
+                    text(", the "),
+                    icon_key(KeyIcon::Cog),
+                    text(" beside it, sets your theme and which cards show"),
                 ]),
                 bullet(vec![
                     emph("Verify your email", Role::Warning),
@@ -128,7 +132,7 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
                 ]),
                 bullet(vec![
                     text("The "),
-                    key("+"),
+                    icon_key(KeyIcon::Plus),
                     text(" at the bottom right starts a new deck"),
                 ]),
             ],
@@ -138,13 +142,19 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
             vec![
                 bullet(vec![key("Cards"), text(" browses, adds and removes cards")]),
                 bullet(vec![
-                    text("The pencil by "),
+                    text("The "),
+                    icon_key(KeyIcon::Edit),
+                    text(" by "),
                     key("Profile"),
                     text(" changes the name, format, command zone, tags and targets"),
                 ]),
-                bullet(vec![text(
-                    "Beside it, the two squares clone the deck and the box with the arrow shares a link to it",
-                )]),
+                bullet(vec![
+                    text("Beside it, "),
+                    icon_key(KeyIcon::Clone),
+                    text(" clones the deck and "),
+                    icon_key(KeyIcon::Share),
+                    text(" shares a link to it"),
+                ]),
                 bullet(vec![text(
                     "Import, export and delete are at the bottom of the page",
                 )]),
@@ -182,6 +192,19 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
                     text(" toggles tokens, the command zone and row art"),
                 ]),
                 bullet(vec![
+                    text("The bar at the bottom: "),
+                    icon_key(KeyIcon::Plus),
+                    text(" adds, "),
+                    icon_key(KeyIcon::Minus),
+                    text(" removes, "),
+                    icon_key(KeyIcon::Funnel),
+                    text(" filters (its "),
+                    key("\u{d7}"),
+                    text(" resets the filter), and "),
+                    icon_key(KeyIcon::Undo),
+                    text(" undoes"),
+                ]),
+                bullet(vec![
                     key_in("Star", Role::Warning),
                     text(
                         " marks up to three MVPs. Suggestions lean toward cards that share their roles",
@@ -213,9 +236,14 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
                     text(" undoes the last swipe"),
                 ]),
                 bullet(vec![
-                    key("Synergy"),
+                    text("The chip after "),
+                    key("From"),
+                    text(" switches between Search and your Maybe pile"),
+                ]),
+                bullet(vec![
+                    icon_key(KeyIcon::Link),
                     text(
-                        " on starts with cards that work with your commander, then cards like your deck. Off shows every legal card",
+                        " is Synergy: on starts with cards that work with your commander, then cards like your deck. Off shows every legal card",
                     ),
                 ]),
                 line(vec![text("Sort only reorders. It never hides cards")]),
@@ -263,11 +291,11 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
                     text(" and more. Stack as many as you want"),
                 ]),
                 bullet(vec![
-                    key("Apply"),
+                    icon_key(KeyIcon::Check),
                     text(" uses it. "),
-                    key_in("Reset", Role::Warning),
+                    icon_key_in(KeyIcon::Undo, Role::Warning),
                     text(" then "),
-                    key("Apply"),
+                    icon_key(KeyIcon::Check),
                     text(" goes back to the default view"),
                 ]),
                 bullet(vec![text("Each screen keeps its own filter")]),
@@ -295,9 +323,11 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
             "Exporting your deck",
             vec![
                 bullet(vec![key("Export"), text(" picks which boards to include")]),
-                bullet(vec![text(
-                    "The two sheets at the bottom right put the decklist on your clipboard",
-                )]),
+                bullet(vec![
+                    text("The "),
+                    icon_key(KeyIcon::Copy),
+                    text(" at the bottom right puts the decklist on your clipboard"),
+                ]),
             ],
         ),
         OneTimeHint::OracleTagDictionary => content(
@@ -414,7 +444,11 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
                     key("Most skipped"),
                     text(" lists cards you skip that other players usually keep"),
                 ]),
-                line(vec![text("Each section's ? explains it")]),
+                line(vec![
+                    text("Each section's "),
+                    key_in("?", Role::Palette6),
+                    text(" explains it"),
+                ]),
             ],
         ),
         OneTimeHint::CreateDeck | OneTimeHint::EditDeck => {
@@ -467,20 +501,25 @@ pub fn swipe_select(mode: SwipeSelectMode) -> HintContent {
     ]);
     let title = match mode {
         SwipeSelectMode::Suggested { has_filter } => {
-            blocks.push(line(vec![text(
-                "Best fit first, 100 deep. The eye shows why each one was suggested",
-            )]));
+            blocks.push(line(vec![
+                text("Best fit first, 100 deep. "),
+                icon_key(KeyIcon::Eye),
+                text(" shows why each one was suggested"),
+            ]));
             if has_filter {
-                blocks.push(line(vec![text(
-                    "The funnel narrows the stack to one color identity",
-                )]));
+                blocks.push(line(vec![
+                    icon_key(KeyIcon::Funnel),
+                    text(" narrows the stack to one color identity"),
+                ]));
             }
             "Suggested commanders"
         }
         SwipeSelectMode::Picking(_) => {
-            blocks.push(line(vec![text(
-                "Most-played first. The funnel narrows by color or anything else",
-            )]));
+            blocks.push(line(vec![
+                text("Most-played first. "),
+                icon_key(KeyIcon::Funnel),
+                text(" narrows by color or anything else"),
+            ]));
             "Swipe select"
         }
     };
@@ -535,7 +574,22 @@ mod tests {
         let decks = content_for(OneTimeHint::DeckList).unwrap();
         assert_eq!(
             decks.blocks[2].plain(),
-            "The + at the bottom right starts a new deck"
+            "The plus at the bottom right starts a new deck"
+        );
+        assert_eq!(
+            decks.blocks[2].spans()[1],
+            icon_key(KeyIcon::Plus),
+            "the add button is an icon, so its key is the icon alone"
+        );
+        let deck = content_for(OneTimeHint::FirstDeck).unwrap();
+        assert_eq!(
+            deck.blocks[2].plain(),
+            "Beside it, clone clones the deck and share shares a link to it"
+        );
+        let export = content_for(OneTimeHint::Export).unwrap();
+        assert_eq!(
+            export.blocks[1].plain(),
+            "The copy at the bottom right puts the decklist on your clipboard"
         );
         let account = content_for(OneTimeHint::Profile).unwrap();
         assert_eq!(
@@ -552,6 +606,11 @@ mod tests {
         let suggested = swipe_select(SwipeSelectMode::Suggested { has_filter: true });
         assert_eq!(suggested.title, "Suggested commanders");
         assert_eq!(suggested.blocks.len(), 6);
+        assert_eq!(
+            suggested.blocks[5].plain(),
+            "funnel narrows the stack to one color identity"
+        );
+        assert_eq!(suggested.blocks[5].spans()[0], icon_key(KeyIcon::Funnel));
         assert_eq!(
             swipe_select(SwipeSelectMode::Suggested { has_filter: false })
                 .blocks
