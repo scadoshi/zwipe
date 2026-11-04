@@ -16,11 +16,11 @@ src/
         ├── card_stores.rs  zwipe-ui's card stores in root signals: filters per deck, parked add stacks, the undo log, adds in flight
         ├── cards/          card rows, image preview, printing sheet, card info, oracle tag reveals, the swipe stack and Swipe select, shared charts, buy links
         ├── catalog.rs      the catalog lists over zwipe-ui's store, fetched on demand
-        ├── chrome/         the authed-call facade, the ? hints, one-time hints, collapsible sections, page keys and Ctrl+Z, the window width, sheet forms, the More menu
+        ├── chrome/         the authed-call facade, the ? hints, one-time hints, collapsible sections, page keys and Ctrl+Z, the window width, sheet forms, the back arrow
         ├── root_signal.rs  signals owned by the root scope, for state root tasks write
         ├── router.rs       Route, one variant per screen at the app's path
         ├── session/        ensure_fresh, the upkeep loop, the auth gate, logout, the funnel events
-        ├── shell/          the top nav Shell, PublicFrame, ScreenFrame, nav
+        ├── shell/          the top nav Shell (the app's header and menu below the breakpoint, with menu_footer and menu_theme), PublicFrame, ScreenFrame, nav
         └── screens/        one module per screen (the deck screens share `deck/`, the card screens are `deck/cards/`), plus not_found.rs
 ```
 
@@ -39,7 +39,7 @@ The upkeep loop runs `ensure_fresh` and then the min-version check, at once and 
 
 `use_root_caches` provides what screens share without fetching again: everybody's counters for the public heroes (one copy, refetched by a hero that mounts when it is a minute old, stored for the next visit), the changelog (fetched once per visit, `Loading`, `Loaded` or `Failed`) and the Universes Beyond franchises. `LoginPrefill` carries the username from Register back to Login.
 
-The root also mounts the kit's `ToastStack` (screens raise toasts with `dioxus_primitives::toast::use_toast`), the `HintHost` that draws whatever `?` topic is posted to the root `Signal<Option<HintTopic>>`, the dialog host (`AlertDialog` anywhere draws there), and the app's splash with its `SplashGate`, which holds the first screen's decode and counters until the splash fades. One page-wide key listener handles Escape (an open dialog first, as a click on its overlay would, then the top of the overlay back stack), Enter in a dialog (its non-danger primary action, never a danger one) and the Themes panel's arrows and Enter.
+The root also mounts the kit's `ToastStack` (screens raise toasts with `dioxus_primitives::toast::use_toast`), the `HintHost` that draws whatever `?` topic is posted to the root `Signal<Option<HintTopic>>`, the dialog host (`AlertDialog` anywhere draws there), and the app's splash with its `SplashGate`, which holds the first screen's decode and counters until the splash fades. One page-wide key listener handles Escape with no dialog open (the top of the overlay back stack) and Enter with nothing focused (the page's form panel when it has exactly one). The kit's own listeners run a dialog's Escape and Enter and the Themes sheet's arrows and Enter.
 
 ## Chrome
 
@@ -49,7 +49,7 @@ The root also mounts the kit's `ToastStack` (screens raise toasts with `dioxus_p
 - `chrome::section`: the app's `CollapsibleSection`. Inside a `web-sections-open` box a wide window shows every section open.
 - `chrome::page_keys`: `use_page_keys` for a screen's single-key shortcuts such as `/`, only for the newest screen and never while typing or with a dialog open.
 - `chrome::sheet`: `SheetFrame { form: SheetForm::Modal | SheetForm::SidePanel, BottomSheet { .. } }` keeps the kit's sheet and moves it on a wide window.
-- `chrome::more_menu`: `use_more_menu()`, `MoreButton` in the action bar and `MoreMenu` beside it: a popover under the button on a wide window, the app's sheet (titled `More` unless the screen passes the app's title) below the breakpoint.
+- `chrome::back_arrow`: `BackArrow`, the app's left chevron in a soft box, drawn in the folded nav's left corner (where `shell::nav::Back::of` says it goes) and in an overlay's `PageHeader` (Swipe select, Examples, the dictionary, the deck pickers).
 
 ## Cards
 
@@ -57,13 +57,13 @@ The root also mounts the kit's `ToastStack` (screens raise toasts with `dioxus_p
 - `cards::otag`: `use_otag_reveals()` provides the tag description lookup and the `Examples` opener; `OtagExamplesHost` draws the examples over the screen.
 - `cards::swipe_stack`: the stack with mouse and touch drag, `SwipeButtons`, and `use_swipe_keys` for the arrows; keys and buttons go through `SwipeControl` so they animate like a drag. `cards::swipe_select` is Swipe select in suggested and commander modes.
 - `cards::charts`: zwipe-ui bars as kit bars, the user's color map seed and counts, the map's ghost and empty line.
-- `cards::buy_links`: `Buy` as one link per retailer that opens a new tab, as zite does it, for a card (`CardBuyLinks`) and as a `More` item for a deck (`MenuBuyLink`); the URLs are zwipe-ui's `buy`.
+- `cards::buy_links`: `Buy` as one link per retailer that opens a new tab, as zite does it, for a card (`CardBuyLinks`); the deck view draws its own pair in its Budget panel. The URLs are zwipe-ui's `buy`.
 
 ## Decks
 
 - `screens::deck::form`: the deck form Create and Edit share. `use_deck_form()` gives a `Copy` `DeckForm` of signals, one `SlotState` per command-zone slot, and runs the form's rules (the name check, a format change turning each `Filter` back on, a commander change clearing its partner and background). `DeckFields` draws the two columns, `DeckFormOverlays` the three pickers and a Swipe select per slot.
 - `domain::deck` holds what the form sends: `FormValues`, `create_request`, and `update_request`, which leaves unchanged fields off the wire and is `None` when nothing changed, the rule behind `Save changes`.
-- `screens::deck::view`: the deck view's panels, its read-only cards column over zwipe-ui's `deck_cards::pass`, and `DeckMore`, the menu and its dialogs.
+- `screens::deck::view`: the deck view's panels, its read-only cards column over zwipe-ui's `deck_cards::pass`, the Data and Danger zone panels at its foot (`panels.rs`) and their dialogs (`dialogs.rs`). Edit, Clone and Share are icons in the Profile panel's header and Cards floats in the dock.
 
 ## Cards and filters
 
@@ -73,19 +73,19 @@ The root also mounts the kit's `ToastStack` (screens raise toasts with `dioxus_p
 
 ## Styling
 
-The root loads, in order: the kit's `THEMES_CSS`, `COMPONENTS_CSS`, `MAGIC_CSS` and `APP_CSS`, zwiper's `main.css` and `accordion.css` (included from `zwiper/assets` as they are, never copied), `TOAST_CSS`, then `assets/web.css`. A screen uses the app's class names, so it looks like the app with no new CSS. `web.css` only holds what a browser window changes: the top nav, the wide layouts, the 900px breakpoint, and undoing the phone-only rules (`body` capped to the screen height, `.screen` fixed to the viewport). The fonts are copies of zwiper's, because `asset!` only reads files inside the crate.
+The root loads, in order: the kit's `THEMES_CSS`, `COMPONENTS_CSS`, `MAGIC_CSS` and `APP_CSS`, zwiper's `main.css` and `accordion.css` (included from `zwiper/assets` as they are, never copied), `TOAST_CSS`, then `assets/web.css`, and runs `assets/header_hide.js`, which slides the folded header away on a scroll down and back on a scroll up below the breakpoint. A screen uses the app's class names, so it looks like the app with no new CSS. `web.css` only holds what a browser window changes: the top nav, the wide layouts, the 900px breakpoint, and undoing the phone-only rules (`body` capped to the screen height, `.screen` fixed to the viewport). The fonts are copies of zwiper's, because `asset!` only reads files inside the crate.
 
 ## Adding a screen
 
 Say the screen is Activity.
 
 1. Make `src/lib/inbound/screens/activity/mod.rs` with a `#[component] pub fn Activity() -> Element`. Copy `screens/account/` as a starting point. A screen with route parameters takes them as props (`deck_id: Uuid`).
-2. Wrap it in `ScreenFrame { title: "Activity", .. }` and put the content in `div.screen-content` the way the app does; give it a `description`, the one line its page head shows on a wide window (the title and `on_hint`'s `?` go in the folded nav below 900px); an `ActionBar` as the frame's last child is pinned to the window's bottom edge at every width. The frame scrolls as one column under the nav with no site footer, so a `position: sticky` column takes `top: var(--web-sticky-top)` and `max-height: var(--web-sticky-max)` to stop under the nav and clear the bar. Sheets and dialogs go beside the frame, not inside the action bar, which is a containing block for fixed elements. Lay the panels out as `web-layout.md` says, with classes in `web.css` named `web-<screen>-*`.
+2. Wrap it in `ScreenFrame { title: "Activity", .. }` and put the content in `div.screen-content` the way the app does; give it a `description`, the one line its page head shows on a wide window (the title and `on_hint`'s `?` go in the folded nav below 900px); a screen has no bar at its end: its one or two main actions float in a `div.action-dock` as the frame's last child, drawn with `components::DockIcon` and the paths in `components::icons`, and Back is the folded nav's arrow (`shell::nav::Back::of` says where it goes). The frame scrolls as one column under the nav with no site footer, so a `position: sticky` column takes `top: var(--web-sticky-top)` and `max-height: var(--web-sticky-max)` to stop under the nav. Sheets and dialogs go beside the frame. Lay the panels out as `web-layout.md` says, with classes in `web.css` named `web-<screen>-*`.
 3. A one-time hint is `use_one_time_hint(OneTimeHint::Activity)` with a `OneTimeHintDialog` beside the frame and the frame's `on_hint` reopening it.
 4. Take the screen's rules, copy, timings and caps from zwipe-ui. What zwipe-ui lacks goes in `src/lib/domain/<name>.rs` as pure, tested functions marked `// Belongs in zwipe-ui`. The component calls them; it does not repeat them.
 5. Call the API through `use_authed()`, which refreshes the session and toasts a failure. Unauthenticated calls go straight to the `Signal<ZwipeClient>`.
 6. Add `pub mod activity;` to `screens/mod.rs` and a route for it in `router.rs`, then its nav entry in `shell/nav.rs` if it has one.
-7. If the screen belongs to a nav entry other than the one `Section::of` gives it, change that match in `shell/nav.rs` and its test.
+7. If the screen belongs to a nav entry other than the one `section_of` gives it, or its back arrow should go somewhere other than the screen before it, change `section_of` or `Back::of` in `shell/nav.rs` and their tests.
 
 Every string comes from the spec, verbatim. A screen that differs from the app in more than layout and input gets a line in the kept deviations of `parity-plan.md`.
 

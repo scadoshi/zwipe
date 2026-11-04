@@ -1,6 +1,6 @@
 # zwiper-web
 
-Zwipe in a browser. Every screen of the phone app (zwiper) is here, from Login to the swipe screens, laid out for a big window: a top nav like zwipe.net's, panels side by side, each screen's action bar pinned to the bottom of the window, keys for the swipes. Below 900px wide the panels fall into one column.
+Zwipe in a browser. Every screen of the phone app (zwiper) is here, from Login to the swipe screens. Below 900px wide it is the app's layout as `context/plans/unified_ui.md` lays it out: the app's header with its back arrow and hamburger, the app's menu, a screen's actions floating in the dock at the bottom right, no bars and no footers. At 900px and up it is laid out for a big window: a top nav like zwipe.net's, panels side by side, keys for the swipes, the same docks.
 
 It is a client-rendered Dioxus app and its own crate. It talks to zerver through `zwipe-client`, takes its screen logic from `zwipe-ui` and draws with `components` (and orangui under it), so copy, rules and look come from the same places the app uses.
 

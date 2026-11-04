@@ -2,6 +2,10 @@
 
 Where the web build stands as of 2026-11-01, written so a fresh session on another machine can pick it up from this branch alone. `web-layout.md`, `parity-plan.md` and `ARCHITECTURE.md` hold the detail; this is the map.
 
+## Since then: the unified UI (2026-11-04)
+
+The app's layout rework (`context/plans/unified_ui.md`, shipping as 1.18.0) came to `feat/web` in five slices, and the rules below that name action bars, panel footers, More sheets or a wide nav with Account and Config pills are history. Below 900px the web is the app: its header with the back arrow and hamburger, its menu, floating docks, Danger zone panels, bottom sheets closed from an × or a drag down. On a wide window the page grammar stays, but with no bars and no footers either: the sign-in submits are full width with link chips beneath, forms save from the dock, every More is gone. `web-layout.md` describes the branch as it is now; `shared-switch.md` lists what moved into `components` and what the web still keeps as a copy.
+
 ## Branches
 
 | Branch | What it is |
