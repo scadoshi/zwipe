@@ -61,7 +61,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn the_policy_has_its_eight_sections_in_order() {
+    fn the_policy_has_its_seven_sections_in_order() {
         let headings: Vec<String> = sections().into_iter().map(|s| s.heading).collect();
         assert_eq!(
             headings,
@@ -73,7 +73,6 @@ mod tests {
                 "Where your data lives",
                 "Security",
                 "Children",
-                "Fan content",
             ]
         );
     }
