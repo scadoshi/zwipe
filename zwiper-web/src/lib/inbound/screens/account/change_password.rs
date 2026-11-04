@@ -1,9 +1,8 @@
 //! The Change password sheet, a centered modal on a wide window, with its
 //! confirm dialog stacked on top.
 
-use components::{
-    AlertDialog, BottomSheet, Button, ButtonVariant, DialogAction, TOAST_QUICK, TextInput,
-};
+use components::icons::CHECK;
+use components::{AlertDialog, BottomSheet, DialogAction, DockIcon, TOAST_QUICK, TextInput};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_core::http::contracts::auth::HttpChangePassword;
@@ -104,20 +103,7 @@ pub(super) fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
             BottomSheet {
                 open,
                 title: "Change password".to_string(),
-                footer: rsx! {
-                    Button {
-                        variant: ButtonVariant::Action,
-                        disabled: is_loading(),
-                        onclick: move |_| open.set(false),
-                        "Back"
-                    }
-                    Button {
-                        variant: ButtonVariant::Action,
-                        disabled: is_loading(),
-                        onclick: move |_| ask_to_confirm(),
-                        if is_loading() { "Saving..." } else { "Save changes" }
-                    }
-                },
+                closable: true,
                 form {
                     class: "flex-col text-center",
                     onsubmit: move |event| {
@@ -148,6 +134,16 @@ pub(super) fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
                         input_type: "password",
                     }
                     button { r#type: "submit", hidden: true }
+                }
+                // Save floats at the sheet's bottom right.
+                div { class: "action-dock action-dock-right sheet-dock",
+                    button {
+                        class: "action-dock-btn",
+                        "aria-label": if is_loading() { "Saving..." } else { "Save changes" },
+                        disabled: is_loading(),
+                        onclick: move |_| ask_to_confirm(),
+                        DockIcon { path: CHECK }
+                    }
                 }
             }
         }

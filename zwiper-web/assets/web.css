@@ -1014,7 +1014,8 @@ body {
     flex: none;
 }
 
-.web-printing-sheet .bottom-sheet:focus {
+/* The body takes the arrow keys once clicked, with no focus ring. */
+.web-printing-body:focus {
     outline: none;
 }
 
@@ -1635,14 +1636,26 @@ body {
     z-index: 1;
 }
 
-.web-filter-dock > .sheet-header,
-.web-filter-dock > .action-bar {
+.web-filter-dock > .sheet-header {
     background-color: var(--bg-primary);
 }
 
 .web-filter-dock-content {
     flex: 1 1 auto;
     overflow-y: auto;
+    /* Room to scroll the last row clear of the dock. */
+    padding-bottom: 5rem;
+}
+
+/* The docked panel's dock floats at its bottom right, as a sheet's does:
+   the transform makes the panel the containing block of the fixed dock. */
+.web-filter-dock {
+    transform: translateZ(0);
+}
+
+.web-filter-dock > .sheet-dock {
+    position: fixed;
+    z-index: 2;
 }
 
 /* The chip's hover title rides on a wrapper that adds no box. */

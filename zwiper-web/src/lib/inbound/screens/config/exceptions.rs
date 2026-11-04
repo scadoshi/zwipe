@@ -1,7 +1,8 @@
 //! The Exceptions sheet, a centered modal on a wide window: the franchises
 //! that still show while Universes Beyond is hidden.
 
-use components::{BottomSheet, Button, ButtonVariant, TOAST_QUICK};
+use components::icons::CHECK;
+use components::{BottomSheet, DockIcon, TOAST_QUICK};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
@@ -15,9 +16,9 @@ use crate::inbound::chrome::one_time_hint::{self, OneTimeHint};
 use crate::inbound::chrome::sheet::{SheetForm, SheetFrame};
 
 /// Edits a draft of `exceptions`, the saved list, copied in on each open.
-/// `Save` closes at once and writes the draft; the saved list changes only
-/// when the server answers. `Back`, a click outside and Esc discard the draft,
-/// saying `Exceptions unchanged` when it differed. The first open in a visit
+/// The dock's checkmark closes at once and writes the draft; the saved list
+/// changes only when the server answers. The ×, a click outside, a drag down
+/// and Esc discard the draft, saying `Exceptions unchanged` when it differed. The first open in a visit
 /// to Config fires the one-time hint; `hint_open` is Config's, so the row's
 /// `?` and the sheet's open the same dialog.
 #[component]
@@ -97,19 +98,7 @@ pub(super) fn ExceptionsSheet(
                 title: "Exceptions".to_string(),
                 hint: hint_open,
                 on_dismiss: move |()| discard.call(()),
-                footer: rsx! {
-                    Button {
-                        variant: ButtonVariant::Action,
-                        onclick: move |_| discard.call(()),
-                        "Back"
-                    }
-                    Button {
-                        variant: ButtonVariant::Action,
-                        disabled: unchanged,
-                        onclick: save,
-                        "Save"
-                    }
-                },
+                closable: true,
                 div { class: if draft().is_empty() { "collapsible" } else { "collapsible open" },
                     div { class: "collapsible-inner",
                         div { class: "label-row",
@@ -133,6 +122,17 @@ pub(super) fn ExceptionsSheet(
                             },
                             "{franchise.name}"
                         }
+                    }
+                }
+                // Save floats at the sheet's bottom right, off while nothing
+                // differs from the saved list.
+                div { class: "action-dock action-dock-right sheet-dock",
+                    button {
+                        class: "action-dock-btn",
+                        "aria-label": "Save",
+                        disabled: unchanged,
+                        onclick: save,
+                        DockIcon { path: CHECK }
                     }
                 }
             }

@@ -1,6 +1,7 @@
 //! The Change email sheet, a centered modal on a wide window.
 
-use components::{BottomSheet, Button, ButtonVariant, TOAST_NORMAL, TextInput};
+use components::icons::CHECK;
+use components::{BottomSheet, DockIcon, TOAST_NORMAL, TextInput};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_core::domain::auth::models::session::Session;
@@ -100,20 +101,7 @@ pub(super) fn ChangeEmailSheet(mut open: Signal<bool>) -> Element {
             BottomSheet {
                 open,
                 title: "Change email".to_string(),
-                footer: rsx! {
-                    Button {
-                        variant: ButtonVariant::Action,
-                        disabled: is_loading(),
-                        onclick: move |_| open.set(false),
-                        "Back"
-                    }
-                    Button {
-                        variant: ButtonVariant::Action,
-                        disabled: is_loading(),
-                        onclick: move |_| attempt_submit(),
-                        if is_loading() { "Saving..." } else { "Save changes" }
-                    }
-                },
+                closable: true,
                 form {
                     class: "flex-col text-center",
                     onsubmit: move |event| {
@@ -136,6 +124,16 @@ pub(super) fn ChangeEmailSheet(mut open: Signal<bool>) -> Element {
                         error: password_error,
                     }
                     button { r#type: "submit", hidden: true }
+                }
+                // Save floats at the sheet's bottom right.
+                div { class: "action-dock action-dock-right sheet-dock",
+                    button {
+                        class: "action-dock-btn",
+                        "aria-label": if is_loading() { "Saving..." } else { "Save changes" },
+                        disabled: is_loading(),
+                        onclick: move |_| attempt_submit(),
+                        DockIcon { path: CHECK }
+                    }
                 }
             }
         }

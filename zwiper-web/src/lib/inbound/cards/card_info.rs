@@ -22,9 +22,11 @@ pub fn CardInfoDisplay(card: Card) -> Element {
 }
 
 /// The card's details (cost, type, oracle text, keywords, roles) as the
-/// sheet behind the eye button: `Back`, `Flip` for a multi-faced card, and
-/// `Printings` when the host passes `on_printings`. Mount it at the screen
-/// root beside the printing sheet.
+/// sheet behind the eye button. It closes from its title bar's × or a drag
+/// down; its own footer, there only when it has something to hold, has
+/// `Flip` for a multi-faced card and `Printings` when the host passes
+/// `on_printings`, as the app's does. Mount it at the screen root beside
+/// the printing sheet.
 #[component]
 pub fn CardDetailsSheet(
     open: Signal<bool>,
@@ -36,24 +38,26 @@ pub fn CardDetailsSheet(
     let face_count = components::card_face_count(&card);
     let mut face = use_signal(|| 0usize);
     let describe_tag = use_describe_tag();
-    let mut open_for_back = open;
+    let actions = (face_count > 1 || on_printings.is_some()).then(|| {
+        rsx! {
+            if face_count > 1 {
+                Button {
+                    variant: ButtonVariant::Action,
+                    onclick: move |_| face.set(face().saturating_add(1).checked_rem(face_count).unwrap_or(0)),
+                    "Flip"
+                }
+            }
+            if let Some(handler) = on_printings {
+                Button { variant: ButtonVariant::Action, onclick: move |_| handler.call(()), "Printings" }
+            }
+        }
+    });
     rsx! {
         BottomSheet {
             open,
             title: name,
-            footer: rsx! {
-                Button { variant: ButtonVariant::Action, onclick: move |_| open_for_back.set(false), "Back" }
-                if face_count > 1 {
-                    Button {
-                        variant: ButtonVariant::Action,
-                        onclick: move |_| face.set(face().saturating_add(1).checked_rem(face_count).unwrap_or(0)),
-                        "Flip"
-                    }
-                }
-                if let Some(handler) = on_printings {
-                    Button { variant: ButtonVariant::Action, onclick: move |_| handler.call(()), "Printings" }
-                }
-            },
+            closable: true,
+            footer: actions,
             div { class: "card-rules",
                 div { class: "sheet-panel",
                     CardDetails {

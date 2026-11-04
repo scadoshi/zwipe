@@ -3,10 +3,11 @@
 //! Remove at three columns a panel docked open beside the card.
 //!
 //! The panel edits a draft over the host's applied filter (zwipe-ui's
-//! [`FilterDraft`]) and hands it back on `Apply`. `Back` drops the edits
-//! with `Filter unchanged`; docked, the panel stays and only the edits go.
-//! Leaving the screen with edits drops them the same way, since the host's
-//! filter never saw them. A host mounts one beside its frame:
+//! [`FilterDraft`]) and hands it back from the checkmark in its dock, where
+//! the undo icon stages the default. The sheet closes from its title bar's
+//! ×, a backdrop tap, Esc or a drag down, dropping the edits with `Filter
+//! unchanged`; leaving the screen with edits drops them the same way, since
+//! the host's filter never saw them. A host mounts one beside its frame:
 //!
 //! ```ignore
 //! CardFilterPanel {
@@ -22,7 +23,8 @@
 
 mod rows;
 
-use components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL, use_overlay_back};
+use components::icons::{CHECK, UNDO};
+use components::{Button, ButtonVariant, DockIcon, TOAST_NORMAL, use_overlay_back};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
@@ -82,11 +84,10 @@ pub fn CardFilterPanel(
     let mut dict_field: Signal<Option<PickerField>> = use_signal(|| None);
 
     let config_for_open = config.clone();
-    let mut reseed = move |applied: &CardQueryBuilder| {
+    let mut reseed_for_open = move |applied: &CardQueryBuilder| {
         draft.set(FilterDraft::new(applied, config_for_open.clone()));
         bump(epoch);
     };
-    let mut reseed_for_open = reseed.clone();
     let needs = config.sources.needs();
 
     // Opening, docking and closing. A close that was not Apply drops the
@@ -134,18 +135,6 @@ pub fn CardFilterPanel(
         next.modes = old.modes;
         draft.set(next);
     });
-
-    let mut back = move || {
-        if is_docked() {
-            let dropped = draft.peek().back();
-            if let Some(t) = dropped {
-                raise(toast, &t);
-            }
-            reseed(&filter.peek());
-        } else {
-            open.set(false);
-        }
-    };
 
     let mut apply_outcome = move |outcome: ApplyOutcome| match outcome {
         ApplyOutcome::Disabled => {}
@@ -269,6 +258,14 @@ pub fn CardFilterPanel(
     };
     let header = rsx! {
         div { class: "sheet-header", style: "position: relative;",
+            if !is_docked() {
+                button {
+                    class: "sheet-close",
+                    "aria-label": "Close",
+                    onclick: move |_| open.set(false),
+                    "\u{00d7}"
+                }
+            }
             span { style: "font-size: 1rem; color: var(--accent-primary);", "Filter" }
             Button {
                 variant: ButtonVariant::Action,
@@ -281,11 +278,22 @@ pub fn CardFilterPanel(
             }
         }
     };
-    let footer = rsx! {
-        ActionBar {
-            Button { variant: ButtonVariant::Action, onclick: move |_| back(), "Back" }
-            Button { variant: ButtonVariant::Action, disabled: unchanged, onclick: move |_| apply(), "Apply" }
-            Button { variant: ButtonVariant::Action, onclick: move |_| reset(), "Reset" }
+    // Reset and Apply float at the panel's bottom right, as in the app.
+    let dock = rsx! {
+        div { class: "action-dock action-dock-right sheet-dock",
+            button {
+                class: "action-dock-btn",
+                "aria-label": "Reset",
+                onclick: move |_| reset(),
+                DockIcon { path: UNDO }
+            }
+            button {
+                class: "action-dock-btn",
+                "aria-label": "Apply",
+                disabled: unchanged,
+                onclick: move |_| apply(),
+                DockIcon { path: CHECK }
+            }
         }
     };
 
@@ -295,7 +303,7 @@ pub fn CardFilterPanel(
                 components::GridCells { still: true }
                 {header}
                 div { class: "sheet-content web-filter-dock-content", {body} }
-                {footer}
+                {dock}
             }
         } else {
             SheetFrame { form: SheetForm::SidePanel,
@@ -311,7 +319,7 @@ pub fn CardFilterPanel(
                             {body}
                         }
                     }
-                    {footer}
+                    {dock}
                 }
             }
         }

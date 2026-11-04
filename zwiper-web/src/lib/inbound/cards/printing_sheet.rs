@@ -4,9 +4,11 @@
 //! The app pages through printings with a swipe carousel; here `Previous`
 //! and `Next` (and the left and right arrows) step through them. On a wide
 //! window the sheet is a centered modal; below the breakpoint it is the
-//! app's bottom sheet.
+//! app's bottom sheet. It closes from its title bar's ×, a backdrop tap, a
+//! drag down or Esc; Save is the checkmark in its dock.
 
-use components::{ActionBar, Button, ButtonVariant, TOAST_QUICK, use_overlay_back_action};
+use components::icons::CHECK;
+use components::{BottomSheet, DockIcon, TOAST_QUICK};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_core::domain::card::Card;
@@ -16,7 +18,7 @@ use crate::inbound::cards::card_info::{CardInfoDisplay, PrintingSheetSkeleton};
 use crate::inbound::chrome::authed::use_authed;
 
 /// The printings of `card`, opening on the one shown. `on_save` takes the
-/// picked printing and toasts `saved_message`; `read_only` hides `Save`.
+/// picked printing and toasts `saved_message`; `read_only` hides the dock.
 /// Leaving with a different printing showing toasts `Printing unchanged`.
 #[component]
 pub fn PrintingSheet(
@@ -77,7 +79,6 @@ pub fn PrintingSheet(
         }
         open.set(false);
     });
-    use_overlay_back_action(open.into(), leave);
 
     let mut step = move |forward: bool| {
         if count < 2 {
@@ -106,25 +107,23 @@ pub fn PrintingSheet(
     });
 
     rsx! {
-        div { class: "web-sheet web-sheet-modal web-printing-sheet",
-            div {
-                class: if open() { "sheet-backdrop sheet-over show" } else { "sheet-backdrop sheet-over" },
-                onclick: move |_| leave.call(()),
-            }
-            div {
-                class: if open() { "bottom-sheet sheet-over show" } else { "bottom-sheet sheet-over" },
-                tabindex: "-1",
-                onkeydown: move |e: Event<KeyboardData>| match e.key() {
-                    Key::ArrowLeft => step(false),
-                    Key::ArrowRight => step(true),
-                    Key::Enter => save.call(()),
-                    _ => {}
-                },
-                components::GridCells { still: true }
-                div { class: "sheet-header",
-                    span { style: "font-size: 1rem; color: var(--accent-primary);", "Printings" }
-                }
-                div { class: "sheet-content no-pad-x",
+        // `sheet-over` lifts the sheet above a details sheet already open
+        // under it. The body takes the arrow keys and Enter once clicked.
+        div { class: "web-sheet web-sheet-modal web-printing-sheet sheet-over",
+            BottomSheet {
+                open,
+                title: "Printings".to_string(),
+                closable: true,
+                on_dismiss: move |()| leave.call(()),
+                div {
+                    class: "web-printing-body",
+                    tabindex: "-1",
+                    onkeydown: move |e: Event<KeyboardData>| match e.key() {
+                        Key::ArrowLeft => step(false),
+                        Key::ArrowRight => step(true),
+                        Key::Enter => save.call(()),
+                        _ => {}
+                    },
                     if loading() {
                         PrintingSheetSkeleton {}
                     } else if let Some(card) = visible.clone() {
@@ -160,14 +159,16 @@ pub fn PrintingSheet(
                         CardInfoDisplay { card }
                     }
                 }
-                ActionBar {
-                    Button { variant: ButtonVariant::Action, onclick: move |_| leave.call(()), "Back" }
-                    if !read_only {
-                        Button {
-                            variant: ButtonVariant::Action,
+                // Save floats at the sheet's bottom right, grayed until a
+                // different printing shows.
+                if !read_only {
+                    div { class: "action-dock action-dock-right sheet-dock",
+                        button {
+                            class: "action-dock-btn",
+                            "aria-label": "Save",
                             disabled: !changed || visible.is_none(),
                             onclick: move |_| save.call(()),
-                            "Save"
+                            DockIcon { path: CHECK }
                         }
                     }
                 }
