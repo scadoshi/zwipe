@@ -26,6 +26,7 @@ use zwipe_ui::deck_signals::{Crossing, budget_crossing, land_count, land_crossin
 use zwipe_ui::filter;
 use zwipe_ui::filter::draft::SheetConfig;
 use zwipe_ui::filter::picker::Sources;
+use zwipe_ui::screens::remove_cards;
 use zwipe_ui::stack::{CardStack, RemoveAction, StackAction};
 use zwipe_ui::stores::filters::FilterScope;
 use zwipe_ui::stores::undo::{UndoAction, create_board_field};
@@ -487,7 +488,7 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
 
     rsx! {
         ScreenFrame {
-            title: "Remove deck cards",
+            title: remove_cards::TITLE,
             description: Some("Swipe through the deck's cards to trim it".to_string()),
             on_hint: move |()| hint_open.set(true),
             div { class: "screen-content card-swipe content-enter web-cards-swipe",

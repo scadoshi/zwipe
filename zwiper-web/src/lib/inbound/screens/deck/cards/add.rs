@@ -32,6 +32,7 @@ use zwipe_ui::deck_signals::{Crossing, budget_crossing, land_crossing, price_of}
 use zwipe_ui::filter::AddContext;
 use zwipe_ui::filter::draft::{ResetRule, SheetConfig};
 use zwipe_ui::generation::Generation;
+use zwipe_ui::screens::add_cards;
 use zwipe_ui::stack::{
     AddAction, CARDS_WARNING_THRESHOLD, CardStack, MAX_CARDS_IN_STACK, MaybeboardAction,
     STACK_WARNING_EVERY, StackAction,
@@ -870,7 +871,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
 
     rsx! {
         ScreenFrame {
-            title: "Add deck cards",
+            title: add_cards::TITLE,
             description: Some("Swipe through cards served in synergy order to build the deck".to_string()),
             on_hint: move |()| hint_open.set(true),
             div { class: "screen-content card-swipe content-enter web-cards-swipe",

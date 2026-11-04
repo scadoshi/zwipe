@@ -39,6 +39,7 @@ use zwipe_ui::deck_signals::{Crossing, budget_crossing, land_count, land_crossin
 use zwipe_ui::filter;
 use zwipe_ui::filter::draft::SheetConfig;
 use zwipe_ui::filter::picker::Sources;
+use zwipe_ui::screens::deck_cards::TITLE;
 use zwipe_ui::stores::filters::FilterScope;
 use zwipe_ui::stores::undo::{UndoAction, create_board_field};
 use zwipe_ui::timing::QUANTITY_FLUSH;
@@ -1047,7 +1048,7 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
 
     rsx! {
         ScreenFrame {
-            title: "Deck cards",
+            title: TITLE,
             description: Some("Every card in the deck, with quantities, boards and printings".to_string()),
             on_hint: move |()| {
                 let mut hint_open = hint_open;
