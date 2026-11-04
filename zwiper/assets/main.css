@@ -486,29 +486,6 @@ button {
     overflow: visible;
 }
 
-/* The theme row at the top of the kit's solid trailing band, signed in: the
-   theme's name as the kit's picker trigger (with its accent dot, since the
-   name opens the Themes sheet) and the Dark/Light switch, left-aligned and
-   spaced like the icon row under it. */
-.app-nav .app-nav-theme {
-    justify-content: flex-start;
-    gap: 0.4rem;
-    padding-bottom: 0.6rem;
-}
-
-/* Both pills stand as tall as the icon row's buttons, in its type size. */
-.app-nav-theme .nav-dropdown-trigger,
-.app-nav-theme .btn-action {
-    display: inline-flex;
-    align-items: center;
-    height: 1.7rem;
-    padding: 0.2rem 0.6rem;
-    font-size: 0.85rem;
-    border-radius: 0.4rem;
-    box-shadow: none;
-    opacity: 0.7;
-}
-
 /* The header holds still while the sheet is up, as while the menu is open:
    a transform would make it the sheet's containing block. */
 .screen > .app-nav:has(.theme-picker-sheet .bottom-sheet.show) {
@@ -524,8 +501,9 @@ button {
     padding-bottom: 0.6rem;
 }
 
-/* The ! and, signed in, the Home, Account, Settings and About icons, one
-   group at the footer's left end. */
+/* The ! and, signed in, the Home, Account, Settings and About icons, then
+   the Theme paintbrush and the mode's sun or moon, one group at the footer's
+   left end. */
 .app-nav-footer-group {
     display: flex;
     align-items: center;
@@ -552,9 +530,11 @@ button {
     padding: 0;
 }
 
-.app-nav-icon .action-dock-icon {
+.app-nav-icon .action-dock-icon,
+.app-nav-icon .mode-icon {
     width: 1.1em;
     height: 1.1em;
+    vertical-align: 0;
 }
 
 .app-nav-icon.active {

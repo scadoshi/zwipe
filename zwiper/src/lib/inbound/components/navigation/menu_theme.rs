@@ -1,26 +1,26 @@
-//! The main menu's theme row, over the footer's icons: the current theme's
-//! name, which opens the Themes sheet, and the Dark/Light switch, as the
-//! websites' phone-width menu has them.
+//! The main menu's theme buttons, after the footer's icons: a paintbrush
+//! that opens the Themes sheet and the mode's sun or moon, which flips
+//! Dark/Light.
 //!
-//! The row drives its own `zwipe_ui::screens::config` model and saves
+//! The pair drives its own `zwipe_ui::screens::config` model and saves
 //! through the same path as Settings' Theme row (see
-//! [`theme_save`](crate::inbound::components::theme_save)), so the two rows
-//! never disagree: both draw the app-wide theme and both persist to the
-//! account's preferences. The sheet is the menu's descendant, so the menu
+//! [`theme_save`](crate::inbound::components::theme_save)), so the pair and
+//! the row never disagree: both draw the app-wide theme and both persist to
+//! the account's preferences. The sheet is the menu's descendant, so the menu
 //! stays painted and folds as the sheet rises, the way the kit's
 //! `ThemePicker` folds a site's menu.
 
-use components::{DarkModeButton, ThemeConfig, Toasts, use_toast};
+use components::{ModeIcon, ThemeConfig, Toasts, use_toast};
 use dioxus::prelude::*;
-use zwipe_core::domain::user::preferences::display_theme_name;
 use zwipe_ui::screens::config::{Action, Effect, Sheet, State};
 
+use crate::inbound::components::action_dock::{BRUSH, DockIcon};
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::telemetry::vocabulary::{ProfileScreen, Screen};
 use crate::inbound::components::theme_save::{self, ThemeSaveSheet, theme_config_of, theme_of};
 use crate::inbound::components::ui_toast;
 
-/// The row's model with the handles that perform its theme effects. Copy, so
+/// The pair's model with the handles that perform its theme effects. Copy, so
 /// every handler and task holds its own.
 #[derive(Clone, Copy)]
 struct Driver {
@@ -43,7 +43,7 @@ impl Driver {
         }
     }
 
-    /// Performs one theme effect. The row sends only theme actions, so the
+    /// Performs one theme effect. The pair sends only theme actions, so the
     /// model never asks for a fetch, a hint, a pip change, the Exceptions
     /// sheet or a navigation here.
     fn perform(self, effect: Effect) {
@@ -84,9 +84,9 @@ impl Driver {
     }
 }
 
-/// The theme row for the signed-in menu's footer: the theme's name as the
-/// kit's picker trigger, opening the Themes sheet and folding the menu, and
-/// the Dark/Light switch, which flips the mode and saves it at once.
+/// The signed-in menu's theme buttons, two footer icons: the paintbrush
+/// opens the Themes sheet and folds the menu, and the sun or moon names the
+/// mode in use and flips it, saving at once.
 #[component]
 pub fn MenuTheme(open: Signal<bool>) -> Element {
     let theme_config: Signal<ThemeConfig> = use_context();
@@ -98,24 +98,22 @@ pub fn MenuTheme(open: Signal<bool>) -> Element {
         menu_open: open,
         sheet_open: use_signal(|| false),
     };
-    let theme = theme_config.read();
-    let name = display_theme_name(&theme.name);
-    let is_dark = theme.is_dark;
-    drop(theme);
+    let is_dark = theme_config.read().is_dark;
     rsx! {
-        div { class: "theme-picker app-nav-theme",
-            button {
-                class: "nav-dropdown-trigger",
-                onclick: move |_| driver.dispatch(Action::OpenThemes),
-                "{name}"
-            }
-            DarkModeButton {
-                is_dark,
-                onclick: move |_| {
-                    let shown = theme_of(theme_config.peek().clone());
-                    driver.dispatch(Action::ToggleDarkMode { shown });
-                },
-            }
+        button {
+            class: "btn-action app-nav-icon",
+            "aria-label": "Theme",
+            onclick: move |_| driver.dispatch(Action::OpenThemes),
+            DockIcon { path: BRUSH }
+        }
+        button {
+            class: "btn-action app-nav-icon",
+            "aria-label": if is_dark { "Switch to light" } else { "Switch to dark" },
+            onclick: move |_| {
+                let shown = theme_of(theme_config.peek().clone());
+                driver.dispatch(Action::ToggleDarkMode { shown });
+            },
+            ModeIcon { dark: is_dark }
         }
         // The kit's class keeps the folding menu painted while the sheet is up.
         div { class: "theme-picker-sheet",

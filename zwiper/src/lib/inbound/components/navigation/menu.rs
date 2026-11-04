@@ -1,8 +1,8 @@
 //! The main menu behind the header's hamburger.
 //!
-//! Signed in, it lists the deck sections, then a footer with the theme row
-//! (the theme's name and the Dark/Light switch) over the `!` for Help and
-//! feedback, the icons for Home, Account, Settings and About, and Log out.
+//! Signed in, it lists the deck sections, then a footer with the `!` for
+//! Help and feedback, the icons for Home, Account, Settings and About, the
+//! theme's paintbrush and the mode's sun or moon, and Log out.
 //! Signed out, it lists the auth screens. The entry for the screen
 //! on view, or the section it sits under, is lit.
 //!
@@ -222,9 +222,9 @@ fn MenuIcon(section: Section, current: bool, mut open: Signal<bool>) -> Element 
 }
 
 /// The menu's footer, for the nav's `trailing` slot: the `!` for Help and
-/// feedback and, signed in, the theme row above it, the icons for Home,
-/// Account, Settings and About beside it and a small Log out on the right
-/// that asks first.
+/// feedback and, signed in, the icons for Home, Account, Settings and About
+/// beside it, then the theme pair, and a small Log out on the right that
+/// asks first.
 #[component]
 pub fn MenuFooter(open: Signal<bool>) -> Element {
     let session: Signal<Option<Session>> = use_context();
@@ -234,9 +234,6 @@ pub fn MenuFooter(open: Signal<bool>) -> Element {
     let signed_in = session.read().is_some();
     let current = Section::of(&route);
     rsx! {
-        if signed_in {
-            MenuTheme { open }
-        }
         div { class: "app-nav-footer",
             div { class: "app-nav-footer-group",
                 SupportButton {}
@@ -244,6 +241,7 @@ pub fn MenuFooter(open: Signal<bool>) -> Element {
                     for section in Section::FOOTER {
                         MenuIcon { key: "{section.label()}", section, current: current == Some(section), open }
                     }
+                    MenuTheme { open }
                 }
             }
             if signed_in {
