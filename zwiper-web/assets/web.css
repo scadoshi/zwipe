@@ -569,13 +569,25 @@ body {
 
 /* ---- About ---- */
 
-/* About keeps the app's column of panels, centered, on a wide window. */
+/* About on a wide window: the rows and Credits in the left column, the
+   changelog in the right, each panel as wide as its column; the columns'
+   gap spaces the panels, so their stacking margins go. */
 @media (min-width: 900px) {
     .changelog-screen.web-about {
         width: 100%;
-        max-width: 48rem;
+        max-width: var(--web-page-max);
         margin: 0 auto;
-        padding-top: 1rem;
+        padding: 0 1.5rem 1rem;
+        box-sizing: border-box;
+    }
+
+    .web-about .settings-list {
+        max-width: none;
+    }
+
+    .web-about .web-column > .about-panel,
+    .web-about .web-column > .changelog-panels {
+        margin-top: 0;
     }
 }
 
