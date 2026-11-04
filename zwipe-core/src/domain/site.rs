@@ -16,6 +16,13 @@ pub const WEB_BASE: &str = "http://localhost:8080";
 #[cfg(not(debug_assertions))]
 pub const WEB_BASE: &str = "https://zwipe.net";
 
+/// The web app's base URL (zwiper-web), no trailing slash.
+#[cfg(debug_assertions)]
+pub const APP_BASE: &str = "http://localhost:8080";
+/// The web app's base URL (zwiper-web), no trailing slash.
+#[cfg(not(debug_assertions))]
+pub const APP_BASE: &str = "https://app.zwipe.net";
+
 /// API base URL (zerver), no trailing slash.
 #[cfg(debug_assertions)]
 pub const API_BASE: &str = "http://localhost:3000";
