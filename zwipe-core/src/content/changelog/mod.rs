@@ -42,6 +42,7 @@ pub const UPCOMING: &[Release] = &[Release {
     date: None,
     entries: &[
         "Home shows a Decks panel with your deck count and a button into Decks",
+        "zwipe.net's theme menu stays open after a pick, so the next theme is one click away",
         "A one-card deck shows 1 card in the deck list",
         "The land target stops at 0",
         "Config is now called Settings",
