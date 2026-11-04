@@ -3451,23 +3451,8 @@ button {
     padding: 0.3rem 0.6rem;
 }
 
-.home-deck-row {
-    padding: 0.7rem 1rem;
-    cursor: pointer;
-}
-
-.home-deck-row:active {
-    background-color: var(--bg-raised);
-}
-
-.home-deck-name {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.home-decks-failed {
+/* The panel's one line while it has no deck to draw or the fetch failed. */
+.home-decks-line {
     padding: 1rem;
 }
 

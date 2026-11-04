@@ -1,11 +1,12 @@
 //! Home's Decks panel: the deck count and an All decks chip in its header,
-//! the latest decks as tiles under it, each a tap into the deck.
+//! the latest decks as tiles under it, each a tap into the deck. With no
+//! deck the chip is Create a deck over one muted line.
 
 use components::{Button, ButtonVariant};
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::scryfall_data::colors::Color;
-use zwipe_ui::screens::home::{self, DeckPanel, DeckTile, Decks, LATEST_DECKS};
+use zwipe_ui::screens::home::{self, DeckPanel, DeckTile, Decks, DecksAction, LATEST_DECKS};
 
 /// The last deck list fetched, kept above the router (as
 /// `Signal<Option<CachedDecks>>`) so a return to Home lists the decks at
@@ -21,10 +22,11 @@ pub struct CachedDecks {
 /// The panel between the hero and the Colors panel, in the Colors panel's
 /// style: Decks and the count chip centered in its header with the All decks
 /// chip in the right corner, then the [`LATEST_DECKS`] most recently updated decks
-/// as three tiles across, each opening its deck. With no deck the one row
-/// opens Create deck; while the fetch is out three tiles ghost; a failed
-/// fetch with nothing cached shows a muted line over the All decks chip.
-/// Home's model decides which.
+/// as three tiles across, each opening its deck. With no deck the count chip
+/// hides, the corner chip is Create a deck and a muted line sits under the
+/// header, the Colors panel's shape before it has counts; while the fetch is
+/// out three tiles ghost; a failed fetch with nothing cached shows a muted
+/// line under the All decks chip. Home's model decides which.
 #[component]
 pub fn HomeDecks(
     decks: Decks,
@@ -32,28 +34,28 @@ pub fn HomeDecks(
     ondeck: EventHandler<Uuid>,
     oncreate: EventHandler,
 ) -> Element {
+    let action = decks.action();
+    let onaction = move |()| match action {
+        DecksAction::AllDecks => onopen.call(()),
+        DecksAction::CreateDeck => oncreate.call(()),
+    };
     rsx! {
         div { class: "container-sm flex-col home-flavor home-decks content-enter-delayed",
             match decks {
                 Decks::Loaded(panel) => rsx! {
-                    PanelHeader { count: Some(panel.count), onopen }
-                    if panel.latest.is_empty() {
-                        div {
-                            class: "settings-row home-deck-row",
-                            role: "button",
-                            onclick: move |_| oncreate.call(()),
-                            span { class: "home-deck-name", {home::CREATE_DECK} }
-                        }
-                    } else {
-                        DeckTiles { panel, ondeck }
-                    }
+                    PanelHeader { count: Some(panel.count), action, onaction }
+                    DeckTiles { panel, ondeck }
+                },
+                Decks::Empty => rsx! {
+                    PanelHeader { count: None, action, onaction }
+                    div { class: "message-empty home-decks-line", {home::NO_DECKS} }
                 },
                 Decks::Failed => rsx! {
-                    PanelHeader { count: None, onopen }
-                    div { class: "message-empty home-decks-failed", {home::DECKS_FAILED} }
+                    PanelHeader { count: None, action, onaction }
+                    div { class: "message-empty home-decks-line", {home::DECKS_FAILED} }
                 },
                 Decks::Loading => rsx! {
-                    PanelHeader { count: None, onopen }
+                    PanelHeader { count: None, action, onaction }
                     div { class: "home-deck-tiles",
                         for i in 0..LATEST_DECKS {
                             div { key: "{i}", class: "home-deck-tile",
@@ -71,10 +73,14 @@ pub fn HomeDecks(
 }
 
 /// The panel's header: the title and the count chip (when there is a
-/// count) centered as one unit, the All decks chip alone in the right
-/// corner.
+/// count) centered as one unit, the action chip (All decks, or Create a
+/// deck with no deck) alone in the right corner.
 #[component]
-fn PanelHeader(count: Option<u32>, onopen: EventHandler) -> Element {
+fn PanelHeader(count: Option<u32>, action: DecksAction, onaction: EventHandler) -> Element {
+    let label = match action {
+        DecksAction::AllDecks => home::ALL_DECKS,
+        DecksAction::CreateDeck => home::CREATE_DECK,
+    };
     rsx! {
         div { class: "settings-list-header home-panel-header-centered",
             div { class: "home-panel-header-title",
@@ -86,8 +92,8 @@ fn PanelHeader(count: Option<u32>, onopen: EventHandler) -> Element {
             div { class: "home-panel-header-action",
                 Button {
                     variant: ButtonVariant::Action,
-                    onclick: move |_| onopen.call(()),
-                    {home::ALL_DECKS}
+                    onclick: move |_| onaction.call(()),
+                    {label}
                 }
             }
         }

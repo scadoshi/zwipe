@@ -34,8 +34,11 @@ pub const ACTIVITY: &str = "Activity";
 /// The Decks panel's chip that opens the deck list.
 pub const ALL_DECKS: &str = "All decks";
 
-/// The Decks panel's one row while the user has no deck; it opens Create deck.
+/// The Decks panel's corner chip while the user has no deck; it opens Create deck.
 pub const CREATE_DECK: &str = "Create a deck";
+
+/// The Decks panel's line while the user has no deck.
+pub const NO_DECKS: &str = "Create a deck and it shows up here";
 
 /// The Decks panel's line when the decks failed to load and none are held.
 pub const DECKS_FAILED: &str = "Could not load your decks";
@@ -95,7 +98,7 @@ pub enum Destination {
     Decks,
     /// This deck, from its tile in the Decks panel.
     Deck(Uuid),
-    /// Create deck, from the Decks panel's row while the user has no deck.
+    /// Create deck, from the Decks panel's corner chip while the user has no deck.
     CreateDeck,
     /// Account, from the action bar.
     Account,
@@ -261,7 +264,7 @@ pub enum Action {
     Decks,
     /// Opens this deck, from its tile in the Decks panel.
     OpenDeck(Uuid),
-    /// Opens Create deck, from the Decks panel's row while the user has no deck.
+    /// Opens Create deck, from the Decks panel's corner chip while the user has no deck.
     CreateDeck,
     /// Opens Account.
     Account,
@@ -334,8 +337,17 @@ impl From<&DeckProfile> for DeckTile {
 pub struct DeckPanel {
     /// The deck count in the header's chip: every deck of the user's, the listed ones included.
     pub count: u32,
-    /// The [`LATEST_DECKS`] most recently updated decks, newest first. Empty shows the [`CREATE_DECK`] row.
+    /// The [`LATEST_DECKS`] most recently updated decks, newest first. Never empty: no deck is [`Decks::Empty`].
     pub latest: Vec<DeckTile>,
+}
+
+/// The chip in the Decks panel's right corner.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum DecksAction {
+    /// [`ALL_DECKS`], opening the deck list.
+    AllDecks,
+    /// [`CREATE_DECK`], opening Create deck.
+    CreateDeck,
 }
 
 /// What the Decks panel draws.
@@ -343,10 +355,23 @@ pub struct DeckPanel {
 pub enum Decks {
     /// The decks are out and none are held: three ghost tiles.
     Loading,
-    /// The fetch failed and none are held: [`DECKS_FAILED`] over the All decks chip.
+    /// The fetch failed and none are held: [`DECKS_FAILED`] under the header.
     Failed,
+    /// The user has no deck: [`NO_DECKS`] under the header, no count chip, and [`CREATE_DECK`] in the corner.
+    Empty,
     /// The count and the latest decks.
     Loaded(DeckPanel),
+}
+
+impl Decks {
+    /// The chip in the header's corner: Create a deck with no deck, All decks otherwise.
+    #[must_use]
+    pub fn action(&self) -> DecksAction {
+        match self {
+            Self::Empty => DecksAction::CreateDeck,
+            Self::Loading | Self::Failed | Self::Loaded(_) => DecksAction::AllDecks,
+        }
+    }
 }
 
 /// What the Colors panel draws.
@@ -610,6 +635,7 @@ impl State {
     #[must_use]
     pub fn decks(&self) -> Decks {
         match &self.decks {
+            Some(decks) if decks.is_empty() => Decks::Empty,
             Some(decks) => Decks::Loaded(DeckPanel {
                 count: u32::try_from(decks.len()).unwrap_or(u32::MAX),
                 latest: decks.iter().take(LATEST_DECKS).cloned().collect(),

@@ -393,19 +393,15 @@ fn the_decks_panel_with_no_deck_offers_create_and_a_failure_says_so_unless_held(
         ticket,
         decks: Vec::new(),
     });
-    assert_eq!(
-        state.decks(),
-        Decks::Loaded(DeckPanel {
-            count: 0,
-            latest: Vec::new(),
-        })
-    );
+    assert_eq!(state.decks(), Decks::Empty);
+    assert_eq!(state.decks().action(), DecksAction::CreateDeck);
 
     let (mut state, effects) = load(cold());
     let ticket = ticket_of(&effects, decks_ticket);
     let effects = state.update(Action::DecksFailed { ticket });
     assert!(effects.is_empty(), "the client reports it: {effects:?}");
     assert_eq!(state.decks(), Decks::Failed);
+    assert_eq!(state.decks().action(), DecksAction::AllDecks);
 
     let (mut state, effects) = load(warm());
     assert_eq!(
