@@ -451,7 +451,7 @@
     padding: 0;
 }
 
-/* ---- Mana pips: every `i.ms.ms-cost`, plus the color map ---- */
+/* ---- Mana pips: every `i.ms.ms-cost` ---- */
 
 /* Pips draw in the five `--mana-*` colors each theme block sets from its own
    palette. `pips-classic`, on the element that carries the theme class,
@@ -1267,99 +1267,67 @@ i.ms.ms-cost.ms-gp {
 }
 
 
-/* ---- ColorMap (components::ColorMap) ---- */
+/* ---- ColorBars (components::ColorBars) ---- */
 
-/* The tiles and pips read `--mana-white` through `--mana-green`, so the map
-   follows the pip style like every other pip. */
-/* No side padding, so the map runs to the panel's edges; the key below
-   carries its own. */
-.color-map {
+/* The pips and fills read `--mana-white` through `--mana-green`, so the bars
+   follow the pip style like every other pip. */
+.color-bars {
     display: flex;
     flex-direction: column;
+    padding: 0.5rem 1rem 0.9rem;
+}
+
+/* Rows space by their own padding, like the deck charts' Roles rows. */
+.color-bar-row {
+    display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.25rem 0 0.5rem;
+    padding: 0.175rem 0;
 }
 
-/* Tiles keep their size, so a map larger than the box scrolls inside it:
-   up and down here, across in .color-map-across inside, each box with
-   orangui's edge fade for its axis. 14rem holds a map of about 2,200
-   colored cards. The scroll stays in the box instead of carrying on to the
-   page. */
-.color-map-viewport {
-    display: flex;
-    flex-direction: column;
-    align-self: stretch;
-    max-height: 14rem;
-    overflow-x: hidden;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
+.color-bar-row > .ms {
+    flex: 0 0 auto;
+    font-size: 0.85rem;
 }
 
-/* A flex child with auto margins centers when it fits and starts at the
-   edge when it does not, so every part stays reachable. */
-.color-map-across {
-    display: flex;
-    flex: none;
-    width: 100%;
-    overflow-x: auto;
-    overflow-y: hidden;
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
+/* The deck charts' bar: a blocky track the fill spans at full height. The
+   track shows under a short fill and stays visible under a white one on a
+   cream background. */
+.color-bar-track {
+    flex: 1;
+    height: 0.9rem;
+    border-radius: 0.15rem;
+    background-color: var(--border-secondary);
+    overflow: hidden;
 }
 
-.color-map-svg {
-    display: block;
-    flex: none;
-    margin: auto;
+.color-bar-fill {
+    box-sizing: border-box;
+    height: 100%;
+    border-radius: inherit;
+    border: 1px solid var(--border-primary);
 }
 
-/* Tiles sweep in on orangui's `heat-sweep`, a ring at a time from the middle
-   out, on the delay each carries. The keyframes' brightness is a CSS filter,
-   which iOS Safari skips on SVG children, so there the tiles only fade and
-   scale. */
-.color-map-tile {
-    transform-box: fill-box;
-    transform-origin: center;
-    animation: heat-sweep 0.4s ease-out backwards;
+.color-bar-count {
+    flex: 0 0 2.2rem;
+    text-align: right;
+    font-size: 0.85rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
 }
 
-/* Hidden at the sweep's start until the splash opens its gate. */
-.color-map-svg.held .color-map-tile {
-    animation-play-state: paused;
+.color-bar-pip-ghost {
+    flex: 0 0 auto;
+    width: 0.85rem;
+    height: 0.85rem;
+    border-radius: 50%;
 }
 
-@media (prefers-reduced-motion: reduce) {
-    .color-map-tile {
-        animation: none;
-    }
-}
-
-/* Under a full-bleed rule, padded like a panel's action bar. */
-.color-map-key {
-    display: flex;
-    align-self: stretch;
-    margin-top: 0.25rem;
-    padding: 0.75rem 0.75rem 0;
-    border-top: 1px solid var(--border-secondary);
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 0.4rem;
-}
-
-.color-map-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-}
-
-/* A button at the key's end takes its line's height, so it sits level with
-   the chips. */
-.color-map-key > .card-action-btn {
-    align-self: stretch;
+.color-bar-count-ghost {
+    flex: 0 0 auto;
+    width: 1.6rem;
+    height: 0.75rem;
+    margin-left: 0.6rem;
 }
 
 /* A bar chart's row: the track fills the row beside its label, and the fill

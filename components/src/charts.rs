@@ -11,12 +11,14 @@
 use std::collections::BTreeMap;
 
 use dioxus::prelude::*;
+use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::deck::deck_metrics::ManaBalanceRow;
 use zwipe_core::domain::deck::draw_odds;
 /// One bar of a [`BarChart`], zwipe-ui's chart bar, so a client hands the
 /// bars zwipe-ui computes straight to the chart.
 pub use zwipe_ui::activity::Bar;
 
+use crate::color_bars::ColorBars;
 use crate::fold::{FOLD_AT, Fold, SeeMore, fold_split};
 use crate::role_tags::{OtagDef, RoleTags};
 
@@ -486,11 +488,24 @@ fn slug_bars(bars: &[(String, usize, u32)]) -> Vec<Bar> {
         .collect()
 }
 
-/// The deck's cards per color as vertical bars, shown in the Mana section.
+/// The deck's cards per color as [`ColorBars`] under a Colors label, shown
+/// in the Mana section: `DeckMetrics::color_bars` tuples, a color's pip or
+/// colorless, in the spacing of the section's other charts.
 #[component]
-pub fn ColorChart(color_bars: Vec<(&'static str, usize, u32)>, hint: Option<Element>) -> Element {
+pub fn ColorChart(color_bars: Vec<(Option<Color>, usize, u32)>, hint: Option<Element>) -> Element {
+    let bars: Vec<zwipe_ui::colors::Bar> = color_bars
+        .into_iter()
+        .map(|(color, count, pct)| zwipe_ui::colors::Bar {
+            color,
+            count: u32::try_from(count).unwrap_or(u32::MAX),
+            pct,
+        })
+        .collect();
     rsx! {
-        BarChart { label: "Colors", bars: tuple_bars(&color_bars), hint }
+        div { style: "display:flex;flex-direction:column;gap:0.35rem;padding:0 0.75rem;",
+            ChartLabel { text: "Colors", hint }
+            ColorBars { bars }
+        }
     }
 }
 

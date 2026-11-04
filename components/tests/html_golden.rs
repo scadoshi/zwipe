@@ -16,11 +16,11 @@ use std::path::PathBuf;
 
 use components::{
     Bar, BarChart, BarOrientation, ChangelogFilter, ChangelogFilters, ChangelogLook,
-    ChangelogReleases, ColorChart, ColorMap, ColorMapCounts, ColorMapGhost, DeckCharts, DrawOdds,
-    FlippableCardImage, LabelCase,
+    ChangelogReleases, ColorBars, ColorChart, DeckCharts, DrawOdds, FlippableCardImage, LabelCase,
 };
 use dioxus::dioxus_core::NoOpMutations;
 use dioxus::prelude::*;
+use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
 use zwipe_core::http::contracts::changelog::{HttpChangelog, HttpRelease};
 
@@ -57,81 +57,18 @@ fn render(app: fn() -> Element) -> String {
     dioxus_ssr::render(&dom)
 }
 
-const SEED: u64 = 0x5eed_c0de_1234_5678;
-
+/// Six rows: a bar per color at its share, a zero count over an empty track
+/// and the colorless bar last in its neutral fill.
 #[test]
-fn color_map_sample() {
+fn color_bars() {
+    let counts = zwipe_ui::colors::ColorCounts {
+        cards: [180, 200, 0, 190, 80],
+        colorless: 50,
+    };
     golden(
-        "color_map_sample",
+        "color_bars",
         &dioxus_ssr::render_element(rsx! {
-            ColorMap {
-                counts: ColorMapCounts {
-                    cards: [180, 200, 70, 190, 80],
-                    colorless: 189,
-                },
-                seed: SEED,
-            }
-        }),
-    );
-}
-
-#[test]
-fn color_map_small_with_key_action() {
-    golden(
-        "color_map_small",
-        &dioxus_ssr::render_element(rsx! {
-            ColorMap {
-                counts: ColorMapCounts {
-                    cards: [3, 0, 0, 1, 0],
-                    colorless: 1,
-                },
-                seed: 7,
-                key_action: rsx! {
-                    button { class: "btn-action", "Open" }
-                },
-            }
-        }),
-    );
-}
-
-#[test]
-fn color_map_capped() {
-    golden(
-        "color_map_capped",
-        &dioxus_ssr::render_element(rsx! {
-            ColorMap {
-                counts: ColorMapCounts {
-                    cards: [9000, 9000, 9000, 9000, 9000],
-                    colorless: 0,
-                },
-                seed: 42,
-            }
-        }),
-    );
-}
-
-#[test]
-fn color_map_colorless_only() {
-    golden(
-        "color_map_colorless",
-        &dioxus_ssr::render_element(rsx! {
-            ColorMap {
-                counts: ColorMapCounts {
-                    cards: [0; 5],
-                    colorless: 5,
-                },
-                seed: 3,
-            }
-        }),
-    );
-}
-
-#[test]
-fn color_map_ghost() {
-    golden(
-        "color_map_ghost",
-        &dioxus_ssr::render_element(rsx! {
-            ColorMapGhost {}
+            ColorBars { bars: zwipe_ui::colors::bars(&counts) }
         }),
     );
 }
@@ -325,7 +262,7 @@ fn deck_charts_with_role_tags() {
                     type_bars: vec![("land", 36, 100)],
                     category_bars: vec![("ramp", 10, 100)],
                 }
-                ColorChart { color_bars: vec![("W", 12, 100), ("U", 0, 0)] }
+                ColorChart { color_bars: vec![(Some(Color::White), 12, 100), (None, 0, 0)] }
             }
         }),
     );

@@ -13,10 +13,10 @@
 //! that removes a row fills from the held list and refetches only when fewer
 //! than ten remain, so the list stays a full top 10. Above the list, sections
 //! in the deck profile's grammar sum up what the user builds, the profile the
-//! ranking reads: a color territory map of the cards, a Summary table (the
+//! ranking reads: a bar per color of the cards, a Summary table (the
 //! deck count, the top colors and the top single color), a chart of the
 //! card roles and a table of the oracle tags across the decks. They share
-//! one accordion with the color map open on entry. Below the list, the staples
+//! one accordion with Colors open on entry. Below the list, the staples
 //! (up to 100 cards in the most decks) show as the shared card rows in the
 //! list's group grammar, the first 10 that match their own Type and Color chip
 //! rows, which the Show row does not touch. With no deck that has cards to
@@ -28,8 +28,8 @@
 
 use components::{
     AlertDialog, Bar, BarChart, BarOrientation, Button, ButtonVariant, CardRoleChips, Chip,
-    ColorMap, ColorMapCounts, DialogAction, HintBullet, HintBullets, HintDialog, HintKey, HintLine,
-    OtagDef, RoleTags, Toasts, use_toast,
+    ColorBars, DialogAction, HintBullet, HintBullets, HintDialog, HintKey, HintLine, OtagDef,
+    RoleTags, Toasts, use_toast,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -44,6 +44,7 @@ use zwipe_core::domain::user::models::hints::HINT_SUGGESTED_COMMANDERS;
 use zwipe_core::http::contracts::suggestions::{
     HttpCommanderSuggestion, HttpStaple, HttpSuggestionReasons,
 };
+use zwipe_ui::colors::ColorCounts;
 use zwipe_ui::generation::Ticket;
 use zwipe_ui::playstyle::{
     self, ProfileSummary, StapleColor, SummaryValue, TagRow, identity_label,
@@ -60,7 +61,7 @@ use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::catalog_cache::CatalogCache;
 use crate::inbound::components::hint_dialog::{self, HintColored};
 use crate::inbound::components::hint_host::HintTopic;
-use crate::inbound::components::home_play_style::ColorMapEmpty;
+use crate::inbound::components::home_play_style::ColorsEmpty;
 use crate::inbound::components::info_button::InfoButton;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{Screen, screen};
@@ -405,29 +406,23 @@ fn StaplesPanel(
 }
 
 /// What the user builds, as sections over the suggestions list in the deck
-/// profile's grammar: a color territory map seeded by the user's id, then a
+/// profile's grammar: Home's [`ColorBars`], then a
 /// Summary table (the deck count, the most common color set and color) in
 /// the Budget section's rows, a chart and a table. The four share one
-/// accordion with Color map open on entry. Colors are a [`ColorMap`], or
-/// Home's empty line when the map has nothing on it; card roles are rows like the deck
+/// accordion with Colors open on entry. Colors are a bar per color, or
+/// Home's empty line when no deck has a card; card roles are rows like the deck
 /// profile's role chart with chip labels, a tapped role revealing its oracle
 /// tags (from `role_tags`) under its row; oracle tags are a [`TagTable`].
 /// `sections` says which draw.
 #[component]
 pub(crate) fn BuilderProfileSections(
     sections: Vec<Section>,
-    color_map: Option<ColorMapCounts>,
+    color_counts: Option<ColorCounts>,
     summary: ProfileSummary,
     roles: Vec<Bar>,
     tags: Vec<TagRow>,
     role_tags: Callback<String, Vec<String>>,
 ) -> Element {
-    // Seeds the color map from the signed-in user, so its shape stays theirs.
-    let session: Signal<Option<Session>> = use_context();
-    let map_seed = session
-        .peek()
-        .as_ref()
-        .map_or(0, |s| components::seed_from_id(s.user.id.as_u128()));
     let mut selected_role: Signal<Option<String>> = use_signal(|| None);
     let open_section: Signal<Option<String>> = use_signal(|| {
         Section::ALL
@@ -451,17 +446,17 @@ pub(crate) fn BuilderProfileSections(
         }
     });
     rsx! {
-        if sections.contains(&Section::ColorMap) {
+        if sections.contains(&Section::Colors) {
             CollapsibleSection {
-                title: Section::ColorMap.title(),
+                title: Section::Colors.title(),
                 open_section,
                 header_accessory: rsx! {
-                    InfoButton { topic: HintTopic::ColorMap }
+                    InfoButton { topic: HintTopic::Colors }
                 },
-                if let Some(counts) = color_map {
-                    ColorMap { counts, seed: map_seed }
+                if let Some(counts) = color_counts {
+                    ColorBars { bars: zwipe_ui::colors::bars(&counts) }
                 } else {
-                    ColorMapEmpty {}
+                    ColorsEmpty {}
                 }
             }
         }
@@ -899,7 +894,7 @@ pub fn SuggestedCommanders() -> Element {
     let shows_swipe = state.shows_swipe();
     let deck_count = state.deck_count();
     let sections = state.sections();
-    let color_map = state.color_map();
+    let color_counts = state.colors();
     let summary = state.summary();
     let role_bars = state.role_bars();
     let tag_rows = state.tag_rows();
@@ -973,7 +968,7 @@ pub fn SuggestedCommanders() -> Element {
                             if let Some(summary) = summary {
                                 BuilderProfileSections {
                                     sections,
-                                    color_map,
+                                    color_counts,
                                     summary,
                                     roles: role_bars,
                                     tags: tag_rows,

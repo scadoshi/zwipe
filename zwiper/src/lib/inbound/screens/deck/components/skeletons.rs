@@ -1,6 +1,6 @@
 //! Loading skeletons for the deck screens.
 
-use components::ColorMapGhost;
+use components::ColorBarsGhost;
 use dioxus::prelude::*;
 
 /// One bordered "settings-list"-shaped skeleton with `rows` row placeholders inside.
@@ -37,28 +37,18 @@ pub(crate) fn DeckStatsSkeleton() -> Element {
     }
 }
 
-/// A color map while its counts load: a [`ColorMapGhost`] of skeleton tiles
-/// sweeping out from the middle in the map's own box, then under its rule
-/// a bare chip for each of the key's five colors and a wider one for
-/// colorless.
+/// The Colors section while its counts load: the six ghost rows of a
+/// [`ColorBarsGhost`], the loaded bars' size.
 #[component]
-fn ColorMapSkeleton() -> Element {
+fn ColorsSkeleton() -> Element {
     rsx! {
-        div { class: "color-map",
-            ColorMapGhost {}
-            div { class: "color-map-key",
-                for i in 0..5 {
-                    div { key: "{i}", class: "skeleton-bar skeleton-chip skeleton-chip-md" }
-                }
-                div { class: "skeleton-bar skeleton-chip skeleton-chip-lg" }
-            }
-        }
+        ColorBarsGhost {}
     }
 }
 
 /// The suggested commanders' profile sections while the first load is in
-/// flight, in the deck view's skeleton grammar: the Color map section open on
-/// its map's ghost, then Summary and the two chart sections collapsed to
+/// flight, in the deck view's skeleton grammar: the Colors section open on
+/// its ghost bars, then Summary and the two chart sections collapsed to
 /// their headers.
 #[component]
 pub(crate) fn BuilderProfileSkeleton() -> Element {
@@ -69,7 +59,7 @@ pub(crate) fn BuilderProfileSkeleton() -> Element {
                     div { class: "skeleton-bar skeleton-section-label" }
                     div { class: "skeleton-bar skeleton-chip skeleton-info-button" }
                 }
-                ColorMapSkeleton {}
+                ColorsSkeleton {}
             }
             for i in 0..3 {
                 div { key: "{i}", class: "skeleton-chart-box",

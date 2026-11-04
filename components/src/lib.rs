@@ -8,12 +8,12 @@
 //! [`OracleText`], [`FlippableCardImage`], [`ChangelogFilters`] and
 //! [`ChangelogReleases`], the deck charts ([`BarChart`], [`DeckCharts`], [`ColorChart`], [`ManaCurve`], [`ManaFulfillment`],
 //! [`DrawOdds`], [`ChartLabel`], with [`Fold`] and [`SeeMore`] behind their
-//! long rows), the [`ColorMap`] and [`ZwipeArchitecture`].
+//! long rows), the [`ColorBars`] and [`ZwipeArchitecture`].
 //!
 //! Styling ships as string constants to inline through `document::Style`.
 //! orangui's sheets come through as they are; [`MAGIC_CSS`] holds this crate's
 //! own rules (oracle text, keyword chips, card rows, the flippable card image,
-//! the changelog, the color map, the mana colors and the mana glyph inside a
+//! the changelog, the color bars, the mana colors and the mana glyph inside a
 //! chip). **CSS cascade order
 //! matters:** `THEMES_CSS`, then `COMPONENTS_CSS`, then `MAGIC_CSS`, then
 //! `APP_CSS` or `SITE_CSS`, then the host's own stylesheet, so component rules
@@ -36,7 +36,7 @@ mod card_role_chips;
 mod card_row;
 mod changelog;
 mod charts;
-mod color_map;
+mod color_bars;
 mod flippable_card_image;
 mod fold;
 mod keyword_chips;
@@ -55,7 +55,7 @@ pub use charts::{
     Bar, BarChart, BarOrientation, ChartLabel, ColorChart, DeckCharts, DrawOdds, LabelCase,
     ManaCurve, ManaFulfillment,
 };
-pub use color_map::{ColorMap, ColorMapGhost, mana_var};
+pub use color_bars::{ColorBars, ColorBarsGhost, mana_var};
 pub use flippable_card_image::{FlippableCardImage, reset_image_ease};
 pub use fold::{FOLD_AT, Fold, SEE_LESS, SEE_MORE, SeeMore, fold_split};
 pub use keyword_chips::{KeywordChips, KeywordReminders};
@@ -79,11 +79,8 @@ pub use orangui::{OpenUrlError, open_url, use_in_app_links};
 pub use orangui::{TOAST_CSS, ToastOptions, ToastStack, Toasts, use_toast};
 pub use role_tags::{OtagDef, RoleTags};
 pub use theme::{pip_color_class, theme_from_preferences};
-/// The color map's counts and a player's seed, from zwipe-ui, for the props
-/// [`ColorMap`] takes.
-pub use zwipe_ui::color_map::{ColorMapCounts, seed_from_id};
 
 /// The Magic rules: oracle text, keyword chips, card rows, the flippable card
-/// image, the changelog and the mana glyph inside a chip. Load it after
+/// image, the changelog, the color bars and the mana glyph inside a chip. Load it after
 /// orangui's [`COMPONENTS_CSS`] and before [`APP_CSS`] or [`SITE_CSS`].
 pub const MAGIC_CSS: &str = include_str!("../assets/magic.css");
