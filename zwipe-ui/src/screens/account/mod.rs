@@ -37,10 +37,7 @@ pub const UNVERIFIED: &str = "Unverified";
 /// The Password row's value.
 pub const PASSWORD_MASK: &str = "•••••••";
 
-/// The action bar's button back to where the user came from.
-pub const BACK: &str = "Back";
-
-/// The action bar's button that asks to log out.
+/// The button that asks to log out.
 pub const LOG_OUT: &str = "Log out";
 
 /// The title of the panel at the foot of the screen that holds Log out and Delete account.
@@ -48,12 +45,6 @@ pub const DANGER_ZONE: &str = "Danger zone";
 
 /// The Delete account row's button.
 pub const DELETE: &str = "Delete";
-
-/// The action bar's button that opens the More sheet.
-pub const MORE: &str = "More";
-
-/// The More sheet's title.
-pub const MORE_TITLE: &str = "More";
 
 /// The button that closes a dialog without acting.
 pub const CANCEL: &str = "Cancel";
@@ -124,7 +115,7 @@ impl Row {
     }
 }
 
-/// An item in the More sheet.
+/// An action in the Danger zone panel besides Log out.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum MoreItem {
     /// Opens the Delete account dialog.
@@ -276,7 +267,7 @@ pub enum Action {
     LogOut,
     /// Logs out, from [`Dialog::LogOut`].
     ConfirmLogOut,
-    /// Presses an item in the More sheet.
+    /// Presses a Danger zone action.
     More(MoreItem),
     /// The Delete account dialog closed without deleting. Its countdown stops.
     CancelDelete,

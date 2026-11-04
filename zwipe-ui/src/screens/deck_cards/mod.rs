@@ -74,22 +74,22 @@ pub const MVP: &str = "MVP";
 /// The line under the chip rows when the main board shows nothing.
 pub const NO_CARDS: &str = "No cards";
 
-/// The action bar's button back to where the user came from.
+/// The Back button, to where the user came from.
 pub const BACK: &str = "Back";
 
-/// The action bar's button that opens Add cards.
+/// The button that opens Add cards.
 pub const ADD: &str = "Add";
 
-/// The action bar's button that opens Remove cards.
+/// The button that opens Remove cards.
 pub const REMOVE: &str = "Remove";
 
-/// The action bar's button that opens the filter sheet.
+/// The button that opens the filter sheet.
 pub const FILTER: &str = "Filter";
 
-/// The action bar's button that walks the undo log back, shown while it holds an entry.
+/// The button that walks the undo log back, shown while it holds an entry.
 pub const UNDO: &str = "Undo";
 
-/// The action bar's button that clears the filter, shown while one is on.
+/// The button that clears the filter, shown while one is on.
 pub const RESET_FILTER: &str = "Reset filter";
 
 /// The toast once a loaded deck shows under a remembered filter.

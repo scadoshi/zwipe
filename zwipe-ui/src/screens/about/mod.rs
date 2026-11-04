@@ -31,7 +31,7 @@ pub const FAILED: &str = "Could not load the changelog";
 /// The first chip, which goes back to [`Filter::Latest`].
 pub const LATEST: &str = "Latest";
 
-/// The action bar's button back to the screen before.
+/// The Back button, to the screen before.
 pub const BACK: &str = "Back";
 
 /// The Version row's value: `v` and the client's version.

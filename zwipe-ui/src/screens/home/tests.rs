@@ -732,8 +732,6 @@ fn every_button_navigates() {
             Destination::Deck(Uuid::from_u128(9)),
         ),
         (Action::CreateDeck, Destination::CreateDeck),
-        (Action::Account, Destination::Account),
-        (Action::Config, Destination::Config),
         (Action::Activity, Destination::Activity),
         (Action::Playstyle, Destination::Playstyle),
     ] {
@@ -744,8 +742,8 @@ fn every_button_navigates() {
 #[test]
 fn the_copy_matches_the_app() {
     assert_eq!(
-        [TITLE, LIVE, ACTIVITY, DECKS, ACCOUNT, CONFIG],
-        ["Home", "Live", "Activity", "Decks", "Account", "Settings"]
+        [TITLE, LIVE, ACTIVITY, DECKS],
+        ["Home", "Live", "Activity", "Decks"]
     );
     assert_eq!(
         [ALL_DECKS, CREATE_DECK, DECKS_FAILED],

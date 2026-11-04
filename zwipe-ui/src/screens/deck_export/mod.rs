@@ -25,10 +25,10 @@ pub const DECKLIST: &str = "Decklist";
 /// The line in place of the decklist when the deck failed to load.
 pub const LOAD_FAILED: &str = "Could not load deck";
 
-/// The action bar's button back to the deck.
+/// The Back button, to the deck.
 pub const BACK: &str = "Back";
 
-/// The action bar's button that copies the decklist.
+/// The button that copies the decklist.
 pub const COPY: &str = "Copy";
 
 /// The toast after Copy.

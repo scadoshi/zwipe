@@ -1,4 +1,4 @@
-//! The deck list: the user's decks folded by Group by and narrowed by Show, with Create, the More sheet's items and the list's one-time hint.
+//! The deck list: the user's decks folded by Group by and narrowed by Show, with Create and the list's one-time hint.
 //!
 //! Group by, Show, the tag fold and the collapsed groups last one visit: the client keeps a [`State`] while the screen is up and drops it on leaving. Folding and narrowing come from [`crate::deck::list`] and the Create check from [`crate::deck::create_gate`].
 
@@ -41,17 +41,8 @@ pub const NO_DECKS: &str = "No decks";
 /// The line above the groups when Show lets no deck through.
 pub const NO_MATCH: &str = "No decks match";
 
-/// The action bar's button back to Home.
-pub const BACK: &str = "Back";
-
-/// The action bar's button that starts a deck.
+/// The button that starts a deck.
 pub const CREATE: &str = "Create";
-
-/// The action bar's button that opens the More sheet.
-pub const MORE: &str = "More";
-
-/// The More sheet's title.
-pub const MORE_TITLE: &str = "More actions";
 
 /// Where an action sends the user. The client maps each to its own route.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -62,42 +53,6 @@ pub enum Destination {
     Deck(Uuid),
     /// The Create deck form.
     CreateDeck,
-    /// The commander maybeboard.
-    CommanderMaybeboard,
-    /// Playstyle.
-    Playstyle,
-}
-
-/// An item in the More sheet.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum MoreItem {
-    /// Opens the commander maybeboard.
-    CommanderMaybeboard,
-    /// Opens Playstyle.
-    Playstyle,
-}
-
-impl MoreItem {
-    /// Every item, top to bottom.
-    pub const ALL: [Self; 2] = [Self::CommanderMaybeboard, Self::Playstyle];
-
-    /// The item's button text.
-    #[must_use]
-    pub fn label(self) -> &'static str {
-        match self {
-            Self::CommanderMaybeboard => "Commander maybeboard",
-            Self::Playstyle => "Playstyle",
-        }
-    }
-
-    /// Where the item goes.
-    #[must_use]
-    pub fn destination(self) -> Destination {
-        match self {
-            Self::CommanderMaybeboard => Destination::CommanderMaybeboard,
-            Self::Playstyle => Destination::Playstyle,
-        }
-    }
 }
 
 /// Where the deck fetch stands, for the client to pick what it draws.
@@ -180,8 +135,6 @@ pub enum Action {
         /// Whether the user's email is verified. A client with no session passes `true`, so only the server can refuse.
         verified: bool,
     },
-    /// Presses an item in the More sheet. The client closes the sheet.
-    More(MoreItem),
     /// Goes back to Home.
     Back,
 }
@@ -286,7 +239,6 @@ impl State {
                     Err(warning) => Effect::Toast(warning),
                 }];
             }
-            Action::More(item) => return vec![Effect::Navigate(item.destination())],
             Action::Back => return vec![Effect::Navigate(Destination::Home)],
         }
         Vec::new()

@@ -31,13 +31,13 @@ pub const TITLE: &str = "Swipe select";
 /// The overlay's title in [`Mode::Suggested`].
 pub const SUGGESTED_TITLE: &str = "Suggested commanders";
 
-/// The action bar's button that closes the overlay.
+/// The button that closes the overlay.
 pub const BACK: &str = "Back";
 
-/// The action bar's button that opens the filter sheet.
+/// The button that opens the filter sheet.
 pub const FILTER: &str = "Filter";
 
-/// The action bar's button that searches again from the top.
+/// The button that searches again from the top.
 pub const REFRESH: &str = "Refresh";
 
 /// The toast for a left swipe.

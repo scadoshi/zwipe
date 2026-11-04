@@ -643,11 +643,8 @@ fn the_copy_matches_the_app() {
     assert_eq!(ART, "Art");
     assert_eq!(CREATE_DECK, "Create deck");
     assert_eq!(REMOVE, "Remove");
-    assert_eq!(BACK, "Back");
     assert_eq!(FILTER, "Filter");
     assert_eq!(SWIPE, "Swipe");
-    assert_eq!(MORE, "More");
-    assert_eq!(MORE_TITLE, "More actions");
     assert_eq!(CLEAR_MAYBEBOARD, "Clear maybeboard");
     assert_eq!(
         CLEAR_BODY,

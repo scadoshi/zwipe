@@ -32,13 +32,13 @@ pub const HINT_TITLE: &str = "Swipe to trim";
 /// The label in front of the board chips.
 pub const BOARDS: &str = "Boards";
 
-/// The action bar's button back to where the user came from.
+/// The Back button, to where the user came from.
 pub const BACK: &str = "Back";
 
-/// The action bar's button that opens the card filter.
+/// The button that opens the card filter.
 pub const FILTER: &str = "Filter";
 
-/// The action bar's button that brings the stack back to its first card.
+/// The button that brings the stack back to its first card.
 pub const REFRESH: &str = "Refresh";
 
 /// The toast for a left swipe.

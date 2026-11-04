@@ -82,28 +82,18 @@ pub const TCGPLAYER: &str = "TCGplayer \u{2197}";
 /// The Buy dialog's link to `Card Kingdom`.
 pub const CARD_KINGDOM: &str = "Card Kingdom \u{2197}";
 
-/// The Decks panel's title, and the action bar's button that opens the deck list.
+/// The Decks panel's title.
 pub const DECKS: &str = "Decks";
-
-/// The action bar's button that opens Account.
-pub const ACCOUNT: &str = "Account";
-
-/// The action bar's button that opens Config.
-pub const CONFIG: &str = "Settings";
 
 /// Where an action sends the user. The client maps each to its own route.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Destination {
-    /// The deck list, from the Decks panel's All decks chip or the action bar.
+    /// The deck list, from the Decks panel's All decks chip.
     Decks,
     /// This deck, from its tile in the Decks panel.
     Deck(Uuid),
     /// Create deck, from the Decks panel's corner chip while the user has no deck.
     CreateDeck,
-    /// Account, from the action bar.
-    Account,
-    /// Config, from the action bar.
-    Config,
     /// Activity, from the hero.
     Activity,
     /// Playstyle, from the Colors panel.
@@ -260,16 +250,12 @@ pub enum Action {
         /// Whether the client holds the user's own counters from under [`COUNTS_FRESH`](crate::timing::COUNTS_FRESH) ago, so switching to them asks for none.
         mine_fresh: bool,
     },
-    /// Opens the deck list, from the Decks panel's All decks chip or the action bar.
+    /// Opens the deck list, from the Decks panel's All decks chip.
     Decks,
     /// Opens this deck, from its tile in the Decks panel.
     OpenDeck(Uuid),
     /// Opens Create deck, from the Decks panel's corner chip while the user has no deck.
     CreateDeck,
-    /// Opens Account.
-    Account,
-    /// Opens Config.
-    Config,
     /// Opens Activity.
     Activity,
     /// Opens Playstyle.
@@ -535,8 +521,6 @@ impl State {
             Action::Decks => return vec![Effect::Navigate(Destination::Decks)],
             Action::OpenDeck(id) => return vec![Effect::Navigate(Destination::Deck(id))],
             Action::CreateDeck => return vec![Effect::Navigate(Destination::CreateDeck)],
-            Action::Account => return vec![Effect::Navigate(Destination::Account)],
-            Action::Config => return vec![Effect::Navigate(Destination::Config)],
             Action::Activity => return vec![Effect::Navigate(Destination::Activity)],
             Action::Playstyle => return vec![Effect::Navigate(Destination::Playstyle)],
         }

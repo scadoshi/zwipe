@@ -55,7 +55,7 @@ pub const IMPORTED: &str = "Imported";
 /// The label over the lines that did not resolve.
 pub const UNRESOLVED: &str = "Unresolved";
 
-/// The action bar's button back to the deck.
+/// The Back button, to the deck.
 pub const BACK: &str = "Back";
 
 /// The submit button in [`ImportMode::Add`].

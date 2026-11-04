@@ -7,7 +7,7 @@
 //! each with its pips and name; a tapped chip narrows the held list to that identity, and the Art chip
 //! toggles the row thumbnails. An expanded row offers **Create deck** (seeds
 //! the create screen), **Maybeboard** (saves to the commander maybeboard) and
-//! **Remove** (hides it for a week). The action bar's Swipe opens the shared
+//! **Remove** (hides it for a week). The Swipe button opens the shared
 //! overlay in its suggested mode, which deals the same held list and whose
 //! Filter sheet holds the same Show chips. Every action
 //! that removes a row fills from the held list and refetches only when fewer

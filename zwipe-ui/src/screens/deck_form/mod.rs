@@ -36,7 +36,7 @@ pub const EDIT_TITLE: &str = "Edit deck";
 /// The line in place of the form when Edit's deck failed to load.
 pub const LOAD_FAILED: &str = "Could not load deck";
 
-/// The action bar's Back button.
+/// The Back button.
 pub const BACK: &str = "Back";
 
 /// The save button, Create's and Edit's; Edit shows it only while something changed.
@@ -302,7 +302,7 @@ pub enum Action {
     SavePicker,
     /// The open picker's Back, or the OS back gesture over it: puts back what it opened on, saying so when that throws a change away.
     BackPicker,
-    /// The action bar's save button.
+    /// The Save button.
     Save,
     /// The save holding `ticket` made the deck with this id.
     Created {
@@ -316,7 +316,7 @@ pub enum Action {
         /// The ticket from the [`Effect::UpdateDeck`] this answers.
         ticket: Ticket,
     },
-    /// The action bar's Back.
+    /// Back.
     Back,
 }
 
@@ -728,7 +728,7 @@ impl State {
         self.tag_list(picker)
     }
 
-    /// Whether a save is out, which turns both action bar buttons off.
+    /// Whether a save is out, which turns Back and Save off.
     #[must_use]
     pub fn is_saving(&self) -> bool {
         self.saving

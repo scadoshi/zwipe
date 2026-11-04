@@ -1,4 +1,4 @@
-//! The deck view: one deck's profile, its sections and stats, the warnings with their fixes, and the More sheet with its dialogs and requests.
+//! The deck view: one deck's profile, its sections and stats, the warnings with their fixes, and the deck's action buttons with their dialogs and requests.
 //!
 //! The client keeps a [`State`] while the screen is up and sends [`Action::Load`] with the deck's id when it opens or the id changes. Which sections show, the Budget figures, the share link and the clone prefill come from [`crate::deck::view`], the fixes from [`crate::deck::warning`] and the buy links from [`crate::buy`]. Which sections are open, the dialogs' visibility and the clone name being typed stay in the client; the Budget section's Buy row opens a retailer through [`Effect::OpenUrl`].
 
@@ -24,20 +24,11 @@ pub const TITLE: &str = "Deck";
 /// The line in place of the deck when its profile failed to load.
 pub const LOAD_FAILED: &str = "Could not load deck";
 
-/// The action bar's button back to the deck list.
-pub const BACK: &str = "Back";
-
-/// The action bar's button that opens Edit deck.
+/// The button that opens Edit deck.
 pub const EDIT: &str = "Edit";
 
-/// The action bar's button that opens the deck's cards.
+/// The button that opens the deck's cards.
 pub const CARDS: &str = "Cards";
-
-/// The action bar's button that opens the More sheet.
-pub const MORE: &str = "More";
-
-/// The More sheet's title.
-pub const MORE_TITLE: &str = "More actions";
 
 /// The title of the panel near the foot of the page that holds Import and Export.
 pub const DATA: &str = "Data";
@@ -173,7 +164,7 @@ impl Section {
     }
 }
 
-/// An item in the More sheet.
+/// One of the deck's action buttons, on the profile card and in the panels under the sections.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum MoreItem {
     /// Opens Import.
@@ -339,7 +330,7 @@ pub enum Action {
     Edit,
     /// Opens the deck's cards.
     Cards,
-    /// Presses an item in the More sheet. The client closes the sheet where it does.
+    /// Presses one of the deck's action buttons.
     More(MoreItem),
     /// Presses a retailer on the Budget section's Buy row. Nothing until the deck loads with a card.
     Buy(Retailer),
@@ -1108,7 +1099,7 @@ impl State {
         self.charted().map(|m| format!("{:.1}", m.avg_cmc))
     }
 
-    /// Whether a More item can be pressed: Export waits for a card.
+    /// Whether an action button can be pressed: Export waits for a card.
     #[must_use]
     pub fn is_enabled(&self, item: MoreItem) -> bool {
         match item {

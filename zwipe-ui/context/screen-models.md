@@ -43,7 +43,7 @@ Every fetch takes a `Ticket` from the model's own `Generation` inside `update`, 
 ## What stays in the client
 
 - Drawing, layout, focus, scroll, hover, gestures and animation. The TUI's focused chip and selected row, the web's wide layout that keeps the tag row open.
-- Overlays that are pure presentation: whether the More sheet or a `?` dialog is up. The items in them and where they lead are the model's.
+- Overlays that are pure presentation: whether a sheet or a `?` dialog is up. The items in them and where they lead are the model's.
 - I/O: zwipe-client calls, session storage, the hint's "seen" check and record, opening URLs.
 - Telemetry and error reporting, through each client's request runner.
 

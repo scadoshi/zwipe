@@ -22,26 +22,6 @@ pub(crate) fn CardInfoDisplay(card: Card) -> Element {
     }
 }
 
-/// Util-bar button (eye icon) that toggles the [`CardDetailsSheet`] for the
-/// active swipe card via the shared `open` signal.
-#[component]
-pub(crate) fn RulesButton(open: Signal<bool>) -> Element {
-    rsx! {
-        Button {
-            variant: ButtonVariant::Action,
-            class: "btn-action-eye",
-            onclick: move |_| open.set(!open()),
-            svg {
-                class: "eye-icon",
-                view_box: "0 0 24 24",
-                xmlns: "http://www.w3.org/2000/svg",
-                path { d: "M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" }
-                circle { cx: "12", cy: "12", r: "3" }
-            }
-        }
-    }
-}
-
 /// Resolves an oracle tag's description from the app-wide catalog cache, for
 /// the tappable tags in a card-role cluster. Warms the cache on mount so a cold
 /// cache still fills while the caller shows.
@@ -62,8 +42,8 @@ pub(crate) fn use_describe_tag() -> Callback<String, Option<String>> {
 
 /// Bottom sheet showing a card's full details (type, oracle text, stats,
 /// keywords, card roles), for printings whose image is text-light (Secret
-/// Lair, full-art, foreign-language). Opened from the action-bar
-/// [`RulesButton`] via the shared `open` signal. The body is the shared
+/// Lair, full-art, foreign-language). The host opens it through the shared
+/// `open` signal. The body is the shared
 /// [`CardDetails`], opening on the shown face's mana cost since the sheet's
 /// title holds only text. The details and the host's `footer` share one
 /// panel, so nothing lies straight on the sheet's grid. The sheet closes
@@ -73,7 +53,8 @@ pub(crate) fn use_describe_tag() -> Callback<String, Option<String>> {
 ///
 /// Printings leaves this sheet open: the host's printing sheet draws over it,
 /// and the host closes this one too when a printing is saved. Mount it at the
-/// screen root, beside the printing sheet, so the sheet covers the action bar.
+/// screen root, beside the printing sheet, so the sheet covers the screen's
+/// buttons.
 #[component]
 pub(crate) fn CardDetailsSheet(
     open: Signal<bool>,

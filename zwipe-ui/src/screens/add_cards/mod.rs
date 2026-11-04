@@ -46,13 +46,13 @@ pub const FROM: &str = "From";
 /// The chip that narrows Search to the commander's synergy pool.
 pub const SYNERGY: &str = "Synergy";
 
-/// The action bar's button back to where the user came from.
+/// The Back button, to where the user came from.
 pub const BACK: &str = "Back";
 
-/// The action bar's button that opens the filter sheet.
+/// The button that opens the filter sheet.
 pub const FILTER: &str = "Filter";
 
-/// The action bar's button that searches again, or reloads the maybeboard.
+/// The button that searches again, or reloads the maybeboard.
 pub const REFRESH: &str = "Refresh";
 
 /// The printings sheet's toast once a printing is picked.

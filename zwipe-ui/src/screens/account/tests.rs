@@ -733,8 +733,7 @@ fn the_copy_matches_the_app() {
     assert_eq!(CHANGE, "Change");
     assert_eq!((VERIFIED, UNVERIFIED), ("Verified", "Unverified"));
     assert_eq!(PASSWORD_MASK, "•••••••");
-    assert_eq!((BACK, LOG_OUT, MORE), ("Back", "Log out", "More"));
-    assert_eq!(MORE_TITLE, "More");
+    assert_eq!(LOG_OUT, "Log out");
     assert_eq!(MoreItem::DeleteAccount.label(), "Delete account");
     assert_eq!(CANCEL, "Cancel");
     assert_eq!(DELETE_PASSWORD, "Password");

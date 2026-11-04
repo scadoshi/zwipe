@@ -30,7 +30,7 @@ struct Runners {
     password: Authed,
 }
 
-/// Whether each sheet, dialog and the More sheet is up.
+/// Whether each sheet and dialog is up.
 #[derive(Clone, Copy)]
 pub(crate) struct Overlays {
     pub(crate) hint: Signal<bool>,

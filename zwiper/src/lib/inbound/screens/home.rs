@@ -380,8 +380,6 @@ fn route(destination: Destination) -> Router {
         Destination::Decks => Router::DeckList {},
         Destination::Deck(deck_id) => Router::ViewDeck { deck_id },
         Destination::CreateDeck => Router::CreateDeck,
-        Destination::Account => Router::Account {},
-        Destination::Config => Router::Config {},
         Destination::Activity => Router::Activity {},
         Destination::Playstyle => Router::SuggestedCommanders {},
     }
@@ -607,8 +605,6 @@ mod tests {
             Router::ViewDeck { deck_id }
         );
         assert_eq!(route(Destination::CreateDeck), Router::CreateDeck);
-        assert_eq!(route(Destination::Account), Router::Account {});
-        assert_eq!(route(Destination::Config), Router::Config {});
         assert_eq!(route(Destination::Activity), Router::Activity {});
         assert_eq!(
             route(Destination::Playstyle),

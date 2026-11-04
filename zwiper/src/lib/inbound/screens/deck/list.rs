@@ -118,8 +118,6 @@ fn route(destination: Destination) -> Router {
         Destination::Home => Router::Home {},
         Destination::Deck(deck_id) => Router::ViewDeck { deck_id },
         Destination::CreateDeck => Router::CreateDeck,
-        Destination::CommanderMaybeboard => Router::CommanderMaybeboard {},
-        Destination::Playstyle => Router::SuggestedCommanders {},
     }
 }
 
@@ -456,13 +454,5 @@ mod tests {
             Router::ViewDeck { deck_id }
         );
         assert_eq!(route(Destination::CreateDeck), Router::CreateDeck);
-        assert_eq!(
-            route(Destination::CommanderMaybeboard),
-            Router::CommanderMaybeboard {}
-        );
-        assert_eq!(
-            route(Destination::Playstyle),
-            Router::SuggestedCommanders {}
-        );
     }
 }

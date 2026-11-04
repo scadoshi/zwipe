@@ -2,7 +2,7 @@
 //!
 //! The client keeps a [`State`] while the screen is up and sends [`Action::Load`] when it opens. The ranking is fetched [`HELD_SIZE`] deep and held; the list shows the first [`LIST_SIZE`] that pass the Show chip, and a row that leaves fills from the held list, fetching again only when fewer than ten remain or a load is still out. The numbers and filters come from [`crate::playstyle`] and the Create check from [`crate::deck::create_gate`].
 //!
-//! Which profile sections are open, the revealed role and tag, the Art chip, the expanded row and whether the More sheet or the Clear skips dialog is up stay in the client. So does the Swipe overlay: its swipes save and skip on their own, and the client sends [`Action::SwipeClosed`] when it closes and [`Action::Create`] for a right swipe.
+//! Which profile sections are open, the revealed role and tag, the Art chip, the expanded row and whether the Clear skips dialog is up stay in the client. So does the Swipe overlay: its swipes save and skip on their own, and the client sends [`Action::SwipeClosed`] when it closes and [`Action::Create`] for a right swipe.
 
 #[cfg(test)]
 mod tests;
@@ -109,19 +109,10 @@ pub const MAYBEBOARD: &str = "Maybeboard";
 /// A row's button that skips its commander for a week.
 pub const REMOVE: &str = "Remove";
 
-/// The action bar's button back to the screen before.
-pub const BACK: &str = "Back";
-
-/// The action bar's button that opens the suggested swipe.
+/// The button that opens the suggested swipe.
 pub const SWIPE: &str = "Swipe";
 
-/// The action bar's button that opens the More sheet.
-pub const MORE: &str = "More";
-
-/// The More sheet's title.
-pub const MORE_TITLE: &str = "More actions";
-
-/// The More sheet's one button, and the title of the dialog it opens.
+/// The button that asks to clear the skips, and the title of the dialog it opens.
 pub const CLEAR_SKIPS: &str = "Clear skips";
 
 /// The Clear skips dialog's line.
@@ -272,7 +263,7 @@ pub enum Action {
         /// The ticket from the [`Effect::DismissCommander`] this answers.
         ticket: Ticket,
     },
-    /// Clears every skip, from the Clear skips dialog. The client closes the More sheet.
+    /// Clears every skip, from the Clear skips dialog.
     ClearSkips,
     /// The clear holding `ticket` went through.
     Cleared {
@@ -598,7 +589,7 @@ impl State {
         }
     }
 
-    /// Whether the action bar offers Swipe: once a load has counted a deck. Hidden while the first load is out.
+    /// Whether Swipe shows: once a load has counted a deck. Hidden while the first load is out.
     #[must_use]
     pub fn shows_swipe(&self) -> bool {
         self.deck_count != 0

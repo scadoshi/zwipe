@@ -706,10 +706,7 @@ fn the_copy_matches_the_app() {
     assert_eq!(CREATE_DECK, "Create deck");
     assert_eq!(MAYBEBOARD, "Maybeboard");
     assert_eq!(REMOVE, "Remove");
-    assert_eq!(BACK, "Back");
     assert_eq!(SWIPE, "Swipe");
-    assert_eq!(MORE, "More");
-    assert_eq!(MORE_TITLE, "More actions");
     assert_eq!(CLEAR_SKIPS, "Clear skips");
     assert_eq!(
         CLEAR_BODY,

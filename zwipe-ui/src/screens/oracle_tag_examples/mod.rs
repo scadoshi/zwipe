@@ -33,7 +33,7 @@ pub const EMPTY: &str = "No example cards for this tag yet.";
 /// The toast for stepping back from the first card.
 pub const AT_FIRST: &str = "Already at the first card";
 
-/// The action bar's button back to the screen that opened the examples.
+/// The Back button, to the screen that opened the examples.
 pub const BACK: &str = "Back";
 
 /// Where an action sends the user. The client maps each to its own route or overlay.
