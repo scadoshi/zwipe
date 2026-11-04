@@ -3199,14 +3199,15 @@ button {
 .color-bars {
     display: flex;
     flex-direction: column;
-    gap: 0.35rem;
     padding: 0.5rem 1rem 0.9rem;
 }
 
+/* Rows space by their own padding, like the deck charts' Roles rows. */
 .color-bar-row {
     display: flex;
     align-items: center;
-    gap: 0.6rem;
+    gap: 0.5rem;
+    padding: 0.175rem 0;
 }
 
 .color-bar-row > .ms {
@@ -3214,12 +3215,13 @@ button {
     font-size: 0.85rem;
 }
 
-/* The track shows under a short fill and stays visible under a white one on
-   a cream background. */
+/* The deck charts' bar: a blocky track the fill spans at full height. The
+   track shows under a short fill and stays visible under a white one on a
+   cream background. */
 .color-bar-track {
     flex: 1;
-    height: 0.5rem;
-    border-radius: 0.25rem;
+    height: 0.9rem;
+    border-radius: 0.15rem;
     background-color: var(--border-secondary);
     overflow: hidden;
 }
