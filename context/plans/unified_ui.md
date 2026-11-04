@@ -16,6 +16,7 @@ These were settled with the owner before the per-screen review. A screen breaks 
 - The menu looks exactly like the web's folded nav: a full-width panel dropping from the header, items stacked, the current one lit.
 - The app's "!" support button leaves the header for the menu's bottom row.
 - Every screen but Home and the auth screens shows a back arrow in the left corner, boxed like the hamburger, calling the screen's own Back (the previous screen, or its fixed parent where it has one). Home is always the menu's first entry. Android's system back keeps working as it does now. (Decided 2026-11-03 while building)
+- Signed in, the menu's footer opens with a theme row over the icon row, as the websites' phone-width menu has it: the current theme's name as the kit's picker trigger, which opens the Themes sheet and folds the menu as it rises, and the kit's Dark/Light switch, which flips the mode and saves it at once through the same path as Settings. Settings keeps its Theme row; signed out, the footer holds only the `!`. (owner, 2026-11-03)
 
 ### Header
 
@@ -32,6 +33,7 @@ These were settled with the owner before the per-screen review. A screen breaks 
 - The action dock is a screen's icon actions in one floating squircle bar at the bottom right (Cards first). It has no minimize button: it covers only a corner and each screen keeps room to scroll clear of it. If it ever crowds content, it shrinks with the header on scroll instead.
 - Icons stand in for words only where the symbol is standard (+, −, a funnel, undo, refresh, the eye). Each icon has an accessible label, and the screen's hint names each one once.
 - A form's primary button (Log in, Import) sits at the end of the form, right after the last field, and scrolls with the content. The deck form is the exception, since it runs about three screens: its Save (Edit) floats from the moment something changes, and its Create (Create deck) floats once the form is valid.
+- The three sign-in forms link to each other from their action docks (owner, 2026-11-03): the icon bar on top and a row of chips under it, right-aligned, so a new user finds Create profile and Forgot password without opening the menu. Login links to Create profile and Forgot password, Create profile to Log in, Forgot password to Log in and Create profile.
 - Nothing hides behind More. Each action a More sheet holds today sits inline where it belongs, destructive ones in red. The four More sheets (Deck view, Decks, Account, Maybeboard and Suggested commanders) go away.
 - No footer anywhere, overlays included (owner, 2026-11-03). A bottom sheet or picker (format, deck tags, oracle tags, card filter, printings, card details, app icon, Universes Beyond) closes with a swipe down or a close button in its title bar, and its Apply or Save is a checkmark in an action dock at its bottom right; the filter's Reset is the × on its funnel, as on Cards.
 - Swipe screens (Add, Remove, Swipe select) float their actions as icons (Filter, Refresh, the eye) in the bottom-right corner just above the bottom edge. Undo stays the swipe down.

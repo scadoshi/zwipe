@@ -41,6 +41,7 @@ pub const UPCOMING: &[Release] = &[Release {
     version: Version::new(1, 17, 1),
     date: None,
     entries: &[
+        "The main menu's footer has the theme and Dark/Light switch, as the website's menu does",
         "Home shows your deck count with an Open button into Decks",
         "About's credits sit in their own panel and its links are in the accent color",
         "zwipe.net's theme menu stays open after a pick, so the next theme is one click away",
@@ -72,6 +73,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "The header stays hidden while a screen bounces at its bottom",
         "Sheets close from an x in their corner or a drag down",
         "Floating buttons rise above the keyboard",
+        "The log in, create profile and forgot password screens link to each other from their action docks",
         "The filter and printing sheets apply from a checkmark at the bottom right",
         "Log in, Create profile and Send a reset link sit at the bottom right",
         "Light themes keep disabled chips, empty heatmap days and empty notes readable",
