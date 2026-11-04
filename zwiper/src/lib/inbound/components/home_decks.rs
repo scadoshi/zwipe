@@ -5,7 +5,6 @@
 use components::{Button, ButtonVariant};
 use dioxus::prelude::*;
 use uuid::Uuid;
-use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_ui::screens::home::{self, DeckPanel, DeckTile, Decks, DecksAction, LATEST_DECKS};
 
 /// The last deck list fetched, kept above the router (as
@@ -132,24 +131,16 @@ fn DeckTiles(panel: DeckPanel, ondeck: EventHandler<Uuid>) -> Element {
     }
 }
 
-/// The deck's color identity as mana pips in WUBRG order, or the colorless
-/// pip for a deck with no colored card.
+/// The deck's color identity as mana pips, or the colorless pip for a deck
+/// with no colored card.
 fn pips(deck: &DeckTile) -> Element {
-    let colors: Vec<Color> = Color::all()
-        .into_iter()
-        .filter(|color| {
-            deck.color_identity
-                .iter()
-                .any(|code| Color::try_from(code.as_str()).ok().as_ref() == Some(color))
-        })
-        .collect();
-    if colors.is_empty() {
+    if deck.color_identity.is_empty() {
         return rsx! {
             i { class: "ms ms-c ms-cost" }
         };
     }
     rsx! {
-        for color in colors {
+        for color in deck.color_identity.iter().copied() {
             i {
                 key: "{color.to_short_name()}",
                 class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost",

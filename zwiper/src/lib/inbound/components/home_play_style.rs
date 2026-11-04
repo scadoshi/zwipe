@@ -2,12 +2,11 @@
 //! user's decks, and a Playstyle chip in its header that opens the full
 //! screen.
 
-use components::{Button, ButtonVariant, ColorMapCounts, mana_var};
+use components::{Button, ButtonVariant, mana_var};
 use dioxus::prelude::*;
 use uuid::Uuid;
-use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::http::contracts::suggestions::HttpPlayStyleSummary;
-use zwipe_ui::screens::home::{self, PlayStyle};
+use zwipe_ui::screens::home::{self, Bar, PlayStyle};
 
 use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::info_button::InfoButton;
@@ -40,9 +39,9 @@ pub fn HomePlayStyle(play_style: PlayStyle, onplaystyle: EventHandler) -> Elemen
     rsx! {
         div { class: "container-sm flex-col home-flavor home-colors content-enter-delayed",
             match play_style {
-                PlayStyle::Bars(counts) => rsx! {
+                PlayStyle::Bars(bars) => rsx! {
                     PanelHeader { onplaystyle }
-                    ColorBars { counts }
+                    ColorBars { bars }
                 },
                 PlayStyle::Empty => rsx! {
                     PanelHeader { onplaystyle }
@@ -81,41 +80,32 @@ pub fn HomePlayStyle(play_style: PlayStyle, onplaystyle: EventHandler) -> Elemen
     }
 }
 
-/// The bars: one per color then colorless, the mana pip at the left, the
-/// track filled in the color's mana variable (a muted neutral for colorless)
-/// to the count's share of the largest, and the count right-aligned at the
-/// end. A zero count draws its pip and count over an empty track.
+/// The bars the model lists: the mana pip at the left, the track filled in
+/// the color's mana variable (a muted neutral for colorless) to the bar's
+/// share, and the count right-aligned at the end. A zero count draws its pip
+/// and count over an empty track.
 #[component]
-fn ColorBars(counts: ColorMapCounts) -> Element {
-    let max = counts
-        .cards
-        .iter()
-        .copied()
-        .chain([counts.colorless])
-        .max()
-        .unwrap_or(0)
-        .max(1);
-    let rows = Color::all()
-        .into_iter()
-        .zip(counts.cards)
-        .map(|(color, cards)| {
-            (
+fn ColorBars(bars: Vec<Bar>) -> Element {
+    let rows = bars.into_iter().map(|bar| {
+        let (pip, fill) = match bar.color {
+            Some(color) => (
                 color.to_short_name().to_lowercase(),
                 format!("var({})", mana_var(color)),
-                cards,
-            )
-        })
-        .chain([("c".to_owned(), COLORLESS_FILL.to_owned(), counts.colorless)]);
+            ),
+            None => ("c".to_owned(), COLORLESS_FILL.to_owned()),
+        };
+        (pip, fill, bar.count, bar.pct)
+    });
     rsx! {
         div { class: "color-bars",
-            for (pip, fill, count) in rows {
+            for (pip, fill, count, pct) in rows {
                 div { key: "{pip}", class: "color-bar-row",
                     i { class: "ms ms-{pip} ms-cost" }
                     div { class: "color-bar-track",
                         if count > 0 {
                             div {
                                 class: "color-bar-fill",
-                                style: "width: {u64::from(count) * 100 / u64::from(max)}%; background-color: {fill};",
+                                style: "width: {pct}%; background-color: {fill};",
                             }
                         }
                     }

@@ -8,6 +8,7 @@ mod tests;
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::deck_metrics;
 use zwipe_core::domain::deck::deck_profile::DeckProfile;
@@ -300,19 +301,28 @@ pub struct DeckTile {
     pub name: String,
     /// The deck's format, the muted chip under the art when set.
     pub format: Option<Format>,
-    /// The deck's color identity as WUBRG short codes, in the server's order.
-    pub color_identity: Vec<String>,
+    /// The deck's color identity in WUBRG order, the pips in the squircle without art; empty for a colorless deck.
+    pub color_identity: Vec<Color>,
     /// The commander's art crop in the tile's squircle, when the deck has a commander with one; the deck's pips stand in without one.
     pub art_url: Option<String>,
 }
 
 impl From<&DeckProfile> for DeckTile {
+    /// Reads the profile's color codes in any case and order; a code that is no color is dropped.
     fn from(profile: &DeckProfile) -> Self {
+        let colors: Vec<Color> = profile
+            .color_identity
+            .iter()
+            .filter_map(|code| Color::try_from(code.as_str()).ok())
+            .collect();
         Self {
             id: profile.id,
             name: profile.name.to_string(),
             format: profile.format,
-            color_identity: profile.color_identity.clone(),
+            color_identity: Color::all()
+                .into_iter()
+                .filter(|color| colors.contains(color))
+                .collect(),
             art_url: profile.commander_art_url.clone(),
         }
     }
@@ -360,8 +370,43 @@ impl Decks {
     }
 }
 
+/// One bar in the Colors panel.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct Bar {
+    /// The bar's color, `None` for the colorless bar.
+    pub color: Option<Color>,
+    /// Cards across the user's decks whose color identity includes the color, or that have none.
+    pub count: u32,
+    /// The bar's fill as a share of the largest count, 0 to 100.
+    pub pct: u32,
+}
+
+/// The Colors panel's bars for `counts`: one per color in WUBRG order, then colorless, the largest count at 100.
+#[must_use]
+pub fn bars(counts: &ColorMapCounts) -> Vec<Bar> {
+    let max = counts
+        .cards
+        .iter()
+        .copied()
+        .chain([counts.colorless])
+        .max()
+        .unwrap_or(0)
+        .max(1);
+    let bar = |color: Option<Color>, count: u32| Bar {
+        color,
+        count,
+        pct: count.saturating_mul(100).checked_div(max).unwrap_or(0),
+    };
+    Color::all()
+        .into_iter()
+        .zip(counts.cards)
+        .map(|(color, count)| bar(Some(color), count))
+        .chain([bar(None, counts.colorless)])
+        .collect()
+}
+
 /// What the Colors panel draws.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PlayStyle {
     /// The summary is out and none is held: the panel ghosts.
     Loading,
@@ -370,7 +415,7 @@ pub enum PlayStyle {
     /// No deck has a colored or colorless card: [`NO_PLAY_STYLE`] under the header.
     Empty,
     /// A bar per color then colorless, each with its count, the largest at full width.
-    Bars(ColorMapCounts),
+    Bars(Vec<Bar>),
 }
 
 /// The featured flavor card's quote and the row under it.
@@ -639,7 +684,7 @@ impl State {
                 .map(ColorMapCounts::from)
                 .filter(playstyle::color_map_has_data)
                 .filter(|_| summary.deck_count > 0)
-                .map_or(PlayStyle::Empty, PlayStyle::Bars),
+                .map_or(PlayStyle::Empty, |counts| PlayStyle::Bars(bars(&counts))),
             None if self.play_style_failed => PlayStyle::Failed,
             None => PlayStyle::Loading,
         }
