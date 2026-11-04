@@ -41,6 +41,8 @@ pub const UPCOMING: &[Release] = &[Release {
     version: Version::new(1, 18, 0),
     date: None,
     entries: &[
+        "Create profile and Forgot password return you to Log in once they succeed, with your username filled in",
+        "Their Log in chips read Back to login",
         "Home's Decks panel with no decks offers Create a deck in its corner",
         "Distributions shows the top five card roles and a new oracle tags chart, with See more for the rest",
         "Draw odds shows its top five groups, with See more for the rest",
