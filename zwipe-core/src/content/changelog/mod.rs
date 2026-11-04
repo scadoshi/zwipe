@@ -41,6 +41,7 @@ pub const UPCOMING: &[Release] = &[Release {
     version: Version::new(1, 17, 1),
     date: None,
     entries: &[
+        "Saving a theme lowers the Themes sheet instead of cutting it off",
         "The main menu's footer has a palette for the theme and a sun or moon for Dark/Light",
         "Home's Decks panel shows your three latest decks as tiles with a button to all of them",
         "Draw odds names the opening hand turn 0, so the heading keeps its width as the turn steps",
