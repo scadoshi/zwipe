@@ -72,10 +72,9 @@ pub struct DeckMetrics {
     /// carrying them under that role, most first, ties by slug. A role whose
     /// cards carry no tags under it is absent.
     pub card_role_tags: BTreeMap<&'static str, Vec<String>>,
-    /// Every functional oracle tag across the mainboard with the copies
-    /// carrying it, most first, ties by slug. A card's tags are the ones filed
-    /// under its roles plus its other tags, each counted once per card; the
-    /// noise the server strips from those is left out.
+    /// Every oracle tag filed under a card role across the mainboard with
+    /// the copies carrying it, most first, ties by slug. A tag under two of a
+    /// card's roles counts once; tags outside every role are left out.
     pub oracle_tag_counts: Vec<(String, usize)>,
     /// Average numeric power over cards that have one (front face for
     /// multi-face cards; `*`/`X` sides skipped). `None` if no card qualified.
@@ -337,14 +336,13 @@ impl DeckMetrics {
                     *slot = slot.saturating_add(qty);
                 }
             }
-            let functional_tags: BTreeSet<&String> = card
+            let role_filed_tags: BTreeSet<&String> = card
                 .card_profile
                 .oracle_tags_by_role
                 .values()
                 .flatten()
-                .chain(&card.card_profile.other_oracle_tags)
                 .collect();
-            for tag in functional_tags {
+            for tag in role_filed_tags {
                 let count = oracle_tag_tally.entry(tag.clone()).or_insert(0);
                 *count = count.saturating_add(qty);
             }
@@ -955,7 +953,7 @@ mod tests {
     }
 
     #[test]
-    fn oracle_tags_count_once_per_card_with_the_other_bucket() {
+    fn oracle_tags_count_once_per_card_under_its_roles() {
         let mut ring = tagged(
             "Sol Ring",
             2,
@@ -967,8 +965,8 @@ mod tests {
         let metrics = DeckMetrics::from_entries(&[ring]);
         assert_eq!(
             metrics.oracle_tag_counts,
-            vec![("eponymous".to_string(), 2), ("mana-rock".to_string(), 2)],
-            "a tag under two roles counts once, other tags count, raw noise does not"
+            vec![("mana-rock".to_string(), 2)],
+            "a tag under two roles counts once; tags outside every role do not count"
         );
     }
 
