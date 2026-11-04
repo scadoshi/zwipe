@@ -1,7 +1,9 @@
 //! Guide article content, as data. Each `Guide` renders into the privacy-page
 //! long-form layout via `super::render_block`. Keep articles accurate to the
-//! app: labels here mirror the real in-app UI text. Never describe where
-//! synergy data comes from; only its user-facing behavior.
+//! app: labels here mirror the real in-app UI text, `backticks` mark a
+//! keyword and `[[name]]` draws an icon button as its icon (the names are in
+//! `super::guide_icon`), so no line describes an icon in words. Never
+//! describe where synergy data comes from; only its user-facing behavior.
 
 use dioxus::prelude::*;
 
@@ -195,7 +197,7 @@ pub(crate) static GUIDES: &[Guide] = &[
             ]),
             Block::Image {
                 file: "getting-started/02-add-cards.webp",
-                alt: "The Add deck cards screen with a Goblin on top of the stack and the Search, Maybeboard, and Synergy chips above it",
+                alt: "The Add deck cards screen with a Goblin on top of the stack, the From row with its Search chip, and the link icon lit in the dock",
                 caption: None,
             },
             Block::P(
@@ -203,7 +205,7 @@ pub(crate) static GUIDES: &[Guide] = &[
             ),
             Block::H2("Shape the stack"),
             Block::P(
-                "On a commander deck, the Synergy toggle starts the stack with cards that fit your commander. Filter narrows by color, type, keyword, price, and more. Sorting reorders what you see without changing which cards are eligible.",
+                "On a commander deck, Synergy, the [[link]] in the dock, starts the stack with cards that fit your commander. The [[funnel]] narrows by color, type, keyword, price, and more. Sorting reorders what you see without changing which cards are eligible.",
             ),
             Block::H2("Review and refine"),
             Block::P(
@@ -228,7 +230,7 @@ pub(crate) static GUIDES: &[Guide] = &[
             ),
             Block::H2("The four swipes"),
             Block::P(
-                "A first-visit hint (\"Swipe to build\") covers the gestures, and the \"?\" in the header reopens it.",
+                "A first-visit hint (\"Swipe to build\") covers the gestures, and the `?` in the header reopens it.",
             ),
             Block::Swipe(&[
                 ("right", "add the card to your deck"),
@@ -246,18 +248,18 @@ pub(crate) static GUIDES: &[Guide] = &[
             },
             Block::H2("Skips are remembered"),
             Block::P(
-                "A left swipe keeps that card out of this deck's swipe pile for a week, even after you reopen the app. After that it can come back, behind the cards you haven't seen yet. Clear skips in the deck's More menu brings them all back sooner. The swipe-memory guide covers this in full.",
+                "A left swipe keeps that card out of this deck's swipe pile for a week, even after you reopen the app. After that it can come back, behind the cards you haven't seen yet. `Clear` beside Clear skips in the deck's Danger zone panel brings them all back sooner. The swipe-memory guide covers this in full.",
             ),
             Block::H2("Synergy"),
             Block::P(
-                "On a commander deck, the Synergy chip starts the stack with cards that fit your commander, best fits first, 25 at a time, then continues with cards like your deck. Off, you browse every legal card. It's on by default, and toggling it reloads the stack.",
+                "On a commander deck, the [[link]] in the dock turns Synergy on, and the stack starts with cards that fit your commander, best fits first, 25 at a time, then continues with cards like your deck. Off, you browse every legal card. It's on by default, and toggling it reloads the stack.",
             ),
             Block::Note(
                 "If synergy is still warming up, Zwipe shows the full pool and tells you once.",
             ),
             Block::H2("Filter, sort, and the maybeboard"),
             Block::P(
-                "Filter decides which cards are dealt; a dot marks an active filter. Sorting reorders the current set only. The From row swaps the stack to your Maybeboard, where a right swipe promotes a card into the deck. Each source keeps its own filter, and the Maybeboard starts unfiltered.",
+                "The [[funnel]] decides which cards are dealt; a dot on it marks an active filter. Sorting reorders the current set only. The chip after From swaps the stack to your Maybeboard, where a right swipe promotes a card into the deck. Each source keeps its own filter, and the Maybeboard starts unfiltered.",
             ),
             Block::Image {
                 file: "swipe-to-build/02-filter-sheet.webp",
@@ -271,7 +273,7 @@ pub(crate) static GUIDES: &[Guide] = &[
             },
             Block::H2("Undo"),
             Block::P(
-                "Swipe down to undo your last swipe; undoing an add removes the card again, and undoing a skip brings the card back. Your place and undo history travel with each deck, so leaving and returning picks up where you left off. Refresh (or changing the filter) starts a fresh stack and clears the history.",
+                "Swipe down to undo your last swipe; undoing an add removes the card again, and undoing a skip brings the card back. Your place and undo history travel with each deck, so leaving and returning picks up where you left off. The [[refresh]] (or changing the filter) starts a fresh stack and clears the history.",
             ),
             Block::Note(
                 "At the very end of the stack, swipe down on the empty card to step back through your last swipes.",
@@ -301,7 +303,7 @@ pub(crate) static GUIDES: &[Guide] = &[
             ]),
             Block::H2("Boards, filter, and refresh"),
             Block::P(
-                "The Boards row picks the pool you're trimming: Main, Maybe, Side, or All. Filter narrows it further, and Refresh restarts the stack and clears your undo history.",
+                "The Boards row picks the pool you're trimming: Main, Maybe, Side, or All. The [[funnel]] narrows it further, and the [[refresh]] restarts the stack and clears your undo history.",
             ),
             Block::Image {
                 file: "remove-cards/01-remove-swipe.webp",
@@ -345,11 +347,11 @@ pub(crate) static GUIDES: &[Guide] = &[
             ),
             Block::H2("Changed your mind? Clear skips"),
             Block::P(
-                "Open the deck's More menu and tap Clear skips. Every card you skipped or removed for that deck comes back into the pool right away, and swiping starts fresh.",
+                "Open the deck, scroll to the Danger zone panel and tap `Clear` beside Clear skips. Every card you skipped or removed for that deck comes back into the pool right away, and swiping starts fresh.",
             ),
             Block::Image {
                 file: "swipe-memory/01-clear-skips.webp",
-                alt: "The deck's More actions sheet with Clear skips among the actions",
+                alt: "The deck's Danger zone panel with the Clear skips row and its Clear button",
                 caption: None,
             },
             Block::Note("Clearing skips can't be undone, and it only affects the one deck."),
@@ -389,11 +391,11 @@ pub(crate) static GUIDES: &[Guide] = &[
                 "Sections combine with `AND`, so stack as many as you like. A multi-value section's `Any`/`All` toggle sets whether a card needs one selected value or all of them, and `include` and `exclude` can run at once.",
             ),
             Block::Note(
-                "Pick the same value as both `include` and `exclude` and `Apply` stops with \"Filter can't both include and exclude\" for that section, leaving the sheet open so you can fix it.",
+                "Pick the same value as both `include` and `exclude` and the [[check]] stops with \"Filter can't both include and exclude\" for that section, leaving the sheet open so you can fix it.",
             ),
             Block::Image {
                 file: "filtering/02-filter-hint.webp",
-                alt: "The Filters hint: filters decide which cards you see; stack sections and tap Apply",
+                alt: "The Filters hint: filters decide which cards you see; stack sections and apply with the check in the dock",
                 caption: None,
             },
             Block::H2("Sorting"),
@@ -402,7 +404,7 @@ pub(crate) static GUIDES: &[Guide] = &[
             ),
             Block::H2("Defaults and Reset"),
             Block::P(
-                "Every screen starts from a default view, and that default isn't always empty. `Reset` returns you to it:",
+                "Every screen starts from a default view, and that default isn't always empty. The [[undo]] on the filter sheet returns you to it:",
             ),
             Block::Bullets(&[
                 "Add cards on a commander deck: your commander's colors, the format's legal cards, in synergy order. Once you hit your land target, lands drop out too.",
@@ -411,7 +413,7 @@ pub(crate) static GUIDES: &[Guide] = &[
                 "Remove and browse: an empty filter, over your deck's own cards.",
             ]),
             Block::P(
-                "The dot on the `Filter` button means you've changed something from that default, a filter or a different sort. `Reset` undoes the change and drops you back to the default. Synergy is a separate mode, so it stays however you set it.",
+                "The dot on the [[funnel]] means you've changed something from that default, a filter or a different sort. The [[undo]] undoes the change and drops you back to the default. Synergy is a separate mode, so it stays however you set it.",
             ),
             Block::Note(
                 "These built-in defaults never light the dot, since you didn't set them: your commander's colors, format legality, the popularity or synergy order, and lands leaving once you're at target.",
@@ -480,11 +482,11 @@ pub(crate) static GUIDES: &[Guide] = &[
             ),
             Block::H2("Where and how"),
             Block::P(
-                "The Synergy chip sits on the From row of the Add deck cards screen whenever the source is Search and your deck has a commander. On, the stack starts with fitting cards, served best-first, 25 at a time, and shuffled within each batch per deck per day, so the same commander doesn't show an identical stack twice; off, you browse everything legal. It's on by default, and toggling it reloads the stack.",
+                "Synergy is the [[link]] in the Add deck cards screen's dock, there whenever the source is Search and your deck has a commander. On, the stack starts with fitting cards, served best-first, 25 at a time, and shuffled within each batch per deck per day, so the same commander doesn't show an identical stack twice; off, you browse everything legal. It's on by default, and toggling it reloads the stack.",
             ),
             Block::Image {
                 file: "synergy/01-synergy-on.webp",
-                alt: "The add screen with the Synergy chip lit and a Goblin on top of the stack for a Goblin commander",
+                alt: "The add screen with the Synergy link icon lit in the dock and a Goblin on top of the stack for a Goblin commander",
                 caption: None,
             },
             Block::Note(
@@ -589,7 +591,7 @@ pub(crate) static GUIDES: &[Guide] = &[
             ),
             Block::H2("The Commander maybeboard screen"),
             Block::P(
-                "Open it from the Decks screen: More, then Commander maybeboard. Saves show newest first as card rows with art (the Art chip hides it). Expand a row for its full details and three actions:",
+                "Open it from the menu, which lists Commander maybeboard. Saves show newest first as card rows with art (the Art chip hides it). Expand a row for its full details and three actions:",
             ),
             Block::Image {
                 file: "commander-maybeboard/02-saved-commanders.webp",
@@ -620,7 +622,7 @@ pub(crate) static GUIDES: &[Guide] = &[
                 "The Swipe button deals commanders right on this screen, with your saves left out, so you only see commanders you haven't saved. A right swipe starts a new deck with the pick; up saves it for later, like everywhere else.",
             ),
             Block::Note(
-                "Clear the whole list from More, then Clear maybeboard. It asks first, because there's no undo.",
+                "Clear the whole list from the Danger zone panel at the bottom: tap `Clear` beside Clear maybeboard. It asks first, because there's no undo.",
             ),
         ],
     },
@@ -636,11 +638,11 @@ pub(crate) static GUIDES: &[Guide] = &[
             ),
             Block::H2("Finding it"),
             Block::Bullets(&[
-                "On the Home screen, tap Playstyle on the Colors panel. It's also on the Decks screen, under More.",
+                "On the Home screen, tap Playstyle on the Colors panel. It's also in the menu.",
                 "Your colors, card roles and oracle tags come first.",
-                "Under them, Suggested commanders lists your top 10 as card rows, best fit first. Its question mark explains the ranking.",
+                "Under them, Suggested commanders lists your top 10 as card rows, best fit first. Its `?` explains the ranking.",
                 "Tap a color chip in the Show row to see only those colors. Tap it again to see them all.",
-                "Staples, at the bottom, lists the cards that show up in the most of your decks. Each row leads with the share of your decks that run it, and an expanded row gives the count, like 4 of 6 decks. Basic lands are left out. Tap a Type or Color chip to narrow it. It has a question mark too.",
+                "Staples, at the bottom, lists the cards that show up in the most of your decks. Each row leads with the share of your decks that run it, and an expanded row gives the count, like 4 of 6 decks. Basic lands are left out. Tap a Type or Color chip to narrow it. It has a `?` too.",
             ]),
             Block::H2("What your decks say"),
             Block::P(
@@ -650,7 +652,7 @@ pub(crate) static GUIDES: &[Guide] = &[
                 "Summary shows how many decks were read, your most built color combination and your top single color.",
                 "Card roles shows how many of your decks fill each role, like ramp or removal. Tap a role to see its tags.",
                 "Oracle tags lists your 10 most impactful tags. Tap a tag to see what it means.",
-                "Colors, Card roles and Oracle tags each have a question mark in the header that explains them.",
+                "Colors, Card roles and Oracle tags each have a `?` in the header that explains them.",
             ]),
             Block::H2("How a tag's impact adds up"),
             Block::Bullets(&[
@@ -658,7 +660,7 @@ pub(crate) static GUIDES: &[Guide] = &[
                 "Cards is how many cards carry it across those decks. More cards, more impact.",
                 "Impact is how much more your decks lean on a tag than Magic cards do overall. Your top tag scores 100.",
                 "A tag your decks use no more often than other Magic cards do doesn't show up at all.",
-                "Each column has its own question mark, too.",
+                "Each column has its own `?`, too.",
             ]),
             Block::P("There's a little more math under the hood, but that's the gist."),
             Block::H2("Why this commander"),
@@ -673,7 +675,7 @@ pub(crate) static GUIDES: &[Guide] = &[
             ]),
             Block::H2("Swipe deeper"),
             Block::P(
-                "Swipe deals the same ranking as a stack, up to 100 deep. Tap Filter while you swipe to narrow it to one color identity.",
+                "Swipe deals the same ranking as a stack, up to 100 deep. Tap the [[funnel]] while you swipe to narrow it to one color identity.",
             ),
             Block::Swipe(&[
                 ("right", "start a new deck with this commander"),
@@ -682,7 +684,7 @@ pub(crate) static GUIDES: &[Guide] = &[
                 ("down", "undo your last swipe"),
             ]),
             Block::P(
-                "Skipped commanders come back on their own after seven days. To bring them all back now, tap More, then Clear skips.",
+                "Skipped commanders come back on their own after seven days. To bring them all back now, scroll to the Danger zone panel and tap `Clear` beside Clear skips.",
             ),
             Block::Note(
                 "You need a deck with some cards in it before anything shows up. Any format counts.",
@@ -701,7 +703,7 @@ pub(crate) static GUIDES: &[Guide] = &[
             ),
             Block::H2("Finding it"),
             Block::P(
-                "On the Home screen, tap Activity under the counters. It opens on the Activity section, and each section has a question mark that explains it.",
+                "On the Home screen, tap Activity under the counters. It opens on the Activity section, and each section has a `?` that explains it.",
             ),
             Block::H2("What's on it"),
             Block::Bullets(&[
@@ -742,7 +744,7 @@ pub(crate) static GUIDES: &[Guide] = &[
             ),
             Block::H2("Prices and buying"),
             Block::P(
-                "The Budget section shows Total price and Average card price, switchable across USD, EUR, and TIX with the currency chip in its header, and each card lists its prices while you swipe. Buy deck (under More) opens mass-entry links to TCGplayer and Card Kingdom.",
+                "The Budget section shows Total price and Average card price, switchable across USD, EUR, and TIX with the currency chip in its header, and each card lists its prices while you swipe. The Buy row in the Budget section links to TCGplayer and Card Kingdom with the deck filled in.",
             ),
         ],
     },
@@ -863,7 +865,7 @@ pub(crate) static GUIDES: &[Guide] = &[
             ),
             Block::H2("Opening it"),
             Block::P(
-                "Open the Oracle tags picker from Tags on the deck's edit form, then tap Dictionary next to Search. The picker's help button has a Dictionary button too. The card filter sheet reaches it as well: the Oracle tags section carries its own Dictionary button for include and for exclude.",
+                "Open the Oracle tags picker from Tags on the deck's edit form, then tap Dictionary next to Search. The picker's `?` has a Dictionary button too. The card filter sheet reaches it as well: the Oracle tags section carries its own Dictionary button for include and for exclude.",
             ),
             Block::H2("Browse by letter"),
             Block::P(
@@ -1005,8 +1007,8 @@ pub(crate) static GUIDES: &[Guide] = &[
             ),
             Block::H2("Create the link"),
             Block::Steps(&[
-                "Open the deck and tap More.",
-                "Tap Share deck, then Create link.",
+                "Open the deck and tap the [[share]] beside its profile. The Share deck dialog opens.",
+                "Tap Create link.",
                 "The link copies to your clipboard, ready to paste anywhere.",
             ]),
             Block::Image {
@@ -1110,7 +1112,7 @@ pub(crate) static GUIDES: &[Guide] = &[
             },
             Block::H2("Exporting"),
             Block::P(
-                "Export builds a plain decklist with Commander, Deck, Maybeboard, and Sideboard sections. Toggle which boards to include, then tap Copy.",
+                "Export builds a plain decklist with Commander, Deck, Maybeboard, and Sideboard sections. Toggle which boards to include, then tap the [[copy]].",
             ),
             Block::Image {
                 file: "import-export/03-export.webp",
