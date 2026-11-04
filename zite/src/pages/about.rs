@@ -2,7 +2,7 @@ use components::{Panel, ZwipeArchitecture};
 use dioxus::prelude::*;
 
 use crate::components::PageMeta;
-use crate::{Footer, Nav};
+use crate::{Footer, Nav, Route};
 
 // Source-material links, used inside the architecture diagram (Wikipedia-style refs).
 const URL_ZWIPER: &str = "https://github.com/scadoshi/zwipe/tree/main/zwiper";
@@ -40,6 +40,7 @@ pub fn About() -> Element {
                     actions: rsx! {
                         a { class: "panel-action", href: "https://github.com/scadoshi/zwipe", "Source" span { class: "ext", "\u{2197}" } }
                         a { class: "panel-action", href: "https://scottyfermo.com", "Built by Scotty" span { class: "ext", "\u{2197}" } }
+                        Link { class: "panel-action", to: Route::Privacy {}, "Privacy policy" }
                     },
                     p {
                         "Zwipe is built and maintained by Scotty Fermo, a Commander player who
