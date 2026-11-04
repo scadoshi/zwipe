@@ -143,6 +143,16 @@ button {
     --content-pad-bottom: 5rem;
 }
 
+/* A text Button floating in a dock (the deck view's Cards, the maybeboard's
+   action): the bar is its chrome. */
+.action-dock > .btn-action {
+    min-height: 2.4rem;
+    margin: 0.3rem 0;
+    border: none;
+    box-shadow: none;
+    background: transparent;
+}
+
 /* A swipe screen's bottom row: its pile chips on the left, compact, and the
    action dock on the right, so no chip row costs the card height up top. The
    row floats where a dock would and lifts over the keyboard the same way. */
