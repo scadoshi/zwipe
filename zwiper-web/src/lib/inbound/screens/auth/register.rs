@@ -17,7 +17,6 @@ use zwipe_core::http::contracts::metrics::AnonymousEventKind;
 use zwipe_ui::account::Password;
 use zwipe_ui::screens::register::{self, Action, Destination, Effect, Field, State};
 
-use crate::inbound::chrome::form_panel::FormPanelHead;
 use crate::inbound::chrome::hint_topic::{self, HintTopic};
 use crate::inbound::chrome::toast::raise;
 use crate::inbound::router::Route;
@@ -150,7 +149,6 @@ pub fn Register() -> Element {
             div { class: "screen-content content-enter",
                 div { class: "web-auth web-page",
                     div { class: "container-sm text-center web-form-panel",
-                        FormPanelHead { title: register::TITLE }
                         form {
                             class: "flex-col",
                             onsubmit: move |event| {

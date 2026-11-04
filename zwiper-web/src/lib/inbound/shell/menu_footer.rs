@@ -1,6 +1,7 @@
 //! The folded menu's footer below the breakpoint, the app's: the `!` for
-//! Help and feedback and, signed in, the icons for Home, Account, Settings
-//! and About, the theme pair, and a small Log out that asks first.
+//! Help and feedback, the icons for Home, Account, Settings and About, the
+//! theme pair, and a small Log out that asks first. Signed out it keeps the
+//! `!`, About and the theme pair.
 
 use components::icons::DockIcon;
 use components::{AlertDialog, DialogAction};
@@ -21,8 +22,9 @@ use crate::inbound::shell::nav::{Section, route_of, section_of};
 /// The platform the problem report email names.
 const PLATFORM: &str = "Web";
 
-/// The footer, for the nav's `trailing` slot. Signed out it holds only the
-/// `!`. A wide window hides it: the bar's pills carry the same screens.
+/// The footer, for the nav's `trailing` slot. Signed out it holds the `!`,
+/// About and the theme pair. A wide window hides it: the bar's pills carry
+/// the same screens.
 #[component]
 pub fn MenuFooter(open: Signal<bool>, signed_in: bool) -> Element {
     let route: Route = use_route();
@@ -41,8 +43,10 @@ pub fn MenuFooter(open: Signal<bool>, signed_in: bool) -> Element {
                             open,
                         }
                     }
-                    MenuTheme { open }
+                } else {
+                    MenuIcon { section: Section::About, current: current == Some(Section::About), open }
                 }
+                MenuTheme { open }
             }
             if signed_in {
                 button {

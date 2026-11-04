@@ -18,7 +18,6 @@ use zwipe_ui::screens::forgot_password::{
     self, Action, BACK, CREATE_PROFILE, Destination, EMAIL, Effect, SEND, State,
 };
 
-use crate::inbound::chrome::form_panel::FormPanelHead;
 use crate::inbound::chrome::toast::raise;
 use crate::inbound::router::Route;
 use crate::inbound::screens::auth::login::LoginPrefill;
@@ -114,7 +113,6 @@ pub fn ForgotPassword() -> Element {
             div { class: "screen-content centered content-enter",
                 div { class: "web-auth web-page",
                     div { class: "container-sm text-center web-form-panel",
-                        FormPanelHead { title: forgot_password::TITLE }
                         form {
                             class: "flex-col",
                             onsubmit: move |event| {

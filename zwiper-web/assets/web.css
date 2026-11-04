@@ -128,12 +128,11 @@ body {
 
 /* ---- Input panels ----
 
-   A sign-in form is its own panel at every width, as wide as the page with
-   its fields held to 26rem in the middle: the kit panel's title bar named
-   after its screen, the fields, the full-width submit under them at the
-   inputs' corner radius, then the links to the other sign-in screens as
+   A sign-in form is its own panel at every width, centered and held to
+   30rem on a wide window: the fields, the full-width submit under them at
+   the inputs' corner radius, then the links to the other sign-in screens as
    chips in one centered row (the app's .form-submit and .form-links). Below
-   the breakpoint it keeps the page's side gutter. */
+   the breakpoint it fills the page inside its side gutter. */
 .web-auth {
     display: flex;
     flex-direction: column;
@@ -156,15 +155,10 @@ body {
     box-shadow: var(--shadow-sm);
 }
 
-.web-form-panel > .panel-head.web-panel-head {
-    text-align: left;
-}
-
-/* The fields keep a reading width, centered in the wider panel. */
-.web-form-panel > form {
-    width: 100%;
-    max-width: 26rem;
-    margin: 0 auto;
+/* A sign-in panel is held to a form's width; the page head wears the same
+   panel at the page's. */
+.web-auth > .web-form-panel {
+    max-width: 30rem;
 }
 
 /* The chip row stays inside the panel, under the form's column, instead

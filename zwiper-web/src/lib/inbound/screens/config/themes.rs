@@ -1,10 +1,13 @@
 //! The Themes sheet, a side panel on a wide window so the preview repaints
 //! the page beside it, and the dark mode toggle. The main menu's theme pair
-//! draws both, so the menu and the Theme row save through one path.
+//! draws both, so the menu and the Theme row save through one path. Signed
+//! out, a pick is kept on this device (the root stores every theme change)
+//! and a profile's theme takes over at login.
 
 use components::{TOAST_NORMAL, TOAST_QUICK, ThemeConfig, ThemeSheet};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
+use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::http::contracts::user::HttpUpdatePreferences;
 
 use crate::domain::preferences::{self, RequestSeq};
@@ -16,6 +19,7 @@ use crate::inbound::chrome::sheet::{SheetForm, SheetFrame};
 /// newer click is ignored.
 pub(crate) fn use_toggle_dark_mode() -> Callback<()> {
     let mut theme: Signal<ThemeConfig> = use_context();
+    let session: Signal<Option<Session>> = use_context();
     let authed = use_authed();
     let toast = use_toast();
     let mut dark_seq = use_signal(RequestSeq::default);
@@ -26,6 +30,13 @@ pub(crate) fn use_toggle_dark_mode() -> Callback<()> {
             is_dark: !prev.is_dark,
         };
         theme.set(next.clone());
+        if !signed_in(session) {
+            toast.success(
+                dark_mode_note(next.is_dark).to_string(),
+                ToastOptions::default().duration(TOAST_NORMAL),
+            );
+            return;
+        }
         let mine = dark_seq.write().begin();
         let request = HttpUpdatePreferences {
             theme: Some(next.name),
@@ -48,13 +59,8 @@ pub(crate) fn use_toggle_dark_mode() -> Callback<()> {
             };
             theme.set(shown);
             if let Some(dark) = saved_dark {
-                let what = if dark {
-                    "Dark mode on"
-                } else {
-                    "Dark mode off"
-                };
                 toast.success(
-                    what.to_string(),
+                    dark_mode_note(dark).to_string(),
                     ToastOptions::default().duration(TOAST_NORMAL),
                 );
             }
@@ -70,10 +76,19 @@ pub(crate) fn use_toggle_dark_mode() -> Callback<()> {
 #[component]
 pub(crate) fn ThemesSheet(open: Signal<bool>) -> Element {
     let mut theme: Signal<ThemeConfig> = use_context();
+    let session: Signal<Option<Session>> = use_context();
     let toast = use_toast();
     let authed = use_authed();
 
     let save = move |picked: ThemeConfig| {
+        if !signed_in(session) {
+            theme.set(picked);
+            toast.success(
+                "Theme saved".to_string(),
+                ToastOptions::default().duration(TOAST_QUICK),
+            );
+            return;
+        }
         let request = HttpUpdatePreferences {
             theme: Some(picked.name),
             dark_mode: Some(picked.is_dark),
@@ -113,5 +128,19 @@ pub(crate) fn ThemesSheet(open: Signal<bool>) -> Element {
                 }
             }
         }
+    }
+}
+
+/// Whether a live session is on, so a theme pick saves to the profile.
+fn signed_in(session: Signal<Option<Session>>) -> bool {
+    session.peek().as_ref().is_some_and(|s| !s.is_expired())
+}
+
+/// What the toast says after the mode flips.
+fn dark_mode_note(dark: bool) -> &'static str {
+    if dark {
+        "Dark mode on"
+    } else {
+        "Dark mode off"
     }
 }

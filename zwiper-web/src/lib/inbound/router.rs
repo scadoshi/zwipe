@@ -27,8 +27,8 @@ use crate::inbound::screens::privacy_policy::PrivacyPolicy;
 use crate::inbound::session::auth_gate::AuthGate;
 use crate::inbound::shell::{OpenFrame, PublicFrame, Shell};
 
-/// The app's routes. The public ones sit in [`PublicFrame`], Privacy policy
-/// and Not found in [`OpenFrame`] (either nav), and the rest need a session ([`AuthGate`])
+/// The app's routes. The public ones sit in [`PublicFrame`], Privacy policy,
+/// About and Not found in [`OpenFrame`] (either nav), and the rest need a session ([`AuthGate`])
 /// and sit under the top nav [`Shell`]. `/changelog` redirects to About and
 /// `/config` to Settings.
 #[derive(Debug, Clone, Routable, PartialEq)]
@@ -52,10 +52,12 @@ pub enum Route {
 
     // == open: the signed-in nav or the public one ==
     #[layout(OpenFrame)]
-        /// The privacy policy, from Account, or from the public nav
-        /// signed out.
+        /// The privacy policy, from Account, or from About signed out.
         #[route("/privacy")]
         PrivacyPolicy {},
+        /// The version, the links, the credits and the release history.
+        #[route("/about")]
+        About {},
     #[end_layout]
 
     // == authed ==
@@ -71,9 +73,6 @@ pub enum Route {
         /// redirects here.
         #[route("/settings")]
         Config {},
-        /// The version, the links, the credits and the release history.
-        #[route("/about")]
-        About {},
         /// How the user picks, from their swipes.
         #[route("/activity")]
         Activity {},

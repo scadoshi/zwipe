@@ -16,8 +16,10 @@ class Pipe:
         r_out, w_out = os.pipe() # chrome fd 4 -> we read
         def pre():
             os.dup2(r_in, 3); os.dup2(w_out, 4)
+        # CHROME_EXTRA: more Chrome flags, space separated (--disable-web-security for a cross-port API).
+        extra = os.environ.get("CHROME_EXTRA", "").split()
         self.proc = subprocess.Popen([CHROME, "--remote-debugging-pipe", "--no-sandbox", "--headless=new", "--hide-scrollbars",
-            f"--window-size={width},{height}", "--user-data-dir=" + os.environ.get("PROFILE", "/tmp/webc-profile"), "about:blank"],
+            f"--window-size={width},{height}", "--user-data-dir=" + os.environ.get("PROFILE", "/tmp/webc-profile"), *extra, "about:blank"],
             pass_fds=(3, 4), preexec_fn=pre, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         os.close(r_in); os.close(w_out)
         self.w = os.fdopen(w_in, "wb", buffering=0); self.r = os.fdopen(r_out, "rb", buffering=0)
@@ -49,6 +51,9 @@ def main():
     p.session = a["sessionId"]
     p.send("Runtime.enable"); p.send("Page.enable")
     p.send("Emulation.setDeviceMetricsOverride", {"width": width, "height": height, "deviceScaleFactor": 1, "mobile": False})
+    # DARK=1 renders with prefers-color-scheme: dark.
+    if os.environ.get("DARK"):
+        p.send("Emulation.setEmulatedMedia", {"features": [{"name": "prefers-color-scheme", "value": "dark"}]})
     p.send("Page.navigate", {"url": url})
     steps = json.load(open(steps_file))
     n = 0

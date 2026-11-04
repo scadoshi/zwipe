@@ -14,6 +14,7 @@ use zwipe_core::domain::site::WEB_BASE;
 use crate::inbound::chrome::back_arrow::BackArrow;
 use crate::inbound::router::Route;
 use crate::inbound::shell::menu_footer::MenuFooter;
+use crate::inbound::shell::menu_theme::MenuTheme;
 use crate::inbound::shell::nav::{Back, MenuOpen, Section, route_of, section_of};
 
 /// The screen on view's title and its `?`, which the folded nav shows
@@ -84,26 +85,21 @@ pub fn Shell() -> Element {
     }
 }
 
-/// The nav over the public screens: the mark, then `Log in`, `Create
-/// profile` and `Privacy policy`, the current one lit, and `Community`.
-/// Below the breakpoint the list is the app's signed-out menu, Log in,
-/// Create profile and Forgot password, with the `!` alone in its footer.
+/// The nav over the public screens: the mark, then the app's signed-out
+/// menu, `Log in`, `Create profile`, `Forgot password` and `About`, the
+/// current one lit. A wide window adds `Community` and the theme pair as
+/// pills; below the breakpoint the footer holds the `!`, the About icon and
+/// the theme pair.
 #[component]
 pub fn PublicNav() -> Element {
     let route: Route = use_route();
     let open = use_menu_open(&route);
     let page: Signal<Option<PageTitle>> = use_context();
-    // The app's signed-out list; a wide window shows Privacy policy in
-    // place of Forgot password, which Login links to.
     let links = [
-        (Route::Login {}, "Log in", ""),
-        (Route::Register {}, "Create profile", ""),
-        (
-            Route::ForgotPassword {},
-            "Forgot password",
-            "web-nav-narrow",
-        ),
-        (Route::PrivacyPolicy {}, "Privacy policy", "web-nav-wide"),
+        (Route::Login {}, "Log in"),
+        (Route::Register {}, "Create profile"),
+        (Route::ForgotPassword {}, "Forgot password"),
+        (Route::About {}, Section::About.label()),
     ];
     rsx! {
         div { class: "web-app-nav",
@@ -117,13 +113,19 @@ pub fn PublicNav() -> Element {
                     NavTitle { page }
                 },
                 links: rsx! {
-                    for (to, label, class) in links {
-                        li { key: "{label}", class,
+                    for (to, label) in links {
+                        li { key: "{label}",
                             NavLink { current: to == route, to, label, open }
                         }
                     }
                     li { class: "web-nav-wide",
                         CommunityLink { open }
+                    }
+                    // No Settings signed out, so the theme pair sits in the
+                    // bar; the pick stays on this device until a profile's
+                    // theme takes over.
+                    li { class: "web-nav-wide web-nav-theme",
+                        MenuTheme { open }
                     }
                 },
                 trailing: rsx! {
