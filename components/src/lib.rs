@@ -10,8 +10,9 @@
 //! [`DrawOdds`], [`ChartLabel`], with [`Fold`] and [`SeeMore`] behind their
 //! long rows), the [`ColorMap`] and [`ZwipeArchitecture`]. The pieces the
 //! two clients' chrome shares sit here too: the [`icons`] module's stroke
-//! paths with [`DockIcon`] and [`EyeIcon`], and [`MenuSection`], the main
-//! menu's section list.
+//! paths with [`DockIcon`] and [`EyeIcon`], the dock's [`DockFilter`],
+//! [`DangerZoneAction`], the one-row Danger zone panel, and [`MenuSection`],
+//! the main menu's section list.
 //!
 //! Styling ships as string constants to inline through `document::Style`.
 //! orangui's sheets come through as they are; [`MAGIC_CSS`] holds this crate's
@@ -40,6 +41,8 @@ mod card_row;
 mod changelog;
 mod charts;
 mod color_map;
+mod danger_zone;
+mod dock_filter;
 mod flippable_card_image;
 mod fold;
 pub mod icons;
@@ -59,6 +62,8 @@ pub use charts::{
     ManaCurve, ManaFulfillment,
 };
 pub use color_map::{ColorMap, ColorMapGhost, mana_var};
+pub use danger_zone::DangerZoneAction;
+pub use dock_filter::DockFilter;
 pub use flippable_card_image::{FlippableCardImage, reset_image_ease};
 pub use fold::{FOLD_AT, Fold, SEE_LESS, SEE_MORE, SeeMore, fold_split};
 pub use icons::{DockIcon, EyeIcon};
