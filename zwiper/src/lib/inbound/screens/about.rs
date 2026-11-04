@@ -1,13 +1,11 @@
 //! About screen: the app's version, its links and credits, then the full
 //! release history.
 //!
-//! The top panel holds the rows Account used to carry under About (Version,
-//! zwipe.net and Privacy policy), with their labels from
-//! `zwipe_ui::screens::account`. Under it a Credits panel holds the Scryfall
-//! credit and the Fan Content notice from `zwipe_core::legal`, then a
-//! Changelog panel holds the shared [`components::Changelog`] as rows, the
-//! same history the website shows: the version filter first, then a release
-//! per row.
+//! The top panel holds the Version, Website and Privacy policy rows. Under it
+//! a Credits panel holds the Scryfall credit and the Fan Content notice from
+//! `zwipe_core::legal`, then a Changelog panel holds the shared
+//! [`components::Changelog`] as rows, the same history the website shows: the
+//! version filter first, then a release per row.
 //!
 //! The changelog is fetched once in the background at startup and cached for
 //! the session (see [`crate::inbound::components::auth::session_upkeep`]).
@@ -16,16 +14,14 @@
 //! fallback: the compiled copy is the one that shipped with this build, so it
 //! could never show anything the reader has not already got.
 //!
-//! What the changelog part knows and does is `zwipe_ui::screens::changelog`;
-//! this file draws its state and performs its effects.
+//! What the screen knows and does is `zwipe_ui::screens::about`; this file
+//! draws its state and performs its effects.
 
 use components::{Button, ButtonVariant, Changelog as ChangelogContent};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
-use zwipe_core::domain::site::WEB_BASE;
 use zwipe_core::legal::{FAN_CONTENT_HTML, SCRYFALL_CREDIT_HTML};
-use zwipe_ui::screens::account::{self, Row};
-use zwipe_ui::screens::changelog::{self as model, Action, Destination, Effect, State, Status};
+use zwipe_ui::screens::about::{self, Action, Destination, Effect, Row, State, Status};
 
 use crate::inbound::components::auth::session_upkeep::ChangelogCache;
 use crate::inbound::components::hint_host::HintTopic;
@@ -37,7 +33,7 @@ use crate::outbound::open_url;
 /// App version, baked at compile time.
 const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-/// The changelog part's model with the handles that perform its effects.
+/// The screen's model with the handles that perform its effects.
 #[derive(Clone, Copy)]
 struct Driver {
     model: Signal<State>,
@@ -51,7 +47,11 @@ impl Driver {
         let effects = model.write().update(action);
         for effect in effects {
             match effect {
+                Effect::OpenUrl(url) => open_url::open(&url),
                 Effect::Navigate(Destination::Previous) => self.navigator.go_back(),
+                Effect::Navigate(Destination::PrivacyPolicy) => {
+                    self.navigator.push(Router::PrivacyPolicy {});
+                }
             }
         }
     }
@@ -82,7 +82,7 @@ pub fn About() -> Element {
 
     rsx! {
         div { class: "screen",
-            ScreenHeader { title: account::ABOUT, back: move |()| driver.dispatch(Action::Back) }
+            ScreenHeader { title: about::TITLE, back: move |()| driver.dispatch(Action::Back) }
 
             div { class: "screen-content content-enter",
                 div { class: "changelog-screen",
@@ -93,7 +93,7 @@ pub fn About() -> Element {
                                 InfoButton { topic: HintTopic::Version }
                             }
                             div { class: "settings-row-value",
-                                span { {account::version_label(APP_VERSION)} }
+                                span { {about::version_label(APP_VERSION)} }
                             }
                         }
                         div { class: "settings-row",
@@ -104,8 +104,8 @@ pub fn About() -> Element {
                             div { class: "settings-row-value",
                                 Button {
                                     variant: ButtonVariant::Action,
-                                    onclick: move |_| open_url::open(WEB_BASE),
-                                    {account::WEBSITE_LINK}
+                                    onclick: move |_| driver.dispatch(Action::Website),
+                                    {about::WEBSITE_LINK}
                                 }
                             }
                         }
@@ -114,10 +114,8 @@ pub fn About() -> Element {
                             div { class: "settings-row-value",
                                 Button {
                                     variant: ButtonVariant::Action,
-                                    onclick: move |_| {
-                                        driver.navigator.push(Router::PrivacyPolicy {});
-                                    },
-                                    {account::VIEW}
+                                    onclick: move |_| driver.dispatch(Action::PrivacyPolicy),
+                                    {about::VIEW}
                                 }
                             }
                         }
@@ -125,7 +123,7 @@ pub fn About() -> Element {
 
                     div { class: "settings-list about-panel",
                         div { class: "settings-list-header",
-                            span { class: "settings-list-title", {model::CREDITS} }
+                            span { class: "settings-list-title", {about::CREDITS} }
                         }
                         div { class: "about-credits",
                             p { dangerous_inner_html: SCRYFALL_CREDIT_HTML }
@@ -135,13 +133,13 @@ pub fn About() -> Element {
 
                     div { class: "settings-list about-panel",
                         div { class: "settings-list-header",
-                            span { class: "settings-list-title", {model::TITLE} }
+                            span { class: "settings-list-title", {about::CHANGELOG} }
                         }
                         match (status, data) {
                             (Status::Loaded, Some(data)) => rsx! { ChangelogContent { data, rows: true } },
                             (Status::Failed, _) => rsx! {
                                 div { class: "settings-row changelog-row",
-                                    span { class: "chip-note", {model::FAILED} }
+                                    span { class: "chip-note", {about::FAILED} }
                                 }
                             },
                             (Status::Loading | Status::Loaded, _) => rsx! { ChangelogSkeleton {} },

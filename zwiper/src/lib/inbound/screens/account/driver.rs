@@ -20,8 +20,6 @@ use crate::inbound::components::auth::signal_logout::SignalLogout;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::{ProfileScreen, Screen, component, screen};
 use crate::inbound::components::{hint_dialog, ui_toast};
-use crate::inbound::router::Router;
-use crate::outbound::open_url;
 
 /// The request runners, one per telemetry screen the account reports under.
 #[derive(Clone, Copy)]
@@ -266,14 +264,7 @@ impl Driver {
                 open.set(true);
             }
             Effect::LogOut => self.session.logout(self.client),
-            Effect::OpenUrl(url) => open_url::open(&url),
             Effect::Navigate(Destination::Previous) => self.navigator.go_back(),
-            Effect::Navigate(Destination::PrivacyPolicy) => {
-                self.navigator.push(Router::PrivacyPolicy {});
-            }
-            Effect::Navigate(Destination::Changelog) => {
-                self.navigator.push(Router::About {});
-            }
             Effect::Toast(toast) => ui_toast::raise(self.toast, toast),
         }
     }

@@ -118,7 +118,7 @@ Effort is the work to build the shared model from the TUI's version and test it 
 | Account | both lists, the three change forms, verification with resend cooldown, delete countdown, More, dialogs | inputs, dialogs as drawn | M, built: `screens::account`; the app switched, web and TUI to switch; the clock stays in the client (`Wait`/`Tick`) |
 | Config | theme pick and preview, dark mode, pips, Universes Beyond and its exceptions, toasts | the app icon picker (app only), theme drawing | M, built: `screens::config`; the app switched, web and TUI to switch; theme and pips stay the client's, the app icon stays in the app |
 | Privacy policy | nothing beyond the source text already in core | rendering; the TUI's parser stays in the TUI | none |
-| Changelog | filing and the filter | web anchors | S, built: `screens::changelog`; the app takes status, copy and Back; components still draws its own chips until K5 |
+| Changelog | filing and the filter | web anchors | S, built: `screens::about`; the app takes status, copy and Back; components still draws its own chips until K5 |
 
 Adding it up: about 45 days of work on the screen models if one agent does it all, plus the pieces in Part 1, much of which comes along with the screens. Waves B to D need Home through Remove. Wave A is built already, and moving web-a's domain files into zwipe-ui is a small job (decision 7).
 

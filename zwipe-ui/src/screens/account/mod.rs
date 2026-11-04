@@ -1,4 +1,4 @@
-//! Account: the user's username, email and password with a sheet to change each, the email's verification with its resend cooldown, the About rows, logging out, and deleting the account behind its countdown.
+//! Account: the user's username, email and password with a sheet to change each, the email's verification with its resend cooldown, logging out, and deleting the account behind its countdown.
 //!
 //! The client keeps a [`State`] while the screen is up and sends [`Action::Load`] with the session's user when it opens. Every check and label comes from [`crate::account`] and the two waits from [`crate::timing`]. The client keeps the clock: each [`Effect::Wait`] asks it to wait one [`TICK`] and send [`Action::Tick`] back, so the model counts whole seconds and never reads the time. The sheets' and dialogs' visibility, the password typed into Delete account, and the version string stay in the client.
 
@@ -9,7 +9,6 @@ mod tests;
 use std::time::Duration;
 
 use chrono::{DateTime, Utc};
-use zwipe_core::domain::site::WEB_BASE;
 use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_core::domain::user::{User, Username};
 
@@ -23,11 +22,8 @@ use crate::{account, timing};
 /// The screen's title.
 pub const TITLE: &str = "Account";
 
-/// The first list's title.
+/// The list's title.
 pub const ACCOUNT: &str = "Account";
-
-/// The second list's title.
-pub const ABOUT: &str = "About";
 
 /// The button on the Username, Email and Password rows that opens their sheet.
 pub const CHANGE: &str = "Change";
@@ -40,15 +36,6 @@ pub const UNVERIFIED: &str = "Unverified";
 
 /// The Password row's value.
 pub const PASSWORD_MASK: &str = "•••••••";
-
-/// The Website row's button.
-pub const WEBSITE_LINK: &str = "zwipe.net \u{2197}";
-
-/// The Privacy policy row's button.
-pub const VIEW: &str = "View";
-
-/// The Version row's button.
-pub const CHANGELOG: &str = "Changelog";
 
 /// The action bar's button back to where the user came from.
 pub const BACK: &str = "Back";
@@ -106,10 +93,6 @@ pub fn version_label(version: &str) -> String {
 pub enum Destination {
     /// Wherever the user came from, from Back.
     Previous,
-    /// The privacy policy, from its row.
-    PrivacyPolicy,
-    /// The changelog, from the Version row.
-    Changelog,
 }
 
 /// A row on the screen, in the order [`State::rows`] lists them.
@@ -125,12 +108,6 @@ pub enum Row {
     Verification,
     /// The masked password with its Change button.
     Password,
-    /// The link to the website.
-    Website,
-    /// The link to the privacy policy.
-    PrivacyPolicy,
-    /// The client's version with the link to the changelog.
-    Version,
 }
 
 impl Row {
@@ -143,20 +120,6 @@ impl Row {
             Self::Pending => "Pending",
             Self::Verification => "Verification",
             Self::Password => "Password",
-            Self::Website => "Website",
-            Self::PrivacyPolicy => "Privacy policy",
-            Self::Version => "Version",
-        }
-    }
-
-    /// The list the row sits in: [`ACCOUNT`] or [`ABOUT`].
-    #[must_use]
-    pub fn list(self) -> &'static str {
-        match self {
-            Self::Username | Self::Email | Self::Pending | Self::Verification | Self::Password => {
-                ACCOUNT
-            }
-            Self::Website | Self::PrivacyPolicy | Self::Version => ABOUT,
         }
     }
 }
@@ -307,12 +270,6 @@ pub enum Action {
         /// The ticket from the [`Effect::ChangePassword`] this answers.
         ticket: Ticket,
     },
-    /// Opens the website.
-    Website,
-    /// Opens the privacy policy.
-    PrivacyPolicy,
-    /// Opens the changelog.
-    Changelog,
     /// Goes back to where the user came from.
     Back,
     /// Asks to log out.
@@ -390,8 +347,6 @@ pub enum Effect {
     OpenDialog(Dialog),
     /// Logs out: the client ends the session, and its sign-in gate takes over.
     LogOut,
-    /// Opens this address outside the client.
-    OpenUrl(String),
     /// Goes to this screen.
     Navigate(Destination),
     /// Raises this toast.
@@ -591,9 +546,6 @@ impl State {
                 let toast = Toast::quick(ToastKind::Success, PASSWORD_CHANGED);
                 self.changed(Sheet::Password, toast)
             }
-            Action::Website => vec![Effect::OpenUrl(WEB_BASE.to_owned())],
-            Action::PrivacyPolicy => vec![Effect::Navigate(Destination::PrivacyPolicy)],
-            Action::Changelog => vec![Effect::Navigate(Destination::Changelog)],
             Action::Back => vec![Effect::Navigate(Destination::Previous)],
             Action::LogOut => vec![Effect::OpenDialog(Dialog::LogOut)],
             Action::ConfirmLogOut => vec![Effect::LogOut],
@@ -827,12 +779,7 @@ impl State {
         if user.email_verified_at.is_none() {
             rows.push(Row::Verification);
         }
-        rows.extend([
-            Row::Password,
-            Row::Website,
-            Row::PrivacyPolicy,
-            Row::Version,
-        ]);
+        rows.push(Row::Password);
         rows
     }
 

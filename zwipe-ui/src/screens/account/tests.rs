@@ -156,15 +156,7 @@ fn rows_follow_verification_and_the_pending_address() {
     let mut state = opened();
     assert_eq!(
         state.rows(),
-        vec![
-            Row::Username,
-            Row::Email,
-            Row::Verification,
-            Row::Password,
-            Row::Website,
-            Row::PrivacyPolicy,
-            Row::Version,
-        ]
+        vec![Row::Username, Row::Email, Row::Verification, Row::Password,]
     );
     assert_eq!(state.badge(), UNVERIFIED);
 
@@ -173,20 +165,7 @@ fn rows_follow_verification_and_the_pending_address() {
     let _ = state.update(Action::Load(Some(Box::new(pending))));
     assert_eq!(
         state.rows(),
-        vec![
-            Row::Username,
-            Row::Email,
-            Row::Pending,
-            Row::Password,
-            Row::Website,
-            Row::PrivacyPolicy,
-            Row::Version,
-        ]
-    );
-    let lists: Vec<&str> = state.rows().into_iter().map(Row::list).collect();
-    assert_eq!(
-        lists,
-        vec![ACCOUNT, ACCOUNT, ACCOUNT, ACCOUNT, ABOUT, ABOUT, ABOUT]
+        vec![Row::Username, Row::Email, Row::Pending, Row::Password,]
     );
 }
 
@@ -730,18 +709,6 @@ fn navigation_and_logging_out() {
         vec![Effect::Navigate(Destination::Previous)]
     );
     assert_eq!(
-        state.update(Action::PrivacyPolicy),
-        vec![Effect::Navigate(Destination::PrivacyPolicy)]
-    );
-    assert_eq!(
-        state.update(Action::Changelog),
-        vec![Effect::Navigate(Destination::Changelog)]
-    );
-    assert_eq!(
-        state.update(Action::Website),
-        vec![Effect::OpenUrl(WEB_BASE.to_owned())]
-    );
-    assert_eq!(
         state.update(Action::LogOut),
         vec![Effect::OpenDialog(Dialog::LogOut)]
     );
@@ -762,12 +729,10 @@ fn passwords_stay_out_of_debug_output() {
 #[test]
 fn the_copy_matches_the_app() {
     assert_eq!(TITLE, "Account");
-    assert_eq!((ACCOUNT, ABOUT), ("Account", "About"));
+    assert_eq!(ACCOUNT, "Account");
     assert_eq!(CHANGE, "Change");
     assert_eq!((VERIFIED, UNVERIFIED), ("Verified", "Unverified"));
     assert_eq!(PASSWORD_MASK, "•••••••");
-    assert_eq!(WEBSITE_LINK, "zwipe.net ↗");
-    assert_eq!((VIEW, CHANGELOG), ("View", "Changelog"));
     assert_eq!((BACK, LOG_OUT, MORE), ("Back", "Log out", "More"));
     assert_eq!(MORE_TITLE, "More");
     assert_eq!(MoreItem::DeleteAccount.label(), "Delete account");
@@ -775,32 +740,19 @@ fn the_copy_matches_the_app() {
     assert_eq!(DELETE_PASSWORD, "Password");
     assert_eq!(DELETING, "Deleting...");
     assert_eq!((SAVE, SAVING), ("Save changes", "Saving..."));
-    assert_eq!(version_label("1.15.0"), "v1.15.0");
     let labels: Vec<&str> = [
         Row::Username,
         Row::Email,
         Row::Pending,
         Row::Verification,
         Row::Password,
-        Row::Website,
-        Row::PrivacyPolicy,
-        Row::Version,
     ]
     .into_iter()
     .map(Row::label)
     .collect();
     assert_eq!(
         labels,
-        [
-            "Username",
-            "Email",
-            "Pending",
-            "Verification",
-            "Password",
-            "Website",
-            "Privacy policy",
-            "Version"
-        ]
+        ["Username", "Email", "Pending", "Verification", "Password"]
     );
     let titles: Vec<&str> = Sheet::ALL.into_iter().map(Sheet::title).collect();
     assert_eq!(
