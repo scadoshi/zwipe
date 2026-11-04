@@ -68,7 +68,7 @@ pub fn Account() -> Element {
                     title: "Your account",
                     HintBullets {
                         HintBullet { "Tap a row's " HintKey { color: "--palette-6", "?" } " for what it does" }
-                        HintBullet { HintKey { "More" } " deletes your account" }
+                        HintBullet { HintKey { "Danger zone" } " at the bottom logs you out or deletes your account" }
                     }
                 }
 

@@ -64,8 +64,10 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
                     text(" lists your latest decks; All decks opens the list"),
                 ]),
                 bullet(vec![
-                    key("Color map"),
-                    text(" grows from your decks' colors. Tap Playstyle for suggested commanders"),
+                    key("Colors"),
+                    text(
+                        " counts your decks' cards by color. Tap Playstyle for suggested commanders",
+                    ),
                 ]),
                 bullet(vec![
                     key("Account"),
@@ -124,7 +126,11 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
                     key("Show"),
                     text(" narrows it by color or tag"),
                 ]),
-                bullet(vec![key("Create"), text(" starts a new deck")]),
+                bullet(vec![
+                    text("The "),
+                    key("+"),
+                    text(" at the bottom right starts a new deck"),
+                ]),
             ],
         ),
         OneTimeHint::FirstDeck => content(
@@ -516,6 +522,25 @@ mod tests {
                 key("Decks"),
                 text(" lists your latest decks; All decks opens the list")
             ])
+        );
+    }
+
+    #[test]
+    fn the_hints_name_the_shipped_controls() {
+        let welcome = content_for(OneTimeHint::FirstLogin).unwrap();
+        assert_eq!(
+            welcome.blocks[1].plain(),
+            "Colors counts your decks' cards by color. Tap Playstyle for suggested commanders"
+        );
+        let decks = content_for(OneTimeHint::DeckList).unwrap();
+        assert_eq!(
+            decks.blocks[2].plain(),
+            "The + at the bottom right starts a new deck"
+        );
+        let account = content_for(OneTimeHint::Profile).unwrap();
+        assert_eq!(
+            account.blocks[1].plain(),
+            "Danger zone at the bottom logs you out or deletes your account"
         );
     }
 
