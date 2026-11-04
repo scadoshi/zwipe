@@ -1277,6 +1277,11 @@ i.ms.ms-cost.ms-gp {
     padding: 0.5rem 1rem 0.9rem;
 }
 
+/* Inside a deck chart the bars take the chart's own side padding. */
+.color-chart .color-bars {
+    padding: 0.25rem 0 0;
+}
+
 /* Rows space by their own padding, like the deck charts' Roles rows. */
 .color-bar-row {
     display: flex;
