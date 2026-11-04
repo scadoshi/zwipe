@@ -1321,11 +1321,18 @@ i.ms.ms-cost.ms-gp {
     color: var(--text-primary);
 }
 
+/* The ghost rows stand as tall as the real ones: the pip ghost is the pip's
+   box and the track keeps its height under the app's skeleton rule. */
 .color-bar-pip-ghost {
     flex: 0 0 auto;
-    width: 0.85rem;
-    height: 0.85rem;
-    border-radius: 50%;
+    width: 1.15rem;
+    height: 1.15rem;
+    border-radius: 0.3rem;
+}
+
+.skeleton-bar.color-bar-track {
+    height: 0.9rem;
+    border-radius: 0.15rem;
 }
 
 .color-bar-count-ghost {

@@ -9,7 +9,7 @@ pub mod universes_beyond;
 use app_icon_sheet::AppIconSheet;
 use components::{
     Button, ButtonVariant, DarkModeButton, HintBullet, HintBullets, HintDialog, HintKey,
-    TOAST_NORMAL, ThemeConfig, ToastOptions, Toasts, use_toast,
+    PaletteIcon, TOAST_NORMAL, ThemeConfig, ToastOptions, Toasts, use_toast,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -245,6 +245,7 @@ pub fn Config() -> Element {
                                     InfoButton { topic: HintTopic::Theme }
                                 }
                                 div { class: "settings-row-value",
+                                    PaletteIcon {}
                                     span { { user::preferences::display_theme_name(&theme_config().name) } }
                                     DarkModeButton {
                                         is_dark: theme_config().is_dark,
