@@ -122,7 +122,7 @@ The wide layout copies zite's home page (`zite/assets/style.css`). Screens move 
 
 ## About
 
-- The screen in the menu's footer, replacing Changelog: a panel of rows (Version with its `?`, Website with the zwipe.net chip, Privacy policy with a View chip), a Credits panel (the Scryfall credit and the Fan Content notice), a Changelog panel holding the version filter, and a panel per release under it. On a wide window the rows and Credits take the left column and the changelog the right, under the page head. `/changelog` redirects here.
+- The screen in the menu's footer, replacing Changelog: a panel of rows (Version with its `?`, Website with the zwipe.net chip, Privacy policy with a View chip), a Credits panel (the Scryfall credit and the Fan Content notice), a Changelog panel holding the version filter, and a panel per release under it. On a wide window the rows and Credits sit side by side under the page head, and the Changelog panel and the release panels run the page's width under them. `/changelog` redirects here.
 
 ## Deck list
 

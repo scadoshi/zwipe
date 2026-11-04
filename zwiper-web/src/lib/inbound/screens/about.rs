@@ -1,7 +1,7 @@
 //! About: the web build's version, its links and credits, then the full
-//! release history, at the app's shape. On a wide window the panels share
-//! two columns under the page head: the rows and Credits on the left, the
-//! changelog on the right.
+//! release history, at the app's shape. On a wide window the rows and
+//! Credits sit side by side under the page head, and the Changelog panel
+//! and the release panels run the page's width under them.
 //!
 //! The top panel holds the Version, Website and Privacy policy rows. Under it
 //! a Credits panel holds the Scryfall credit and the Fan Content notice from
@@ -95,7 +95,8 @@ pub fn About() -> Element {
     rsx! {
         ScreenFrame { title: about::TITLE, description: Some(DESCRIPTION.to_owned()),
             div { class: "screen-content content-enter",
-                div { class: "changelog-screen web-about web-columns",
+                div { class: "changelog-screen web-about",
+                    div { class: "web-columns",
                     div { class: "web-column",
                     div { class: "settings-list",
                         div { class: "settings-row",
@@ -125,7 +126,8 @@ pub fn About() -> Element {
                             }
                         }
                     }
-
+                    }
+                    div { class: "web-column",
                     div { class: "settings-list about-panel",
                         div { class: "settings-list-header",
                             span { class: "settings-list-title", {about::CREDITS} }
@@ -135,9 +137,8 @@ pub fn About() -> Element {
                             p { dangerous_inner_html: FAN_CONTENT_HTML }
                         }
                     }
-
                     }
-                    div { class: "web-column",
+                    }
                     div { class: "settings-list about-panel",
                         div { class: "settings-list-header",
                             span { class: "settings-list-title", {about::CHANGELOG} }
@@ -160,7 +161,6 @@ pub fn About() -> Element {
                         },
                         (Status::Failed, _) => rsx! {},
                         (Status::Loading | Status::Loaded, _) => rsx! { ChangelogSkeletonPanels {} },
-                    }
                     }
                 }
             }
