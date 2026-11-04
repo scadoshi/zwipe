@@ -22,7 +22,7 @@ pub struct ColorCounts {
 }
 
 impl ColorCounts {
-    /// The bars: one per color in WUBRG order, then colorless, the largest count at 100 and any other nonzero count at least [`BAR_SLIVER_PCT`].
+    /// The bars: one per color in WUBRG order, then colorless, the largest count at 100 and any other nonzero count at least 4, a visible sliver.
     #[must_use]
     pub fn bars(&self) -> Vec<Bar> {
         let max = self
