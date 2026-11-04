@@ -22,12 +22,12 @@ The shared crates (zwipe-ui, zwipe-core, zwipe-client, components, and orangui w
 These are recorded in `web-layout.md`; they are repeated here because they came from conversation, not from the specs.
 
 - The page follows zite's grammar: a centered page capped at 74rem with a small top gap, a hero where a screen has one, and the other panels in two balanced columns.
-- The web is panels at every width. Every input form is its own panel with a title bar named after its screen and its buttons in an action footer under a full-bleed rule. The mobile app stays panel-less; don't change it.
-- Panel footer buttons are the app's compact buttons in a row, not full-width stacks.
-- The top nav is zite's nav bar with the Z mark (in `var(--logo)`) linking Home and a hamburger below 900px. Every screen but Home and the three auth forms opens with a page head on a wide window (title, `?`, one-line description); below 900px the title and `?` sit centered in the folded nav. This replaced round 9's "no screen title header".
+- A wide window is panels: every input form is its own panel with a title bar named after its screen. Below 900px the web is the app's layout, panel-less, with the action dock and bottom sheets (`web-layout.md`, Shared chrome). The mobile app stays panel-less; don't change it.
+- Panels have no footers. A screen's one or two main actions float in the action dock; the rest sit inline, the app's compact buttons in a row, not full-width stacks.
+- The top nav is zite's nav bar: the Z mark (in `var(--logo)`) linking Home on a wide window, the hamburger below 900px, and the back arrow at every width on screens below a section (owner, 2026-11-04). Every screen but Home and the three auth forms opens with a page head on a wide window (title, `?`, one-line description); below 900px the title and `?` sit centered in the folded nav. This replaced round 9's "no screen title header".
 - No navigation-only buttons (Back, Back to login and the like); the nav and the browser cover them. Buttons that do something stay.
 - No site footer in the web app. The Scryfall credit and the Fan Content notice live on zite and in the Privacy policy screen.
-- Each screen's action bar is pinned to the bottom of the window, always on screen.
+- No screen has a bar at its end or a toolbar under the nav; nothing hides behind More (`web-layout.md`, Shared chrome).
 - Password rules live behind the `?` next to the Password label, as in the app.
 - Lists of cards (Most skipped, Staples, Suggested commanders) keep the app's card-group header: the theme's accent-tertiary (Gruvbox's pink) in bold. Other panels use the teal section title.
 - Dialogs as few as possible on the web: where a link or a page does the job, it replaces the app's dialog (Help is the nav's `Community` link to zite's Community page). Form panels are page-wide with their fields held to a reading width; dialogs size to their content up to the page width.
@@ -49,12 +49,12 @@ Still to come, as zwiper-helpers lands each shared branch: toasts take the app's
 
 ## Review queue
 
-Approved: Login, Register and Forgot password (round 10: page-wide form panels with fields at 26rem, content-sized dialogs, Community in place of Help, Esc closing dialogs, Enter submitting the form with or without focus); Home (zite's tagline under the hero); Activity (no Back, the Activity panel spanning the page with its heatmap at size, Most skipped keeping the app's card-list header); Playstyle (paired rows: Summary with Color map, Card roles with Oracle tags, Suggested commanders with Staples; card lists holding their own filters; Clear skips on the bar when wide and in More on phones); Not found (zite's dead end under either nav). Page heads then went onto every screen (title, `?`, one-line description on wide windows; title and `?` centered in the folded nav), and the owner accepted the auth screens showing their title twice on phones.
+Approved: Login, Register and Forgot password (round 10: page-wide form panels with fields at 26rem, content-sized dialogs, Community in place of Help, Esc closing dialogs, Enter submitting the form with or without focus); Home (zite's tagline under the hero); Activity (no Back, the Activity panel spanning the page with its heatmap at size, Most skipped keeping the app's card-list header); Playstyle (paired rows: Summary with Color map, Card roles with Oracle tags, Suggested commanders with Staples; card lists holding their own filters; Clear skips in a Danger zone panel at the page's end); Not found (zite's dead end under either nav). Page heads then went onto every screen (title, `?`, one-line description on wide windows; title and `?` centered in the folded nav), and the owner accepted the auth screens showing their title twice on phones.
 
 Next session starts with the deck view. Renders of it as it stood were sent on 2026-11-01, with four proposals the owner hasn't answered yet:
 1. Profile becomes the first panel in the left column instead of a lone 40rem strip.
 2. The page head shows the deck's name instead of "Deck".
-3. On wide windows More breaks up: the TCGplayer and Card Kingdom links go in Budget's footer, Import and Export cards go at the top of the cards column, and Clone, Share, Clear skips and Delete go on the bar beside Edit and Cards (the destructive two in red). Phones keep the app's More sheet.
+3. More breaks up at every width, as `web-layout.md`'s Deck view now records: Buy's retailer chips in Budget, Import and Export in a Data panel, Clear skips and Delete in a Danger zone panel, Edit, Clone and Share as icons in the Profile header.
 4. The Warnings panel's `Add cards` button stays on one line.
 
 Then one screen per round with renders: Account, Config, Privacy policy, Changelog, Decks, Create and Edit, Import and Export, Commander maybeboard, Dictionary and Examples, Add, Deck cards, Remove, Update required. Remove each screen's Back button on its turn. When a change touches approved screens, re-render from Login onward for the owner to re-confirm.
