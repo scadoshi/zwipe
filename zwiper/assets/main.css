@@ -200,11 +200,15 @@ button {
 }
 
 /* A sign-in form's submit: the kit's full-width button under the last
-   field, then the chips to the other sign-in screens, one per row, centered.
-   The content's trailing padding keeps the last chip clear of the home
+   field, with the field's corners and padding so it reads as the form's
+   last row, then the chips to the other sign-in screens, one per row,
+   centered. The field's own bottom margin is the only gap above it; the
+   content's trailing padding keeps the last chip clear of the home
    indicator. */
 .form-submit > .btn {
-    margin: 1rem 0 0;
+    margin: 0;
+    padding: 0.75rem 1rem;
+    border-radius: 0.4rem;
 }
 
 .form-links {
