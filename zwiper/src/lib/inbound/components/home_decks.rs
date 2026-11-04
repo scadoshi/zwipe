@@ -19,8 +19,8 @@ pub struct CachedDecks {
 }
 
 /// The panel between the hero and the Colors panel, in the Colors panel's
-/// style: Decks at the left of its header, the count chip and the All decks
-/// chip at the right, then the [`LATEST_DECKS`] most recently updated decks
+/// style: Decks and the count chip centered in its header with the All decks
+/// chip in the right corner, then the [`LATEST_DECKS`] most recently updated decks
 /// as three tiles across, each opening its deck. With no deck the one row
 /// opens Create deck; while the fetch is out three tiles ghost; a failed
 /// fetch with nothing cached shows a muted line over the All decks chip.
@@ -70,17 +70,20 @@ pub fn HomeDecks(
     }
 }
 
-/// The panel's header: the title on the left, the count chip (when there
-/// is a count) and the All decks chip on the right.
+/// The panel's header: the title and the count chip (when there is a
+/// count) centered as one unit, the All decks chip alone in the right
+/// corner.
 #[component]
 fn PanelHeader(count: Option<u32>, onopen: EventHandler) -> Element {
     rsx! {
-        div { class: "settings-list-header",
-            span { class: "settings-list-title", {home::DECKS} }
-            div { class: "card-group-header-actions",
+        div { class: "settings-list-header home-panel-header-centered",
+            div { class: "home-panel-header-title",
+                span { class: "settings-list-title", {home::DECKS} }
                 if let Some(count) = count {
                     span { class: "stat-chip", "{count}" }
                 }
+            }
+            div { class: "home-panel-header-action",
                 Button {
                     variant: ButtonVariant::Action,
                     onclick: move |_| onopen.call(()),

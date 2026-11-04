@@ -3131,9 +3131,10 @@ button {
     padding-bottom: 0.75rem;
 }
 
-/* Home's Colors panel: Colors at the left of its header, the Playstyle
-   chip and the "?" at the right, then one compact bar per color. */
+/* Home's Colors panel: Colors and its "?" centered in its header, the
+   Playstyle chip in the right corner, then one compact bar per color. */
 .home-colors {
+    --home-panel-action-width: 5.4rem;
     min-height: 0;
     padding-bottom: 0;
     text-align: left;
@@ -3141,6 +3142,58 @@ button {
 
 .home-colors > .settings-list-header {
     padding: 0.6rem 1rem;
+}
+
+/* A Home panel header whose title group is centered on the panel, with one
+   action in the right corner. The action leaves the flow, so the group
+   centers on the whole panel rather than on the room beside the action;
+   --home-panel-action-width (the corner action's width, set per panel) is
+   reserved on both sides, so the group stays centered and clear of the
+   action, and the title ellipsizes instead of wrapping when it would not
+   fit. */
+.home-flavor > .settings-list-header.home-panel-header-centered {
+    position: relative;
+    justify-content: center;
+    flex-wrap: nowrap;
+    padding-left: calc(1rem + var(--home-panel-action-width, 0rem) + 0.5rem);
+    padding-right: calc(1rem + var(--home-panel-action-width, 0rem) + 0.5rem);
+}
+
+.home-panel-header-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+    max-width: 100%;
+}
+
+.home-panel-header-title > .settings-list-title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* The chip and the "?" keep the header the height of a plain one. */
+.home-panel-header-title > .stat-chip,
+.home-panel-header-title > .info-button,
+.home-panel-header-title > .skeleton-info-button {
+    flex: none;
+    margin: -0.25rem 0;
+}
+
+.home-panel-header-action {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+}
+
+/* The ghost title is the word's width, not the section label's share. */
+.home-panel-skeleton-title {
+    width: 3.6rem;
+    margin-bottom: 0;
 }
 
 .home-colors > .settings-list-header .btn-action {
@@ -3388,11 +3441,12 @@ button {
     align-self: stretch;
 }
 
-/* Home's Decks panel: the Colors panel's style, Decks at the left of its
-   header with the count chip and All decks at the right, then three tiles
-   across at the Colors panel's row gap. The one row is Create a deck while
-   the user has no deck. */
+/* Home's Decks panel: the Colors panel's style, Decks and the count chip
+   centered in its header with All decks in the right corner, then three
+   tiles across at the Colors panel's row gap. The one row is Create a deck
+   while the user has no deck. */
 .home-decks {
+    --home-panel-action-width: 5.4rem;
     min-height: 0;
     padding-bottom: 0;
     text-align: left;
