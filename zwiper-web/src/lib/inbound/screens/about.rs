@@ -4,15 +4,18 @@
 //! The top panel holds the Version, Website and Privacy policy rows. Under it
 //! a Credits panel holds the Scryfall credit and the Fan Content notice from
 //! `zwipe_core::legal`, then a Changelog panel holds the shared
-//! [`components::Changelog`] as rows: the version filter first, then a
-//! release per row. The history comes from the root's cache, fetched once at
+//! [`components::ChangelogFilters`] as a row, with each release a panel of
+//! its own under it ([`components::ChangelogReleases`]). The history comes
+//! from the root's cache, fetched once at
 //! the start of the visit: a skeleton while it is out, a note if it failed,
 //! with no retry and no compiled fallback.
 //!
 //! What the screen knows and does is `zwipe_ui::screens::about`; this file
 //! draws its state and performs its effects.
 
-use components::{Button, ButtonVariant, Changelog as ChangelogContent};
+use components::{
+    Button, ButtonVariant, ChangelogFilter, ChangelogFilters, ChangelogLook, ChangelogReleases,
+};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use zwipe_core::legal::{FAN_CONTENT_HTML, SCRYFALL_CREDIT_HTML};
@@ -85,6 +88,7 @@ pub fn About() -> Element {
         let screen = model.read();
         (screen.status(), screen.changelog().cloned())
     };
+    let selection = use_signal(|| ChangelogFilter::Latest);
 
     rsx! {
         ScreenFrame { title: about::TITLE, description: Some(DESCRIPTION.to_owned()),
@@ -133,15 +137,24 @@ pub fn About() -> Element {
                         div { class: "settings-list-header",
                             span { class: "settings-list-title", {about::CHANGELOG} }
                         }
-                        match (status, data) {
-                            (Status::Loaded, Some(data)) => rsx! { ChangelogContent { data, rows: true } },
+                        match (status, &data) {
+                            (Status::Loaded, Some(data)) => rsx! {
+                                ChangelogFilters { data: data.clone(), selection, look: ChangelogLook::App }
+                            },
                             (Status::Failed, _) => rsx! {
-                                div { class: "settings-row changelog-row",
+                                div { class: "settings-row changelog-filters-row",
                                     span { class: "chip-note", {about::FAILED} }
                                 }
                             },
-                            (Status::Loading | Status::Loaded, _) => rsx! { ChangelogSkeleton {} },
+                            (Status::Loading | Status::Loaded, _) => rsx! { ChangelogSkeletonChips {} },
                         }
+                    }
+                    match (status, data) {
+                        (Status::Loaded, Some(data)) => rsx! {
+                            ChangelogReleases { data, selection, look: ChangelogLook::App }
+                        },
+                        (Status::Failed, _) => rsx! {},
+                        (Status::Loading | Status::Loaded, _) => rsx! { ChangelogSkeletonPanels {} },
                     }
                 }
             }
@@ -160,10 +173,10 @@ fn RowLabel(label: &'static str, topic: HintTopic) -> Element {
     }
 }
 
-/// The app's ghost of the changelog rows while the visit's fetch is out:
-/// the filter chips, then a release per row.
+/// The chips' ghost while the visit's fetch is out: one row of chip-sized
+/// bars in the Changelog panel.
 #[component]
-fn ChangelogSkeleton() -> Element {
+fn ChangelogSkeletonChips() -> Element {
     rsx! {
         div { class: "settings-row changelog-filters-row",
             div { class: "changelog-skeleton-chips",
@@ -172,14 +185,22 @@ fn ChangelogSkeleton() -> Element {
                 }
             }
         }
-        div { class: "changelog-rows",
+    }
+}
+
+/// The releases' ghost while the fetch is out: a panel per release, its
+/// header a version and a date, its body the bullets.
+#[component]
+fn ChangelogSkeletonPanels() -> Element {
+    rsx! {
+        div { class: "changelog-panels",
             for (c , bullets) in SKELETON_BULLETS.into_iter().enumerate() {
-                div { key: "{c}", class: "settings-row changelog-row",
-                    div { class: "changelog-skeleton-row",
+                div { key: "{c}", class: "settings-list changelog-panel",
+                    div { class: "settings-list-header changelog-skeleton-row",
                         div { class: "skeleton-bar changelog-skeleton-version" }
                         div { class: "skeleton-bar changelog-skeleton-date" }
                     }
-                    div { class: "changelog-skeleton-bullets",
+                    div { class: "changelog-skeleton-bullets changelog-panel-body",
                         for b in 0..bullets {
                             div { key: "{b}", class: "skeleton-bar changelog-skeleton-bullet" }
                         }

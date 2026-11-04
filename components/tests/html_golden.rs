@@ -15,11 +15,12 @@ use std::fs;
 use std::path::PathBuf;
 
 use components::{
-    Bar, BarChart, BarOrientation, Changelog, ColorChart, ColorMap, ColorMapCounts, ColorMapGhost,
-    DeckCharts, DrawOdds, FlippableCardImage, LabelCase,
+    Bar, BarChart, BarOrientation, ChangelogFilter, ChangelogFilters, ChangelogLook,
+    ChangelogReleases, ColorBars, ColorChart, DeckCharts, DrawOdds, FlippableCardImage, LabelCase,
 };
 use dioxus::dioxus_core::NoOpMutations;
 use dioxus::prelude::*;
+use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
 use zwipe_core::http::contracts::changelog::{HttpChangelog, HttpRelease};
 
@@ -56,81 +57,18 @@ fn render(app: fn() -> Element) -> String {
     dioxus_ssr::render(&dom)
 }
 
-const SEED: u64 = 0x5eed_c0de_1234_5678;
-
+/// Six rows: a bar per color at its share, a zero count over an empty track
+/// and the colorless bar last in its neutral fill.
 #[test]
-fn color_map_sample() {
+fn color_bars() {
+    let counts = zwipe_ui::colors::ColorCounts {
+        cards: [180, 200, 0, 190, 80],
+        colorless: 50,
+    };
     golden(
-        "color_map_sample",
+        "color_bars",
         &dioxus_ssr::render_element(rsx! {
-            ColorMap {
-                counts: ColorMapCounts {
-                    cards: [180, 200, 70, 190, 80],
-                    colorless: 189,
-                },
-                seed: SEED,
-            }
-        }),
-    );
-}
-
-#[test]
-fn color_map_small_with_key_action() {
-    golden(
-        "color_map_small",
-        &dioxus_ssr::render_element(rsx! {
-            ColorMap {
-                counts: ColorMapCounts {
-                    cards: [3, 0, 0, 1, 0],
-                    colorless: 1,
-                },
-                seed: 7,
-                key_action: rsx! {
-                    button { class: "btn-action", "Open" }
-                },
-            }
-        }),
-    );
-}
-
-#[test]
-fn color_map_capped() {
-    golden(
-        "color_map_capped",
-        &dioxus_ssr::render_element(rsx! {
-            ColorMap {
-                counts: ColorMapCounts {
-                    cards: [9000, 9000, 9000, 9000, 9000],
-                    colorless: 0,
-                },
-                seed: 42,
-            }
-        }),
-    );
-}
-
-#[test]
-fn color_map_colorless_only() {
-    golden(
-        "color_map_colorless",
-        &dioxus_ssr::render_element(rsx! {
-            ColorMap {
-                counts: ColorMapCounts {
-                    cards: [0; 5],
-                    colorless: 5,
-                },
-                seed: 3,
-            }
-        }),
-    );
-}
-
-#[test]
-fn color_map_ghost() {
-    golden(
-        "color_map_ghost",
-        &dioxus_ssr::render_element(rsx! {
-            ColorMapGhost {}
+            ColorBars { bars: zwipe_ui::colors::bars(&counts) }
         }),
     );
 }
@@ -165,8 +103,10 @@ fn changelog_latest() {
     golden(
         "changelog_latest",
         &render(|| {
+            let selection = use_signal(|| ChangelogFilter::Latest);
             rsx! {
-                Changelog { data: two_years() }
+                ChangelogFilters { data: two_years(), selection }
+                ChangelogReleases { data: two_years(), selection }
             }
         }),
     );
@@ -177,12 +117,24 @@ fn changelog_anchored_with_links() {
     golden(
         "changelog_anchored",
         &render(|| {
+            let selection = use_signal(|| ChangelogFilter::Latest);
             rsx! {
-                Changelog {
-                    data: two_years(),
-                    anchor: "#v1-14-1",
-                    link_versions: true,
-                }
+                ChangelogFilters { data: two_years(), selection, anchor: "#v1-14-1" }
+                ChangelogReleases { data: two_years(), selection, link_versions: true }
+            }
+        }),
+    );
+}
+
+#[test]
+fn changelog_app_panels() {
+    golden(
+        "changelog_app_panels",
+        &render(|| {
+            let selection = use_signal(|| ChangelogFilter::Latest);
+            rsx! {
+                ChangelogFilters { data: two_years(), selection, look: ChangelogLook::App }
+                ChangelogReleases { data: two_years(), selection, look: ChangelogLook::App }
             }
         }),
     );
@@ -193,8 +145,10 @@ fn changelog_anchored_upcoming() {
     golden(
         "changelog_anchored_upcoming",
         &render(|| {
+            let selection = use_signal(|| ChangelogFilter::Latest);
             rsx! {
-                Changelog { data: two_years(), anchor: "v1-16-0" }
+                ChangelogFilters { data: two_years(), selection, anchor: "v1-16-0" }
+                ChangelogReleases { data: two_years(), selection }
             }
         }),
     );
@@ -308,7 +262,7 @@ fn deck_charts_with_role_tags() {
                     type_bars: vec![("land", 36, 100)],
                     category_bars: vec![("ramp", 10, 100)],
                 }
-                ColorChart { color_bars: vec![("W", 12, 100), ("U", 0, 0)] }
+                ColorChart { color_bars: vec![(Some(Color::White), 12, 100), (None, 0, 0)] }
             }
         }),
     );

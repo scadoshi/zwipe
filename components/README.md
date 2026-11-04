@@ -1,10 +1,10 @@
 # components
 
-The Magic pieces of the Zwipe UI, over [orangui](https://github.com/scadoshi/orangui). orangui is the generic Dioxus kit (themes, panels, nav, charts, the entrance effects, the app and site kits); this crate re-exports all of it and adds what needs `zwipe-core`. The logic behind its pieces (the color map's layout, the chart bars, the changelog's filing) comes from `zwipe-ui`, so every client computes the same thing and this crate only draws it. The app (`zwiper`) and the website (`zite`) depend on it and import everything as `components::`. The owner's portfolio and cairn take orangui directly.
+The Magic pieces of the Zwipe UI, over [orangui](https://github.com/scadoshi/orangui). orangui is the generic Dioxus kit (themes, panels, nav, charts, the entrance effects, the app and site kits); this crate re-exports all of it and adds what needs `zwipe-core`. The logic behind its pieces (the color bars, the chart bars, the changelog's filing) comes from `zwipe-ui`, so every client computes the same thing and this crate only draws it. The app (`zwiper`) and the website (`zite`) depend on it and import everything as `components::`. The owner's portfolio and cairn take orangui directly.
 
 ## Components
 
-Here: `CardDetails`, `CardRow`, `CardRoleChips`, `KeywordChips`, `OracleText`, `FlippableCardImage`, `Changelog`, the deck chart family (`BarChart`, `DeckCharts`, `ManaCurve`, `ManaFulfillment`, `DrawOdds`, `ChartLabel`), `ColorMap` with `ColorMapGhost`, and `ZwipeArchitecture`. `Bar`, `ColorMapCounts` and `seed_from_id` are zwipe-ui's, re-exported for these props.
+Here: `CardDetails`, `CardRow`, `CardRoleChips`, `KeywordChips`, `OracleText`, `FlippableCardImage`, `Changelog`, the deck chart family (`BarChart`, `DeckCharts`, `ManaCurve`, `ManaFulfillment`, `DrawOdds`, `ChartLabel`), `ColorBars` with `ColorBarsGhost`, and `ZwipeArchitecture`. `Bar` is zwipe-ui's, re-exported for the charts' props; `ColorBars` takes `zwipe_ui::colors::Bar`s.
 
 From orangui, re-exported whole (`pub use orangui::*`): `ActionBar`, `Banner`, `Button`, `Chip`, `NavBar`, `NavDropdown`, `PageMeta`, `Panel`, `PasswordInput`, `ThemePicker`, the diagram pieces, the entrance figures, the app kit (`BottomSheet`, `PageHeader`, `ThemeSheet`, the hint pieces, the overlay back stack and, behind the `toast` feature, `ToastStack`), the site kit (`use_persisted_theme`, `StatsStrip`, `GalleryFrame`, `GalleryFooter`, the scripts), `HeatGrid`, the chart helpers and the theme model (`ThemeConfig`, `ALLOWED_THEMES`, `COLORBLIND_THEMES`, `display_theme_name`).
 

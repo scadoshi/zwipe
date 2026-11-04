@@ -209,7 +209,7 @@ fn use_screen_state() {
     let cached_my_counts: Signal<Option<CachedMyCounts>> = use_signal(|| None);
     use_context_provider(|| cached_my_counts);
 
-    // Home's Color map panel: the last summary, kept above the router so a
+    // Home's Colors panel: the last summary, kept above the router so a
     // return to Home shows it while the refetch is out (see CachedPlayStyle).
     let cached_play_style: Signal<Option<CachedPlayStyle>> = use_signal(|| None);
     use_context_provider(|| cached_play_style);

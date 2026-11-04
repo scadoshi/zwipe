@@ -5,21 +5,21 @@
 //! orangui items `zwiper` (the app) and `zite` (the site) use, so they keep one
 //! import path, and adds what needs `zwipe-core`: [`CardDetails`], [`CardRow`],
 //! [`CardRoleChips`], [`RoleTags`], [`OtagDef`], [`KeywordChips`],
-//! [`OracleText`], [`FlippableCardImage`], [`Changelog`], the deck charts
-//! ([`BarChart`], [`DeckCharts`], [`ColorChart`], [`ManaCurve`], [`ManaFulfillment`],
+//! [`OracleText`], [`FlippableCardImage`], [`ChangelogFilters`] and
+//! [`ChangelogReleases`], the deck charts ([`BarChart`], [`DeckCharts`], [`ColorChart`], [`ManaCurve`], [`ManaFulfillment`],
 //! [`DrawOdds`], [`ChartLabel`], with [`Fold`] and [`SeeMore`] behind their
-//! long rows), the [`ColorMap`] and [`ZwipeArchitecture`]. The pieces the
+//! long rows), the [`ColorBars`] and [`ZwipeArchitecture`]. The pieces the
 //! two clients' chrome shares sit here too: the [`icons`] module's stroke
 //! paths with [`DockIcon`] and [`EyeIcon`], the dock's [`DockFilter`],
 //! [`DangerZoneAction`], the one-row Danger zone panel, [`MenuSection`],
 //! the main menu's section list, and Home's [`HomeDecks`] and
-//! [`HomeColors`] panels with [`ColorMapEmpty`], the line a color map shows
+//! [`HomeColors`] panels with [`ColorsEmpty`], the line the Colors bars show
 //! before any deck has a card.
 //!
 //! Styling ships as string constants to inline through `document::Style`.
 //! orangui's sheets come through as they are; [`MAGIC_CSS`] holds this crate's
 //! own rules (oracle text, keyword chips, card rows, the flippable card image,
-//! the changelog, the color map, the mana colors and the mana glyph inside a
+//! the changelog, the color bars, the mana colors and the mana glyph inside a
 //! chip). **CSS cascade order
 //! matters:** `THEMES_CSS`, then `COMPONENTS_CSS`, then `MAGIC_CSS`, then
 //! `APP_CSS` or `SITE_CSS`, then the host's own stylesheet, so component rules
@@ -42,7 +42,7 @@ mod card_role_chips;
 mod card_row;
 mod changelog;
 mod charts;
-mod color_map;
+mod color_bars;
 mod danger_zone;
 mod dock_filter;
 mod flippable_card_image;
@@ -60,17 +60,19 @@ pub use architecture::ZwipeArchitecture;
 pub use card_details::{CardDetails, card_face_count};
 pub use card_role_chips::CardRoleChips;
 pub use card_row::CardRow;
-pub use changelog::Changelog;
+pub use changelog::{
+    ChangelogFilters, ChangelogLook, ChangelogReleases, Filter as ChangelogFilter,
+};
 pub use charts::{
     Bar, BarChart, BarOrientation, ChartLabel, ColorChart, DeckCharts, DrawOdds, LabelCase,
     ManaCurve, ManaFulfillment,
 };
-pub use color_map::{ColorMap, ColorMapGhost, mana_var};
+pub use color_bars::{ColorBars, ColorBarsGhost, mana_var};
 pub use danger_zone::DangerZoneAction;
 pub use dock_filter::DockFilter;
 pub use flippable_card_image::{FlippableCardImage, reset_image_ease};
 pub use fold::{FOLD_AT, Fold, SEE_LESS, SEE_MORE, SeeMore, fold_split};
-pub use home_colors::{ColorMapEmpty, HomeColors};
+pub use home_colors::{ColorsEmpty, HomeColors};
 pub use home_decks::HomeDecks;
 pub use icons::{DockIcon, EyeIcon};
 pub use keyword_chips::{KeywordChips, KeywordReminders};
@@ -95,11 +97,8 @@ pub use orangui::{OpenUrlError, open_url, use_in_app_links};
 pub use orangui::{TOAST_CSS, ToastOptions, ToastStack, Toasts, use_toast};
 pub use role_tags::{OtagDef, RoleTags};
 pub use theme::{pip_color_class, theme_from_preferences};
-/// The color map's counts and a player's seed, from zwipe-ui, for the props
-/// [`ColorMap`] takes.
-pub use zwipe_ui::color_map::{ColorMapCounts, seed_from_id};
 
 /// The Magic rules: oracle text, keyword chips, card rows, the flippable card
-/// image, the changelog and the mana glyph inside a chip. Load it after
+/// image, the changelog, the color bars and the mana glyph inside a chip. Load it after
 /// orangui's [`COMPONENTS_CSS`] and before [`APP_CSS`] or [`SITE_CSS`].
 pub const MAGIC_CSS: &str = include_str!("../assets/magic.css");

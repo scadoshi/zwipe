@@ -2,7 +2,7 @@
 //! the app's hint host, and the summary the app caches above the router for
 //! it.
 
-pub(crate) use components::ColorMapEmpty;
+pub(crate) use components::ColorsEmpty;
 use components::HomeColors;
 use dioxus::prelude::*;
 use uuid::Uuid;

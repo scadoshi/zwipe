@@ -76,8 +76,8 @@ pub enum HintTopic {
     DrawOdds,
     /// Home: the Colors bars.
     HomeColors,
-    /// Playstyle: the color map.
-    ColorMap,
+    /// Playstyle: the Colors bars.
+    Colors,
     /// Playstyle: the card roles chart.
     SuggestionRoleChart,
     /// Playstyle: the oracle tags table.
@@ -131,11 +131,10 @@ impl HintTopic {
             Self::Version => "Version",
             Self::TypeChart => "Types",
             Self::RoleChart => "Roles",
-            Self::ColorChart | Self::HomeColors => "Colors",
+            Self::ColorChart | Self::HomeColors | Self::Colors => "Colors",
             Self::ManaCurve => "Mana curve",
             Self::ManaFulfillment => "Mana cost fulfillment",
             Self::DrawOdds => "Draw odds",
-            Self::ColorMap => "Color map",
             Self::SuggestionRoleChart | Self::RoleRates => "Card roles",
             Self::SuggestionTagDecks => "Decks",
             Self::SuggestionTagCards => "Cards",
@@ -249,7 +248,7 @@ impl HintTopic {
                 HintLine { "Mainboard cards by oracle tag, the finer tags under each role. Tap a tag for what it means" }
             },
             Self::ColorChart => rsx! {
-                HintLine { "Mainboard cards by color" }
+                HintLine { "Mainboard cards by color identity; a two-color card counts for both" }
             },
             Self::ManaCurve => rsx! {
                 HintLine { "Nonland mainboard cards by mana value" }
@@ -273,12 +272,10 @@ impl HintTopic {
                     HintBullet { "Playstyle has the full picture" }
                 }
             },
-            Self::ColorMap => rsx! {
+            Self::Colors => rsx! {
                 HintBullets {
-                    HintBullet { "Each tile stands for a share of the colored cards across your decks" }
-                    HintBullet { "Every color grows out from the middle, and the color with the most cards claims the most ground" }
-                    HintBullet { "The shape is generated per player" }
-                    HintBullet { "Colorless cards are in the key below" }
+                    HintBullet { "How many cards across your decks are each color, by color identity, colorless last" }
+                    HintBullet { "A card counts once per deck it is in, and a two-color card counts for both colors" }
                 }
             },
             Self::SuggestionRoleChart => rsx! {

@@ -11,12 +11,14 @@
 use std::collections::BTreeMap;
 
 use dioxus::prelude::*;
+use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::deck::deck_metrics::ManaBalanceRow;
 use zwipe_core::domain::deck::draw_odds;
 /// One bar of a [`BarChart`], zwipe-ui's chart bar, so a client hands the
 /// bars zwipe-ui computes straight to the chart.
 pub use zwipe_ui::activity::Bar;
 
+use crate::color_bars::ColorBars;
 use crate::fold::{FOLD_AT, Fold, SeeMore, fold_split};
 use crate::role_tags::{OtagDef, RoleTags};
 
@@ -486,11 +488,24 @@ fn slug_bars(bars: &[(String, usize, u32)]) -> Vec<Bar> {
         .collect()
 }
 
-/// The deck's cards per color as vertical bars, shown in the Mana section.
+/// The deck's cards per color as [`ColorBars`] under a Colors label, shown
+/// in the Mana section: `DeckMetrics::color_bars` tuples, a color's pip or
+/// colorless, in the spacing of the section's other charts.
 #[component]
-pub fn ColorChart(color_bars: Vec<(&'static str, usize, u32)>, hint: Option<Element>) -> Element {
+pub fn ColorChart(color_bars: Vec<(Option<Color>, usize, u32)>, hint: Option<Element>) -> Element {
+    let bars: Vec<zwipe_ui::colors::Bar> = color_bars
+        .into_iter()
+        .map(|(color, count, pct)| zwipe_ui::colors::Bar {
+            color,
+            count: u32::try_from(count).unwrap_or(u32::MAX),
+            pct,
+        })
+        .collect();
     rsx! {
-        BarChart { label: "Colors", bars: tuple_bars(&color_bars), hint }
+        div { class: "color-chart", style: "display:flex;flex-direction:column;gap:0.35rem;padding:0 0.75rem;",
+            ChartLabel { text: "Colors", hint }
+            ColorBars { bars }
+        }
     }
 }
 
@@ -622,23 +637,38 @@ fn whole_percent(probability: f64) -> u32 {
         .unwrap_or(0)
 }
 
-/// Per-color mana cost fulfillment, rendered flat.
+/// The mana fill a fulfillment row's bar takes, from its W/U/B/R/G letter;
+/// an unknown letter takes the text color.
+fn balance_fill(label: &str) -> &'static str {
+    match label {
+        "W" => "var(--mana-white)",
+        "U" => "var(--mana-blue)",
+        "B" => "var(--mana-black)",
+        "R" => "var(--mana-red)",
+        "G" => "var(--mana-green)",
+        _ => "var(--text-primary)",
+    }
+}
+
+/// Per-color mana cost fulfillment: a [`ColorBars`]-style row per color,
+/// the pip at the left and the track filled in the color's mana fill to the
+/// produced share, then a check when production covers the cost and the
+/// produced over consumed pips.
 #[component]
 pub fn ManaFulfillment(rows: Vec<ManaBalanceRow>, hint: Option<Element>) -> Element {
     if rows.is_empty() {
         return rsx! {};
     }
     rsx! {
-        div { style: "display:flex;flex-direction:column;gap:0.4rem;padding:0 0.75rem;",
+        div { class: "color-chart", style: "display:flex;flex-direction:column;gap:0.4rem;padding:0 0.75rem;",
             ChartLabel { text: "Mana cost fulfillment", hint }
             for ManaBalanceRow { label: color_label, consumed, produced, fill_pct, is_surplus } in rows.iter() {
-                div { style: "display:flex;align-items:center;gap:0.5rem;",
-                    span { style: "width:1ch;font-size:0.75rem;color:var(--text-primary);opacity:0.85;", "{color_label}" }
-                    div { style: "flex:1;height:1rem;background:var(--border-secondary);border-radius:0.15rem;overflow:hidden;",
+                div { class: "color-bar-row",
+                    i { class: "ms ms-{color_label.to_lowercase()} ms-cost" }
+                    div { class: "color-bar-track",
                         div {
-                            style: format!(
-                                "height:100%;width:{fill_pct}%;background:var(--text-primary);opacity:0.65;border-radius:0.15rem;"
-                            ),
+                            class: "color-bar-fill",
+                            style: "width: {fill_pct}%; background-color: {balance_fill(color_label)};",
                         }
                     }
                     span { style: "font-size:0.75rem;color:var(--text-primary);opacity:0.85;width:1.25rem;text-align:center;flex-shrink:0;",

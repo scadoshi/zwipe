@@ -1137,7 +1137,7 @@ body {
     }
 
     .web-playstyle-summary-hero { order: 1; }
-    .web-playstyle-color-map { order: 2; }
+    .web-playstyle-colors { order: 2; }
     .web-playstyle-roles { order: 3; }
     .web-playstyle-tags { order: 4; }
     .web-playstyle-suggested { order: 5; }

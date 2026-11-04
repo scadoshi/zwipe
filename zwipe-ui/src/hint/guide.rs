@@ -39,7 +39,7 @@ impl HintTopic {
             | Self::ManaFulfillment
             | Self::DrawOdds => Some("deck-stats"),
             Self::HomeColors
-            | Self::ColorMap
+            | Self::Colors
             | Self::SuggestionRoleChart
             | Self::SuggestionTagChart
             | Self::SuggestionTagDecks
@@ -132,7 +132,7 @@ mod tests {
         HintTopic::ManaFulfillment,
         HintTopic::DrawOdds,
         HintTopic::HomeColors,
-        HintTopic::ColorMap,
+        HintTopic::Colors,
         HintTopic::SuggestionRoleChart,
         HintTopic::SuggestionTagChart,
         HintTopic::SuggestionTagDecks,

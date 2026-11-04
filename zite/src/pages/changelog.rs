@@ -1,4 +1,4 @@
-use components::{Changelog as ChangelogContent, Panel};
+use components::{ChangelogFilter, ChangelogFilters, ChangelogReleases, Panel};
 use dioxus::prelude::*;
 
 use crate::components::{PageMeta, sleep_ms};
@@ -34,6 +34,8 @@ pub fn Changelog() -> Element {
         });
     });
 
+    let selection = use_signal(|| ChangelogFilter::Latest);
+
     rsx! {
         PageMeta {
             title: "Changelog",
@@ -45,9 +47,10 @@ pub fn Changelog() -> Element {
             div { class: "page-header",
                 Panel { title: "Changelog", title_h1: true,
                     p { class: "tagline", "Every release, newest first." }
+                    ChangelogFilters { selection, anchor: anchor() }
                 }
             }
-            ChangelogContent { anchor: anchor(), link_versions: true }
+            ChangelogReleases { selection, link_versions: true }
         }
         Footer {}
     }

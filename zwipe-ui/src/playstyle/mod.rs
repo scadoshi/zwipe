@@ -16,7 +16,6 @@ use zwipe_core::http::contracts::suggestions::{
 };
 
 use crate::activity::Bar;
-use crate::color_map::ColorMapCounts;
 
 /// Suggestions the list shows; a shorter list after a dropped row refetches.
 pub const LIST_SIZE: usize = 10;
@@ -206,12 +205,6 @@ pub fn profile_summary(profile: &HttpBuilderProfile) -> ProfileSummary {
         color_set,
         color,
     }
-}
-
-/// Whether a color map has anything to draw: a colored or colorless card.
-#[must_use]
-pub fn color_map_has_data(counts: &ColorMapCounts) -> bool {
-    counts.colorless > 0 || counts.cards.iter().any(|n| *n > 0)
 }
 
 /// A deck count as a bar size.

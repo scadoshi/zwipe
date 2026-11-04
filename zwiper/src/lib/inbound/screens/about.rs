@@ -4,7 +4,9 @@
 //! The top panel holds the Version, Website and Privacy policy rows. Under it
 //! a Credits panel holds the Scryfall credit and the Fan Content notice from
 //! `zwipe_core::legal`, then a Changelog panel holds the shared
-//! [`components::Changelog`] as rows, the same history the website shows: the
+//! [`components::ChangelogFilters`] as a row, with each release a panel of
+//! its own under it ([`components::ChangelogReleases`]), the same history the
+//! website shows: the
 //! version filter first, then a release per row.
 //!
 //! The changelog is fetched once in the background at startup and cached for
@@ -17,7 +19,9 @@
 //! What the screen knows and does is `zwipe_ui::screens::about`; this file
 //! draws its state and performs its effects.
 
-use components::{Button, ButtonVariant, Changelog as ChangelogContent};
+use components::{
+    Button, ButtonVariant, ChangelogFilter, ChangelogFilters, ChangelogLook, ChangelogReleases,
+};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use zwipe_core::legal::{FAN_CONTENT_HTML, SCRYFALL_CREDIT_HTML};
@@ -79,6 +83,7 @@ pub fn About() -> Element {
         let screen = model.read();
         (screen.status(), screen.changelog().cloned())
     };
+    let selection = use_signal(|| ChangelogFilter::Latest);
 
     rsx! {
         div { class: "screen",
@@ -135,15 +140,24 @@ pub fn About() -> Element {
                         div { class: "settings-list-header",
                             span { class: "settings-list-title", {about::CHANGELOG} }
                         }
-                        match (status, data) {
-                            (Status::Loaded, Some(data)) => rsx! { ChangelogContent { data, rows: true } },
+                        match (status, &data) {
+                            (Status::Loaded, Some(data)) => rsx! {
+                                ChangelogFilters { data: data.clone(), selection, look: ChangelogLook::App }
+                            },
                             (Status::Failed, _) => rsx! {
-                                div { class: "settings-row changelog-row",
+                                div { class: "settings-row changelog-filters-row",
                                     span { class: "chip-note", {about::FAILED} }
                                 }
                             },
-                            (Status::Loading | Status::Loaded, _) => rsx! { ChangelogSkeleton {} },
+                            (Status::Loading | Status::Loaded, _) => rsx! { ChangelogSkeletonChips {} },
                         }
+                    }
+                    match (status, data) {
+                        (Status::Loaded, Some(data)) => rsx! {
+                            ChangelogReleases { data, selection, look: ChangelogLook::App }
+                        },
+                        (Status::Failed, _) => rsx! {},
+                        (Status::Loading | Status::Loaded, _) => rsx! { ChangelogSkeletonPanels {} },
                     }
                 }
             }
@@ -151,13 +165,10 @@ pub fn About() -> Element {
     }
 }
 
-/// Placeholder shown while the startup changelog fetch is still in flight.
-/// Mirrors the real changelog's rows: the filter chips, then a release per row.
+/// The chips' placeholder while the startup changelog fetch is still in
+/// flight: one row of chip-sized bars in the Changelog panel.
 #[component]
-fn ChangelogSkeleton() -> Element {
-    // Bullet counts per placeholder row, roughly matching a real release.
-    const CARD_BULLETS: &[usize] = &[5, 3, 4];
-
+fn ChangelogSkeletonChips() -> Element {
     rsx! {
         div { class: "settings-row changelog-filters-row",
             div { class: "changelog-skeleton-chips",
@@ -166,14 +177,25 @@ fn ChangelogSkeleton() -> Element {
                 }
             }
         }
-        div { class: "changelog-rows",
+    }
+}
+
+/// The releases' placeholder while the fetch is in flight: a panel per
+/// release, its header a version and a date, its body the bullets.
+#[component]
+fn ChangelogSkeletonPanels() -> Element {
+    // Bullet counts per placeholder panel, roughly matching a real release.
+    const CARD_BULLETS: &[usize] = &[5, 3, 4];
+
+    rsx! {
+        div { class: "changelog-panels",
             for (c , bullets) in CARD_BULLETS.iter().enumerate() {
-                div { key: "{c}", class: "settings-row changelog-row",
-                    div { class: "changelog-skeleton-row",
+                div { key: "{c}", class: "settings-list changelog-panel",
+                    div { class: "settings-list-header changelog-skeleton-row",
                         div { class: "skeleton-bar changelog-skeleton-version" }
                         div { class: "skeleton-bar changelog-skeleton-date" }
                     }
-                    div { class: "changelog-skeleton-bullets",
+                    div { class: "changelog-skeleton-bullets changelog-panel-body",
                         for b in 0..*bullets {
                             div { key: "{b}", class: "skeleton-bar changelog-skeleton-bullet" }
                         }

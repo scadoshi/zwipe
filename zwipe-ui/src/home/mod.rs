@@ -1,6 +1,6 @@
 //! The home screen's figures, scope, flavor card expiry and greeting. The
-//! buy links live in [`crate::buy`] and the color map test in
-//! [`crate::playstyle::color_map_has_data`].
+//! buy links live in [`crate::buy`] and the Colors panel's bars in
+//! [`crate::colors`].
 
 use chrono::{DateTime, Timelike, Utc};
 use zwipe_core::domain::user::User;

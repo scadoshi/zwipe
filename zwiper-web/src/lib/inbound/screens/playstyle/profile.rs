@@ -1,26 +1,27 @@
-//! Playstyle's profile: the Color map, Summary, Card roles and Oracle tags
+//! Playstyle's profile: the Colors, Summary, Card roles and Oracle tags
 //! sections over the suggestions, and their loading ghosts.
 
-use components::{BarChart, BarOrientation, ColorMap, ColorMapEmpty, OtagDef, RoleTags};
+use components::{
+    BarChart, BarOrientation, ColorBars, ColorBarsGhost, ColorsEmpty, OtagDef, RoleTags,
+};
 use dioxus::prelude::*;
-use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::http::contracts::suggestions::HttpBuilderProfile;
 use zwipe_ui::playstyle::{SummaryValue, TagRow, profile_summary, role_bars, role_tags, tag_rows};
 
 use super::chips::IdentityPips;
-use crate::inbound::cards::charts::{ColorMapSkeleton, chart_bars, map_counts, user_seed};
+use crate::inbound::cards::charts::{chart_bars, color_bars};
 use crate::inbound::cards::otag::{OtagDescribe, OtagExamplesOpen};
 use crate::inbound::chrome::hint_topic::{HintTopic, InfoButton};
 use crate::inbound::chrome::section::CollapsibleSection;
 
-/// The Color map section's title, the one open on entry.
-pub(crate) const COLORS_TITLE: &str = "Color map";
+/// The Colors section's title, the one open on entry.
+pub(crate) const COLORS_TITLE: &str = "Colors";
 const SUMMARY_TITLE: &str = "Summary";
 const ROLES_TITLE: &str = "Card roles";
 const TAGS_TITLE: &str = "Oracle tags";
 
-/// What the user builds: one accordion with the Color map open on entry,
+/// What the user builds: one accordion with Colors open on entry,
 /// then Summary, Card roles (a role chart whose roles reveal their tags) and
 /// Oracle tags (the [`TagTable`]). The host wraps it in a
 /// `web-sections-open` box, so a wide window shows every section open, and
@@ -28,10 +29,8 @@ const TAGS_TITLE: &str = "Oracle tags";
 #[component]
 pub fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
     let summary = profile.clone();
-    let session: Signal<Option<Session>> = use_context();
-    let seed = user_seed(session);
     let mut selected_role: Signal<Option<String>> = use_signal(|| None);
-    let counts = profile.color_map.as_ref().and_then(map_counts);
+    let colors = profile.color_map.as_ref().and_then(color_bars);
     let open_section: Signal<Option<String>> = use_signal(|| Some(COLORS_TITLE.to_string()));
     let roles = chart_bars(role_bars(&profile.roles, &profile.tags));
     let tags = tag_rows(&profile.tags);
@@ -52,15 +51,15 @@ pub fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
         }
     });
     rsx! {
-        div { class: "web-playstyle-cell web-playstyle-color-map",
+        div { class: "web-playstyle-cell web-playstyle-colors",
             CollapsibleSection {
                 title: COLORS_TITLE,
                 open_section,
-                header_accessory: rsx! { InfoButton { topic: HintTopic::ColorMap } },
-                if let Some(counts) = counts {
-                    ColorMap { counts, seed }
+                header_accessory: rsx! { InfoButton { topic: HintTopic::Colors } },
+                if let Some(bars) = colors {
+                    ColorBars { bars }
                 } else {
-                    ColorMapEmpty {}
+                    ColorsEmpty {}
                 }
             }
         }
@@ -222,7 +221,7 @@ fn TagTable(rows: Vec<TagRow>) -> Element {
     }
 }
 
-/// The profile while it loads: the Color map section open on its ghost map,
+/// The profile while it loads: the Colors section open on its ghost bars,
 /// then three collapsed section ghosts, Summary's hidden on a wide window
 /// where the hero ghosts it.
 #[component]
@@ -234,7 +233,7 @@ pub fn BuilderProfileSkeleton() -> Element {
                     div { class: "skeleton-bar skeleton-section-label" }
                     div { class: "skeleton-bar skeleton-chip skeleton-info-button" }
                 }
-                ColorMapSkeleton {}
+                ColorBarsGhost {}
             }
             div { class: "web-playstyle-summary-inline",
                 div { class: "skeleton-chart-box",

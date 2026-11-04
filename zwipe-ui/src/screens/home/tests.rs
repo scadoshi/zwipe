@@ -201,7 +201,7 @@ fn a_warm_load_draws_what_is_held_and_skips_fresh_copies() {
     assert!(state.live());
     assert_eq!(
         state.play_style(),
-        PlayStyle::Bars(bars(&ColorMapCounts {
+        PlayStyle::Bars(colors::bars(&ColorCounts {
             cards: [1, 0, 0, 0, 4],
             colorless: 0
         }))
@@ -329,35 +329,6 @@ fn a_late_counts_reply_is_ignored() {
 }
 
 #[test]
-fn the_bars_scale_to_the_largest_count_with_colorless_last() {
-    let counts = ColorMapCounts {
-        cards: [1, 0, 0, 0, 4],
-        colorless: 2,
-    };
-    let rows: Vec<(Option<Color>, u32, u32)> = bars(&counts)
-        .into_iter()
-        .map(|bar| (bar.color, bar.count, bar.pct))
-        .collect();
-    assert_eq!(
-        rows,
-        [
-            (Some(Color::White), 1, 25),
-            (Some(Color::Blue), 0, 0),
-            (Some(Color::Black), 0, 0),
-            (Some(Color::Red), 0, 0),
-            (Some(Color::Green), 4, 100),
-            (None, 2, 50),
-        ]
-    );
-    assert!(
-        bars(&ColorMapCounts::default())
-            .iter()
-            .all(|bar| bar.pct == 0),
-        "nothing to share"
-    );
-}
-
-#[test]
 fn a_deck_tile_reads_its_color_identity_in_wubrg_order() {
     let mut profile = deck_profile("Esper");
     profile.color_identity = vec![
@@ -376,13 +347,13 @@ fn a_deck_tile_reads_its_color_identity_in_wubrg_order() {
 }
 
 #[test]
-fn the_color_map_draws_only_with_decks_and_cards() {
+fn the_colors_draw_only_with_decks_and_cards() {
     for (summary, want) in [
         (summary(0, [1, 0, 0, 0, 0], 0), PlayStyle::Empty),
         (summary(2, [0; 5], 0), PlayStyle::Empty),
         (
             summary(2, [0; 5], 3),
-            PlayStyle::Bars(bars(&ColorMapCounts {
+            PlayStyle::Bars(colors::bars(&ColorCounts {
                 cards: [0; 5],
                 colorless: 3,
             })),

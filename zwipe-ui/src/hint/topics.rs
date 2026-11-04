@@ -69,8 +69,8 @@ pub enum HintTopic {
     DrawOdds,
     /// Home's Colors bars.
     HomeColors,
-    /// Playstyle's color map.
-    ColorMap,
+    /// Playstyle's Colors bars.
+    Colors,
     /// Playstyle's Card roles chart.
     SuggestionRoleChart,
     /// Playstyle's Oracle tags chart.
@@ -127,7 +127,7 @@ impl HintTopic {
         Self::ManaFulfillment,
         Self::DrawOdds,
         Self::HomeColors,
-        Self::ColorMap,
+        Self::Colors,
         Self::SuggestionRoleChart,
         Self::SuggestionTagChart,
         Self::SuggestionTagDecks,
@@ -170,11 +170,10 @@ impl HintTopic {
             Self::OtherTags => "Other tags",
             Self::TypeChart => "Types",
             Self::RoleChart => "Roles",
-            Self::ColorChart | Self::HomeColors => "Colors",
+            Self::ColorChart | Self::HomeColors | Self::Colors => "Colors",
             Self::ManaCurve => "Mana curve",
             Self::ManaFulfillment => "Mana cost fulfillment",
             Self::DrawOdds => "Draw odds",
-            Self::ColorMap => "Color map",
             Self::SuggestionRoleChart | Self::RoleRates => "Card roles",
             Self::SuggestionTagDecks => "Decks",
             Self::SuggestionTagCards => "Cards",
@@ -325,7 +324,9 @@ impl HintTopic {
             Self::OracleTagChart => vec![line(vec![text(
                 "Mainboard cards by oracle tag, the finer tags under each role. Tap a tag for what it means",
             )])],
-            Self::ColorChart => vec![line(vec![text("Mainboard cards by color")])],
+            Self::ColorChart => vec![line(vec![text(
+                "Mainboard cards by color identity; a two-color card counts for both",
+            )])],
             Self::ManaCurve => vec![line(vec![text("Nonland mainboard cards by mana value")])],
             Self::ManaFulfillment => vec![
                 bullet(vec![text(
@@ -358,15 +359,13 @@ impl HintTopic {
                 )]),
                 bullet(vec![text("Playstyle has the full picture")]),
             ],
-            Self::ColorMap => vec![
+            Self::Colors => vec![
                 bullet(vec![text(
-                    "Each tile stands for a share of the colored cards across your decks",
+                    "How many cards across your decks are each color, by color identity, colorless last",
                 )]),
                 bullet(vec![text(
-                    "Every color grows out from the middle, and the color with the most cards claims the most ground",
+                    "A card counts once per deck it is in, and a two-color card counts for both colors",
                 )]),
-                bullet(vec![text("The shape is generated per player")]),
-                bullet(vec![text("Colorless cards are in the key below")]),
             ],
             Self::SuggestionRoleChart => vec![line(vec![text(
                 "How many of your decks have a tag in each role. Tap a role for its tags",

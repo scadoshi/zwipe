@@ -99,20 +99,6 @@ impl DeckMetrics {
         }
     }
 
-    /// 5-letter abbreviation for color distribution labels.
-    pub fn abbreviate_color(label: &str) -> &str {
-        match label {
-            "white" => "white",
-            "blue" => "blue",
-            "black" => "black",
-            "red" => "red",
-            "green" => "green",
-            "multicolor" => "multi",
-            "colorless" => "clrls",
-            _ => label,
-        }
-    }
-
     /// Max-normalized bar height for chart rendering: the tallest bar reads
     /// 100, any nonzero count reads at least 4 (a visible sliver), zero is 0.
     pub fn bar_pct(count: usize, max: usize) -> u32 {
@@ -156,18 +142,25 @@ impl DeckMetrics {
             .collect()
     }
 
-    /// Chart-ready color distribution: `(abbreviated label, count, height pct)`.
-    pub fn color_bars(&self) -> Vec<(&'static str, usize, u32)> {
-        let max = self.color_counts.iter().map(|(_, c)| *c).max().unwrap_or(0);
-        self.color_counts
-            .iter()
-            .map(|(label, count)| {
-                (
-                    Self::abbreviate_color(label),
-                    *count,
-                    Self::bar_pct(*count, max),
-                )
-            })
+    /// The Mana section's color bars: `(color, count, width pct)`, one per
+    /// color in WUBRG order then colorless as `None`, zero counts included,
+    /// the largest count at 100. A card counts once per color of its color
+    /// identity, so a two-color card fills both bars.
+    pub fn color_bars(&self) -> Vec<(Option<Color>, usize, u32)> {
+        let count_of = |wanted: &str| {
+            self.color_counts
+                .iter()
+                .find(|(label, _)| *label == wanted)
+                .map_or(0, |(_, count)| *count)
+        };
+        let bars: Vec<(Option<Color>, usize)> = Color::all()
+            .into_iter()
+            .map(|color| (Some(color), count_of(color_label(color))))
+            .chain([(None, count_of(COLORLESS_LABEL))])
+            .collect();
+        let max = bars.iter().map(|(_, c)| *c).max().unwrap_or(0);
+        bars.into_iter()
+            .map(|(color, count)| (color, count, Self::bar_pct(count, max)))
             .collect()
     }
 
@@ -319,9 +312,10 @@ impl DeckMetrics {
                 nonland_copies += qty_f;
             }
 
-            let color_idx = classify_color(card);
-            if let Some(slot) = color_buckets.get_mut(color_idx) {
-                *slot = slot.saturating_add(qty);
+            for color_idx in color_slots(card) {
+                if let Some(slot) = color_buckets.get_mut(color_idx) {
+                    *slot = slot.saturating_add(qty);
+                }
             }
 
             // Card roles. `card_roles` are server slugs; this compact chart keys off
@@ -645,16 +639,22 @@ const TYPE_LABELS: [&str; 8] = [
     "other",
 ];
 
-/// Chart labels for the color buckets.
-const COLOR_LABELS: [&str; 7] = [
-    "white",
-    "blue",
-    "black",
-    "red",
-    "green",
-    "multicolor",
-    "colorless",
-];
+/// Chart labels for the color buckets: WUBRG, then colorless.
+const COLOR_LABELS: [&str; 6] = ["white", "blue", "black", "red", "green", "colorless"];
+
+/// The [`COLOR_LABELS`] entry for the colorless bucket.
+const COLORLESS_LABEL: &str = "colorless";
+
+/// The [`COLOR_LABELS`] entry for a color's bucket.
+fn color_label(color: Color) -> &'static str {
+    match color {
+        Color::White => "white",
+        Color::Blue => "blue",
+        Color::Black => "black",
+        Color::Red => "red",
+        Color::Green => "green",
+    }
+}
 
 /// Card type classification; first match wins (matches `group_cards.rs` logic).
 fn classify_type(card: &Card) -> usize {
@@ -772,23 +772,23 @@ pub fn deck_price(entries: &[DeckEntry], command_zone: &[Card], currency: PriceC
     mainboard_total_price(entries, currency) + command_zone_total
 }
 
-/// Color identity classification: WUBRG order + multicolor + colorless.
-fn classify_color(card: &Card) -> usize {
+/// The color buckets a card counts in: one per color of its color identity,
+/// so a two-color card counts for both, or the colorless bucket when it has
+/// none.
+fn color_slots(card: &Card) -> Vec<usize> {
     let ci = &card.scryfall_data.color_identity;
     if ci.is_empty() {
-        return 6; // colorless
+        return vec![5];
     }
-    if ci.len() >= 2 {
-        return 5; // multicolor
-    }
-    match ci.first() {
-        Some(Color::White) => 0,
-        Some(Color::Blue) => 1,
-        Some(Color::Black) => 2,
-        Some(Color::Red) => 3,
-        Some(Color::Green) => 4,
-        None => 6,
-    }
+    ci.iter()
+        .map(|color| match color {
+            Color::White => 0,
+            Color::Blue => 1,
+            Color::Black => 2,
+            Color::Red => 3,
+            Color::Green => 4,
+        })
+        .collect()
 }
 
 #[cfg(test)]
@@ -904,14 +904,17 @@ mod tests {
     }
 
     #[test]
-    fn multicolor_classification() {
+    fn a_multicolor_card_counts_once_per_color() {
         let mut entry = make_entry("Atraxa", 1);
         entry.card.scryfall_data.color_identity =
             Colors::from([Color::White, Color::Blue, Color::Black, Color::Green]);
         entry.card.scryfall_data.type_line = Some("Creature — Phyrexian Angel Horror".to_string());
 
         let metrics = DeckMetrics::from_entries(&[entry]);
-        assert_eq!(metrics.color_counts, vec![("multicolor", 1)]);
+        assert_eq!(
+            metrics.color_counts,
+            vec![("white", 1), ("blue", 1), ("black", 1), ("green", 1)]
+        );
     }
 
     #[test]
@@ -936,6 +939,43 @@ mod tests {
         assert_eq!(metrics.cmc_histogram, [0, 4, 0, 0, 0, 0, 0]); // lands excluded
         assert_eq!(metrics.type_counts, vec![("lands", 10), ("instants", 4)]);
         assert_eq!(metrics.color_counts, vec![("red", 4), ("green", 10)]);
+    }
+
+    #[test]
+    fn color_bars_run_wubrg_then_colorless_with_zeros() {
+        let mut bolt = make_entry("Lightning Bolt", 4);
+        bolt.card.scryfall_data.color_identity = Colors::from([Color::Red]);
+        let mut forest = make_entry("Forest", 10);
+        forest.card.scryfall_data.color_identity = Colors::from([Color::Green]);
+        let mut sol_ring = make_entry("Sol Ring", 1);
+        sol_ring.card.scryfall_data.color_identity = Colors::from([]);
+        let mut atraxa = make_entry("Atraxa", 1);
+        atraxa.card.scryfall_data.color_identity = Colors::from([Color::White, Color::Blue]);
+
+        let metrics = DeckMetrics::from_entries(&[bolt, forest, sol_ring, atraxa]);
+        assert_eq!(
+            metrics.color_bars(),
+            vec![
+                (Some(Color::White), 1, 10),
+                (Some(Color::Blue), 1, 10),
+                (Some(Color::Black), 0, 0),
+                (Some(Color::Red), 4, 40),
+                (Some(Color::Green), 10, 100),
+                (None, 1, 10),
+            ],
+            "a two-color card fills both of its bars"
+        );
+        assert_eq!(
+            DeckMetrics::from_entries(&[]).color_bars(),
+            vec![
+                (Some(Color::White), 0, 0),
+                (Some(Color::Blue), 0, 0),
+                (Some(Color::Black), 0, 0),
+                (Some(Color::Red), 0, 0),
+                (Some(Color::Green), 0, 0),
+                (None, 0, 0),
+            ]
+        );
     }
 
     fn tagged(name: &str, qty: i32, by_role: &[(&str, &[&str])]) -> DeckEntry {
