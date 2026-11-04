@@ -58,6 +58,7 @@ Settled with the owner before the per-screen review. A screen breaks one only wh
 ### zwiper-web at phone width
 
 - Below 900px the web matches the app: no panels, bottom sheets for pickers, the theme and filters, and the same header with the hamburger. Wide windows keep zite's centered page and panels.
+- The back arrow shows at every width on zwiper-web since the wide layout lost its bars (owner, 2026-11-04).
 
 ## Web follow-ups
 

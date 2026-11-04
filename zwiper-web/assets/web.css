@@ -62,6 +62,14 @@ body {
     padding-bottom: 5rem;
 }
 
+/* Below the breakpoint a tall card cannot scroll the swipe screen and
+   take the header with it, as in the app. */
+@media (max-width: 899px) {
+    .web-scroll-screen > .screen-content.card-swipe {
+        overflow-y: hidden;
+    }
+}
+
 /* Under the nav a screen has no header bar. Its title stays for assistive
    tech. */
 .web-sr-only {

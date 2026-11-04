@@ -27,10 +27,10 @@ pub(super) struct PageTitle {
 }
 
 /// The nav for a signed-in user over the matched screen. A wide window
-/// shows Decks, Activity, Playstyle, Account, Config and `Community` as
+/// shows Decks, Activity, Playstyle, Account, Settings and `Community` as
 /// pills, the current one lit, with the mark the way Home. Below the
 /// breakpoint the menu is the app's: Decks, Playstyle, Activity and
-/// Commander maybeboard, then `Community`, over the footer row of icons.
+/// Commander maybeboard, over the footer row of icons.
 #[component]
 pub fn Shell() -> Element {
     let route: Route = use_route();
@@ -68,7 +68,7 @@ pub fn Shell() -> Element {
                                 NavLink { to: route_of(section), label: section.label(), current: current == Some(section), open }
                             }
                         }
-                        li {
+                        li { class: "web-nav-wide",
                             CommunityLink { open }
                         }
                     },
@@ -122,7 +122,7 @@ pub fn PublicNav() -> Element {
                             NavLink { current: to == route, to, label, open }
                         }
                     }
-                    li {
+                    li { class: "web-nav-wide",
                         CommunityLink { open }
                     }
                 },
@@ -185,8 +185,9 @@ fn NavTitle(page: Signal<Option<PageTitle>>) -> Element {
 }
 
 /// The Z mark, the app icon's art, in the logo color, linking Home (Login
-/// when signed out, through the auth gate). A wide window's brand; below
-/// the breakpoint the corner holds the back arrow instead.
+/// when signed out, through the auth gate). A wide window's brand, with
+/// the back arrow beside it; below the breakpoint the corner holds the
+/// arrow alone.
 #[component]
 fn NavMark(open: Signal<bool>) -> Element {
     rsx! {
@@ -212,7 +213,6 @@ fn BackButton(back: Option<Back>, mut open: Signal<bool>) -> Element {
     };
     rsx! {
         BackArrow {
-            class: "web-nav-narrow",
             onclick: move |()| {
                 open.set(false);
                 match &back {
