@@ -5,13 +5,12 @@
 //! card's entrance, image easing and the sheets.
 
 use components::{
-    Chip, HintBullet, HintBullets, HintDialog, HintKey, HintLine, TOAST_NORMAL, ToastOptions,
-    Toasts, use_toast,
+    Chip, HintBullet, HintBullets, HintDialog, HintKey, HintLine, ToastOptions, Toasts, use_toast,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use uuid::Uuid;
-use zwipe_client::{ClientError, ZwipeClient};
+use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
@@ -40,6 +39,7 @@ use crate::inbound::components::telemetry::flush_loop;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen, component, screen};
 use crate::inbound::components::{guide_link, ui_toast};
+use crate::inbound::router::Router;
 use crate::inbound::screens::deck::card::components::action_history::AddAction;
 use crate::inbound::screens::deck::card::components::add_stack_cache::{
     AddStackCache, ParkedStack,
@@ -184,19 +184,19 @@ impl Driver {
                 kind,
                 synergy,
             } => usage_buffer.peek().record_pile_end(deck_id, kind, synergy),
-            Effect::Navigate(Destination::Previous) => navigator.go_back(),
+            Effect::Navigate(Destination::Previous) | Effect::Replace(Destination::Previous) => {
+                navigator.go_back();
+            }
+            Effect::Navigate(Destination::DeckList) | Effect::Replace(Destination::DeckList) => {
+                navigator.replace(Router::DeckList {});
+            }
             Effect::Toast(raised) => ui_toast::raise(toast, raised),
         }
     }
 
     /// Fetches the deck quietly.
     fn fetch_deck(self, ticket: Ticket, deck_id: Uuid) {
-        let Self {
-            authed,
-            navigator,
-            toast,
-            ..
-        } = self;
+        let Self { authed, toast, .. } = self;
         spawn(async move {
             // Quiet: the screen works without deck context; telemetry
             // still records the failure. A missing deck is the exception.
@@ -205,19 +205,16 @@ impl Driver {
                     c.fetch_deck(deck_id, &s).await
                 })
                 .await;
-            if let Err(e @ ClientError::NotFound(_)) = &deck {
-                toast.error(
-                    e.to_user_message(),
-                    ToastOptions::default().duration(TOAST_NORMAL),
-                );
-            }
-            self.dispatch(match missing_deck::settle(navigator, deck) {
-                Some(deck) => Action::DeckLoaded {
+            self.dispatch(missing_deck::settle_quiet(
+                toast,
+                deck,
+                |deck| Action::DeckLoaded {
                     ticket,
                     deck: Box::new(deck),
                 },
-                None => Action::Failed { ticket },
-            });
+                Action::Gone { ticket },
+                Action::Failed { ticket },
+            ));
         });
     }
 

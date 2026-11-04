@@ -80,10 +80,12 @@ impl Driver {
                             c.import_deck_cards(deck_id, &text, board, mode, &s).await
                         })
                         .await;
-                    self.dispatch(match missing_deck::settle(navigator, reply) {
-                        Some(result) => Action::Imported { ticket, result },
-                        None => Action::Failed { ticket },
-                    });
+                    self.dispatch(missing_deck::settle(
+                        reply,
+                        |result| Action::Imported { ticket, result },
+                        Action::Gone { ticket },
+                        Action::Failed { ticket },
+                    ));
                 });
             }
             Effect::ImportArchidektDeck {
@@ -101,18 +103,31 @@ impl Driver {
                                 .await
                         })
                         .await;
-                    self.dispatch(match missing_deck::settle(navigator, reply) {
-                        Some(result) => Action::Imported { ticket, result },
-                        None => Action::Failed { ticket },
-                    });
+                    self.dispatch(missing_deck::settle(
+                        reply,
+                        |result| Action::Imported { ticket, result },
+                        Action::Gone { ticket },
+                        Action::Failed { ticket },
+                    ));
                 });
             }
             Effect::ClearUndo(deck_id) => undo_store.clear(deck_id),
             Effect::Toast(raised) => ui_toast::raise(toast, raised),
-            Effect::Navigate(Destination::Deck(deck_id)) => {
-                navigator.push(Router::ViewDeck { deck_id });
+            Effect::Navigate(destination) => {
+                navigator.push(route(destination));
+            }
+            Effect::Replace(destination) => {
+                navigator.replace(route(destination));
             }
         }
+    }
+}
+
+/// The app's route for each destination.
+fn route(destination: Destination) -> Router {
+    match destination {
+        Destination::Deck(deck_id) => Router::ViewDeck { deck_id },
+        Destination::DeckList => Router::DeckList {},
     }
 }
 

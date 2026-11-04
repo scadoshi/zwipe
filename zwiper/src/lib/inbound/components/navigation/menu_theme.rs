@@ -101,13 +101,13 @@ pub fn MenuTheme(open: Signal<bool>) -> Element {
     let is_dark = theme_config.read().is_dark;
     rsx! {
         button {
-            class: "btn-action app-nav-icon",
+            class: "btn-action nav-icon",
             "aria-label": "Theme",
             onclick: move |_| driver.dispatch(Action::OpenThemes),
             DockIcon { path: PALETTE }
         }
         button {
-            class: "btn-action app-nav-icon",
+            class: "btn-action nav-icon",
             "aria-label": if is_dark { "Switch to light" } else { "Switch to dark" },
             onclick: move |_| {
                 let shown = theme_of(theme_config.peek().clone());

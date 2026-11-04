@@ -71,6 +71,28 @@ impl Driver {
     }
 
     /// Performs one effect, feeding any reply back through [`Self::dispatch`].
+    /// Fetches Edit's deck; a gone deck is [`Action::Gone`].
+    fn fetch_deck(self, ticket: Ticket, deck_id: Uuid) {
+        let authed = self.authed;
+        spawn(async move {
+            // try_run reports a failure and raises its error toast.
+            let reply = authed
+                .try_run("load_deck", |c, s| async move {
+                    c.fetch_deck(deck_id, &s).await
+                })
+                .await;
+            self.dispatch(missing_deck::settle(
+                reply,
+                |deck| Action::Loaded {
+                    ticket,
+                    profile: Box::new(deck.deck_profile),
+                },
+                Action::Gone { ticket },
+                Action::Failed { ticket },
+            ));
+        });
+    }
+
     fn perform(self, effect: Effect) {
         let authed = self.authed;
         let client = self.client;
@@ -83,23 +105,7 @@ impl Driver {
                     self.hint_open,
                 );
             }
-            Effect::FetchDeck { ticket, deck_id } => {
-                spawn(async move {
-                    // try_run reports a failure and raises its error toast.
-                    let reply = authed
-                        .try_run("load_deck", |c, s| async move {
-                            c.fetch_deck(deck_id, &s).await
-                        })
-                        .await;
-                    self.dispatch(match missing_deck::settle(self.navigator, reply) {
-                        Some(deck) => Action::Loaded {
-                            ticket,
-                            profile: Box::new(deck.deck_profile),
-                        },
-                        None => Action::Failed { ticket },
-                    });
-                });
-            }
+            Effect::FetchDeck { ticket, deck_id } => self.fetch_deck(ticket, deck_id),
             Effect::FetchCard {
                 ticket,
                 slot,
@@ -166,10 +172,18 @@ impl Driver {
                     });
                 });
             }
-            Effect::Navigate(Destination::Previous) => self.navigator.go_back(),
-            Effect::Navigate(Destination::Deck(deck_id)) => {
-                self.navigator.push(Router::ViewDeck { deck_id });
-            }
+            Effect::Navigate(destination) => match route(destination) {
+                Some(route) => {
+                    self.navigator.push(route);
+                }
+                None => self.navigator.go_back(),
+            },
+            Effect::Replace(destination) => match route(destination) {
+                Some(route) => {
+                    self.navigator.replace(route);
+                }
+                None => self.navigator.go_back(),
+            },
             Effect::Toast(toast) => ui_toast::raise(self.toast, toast),
         }
     }
@@ -227,6 +241,15 @@ impl Driver {
                 Err(e) => tracing::warn!("partner autofill search failed: {e}"),
             }
         });
+    }
+}
+
+/// The route a destination opens, or `None` for the screen before this one.
+fn route(destination: Destination) -> Option<Router> {
+    match destination {
+        Destination::Previous => None,
+        Destination::Deck(deck_id) => Some(Router::ViewDeck { deck_id }),
+        Destination::DeckList => Some(Router::DeckList {}),
     }
 }
 

@@ -85,6 +85,8 @@ pub const NO_MATCHES: &str = "No cards match your filters";
 pub enum Destination {
     /// Wherever the user came from, from Back.
     Previous,
+    /// The deck list, in place of a screen whose deck is gone.
+    DeckList,
 }
 
 /// Which board the stack trims.
@@ -201,6 +203,11 @@ pub enum Action {
         /// The ticket from the request this answers.
         ticket: Ticket,
     },
+    /// The request holding `ticket` found no deck: the server no longer has it. The client has already reported it and raised its toast.
+    Gone {
+        /// The ticket from the request this answers.
+        ticket: Ticket,
+    },
     /// The client's card filter was applied: the stack is built again from the first card.
     Filter(CardQueryBuilder),
     /// Picks the board to trim; the stack is built again from the first card.
@@ -314,6 +321,8 @@ pub enum Effect {
     Enter(Direction),
     /// Goes to this screen.
     Navigate(Destination),
+    /// Goes to this screen in place of the current one, so Back skips a screen with nothing left to show.
+    Replace(Destination),
     /// Raises this toast.
     Toast(Toast),
 }
@@ -438,6 +447,7 @@ impl State {
                 Vec::new()
             }
             Action::Failed { ticket } => self.failed(ticket),
+            Action::Gone { ticket } => self.gone(ticket),
             Action::Filter(filter) => {
                 self.filter = filter;
                 self.rerun();
@@ -501,6 +511,12 @@ impl State {
     }
 
     /// Settles a failed request.
+    fn gone(&mut self, ticket: Ticket) -> Vec<Effect> {
+        let mut effects = self.failed(ticket);
+        effects.push(Effect::Replace(Destination::DeckList));
+        effects
+    }
+
     fn failed(&mut self, ticket: Ticket) -> Vec<Effect> {
         let Some(deck_id) = self.deck_id else {
             return Vec::new();

@@ -135,19 +135,12 @@ button {
  ==================== */
 
 /* The kit's .action-dock is the floating bar; the screen's content ends
-   with room to scroll its last row clear of it. */
+   with room to scroll its last row clear of it. The room goes through
+   --content-pad-bottom rather than the kit's soft 5rem, so the screen's own
+   trailing padding adds the home indicator's inset to it, and a swipe
+   screen's bottom row asks for the same room. */
 .screen:has(> .action-dock, > .swipe-bottom-row) > .screen-content {
     --content-pad-bottom: 5rem;
-}
-
-/* A text Button floating in a dock (Swipe, Filter, Cards): the bar is its
-   chrome. */
-.action-dock > .btn-action {
-    min-height: 2.4rem;
-    margin: 0.3rem 0;
-    border: none;
-    box-shadow: none;
-    background: transparent;
 }
 
 /* A swipe screen's bottom row: its pile chips on the left, compact, and the
@@ -230,15 +223,8 @@ button {
     gap: 0.4rem;
 }
 
-/* An icon in a button the height of its text siblings. */
-.btn-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.share-icon {
-    /* Every icon in an icon button: share, edit, clone. */
+/* The header row's icons, edit, clone and share, each in a kit .btn-icon. */
+.profile-icon {
     display: block;
     width: 1.1em;
     height: 1.1em;
@@ -284,10 +270,6 @@ button {
 }
 
 /* ==================
-  form submit
- ==================== */
-
-/* ==================
   list header actions
  ==================== */
 
@@ -314,13 +296,8 @@ button {
 
 /* The header sits over the top of the screen, under the status bar strip,
    and header_hide.js slides it up behind that strip as the content scrolls
-   down. Its height is fixed (the bar's 0.5rem padding around a 1.7rem row,
-   the corner buttons' height, and its 1px rule), so each screen's scroll area
-   opens with a spacer that tall and nothing moves at rest. */
-.screen {
-    --app-nav-h: calc(2.7rem + 1px);
-}
-
+   down. Its height is the kit's --app-nav-h, and the kit opens each screen's
+   scroll area with a spacer that tall. */
 .screen > .app-nav {
     position: absolute;
     top: env(safe-area-inset-top, 0px);
@@ -334,19 +311,6 @@ button {
    which then covered only the bar, so a tap outside the menu missed it. */
 .screen > .app-nav:has(.nav-panel-open) {
     transform: none !important;
-}
-
-/* No footer sits over the home indicator any more, so the kit's band behind
-   it goes and the backdrop runs to the bottom edge. */
-.screen::after {
-    display: none;
-}
-
-.screen > .app-nav ~ .screen-content::before {
-    content: "";
-    display: block;
-    flex: 0 0 var(--app-nav-h);
-    width: 100%;
 }
 
 /* The status bar strip (orangui's .screen::before) stays over the header as it
@@ -468,55 +432,19 @@ button {
     transform: none !important;
 }
 
-/* The menu's footer row inside the kit's solid trailing band: the ! at one
-   end and Log out at the other. */
-.app-nav-footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding-bottom: 0.6rem;
-}
-
-/* The ! and, signed in, the Home, Account, Settings and About icons, then
-   the Theme paintbrush and the mode's sun or moon, one group at the footer's
-   left end. */
-.app-nav-footer-group {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-}
-
+/* The menu's footer is the kit's .nav-trailing-row: the ! and, signed in,
+   the Home, Account, Settings and About icons with the Theme palette and
+   the mode's sun or moon at one end, and Log out at the other. The two
+   text buttons sit at the icons' height and fade. */
 .app-nav-support,
-.app-nav-logout,
-.app-nav-icon {
+.app-nav-logout {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     height: 1.7rem;
     padding: 0.2rem 0.6rem;
     font-size: 0.85rem;
-    opacity: 0.7;
-}
-
-/* An icon button is as wide as the !, and the one for the screen on view
-   is lit the way the list's entry is. The kit's lit nav-link style reaches
-   only the list, so the footer carries its own. */
-.app-nav-icon {
-    width: 2.1rem;
-    padding: 0;
-}
-
-.app-nav-icon .action-dock-icon,
-.app-nav-icon .mode-icon {
-    width: 1.1em;
-    height: 1.1em;
-    vertical-align: 0;
-}
-
-.app-nav-icon.active {
-    opacity: 1;
-    color: var(--accent-primary);
-    border-color: var(--accent-primary);
+    opacity: var(--fade-corner);
 }
 
 /* ==================
@@ -1021,8 +949,7 @@ button {
 }
 
 /* .btn-action (Button Action) is in the shared components.css and the header
-   corners in the shared app.css. The other modifiers (.btn-action-eye,
-   .btn-action-clear) stay here. */
+   corners in the shared app.css. The .btn-action-eye modifier stays here. */
 .filter-dot {
     width: 6px;
     height: 6px;
@@ -1066,11 +993,6 @@ button {
     align-items: center;
     justify-content: center;
     align-self: stretch;
-}
-
-/* .btn-action:disabled, .btn-danger and .btn-action-danger are in components.css. */
-.btn-action-clear {
-    animation: row-enter 0.2s ease-out both;
 }
 
 /* ===========================
@@ -2081,24 +2003,6 @@ button {
     display: flex;
     flex-direction: column;
     gap: 1rem;
-}
-
-/* An outcome under the hero, as wide as the hero and one panel gap below it.
-   Its title wears the outcome: the success green. Not a link, so it keeps its
-   resting border under a finger. */
-.outcome-success {
-    width: 100%;
-    max-width: 26rem;
-    padding: 0 1rem;
-    margin-top: var(--panel-gap);
-}
-
-.outcome-success .panel-card:hover {
-    border-color: var(--border-secondary);
-}
-
-.outcome-success .panel-title {
-    color: var(--color-success);
 }
 
 .home-hero .hero-head {
@@ -3862,11 +3766,6 @@ button {
 
 /* Universes Beyond sheet: grayed franchise chips until the hide toggle is on,
    and short explanatory notes under the title and section label. */
-.pref-row:disabled {
-    opacity: 0.45;
-    cursor: default;
-}
-
 .ub-chips-disabled {
     opacity: 0.45;
     pointer-events: none;

@@ -124,7 +124,7 @@ pub const DELETE: &str = "Delete";
 /// Where an action sends the user. The client maps each to its own route.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Destination {
-    /// The deck list, from Back and in place of a deleted deck.
+    /// The deck list, from Back and in place of a deleted or gone deck.
     DeckList,
     /// Edit deck for this deck.
     EditDeck(Uuid),
@@ -318,6 +318,11 @@ pub enum Action {
     /// The request holding `ticket` failed. The client has already reported it and raised its error toast.
     Failed {
         /// The ticket from the effect this answers.
+        ticket: Ticket,
+    },
+    /// The request holding `ticket` found no deck: the server no longer has it. The client has already reported it and raised its toast.
+    Gone {
+        /// The ticket from the request this answers.
         ticket: Ticket,
     },
     /// Picks the currency the Budget section's running prices read in.
@@ -703,6 +708,10 @@ impl State {
             Action::Failed { ticket } => {
                 self.failed(ticket);
                 Vec::new()
+            }
+            Action::Gone { ticket } => {
+                self.failed(ticket);
+                vec![Effect::Replace(Destination::DeckList)]
             }
             Action::PickCurrency(currency) => {
                 self.currency = currency;

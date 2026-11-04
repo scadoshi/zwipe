@@ -67,13 +67,15 @@ impl Driver {
                             c.fetch_deck(deck_id, &s).await
                         })
                         .await;
-                    self.dispatch(match missing_deck::settle(navigator, reply) {
-                        Some(deck) => Action::Loaded {
+                    self.dispatch(missing_deck::settle(
+                        reply,
+                        |deck| Action::Loaded {
                             ticket,
                             deck: Box::new(deck),
                         },
-                        None => Action::Failed { ticket },
-                    });
+                        Action::Gone { ticket },
+                        Action::Failed { ticket },
+                    ));
                 });
             }
             Effect::Copy { text, done } => {
@@ -84,10 +86,21 @@ impl Driver {
                 document::eval(&js);
                 ui_toast::raise(toast, done);
             }
-            Effect::Navigate(Destination::Deck(deck_id)) => {
-                navigator.push(Router::ViewDeck { deck_id });
+            Effect::Navigate(destination) => {
+                navigator.push(route(destination));
+            }
+            Effect::Replace(destination) => {
+                navigator.replace(route(destination));
             }
         }
+    }
+}
+
+/// The app's route for each destination.
+fn route(destination: Destination) -> Router {
+    match destination {
+        Destination::Deck(deck_id) => Router::ViewDeck { deck_id },
+        Destination::DeckList => Router::DeckList {},
     }
 }
 

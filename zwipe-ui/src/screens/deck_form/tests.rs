@@ -194,6 +194,16 @@ fn edit_loads_the_deck_then_its_command_zone() {
 }
 
 #[test]
+fn a_gone_deck_is_replaced_by_the_deck_list() {
+    let (mut state, ticket) = edit_loading(Uuid::new_v4());
+    assert!(matches!(
+        state.update(Action::Gone { ticket }).as_slice(),
+        [Effect::Replace(Destination::DeckList)]
+    ));
+    assert_eq!(state.status(), Status::Failed);
+}
+
+#[test]
 fn a_failed_deck_load_shows_the_failure_line() {
     let (mut state, ticket) = edit_loading(Uuid::new_v4());
     assert!(state.update(Action::Failed { ticket }).is_empty());

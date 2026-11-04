@@ -210,6 +210,8 @@ pub enum Destination {
     AddCards(Uuid),
     /// Remove cards for this deck.
     RemoveCards(Uuid),
+    /// The deck list, in place of a screen whose deck is gone.
+    DeckList,
 }
 
 /// Which write a request is, for the client's telemetry name and its reporting.
@@ -301,6 +303,11 @@ pub enum Action {
     },
     /// The request holding `ticket` failed. The client has already reported it, and raised its error toast unless the request was quiet.
     Failed {
+        /// The ticket from the request this answers.
+        ticket: Ticket,
+    },
+    /// The request holding `ticket` found no deck: the server no longer has it. The client has already reported it and raised its toast.
+    Gone {
         /// The ticket from the request this answers.
         ticket: Ticket,
     },
@@ -516,6 +523,8 @@ pub enum Effect {
     OpenPrintings,
     /// Goes to this screen.
     Navigate(Destination),
+    /// Goes to this screen in place of the current one, so Back skips a screen with nothing left to show.
+    Replace(Destination),
     /// Raises this toast.
     Toast(Toast),
 }
@@ -699,6 +708,7 @@ impl State {
                 Vec::new()
             }
             Action::Failed { ticket } => self.failed(ticket),
+            Action::Gone { ticket } => self.gone(ticket),
             Action::Filter(filter) => {
                 self.filter = *filter;
                 Vec::new()
@@ -833,6 +843,12 @@ impl State {
             )));
         }
         effects.push(Effect::Refilter);
+        effects
+    }
+
+    fn gone(&mut self, ticket: Ticket) -> Vec<Effect> {
+        let mut effects = self.failed(ticket);
+        effects.push(Effect::Replace(Destination::DeckList));
         effects
     }
 

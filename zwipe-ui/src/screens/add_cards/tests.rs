@@ -281,6 +281,25 @@ fn a_late_search_reply_is_ignored() {
 }
 
 #[test]
+fn a_gone_deck_is_replaced_by_the_deck_list() {
+    let built = commander_deck(&[]);
+    let mut state = State::new();
+    let effects = state.update(Action::Load {
+        deck_id: built.deck_profile.id,
+        filter: None,
+        parked: None,
+    });
+    let Some(Effect::FetchDeck { ticket, .. }) = effects.get(1) else {
+        panic!("the deck is fetched: {effects:?}");
+    };
+    assert_eq!(
+        state.update(Action::Gone { ticket: *ticket }),
+        [Effect::Replace(Destination::DeckList)]
+    );
+    assert!(!state.is_deck_loaded());
+}
+
+#[test]
 fn a_failed_search_stops_loading() {
     let (mut state, _) = with_deck(&commander_deck(&[]));
     let ticket = ticket_of(&state.update(Action::Filter(state.filter().clone())));

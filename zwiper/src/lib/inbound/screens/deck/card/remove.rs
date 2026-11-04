@@ -38,6 +38,7 @@ use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen, component, screen};
 use crate::inbound::components::{guide_link, ui_toast};
+use crate::inbound::router::Router;
 use crate::inbound::screens::deck::card::components::undo_log::{UndoAction, UndoStore};
 use crate::inbound::screens::deck::card::filter::card_filter_sheet::CardFilterSheet;
 use crate::inbound::screens::deck::card::filter::deck_cards::DeckCards;
@@ -169,7 +170,12 @@ impl Driver {
                 undo_store.push(deck_id, from_shared(action));
             }
             Effect::Enter(side) => entering.set(Some(direction(side))),
-            Effect::Navigate(Destination::Previous) => navigator.go_back(),
+            Effect::Navigate(Destination::Previous) | Effect::Replace(Destination::Previous) => {
+                navigator.go_back();
+            }
+            Effect::Navigate(Destination::DeckList) | Effect::Replace(Destination::DeckList) => {
+                navigator.replace(Router::DeckList {});
+            }
             Effect::Toast(raised) => ui_toast::raise(toast, raised),
         }
     }
@@ -178,7 +184,6 @@ impl Driver {
     fn fetch_deck(self, ticket: Ticket, deck_id: Uuid) {
         let Self {
             authed,
-            navigator,
             mut deck_cards_for_filter,
             ..
         } = self;
@@ -188,16 +193,24 @@ impl Driver {
                     c.fetch_deck(deck_id, &s).await
                 })
                 .await;
-            let Some(deck) = missing_deck::settle(navigator, deck) else {
-                self.dispatch(Action::Failed { ticket });
-                return;
-            };
-            deck_cards_for_filter.set(deck.entries.iter().map(|e| e.card.clone()).collect());
-            self.dispatch(Action::Loaded {
-                ticket,
-                deck: Box::new(deck),
-            });
-            self.bump_filter();
+            let action = missing_deck::settle(
+                deck,
+                |deck| {
+                    deck_cards_for_filter
+                        .set(deck.entries.iter().map(|e| e.card.clone()).collect());
+                    Action::Loaded {
+                        ticket,
+                        deck: Box::new(deck),
+                    }
+                },
+                Action::Gone { ticket },
+                Action::Failed { ticket },
+            );
+            let loaded = matches!(action, Action::Loaded { .. });
+            self.dispatch(action);
+            if loaded {
+                self.bump_filter();
+            }
         });
     }
 

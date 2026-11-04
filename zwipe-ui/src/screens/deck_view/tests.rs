@@ -199,6 +199,16 @@ fn a_failed_commander_leaves_the_profile_shown() {
 }
 
 #[test]
+fn a_gone_deck_is_replaced_by_the_deck_list() {
+    let (mut state, ticket, _) = loading(&deck_profile("Gone"));
+    assert_eq!(
+        state.update(Action::Gone { ticket }),
+        [Effect::Replace(Destination::DeckList)]
+    );
+    assert_eq!(state.status(), Status::Failed);
+}
+
+#[test]
 fn a_failed_profile_reads_could_not_load() {
     let profile = deck_profile("Gone");
     let (mut state, ticket, _) = loading(&profile);

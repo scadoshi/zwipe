@@ -187,15 +187,20 @@ impl Driver {
         self.dispatch(reply.map_or(Action::Failed { ticket }, landed));
     }
 
-    /// [`Self::settle`] for a fetch of the deck itself: a not-found reply
-    /// leaves for the deck list instead.
+    /// [`Self::settle`] for a fetch of the deck itself: a not-found reply is
+    /// [`Action::Gone`].
     fn settle_deck<T>(
         self,
         ticket: Ticket,
         reply: Result<T, ClientError>,
         landed: impl FnOnce(T) -> Action,
     ) {
-        self.settle(ticket, missing_deck::settle(self.navigator, reply), landed);
+        self.dispatch(missing_deck::settle(
+            reply,
+            landed,
+            Action::Gone { ticket },
+            Action::Failed { ticket },
+        ));
     }
 
     fn fetch_profile(self, ticket: Ticket, deck_id: Uuid) {
@@ -876,7 +881,7 @@ fn ActionPanel(
 fn EditIcon() -> Element {
     rsx! {
         svg {
-            class: "share-icon",
+            class: "profile-icon",
             view_box: "0 0 24 24",
             xmlns: "http://www.w3.org/2000/svg",
             "aria-hidden": "true",
@@ -891,7 +896,7 @@ fn EditIcon() -> Element {
 fn CloneIcon() -> Element {
     rsx! {
         svg {
-            class: "share-icon",
+            class: "profile-icon",
             view_box: "0 0 24 24",
             xmlns: "http://www.w3.org/2000/svg",
             "aria-hidden": "true",
@@ -906,7 +911,7 @@ fn CloneIcon() -> Element {
 fn ShareIcon() -> Element {
     rsx! {
         svg {
-            class: "share-icon",
+            class: "profile-icon",
             view_box: "0 0 24 24",
             xmlns: "http://www.w3.org/2000/svg",
             "aria-hidden": "true",

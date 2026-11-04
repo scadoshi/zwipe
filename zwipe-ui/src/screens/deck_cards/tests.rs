@@ -177,6 +177,16 @@ fn the_hint_waits_for_the_first_card() {
 }
 
 #[test]
+fn a_gone_deck_is_replaced_by_the_deck_list() {
+    let (mut state, _, ticket, _) = loading(blank());
+    assert!(matches!(
+        state.update(Action::Gone { ticket }).as_slice(),
+        [Effect::Replace(Destination::DeckList)]
+    ));
+    assert!(!state.is_loaded());
+}
+
+#[test]
 fn a_failed_load_keeps_the_skeletons() {
     let (mut state, _, ticket, _) = loading(blank());
     assert!(state.update(Action::Failed { ticket }).is_empty());

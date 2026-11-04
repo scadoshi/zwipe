@@ -185,6 +185,16 @@ fn a_loaded_deck_shows_its_main_board() {
 }
 
 #[test]
+fn a_gone_deck_is_replaced_by_the_deck_list() {
+    let (mut state, ticket) = loading(&deck_profile("Trim"));
+    assert_eq!(
+        state.update(Action::Gone { ticket }),
+        [Effect::Replace(Destination::DeckList)]
+    );
+    assert_eq!(state.status(), Status::Failed);
+}
+
+#[test]
 fn a_failed_load_says_so() {
     let (mut state, ticket) = loading(&deck_profile("Trim"));
     assert_eq!(state.update(Action::Failed { ticket }), NOTHING);

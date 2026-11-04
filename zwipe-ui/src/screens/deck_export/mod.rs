@@ -39,6 +39,8 @@ pub const COPIED: &str = "Copied to clipboard";
 pub enum Destination {
     /// The deck view for this deck, from Back.
     Deck(Uuid),
+    /// The deck list, in place of a screen whose deck is gone.
+    DeckList,
 }
 
 /// One board chip.
@@ -95,6 +97,11 @@ pub enum Action {
         /// The ticket from the [`Effect::FetchDeck`] this answers.
         ticket: Ticket,
     },
+    /// The request holding `ticket` found no deck: the server no longer has it. The client has already reported it and raised its toast.
+    Gone {
+        /// The ticket from the [`Effect::FetchDeck`] this answers.
+        ticket: Ticket,
+    },
     /// Turns a board on or off under the at-least-one rule.
     Toggle(Board),
     /// Copies the decklist. Does nothing until the deck has loaded.
@@ -124,6 +131,8 @@ pub enum Effect {
     },
     /// Goes to this screen.
     Navigate(Destination),
+    /// Goes to this screen in place of the current one, so Back skips a screen with nothing left to show.
+    Replace(Destination),
 }
 
 /// The deck as the last fetch left it.
@@ -189,6 +198,12 @@ impl State {
                 if self.tickets.is_current(ticket) {
                     self.load = Load::Failed;
                 }
+            }
+            Action::Gone { ticket } => {
+                if self.tickets.is_current(ticket) {
+                    self.load = Load::Failed;
+                }
+                return vec![Effect::Replace(Destination::DeckList)];
             }
             Action::Toggle(board) => match board {
                 Board::Deck => self.boards.toggle_deck(),

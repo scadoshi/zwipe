@@ -225,13 +225,18 @@ impl Driver {
             }
             Effect::Collapse => expanded_card.set(None),
             Effect::OpenPrintings => printing_sheet_open.set(true),
-            Effect::Navigate(Destination::Previous) => navigator.go_back(),
-            Effect::Navigate(Destination::AddCards(deck_id)) => {
-                navigator.push(Router::AddDeckCard { deck_id });
-            }
-            Effect::Navigate(Destination::RemoveCards(deck_id)) => {
-                navigator.push(Router::RemoveDeckCard { deck_id });
-            }
+            Effect::Navigate(destination) => match route(destination) {
+                Some(route) => {
+                    navigator.push(route);
+                }
+                None => navigator.go_back(),
+            },
+            Effect::Replace(destination) => match route(destination) {
+                Some(route) => {
+                    navigator.replace(route);
+                }
+                None => navigator.go_back(),
+            },
             Effect::Toast(t) => ui_toast::raise(toast, t),
         }
     }
@@ -382,9 +387,7 @@ impl Driver {
     /// keep their tolerant handling inside. The profile goes to the model as
     /// soon as it lands, so the header draws before the cards.
     fn fetch_deck(self, ticket: Ticket, deck_id: Uuid) {
-        let Self {
-            authed, navigator, ..
-        } = self;
+        let Self { authed, .. } = self;
         spawn(async move {
             let loaded = authed
                 .try_run("load_deck", |c, s| async move {
@@ -403,15 +406,27 @@ impl Driver {
                     Ok((deck, zone))
                 })
                 .await;
-            self.dispatch(match missing_deck::settle(navigator, loaded) {
-                Some((deck, zone)) => Action::Loaded {
+            self.dispatch(missing_deck::settle(
+                loaded,
+                |(deck, zone)| Action::Loaded {
                     ticket,
                     deck: Box::new(deck),
                     zone: Box::new(zone),
                 },
-                None => Action::Failed { ticket },
-            });
+                Action::Gone { ticket },
+                Action::Failed { ticket },
+            ));
         });
+    }
+}
+
+/// The route a destination opens, or `None` for the screen before this one.
+fn route(destination: Destination) -> Option<Router> {
+    match destination {
+        Destination::Previous => None,
+        Destination::AddCards(deck_id) => Some(Router::AddDeckCard { deck_id }),
+        Destination::RemoveCards(deck_id) => Some(Router::RemoveDeckCard { deck_id }),
+        Destination::DeckList => Some(Router::DeckList {}),
     }
 }
 

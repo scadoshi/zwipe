@@ -207,7 +207,7 @@ fn MenuIcon(section: Section, current: bool, mut open: Signal<bool>) -> Element 
     let nav = use_navigator();
     rsx! {
         button {
-            class: if current { "btn-action app-nav-icon nav-link active" } else { "btn-action app-nav-icon nav-link" },
+            class: if current { "btn-action nav-icon nav-link active" } else { "btn-action nav-icon nav-link" },
             "aria-label": section.label(),
             onclick: move |_| {
                 if section.route() == route {
@@ -234,8 +234,8 @@ pub fn MenuFooter(open: Signal<bool>) -> Element {
     let signed_in = session.read().is_some();
     let current = Section::of(&route);
     rsx! {
-        div { class: "app-nav-footer",
-            div { class: "app-nav-footer-group",
+        div { class: "nav-trailing-row",
+            div { class: "nav-trailing-group",
                 SupportButton {}
                 if signed_in {
                     for section in Section::FOOTER {

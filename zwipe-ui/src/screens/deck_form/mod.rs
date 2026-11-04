@@ -169,6 +169,8 @@ pub enum Destination {
     Previous,
     /// The deck view for the deck with this id: Edit's Back, and after either save.
     Deck(Uuid),
+    /// The deck list, in place of a screen whose deck is gone.
+    DeckList,
 }
 
 /// What a user does on the form, and each reply the client hands back.
@@ -193,6 +195,11 @@ pub enum Action {
     /// The request holding `ticket` failed. The client has already reported it, and raised its error toast unless it was a search.
     Failed {
         /// The ticket from the effect this answers.
+        ticket: Ticket,
+    },
+    /// The request holding `ticket` found no deck: the server no longer has it. The client has already reported it and raised its toast.
+    Gone {
+        /// The ticket from the request this answers.
         ticket: Ticket,
     },
     /// The server's deck tag catalog, whenever the client's copy changes. Closing the deck tag picker seeds oracle tags from it; an empty catalog seeds nothing.
@@ -375,6 +382,8 @@ pub enum Effect {
     },
     /// Goes to this screen.
     Navigate(Destination),
+    /// Goes to this screen in place of the current one, so Back skips a screen with nothing left to show.
+    Replace(Destination),
     /// Raises this toast.
     Toast(Toast),
 }
@@ -535,6 +544,10 @@ impl State {
             Action::Failed { ticket } => {
                 self.failed(ticket);
                 Vec::new()
+            }
+            Action::Gone { ticket } => {
+                self.failed(ticket);
+                vec![Effect::Replace(Destination::DeckList)]
             }
             Action::Catalog(catalog) => {
                 self.catalog = catalog;
