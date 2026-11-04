@@ -102,7 +102,9 @@ impl Driver {
                 });
             }
             Effect::Save { ticket, change } => {
-                theme_save::save(authed, ticket, change, move |action| self.dispatch(action));
+                theme_save::save(authed, session, ticket, change, move |action| {
+                    self.dispatch(action);
+                });
             }
             Effect::ShowTheme(theme) => theme_config.set(theme_config_of(theme)),
             Effect::ShowPips(style) => pip_style.set(style),
