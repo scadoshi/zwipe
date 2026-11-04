@@ -79,6 +79,7 @@ fn warm() -> Cached {
         mine: Some(held(1, Age::Fresh)),
         play_style: Some(summary(2, [1, 0, 0, 0, 4], 0)),
         flavor: Some(flavor("Llanowar Elves", Some("One bone broken"))),
+        decks: Some(vec![deck(1, "Elves"), deck(2, "Goblins")]),
         ..cold()
     }
 }
@@ -125,6 +126,24 @@ fn play_style_ticket(e: &Effect) -> Option<Ticket> {
     }
 }
 
+fn decks_ticket(e: &Effect) -> Option<Ticket> {
+    match e {
+        Effect::FetchDecks(t) => Some(*t),
+        _ => None,
+    }
+}
+
+/// A deck row named `name`, with the id `n`.
+fn deck(n: u128, name: &str) -> DeckRow {
+    DeckRow {
+        id: Uuid::from_u128(n),
+        name: name.to_owned(),
+        format: None,
+        color_identity: Vec::new(),
+        art_url: None,
+    }
+}
+
 fn flavor_ticket(e: &Effect) -> Option<Ticket> {
     match e {
         Effect::FetchFlavor(t) => Some(*t),
@@ -154,6 +173,7 @@ fn a_cold_load_asks_for_everything_then_offers_the_hint() {
         Effect::FetchPreferences,
         Effect::FetchCounts(_),
         Effect::FetchPlayStyle(_),
+        Effect::FetchDecks(_),
         Effect::FetchFlavor(_),
         Effect::OfferHint(OneTimeHint::FirstLogin),
     ] = effects.as_slice()
@@ -172,6 +192,7 @@ fn a_warm_load_draws_what_is_held_and_skips_fresh_copies() {
         Effect::FetchUser(_),
         Effect::FetchPreferences,
         Effect::FetchPlayStyle(_),
+        Effect::FetchDecks(_),
         Effect::OfferHint(OneTimeHint::FirstLogin),
     ] = effects.as_slice()
     else {
@@ -337,27 +358,83 @@ fn the_color_map_draws_only_with_decks_and_cards() {
 }
 
 #[test]
-fn the_decks_panel_counts_the_summarys_decks() {
+fn the_decks_panel_lists_the_latest_three_in_the_servers_order() {
     let (mut state, effects) = load(cold());
     assert_eq!(state.decks(), Decks::Loading);
+    let ticket = ticket_of(&effects, decks_ticket);
+    let _ = state.update(Action::DecksLoaded {
+        ticket,
+        decks: vec![deck(4, "d"), deck(1, "a"), deck(3, "c"), deck(2, "b")],
+    });
+    assert_eq!(
+        state.decks(),
+        Decks::Loaded(DeckPanel {
+            count: 4,
+            latest: vec![deck(4, "d"), deck(1, "a"), deck(3, "c")],
+        }),
+        "the first three as listed, the count of them all"
+    );
+
     let ticket = ticket_of(&effects, play_style_ticket);
     let _ = state.update(Action::PlayStyleLoaded {
         ticket,
         summary: summary(1, [0; 5], 0),
     });
-    assert_eq!(state.decks(), Decks::Count(1));
+    let Decks::Loaded(panel) = state.decks() else {
+        panic!("loaded");
+    };
+    assert_eq!(panel.count, 4, "the summary counts only decks with cards");
+}
 
+#[test]
+fn the_decks_panel_with_no_deck_offers_create_and_a_failure_says_so_unless_held() {
     let (mut state, effects) = load(cold());
-    let ticket = ticket_of(&effects, play_style_ticket);
-    let _ = state.update(Action::PlayStyleFailed { ticket });
-    assert_eq!(state.decks(), Decks::Failed);
-
-    let (state, _) = load(warm());
+    let ticket = ticket_of(&effects, decks_ticket);
+    let _ = state.update(Action::DecksLoaded {
+        ticket,
+        decks: Vec::new(),
+    });
     assert_eq!(
         state.decks(),
-        Decks::Count(2),
+        Decks::Loaded(DeckPanel {
+            count: 0,
+            latest: Vec::new(),
+        })
+    );
+
+    let (mut state, effects) = load(cold());
+    let ticket = ticket_of(&effects, decks_ticket);
+    let effects = state.update(Action::DecksFailed { ticket });
+    assert!(effects.is_empty(), "the client reports it: {effects:?}");
+    assert_eq!(state.decks(), Decks::Failed);
+
+    let (mut state, effects) = load(warm());
+    assert_eq!(
+        state.decks(),
+        Decks::Loaded(DeckPanel {
+            count: 2,
+            latest: vec![deck(1, "Elves"), deck(2, "Goblins")],
+        }),
         "held before the refetch lands"
     );
+    let ticket = ticket_of(&effects, decks_ticket);
+    let _ = state.update(Action::DecksFailed { ticket });
+    assert!(
+        matches!(state.decks(), Decks::Loaded(_)),
+        "the held decks stay"
+    );
+}
+
+#[test]
+fn a_late_decks_reply_is_ignored() {
+    let (mut state, effects) = load(cold());
+    let older = ticket_of(&effects, decks_ticket);
+    let _ = state.update(Action::Load(Box::new(cold())));
+    let _ = state.update(Action::DecksLoaded {
+        ticket: older,
+        decks: vec![deck(1, "a")],
+    });
+    assert_eq!(state.decks(), Decks::Loading);
 }
 
 #[test]
@@ -661,6 +738,11 @@ fn every_button_navigates() {
     let mut state = State::new();
     for (action, to) in [
         (Action::Decks, Destination::Decks),
+        (
+            Action::OpenDeck(Uuid::from_u128(9)),
+            Destination::Deck(Uuid::from_u128(9)),
+        ),
+        (Action::CreateDeck, Destination::CreateDeck),
         (Action::Account, Destination::Account),
         (Action::Config, Destination::Config),
         (Action::Activity, Destination::Activity),
@@ -677,8 +759,8 @@ fn the_copy_matches_the_app() {
         ["Home", "Live", "Activity", "Decks", "Account", "Settings"]
     );
     assert_eq!(
-        [OPEN_DECKS, DECKS_FAILED],
-        ["Open", "Could not load your decks"]
+        [ALL_DECKS, CREATE_DECK, DECKS_FAILED],
+        ["All decks", "Create a deck", "Could not load your decks"]
     );
     assert_eq!(
         [COLOR_MAP, PLAYSTYLE, NO_PLAY_STYLE, PLAY_STYLE_FAILED],

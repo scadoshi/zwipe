@@ -59,7 +59,10 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
         OneTimeHint::FirstLogin => content(
             "Welcome to Zwipe",
             vec![
-                bullet(vec![key("Decks"), text(" holds your decks")]),
+                bullet(vec![
+                    key("Decks"),
+                    text(" lists your latest decks; All decks opens the list"),
+                ]),
                 bullet(vec![
                     key("Color map"),
                     text(" grows from your decks' colors. Tap Playstyle for suggested commanders"),
@@ -509,7 +512,10 @@ mod tests {
         assert_eq!(welcome.title, "Welcome to Zwipe");
         assert_eq!(
             welcome.blocks[0],
-            bullet(vec![key("Decks"), text(" holds your decks")])
+            bullet(vec![
+                key("Decks"),
+                text(" lists your latest decks; All decks opens the list")
+            ])
         );
     }
 

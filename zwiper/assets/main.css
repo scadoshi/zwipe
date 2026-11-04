@@ -3363,30 +3363,99 @@ button {
     align-self: stretch;
 }
 
-/* Home's Decks row: a one-row settings list as wide as the hero panel above
-   it, with a gap between the two. */
+/* Home's Decks panel: the Color map's panel, Decks at the left of its
+   header with the count chip and All decks at the right, then one row per
+   deck. */
 .home-decks {
-    width: calc(100% - 2rem);
-    max-width: 24rem;
-    margin-top: var(--panel-gap);
+    min-height: 0;
+    padding-bottom: 0;
+    text-align: left;
+}
+
+.home-decks > .settings-list-header {
+    padding: 0.6rem 1rem;
+}
+
+.home-decks > .settings-list-header .btn-action {
+    padding: 0.3rem 0.6rem;
+}
+
+.home-deck-row {
+    padding: 0.7rem 1rem;
+    cursor: pointer;
+}
+
+.home-deck-row:active {
+    background-color: var(--bg-raised);
+}
+
+.home-deck-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.home-decks-failed {
+    padding: 1rem;
+}
+
+.home-deck-skeleton-name {
+    width: 45%;
+    height: 0.9rem;
+}
+
+/* Layout B: three tiles in a row, the commander's art or the deck's pips
+   over the name on one line. */
+.home-deck-tiles {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.6rem;
+    padding: 0.75rem 1rem 1rem;
+}
+
+.home-deck-tile {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    min-width: 0;
     padding: 0;
+    border: 1px solid var(--border-secondary);
+    border-radius: 0.6rem;
+    background-color: var(--bg-raised);
+    color: var(--text-primary);
+    overflow: hidden;
+    cursor: pointer;
+    text-align: center;
 }
 
-/* The hint beside the "?" chip when the count failed to load. */
-.home-decks-hint {
+.home-deck-tile-art {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.2rem;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    background-color: var(--bg-primary);
+    font-size: 1.1rem;
+}
+
+.home-deck-tile-art > img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.home-deck-tile-name {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.35rem 0.4rem;
     font-size: 0.75rem;
-    color: var(--text-muted);
-}
-
-/* The chip's ghost and the Open button's, their sizes. */
-.home-decks-skeleton-count {
-    width: 2rem;
-    height: 1.4rem;
-}
-
-.home-decks-skeleton-open {
-    width: 3.6rem;
-    height: 1.7rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 /* A Home panel's buttons, centered under a line. */

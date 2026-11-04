@@ -22,6 +22,7 @@ use crate::config::Config;
 use crate::inbound::components::auth::ensure_session::EnsureFresh;
 use crate::inbound::components::catalog_cache::use_catalog_cache;
 use crate::inbound::components::hint_host::HintTopic;
+use crate::inbound::components::home_decks::CachedDecks;
 use crate::inbound::components::home_hero::{CachedCounts, CachedMyCounts};
 use crate::inbound::components::home_play_style::CachedPlayStyle;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
@@ -212,6 +213,11 @@ fn use_screen_state() {
     // return to Home shows it while the refetch is out (see CachedPlayStyle).
     let cached_play_style: Signal<Option<CachedPlayStyle>> = use_signal(|| None);
     use_context_provider(|| cached_play_style);
+
+    // Home's Decks panel: the last deck list, kept the same way (see
+    // CachedDecks).
+    let cached_decks: Signal<Option<CachedDecks>> = use_signal(|| None);
+    use_context_provider(|| cached_decks);
 }
 
 /// Starts the changelog and catalog fetches and provides their caches.
