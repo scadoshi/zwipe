@@ -47,8 +47,8 @@ impl Section {
     pub const ALL: [Self; 8] = [
         Self::Decks,
         Self::Playstyle,
-        Self::Maybeboard,
         Self::Activity,
+        Self::Maybeboard,
         Self::Home,
         Self::Account,
         Self::Config,
@@ -59,8 +59,8 @@ impl Section {
     pub const LISTED: [Self; 4] = [
         Self::Decks,
         Self::Playstyle,
-        Self::Maybeboard,
         Self::Activity,
+        Self::Maybeboard,
     ];
 
     /// The sections the footer holds as icons, left to right.
