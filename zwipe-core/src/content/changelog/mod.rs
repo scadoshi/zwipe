@@ -64,7 +64,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Distributions shows the top five card roles and a new oracle tags chart, the rest behind See more",
         "Draw odds shows its top five groups, the rest behind See more",
         "Draw odds names the opening hand turn 0",
-        "About, a new screen in the main menu with the version, links, credits and the changelog",
+        "About, a new screen in the main menu with the version, links, credits and the changelog, each release in a panel of its own",
         "Config is now called Settings",
         "The Natural setting for mana symbols is now called Classic",
         "Log in, Create profile and Send are full-width buttons under their forms, with chips to the other sign-in screens beneath",
@@ -77,6 +77,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Light themes keep disabled chips, empty heatmap days and empty notes readable",
         "The privacy policy no longer repeats the Fan Content notice",
         "zwipe.net's theme menu stays open after a pick",
+        "zwipe.net's nav shows the stores as Apple and Play icons and its footer holds Contribute",
     ],
 }];
 

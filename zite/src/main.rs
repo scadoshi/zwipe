@@ -374,9 +374,6 @@ pub fn Nav() -> Element {
                     Link { to: Route::Changelog {}, onclick: move |_| open.set(false), "Changelog" }
                 }
                 li {
-                    Link { to: Route::Contribute {}, onclick: move |_| open.set(false), "Contribute" }
-                }
-                li {
                     Link { to: Route::Community {}, onclick: move |_| open.set(false), "Community" }
                 }
                 // The store pills hide in the collapsed panel on mobile,
@@ -399,7 +396,7 @@ pub fn Nav() -> Element {
     }
 }
 
-/// The site footer: copyright, the privacy and community links, and the Scryfall and
+/// The site footer: copyright, the privacy, community and contribute links, and the Scryfall and
 /// Wizards notices.
 #[component]
 pub fn Footer() -> Element {
@@ -409,6 +406,8 @@ pub fn Footer() -> Element {
                 Link { to: Route::Privacy {}, "Privacy policy" }
                 " | "
                 Link { to: Route::Community {}, "Community" }
+                " | "
+                Link { to: Route::Contribute {}, "Contribute" }
             }
             p { class: "site-footer-note",
                 "Card data and images from "
