@@ -239,13 +239,8 @@ pub fn BarChart(
                 span { style: label_style(bar), onclick: tap(bar.key.clone()),
                     "{bar.label}"
                 }
-                div { style: "flex:1;height:0.9rem;background:var(--border-secondary);border-radius:0.15rem;overflow:hidden;",
-                    div {
-                        style: format!(
-                            "height:100%;width:{}%;background:var(--text-primary);opacity:0.65;border-radius:0.15rem;",
-                            bar.pct
-                        ),
-                    }
+                div { class: "chart-track",
+                    div { class: "chart-fill", style: "width:{bar.pct}%;" }
                 }
                 span { style: count_style, "{bar.count}{count_suffix}" }
             }
@@ -263,13 +258,8 @@ pub fn BarChart(
                     span { class: "keyword-chip static muted", "{chip_label(bar)}" }
                 }
             }
-            div { style: "flex:1;height:0.9rem;background:var(--border-secondary);border-radius:0.15rem;overflow:hidden;",
-                div {
-                    style: format!(
-                        "height:100%;width:{}%;background:var(--text-primary);opacity:0.65;border-radius:0.15rem;",
-                        bar.pct
-                    ),
-                }
+            div { class: "chart-track",
+                div { class: "chart-fill", style: "width:{bar.pct}%;" }
             }
             span { style: count_style, "{bar.count}{count_suffix}" }
             // Mounted shut under every row so opening one is a class
@@ -612,8 +602,8 @@ fn OddsRow(label: &'static str, pct: u32) -> Element {
             span { style: "width:5ch;font-size:0.7rem;color:var(--text-primary);opacity:0.85;text-align:right;flex-shrink:0;text-transform:uppercase;",
                 "{label}"
             }
-            div { style: "flex:1;height:0.9rem;background:var(--border-secondary);border-radius:0.15rem;overflow:hidden;",
-                div { style: "height:100%;width:{pct}%;background:var(--text-primary);opacity:0.65;border-radius:0.15rem;" }
+            div { class: "chart-track",
+                div { class: "chart-fill", style: "width:{pct}%;" }
             }
             span { style: "font-size:0.7rem;color:var(--text-primary);opacity:0.85;width:4ch;text-align:right;flex-shrink:0;",
                 "{pct}%"
