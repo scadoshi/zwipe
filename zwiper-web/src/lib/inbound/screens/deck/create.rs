@@ -1,8 +1,9 @@
-//! Create deck: the deck form and `Save`. A commander handed over by
-//! Playstyle or the commander maybeboard arrives with the format set to
-//! Commander.
+//! Create deck: the deck form, with Save as the dock's checkmark once the
+//! name passes. A commander handed over by Playstyle or the commander
+//! maybeboard arrives with the format set to Commander.
 
-use components::{ActionBar, Button, ButtonVariant};
+use components::DockIcon;
+use components::icons::CHECK;
 use dioxus::prelude::*;
 use zwipe_core::domain::deck::{DeckName, Format};
 
@@ -67,6 +68,7 @@ pub fn CreateDeck() -> Element {
         });
     });
 
+    let valid = DeckName::new((form.name)()).is_ok();
     rsx! {
         ScreenFrame {
             title: "Create deck",
@@ -78,21 +80,16 @@ pub fn CreateDeck() -> Element {
             div { class: "screen-content content-enter",
                 DeckFields { form, on_enter: move |()| submit.call(()) }
             }
-            ActionBar {
-                Button {
-                    variant: ButtonVariant::Action,
-                    disabled: saving(),
-                    onclick: move |_| navigator.go_back(),
-                    "Back"
-                }
-                Button {
-                    variant: ButtonVariant::Action,
-                    disabled: saving(),
-                    onclick: move |_| submit.call(()),
-                    if saving() {
-                        "Saving..."
-                    } else {
-                        "Save"
+            // Save as the action dock's checkmark, pinned bottom right, once
+            // the form is valid; dimmed while the save is out.
+            if valid {
+                div { class: "action-dock action-dock-right",
+                    button {
+                        class: "action-dock-btn",
+                        "aria-label": if saving() { "Saving..." } else { "Save" },
+                        disabled: saving(),
+                        onclick: move |_| submit.call(()),
+                        DockIcon { path: CHECK }
                     }
                 }
             }

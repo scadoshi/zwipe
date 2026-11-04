@@ -1,7 +1,9 @@
-//! Edit deck: the deck form filled from the saved deck, with `Save changes`
-//! only while something differs from it. Only the changed fields are sent.
+//! Edit deck: the deck form filled from the saved deck, with Save as the
+//! dock's checkmark only while something differs from it. Only the changed
+//! fields are sent.
 
-use components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL};
+use components::icons::CHECK;
+use components::{DockIcon, TOAST_NORMAL};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
@@ -143,25 +145,16 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                     },
                 }
             }
-            ActionBar {
-                Button {
-                    variant: ButtonVariant::Action,
-                    disabled: saving(),
-                    onclick: move |_| {
-                        navigator.push(Route::ViewDeck { deck_id });
-                    },
-                    "Back"
-                }
-                if has_changes {
-                    Button {
-                        variant: ButtonVariant::Action,
+            // Save as the action dock's checkmark, pinned bottom right, while
+            // there is something to save; dimmed while the save is out.
+            if has_changes {
+                div { class: "action-dock action-dock-right",
+                    button {
+                        class: "action-dock-btn",
+                        "aria-label": if saving() { "Saving..." } else { "Save changes" },
                         disabled: saving(),
                         onclick: move |_| submit.call(()),
-                        if saving() {
-                            "Saving..."
-                        } else {
-                            "Save changes"
-                        }
+                        DockIcon { path: CHECK }
                     }
                 }
             }

@@ -1,14 +1,16 @@
 //! The form's three pickers: format, deck tags and oracle tags. Each is the
 //! app's full-screen picker below the breakpoint and a side panel over the
-//! form's right column on a wide window: the search, the definition bar,
-//! the chip grid, and `Back` / `Save` at its foot.
+//! form's right column on a wide window: the header's back arrow, the
+//! search, the definition bar, the chip grid, and Save as the checkmark in
+//! the dock at its bottom right.
 //!
-//! Each opens on a snapshot. `Back` (and Esc) puts the snapshot back and
-//! says so when something changed; `Save` keeps the change and stays off
-//! while nothing has. `/` focuses the search.
+//! Each opens on a snapshot. The back arrow (and Esc) puts the snapshot
+//! back and says so when something changed; the checkmark keeps the change
+//! and stays off while nothing has. `/` focuses the search.
 
+use components::icons::CHECK;
 use components::{
-    ActionBar, Button, ButtonVariant, DialogAction, HintDialog, PageHeader, TOAST_NORMAL,
+    Button, ButtonVariant, DialogAction, DockIcon, HintDialog, PageHeader, TOAST_NORMAL,
     TOAST_QUICK, use_overlay_back_action,
 };
 use dioxus::prelude::*;
@@ -30,28 +32,32 @@ use crate::domain::deck::{
 };
 use crate::inbound::catalog::CatalogCache;
 use crate::inbound::chrome::authed::use_authed;
+use crate::inbound::chrome::back_arrow::BackArrow;
 use crate::inbound::chrome::hint_body::{ContentHintDialog, HintBody};
 use crate::inbound::chrome::page_keys::{focus_by_id, use_page_keys};
 use crate::inbound::screens::oracle_tag_dictionary::OracleTagDictionary;
 
 /// The picker's shell: hidden and click-through while closed, its header,
-/// body and footer while open. Mounted only while open, so its keys never
-/// answer under a closed picker.
+/// body and dock while open. Mounted only while open, so its keys never
+/// answer under a closed picker. The header's back arrow calls `on_back`;
+/// the dock's checkmark calls `on_save` and stays off while `unchanged`.
 #[component]
 fn PickerFrame(
     open: Signal<bool>,
     title: &'static str,
     search_id: &'static str,
     hint_open: Signal<bool>,
+    unchanged: bool,
+    on_back: EventHandler<()>,
+    on_save: EventHandler<()>,
     children: Element,
-    footer: Element,
 ) -> Element {
     rsx! {
         div {
             class: if open() { "screen swipe-select-screen web-picker show" } else { "screen swipe-select-screen web-picker" },
             components::GridCells { still: true }
             if open() {
-                PickerBody { title, search_id, hint_open, footer, {children} }
+                PickerBody { title, search_id, hint_open, unchanged, on_back, on_save, {children} }
             }
         }
     }
@@ -63,8 +69,10 @@ fn PickerBody(
     title: &'static str,
     search_id: &'static str,
     mut hint_open: Signal<bool>,
+    unchanged: bool,
+    on_back: EventHandler<()>,
+    on_save: EventHandler<()>,
     children: Element,
-    footer: Element,
 ) -> Element {
     use_page_keys(Callback::new(move |key: String| {
         if key == "/" {
@@ -74,11 +82,22 @@ fn PickerBody(
     rsx! {
         PageHeader {
             title,
-            leading: rsx! { span { class: "page-header-corner" } },
+            leading: rsx! {
+                BackArrow { class: "page-header-support", onclick: move |()| on_back.call(()) }
+            },
             on_hint: move |()| hint_open.set(true),
         }
         div { class: "screen-content content-enter tag-screen", {children} }
-        ActionBar { {footer} }
+        // Save as the action dock's checkmark, pinned bottom right.
+        div { class: "action-dock action-dock-right",
+            button {
+                class: "action-dock-btn",
+                "aria-label": "Save",
+                disabled: unchanged,
+                onclick: move |_| on_save.call(()),
+                DockIcon { path: CHECK }
+            }
+        }
     }
 }
 
@@ -165,15 +184,9 @@ pub fn FormatPicker(form: DeckForm) -> Element {
             title: "Format",
             search_id: "format-search",
             hint_open,
-            footer: rsx! {
-                Button { variant: ButtonVariant::Action, onclick: move |_| back.call(()), "Back" }
-                Button {
-                    variant: ButtonVariant::Action,
-                    disabled: unchanged,
-                    onclick: move |_| open.set(false),
-                    "Save"
-                }
-            },
+            unchanged,
+            on_back: move |()| back.call(()),
+            on_save: move |()| open.set(false),
             div { class: "tag-controls",
                 div { class: "tag-controls-head",
                     label { class: "tag-search-label", r#for: "format-search", "Search" }
@@ -291,17 +304,11 @@ pub fn DeckTagPicker(form: DeckForm) -> Element {
             title: "Deck tags",
             search_id: "tag-search",
             hint_open,
-            footer: rsx! {
-                Button { variant: ButtonVariant::Action, onclick: move |_| back.call(()), "Back" }
-                Button {
-                    variant: ButtonVariant::Action,
-                    disabled: unchanged,
-                    onclick: move |_| {
-                        open.set(false);
-                        reconcile();
-                    },
-                    "Save"
-                }
+            unchanged,
+            on_back: move |()| back.call(()),
+            on_save: move |()| {
+                open.set(false);
+                reconcile();
             },
             div { class: "tag-controls",
                 div { class: "tag-controls-head",
@@ -461,15 +468,9 @@ pub fn OracleTagPicker(form: DeckForm) -> Element {
             title: "Oracle tags",
             search_id: "oracle-tag-search",
             hint_open,
-            footer: rsx! {
-                Button { variant: ButtonVariant::Action, onclick: move |_| back.call(()), "Back" }
-                Button {
-                    variant: ButtonVariant::Action,
-                    disabled: unchanged,
-                    onclick: move |_| open.set(false),
-                    "Save"
-                }
-            },
+            unchanged,
+            on_back: move |()| back.call(()),
+            on_save: move |()| open.set(false),
             div { class: "tag-controls",
                 div { class: "tag-controls-head",
                     label { class: "tag-search-label", r#for: "oracle-tag-search", "Search" }
