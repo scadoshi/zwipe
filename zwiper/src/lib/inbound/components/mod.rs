@@ -42,6 +42,8 @@ pub mod screen_header;
 pub mod support;
 /// Usage telemetry buffer + flush loop.
 pub mod telemetry;
+/// Saving the theme to the account, shared by Settings and the main menu.
+pub mod theme_save;
 /// Three-state toggle component (true/false/any).
 #[expect(
     unpredictable_function_pointer_comparisons,

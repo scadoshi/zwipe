@@ -199,6 +199,44 @@ button {
     white-space: nowrap;
 }
 
+/* A two-row dock (the auth screens): the icon bar on top and a row of link
+   chips under it, both right-aligned, floating where a dock would and lifting
+   over the keyboard the same way. */
+.action-dock-stack {
+    position: fixed;
+    right: 0.6rem;
+    bottom: calc(env(safe-area-inset-bottom, 0px) / 2 + 0.6rem + var(--keyboard-inset, 0px));
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.4rem;
+    transition: bottom 0.25s ease;
+}
+
+.action-dock-stack > .action-dock {
+    position: static;
+    margin: 0;
+}
+
+.action-dock-chips {
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+    gap: 0.35rem;
+}
+
+.action-dock-chips > .chip {
+    padding: 0.3rem 0.5rem;
+    white-space: nowrap;
+}
+
+/* The stack is a row taller than the bar, so its screen keeps that much more
+   room to scroll the last field clear of it. */
+.screen:has(> .action-dock-stack) > .screen-content {
+    --content-pad-bottom: 7rem;
+}
+
 /* The filter dot sits on the funnel's top left, clear of the reset. */
 .action-dock-btn .filter-dot {
     position: absolute;
@@ -446,6 +484,35 @@ button {
 .app-nav .nav-panel .nav-links {
     max-height: none;
     overflow: visible;
+}
+
+/* The theme row at the top of the kit's solid trailing band, signed in: the
+   theme's name as the kit's picker trigger (with its accent dot, since the
+   name opens the Themes sheet) and the Dark/Light switch, left-aligned and
+   spaced like the icon row under it. */
+.app-nav .app-nav-theme {
+    justify-content: flex-start;
+    gap: 0.4rem;
+    padding-bottom: 0.6rem;
+}
+
+/* Both pills stand as tall as the icon row's buttons, in its type size. */
+.app-nav-theme .nav-dropdown-trigger,
+.app-nav-theme .btn-action {
+    display: inline-flex;
+    align-items: center;
+    height: 1.7rem;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.85rem;
+    border-radius: 0.4rem;
+    box-shadow: none;
+    opacity: 0.7;
+}
+
+/* The header holds still while the sheet is up, as while the menu is open:
+   a transform would make it the sheet's containing block. */
+.screen > .app-nav:has(.theme-picker-sheet .bottom-sheet.show) {
+    transform: none !important;
 }
 
 /* The menu's footer row inside the kit's solid trailing band: the ! at one

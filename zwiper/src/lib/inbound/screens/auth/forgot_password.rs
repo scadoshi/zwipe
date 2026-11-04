@@ -1,6 +1,6 @@
 //! Forgot password screen.
 
-use components::{Panel, TOAST_NORMAL, TextInput, ToastOptions, Toasts, use_toast};
+use components::{Chip, Panel, TOAST_NORMAL, TextInput, ToastOptions, Toasts, use_toast};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use zwipe_client::ZwipeClient;
@@ -8,10 +8,12 @@ use zwipe_core::http::contracts::auth::HttpRequestPasswordReset;
 use zwipe_ui::screens::forgot_password::{
     self, Action, Destination, EMAIL, Effect, SEND, SENT_BODY, SENT_TITLE, State,
 };
+use zwipe_ui::screens::login;
 
 use crate::inbound::components::action_dock::{self, DockIcon};
 use crate::inbound::components::home_hero::HomeHero;
 use crate::inbound::components::screen_header::ScreenHeader;
+use crate::inbound::router::Router;
 
 /// Forgot password's model with the handles that perform its effects. Copy,
 /// so every handler and task holds its own.
@@ -109,14 +111,33 @@ pub fn ForgotPassword() -> Element {
                     }
                 }
             }
-            // Send floats at the bottom right until the link is sent.
+            // Send floats at the bottom right until the link is sent, the
+            // other auth screens as chips under it.
             if !is_sent {
-                div { class: "action-dock action-dock-right",
-                    button {
-                        class: "action-dock-btn",
-                        "aria-label": SEND,
-                        onclick: move |_| driver.dispatch(Action::Submit),
-                        DockIcon { path: action_dock::SEND }
+                div { class: "action-dock-stack",
+                    div { class: "action-dock",
+                        button {
+                            class: "action-dock-btn",
+                            "aria-label": SEND,
+                            onclick: move |_| driver.dispatch(Action::Submit),
+                            DockIcon { path: action_dock::SEND }
+                        }
+                    }
+                    div { class: "action-dock-chips",
+                        Chip {
+                            selected: false,
+                            onclick: move |_| {
+                                driver.navigator.push(Router::Login {});
+                            },
+                            {login::LOG_IN}
+                        }
+                        Chip {
+                            selected: false,
+                            onclick: move |_| {
+                                driver.navigator.push(Router::Register {});
+                            },
+                            {login::CREATE_PROFILE}
+                        }
                     }
                 }
             }

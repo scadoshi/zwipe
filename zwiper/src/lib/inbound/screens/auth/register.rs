@@ -1,12 +1,13 @@
 //! New user registration screen.
 
-use components::{TOAST_NORMAL, TextInput, ToastOptions, Toasts, use_toast};
+use components::{Chip, TOAST_NORMAL, TextInput, ToastOptions, Toasts, use_toast};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use zwipe_client::ZwipeClient;
 use zwipe_core::http::contracts::auth::HttpRegisterUser;
 use zwipe_core::http::contracts::metrics::AnonymousEventKind;
 use zwipe_ui::account::Password;
+use zwipe_ui::screens::login;
 use zwipe_ui::screens::register::{self, Action, Destination, Effect, Field, State};
 
 use crate::inbound::components::action_dock::{self, DockIcon};
@@ -15,6 +16,7 @@ use crate::inbound::components::home_hero::HomeHero;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::anonymous;
 use crate::inbound::components::{info_button, ui_toast};
+use crate::inbound::router::Router;
 use crate::inbound::screens::auth::login::LoginPrefill;
 
 /// Register's model with the handles that perform its effects. Copy, so
@@ -168,14 +170,26 @@ pub fn Register() -> Element {
                 }
             }
         }
-            // Create profile floats at the bottom right.
-            div { class: "action-dock action-dock-right",
-                button {
-                    class: "action-dock-btn",
-                    "aria-label": submit_label,
-                    disabled: is_loading,
-                    onclick: move |_| driver.dispatch(Action::Submit),
-                    DockIcon { path: action_dock::ARROW }
+            // Create profile floats at the bottom right, Log in as a chip
+            // under it.
+            div { class: "action-dock-stack",
+                div { class: "action-dock",
+                    button {
+                        class: "action-dock-btn",
+                        "aria-label": submit_label,
+                        disabled: is_loading,
+                        onclick: move |_| driver.dispatch(Action::Submit),
+                        DockIcon { path: action_dock::ARROW }
+                    }
+                }
+                div { class: "action-dock-chips",
+                    Chip {
+                        selected: false,
+                        onclick: move |_| {
+                            driver.navigator.push(Router::Login {});
+                        },
+                        {login::LOG_IN}
+                    }
                 }
             }
     }
