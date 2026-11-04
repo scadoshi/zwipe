@@ -873,7 +873,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
         }
         {
             let (deck_size, buckets) = metrics.draw_odds_buckets();
-            let bucket_count = buckets.len();
+            let bucket_count = buckets.len().min(6);
             panels.push((
                 "Draw odds",
                 bucket_count.saturating_add(3),

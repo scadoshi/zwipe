@@ -16,7 +16,7 @@ use std::path::PathBuf;
 
 use components::{
     Bar, BarChart, BarOrientation, Changelog, ColorChart, ColorMap, ColorMapCounts, ColorMapGhost,
-    DeckCharts, FlippableCardImage, LabelCase,
+    DeckCharts, DrawOdds, FlippableCardImage, LabelCase,
 };
 use dioxus::dioxus_core::NoOpMutations;
 use dioxus::prelude::*;
@@ -345,6 +345,30 @@ fn deck_charts_fold_past_five_rows() {
                     oracle_tag_bars: tags,
                     role_tags: BTreeMap::from([("ramp", vec!["mana-rock".to_string()])]),
                 }
+            }
+        }),
+    );
+}
+
+/// Six buckets: the stepper, five rows, then the sixth behind See more.
+#[test]
+fn draw_odds_fold_past_five_rows() {
+    golden(
+        "draw_odds_folded",
+        &render(|| {
+            rsx! {
+                DrawOdds {
+                    deck_size: 99,
+                    buckets: vec![
+                        ("Land", 36),
+                        ("ramp", 12),
+                        ("draw", 10),
+                        ("remov", 8),
+                        ("wipe", 4),
+                        ("tutor", 3),
+                    ],
+                }
+                DrawOdds { deck_size: 60, buckets: vec![("Land", 24), ("ramp", 4)] }
             }
         }),
     );

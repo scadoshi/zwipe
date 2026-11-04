@@ -529,8 +529,10 @@ pub fn ManaCurve(mana_curve_bars: [(usize, u32); 7], hint: Option<Element>) -> E
 
 /// Draw odds: `P(>=1)` per category as horizontal bars, with - and + to step
 /// the draw window from turn 0, the opening hand, through later turns. On the
-/// draw: `draws = 7 + turn`. `buckets` is `(label, count K)`;
-/// probabilities recompute live for the selected turn from the deck's engine.
+/// draw: `draws = 7 + turn`. `buckets` is `(label, count K)` in the order to
+/// show; probabilities recompute live for the selected turn from the deck's
+/// engine. The first [`FOLD_AT`] buckets show under the stepper and the rest
+/// fold behind a [`SeeMore`] chip.
 #[component]
 pub fn DrawOdds(
     deck_size: u32,
@@ -539,6 +541,8 @@ pub fn DrawOdds(
 ) -> Element {
     const MAX_TURN: u32 = 20;
     let mut turn = use_signal(|| 0u32);
+    let mut fold_open = use_signal(|| false);
+    let toggle_fold = use_callback(move |()| fold_open.toggle());
     // The stepper holds `turn` at MAX_TURN or below, so this never saturates.
     let draws = turn().saturating_add(7);
     // Turn 0 is the opening hand, named as a turn so the heading keeps one
@@ -548,12 +552,16 @@ pub fn DrawOdds(
     // `{ let …; rsx! }` block inside the `for` (which confuses Dioxus node
     // diffing and drops the bar-width style on alternating turns); the keyed
     // loop below remounts changed rows.
-    let rows = buckets.iter().map(|(label, k)| {
-        (
-            *label,
-            whole_percent(draw_odds::p_at_least_one(deck_size, *k, draws)),
-        )
-    });
+    let rows: Vec<(&'static str, u32)> = buckets
+        .iter()
+        .map(|(label, k)| {
+            (
+                *label,
+                whole_percent(draw_odds::p_at_least_one(deck_size, *k, draws)),
+            )
+        })
+        .collect();
+    let (shown_rows, folded_rows) = fold_split(&rows, FOLD_AT);
     rsx! {
         div { style: "display:flex;flex-direction:column;gap:0.35rem;padding:0 0.75rem;",
             div { style: "display:flex;align-items:center;justify-content:center;gap:0.6rem;",
@@ -575,23 +583,38 @@ pub fn DrawOdds(
                     "+"
                 }
             }
-            for (label, pct) in rows {
-                // Key includes pct so a changed row remounts (fresh DOM) instead
-                // of an in-place style update; the WebView drops the latter and
-                // leaves the bar unfilled on alternating turns otherwise.
-                div {
-                    key: "{label}-{pct}",
-                    style: "display:flex;align-items:center;gap:0.5rem;",
-                    span { style: "width:5ch;font-size:0.7rem;color:var(--text-primary);opacity:0.85;text-align:right;flex-shrink:0;text-transform:uppercase;",
-                        "{label}"
-                    }
-                    div { style: "flex:1;height:0.9rem;background:var(--border-secondary);border-radius:0.15rem;overflow:hidden;",
-                        div { style: "height:100%;width:{pct}%;background:var(--text-primary);opacity:0.65;border-radius:0.15rem;" }
-                    }
-                    span { style: "font-size:0.7rem;color:var(--text-primary);opacity:0.85;width:4ch;text-align:right;flex-shrink:0;",
-                        "{pct}%"
+            for (label, pct) in shown_rows.iter().copied() {
+                OddsRow { label, pct }
+            }
+            if let Some(rest) = folded_rows {
+                Fold { open: fold_open(),
+                    for (label, pct) in rest.iter().copied() {
+                        OddsRow { label, pct }
                     }
                 }
+                SeeMore { open: fold_open(), on_toggle: toggle_fold }
+            }
+        }
+    }
+}
+
+/// One draw odds bar. Its key includes `pct` so a changed row remounts
+/// (fresh DOM) instead of an in-place style update; the web view drops the
+/// latter and leaves the bar unfilled on alternating turns otherwise.
+#[component]
+fn OddsRow(label: &'static str, pct: u32) -> Element {
+    rsx! {
+        div {
+            key: "{label}-{pct}",
+            style: "display:flex;align-items:center;gap:0.5rem;padding:0.175rem 0;",
+            span { style: "width:5ch;font-size:0.7rem;color:var(--text-primary);opacity:0.85;text-align:right;flex-shrink:0;text-transform:uppercase;",
+                "{label}"
+            }
+            div { style: "flex:1;height:0.9rem;background:var(--border-secondary);border-radius:0.15rem;overflow:hidden;",
+                div { style: "height:100%;width:{pct}%;background:var(--text-primary);opacity:0.65;border-radius:0.15rem;" }
+            }
+            span { style: "font-size:0.7rem;color:var(--text-primary);opacity:0.85;width:4ch;text-align:right;flex-shrink:0;",
+                "{pct}%"
             }
         }
     }

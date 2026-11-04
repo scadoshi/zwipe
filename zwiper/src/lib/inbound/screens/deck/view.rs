@@ -679,6 +679,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                             open_section: open_section,
                                             header_accessory: rsx! { InfoButton { topic: HintTopic::DrawOdds } },
                                             DrawOdds {
+                                                key: "{deck_id}",
                                                 deck_size: deck_size,
                                                 buckets: buckets,
                                             }

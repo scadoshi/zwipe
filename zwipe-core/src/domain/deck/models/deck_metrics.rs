@@ -226,8 +226,9 @@ impl DeckMetrics {
     }
 
     /// Draw-odds inputs: `(library size, [(bucket label, count)])`, lands
-    /// plus each card role. Library size is the mainboard (the commander sits
-    /// in the command zone, not the library).
+    /// plus each card role, the largest bucket first and Land ahead of a role
+    /// it ties. Library size is the mainboard (the commander sits in the
+    /// command zone, not the library).
     pub fn draw_odds_buckets(&self) -> (u32, Vec<(&'static str, u32)>) {
         let deck_size = display_count(self.land_count.saturating_add(self.nonland_count));
         let mut buckets: Vec<(&'static str, u32)> = vec![("Land", display_count(self.land_count))];
@@ -236,6 +237,7 @@ impl DeckMetrics {
                 .iter()
                 .map(|(label, count)| (*label, display_count(*count))),
         );
+        buckets.sort_by_key(|(_, count)| std::cmp::Reverse(*count));
         (deck_size, buckets)
     }
 
@@ -991,6 +993,22 @@ mod tests {
         side.deck_card.board = crate::domain::deck::Board::Sideboard;
         let metrics = DeckMetrics::from_entries(&[side]);
         assert_eq!(metrics.oracle_tag_counts, Vec::<(String, usize)>::new());
+    }
+
+    #[test]
+    fn draw_odds_buckets_lead_with_the_largest() {
+        let mut land = make_entry("Forest", 3);
+        land.card.scryfall_data.type_line = Some("Basic Land — Forest".to_string());
+        let bolt = tagged("Lightning Bolt", 4, &[("removal", &["burn-creature"])]);
+        let ring = tagged("Sol Ring", 3, &[("ramp", &[])]);
+        let metrics = DeckMetrics::from_entries(&[land, bolt, ring]);
+        let (deck_size, buckets) = metrics.draw_odds_buckets();
+        assert_eq!(deck_size, 10);
+        assert_eq!(
+            buckets,
+            vec![("remov", 4), ("Land", 3), ("ramp", 3)],
+            "Land stays ahead of a role it ties"
+        );
     }
 
     #[test]
