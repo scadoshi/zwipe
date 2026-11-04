@@ -8,12 +8,14 @@
 //! the selection, `+` and `-` change its quantity, F flips it, `/` focuses
 //! Quick add and Ctrl+Z is `Undo`. A row dragged onto a board's header or
 //! chip moves there. Below the breakpoint it is the app's list, rows
-//! opening inline.
+//! opening inline. The screen's actions, add, remove, the filter and undo,
+//! float as the dock's icons at every width.
 
 use std::collections::{HashMap, HashSet};
 
 use chrono::Utc;
-use components::{ActionBar, Button, ButtonVariant, CardDetails, Chip, TOAST_QUICK};
+use components::icons::{MINUS, PLUS, UNDO};
+use components::{CardDetails, Chip, DockFilter, DockIcon, TOAST_QUICK};
 use dioxus::core::spawn_forever;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -815,7 +817,7 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
         toast.info(message, quick);
     });
 
-    let reset_filter = move |_| {
+    let reset_filter = move |()| {
         filter.set(CardQueryBuilder::default());
         selected.set(None);
         toast.info(
@@ -1247,21 +1249,43 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
                     }
                 }
             }
-            ActionBar {
-                Button { variant: ButtonVariant::Action, onclick: move |_| navigator.go_back(), "Back" }
-                Button { variant: ButtonVariant::Action, onclick: move |_| { navigator.push(Route::AddDeckCard { deck_id }); }, "Add" }
-                Button { variant: ButtonVariant::Action, onclick: move |_| { navigator.push(Route::RemoveDeckCard { deck_id }); }, "Remove" }
-                Button { variant: ButtonVariant::Action, onclick: move |_| filter_open.set(true),
-                    "Filter"
-                    if dot {
-                        span { class: "filter-dot" }
-                    }
+            // The screen's actions as one floating icon bar at the bottom right:
+            // add and remove, then the filter (with its reset while a filter is
+            // on) and undo. Back is the header's arrow.
+            div { class: "action-dock action-dock-right",
+                button {
+                    class: "action-dock-btn",
+                    "aria-label": "Add",
+                    onclick: move |_| {
+                        navigator.push(Route::AddDeckCard { deck_id });
+                    },
+                    DockIcon { path: PLUS }
                 }
-                if undo_ready {
-                    Button { variant: ButtonVariant::Action, onclick: move |_| apply_undo.call(()), "Undo" }
+                button {
+                    class: "action-dock-btn",
+                    "aria-label": "Remove",
+                    onclick: move |_| {
+                        navigator.push(Route::RemoveDeckCard { deck_id });
+                    },
+                    DockIcon { path: MINUS }
                 }
-                if filter_on {
-                    Button { variant: ButtonVariant::Action, class: "btn-action-clear", onclick: reset_filter, "Reset filter" }
+                span { class: "action-dock-divider" }
+                DockFilter {
+                    label: "Filter",
+                    dot,
+                    active: filter_on,
+                    onclick: move |()| filter_open.set(true),
+                    on_reset: reset_filter,
+                    reset_label: "Reset filter",
+                }
+                // Disabled while there is nothing to undo, so the bar keeps
+                // its width.
+                button {
+                    class: "action-dock-btn",
+                    "aria-label": "Undo",
+                    disabled: !undo_ready,
+                    onclick: move |_| apply_undo.call(()),
+                    DockIcon { path: UNDO }
                 }
             }
         }
