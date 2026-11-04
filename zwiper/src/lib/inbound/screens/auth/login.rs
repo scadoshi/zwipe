@@ -1,6 +1,8 @@
 //! User login screen.
 
-use components::{TOAST_NORMAL, TextInput, ThemeConfig, ToastOptions, Toasts, use_toast};
+use components::{
+    Button, ButtonVariant, TOAST_NORMAL, TextInput, ThemeConfig, ToastOptions, Toasts, use_toast,
+};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use zwipe_client::ZwipeClient;
@@ -10,7 +12,6 @@ use zwipe_core::http::contracts::auth::HttpAuthenticateUser;
 use zwipe_ui::account::Password;
 use zwipe_ui::screens::login::{self, Action, Destination, Effect, Field, State};
 
-use crate::inbound::components::action_dock::{self, DockIcon};
 use crate::inbound::components::home_hero::HomeHero;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::ui_toast;
@@ -155,7 +156,7 @@ pub fn Login() -> Element {
             div { class: "screen-content centered content-enter",
             HomeHero {}
             div { class : "container-sm text-center",
-                form { class: "flex-col",
+                form { class: "flex-col", onsubmit: move |evt| evt.prevent_default(),
                     TextInput {
                         value: driver.identifier,
                         id: "identity",
@@ -169,32 +170,33 @@ pub fn Login() -> Element {
                         placeholder: Field::Password.placeholder(),
                         input_type: "password",
                     }
+                    // The form's one button, so Return in a field clicks it;
+                    // the click handles the submit itself, never the page.
+                    div { class: "form-submit",
+                        Button {
+                            disabled: is_loading,
+                            onclick: move |evt: MouseEvent| {
+                                evt.prevent_default();
+                                driver.dispatch(Action::Submit);
+                            },
+                            {submit_label}
+                        }
+                    }
+                }
+                div { class: "form-links",
+                    Button {
+                        variant: ButtonVariant::Action,
+                        onclick: move |_| driver.dispatch(Action::CreateProfile),
+                        {login::CREATE_PROFILE}
+                    }
+                    Button {
+                        variant: ButtonVariant::Action,
+                        onclick: move |_| driver.dispatch(Action::ForgotPassword),
+                        {login::FORGOT_PASSWORD}
+                    }
                 }
             }
         }
-            // One dock at the bottom right: the other auth screens as text
-            // segments, then Log in as the arrow.
-            div { class: "action-dock action-dock-right",
-                button {
-                    class: "action-dock-text",
-                    onclick: move |_| driver.dispatch(Action::CreateProfile),
-                    {login::CREATE_PROFILE}
-                }
-                span { class: "action-dock-divider" }
-                button {
-                    class: "action-dock-text",
-                    onclick: move |_| driver.dispatch(Action::ForgotPassword),
-                    {login::FORGOT_PASSWORD}
-                }
-                span { class: "action-dock-divider" }
-                button {
-                    class: "action-dock-btn",
-                    "aria-label": submit_label,
-                    disabled: is_loading,
-                    onclick: move |_| driver.dispatch(Action::Submit),
-                    DockIcon { path: action_dock::ARROW }
-                }
-            }
     }
     }
 }

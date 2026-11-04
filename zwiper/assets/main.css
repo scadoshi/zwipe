@@ -199,25 +199,20 @@ button {
     white-space: nowrap;
 }
 
-/* A text segment in a dock (the auth screens' links to each other): the
-   dock's height with horizontal padding, so the dividers run edge to edge as
-   they do between icons, at the kit chip's font size. */
-.action-dock-text {
-    display: flex;
-    align-items: center;
-    margin: 0;
-    padding: 0 0.6rem;
-    border: none;
-    border-radius: 0.6rem;
-    background: transparent;
-    color: var(--text-primary);
-    font-size: 0.75rem;
-    white-space: nowrap;
-    cursor: pointer;
+/* A sign-in form's submit: the kit's full-width button under the last
+   field, then the chips to the other sign-in screens, one per row, centered.
+   The content's trailing padding keeps the last chip clear of the home
+   indicator. */
+.form-submit > .btn {
+    margin: 1rem 0 0;
 }
 
-.action-dock-text:active {
-    background-color: var(--bg-primary);
+.form-links {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1rem;
 }
 
 /* The filter dot sits on the funnel's top left, clear of the reset. */

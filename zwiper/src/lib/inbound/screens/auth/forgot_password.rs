@@ -1,6 +1,8 @@
 //! Forgot password screen.
 
-use components::{Panel, TOAST_NORMAL, TextInput, ToastOptions, Toasts, use_toast};
+use components::{
+    Button, ButtonVariant, Panel, TOAST_NORMAL, TextInput, ToastOptions, Toasts, use_toast,
+};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use zwipe_client::ZwipeClient;
@@ -10,7 +12,6 @@ use zwipe_ui::screens::forgot_password::{
 };
 use zwipe_ui::screens::login;
 
-use crate::inbound::components::action_dock::{self, DockIcon};
 use crate::inbound::components::home_hero::HomeHero;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::router::Router;
@@ -96,7 +97,7 @@ pub fn ForgotPassword() -> Element {
                     }
                 } else {
                     div { class: "container-sm text-center",
-                        form { class: "flex-col",
+                        form { class: "flex-col", onsubmit: move |evt| evt.prevent_default(),
                             TextInput {
                                 value: driver.email,
                                 id: "email",
@@ -107,35 +108,36 @@ pub fn ForgotPassword() -> Element {
                             if is_loading {
                                 div { class: "spinner" }
                             }
+                            // The form's one button, so Return in the field
+                            // clicks it; the click handles the submit itself,
+                            // never the page.
+                            div { class: "form-submit",
+                                Button {
+                                    disabled: is_loading,
+                                    onclick: move |evt: MouseEvent| {
+                                        evt.prevent_default();
+                                        driver.dispatch(Action::Submit);
+                                    },
+                                    {SEND}
+                                }
+                            }
                         }
-                    }
-                }
-            }
-            // One dock at the bottom right until the link is sent: the other
-            // auth screens as text segments, then Send as the paper plane.
-            if !is_sent {
-                div { class: "action-dock action-dock-right",
-                    button {
-                        class: "action-dock-text",
-                        onclick: move |_| {
-                            driver.navigator.push(Router::Login {});
-                        },
-                        {login::LOG_IN}
-                    }
-                    span { class: "action-dock-divider" }
-                    button {
-                        class: "action-dock-text",
-                        onclick: move |_| {
-                            driver.navigator.push(Router::Register {});
-                        },
-                        {login::CREATE_PROFILE}
-                    }
-                    span { class: "action-dock-divider" }
-                    button {
-                        class: "action-dock-btn",
-                        "aria-label": SEND,
-                        onclick: move |_| driver.dispatch(Action::Submit),
-                        DockIcon { path: action_dock::SEND }
+                        div { class: "form-links",
+                            Button {
+                                variant: ButtonVariant::Action,
+                                onclick: move |_| {
+                                    driver.navigator.push(Router::Login {});
+                                },
+                                {login::LOG_IN}
+                            }
+                            Button {
+                                variant: ButtonVariant::Action,
+                                onclick: move |_| {
+                                    driver.navigator.push(Router::Register {});
+                                },
+                                {login::CREATE_PROFILE}
+                            }
+                        }
                     }
                 }
             }
