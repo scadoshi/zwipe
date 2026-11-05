@@ -1725,4 +1725,273 @@ i.ms.ms-cost.ms-gp {
    the danger color. Compound selector so it outranks orangui's title color. */
 .settings-list-title.danger-zone-title {
     color: var(--color-error);
+/* ---- DeckPage (components::DeckPage) ---- */
+
+/* The page: its parts one panel gap apart, each the page's width. */
+.deck-page {
+    display: flex;
+    flex-direction: column;
+    gap: var(--panel-gap);
+    width: 100%;
+    min-width: 0;
+}
+
+/* The head: the name and its chips, then the featured cards in a centered
+   row under them. */
+.deck-head {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.deck-head-featured {
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: center;
+    gap: 1.25rem;
+}
+
+.deck-featured-card {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 13rem;
+    text-align: center;
+}
+
+/* The image's footprint is reserved before it loads, so the head does not
+   jump when it lands. */
+.deck-featured-image {
+    width: 100%;
+    aspect-ratio: 5 / 7;
+    cursor: pointer;
+}
+
+.deck-featured-card .deck-featured-image img {
+    width: 100%;
+    height: auto;
+    max-width: 100%;
+    border-radius: 4.75% / 3.5%;
+    border: 1px solid var(--border-secondary);
+    box-shadow: var(--shadow-md);
+}
+
+.deck-featured-name {
+    margin-top: 0.55rem;
+    font-size: 0.82rem;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.deck-featured-role {
+    display: inline-block;
+    margin-top: 0.4rem;
+    padding: 0.15rem 0.5rem;
+    font-size: 0.68rem;
+    border: 1px solid transparent;
+    border-radius: 0.6rem;
+}
+
+.deck-featured-role-zone {
+    color: var(--palette-3);
+    background-color: color-mix(in srgb, var(--palette-3) 12%, var(--bg-primary));
+    border-color: color-mix(in srgb, var(--palette-3) 35%, var(--bg-primary));
+}
+
+.deck-featured-role-mvp {
+    color: var(--palette-6);
+    background-color: color-mix(in srgb, var(--palette-6) 12%, var(--bg-primary));
+    border-color: color-mix(in srgb, var(--palette-6) 35%, var(--bg-primary));
+}
+
+.deck-head-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    min-width: 0;
+}
+
+.deck-head-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.deck-head-title {
+    margin: 0;
+    font-size: 1.6rem;
+    letter-spacing: 0.02em;
+    overflow-wrap: anywhere;
+}
+
+.deck-head-actions {
+    display: flex;
+    flex: none;
+    gap: 0.5rem;
+}
+
+/* The chips tint over the page background, so the page's cells never show
+   through them. */
+.deck-head-meta {
+    --tone-base: var(--bg-primary);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+/* The three rows over the cards. */
+.deck-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.deck-controls .chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+}
+
+.deck-controls .chip-row-label {
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.deck-controls-name {
+    width: 10rem;
+    padding: 0.3rem 0.6rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.6rem;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.75rem;
+}
+
+.deck-controls-name:focus {
+    outline: none;
+    border-color: var(--accent-secondary);
+}
+
+.deck-bands {
+    display: flex;
+    flex-direction: column;
+    gap: var(--panel-gap);
+}
+
+.deck-empty {
+    margin: 0;
+    padding: 1rem;
+    text-align: center;
+    color: var(--text-muted);
+}
+
+/* A folding panel: the header's arrow points down while open and sideways
+   once folded, and the body eases shut on its grid row. */
+.deck-fold {
+    overflow: hidden;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.deck-fold-head {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid var(--border-secondary);
+    color: var(--accent-tertiary);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    user-select: none;
+    transition: border-color 0.25s ease;
+}
+
+.deck-fold-head .card-row-arrow {
+    transform: rotate(90deg);
+}
+
+.deck-fold.folded .deck-fold-head .card-row-arrow {
+    transform: none;
+}
+
+.deck-fold.folded .deck-fold-head {
+    border-bottom-color: transparent;
+}
+
+.deck-fold-accessory {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: auto;
+}
+
+.deck-fold-body {
+    display: grid;
+    grid-template-rows: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+    opacity: 1;
+    transition:
+        grid-template-rows 0.25s ease,
+        opacity 0.25s ease;
+}
+
+.deck-fold.folded .deck-fold-body {
+    grid-template-rows: 0fr;
+    opacity: 0;
+}
+
+.deck-fold-inner {
+    overflow: hidden;
+    min-height: 0;
+    min-width: 0;
+}
+
+/* A band's rows, one under another the band's width, so no card is lost
+   among its neighbors. */
+.deck-band-rows {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+}
+
+.deck-band-rows > .card-row {
+    border-bottom: 1px solid var(--border-secondary);
+}
+
+.deck-band-rows > .card-row.expanded {
+    grid-column: 1 / -1;
+}
+
+/* The stat panels two across, and the host's foot likewise. */
+.deck-stats,
+.deck-foot {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--panel-gap);
+    align-items: start;
+}
+
+/* A stat panel's body: its blocks stacked at the app's section rhythm. */
+.deck-stat-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 0.75rem 0;
+}
+
+@media (max-width: 56rem) {
+    .deck-head-featured {
+        gap: 0.5rem;
+    }
+
+    .deck-stats,
+    .deck-foot {
+        grid-template-columns: minmax(0, 1fr);
+    }
 }
