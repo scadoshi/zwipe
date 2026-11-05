@@ -114,17 +114,7 @@ pub(crate) fn ThemesSheet(open: Signal<bool>) -> Element {
     rsx! {
         div { class: "web-theme-sheet",
             SheetFrame { wide: SheetWide::Drawer,
-                ThemeSheet {
-                    open,
-                    theme,
-                    on_save: save,
-                    on_unchanged: move |()| {
-                        toast.info(
-                            "Theme unchanged".to_string(),
-                            ToastOptions::default().duration(TOAST_QUICK),
-                        );
-                    },
-                }
+                ThemeSheet { open, theme, on_save: save }
             }
         }
     }

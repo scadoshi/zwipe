@@ -393,15 +393,14 @@ fn change_opens_the_themes_sheet() {
 }
 
 #[test]
-fn a_kept_theme_closes_the_sheet_and_saves_without_a_preview_change() {
+fn a_kept_theme_saves_without_closing_the_sheet_or_a_preview_change() {
     let mut state = State::new();
     let dracula = Theme {
         name: "dracula".to_owned(),
         dark_mode: false,
     };
     let effects = state.update(Action::KeepTheme(dracula.clone()));
-    assert_eq!(effects.first(), Some(&Effect::CloseSheet(Sheet::Themes)));
-    assert_eq!(effects.len(), 2, "{effects:?}");
+    assert_eq!(effects.len(), 1, "{effects:?}");
     let (ticket, change) = save_in(&effects);
     assert_eq!(
         change,
@@ -436,22 +435,6 @@ fn every_theme_save_lands() {
     let (second, _) = save_in(&state.update(Action::KeepTheme(gruvbox(true))));
     assert_eq!(saved(&mut state, second, account()).len(), 2);
     assert_eq!(saved(&mut state, first, account()).len(), 2);
-}
-
-#[test]
-fn a_discarded_pick_says_the_theme_is_unchanged() {
-    let mut state = State::new();
-    assert_eq!(
-        state.update(Action::DiscardTheme { picked: true }),
-        [
-            Effect::CloseSheet(Sheet::Themes),
-            Effect::Toast(Toast::new(ToastKind::Info, "Theme unchanged", QUICK)),
-        ]
-    );
-    assert_eq!(
-        state.update(Action::DiscardTheme { picked: false }),
-        [Effect::CloseSheet(Sheet::Themes)]
-    );
 }
 
 #[test]

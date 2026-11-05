@@ -72,6 +72,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "About, a new screen in the main menu with the version, links, credits and the changelog, each release in a panel of its own",
         "About and the privacy policy open from the main menu signed out",
         "Signed out, the main menu's palette and sun or moon change the theme on this device until you log in",
+        "The Themes sheet saves a theme as you tap it and stays open, with no checkmark",
         "Config is now called Settings",
         "The Natural setting for mana symbols is now called Classic",
         "Log in, Create profile and Send are full-width buttons under their forms, with chips to the other sign-in screens beneath",
