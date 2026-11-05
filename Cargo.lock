@@ -9030,6 +9030,7 @@ dependencies = [
  "components",
  "dioxus",
  "dioxus-primitives",
+ "dotenvy",
  "getrandom 0.4.3",
  "gloo-timers 0.4.0",
  "reqwest",
