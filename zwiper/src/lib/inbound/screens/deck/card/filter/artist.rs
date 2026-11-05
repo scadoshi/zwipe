@@ -204,7 +204,7 @@ pub fn Artist() -> Element {
                     artist_search_query.set(String::new());
                     artist_is_typing.set(false);
                 },
-    input { class: "input input-compact",
+                input { class: "input input-compact",
                         style: "flex: 1; margin-bottom: 0;",
                         id: "artist-search",
                         placeholder: "Type to search",

@@ -28,7 +28,7 @@ pub(crate) fn TextContains() -> Element {
             on_clear: move |()| {
                 filter_builder.write().unset_oracle_text_contains();
             },
-    input { class: "input input-compact",
+            input { class: "input input-compact",
                 id: "oracle-text-contains",
                 placeholder: "Oracle text contains",
                 value: oracle_text_value,
@@ -49,7 +49,7 @@ pub(crate) fn TextContains() -> Element {
             on_clear: move |()| {
                 filter_builder.write().unset_oracle_text_not_contains();
             },
-    input { class: "input input-compact",
+            input { class: "input input-compact",
                 id: "oracle-text-not-contains",
                 placeholder: "Oracle text doesn't contain",
                 value: oracle_text_not_value,

@@ -29,7 +29,7 @@ pub fn FlavorText() -> Element {
                 on_clear: move |()| {
                     filter_builder.write().unset_flavor_text_contains();
                 },
-    input { class: "input input-compact",
+                input { class: "input input-compact",
                     id: "flavor-text-contains",
                     placeholder: "Flavor text contains",
                     value: flavor_text_value,
@@ -50,7 +50,7 @@ pub fn FlavorText() -> Element {
                 on_clear: move |()| {
                     filter_builder.write().unset_flavor_text_not_contains();
                 },
-    input { class: "input input-compact",
+                input { class: "input input-compact",
                     id: "flavor-text-not-contains",
                     placeholder: "Flavor text doesn't contain",
                     value: flavor_text_not_value,
