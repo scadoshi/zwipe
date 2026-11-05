@@ -39,6 +39,7 @@ fn ticket_of(effects: &[Effect]) -> Ticket {
             | Effect::ChangeUsername { ticket: t, .. }
             | Effect::ChangeEmail { ticket: t, .. }
             | Effect::ChangePassword { ticket: t, .. }
+            | Effect::RequestPasswordReset { ticket: t, .. }
             | Effect::DeleteAccount { ticket: t, .. } => Some(*t),
             _ => None,
         })
@@ -489,6 +490,36 @@ fn a_password_change_confirms_first_then_sends() {
         state.update(Action::PasswordChanged { ticket }),
         vec![
             Effect::Toast(Toast::quick(ToastKind::Success, PASSWORD_CHANGED)),
+            Effect::CloseSheet(Sheet::Password),
+        ]
+    );
+}
+
+#[test]
+fn forgot_password_sends_a_reset_link_to_the_account_email_then_closes_the_sheet() {
+    let mut state = opened();
+    let _ = state.update(Action::OpenSheet(Sheet::Password));
+    let effects = state.update(Action::ForgotPassword);
+    let ticket = ticket_of(&effects);
+    assert_eq!(
+        effects,
+        vec![Effect::RequestPasswordReset {
+            ticket,
+            email: "scotty@zwipe.net".to_owned(),
+        }]
+    );
+    assert_eq!(
+        state.update(Action::ForgotPassword),
+        none(),
+        "a second press while the link is out sends nothing"
+    );
+    assert_eq!(
+        state.update(Action::ResetLinkSent { ticket }),
+        vec![
+            Effect::Toast(Toast::normal(
+                ToastKind::Success,
+                "Reset link sent to scotty@zwipe.net",
+            )),
             Effect::CloseSheet(Sheet::Password),
         ]
     );

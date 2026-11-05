@@ -1,6 +1,6 @@
 //! Change username bottom sheet.
 
-use components::{BottomSheet, Button, ButtonVariant, TextInput};
+use components::{ActionDock, BottomSheet, DockAction, DockPlace, TextInput, icons};
 use dioxus::prelude::*;
 use zwipe_ui::screens::account::{Action, Field, Sheet};
 
@@ -26,14 +26,6 @@ pub fn ChangeUsernameSheet(open: Signal<bool>) -> Element {
             open,
             title: sheet.title().to_string(),
             closable: true,
-            footer: rsx! {
-                Button {
-                    variant: ButtonVariant::Action,
-                    disabled: is_loading,
-                    onclick: move |_| driver.dispatch(Action::Save(sheet)),
-                    {save_label}
-                }
-            },
 
             div { class: "flex-col text-center",
 
@@ -52,6 +44,15 @@ pub fn ChangeUsernameSheet(open: Signal<bool>) -> Element {
                     placeholder: Field::Password.placeholder(),
                     input_type: "password",
                     error: password_error,
+                }
+            }
+            // Save floats at the sheet's bottom right.
+            ActionDock { place: DockPlace::Sheet,
+                DockAction {
+                    label: save_label,
+                    icon: icons::CHECK,
+                    disabled: is_loading,
+                    onclick: move |()| driver.dispatch(Action::Save(sheet)),
                 }
             }
         }

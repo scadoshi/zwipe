@@ -1,6 +1,6 @@
 //! Account's model with the handles that perform its effects.
 
-use components::{TOAST_LONG, ToastOptions, Toasts, use_toast};
+use components::{TOAST_LONG, TOAST_NORMAL, ToastOptions, Toasts, use_toast};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use zwipe_client::{ClientError, ZwipeClient};
@@ -8,6 +8,7 @@ use zwipe_core::domain::auth::models::secret::Secret;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::http::contracts::auth::{
     HttpChangeEmail, HttpChangePassword, HttpChangeUsername, HttpDeleteUser,
+    HttpRequestPasswordReset,
 };
 use zwipe_ui::generation::Ticket;
 use zwipe_ui::screens::account::{
@@ -250,6 +251,7 @@ impl Driver {
                 current,
                 new,
             } => self.change_password(ticket, &current, &new),
+            Effect::RequestPasswordReset { ticket, email } => self.request_reset(ticket, &email),
             Effect::DeleteAccount { ticket, password } => {
                 spawn(async move {
                     self.run_delete(ticket, password).await;
@@ -406,6 +408,28 @@ impl Driver {
                 }
                 None => Action::Failed { ticket },
             });
+        });
+    }
+
+    /// Asks for a reset link to `email`, with no session on the request, as
+    /// the Forgot password screen does.
+    fn request_reset(self, ticket: Ticket, email: &str) {
+        tracing::info!("request password reset from account");
+        let request = HttpRequestPasswordReset::new(email);
+        spawn(async move {
+            let client = self.client.peek().clone();
+            let reply = match client.request_password_reset(request).await {
+                Ok(()) => Action::ResetLinkSent { ticket },
+                Err(e) => {
+                    tracing::warn!("password reset request failed: {e}");
+                    self.toast.error(
+                        e.to_user_message(),
+                        ToastOptions::default().duration(TOAST_NORMAL),
+                    );
+                    Action::Failed { ticket }
+                }
+            };
+            self.dispatch(reply);
         });
     }
 
