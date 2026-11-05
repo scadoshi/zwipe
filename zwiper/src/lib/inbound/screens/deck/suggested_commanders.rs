@@ -569,12 +569,13 @@ pub(crate) fn SuggestionReasons(
                         evt.stop_propagation();
                         reasons_open.set(!reasons_open());
                     },
-                    {model::WHY}
-                    // The card rows' disclosure arrow: sideways folded, down open.
+                    // The card rows' disclosure arrow at the left, as on every
+                    // fold: sideways folded, down open.
                     span {
                         class: if reasons_open() { "chip-fold-arrow expanded" } else { "chip-fold-arrow" },
                         "\u{25B8}"
                     }
+                    {model::WHY}
                 }
                 // The bullets stay mounted and ease open and closed under the chip.
                 div { class: if reasons_open() { "collapsible open" } else { "collapsible" },
