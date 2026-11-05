@@ -77,6 +77,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "The Themes sheet saves a theme as you tap it and stays open, with no checkmark",
         "A fold-all button at the end of the Group by row shuts every card group, and opens them again",
         "The card details sheet shows the details on the sheet itself, with no panel under them",
+        "The tag pickers and the dictionary scroll to the screen's edge, with Search as a chip over the field",
         "Config is now called Settings",
         "The Natural setting for mana symbols is now called Classic",
         "Log in, Create profile and Send are full-width buttons under their forms, with chips to the other sign-in screens beneath",
