@@ -22,16 +22,16 @@ use crate::inbound::shell::nav::{Section, route_of, section_of};
 /// The platform the problem report email names.
 const PLATFORM: &str = "Web";
 
-/// The footer, for the nav's `trailing` slot. Signed out it holds the `!`,
-/// About and the theme pair. A wide window hides it: the bar's pills carry
-/// the same screens.
+/// The footer, for the nav's `trailing` slot, at every width: in the bar on
+/// a wide window, under the folded list below the breakpoint. Signed out it
+/// holds the `!`, About and the theme pair.
 #[component]
 pub fn MenuFooter(open: Signal<bool>, signed_in: bool) -> Element {
     let route: Route = use_route();
     let current = section_of(&route);
     let mut confirm = use_signal(|| false);
     rsx! {
-        div { class: "nav-trailing-row web-nav-narrow",
+        div { class: "nav-trailing-row",
             div { class: "nav-trailing-group",
                 SupportButton {}
                 if signed_in {

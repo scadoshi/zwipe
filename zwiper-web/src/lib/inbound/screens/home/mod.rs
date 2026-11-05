@@ -447,6 +447,8 @@ pub fn Home() -> Element {
                             },
                         }
                     }
+                    // Decks beside Colors on a wide window, the flavor card
+                    // the page's width under them; one column on the phone.
                     div { class: "web-columns",
                         div { class: "web-column",
                             HomeDecks {
@@ -455,19 +457,19 @@ pub fn Home() -> Element {
                                 ondeck: move |id| driver.dispatch(Action::OpenDeck(id)),
                                 oncreate: move |()| driver.dispatch(Action::CreateDeck),
                             }
+                        }
+                        div { class: "web-column",
                             HomeColors {
                                 play_style,
                                 onplaystyle: move |()| driver.dispatch(Action::Playstyle),
                                 oninfo: move |()| hint.set(Some(HintTopic::HomeColors)),
                             }
                         }
-                        div { class: "web-column",
-                            FlavorPanel {
-                                flavor,
-                                card,
-                                on_image: move |sd: ScryfallData| preview.set(Some((sd, 0))),
-                            }
-                        }
+                    }
+                    FlavorPanel {
+                        flavor,
+                        card,
+                        on_image: move |sd: ScryfallData| preview.set(Some((sd, 0))),
                     }
                 }
             }

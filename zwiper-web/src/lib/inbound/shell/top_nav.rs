@@ -9,12 +9,10 @@
 use components::{InfoButton, NavBar, use_overlay_back};
 use dioxus::prelude::*;
 use zwipe_core::domain::logo;
-use zwipe_core::domain::site::WEB_BASE;
 
 use crate::inbound::chrome::back_arrow::BackArrow;
 use crate::inbound::router::Route;
 use crate::inbound::shell::menu_footer::MenuFooter;
-use crate::inbound::shell::menu_theme::MenuTheme;
 use crate::inbound::shell::nav::{Back, MenuOpen, Section, route_of, section_of};
 
 /// The screen on view's title and its `?`, which the folded nav shows
@@ -27,11 +25,11 @@ pub(super) struct PageTitle {
     pub(super) on_hint: Option<Callback<()>>,
 }
 
-/// The nav for a signed-in user over the matched screen. A wide window
-/// shows Decks, Activity, Playstyle, Account, Settings and `Community` as
-/// pills, the current one lit, with the mark the way Home. Below the
-/// breakpoint the menu is the app's: Decks, Playstyle, Activity and
-/// Commander maybeboard, over the footer row of icons.
+/// The nav for a signed-in user over the matched screen: the app's menu at
+/// every width. A wide window shows Decks, Playstyle, Activity and
+/// Commander maybeboard as pills, the current one lit, then the footer's
+/// icons and Log out in the bar, with the mark the way Home. Below the
+/// breakpoint the same list folds behind the hamburger over the footer row.
 #[component]
 pub fn Shell() -> Element {
     let route: Route = use_route();
@@ -52,25 +50,10 @@ pub fn Shell() -> Element {
                         NavTitle { page }
                     },
                     links: rsx! {
-                        // The app's list; a wide window hides the maybeboard
-                        // and orders Activity before Playstyle (web.css).
                         for section in Section::LISTED {
-                            li {
-                                key: "{section.label()}",
-                                class: if section == Section::Maybeboard { "web-nav-narrow" } else { "" },
-                                "data-section": section.label(),
+                            li { key: "{section.label()}",
                                 NavLink { to: route_of(section), label: section.label(), current: current == Some(section), open }
                             }
-                        }
-                        // Account and Config stay pills on a wide window; the
-                        // folded menu's footer holds them as icons.
-                        for section in [Section::Account, Section::Config] {
-                            li { key: "{section.label()}", class: "web-nav-wide",
-                                NavLink { to: route_of(section), label: section.label(), current: current == Some(section), open }
-                            }
-                        }
-                        li { class: "web-nav-wide",
-                            CommunityLink { open }
                         }
                     },
                     trailing: rsx! {
@@ -86,10 +69,9 @@ pub fn Shell() -> Element {
 }
 
 /// The nav over the public screens: the mark, then the app's signed-out
-/// menu, `Log in`, `Create profile`, `Forgot password` and `About`, the
-/// current one lit. A wide window adds `Community` and the theme pair as
-/// pills; below the breakpoint the footer holds the `!`, the About icon and
-/// the theme pair.
+/// menu, `Log in`, `Create profile` and `Forgot password`, the current one
+/// lit, and the footer's `!`, About icon and theme pair, in the bar on a
+/// wide window and under the folded list below the breakpoint.
 #[component]
 pub fn PublicNav() -> Element {
     let route: Route = use_route();
@@ -99,7 +81,6 @@ pub fn PublicNav() -> Element {
         (Route::Login {}, "Log in"),
         (Route::Register {}, "Create profile"),
         (Route::ForgotPassword {}, "Forgot password"),
-        (Route::About {}, Section::About.label()),
     ];
     rsx! {
         div { class: "web-app-nav",
@@ -117,15 +98,6 @@ pub fn PublicNav() -> Element {
                         li { key: "{label}",
                             NavLink { current: to == route, to, label, open }
                         }
-                    }
-                    li { class: "web-nav-wide",
-                        CommunityLink { open }
-                    }
-                    // No Settings signed out, so the theme pair sits in the
-                    // bar; the pick stays on this device until a profile's
-                    // theme takes over.
-                    li { class: "web-nav-wide web-nav-theme",
-                        MenuTheme { open }
                     }
                 },
                 trailing: rsx! {
@@ -227,20 +199,6 @@ fn BackButton(back: Option<Back>, mut open: Signal<bool>) -> Element {
                     }
                 }
             },
-        }
-    }
-}
-
-/// `Community`, a nav pill to zite's Community page (Discord, email
-/// support), folding the menu.
-#[component]
-fn CommunityLink(mut open: Signal<bool>) -> Element {
-    rsx! {
-        a {
-            class: "nav-link",
-            href: "{WEB_BASE}/community",
-            onclick: move |_| open.set(false),
-            "Community"
         }
     }
 }

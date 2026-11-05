@@ -377,23 +377,22 @@ body {
     }
 }
 
-/* A wide window keeps zite's order, Activity before Playstyle, and has no
-   menu footer: the bar's pills carry its screens. */
+/* A wide window shows the app's list as pills, in the app's order, with the
+   menu footer's icons after them. */
 @media (min-width: 900px) {
     .web-nav-narrow {
         display: none !important;
     }
 
-    .web-shell .nav-links > li[data-section="Decks"] {
-        order: -2;
-    }
-
-    .web-shell .nav-links > li[data-section="Activity"] {
-        order: -1;
-    }
-
+    /* The menu footer sits in the bar after the pills, one row of icons
+       and Log out, with no band of its own. */
     .web-shell .nav-panel .nav-trailing {
-        display: none;
+        margin-left: 0.75rem;
+    }
+
+    .web-shell .nav-trailing-row {
+        padding-bottom: 0;
+        gap: 0.75rem;
     }
 }
 
@@ -980,23 +979,39 @@ body {
         flex-shrink: 0;
     }
 
+    /* The mark sizes off the hero's own width, not the window's, so a
+       tablet's wider window with the phone's panel keeps it inside. The
+       size is the app's 2.25vw on a phone, as a share of the panel. */
+    .web-home-page .home-hero {
+        container-type: inline-size;
+    }
+
+    .web-home-page .home-hero .logo {
+        font-size: clamp(0.45rem, 2.45cqw, 1.26rem);
+    }
+
     .web-home-page .home-hero {
         margin-top: auto;
     }
 
-    .web-home-page .web-column:last-child > .home-flavor {
+    .web-home-page > .home-flavor {
         margin-bottom: auto;
     }
 }
 
 @media (min-width: 900px) {
-    /* zite's page from the top; the hero centered over the two columns. */
+    /* zite's page from the top: the hero, Decks beside Colors, then the
+       flavor card at the page's width. */
     .web-home .web-home-page {
         display: flex;
         margin: 0 auto;
     }
 
-    .web-home-page .home-flavor {
+    .web-home-page > .home-flavor {
+        width: 100%;
+        max-width: none;
+        margin: 0;
+        box-sizing: border-box;
         min-height: 0;
     }
 }
