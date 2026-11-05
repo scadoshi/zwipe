@@ -2009,3 +2009,21 @@ i.ms.ms-cost.ms-gp {
         grid-template-columns: minmax(0, 1fr);
     }
 }
+
+/* The fold-all button sits at the end of the Group by row. */
+.deck-fold-all {
+    margin-left: auto;
+}
+
+/* Text for screen readers only, the label of an icon button. */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}

@@ -1,4 +1,6 @@
-//! New user registration screen.
+//! Create profile: the hero, then the four fields and `Create profile` in
+//! a panel headed with the screen's name, `Back to login` as a chip along
+//! its foot, then the featured flavor card.
 
 use components::{Button, ButtonVariant, TOAST_NORMAL, TextInput, ToastOptions, Toasts, use_toast};
 use dioxus::prelude::*;
@@ -10,6 +12,7 @@ use zwipe_ui::account::Password;
 use zwipe_ui::screens::register::{self, Action, Destination, Effect, Field, State};
 
 use crate::inbound::components::hint_host::HintTopic;
+use crate::inbound::components::home_flavor::PublicFlavor;
 use crate::inbound::components::home_hero::HomeHero;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::anonymous;
@@ -135,7 +138,10 @@ pub fn Register() -> Element {
             ScreenHeader { title: register::TITLE }
             div { class: "screen-content content-enter",
             HomeHero {}
-            div { class : "container-sm text-center",
+            div { class: "container-sm text-center form-panel",
+                div { class: "settings-list-header",
+                    span { class: "settings-list-title", {register::TITLE} }
+                }
                 form { class: "flex-col", onsubmit: move |evt| evt.prevent_default(),
                     TextInput {
                         value: driver.username,
@@ -189,6 +195,7 @@ pub fn Register() -> Element {
                     }
                 }
             }
+            PublicFlavor {}
         }
     }
     }

@@ -456,6 +456,22 @@ pub fn quote(card: &Card) -> Flavor {
     })
 }
 
+/// The Buy dialog's retailer links for `card`, `TCGplayer` then `Card Kingdom`.
+#[must_use]
+pub fn buy_links(card: &Card) -> Vec<BuyLink> {
+    let data = &card.scryfall_data;
+    vec![
+        BuyLink {
+            label: TCGPLAYER,
+            url: buy::tcgplayer_card_url(&data.name, data.tcgplayer_id),
+        },
+        BuyLink {
+            label: CARD_KINGDOM,
+            url: buy::cardkingdom_card_url(&data.name),
+        },
+    ]
+}
+
 impl State {
     /// Home before [`Action::Load`]: every panel ghosts and the scope is everybody's.
     #[must_use]
@@ -682,23 +698,10 @@ impl State {
         self.flavor_card().map_or(Flavor::Loading, quote)
     }
 
-    /// The Buy dialog's retailer links for the flavor card held, `TCGplayer` then `Card Kingdom`. Empty with no card.
+    /// The Buy dialog's retailer links for the flavor card held, [`buy_links`] of it. Empty with no card.
     #[must_use]
     pub fn buy_links(&self) -> Vec<BuyLink> {
-        let Some(card) = self.flavor_card() else {
-            return Vec::new();
-        };
-        let data = &card.scryfall_data;
-        vec![
-            BuyLink {
-                label: TCGPLAYER,
-                url: buy::tcgplayer_card_url(&data.name, data.tcgplayer_id),
-            },
-            BuyLink {
-                label: CARD_KINGDOM,
-                url: buy::cardkingdom_card_url(&data.name),
-            },
-        ]
+        self.flavor_card().map_or_else(Vec::new, buy_links)
     }
 }
 

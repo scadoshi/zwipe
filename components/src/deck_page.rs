@@ -19,7 +19,8 @@ use zwipe_core::domain::deck::{Board, Format, PowerLevel};
 use zwipe_ui::deck::command_zone::Slot;
 use zwipe_ui::deck_cards::Display;
 
-use crate::{Chip, FlippableCardImage};
+use crate::icons::{DockIcon, FOLD, UNFOLD};
+use crate::{Button, ButtonVariant, Chip, FlippableCardImage};
 
 /// The card types the Filter row offers.
 const FILTER_TYPES: [CardType; 6] = [
@@ -295,10 +296,14 @@ pub fn FeaturedCard(
 /// The rows over the cards: the host's `leading` row, Group by, the host's
 /// `boards` row, Show and Filter. The host holds every signal; `show_tokens`
 /// is `None` for a list with no tokens, and `on_change` fires when a row
-/// changes what the list shows.
+/// changes what the list shows. With `on_fold_all` the Group by row ends in
+/// the fold-all button, which shuts every group, or opens every group once
+/// `all_folded`.
 #[component]
 pub fn DeckControls(
     mut group_by: Signal<GroupByOption>,
+    #[props(default)] all_folded: bool,
+    #[props(default)] on_fold_all: Option<Callback<()>>,
     #[props(default)] show_tokens: Option<Signal<bool>>,
     mut show_zone: Signal<bool>,
     mut show_art: Signal<bool>,
@@ -331,6 +336,19 @@ pub fn DeckControls(
                     "{option}"
                 }
             }
+            if let Some(on_fold_all) = on_fold_all {
+                Button {
+                    variant: ButtonVariant::Action,
+                    class: "btn-icon deck-fold-all",
+                    onclick: move |_| on_fold_all.call(()),
+                    DockIcon { path: if all_folded { UNFOLD } else { FOLD } }
+
+                    span { class: "sr-only", if all_folded { "Open every group" } else { "Shut every group" } }
+                }
+            }
+        }
+        if let Some(boards) = boards {
+            {boards}
         }
         if let Some(boards) = boards {
             {boards}

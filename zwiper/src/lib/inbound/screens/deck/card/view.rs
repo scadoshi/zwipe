@@ -1,5 +1,5 @@
 use components::icons::{self};
-use components::{Chip, DockAction, DockFilter, Toasts, use_toast};
+use components::{Button, ButtonVariant, Chip, DockAction, DockFilter, Toasts, use_toast};
 use dioxus::core::spawn_forever;
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -709,6 +709,19 @@ pub fn View(deck_id: Uuid) -> Element {
             rows,
         ));
     }
+    // The fold-all button covers every section on screen.
+    let mut section_keys: Vec<String> = display.groups.iter().map(|g| g.key.clone()).collect();
+    section_keys.push(deck_cards::LANDS_KEY.to_owned());
+    if show_tokens {
+        section_keys.push(deck_cards::TOKENS_KEY.to_owned());
+    }
+    if show_maybe && !display.maybe.is_empty() {
+        section_keys.push(deck_cards::MAYBEBOARD_KEY.to_owned());
+    }
+    if show_side && !display.side.is_empty() {
+        section_keys.push(deck_cards::SIDEBOARD_KEY.to_owned());
+    }
+    let all_collapsed = model.all_collapsed(&section_keys);
     let lands_title = deck_cards::lands_title(model.copies(&display.lands));
     let lands: Vec<_> = display
         .lands
@@ -806,6 +819,19 @@ pub fn View(deck_id: Uuid) -> Element {
                                     onclick: move |_| driver.dispatch(Action::PickGroupBy(option)),
                                     "{option}"
                                 }
+                            }
+                            Button {
+                                variant: ButtonVariant::Action,
+                                class: "btn-icon deck-fold-all",
+                                onclick: move |_| {
+                                    driver.dispatch(Action::SetSections {
+                                        keys: section_keys.clone(),
+                                        collapsed: !all_collapsed,
+                                    });
+                                },
+                                icons::DockIcon { path: if all_collapsed { icons::UNFOLD } else { icons::FOLD } }
+
+                                span { class: "sr-only", if all_collapsed { "Open every group" } else { "Shut every group" } }
                             }
                         }
 

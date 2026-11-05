@@ -348,7 +348,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
     // Budget panel currency, mirroring the app's Budget section chips.
     let mut selected_currency = use_signal(|| "usd");
     // The folded panels, by key. The card groups open; the stat panels fold.
-    let folded: Signal<HashSet<String>> = use_signal(|| {
+    let mut folded: Signal<HashSet<String>> = use_signal(|| {
         ["Budget", "Tags", "Distributions", "Mana", "Draw odds"]
             .into_iter()
             .map(String::from)
@@ -498,6 +498,22 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
             .into()
     });
     let sections = components::sections(&display, deck.format, tokens.as_deref(), &qty_by_id);
+    // The fold-all button: every card group shut, or every one open again.
+    let section_keys: Vec<String> = sections.iter().map(|s| s.key.clone()).collect();
+    let all_folded = {
+        let shut = folded.read();
+        !section_keys.is_empty() && section_keys.iter().all(|k| shut.contains(k))
+    };
+    let fold_all = move |()| {
+        let mut shut = folded.write();
+        if all_folded {
+            for key in &section_keys {
+                shut.remove(key);
+            }
+        } else {
+            shut.extend(section_keys.iter().cloned());
+        }
+    };
     let empty = sections.is_empty();
 
     // Distribution charts, mirroring the app's deck screen sections: metrics
@@ -625,6 +641,8 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
                 controls: rsx! {
                     DeckControls {
                         group_by,
+                        all_folded,
+                        on_fold_all: fold_all,
                         show_tokens: (!deck.tokens.is_empty()).then_some(show_tokens),
                         show_zone,
                         show_art: show_row_art,

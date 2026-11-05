@@ -364,6 +364,30 @@ fn show_chips_and_sections_toggle() {
 }
 
 #[test]
+fn fold_all_collapses_every_section_and_opens_them_again() {
+    let (mut state, _) = loaded();
+    let keys = vec![LANDS_KEY.to_owned(), MAYBEBOARD_KEY.to_owned()];
+    assert!(!state.all_collapsed(&keys));
+    assert!(
+        state
+            .update(Action::SetSections {
+                keys: keys.clone(),
+                collapsed: true,
+            })
+            .is_empty()
+    );
+    assert!(state.all_collapsed(&keys));
+    let _ = state.update(Action::ToggleSection(LANDS_KEY.to_owned()));
+    assert!(!state.all_collapsed(&keys) && state.is_collapsed(MAYBEBOARD_KEY));
+    let _ = state.update(Action::SetSections {
+        keys,
+        collapsed: false,
+    });
+    assert!(!state.is_collapsed(LANDS_KEY) && !state.is_collapsed(MAYBEBOARD_KEY));
+    assert!(!state.all_collapsed(&[]));
+}
+
+#[test]
 fn the_groups_follow_the_applied_filter_and_the_boards_the_live_one() {
     let (mut state, _) = loaded();
     let live = CardQueryBuilder::with_name_contains("zzz");
