@@ -149,21 +149,21 @@ pub(crate) fn DeckFields(
                     div { class: "label-row",
                         label { class: "label", {model::PRICE_TARGET} }
                         InfoButton { topic: HintTopic::PriceTarget }
+                        // The currencies on the label's line.
+                        div { class: "label-row-chips",
+                            for currency in PriceCurrency::all().iter().copied() {
+                                div {
+                                    class: if currency_picked == currency { "chip selected" } else { "chip" },
+                                    onclick: move |_| on_action.call(Action::PickCurrency(currency)),
+                                    "{currency.label()}"
+                                }
+                            }
+                        }
                         if !price_text.is_empty() {
                             button {
                                 class: "clear-btn",
                                 onclick: move |_| on_action.call(Action::ClearPrice),
                                 "\u{00d7}"
-                            }
-                        }
-                    }
-
-                    div { class: "chip-row", style: "margin-bottom: 0.5rem; justify-content: center;",
-                        for currency in PriceCurrency::all().iter().copied() {
-                            div {
-                                class: if currency_picked == currency { "chip selected" } else { "chip" },
-                                onclick: move |_| on_action.call(Action::PickCurrency(currency)),
-                                "{currency.label()}"
                             }
                         }
                     }

@@ -2913,6 +2913,14 @@ button {
     margin-bottom: 0.4rem;
 }
 
+/* Chips on the label's own line, a step after its "?", wrapping under it
+   as one group when the line is short. */
+.label-row-chips {
+    display: flex;
+    gap: 0.4rem;
+    margin-left: 0.5rem;
+}
+
 .label-row .label {
     margin-bottom: 0;
 }
