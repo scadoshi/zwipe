@@ -4,7 +4,7 @@
 //! file draws its state, performs its effects and keeps the gestures, the
 //! card's entrance, image easing and the sheets.
 
-use components::icons::{self, DockIcon, EyeIcon};
+use components::icons::{self, BoltIcon, DockIcon, EyeIcon};
 use components::{Chip, DockAction, DockFilter, ToastOptions, Toasts, use_toast};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -771,7 +771,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                             "aria-label": add_cards::SYNERGY,
                             "aria-pressed": "{filter_builder.read().synergy()}",
                             onclick: move |_| driver.dispatch(Action::ToggleSynergy),
-                            DockIcon { path: icons::BOLT }
+                            BoltIcon {}
                         }
                     }
                     DockFilter {
