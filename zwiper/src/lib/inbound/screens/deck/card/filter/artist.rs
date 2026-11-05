@@ -1,5 +1,6 @@
 //! Artist filter component.
 
+use components::ClearWrap;
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
@@ -197,34 +198,29 @@ pub fn Artist() -> Element {
                 }
             }
 
-            div { class: "flex items-center gap-05",
-                input { class: "input input-compact",
-                    style: "flex: 1; margin-bottom: 0;",
-                    id: "artist-search",
-                    placeholder: "Type to search",
-                    value: "{artist_search_query()}",
-                    r#type: "text",
-                    autocapitalize: "none",
-                    autocorrect: "off",
-                    spellcheck: "false",
-                    oninput: move |event| {
-                        artist_is_typing.set(true);
-                        artist_search_query.set(event.value());
-                    },
-                    onblur: move |_| {
-                        artist_is_typing.set(false);
-                    }
-                }
-                if !artist_search_query().is_empty() {
-                    button {
-                        class: "clear-btn",
-                        onclick: move |_| {
-                            artist_search_query.set(String::new());
-                            artist_is_typing.set(false);
+            ClearWrap {
+                filled: !artist_search_query().is_empty(),
+                on_clear: move |()| {
+                    artist_search_query.set(String::new());
+                    artist_is_typing.set(false);
+                },
+    input { class: "input input-compact",
+                        style: "flex: 1; margin-bottom: 0;",
+                        id: "artist-search",
+                        placeholder: "Type to search",
+                        value: "{artist_search_query()}",
+                        r#type: "text",
+                        autocapitalize: "none",
+                        autocorrect: "off",
+                        spellcheck: "false",
+                        oninput: move |event| {
+                            artist_is_typing.set(true);
+                            artist_search_query.set(event.value());
                         },
-                        "\u{00d7}"
+                        onblur: move |_| {
+                            artist_is_typing.set(false);
+                        }
                     }
-                }
             }
         }
     }

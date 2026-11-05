@@ -7,6 +7,7 @@
 //! `oracle_tags_*` filter criteria, mirroring the include/any-all/exclude
 //! structure of the other multi-select filters.
 
+use components::ClearWrap;
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::oracle_tag::{self, OracleTag};
@@ -189,29 +190,24 @@ pub(crate) fn OracleTags(on_dictionary: EventHandler<PickerField>) -> Element {
                 }
             }
 
-            div { class: "flex items-center gap-05",
-                input { class: "input input-compact",
-                    style: "flex: 1; margin-bottom: 0;",
-                    id: "oracle-tags-search",
-                    placeholder: "Search all oracle tags",
-                    value: "{includes_search()}",
-                    r#type: "text",
-                    autocapitalize: "none",
-                    autocorrect: "off",
-                    spellcheck: "false",
-                    oninput: move |event| {
-                        includes_search.set(event.value());
+            ClearWrap {
+                filled: !includes_search().is_empty(),
+                on_clear: move |()| {
+                    includes_search.set(String::new());
+                },
+    input { class: "input input-compact",
+                        style: "flex: 1; margin-bottom: 0;",
+                        id: "oracle-tags-search",
+                        placeholder: "Search all oracle tags",
+                        value: "{includes_search()}",
+                        r#type: "text",
+                        autocapitalize: "none",
+                        autocorrect: "off",
+                        spellcheck: "false",
+                        oninput: move |event| {
+                            includes_search.set(event.value());
+                        }
                     }
-                }
-                if !includes_search().is_empty() {
-                    button {
-                        class: "clear-btn",
-                        onclick: move |_| {
-                            includes_search.set(String::new());
-                        },
-                        "\u{00d7}"
-                    }
-                }
             }
 
             // == excludes ==
@@ -285,29 +281,24 @@ pub(crate) fn OracleTags(on_dictionary: EventHandler<PickerField>) -> Element {
                 }
             }
 
-            div { class: "flex items-center gap-05",
-                input { class: "input input-compact",
-                    style: "flex: 1; margin-bottom: 0;",
-                    id: "oracle-tags-excludes-search",
-                    placeholder: "Search all oracle tags",
-                    value: "{excludes_search()}",
-                    r#type: "text",
-                    autocapitalize: "none",
-                    autocorrect: "off",
-                    spellcheck: "false",
-                    oninput: move |event| {
-                        excludes_search.set(event.value());
+            ClearWrap {
+                filled: !excludes_search().is_empty(),
+                on_clear: move |()| {
+                    excludes_search.set(String::new());
+                },
+    input { class: "input input-compact",
+                        style: "flex: 1; margin-bottom: 0;",
+                        id: "oracle-tags-excludes-search",
+                        placeholder: "Search all oracle tags",
+                        value: "{excludes_search()}",
+                        r#type: "text",
+                        autocapitalize: "none",
+                        autocorrect: "off",
+                        spellcheck: "false",
+                        oninput: move |event| {
+                            excludes_search.set(event.value());
+                        }
                     }
-                }
-                if !excludes_search().is_empty() {
-                    button {
-                        class: "clear-btn",
-                        onclick: move |_| {
-                            excludes_search.set(String::new());
-                        },
-                        "\u{00d7}"
-                    }
-                }
             }
         }
     }
