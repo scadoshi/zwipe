@@ -1418,28 +1418,25 @@ i.ms.ms-cost.ms-gp {
     min-width: 0;
 }
 
-/* The head: the featured cards at the left, the name and its chips beside
-   them. Below the breakpoint the cards sit centered over the name. */
+/* The head: the name and its chips, then the featured cards in a centered
+   row under them. */
 .deck-head {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
+    display: flex;
+    flex-direction: column;
     gap: 1.5rem;
-    align-items: start;
-}
-
-.deck-head-plain {
-    grid-template-columns: minmax(0, 1fr);
 }
 
 .deck-head-featured {
     display: flex;
     flex-wrap: nowrap;
-    gap: 1rem;
+    justify-content: center;
+    gap: 1.25rem;
 }
 
 .deck-featured-card {
-    width: 10rem;
+    flex: 1 1 0;
     min-width: 0;
+    max-width: 13rem;
     text-align: center;
 }
 
@@ -1671,12 +1668,8 @@ i.ms.ms-cost.ms-gp {
 }
 
 @media (max-width: 56rem) {
-    .deck-head {
-        grid-template-columns: minmax(0, 1fr);
-    }
-
     .deck-head-featured {
-        justify-content: center;
+        gap: 0.5rem;
     }
 
     .deck-stats,

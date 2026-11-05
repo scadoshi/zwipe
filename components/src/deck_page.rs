@@ -179,11 +179,10 @@ pub fn DeckPage(
     }
 }
 
-/// The head: the featured cards (`children`, [`FeaturedCard`]s) at the
-/// left, and beside them the name over the facts as chips, with the host's
-/// `actions` at the name's right end. Below the breakpoint the cards sit
-/// over the name. `featured_class` joins the featured row's classes, for a
-/// host's entrance.
+/// The head: the name over the facts as chips, with the host's `actions`
+/// at the name's right end, then the featured cards (`children`,
+/// [`FeaturedCard`]s) in a centered row under them. `featured_class` joins
+/// the featured row's classes, for a host's entrance.
 #[component]
 pub fn DeckHead(
     name: String,
@@ -198,10 +197,7 @@ pub fn DeckHead(
         None => "deck-head-featured".to_owned(),
     };
     rsx! {
-        div { class: if has_featured { "deck-head" } else { "deck-head deck-head-plain" },
-            if has_featured {
-                div { class: "{featured_class}", {children} }
-            }
+        div { class: "deck-head",
             div { class: "deck-head-text",
                 div { class: "deck-head-title-row",
                     h1 { class: "deck-head-title", "{name}" }
@@ -230,6 +226,9 @@ pub fn DeckHead(
                         span { class: "stat-chip stat-chip-money", "{price}" }
                     }
                 }
+            }
+            if has_featured {
+                div { class: "{featured_class}", {children} }
             }
         }
     }
