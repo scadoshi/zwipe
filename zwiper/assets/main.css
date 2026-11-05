@@ -1031,31 +1031,33 @@ button {
     box-shadow: none;
 }
 
+/* The kit's Chip, as the Tags fold chip above it: a control, not a label. */
 .deck-group > .card-group-header.group-collapsible {
-    --tone: var(--accent-tertiary);
     display: inline-flex;
     align-items: center;
-    gap: 0.3rem;
-    padding: 0.2rem 0.7rem 0.2rem 0.45rem;
+    gap: 0.35rem;
+    padding: 0.3rem 0.6rem;
     margin: 0.5rem 0 0;
-    border: 1px solid color-mix(in srgb, var(--tone) 35%, transparent);
+    border: 1px solid var(--border-primary);
     border-radius: 0.6rem;
-    background-color: color-mix(in srgb, var(--tone) 12%, transparent);
-    color: var(--tone);
-    font-size: 0.78rem;
-    font-weight: 600;
+    background-color: var(--bg-primary);
+    box-shadow: var(--shadow-sm);
+    color: var(--text-primary);
+    font-size: 0.75rem;
+    font-weight: 400;
 }
 
 .deck-group > .card-group-header .card-row-arrow {
-    width: 1rem;
-    height: 1rem;
-    color: var(--tone);
+    width: 1em;
+    height: 1em;
+    font-size: 1rem;
+    color: var(--text-primary);
 }
 
 /* The chip keeps its whole border while folded; the folded rule below
    that clears a group header's bottom edge does not apply to it. */
 .card-group.deck-group.collapsed > .card-group-header.group-collapsible {
-    border-bottom-color: color-mix(in srgb, var(--tone) 35%, transparent);
+    border-bottom-color: var(--border-primary);
 }
 
 /* The decks sit a panel gap under their chip and over the next one. The
@@ -3099,12 +3101,6 @@ button {
     margin-top: 0.5rem;
 }
 
-/* (The old `.deck-group-header` variant lived here: it stripped the header's
-   bottom rule because deck-list headers floated over free-standing deck
-   panels, where a rule read as a stray line. Deck rows now sit inside a
-   container like the card list's, so the header has something to divide and
-   both screens share one header style.) */
-
 /* The fold chip's arrow: the card rows' disclosure grammar, pointing
    sideways while folded and easing down when open, a size up so it reads
    in a chip. */
@@ -3116,7 +3112,7 @@ button {
        about the arrow's own middle rather than the glyph cell's. */
     width: 1em;
     height: 1em;
-    margin-left: 0.35rem;
+    margin-right: 0.35rem;
     font-size: 1rem;
     line-height: 1;
     transform-origin: 50% 50%;

@@ -335,12 +335,13 @@ pub fn DeckList() -> Element {
                                 Chip {
                                     selected: tags_open,
                                     onclick: move |_| driver.dispatch(Action::ToggleTagFold),
-                                    {deck_list::TAGS}
-                                    // The card rows' disclosure arrow: sideways folded, down open.
+                                    // The card rows' disclosure arrow at the left, as on every
+                                    // fold: sideways folded, down open.
                                     span {
                                         class: if tags_open { "chip-fold-arrow expanded" } else { "chip-fold-arrow" },
                                         "\u{25B8}"
                                     }
+                                    {deck_list::TAGS}
                                 }
                                 // The tags that are on stay in the row while folded.
                                 if !tags_open {
