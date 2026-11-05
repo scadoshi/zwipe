@@ -10,7 +10,7 @@ use crate::generation::{Generation, Ticket};
 use crate::toast::{Toast, ToastKind};
 
 /// The screen's title.
-pub const TITLE: &str = "Reset password";
+pub const TITLE: &str = "Forgot password";
 
 /// The email field's label and placeholder.
 pub const EMAIL: &str = "Email";
