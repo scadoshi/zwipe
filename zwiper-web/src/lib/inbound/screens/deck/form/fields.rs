@@ -83,6 +83,7 @@ fn ProfileFields(form: DeckForm, on_enter: EventHandler<()>) -> Element {
                         id: DECK_NAME_ID,
                         placeholder: "Not set",
                         error: (form.name_error)(),
+                        on_clear: |()| {},
                     }
                 }
                 div {
@@ -258,10 +259,15 @@ fn TagFields(form: DeckForm) -> Element {
                         label { class: "label", "Deck tags" }
                         InfoButton { topic: HintTopic::DeckTags }
                         span { class: "field-count", "{tags.read().len()}/{MAX_DECK_TAGS}" }
+                        if !tags.read().is_empty() {
+                            button {
+                                class: "clear-btn",
+                                r#type: "button",
+                                onclick: move |_| tags.set(Vec::new()),
+                                "\u{00d7}"
+                            }
+                        }
                     }
-                    ClearWrap {
-                        filled: !tags.read().is_empty(),
-                        on_clear: move |()| tags.set(Vec::new()),
                     if tags.read().is_empty() {
                         div { class: "input input-placeholder input-tappable", onclick: move |_| tags_open.set(true), "Not set" }
                     } else {
@@ -282,17 +288,21 @@ fn TagFields(form: DeckForm) -> Element {
                             }
                         }
                     }
-                    }
                 }
                 div { style: "margin-top: 1rem;",
                     div { class: "label-row",
                         label { class: "label", "Oracle tags" }
                         InfoButton { topic: HintTopic::OracleTags }
                         span { class: "field-count", "{oracle_tags.read().len()}/{MAX_DECK_ORACLE_TAGS}" }
+                        if !oracle_tags.read().is_empty() {
+                            button {
+                                class: "clear-btn",
+                                r#type: "button",
+                                onclick: move |_| oracle_tags.set(Vec::new()),
+                                "\u{00d7}"
+                            }
+                        }
                     }
-                    ClearWrap {
-                        filled: !oracle_tags.read().is_empty(),
-                        on_clear: move |()| oracle_tags.set(Vec::new()),
                     if oracle_tags.read().is_empty() {
                         div { class: "input input-placeholder input-tappable", onclick: move |_| oracle_open.set(true), "Not set" }
                     } else {
@@ -312,7 +322,6 @@ fn TagFields(form: DeckForm) -> Element {
                                 }
                             }
                         }
-                    }
                     }
                 }
                 div { style: "margin-top: 1rem;",
