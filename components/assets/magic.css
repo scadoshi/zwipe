@@ -2013,9 +2013,9 @@ i.ms.ms-cost.ms-gp {
     }
 }
 
-/* The fold-all button sits at the end of the Show row. */
+/* The fold-all button follows the Show chips, in the row's flow. */
 .deck-fold-all {
-    margin-left: auto;
+    margin-left: 0.25rem;
 }
 
 /* Text for screen readers only, the label of an icon button. */
