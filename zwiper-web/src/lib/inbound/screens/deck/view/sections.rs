@@ -1,10 +1,13 @@
 //! The deck view's panels: the Profile card with Edit, Clone and Share in
 //! its header, and the Budget (with its Buy row), Tags, Distributions,
-//! Mana, Draw odds and Warnings sections.
+//! Mana, Draw odds and Warnings sections. Each section is a body the wide
+//! window's deck page folds in its own panel, and a `*Section` wrapper
+//! that draws the body in the phone's accordion.
 
 use components::icons::{CloneIcon, EditIcon, ShareIcon};
 use components::{
-    Button, ButtonVariant, ColorChart, DeckCharts, DrawOdds, ManaCurve, ManaFulfillment,
+    Button, ButtonVariant, ColorChart, DeckCharts, DrawOdds, InfoButton as HintButton, ManaCurve,
+    ManaFulfillment,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -35,10 +38,56 @@ fn InfoRow(label: String, value: String) -> Element {
     }
 }
 
+/// Edit, Clone and Share as icons, the actions on the deck as a whole, in
+/// the Profile card's header on the phone and the deck page's head on a
+/// wide window, where `on_hint` adds the page's `?` after them.
+#[component]
+pub fn ProfileActions(
+    deck_id: Uuid,
+    dialogs: DeckDialogs,
+    #[props(default)] on_hint: Option<Callback<()>>,
+) -> Element {
+    let navigator = use_navigator();
+    let DeckDialogs {
+        mut clone,
+        mut share,
+        ..
+    } = dialogs;
+    rsx! {
+        div { class: "deck-profile-actions",
+            Button {
+                variant: ButtonVariant::Action,
+                class: "btn-icon",
+                onclick: move |_| {
+                    navigator.push(Route::EditDeck { deck_id });
+                },
+                EditIcon {}
+                span { class: "sr-only", {EDIT} }
+            }
+            Button {
+                variant: ButtonVariant::Action,
+                class: "btn-icon",
+                onclick: move |_| clone.set(true),
+                CloneIcon {}
+                span { class: "sr-only", {MoreItem::CloneDeck.short_label()} }
+            }
+            Button {
+                variant: ButtonVariant::Action,
+                class: "btn-icon",
+                onclick: move |_| share.set(true),
+                ShareIcon {}
+                span { class: "sr-only", {MoreItem::ShareDeck.short_label()} }
+            }
+            if let Some(open) = on_hint {
+                HintButton { onclick: move |_| open.call(()) }
+            }
+        }
+    }
+}
+
 /// The Profile card: name, card count, format, the command zone and power
-/// level, with Edit, Clone and Share as icons in its header, the actions
-/// on the deck as a whole. The commander row prefers the fetched card's
-/// name.
+/// level, with [`ProfileActions`] in its header. The commander row prefers
+/// the fetched card's name.
 #[component]
 pub fn ProfileCard(
     profile: DeckProfile,
@@ -46,13 +95,7 @@ pub fn ProfileCard(
     cards: usize,
     dialogs: DeckDialogs,
 ) -> Element {
-    let navigator = use_navigator();
     let deck_id = profile.id;
-    let DeckDialogs {
-        mut clone,
-        mut share,
-        ..
-    } = dialogs;
     let label = Slot::Commander.label(profile.format);
     let commander_name = commander
         .map(|c| c.scryfall_data.name)
@@ -65,31 +108,7 @@ pub fn ProfileCard(
         div { class: "settings-list",
             div { class: "settings-list-header",
                 span { class: "settings-list-title", "Profile" }
-                div { class: "deck-profile-actions",
-                    Button {
-                        variant: ButtonVariant::Action,
-                        class: "btn-icon",
-                        onclick: move |_| {
-                            navigator.push(Route::EditDeck { deck_id });
-                        },
-                        EditIcon {}
-                        span { class: "sr-only", {EDIT} }
-                    }
-                    Button {
-                        variant: ButtonVariant::Action,
-                        class: "btn-icon",
-                        onclick: move |_| clone.set(true),
-                        CloneIcon {}
-                        span { class: "sr-only", {MoreItem::CloneDeck.short_label()} }
-                    }
-                    Button {
-                        variant: ButtonVariant::Action,
-                        class: "btn-icon",
-                        onclick: move |_| share.set(true),
-                        ShareIcon {}
-                        span { class: "sr-only", {MoreItem::ShareDeck.short_label()} }
-                    }
-                }
+                ProfileActions { deck_id, dialogs }
             }
             InfoRow { label: "Name", value: profile.name.to_string() }
             InfoRow { label: "Cards", value: cards.to_string() }
@@ -113,16 +132,32 @@ pub fn ProfileCard(
     }
 }
 
-/// The Budget section: its currency chips (only with cards to price), the
-/// total and average price, and the Buy row with the `TCGplayer` and `Card
-/// Kingdom` links once `buy` holds them.
+/// The currency chips in Budget's header, once there are cards to price.
 #[component]
-pub fn BudgetSection(
+pub fn CurrencyChips(mut currency: Signal<PriceCurrency>) -> Element {
+    let shown = currency();
+    rsx! {
+        div { class: "chip-row", style: "margin-bottom:0;",
+            for each in PriceCurrency::all().iter().copied() {
+                div {
+                    key: "{each.label()}",
+                    class: if shown == each { "chip selected" } else { "chip" },
+                    onclick: move |_| currency.set(each),
+                    "{each.label()}"
+                }
+            }
+        }
+    }
+}
+
+/// Budget's body: the total and average price, and the Buy row with the
+/// `TCGplayer` and `Card Kingdom` links once `buy` holds them.
+#[component]
+pub fn BudgetBody(
     profile: DeckProfile,
     metrics: Option<DeckMetrics>,
     buy: Option<(String, String)>,
-    mut currency: Signal<PriceCurrency>,
-    open_section: Signal<Option<String>>,
+    currency: Signal<PriceCurrency>,
 ) -> Element {
     let shown = currency();
     let (total, average) = match (&metrics, shown) {
@@ -131,39 +166,44 @@ pub fn BudgetSection(
         (Some(m), PriceCurrency::Usd) => (m.total_price_usd, m.avg_price_usd),
         (None, _) => (None, None),
     };
-    let has_metrics = metrics.is_some();
-    let accessory = has_metrics.then(|| {
-        rsx! {
-            div { class: "chip-row", style: "margin-bottom:0;",
-                for each in PriceCurrency::all().iter().copied() {
-                    div {
-                        key: "{each.label()}",
-                        class: if shown == each { "chip selected" } else { "chip" },
-                        onclick: move |_| currency.set(each),
-                        "{each.label()}"
-                    }
+    rsx! {
+        div { style: "display:flex;flex-direction:column;",
+            InfoRow { label: "Total price", value: total_price_line(&profile, total, shown) }
+            if metrics.is_some() {
+                InfoRow {
+                    label: "Average card price",
+                    value: average.map_or_else(|| "N/A".to_owned(), |v| shown.format_amount(v)),
                 }
             }
+            if let Some((tcgplayer, cardkingdom)) = buy {
+                div { class: "deck-buy-row",
+                    span { class: "stat-chip stat-chip-p1 chip-row-label", {BUY} }
+                    BuyLink { href: tcgplayer, label: "TCGplayer" }
+                    BuyLink { href: cardkingdom, label: "Card Kingdom" }
+                }
+            }
+        }
+    }
+}
+
+/// The Budget section of the phone's accordion: [`CurrencyChips`] in its
+/// header over [`BudgetBody`].
+#[component]
+pub fn BudgetSection(
+    profile: DeckProfile,
+    metrics: Option<DeckMetrics>,
+    buy: Option<(String, String)>,
+    currency: Signal<PriceCurrency>,
+    open_section: Signal<Option<String>>,
+) -> Element {
+    let accessory = metrics.is_some().then(|| {
+        rsx! {
+            CurrencyChips { currency }
         }
     });
     rsx! {
         CollapsibleSection { title: "Budget", open_section, header_accessory: accessory,
-            div { style: "display:flex;flex-direction:column;",
-                InfoRow { label: "Total price", value: total_price_line(&profile, total, shown) }
-                if has_metrics {
-                    InfoRow {
-                        label: "Average card price",
-                        value: average.map_or_else(|| "N/A".to_owned(), |v| shown.format_amount(v)),
-                    }
-                }
-                if let Some((tcgplayer, cardkingdom)) = buy {
-                    div { class: "deck-buy-row",
-                        span { class: "stat-chip stat-chip-p1 chip-row-label", {BUY} }
-                        BuyLink { href: tcgplayer, label: "TCGplayer" }
-                        BuyLink { href: cardkingdom, label: "Card Kingdom" }
-                    }
-                }
-            }
+            BudgetBody { profile, metrics, buy, currency }
         }
     }
 }
@@ -204,14 +244,22 @@ fn TagRow(label: String, topic: Option<HintTopic>, chips: Vec<String>) -> Elemen
     }
 }
 
-/// The Tags section: deck, oracle and other tags, each row only when it has
-/// any.
+/// The Tags section of the phone's accordion, over [`TagsBody`].
 #[component]
 pub fn TagsSection(profile: DeckProfile, open_section: Signal<Option<String>>) -> Element {
     let count = crate::domain::deck::tag_count(&profile);
     rsx! {
         CollapsibleSection { title: "Tags", badge: count.to_string(), open_section,
-            div { style: "display:flex;flex-direction:column;",
+            TagsBody { profile }
+        }
+    }
+}
+
+/// Tags' body: deck, oracle and other tags, each row only when it has any.
+#[component]
+pub fn TagsBody(profile: DeckProfile) -> Element {
+    rsx! {
+        div { style: "display:flex;flex-direction:column;",
                 if !profile.tags.is_empty() {
                     TagRow {
                         label: "Deck tags",
@@ -232,74 +280,102 @@ pub fn TagsSection(profile: DeckProfile, open_section: Signal<Option<String>>) -
                         chips: profile.other_tags.iter().map(|t| t.display_name().to_owned()).collect::<Vec<_>>(),
                     }
                 }
+        }
+    }
+}
+
+/// The metrics with a card to chart, if any.
+#[must_use]
+pub fn charted(metrics: Option<&DeckMetrics>) -> Option<DeckMetrics> {
+    metrics
+        .filter(|m| m.land_count > 0 || m.nonland_count > 0)
+        .cloned()
+}
+
+/// Distributions' body: the average P/T and the type and role charts.
+#[component]
+pub fn DistributionsBody(metrics: DeckMetrics) -> Element {
+    let describe_tag = try_use_context::<OtagDescribe>().map(|d| d.0);
+    let on_examples = try_use_context::<OtagExamplesOpen>().map(|e| e.0);
+    let average_pt = (metrics.avg_power.is_some() || metrics.avg_toughness.is_some()).then(|| {
+        let one = |v: Option<f64>| v.map_or_else(|| "-".to_owned(), |v| format!("{v:.1}"));
+        format!(
+            "{} / {}",
+            one(metrics.avg_power),
+            one(metrics.avg_toughness)
+        )
+    });
+    rsx! {
+        if let Some(value) = average_pt {
+            div { class: "settings-row",
+                span { class: "settings-row-label", "Average P/T" }
+                span { class: "info-row-value", style: "white-space:nowrap;", "{value}" }
+            }
+        }
+        DeckCharts {
+            type_bars: metrics.type_bars(),
+            category_bars: metrics.card_role_bars(),
+            role_tags: metrics.card_role_tags.clone(),
+            describe_tag,
+            on_examples,
+            type_hint: rsx! { InfoButton { topic: HintTopic::TypeChart } },
+            role_hint: rsx! { InfoButton { topic: HintTopic::RoleChart } },
+        }
+    }
+}
+
+/// Mana's body: the lands against their target, and with a card to chart
+/// the average mana value, the curve, the colors and the fulfillment.
+#[component]
+pub fn ManaBody(
+    charts: Option<DeckMetrics>,
+    land_count: usize,
+    land_target: Option<i32>,
+) -> Element {
+    let lands = match land_target {
+        Some(target) => format!("{land_count} / {target}"),
+        None => land_count.to_string(),
+    };
+    rsx! {
+        InfoRow { label: "Lands", value: lands }
+        if let Some(m) = charts {
+            InfoRow { label: "Average mana value", value: format!("{:.1}", m.avg_cmc) }
+            ManaCurve {
+                mana_curve_bars: m.mana_curve_bars(),
+                hint: rsx! { InfoButton { topic: HintTopic::ManaCurve } },
+            }
+            ColorChart {
+                bars: ColorCounts::from(&m).bars(),
+                hint: rsx! { InfoButton { topic: HintTopic::ColorChart } },
+            }
+            ManaFulfillment {
+                rows: m.mana_balance_rows(),
+                hint: rsx! { InfoButton { topic: HintTopic::ManaFulfillment } },
             }
         }
     }
 }
 
-/// Distributions, Mana and Draw odds. Distributions and Draw odds need a
-/// mainboard card; Mana shows with one or with a land target.
+/// Distributions, Mana and Draw odds in the phone's accordion.
+/// Distributions and Draw odds need a mainboard card; Mana shows with one
+/// or with a land target.
 #[component]
 pub fn StatsSections(
     metrics: Option<DeckMetrics>,
     land_target: Option<i32>,
     open_section: Signal<Option<String>>,
 ) -> Element {
-    let describe_tag = try_use_context::<OtagDescribe>().map(|d| d.0);
-    let on_examples = try_use_context::<OtagExamplesOpen>().map(|e| e.0);
-    let charts = metrics
-        .as_ref()
-        .filter(|m| m.land_count > 0 || m.nonland_count > 0)
-        .cloned();
+    let charts = charted(metrics.as_ref());
     let land_count = metrics.as_ref().map_or(0, |m| m.land_count);
-    let lands = match land_target {
-        Some(target) => format!("{land_count} / {target}"),
-        None => land_count.to_string(),
-    };
-    let average_pt = charts.as_ref().and_then(|m| {
-        (m.avg_power.is_some() || m.avg_toughness.is_some()).then(|| {
-            let one = |v: Option<f64>| v.map_or_else(|| "-".to_owned(), |v| format!("{v:.1}"));
-            format!("{} / {}", one(m.avg_power), one(m.avg_toughness))
-        })
-    });
     rsx! {
         if let Some(m) = charts.clone() {
             CollapsibleSection { title: "Distributions", open_section,
-                if let Some(value) = average_pt {
-                    div { class: "settings-row",
-                        span { class: "settings-row-label", "Average P/T" }
-                        span { class: "info-row-value", style: "white-space:nowrap;", "{value}" }
-                    }
-                }
-                DeckCharts {
-                    type_bars: m.type_bars(),
-                    category_bars: m.card_role_bars(),
-                    role_tags: m.card_role_tags.clone(),
-                    describe_tag,
-                    on_examples,
-                    type_hint: rsx! { InfoButton { topic: HintTopic::TypeChart } },
-                    role_hint: rsx! { InfoButton { topic: HintTopic::RoleChart } },
-                }
+                DistributionsBody { metrics: m }
             }
         }
         if charts.is_some() || land_target.is_some() {
             CollapsibleSection { title: "Mana", open_section,
-                InfoRow { label: "Lands", value: lands }
-                if let Some(m) = charts.clone() {
-                    InfoRow { label: "Average mana value", value: format!("{:.1}", m.avg_cmc) }
-                    ManaCurve {
-                        mana_curve_bars: m.mana_curve_bars(),
-                        hint: rsx! { InfoButton { topic: HintTopic::ManaCurve } },
-                    }
-                    ColorChart {
-                        bars: ColorCounts::from(&m).bars(),
-                        hint: rsx! { InfoButton { topic: HintTopic::ColorChart } },
-                    }
-                    ManaFulfillment {
-                        rows: m.mana_balance_rows(),
-                        hint: rsx! { InfoButton { topic: HintTopic::ManaFulfillment } },
-                    }
-                }
+                ManaBody { charts: charts.clone(), land_count, land_target }
             }
         }
         if let Some(m) = charts {
@@ -316,7 +392,7 @@ pub fn StatsSections(
 /// The draw odds with ← and → stepping the turn while one of its `-` and `+`
 /// buttons has focus.
 #[component]
-fn DrawOddsStepper(metrics: DeckMetrics) -> Element {
+pub fn DrawOddsStepper(metrics: DeckMetrics) -> Element {
     let (deck_size, buckets) = metrics.draw_odds_buckets();
     rsx! {
         div {
@@ -348,7 +424,7 @@ pub struct WarningFixes {
     pub remove: Callback<Uuid>,
 }
 
-/// The Warnings section: each warning's message and, on the right, its fix.
+/// The Warnings section: [`WarningsBody`] in the phone's accordion.
 #[component]
 pub fn WarningsSection(
     deck_id: Uuid,
@@ -356,11 +432,20 @@ pub fn WarningsSection(
     fixes: WarningFixes,
     open_section: Signal<Option<String>>,
 ) -> Element {
-    let navigator = use_navigator();
     let count = warnings.len();
     rsx! {
         CollapsibleSection { title: "Warnings", warn: true, badge: count.to_string(), open_section,
-            div { style: "display:flex;flex-direction:column;",
+            WarningsBody { deck_id, warnings, fixes }
+        }
+    }
+}
+
+/// Warnings' body: each warning's message and, on the right, its fix.
+#[component]
+pub fn WarningsBody(deck_id: Uuid, warnings: Vec<DeckWarning>, fixes: WarningFixes) -> Element {
+    let navigator = use_navigator();
+    rsx! {
+        div { style: "display:flex;flex-direction:column;",
                 for (i, item) in warnings.into_iter().enumerate() {
                     div { key: "{i}", class: "settings-row", style: "justify-content: space-between; gap: 0.5rem;",
                         span { class: "text-muted", "{item}" }
@@ -389,7 +474,6 @@ pub fn WarningsSection(
                         }
                     }
                 }
-            }
         }
     }
 }

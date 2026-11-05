@@ -1484,24 +1484,8 @@ body {
 
 /* ---- Deck view ---- */
 
-/* Below the breakpoint the page is one stack, as in the app, with no cards
-   column. */
-.web-deck-view-cards {
-    display: none;
-}
-
+/* Below the breakpoint the page is the app's one stack. */
 @media (max-width: 899px) {
-    /* The profile opens the page as in the app, ahead of the stats column
-       it follows in the markup. */
-    .web-deck-view {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .web-deck-view .web-deck-profile {
-        order: -1;
-    }
-
     .web-deck-view {
         width: calc(100% - 4rem);
         max-width: 40rem;
@@ -1512,17 +1496,16 @@ body {
     }
 }
 
+/* On a wide window it is the deck page both sites share; the page's
+   trailing room keeps the floating Cards off Delete. */
 @media (min-width: 900px) {
-    .web-deck-view-cards {
-        display: flex;
-        flex-direction: column;
-        min-width: 0;
+    .web-deck-page {
+        padding-bottom: 5rem;
     }
 
-    .web-deck-cards {
-        display: flex;
-        flex-direction: column;
-        gap: var(--panel-gap);
+    /* Warnings at the foot, open, in the section's own warning dress. */
+    .web-deck-warnings {
+        margin: 0;
     }
 }
 

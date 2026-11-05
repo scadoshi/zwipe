@@ -1,17 +1,14 @@
-//! The deck view: the Profile card with Edit, Clone and Share, the Budget,
-//! Tags, stats and Warnings sections, the Data and Danger zone panels at
-//! the foot, and Cards floating in the dock.
-//!
-//! On a wide window the Profile card is the hero at the top of zite's page;
-//! under it Budget, Tags and the stats share the left column, and Warnings
-//! over the cards column for reading share the right, with Data and Danger
-//! zone in a row under both. Every section is open at once. Below the
-//! breakpoint it is the app's accordion with `Budget` open and no cards
-//! column. A deck the server no longer has leaves for Decks, as the app's
-//! model does with `Action::Gone`.
+//! The deck view. On a wide window it is the deck page both sites share
+//! (`page`): the name, its facts and the featured cards, the cards as
+//! bands, the stats folded under them, and Warnings, Data and Danger zone
+//! at the foot. Below the breakpoint it is the app's stack: the Profile
+//! card, the accordion with `Budget` open, Data and Danger zone, and Cards
+//! floating in the dock. A deck the server no longer has leaves for Decks,
+//! as the app's model does with `Action::Gone`.
 
 pub mod cards;
 pub mod dialogs;
+pub mod page;
 pub mod panels;
 pub mod sections;
 
@@ -30,30 +27,30 @@ use zwipe_ui::buy;
 use zwipe_ui::deck::form::Slot;
 use zwipe_ui::screens::deck_view::CARDS;
 
-use self::cards::CardsColumn;
 use self::dialogs::{DeckDialogsHost, use_deck_dialogs};
+use self::page::DeckWidePage;
 use self::panels::{DangerZonePanel, DataPanel};
 use self::sections::{
     BudgetSection, ProfileCard, StatsSections, TagsSection, WarningFixes, WarningsSection,
 };
-use super::skeletons::{DeckCardsSkeleton, DeckProfileSkeleton, DeckStatsSkeleton};
+use super::skeletons::{DeckProfileSkeleton, DeckStatsSkeleton};
 use crate::domain::deck::{has_budget, metrics_possible, tag_count};
 use crate::inbound::cards::card_row::{CardOverlaysHost, use_card_overlays};
 use crate::inbound::cards::otag::{OtagExamplesHost, use_otag_reveals};
 use crate::inbound::chrome::authed::use_authed;
+use crate::inbound::chrome::media::use_wide;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::router::Route;
-use crate::inbound::shell::{HeadPlace, PageHead, ScreenFrame};
+use crate::inbound::shell::{HeadPlace, ScreenFrame};
 
-/// The screen's title, in the tab, the folded nav and the page head.
+/// The screen's title, in the tab and the folded nav.
 const TITLE: &str = "Deck";
-/// The page head's line under the title.
-const LINE: &str = "The deck's profile, stats, warnings and cards";
 
 /// The deck view for `deck_id`.
 #[component]
 pub fn ViewDeck(deck_id: Uuid) -> Element {
     let navigator = use_navigator();
+    let wide = use_wide();
     let client: Signal<ZwipeClient> = use_context();
     let session: Signal<Option<Session>> = use_context();
     let authed = use_authed();
@@ -235,63 +232,53 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
             on_hint,
             div { class: "screen-content",
                 match loaded_profile {
+                    Some(Ok(p)) if wide() => rsx! {
+                        div { class: "content-enter web-page web-deck-page",
+                            DeckWidePage {
+                                deck_id,
+                                profile: p,
+                                deck: loaded_deck,
+                                deck_loading,
+                                metrics,
+                                buy: buy_links,
+                                currency,
+                                warnings,
+                                fixes,
+                                dialogs,
+                                on_hint,
+                            }
+                        }
+                    },
                     Some(Ok(p)) => {
                         let cards = metrics
                             .as_ref()
                             .map_or_else(|| usize::try_from(p.card_count).unwrap_or(0), |m| m.total_cards);
                         rsx! {
-                            // The head beside the profile on a wide window,
-                            // then the stats under the head and the cards under
-                            // the profile.
-                            div { class: "content-enter web-deck-view web-page web-sections-open",
-                                div { class: "web-columns",
-                                    div { class: "web-column",
-                                        PageHead { title: TITLE, line: LINE, on_hint }
-                                        if has_budget(&p, metrics.is_some()) {
-                                            BudgetSection {
-                                                profile: p.clone(),
-                                                metrics: metrics.clone(),
-                                                buy: buy_links,
-                                                currency,
-                                                open_section,
-                                            }
-                                        }
-                                        if tag_count(&p) > 0 {
-                                            TagsSection { profile: p.clone(), open_section }
-                                        }
-                                        if metrics.is_none() && deck_loading && metrics_possible(&p) {
-                                            DeckStatsSkeleton {}
-                                        } else {
-                                            StatsSections { metrics: metrics.clone(), land_target: p.land_target, open_section }
-                                        }
-                                    }
-                                    div { class: "web-column",
-                                        div { class: "web-deck-profile",
-                                            ProfileCard { profile: p, commander: commander(), cards, dialogs }
-                                        }
-                                        div { class: "web-deck-view-cards",
-                                            if let Some(loaded) = loaded_deck {
-                                                CardsColumn { key: "{deck_id}", deck: loaded }
-                                            } else if deck_loading {
-                                                DeckCardsSkeleton {}
-                                            }
-                                        }
+                            // The app's stack.
+                            div { class: "content-enter web-deck-view",
+                                ProfileCard { profile: p.clone(), commander: commander(), cards, dialogs }
+                                if has_budget(&p, metrics.is_some()) {
+                                    BudgetSection {
+                                        profile: p.clone(),
+                                        metrics: metrics.clone(),
+                                        buy: buy_links,
+                                        currency,
+                                        open_section,
                                     }
                                 }
-                                // The warnings and the less used actions at the
-                                // foot of the page, Danger zone last; the content's
-                                // trailing room keeps the floating Cards off Delete.
-                                div { class: "web-columns",
-                                    div { class: "web-column",
-                                        if !warnings.is_empty() {
-                                            WarningsSection { deck_id, warnings, fixes, open_section }
-                                        }
-                                        DataPanel { deck_id, has_cards: metrics.is_some() }
-                                    }
-                                    div { class: "web-column",
-                                        DangerZonePanel { dialogs }
-                                    }
+                                if tag_count(&p) > 0 {
+                                    TagsSection { profile: p.clone(), open_section }
                                 }
+                                if metrics.is_none() && deck_loading && metrics_possible(&p) {
+                                    DeckStatsSkeleton {}
+                                } else {
+                                    StatsSections { metrics: metrics.clone(), land_target: p.land_target, open_section }
+                                }
+                                if !warnings.is_empty() {
+                                    WarningsSection { deck_id, warnings, fixes, open_section }
+                                }
+                                DataPanel { deck_id, has_cards: metrics.is_some() }
+                                DangerZonePanel { dialogs }
                             }
                         }
                     }
@@ -299,21 +286,9 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                         p { class: "text-muted", "Could not load deck" }
                     },
                     None => rsx! {
-                        div { class: "content-enter web-deck-view web-page",
-                            div { class: "web-columns",
-                                div { class: "web-column",
-                                    PageHead { title: TITLE, line: LINE, on_hint }
-                                    DeckStatsSkeleton {}
-                                }
-                                div { class: "web-column",
-                                    div { class: "web-deck-profile",
-                                        DeckProfileSkeleton {}
-                                    }
-                                    div { class: "web-deck-view-cards",
-                                        DeckCardsSkeleton {}
-                                    }
-                                }
-                            }
+                        div { class: if wide() { "content-enter web-page web-deck-page" } else { "content-enter web-deck-view" },
+                            DeckProfileSkeleton {}
+                            DeckStatsSkeleton {}
                         }
                     },
                 }
