@@ -201,15 +201,13 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
                 }
                 if let Some(card) = current.clone() {
                     div { class: "web-examples-details",
-                        div { class: "sheet-panel",
-                            CardDetails {
-                                key: "{card.scryfall_data.id}",
-                                card,
-                                show_name: true,
-                                show_cost: true,
-                                show_classification: true,
-                                describe_tag: Some(describe_tag),
-                            }
+                        CardDetails {
+                            key: "{card.scryfall_data.id}",
+                            card,
+                            show_name: true,
+                            show_cost: true,
+                            show_classification: true,
+                            describe_tag: Some(describe_tag),
                         }
                     }
                 }

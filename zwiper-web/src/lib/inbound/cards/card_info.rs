@@ -59,19 +59,17 @@ pub fn CardDetailsSheet(
             closable: true,
             footer: actions,
             div { class: "card-rules",
-                div { class: "sheet-panel",
-                    CardDetails {
-                        card,
-                        show_name: false,
-                        show_cost: true,
-                        show_classification: true,
-                        show_flip: false,
-                        face: Some(face),
-                        describe_tag: Some(describe_tag),
-                    }
-                    if let Some(footer) = footer {
-                        {footer}
-                    }
+                CardDetails {
+                    card,
+                    show_name: false,
+                    show_cost: true,
+                    show_classification: true,
+                    show_flip: false,
+                    face: Some(face),
+                    describe_tag: Some(describe_tag),
+                }
+                if let Some(footer) = footer {
+                    {footer}
                 }
             }
         }
