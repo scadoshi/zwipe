@@ -1037,7 +1037,7 @@ button {
     align-items: center;
     gap: 0.3rem;
     padding: 0.2rem 0.7rem 0.2rem 0.45rem;
-    margin: 0.25rem 0 0;
+    margin: 0.5rem 0 0;
     border: 1px solid color-mix(in srgb, var(--tone) 35%, transparent);
     border-radius: 0.6rem;
     background-color: color-mix(in srgb, var(--tone) 12%, transparent);
@@ -1052,10 +1052,24 @@ button {
     color: var(--tone);
 }
 
+/* The chip keeps its whole border while folded; the folded rule below
+   that clears a group header's bottom edge does not apply to it. */
+.card-group.deck-group.collapsed > .card-group-header.group-collapsible {
+    border-bottom-color: color-mix(in srgb, var(--tone) 35%, transparent);
+}
+
+/* The tiles sit a panel gap under their chip and over the next one. The
+   padding opens and closes with the fold, so folded groups stack at the
+   chip row's own spacing instead of holding two gaps of empty space. */
 .deck-group > .collapsible > .collapsible-inner {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--panel-gap);
+    padding: 0;
+    transition: padding 0.25s ease;
+}
+
+.deck-group > .collapsible.open > .collapsible-inner {
     padding: var(--panel-gap) 0;
 }
 
