@@ -1666,14 +1666,13 @@ body {
 }
 
 @media (min-width: 900px) and (hover: hover) {
-    /* The deck page's preview pins under the head's title row on the side
-       the cursor is not on, so it covers neither the row being read nor
-       the head's buttons: the factor turns the cursor's distance from the
-       middle into a far-off value the clamp pulls back to one gutter or
-       the other. */
+    /* The deck page's preview pins under the nav on the side the cursor is
+       not on, so it never covers the row being read: the factor turns the
+       cursor's distance from the middle into a far-off value the clamp
+       pulls back to one gutter or the other. */
     .web-hover-preview.web-hover-pinned {
         left: clamp(1rem, (50vw - var(--hover-x)) * 1000, calc(100vw - 16rem));
-        top: calc(var(--sheet-drawer-top, 5.5rem) + 3.5rem);
+        top: calc(var(--sheet-drawer-top, 5.5rem) + 0.5rem);
         width: 15rem;
     }
 }
