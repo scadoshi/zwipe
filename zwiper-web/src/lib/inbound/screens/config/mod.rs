@@ -6,7 +6,7 @@
 mod exceptions;
 mod themes;
 
-use components::{Button, ButtonVariant, DarkModeButton, TOAST_NORMAL, ThemeConfig};
+use components::{Button, ButtonVariant, DarkModeButton, PaletteIcon, TOAST_NORMAL, ThemeConfig};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_core::domain::auth::models::session::Session;
@@ -169,6 +169,8 @@ pub fn Config() -> Element {
                                 Button {
                                     variant: ButtonVariant::Action,
                                     onclick: move |_| themes_open.set(true),
+                                    PaletteIcon {}
+                                    " "
                                     "Change"
                                 }
                             }
