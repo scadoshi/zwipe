@@ -21,6 +21,39 @@ use crate::outbound::timer;
 #[derive(Debug, Clone, Copy)]
 pub struct ShowRowArt(pub Signal<bool>);
 
+/// The card a hovered row shows, with the cursor's x, for a screen that
+/// draws the preview itself with [`HoverPreviewHost`] pinned clear of the
+/// rows. Rows without the context float the preview beside the cursor.
+#[derive(Debug, Clone, Copy)]
+pub struct HoverPreview(pub Signal<Option<HoverCard>>);
+
+/// A hovered card's image and where the cursor was.
+#[derive(Debug, Clone, PartialEq)]
+pub struct HoverCard {
+    /// The card's image.
+    pub url: String,
+    /// What the image shows, for assistive tech.
+    pub name: String,
+    /// The cursor's x in the window.
+    pub x: f64,
+}
+
+/// The pinned preview of the row under the cursor, on the side of the
+/// window the cursor is not on. Mount it outside any transformed ancestor,
+/// where `position: fixed` means the window.
+#[component]
+pub fn HoverPreviewHost(preview: Signal<Option<HoverCard>>) -> Element {
+    rsx! {
+        if let Some(card) = preview() {
+            div {
+                class: "web-hover-preview web-hover-pinned",
+                style: "--hover-x: {card.x}px;",
+                img { src: "{card.url}", alt: "{card.name}" }
+            }
+        }
+    }
+}
+
 /// The overlays a screen's rows open: the full image and the printing
 /// sheet. `Copy`; provided by [`use_card_overlays`].
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -112,11 +145,13 @@ pub fn CardRow(
     let describe_tag = try_use_context::<OtagDescribe>().map(|d| d.0);
     let on_examples = try_use_context::<OtagExamplesOpen>().map(|e| e.0);
     let show_art = try_use_context::<ShowRowArt>().map(|s| (s.0)());
+    let pinned = try_use_context::<HoverPreview>().map(|p| p.0);
     let mut hovering = use_signal(|| false);
     let mut hover_shown = use_signal(|| false);
     let mut cursor = use_signal(|| (0.0_f64, 0.0_f64));
     let sd_for_image = card.scryfall_data.clone();
     let sd_for_hover = card.scryfall_data.clone();
+    let sd_for_pin = card.scryfall_data.clone();
     let on_image = overlays.map(|CardOverlays { mut preview, .. }| {
         EventHandler::new(move |()| preview.set(Some((sd_for_image.clone(), face()))))
     });
@@ -157,16 +192,32 @@ pub fn CardRow(
                 price_currency,
                 on_hover_enter: move |()| {
                     hovering.set(true);
+                    let sd_for_pin = sd_for_pin.clone();
                     spawn(async move {
                         timer::sleep(HOVER_DELAY).await;
-                        if hovering() {
-                            hover_shown.set(true);
+                        if !hovering() {
+                            return;
+                        }
+                        match pinned {
+                            Some(mut pinned) => {
+                                if let Some(url) = sd_for_pin.primary_image_url(ImageSize::Normal) {
+                                    pinned.set(Some(HoverCard {
+                                        url: url.to_owned(),
+                                        name: sd_for_pin.name.clone(),
+                                        x: cursor().0,
+                                    }));
+                                }
+                            }
+                            None => hover_shown.set(true),
                         }
                     });
                 },
                 on_hover_leave: move |()| {
                     hovering.set(false);
                     hover_shown.set(false);
+                    if let Some(mut pinned) = pinned {
+                        pinned.set(None);
+                    }
                 },
                 extra_actions,
                 footer,

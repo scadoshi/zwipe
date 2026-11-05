@@ -1,9 +1,10 @@
 //! The deck on a wide window: the deck page both sites share, editing. The
 //! head carries Edit, Clone, Share and the page's `?` beside the name; the
 //! controls add Quick add and the Boards row; the bands are the editor's
-//! rows, a click selecting one into the pane beside them; the stats fold
-//! under the cards; and the foot holds Warnings, Data and Danger zone. The
-//! dock floats add, remove, the filter and undo.
+//! rows, opening inline with their actions as on the phone, the hover
+//! preview pinned to the side the cursor is not on; the stats fold under
+//! the cards; and the foot holds Warnings, Data and Danger zone. The dock
+//! floats add, remove, the filter and undo.
 
 use std::collections::HashSet;
 
@@ -33,14 +34,16 @@ use super::sections::{
 use crate::domain::deck::{has_budget, tag_count};
 use crate::inbound::card_filter::CardFilterPanel;
 use crate::inbound::card_stores::CardStores;
-use crate::inbound::cards::card_row::{CardOverlays, CardOverlaysHost, use_card_overlays};
-use crate::inbound::cards::otag::{OtagExamplesHost, OtagExamplesOpen, use_otag_reveals};
+use crate::inbound::cards::card_row::{
+    CardOverlays, CardOverlaysHost, HoverCard, HoverPreview, HoverPreviewHost, use_card_overlays,
+};
+use crate::inbound::cards::otag::{OtagExamplesHost, use_otag_reveals};
 use crate::inbound::cards::printing_sheet::PrintingSheet;
 use crate::inbound::chrome::hint_topic::{HintTopic, InfoButton};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog};
 use crate::inbound::router::Route;
 use crate::inbound::screens::deck::cards::editor::{
-    DetailPane, Editor, Listed, RowInfo, RowKind, main_row_of, row_view, use_deck_editor,
+    Editor, Listed, RowInfo, RowKind, main_row_of, row_view, use_deck_editor,
 };
 use crate::inbound::screens::deck::cards::quick_add::QuickAdd;
 use crate::inbound::screens::deck::skeletons::DeckCardsSkeleton;
@@ -78,16 +81,12 @@ pub fn DeckWidePage(
         show_art,
         collapsed,
         mut selected,
-        face,
-        mut printing,
-        mut printing_open,
+        printing,
+        printing_open,
         mut filter_open,
         hint_open,
         listing,
         meta,
-        change_quantity,
-        move_to_board,
-        toggle_mvp,
         save_printing,
         apply_undo,
         reset_filter,
@@ -98,7 +97,10 @@ pub fn DeckWidePage(
     let examples = use_otag_reveals();
     let overlays = use_card_overlays();
     let CardOverlays { mut preview, .. } = overlays;
-    let on_examples = try_use_context::<OtagExamplesOpen>().map(|e| e.0);
+    // The hover preview pins to the far side of the window, outside the
+    // rows, whose hover scale would otherwise pin it to the row.
+    let hover: Signal<Option<HoverCard>> = use_signal(|| None);
+    use_context_provider(|| HoverPreview(hover));
     let folded: Signal<HashSet<String>> =
         use_signal(|| FOLDED_STATS.into_iter().map(String::from).collect());
     // A fix made at the foot reloads the deck, so the rows follow.
@@ -125,7 +127,7 @@ pub fn DeckWidePage(
         zone: zone_rows,
         groups: main_groups,
         lands: main_lands,
-        rows,
+        ..
     } = listing();
     let row_meta = meta();
     let applied = filter.read().clone();
@@ -133,8 +135,6 @@ pub fn DeckWidePage(
     let held_profile = profile();
     let format = held_profile.as_ref().and_then(|p| p.format);
     let oathbreaker = format.is_some_and(|f| f.has_signature_spell());
-    let pane_row =
-        selected().and_then(|id| rows.iter().find(|r| r.card.scryfall_data.id == id).cloned());
     let qty_count = |cards: &[Card]| -> i32 {
         cards
             .iter()
@@ -435,27 +435,6 @@ pub fn DeckWidePage(
                     }
                 }
             },
-            pane: rsx! {
-                if let Some(row) = pane_row {
-                    DetailPane {
-                        key: "{row.card.scryfall_data.id}",
-                        row,
-                        face,
-                        board: row_meta.get(&selected().unwrap_or_default()).map(|m| m.board),
-                        on_examples,
-                        on_qty: move |(id, d): (Uuid, i32)| change_quantity.call((id, d, true)),
-                        on_move: move |(id, b): (Uuid, Board)| move_to_board.call((id, b, true)),
-                        on_star: move |(id, s): (Uuid, bool)| toggle_mvp.call((id, s)),
-                        on_printing: move |(c, slot): (Card, Option<Slot>)| {
-                            printing.set(Some((c, slot)));
-                            printing_open.set(true);
-                        },
-                        on_image: move |(c, f): (Card, usize)| preview.set(Some((c.scryfall_data, f))),
-                    }
-                } else {
-                    p { class: "text-muted web-deck-pane-empty", "Select a card" }
-                }
-            },
             stats: rsx! {
                 if let Some(p) = held_profile {
                     if has_budget(&p, has_cards) {
@@ -559,6 +538,7 @@ pub fn DeckWidePage(
                 selected.set(None);
             },
         }
+        HoverPreviewHost { preview: hover }
         CardOverlaysHost { overlays, on_printing_save: move |_| {} }
         OtagExamplesHost { examples }
         OneTimeHintDialog { hint: OneTimeHint::DeckCards, open: hint_open }

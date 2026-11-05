@@ -21,15 +21,13 @@ use zwipe_ui::filter::picker::Sources;
 use zwipe_ui::screens::deck_cards::TITLE;
 use zwipe_ui::{deck_cards, filter};
 
-use super::editor::{
-    DetailPane, Editor, Listed, RowInfo, RowKind, main_row_of, row_view, use_deck_editor,
-};
+use super::editor::{Editor, Listed, RowInfo, RowKind, main_row_of, row_view, use_deck_editor};
 use super::featured::FeaturedCards;
 use super::quick_add::QuickAdd;
 use crate::inbound::card_filter::CardFilterPanel;
 use crate::inbound::card_stores::CardStores;
 use crate::inbound::cards::card_row::{CardOverlays, CardOverlaysHost, use_card_overlays};
-use crate::inbound::cards::otag::{OtagExamplesHost, OtagExamplesOpen, use_otag_reveals};
+use crate::inbound::cards::otag::{OtagExamplesHost, use_otag_reveals};
 use crate::inbound::cards::printing_sheet::PrintingSheet;
 use crate::inbound::chrome::media::use_wide;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog};
@@ -127,16 +125,12 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
         mut show_art,
         collapsed,
         mut selected,
-        face,
-        mut printing,
-        mut printing_open,
+        printing,
+        printing_open,
         mut filter_open,
         hint_open,
         listing,
         meta,
-        change_quantity,
-        move_to_board,
-        toggle_mvp,
         save_printing,
         apply_undo,
         reset_filter,
@@ -147,7 +141,6 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
     let examples = use_otag_reveals();
     let overlays = use_card_overlays();
     let CardOverlays { mut preview, .. } = overlays;
-    let on_examples = try_use_context::<OtagExamplesOpen>().map(|e| e.0);
 
     let Listed {
         tokens: token_rows,
@@ -156,7 +149,7 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
         zone: zone_rows,
         groups: main_groups,
         lands: main_lands,
-        rows,
+        ..
     } = listing();
     let row_meta = meta();
     let applied = filter.read().clone();
@@ -164,8 +157,6 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
     let format = profile.read().as_ref().and_then(|p| p.format);
     let oathbreaker = format.is_some_and(|f| f.has_signature_spell());
     let main_row = |card: &Card| -> RowInfo { main_row_of(&row_meta, card) };
-    let pane_row =
-        selected().and_then(|id| rows.iter().find(|r| r.card.scryfall_data.id == id).cloned());
     let qty_count = |cards: &[Card]| -> i32 {
         cards
             .iter()
@@ -377,27 +368,6 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
                     }
                     if shown_boards.main && main_groups.is_empty() && main_lands.is_empty() && loaded() {
                         p { class: "text-muted", "No cards" }
-                    }
-                }
-                div { class: "web-deck-cards-pane",
-                    if let Some(row) = pane_row {
-                        DetailPane {
-                            key: "{row.card.scryfall_data.id}",
-                            row,
-                            face,
-                            board: row_meta.get(&selected().unwrap_or_default()).map(|m| m.board),
-                            on_examples,
-                            on_qty: move |(id, d): (Uuid, i32)| change_quantity.call((id, d, true)),
-                            on_move: move |(id, b): (Uuid, Board)| move_to_board.call((id, b, true)),
-                            on_star: move |(id, s): (Uuid, bool)| toggle_mvp.call((id, s)),
-                            on_printing: move |(c, slot): (Card, Option<Slot>)| {
-                                printing.set(Some((c, slot)));
-                                printing_open.set(true);
-                            },
-                            on_image: move |(c, f): (Card, usize)| preview.set(Some((c.scryfall_data, f))),
-                        }
-                    } else {
-                        p { class: "text-muted web-deck-cards-pane-empty", "Select a card" }
                     }
                 }
             }

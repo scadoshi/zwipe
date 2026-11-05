@@ -2,14 +2,13 @@
 //! and the deck page on a wide window: the deck's entries, zone and
 //! profile, the filter, the group and board rows, the selection the keys
 //! move, the quantity bursts, moves, stars, printings and undo, each saved
-//! as it happens. [`use_deck_editor`] holds it all; [`row_view`] draws one
-//! row with the actions its kind allows, and [`DetailPane`] the selected
-//! row's details on a wide window.
+//! as it happens. [`use_deck_editor`] holds it all, and [`row_view`] draws
+//! one row with the actions its kind allows.
 
 use std::collections::{HashMap, HashSet};
 
 use chrono::Utc;
-use components::{CardDetails, TOAST_QUICK};
+use components::TOAST_QUICK;
 use dioxus::core::spawn_forever;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -17,7 +16,6 @@ use uuid::Uuid;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
-use zwipe_core::domain::card::scryfall_data::ImageSize;
 use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::card::search_card::card_filter::CardSortKey;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
@@ -1044,114 +1042,6 @@ pub(crate) fn row_view(
                     on_printing: on_print,
                     on_drag_start: drag,
                 }
-            }
-        }
-    }
-}
-
-/// The selected row on a wide window: its image, its details and the same
-/// actions the row opens inline below the breakpoint.
-#[component]
-pub(crate) fn DetailPane(
-    row: RowInfo,
-    face: Signal<usize>,
-    board: Option<Board>,
-    on_examples: Option<Callback<String>>,
-    on_qty: EventHandler<(Uuid, i32)>,
-    on_move: EventHandler<(Uuid, Board)>,
-    on_star: EventHandler<(Uuid, bool)>,
-    on_printing: EventHandler<(Card, Option<Slot>)>,
-    on_image: EventHandler<(Card, usize)>,
-) -> Element {
-    let describe_tag = crate::inbound::cards::otag::use_describe_tag();
-    let RowInfo { card, qty, kind } = row;
-    let id = card.scryfall_data.id;
-    let shown_face = face();
-    let card_for_image = card.clone();
-    let card_for_print = card.clone();
-    let current = match kind {
-        RowKind::Board(b) => b,
-        _ => board.unwrap_or(Board::Deck),
-    };
-    let editable = matches!(kind, RowKind::Main { .. } | RowKind::Board(_));
-    let slot = match kind {
-        RowKind::Zone(slot) => Some(slot),
-        _ => None,
-    };
-    let moves: Vec<(&'static str, Board)> = match current {
-        Board::Deck => vec![
-            ("To maybeboard", Board::Maybeboard),
-            ("To sideboard", Board::Sideboard),
-        ],
-        Board::Maybeboard => vec![
-            ("To mainboard", Board::Deck),
-            ("To sideboard", Board::Sideboard),
-        ],
-        Board::Sideboard => vec![
-            ("To mainboard", Board::Deck),
-            ("To maybeboard", Board::Maybeboard),
-        ],
-    };
-    let has_image = card
-        .scryfall_data
-        .primary_image_url(ImageSize::Normal)
-        .is_some();
-    rsx! {
-        div { class: "sheet-panel web-deck-pane",
-            if has_image {
-                components::FlippableCardImage {
-                    key: "{id}-{shown_face}",
-                    sd: card.scryfall_data.clone(),
-                    size: ImageSize::Normal,
-                    class: "web-deck-pane-image".to_string(),
-                    initial_face: shown_face,
-                    on_face_change: move |f: usize| face.set(f),
-                }
-            }
-            CardDetails {
-                card,
-                show_name: true,
-                show_cost: true,
-                show_classification: true,
-                face: Some(face),
-                describe_tag: Some(describe_tag),
-                on_examples,
-                on_image: has_image.then(|| EventHandler::new(move |()| on_image.call((card_for_image.clone(), face())))),
-                has_actions: !matches!(kind, RowKind::Token),
-                actions: rsx! {
-                    div { class: "card-action-row",
-                        if editable {
-                            button { class: "card-action-btn", onclick: move |_| on_qty.call((id, -1)), "-" }
-                            span { class: "card-action-count", "{qty}" }
-                            button { class: "card-action-btn", onclick: move |_| on_qty.call((id, 1)), "+" }
-                        }
-                        if !matches!(kind, RowKind::Token) {
-                            button {
-                                class: "card-action-btn",
-                                onclick: move |_| on_printing.call((card_for_print.clone(), slot)),
-                                "Printing"
-                            }
-                        }
-                        if let RowKind::Main { mvp } = kind {
-                            button { class: "card-action-btn", onclick: move |_| on_star.call((id, mvp)),
-                                if mvp { "Unstar" } else { "Star" }
-                            }
-                        }
-                    }
-                    if editable {
-                        div { class: "card-action-row",
-                            for (label, target) in moves {
-                                button {
-                                    key: "{label}",
-                                    class: "card-action-btn",
-                                    style: "white-space:nowrap;",
-                                    onclick: move |_| on_move.call((id, target)),
-                                    "{label}"
-                                }
-                            }
-                        }
-                    }
-                },
             }
         }
     }
